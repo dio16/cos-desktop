@@ -2404,6 +2404,81 @@ fn cancelled_at_reason_requires_a_cancelled_class() {
     );
 }
 
+/// BLOCKING B-R1-01 (a): a valid-looking row printed by a sampler that exits non-zero is
+/// refused; the attempt is counted and no value is taken.
+#[test]
+fn nonzero_sampler_exit_is_sample_tool_failed() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_failing_helper");
+    config.sample_interval_ms = 10;
+    config.max_samples = 1;
+    config.cancel_after_ms = Some(1_500);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.working_set_attempts, 1, "the attempt was made");
+    assert_eq!(observation.working_set_samples, 0);
+    assert_eq!(
+        observation.working_set_max_bytes, None,
+        "no value from a failed run"
+    );
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(
+        observation.working_set_reason,
+        Some("sample_tool_failed"),
+        "a non-zero exit is a sample failure"
+    );
+}
+
+/// BLOCKING B-R1-01 (b): a row parsed out of a truncated capture is incomplete evidence
+/// and is refused.
+#[test]
+fn truncated_sample_capture_is_refused() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_truncating_helper");
+    config.sample_interval_ms = 10;
+    config.max_samples = 1;
+    config.cancel_after_ms = Some(1_500);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.working_set_attempts, 1);
+    assert_eq!(observation.working_set_samples, 0);
+    assert_eq!(observation.working_set_max_bytes, None);
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(
+        observation.working_set_reason,
+        Some("sample_output_truncated"),
+        "a truncated capture is not a complete row"
+    );
+}
+
+/// Positive control: the same seam, a sampler that exits 0 with a small capture, still
+/// produces the value — the new checks must not reject good samples.
+#[test]
+fn successful_sampler_still_records_the_value() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_valid_helper");
+    // A generous interval and cap, so the run is neither capped nor failed.
+    config.sample_interval_ms = 300;
+    config.max_samples = 8;
+    config.cancel_after_ms = Some(900);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert!(observation.working_set_attempts >= 1);
+    assert!(observation.working_set_samples >= 1);
+    assert_eq!(observation.working_set_max_bytes, Some(12_000 * 1024));
+    assert_eq!(observation.working_set_sampling, "sampled_lower_bound");
+    assert_eq!(observation.working_set_reason, None);
+}
+
 /// A2: the post-spawn digest check is load-bearing. The sampler helper replaces its own
 /// program file while it runs and then emits a valid row; the harness must discard that
 /// value because the executed bytes are no longer the verified ones.
@@ -3301,6 +3376,33 @@ fn sampler_pid() -> u32 {
         }
     }
     0
+}
+
+/// A sampler that prints a perfectly valid row and then exits non-zero: the row is not
+/// evidence, because the program that produced it failed.
+#[test]
+fn fake_sampler_failing_helper() {
+    let pid = sampler_pid();
+    if pid == 0 {
+        return;
+    }
+    println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    std::process::exit(1);
+}
+
+/// A sampler that prints a valid row and then floods the capture, so the row sits in a
+/// truncated buffer and must be refused.
+#[test]
+fn fake_sampler_truncating_helper() {
+    let pid = sampler_pid();
+    if pid == 0 {
+        return;
+    }
+    println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    let padding = "x".repeat(1024);
+    for _ in 0..16 {
+        println!("{padding}");
+    }
 }
 
 /// A sampler that replaces its own program file while it runs and still emits a valid

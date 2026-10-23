@@ -138,6 +138,12 @@
 //! process can detect; the path, the digest and the per-sample re-verification make such
 //! a substitution visible in the evidence.
 //!
+//! A sample is only harvested when the sampler **exited with code 0 and its stdout
+//! capture was not truncated**; a non-zero exit is `sample_tool_failed` and an output
+//! that filled the 8 KiB capture is `sample_output_truncated`, each counting its attempt
+//! and neither producing a value or `sampled_lower_bound`. A row printed before a failure
+//! is not evidence.
+//!
 //! Each sample is a bounded `tasklist /FI "PID eq <id>" /FO CSV /NH` call (argv only, no
 //! shell, hard per-sample timeout of 2000 ms — the sampler runs concurrently with the
 //! child, so its cost never moves the child's deadline — at most `max_samples` sampling
@@ -323,6 +329,8 @@ const SAMPLE_OUTPUT_BYTES: u64 = 8 * 1024;
 const SAMPLED_LOWER_BOUND: &str = "sampled_lower_bound";
 const SAMPLE_TOOL_MISSING: &str = "sample_tool_missing";
 const SAMPLE_TIMEOUT_REASON: &str = "sample_timeout";
+const SAMPLE_TOOL_FAILED: &str = "sample_tool_failed";
+const SAMPLE_OUTPUT_TRUNCATED: &str = "sample_output_truncated";
 const SAMPLE_PARSE_FAILED: &str = "sample_parse_failed";
 const SAMPLE_NO_SAMPLE: &str = "no_sample";
 const SAMPLE_DISABLED: &str = "sampling_disabled";
@@ -2647,11 +2655,17 @@ fn supervise(
         // Harvest a sample that has finished (or timed out) without blocking the loop.
         if let Some(mut flight) = in_flight.take() {
             match flight.child.try_wait() {
-                Ok(Some(_)) => {
-                    // The bytes must still be the verified ones after the child ran; a
-                    // changed program means the value is discarded and the capture is
-                    // released like every other completed sample (NIT N2).
-                    if !sample_tool_matches(&flight.tool, &flight.digest) {
+                Ok(Some(status)) => {
+                    // A sampler that failed did not measure anything: a row printed
+                    // before a non-zero exit is not evidence (BLOCKING B-R1-01).
+                    if !status.success() {
+                        flight.capture.release();
+                        sampler.failed(SAMPLE_TOOL_FAILED);
+                        next_sample = None;
+                    } else if !sample_tool_matches(&flight.tool, &flight.digest) {
+                        // The bytes must still be the verified ones after the child ran;
+                        // a changed program means the value is discarded and the capture
+                        // is released like every other completed sample (NIT N2).
                         flight.capture.release();
                         sampler.discarded(SAMPLE_TOOL_CHANGED);
                         next_sample = None;
@@ -2851,8 +2865,14 @@ fn harvest_sample(flight: &mut SampleInFlight) -> Result<u64, &'static str> {
     let capture = flight
         .capture
         .read(usize::try_from(SAMPLE_OUTPUT_BYTES).unwrap_or(usize::MAX));
-    let bytes = capture.0.bytes;
+    let stdout = capture.0;
     flight.capture.release();
+    // A row parsed out of a truncated buffer is incomplete evidence: the rest of the
+    // output was never read, so no value is taken from it (BLOCKING B-R1-01).
+    if stdout.truncated {
+        return Err(SAMPLE_OUTPUT_TRUNCATED);
+    }
+    let bytes = stdout.bytes;
     if bytes.is_empty() {
         return Err(SAMPLE_PARSE_FAILED);
     }
