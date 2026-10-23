@@ -113,12 +113,13 @@
 //! not interpreted either; pixel values are compared as stored.
 //!
 //! Capability rows are built only from observations that are `decoded`, complete, and
-//! whose validity is `presence_only` or `structure_verified` (A1), after observation
-//! truncation (A3), so a mismatch, refusal or dropped row never contributes. Each row
-//! carries `pixels_verified`, the number of its observations whose decoded pixels were
-//! verified (an observation row's `pixel_verified` is the boolean for that single
-//! observation, a capability row's `pixels_verified` is the count — NIT-3); structure
-//! and pixel evidence are therefore labelled separately, and a `pixel_mismatch` row is
+//! whose validity is `presence_only`, `structure_verified` or `pixels_verified` (A1),
+//! after observation truncation (A3), so a mismatch, refusal or dropped row never
+//! contributes. Each row carries `pixels_verified`, the number of its observations
+//! whose decoded pixels were verified (an observation row's `pixel_verified` is the
+//! boolean for that single observation, a capability row's `pixels_verified` is the
+//! count — NIT-3); structure and pixel evidence are therefore labelled separately,
+//! and a `pixel_mismatch` row is
 //! `error` so it never counts at all.
 //! `max_width`/`max_height` are independent observed maxima and need not come from
 //! one output (N3). Colour-management markers are reported only when the parser
