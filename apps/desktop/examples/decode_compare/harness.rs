@@ -1,11 +1,11 @@
-//! Exploratory, decoder-neutral MP-IMG2 Phase 1 comparison harness (record schema v5).
+//! Exploratory, decoder-neutral MP-IMG2 Phase 2 comparison harness (record schema v6).
 //!
 //! This module is shared by the operator-run `decode_compare` example and its
 //! contract tests. It is not a product decoder, selects no decoder, links no
 //! FFmpeg and makes no numeric claim: the emitted record is explicitly
 //! exploratory and every value it contains was actually observed.
 //!
-//! Candidate process protocol (v5), fixed so that no argv element or decoder path
+//! Candidate process protocol (v6), fixed so that no argv element or decoder path
 //! can be derived from media metadata. Three transports exist and all of them pass
 //! argv as a separate argument vector; no command string is ever built, quoted or
 //! interpreted:
@@ -19,7 +19,8 @@
 //!   and the identity probe is `-Version`. The interpreter path resolved from
 //!   `PATH` is recorded as `launcher` (null when it could not be resolved, in
 //!   which case the bare name is launched). The script transport always writes
-//!   `<stem>.wic.png`, so its encoder format never depends on the input suffix.
+//!   `<stem>.<candidate>.wic.png`, so its encoder format never depends on the input
+//!   suffix and no two candidates can ever share an output path.
 //! - environment (contract tests only): the case paths and the probe form travel
 //!   in [`ENV_INPUT`], [`ENV_OUTPUT`] and [`ENV_PROBE`], because a libtest helper
 //!   process's argv is not free.
@@ -34,9 +35,43 @@
 //! regular file with size `> 0`; the record keeps the evidence separated
 //! (`output_present`, `output_bytes`) from the claim (`validity`), and that claim
 //! is only ever `presence_only`. Exit `0` with a missing or zero-byte output is
-//! `error` with refusal `output_missing`. No pixel, checksum or colour content is
+//! `error` with refusal `output_missing`, and an expectation-bearing output that the
+//! inspector cannot verify is `error` with refusal `output_unparsable` or
+//! `output_incomplete` while its validity stays `not_measured` (N5). No pixel, checksum or colour content is
 //! validated here, so `validity: "presence_only"` never means the image was
 //! verified, and `not_measured` means the image itself was not validated at all.
+//!
+//! Verified evidence and capability facts (MP-IMG2 Phase 2): the harness inspects
+//! the bytes the candidate wrote itself with the bounded dependency-free parser in
+//! [`inspect`] (PNG IHDR plus a bounded chunk walk with `IEND` and
+//! `iCCP`/`sRGB`/`gAMA` presence, BMP `BITMAPINFOHEADER`/V4/V5 width/height/bit
+//! count, JPEG `SOF0`/`SOF2` precision, dimensions and component count). Nothing is
+//! taken from the candidate's own report and nothing is guessed: an output the parser
+//! cannot read is `not_measured`, and when an expectation exists that also demotes
+//! the observation class to `not_measured` with refusal `output_unparsable`, so the
+//! record never keeps a `decoded` claim it cannot support. A `cases.txt` line may
+//! declare
+//! `name[|expected:WxH][|declared-class]`; when an expectation exists and the output
+//! parses, matching dimensions yield `validity: content_verified`, and a mismatch
+//! demotes the observation to `error` with refusal `dimension_mismatch` — never a
+//! success class. Without an expectation the claim stays `presence_only`. The record
+//! also carries a `capabilities` table with one row per candidate × observed format.
+//!
+//! A content claim requires a **complete** container (B2): PNG needs a real `IEND`
+//! chunk of length `0`, BMP needs the whole declared header plus a pixel-data offset
+//! inside the file, and JPEG needs a full `SOF` payload inside its declared segment.
+//! Incomplete or unparsable outputs with an expectation are recorded as `error` with
+//! refusal `output_incomplete` / `output_unparsable` (N5) — the raw exit code stays
+//! recorded, but the record never keeps a success class the bytes cannot support.
+//! Capability rows are built only from observations that are `decoded`, complete, and
+//! whose validity is `presence_only` or `content_verified` (A1), after observation
+//! truncation (A3), so a mismatch, refusal or dropped row never contributes.
+//! `max_width`/`max_height` are independent observed maxima and need not come from
+//! one output (N3). Colour-management markers are reported only when the parser
+//! actually saw them, a set the headers never stated is named in `not_measured` with
+//! the reason `header_field_not_observed` (N2), and orientation, region/partial-decode
+//! and sequential capability are always `not_measured` with an explicit reason token
+//! because this harness does not observe them.
 //!
 //! Outcome mapping: exit code `0` with a present output is `decoded`, `2`
 //! unsupported, `3` corrupt, `4` oversize, `5` cancelled; any other code is
@@ -85,6 +120,7 @@
 //! record asserts it; the descendant test proves only that the parent is not
 //! blocked by an inherited capture handle.
 
+use crate::inspect::{self, ColourMarker, ColourType, Format, Inspection};
 use std::{
     collections::BTreeMap,
     ffi::OsString,
@@ -99,14 +135,14 @@ use std::{
 };
 
 /// Fixed record schema version; changing record semantics requires a new version.
-pub const SCHEMA_VERSION: u32 = 5;
+pub const SCHEMA_VERSION: u32 = 6;
 /// Refusal token for a run token whose directory already exists.
 pub const WORK_DIR_EXISTS: &str = "work_dir_exists";
 /// Fixed prefix of every per-run work-directory token.
 pub const RUN_TOKEN_PREFIX: &str = "run-";
 /// Exploratory comparisons are not a ratified numeric gate.
 pub const NUMERIC_GATE: &str = "NOT_RATIFIED";
-/// Optional operator declaration of the expected outcome per case file name.
+/// Optional operator expectations per case: `name[|expected:WxH][|declared-class]`.
 pub const MANIFEST_FILE: &str = "cases.txt";
 /// Operator work subdirectory created next to the record.
 pub const OUTPUT_DIR: &str = "decode_compare_outputs";
@@ -144,6 +180,7 @@ const MAX_ID_BYTES: usize = 64;
 const MAX_CASE_NAME_BYTES: usize = 256;
 const MAX_IDENTITY_CHARS: usize = 256;
 const MAX_REASON_CHARS: usize = 32;
+const MAX_EXPECTED_DIMENSION: u32 = 1 << 20;
 const MAX_MANIFEST_LINES: usize = 1024;
 const MAX_DIR_ENTRIES: usize = 4096;
 const MAX_PATH_ENTRIES: usize = 64;
@@ -154,6 +191,19 @@ const INPUT_FLAG: &str = "-i";
 const NOT_MEASURED: &str = "not_measured";
 /// Validity claim when the only evidence is a non-empty output file.
 const PRESENCE_ONLY: &str = "presence_only";
+/// Validity claim when the inspected output matches the operator expectation.
+const CONTENT_VERIFIED: &str = "content_verified";
+/// Validity claim (and refusal) when the inspected output contradicts it.
+const DIMENSION_MISMATCH: &str = "dimension_mismatch";
+/// Reason tokens for a validity that could not be established.
+const OUTPUT_UNPARSABLE: &str = "output_unparsable";
+const OUTPUT_INCOMPLETE: &str = "output_incomplete";
+const NO_EXPECTATION: &str = "no_expectation";
+/// Capability facts this harness never observes, with the reason it does not.
+const ORIENTATION_REASON: &str = "exif_orientation_not_parsed";
+const REGION_REASON: &str = "partial_decode_not_observed";
+const SEQUENTIAL_REASON: &str = "sequential_capability_not_observed";
+const HEADER_FIELD_NOT_OBSERVED: &str = "header_field_not_observed";
 /// Content of the work-directory ownership marker (tool label + schema version).
 /// Bytes still to append after the last observation row: `\n  ]`, `\n`, `}`, `\n`.
 const OBSERVATIONS_TAIL: &str = "\n  ]\n}\n";
@@ -321,6 +371,15 @@ pub struct Invocation {
     pub env_transport: bool,
 }
 
+/// What the operator declared for one case in `cases.txt`.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Expectation {
+    /// Declared outcome class, when the line names one.
+    pub outcome: Option<OutcomeClass>,
+    /// Declared output dimensions, when the line names `expected:WxH`.
+    pub dimensions: Option<(u32, u32)>,
+}
+
 /// One validated comparison run configuration.
 #[derive(Debug)]
 pub struct Config {
@@ -338,7 +397,8 @@ pub struct Config {
     /// Optional operator pixel bound forwarded to the script transport.
     pub max_pixels: Option<u64>,
     pub invocation: Invocation,
-    pub declared: BTreeMap<String, OutcomeClass>,
+    /// Per-case operator expectations, keyed by case file name.
+    pub expectations: BTreeMap<String, Expectation>,
 }
 
 /// Observed candidate identity. Every field is an observation or `null`.
@@ -382,8 +442,24 @@ pub struct Observation {
     pub output_present: bool,
     /// Observed output size when a regular file exists (may be `0`), else `None`.
     pub output_bytes: Option<u64>,
-    /// Claim standing on that evidence: `presence_only` or `not_measured`.
+    /// Container the harness itself recognised in the output.
+    pub inspected_format: Format,
+    /// Whether the container terminator was observed.
+    pub inspected_complete: bool,
+    pub inspected_width: Option<u32>,
+    pub inspected_height: Option<u32>,
+    pub inspected_bit_depth: Option<u32>,
+    pub inspected_channels: Option<u32>,
+    pub inspected_colour_type: ColourType,
+    /// Colour-management markers the inspector saw in this output.
+    pub inspected_colour_markers: Vec<ColourMarker>,
+    /// Operator expectation for this case, when the manifest declares one.
+    pub expected_dimensions: Option<(u32, u32)>,
+    /// Claim standing on that evidence: `content_verified`, `dimension_mismatch`,
+    /// `presence_only` or `not_measured`.
     pub validity: &'static str,
+    /// Why the claim is not `content_verified`, as a stable token.
+    pub validity_reason: Option<&'static str>,
     /// Stable refusal reason when the case was not fully measured, else `None`.
     pub refusal: Option<&'static str>,
 }
@@ -406,6 +482,25 @@ pub struct Report {
     pub observations_truncated: bool,
     pub candidates: Vec<CandidateRecord>,
     pub observations: Vec<Observation>,
+    pub capabilities: Vec<CapabilityRow>,
+}
+
+/// One candidate × observed format capability row, derived only from outputs the
+/// harness parsed itself.
+///
+/// `max_width`/`max_height` are independent observed maxima: they need not come from
+/// the same output, so they are a lower bound on each axis, not a decoded size.
+#[derive(Debug)]
+pub struct CapabilityRow {
+    pub candidate_id: String,
+    pub format: Format,
+    pub observations: usize,
+    pub max_width: Option<u32>,
+    pub max_height: Option<u32>,
+    pub bit_depths: Vec<u32>,
+    pub channels: Vec<u32>,
+    pub colour_types: Vec<ColourType>,
+    pub colour_markers: Vec<ColourMarker>,
 }
 
 struct Case {
@@ -567,7 +662,7 @@ where
         }
         ids.push(candidate.id.as_str());
     }
-    let declared = load_manifest(&cases)?;
+    let expectations = load_manifest(&cases)?;
     Ok(Config {
         cases,
         out,
@@ -583,7 +678,7 @@ where
             argv_prefix: Vec::new(),
             env_transport: false,
         },
-        declared,
+        expectations,
     })
 }
 
@@ -717,14 +812,16 @@ fn local_absolute_path(path: &Path, what: &str) -> Result<PathBuf, UsageError> {
 }
 
 /// Read the optional operator declaration through a hard byte bound; a malformed
-/// manifest is a refusal. The file is opened and read with `take(MAX + 1)` so the
-/// declared cap bounds allocation and one extra byte proves the cap was exceeded.
-fn load_manifest(cases: &Path) -> Result<BTreeMap<String, OutcomeClass>, UsageError> {
-    let mut declared = BTreeMap::new();
+/// manifest is a refusal. Lines are `name[|expected:WxH][|declared-class]`, with the
+/// fields after the name optional and any other field refused. The file is opened
+/// and read with `take(MAX + 1)` so the declared cap bounds allocation and one extra
+/// byte proves the cap was exceeded.
+fn load_manifest(cases: &Path) -> Result<BTreeMap<String, Expectation>, UsageError> {
+    let mut expectations: BTreeMap<String, Expectation> = BTreeMap::new();
     let manifest = cases.join(MANIFEST_FILE);
     let file = match fs::File::open(&manifest) {
         Ok(file) => file,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(declared),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(expectations),
         Err(error) => {
             return Err(UsageError::new(format!(
                 "cannot read {}: {error}",
@@ -756,29 +853,92 @@ fn load_manifest(cases: &Path) -> Result<BTreeMap<String, OutcomeClass>, UsageEr
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        let (name, token) = line.split_once('\t').ok_or_else(|| {
-            UsageError::new(format!(
-                "{MANIFEST_FILE} line {} must be '<case file name><TAB><declared outcome>'",
+        // A4: the legacy TAB form is refused by name instead of silently parsing
+        // into an expectation that matches no field.
+        if line.contains('\t') {
+            return Err(UsageError::new(format!(
+                "{MANIFEST_FILE} line {} uses the legacy TAB separator; use \
+                 '<name>|<expected:WxH>|<declared-class>'",
                 index + 1
-            ))
-        })?;
-        let name = name.trim();
+            )));
+        }
+        let mut fields = line.split('|').map(str::trim);
+        let name = fields.next().unwrap_or_default();
         if name.is_empty() || name.len() > MAX_CASE_NAME_BYTES {
             return Err(UsageError::new(format!(
                 "{MANIFEST_FILE} line {} names a case of 1-{MAX_CASE_NAME_BYTES} bytes",
                 index + 1
             )));
         }
-        let class = OutcomeClass::from_token(token.trim()).ok_or_else(|| {
-            UsageError::new(format!(
-                "{MANIFEST_FILE} line {} declares an unknown outcome class {:?}",
-                index + 1,
-                token.trim()
-            ))
-        })?;
-        declared.insert(name.to_owned(), class);
+        let mut expectation = Expectation::default();
+        for field in fields {
+            if field.is_empty() {
+                return Err(UsageError::new(format!(
+                    "{MANIFEST_FILE} line {} has an empty field",
+                    index + 1
+                )));
+            }
+            if let Some(dimensions) = field.strip_prefix("expected:") {
+                if expectation.dimensions.is_some() {
+                    return Err(UsageError::new(format!(
+                        "{MANIFEST_FILE} line {} declares more than one expectation",
+                        index + 1
+                    )));
+                }
+                let parsed = parse_dimensions(dimensions).ok_or_else(|| {
+                    UsageError::new(format!(
+                        "{MANIFEST_FILE} line {} expects {dimensions:?}, not WxH",
+                        index + 1
+                    ))
+                })?;
+                expectation.dimensions = Some(parsed);
+            } else {
+                if expectation.outcome.is_some() {
+                    return Err(UsageError::new(format!(
+                        "{MANIFEST_FILE} line {} declares more than one outcome class",
+                        index + 1
+                    )));
+                }
+                let class = OutcomeClass::from_token(field).ok_or_else(|| {
+                    UsageError::new(format!(
+                        "{MANIFEST_FILE} line {} declares an unknown outcome class {field:?}",
+                        index + 1
+                    ))
+                })?;
+                expectation.outcome = Some(class);
+            }
+        }
+        // A4: an expectation for a case that is not in the directory is a typo,
+        // not a silent no-op.
+        if !cases.join(name).is_file() {
+            return Err(UsageError::new(format!(
+                "{MANIFEST_FILE} line {} names unknown case {name:?}",
+                index + 1
+            )));
+        }
+        if expectations.insert(name.to_owned(), expectation).is_some() {
+            return Err(UsageError::new(format!(
+                "{MANIFEST_FILE} line {} repeats case {name:?}",
+                index + 1
+            )));
+        }
     }
-    Ok(declared)
+    Ok(expectations)
+}
+
+/// Parse `WxH`; both dimensions must be positive and bounded.
+fn parse_dimensions(text: &str) -> Option<(u32, u32)> {
+    let (width, height) = text.split_once('x')?;
+    let width = width.parse::<u32>().ok()?;
+    let height = height.parse::<u32>().ok()?;
+    if width == 0
+        || height == 0
+        || width > MAX_EXPECTED_DIMENSION
+        || height > MAX_EXPECTED_DIMENSION
+    {
+        return None;
+    }
+    Some((width, height))
 }
 
 /// Run every admitted case against every candidate and return ordered observations.
@@ -849,6 +1009,7 @@ fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, Usag
         observations_truncated,
         candidates: identities,
         observations,
+        capabilities: Vec::new(),
     };
     // One rendering pass decides how many observations fit the byte budget.
     let (_, kept) = render(&report);
@@ -856,6 +1017,9 @@ fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, Usag
         report.observations.truncate(kept);
         report.observations_truncated = true;
     }
+    // A3: the capability table is derived from the observations that survived the
+    // byte budget, so a dropped row can never contribute a capability claim.
+    report.capabilities = capability_rows(&report.observations);
     if render(&report).0.len() > config.max_record_bytes {
         return Err(UsageError::new(format!(
             "the record header alone exceeds the {} byte cap",
@@ -1052,9 +1216,13 @@ fn resolve_on_path(program: &str) -> Option<PathBuf> {
 }
 
 /// The case output path. An executable keeps the case suffix because a
-/// format-inferring tool needs it; the script transport always writes
-/// `<stem>.wic.png`, so its encoder format never depends on the input suffix and a
-/// valid `.jpg`/`.tif`/`.gif` input is decoded instead of reported as unsupported.
+/// format-inferring tool needs it; the script transport always writes a PNG, so its
+/// encoder format never depends on the input suffix and a valid `.jpg`/`.tif`/`.gif`
+/// input is decoded instead of reported as unsupported.
+///
+/// The candidate id is part of every name (B1): two candidates on the same case can
+/// therefore never share a path, so one candidate's output can never be attributed
+/// to another that wrote nothing.
 pub fn output_path(
     program: &Program,
     work: &Path,
@@ -1066,9 +1234,21 @@ pub fn output_path(
     let stem = format!("{:03}_{}", case_index, sanitize_name(case_id));
     match program {
         Program::Executable(_) => work.join(format!("{stem}.{candidate_id}.{suffix}")),
-        // Two script candidates on one case share this name by design; each
-        // observation measures its own output immediately after its own child.
-        Program::PwshScript(_) => work.join(format!("{stem}.wic.png")),
+        Program::PwshScript(_) => work.join(format!("{stem}.{candidate_id}.wic.png")),
+    }
+}
+
+/// Prove the output path this observation will measure does not exist yet (B1).
+///
+/// The run directory is fresh, so this can only trip on a path the harness itself
+/// reuses; refusing keeps a foreign or shared file from being read as this child's
+/// evidence. Any error other than `NotFound` also refuses, because an unverifiable
+/// path must not be trusted.
+pub fn require_absent_output(path: &Path) -> Result<(), &'static str> {
+    match fs::symlink_metadata(path) {
+        Ok(_) => Err("output_stale_present"),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(_) => Err("output_unverifiable"),
     }
 }
 
@@ -1310,12 +1490,25 @@ fn measure(
         suffix: case.suffix.clone(),
         input_bytes: case.input_bytes,
         declared_outcome: config
-            .declared
+            .expectations
             .get(&case.id)
-            .copied()
+            .and_then(|expectation| expectation.outcome)
             .unwrap_or(OutcomeClass::NotMeasured),
         observed_outcome: OutcomeClass::NotRun,
         candidate_reason: NOT_MEASURED,
+        inspected_format: Format::NotMeasured,
+        inspected_complete: false,
+        inspected_width: None,
+        inspected_height: None,
+        inspected_bit_depth: None,
+        inspected_channels: None,
+        inspected_colour_type: ColourType::NotMeasured,
+        inspected_colour_markers: Vec::new(),
+        expected_dimensions: config
+            .expectations
+            .get(&case.id)
+            .and_then(|expectation| expectation.dimensions),
+        validity_reason: None,
         exit_code: None,
         timeout_fired: false,
         captured_stdout_bytes: 0,
@@ -1350,6 +1543,11 @@ fn measure(
         sanitize_name(&case.id),
         candidate.id
     );
+    if let Err(reason) = require_absent_output(&output) {
+        observation.observed_outcome = OutcomeClass::NotRun;
+        observation.refusal = Some(reason);
+        return observation;
+    }
     let Some((capture, stdout_stdio, stderr_stdio)) = CaptureFiles::open(captures, &stem) else {
         observation.observed_outcome = OutcomeClass::NotRun;
         observation.refusal = Some("capture_uncreatable");
@@ -1418,11 +1616,51 @@ fn measure(
                 }
                 None => classify(supervised.exit_code),
             };
-            observation.validity = if observation.observed_outcome == OutcomeClass::Decoded {
-                PRESENCE_ONLY
+            // Phase 2: verify the bytes the candidate wrote, never its exit code.
+            let inspection = if output_present {
+                match fs::File::open(&output) {
+                    Ok(mut file) => inspect::inspect(&mut file),
+                    Err(_) => Inspection::default(),
+                }
             } else {
-                NOT_MEASURED
+                Inspection::default()
             };
+            observation.inspected_format = inspection.format.unwrap_or(Format::NotMeasured);
+            observation.inspected_complete = inspection.complete;
+            observation.inspected_width = inspection.width;
+            observation.inspected_height = inspection.height;
+            observation.inspected_bit_depth = inspection.bit_depth;
+            observation.inspected_channels = inspection.channels;
+            observation.inspected_colour_type =
+                inspection.colour_type.unwrap_or(ColourType::NotMeasured);
+            observation.inspected_colour_markers = inspection.colour_markers.clone();
+            let (validity, reason) = verify(
+                observation.observed_outcome,
+                observation.expected_dimensions,
+                inspection.dimensions(),
+                inspection.complete,
+            );
+            observation.validity = validity;
+            observation.validity_reason = reason;
+            // A verdict the evidence contradicts can never keep a success class.
+            // An expectation-bearing output that is contradicted, unparsable or
+            // incomplete is a contract failure, so it is `error` with the named
+            // refusal (N5) while the raw exit code stays recorded as evidence.
+            match (validity, reason) {
+                (DIMENSION_MISMATCH, _) => {
+                    observation.observed_outcome = OutcomeClass::Error;
+                    observation.refusal = Some(DIMENSION_MISMATCH);
+                }
+                (_, Some(OUTPUT_UNPARSABLE)) => {
+                    observation.observed_outcome = OutcomeClass::Error;
+                    observation.refusal = Some(OUTPUT_UNPARSABLE);
+                }
+                (_, Some(OUTPUT_INCOMPLETE)) => {
+                    observation.observed_outcome = OutcomeClass::Error;
+                    observation.refusal = Some(OUTPUT_INCOMPLETE);
+                }
+                _ => {}
+            }
         }
         Err(error) => {
             observation.refusal = Some(if error.kind() == std::io::ErrorKind::NotFound {
@@ -1434,6 +1672,104 @@ fn measure(
     }
     capture.release();
     observation
+}
+
+/// Aggregate the parsed outputs into one row per candidate × observed format.
+///
+/// Only outputs the inspector itself recognised *and* measured are counted, and a
+/// capped (cancelled) run is not capability evidence. Values are sorted and
+/// de-duplicated so the table is deterministic; anything the inspector could not
+/// read stays empty here and is rendered as `not_measured` in the record.
+fn capability_rows(observations: &[Observation]) -> Vec<CapabilityRow> {
+    let mut rows: BTreeMap<(String, Format), CapabilityRow> = BTreeMap::new();
+    for observation in observations {
+        // A1/B2: only a decoded observation with a complete container and a
+        // presence/content validity is capability evidence; refusals, mismatches
+        // and not_measured rows never are.
+        if observation.observed_outcome != OutcomeClass::Decoded {
+            continue;
+        }
+        if !observation.inspected_complete {
+            continue;
+        }
+        if !matches!(observation.validity, PRESENCE_ONLY | CONTENT_VERIFIED) {
+            continue;
+        }
+        let format = observation.inspected_format;
+        if format == Format::NotMeasured {
+            continue;
+        }
+        let (Some(width), Some(height)) =
+            (observation.inspected_width, observation.inspected_height)
+        else {
+            continue;
+        };
+        let row = rows
+            .entry((observation.candidate_id.clone(), format))
+            .or_insert_with(|| CapabilityRow {
+                candidate_id: observation.candidate_id.clone(),
+                format,
+                observations: 0,
+                max_width: None,
+                max_height: None,
+                bit_depths: Vec::new(),
+                channels: Vec::new(),
+                colour_types: Vec::new(),
+                colour_markers: Vec::new(),
+            });
+        row.observations += 1;
+        row.max_width = Some(row.max_width.map_or(width, |current| current.max(width)));
+        row.max_height = Some(row.max_height.map_or(height, |current| current.max(height)));
+        push_unique(&mut row.bit_depths, observation.inspected_bit_depth);
+        push_unique(&mut row.channels, observation.inspected_channels);
+        push_unique_colour(&mut row.colour_types, observation.inspected_colour_type);
+        row.colour_markers
+            .extend(observation.inspected_colour_markers.iter().copied());
+        row.colour_markers.sort();
+        row.colour_markers.dedup();
+    }
+    rows.into_values().collect()
+}
+
+fn push_unique(values: &mut Vec<u32>, value: Option<u32>) {
+    if let Some(value) = value
+        && !values.contains(&value)
+    {
+        values.push(value);
+        values.sort_unstable();
+    }
+}
+
+fn push_unique_colour(values: &mut Vec<ColourType>, value: ColourType) {
+    if value != ColourType::NotMeasured && !values.contains(&value) {
+        values.push(value);
+        values.sort();
+    }
+}
+
+/// Decide the validity claim from the class, the operator expectation and what the
+/// inspector actually read. A parsed output that contradicts the expectation is a
+/// mismatch, never a success class; an unparsable output with an expectation is
+/// `not_measured`, and the caller demotes the class so no unsupported success claim
+/// survives in the record.
+fn verify(
+    outcome: OutcomeClass,
+    expected: Option<(u32, u32)>,
+    observed: Option<(u32, u32)>,
+    complete: bool,
+) -> (&'static str, Option<&'static str>) {
+    if outcome != OutcomeClass::Decoded {
+        return (NOT_MEASURED, None);
+    }
+    match (expected, observed) {
+        // Nothing could be read at all: unparsable, never a guess.
+        (Some(_), None) => (NOT_MEASURED, Some(OUTPUT_UNPARSABLE)),
+        // B2: a content claim needs a complete container, not just a header.
+        (Some(_), Some(_)) if !complete => (NOT_MEASURED, Some(OUTPUT_INCOMPLETE)),
+        (Some(expected), Some(observed)) if expected == observed => (CONTENT_VERIFIED, None),
+        (Some(_), Some(_)) => (DIMENSION_MISMATCH, Some(DIMENSION_MISMATCH)),
+        (None, _) => (PRESENCE_ONLY, Some(NO_EXPECTATION)),
+    }
 }
 
 fn sanitize_name(name: &str) -> String {
@@ -1617,6 +1953,8 @@ pub fn render(report: &Report) -> (String, usize) {
         report.observations_truncated
     );
     let _ = writeln!(json, "  \"candidates\": {},", json_array(&candidates));
+    let capabilities: Vec<String> = report.capabilities.iter().map(capability_row).collect();
+    let _ = writeln!(json, "  \"capabilities\": {},", json_array(&capabilities));
     json.push_str("  \"observations\": ");
     let budget = report.max_record_bytes;
     let mut rows: Vec<String> = Vec::new();
@@ -1654,7 +1992,11 @@ fn observation_row(observation: &Observation) -> String {
          \"candidate_reason\": {}, \"exit_code\": {}, \"timeout_fired\": {}, \
          \"captured_stdout_bytes\": {}, \"captured_stderr_bytes\": {}, \"stdout_truncated\": {}, \
          \"stderr_truncated\": {}, \"wall_ms\": {}, \"scratch_bytes\": {}, \
-         \"output_present\": {}, \"output_bytes\": {}, \"validity\": {}, \"refusal\": {}}}",
+         \"output_present\": {}, \"output_bytes\": {}, \"inspected_format\": {}, \
+         \"inspected_complete\": {}, \"inspected_width\": {}, \"inspected_height\": {}, \
+         \"inspected_bit_depth\": {}, \"inspected_channels\": {}, \"inspected_colour_type\": {}, \
+         \"inspected_colour_markers\": {}, \"expected_dimensions\": {}, \"validity\": {}, \
+         \"validity_reason\": {}, \"refusal\": {}}}",
         quoted(&observation.candidate_id),
         quoted(&observation.case_id),
         path_field(&observation.input_path),
@@ -1673,9 +2015,90 @@ fn observation_row(observation: &Observation) -> String {
         number_field(observation.scratch_bytes),
         observation.output_present,
         number_field(observation.output_bytes),
+        quoted(observation.inspected_format.as_str()),
+        observation.inspected_complete,
+        number_field(observation.inspected_width.map(u64::from)),
+        number_field(observation.inspected_height.map(u64::from)),
+        number_field(observation.inspected_bit_depth.map(u64::from)),
+        number_field(observation.inspected_channels.map(u64::from)),
+        quoted(observation.inspected_colour_type.as_str()),
+        marker_array(&observation.inspected_colour_markers),
+        dimensions_field(observation.expected_dimensions),
         quoted(observation.validity),
+        text_field(observation.validity_reason),
         text_field(observation.refusal),
     )
+}
+
+fn capability_row(row: &CapabilityRow) -> String {
+    // N2: a set the headers never stated is named explicitly, with one reason.
+    let mut unmeasured: Vec<&str> = Vec::new();
+    if row.bit_depths.is_empty() {
+        unmeasured.push("bit_depths");
+    }
+    if row.channels.is_empty() {
+        unmeasured.push("channels");
+    }
+    if row.colour_types.is_empty() {
+        unmeasured.push("colour_types");
+    }
+    let reason = if unmeasured.is_empty() {
+        "null".to_owned()
+    } else {
+        quoted(HEADER_FIELD_NOT_OBSERVED)
+    };
+    format!(
+        "    {{\"candidate_id\": {}, \"format\": {}, \"observations\": {}, \"max_width\": {}, \
+         \"max_height\": {}, \"bit_depths\": {}, \"channels\": {}, \"colour_types\": {}, \
+         \"colour_markers\": {}, \"not_measured\": {}, \"not_measured_reason\": {}, \
+         \"orientation\": {}, \"orientation_reason\": {}, \
+         \"region\": {}, \"region_reason\": {}, \"sequential\": {}, \
+         \"sequential_reason\": {}}}",
+        quoted(&row.candidate_id),
+        quoted(row.format.as_str()),
+        row.observations,
+        number_field(row.max_width.map(u64::from)),
+        number_field(row.max_height.map(u64::from)),
+        number_array(&row.bit_depths),
+        number_array(&row.channels),
+        colour_type_array(&row.colour_types),
+        marker_array(&row.colour_markers),
+        string_list(&unmeasured),
+        reason,
+        quoted(NOT_MEASURED),
+        quoted(ORIENTATION_REASON),
+        quoted(NOT_MEASURED),
+        quoted(REGION_REASON),
+        quoted(NOT_MEASURED),
+        quoted(SEQUENTIAL_REASON),
+    )
+}
+
+fn string_list(values: &[&str]) -> String {
+    let rendered: Vec<String> = values.iter().map(|value| quoted(value)).collect();
+    format!("[{}]", rendered.join(", "))
+}
+
+fn dimensions_field(dimensions: Option<(u32, u32)>) -> String {
+    match dimensions {
+        Some((width, height)) => quoted(&format!("{width}x{height}")),
+        None => "null".to_owned(),
+    }
+}
+
+fn number_array(values: &[u32]) -> String {
+    let rendered: Vec<String> = values.iter().map(|value| value.to_string()).collect();
+    format!("[{}]", rendered.join(", "))
+}
+
+fn colour_type_array(values: &[ColourType]) -> String {
+    let rendered: Vec<String> = values.iter().map(|value| quoted(value.as_str())).collect();
+    format!("[{}]", rendered.join(", "))
+}
+
+fn marker_array(values: &[ColourMarker]) -> String {
+    let rendered: Vec<String> = values.iter().map(|value| quoted(value.as_str())).collect();
+    format!("[{}]", rendered.join(", "))
 }
 
 fn json_array(rows: &[String]) -> String {

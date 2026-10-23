@@ -12,6 +12,8 @@
 //! `decode_compare/harness.rs` for the candidate protocol and record schema.
 #[path = "decode_compare/harness.rs"]
 mod harness;
+#[path = "decode_compare/inspect.rs"]
+mod inspect;
 
 fn main() {
     std::process::exit(harness::run_from_args(std::env::args_os().skip(1)));

@@ -22,8 +22,8 @@
         pwsh -NoProfile -File wic_probe.ps1 -InputPath <in> -OutputPath <out> [-MaxPixels N]
     and its identity probe as
         pwsh -NoProfile -File wic_probe.ps1 -Version
-    The harness always asks for a `.wic.png` output, so the encoder format never
-    depends on the input suffix.
+    The harness always asks for a `<stem>.<candidate>.wic.png` output, so the encoder
+    format never depends on the input suffix.
 
     Exit codes mirror the harness outcome vocabulary:
         0 decoded       WIC admitted the container and materialized pixels

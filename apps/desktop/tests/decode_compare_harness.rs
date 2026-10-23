@@ -10,6 +10,8 @@
 
 #[path = "../examples/decode_compare/harness.rs"]
 mod harness;
+#[path = "../examples/decode_compare/inspect.rs"]
+mod inspect;
 
 use harness::{Candidate, Invocation, OutcomeClass, Program, Report};
 use std::{
@@ -30,6 +32,9 @@ const FAKE_OUTPUT: &[u8] = b"fake-decoded-output";
 /// 512-byte bound used by the scratch-cap test, so a working cap kills it first).
 const FLOOD_LIMIT_CHUNKS: usize = 2_000;
 static NEXT: AtomicUsize = AtomicUsize::new(0);
+
+/// One manifest row: case name, optional `expected:WxH`, declared outcome class.
+type Declaration<'a> = (&'a str, Option<(u32, u32)>, OutcomeClass);
 
 struct Fixture {
     base: PathBuf,
@@ -53,9 +58,22 @@ impl Fixture {
     }
 
     fn declare(&self, declarations: &[(&str, OutcomeClass)]) {
-        let mut text = String::from("# case file name<TAB>declared outcome\n");
-        for (name, class) in declarations {
-            text.push_str(&format!("{name}\t{}\n", class.as_str()));
+        let rows: Vec<Declaration<'_>> = declarations
+            .iter()
+            .map(|(name, class)| (*name, None, *class))
+            .collect();
+        self.declare_expected(&rows);
+    }
+
+    /// Write a manifest with optional `expected:WxH` dimensions per case.
+    fn declare_expected(&self, declarations: &[Declaration<'_>]) {
+        let mut text = String::from("# case file name[|expected:WxH][|declared-class]\n");
+        for (name, expected, class) in declarations {
+            text.push_str(name);
+            if let Some((width, height)) = expected {
+                text.push_str(&format!("|expected:{width}x{height}"));
+            }
+            text.push_str(&format!("|{}\n", class.as_str()));
         }
         std::fs::write(self.cases.join(harness::MANIFEST_FILE), text).unwrap();
     }
@@ -464,7 +482,8 @@ fn script_transport_writes_a_fixed_png_output_for_any_input_suffix() {
         );
         assert_eq!(
             path.file_name().and_then(|name| name.to_str()),
-            Some(format!("003_photo.{suffix}.wic.png").as_str())
+            Some(format!("003_photo.{suffix}.wic.wic.png").as_str()),
+            "B1: the candidate id is part of the name"
         );
     }
 
@@ -794,6 +813,469 @@ fn run_token_never_appears_in_the_record() {
     );
 }
 
+/// Phase 2: the inspector reads PNG, BMP and JPEG headers itself, and reports
+/// nothing it could not parse.
+#[test]
+fn output_inspector_reads_png_bmp_and_jpeg_headers() {
+    let mut png = std::io::Cursor::new(png_bytes(16, 9, 6, true));
+    let inspected = inspect::inspect(&mut png);
+    assert_eq!(inspected.format, Some(inspect::Format::Png));
+    assert!(inspected.complete, "IEND must be observed");
+    assert_eq!(inspected.dimensions(), Some((16, 9)));
+    assert_eq!(inspected.bit_depth, Some(8));
+    assert_eq!(inspected.channels, Some(4));
+    assert_eq!(inspected.colour_type, Some(inspect::ColourType::Rgba));
+    assert_eq!(inspected.colour_markers, vec![inspect::ColourMarker::Srgb]);
+
+    let mut bmp = std::io::Cursor::new(bmp_bytes(8, 4, 24));
+    let inspected = inspect::inspect(&mut bmp);
+    assert_eq!(inspected.format, Some(inspect::Format::Bmp));
+    assert_eq!(inspected.dimensions(), Some((8, 4)));
+    assert_eq!(inspected.bit_depth, Some(24));
+    assert_eq!(inspected.channels, Some(3));
+    assert_eq!(inspected.colour_type, Some(inspect::ColourType::Rgb));
+
+    let mut jpeg = std::io::Cursor::new(jpeg_bytes(24, 12, 3));
+    let inspected = inspect::inspect(&mut jpeg);
+    assert_eq!(inspected.format, Some(inspect::Format::Jpeg));
+    assert_eq!(inspected.dimensions(), Some((24, 12)));
+    assert_eq!(inspected.bit_depth, Some(8));
+    assert_eq!(inspected.channels, Some(3));
+    assert_eq!(inspected.colour_type, Some(inspect::ColourType::Rgb));
+
+    // A truncated PNG keeps only the signature observation and no dimensions.
+    let mut truncated = std::io::Cursor::new(png_bytes(16, 16, 2, false)[..12].to_vec());
+    let inspected = inspect::inspect(&mut truncated);
+    assert_eq!(inspected.format, Some(inspect::Format::Png));
+    assert_eq!(inspected.dimensions(), None);
+    assert!(!inspected.complete);
+
+    // Garbage is not guessed into a format.
+    let mut garbage = std::io::Cursor::new(vec![0xAB_u8; 64]);
+    let inspected = inspect::inspect(&mut garbage);
+    assert_eq!(inspected.format, None);
+    assert_eq!(inspected.dimensions(), None);
+    assert!(inspected.colour_markers.is_empty());
+}
+
+/// Phase 2: a parsed output that matches the operator expectation is verified.
+#[test]
+fn content_verified_when_the_output_matches_the_expectation() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png16");
+    fixture.declare_expected(&[("a.png", Some((16, 16)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Decoded);
+    assert_eq!(observation.validity, "content_verified");
+    assert_eq!(observation.validity_reason, None);
+    assert_eq!(observation.inspected_format, inspect::Format::Png);
+    assert_eq!(observation.inspected_width, Some(16));
+    assert_eq!(observation.inspected_height, Some(16));
+    assert_eq!(observation.inspected_bit_depth, Some(8));
+    assert_eq!(observation.inspected_channels, Some(3));
+    assert_eq!(observation.expected_dimensions, Some((16, 16)));
+    assert_eq!(observation.refusal, None);
+}
+
+/// Phase 2: a parsed output that contradicts the expectation is an error, never a
+/// success class, and the mismatch is visible in both the class and the validity.
+#[test]
+fn dimension_mismatch_demotes_decoded_to_error() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png16");
+    fixture.declare_expected(&[("a.png", Some((32, 32)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(
+        observation.exit_code,
+        Some(0),
+        "the child still exited successfully"
+    );
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("dimension_mismatch"));
+    assert_eq!(observation.validity, "dimension_mismatch");
+    assert_eq!(observation.validity_reason, Some("dimension_mismatch"));
+    assert_eq!(observation.inspected_width, Some(16));
+    assert_eq!(observation.inspected_height, Some(16));
+    assert_eq!(observation.expected_dimensions, Some((32, 32)));
+}
+
+/// Phase 2/N5: an expected output the inspector cannot parse is `error` with
+/// refusal `output_unparsable` — the record must not keep a `decoded` success claim
+/// it cannot support, and the raw exit code stays as evidence.
+#[test]
+fn unparsable_output_with_an_expectation_is_not_measured() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    fixture.declare_expected(&[("a.png", Some((16, 16)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(
+        observation.exit_code,
+        Some(0),
+        "the child still exited successfully"
+    );
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_unparsable"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.validity_reason, Some("output_unparsable"));
+    assert_eq!(observation.inspected_format, inspect::Format::NotMeasured);
+    assert_eq!(observation.inspected_width, None);
+}
+
+/// Phase 2: the capability table holds one row per candidate × observed format,
+/// derived only from parsed outputs, with sorted de-duplicated values.
+#[test]
+fn capability_rows_are_derived_from_parsed_outputs() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png16");
+    fixture.case("b.png", "png32");
+    fixture.case("c.png", "png-srgb");
+    fixture.case("d.bmp", "bmp");
+    fixture.case("e.jpg", "jpeg");
+    fixture.case("f.bin", "ok");
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let formats: Vec<&str> = report
+        .capabilities
+        .iter()
+        .map(|row| row.format.as_str())
+        .collect();
+    assert_eq!(formats, vec!["png", "bmp", "jpeg"], "sorted by format");
+
+    let png = &report.capabilities[0];
+    assert_eq!(png.observations, 3);
+    assert_eq!((png.max_width, png.max_height), (Some(32), Some(32)));
+    assert_eq!(png.bit_depths, vec![8]);
+    assert_eq!(png.channels, vec![3, 4]);
+    assert_eq!(
+        png.colour_types,
+        vec![inspect::ColourType::Rgb, inspect::ColourType::Rgba]
+    );
+    assert_eq!(png.colour_markers, vec![inspect::ColourMarker::Srgb]);
+
+    let bmp = &report.capabilities[1];
+    assert_eq!(bmp.observations, 1);
+    assert_eq!((bmp.max_width, bmp.max_height), (Some(8), Some(4)));
+    assert_eq!(bmp.bit_depths, vec![24]);
+
+    let jpeg = &report.capabilities[2];
+    assert_eq!(jpeg.observations, 1);
+    assert_eq!((jpeg.max_width, jpeg.max_height), (Some(24), Some(12)));
+
+    // The garbage output produced no capability row at all.
+    assert!(
+        report
+            .observations
+            .iter()
+            .any(|observation| observation.case_id == "f.bin"
+                && observation.inspected_format == inspect::Format::NotMeasured)
+    );
+
+    // The table is rendered with explicit not_measured facts and reasons.
+    let json = harness::render(&report).0;
+    assert!(json.contains("\"capabilities\": ["));
+    assert!(json.contains("\"orientation\": \"not_measured\""));
+    assert!(json.contains("\"orientation_reason\": \"exif_orientation_not_parsed\""));
+    assert!(json.contains("\"region_reason\": \"partial_decode_not_observed\""));
+    assert!(json.contains("\"sequential_reason\": \"sequential_capability_not_observed\""));
+}
+
+/// Phase 2: capability rows are deterministic across runs.
+#[test]
+fn capability_table_is_deterministic() {
+    let fixture = Fixture::new();
+    fixture.case("b.png", "png32");
+    fixture.case("a.png", "png16");
+    let first = measured(&fixture, &[fixture.fake()], HELPER);
+    let second = measured(&fixture, &[fixture.fake()], HELPER);
+    assert_eq!(first.capabilities.len(), 1);
+    assert_eq!(
+        harness::render(&first).0.contains("\"max_width\": 32"),
+        harness::render(&second).0.contains("\"max_width\": 32")
+    );
+    assert_eq!(
+        first.capabilities[0].observations,
+        second.capabilities[0].observations
+    );
+}
+
+/// B1: every candidate gets its own output name, and a path that already exists is
+/// refused before any child is spawned.
+#[test]
+fn output_names_are_per_candidate_and_stale_paths_are_refused() {
+    let work = PathBuf::from(r"C:\work");
+    let scripted = Program::PwshScript(PathBuf::from(r"C:\tools\wic_probe.ps1"));
+    let first = harness::output_path(&scripted, &work, 0, "a.png", "wic", "png");
+    let second = harness::output_path(&scripted, &work, 0, "a.png", "wic-alt", "png");
+    assert_ne!(
+        first, second,
+        "two script candidates on one case must never share a path"
+    );
+    assert_eq!(
+        first.file_name().and_then(|name| name.to_str()),
+        Some("000_a.png.wic.wic.png")
+    );
+    assert_eq!(
+        second.file_name().and_then(|name| name.to_str()),
+        Some("000_a.png.wic-alt.wic.png")
+    );
+
+    let root = std::env::temp_dir().join(format!(
+        "img2-stale-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    std::fs::create_dir_all(&root).unwrap();
+    let taken = root.join("taken.png");
+    std::fs::write(&taken, b"x").unwrap();
+    assert_eq!(
+        harness::require_absent_output(&taken),
+        Err("output_stale_present")
+    );
+    assert_eq!(
+        harness::require_absent_output(&root.join("free.png")),
+        Ok(())
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// B1: a silent candidate never inherits another candidate's output.
+#[test]
+fn silent_candidate_never_inherits_another_candidates_output() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "unless-silent");
+    fixture.declare_expected(&[("a.png", Some((16, 16)), OutcomeClass::Decoded)]);
+    let mut writer = fixture.fake();
+    writer.id = "writer".to_owned();
+    let mut silent = fixture.fake();
+    silent.id = "silent".to_owned();
+    let report = measured(&fixture, &[writer, silent], HELPER);
+
+    let writer_row = report
+        .observations
+        .iter()
+        .find(|observation| observation.candidate_id == "writer")
+        .unwrap();
+    assert_eq!(writer_row.observed_outcome, OutcomeClass::Decoded);
+    assert_eq!(writer_row.validity, "content_verified");
+
+    let silent_row = report
+        .observations
+        .iter()
+        .find(|observation| observation.candidate_id == "silent")
+        .unwrap();
+    assert_eq!(silent_row.exit_code, Some(0));
+    assert_eq!(silent_row.observed_outcome, OutcomeClass::Error);
+    assert_eq!(silent_row.refusal, Some("output_missing"));
+    assert!(!silent_row.output_present);
+    assert_eq!(silent_row.validity, "not_measured");
+    assert_ne!(silent_row.validity, "content_verified");
+
+    let candidates: Vec<&str> = report
+        .capabilities
+        .iter()
+        .map(|row| row.candidate_id.as_str())
+        .collect();
+    assert_eq!(candidates, vec!["writer"], "the silent leg gets no row");
+}
+
+/// B2: a container that stops before its terminator never verifies and never
+/// produces a capability row.
+#[test]
+fn incomplete_outputs_are_never_verified() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-header-only");
+    fixture.case("b.jpg", "jpeg-sof-only");
+    fixture.case("c.bmp", "bmp-header-only");
+    fixture.declare_expected(&[
+        ("a.png", Some((16, 16)), OutcomeClass::Decoded),
+        ("b.jpg", Some((24, 12)), OutcomeClass::Decoded),
+        ("c.bmp", Some((8, 4)), OutcomeClass::Decoded),
+    ]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    for observation in &report.observations {
+        assert_eq!(
+            observation.exit_code,
+            Some(0),
+            "{} still exited successfully",
+            observation.case_id
+        );
+        assert_ne!(
+            observation.observed_outcome,
+            OutcomeClass::Decoded,
+            "{} must not claim a decode the bytes do not support",
+            observation.case_id
+        );
+        assert_eq!(observation.validity, "not_measured");
+        assert!(
+            matches!(
+                observation.refusal,
+                Some("output_incomplete") | Some("output_unparsable")
+            ),
+            "{}: unexpected refusal {:?}",
+            observation.case_id,
+            observation.refusal
+        );
+    }
+    assert!(
+        report.capabilities.is_empty(),
+        "no capability row may come from an incomplete container"
+    );
+}
+
+/// A1: capability rows come only from decoded observations with a presence or
+/// content validity, so a mismatch and a truncated output in the same run never
+/// contribute.
+#[test]
+fn capability_rows_need_a_verified_decode() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png16");
+    fixture.case("b.png", "png16");
+    fixture.case("c.png", "png-header-only");
+    fixture.declare_expected(&[
+        ("a.png", Some((16, 16)), OutcomeClass::Decoded),
+        ("b.png", Some((32, 32)), OutcomeClass::Decoded),
+        ("c.png", Some((16, 16)), OutcomeClass::Decoded),
+    ]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let by_case = |case: &str| {
+        report
+            .observations
+            .iter()
+            .find(|observation| observation.case_id == case)
+            .unwrap()
+    };
+    assert_eq!(by_case("a.png").validity, "content_verified");
+    assert_eq!(by_case("b.png").validity, "dimension_mismatch");
+    assert_eq!(by_case("b.png").observed_outcome, OutcomeClass::Error);
+    assert_eq!(by_case("c.png").validity, "not_measured");
+
+    assert_eq!(report.capabilities.len(), 1);
+    assert_eq!(report.capabilities[0].observations, 1);
+    assert_eq!(report.capabilities[0].max_width, Some(16));
+}
+
+/// A2: an illegal header field combination is not measured and not a capability.
+#[test]
+fn illegal_header_combinations_are_not_measured() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-illegal");
+    fixture.declare_expected(&[("a.png", Some((16, 16)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_unparsable"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.inspected_format, inspect::Format::NotMeasured);
+    assert_eq!(observation.inspected_width, None);
+    assert!(report.capabilities.is_empty());
+}
+
+/// A3: the capability table is built after observation truncation.
+#[test]
+fn capabilities_ignore_truncated_observations() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png16");
+    fixture.case("b.png", "png16");
+    fixture.case("c.png", "png16");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.max_record_bytes = 2600;
+    config.invocation = helper_invocation(HELPER);
+    let report = harness::run(&config).unwrap();
+
+    assert!(
+        report.observations.len() < 3,
+        "the record must be truncated"
+    );
+    assert_eq!(
+        report.capabilities[0].observations,
+        report.observations.len(),
+        "the table may only count observations that survived the budget"
+    );
+}
+
+/// A4: the manifest fails closed on an unknown case name and on the legacy TAB
+/// separator.
+#[test]
+fn manifest_rejects_unknown_names_and_the_tab_separator() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png16");
+
+    std::fs::write(
+        fixture.cases.join(harness::MANIFEST_FILE),
+        "ghost.png|expected:16x16|decoded\n",
+    )
+    .unwrap();
+    let error = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap_err();
+    assert!(
+        format!("{error}").contains("unknown case"),
+        "unexpected refusal: {error}"
+    );
+
+    std::fs::write(
+        fixture.cases.join(harness::MANIFEST_FILE),
+        "a.png\tdecoded\n",
+    )
+    .unwrap();
+    let error = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap_err();
+    assert!(
+        format!("{error}").contains("legacy TAB separator"),
+        "unexpected refusal: {error}"
+    );
+}
+
+/// N1: a PNG terminator must be an empty IEND, and IHDR may appear only once and
+/// first.
+#[test]
+fn png_terminator_and_ihdr_order_are_enforced() {
+    let mut bad_iend = std::io::Cursor::new(png_with_iend_length(16, 16, 5));
+    let inspected = inspect::inspect(&mut bad_iend);
+    assert_eq!(inspected.dimensions(), Some((16, 16)));
+    assert!(
+        !inspected.complete,
+        "IEND with a payload is not a terminator"
+    );
+
+    let mut duplicate = std::io::Cursor::new(png_duplicate_ihdr(16, 16));
+    let inspected = inspect::inspect(&mut duplicate);
+    assert!(!inspected.complete);
+
+    let mut header_only = std::io::Cursor::new(png_header_only(16, 16));
+    let inspected = inspect::inspect(&mut header_only);
+    assert_eq!(inspected.format, Some(inspect::Format::Png));
+    assert_eq!(inspected.dimensions(), Some((16, 16)));
+    assert!(!inspected.complete, "33 bytes carry no IEND");
+}
+
+/// N2: a set the headers never stated is named explicitly with a reason token.
+#[test]
+fn empty_capability_sets_are_explicit() {
+    let fixture = Fixture::new();
+    fixture.case("a.bmp", "bmp-paletted");
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let row = &report.capabilities[0];
+    assert_eq!(row.bit_depths, vec![8]);
+    assert!(
+        row.channels.is_empty(),
+        "a paletted bitmap states no channels"
+    );
+    assert!(row.colour_types.is_empty());
+
+    let json = harness::render(&report).0;
+    assert!(json.contains("\"not_measured\": [\"channels\", \"colour_types\"]"));
+    assert!(json.contains("\"not_measured_reason\": \"header_field_not_observed\""));
+}
+
 /// A6: both global bounds truncate explicitly instead of growing the record.
 #[test]
 fn observation_and_record_caps_truncate_explicitly() {
@@ -914,7 +1396,7 @@ fn record_is_deterministic_sorted_and_carries_no_decision_field() {
         json_values(&first_json, "case_id"),
         vec!["a.png", "a.png", "b.png", "b.png"]
     );
-    assert!(first_json.contains("\"schema_version\": 5"));
+    assert!(first_json.contains("\"schema_version\": 6"));
     assert!(first_json.contains("\"exploratory\": true"));
     assert!(first_json.contains("\"numeric_gate\": \"NOT_RATIFIED\""));
     for decision in ["\"pass\"", "\"winner\"", "\"score\"", "\"selected\""] {
@@ -1048,6 +1530,63 @@ fn fake_candidate(support: ProbeSupport) {
             eprintln!("fake-marked");
             0
         }
+        // Phase 2: structurally valid containers the inspector must parse.
+        "png16" => {
+            std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
+            0
+        }
+        "png32" => {
+            std::fs::write(&output, png_bytes(32, 32, 2, false)).unwrap();
+            0
+        }
+        "png-srgb" => {
+            std::fs::write(&output, png_bytes(16, 16, 6, true)).unwrap();
+            0
+        }
+        "bmp" => {
+            std::fs::write(&output, bmp_bytes(8, 4, 24)).unwrap();
+            0
+        }
+        "jpeg" => {
+            std::fs::write(&output, jpeg_bytes(24, 12, 3)).unwrap();
+            0
+        }
+        // B1: writes only when the harness gave it its own (non-shared) name.
+        "unless-silent" => {
+            if !output.to_string_lossy().contains("silent") {
+                std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
+            }
+            0
+        }
+        // B2/A2/N1: containers whose headers are present but not trustworthy.
+        "png-header-only" => {
+            std::fs::write(&output, png_header_only(16, 16)).unwrap();
+            0
+        }
+        "png-illegal" => {
+            std::fs::write(&output, png_bytes_with(16, 16, 2, 4, false)).unwrap();
+            0
+        }
+        "png-bad-iend" => {
+            std::fs::write(&output, png_with_iend_length(16, 16, 5)).unwrap();
+            0
+        }
+        "png-dup-ihdr" => {
+            std::fs::write(&output, png_duplicate_ihdr(16, 16)).unwrap();
+            0
+        }
+        "jpeg-sof-only" => {
+            std::fs::write(&output, jpeg_sof_only(24, 12, 3)).unwrap();
+            0
+        }
+        "bmp-header-only" => {
+            std::fs::write(&output, bmp_header_only(8, 4, 24)).unwrap();
+            0
+        }
+        "bmp-paletted" => {
+            std::fs::write(&output, bmp_bytes(8, 4, 8)).unwrap();
+            0
+        }
         // B-02: exit 0 with no output, and exit 0 with a zero-byte output.
         "nooutput" => 0,
         "emptyoutput" => {
@@ -1144,4 +1683,159 @@ fn json_values(json: &str, key: &str) -> Vec<String> {
         rest = &rest[end..];
     }
     values
+}
+
+/// CRC-32 as PNG defines it, so the crafted fixtures are structurally valid.
+fn crc32(bytes: &[u8]) -> u32 {
+    let mut crc = 0xFFFF_FFFF_u32;
+    for byte in bytes {
+        crc ^= u32::from(*byte);
+        for _ in 0..8 {
+            let mask = (crc & 1).wrapping_neg();
+            crc = (crc >> 1) ^ (0xEDB8_8320 & mask);
+        }
+    }
+    !crc
+}
+
+fn png_chunk(kind: &[u8; 4], payload: &[u8]) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(&u32::try_from(payload.len()).unwrap().to_be_bytes());
+    bytes.extend_from_slice(kind);
+    bytes.extend_from_slice(payload);
+    let mut crc_input = Vec::from(*kind);
+    crc_input.extend_from_slice(payload);
+    bytes.extend_from_slice(&crc32(&crc_input).to_be_bytes());
+    bytes
+}
+
+/// Minimal but structurally valid PNG: signature, IHDR, optional sRGB, IDAT, IEND.
+fn png_bytes(width: u32, height: u32, colour_type: u8, with_srgb: bool) -> Vec<u8> {
+    png_bytes_with(width, height, colour_type, 8, with_srgb)
+}
+
+fn png_signature() -> Vec<u8> {
+    vec![0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]
+}
+
+fn png_ihdr(width: u32, height: u32, colour_type: u8, bit_depth: u8) -> Vec<u8> {
+    let mut ihdr = Vec::new();
+    ihdr.extend_from_slice(&width.to_be_bytes());
+    ihdr.extend_from_slice(&height.to_be_bytes());
+    ihdr.extend_from_slice(&[bit_depth, colour_type, 0, 0, 0]);
+    png_chunk(b"IHDR", &ihdr)
+}
+
+fn png_bytes_with(
+    width: u32,
+    height: u32,
+    colour_type: u8,
+    bit_depth: u8,
+    with_srgb: bool,
+) -> Vec<u8> {
+    let mut bytes = png_signature();
+    bytes.extend_from_slice(&png_ihdr(width, height, colour_type, bit_depth));
+    if with_srgb {
+        bytes.extend_from_slice(&png_chunk(b"sRGB", &[0]));
+    }
+    bytes.extend_from_slice(&png_chunk(
+        b"IDAT",
+        &[0x78, 0x9C, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01],
+    ));
+    bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
+    bytes
+}
+
+/// A 33-byte PNG: signature and IHDR only, no IDAT and no IEND (B2).
+fn png_header_only(width: u32, height: u32) -> Vec<u8> {
+    let mut bytes = png_signature();
+    bytes.extend_from_slice(&png_ihdr(width, height, 2, 8));
+    bytes
+}
+
+/// A PNG whose IEND states a non-zero length, so it does not terminate the image (N1).
+fn png_with_iend_length(width: u32, height: u32, iend_length: u32) -> Vec<u8> {
+    let mut bytes = png_signature();
+    bytes.extend_from_slice(&png_ihdr(width, height, 2, 8));
+    let mut chunk = Vec::new();
+    chunk.extend_from_slice(&iend_length.to_be_bytes());
+    chunk.extend_from_slice(b"IEND");
+    chunk.extend_from_slice(&[0_u8; 4]);
+    bytes.extend_from_slice(&chunk);
+    bytes
+}
+
+/// A PNG with two IHDR chunks, which the format forbids (N1).
+fn png_duplicate_ihdr(width: u32, height: u32) -> Vec<u8> {
+    let mut bytes = png_signature();
+    bytes.extend_from_slice(&png_ihdr(width, height, 2, 8));
+    bytes.extend_from_slice(&png_ihdr(width, height, 2, 8));
+    bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
+    bytes
+}
+
+/// Minimal structurally valid BMP with a 40-byte BITMAPINFOHEADER.
+fn bmp_bytes(width: i32, height: i32, bit_count: u16) -> Vec<u8> {
+    let header_size = 40_u32;
+    let data_offset = 14 + header_size;
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(b"BM");
+    bytes.extend_from_slice(&(data_offset + 16).to_le_bytes());
+    bytes.extend_from_slice(&0_u32.to_le_bytes());
+    bytes.extend_from_slice(&data_offset.to_le_bytes());
+    bytes.extend_from_slice(&header_size.to_le_bytes());
+    bytes.extend_from_slice(&width.to_le_bytes());
+    bytes.extend_from_slice(&height.to_le_bytes());
+    bytes.extend_from_slice(&1_u16.to_le_bytes());
+    bytes.extend_from_slice(&bit_count.to_le_bytes());
+    bytes.extend_from_slice(&0_u32.to_le_bytes());
+    bytes.extend_from_slice(&0_u32.to_le_bytes());
+    bytes.extend_from_slice(&2835_i32.to_le_bytes());
+    bytes.extend_from_slice(&2835_i32.to_le_bytes());
+    bytes.extend_from_slice(&0_u32.to_le_bytes());
+    bytes.extend_from_slice(&0_u32.to_le_bytes());
+    bytes.extend_from_slice(&[0_u8; 16]);
+    bytes
+}
+
+/// A JPEG that stops after its SOF segment: no EOI, no scan (B2).
+fn jpeg_sof_only(width: u16, height: u16, components: u8) -> Vec<u8> {
+    let mut payload = Vec::new();
+    payload.push(8);
+    payload.extend_from_slice(&height.to_be_bytes());
+    payload.extend_from_slice(&width.to_be_bytes());
+    payload.push(components);
+    for index in 0..components {
+        payload.extend_from_slice(&[index + 1, 0x11, 0]);
+    }
+    let mut bytes = vec![0xFF, 0xD8];
+    bytes.extend_from_slice(&[0xFF, 0xC0]);
+    bytes.extend_from_slice(&u16::try_from(payload.len() + 2).unwrap().to_be_bytes());
+    bytes.extend_from_slice(&payload);
+    bytes
+}
+
+/// A 34-byte BMP whose header claims 40 bytes and whose data offset is 54 (B2).
+fn bmp_header_only(width: i32, height: i32, bit_count: u16) -> Vec<u8> {
+    let mut bytes = bmp_bytes(width, height, bit_count);
+    bytes.truncate(34);
+    bytes
+}
+
+/// Minimal structurally valid JPEG: SOI, SOF0 with the given geometry, EOI.
+fn jpeg_bytes(width: u16, height: u16, components: u8) -> Vec<u8> {
+    let mut payload = Vec::new();
+    payload.push(8);
+    payload.extend_from_slice(&height.to_be_bytes());
+    payload.extend_from_slice(&width.to_be_bytes());
+    payload.push(components);
+    for index in 0..components {
+        payload.extend_from_slice(&[index + 1, 0x11, 0]);
+    }
+    let mut bytes = vec![0xFF, 0xD8];
+    bytes.extend_from_slice(&[0xFF, 0xC0]);
+    bytes.extend_from_slice(&u16::try_from(payload.len() + 2).unwrap().to_be_bytes());
+    bytes.extend_from_slice(&payload);
+    bytes.extend_from_slice(&[0xFF, 0xD9]);
+    bytes
 }
