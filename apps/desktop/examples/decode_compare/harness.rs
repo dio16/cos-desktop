@@ -118,7 +118,16 @@
 //! samples its working set through a bounded `tasklist /FI "PID eq <id>" /FO CSV /NH`
 //! call (argv only, no shell, hard per-sample timeout of 2000 ms — the sampler runs
 //! concurrently with the child, so its cost never moves the child's deadline — at most
-//! `max_samples` sampling *attempts*, successes or not). A sample is accepted only when
+//! `max_samples` sampling *attempts*, successes or not). The sampler program is bound to
+//! an absolute, trusted path — `%SystemRoot%\System32\tasklist.exe`, resolved from the
+//! `SystemRoot` value and required to exist as a regular file — and never launched by a
+//! bare name, so a `tasklist.exe` dropped next to the harness cannot win the
+//! application-directory search (BLOCKING finding). A missing or relative program is
+//! `sample_tool_missing` and no sampling happens at all; the operator binary reads no
+//! environment variable for it. The resolved path and its SHA-256 (computed with the
+//! harness's own bounded SHA-256 over at most 32 MiB) are recorded in the header, and a
+//! file that cannot be hashed is `not_measured` with a reason rather than a fabricated
+//! digest. A sample is accepted only when
 //! the row is the documented five-column Windows layout, its PID column equals the
 //! supervised child, and its memory column has the `12,000 K` form; anything else is
 //! `sample_parse_failed` (A1). The first attempt waits one interval, so a candidate that
@@ -221,7 +230,7 @@ use crate::inspect::{self, ColourMarker, ColourType, Format, Inspection};
 use crate::pixels;
 use std::{
     collections::BTreeMap,
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     fmt::Write as _,
     fs,
     io::Read,
@@ -308,10 +317,12 @@ pub const DEFAULT_SAMPLE_INTERVAL_MS: u64 = 50;
 pub const MAX_SAMPLES_LIMIT: usize = 256;
 /// Largest accepted sampling interval.
 pub const MAX_SAMPLE_INTERVAL_MS: u64 = 60_000;
-/// Test/operator injection point for the sampler program (defaults to `tasklist`).
-pub const SAMPLE_TOOL_ENV: &str = "DECODE_COMPARE_SAMPLE_TOOL";
-/// Program used for sampling unless it is overridden.
-const DEFAULT_SAMPLE_TOOL: &str = "tasklist";
+/// Directory of the trusted system sampler, relative to `%SystemRoot%`.
+const SYSTEM_SAMPLER_DIR: &str = "System32";
+/// File name of the trusted system sampler.
+const SYSTEM_SAMPLER_FILE: &str = "tasklist.exe";
+/// Bounded read used to fingerprint the sampler program.
+const SAMPLE_TOOL_DIGEST_CAP: u64 = 32 * 1024 * 1024;
 /// Per-sample hard timeout for the sampling command.
 const SAMPLE_TIMEOUT: Duration = Duration::from_millis(2_000);
 /// Bounded read of one sample's stdout.
@@ -537,8 +548,10 @@ pub struct Config {
     /// Operator-requested cancellation deadline, applied when shorter than
     /// `timeout_ms`.
     pub cancel_after_ms: Option<u64>,
-    /// Sampler program override (tests only; `tasklist` otherwise). The
-    /// `DECODE_COMPARE_SAMPLE_TOOL` variable is the operator-facing injection point.
+    /// Absolute sampler program override, used only by tests: the operator binary
+    /// leaves this `None` and resolves the system tasklist under System32. There is no
+    /// environment-variable form on purpose (it would let a substituted program be used
+    /// with no other evidence); a relative value is refused by the resolver.
     pub sample_tool: Option<PathBuf>,
     /// Extra argv placed before the fixed sample argv (tests only).
     pub sample_argv_prefix: Vec<OsString>,
@@ -657,6 +670,12 @@ pub struct Report {
     pub max_samples: usize,
     /// Operator cancellation deadline used for this run, when one was requested.
     pub cancel_after_ms: Option<u64>,
+    /// Resolved absolute path of the sampler program.
+    pub sample_tool: Option<PathBuf>,
+    /// SHA-256 of the sampler program (never fabricated).
+    pub sample_tool_sha256: Option<String>,
+    /// Why the sampler identity is unavailable, when it is.
+    pub sample_tool_reason: Option<&'static str>,
     pub cases_truncated: bool,
     pub observations_truncated: bool,
     pub candidates: Vec<CandidateRecord>,
@@ -940,7 +959,10 @@ where
         sample_interval_ms,
         max_samples,
         cancel_after_ms,
-        sample_tool: std::env::var_os(SAMPLE_TOOL_ENV).map(PathBuf::from),
+        // Tests inject through `Config`; the operator binary never reads an
+        // environment variable for the sampler program (BLOCKING finding: the env
+        // seam let a substituted tool be used with no other evidence).
+        sample_tool: None,
         sample_argv_prefix: Vec::new(),
         invocation: Invocation {
             argv_prefix: Vec::new(),
@@ -1238,6 +1260,19 @@ pub fn run(config: &Config) -> Result<Report, UsageError> {
 }
 
 fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, UsageError> {
+    // BLOCKING finding: the sampler must be an absolute, trusted program. Resolve it
+    // once, fingerprint it, and pass it to every sampling site.
+    let system_root = std::env::var_os("SystemRoot");
+    let resolved = resolve_sample_tool(config.sample_tool.as_deref(), system_root.as_deref());
+    let (sample_tool_sha256, sample_tool_digest_reason) = match resolved.as_ref() {
+        Ok(path) => fingerprint_sample_tool(path),
+        Err(_) => (None, None),
+    };
+    let sample_tool_reason = match resolved.as_ref() {
+        Ok(_) => sample_tool_digest_reason,
+        Err(reason) => Some(*reason),
+    };
+    let resolved_sample_tool = resolved.ok();
     let mut candidates = config.candidates.clone();
     candidates.sort_by(|left, right| left.id.cmp(&right.id));
     let launchers: Vec<Launcher> = candidates
@@ -1270,8 +1305,13 @@ fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, Usag
                 observations_truncated = true;
                 break 'cases;
             }
+            let paths = RunPaths {
+                work,
+                captures,
+                sample_tool: resolved_sample_tool.as_deref(),
+            };
             observations.push(measure(
-                config, candidate, launcher, case, work, captures, case_index,
+                config, candidate, launcher, case, &paths, case_index,
             ));
         }
     }
@@ -1290,6 +1330,9 @@ fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, Usag
         sample_interval_ms: config.sample_interval_ms,
         max_samples: config.max_samples,
         cancel_after_ms: config.cancel_after_ms,
+        sample_tool: resolved_sample_tool.clone(),
+        sample_tool_sha256: sample_tool_sha256.clone(),
+        sample_tool_reason,
         cases_truncated,
         observations_truncated,
         candidates: identities,
@@ -1624,6 +1667,7 @@ fn probe_identity(
                 None,
                 Some(probe_bounds(&capture)),
                 None,
+                SAMPLE_DISABLED,
             )
         });
         let (stdout, stderr) = capture.read(PROBE_CAP_BYTES);
@@ -1763,13 +1807,20 @@ fn read_capture(path: &Path, cap: usize) -> Capture {
     Capture { bytes, truncated }
 }
 
+/// Run-scoped paths every observation needs.
+struct RunPaths<'a> {
+    work: &'a Path,
+    captures: &'a Path,
+    /// Absolute sampler program, or `None` when it could not be resolved.
+    sample_tool: Option<&'a Path>,
+}
+
 fn measure(
     config: &Config,
     candidate: &Candidate,
     launcher: &Launcher,
     case: &Case,
-    work: &Path,
-    captures: &Path,
+    paths: &RunPaths<'_>,
     case_index: usize,
 ) -> Observation {
     let mut observation = Observation {
@@ -1836,7 +1887,7 @@ fn measure(
     };
     let output = output_path(
         &candidate.program,
-        work,
+        paths.work,
         case_index,
         &case.id,
         &candidate.id,
@@ -1853,7 +1904,8 @@ fn measure(
         observation.refusal = Some(reason);
         return observation;
     }
-    let Some((capture, stdout_stdio, stderr_stdio)) = CaptureFiles::open(captures, &stem) else {
+    let Some((capture, stdout_stdio, stderr_stdio)) = CaptureFiles::open(paths.captures, &stem)
+    else {
         observation.observed_outcome = OutcomeClass::NotRun;
         observation.refusal = Some("capture_uncreatable");
         return observation;
@@ -1884,23 +1936,31 @@ fn measure(
                 output: Some(&output),
                 output_limit: u64::try_from(config.max_output_file_bytes).unwrap_or(u64::MAX),
             };
-            let sampling = (config.sample_interval_ms > 0).then(|| Sampling {
-                captures,
-                stem: format!("{stem}.ws"),
-                interval: Duration::from_millis(config.sample_interval_ms),
-                max_samples: config.max_samples,
-                tool: config
-                    .sample_tool
-                    .clone()
-                    .unwrap_or_else(|| PathBuf::from(DEFAULT_SAMPLE_TOOL)),
-                argv_prefix: config.sample_argv_prefix.clone(),
-            });
+            // Sampling needs both an operator-enabled interval and an absolute,
+            // resolved sampler program; without the tool nothing is spawned.
+            let sampling = (config.sample_interval_ms > 0)
+                .then_some(paths.sample_tool)
+                .flatten()
+                .map(|tool| Sampling {
+                    captures: paths.captures,
+                    stem: format!("{stem}.ws"),
+                    interval: Duration::from_millis(config.sample_interval_ms),
+                    max_samples: config.max_samples,
+                    tool: tool.to_path_buf(),
+                    argv_prefix: config.sample_argv_prefix.clone(),
+                });
+            let sampling_disabled_reason = match (config.sample_interval_ms, paths.sample_tool) {
+                (0, _) => SAMPLE_DISABLED,
+                (_, None) => SAMPLE_TOOL_MISSING,
+                (_, Some(_)) => SAMPLE_DISABLED,
+            };
             let supervised = supervise(
                 child,
                 Duration::from_millis(config.timeout_ms),
                 config.cancel_after_ms.map(Duration::from_millis),
                 Some(bounds),
                 sampling.as_ref(),
+                sampling_disabled_reason,
             );
             let (stdout, stderr) = capture.read(config.max_output_bytes);
             let (output_bytes, output_present) = match fs::metadata(&output) {
@@ -2308,6 +2368,90 @@ fn exceeded(bounds: &Bounds<'_>) -> Option<CapKind> {
 /// the child is reaped, so a burst that finishes between two polls is still
 /// classified as capped instead of a success. Kill/reap applies to the direct child
 /// only (A-01); termination of descendants is neither guaranteed nor claimed.
+/// Why the sampler program could not be hashed.
+const SAMPLE_TOOL_UNREADABLE: &str = "sample_tool_unreadable";
+/// The sampler program was larger than the bounded read.
+const SAMPLE_TOOL_OVERSIZE: &str = "sample_tool_oversize";
+
+/// Resolve the sampler program to an absolute path.
+///
+/// The default is `%SystemRoot%\System32\tasklist.exe` built from the trusted
+/// `SystemRoot` value, never a bare name: a bare name makes CreateProcess search the
+/// application directory first, so a `tasklist.exe` dropped next to the harness would
+/// win (BLOCKING finding). A configured (test-only) path is accepted only when it is
+/// absolute, so the same substitution cannot be reached through configuration either.
+/// A missing `SystemRoot`, a relative path or an absent file is `sample_tool_missing`.
+pub fn resolve_sample_tool(
+    configured: Option<&Path>,
+    system_root: Option<&OsStr>,
+) -> Result<PathBuf, &'static str> {
+    resolve_sample_tool_in(configured, system_root, true)
+}
+
+/// The path logic, with the existence check switchable so tests can assert the pure
+/// derivation without depending on what is installed.
+fn resolve_sample_tool_in(
+    configured: Option<&Path>,
+    system_root: Option<&OsStr>,
+    require_file: bool,
+) -> Result<PathBuf, &'static str> {
+    let path = match configured {
+        Some(path) => {
+            if !path.is_absolute() {
+                return Err(SAMPLE_TOOL_MISSING);
+            }
+            path.to_path_buf()
+        }
+        None => {
+            let root = system_root.ok_or(SAMPLE_TOOL_MISSING)?;
+            if root.is_empty() {
+                return Err(SAMPLE_TOOL_MISSING);
+            }
+            PathBuf::from(root)
+                .join(SYSTEM_SAMPLER_DIR)
+                .join(SYSTEM_SAMPLER_FILE)
+        }
+    };
+    if !path.is_absolute() {
+        return Err(SAMPLE_TOOL_MISSING);
+    }
+    if require_file && !path.is_file() {
+        return Err(SAMPLE_TOOL_MISSING);
+    }
+    Ok(path)
+}
+
+/// Test seam: the pure path resolution without touching the filesystem.
+#[cfg(test)]
+pub fn resolve_sample_tool_for_tests(
+    configured: Option<&Path>,
+    system_root: Option<&OsStr>,
+) -> Result<PathBuf, &'static str> {
+    resolve_sample_tool_in(configured, system_root, false)
+}
+
+/// Test seam: fingerprint a path (a directory stands in for an unreadable file).
+#[cfg(test)]
+pub fn fingerprint_sample_tool_for_tests(path: &Path) -> (Option<String>, Option<&'static str>) {
+    fingerprint_sample_tool(path)
+}
+
+/// Fingerprint the resolved sampler program with the harness's own bounded SHA-256.
+fn fingerprint_sample_tool(path: &Path) -> (Option<String>, Option<&'static str>) {
+    let Ok(file) = fs::File::open(path) else {
+        return (None, Some(SAMPLE_TOOL_UNREADABLE));
+    };
+    let mut bytes = Vec::new();
+    let mut limited = file.take(SAMPLE_TOOL_DIGEST_CAP.saturating_add(1));
+    if limited.read_to_end(&mut bytes).is_err() {
+        return (None, Some(SAMPLE_TOOL_UNREADABLE));
+    }
+    if bytes.len() as u64 > SAMPLE_TOOL_DIGEST_CAP {
+        return (None, Some(SAMPLE_TOOL_OVERSIZE));
+    }
+    (Some(pixels::hex(&pixels::sha256(&bytes))), None)
+}
+
 /// Sampling configuration for one observation.
 struct Sampling<'a> {
     captures: &'a Path,
@@ -2340,6 +2484,15 @@ pub struct Sampler {
 }
 
 impl Sampler {
+    /// A sampler that never runs, with the documented reason why (`sampling_disabled`
+    /// when the operator turned sampling off, `sample_tool_missing` when the sampler
+    /// program could not be resolved).
+    fn disabled(reason: &'static str) -> Self {
+        let mut sampler = Self::new(false, 0);
+        sampler.reason = Some(reason);
+        sampler
+    }
+
     fn new(enabled: bool, max_samples: usize) -> Self {
         Self {
             enabled,
@@ -2420,6 +2573,7 @@ fn supervise(
     cancel_after: Option<Duration>,
     bounds: Option<Bounds<'_>>,
     sampling: Option<&Sampling<'_>>,
+    sampling_disabled_reason: &'static str,
 ) -> Supervised {
     let started = Instant::now();
     let pid = child.id();
@@ -2430,7 +2584,10 @@ fn supervise(
     let mut scratch_max_bytes = 0_u64;
     let mut cancellation_requested_at_ms = None;
     let mut cancellation_observed_ms = None;
-    let mut sampler = Sampler::new(sampling.is_some(), sampling.map_or(0, |c| c.max_samples));
+    let mut sampler = match sampling {
+        Some(config) => Sampler::new(true, config.max_samples),
+        None => Sampler::disabled(sampling_disabled_reason),
+    };
     let deadline = match cancel_after {
         Some(early) => early.min(timeout),
         None => timeout,
@@ -2817,6 +2974,21 @@ pub fn render(report: &Report) -> (String, usize) {
         json,
         "  \"cancel_after_ms\": {},",
         number_field(report.cancel_after_ms)
+    );
+    let _ = writeln!(
+        json,
+        "  \"sample_tool\": {},",
+        path_field_opt(report.sample_tool.as_deref())
+    );
+    let _ = writeln!(
+        json,
+        "  \"sample_tool_sha256\": {},",
+        text_field(report.sample_tool_sha256.as_deref())
+    );
+    let _ = writeln!(
+        json,
+        "  \"sample_tool_reason\": {},",
+        text_field(report.sample_tool_reason)
     );
     let _ = writeln!(json, "  \"cases_truncated\": {},", report.cases_truncated);
     let _ = writeln!(

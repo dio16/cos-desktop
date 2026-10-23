@@ -2280,6 +2280,146 @@ fn sampled_record_is_deterministic_apart_from_documented_fields() {
     }
 }
 
+/// BLOCKING (a): the sampler is resolved to an absolute system path, never a bare name
+/// — so a `tasklist.exe` dropped next to the harness cannot win a CreateProcess search —
+/// and a relative or missing program is refused instead of used.
+#[test]
+fn sampler_is_resolved_to_an_absolute_system_path() {
+    // The default is built from the trusted SystemRoot value.
+    let resolved =
+        harness::resolve_sample_tool_for_tests(None, Some(std::ffi::OsStr::new("C:\\Windows")))
+            .expect("the system path is derived, existence is checked by the caller");
+    assert_eq!(
+        resolved,
+        std::path::PathBuf::from("C:\\Windows\\System32\\tasklist.exe")
+    );
+    assert!(resolved.is_absolute());
+
+    // No SystemRoot: refuse, never fall back to a bare name.
+    assert_eq!(
+        harness::resolve_sample_tool_for_tests(None, None),
+        Err("sample_tool_missing")
+    );
+    // A relative program is exactly the substitution the finding describes.
+    assert_eq!(
+        harness::resolve_sample_tool_for_tests(
+            Some(std::path::Path::new("tasklist.exe")),
+            Some(std::ffi::OsStr::new("C:\\Windows"))
+        ),
+        Err("sample_tool_missing")
+    );
+    // An absolute program that does not exist is refused too (the real resolver also
+    // checks that the path is an existing regular file).
+    assert_eq!(
+        harness::resolve_sample_tool(
+            Some(std::path::Path::new(
+                "C:\\definitely\\not\\here\\tasklist.exe"
+            )),
+            Some(std::ffi::OsStr::new("C:\\Windows"))
+        ),
+        Err("sample_tool_missing")
+    );
+}
+
+/// BLOCKING (a), end to end: with a relative sampler path and a decoy `tasklist.exe`
+/// sitting in the working directory, sampling refuses with `sample_tool_missing` and
+/// records no value at all.
+#[test]
+fn relative_sampler_never_runs_and_never_records_a_value() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    // The decoy a bare-name search would find in the application/working directory.
+    let decoy = fixture.base.join("tasklist.exe");
+    std::fs::write(&decoy, b"not a real sampler").unwrap();
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.sample_interval_ms = 10;
+    config.cancel_after_ms = Some(500);
+    config.sample_tool = Some(std::path::PathBuf::from("tasklist.exe"));
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.working_set_attempts, 0, "nothing was spawned");
+    assert_eq!(observation.working_set_samples, 0);
+    assert_eq!(
+        observation.working_set_max_bytes, None,
+        "never a fabricated value"
+    );
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(observation.working_set_reason, Some("sample_tool_missing"));
+    assert_eq!(report.sample_tool, None, "the decoy must not be adopted");
+    assert_eq!(report.sample_tool_reason, Some("sample_tool_missing"));
+    assert_eq!(report.sample_tool_sha256, None);
+}
+
+/// BLOCKING (b): the operator binary reads no environment variable for the sampler; the
+/// seam is gone and only the `Config` injection used by tests remains.
+#[test]
+fn operator_configuration_never_reads_a_sampler_environment_variable() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    assert_eq!(
+        config.sample_tool, None,
+        "the operator configuration must not take the sampler program from the environment"
+    );
+    assert!(config.sample_argv_prefix.is_empty());
+}
+
+/// BLOCKING (3): the header binds the real system sampler — absolute System32 path and a
+/// SHA-256 that matches an independent read of that file.
+#[test]
+fn record_header_binds_the_real_system_sampler() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    // No injection: this is the operator path, so the system tasklist is resolved.
+    let report = harness::run(&config).unwrap();
+
+    let tool = report
+        .sample_tool
+        .as_ref()
+        .expect("the system sampler resolves");
+    assert!(tool.is_absolute());
+    let expected = std::path::Path::new(&std::env::var("SystemRoot").unwrap())
+        .join("System32")
+        .join("tasklist.exe");
+    assert_eq!(
+        tool, &expected,
+        "the resolved path must be the system tasklist"
+    );
+    assert!(tool.is_file());
+
+    let digest = report
+        .sample_tool_sha256
+        .as_ref()
+        .expect("the system sampler is hashed");
+    assert_eq!(digest.len(), 64);
+    assert!(digest.bytes().all(|byte| byte.is_ascii_hexdigit()));
+    let bytes = std::fs::read(tool).unwrap();
+    assert_eq!(
+        digest,
+        &pixels::hex(&pixels::sha256(&bytes)),
+        "the recorded digest must be the real file's digest"
+    );
+    assert_eq!(report.sample_tool_reason, None);
+
+    let json = harness::render(&report).0;
+    assert!(json.contains("\"sample_tool\": "));
+    assert!(json.contains(&format!("\"sample_tool_sha256\": \"{digest}\"")));
+}
+
+/// BLOCKING (3): a hash failure is `not_measured` with a reason, never a fabricated
+/// digest. An unreadable file is simulated with a directory-shaped path.
+#[test]
+fn sampler_digest_failure_is_not_measured() {
+    let (digest, reason) =
+        harness::fingerprint_sample_tool_for_tests(std::path::Path::new("C:\\Windows\\System32"));
+    assert_eq!(digest, None);
+    assert_eq!(reason, Some("sample_tool_unreadable"));
+}
+
 /// A1: the parser table. Every row shape is either strictly a tasklist row for the
 /// supervised pid, or it is refused — never turned into a byte count.
 #[test]
@@ -2428,29 +2568,79 @@ fn hanging_sampler_hits_the_sample_timeout() {
     );
 }
 
-/// A2: the cap bounds attempts, not successes. An always-unparseable sampler stops
-/// after `--max-samples` attempts.
+/// A2/NIT: the cap bounds attempts and really stops spawning. The counter file proves
+/// how many times the sampler program was started, independent of what it printed, and
+/// the child lives far longer than the two allowed attempts.
 #[test]
-fn sample_cap_bounds_attempts_not_successes() {
+fn sample_cap_bounds_attempts_and_stops_spawning() {
     let fixture = Fixture::new();
     fixture.case("a.png", "sleep-long");
+    let counter = fixture.base.join("spawns.txt");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    inject_sampler(&mut config, "fake_sampler_garbage_helper");
+    inject_sampler(&mut config, "fake_sampler_counting_helper");
+    config
+        .sample_argv_prefix
+        .push(counter.clone().into_os_string());
     config.sample_interval_ms = 10;
     config.max_samples = 2;
+    config.cancel_after_ms = Some(3_000);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    let spawns = std::fs::read(&counter)
+        .map(|bytes| bytes.len())
+        .unwrap_or(0);
+    assert_eq!(
+        spawns, 2,
+        "the sampler program ran exactly the allowed attempts"
+    );
+    assert_eq!(observation.working_set_attempts, 2);
+    assert_eq!(
+        observation.working_set_samples, 2,
+        "both attempts succeeded"
+    );
+    assert_eq!(observation.working_set_sampling, "sampled_lower_bound");
+    assert_eq!(
+        observation.working_set_reason,
+        Some("sample_capped"),
+        "the cap, not a failure, stopped sampling"
+    );
+    assert!(
+        observation.wall_ms.unwrap() > 1_000,
+        "the child outlived the cap"
+    );
+}
+
+/// A2: a failure stops scheduling immediately, so the cap is never reached and
+/// `sample_capped` is not claimed.
+#[test]
+fn sampler_failure_stops_scheduling_before_the_cap() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let counter = fixture.base.join("spawns-fail.txt");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_counting_garbage_helper");
+    config
+        .sample_argv_prefix
+        .push(counter.clone().into_os_string());
+    config.sample_interval_ms = 10;
+    config.max_samples = 5;
     config.cancel_after_ms = Some(2_000);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
-    assert!(
-        observation.working_set_attempts <= 2,
-        "attempts {} must not exceed the cap",
-        observation.working_set_attempts
-    );
-    assert_eq!(observation.working_set_samples, 0);
-    // The failure stopped sampling first, so `sample_capped` is not claimed.
-    assert_eq!(observation.working_set_reason, Some("sample_parse_failed"));
+    let spawns = std::fs::read(&counter)
+        .map(|bytes| bytes.len())
+        .unwrap_or(0);
+    assert_eq!(spawns, 1, "one failing attempt, then no retry");
+    assert_eq!(observation.working_set_attempts, 1);
     assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(observation.working_set_reason, Some("sample_parse_failed"));
+    assert_ne!(
+        observation.working_set_reason,
+        Some("sample_capped"),
+        "the cap did not stop sampling"
+    );
 }
 
 /// A3: the sampler bookkeeping for both mixed orders. A success clears an earlier
@@ -2776,6 +2966,52 @@ fn fake_sampler_valid_helper() {
         return;
     }
     println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+}
+
+/// Append one byte to the counter file passed as the last argument, so the test can
+/// count real spawns independently of the printed row.
+fn sampler_counter_path() -> Option<std::path::PathBuf> {
+    let args: Vec<String> = std::env::args().collect();
+    let index = args.iter().position(|argument| argument == "/FI")?;
+    // The counter is the extra argv element injected right before the fixed sample
+    // argv; a bare `--quiet` (no counter injected) is not a path.
+    let candidate = args.get(index.checked_sub(1)?)?;
+    candidate
+        .ends_with(".txt")
+        .then(|| std::path::PathBuf::from(candidate))
+}
+
+fn count_spawn() {
+    if let Some(path) = sampler_counter_path() {
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .unwrap();
+        use std::io::Write as _;
+        let _ = file.write_all(b"x");
+    }
+}
+
+/// A sampler that counts its spawns and prints a valid row.
+#[test]
+fn fake_sampler_counting_helper() {
+    let pid = sampler_pid();
+    if pid == 0 {
+        return;
+    }
+    count_spawn();
+    println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+}
+
+/// A sampler that counts its spawns and prints an unparseable row.
+#[test]
+fn fake_sampler_counting_garbage_helper() {
+    if sampler_pid() == 0 {
+        return;
+    }
+    count_spawn();
+    println!("\"fake.exe\",\"1\",\"Console\",\"1\",\"twelve megabytes\"");
 }
 
 /// A sampler whose row is garbage.
