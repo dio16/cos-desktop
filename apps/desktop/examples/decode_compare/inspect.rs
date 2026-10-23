@@ -154,7 +154,7 @@ pub fn inspect<R: Read + Seek>(reader: &mut R) -> Inspection {
     };
     if head == PNG_SIGNATURE {
         // The reader is positioned on the first chunk header.
-        return inspect_png(reader, budget);
+        return inspect_png(reader, budget, length);
     }
     if head.starts_with(b"BM") {
         // The reader is positioned after `BM` and six file-header bytes.
@@ -170,14 +170,21 @@ pub fn inspect<R: Read + Seek>(reader: &mut R) -> Inspection {
     Inspection::default()
 }
 
-fn inspect_png<R: Read + Seek>(reader: &mut R, mut budget: u64) -> Inspection {
+fn inspect_png<R: Read + Seek>(reader: &mut R, mut budget: u64, file_len: u64) -> Inspection {
     let mut inspection = Inspection {
         format: Some(Format::Png),
         ..Inspection::default()
     };
     let mut ihdr_seen = false;
     let mut idat_seen = false;
+    // The signature is already consumed.
+    let mut position = PNG_SIGNATURE.len() as u64;
     for _ in 0..MAX_INSPECT_STEPS {
+        // A chunk is only present when its 8-byte header, its whole payload and its
+        // 4-byte CRC all sit inside the file (B-R1-01 residual).
+        if position.saturating_add(8) > file_len {
+            return inspection;
+        }
         let Some(length_bytes) = read_bytes(reader, 4, &mut budget) else {
             return inspection;
         };
@@ -191,6 +198,17 @@ fn inspect_png<R: Read + Seek>(reader: &mut R, mut budget: u64) -> Inspection {
             return inspection;
         };
         if length > MAX_PNG_CHUNK {
+            return inspection;
+        }
+        let Some(chunk_end) = position
+            .checked_add(8)
+            .and_then(|payload_start| payload_start.checked_add(length))
+            .and_then(|payload_end| payload_end.checked_add(4))
+        else {
+            return inspection;
+        };
+        if chunk_end > file_len {
+            // Header, payload or CRC would run past the end of the file.
             return inspection;
         }
         // IHDR must be the first chunk and may appear exactly once (N1).
@@ -243,9 +261,15 @@ fn inspect_png<R: Read + Seek>(reader: &mut R, mut budget: u64) -> Inspection {
             b"sRGB" => inspection.record(ColourMarker::Srgb),
             b"gAMA" => inspection.record(ColourMarker::Gamma),
             b"IEND" => {
-                // A real IEND states length 0 and terminates the image (N1), and it
-                // may only do so after some image data exists (B-R1-01).
+                // A real IEND states length 0 and the fixed terminator CRC, and it may
+                // only close an image that has data (B-R1-01 residual).
                 if length != 0 {
+                    return inspection;
+                }
+                let Some(crc) = read_bytes(reader, 4, &mut budget) else {
+                    return inspection;
+                };
+                if crc.as_slice() != PNG_IEND_CRC {
                     return inspection;
                 }
                 inspection.complete = ihdr_seen && idat_seen;
@@ -253,16 +277,21 @@ fn inspect_png<R: Read + Seek>(reader: &mut R, mut budget: u64) -> Inspection {
             }
             _ => {}
         }
-        // The IHDR payload is read above; every other chunk payload is skipped.
+        // The IHDR payload is read above; every other chunk payload is skipped. Both
+        // the payload and the CRC are proven inside the file by `chunk_end`.
         if kind.as_slice() != b"IHDR" && length > 0 && skip_bytes(reader, length).is_none() {
             return inspection;
         }
         if skip_bytes(reader, 4).is_none() {
             return inspection;
         }
+        position = chunk_end;
     }
     inspection
 }
+
+/// The CRC every PNG `IEND` chunk carries (`AE 42 60 82`).
+const PNG_IEND_CRC: [u8; 4] = [0xAE, 0x42, 0x60, 0x82];
 
 /// PNG bit depths the format allows for each colour type (A2).
 fn png_depth_allowed(colour_type: ColourType, bit_depth: u32) -> bool {
@@ -418,13 +447,6 @@ fn inspect_jpeg<R: Read + Seek>(reader: &mut R, mut budget: u64, file_len: u64) 
                 return inspection;
             }
             0x01 | 0xD0..=0xD7 => continue,
-            0xDA => {
-                // Start of scan: entropy-coded data follows, so the walk ends here.
-                // B-R1-01: the image is only complete with a full SOF, a scan after
-                // it, and a real EOI terminator at the end of the file.
-                inspection.complete = inspection.width.is_some() && ends_with_eoi(reader, file_len);
-                return inspection;
-            }
             _ => {}
         }
         let Some(length_bytes) = read_bytes(reader, 2, &mut budget) else {
@@ -435,6 +457,23 @@ fn inspect_jpeg<R: Read + Seek>(reader: &mut R, mut budget: u64, file_len: u64) 
             return inspection;
         }
         let payload = length - 2;
+        if marker == 0xDA {
+            // Start of scan: entropy-coded data follows, so the walk ends here. The
+            // marker only counts as a scan start when it is a well-formed segment: a
+            // non-empty header that fits inside the file (B-R1-01 residual). The image
+            // is complete only with a full SOF, that scan and a real EOI terminator.
+            let Ok(header_start) = reader.stream_position() else {
+                return inspection;
+            };
+            let Some(segment_end) = header_start.checked_add(payload) else {
+                return inspection;
+            };
+            if payload == 0 || segment_end > file_len {
+                return inspection;
+            }
+            inspection.complete = inspection.width.is_some() && ends_with_eoi(reader, file_len);
+            return inspection;
+        }
         if matches!(marker, 0xC0..=0xCF) && !matches!(marker, 0xC4 | 0xC8 | 0xCC) {
             // The SOF payload must carry all six bytes before any of them is read,
             // and nothing past the declared segment may be consumed (B2).

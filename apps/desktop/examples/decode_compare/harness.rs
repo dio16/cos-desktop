@@ -36,8 +36,10 @@
 //! `output_bytes`, the `inspected_*` fields) separate from the claim, and `validity`
 //! is exactly one of:
 //!
-//! - `content_verified` — the output parsed as a **complete** container of the
-//!   declared format and its declared dimensions equal the operator expectation.
+//! - `structure_verified` — the output parsed as a **complete** container of the
+//!   declared format and its declared dimensions equal the operator expectation. This
+//!   means structural presence only: mandatory chunks/segments, their CRCs/lengths and
+//!   the declared dimensions were checked, never pixel content.
 //! - `dimension_mismatch` — it parsed completely but the dimensions contradict the
 //!   expectation; the observation is demoted to `error` with refusal
 //!   `dimension_mismatch`.
@@ -65,21 +67,23 @@
 //! the observation class to `error` with refusal `output_unparsable`, so the record
 //! never keeps a `decoded` claim it cannot support. A `cases.txt` line may declare
 //! `name[|expected:WxH][|declared-class]`; when an expectation exists and the output
-//! parses, matching dimensions yield `validity: content_verified`, and a mismatch
+//! parses, matching dimensions yield `validity: structure_verified`, and a mismatch
 //! demotes the observation to `error` with refusal `dimension_mismatch` — never a
 //! success class. Without an expectation the claim stays `presence_only`. The record
 //! also carries a `capabilities` table with one row per candidate × observed format.
 //!
-//! A content claim requires a **complete** container (B2 / B-R1-01): PNG needs a legal
-//! IHDR, at least one non-empty `IDAT` and a real `IEND` of length `0`; JPEG needs a
-//! full `SOF` segment, a `SOS` after it and a real `EOI` at the end of the file; BMP
-//! needs the whole declared header, a pixel-data offset inside the file and a declared
-//! pixel buffer that fits it (`data_offset + row_bytes * height <= file_size`, with the
-//! 4-byte-aligned row size of the declared bit count and the height magnitude so
-//! top-down bitmaps are covered). Header-only or truncated outputs are therefore
-//! `error` + `output_incomplete`, never a success class.
+//! A claim requires a **complete** container (B2 / B-R1-01): PNG needs a legal IHDR,
+//! at least one non-empty `IDAT` and a real `IEND` of length `0` whose CRC is
+//! `AE 42 60 82`, and every counted chunk must have its payload *and* its 4-byte CRC
+//! inside the file; JPEG needs a full `SOF` segment, a well-formed `SOS` (length field
+//! `>= 2`, segment inside the file, header present) after it and a real `EOI` at the
+//! end of the file; BMP needs the whole declared header, a pixel-data offset inside the
+//! file and a declared pixel buffer that fits it (`data_offset + row_bytes * height <=
+//! file_size`, with the 4-byte-aligned row size of the declared bit count and the
+//! height magnitude so top-down bitmaps are covered). Header-only, CRC-less or
+//! truncated outputs are therefore `error` + `output_incomplete`, never a success.
 //! Capability rows are built only from observations that are `decoded`, complete, and
-//! whose validity is `presence_only` or `content_verified` (A1), after observation
+//! whose validity is `presence_only` or `structure_verified` (A1), after observation
 //! truncation (A3), so a mismatch, refusal or dropped row never contributes.
 //! `max_width`/`max_height` are independent observed maxima and need not come from
 //! one output (N3). Colour-management markers are reported only when the parser
@@ -150,7 +154,7 @@ use std::{
 };
 
 /// Fixed record schema version; changing record semantics requires a new version.
-pub const SCHEMA_VERSION: u32 = 6;
+pub const SCHEMA_VERSION: u32 = 7;
 /// Refusal token for a run token whose directory already exists.
 pub const WORK_DIR_EXISTS: &str = "work_dir_exists";
 /// Fixed prefix of every per-run work-directory token.
@@ -206,8 +210,10 @@ const INPUT_FLAG: &str = "-i";
 const NOT_MEASURED: &str = "not_measured";
 /// Validity claim when the only evidence is a non-empty output file.
 const PRESENCE_ONLY: &str = "presence_only";
-/// Validity claim when the inspected output matches the operator expectation.
-const CONTENT_VERIFIED: &str = "content_verified";
+/// Validity claim when the inspected output is a complete container of the declared
+/// format and its declared dimensions match the operator expectation. The name is
+/// deliberately about *structure*: no pixel content is validated.
+const STRUCTURE_VERIFIED: &str = "structure_verified";
 /// Validity claim (and refusal) when the inspected output contradicts it.
 const DIMENSION_MISMATCH: &str = "dimension_mismatch";
 /// Reason tokens for a validity that could not be established.
@@ -470,10 +476,10 @@ pub struct Observation {
     pub inspected_colour_markers: Vec<ColourMarker>,
     /// Operator expectation for this case, when the manifest declares one.
     pub expected_dimensions: Option<(u32, u32)>,
-    /// Claim standing on that evidence: `content_verified`, `dimension_mismatch`,
+    /// Claim standing on that evidence: `structure_verified`, `dimension_mismatch`,
     /// `presence_only` or `not_measured`.
     pub validity: &'static str,
-    /// Why the claim is not `content_verified`, as a stable token.
+    /// Why the claim is not `structure_verified`, as a stable token.
     pub validity_reason: Option<&'static str>,
     /// Stable refusal reason when the case was not fully measured, else `None`.
     pub refusal: Option<&'static str>,
@@ -1707,7 +1713,7 @@ fn capability_rows(observations: &[Observation]) -> Vec<CapabilityRow> {
         if !observation.inspected_complete {
             continue;
         }
-        if !matches!(observation.validity, PRESENCE_ONLY | CONTENT_VERIFIED) {
+        if !matches!(observation.validity, PRESENCE_ONLY | STRUCTURE_VERIFIED) {
             continue;
         }
         let format = observation.inspected_format;
@@ -1781,7 +1787,7 @@ fn verify(
         (Some(_), None) => (NOT_MEASURED, Some(OUTPUT_UNPARSABLE)),
         // B2: a content claim needs a complete container, not just a header.
         (Some(_), Some(_)) if !complete => (NOT_MEASURED, Some(OUTPUT_INCOMPLETE)),
-        (Some(expected), Some(observed)) if expected == observed => (CONTENT_VERIFIED, None),
+        (Some(expected), Some(observed)) if expected == observed => (STRUCTURE_VERIFIED, None),
         (Some(_), Some(_)) => (DIMENSION_MISMATCH, Some(DIMENSION_MISMATCH)),
         (None, _) => (PRESENCE_ONLY, Some(NO_EXPECTATION)),
     }

@@ -860,7 +860,7 @@ fn output_inspector_reads_png_bmp_and_jpeg_headers() {
 
 /// Phase 2: a parsed output that matches the operator expectation is verified.
 #[test]
-fn content_verified_when_the_output_matches_the_expectation() {
+fn structure_verified_when_the_output_matches_the_expectation() {
     let fixture = Fixture::new();
     fixture.case("a.png", "png16");
     fixture.declare_expected(&[("a.png", Some((16, 16)), OutcomeClass::Decoded)]);
@@ -868,7 +868,7 @@ fn content_verified_when_the_output_matches_the_expectation() {
 
     let observation = &report.observations[0];
     assert_eq!(observation.observed_outcome, OutcomeClass::Decoded);
-    assert_eq!(observation.validity, "content_verified");
+    assert_eq!(observation.validity, "structure_verified");
     assert_eq!(observation.validity_reason, None);
     assert_eq!(observation.inspected_format, inspect::Format::Png);
     assert_eq!(observation.inspected_width, Some(16));
@@ -1062,7 +1062,7 @@ fn silent_candidate_never_inherits_another_candidates_output() {
         .find(|observation| observation.candidate_id == "writer")
         .unwrap();
     assert_eq!(writer_row.observed_outcome, OutcomeClass::Decoded);
-    assert_eq!(writer_row.validity, "content_verified");
+    assert_eq!(writer_row.validity, "structure_verified");
 
     let silent_row = report
         .observations
@@ -1074,7 +1074,7 @@ fn silent_candidate_never_inherits_another_candidates_output() {
     assert_eq!(silent_row.refusal, Some("output_missing"));
     assert!(!silent_row.output_present);
     assert_eq!(silent_row.validity, "not_measured");
-    assert_ne!(silent_row.validity, "content_verified");
+    assert_ne!(silent_row.validity, "structure_verified");
 
     let candidates: Vec<&str> = report
         .capabilities
@@ -1152,7 +1152,7 @@ fn capability_rows_need_a_verified_decode() {
             .find(|observation| observation.case_id == case)
             .unwrap()
     };
-    assert_eq!(by_case("a.png").validity, "content_verified");
+    assert_eq!(by_case("a.png").validity, "structure_verified");
     assert_eq!(by_case("b.png").validity, "dimension_mismatch");
     assert_eq!(by_case("b.png").observed_outcome, OutcomeClass::Error);
     assert_eq!(by_case("c.png").validity, "not_measured");
@@ -1358,6 +1358,45 @@ fn bmp_with_short_pixel_data_is_incomplete() {
     assert!(report.capabilities.is_empty());
 }
 
+/// B-R1-01 residual: a PNG whose terminator chunk has no CRC bytes is not complete,
+/// even though the IHDR and a non-empty IDAT are present.
+#[test]
+fn png_iend_without_crc_is_incomplete() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-iend-no-crc");
+    fixture.declare_expected(&[("a.png", Some((16, 16)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_incomplete"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.inspected_format, inspect::Format::Png);
+    assert_eq!(observation.inspected_width, Some(16));
+    assert!(!observation.inspected_complete);
+    assert!(report.capabilities.is_empty());
+}
+
+/// B-R1-01 residual: `FF DA FF D9` has no SOS length field, so it never counts as a
+/// scan start and the file is not complete.
+#[test]
+fn jpeg_sos_without_length_is_incomplete() {
+    let fixture = Fixture::new();
+    fixture.case("a.jpg", "jpeg-sos-nolen");
+    fixture.declare_expected(&[("a.jpg", Some((24, 12)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_incomplete"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.inspected_format, inspect::Format::Jpeg);
+    assert!(!observation.inspected_complete);
+    assert!(report.capabilities.is_empty());
+}
+
 /// A6: both global bounds truncate explicitly instead of growing the record.
 #[test]
 fn observation_and_record_caps_truncate_explicitly() {
@@ -1478,7 +1517,7 @@ fn record_is_deterministic_sorted_and_carries_no_decision_field() {
         json_values(&first_json, "case_id"),
         vec!["a.png", "a.png", "b.png", "b.png"]
     );
-    assert!(first_json.contains("\"schema_version\": 6"));
+    assert!(first_json.contains("\"schema_version\": 7"));
     assert!(first_json.contains("\"exploratory\": true"));
     assert!(first_json.contains("\"numeric_gate\": \"NOT_RATIFIED\""));
     for decision in ["\"pass\"", "\"winner\"", "\"score\"", "\"selected\""] {
@@ -1672,6 +1711,14 @@ fn fake_candidate(support: ProbeSupport) {
         }
         "jpeg-no-eoi" => {
             std::fs::write(&output, jpeg_without_eoi(24, 12, 3)).unwrap();
+            0
+        }
+        "png-iend-no-crc" => {
+            std::fs::write(&output, png_iend_without_crc(16, 16)).unwrap();
+            0
+        }
+        "jpeg-sos-nolen" => {
+            std::fs::write(&output, jpeg_sos_without_length(24, 12, 3)).unwrap();
             0
         }
         "bmp-short-pixels" => {
@@ -1946,6 +1993,28 @@ fn png_without_idat(width: u32, height: u32) -> Vec<u8> {
     let mut bytes = png_signature();
     bytes.extend_from_slice(&png_ihdr(width, height, 2, 8));
     bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
+    bytes
+}
+
+/// IHDR and a non-empty IDAT with real CRCs, then an IEND whose 4-byte CRC is cut
+/// off, so the terminator chunk is not fully inside the file (B-R1-01 residual).
+fn png_iend_without_crc(width: u32, height: u32) -> Vec<u8> {
+    let mut bytes = png_signature();
+    bytes.extend_from_slice(&png_ihdr(width, height, 2, 8));
+    bytes.extend_from_slice(&png_chunk(
+        b"IDAT",
+        &[0x78, 0x9C, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01],
+    ));
+    bytes.extend_from_slice(&0_u32.to_be_bytes());
+    bytes.extend_from_slice(b"IEND");
+    bytes
+}
+
+/// A JPEG with a valid SOF followed by `FF DA FF D9`: the scan marker has no length
+/// field, so it is not a well-formed SOS segment (B-R1-01 residual).
+fn jpeg_sos_without_length(width: u16, height: u16, components: u8) -> Vec<u8> {
+    let mut bytes = jpeg_sof_only(width, height, components);
+    bytes.extend_from_slice(&[0xFF, 0xDA, 0xFF, 0xD9]);
     bytes
 }
 
