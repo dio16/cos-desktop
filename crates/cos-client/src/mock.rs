@@ -6,30 +6,249 @@
 //! automatically, never reimplements Domain transitions and never fabricates
 //! completion. Every identity is `fixture:`-namespaced (validated at load).
 
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt;
 use std::path::Path;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use desktop_protocol::{
-    CommandEnvelope, CommandId, CommandOperation, CommandPayload, CommandReceipt, CommandTarget,
-    EpochId, ErrorCode, HelloAccepted, HelloRejected, HelloRequest, Limits, ObservationScope,
-    ObservationScopeRequest, OpenObservation, ProtocolError, ProtocolVersions, ReceiptLookup,
-    ReplayAccepted, ResyncReason, ResyncRequired, ServerFrame, ServerMessage, ServerWire,
-    SnapshotBegin, SnapshotChunk, SnapshotEnd, TaskId, Version, VersionAdvertisement,
-    integrity_digest_of, negotiate_session,
+    AuthorizedCommandReceipt, AuthorizedReceiptLookup, CommandEnvelope, CommandId,
+    CommandOperation, CommandPayload, CommandReadDecision, CommandReceipt, CommandTarget, EpochId,
+    ErrorCode, HelloAccepted, HelloRejected, HelloRequest, Limits, ObservationScope,
+    ObservationScopeRequest, OpenAuthorizedObservation, ProtocolError, ProtocolVersions, ReadGrant,
+    ReadInvalidated, ReadInvalidationReason, ReadRequestId, ReadRevision, ReadStamp,
+    ReceiptReadOutcome, ReceiptReadResult, ReplayAccepted, ResyncReason, ResyncRequired,
+    ServerFrame, ServerId, ServerMessage, ServerWire, SnapshotBegin, SnapshotChunk, SnapshotEnd,
+    TaskId, Version, VersionAdvertisement, integrity_digest_of, negotiate_session,
 };
 use serde_json::Value;
 
 use crate::client::{
-    ClientConfig, ClientEvent, ClientSource, CommandStatus, ConnectionState, CosClient,
-    DesktopClient, SnapshotHandle,
+    ClientConfig, ClientEvent, ClientSource, ConnectionState, CosClient, DesktopClient, PumpReport,
+    SnapshotHandle,
 };
 use crate::error::ClientError;
 use crate::fixture::{
-    CommandDefault, FixtureError, FixtureReceipt, FixtureRuntime, FixtureScenario, FixtureStep,
-    ObservationMode, Trigger, parse_trigger,
+    CommandDefault, FixtureError, FixtureReadAuthorization, FixtureReceipt, FixtureReceiptOutcome,
+    FixtureRuntime, FixtureScenario, FixtureStep, ObservationMode, Trigger, parse_trigger,
 };
+use crate::read::{CommandLookup, CommandStatus, PublicationAccess};
 use crate::transport::{Transport, TransportError};
+
+mod deadline_trace;
+use deadline_trace::FixtureTrace;
+
+/// One steered fixture action, applied on the provider's next poll.
+enum MockCommand {
+    /// Inject a raw JSON frame (stamped from the active binding when omitted).
+    Inject(String),
+    /// Inject a raw JSON frame verbatim, preserving a missing or null stamp.
+    InjectVerbatim(String),
+    /// Inject a typed server message, optionally stamped from the active binding.
+    Message {
+        message: Box<ServerMessage>,
+        stamped: bool,
+    },
+    /// Inject a typed server message with an explicit (possibly stale) stamp.
+    StampedMessage {
+        message: Box<ServerMessage>,
+        stamp: Box<ReadStamp>,
+    },
+    /// Make the next poll report a transport disconnect.
+    Disconnect,
+    /// Simulate a runtime restart with a new epoch.
+    SetEpoch(EpochId),
+    /// Deliver one scripted manual step.
+    DeliverStep(String),
+    /// Deny a command identity for later authorized receipt reads.
+    DenyCommand(String),
+    /// Serve later grants with a stamp that names another scope identity.
+    GrantStampScope(String),
+    /// Arm a blueprint violation the provider injects into every later grant.
+    GrantFlaw(GrantFlaw),
+    /// Stop injecting a blueprint violation into later grants.
+    ClearGrantFlaw,
+    /// Answer the outstanding authorized lookup with an explicit receipt.
+    AnswerLookup(Option<Box<CommandReceipt>>),
+    /// Answer the outstanding authorized lookup with a scoped denial.
+    DenyLookup,
+    /// Serve later grants with a different observation scope.
+    ServeScope(Box<ObservationScopeRequest>),
+}
+
+/// A deliberate blueprint violation the fixture provider injects into a grant
+/// it issues while the client is still synchronizing.
+///
+/// Each variant is an otherwise well-formed grant whose sole contradiction the
+/// client must refuse without opening a binding. It exists so a transcript can
+/// drive the refusal paths directly, instead of relying on the provider's clean
+/// grant being malformed by accident.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum GrantFlaw {
+    /// Omit one requested identity's read decision.
+    MissingDecision,
+    /// Answer an identity the client never requested.
+    ExtraDecision,
+    /// Answer one requested identity more than once.
+    DuplicateDecision,
+    /// Stamp the grant with a server identity other than the authenticated one.
+    ForeignServer,
+}
+
+#[derive(Default)]
+struct MockShared {
+    commands: VecDeque<MockCommand>,
+    active_stamp: Option<ReadStamp>,
+    sent_frames: usize,
+    lookups: usize,
+    /// Command dispatches the provider actually received, as (command id, payload kind).
+    command_sends: Vec<(String, String)>,
+}
+
+/// Shared control channel for a scripted fixture transcript.
+///
+/// It only enqueues steered actions and reports counters; the provider applies
+/// them on its next poll, so a window or owner never waits on fixture I/O.
+#[derive(Clone, Default)]
+pub struct MockControl {
+    state: Arc<Mutex<MockShared>>,
+}
+
+impl MockControl {
+    /// Inject a raw JSON frame, stamped from the active binding when omitted.
+    pub fn inject_raw(&self, raw: impl Into<String>) {
+        self.push(MockCommand::Inject(raw.into()));
+    }
+
+    /// Inject a typed server message, stamped from the active binding.
+    pub fn inject_message(&self, message: ServerMessage) {
+        self.push(MockCommand::Message {
+            message: Box::new(message),
+            stamped: true,
+        });
+    }
+
+    /// Inject a typed server message without any frame stamp.
+    pub fn inject_unstamped_message(&self, message: ServerMessage) {
+        self.push(MockCommand::Message {
+            message: Box::new(message),
+            stamped: false,
+        });
+    }
+
+    /// Inject a typed state-bearing message carrying an explicit stamp.
+    pub fn inject_message_with_stamp(&self, message: ServerMessage, stamp: ReadStamp) {
+        self.push(MockCommand::StampedMessage {
+            message: Box::new(message),
+            stamp: Box::new(stamp),
+        });
+    }
+
+    /// Inject a raw JSON frame verbatim, preserving a missing or null stamp.
+    pub fn inject_raw_unstamped(&self, raw: impl Into<String>) {
+        self.push(MockCommand::InjectVerbatim(raw.into()));
+    }
+
+    /// Report a transport disconnect on the next poll.
+    pub fn disconnect(&self) {
+        self.push(MockCommand::Disconnect);
+    }
+
+    /// Simulate a runtime restart with a new epoch.
+    pub fn set_epoch(&self, epoch: EpochId) {
+        self.push(MockCommand::SetEpoch(epoch));
+    }
+
+    /// Deny an identity for later authorized receipt reads.
+    pub fn deny_command(&self, id: impl Into<String>) {
+        self.push(MockCommand::DenyCommand(id.into()));
+    }
+
+    /// Serve later grants with a stamp that names another scope identity, so the
+    /// client must refuse the contradiction before any binding opens.
+    pub fn grant_stamp_scope(&self, scope_id: impl Into<String>) {
+        self.push(MockCommand::GrantStampScope(scope_id.into()));
+    }
+
+    /// Arm a blueprint violation injected into every later issued grant, so the
+    /// client is delivered a grant that is well-formed except for one
+    /// contradiction and must stay withheld.
+    pub fn grant_flaw(&self, flaw: GrantFlaw) {
+        self.push(MockCommand::GrantFlaw(flaw));
+    }
+
+    /// Stop injecting a blueprint violation into later grants.
+    pub fn clear_grant_flaw(&self) {
+        self.push(MockCommand::ClearGrantFlaw);
+    }
+
+    /// Answer the outstanding authorized lookup, for transcripts that keep lookups
+    /// pending until the test decides the outcome.
+    pub fn answer_pending_lookup(&self, receipt: Option<CommandReceipt>) {
+        self.push(MockCommand::AnswerLookup(receipt.map(Box::new)));
+    }
+
+    /// Answer the outstanding authorized lookup with a scoped denial.
+    pub fn answer_pending_lookup_denied(&self) {
+        self.push(MockCommand::DenyLookup);
+    }
+
+    /// Deliver one scripted manual step.
+    pub fn deliver_step(&self, id: impl Into<String>) {
+        self.push(MockCommand::DeliverStep(id.into()));
+    }
+
+    /// Serve later grant frames with a different observation scope.
+    ///
+    /// A transcript otherwise answers every open request with the scope it was
+    /// built for. This test-only seam moves the provider onto the exact scope a
+    /// caller names, so a client that requested a new scope can be answered with
+    /// a grant that matches it (or, while unset, must stay refused).
+    pub fn serve_scope(&self, scope: ObservationScopeRequest) {
+        self.push(MockCommand::ServeScope(Box::new(scope)));
+    }
+
+    /// Binding the provider currently serves data under.
+    pub fn active_stamp(&self) -> Option<ReadStamp> {
+        self.state
+            .lock()
+            .expect("fixture control lock")
+            .active_stamp
+            .clone()
+    }
+
+    /// Number of client frames the provider has consumed.
+    pub fn sent_frames(&self) -> usize {
+        self.state.lock().expect("fixture control lock").sent_frames
+    }
+
+    /// Number of authorized receipt lookups the provider has received.
+    pub fn lookups_seen(&self) -> usize {
+        self.state.lock().expect("fixture control lock").lookups
+    }
+
+    /// Command dispatches the provider actually received, in delivery order.
+    ///
+    /// Fixture-side observation for per-identity re-send assertions: unlike the
+    /// total frame count, this excludes reauthorization and lookup frames, so a
+    /// duplicate `StopTask` dispatch is directly visible.
+    pub fn sent_commands(&self) -> Vec<(String, String)> {
+        self.state
+            .lock()
+            .expect("fixture control lock")
+            .command_sends
+            .clone()
+    }
+
+    fn push(&self, command: MockCommand) {
+        self.state
+            .lock()
+            .expect("fixture control lock")
+            .commands
+            .push_back(command);
+    }
+}
 
 /// Scripted byte transport and synthetic server.
 ///
@@ -40,7 +259,7 @@ pub struct MockTransport {
     scenario: FixtureScenario,
     runtime: FixtureRuntime,
     limits: Limits,
-    inbox: VecDeque<Vec<u8>>,
+    inbox: VecDeque<QueuedFixtureFrame>,
     inbox_bytes: u64,
     overflowed: bool,
     disconnect_pending: bool,
@@ -48,22 +267,100 @@ pub struct MockTransport {
     selected: Option<ProtocolVersions>,
     observation_count: u32,
     after_open_steps: VecDeque<FixtureStep>,
+    after_delay_steps: Vec<(Duration, FixtureStep, bool)>,
+    delayed_steps: Vec<ScheduledFixtureStep>,
+    session_serial: u64,
+    consumed_once: BTreeSet<String>,
+    trace: FixtureTrace,
+    #[cfg(test)]
+    fixture_now_override: Option<Instant>,
     command_steps: BTreeMap<String, VecDeque<FixtureStep>>,
     manual_steps: BTreeMap<String, FixtureStep>,
+    /// Test-only contradiction: the grant stamp names another scope identity.
+    grant_stamp_scope: Option<String>,
+    /// Test-only override: scope served to later grants when set.
+    served_scope: Option<ObservationScopeRequest>,
+    /// Test-only blueprint violation injected into every later issued grant.
+    grant_flaw: Option<GrantFlaw>,
     receipts: BTreeMap<CommandId, CommandReceipt>,
     command_digests: BTreeMap<CommandId, desktop_protocol::IntegrityDigest>,
     command_responses: BTreeMap<CommandId, Vec<Vec<u8>>>,
+    active_read: Option<ActiveRead>,
+    read_revision: ReadRevision,
+    authorization: FixtureReadAuthorization,
+    pending_lookup: Option<AuthorizedReceiptLookup>,
+    observation_control: Option<crate::ObservationControl>,
+    shared: Arc<Mutex<MockShared>>,
+}
+
+/// Authorized binding the fixture provider currently serves data under.
+#[derive(Clone)]
+struct ActiveRead {
+    stamp: ReadStamp,
+    denied: BTreeSet<CommandId>,
+    absent: BTreeSet<CommandId>,
+}
+
+struct QueuedFixtureFrame {
+    bytes: Vec<u8>,
+    session_serial: Option<u64>,
+}
+
+struct ScheduledFixtureStep {
+    release_at: Instant,
+    session_serial: u64,
+    once: bool,
+    step: FixtureStep,
+}
+
+#[derive(Clone, Copy)]
+enum ScheduleCancelReason {
+    Replaced,
+    Disconnect,
+    ResetStream,
+    AuthorizationChanged,
+    ScopeChanged,
+    EpochChanged,
+    Capacity,
+    Closed,
+}
+
+impl ScheduleCancelReason {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Replaced => "replaced",
+            Self::Disconnect => "disconnect",
+            Self::ResetStream => "reset_stream",
+            Self::AuthorizationChanged => "authorization_changed",
+            Self::ScopeChanged => "scope_changed",
+            Self::EpochChanged => "epoch_changed",
+            Self::Capacity => "capacity",
+            Self::Closed => "closed",
+        }
+    }
 }
 
 impl MockTransport {
     /// Build a transport for a validated scenario.
     pub fn new(scenario: FixtureScenario) -> Result<Self, FixtureError> {
+        if scenario.steps.len() > 1024 {
+            return Err(FixtureError::Invalid(
+                "at most 1024 fixture steps are allowed".to_owned(),
+            ));
+        }
         let mut after_open_steps = VecDeque::new();
+        let mut after_delay_steps = Vec::new();
         let mut command_steps: BTreeMap<String, VecDeque<FixtureStep>> = BTreeMap::new();
         let mut manual_steps = BTreeMap::new();
         for step in &scenario.steps {
             match parse_trigger(&step.trigger) {
                 Some(Trigger::AfterOpen) => after_open_steps.push_back(step.clone()),
+                Some(Trigger::AfterDelay(delay)) => {
+                    after_delay_steps.push((delay, step.clone(), false));
+                }
+                Some(Trigger::AfterDelayOnce(delay)) => {
+                    after_delay_steps.push((delay, step.clone(), true));
+                }
                 Some(Trigger::OnCommand(kind)) => {
                     command_steps
                         .entry(kind)
@@ -83,6 +380,8 @@ impl MockTransport {
         }
         let limits = scenario.limits.unwrap_or(Limits::DEFAULT);
         let runtime = FixtureRuntime::new(&scenario)?;
+        let authorization = scenario.read_authorization();
+        let shared: Arc<Mutex<MockShared>> = Arc::new(Mutex::new(MockShared::default()));
         Ok(Self {
             scenario,
             runtime,
@@ -95,12 +394,35 @@ impl MockTransport {
             selected: None,
             observation_count: 0,
             after_open_steps,
+            after_delay_steps,
+            delayed_steps: Vec::new(),
+            session_serial: 0,
+            consumed_once: BTreeSet::new(),
+            trace: FixtureTrace::new(),
+            #[cfg(test)]
+            fixture_now_override: None,
             command_steps,
             manual_steps,
+            grant_stamp_scope: None,
+            served_scope: None,
+            grant_flaw: None,
             receipts: BTreeMap::new(),
             command_digests: BTreeMap::new(),
             command_responses: BTreeMap::new(),
+            active_read: None,
+            read_revision: authorization.read_revision.clone(),
+            authorization,
+            pending_lookup: None,
+            observation_control: None,
+            shared,
         })
+    }
+
+    /// Shared control channel for this transcript.
+    pub fn control(&self) -> MockControl {
+        MockControl {
+            state: Arc::clone(&self.shared),
+        }
     }
 
     /// Scenario definition.
@@ -120,12 +442,28 @@ impl MockTransport {
 
     /// Simulate a runtime restart with a new epoch.
     pub fn set_epoch(&mut self, epoch: EpochId) {
+        self.cancel_schedule(ScheduleCancelReason::EpochChanged);
         self.runtime.set_epoch(epoch);
     }
 
     /// Raw client frames recorded by the provider.
     pub fn sent_frames(&self) -> &[Vec<u8>] {
         &self.sent
+    }
+
+    /// Binding the provider currently serves data under, when a grant is open.
+    pub fn active_stamp(&self) -> Option<ReadStamp> {
+        self.active_read.as_ref().map(|active| active.stamp.clone())
+    }
+
+    /// Bump the scripted read revision for late/equal grant transcripts.
+    pub fn set_read_revision(&mut self, revision: ReadRevision) {
+        self.read_revision = revision;
+    }
+
+    /// Whether a command is denied by the current fixture context.
+    pub fn read_denies(&self, command_id: &CommandId) -> bool {
+        self.authorization.denied_commands.contains(command_id)
     }
 
     /// Number of frames currently queued for the client.
@@ -138,9 +476,147 @@ impl MockTransport {
         self.observation_count
     }
 
-    /// Queue a raw JSON frame verbatim (malformed/unknown/oversize tests).
+    /// Apply steered transcript actions queued by the test control channel.
+    fn apply_control(&mut self) {
+        loop {
+            let command = {
+                let Ok(mut shared) = self.shared.lock() else {
+                    return;
+                };
+                shared.commands.pop_front()
+            };
+            let Some(command) = command else {
+                return;
+            };
+            match command {
+                MockCommand::Inject(raw) => self.inject_raw(raw),
+                MockCommand::InjectVerbatim(raw) => self.inject_raw_unstamped(raw),
+                MockCommand::Message { message, stamped } => {
+                    let frame = if stamped {
+                        self.message_frame(&message)
+                    } else {
+                        self.unstamped_frame(&message)
+                    };
+                    match frame {
+                        Ok(bytes) => self.enqueue_bytes(bytes),
+                        Err(error) => {
+                            self.enqueue_error(ErrorCode::InternalError, error.to_string(), None);
+                        }
+                    }
+                }
+                MockCommand::StampedMessage { message, stamp } => {
+                    match self.frame_with_stamp(&message, Some(*stamp)) {
+                        Ok(bytes) => self.enqueue_bytes(bytes),
+                        Err(error) => {
+                            self.enqueue_error(ErrorCode::InternalError, error.to_string(), None);
+                        }
+                    }
+                }
+                MockCommand::Disconnect => self.simulate_disconnect(),
+                MockCommand::SetEpoch(epoch) => self.set_epoch(epoch),
+                MockCommand::DenyCommand(raw) => {
+                    if let Ok(command_id) = CommandId::new(raw)
+                        && !self.authorization.denied_commands.contains(&command_id)
+                    {
+                        self.authorization.denied_commands.push(command_id);
+                    }
+                }
+                MockCommand::GrantStampScope(scope_id) => self.grant_stamp_scope = Some(scope_id),
+                MockCommand::ServeScope(scope) => {
+                    self.cancel_schedule(ScheduleCancelReason::ScopeChanged);
+                    self.served_scope = Some(*scope);
+                }
+                MockCommand::GrantFlaw(flaw) => self.grant_flaw = Some(flaw),
+                MockCommand::ClearGrantFlaw => self.grant_flaw = None,
+                MockCommand::DenyLookup => {
+                    if let Some(lookup) = self.pending_lookup.clone() {
+                        self.enqueue_message(&ServerMessage::ReceiptReadResult(
+                            ReceiptReadResult {
+                                lookup_id: lookup.lookup_id,
+                                stamp: lookup.stamp,
+                                command_id: lookup.command_id,
+                                outcome: ReceiptReadOutcome::Denied,
+                            },
+                        ));
+                    }
+                }
+                MockCommand::AnswerLookup(receipt) => {
+                    if let Some(lookup) = self.pending_lookup.clone() {
+                        self.enqueue_message(&ServerMessage::ReceiptReadResult(
+                            ReceiptReadResult {
+                                lookup_id: lookup.lookup_id,
+                                stamp: lookup.stamp,
+                                command_id: lookup.command_id,
+                                outcome: ReceiptReadOutcome::Allowed {
+                                    receipt: receipt.map(|receipt| *receipt),
+                                },
+                            },
+                        ));
+                    }
+                }
+                MockCommand::DeliverStep(id) => {
+                    if let Err(error) = self.deliver_step(&id) {
+                        self.enqueue_error(ErrorCode::InternalError, error.to_string(), None);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Queue a raw JSON frame for the client.
+    ///
+    /// State-bearing fixture frames are stamped with the provider's active
+    /// binding, exactly as a real server would; a transcript that must stay
+    /// unstamped uses [`Self::inject_raw_unstamped`].
     pub fn inject_raw(&mut self, raw: impl AsRef<str>) {
-        self.enqueue_bytes(raw.as_ref().as_bytes().to_vec());
+        let bytes = match self.stamp_frame(raw.as_ref()) {
+            Some(bytes) => bytes,
+            None => raw.as_ref().as_bytes().to_vec(),
+        };
+        self.enqueue_bytes(bytes);
+    }
+
+    /// Queue a raw JSON frame verbatim, preserving a missing or null stamp.
+    pub fn inject_raw_unstamped(&mut self, raw: impl AsRef<str>) {
+        let bytes = raw.as_ref().as_bytes().to_vec();
+        self.enqueue_bytes(bytes);
+    }
+
+    /// Attach the active binding to a state-bearing frame that carries none.
+    fn stamp_frame(&self, raw: &str) -> Option<Vec<u8>> {
+        let active = self.active_read.as_ref()?;
+        let mut value: Value = serde_json::from_str(raw).ok()?;
+        if value.get("kind").and_then(Value::as_str) != Some("FRAME") {
+            return None;
+        }
+        let message = value.get_mut("message")?;
+        let kind = message
+            .get("kind")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        let state_bearing = matches!(
+            kind.as_deref(),
+            Some(
+                "REPLAY_ACCEPTED"
+                    | "SNAPSHOT_BEGIN"
+                    | "SNAPSHOT_CHUNK"
+                    | "SNAPSHOT_END"
+                    | "DELTA_TRANSACTION"
+                    | "RECEIPT"
+            )
+        );
+        if !state_bearing {
+            return None;
+        }
+        let root = value.as_object_mut()?;
+        if root.get("read_stamp").is_some_and(|stamp| !stamp.is_null()) {
+            return None;
+        }
+        root.insert(
+            "read_stamp".to_owned(),
+            serde_json::to_value(active.stamp.clone()).ok()?,
+        );
+        serde_json::to_vec(&value).ok()
     }
 
     /// Feed a raw client frame as if the client had sent it.
@@ -156,6 +632,7 @@ impl MockTransport {
 
     /// Make the next poll report a transport disconnect (recovery tests).
     pub fn simulate_disconnect(&mut self) {
+        self.cancel_schedule(ScheduleCancelReason::Disconnect);
         self.disconnect_pending = true;
     }
 
@@ -170,6 +647,122 @@ impl MockTransport {
             self.enqueue_bytes(frame);
         }
         Ok(())
+    }
+
+    fn fixture_now(&self) -> Instant {
+        #[cfg(test)]
+        if let Some(now) = self.fixture_now_override {
+            return now;
+        }
+        Instant::now()
+    }
+
+    fn fixture_hint(&self) -> Option<Duration> {
+        if self
+            .inbox
+            .iter()
+            .any(|frame| frame.session_serial == Some(self.session_serial))
+        {
+            return Some(Duration::from_millis(1));
+        }
+        let now = self.fixture_now();
+        self.delayed_steps
+            .iter()
+            .map(|step| step.release_at.saturating_duration_since(now))
+            .min()
+    }
+
+    fn cancel_schedule(&mut self, reason: ScheduleCancelReason) {
+        while let Some(step) = self.delayed_steps.pop() {
+            self.trace.record(
+                step.session_serial,
+                &step.step.id,
+                "cancelled",
+                &[],
+                Some(reason.as_str()),
+                None,
+            );
+        }
+        let serial = self.session_serial;
+        let mut dropped_bytes = 0;
+        self.inbox.retain(|frame| {
+            let keep = frame.session_serial != Some(serial);
+            if !keep {
+                dropped_bytes += frame.bytes.len() as u64;
+            }
+            keep
+        });
+        self.inbox_bytes = self.inbox_bytes.saturating_sub(dropped_bytes);
+    }
+
+    /// Materialization is not delivery: reserve the complete batch before tracing
+    /// and making any owned frame consumable.
+    fn enqueue_due_steps(&mut self) {
+        let now = self.fixture_now();
+        let mut index = 0;
+        while index < self.delayed_steps.len() {
+            if self.delayed_steps[index].release_at > now {
+                index += 1;
+                continue;
+            }
+            let scheduled = self.delayed_steps.remove(index);
+            if scheduled.session_serial != self.session_serial {
+                self.trace.record(
+                    scheduled.session_serial,
+                    &scheduled.step.id,
+                    "cancelled",
+                    &[],
+                    Some(ScheduleCancelReason::Replaced.as_str()),
+                    None,
+                );
+                continue;
+            }
+            match self.materialize_step(&scheduled.step, None) {
+                Ok(frames) => {
+                    if scheduled.once {
+                        self.consumed_once.insert(scheduled.step.id.clone());
+                    }
+                    self.trace.record(
+                        scheduled.session_serial,
+                        &scheduled.step.id,
+                        "materialized",
+                        &frames,
+                        None,
+                        None,
+                    );
+                    let bytes = frames
+                        .iter()
+                        .fold(0_u64, |sum, frame| sum.saturating_add(frame.len() as u64));
+                    if self.inbox.len().saturating_add(frames.len())
+                        > self.limits.max_queue_frames as usize
+                        || self.inbox_bytes.saturating_add(bytes) > self.limits.max_queue_bytes
+                        || self.inbox.try_reserve(frames.len()).is_err()
+                    {
+                        self.trace.fail();
+                        self.overflowed = true;
+                        return;
+                    }
+                    self.trace.record(
+                        scheduled.session_serial,
+                        &scheduled.step.id,
+                        "delivered",
+                        &frames,
+                        None,
+                        None,
+                    );
+                    self.inbox_bytes += bytes;
+                    self.inbox
+                        .extend(frames.into_iter().map(|bytes| QueuedFixtureFrame {
+                            bytes,
+                            session_serial: Some(scheduled.session_serial),
+                        }));
+                }
+                Err(error) => {
+                    self.trace.fail();
+                    self.enqueue_error(ErrorCode::InternalError, error.to_string(), None);
+                }
+            }
+        }
     }
 
     fn handle_client_frame(&mut self, frame: &[u8]) {
@@ -195,7 +788,34 @@ impl MockTransport {
                     );
                 }
             },
-            Some("FRAME") => self.handle_frame(value),
+            Some("FRAME") => {
+                // Fixture-side observation of actual command dispatches: a test can
+                // assert per-identity that no command was re-sent, which a total
+                // frame count cannot show once reauthorization adds lookups.
+                if let Some(message) = value.get("message")
+                    && message.get("kind").and_then(Value::as_str) == Some("COMMAND")
+                {
+                    let id = message
+                        .get("command_id")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_owned();
+                    let payload = message
+                        .pointer("/payload/kind")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_owned();
+                    if let Ok(mut shared) = self.shared.lock() {
+                        shared.command_sends.push((id.clone(), payload.clone()));
+                    }
+                    // Same seam, same evidence: the provider records the exact
+                    // identity it received into the ordered run trace, so a native
+                    // run's Send count is never inferred from the screen.
+                    self.trace
+                        .record_command(self.session_serial, &id, &payload);
+                }
+                self.handle_frame(value);
+            }
             Some(other) => {
                 self.enqueue_error(
                     ErrorCode::UnsupportedCommand,
@@ -244,27 +864,31 @@ impl MockTransport {
             .and_then(Value::as_str)
             .map(str::to_owned);
         match kind.as_deref() {
-            Some("OPEN_OBSERVATION") => match serde_json::from_value::<OpenObservation>(message) {
-                Ok(open) => self.handle_open(open),
-                Err(error) => {
-                    self.enqueue_error(
-                        ErrorCode::ValidationFailed,
-                        format!("malformed observation request: {error}"),
-                        None,
-                    );
+            Some("OPEN_OBSERVATION") => {
+                match serde_json::from_value::<OpenAuthorizedObservation>(message) {
+                    Ok(open) => self.handle_open(open),
+                    Err(error) => {
+                        self.enqueue_error(
+                            ErrorCode::ValidationFailed,
+                            format!("malformed observation request: {error}"),
+                            None,
+                        );
+                    }
                 }
-            },
+            }
             Some("COMMAND") => self.handle_command_value(message),
-            Some("LOOKUP_RECEIPT") => match serde_json::from_value::<ReceiptLookup>(message) {
-                Ok(lookup) => self.handle_lookup(lookup),
-                Err(error) => {
-                    self.enqueue_error(
-                        ErrorCode::ValidationFailed,
-                        format!("malformed receipt lookup: {error}"),
-                        None,
-                    );
+            Some("LOOKUP_RECEIPT") => {
+                match serde_json::from_value::<AuthorizedReceiptLookup>(message) {
+                    Ok(lookup) => self.handle_lookup(lookup),
+                    Err(error) => {
+                        self.enqueue_error(
+                            ErrorCode::ValidationFailed,
+                            format!("malformed receipt lookup: {error}"),
+                            None,
+                        );
+                    }
                 }
-            },
+            }
             Some(other) => {
                 self.enqueue_error(
                     ErrorCode::UnsupportedCommand,
@@ -315,7 +939,8 @@ impl MockTransport {
         }
     }
 
-    fn handle_open(&mut self, open: OpenObservation) {
+    fn handle_open(&mut self, open: OpenAuthorizedObservation) {
+        self.cancel_schedule(ScheduleCancelReason::Replaced);
         if self.selected.is_none() {
             self.enqueue_error(
                 ErrorCode::ValidationFailed,
@@ -324,6 +949,11 @@ impl MockTransport {
             );
             return;
         }
+        let OpenAuthorizedObservation {
+            request_id,
+            observation: open,
+            retained_commands,
+        } = open;
         self.observation_count += 1;
         if let Some(epoch) = &open.epoch
             && epoch != self.runtime.epoch()
@@ -336,6 +966,19 @@ impl MockTransport {
         {
             self.enqueue_resync(ResyncReason::UnknownScope, "observation scope is unknown");
             return;
+        }
+        if self.authorization.grant_on_open {
+            let grant = self.issue_grant(&request_id, &retained_commands);
+            if let Err(error) = self.schedule_after_delay_steps() {
+                self.trace.fail();
+                self.enqueue_error(ErrorCode::InternalError, error.to_string(), None);
+                return;
+            }
+            self.enqueue_message(&ServerMessage::ReadGrant(grant));
+        } else {
+            self.active_read = None;
+            self.trace
+                .record(self.session_serial, "", "withheld", &[], None, None);
         }
         if let Some(cursor) = &open.last_seen_cursor {
             match self.scenario.observation_mode {
@@ -385,6 +1028,164 @@ impl MockTransport {
         }
     }
 
+    /// A new grant cancels its predecessor and re-arms only repeatable steps.
+    fn schedule_after_delay_steps(&mut self) -> Result<(), FixtureError> {
+        self.session_serial = self
+            .session_serial
+            .checked_add(1)
+            .ok_or_else(|| FixtureError::Invalid("fixture session serial exhausted".to_owned()))?;
+        let issued_at = self.fixture_now();
+        self.trace
+            .record(self.session_serial, "", "grant", &[], None, None);
+        for (delay, step, once) in &self.after_delay_steps {
+            if *once && self.consumed_once.contains(&step.id) {
+                continue;
+            }
+            let release_at = issued_at.checked_add(*delay).ok_or_else(|| {
+                FixtureError::Invalid("fixture deadline cannot be represented".to_owned())
+            })?;
+            self.delayed_steps.push(ScheduledFixtureStep {
+                release_at,
+                session_serial: self.session_serial,
+                once: *once,
+                step: step.clone(),
+            });
+            self.trace
+                .record(self.session_serial, &step.id, "armed", &[], None, None);
+        }
+        Ok(())
+    }
+
+    /// Issue the fixture grant for one authorized open request.
+    ///
+    /// When a [`GrantFlaw`] is armed, the issued grant carries exactly that one
+    /// contradiction: well-formed in every other respect, it is the sole reason
+    /// the client must refuse it.
+    fn issue_grant(&mut self, request_id: &ReadRequestId, retained: &[CommandId]) -> ReadGrant {
+        let stamp = self.current_stamp(request_id);
+        let mut command_reads: Vec<CommandReadDecision> = retained
+            .iter()
+            .map(|command_id| CommandReadDecision {
+                command_id: command_id.clone(),
+                readable: !self.authorization.denied_commands.contains(command_id),
+            })
+            .collect();
+        let mut stamp = stamp;
+        match self.grant_flaw {
+            None => {}
+            Some(GrantFlaw::MissingDecision) => {
+                command_reads.pop();
+            }
+            Some(GrantFlaw::ExtraDecision) => {
+                command_reads.push(CommandReadDecision {
+                    command_id: CommandId::fixture("command/unrequested"),
+                    readable: true,
+                });
+            }
+            Some(GrantFlaw::DuplicateDecision) => {
+                if let Some(first) = command_reads.first().cloned() {
+                    command_reads.push(first);
+                }
+            }
+            Some(GrantFlaw::ForeignServer) => {
+                stamp.server_id = ServerId::fixture("server/foreign");
+            }
+        }
+        self.active_read = Some(ActiveRead {
+            stamp: stamp.clone(),
+            denied: self.authorization.denied_commands.iter().cloned().collect(),
+            absent: self.authorization.absent_commands.iter().cloned().collect(),
+        });
+        if let Ok(mut shared) = self.shared.lock() {
+            shared.active_stamp = Some(stamp.clone());
+        }
+        ReadGrant {
+            stamp,
+            scope: self.issued_scope(),
+            local_intents_readable: self.authorization.local_intents_readable,
+            command_reads,
+        }
+    }
+
+    fn current_stamp(&self, request_id: &ReadRequestId) -> ReadStamp {
+        ReadStamp {
+            request_id: request_id.clone(),
+            server_id: self.scenario.server_identity.clone(),
+            epoch: self.runtime.epoch().clone(),
+            context_id: self.authorization.context_id.clone(),
+            read_revision: self.read_revision.clone(),
+            scope_id: match &self.grant_stamp_scope {
+                Some(scope_id) => desktop_protocol::ScopeId::fixture(scope_id.clone()),
+                None => self.scenario.scope.scope_id.clone(),
+            },
+        }
+    }
+
+    /// Script a close-only invalidation with a strictly newer revision.
+    fn invalidate_read(&mut self, reason: ReadInvalidationReason) -> Result<Vec<u8>, FixtureError> {
+        let Some(active) = self.active_read.take() else {
+            return Err(FixtureError::Invalid(
+                "no active read binding to invalidate".to_owned(),
+            ));
+        };
+        self.cancel_schedule(ScheduleCancelReason::AuthorizationChanged);
+        if let Ok(mut shared) = self.shared.lock() {
+            shared.active_stamp = None;
+        }
+        let floor = self
+            .read_revision
+            .as_counter()
+            .to_u128()
+            .and_then(|revision| revision.checked_add(1))
+            .ok_or_else(|| FixtureError::Invalid("fixture read revision exhausted".to_owned()))?;
+        let fresh = floor
+            .checked_add(1)
+            .ok_or_else(|| FixtureError::Invalid("fixture read revision exhausted".to_owned()))?;
+        // The invalidation establishes a floor. The scripted producer's next
+        // grant must be strictly newer, never the equal revision the client rejects.
+        self.read_revision = ReadRevision::new(desktop_protocol::Counter::from_u128(fresh));
+        self.message_frame(&ServerMessage::ReadInvalidated(ReadInvalidated {
+            request_id: active.stamp.request_id.clone(),
+            context_id: active.stamp.context_id.clone(),
+            read_revision: ReadRevision::new(desktop_protocol::Counter::from_u128(floor)),
+            reason,
+        }))
+    }
+
+    /// Answer the outstanding authorized lookup from the script.
+    fn scripted_receipt_read(
+        &mut self,
+        script: &crate::fixture::FixtureReceiptRead,
+    ) -> Result<Vec<u8>, FixtureError> {
+        let Some(pending) = self.pending_lookup.clone() else {
+            return Err(FixtureError::Invalid(
+                "no pending receipt lookup to answer".to_owned(),
+            ));
+        };
+        let command_id = script
+            .command_id
+            .clone()
+            .unwrap_or_else(|| pending.command_id.clone());
+        if command_id != pending.command_id {
+            return Err(FixtureError::Invalid(
+                "scripted receipt read answers another command".to_owned(),
+            ));
+        }
+        let outcome = match script.outcome {
+            FixtureReceiptOutcome::Denied => ReceiptReadOutcome::Denied,
+            FixtureReceiptOutcome::Absent => ReceiptReadOutcome::Allowed { receipt: None },
+            FixtureReceiptOutcome::Allowed => ReceiptReadOutcome::Allowed {
+                receipt: self.receipts.get(&command_id).cloned(),
+            },
+        };
+        self.message_frame(&ServerMessage::ReceiptReadResult(ReceiptReadResult {
+            lookup_id: pending.lookup_id,
+            stamp: pending.stamp,
+            command_id,
+            outcome,
+        }))
+    }
+
     fn enqueue_snapshot(&mut self) {
         let bundle = match self.runtime.snapshot_bundle() {
             Ok(bundle) => bundle,
@@ -416,13 +1217,23 @@ impl MockTransport {
 
     fn issued_scope(&self) -> ObservationScope {
         let versions = self.selected.unwrap_or(ProtocolVersions {
-            protocol: Version::new(1, 0),
-            schema: Version::new(1, 0),
+            protocol: Version::new(2, 0),
+            schema: Version::new(2, 0),
         });
+        let task_ids = self
+            .served_scope
+            .as_ref()
+            .map(|scope| scope.task_ids.clone())
+            .unwrap_or_else(|| self.scenario.scope.task_ids.clone());
+        let filters = self
+            .served_scope
+            .as_ref()
+            .map(|scope| scope.filters.clone())
+            .unwrap_or_else(|| self.scenario.scope.filters.clone());
         ObservationScope {
             scope_id: self.scenario.scope.scope_id.clone(),
-            task_ids: self.scenario.scope.task_ids.clone(),
-            filters: self.scenario.scope.filters.clone(),
+            task_ids,
+            filters,
             protocol: versions.protocol,
             schema: versions.schema,
         }
@@ -564,19 +1375,54 @@ impl MockTransport {
         }
     }
 
-    fn handle_lookup(&mut self, lookup: ReceiptLookup) {
-        match self.receipts.get(&lookup.command_id) {
-            Some(receipt) => {
-                self.enqueue_message(&ServerMessage::Receipt(receipt.clone()));
-            }
-            None => {
-                self.enqueue_error(
-                    ErrorCode::ReceiptExpired,
-                    "no receipt is retained for this command",
-                    Some(lookup.command_id.clone()),
-                );
-            }
+    fn handle_lookup(&mut self, lookup: AuthorizedReceiptLookup) {
+        let Some(active) = self.active_read.as_ref() else {
+            self.enqueue_error(
+                ErrorCode::Unauthorized,
+                "no active read binding is bound to this channel",
+                None,
+            );
+            return;
+        };
+        if lookup.stamp != active.stamp {
+            self.enqueue_error(
+                ErrorCode::ValidationFailed,
+                "receipt lookup stamp is not the current binding",
+                None,
+            );
+            return;
         }
+        if let Ok(mut shared) = self.shared.lock() {
+            shared.lookups += 1;
+        }
+        self.pending_lookup = Some(lookup.clone());
+        if !self.authorization.answer_lookups {
+            // The transcript answers this lookup itself.
+            return;
+        }
+        let outcome = if active.denied.contains(&lookup.command_id)
+            || self
+                .authorization
+                .denied_commands
+                .contains(&lookup.command_id)
+        {
+            ReceiptReadOutcome::Denied
+        } else if active.absent.contains(&lookup.command_id) {
+            ReceiptReadOutcome::Allowed { receipt: None }
+        } else {
+            match self.receipts.get(&lookup.command_id) {
+                Some(receipt) => ReceiptReadOutcome::Allowed {
+                    receipt: Some(receipt.clone()),
+                },
+                None => ReceiptReadOutcome::Allowed { receipt: None },
+            }
+        };
+        self.enqueue_message(&ServerMessage::ReceiptReadResult(ReceiptReadResult {
+            lookup_id: lookup.lookup_id,
+            stamp: lookup.stamp,
+            command_id: lookup.command_id,
+            outcome,
+        }));
     }
 
     fn materialize_step(
@@ -611,6 +1457,12 @@ impl MockTransport {
                         message: Some(format!("scripted resync from step {}", step.id)),
                     },
                 ))?);
+            }
+            if let Some(reason) = &action.read_invalidated {
+                frames.push(self.invalidate_read(reason.clone())?);
+            }
+            if let Some(script) = &action.receipt_read {
+                frames.push(self.scripted_receipt_read(script)?);
             }
         }
         Ok(frames)
@@ -685,19 +1537,60 @@ impl MockTransport {
 
     fn message_frame(&self, message: &ServerMessage) -> Result<Vec<u8>, FixtureError> {
         let versions = self.selected.unwrap_or(ProtocolVersions {
-            protocol: Version::new(1, 0),
-            schema: Version::new(1, 0),
+            protocol: Version::new(2, 0),
+            schema: Version::new(2, 0),
         });
         let wire = ServerWire::Frame(ServerFrame {
             protocol: versions.protocol,
             schema: versions.schema,
+            read_stamp: message_stamp(message, self.active_read.as_ref()),
+            message: message.clone(),
+        });
+        Ok(serde_json::to_vec(&wire)?)
+    }
+
+    /// Frame for a typed message with no authorization stamp at all.
+    fn unstamped_frame(&self, message: &ServerMessage) -> Result<Vec<u8>, FixtureError> {
+        self.frame_with_stamp(message, None)
+    }
+
+    /// Frame for a typed message with an explicit stamp.
+    fn frame_with_stamp(
+        &self,
+        message: &ServerMessage,
+        read_stamp: Option<ReadStamp>,
+    ) -> Result<Vec<u8>, FixtureError> {
+        let versions = self.selected.unwrap_or(ProtocolVersions {
+            protocol: Version::new(2, 0),
+            schema: Version::new(2, 0),
+        });
+        let wire = ServerWire::Frame(ServerFrame {
+            protocol: versions.protocol,
+            schema: versions.schema,
+            read_stamp,
             message: message.clone(),
         });
         Ok(serde_json::to_vec(&wire)?)
     }
 
     fn receipt_frame(&self, receipt: &CommandReceipt) -> Vec<u8> {
-        self.message_frame(&ServerMessage::Receipt(receipt.clone()))
+        let Some(active) = self.active_read.as_ref() else {
+            // An unverified or unauthorized channel cannot disclose a receipt.
+            return Vec::new();
+        };
+        if active.denied.contains(&receipt.command_id) {
+            // Denied carries no receipt, retention or execution fact.
+            return Vec::new();
+        }
+        let authorized = AuthorizedCommandReceipt {
+            stamp: active.stamp.clone(),
+            permission: CommandReadDecision {
+                command_id: receipt.command_id.clone(),
+                readable: true,
+            },
+            receipt: receipt.clone(),
+        };
+        self.message_frame(&ServerMessage::Receipt(authorized))
             .unwrap_or_default()
     }
 
@@ -749,6 +1642,9 @@ impl MockTransport {
     }
 
     fn enqueue_bytes(&mut self, bytes: Vec<u8>) {
+        if bytes.is_empty() {
+            return;
+        }
         let frames = self.inbox.len() as u64 + 1;
         let total_bytes = self.inbox_bytes.saturating_add(bytes.len() as u64);
         if frames > u64::from(self.limits.max_queue_frames)
@@ -758,23 +1654,59 @@ impl MockTransport {
             return;
         }
         self.inbox_bytes = total_bytes;
-        self.inbox.push_back(bytes);
+        self.inbox.push_back(QueuedFixtureFrame {
+            bytes,
+            session_serial: None,
+        });
+    }
+}
+
+/// Stamp carried by a state-bearing fixture frame under the active binding.
+fn message_stamp(message: &ServerMessage, active: Option<&ActiveRead>) -> Option<ReadStamp> {
+    match message {
+        ServerMessage::ReplayAccepted(_)
+        | ServerMessage::SnapshotBegin(_)
+        | ServerMessage::SnapshotChunk(_)
+        | ServerMessage::SnapshotEnd(_)
+        | ServerMessage::DeltaTransaction(_)
+        | ServerMessage::Receipt(_) => active.map(|active| active.stamp.clone()),
+        // A state-bearing error settles a command, so it carries the binding too.
+        ServerMessage::Error(error) if error.command_id.is_some() => {
+            active.map(|active| active.stamp.clone())
+        }
+        ServerMessage::ResyncRequired(_)
+        | ServerMessage::ReadGrant(_)
+        | ServerMessage::ReadInvalidated(_)
+        | ServerMessage::ReceiptReadResult(_)
+        | ServerMessage::Error(_)
+        | ServerMessage::Unknown(_) => None,
     }
 }
 
 impl Transport for MockTransport {
     fn send(&mut self, frame: Vec<u8>) -> Result<(), TransportError> {
         self.sent.push(frame.clone());
+        if let Ok(mut shared) = self.shared.lock() {
+            shared.sent_frames += 1;
+        }
         self.handle_client_frame(&frame);
         Ok(())
     }
 
+    // Poll is the sole delivery authority; a reported deadline is only a wake hint.
     fn poll(&mut self) -> Result<Option<Vec<u8>>, TransportError> {
+        self.apply_control();
+        if self.disconnect_pending {
+            self.cancel_schedule(ScheduleCancelReason::Disconnect);
+        } else {
+            self.enqueue_due_steps();
+        }
         if self.disconnect_pending {
             self.disconnect_pending = false;
             return Err(TransportError::Disconnected);
         }
         if self.overflowed {
+            self.cancel_schedule(ScheduleCancelReason::Capacity);
             self.overflowed = false;
             self.inbox.clear();
             self.inbox_bytes = 0;
@@ -782,15 +1714,28 @@ impl Transport for MockTransport {
         }
         let frame = self.inbox.pop_front();
         if let Some(frame) = &frame {
-            self.inbox_bytes = self.inbox_bytes.saturating_sub(frame.len() as u64);
+            self.inbox_bytes = self.inbox_bytes.saturating_sub(frame.bytes.len() as u64);
         }
-        Ok(frame)
+        Ok(frame.map(|frame| frame.bytes))
     }
 
     fn reset_stream(&mut self) {
+        self.cancel_schedule(ScheduleCancelReason::ResetStream);
+        // Only the stream is reset. The scripted producer keeps the binding it
+        // is serving, so a client that re-opens under the current context is
+        // answered from that same binding instead of a cleared one.
         self.inbox.clear();
         self.inbox_bytes = 0;
         self.overflowed = false;
+    }
+
+    fn bind_observation_control(&mut self, control: crate::ObservationControl) {
+        self.observation_control = Some(control);
+    }
+
+    fn authenticated_server(&self) -> Option<ServerId> {
+        // Fixture identity: visibly synthetic, never a claim of real auth.
+        Some(self.scenario.server_identity.clone())
     }
 }
 
@@ -807,6 +1752,7 @@ pub struct MockCosClient {
     client: CosClient<MockTransport>,
     scenario_id: String,
     primary_task: Option<TaskId>,
+    traced_consumer: Option<(&'static str, &'static str, u64)>,
 }
 
 impl MockCosClient {
@@ -849,6 +1795,7 @@ impl MockCosClient {
             client,
             scenario_id,
             primary_task,
+            traced_consumer: None,
         })
     }
 
@@ -915,13 +1862,83 @@ impl MockCosClient {
     }
 
     /// Local command status.
-    pub fn command_status(&self, command_id: &CommandId) -> Option<&CommandStatus> {
-        self.client.command_status(command_id)
+    pub fn lookup_command(&self, command_id: &CommandId) -> CommandLookup<'_> {
+        self.client.lookup_command(command_id)
     }
 
-    /// Look up a receipt.
-    pub fn lookup_receipt(&mut self, command_id: &CommandId) -> Result<(), ClientError> {
-        self.client.lookup_receipt(command_id)
+    /// The single authoritative retained registry.
+    pub fn command_statuses(&self) -> &BTreeMap<CommandId, CommandStatus> {
+        self.client.command_statuses()
+    }
+
+    /// Number of identity-level read-evidence entries held right now.
+    pub fn read_evidence_len(&self) -> usize {
+        self.client.read_evidence_len()
+    }
+
+    /// Whether current evidence exists for one identity.
+    pub fn read_evidence_has(&self, id: &CommandId) -> bool {
+        self.client.read_evidence_has(id)
+    }
+
+    /// Bounded background progress with event-free change reporting.
+    pub fn pump_step(&mut self, now_ms: u64, budget: usize) -> PumpReport {
+        let mut report = self.client.pump_step(now_ms, budget);
+        if let Some(delay) = self.client.transport().fixture_hint() {
+            let milliseconds = delay.as_nanos().div_ceil(1_000_000).max(1);
+            if let Ok(milliseconds) = u64::try_from(milliseconds) {
+                let at = now_ms.saturating_add(milliseconds);
+                report.next_deadline_ms =
+                    Some(report.next_deadline_ms.map_or(at, |old| old.min(at)));
+            }
+        }
+        if self.client.transport().trace.enabled() {
+            let access = match self.client.publication_access() {
+                PublicationAccess::Validated { .. } => "validated",
+                PublicationAccess::Withheld { .. } => "withheld",
+            };
+            let connection = self.client.connection().label();
+            let serial = self.client.transport().session_serial;
+            let state = (access, connection, serial);
+            if report.changed || self.traced_consumer != Some(state) {
+                self.client.transport_mut().trace.record(
+                    serial,
+                    "",
+                    "consumer_state",
+                    &[],
+                    None,
+                    Some((access, connection)),
+                );
+                self.traced_consumer = Some(state);
+            }
+        }
+        report
+    }
+
+    /// Validated publication evidence.
+    pub fn publication_access(&self) -> PublicationAccess<'_> {
+        self.client.publication_access()
+    }
+
+    /// Begin observation with explicit authorized retention interest.
+    pub fn begin_authorized_observation(
+        &mut self,
+        request: OpenAuthorizedObservation,
+    ) -> Result<(), ClientError> {
+        self.client.begin_authorized_observation(request)
+    }
+
+    /// Issue an authorized receipt lookup.
+    pub fn lookup_receipt_authorized(
+        &mut self,
+        request: AuthorizedReceiptLookup,
+    ) -> Result<(), ClientError> {
+        self.client.lookup_receipt_authorized(request)
+    }
+
+    /// Bind the shared close-only publication fence.
+    pub fn bind_observation_control(&mut self, control: crate::ObservationControl) {
+        self.client.bind_observation_control(control);
     }
 
     /// Request a full resync.
@@ -952,6 +1969,14 @@ impl MockCosClient {
     /// Mutably borrow the scripted transport.
     pub fn mock_mut(&mut self) -> &mut MockTransport {
         self.client.transport_mut()
+    }
+
+    /// Shared control channel for this transcript.
+    ///
+    /// Steered actions are applied on the provider's next poll, so a steered
+    /// fixture never blocks or mutates the client from another thread.
+    pub fn control(&self) -> MockControl {
+        self.client.transport().control()
     }
 }
 
@@ -1001,7 +2026,68 @@ impl DesktopClient for MockCosClient {
         MockCosClient::stop_task(self, task_id)
     }
 
-    fn command_status(&self, command_id: &CommandId) -> Option<&CommandStatus> {
-        MockCosClient::command_status(self, command_id)
+    fn pump_step(&mut self, now_ms: u64, budget: usize) -> PumpReport {
+        MockCosClient::pump_step(self, now_ms, budget)
+    }
+
+    fn command_statuses(&self) -> &BTreeMap<CommandId, CommandStatus> {
+        self.client.command_statuses()
+    }
+
+    fn lookup_command(&self, id: &CommandId) -> CommandLookup<'_> {
+        MockCosClient::lookup_command(self, id)
+    }
+
+    fn retain_command(&mut self, id: &CommandId) -> Result<(), ClientError> {
+        self.client.retain_command(id)
+    }
+
+    fn release_command(&mut self, id: &CommandId) {
+        self.client.release_command(id);
+    }
+
+    fn begin_authorized_observation(
+        &mut self,
+        request: OpenAuthorizedObservation,
+    ) -> Result<(), ClientError> {
+        MockCosClient::begin_authorized_observation(self, request)
+    }
+
+    fn publication_access(&self) -> PublicationAccess<'_> {
+        MockCosClient::publication_access(self)
+    }
+
+    fn lookup_receipt_authorized(
+        &mut self,
+        request: AuthorizedReceiptLookup,
+    ) -> Result<(), ClientError> {
+        MockCosClient::lookup_receipt_authorized(self, request)
+    }
+
+    fn bind_observation_control(&mut self, control: crate::ObservationControl) {
+        MockCosClient::bind_observation_control(self, control);
+    }
+
+    fn observation_request(&self, scope: ObservationScopeRequest) -> OpenAuthorizedObservation {
+        self.client.observation_request(scope)
+    }
+
+    fn adopt_retained_registry(
+        &mut self,
+        records: BTreeMap<CommandId, CommandStatus>,
+        references: BTreeMap<CommandId, usize>,
+    ) -> Result<(), ClientError> {
+        self.client.adopt_retained_registry(records, references)
     }
 }
+
+impl Drop for MockTransport {
+    fn drop(&mut self) {
+        self.cancel_schedule(ScheduleCancelReason::Closed);
+        self.trace
+            .record(self.session_serial, "", "closed", &[], None, None);
+    }
+}
+
+#[cfg(test)]
+mod deadline_tests;

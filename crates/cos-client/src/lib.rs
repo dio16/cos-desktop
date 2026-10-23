@@ -15,18 +15,25 @@ pub mod error;
 pub mod fixture;
 pub mod mock;
 pub mod projection;
+pub mod read;
 pub mod transport;
 
 pub use client::{
-    ClientConfig, ClientEvent, ClientSource, CommandStatus, ConnectionState, CosClient,
-    DesktopClient, SnapshotHandle, backoff_ms,
+    ClientConfig, ClientEvent, ClientSource, CommandState, ConnectionState, CosClient,
+    DesktopClient, PumpReport, SnapshotHandle, backoff_ms,
 };
+pub use desktop_protocol::ReceiptState;
 pub use error::ClientError;
 pub use fixture::{
-    CommandDefault, CommandPolicy, FixtureAction, FixtureDelta, FixtureError, FixtureReceipt,
+    CommandDefault, CommandPolicy, FixtureAction, FixtureDelta, FixtureError,
+    FixtureReadAuthorization, FixtureReceipt, FixtureReceiptOutcome, FixtureReceiptRead,
     FixtureRuntime, FixtureScenario, FixtureState, FixtureStep, ObservationMode, SnapshotBundle,
     Trigger, parse_trigger,
 };
-pub use mock::{MockCosClient, MockTransport};
+pub use mock::{MockControl, MockCosClient, MockTransport};
 pub use projection::{ProjectionIntegrityError, ProjectionKey, ProjectionState};
+pub use read::{
+    CommandLookup, CommandStatus, MAX_READ_EVIDENCE, ObservationControl, PublicationAccess,
+    ReadEvidence, ReadUnavailable, ReadableCommands, next_read_request_id, next_receipt_read_id,
+};
 pub use transport::{Transport, TransportError};

@@ -8,8 +8,9 @@ use cos_client::*;
 use desktop_protocol::{
     ClientFrame, ClientMessage, ClientWire, Counter, Cursor, DeltaTransaction, EpochId, ErrorCode,
     EvaluationId, IntegrityDigest, MAX_CONTROL_FRAME_BYTES, ObservationScopeRequest,
-    OpenObservation, Projection, ProjectionMutation, ResyncReason, SnapshotChunk, SnapshotId,
-    TaskStatus, TransactionId, Version, integrity_digest_of,
+    OpenAuthorizedObservation, OpenObservation, Projection, ProjectionMutation, ReadRequestId,
+    ResyncReason, SnapshotChunk, SnapshotId, TaskStatus, TransactionId, Version,
+    integrity_digest_of,
 };
 
 fn transaction(
@@ -272,7 +273,7 @@ fn repeated_overflow_reports_scope_incompatibility() {
 fn session_generation_cancellation_ignores_late_chunks() {
     let mut mock = load_mock();
     mock.connect(0).expect("connect");
-    mock.pump_bounded(0, 2); // hello acknowledgement + snapshot begin: staging started
+    mock.pump_bounded(0, 3); // hello acknowledgement + read grant + snapshot begin: staging started
 
     mock.disconnect();
     assert_eq!(mock.connection(), &ConnectionState::Disconnected);
@@ -332,9 +333,9 @@ fn local_disconnect_preserves_the_task_and_reconnect_resynchronizes() {
 fn transport_loss_resumes_from_the_last_applied_cursor() {
     let mut mock = load_mock();
     mock.connect(0).expect("connect");
-    // hello acknowledgement + snapshot begin + 4 chunks + snapshot end: the
-    // snapshot lands, both deltas stay queued.
-    mock.pump_bounded(0, 7);
+    // hello acknowledgement + read grant + snapshot begin + 4 chunks + snapshot
+    // end: the snapshot lands, both deltas stay queued.
+    mock.pump_bounded(0, 8);
     assert_eq!(mock.connection(), &ConnectionState::Live);
     let cursor = mock.client().last_seen_cursor().cloned().expect("cursor");
     assert_eq!(
@@ -383,8 +384,8 @@ fn pruned_history_requires_a_full_resync() {
     scenario.journal_capacity = Some(1);
     let mut mock = MockCosClient::from_scenario(scenario).expect("mock");
     mock.connect(0).expect("connect");
-    // hello acknowledgement + snapshot begin + 4 chunks + snapshot end.
-    mock.pump_bounded(0, 7);
+    // hello acknowledgement + read grant + snapshot begin + 4 chunks + snapshot end.
+    mock.pump_bounded(0, 8);
     assert_eq!(mock.connection(), &ConnectionState::Live);
 
     mock.mock_mut().simulate_disconnect();
@@ -416,8 +417,8 @@ fn unknown_events_follow_informational_and_state_changing_policies() {
     let mut mock = live_mock();
     let informational = serde_json::json!({
         "kind": "FRAME",
-        "protocol": { "major": 1, "minor": 0 },
-        "schema": { "major": 1, "minor": 0 },
+        "protocol": { "major": 2, "minor": 0 },
+        "schema": { "major": 2, "minor": 0 },
         "message": {
             "kind": "FUTURE_INFO",
             "affects_state": false,
@@ -457,8 +458,8 @@ fn unknown_events_follow_informational_and_state_changing_policies() {
     // An unknown state-changing event requires resync.
     let state_changing = serde_json::json!({
         "kind": "FRAME",
-        "protocol": { "major": 1, "minor": 0 },
-        "schema": { "major": 1, "minor": 0 },
+        "protocol": { "major": 2, "minor": 0 },
+        "schema": { "major": 2, "minor": 0 },
         "message": { "kind": "FUTURE_STATE", "cursor": "fixture:cursor/32" }
     });
     mock.mock_mut().inject_raw(state_changing.to_string());
@@ -472,6 +473,33 @@ fn unknown_events_follow_informational_and_state_changing_policies() {
         mock.connection(),
         ConnectionState::Reconnecting { .. }
     ));
+}
+
+#[test]
+fn legacy_1_0_only_peer_is_refused_before_any_data_or_command() {
+    let mut scenario = FixtureScenario::from_file(fixture_path()).expect("scenario");
+    // The 2.0 client must refuse a peer that only speaks the replaced 1.0 pair.
+    scenario.hello.protocol = vec![desktop_protocol::VersionRange::new(1, 0, 0)];
+    scenario.hello.schema = vec![desktop_protocol::VersionRange::new(1, 0, 0)];
+    let mut mock = MockCosClient::from_scenario(scenario).expect("mock");
+    mock.connect(0).expect("connect");
+    let events = mock.pump(0);
+    assert!(
+        events.iter().any(|event| matches!(
+            event,
+            ClientEvent::Error(ClientError::VersionIncompatible(_))
+        )),
+        "a 1.0-only peer is refused explicitly"
+    );
+    assert!(matches!(
+        mock.connection(),
+        ConnectionState::Incompatible { .. }
+    ));
+    assert_eq!(
+        mock.mock().sent_frames().len(),
+        1,
+        "only the hello may be sent; no observation request or command follows"
+    );
 }
 
 #[test]
@@ -493,8 +521,8 @@ fn oversized_frames_are_rejected_before_parsing() {
 #[test]
 fn negotiation_rejection_is_terminal_and_side_effect_free() {
     let mut scenario = FixtureScenario::from_file(fixture_path()).expect("scenario");
-    scenario.hello.protocol = vec![desktop_protocol::VersionRange::new(2, 0, 0)];
-    scenario.hello.schema = vec![desktop_protocol::VersionRange::new(2, 0, 0)];
+    scenario.hello.protocol = vec![desktop_protocol::VersionRange::new(3, 0, 0)];
+    scenario.hello.schema = vec![desktop_protocol::VersionRange::new(3, 0, 0)];
     let mut mock = MockCosClient::from_scenario(scenario).expect("mock");
     mock.connect(0).expect("connect");
     let events = mock.pump(0);
@@ -543,16 +571,20 @@ fn epoch_changes_invalidate_the_session_and_resynchronize() {
     // A stale epoch on a resume request is refused by the provider, and the
     // client falls back to the atomic full-snapshot path.
     let stale_open = ClientWire::Frame(ClientFrame {
-        protocol: Version::new(1, 0),
-        schema: Version::new(1, 0),
-        message: ClientMessage::OpenObservation(OpenObservation {
-            scope: ObservationScopeRequest {
-                task_ids: vec![task_id()],
-                filters: Vec::new(),
+        protocol: Version::new(2, 0),
+        schema: Version::new(2, 0),
+        message: ClientMessage::OpenObservation(OpenAuthorizedObservation {
+            request_id: ReadRequestId::new("read-req/stale-epoch").expect("valid request identity"),
+            observation: OpenObservation {
+                scope: ObservationScopeRequest {
+                    task_ids: vec![task_id()],
+                    filters: Vec::new(),
+                },
+                scope_id: None,
+                last_seen_cursor: mock.client().last_seen_cursor().cloned(),
+                epoch: Some(EpochId::fixture("epoch/0")),
             },
-            scope_id: None,
-            last_seen_cursor: mock.client().last_seen_cursor().cloned(),
-            epoch: Some(EpochId::fixture("epoch/0")),
+            retained_commands: Vec::new(),
         }),
     });
     mock.mock_mut()

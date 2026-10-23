@@ -1,6 +1,6 @@
 # Current COS Runtime Survey
 
-Status: **Observed** (historical source survey). Surveyed system: COS Runtime (separate repository). Checkout paths, commit identities and repository URLs are intentionally omitted from this publication snapshot.
+Status: **Observed** (source survey). Surveyed Runtime: `<runtime-root>`, branch `dev`, HEAD `f94985bd4c5a3a0714153f9d068f24439d57a1f2`, worktree clean including untracked, origin `<runtime-repository-url>`.
 
 Initial state recorded 2026-09-21T01:00:19.464Z: Desktop repository uninitialized except the canonical Markdown; runtime untouched. This document is evidence for the Desktop protocol and required-changes documents; it is not an implementation claim about a future `cosd` and it does not replace runtime-owned documentation.
 
@@ -14,11 +14,11 @@ Initial state recorded 2026-09-21T01:00:19.464Z: Desktop repository uninitialize
 | **Deferred** | Explicitly postponed by the runtime docs/canon, not merely missing. |
 | **Inferred** | Derived from absence or composition; marked inline where used. |
 
-Method: read-only file reads, globs and searches of the separate COS Runtime repository on 2026-09-21. No runtime was started, no test/build/lint was run. Line numbers are from the surveyed revision and will drift; symbols and file paths are stable anchors within that repository.
+Method: read-only file reads, globs and greps over `<runtime-root>` on 2026-09-21. No runtime was started, no test/build/lint was run. Line numbers are from the surveyed revision and will drift; symbols and file paths are the stable anchors.
 
 ## 1. Topology and authority boundary
 
-The Runtime repository is one git root with an execution plane (ComfyUI) and a control plane. The control plane owns API, frontend, launchers, persistence and tests; ComfyUI owns graph execution (**Observed**).
+`<runtime-root>` is one git root with an execution plane (ComfyUI) and a control plane (`<runtime-root>/orchestrator`). The control plane owns API, frontend, launchers, persistence and tests; ComfyUI owns graph execution (`orchestrator/README.md:13`, `orchestrator/AGENTS.md` Ownership boundaries; **Observed**).
 
 Inside the control plane there are two distinct loops, which must not be conflated:
 
@@ -268,7 +268,7 @@ Classes: **(1) reusable existing boundary** — Desktop adapter can consume it a
 
 Revalidation (read-only, no runtime start):
 
-1. In the COS Runtime repository, record its current revision and worktree status; compare only against locally retained authorized evidence.
+1. From `<runtime-root>`, run `git rev-parse HEAD` → compare to `f94985bd…`; `git status --porcelain` → expect clean.
 2. Re-grep the anchors: `api.py` `/api/cos/` route decorators; `_ROUTE_POLICY`; `_COS_*_HTTP` maps; `cos_frontend_models.py` model set; `db.py` CREATE TABLE blocks and migration head (`INSERT INTO schema_migrations(version) VALUES (38)`); `cos_frontend_api.py` public functions; `creative_loop.py` stop/reconcile/drain/dispatch symbols; `rust/crates/*/src/lib.rs` exports, `refinement.rs` enums, `worker_message.rs` constants; `frontend/contracts/cos-openapi.json` provenance block; `frontend/src/api/queries/cos.ts` endpoint table; `static/cos` release record.
 3. Confirm absence claims by grep: `websocket`, `boot_id|startup_epoch|runtime_epoch`, `projection_revision`, `DMLG` (Python), `tauri|electron|ipc` (frontend/static).
 4. Run the runtime's own verification only in the runtime repo, by its owners (pytest lanes, `cargo test`, frontend lanes); this survey ran nothing.
@@ -291,6 +291,6 @@ Uncertainties / [Inferred] items:
 
 ## Bootstrap revalidation (2026-09-21)
 
-Observed again during the authorized Desktop implementation: COS Runtime was re-inspected; checkout path, commit identity and repository URL are omitted. Rechecked Rust workspace members, COS route declarations, Task/Candidate/Evaluation/Stop DTO anchors, and stop/restart/dispatch function anchors. The classifications and RC-01–RC-17 remain applicable; no new server capabilities are inferred from Desktop fixture work.
+Observed again during the authorized Desktop implementation: Runtime root `<runtime-root>`, branch `dev`, HEAD `f94985bd4c5a3a0714153f9d068f24439d57a1f2`, clean porcelain including untracked files, unchanged origin `<runtime-repository-url>`. The surveyed commit has not changed. Rechecked Rust workspace members, COS route declarations, Task/Candidate/Evaluation/Stop DTO anchors, and stop/restart/dispatch function anchors. The classifications and RC-01–RC-17 remain applicable; no new server capabilities are inferred from Desktop fixture work.
 
 No Runtime build, test, process launch, database read, configuration import, or source mutation was performed. Final baseline comparison is recorded separately in the bootstrap report; concurrent external changes must not be reverted.

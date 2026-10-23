@@ -1,0 +1,129 @@
+# COS Desktop design canon — architecture, ownership and decision authority
+
+**Status:** Desktop-side **Accepted design constraints**, with explicitly **Proposed/approval-pending** decision gates below. Transcribed from Product/UX Canon and accepted architecture/ADRs. **No implementation, Runtime contract, R0, video, UX or DD approval is granted here.** The prior freeze-reviewed plan SHA `f3ea37eaba8ed36551b2cfa3d8b370cd01956d70` is provenance only; this edited text is not externally reviewed by that provenance.
+
+This document owns the **cross-cutting Desktop architecture and responsibility contract**. Per-feature interface/behavior/failure/acceptance definitions live in [Desktop Design Contracts](DESKTOP_DESIGN_CONTRACTS.md); the [Implementation Master Plan](../development/IMPLEMENTATION_MASTER_PLAN.md) is its **derived execution projection**, not design authority.
+
+## 1. Normative authority and precedence
+
+| Question | Single authority | Status boundary |
+|---|---|---|
+| Product meaning, workflows, MVP, UX invariants | [Product/UX Canon](COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md) | Sole product/UX canon; **unchanged** |
+| Approved repository/process/rendering decisions | [ADRs 0001–0007](../decisions/ADR-0007-RENDERING-PERFORMANCE-VISUAL-ARCHITECTURE.md) | Accepted decisions; pin KEEP and no independent renderer |
+| Physical layer ownership and import permissions | [Repository Architecture](REPOSITORY_ARCHITECTURE.md), [Dependency Rules](DEPENDENCY_RULES.md) | Accepted; dependency checker enforced |
+| Machine-readable Desktop wire semantics | [Desktop Protocol Draft](DESKTOP_PROTOCOL.md), [Protocol Ownership](../integration/PROTOCOL_OWNERSHIP.md) | **Draft** where marked; real server approval and compatibility are still required |
+| Rendering stages, native feasibility, numeric budget owner | [Rendering Architecture](RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md), [ADR-0007](../decisions/ADR-0007-RENDERING-PERFORMANCE-VISUAL-ARCHITECTURE.md) | Accepted direction; Proposed thresholds pending R0 |
+| Cross-cutting Desktop roles, contract boundaries, DD decisions | **This Design Canon** | Accepted boundaries; per-DD status remains gated |
+| Desktop component behaviors, public API proposals, invariants, functional acceptance and rollback | [Desktop Design Contracts](DESKTOP_DESIGN_CONTRACTS.md) | Frozen specification **not** blanket execution authorization |
+| Test admission, independent oracle, placement/ownership, impact tiers and verification routes | [TESTING](../development/TESTING.md) | Single test-policy owner; DC acceptance specifies what to prove, not an independent test framework or policy |
+| Task order, readiness, dependencies, evidence, deliverables | [Implementation Master Plan](../development/IMPLEMENTATION_MASTER_PLAN.md) | Execution plan, **derived** from design authority |
+| External Runtime capabilities or changes | [Runtime Required Changes](../integration/COS_RUNTIME_REQUIRED_CHANGES.md), [Runtime Survey](../integration/CURRENT_COS_RUNTIME_SURVEY.md) | Proposed requests; Runtime owner alone approves/implements |
+
+**Conflict rule:** a lower-authority document cannot amend a higher-authority contract by paraphrase, and a task plan cannot authorize a pending DD/RC/R0/UX gate. If two canonical owners conflict, stop the affected task and obtain an explicit owner decision/amendment; never silently apply a precedence rule to override the Product Canon, ADR, protocol security or Runtime authority.
+
+**Evidence is not permission:** approved specification ≠ implementation authorization; `IMPLEMENTED` ≠ `TESTED`; `TESTED` ≠ `INTEGRATED`; `INTEGRATED` ≠ `PRODUCT_ACCEPTED`; `EXPERIMENT_COMPLETED` ≠ `DESIGN_SELECTED`; fixture PASS ≠ real-server acceptance; `NOT_MEASURED` ≠ PASS. The independent lifecycle axes are defined below.
+Specification, implementation permission/progress, experiment authority and product acceptance are independent axes, owned by [§6's decision registry](#6-decision-ownership-and-approval-state). Contract-internal HOW choices need no new DD; changes of scope, behavior, ownership, API or wire semantics require the relevant owner.
+
+## 2. Component roles, responsibility, allowed information
+
+| Boundary | Owns (exactly) | Must not own or infer | Observable interface |
+|---|---|---|---|
+| COS Runtime (separate repo) | Creative Task/iteration, scheduling, best/formal selection, evaluation/evidence, graph/plan/Artifact identities, immutable outcomes, stop completion, persistence, auth/protocol server | Desktop window/presentation state | Negotiated, authorized canonical projections and receipts |
+| `crates/desktop-protocol` | Versioned DTOs/identities, schema/validation, command/receipt envelopes and bounds | Runtime Domain behavior, DB, GPU, user preferences | Typed projections, stable IDs and wire frames |
+| `crates/cos-client` | Observation/snapshot/delta integrity, session/epoch/cursor, receipt reconciliation, capability-aware transport policy, bounded **internal** command registry | GUI, canonical facts, media bytes/representation keys, OS UI, publication authorization decisions | Object-safe `DesktopClient`, immutable `SnapshotHandle`, internal command status |
+| `crates/app-core` | One process-wide observation owner, command routing, scope-gated atomic publication/subscription and lookup, connection lifecycle, preferences coordination | GPUI widgets, canonical truth, a second command store, independent Runtime auth policy | Atomic publication for the currently Runtime-validated scope and typed commands/availability |
+| `crates/ui-model` | GPUI-free presentation derivation, task/candidate identities and local view state | Reinterpretation of status/phase/outcome, direct transport/GPU | Revision-tagged display records and window-local pointers |
+| `crates/desktop-gpui` | Native shell/widgets, focus/IME/AX, drawing, GPU residency/upload and device generation | Network/IPC, media decode/authorization, canonical task/selection | Display consumes publication; input invokes app-core |
+| `apps/desktop` | Binary configuration/validation, injection, startup/shutdown and window composition | Production Runtime child process ownership, internal Runtime access | Process lifecycle and explicit fixture/production source |
+| `crates/media` (MP-IMG1 local encoded boundary introduced; later stages remain conditional) | Typed representation keys, local-input feasibility, bounded byte acquisition/verification and CPU cache/eviction; future admitted decode | GPU handles, protocol frames, authorization policy, canonical identity | Explicit provenance/integrity plus bounded CPU-side representations; no absent-digest Verified claim |
+| `crates/platform` (future, MP-SEC1) | OS credential/secure-store adapter and platform specifics | Runtime authentication authority, canonical task logic | Narrow injected OS service |
+| Product/UX, Desktop architecture, Runtime, security and release owners | Ratify only their respective DD/RC/experiment/release decisions | Implicit agent approval of open decisions | Recorded approval/evidence and task-gate transition |
+| Cross-layer workflow boundary | Runtime Task semantics remain Runtime-owned; Refine/Taskern roles and hand-off are described in [Refine/Taskern execution boundary](../integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md) | Desktop must not equate Runtime with Refine, infer a Taskern capability, or create a second execution owner | Separately authorized workflow hand-off; absent capability is unavailable |
+
+The direct workspace dependency **allowlist**, not this description, decides permitted imports. Never add an app-core → ui-model cycle; desktop-gpui never imports cos-client. MP-IMG1 justifies `media` with real local responsibilities; `platform` remains uncreated until its task justifies it. No monorepo conversion, Runtime submodule, Runtime DB/CAS/config read, hardcoded checkout production launch or `unsafe` exception.
+
+## 3. Canonical state and presentation state
+
+Runtime is the only writer of Task Status, Inner Phase, Iteration, Best Candidate, Formal Selection/Outcome, Evaluation, Artifact identity, GraphRevision, ExecutionPlan and Stop completion. Desktop stores presentation-only Viewed candidate, Compare pair, focus, scroll, zoom/pan, disclosure, draft and window preferences. **Viewed ≠ Compare ≠ Best-so-far ≠ Formal Selected.**
+
+- Render status, phase, iteration, artifact availability, connection freshness and formal outcome as distinct typed axes.
+- Disconnect labels canonical values stale, not failed; Accepted Stop is not completed Stop; unknown/unavailable is not absent or failed.
+- Late background derivations/media responses cannot overwrite a newer revision or presentation selection; removed identities yield explicit unavailable references, never a silent replacement.
+- Fixture mode is explicit and isolated; never fall back to fixtures after production connection failure.
+- Desktop preferences may persist only the closed Desktop-local field set owned by [DC-MP-REC3](DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rec3). No canonical truth, credentials, artifact bytes or locators.
+
+## 4. Session, transport and publication contract
+
+**Transport path:** Runtime's authorized server → negotiated `desktop-protocol` frames → `cos-client` scoped observation/recovery → `app-core` single process-wide atomic publication → UI-model revision-scoped derivation → GPUI windows. Window code does not pump clients or initiate socket I/O.
+
+**Command path:** explicit UI intent → app-core → DesktopClient → Runtime-owned auth/receipt/canonical transition → projection/receipt reconciliation → authorization-filtered publication → display. No speculative completion and no auto-replay of unknown mutating commands.
+
+**Observation integrity:** snapshot staging + digest, ordered delta transaction with predecessor cursor and epoch; validate the **effective complete transaction** before an atomic publish/cursor advance ([DC-MP-COR1](DESKTOP_DESIGN_CONTRACTS.md#dc-mp-cor1)). A single shared aggregate validator owns the invariant set for snapshot and delta (preferred over duplicating COR2 checks). Explicit fallible precommit admission/allocation errors fail closed without partial publish or cursor advance; process-aborting Rust OOM is not a recoverable transaction error and is neither claimed impossible nor recoverable. Invalid transaction preserves last known valid projection and invokes bounded recovery.
+
+**Publication design is specified but not DD-01 approved.** [DC-MP-PUB1](DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub1) freezes proposed one-owner publication, session generation, complete derived state, coalescible display notices, bounded diagnostics event log and bounded command state. It requires DD-01 `SPEC_APPROVED` and separate `IMPLEMENTATION_AUTHORIZED` before implementation; neither this text nor its derived execution index grants either.
+
+**Command retention and disclosure are distinct:** `cos-client` owns the whole trusted internal unresolved registry and exact budgets across reconnect, resync, epoch/scope change and owner replacement; retention grants no disclosure. Runtime grants/revokes principal/read scope and authorizes receipt lookup; `app-core` gates atomic publication/lookup using that currently validated scope, not a second Runtime policy. Principal/auth-context change, read revocation or subscription-scope change immediately withholds old projection/receipt. Epoch or owner replacement alone grants no permission. Same-scope ordinary reconnect may retain stale display only while that permission remains valid, and restore eligible data after reauthorization. [DC-MP-PUB1](DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub1) owns the ten scenarios, disjoint 64+64/128 budgets, unknown-outcome/tombstone lifetime and settled/reference rules. No new public API/wire field without DD-13/RC-03 approval.
+
+## 5. Media, rendering, UX and security seams
+
+**Media:** `cos-client` transfers descriptor DTOs/control messages only; MP-RT6 owns authorization/re-authorization/denial policy; `crates/media` owns descriptor-based byte acquisition, verification, quarantine, decode and CPU cache; `desktop-gpui` owns GPU upload/residency/device generation. Generated, fixture and external authorized media retain distinct provenance; external media is untrusted and authorization-gated. Expected digest is trusted only with authoritative provenance from the authorized descriptor; absent digest means **not Verified**, but does not by itself prohibit safe, bounded local decode. See the single cross-task admission and integrity contract [DC media-input-admission-and-integrity](DESKTOP_DESIGN_CONTRACTS.md#media-input-admission-and-integrity) and its task owners DC-MP-IMG1/2/6, SEC3 and RT6. Local/fixture feasibility needs no Runtime; production full-detail requires authorized MP-IMG6 and applicable DD/RC gates. No URL-as-filesystem-path, arbitrary redirect, binary media in control frames or silent unbounded decode.
+
+**UI:** Task Rail, Brief, History, Dock, Inspector/Evidence/Intervention, Flow, Compare, Palette and Video use the Product Canon's semantics and the explicit Desktop local/Runtime facts in their respective [DC-MP-*](DESKTOP_DESIGN_CONTRACTS.md) sections. In particular, no Runtime issue collection or attention DTO exists yet: local intervention/attention is *typed and labelled Desktop-local*, not fabricated authoritative severity. The missing Runtime issue projection remains a contract gap.
+
+**Rendering:** pinned GPUI shell is the default. Decode/upload/eviction and graph stages are evidence-gated; custom renderer, video surface implementation and DPI/typography adoption need their stated gates. Numeric targets remain exclusively in rendering §10 and may not be represented as measured or ratified before R0 evidence. Native frame/GPU observations do not establish real Runtime integration.
+
+**Security:** credentials in OS secure store when authorized; no raw secrets, signed locators, private filesystem paths or payload bodies in diagnostics/publication. Bounded queues, cache, retries and retention; all external media and metadata are untrusted. GUI capability restrictions are UX signals, not server authorization. Release/signing/update gates belong to Product/operator/Runtime owners as recorded below.
+
+## 6. Decision ownership and approval state
+
+The registry below is the **single owner** of DD descriptions, decision owners and required approval predicates. A DD listed here is **not automatically approved**. The implementation master plan references these IDs and retains the corresponding execution/status projection.
+
+Every unresolved item is classified. "Owner" = the party who must ratify; a coding agent may only implement **within** the frozen part.
+
+**Specification/experiment ladder:** `SPEC_DRAFTED` → `SPEC_APPROVED` records owner ratification of contract text. `IMPLEMENTATION_AUTHORIZED` is independent and required before implementation; implementation lifecycle is `IMPLEMENTED` → `TESTED` → `INTEGRATED` → `PRODUCT_ACCEPTED`, each supported by evidence and its named owner. Experiments independently progress `EXPERIMENT_AUTHORIZED` → `EXPERIMENT_COMPLETED` → `DESIGN_SELECTED`. Contract-internal HOW choices need no new DD; changing scope, behavior, ownership, API or wire semantics requires owner amendment/approval. No status implies another.
+
+**Scoped MP-PUB1 ratification:** the [direct human owner approval](../development/evidence/README.md#historical-records) adopts reviewed Option B, records DD-01 and bounded DD-12/13/15/19 `SPEC_APPROVED`, and separately grants Desktop-only MP-PUB1 `IMPLEMENTATION_AUTHORIZED`. STEP2 canonicalization/Taskern preparation starts now; product implementation still requires the explicit STEP3 directive after STEP2 completion. No Runtime implementation, demonstrated adapter/credentials, other task authorization, Gate, product acceptance, merge/push or release follows. Historical STEP1 proposal/review records remain unchanged; current authoritative behavior is DC-MP-PUB1 plus the Protocol.
+
+| ID | Item | Class | Owner | Gate to clear before implementation |
+|---|---|---|---|---|
+| DD-01 | ARC-01 observation owner and atomic publication | DESIGN_DECISION — SPEC_APPROVED (MP-PUB1) | Desktop architect | [Owner ratification](../development/evidence/README.md#historical-records) adopts [DC-MP-PUB1](DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub1) Option B and separately authorizes Desktop MP-PUB1. STEP3 start remains separately instructed; deviations need owner amendment and authorization. No product implementation/evidence is inferred |
+| DD-02a | R2 representation experiment authorization (candidates, workload, gates fixed) | EXPERIMENT_DECISION | Desktop architect | `EXPERIMENT_AUTHORIZED` after MP-R0D; candidates are fixed in MP-PUB4 |
+| DD-02b | R2 representation selection from evidence | EXPERIMENT_DECISION | Desktop architect | `DESIGN_SELECTED` only after `EXPERIMENT_COMPLETED`; no change before evidence |
+| DD-03 | Compare/viewing UX (UX-01) | DESIGN_DECISION_REQUIRED | Product/UX owner | Product Canon §§20, 65 semantics + prototype evidence. Options in Product UX Architecture §16: synchronized zoom/pan/video seek, swap A/B, change A/B, close/restore previous view. Recommendation (not approval): independent camera by default; explicit zoom/pan sync only if clamping behavior remains clear; defer synchronized video seek until capability/authorization is proven. Product/UX selects and approves; impacts MP-IMG5/Compare behavior |
+| DD-04a | Typography/font-stack candidate pre-approval | DESIGN_DECISION_REQUIRED | Product/UX + rendering owner | `SPEC_APPROVED` freezes candidate contract; separate `IMPLEMENTATION_AUTHORIZED` and (if comparison experiment) `EXPERIMENT_AUTHORIZED` required; no final product claim |
+| DD-04b | Typography/token **final adoption** after R1 native validation | DESIGN_DECISION_REQUIRED (native evidence required) | Product/UX + rendering owner | `DESIGN_SELECTED` after MP-TYP1's R1 evidence; TYP2/PL1 and any release claim depend on it |
+| DD-05 | Keyboard map + Command Palette inventory | DESIGN_DECISION_REQUIRED | Product/UX owner | prototype + AX feasibility |
+| DD-06 | Creative Brief field set/validation/requiredness | DESIGN_DECISION_REQUIRED + RUNTIME_CONTRACT_REQUIRED | Product/UX owner + Runtime owner | canon §12–13 semantics + RC-01/09 create contract |
+| DD-07 | History surface data contract (what "history" is projected from; paging) | RUNTIME_CONTRACT_REQUIRED | Runtime owner + protocol owner | RC-05/06/12 alignment; protocol fields |
+| DD-08 | Image representation policy (thumbnail/preview/tile, codec admission) | EXPERIMENT_DECISION | Desktop architect after R4 Decode/Upload/Eviction evidence | rendering §6/§6.1/§13 R4 |
+| DD-09 | Fixed vs adaptive upload/scheduling | EXPERIMENT_DECISION | Desktop architect after rendering R4/§6.2 evidence | fixed budget default; adaptive only on measured benefit |
+| DD-10 | Graph stage selection (A→F) and custom element need | EXPERIMENT_DECISION + API_CAPABILITY_GATE | Desktop architect after R6 stages | rendering §8.1/§13 R6 |
+| DD-11 | Video presentation route (pin surface no-op) | API_CAPABILITY_GATE + NOT_AUTHORIZED | Desktop+Rendering owners, then explicit authorization | MP-VID1 probe **requires separate explicit authorization**; MP-VID2 decision follows capability evidence, not an implicit implementation approval |
+| DD-12 | Credential storage/identity (RC-02) | RUNTIME_CONTRACT_REQUIRED — scoped SPEC_APPROVED handoff | Runtime owner | MP-PUB1 verified-channel/server identity and synchronous principal/auth-context-change detection requirements are approved. Actual issuer, secure-store delivery and authenticated adapter remain separately implemented/unverified; no plaintext credential, privileged environment change or loopback trust is approved |
+| DD-13 | Read authorization & cursor invalidation (RC-03) | RUNTIME_CONTRACT_REQUIRED — scoped SPEC_APPROVED handoff | Runtime owner | [Protocol authorized read handoff](DESKTOP_PROTOCOL.md#authorized-read-handoff) is ratified: Runtime-issued context/request/read-revision/scope binding, local-intent permission, per-command decisions, revocation and denial distinction. Runtime alone owns policy/cursor audience. Real enforcement remains external NOT_RUN, not an MP-PUB1 hard prerequisite |
+| DD-14 | Media descriptor authorization (RC-13) | RUNTIME_CONTRACT_REQUIRED | Runtime owner | RC-03 |
+| DD-15 | Receipt/dedupe retention semantics (RC-08) | RUNTIME_CONTRACT_REQUIRED — scoped SPEC_APPROVED read semantics | Runtime owner | MP-PUB1 Allowed/no receipt preserves execution uncertainty; read Denied does not settle/clear/convert command truth. Existing server retention/dedupe guarantees/duration remain unverified and require separately delivered advertised policy; no longer retention or automatic retry is approved |
+| DD-16 | Stop projection/reflection alignment (RC-10) | RUNTIME_CONTRACT_REQUIRED | Runtime owner | canonical reflection field/query |
+| DD-17 | Capability projection with real grants (RC-11) | RUNTIME_CONTRACT_REQUIRED | Runtime owner | non-zero capability projection |
+| DD-18 | Phase vocabulary openness (RC-14) | RUNTIME_CONTRACT_REQUIRED | Runtime owner | mapping or explicit open rule |
+| DD-19 | Protocol/schema negotiation with real server (RC-15) | RUNTIME_CONTRACT_REQUIRED — scoped SPEC_APPROVED transition | Runtime + protocol owners | MP-PUB1 required stamp/control grammar uses [Protocol](DESKTOP_PROTOCOL.md#authorized-read-handoff) breaking-major target2.0/2.0 and refuses unstamped/v1 peers for authorized reads. Existing Rust fixture1.0 is Observed until Desktop migration; no deployed server/pairing/authentication mechanism or real compatibility PASS is claimed. Contract→server→client→compatibility/migration remain separate |
+| DD-20 | Launch/lifecycle/discovery (RC-16) | RUNTIME_CONTRACT_REQUIRED | Runtime owner | supported service contract |
+| DD-21 | Signing identity, installer format, updater channel | DESIGN_DECISION_REQUIRED (+ operator authorization) | Product owner / operator | certificate + distribution decisions |
+| DD-22 | Diagnostics retention windows, report-export contents and log-subsystem split details | DESIGN_DECISION_REQUIRED | Desktop architect + security owner | `SPEC_APPROVED` required only for the *details*; MP-SEC2 may implement the non-negotiable redaction/boundedness invariants before it |
+| DD-23 | Supported assistive-technology/DPI/device matrix for release claims | DESIGN_DECISION_REQUIRED | Product owner | R10 evidence + claim matrix |
+| DD-24 | Deferred modalities (audio/3D/document/HDR) re-entry trigger | DEFERRED | Product owner | stated trigger: a canon change or a documented MVP-scope exception |
+| DD-25 | Golden-Workflow Start/iteration-advance semantics (existing Runtime operation vs new command; UI ownership) | RUNTIME_CONTRACT_REQUIRED + DESIGN_DECISION_REQUIRED | Runtime owner + Product/UX owner | Contract decision required before MP-NAV2/MP-ACC1 acceptance; no Desktop-invented command. If a new command is required, Runtime owner approves its contract and the derived execution projection is amended; steps remain blocked until then |
+| DD-26 | Intervention priority policy (which issue surfaces first, and the tie rules) | DESIGN_DECISION_REQUIRED | Product/UX owner | `SPEC_APPROVED` before MP-INS3 ships; MP-INS3's declared deterministic rule is the interim contract only |
+
+
+**Amendment rule:** each decision transition records owner, date, evidence, selected outcome and affected contract IDs; amend the governing canonical text before changing its derived execution projection. `SPEC_DRAFTED` alone cannot start implementation; `SPEC_APPROVED` alone does not authorize it; `IMPLEMENTED` or `TESTED` does not mean integrated or product-accepted; `EXPERIMENT_COMPLETED` alone does not select a design; Runtime approval cannot be inferred from Desktop fixture tests. No silent adoption of speculative codecs, video route, benchmark numbers or product UX defaults.
+
+## 7. Plan translation, gate discipline and review
+
+Every `MP-*` task has exactly one [DC-MP-*](DESKTOP_DESIGN_CONTRACTS.md) design contract. The plan's task card links that contract and carries only derived execution metadata. The plan owns task order/readiness, dependency classes, evidence, status and blockers; it is not normative design authority. Each contract labels hard implementation prerequisites separately from conditional Runtime/product acceptance gates.
+
+Before implementation: (1) resolve the design owner/contract; (2) verify the separate implementation authorization and hard dependencies; (3) implement only that authorized scope; (4) test against canonical observable acceptance; (5) record honest execution evidence. A conditionally Runtime-blocked product exit must not prevent explicitly permitted fixture-only/local feasibility work; fixture success must not close the product exit.
+
+**Change sequence:** decide with relevant owner → amend Product Canon/ADR/Protocol Draft/Design Canon or Design Contracts as appropriate → update derived execution projection, gate maps and tests in the same change → independently check drift/links/status/DAG → review → then separately authorize implementation. Mark historical freeze SHA as provenance; do not claim a newly edited text was externally reviewed or that release gates passed.
+
+**No implicit task execution:** this documentation task creates neither production functionality nor an implementation authorization. Its acceptance is documentation-only: every owner unambiguous, all 62 contract links resolvable, no changed product/wire/ADR meaning, no plan-alone design rule, and no gate upgraded without explicit approval.

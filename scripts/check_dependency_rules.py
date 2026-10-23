@@ -43,15 +43,16 @@ import urllib.parse
 from dataclasses import dataclass
 
 # DEPENDENCY_RULES.md "Direct workspace dependency allowlist". Rows are dependents; cells are
-# the only allowed direct workspace dependencies. media/platform stay out until they exist with
-# real responsibilities; adding one requires updating DEPENDENCY_RULES.md and this table together.
+# the only allowed direct workspace dependencies. MP-IMG1 introduces media with
+# real local-input responsibilities; platform remains absent until its own task.
 WORKSPACE_ALLOWLIST = {
-    "cos-desktop": {"desktop-gpui", "ui-model", "app-core", "cos-client", "desktop-protocol"},
-    "desktop-gpui": {"ui-model", "app-core", "desktop-protocol"},
+    "cos-desktop": {"desktop-gpui", "ui-model", "app-core", "cos-client", "desktop-protocol", "media"},
+    "desktop-gpui": {"ui-model", "app-core", "desktop-protocol", "media"},
     "ui-model": {"app-core", "desktop-protocol"},
-    "app-core": {"cos-client", "desktop-protocol"},
+    "app-core": {"cos-client", "desktop-protocol", "media"},
     "cos-client": {"desktop-protocol"},
     "desktop-protocol": set(),
+    "media": {"desktop-protocol"},
 }
 
 GPUI_PACKAGES = ("gpui", "gpui_platform", "gpui_windows")

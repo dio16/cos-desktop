@@ -1,0 +1,61 @@
+{
+  "schema_version": 2,
+  "approved": [
+    {
+      "product_commit": "f7455bf3e312492b551faa229d50e97d60c08a81",
+      "executable_sha256": "sha256:cf318e50e090b0dd18bcca4753393d932e6dac934dd6c86959b089c452be0c4c",
+      "helper_sha256": "sha256:50fc6744aef76858435f8bc5df2a758485ff74574999ef0071234c3503ed6946",
+      "helper_source_sha256": "sha256:710f09e8c0e3d9b9c9d172e56c5aa174e9fd996762d60b4fb32dc352f2fee9fd",
+      "helper_protocol": 2,
+      "helper_relative_path": "target/debug/examples/r0_owner.exe"
+    },
+    {
+      "product_commit": "ff1583a605462786a1970811d3e3008387316edb",
+      "executable_sha256": "sha256:b9f5038564bcba305d73a3ce92fb1b6cb0efed25d1cddeae62c8128ab1fe8b5d",
+      "helper_sha256": "sha256:fa04da89083115a23558dbf1a364960d7138f3ba5b6842533fc721fed21eba09",
+      "helper_source_sha256": "sha256:710f09e8c0e3d9b9c9d172e56c5aa174e9fd996762d60b4fb32dc352f2fee9fd",
+      "helper_protocol": 2,
+      "helper_relative_path": "target/debug/examples/r0_owner.exe"
+    },
+    {
+      "product_commit": "0b635215417abf0d11f4feaabaed2780194faefc",
+      "executable_sha256": "sha256:b886eb5110b5602a7f6c6e4ba310440a0ca0209cf32fb1dafa83f77c0a76c06c",
+      "helper_sha256": "sha256:fa04da89083115a23558dbf1a364960d7138f3ba5b6842533fc721fed21eba09",
+      "helper_source_sha256": "sha256:710f09e8c0e3d9b9c9d172e56c5aa174e9fd996762d60b4fb32dc352f2fee9fd",
+      "helper_protocol": 2,
+      "helper_relative_path": "target/debug/examples/r0_owner.exe"
+    },
+    {
+      "product_commit": "19e06770ffd35364174f7719f38794773a8c8441",
+      "executable_sha256": "sha256:fe4787b547a57822935c1db83ac47b5f345596c53c9f634471a7c404d8cd5701",
+      "helper_sha256": "sha256:fa04da89083115a23558dbf1a364960d7138f3ba5b6842533fc721fed21eba09",
+      "helper_source_sha256": "sha256:710f09e8c0e3d9b9c9d172e56c5aa174e9fd996762d60b4fb32dc352f2fee9fd",
+      "helper_protocol": 2,
+      "helper_relative_path": "target/debug/examples/r0_owner.exe"
+    },
+    {
+      "product_commit": "2a8f190647b8d6cf4a45c363c66f993cdf4b5921",
+      "executable_sha256": "sha256:6617c4a97369cc9c1dfbdab2589bde81ebcb9cdd765c19eeb37ed2289fcc876f",
+      "helper_sha256": "sha256:fa04da89083115a23558dbf1a364960d7138f3ba5b6842533fc721fed21eba09",
+      "helper_source_sha256": "sha256:710f09e8c0e3d9b9c9d172e56c5aa174e9fd996762d60b4fb32dc352f2fee9fd",
+      "helper_protocol": 2,
+      "helper_relative_path": "target/debug/examples/r0_owner.exe"
+    },
+    {
+      "product_commit": "47818282073eae5c3af97ef01d637dbf8dd4aac0",
+      "executable_sha256": "sha256:8af723de8f6b8c53ef4f75a8bed016bb03274320bd4fd43149464d5d54a5bb44",
+      "helper_sha256": "sha256:fa04da89083115a23558dbf1a364960d7138f3ba5b6842533fc721fed21eba09",
+      "helper_source_sha256": "sha256:710f09e8c0e3d9b9c9d172e56c5aa174e9fd996762d60b4fb32dc352f2fee9fd",
+      "helper_protocol": 2,
+      "helper_relative_path": "target/debug/examples/r0_owner.exe"
+    },
+    {
+      "product_commit": "edfebdaff1857f20fcf77e1bcf8440a557aaa758",
+      "executable_sha256": "sha256:a86f3758813b6237bd15b1350e245800469d5654234901928ff6c267b7b20043",
+      "helper_sha256": "sha256:fa04da89083115a23558dbf1a364960d7138f3ba5b6842533fc721fed21eba09",
+      "helper_source_sha256": "sha256:710f09e8c0e3d9b9c9d172e56c5aa174e9fd996762d60b4fb32dc352f2fee9fd",
+      "helper_protocol": 2,
+      "helper_relative_path": "target/debug/examples/r0_owner.exe"
+    }
+  ]
+}

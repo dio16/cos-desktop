@@ -1,0 +1,137 @@
+{
+  "manifest_version": 1,
+  "scenario": {
+    "id": "media-decode-upload",
+    "version": "v1",
+    "benchmark_revision": "r0a-s1"
+  },
+  "identity": {
+    "repository": {
+      "sha": "f7455bf3e312492b551faa229d50e97d60c08a81",
+      "dirty": false,
+      "content_hash": {
+        "status": "NOT_MEASURED",
+        "reason": "fixture only; no source content hash was computed"
+      }
+    },
+    "schema_hash": "sha256:772eed7fd2bcc71b929052eded3f7ec67c881a7261d06089806c7d037d8ee84e",
+    "definition_hash": "sha256:e2423743a106da1e572808353337213d4553f283321257b7614f3735d9f56f5b",
+    "driver_hash": {
+      "status": "NOT_IMPLEMENTED",
+      "reason": "decode/upload driver is not implemented"
+    },
+    "gpui_revision": "395def7a067b32ed598fcb3f048969ada9b54942",
+    "build": {
+      "profile": "dev",
+      "features": [],
+      "flags": []
+    },
+    "executable_sha256": {
+      "status": "NOT_MEASURED",
+      "reason": "no executable is produced or launched by this contract fixture"
+    },
+    "toolchain": {
+      "rustc": "1.98.1",
+      "cargo": "1.98.1",
+      "target": "x86_64-pc-windows-msvc"
+    }
+  },
+  "machine": {
+    "os": {
+      "edition": "Windows 11 Pro",
+      "build": "10.0.26300"
+    },
+    "cpu": {
+      "model": "fixture-cpu",
+      "logical_count": 16
+    },
+    "ram_bytes": 68719476736,
+    "gpu": {
+      "status": "NOT_IMPLEMENTED",
+      "reason": "GPU measurement is not implemented"
+    },
+    "displays": [
+      {
+        "width": 2560,
+        "height": 1440,
+        "refresh_hz": 60,
+        "dpi": 96
+      }
+    ],
+    "window": {
+      "geometry": "1280x832+40+40",
+      "visibility": "VISIBLE",
+      "occlusion": "NONE"
+    },
+    "power_profile": "balanced",
+    "background_contention": {
+      "status": "NOT_MEASURED",
+      "reason": "not controlled"
+    },
+    "thermal_state": {
+      "status": "NOT_MEASURED",
+      "reason": "not controlled"
+    }
+  },
+  "workload": {
+    "generator": {
+      "version": "v1",
+      "revision": "r0a-s1",
+      "seed": 11
+    },
+    "distribution": "fixed-image-set",
+    "parameters": {},
+    "source": {
+      "identity": "fixture-media-set",
+      "sha256": {
+        "status": "NOT_MEASURED",
+        "reason": "fixture only; no source bytes exist"
+      }
+    },
+    "representation_policy": "encoded-only",
+    "actions": [
+      {
+        "step": "switch-image",
+        "requested_cadence_hz": {
+          "status": "NOT_MEASURED",
+          "reason": "no driver records achieved cadence"
+        },
+        "burst": 1
+      }
+    ],
+    "duration_ms": 1000,
+    "repetitions": 1,
+    "warmup": 0,
+    "cache_actions": [],
+    "cache_state": {
+      "status": "NOT_MEASURED",
+      "reason": "no cache reset is claimed"
+    },
+    "viewport": "1280x832",
+    "endpoints": [
+      {
+        "id": "first-decoded-frame",
+        "definition": "first presented decoded frame",
+        "start": "decode request",
+        "end": "first present",
+        "correlation": "monotonic clock"
+      }
+    ],
+    "run_id": "run-101",
+    "pair_id": "pair-101",
+    "variant": "not-implemented",
+    "order": "only",
+    "expected_state": "unavailable; no decode/upload path exists",
+    "recovery": "none",
+    "tool": {
+      "name": "r0-contract",
+      "version": "1",
+      "config": "fixture"
+    }
+  },
+  "surface": {
+    "id": "media-decode-upload",
+    "status": "NOT_IMPLEMENTED",
+    "reason": "MP-IMG2 decoder comparison and MP-IMG3 upload are not implemented"
+  }
+}

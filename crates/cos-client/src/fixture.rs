@@ -8,11 +8,13 @@
 
 use std::collections::VecDeque;
 use std::path::Path;
+use std::time::Duration;
 
 use desktop_protocol::{
-    Cursor, EpochId, IntegrityDigest, Limits, Projection, ProjectionMutation, ProtocolError,
-    ReceiptState, RejectReason, ResyncReason, ScopeFilter, ScopeId, ServerId, SnapshotCounts,
-    SnapshotId, TaskId, TransactionId, VersionRange, integrity_digest_of,
+    CommandId, Cursor, EpochId, IntegrityDigest, Limits, Projection, ProjectionMutation,
+    ProtocolError, ReadContextId, ReadInvalidationReason, ReadRevision, ReceiptState, RejectReason,
+    ResyncReason, ScopeFilter, ScopeId, ServerId, SnapshotCounts, SnapshotId, TaskId,
+    TransactionId, VersionRange, integrity_digest_of,
 };
 use serde::{Deserialize, Serialize};
 
@@ -81,6 +83,42 @@ pub struct FixtureScenario {
     /// Per-command default outcome when no step answers.
     #[serde(default)]
     pub commands: std::collections::BTreeMap<String, CommandPolicy>,
+    /// Scripted authorized read handoff (fixture transcript, not authenticated Runtime).
+    #[serde(default)]
+    pub read_authorization: Option<FixtureReadAuthorization>,
+}
+
+/// Scripted authorized read handoff for one fixture context.
+///
+/// The provider answers an authorized open request with this context's grant and
+/// stamps every later state-bearing frame with the same binding. It is a
+/// deterministic transcript, never a claim of authenticated Runtime behavior.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FixtureReadAuthorization {
+    /// Runtime-issued read context identity.
+    pub context_id: ReadContextId,
+    /// Monotonic read revision, as a decimal string.
+    pub read_revision: ReadRevision,
+    /// Whether local lifecycle intents from this context are readable.
+    #[serde(default = "default_true")]
+    pub local_intents_readable: bool,
+    /// Retained identities this context denies.
+    #[serde(default)]
+    pub denied_commands: Vec<CommandId>,
+    /// Identities with no retained server receipt (Allowed/no receipt).
+    #[serde(default)]
+    pub absent_commands: Vec<CommandId>,
+    /// Whether an open request is answered with a grant.
+    #[serde(default = "default_true")]
+    pub grant_on_open: bool,
+    /// Whether authorized receipt lookups are answered; a transcript that must
+    /// stay pending answers them itself.
+    #[serde(default = "default_true")]
+    pub answer_lookups: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 /// Handshake advertisement of the synthetic server.
@@ -194,7 +232,8 @@ impl FixtureState {
 pub struct FixtureStep {
     /// Step identity (used by manual delivery and diagnostics).
     pub id: String,
-    /// Trigger: `after_open`, `manual` or `on_command:<KIND>`.
+    /// Trigger: `after_open`, `after_ms:<1..=86400000>`, `after_ms_once:<1..=86400000>`,
+    /// `manual` or `on_command:<KIND>`. The one-shot form only schedules invalidation.
     pub trigger: String,
     /// Actions delivered in order.
     #[serde(default)]
@@ -219,6 +258,34 @@ pub struct FixtureAction {
     /// Emit a resync-required message.
     #[serde(default)]
     pub resync_required: Option<ResyncReason>,
+    /// Invalidate the current read binding with a newer revision.
+    #[serde(default)]
+    pub read_invalidated: Option<ReadInvalidationReason>,
+    /// Answer an outstanding authorized receipt lookup from the script.
+    #[serde(default)]
+    pub receipt_read: Option<FixtureReceiptRead>,
+}
+
+/// Scripted answer for one authorized receipt lookup.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FixtureReceiptRead {
+    /// Scoped outcome: `denied`, `allowed` (retained receipt) or `absent`.
+    pub outcome: FixtureReceiptOutcome,
+    /// Command identity to answer; the pending lookup when omitted.
+    #[serde(default)]
+    pub command_id: Option<CommandId>,
+}
+
+/// Scripted receipt-read outcome class.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FixtureReceiptOutcome {
+    /// Denied without disclosing receipt or execution facts.
+    Denied,
+    /// Allowed with the retained server receipt.
+    Allowed,
+    /// Allowed with no retained server receipt.
+    Absent,
 }
 
 /// Scripted delta content.
@@ -314,6 +381,30 @@ impl FixtureScenario {
         self.scope.task_ids.first()
     }
 
+    /// Effective authorized read context for this transcript.
+    ///
+    /// A scenario without an explicit context is still a trusted fixture
+    /// producer; the synthesized context stays visibly fixture-namespaced.
+    pub fn read_authorization(&self) -> FixtureReadAuthorization {
+        self.read_authorization
+            .clone()
+            .unwrap_or_else(|| FixtureReadAuthorization {
+                context_id: ReadContextId::new(format!(
+                    "fixture:read-context/{}",
+                    self.scenario_id
+                ))
+                .expect("scenario-derived fixture context identity is valid"),
+                read_revision: ReadRevision::new(
+                    desktop_protocol::Counter::new("1").expect("1 is a valid counter"),
+                ),
+                local_intents_readable: true,
+                denied_commands: Vec::new(),
+                absent_commands: Vec::new(),
+                grant_on_open: true,
+                answer_lookups: true,
+            })
+    }
+
     /// Validate fixture isolation, references and script structure.
     pub fn validate(&self) -> Result<(), FixtureError> {
         if !self.fixture {
@@ -344,6 +435,11 @@ impl FixtureScenario {
         {
             return Err(FixtureError::Invalid("limits must be non-zero".to_owned()));
         }
+        if self.steps.len() > 1024 {
+            return Err(FixtureError::Invalid(
+                "at most 1024 fixture steps are allowed".to_owned(),
+            ));
+        }
         let mut step_ids = std::collections::BTreeSet::new();
         for step in &self.steps {
             if !step_ids.insert(step.id.as_str()) {
@@ -352,8 +448,14 @@ impl FixtureScenario {
                     step.id
                 )));
             }
-            match parse_trigger(&step.trigger) {
-                Some(Trigger::AfterOpen) | Some(Trigger::Manual) => {}
+            let trigger = parse_trigger(&step.trigger);
+            match &trigger {
+                Some(
+                    Trigger::AfterOpen
+                    | Trigger::AfterDelay(_)
+                    | Trigger::AfterDelayOnce(_)
+                    | Trigger::Manual,
+                ) => {}
                 Some(Trigger::OnCommand(operation)) => {
                     let known = matches!(
                         operation.as_str(),
@@ -373,8 +475,36 @@ impl FixtureScenario {
                     )));
                 }
             }
+            if matches!(trigger, Some(Trigger::AfterDelayOnce(_)))
+                && (step.actions.len() != 1
+                    || step.actions.iter().any(|action| {
+                        action.read_invalidated.is_none()
+                            || action.delta.is_some()
+                            || action.receipt.is_some()
+                            || action.error.is_some()
+                            || action.raw.is_some()
+                            || action.resync_required.is_some()
+                            || action.receipt_read.is_some()
+                    }))
+            {
+                return Err(FixtureError::Invalid(
+                    "after_ms_once must contain exactly one read_invalidated action".to_owned(),
+                ));
+            }
             for action in &step.actions {
                 if let Some(delta) = &action.delta {
+                    if matches!(
+                        trigger,
+                        Some(Trigger::AfterDelay(_) | Trigger::AfterDelayOnce(_))
+                    ) && (delta.transaction_id.is_some()
+                        || delta.cursor.is_some()
+                        || delta.predecessor.is_some())
+                    {
+                        return Err(FixtureError::Invalid(
+                            "delayed deltas cannot pin transaction_id, cursor or predecessor"
+                                .to_owned(),
+                        ));
+                    }
                     if let Some(transaction_id) = &delta.transaction_id {
                         require_fixture("step delta transaction_id", transaction_id.as_str())?;
                     }
@@ -401,6 +531,17 @@ impl FixtureScenario {
                 {
                     require_fixture("step error command_id", command_id.as_str())?;
                 }
+                if let Some(read) = &action.receipt_read
+                    && let Some(command_id) = &read.command_id
+                {
+                    require_fixture("step receipt_read command_id", command_id.as_str())?;
+                }
+            }
+        }
+        if let Some(read) = &self.read_authorization {
+            require_fixture("read_authorization.context_id", read.context_id.as_str())?;
+            for command_id in read.denied_commands.iter().chain(&read.absent_commands) {
+                require_fixture("read_authorization command_id", command_id.as_str())?;
             }
         }
         for kind in self.commands.keys() {
@@ -579,6 +720,10 @@ fn push_candidate_ids(ids: &mut Vec<String>, candidate: &desktop_protocol::Candi
 pub enum Trigger {
     /// Deliver once, immediately after the first snapshot completes.
     AfterOpen,
+    /// Deliver after each open grant; a new binding re-arms the step.
+    AfterDelay(Duration),
+    /// Deliver one invalidation at most once during the entire transcript.
+    AfterDelayOnce(Duration),
     /// Deliver when the named command kind arrives.
     OnCommand(String),
     /// Deliver only when a test requests it.
@@ -592,6 +737,20 @@ pub fn parse_trigger(raw: &str) -> Option<Trigger> {
     }
     if raw == "manual" {
         return Some(Trigger::Manual);
+    }
+    for (prefix, once) in [("after_ms:", false), ("after_ms_once:", true)] {
+        if let Some(milliseconds) = raw
+            .strip_prefix(prefix)
+            .and_then(|value| value.parse::<u64>().ok())
+            .filter(|value| (1..=86_400_000).contains(value))
+        {
+            let delay = Duration::from_millis(milliseconds);
+            return Some(if once {
+                Trigger::AfterDelayOnce(delay)
+            } else {
+                Trigger::AfterDelay(delay)
+            });
+        }
     }
     raw.strip_prefix("on_command:")
         .filter(|kind| !kind.is_empty())

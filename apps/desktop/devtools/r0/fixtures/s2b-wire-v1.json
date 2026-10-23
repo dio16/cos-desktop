@@ -1,0 +1,35 @@
+{
+  "capture_version": 1,
+  "execution_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "pid": 42,
+  "executable_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "gpui_pin": "395def7a067b32ed598fcb3f048969ada9b54942",
+  "feature": "r0-s2b-instrumentation",
+  "target": "x86_64-pc-windows-msvc",
+  "clock": {
+    "domain": "native-process-instant-v1", "origin_ns": 0, "unit": "ns",
+    "resolution": "NOT_MEASURED", "uncertainty": "NOT_MEASURED", "mapping": "NONE",
+    "paired_reads": 128, "min_positive_delta_ns": 100
+  },
+  "scope_start_ns": 5,
+  "scope_end_ns": 60,
+  "records": [
+    {"seq":1,"kind":1,"window":10,"lifetime":1,"start_ns":10,"end_ns":10,"dirty_ns":null,"invalidations":null,"paired_draw_start_ns":null,"paired_draw_end_ns":null,"category":null,"caused_invalidation":null,"lost":null},
+    {"seq":2,"kind":2,"window":10,"lifetime":1,"start_ns":12,"end_ns":20,"dirty_ns":10,"invalidations":3,"paired_draw_start_ns":null,"paired_draw_end_ns":null,"category":null,"caused_invalidation":null,"lost":null},
+    {"seq":3,"kind":3,"window":10,"lifetime":1,"start_ns":22,"end_ns":28,"dirty_ns":10,"invalidations":3,"paired_draw_start_ns":12,"paired_draw_end_ns":20,"category":null,"caused_invalidation":null,"lost":null},
+    {"seq":4,"kind":0,"window":null,"lifetime":null,"start_ns":8,"end_ns":30,"dirty_ns":null,"invalidations":null,"paired_draw_start_ns":null,"paired_draw_end_ns":null,"category":1,"caused_invalidation":true,"lost":null},
+    {"seq":5,"kind":4,"window":10,"lifetime":1,"start_ns":40,"end_ns":40,"dirty_ns":null,"invalidations":null,"paired_draw_start_ns":null,"paired_draw_end_ns":null,"category":null,"caused_invalidation":null,"lost":null},
+    {"seq":6,"kind":1,"window":11,"lifetime":2,"start_ns":42,"end_ns":42,"dirty_ns":null,"invalidations":null,"paired_draw_start_ns":null,"paired_draw_end_ns":null,"category":null,"caused_invalidation":null,"lost":null},
+    {"seq":7,"kind":2,"window":11,"lifetime":2,"start_ns":43,"end_ns":49,"dirty_ns":42,"invalidations":2,"paired_draw_start_ns":null,"paired_draw_end_ns":null,"category":null,"caused_invalidation":null,"lost":null},
+    {"seq":8,"kind":8,"window":10,"lifetime":1,"start_ns":14,"end_ns":14,"dirty_ns":null,"invalidations":null,"paired_draw_start_ns":null,"paired_draw_end_ns":null,"category":1,"caused_invalidation":null,"lost":null},
+    {"seq":9,"kind":9,"window":10,"lifetime":1,"start_ns":15,"end_ns":15,"dirty_ns":null,"invalidations":null,"paired_draw_start_ns":null,"paired_draw_end_ns":null,"category":null,"caused_invalidation":null,"lost":null}
+  ],
+  "summary": {
+    "journal_lost":0,"journal_seen":7,"local_received":2,"local_enqueued":2,"local_dropped":0,
+    "local_undrained":0,"eligible":9,"retained":9,"retention_dropped":0,"excluded":0,
+    "pre_scope":0,"post_scope":0,"invalid_clock":0,"barrier_spans":0,"correlation_invalid":0,
+    "input_unassociated":1,"unmatched_submission":0,"undrained_journal":0,"cancelled":true,
+    "source_coverage":"OFFERED_FINALIZED_JOURNAL_ONLY","unoffered_loss":"UNKNOWN",
+    "unfinalized_tail":"UNKNOWN","kind_counts":[1,2,2,1,1,0,0,0,1,1]
+  }
+}

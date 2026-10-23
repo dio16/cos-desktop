@@ -3,3 +3,8 @@ Copyright 2026 dio
 
 Licensed under the Apache License, Version 2.0.
 Third-party dependencies retain their respective licenses and notices.
+
+Unicode simple case-folding data (Unicode 16.0.0):
+Copyright © 1991-2026 Unicode, Inc. Licensed under UNICODE LICENSE V3.
+The full copyright and permission notice accompanies the generated data in
+crates/ui-model/src/simple_casefold.rs.

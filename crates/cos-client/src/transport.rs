@@ -20,7 +20,20 @@ pub enum TransportError {
 
 /// A duplex byte transport for encoded protocol frames.
 pub trait Transport: Send {
+    /// Bind the actual close-only publication fence before the first observation.
+    fn bind_observation_control(&mut self, control: crate::ObservationControl);
+
+    /// Server identity verified by the trusted adapter, not inferred from Hello.
+    /// Unsupported/unverified adapters return None and cannot publish.
+    fn authenticated_server(&self) -> Option<desktop_protocol::ServerId> {
+        None
+    }
+
     /// Send one encoded frame.
+    ///
+    /// The call must enqueue bounded output and return without waiting on network
+    /// or filesystem work: the owner wraps final command acceptance and its
+    /// dispatch in one short boundary, which may only contain bounded work.
     fn send(&mut self, frame: Vec<u8>) -> Result<(), TransportError>;
 
     /// Receive one encoded frame if one is available.

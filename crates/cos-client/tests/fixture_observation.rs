@@ -304,8 +304,8 @@ fn client_frames_carry_the_negotiated_versions() {
             schema,
             message,
         }) => {
-            assert_eq!(protocol, Version::new(1, 0));
-            assert_eq!(schema, Version::new(1, 0));
+            assert_eq!(protocol, Version::new(2, 0));
+            assert_eq!(schema, Version::new(2, 0));
             assert!(matches!(message, ClientMessage::OpenObservation(_)));
         }
         other => panic!("unexpected wire {other:?}"),
@@ -332,4 +332,72 @@ fn client_frames_carry_the_negotiated_versions() {
         },
     ));
     assert!(chunk.contains("SNAPSHOT_CHUNK"));
+}
+
+/// A delta that lands after the session is already live must mark the report
+/// changed: the owner publishes only when `PumpReport::changed` says the client
+/// changed, so an unmarked delta would leave the previous publication
+/// installed. A re-delivered identical transaction is a duplicate and must not
+/// publish either.
+#[test]
+fn a_delta_after_the_initial_pump_marks_the_report_changed() {
+    let mut mock = live_mock();
+    let idle = mock.pump_step(0, 64);
+    assert!(!idle.changed, "an idle live pump reports no change");
+
+    let mut task = mock
+        .snapshot()
+        .task(&task_id())
+        .cloned()
+        .expect("fixture task");
+    let base = task.projection_revision.clone();
+    task.title = "delta after publication".to_owned();
+    task.projection_revision = Counter::new("9").expect("counter");
+    let mutations = vec![ProjectionMutation::Upsert {
+        base_revision: Some(base),
+        projection: Projection::Task(task),
+    }];
+    let transaction = DeltaTransaction {
+        transaction_id: TransactionId::fixture("transaction/after-open"),
+        epoch: EpochId::fixture("epoch/1"),
+        cursor: Cursor::fixture("cursor/after-open"),
+        predecessor: mock.client().last_seen_cursor().cloned(),
+        mutation_count: mutations.len() as u32,
+        integrity_digest: integrity_digest_of(&mutations).expect("digest"),
+        mutations,
+    };
+    let frame = delta_frame(transaction);
+    mock.mock_mut().inject_raw(frame.clone());
+    let report = mock.pump_step(0, 64);
+    assert!(
+        report.changed,
+        "an applied delta marks the report changed: {:?}",
+        report.events
+    );
+    assert!(
+        report
+            .events
+            .iter()
+            .any(|event| matches!(event, ClientEvent::DeltaApplied { .. })),
+        "the delta applies: {:?}",
+        report.events
+    );
+    assert_eq!(
+        mock.snapshot().task(&task_id()).expect("task").title,
+        "delta after publication"
+    );
+
+    mock.mock_mut().inject_raw(frame);
+    let duplicate = mock.pump_step(0, 64);
+    assert!(
+        duplicate
+            .events
+            .iter()
+            .any(|event| matches!(event, ClientEvent::DuplicateIgnored { .. })),
+        "the identical replay is a duplicate"
+    );
+    assert!(
+        !duplicate.changed,
+        "an ignored duplicate must not publish a new version"
+    );
 }

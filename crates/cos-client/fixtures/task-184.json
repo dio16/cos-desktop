@@ -6,14 +6,33 @@
   "epoch": "fixture:epoch/1",
   "hello": {
     "server_build": "fixture-adapter-0.1.0",
-    "protocol": [{ "major": 1, "min_minor": 0, "max_minor": 0 }],
-    "schema": [{ "major": 1, "min_minor": 0, "max_minor": 0 }],
+    "protocol": [
+      {
+        "major": 2,
+        "min_minor": 0,
+        "max_minor": 0
+      }
+    ],
+    "schema": [
+      {
+        "major": 2,
+        "min_minor": 0,
+        "max_minor": 0
+      }
+    ],
     "dedupe_retention_ms": 86400000
   },
   "scope": {
     "scope_id": "fixture:scope/task-184",
-    "task_ids": ["fixture:task/Task-184"],
-    "filters": [{ "name": "fixture_view", "value": "task" }]
+    "task_ids": [
+      "fixture:task/Task-184"
+    ],
+    "filters": [
+      {
+        "name": "fixture_view",
+        "value": "task"
+      }
+    ]
   },
   "observation_mode": "replay",
   "journal_capacity": 32,
@@ -48,8 +67,14 @@
         "media_type": "image/png",
         "availability": "AVAILABLE",
         "descriptor_refs": [
-          { "representation": "THUMBNAIL", "descriptor_id": "fixture:descriptor/a/thumbnail" },
-          { "representation": "ORIGINAL", "descriptor_id": "fixture:descriptor/a/original" }
+          {
+            "representation": "THUMBNAIL",
+            "descriptor_id": "fixture:descriptor/a/thumbnail"
+          },
+          {
+            "representation": "ORIGINAL",
+            "descriptor_id": "fixture:descriptor/a/original"
+          }
         ],
         "verification": {
           "state": "VERIFIED",
@@ -65,8 +90,14 @@
         "media_type": "image/png",
         "availability": "AVAILABLE",
         "descriptor_refs": [
-          { "representation": "THUMBNAIL", "descriptor_id": "fixture:descriptor/b/thumbnail" },
-          { "representation": "ORIGINAL", "descriptor_id": "fixture:descriptor/b/original" }
+          {
+            "representation": "THUMBNAIL",
+            "descriptor_id": "fixture:descriptor/b/thumbnail"
+          },
+          {
+            "representation": "ORIGINAL",
+            "descriptor_id": "fixture:descriptor/b/original"
+          }
         ],
         "verification": {
           "state": "VERIFIED",
@@ -82,8 +113,14 @@
         "media_type": "image/png",
         "availability": "AVAILABLE",
         "descriptor_refs": [
-          { "representation": "THUMBNAIL", "descriptor_id": "fixture:descriptor/c/thumbnail" },
-          { "representation": "ORIGINAL", "descriptor_id": "fixture:descriptor/c/original" }
+          {
+            "representation": "THUMBNAIL",
+            "descriptor_id": "fixture:descriptor/c/thumbnail"
+          },
+          {
+            "representation": "ORIGINAL",
+            "descriptor_id": "fixture:descriptor/c/original"
+          }
         ],
         "verification": {
           "state": "VERIFIED",
@@ -99,8 +136,14 @@
         "media_type": "image/png",
         "availability": "AVAILABLE",
         "descriptor_refs": [
-          { "representation": "THUMBNAIL", "descriptor_id": "fixture:descriptor/d/thumbnail" },
-          { "representation": "ORIGINAL", "descriptor_id": "fixture:descriptor/d/original" }
+          {
+            "representation": "THUMBNAIL",
+            "descriptor_id": "fixture:descriptor/d/thumbnail"
+          },
+          {
+            "representation": "ORIGINAL",
+            "descriptor_id": "fixture:descriptor/d/original"
+          }
         ],
         "verification": {
           "state": "VERIFIED",
@@ -116,8 +159,14 @@
         "media_type": "image/png",
         "availability": "AVAILABLE",
         "descriptor_refs": [
-          { "representation": "THUMBNAIL", "descriptor_id": "fixture:descriptor/e/thumbnail" },
-          { "representation": "ORIGINAL", "descriptor_id": "fixture:descriptor/e/original" }
+          {
+            "representation": "THUMBNAIL",
+            "descriptor_id": "fixture:descriptor/e/thumbnail"
+          },
+          {
+            "representation": "ORIGINAL",
+            "descriptor_id": "fixture:descriptor/e/original"
+          }
         ],
         "verification": {
           "state": "VERIFIED",
@@ -139,8 +188,12 @@
         },
         "task_ref": "fixture:task/Task-184",
         "iteration_ref": "fixture:iteration/Task-184/1",
-        "artifact_refs": ["fixture:artifact/a"],
-        "evaluation_refs": ["fixture:evaluation/a"],
+        "artifact_refs": [
+          "fixture:artifact/a"
+        ],
+        "evaluation_refs": [
+          "fixture:evaluation/a"
+        ],
         "display_label": "A",
         "projection_revision": "1"
       },
@@ -154,8 +207,12 @@
         },
         "task_ref": "fixture:task/Task-184",
         "iteration_ref": "fixture:iteration/Task-184/1",
-        "artifact_refs": ["fixture:artifact/b"],
-        "evaluation_refs": ["fixture:evaluation/b"],
+        "artifact_refs": [
+          "fixture:artifact/b"
+        ],
+        "evaluation_refs": [
+          "fixture:evaluation/b"
+        ],
         "display_label": "B",
         "projection_revision": "2"
       },
@@ -169,8 +226,12 @@
         },
         "task_ref": "fixture:task/Task-184",
         "iteration_ref": "fixture:iteration/Task-184/2",
-        "artifact_refs": ["fixture:artifact/c"],
-        "evaluation_refs": ["fixture:evaluation/c"],
+        "artifact_refs": [
+          "fixture:artifact/c"
+        ],
+        "evaluation_refs": [
+          "fixture:evaluation/c"
+        ],
         "display_label": "C",
         "projection_revision": "3"
       },
@@ -184,8 +245,12 @@
         },
         "task_ref": "fixture:task/Task-184",
         "iteration_ref": "fixture:iteration/Task-184/2",
-        "artifact_refs": ["fixture:artifact/d"],
-        "evaluation_refs": ["fixture:evaluation/d"],
+        "artifact_refs": [
+          "fixture:artifact/d"
+        ],
+        "evaluation_refs": [
+          "fixture:evaluation/d"
+        ],
         "display_label": "D",
         "projection_revision": "4"
       },
@@ -199,8 +264,12 @@
         },
         "task_ref": "fixture:task/Task-184",
         "iteration_ref": "fixture:iteration/Task-184/3",
-        "artifact_refs": ["fixture:artifact/e"],
-        "evaluation_refs": ["fixture:evaluation/e"],
+        "artifact_refs": [
+          "fixture:artifact/e"
+        ],
+        "evaluation_refs": [
+          "fixture:evaluation/e"
+        ],
         "display_label": "E",
         "projection_revision": "5"
       }
@@ -215,12 +284,23 @@
           "candidate_id": "fixture:candidate/a",
           "artifact_ref": "fixture:artifact/a"
         },
-        "artifact_refs": ["fixture:artifact/a"],
+        "artifact_refs": [
+          "fixture:artifact/a"
+        ],
         "decision": "FAIL",
-        "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": 58.0 }],
+        "axes": [
+          {
+            "name": "visual_quality",
+            "unit": "score_0_100",
+            "value": 58.0
+          }
+        ],
         "evidence_refs": [
           {
-            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-a" },
+            "record_ref": {
+              "kind": "EVIDENCE",
+              "id": "fixture:evidence/evaluation-a"
+            },
             "status": "AVAILABLE",
             "summary": "contrast banding across the key visual",
             "detail": null
@@ -239,12 +319,23 @@
           "candidate_id": "fixture:candidate/b",
           "artifact_ref": "fixture:artifact/b"
         },
-        "artifact_refs": ["fixture:artifact/b"],
+        "artifact_refs": [
+          "fixture:artifact/b"
+        ],
         "decision": "FAIL",
-        "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": 66.0 }],
+        "axes": [
+          {
+            "name": "visual_quality",
+            "unit": "score_0_100",
+            "value": 66.0
+          }
+        ],
         "evidence_refs": [
           {
-            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-b" },
+            "record_ref": {
+              "kind": "EVIDENCE",
+              "id": "fixture:evidence/evaluation-b"
+            },
             "status": "AVAILABLE",
             "summary": "product silhouette reads as flat",
             "detail": null
@@ -263,12 +354,23 @@
           "candidate_id": "fixture:candidate/c",
           "artifact_ref": "fixture:artifact/c"
         },
-        "artifact_refs": ["fixture:artifact/c"],
+        "artifact_refs": [
+          "fixture:artifact/c"
+        ],
         "decision": "ABSTAIN",
-        "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": null }],
+        "axes": [
+          {
+            "name": "visual_quality",
+            "unit": "score_0_100",
+            "value": null
+          }
+        ],
         "evidence_refs": [
           {
-            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-c" },
+            "record_ref": {
+              "kind": "EVIDENCE",
+              "id": "fixture:evidence/evaluation-c"
+            },
             "status": "MISSING",
             "summary": "evaluator could not score this candidate",
             "detail": null
@@ -287,12 +389,23 @@
           "candidate_id": "fixture:candidate/d",
           "artifact_ref": "fixture:artifact/d"
         },
-        "artifact_refs": ["fixture:artifact/d"],
+        "artifact_refs": [
+          "fixture:artifact/d"
+        ],
         "decision": "PASS",
-        "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": 81.0 }],
+        "axes": [
+          {
+            "name": "visual_quality",
+            "unit": "score_0_100",
+            "value": 81.0
+          }
+        ],
         "evidence_refs": [
           {
-            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-d" },
+            "record_ref": {
+              "kind": "EVIDENCE",
+              "id": "fixture:evidence/evaluation-d"
+            },
             "status": "AVAILABLE",
             "summary": "composition and lighting direction accepted",
             "detail": null
@@ -311,12 +424,23 @@
           "candidate_id": "fixture:candidate/e",
           "artifact_ref": "fixture:artifact/e"
         },
-        "artifact_refs": ["fixture:artifact/e"],
+        "artifact_refs": [
+          "fixture:artifact/e"
+        ],
         "decision": "PASS",
-        "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": 88.0 }],
+        "axes": [
+          {
+            "name": "visual_quality",
+            "unit": "score_0_100",
+            "value": 88.0
+          }
+        ],
         "evidence_refs": [
           {
-            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-e" },
+            "record_ref": {
+              "kind": "EVIDENCE",
+              "id": "fixture:evidence/evaluation-e"
+            },
             "status": "AVAILABLE",
             "summary": "refined lighting reads as the strongest candidate",
             "detail": null
@@ -351,7 +475,10 @@
         "refinement_refs": [],
         "evidence_refs": [
           {
-            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-a" },
+            "record_ref": {
+              "kind": "EVIDENCE",
+              "id": "fixture:evidence/evaluation-a"
+            },
             "status": "AVAILABLE",
             "summary": "baseline iteration evidence",
             "detail": null
@@ -379,10 +506,15 @@
             "artifact_ref": "fixture:artifact/d"
           }
         ],
-        "refinement_refs": ["fixture:refinement/Task-184/2"],
+        "refinement_refs": [
+          "fixture:refinement/Task-184/2"
+        ],
         "evidence_refs": [
           {
-            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-d" },
+            "record_ref": {
+              "kind": "EVIDENCE",
+              "id": "fixture:evidence/evaluation-d"
+            },
             "status": "AVAILABLE",
             "summary": "refinement driven by iteration 1 contrast findings",
             "detail": null
@@ -403,10 +535,15 @@
             "artifact_ref": "fixture:artifact/e"
           }
         ],
-        "refinement_refs": ["fixture:refinement/Task-184/3"],
+        "refinement_refs": [
+          "fixture:refinement/Task-184/3"
+        ],
         "evidence_refs": [
           {
-            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-e" },
+            "record_ref": {
+              "kind": "EVIDENCE",
+              "id": "fixture:evidence/evaluation-e"
+            },
             "status": "AVAILABLE",
             "summary": "refinement from iteration 2 lighting direction",
             "detail": null
@@ -429,27 +566,105 @@
           }
         ],
         "nodes": [
-          { "node_ref": "fixture:node/goal", "label": "Goal", "layer": "GOAL" },
-          { "node_ref": "fixture:node/context", "label": "Context", "layer": "CONTEXT" },
-          { "node_ref": "fixture:node/capability", "label": "Capability", "layer": "CAPABILITY" },
-          { "node_ref": "fixture:node/generation", "label": "Generation", "layer": "CREATION" },
-          { "node_ref": "fixture:node/evaluation", "label": "Evaluation", "layer": "EVALUATION" },
-          { "node_ref": "fixture:node/select", "label": "Select", "layer": null },
-          { "node_ref": "fixture:node/feedback", "label": "Feedback", "layer": "FEEDBACK" },
-          { "node_ref": "fixture:node/refine", "label": "Refine", "layer": "FEEDBACK" },
-          { "node_ref": "fixture:node/outcome", "label": "Outcome", "layer": null }
+          {
+            "node_ref": "fixture:node/goal",
+            "label": "Goal",
+            "layer": "GOAL"
+          },
+          {
+            "node_ref": "fixture:node/context",
+            "label": "Context",
+            "layer": "CONTEXT"
+          },
+          {
+            "node_ref": "fixture:node/capability",
+            "label": "Capability",
+            "layer": "CAPABILITY"
+          },
+          {
+            "node_ref": "fixture:node/generation",
+            "label": "Generation",
+            "layer": "CREATION"
+          },
+          {
+            "node_ref": "fixture:node/evaluation",
+            "label": "Evaluation",
+            "layer": "EVALUATION"
+          },
+          {
+            "node_ref": "fixture:node/select",
+            "label": "Select",
+            "layer": null
+          },
+          {
+            "node_ref": "fixture:node/feedback",
+            "label": "Feedback",
+            "layer": "FEEDBACK"
+          },
+          {
+            "node_ref": "fixture:node/refine",
+            "label": "Refine",
+            "layer": "FEEDBACK"
+          },
+          {
+            "node_ref": "fixture:node/outcome",
+            "label": "Outcome",
+            "layer": null
+          }
         ],
         "edges": [
-          { "edge_ref": "fixture:edge/goal-context", "from": "fixture:node/goal", "to": "fixture:node/context", "kind": "FLOW" },
-          { "edge_ref": "fixture:edge/context-capability", "from": "fixture:node/context", "to": "fixture:node/capability", "kind": "FLOW" },
-          { "edge_ref": "fixture:edge/capability-generation", "from": "fixture:node/capability", "to": "fixture:node/generation", "kind": "FLOW" },
-          { "edge_ref": "fixture:edge/generation-evaluation", "from": "fixture:node/generation", "to": "fixture:node/evaluation", "kind": "FLOW" },
-          { "edge_ref": "fixture:edge/evaluation-select", "from": "fixture:node/evaluation", "to": "fixture:node/select", "kind": "FLOW" },
-          { "edge_ref": "fixture:edge/select-feedback", "from": "fixture:node/select", "to": "fixture:node/feedback", "kind": "FLOW" },
-          { "edge_ref": "fixture:edge/feedback-refine", "from": "fixture:node/feedback", "to": "fixture:node/refine", "kind": "FLOW" },
-          { "edge_ref": "fixture:edge/refine-outcome", "from": "fixture:node/refine", "to": "fixture:node/outcome", "kind": "FLOW" }
+          {
+            "edge_ref": "fixture:edge/goal-context",
+            "from": "fixture:node/goal",
+            "to": "fixture:node/context",
+            "kind": "FLOW"
+          },
+          {
+            "edge_ref": "fixture:edge/context-capability",
+            "from": "fixture:node/context",
+            "to": "fixture:node/capability",
+            "kind": "FLOW"
+          },
+          {
+            "edge_ref": "fixture:edge/capability-generation",
+            "from": "fixture:node/capability",
+            "to": "fixture:node/generation",
+            "kind": "FLOW"
+          },
+          {
+            "edge_ref": "fixture:edge/generation-evaluation",
+            "from": "fixture:node/generation",
+            "to": "fixture:node/evaluation",
+            "kind": "FLOW"
+          },
+          {
+            "edge_ref": "fixture:edge/evaluation-select",
+            "from": "fixture:node/evaluation",
+            "to": "fixture:node/select",
+            "kind": "FLOW"
+          },
+          {
+            "edge_ref": "fixture:edge/select-feedback",
+            "from": "fixture:node/select",
+            "to": "fixture:node/feedback",
+            "kind": "FLOW"
+          },
+          {
+            "edge_ref": "fixture:edge/feedback-refine",
+            "from": "fixture:node/feedback",
+            "to": "fixture:node/refine",
+            "kind": "FLOW"
+          },
+          {
+            "edge_ref": "fixture:edge/refine-outcome",
+            "from": "fixture:node/refine",
+            "to": "fixture:node/outcome",
+            "kind": "FLOW"
+          }
         ],
-        "provenance_refs": ["fixture:provenance/Task-184/3"],
+        "provenance_refs": [
+          "fixture:provenance/Task-184/3"
+        ],
         "refinement_refs": [
           "fixture:refinement/Task-184/2",
           "fixture:refinement/Task-184/3"
@@ -460,24 +675,72 @@
     "capabilities": [
       {
         "capabilities_ref": "fixture:capabilities/Task-184",
-        "scope": { "kind": "TASK", "task_id": "fixture:task/Task-184" },
+        "scope": {
+          "kind": "TASK",
+          "task_id": "fixture:task/Task-184"
+        },
         "commands": [
-          { "operation": "STOP_TASK", "support": "SUPPORTED", "reason": null },
-          { "operation": "CREATE_TASK", "support": "UNSUPPORTED", "reason": "fixture does not script task creation" },
-          { "operation": "REUSE_TASK", "support": "UNSUPPORTED", "reason": "fixture does not script task reuse" }
+          {
+            "operation": "STOP_TASK",
+            "support": "SUPPORTED",
+            "reason": null
+          },
+          {
+            "operation": "CREATE_TASK",
+            "support": "UNSUPPORTED",
+            "reason": "fixture does not script task creation"
+          },
+          {
+            "operation": "REUSE_TASK",
+            "support": "UNSUPPORTED",
+            "reason": "fixture does not script task reuse"
+          }
         ],
         "media": [
-          { "representation": "METADATA", "support": "SUPPORTED", "reason": null },
-          { "representation": "THUMBNAIL", "support": "SUPPORTED", "reason": null },
-          { "representation": "PREVIEW", "support": "SUPPORTED", "reason": null },
-          { "representation": "ORIGINAL", "support": "SUPPORTED", "reason": null }
+          {
+            "representation": "METADATA",
+            "support": "SUPPORTED",
+            "reason": null
+          },
+          {
+            "representation": "THUMBNAIL",
+            "support": "SUPPORTED",
+            "reason": null
+          },
+          {
+            "representation": "PREVIEW",
+            "support": "SUPPORTED",
+            "reason": null
+          },
+          {
+            "representation": "ORIGINAL",
+            "support": "SUPPORTED",
+            "reason": null
+          }
         ],
         "features": [
-          { "feature": "artifact.view", "support": "SUPPORTED", "reason": null },
-          { "feature": "compare.pair", "support": "SUPPORTED", "reason": null },
-          { "feature": "media.playback", "support": "UNSUPPORTED", "reason": "bootstrap has no media pipeline" }
+          {
+            "feature": "artifact.view",
+            "support": "SUPPORTED",
+            "reason": null
+          },
+          {
+            "feature": "compare.pair",
+            "support": "SUPPORTED",
+            "reason": null
+          },
+          {
+            "feature": "media.playback",
+            "support": "UNSUPPORTED",
+            "reason": "bootstrap has no media pipeline"
+          }
         ],
-        "constraints": [{ "name": "max_candidates_per_iteration", "value": "8" }],
+        "constraints": [
+          {
+            "name": "max_candidates_per_iteration",
+            "value": "8"
+          }
+        ],
         "availability": "SUPPORTED",
         "reason": null,
         "projection_revision": "2"
@@ -505,12 +768,23 @@
                     "candidate_id": "fixture:candidate/e",
                     "artifact_ref": "fixture:artifact/e"
                   },
-                  "artifact_refs": ["fixture:artifact/e"],
+                  "artifact_refs": [
+                    "fixture:artifact/e"
+                  ],
                   "decision": "PASS",
-                  "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": 89.0 }],
+                  "axes": [
+                    {
+                      "name": "visual_quality",
+                      "unit": "score_0_100",
+                      "value": 89.0
+                    }
+                  ],
                   "evidence_refs": [
                     {
-                      "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-e" },
+                      "record_ref": {
+                        "kind": "EVIDENCE",
+                        "id": "fixture:evidence/evaluation-e"
+                      },
                       "status": "AVAILABLE",
                       "summary": "rescore after refinement: strongest candidate so far",
                       "detail": null
@@ -619,7 +893,9 @@
                   "formal_status": "CANCELLED",
                   "selected_refs": [],
                   "stop_reason": "HUMAN_STOP",
-                  "provenance_refs": ["fixture:provenance/Task-184/stop"],
+                  "provenance_refs": [
+                    "fixture:provenance/Task-184/stop"
+                  ],
                   "evidence_refs": [],
                   "projection_revision": "1"
                 }
@@ -632,7 +908,12 @@
             "state": "CANONICAL_REFLECTED",
             "task_id": "fixture:task/Task-184",
             "accepted_at": "2026-09-21T00:00:04Z",
-            "effect_refs": [{ "kind": "OUTCOME", "id": "fixture:outcome/Task-184" }],
+            "effect_refs": [
+              {
+                "kind": "OUTCOME",
+                "id": "fixture:outcome/Task-184"
+              }
+            ],
             "message": "simulated terminal projection: canonical stop effect recorded"
           }
         }
@@ -640,8 +921,22 @@
     }
   ],
   "commands": {
-    "STOP_TASK": { "default": "accepted" },
-    "CREATE_TASK": { "default": "unsupported" },
-    "REUSE_TASK": { "default": "unsupported" }
+    "STOP_TASK": {
+      "default": "accepted"
+    },
+    "CREATE_TASK": {
+      "default": "unsupported"
+    },
+    "REUSE_TASK": {
+      "default": "unsupported"
+    }
+  },
+  "read_authorization": {
+    "context_id": "fixture:read-context/task-184-refine",
+    "read_revision": "1",
+    "local_intents_readable": true,
+    "denied_commands": [],
+    "absent_commands": [],
+    "grant_on_open": true
   }
 }

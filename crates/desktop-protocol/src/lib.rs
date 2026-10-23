@@ -42,14 +42,16 @@ pub use ids::{
     EntityKind, EntityRef, EpochId, EvaluationId, FormalSelectionRef, GraphId, GraphRef,
     HarnessVersionId, IdError, IntegrityDigest, IterationId, LayerLabel, MAX_COUNTER_DIGITS,
     MAX_OPAQUE_BYTES, NodeId, OutcomeId, PhaseLabel, PlanId, PlanRef, ProfileId, ProjectionKind,
-    ProvenanceId, RecipeId, RefinementId, RunId, ScopeId, ServerId, SnapshotId, StopReasonLabel,
-    TaskId, TransactionId,
+    ProvenanceId, ReadContextId, ReadRequestId, ReadRevision, ReceiptReadId, RecipeId,
+    RefinementId, RunId, ScopeId, ServerId, SnapshotId, StopReasonLabel, TaskId, TransactionId,
 };
 pub use messages::{
-    ClientFrame, ClientMessage, ClientWire, CommandEnvelope, CommandPayload, CommandReceipt,
-    CommandTarget, CommandValidationError, CreateTaskCommand, DeltaTransaction, NamedParameter,
-    ObservationScope, ObservationScopeRequest, OpenObservation, ParameterValue, Projection,
-    ProjectionMutation, ReceiptLookup, ReceiptState, RecipeRef, RemoveTarget, ReplayAccepted,
+    AuthorizedCommandReceipt, AuthorizedReceiptLookup, ClientFrame, ClientMessage, ClientWire,
+    CommandEnvelope, CommandPayload, CommandReadDecision, CommandReceipt, CommandTarget,
+    CommandValidationError, CreateTaskCommand, DeltaTransaction, NamedParameter, ObservationScope,
+    ObservationScopeRequest, OpenAuthorizedObservation, OpenObservation, ParameterValue,
+    Projection, ProjectionMutation, ReadGrant, ReadInvalidated, ReadInvalidationReason, ReadStamp,
+    ReceiptReadOutcome, ReceiptReadResult, ReceiptState, RecipeRef, RemoveTarget, ReplayAccepted,
     ResyncRequired, ReuseTaskCommand, ScopeFilter, ServerFrame, ServerMessage, ServerWire,
     SnapshotBegin, SnapshotChunk, SnapshotCounts, SnapshotEnd, StopTaskCommand, UnknownMessage,
 };

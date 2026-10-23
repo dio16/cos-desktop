@@ -35,6 +35,7 @@ LAYOUT = {
     "app-core": "crates/app-core",
     "cos-client": "crates/cos-client",
     "desktop-protocol": "crates/desktop-protocol",
+    "media": "crates/media",
 }
 
 
@@ -112,6 +113,7 @@ class DependencyRulesTests(unittest.TestCase):
                     self.member_dep("cos-desktop", "app-core"),
                     self.member_dep("cos-desktop", "cos-client"),
                     self.member_dep("cos-desktop", "desktop-protocol"),
+                    self.member_dep("cos-desktop", "media", kind="dev"),
                     git_dep("gpui"),
                     git_dep("gpui_platform"),
                 ],
@@ -137,6 +139,7 @@ class DependencyRulesTests(unittest.TestCase):
                 [self.member_dep("cos-client", "desktop-protocol"), registry_dep("serde")],
             ),
             self.member("desktop-protocol"),
+            self.member("media", [self.member_dep("media", "desktop-protocol"), registry_dep("sha2")]),
         ]
         return self.workspace(packages)
 
@@ -223,12 +226,22 @@ class DependencyRulesTests(unittest.TestCase):
 
     def test_unknown_workspace_member_detected(self):
         metadata = self.clean_workspace()
-        metadata["packages"].append(self.member("media"))
+        metadata["packages"].append(self.member("unapproved-layer"))
         metadata["workspace_members"].append(metadata["packages"][-1]["id"])
         violations = cdr.check_metadata(metadata, str(self.root))
         unknown = [v for v in violations if v.code == "unknown-package"]
         self.assertTrue(unknown, violations)
         self.assertIn("DEPENDENCY_RULES.md", unknown[0].message)
+
+    def test_media_cannot_import_client_core_or_gpui(self):
+        for dependency in ("cos-client", "app-core", "desktop-gpui"):
+            with self.subTest(dependency=dependency):
+                metadata = self.clean_workspace()
+                self.package(metadata, "media")["dependencies"].append(
+                    self.member_dep("media", dependency)
+                )
+                violations = cdr.check_metadata(metadata, str(self.root))
+                self.assertIn("forbidden-edge", self.codes(violations))
 
     def test_floating_git_ref_detected(self):
         metadata = self.clean_workspace()

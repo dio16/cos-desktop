@@ -4,11 +4,11 @@ Status: **Observed** executable bootstrap. Verification commit `1f816fd2032148ec
 
 ## 1. Repository
 
-- Desktop root: `<desktop-root>`, an independent Git repository. Branch `master` was renamed to `main` before the first remote push; `dev` branches from the same baseline.
-- Git history: five local commits. Per-commit identity was explicitly selected rather than changing global Git configuration.
-- Runtime baseline: `<runtime-root>` (COS Runtime, separate repository), branch `dev`; no Runtime mutation/build/test/launch/DB read.
-- Repository publication: `dio16/cos-desktop` was created as a private repository and branches were pushed. This is a historical record; this document does not claim any current remote change.
-- Remote CI: workflow was defined and triggered; jobs failed before any step ran. Remote CI therefore remains **defined and triggered, never executed**. No billing-account detail is included.
+- Desktop root: `<desktop-root>`, independent Git repository. Branch `master` was renamed to `main` before the first remote push (no meaningful divergent history existed); `dev` branches from the same baseline.
+- Git history: five local commits (`5243a0c chore`, `329f0fa ci`, `1f816fd docs`, `fde2d09 docs`, `69c7a62 docs`). No unrelated changes, global identity change, or hook modification. Per-commit identity was explicitly supplied rather than rewriting global Git config.
+- Runtime baseline: `<runtime-root>`, branch `dev`, HEAD `f94985bd4c5a3a0714153f9d068f24439d57a1f2`, clean including untracked, origin `<runtime-repository-url>`. Same state at start and end. No Runtime mutation/build/test/launch/DB read.
+- GitHub: `dio16/cos-desktop` created **private** by the operator's explicit authorization; `origin` set to `https://github.com/dio16/cos-desktop.git`; `main` pushed with upstream and set as default branch; `dev` pushed with upstream. Merge policy: squash and rebase enabled, merge commits disabled, delete-branch-on-merge enabled. No force push, no history rewrite, no other account.
+- Remote CI: workflow is published and both pushes triggered runs. Both runs failed before any step ran; remote CI remains **defined and triggered, never executed successfully**. The account-specific cause is omitted here; this does not imply a workflow or code defect.
 
 
 ## 2. Toolchain and GPUI
@@ -66,7 +66,7 @@ Initial minimal GPUI experiment separately built in ≈3m07s, rendered bootstrap
 
 ## 6. CI
 
-`.github/workflows/ci.yml` is Windows-primary, pinned toolchain, gates 1–5 plus metadata/checker/self-test, no matrix/cache/publish. Remote execution: **triggered, failed before any step** — GitHub refused to start the runner job with the account-billing annotation quoted in §1. Local gates ran on this workstation instead. Remote CI has therefore never validated this repository; the workflow content itself remains unexecuted.
+`.github/workflows/ci.yml` is Windows-primary, pinned toolchain, gates 1–5 plus metadata/checker/self-test, no matrix/cache/publish. Remote execution was triggered and failed before any step; the historical result is **not run successfully**. Local gates ran on this workstation instead. Remote CI has therefore never validated this repository; the workflow content itself remains unexecuted.
 
 ## 7. Runtime survey and missing capabilities
 
@@ -85,6 +85,6 @@ Runtime HEAD unchanged (`f94985bd...`); survey classifications and RC-01–RC-17
 
 - Verified commit: `1f816fd2032148ecf0614cc5743a0809eba87a39`.
 - Post-verification content changes: README repository identity (`69c7a62`) and this report's GitHub/CI update. Both are documentation-only; no source, manifest, lockfile or configuration changed, so the §5 gate results still describe the current tree.
-- Push state: `main` and `dev` are published to `dio16/cos-desktop` (private) at the same baseline commit. No force push.
+- Push state: `main` and `dev` were published to the private `dio16/cos-desktop` repository at the same baseline commit. Current repository visibility has not been reverified. No force push.
 - No temporary verification artifacts remain outside ignored `target/`.
 - Cargo.lock committed.

@@ -1,0 +1,137 @@
+{
+  "manifest_version": 1,
+  "scenario": {
+    "id": "shell-startup",
+    "version": "v1",
+    "benchmark_revision": "r0a-s1"
+  },
+  "identity": {
+    "repository": {
+      "sha": "f7455bf3e312492b551faa229d50e97d60c08a81",
+      "dirty": false,
+      "content_hash": {
+        "status": "NOT_MEASURED",
+        "reason": "fixture only; no source content hash was computed"
+      }
+    },
+    "schema_hash": "sha256:772eed7fd2bcc71b929052eded3f7ec67c881a7261d06089806c7d037d8ee84e",
+    "definition_hash": "sha256:446d966364d2d3b271e3f63cff82636ac558f729361fff6a936506f884433893",
+    "driver_hash": {
+      "status": "NOT_IMPLEMENTED",
+      "reason": "R0A-S2 driver is not implemented in this slice"
+    },
+    "gpui_revision": "395def7a067b32ed598fcb3f048969ada9b54942",
+    "build": {
+      "profile": "dev",
+      "features": [],
+      "flags": []
+    },
+    "executable_sha256": {
+      "status": "NOT_MEASURED",
+      "reason": "no executable is produced or launched by this contract fixture"
+    },
+    "toolchain": {
+      "rustc": "1.98.1",
+      "cargo": "1.98.1",
+      "target": "x86_64-pc-windows-msvc"
+    }
+  },
+  "machine": {
+    "os": {
+      "edition": "Windows 11 Pro",
+      "build": "10.0.26300"
+    },
+    "cpu": {
+      "model": "fixture-cpu",
+      "logical_count": 16
+    },
+    "ram_bytes": 68719476736,
+    "gpu": {
+      "status": "NOT_MEASURED",
+      "reason": "GPU identity is not captured by this contract fixture"
+    },
+    "displays": [
+      {
+        "width": 2560,
+        "height": 1440,
+        "refresh_hz": 60,
+        "dpi": 96
+      }
+    ],
+    "window": {
+      "geometry": "1280x832+40+40",
+      "visibility": "VISIBLE",
+      "occlusion": "NONE"
+    },
+    "power_profile": "balanced",
+    "background_contention": {
+      "status": "NOT_MEASURED",
+      "reason": "contention is not controlled by this fixture"
+    },
+    "thermal_state": {
+      "status": "NOT_MEASURED",
+      "reason": "thermal controls are not applied by this fixture"
+    }
+  },
+  "workload": {
+    "generator": {
+      "version": "v1",
+      "revision": "r0a-s1",
+      "seed": 7
+    },
+    "distribution": "fixed-list",
+    "parameters": {},
+    "source": {
+      "identity": "fixture-task-184",
+      "sha256": {
+        "status": "NOT_MEASURED",
+        "reason": "fixture only; no source bytes exist"
+      }
+    },
+    "representation_policy": "encoded-only",
+    "actions": [
+      {
+        "step": "open-shell",
+        "requested_cadence_hz": {
+          "status": "NOT_MEASURED",
+          "reason": "no driver records achieved cadence in this slice"
+        },
+        "burst": 1
+      }
+    ],
+    "duration_ms": 1000,
+    "repetitions": 1,
+    "warmup": 0,
+    "cache_actions": [],
+    "cache_state": {
+      "status": "NOT_MEASURED",
+      "reason": "no OS or GPU cache reset is claimed"
+    },
+    "viewport": "1280x832",
+    "endpoints": [
+      {
+        "id": "first-frame",
+        "definition": "first presented frame after window creation",
+        "start": "process start",
+        "end": "first present",
+        "correlation": "monotonic clock"
+      }
+    ],
+    "run_id": "run-001",
+    "pair_id": "pair-001",
+    "variant": "baseline",
+    "order": "first",
+    "expected_state": "shell surface becomes visible",
+    "recovery": "close the dedicated window",
+    "tool": {
+      "name": "r0-contract",
+      "version": "1",
+      "config": "fixture"
+    }
+  },
+  "surface": {
+    "id": "shell",
+    "status": "IMPLEMENTED",
+    "reason": ""
+  }
+}

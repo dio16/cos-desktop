@@ -1,0 +1,135 @@
+{
+  "result_version": 1,
+  "manifest": {
+    "scenario_id": "shell-startup",
+    "scenario_version": "v1",
+    "benchmark_revision": "r0a-s1",
+    "definition_hash": "sha256:446d966364d2d3b271e3f63cff82636ac558f729361fff6a936506f884433893"
+  },
+  "runs": [
+    {
+      "run_id": "run-001",
+      "pair_id": "pair-001",
+      "scenario_id": "shell-startup",
+      "variant": "baseline",
+      "status": "NOT_MEASURED",
+      "reason": "no measurement driver exists in MP-R0A-S1",
+      "endpoints": [
+        {
+          "id": "first-frame",
+          "status": "NOT_MEASURED",
+          "reason": "driver not implemented",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no endpoint provider"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no endpoint provider"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no endpoint provider"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no endpoint provider"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no endpoint provider"
+          }
+        }
+      ],
+      "metrics": [
+        {
+          "id": "startup-to-first-frame",
+          "unit": "ms",
+          "method": "not-measured",
+          "sample_unit": "run",
+          "counts": {
+            "eligible": 0,
+            "observed": 0,
+            "failed": 0,
+            "censored": 0,
+            "excluded": 0
+          },
+          "percentiles": {
+            "min": null,
+            "max": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "estimator": "none",
+          "validity": "no samples were collected",
+          "spread": "not-estimated"
+        }
+      ],
+      "resources": {
+        "process": {
+          "private_bytes": null,
+          "working_set_bytes": null,
+          "status": "NOT_MEASURED",
+          "reason": "no sampling"
+        },
+        "media": {
+          "decoded_bytes": null,
+          "scratch_bytes": null,
+          "staging_bytes": null,
+          "cache_bytes": null,
+          "status": "NOT_MEASURED",
+          "reason": "no sampling"
+        },
+        "gpu": {
+          "dedicated_bytes": null,
+          "shared_bytes": null,
+          "committed_bytes": null,
+          "status": "NOT_MEASURED",
+          "reason": "no GPU counters"
+        },
+        "devices": {
+          "count": null,
+          "generations": null,
+          "status": "NOT_MEASURED",
+          "reason": "no device sampling"
+        },
+        "sampling": "none"
+      },
+      "frames": {
+        "requested": null,
+        "processed": null,
+        "submitted": null,
+        "present": null,
+        "displayed": null,
+        "missed": null,
+        "dropped": null,
+        "stalled": null,
+        "eligibility": null,
+        "idle": null,
+        "rule": "no frames were requested in this fixture",
+        "reason": "no frame counters were sampled"
+      },
+      "instrumentation": {
+        "tool": "none",
+        "revision": "none",
+        "config": "none",
+        "probes": {
+          "supported": [],
+          "missing": [
+            "frame-present",
+            "process-memory",
+            "gpu-memory"
+          ]
+        },
+        "overhead": "not measured",
+        "loss": "not measured",
+        "floor": "not measured"
+      },
+      "failures": [],
+      "outliers": [],
+      "evidence": []
+    }
+  ],
+  "evidence": []
+}

@@ -1,5 +1,6 @@
 # Rust build outputs
 /target/
+/target-step5/
 **/target/
 
 # Cargo lock backup / credentials
@@ -30,13 +31,19 @@ Thumbs.db
 secrets.toml
 
 # OS artifacts
+Desktop.ini
 
-# Historical development evidence is withheld; keep only its public disclosure.
+# Native review evidence logs must be trackable.
+!docs/development/evidence/**/*.log
+
+__pycache__/
+*.pyc
+
+# Private historical evidence is retained locally, never republished.
 /docs/development/evidence/*
 !/docs/development/evidence/README.md
 
-# Environment secrets
+# Local environment files may contain credentials.
 .env
 .env.*
 !.env.example
-Desktop.ini

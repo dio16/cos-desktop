@@ -7,6 +7,7 @@ members = [
     "crates/app-core",
     "crates/cos-client",
     "crates/desktop-protocol",
+    "crates/media",
 ]
 
 [workspace.package]

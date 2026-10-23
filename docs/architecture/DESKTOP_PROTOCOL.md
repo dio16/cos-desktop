@@ -1,6 +1,6 @@
 # Desktop Protocol Draft
 
-Status: **Proposed — Draft**, except authority/safety rules marked **Accepted**. This is not an implemented server API. Bootstrap will implement only a fixture-tested contract/client. [Current runtime survey](../integration/CURRENT_COS_RUNTIME_SURVEY.md) is the evidence for existing APIs; do not assume they already provide these guarantees. [Ownership](../integration/PROTOCOL_OWNERSHIP.md) governs the future machine-readable source.
+Status: **Proposed — Draft** except Accepted authority/safety rules and the **SPEC_APPROVED MP-PUB1 authorized-read contract** below. [Direct owner ratification](../development/evidence/README.md#historical-records) approves the bounded DD-12/13/15/19 amendment and required major transition; it is not a server implementation/release claim. The observed Rust bootstrap is still the 1.0 fixture contract until the separately instructed Desktop implementation migrates it. [Current runtime survey](../integration/CURRENT_COS_RUNTIME_SURVEY.md) records existing APIs; [ownership](../integration/PROTOCOL_OWNERSHIP.md) governs the sole machine-readable source.
 
 ## 1. Scope, identity and data
 
@@ -39,13 +39,102 @@ A projection key is `(entity kind, canonical entity id, projection kind)`. Its `
 
 A stream cursor identifies a durable observation position within `(server_identity, runtime_epoch, subscription_scope_id)`. Scope includes principal/authorization context, task set, filters and negotiated schema. It is not a projection revision and cannot resume another scope. Cursor is opaque to the client; ordering/continuity is expressed by predecessor links rather than arithmetic assumptions. Runtime epoch changes whenever prior cursor validity cannot be guaranteed (at minimum after a non-durable restart). A durable epoch across restart is permitted only if replay guarantees are proven. Authentication scope changes invalidate cursors.
 
+Authorization visibility is stricter than retention. Principal/authentication/read-grant/subscription changes immediately withhold old projection and receipt reads while the new exact scope is validated. Retained unresolved state is not permission; reconnect restores only after reauthorization, and epoch/owner replacement grants nothing. The MP-PUB1 handoff below is now SPEC_APPROVED under DD-12/13/15/19; actual credentials, policy enforcement, server/adapter and real compatibility remain NOT_IMPLEMENTED/NOT_RUN in this task.
+
+### Authorized read handoff
+
+**SPEC_APPROVED for MP-PUB1.** Runtime evaluates the authenticated principal, authentication context, current read policy and cursor audience on a verified server/channel. The client cannot send a principal string as proof. The negotiated target for this required-field/interaction change is **protocol 2.0 / schema 2.0**, the next major after the observed fixture1.0 pair: no optional-default downgrade, v1 read adapter or real server support is claimed. This coordinate applies only to the approved read-boundary migration, not unrelated Draft features. STEP3 implemented the 2.0 Rust declarations in `crates/desktop-protocol` (Observed: compiled and exercised by fixture transcripts); the former 1.0 declarations were replaced, not retained as a compatibility shim, and no generated schema is independently edited. Real server support remains unverified.
+
+Opaque validated IDs follow existing ID bounds/conventions; Counter remains a decimal-string counter. Request/lookup IDs are client-generated non-reused correlation identities, not credentials; Runtime issues context/revision/scope binding. New Rust wire declarations are the approved target, **not implemented types**:
+
+```rust
+pub struct ReadRequestId(String);
+pub struct ReadContextId(String);
+pub struct ReceiptReadId(String);
+pub struct ReadRevision(Counter);
+pub struct ReadStamp {
+    pub request_id: ReadRequestId,
+    pub server_id: ServerId,
+    pub epoch: EpochId,
+    pub context_id: ReadContextId,
+    pub read_revision: ReadRevision,
+    pub scope_id: ScopeId,
+}
+pub struct OpenAuthorizedObservation {
+    pub request_id: ReadRequestId,
+    pub observation: OpenObservation,
+    pub retained_commands: Vec<CommandId>, // distinct, <=448
+}
+pub struct CommandReadDecision {
+    pub command_id: CommandId,
+    pub readable: bool,
+}
+pub struct ReadGrant {
+    pub stamp: ReadStamp,
+    pub scope: ObservationScope,
+    pub local_intents_readable: bool,
+    pub command_reads: Vec<CommandReadDecision>, // exactly requested IDs
+}
+pub enum ReadInvalidationReason {
+    PrincipalChanged, AuthenticationChanged, GrantRevoked, ScopeChanged,
+    ChannelLost, EpochChanged,
+}
+pub struct ReadInvalidated {
+    pub request_id: ReadRequestId,
+    pub context_id: ReadContextId,
+    pub read_revision: ReadRevision,
+    pub reason: ReadInvalidationReason,
+}
+pub struct AuthorizedReceiptLookup {
+    pub lookup_id: ReceiptReadId,
+    pub stamp: ReadStamp,
+    pub command_id: CommandId,
+}
+pub enum ReceiptReadOutcome {
+    Allowed { receipt: Option<CommandReceipt> },
+    Denied,
+}
+pub struct ReceiptReadResult {
+    pub lookup_id: ReceiptReadId,
+    pub stamp: ReadStamp,
+    pub command_id: CommandId,
+    pub outcome: ReceiptReadOutcome,
+}
+pub struct AuthorizedCommandReceipt {
+    pub stamp: ReadStamp,
+    pub permission: CommandReadDecision, // true and matches receipt.command_id
+    pub receipt: CommandReceipt,
+}
+```
+
+| Producer → consumer | Required validation/action |
+|---|---|
+| Authenticated adapter → cos-client | Verify server/channel; synchronous close-only control on principal/auth-context/channel change before new credentials/bytes/waking. Loopback or Source is not proof. |
+| Runtime observation handler → client | Exact fresh request nonce, channel/server/epoch/context/revision and granted scope; complete decisions for the submitted retained-ID set; then stamped snapshot/replay. |
+| Runtime policy/session handler → client | Ordered current-context ReadInvalidated with newer revision, or session-wide authentication failure. Client closes shared publication fence inside decode before events/later frames/pump return. |
+| Runtime receipt handler → client | Current positive per-ID decision and actual receipt, or correlated Allowed/no receipt / Denied; validate stamp/lookup/ID before reconciliation or disclosure. |
+| Client → app-core → windows | Trusted current read view → one authorization-filtered publication; no raw grant/identity/registry/error-text. [DC-MP-PUB1](DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub1) owns local gate/retention/threading. |
+
+`ReadContextId` binds the principal/authentication context/effective read scope tuple. Reuse requires that tuple to be exactly unchanged and freshly validated; any principal/authentication/scope change changes it. Revision advances on renewal/policy change and never rolls back. Re-grant after revocation needs a new request and fresh policy evaluation; old/equal grant cannot reopen an invalidated binding. A stale lookup stamp is denied even if the object exists. The client records current invalidation floor; non-reused request IDs reject late former-session results without an unbounded historical grant cache.
+
+Local-intent permission is Runtime-issued disclosure permission for locally created lifecycle fields tagged with that exact validated origin context; it is not permission for receipts/remote errors or another context. Receipt-bearing/server-derived records require an explicit current positive per-ID decision. Grant per-ID decisions address retained IDs supplied by this client without statuses/envelopes; negative decisions contain no existence/outcome facts. Runtime policy determines readability, never Desktop Task membership or status. Missing/duplicate/extra decisions, mismatched scope/stamp/channel, oversized IDs/list/frame or unsupported required grammar fail closed; no truncated/partial grant. Existing 1MiB/frame and decoded/staging limits remain, list max448 derived from the frozen registry bound.
+
+`ClientMessage::OpenObservation` consumes OpenAuthorizedObservation instead of the unstamped request; LookupReceipt consumes AuthorizedReceiptLookup. Server adds ReadGrant, ReadInvalidated, ReceiptReadResult; ordinary receipt delivery becomes AuthorizedCommandReceipt. State-bearing ServerFrame carries an optional `read_stamp` field whose presence is **required by the message contract** after grant on SnapshotBegin/Chunk/End, DeltaTransaction, ReplayAccepted and state-bearing errors. Grant/invalidation/receipt controls have their specified payload binding; the same validation applies and conflicting duplicate envelope/payload stamps are invalid. Hello/negotiation controls have no fabricated grant. Missing required stamp never defaults to current permission. This is a breaking-major migration, not parallel v1/v2 editable DTOs.
+
+Runtime serializes grant/invalidation/state delivery and enqueues invalidation before any later data under that revoked binding, stops authorizing old-stamp queries and validates each request against current policy. Client locally closes at authenticated decode, adapter detection or synchronous local scope/auth intent as specified in DC-MP-PUB1. It cannot erase previously authorized results/frames or promise detection before network delivery. Detected channel loss/uncertainty closes; steady disconnect never presumes grant survival.
+
+Denied is a scoped read outcome with no receipt, not generic ProtocolError(command_id) execution-Failed mutation. Session-wide Unauthorized/Forbidden invalidates read access and must not settle a correlated command. Actual command execution rejection remains an independently identified authenticated command result; a rejected AuthorizedCommandReceipt carries its actual execution fact only with positive read permission. Allowed/no receipt covers absent/expired lookup; the client returns Found(actual retained state) or, only with current positive read evidence and true local absence, NotRetained. Neither means non-execution; no automatic resend. Negative unsolicited decisions must not enumerate unknown IDs. New positive receipt permission or bounded authorized lookup lets the owner reconcile continuously without a UI click.
+
+Credential issuance/storage, concrete server-channel verification, policy enforcement, canonical snapshot cut/journal and server receipt retention remain Runtime-owned, separately implemented and verified. Explicit Fixture transcripts may exercise this consumer contract while visibly Fixture; they cannot constitute authenticated real Runtime success. Required compatibility cases are 2.0/2.0 successful scripted negotiation, refusal of1.0-only/disjoint/mixed unsupported peers before data/commands, required stamp/decision rejection, and preserved existing identity/integrity/unknown-field rules.
+
+
 ### Atomic observation session
 
 Client requests `OpenObservation(scope, last_seen_cursor?, epoch?)` as one logical operation. `initial_snapshot` and `subscribe` may be convenience views of that session, never independently raced calls.
 
 For new/full observation the server establishes a consistent canonical read cut and replay position C atomically, pins/registers delivery after C before releasing that cut, then sends SnapshotBegin, complete snapshot content, SnapshotEnd with snapshot_id, scope, epoch, cursor C, expected entity counts and integrity digest. Updates committed after C are buffered/replayed in order only after SnapshotEnd. Server must not assemble unrelated endpoint responses and call the result atomic. If the server cannot hold a cut/replay reservation, fail explicitly and restart; do not silently lose updates.
 
-Client stages snapshot off the visible model, checks completeness/digest/schema/reference integrity and session generation, then swaps the whole bundle once. Only after successful atomic application is C the last_seen_cursor. Interdependent projections are either present or explicitly marked unavailable/deferred references, never accidental dangling references. Old view can remain visible as stale; it is not partly overwritten by an incomplete snapshot. Late messages from cancelled session generations are ignored.
+Client stages snapshot off the visible model, checks completeness/digest/schema/reference integrity and session generation, then swaps the whole bundle once. Only after successful atomic application is C the last_seen_cursor. Interdependent projections are either present or explicitly marked unavailable/deferred references, never accidental dangling references. A stale old view may remain visible only for the same principal/auth context/read grant/subscription scope while that authorization remains valid; on any scope/auth change or uncertainty, withhold it immediately and fail closed. It is not partly overwritten by an incomplete snapshot. Late messages from cancelled session generations are ignored.
 
 For resume, server either acknowledges ReplayAccepted for the exact scope/epoch and sends all committed transactions after last_seen_cursor, or returns ResyncRequired(reason). Reasons include expired/pruned cursor, unknown scope, authorization change, epoch change or unavailable history. Full snapshot follows the same atomic path, not a partial fallback. A fresh process without durable cached complete state cannot use a saved cursor alone; request a full snapshot.
 
@@ -80,7 +169,7 @@ Expected revision is required for mutations whose correctness depends on a viewe
 | ResultUnknown | Response lost, timeout or crash; execution may have happened |
 | CanonicalReflected | Authoritative projection/receipt links command_id to canonical effect; for Stop this still distinguishes stop-request state from terminal completion |
 
-Server Draft guarantee: persist command digest and receipt atomically with the accepted effect/intent before acknowledging. Same ID and same digest returns original receipt/result; same ID and different digest returns CommandIdConflict. In-flight duplicate cannot execute twice. Receipt status lookup by command_id must be authorized. For asynchronous execution, accepted receipt persists the intent and effect/outcome reference when known. Runtime crash recovery must not duplicate work from an accepted intent.
+Server Draft guarantee: persist command digest and receipt atomically with accepted effect/intent before acknowledging. Same ID and same digest returns original receipt/result; same ID and different digest returns CommandIdConflict. In-flight duplicate cannot execute twice. Receipt status lookup by command_id must be authorized for the current principal and scope; retaining a receipt internally does not authorize publication or lookup. For asynchronous execution, accepted receipt persists the intent and effect/outcome reference when known. Runtime crash recovery must not duplicate work from an accepted intent.
 
 Dedupe retention is negotiated and advertised as an expiry for lookup/replay safety; no retention duration is currently verified. On lost response, query receipt, refresh projections and show unknown meanwhile. Only retry the identical ID/envelope when the server explicitly guarantees dedupe is still retained and valid across the observed epoch; never generate a new ID to hide a lost response. Unknown/pruned receipt does not prove non-execution. If guarantee is absent/expired or server identity changes, do not automatically resend a mutating command. User reconciliation may create a new intentional request, clearly distinct from retry. Client cancellation/timeouts do not roll back server work. UI disable is not security control. Stop sent/accepted is never Stop completion.
 
@@ -94,7 +183,7 @@ Capabilities express supported operations and constraints at server/task/artifac
 
 Separate `desktop_version` (client release), `cosd_version` (server build; existing adapter may identify itself without claiming to be cosd), `protocol_version` (envelope/interaction), `schema_version` (payload grammar/meaning). Complete application version equality is never required.
 
-Draft protocol and schema versions are `major.minor`. Hello advertises supported ranges as `{major, min_minor, max_minor}` with inclusive bounds; multiple majors are separate entries, not one ambiguous semver expression. Initial fixture contract candidate is protocol 1.0/schema 1.0, not a claim of deployed v1 server support. Server chooses the highest mutually supported protocol and schema combination it can actually encode; client confirms before snapshots or commands. No intersection produces explicit VersionIncompatible and no side effects. The selected pair is fixed for the session; changing it requires a new observation. Advertise feature capabilities separately.
+Protocol and schema versions use `major.minor`. Hello advertises inclusive `{major, min_minor, max_minor}` ranges; multiple majors are separate entries. **Observed bootstrap:** fixture protocol1.0/schema1.0. **SPEC_APPROVED MP-PUB1 target:** protocol2.0/schema2.0 for mandatory read stamps/control grammar above; the migrated client advertises no authorized-read v1 downgrade. Neither is a deployed server claim. Server chooses the highest mutually supported pair it actually encodes, client confirms before snapshots/commands, and no intersection produces VersionIncompatible with no effects. Pair changes require a new observation; feature support is advertised separately.
 
 Minor additions may add optional fields with explicit defaults that preserve prior semantics. Emit fields/events only as supported by the negotiated schema; never add a required field or reinterpret a value in a minor update. Unknown noncritical fields are ignored (bounded parsing); unknown fields cannot bypass required-field validation. Unknown informational event with `affects_state=false` may be skipped while respecting its cursor continuity. Unknown state-changing event or unknown critical extension triggers incompatibility/resync, never silent cursor advancement. Unknown enum values remain an explicit Unknown(raw) presentation value and disable operations requiring understood semantics; unknown command discriminants are rejected, never executed as a default variant. If the selected schema cannot represent an authoritative state safely, server rejects that schema instead of lying by coercion.
 
@@ -104,7 +193,7 @@ Breaking semantics, removal, new mandatory fields, incompatible identity/framing
 
 Accepted pipeline: ArtifactSnapshot → MediaDescriptor → authorized media service → background decode → GPUI-owned GPU texture. Metadata, thumbnail, preview and original are distinct representations. No JSON + base64 images. No control-plane binary bytes. Complete media service/pipeline is Deferred beyond bootstrap.
 
-Draft descriptor fields: opaque descriptor_id, artifact_ref, representation kind/version, media type, byte length/dimensions/duration where known, availability, verification state and expected digest/algorithm where meaningful, authorized locator/access_handle, server identity, audience/principal scope and expiry. Locator is a same-authority service endpoint or opaque handle, not a filesystem path or unrestricted URL capability. Client allows only negotiated server/scheme/origin; no arbitrary redirects, local file schemes, shell commands or metadata-driven executable actions. Server resolves handles and enforces task/artifact authorization again. Do not log signed URLs/tokens or persist credentials in plaintext.
+Draft descriptor fields: opaque descriptor_id, artifact_ref, representation kind/version, media type, byte length/dimensions/duration where known, availability, verification state and expected digest/algorithm where meaningful, authorized locator/access_handle, server identity, audience/principal scope and expiry. Expected-digest provenance is the authenticated descriptor issuer/identity and its authorized scope; it does not prescribe a new wire field, and this remains Draft pending Runtime/protocol approval. Absence of an expected digest means content is **not Verified**; it does not alone prohibit a safe bounded local decode, but must not be reported as verified. Locator is a same-authority service endpoint or opaque handle, not a filesystem path or unrestricted URL capability. Client allows only negotiated server/scheme/origin; no arbitrary redirects, local file schemes, shell commands or metadata-driven executable actions. Server resolves handles and enforces task/artifact authorization again. Do not log signed URLs/tokens or persist credentials in plaintext.
 
 Expired descriptor is refreshed through cos-client; missing/forbidden/pending/unsupported remain distinct states. Verify content identity/length/type and bounded decode policy before upload; digest mismatch quarantines/discards bytes and reports verification failure, never replaces canonical identity. External media remains untrusted even when transport-authenticated. Cache key includes canonical identity, representation and authorization scope, with independently bounded metadata/thumbnail/CPU/GPU budgets. GPUI texture ownership never leaks into protocol/client. OS file access for explicit import/export requires separate user-scoped permissions, not a MediaDescriptor escape hatch.
 

@@ -10,16 +10,16 @@ Creative Task → Artifact → Evaluation → Evidence → Refinement → Iterat
 
 | Repository | Exclusive responsibility |
 |---|---|
-| Runtime: COS Runtime (separate repository) | REOS; COS Domain; Creative Task canonical semantics; Versioned DMLG; Graph Kernel; Immutable Execution Plan; Worker Runtime; Artifact canonical identity/CAS; Evaluation; Evidence; Refinement semantics; Provenance; Knowledge; Formal Outcome; Persistence; runtime authority; future cosd; Desktop-facing canonical projections; protocol server |
-| Desktop: `<desktop-root>`, target `dio16/cos-desktop` | Native GPUI app; shell; Work Surface; Artifact presentation; Compare UX; Flow/DMLG visualization; Inspector; Creative Loop Dock; Command Palette; Desktop-local state; UI Model; COS client; media presentation/cache; OS integration; windows; installer/updater; diagnostics; accessibility; native performance; independent release lifecycle |
+| Runtime: `<runtime-root>`, external Runtime repository | REOS; COS Domain; Creative Task canonical semantics; Versioned DMLG; Graph Kernel; Immutable Execution Plan; Worker Runtime; Artifact canonical identity/CAS; Evaluation; Evidence; Refinement semantics; Provenance; Knowledge; Formal Outcome; Persistence; runtime authority; future cosd; Desktop-facing canonical projections; protocol server |
+| Desktop: `<desktop-root>`, this repository | Native GPUI app; shell; Work Surface; Artifact presentation; Compare UX; Flow/DMLG visualization; Inspector; Creative Loop Dock; Command Palette; Desktop-local state; UI Model; COS client; media presentation/cache; OS integration; windows; installer/updater; diagnostics; accessibility; native performance; independent release lifecycle |
 
-Never move Task Status, Formal Outcome, Evaluation result, Best candidate/Winner, Formal selection, GraphRevision, ExecutionPlan, Artifact canonical identity or Stop completion authority into Desktop. Do not create `cosd`, `artifact-service`, or `provider-adapters` in this repository. Desktop's future `media` crate is presentation/cache, not the canonical artifact service.
+Never move Task Status, Formal Outcome, Evaluation result, Best candidate/Winner, Formal selection, GraphRevision, ExecutionPlan, Artifact canonical identity or Stop completion authority into Desktop. Do not create `cosd`, `artifact-service`, or `provider-adapters` in this repository. Desktop's `media` crate is presentation/cache, not the canonical artifact service.
 
-Forbidden: monorepo conversion; Runtime submodule; Desktop beneath Runtime; merged histories/releases; direct dependencies on Runtime internal crates; Runtime DB/artifact DB/internal config access; launching internal Python using a hardcoded checkout path. `<runtime-root>` in historical development instructions is illustrative, never a production endpoint.
+Forbidden: monorepo conversion; Runtime submodule; Desktop beneath Runtime; merged histories/releases; direct dependencies on Runtime internal crates; Runtime DB/artifact DB/internal config access; launching internal Python using a hardcoded checkout path. `<runtime-root>` is an inspection location, never a production endpoint.
 
 ## Implemented minimal shape
 
-Implemented workspace members: `apps/desktop`, `crates/desktop-gpui`, `crates/ui-model`, `crates/app-core`, `crates/cos-client`, `crates/desktop-protocol`. `crates/media` and `crates/platform` remain deferred and are not scaffolded. Root also has Apache-2.0 LICENSE/NOTICE, toolchain/config, fixtures, scripts, Windows CI, and docs. `Binary package name is cos-desktop`; actual invoked selector is `-p cos-desktop`, not the earlier planned `-p desktop`.
+Implemented workspace members: `apps/desktop`, `crates/desktop-gpui`, `crates/ui-model`, `crates/app-core`, `crates/cos-client`, `crates/desktop-protocol`, `crates/media`. MP-IMG1 introduces local encoded-input/key/cache feasibility only; decode/GPU/external acquisition remain conditional, and Native picker qualification is separately recorded. `crates/platform` remains deferred and is not scaffolded. Root also has Apache-2.0 LICENSE/NOTICE, toolchain/config, fixtures, scripts, Windows CI, and docs. Binary package name is `cos-desktop`; invoke `-p cos-desktop`, not the earlier planned `-p desktop`.
 
 | Planned path | Responsibility |
 |---|---|
@@ -29,7 +29,7 @@ Implemented workspace members: `apps/desktop`, `crates/desktop-gpui`, `crates/ui
 | `crates/app-core` | Navigation, command orchestration, preferences, capabilities, connection lifecycle; no GPUI |
 | `crates/cos-client` | Transport-independent client interface and observation/recovery; fixture provider behind the same boundary |
 | `crates/desktop-protocol` | Versioned wire contract only, not Domain objects |
-| `crates/media` (Deferred) | Bounded media retrieval/decode/cache, not GPU resources or canonical identity |
+| `crates/media` (local encoded boundary introduced by MP-IMG1) | Typed representation keys, bounded local encoded acquisition/integrity/cache; admitted decode/external acquisition remain future tasks; no GPU resources or canonical identity |
 | `crates/platform` (Deferred) | OS integration, credential-store interfaces, platform adapters; no Domain semantics |
 
 Responsibility order: `cos-desktop` binary → desktop-gpui → ui-model → app-core → cos-client → desktop-protocol. This is not an adjacency-only dependency rule. [DEPENDENCY_RULES.md](DEPENDENCY_RULES.md) alone defines allowed direct workspace edges. Adding cos-client isolates transport, not Domain authority.

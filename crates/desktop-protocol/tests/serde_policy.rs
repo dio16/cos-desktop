@@ -237,8 +237,9 @@ fn unknown_server_message_kinds_default_to_state_changing() {
         mutations: Vec::new(),
     });
     let wire = ServerWire::Frame(desktop_protocol::ServerFrame {
-        protocol: Version::new(1, 0),
-        schema: Version::new(1, 0),
+        protocol: Version::new(2, 0),
+        schema: Version::new(2, 0),
+        read_stamp: None,
         message: known.clone(),
     });
     let encoded = serde_json::to_string(&wire).expect("wire serializes");

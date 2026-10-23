@@ -1,0 +1,1151 @@
+# COS Desktop Implementation Master Plan
+
+Status: **Execution projection of the Desktop Design Canon and canonical component contracts.** Historical freeze-reviewed source: `f3ea37eaba8ed36551b2cfa3d8b370cd01956d70`; this plan update is a documentation-only reconciliation, not covered by that review. The plan owns priority, DAG/milestones, readiness, prerequisites, approval/evidence reporting, and crosswalk—not design contracts. No implementation/UX/Runtime/R0/video approval is granted here.
+
+It does **not** own and does not restate:
+
+- Desktop architecture, decision ownership and cross-layer invariants → [DESKTOP_DESIGN_CANON.md](../architecture/DESKTOP_DESIGN_CANON.md).
+- Task behavior, APIs, failure, rollback and observable acceptance → [DESKTOP_DESIGN_CONTRACTS.md](../architecture/DESKTOP_DESIGN_CONTRACTS.md); each task below links its one canonical contract.
+
+- Product/UX semantics → [COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md](../architecture/COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md) (sole product/UX canon; unchanged by this plan).
+- Rendering/performance/visual architecture, R0–R10 phases, numeric budgets → [RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md](../architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md) + [ADR-0007](../decisions/ADR-0007-RENDERING-PERFORMANCE-VISUAL-ARCHITECTURE.md) (pin KEEP; not reopened here).
+- Measured evidence → [historical finalization evidence](ARCHITECTURE_PLAN_FINALIZATION_REPORT.md), [projection baseline](PROJECTION_MEASUREMENT_2026-10-08.md), and historical [TERN_BINARY_RENDERING_ANALYSIS.md](TERN_BINARY_RENDERING_ANALYSIS.md); historical workflow record → [disclosure](evidence/README.md#historical-records).
+- Physical ownership/dependency law → [REPOSITORY_ARCHITECTURE.md](../architecture/REPOSITORY_ARCHITECTURE.md), [DEPENDENCY_RULES.md](../architecture/DEPENDENCY_RULES.md).
+- Wire contract → [DESKTOP_PROTOCOL.md](../architecture/DESKTOP_PROTOCOL.md), [PROTOCOL_OWNERSHIP.md](../integration/PROTOCOL_OWNERSHIP.md).
+- Runtime change requests → [COS_RUNTIME_REQUIRED_CHANGES.md](../integration/COS_RUNTIME_REQUIRED_CHANGES.md) (RC-01–RC-17, still **Proposed** requests, not an approved Runtime plan).
+
+**The document itself grants no implementation authority.** Current direct-user execution, dev-integration and task-branch-cleanup authority is recorded in [§19.6](#196-current-user-authority-and-continuous-execution). It supersedes the older per-task start-authorization restrictions without waiving canonical design, Runtime, UX, measurement or security decisions.
+
+Evidence vocabulary (unchanged from repository policy): **Observed** = directly inspected/executed with recorded evidence; **Accepted** = decided policy, not implemented behavior; **Proposed** = candidate needing validation; **Deferred** = triggered re-entry stated.
+
+---
+
+## 1. Scope, authority and planning baseline
+
+**Historical planning baseline (earlier pass):** the table records that pass's branch, observations and docs-only scope. Current finalization from `dev` includes the authorized existing app-core test correction and fresh validation/measurements described in §1.1; it does not reuse the historical scope as a current assertion.
+
+| Item | Value |
+|---|---|
+| Repository / branch policy | Desktop repository; `feature/*` → `dev` → `main` |
+| Planning branch | `feature/implementation-master-plan` created from `main` |
+| Baseline SHA (observed) | `aa9a07e41d1ae647ef365ffd67e65cffcf9b8f9e` (`main` = `origin/main` = `dev` = `origin/dev` at planning time) |
+| Toolchain (observed) | `rustc 1.98.1 (48a229cea 2026-09-01)`, `cargo 1.98.1 (797e8a9bc 2026-08-05)` via `rust-toolchain.toml` |
+| GPUI pin (observed, KEEP) | Zed `395def7a067b32ed598fcb3f048969ada9b54942` (`gpui 0.2.2`) |
+| Workspace members (observed) | `apps/desktop`, `crates/desktop-gpui`, `crates/ui-model`, `crates/app-core`, `crates/cos-client`, `crates/desktop-protocol` |
+| Runtime checkout (observed, read-only) | `<runtime-root>`, branch `dev`, HEAD `f9867478fdd7080137a9dadabc55c2be2f18adf7`, clean worktree; the 2026-09-21 survey baseline `f94985bd…` is **historical** |
+| Document scope | Planning and documentation only: no Rust/test/script/CI/manifest/lockfile/pin change, no Runtime change, no benchmark or feature implementation |
+
+### 1.1 Evidence provenance and this plan update
+
+**Historical planning observations:** the repository/branch, earlier Runtime checkout, fixture COR-01 reproduction and DOC-01 corrections below belong to the earlier planning pass. They are not current Runtime execution or a current worktree assertion.
+
+**Historical 2026-10-08 finalization:** the 62 task cards, hard DAG, readiness distribution and canonical ownership were reconciled against actual Desktop code. Repository provenance, full local quality gates, test-only correction, Windows native smoke and bounded measurements are recorded in [the finalization evidence](ARCHITECTURE_PLAN_FINALIZATION_REPORT.md). Public projection measurements are in [the source-qualified baseline report](PROJECTION_MEASUREMENT_2026-10-08.md).
+
+**Not qualified:** real Runtime integration/task survival, product media/Video, the Golden Workflow, packaging/update, full AX/IME/mixed-DPI matrix, R0 authorization and ratified SLOs. Historical [Tern analysis](TERN_BINARY_RENDERING_ANALYSIS.md) is not same-driver paired evidence. This plan indexes evidence; it does not turn an observation or specification into implementation authorization or product acceptance.
+
+**Current 2026-10-11 workflow reconciliation:** MP-COR1 is `COMPLETED_ACCEPTED` by its recorded Caller decision (§19.1), not by a plan label or Refine success. Standard subsequent work is Taskern planning/context → existing Agent implementation/test → candidate commit → Refine 0.3 independent Gate → Tern review → separate Caller acceptance/integration. The owning [boundary policy](../integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md) and [STEP 1 historical record](evidence/README.md#historical-records) qualify those observations. The subsequent user instruction authorizes STEP 2–5 progression after each clean Tern review; §19.2 records the current packet. This does not authorize acceptance, integration or other product tasks.
+
+**Current 2026-10-17 MP-PUB1 disposition:** The recorded Caller decision is **COMPLETED_ACCEPTED at Desktop fixture/public seam** for product `6b05dcc7df280ab6ef6f50d6a2cad28f90c4abeb` and reviewed docs closure `68524496ba5383a195f151dee303ab5660905714`. Recorded Gate, native run2 and independent Tern review remain distinct historical outcomes. A19 remains NOT_RUN; no next MP, remote push/merge, branch deletion or release follows. Historical raw records are private; see the [disclosure](evidence/README.md#historical-records).
+
+**Historical 2026-10-16 MP-PUB1 correction evidence:** The append-only corrections and STEP2–6 history are retained privately; see the [historical-records disclosure](evidence/README.md#historical-records). The historical missing-native HOLD and provider prerequisite were superseded by the actual run2 and final Tern technical PASS above; failed receipts and partial batches were not rewritten or retroactively passed.
+
+---
+
+## 2. Current implementation baseline
+
+Per-feature classification: `IMPLEMENTED_AND_VERIFIED` (historical checked-in evidence, not re-executed by this docs step), `IMPLEMENTED_BUT_INCOMPLETE`, `IMPLEMENTED_WITH_CORRECTNESS_RISK`, `DESIGN_READY_NOT_IMPLEMENTED`, `REQUIRES_DESIGN_DECISION`, `BLOCKED_BY_RUNTIME`, `BLOCKED_BY_UX`, `DEFERRED`, `NOT_AUTHORIZED`. MP-COR1 completion is updated from its later accepted evidence; other baseline observations retain their original scope.
+
+| # | Area | Class | Evidence (observed source) |
+|---|---|---|---|
+| 1 | GPUI shell / window / keyboard / focus | IMPLEMENTED_BUT_INCOMPLETE | `crates/desktop-gpui/src/lib.rs:18-155` (surfaces, focus handles, `Ctrl+1/2/3`, `Ctrl+Tab`, Tab/Enter/Space, `Ctrl+D`); placeholder bodies `:128-130`; task rail "not implemented" `:204-215`; stop unavailable `:237-255` |
+| 2 | ui-model / presentation-local state | IMPLEMENTED_BUT_INCOMPLETE | `crates/ui-model/src/lib.rs:1-58` viewed/compare/diagnostics; `Workbench::new` one-shot text derivation `:80-166`; unit test asserts viewed≠compare |
+| 3 | app-core / command ownership | IMPLEMENTED_BUT_INCOMPLETE | `crates/app-core/src/lib.rs:14-104`: private boxed `DesktopClient`, `snapshot()` on demand, stop route, `disconnect()` drops events; no event subscription/publication; `navigation.rs` 3 surfaces |
+| 4 | cos-client / snapshot / delta / recovery | IMPLEMENTED_AND_VERIFIED for MP-COR1's accepted scope; MP-COR2 technically verified and merged to dev, not Caller-accepted | Delta effective-state validation before apply/publish/cursor advance in `client.rs`; snapshot and delta reuse `EffectiveState::validate` in `projection.rs`; public regressions in `tests/effective_state.rs` and `tests/graph_integrity.rs`. [COR1 Caller acceptance](evidence/README.md#historical-records), [COR1 quality evidence](evidence/README.md#historical-records), [COR2 Gate/review closure](evidence/README.md#historical-records), [independent final assessment](evidence/README.md#historical-records), [dev integration](evidence/README.md#historical-records). Real Runtime, R0 ratification and COR2 Caller acceptance remain unqualified. |
+| 5 | desktop-protocol / version / identity / revision | IMPLEMENTED_AND_VERIFIED | `src/ids.rs` typed identities (`CandidateRef` 5-tuple, formal selection, `GraphRef` exact version+digest); `src/versions.rs` range negotiation; `src/bounds.rs` limits; tests `serde_policy.rs`, `negotiation.rs` |
+| 6 | Runtime transport / authentication / subscription | DESIGN_READY_NOT_IMPLEMENTED + BLOCKED_BY_RUNTIME | `src/transport.rs:1-32` raw byte seam only; `main.rs:28-41` Runtime path always `AppCore::disconnected`; principal-from-transport rule `messages.rs:76-93`; RC-01/02/03 unresolved |
+| 7 | Task Rail / navigation | DESIGN_READY_NOT_IMPLEMENTED | shell text `:204-215`; no task list model; `navigation.rs` covers only 3 work surfaces |
+| 8 | Creative Brief / Task creation | DESIGN_READY_NOT_IMPLEMENTED + BLOCKED_BY_RUNTIME/UX | `CreateTaskCommand` DTO exists (`messages.rs` ~605-700); fixture capability marks create unsupported (asserted `fixture_observation.rs:116-126`); brief field set/validation not frozen |
+| 9 | Candidate Dock / iteration / history | IMPLEMENTED_BUT_INCOMPLETE (dock qualification) / DESIGN_READY_NOT_IMPLEMENTED (history timeline) | implementation at `23a2a5f`; [historical native observations and correction](evidence/README.md#historical-records) show bounded row construction and Viewed retention, but source binding, active/anchor retention, Compare evidence and independent verification remain incomplete; history/unavailable policy is MP-DOCK2 |
+| 10 | Artifact / Image / Compare | DESIGN_READY_NOT_IMPLEMENTED | "Media viewer not implemented" `desktop-gpui:128-130`; compare pair model only (`ui-model:20-39`); no decode/upload/cache code anywhere |
+| 11 | Evaluation / Evidence / Inspector | IMPLEMENTED_BUT_INCOMPLETE (text) / DESIGN_READY for the surface | evaluation/evidence flattened to strings `ui-model:120-148`; DTOs `projections.rs:241-303`; no inspector surface, no evidence detail fetch |
+| 12 | Stop / command reconciliation | IMPLEMENTED_AND_VERIFIED at client level, incomplete in UI | statuses `client.rs:110-147`; `commands.rs:26-78` (accepted ≠ completion), `:213-273` (lost response stays unknown); shell exposes no stop control |
+| 13 | Flow / DMLG inspection | DESIGN_READY_NOT_IMPLEMENTED | graph DTO `projections.rs:352-408`; shell prints node labels joined with arrows; no layout, culling, inspection list |
+| 14 | Diagnostics / observability | IMPLEMENTED_BUT_INCOMPLETE | `diagnostics_open` toggle; diagnostics string built once in `ui-model:82-107`; no bounded ring buffer, counters, redaction policy implementation |
+| 15 | Accessibility / DPI / IME | DESIGN_READY_NOT_IMPLEMENTED | labels/roles/focus in shell; no IME text entry, no screen-reader verification, no DPI matrix, no known-AT matrix |
+| 16 | Device loss / reconnect / recovery | IMPLEMENTED_AND_VERIFIED (client staging/recovery) + DESIGN_READY_NOT_IMPLEMENTED (OS/GPU device loss, live session reconnect) | client queue overflow/epoch/session recovery in `tests/recovery.rs`; no device-loss handling; no reconnect because no live session owner exists |
+| 17 | Packaging / distribution / update | DEFERRED | no installer/updater/signing code; canon §60–61 remain product requirements |
+
+The table above retains the pre-MP-PUB1 implementation baseline, not a current assertion that observation is absent. MP-PUB1 subsequently introduced observation/publication and live fixture refresh; its current evidence, successful Gate and incomplete native acceptance are indexed in §5.2, its task card and §19.5. Unrelated surface/Runtime/UX completion is not inferred.
+
+Additional confirmed structural facts used by this plan (all observed):
+
+- **Historical pre-MP-PUB1 absence of a live update path:** the fixture client was pumped once before `AppCore` took ownership, and text was derived once with no later subscription. This described the original baseline, not today's implementation. Current observation/live fixture refresh exists; its Gate success and remaining native acceptance gap are recorded in §5.2 and §19.5.
+- **Conditional copy-on-write:** `SnapshotHandle = Arc<ProjectionState>`; mutation uses `Arc::make_mut`, so a retained handle forces a full `ProjectionState` clone on the next delta (rendering companion §4). Instrumentation is required before changing this boundary.
+- **Candidate element identity** is `("candidate", index)` — enumeration position, not scoped identity (rendering companion §2, §4; violates the stable-identity policy).
+- **CI:** gates 1–5 + dependency checker declared in `.github/workflows/ci.yml`; native startup smoke is an explicit **manual** gate; remote execution was never successfully started (BOOTSTRAP_REPORT §6).
+
+---
+
+## 3. Accepted invariants (canon reference)
+
+The [Desktop Design Canon](../architecture/DESKTOP_DESIGN_CANON.md) owns accepted architecture, state/authority boundaries, security and cross-layer invariants. The Product/UX Canon owns product meaning; ADRs and protocol documents own their respective decisions. This plan does not paraphrase those rules. Each task's single linked DC contract is the implementation-facing behavior and acceptance authority. See the owner documents when needed; conflicts or uncovered behavior return to the relevant owner rather than being resolved in this execution index.
+
+---
+
+## 4. Target MVP and deferred scope
+
+The Product/UX Canon §68 owns MVP and deferred scope. The traceability crosswalk in §15.3 retains the mapping to tasks, including Video as an MVP requirement with separate authorization gates. This plan neither changes product scope nor closes an MVP item by relabeling a capability limitation.
+
+---
+
+
+## 5. Correctness prerequisites (P0)
+
+### 5.1 COR-01 — delta reference integrity: **RESOLVED, MP-COR1 accepted**
+
+Current status: the shared aggregate validator now checks the effective transaction before apply/publish/cursor advance. The historical Caller acceptance, fail-before/after record and quality gates are retained privately; see the [historical-records disclosure](evidence/README.md#historical-records). This does not complete publication, graph scaling or real Runtime integration.
+
+**Historical pre-fix observation and reproduction:** `client.rs:1181-1318` then checked references against the pre-transaction state and applied writes without an aggregate delta check; `validate_integrity` ran only on snapshot construction. The following public-fixture harness output was recorded before MP-COR1, not reproduced against current code:
+
+```text
+baseline: tasks=1 candidates=5 artifacts=5 iterations=3
+A remove-referenced-artifact: connection=Live delta_applied=true error=false removed=true
+  dangling_candidates=["fixture:candidate/a"]  (referenced it before: ["fixture:candidate/a"])
+B reciprocal-mismatch upserts: connection=Live delta_applied=true error=false
+  iteration_lists_candidate=true
+  candidate_iteration_ref=Some("fixture:iteration/Task-184/3")
+  iteration_candidate_refs=Some(["fixture:candidate/plan-z"])
+cursor_after=Some("fixture:cursor/plan/cor01-b") epoch=Some("fixture:epoch/1")
+```
+
+Two distinct defects were demonstrated on that pre-fix revision:
+
+- **A (referenced entity removed):** a single `Remove { Artifact }` mutation that a candidate still references is accepted; the resulting published state violates `validate_integrity`'s artifact-reference rule and the cursor advances.
+- **B (delete/update inside one transaction):** two upserts that pass per-mutation checks but break reciprocal iteration↔candidate ownership are accepted and published.
+
+The historical reproduction established delta/snapshot integrity inconsistency. MP-COR1's later acceptance above closes that defect under DC-MP-COR1; the original output is retained as failure provenance, not a current failure claim.
+
+### 5.2 ARC-01 — state publication/observation ownership: **RESOLVED at accepted Desktop fixture/public seam**
+
+Historical pre-MP-PUB1 observation: `AppCore` owned a private `Option<Box<dyn DesktopClient>>` with on-demand `snapshot()` and no subscription, revision or notification (`app-core/src/lib.rs:14-104`); `Workbench::new` derived text once (`ui-model/src/lib.rs:80-166`); the shell's only `cx.notify()` sources were initial load and local UI actions. That baseline identified missing live projection, recovery, receipt and stale-state publication. It is retained as defect provenance, not the current implementation state.
+
+The contract remains [DC-MP-PUB1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub1). Historical owner ratification, acceptance, Gate and review records are private; see the [historical-records disclosure](evidence/README.md#historical-records). A19 real authenticated Runtime remains NOT_RUN; ownership/generation/multi-window/read semantics still come from the contract.
+
+### 5.3 PERF-01 — graph validation cost: **confirmed asymptotic**
+
+Observed code scans both edge endpoints through `graph.nodes.iter().any(…)`, giving Θ(E·V) graph membership work in integrity and graph-upsert validation. The [fresh public-API baseline](PROJECTION_MEASUREMENT_2026-10-08.md) measures validation across 1k/10k/50k-edge corpora, legal rewires, retained-handle COW and approximate process memory. It supports COR1 correctness first, then COR2's bounded per-graph membership index inside the same validation owner. Exact allocation counts and an optimized paired A/B result are NOT_MEASURED; no improvement or R0 threshold acceptance is inferred.
+
+---
+
+## 6. Design decision ownership (derived gate index)
+
+The authoritative DD-01–DD-26 registry, decision owners, approval ladder and predicates now live in [Desktop Design Canon §6](../architecture/DESKTOP_DESIGN_CANON.md#6-decision-ownership-and-approval-state). The current plan task cards reference those decisions for **readiness, scheduling and execution**, never for unilateral design approval.
+
+Except the scoped MP-PUB1 owner ratification above, previously pending DD/RC/UX/experiment gates remain pending. SPEC_DRAFTED, plan readiness and review never ratify themselves. Owning design/Protocol/Runtime/ADR approval transitions are recorded first and mirrored here. MP-PUB1's grant authorizes Desktop scope only, not Runtime implementation or a later-step start; no other task approval follows.
+
+---
+
+## 7. Milestones, dependency DAG and task contracts
+
+### 7.1 Milestones
+
+| Milestone | Goal | Exit (observable) |
+|---|---|---|
+| **M1 Correctness foundation** | Delta integrity is trustworthy; graph validation is scalable; publication contract frozen | DC-MP-COR1 integrity regressions PASS; DC-MP-COR2 public behavior/error-order parity and same-condition 10k/50k comparison evidence; internal counters optional diagnostics, not an exit gate |
+| **M2 Measurement foundation (R0)** | Repeatable harness, honest NOT_MEASURED reporting, ratified thresholds | rendering §10.1/§11.1/§11.2 executed on the locked shell; ratification record |
+| **M3 UX prototype & validation** | Golden-workflow comprehension validated before production surfaces | UX validation record (canon §65) with the 8 comprehension checks |
+| **M4 Design system, typography, DPI** | Token/typography system with native evidence | R1 exit: no clipping/missing glyphs/focus/contrast failures in the declared matrix |
+| **M5 State publication & live shell** | Live, revisioned, cancellable projection → window updates | ARC-01 contract implemented; no stale overwrite; local state preserved |
+| **M6 Navigation & task surfaces** | Task Rail, Brief creation, History | Virtualized rail; create flow behind capability+contract; reopen from history |
+| **M7 Candidates, iterations, history detail** | Dock + timeline with stable identity | 10k-item rail-scale behaviour; viewed/compare survive inserts/removals |
+| **M8 Artifact/image presentation** | Representations, decode/upload/eviction, full view | R4 Decode→Upload→Eviction gates pass per codec/representation |
+| **M9 Evaluation/Evidence/Inspector** | Explainability surfaces | Evaluation→Evidence→Refinement→Outcome navigation from authoritative projections |
+| **M10 Compare** | Two-pane compare with resource reuse | R5 exit + UX-01 decisions implemented |
+| **M11 Flow/graph** | Read-only Flow + inspection-first graph | R6 simplest passing stage; accessible inspection |
+| **M12 Runtime integration** | Real transport, identity, authorization, observation | Contract freeze + real-server acceptance campaign |
+| **M13 Security & capability** | Credentials, gating, redaction, untrusted media | Security acceptance scenarios pass |
+| **M14 Recovery & device loss** | R8 hardening + crash/restart behaviour | Plateau/release + device recovery evidence |
+| **M15 Video** | MVP video path *if and only if* authorized; investigation and authorization are separate milestones of their own | VID1/VID2 complete → a recorded capability/authorization decision; VID3/VID4 complete only if the decision authorizes implementation **and** R7 gates pass. An "unavailable" finding completes VID1/VID2 only — the MVP item stays open (it may not be closed by declaring the capability restricted; that would require a Product-owner scope exception). |
+| **M16 Accessibility & polish** | R10 consolidated + R9 polish | R10 matrix; no idle animation/legibility regressions |
+| **M17 Packaging & release** | Installer/portable/updater/diagnostics | Signed artifacts + update/rollback procedure |
+| **M18 Product acceptance** | Golden Workflow + canon §63–66 evidence | Acceptance report with all NOT_MEASURED items labelled |
+
+### 7.2 Dependency DAG (no cycles)
+
+```mermaid
+flowchart TD
+    COR1[MP-COR1] --> PUB1[MP-PUB1]
+    PUB1 --> PUB2[MP-PUB2]
+    PUB1 --> PUB3[MP-PUB3]
+    PUB2 --> NAV1[MP-NAV1]
+    PUB2 --> DOCK1[MP-DOCK1]
+    PUB2 --> NAV4[MP-NAV4]
+    PUB2 --> NAV5[MP-NAV5]
+    R0A[MP-R0A] --> R0B[MP-R0B]
+    R0A --> R0C[MP-R0C]
+    R0B --> R0D[MP-R0D]
+    R0C --> R0D
+    TYP1[MP-TYP1] --> TYP2[MP-TYP2]
+    TYP2 --> PL1[MP-PL1]
+    SEC2[MP-SEC2] --> REL3[MP-REL3]
+    SEC2 --> RT2[MP-RT2]
+    IMG1[MP-IMG1] --> IMG2[MP-IMG2]
+    IMG1 --> IMG6[MP-IMG6]
+    IMG1 --> SEC3[MP-SEC3]
+    SEC3 --> IMG2
+    IMG2 --> IMG3[MP-IMG3]
+    IMG3 --> IMG4[MP-IMG4]
+    IMG4 --> IMG5[MP-IMG5]
+    IMG5 --> CMP1[MP-CMP1]
+    DOCK1 --> DOCK2[MP-DOCK2]
+    DOCK2 --> INS1[MP-INS1]
+    INS1 --> INS2[MP-INS2]
+    INS1 --> INS3[MP-INS3]
+    FLOW1[MP-FLOW1] --> FLOW2[MP-FLOW2]
+    FLOW2 --> FLOW3[MP-FLOW3]
+    RT1[MP-RT1] --> RT2[MP-RT2]
+    RT2 --> RT3[MP-RT3]
+    RT2 --> RT4[MP-RT4]
+    RT2 --> RT5[MP-RT5]
+    RT2 --> RT7[MP-RT7]
+    RT2 --> IMG6
+    RT6[MP-RT6] --> IMG6
+    SEC1[MP-SEC1] --> RT2
+    IMG4 --> REC1[MP-REC1]
+    IMG4 --> REC2[MP-REC2]
+    AX1[MP-AX1] --> AX2[MP-AX2]
+    REL1[MP-REL1] --> REL2[MP-REL2]
+    NAV2[MP-NAV2]
+    NAV3[MP-NAV3]
+    RT8[MP-RT8]
+    REC3[MP-REC3]
+    COR2[MP-COR2]
+    PUB4[MP-PUB4]
+    UX1[MP-UX1]
+    UX2[MP-UX2]
+    UX3[MP-UX3]
+    UX4[MP-UX4]
+    VID1[MP-VID1]
+    VID2[MP-VID2]
+    VID3[MP-VID3]
+    VID4[MP-VID4]
+    ACC1[MP-ACC1]
+    ACC2[MP-ACC2]
+```
+
+This graph contains **62 task nodes and 41 hard implementation edges**. An edge means the dependent implementation cannot start without the upstream task result. The forward-ordered edges are acyclic. Decision/authorization, measurement readiness, conditional Runtime functionality and downstream product acceptance are separate gates, not hard task dependencies. MP-IMG1 local/fixture inputs do not depend on MP-IMG6; MP-IMG5 local/fixture full-view feasibility does not depend on MP-IMG6; MP-NAV4 fixture/local axes and native interaction do not depend on MP-RT4. External-media decode requires the MP-IMG6/MP-SEC3 admission and authorization gates; MP-IMG6 also requires MP-RT2 descriptor transport and MP-RT6 authorization. Production full-detail acceptance requires MP-IMG6; NAV4 real receipt reflection and Runtime acceptance require MP-RT4. Desktop-local REC3 restoration is not blocked by RT3/RT8; task-survival/product acceptance remains conditional on real Runtime evidence. VID1→VID2→VID3→VID4 is an authorization/acceptance sequence, not an implementation dependency chain.
+
+**Non-DAG gate crosswalk:** R0A→R0B/R0C→R0D is the R0 evidence sequence; R0 authorization and R0D gate measurement-based experiments/adoption, not independently implementable work. UX-01/DD-03 gates Compare semantics; DD-04a/04b gate typography implementation/adoption; DD-05 gates the Palette inventory; DD-06/DD-25 and RC-01/09 gate real task creation; DD-01 `SPEC_APPROVED` plus separate `IMPLEMENTATION_AUTHORIZED` gates PUB1; RT4 gates NAV4's Runtime receipt reflection. IMG6/RT6/RC-13 gate production media; IMG1–5 local feasibility is not Runtime-blocked. Video stays MVP-required and NOT_AUTHORIZED: VID1 probe authorization precedes VID2 authorization decision; VID3 implementation is permitted only if VID2 authorizes it; VID4 acceptance follows the selected path, with any scope exception governed by Product-owner acceptance, not a hard DAG edge.
+
+MP-ACC1 remains a **conditional product gate** over required evidence from MP-NAV2, MP-IMG5/6, MP-CMP1, MP-INS1/2, MP-FLOW1, MP-NAV3, MP-RT3/4/5/7, MP-REC3 and MP-REL1; DD-25 Start/Next Iteration remains required before those steps pass. MP-ACC2 remains a **release gate** over MP-ACC1, MP-FLOW3, MP-REL2, MP-REC2, MP-NAV5, MP-PL1, MP-AX2, MP-PUB3, DD-04b typography adoption, and VID4 unless the Product owner records an explicit scope exception. These acceptance conditions remain in the owning contracts; they are not hard DAG ancestors.
+
+### 7.3 Parallel lanes (reconstructed from the corrected DAG)
+
+The table groups related work; it does not add dependencies. Only the §7.2 edges are hard prerequisites. Gates can constrain a declared task slice or its acceptance exit without blocking other explicitly separable work.
+
+| Lane | Members | Gate summary |
+|---|---|---|
+| **L-Correctness** | MP-COR1, MP-COR2 | Both independently startable; COR2 gates scaled graph ingestion, not the accessible-list skeleton. |
+| **L-Publication** | MP-PUB1..4; MP-NAV1..5; MP-DOCK1/2; MP-INS1..3 | PUB1 requires DD-01 `SPEC_APPROVED` and separate implementation authorization; its direct DAG prerequisite is COR1. Surface-specific UX/Runtime gates remain separate. |
+| **L-Measurement** | MP-R0A..D | Explicit R0 authorization; the R0 internal sequence is hard, but R0D is only an experiment/adoption gate for other lanes. |
+| **L-UX** | MP-UX1..4 | Owner authorization and decisions as specified in the task cards; no generic code dependency. |
+| **L-Typography** | MP-TYP1/2, MP-PL1 | DD-04a gates TYP1; R0D gates calibrated R1 evidence/threshold claims; DD-04b adoption gates TYP2/PL1. |
+| **L-Media** | MP-IMG1..6, MP-SEC3, MP-CMP1, MP-REC1/2 | Local-input feasibility is independent of Runtime; IMG6/RT6 gates production inputs, IMG6 also gates production full-detail. |
+| **L-Graph** | MP-FLOW1..3 | Fixture/list work is independently startable; COR2 gates scaled graph-ingestion claims; R0/experiment gates apply to measured stages. |
+| **L-Runtime** | MP-RT1..8, MP-SEC1, MP-INS2 | Runtime-owner contract approvals gate Runtime-dependent slices; MP-RT8 local native single-instance/shutdown work is independently implementable. |
+| **L-Release** | MP-SEC2, MP-REL1..3 | SEC2/REL1 design work can start within their task gates; report-content and signing/updater decisions remain gated. |
+| **L-Video** | MP-VID1..4 | Separate explicit authorization sequence; NOT_AUTHORIZED. |
+
+Integration ownership and file-conflict policy are assigned per shared file by the coordinating Caller/integration owner before merging parallel work; conflicting changes are not silently ordered. Testing ownership and impact routes are defined in [TESTING.md §1](TESTING.md#1-quality-gates-and-impact-routes).
+
+### 7.4 Execution card template and single-owner design rule
+
+The [Desktop Design Canon](../architecture/DESKTOP_DESIGN_CANON.md) owns design authority/decisions; each [canonical component contract](../architecture/DESKTOP_DESIGN_CONTRACTS.md) owns purpose, behavior, scope, non-goals, interface/API semantics, threading, failure/recovery, security, rollback and **observable acceptance**. These clauses are not rewritten or editable in this execution plan.
+
+**Inherited card schema (applies to all 62 cards):** task ID and goal are the heading; owner, status/readiness, direct hard prerequisites, separate gates, one DC contract, and evidence are the required fields. Direct prerequisites are exactly the incoming §7.2 DAG edges (or `none`); a card's **Gate** includes the decision/authorization/readiness needed for the named work, with any conditional product/real-Runtime exit stated separately. Each card's **Contract** is its single DC-MP link; contract scope and acceptance are not duplicated. **Evidence** is the contract's observable acceptance plus the task-specific evidence named in the card or inherited crosswalk below; evidence is future obligation, never a claim that work ran.
+
+Gate labels: **hard** = §7.2 implementation prerequisite; **conditional** = required only for a named Runtime/product exit; **optional** = explicitly optional scope; **advisory** = non-blocking recommendation; **release** = product/release acceptance. A status such as DESIGN_GATE_REQUIRED, EXPERIMENT_READY, RUNTIME_BLOCKED, UX_BLOCKED or NOT_AUTHORIZED is not itself implementation permission.
+
+Plan governance: §7.2 is canonical for hard edges; §6 reflects decision status but cannot approve a gate. Testing routes follow [TESTING.md](TESTING.md). If ambiguity changes design or ownership, stop and amend its design owner before revising this projection.
+
+
+
+### 7.5 M1 — Correctness foundation
+
+#### MP-COR1 — Delta effective-state integrity (COR-01)
+- **Hard prereqs:** none.
+- **Priority:** P0 · **Status:** COMPLETED_ACCEPTED · **Owner:** `crates/cos-client` (`client.rs`, `projection.rs`, `tests/`)
+- **Prereqs:** none. **Accepted inputs:** DESKTOP_PROTOCOL.md §2 (atomic transaction, staging, integrity); rendering companion §13 R2 ("no lost required event/receipt, stale overwrite or partial transaction").
+- **Evidence:** [Caller acceptance](evidence/README.md#historical-records), [quality gates](evidence/README.md#historical-records), [fail-before/after](evidence/README.md#historical-records), public `effective_state` regressions and §19.1's independent review; historical delegated receipts are not Refine 0.3 Gate evidence.
+- **Unresolved decisions:** none. **Stop/escalation:** if an accepted-input-shaped transaction (a legal rewire the protocol permits) fails validation, stop and escalate to the protocol owner instead of relaxing rules ad hoc.
+- **Design source / acceptance:** [DC-MP-COR1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-cor1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-COR2 — Graph validation scaling (PERF-01)
+- **Hard prereqs:** none.
+- **Priority:** P0 · **Status:** IMPLEMENTED_BUT_INCOMPLETE (technical checks, STEP 4 Tern review and dev integration complete; separate Caller acceptance pending) · **Owner:** `crates/cos-client` (`projection.rs`)
+- **Prereqs:** none (independent of the delta-integrity task; either may land first). **Inputs:** rendering §10 graph workloads; §4.2 measurement separation (validation vs publication vs layout).
+- **Evidence:** [implementation/public regressions, same-session 10k/50k parity/timing/traversal, local quality and native startup](evidence/README.md#historical-records), [fixed candidate/Gate/review closure and interruption](evidence/README.md#historical-records), [independent assessment](evidence/README.md#historical-records). Numeric performance targets remain unratified; no R0, real-Runtime or Caller acceptance is inferred. Zero-intervention end-to-end delivery was not achieved.
+- **Unresolved:** none. **Stop/escalation:** if any pre-existing valid fixture graph is rejected, stop (behavior drift).
+- **Consumers:** MP-PUB4, MP-FLOW1/2, R6 experiments.
+- **Design source / acceptance:** [DC-MP-COR2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-cor2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-PUB1 — Observation session owner and atomic publication (ARC-01)
+- **Hard prereqs:** MP-COR1.
+- **Priority:** P0 · **Status:** COMPLETED_ACCEPTED (Desktop fixture/public seam; A19 real Runtime NOT_RUN) · **Owner:** `crates/app-core`, `crates/cos-client`, `crates/desktop-protocol`, `crates/ui-model`, `apps/desktop`, `crates/desktop-gpui`
+- **Gate:** DD-01 SPEC_APPROVED and separate Desktop MP-PUB1 IMPLEMENTATION_AUTHORIZED remain recorded by [owner approval](evidence/README.md#historical-records), including the bounded DD-12/13/15/19 amendment. Ordinary STEP transitions and current-task Gate attempts without a numerical ceiling are Caller-approved; each actual dispatch is separately bounded and automatic retry remains 0. R4 is now SUCCEEDED. Real Runtime evidence remains a conditional integration exit, not an added hard edge. **Inputs:** PROCESS_MODEL, DC-MP-PUB1 and DESKTOP_PROTOCOL authorized read handoff.
+- **Evidence:** [historical STEP3 source closure](evidence/README.md#historical-records), [R1 implementation](evidence/README.md#historical-records), [R2b native evidence](evidence/README.md#historical-records), [R3 quality](evidence/README.md#historical-records), [immutable R4 timeout](evidence/README.md#historical-records), [successful R4 and earlier HOLD history](evidence/README.md#historical-records), and [actual run2 native evidence](evidence/README.md#historical-records).
+- **Unresolved:** none within the accepted Desktop fixture/public seam. [Caller ACCEPT](evidence/README.md#historical-records) binds product `6b05dcc7df280ab6ef6f50d6a2cad28f90c4abeb` and docs closure `68524496ba5383a195f151dee303ab5660905714`; it is not inferred from Gate/review success or prior blanket approval. A19 real authenticated Runtime remains separately owned/NOT_RUN, not an added hard prerequisite. Next MP, integration and release remain outside this decision.
+- **Subsequent evidence:** [Correction and native-review addendum](evidence/README.md#historical-records) preserves prior consent/partial evidence and records the caller-authorized run2. No contract, hard edge or Taskern Plan revision changed.
+- **Stop/escalation:** if an implementation requirement exceeds the approved contract/API/major transition, adds a dependency or requires Runtime mutation, stop for the relevant owner; do not infer new permission from readiness.
+- **Consumers:** MP-PUB2/3, all surface tasks, MP-RT3.
+- **Design source / acceptance:** [DC-MP-PUB1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-PUB2 — Incremental window refresh and derived-view policy
+- **Hard prereqs:** MP-PUB1.
+- **Priority:** P0 · **Status:** IMPLEMENTED_BUT_INCOMPLETE ([implementation and technical review complete](evidence/README.md#historical-records): local quality/changed-path Native, independent Gate R3 and remote Tern R2 0/0/0 PASS; separate Caller final acceptance pending) · **Owner:** `crates/ui-model`, `crates/desktop-gpui`; app-core only exposes the existing snapshot-handle type through the allowed boundary.
+- **Evidence:** [direct MP-PUB2/MP-PUB3 Caller authority](evidence/README.md#historical-records), [Taskern revision1 packet](evidence/README.md#historical-records), [quality](evidence/README.md#historical-records), [normal-binary Native evidence](evidence/README.md#historical-records), [observable pixel comparison](evidence/README.md#historical-records). No private-helper count is an acceptance oracle; A19 and full product UX remain outside this slice.
+- **Gate history:** [R1](evidence/README.md#historical-records) preserves the no-PATH checker failure; [the corrected existing launcher](evidence/README.md#historical-records) passed. [R2](evidence/README.md#historical-records) preserves seven successful command checks/176 tests, followed by the correctly rejected old HEAD predicate. Both failed Gates retain complete cleanup and separate stored-integrity outcomes. [R3](evidence/README.md#historical-records) SUCCEEDED on `f28a2055f88ae73fe9d9afd9fc56233a45e82293`: all seven commands, HEAD and clean-worktree predicates passed; 176 tests passed, all eight outputs collected, cleanup complete. Static preflight UNKNOWN and later documentation closure are not attributed to that Gate.
+- **Unresolved:** cache/reuse representation → MP-PUB4.
+- **Consumers:** MP-NAV1, MP-DOCK1/2, MP-INS*, MP-FLOW*.
+- **Design source / acceptance:** [DC-MP-PUB2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-PUB3 — Multi-window, generation and stale-result conformance tests
+- **Hard prereqs:** MP-PUB1.
+- **Priority:** P1 · **Status:** IMPLEMENTED_BUT_INCOMPLETE ([implementation and technical review complete](evidence/README.md#historical-records): eight-invariant crosswalk, local quality/179 workspace tests, actual native startup smoke, independent Gate R2 and remote Tern R3 0/0/0 PASS; separate Caller final acceptance pending) · **Owner:** `crates/app-core` tests, `crates/desktop-gpui` tests
+- **Authorization:** [2026-10-18 direct Caller instruction](evidence/README.md#historical-records) authorizes this MP after MP-PUB2 completes implementation/verification and clean remote Tern review; [MP-PUB2 remote R2](evidence/README.md#historical-records) is 0/0/0 PASS, so this task proceeded. It grants no unrelated task or integration.
+- **Gate history:** [R1](evidence/README.md#historical-records) SUCCEEDED on `60cf860a52090989a28b7bd05b75067d53755ae0`: all seven quality commands plus the HEAD and clean-worktree predicates passed, 179 workspace tests passed across 22 targets, all nine declared outputs were collected, cleanup complete. Static preflight UNKNOWN was not relabelled PASS; no candidate was mutated during checks.
+- **Gate history (continued):** [R2](evidence/README.md#historical-records) SUCCEEDED on the repaired candidate `2df45bd337ed65546c8d48074daf2e48cb525126`: all seven quality commands plus the HEAD and clean-worktree predicates passed, 179 workspace tests passed across 22 targets, all ten declared outputs were collected, cleanup complete. R1 remains stored and immutable as superseded evidence.
+- **Remote review history:** [R1](evidence/README.md#historical-records) returned 0 BLOCKING / 2 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE (HOLD) on `f1ad65c82d638650a1275b005b4120cf2ad31162`: A-NB-1 required a per-identity re-dispatch oracle instead of a total frame count, A-NB-2 required honest native-evidence run identifiers and span. Both were repaired in this session: the fixture provider records received command dispatches and both reconnect tests compare that ordered record before and after recovery, and the native evidence now states the two recorded identities and the corrected 78.23 s span.
+- **Remote review history (continued):** [R2](evidence/README.md#historical-records) confirmed A-NB-1 CLOSED on `483e5d8e17325de0f23ec1834ceac3ab84668f54` and found the one remaining stale native note; [R3](evidence/README.md#historical-records) is 0/0/0 PASS on `ae4bd713884ba941c3b4ba95d8d5f29761af2a3c` with A-NB-2 CLOSED. [Technical completion](evidence/README.md#historical-records) records the closed technical review; Caller acceptance remains separate and pending.
+- **Evidence:** [Taskern revision 1 packet](evidence/README.md#historical-records), [eight-invariant crosswalk](evidence/README.md#historical-records), [test admission](evidence/README.md#historical-records), [quality](evidence/README.md#historical-records), [invariant-removal probes](evidence/README.md#historical-records), [native startup smoke](evidence/README.md#historical-records).
+- **Observed repair:** the inherited DC-MP-PUB1 diagnostic bound (at most 1,024 events with explicit `event_gap`) had no implementation at the owner seam: `ObservationSessionOwner::step` discarded `PumpReport::events`. `crates/app-core/src/diagnostics.rs` now retains category-only events with a monotone non-reusing sequence and an explicit bound/gap; no identity, receipt, grant, cursor or remote text is retained and diagnostics never drive publication or command truth.
+- **Consumers:** MP-RT3, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-PUB3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-PUB4 — R2 representation experiment (COW / index / cache / sharing)
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** EXPERIMENT_READY · **Owner:** `crates/cos-client` + `crates/app-core` under the R2 experiment contract
+- **Prereq/gate:** MP-R0A/B/D (harness + baseline + ratified thresholds) and DD-02a `EXPERIMENT_AUTHORIZED` to run the comparison; adoption additionally requires DD-02b `DESIGN_SELECTED` after `EXPERIMENT_COMPLETED`. Running the experiment and choosing a design are separate gates.
+- **Consumers:** MP-PUB2, MP-NAV1, MP-DOCK1, R3 workload results.
+- **Design source / acceptance:** [DC-MP-PUB4](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub4). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+---
+
+### 7.6 M2 — Measurement foundation (R0)
+
+All R0 tasks are **NOT_AUTHORIZED** until an explicit R0 implementation authorization exists (ADR-0007 §15, rendering §13). They are technically **EXPERIMENT_READY**: the workload manifest fields, endpoint definitions, result contract and calibration protocol are already specified in rendering §10.1/§11.1/§11.2.
+
+#### MP-R0A — R0 harness implementation
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** IMPLEMENTATION_AUTHORIZED; S1 A/B TECHNICALLY COMPLETE and S2A LIMITED TECHNICAL COMPLETION (independent 0/0/0); MP-R0A overall IN_PROGRESS, S2B/S3 instrumentation/ledger/aggregation and R0B/C measurements pending · **Owner:** `apps/desktop` dev-only profiling module + a versioned workload manifest set (location decided with R0 authorization; must not become production behaviour)
+- **Consumers:** MP-R0B/C, MP-PUB4, MP-TYP1, MP-IMG*, MP-FLOW*, MP-REC2.
+- **Design source / acceptance:** [DC-MP-R0A](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0a). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+- **S1 contract foundation:** `apps/desktop/devtools/r0` (Python stdlib only) defines the versioned manifest and result contracts, a bounded UTF-8 loader with duplicate-key/non-finite rejection, and an offline `manifest|result|pair` validator. [Admission](evidence/README.md#historical-records) and [validation](evidence/README.md#historical-records) retain 25 contract tests (17 categories) and CLI outcomes. [Two-Gate verification](evidence/README.md#historical-records): product `440ea864d6d7e87875d6ccddbc1758b2984b5d2e`, quality Gate `aab9ec8e-1d09-4c74-8de2-9ad15364b310` (9/9, Python 25 tests) and build Gate `7570d1ba-010d-48eb-83be-12804e5c7239` (3/3), candidate digest `sha256:3bae64d6…`, 12 identical artifacts, absent 0, cleanup complete, verify exit 0; a1–a5 Gates remain history. The [S1 bounded technical-completion record](evidence/README.md#historical-records) independently verifies the final docs-only SHA `8ea1ef9` at 0/0/0. At S1 closure, R0A-S2 instrumentation/driver, S3 ledger/aggregation, R0B/R0C/R0D and numeric claims were still NOT_RUN. Current status: S2A LIMITED TECHNICAL COMPLETION; S2B/S3 and R0B/R0C remain NOT_RUN; R0D/numeric SLO remain NOT_RATIFIED; MP-R0A overall remains IN_PROGRESS. S1 completion alone did not constitute R0A completion.
+- **S2A process driver — LIMITED TECHNICAL COMPLETION:** [completion record](evidence/README.md#historical-records) binds product `ca9b074b4f99ddc50894a449aef7775615d454c5` and reviewed evidence `087398591b3ac18ee2a5ebed0220858a09394f0e` to [independent R10 PASS 0/0/0](evidence/README.md#historical-records). Approved-only launch, OS-resolved single-use profile identity, pinned paths/fixtures, pre-go JobObject containment, complete unmeasured result semantics and the completion-directory publication point are implemented. 48 Python tests (SKIP 0), 285 Rust tests, 14 dependency tests and two helper tests passed; separate approved normal/timeout/native-driver-kill evidence is retained. Publication visibility is not power-loss durability; per-user claims do not defend against administrator/registry-owner tampering.
+- **S2A independent verification:** quality Gate `8b78c094-e476-44ec-a419-fe5ffaeb0ff5` (11/11) and build Gate `eedce38a-c489-4d3d-af64-31bae90160ca` (3/3) succeeded on that exact product: [receipt comparison](evidence/README.md#historical-records) records 12 distinct checks, identical candidate digest and 25 artifact ID/path/size/SHA-256 tuples, absent 0, cleanup complete and integrity success. Preflight UNKNOWN remains UNKNOWN; all historical Gate/review evidence retains its original scope. The docs-only completion record awaits final independent confirmation. R0A overall remains IN_PROGRESS; S2B/S3 and R0B/C are NOT_RUN, R0D/numeric SLO NOT_RATIFIED, visual/Present/displayed NOT_MEASURED, IMG1 M09/IMG2 comparison incomplete; no Runtime/Product UX/DD/main/release approval follows.
+- **2026-10-23 Caller pause — S2B HOLD:** [The durable stop record](evidence/README.md#historical-records) binds product `6584e7683ae97869aa498526db290c1550bd59db`, reviewed evidence `68e8f36898be0ffc6f92eb33f074b552a3fd75e2`, successful r9 Quality/Build receipts and the latest Tern R5 **3 BLOCKING / 2 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE**. S2B has implementation and limited Native evidence (N06 PARTIAL), not limited technical completion; earlier S2B pending/NOT_RUN wording above is historical to S2A closure. Five R5 consumer/evidence/test findings remain unmodified. The Caller authorized recording, commit and push only, then stopping; explicit resume is required. S3/R0B/C, numeric SLO, IMG2 and Runtime/Product UX/DD/main/release boundaries are unchanged.
+
+#### MP-R0B — Baseline capture, noise and endpoint availability
+- **Hard prereqs:** MP-R0A.
+- **Priority:** P1 · **Status:** AUTHORIZED by [Caller approval](evidence/README.md#historical-records) for measurement execution; numeric thresholds remain unratified · **Owner:** R0 harness owner (`apps/desktop`), with rendering owner for endpoint/evidence review
+- **Consumers:** MP-R0D, MP-PUB4, MP-TYP1, MP-IMG*.
+- **Design source / acceptance:** [DC-MP-R0B](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0b). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-R0C — Windows scheduling and stall attribution
+- **Hard prereqs:** MP-R0A.
+- **Priority:** P1 · **Status:** NOT_AUTHORIZED (EXPERIMENT_READY) · **Owner:** Desktop/Windows performance owner
+- **Consumers:** MP-R0D, ADR-0007 pin decision record (only if evidence demands).
+- **Design source / acceptance:** [DC-MP-R0C](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0c). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-R0D — R0 ratification record
+- **Hard prereqs:** MP-R0B, MP-R0C.
+- **Priority:** P1 · **Status:** NOT_AUTHORIZED (EXPERIMENT_READY) · **Owner:** Desktop architect + rendering owner (ratification record; evidence producers remain R0A/B/C)
+- **Consumers:** every experiment/phase exit below.
+- **Design source / acceptance:** [DC-MP-R0D](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0d). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+---
+
+### 7.7 M3 — UX prototype and validation
+
+#### MP-UX1 — Operable prototype of the Golden Workflow surfaces
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** UX_BLOCKED (needs UX/product authorization to run prototype work; prototype scope must be explicitly authorized before code) · **Owner:** Desktop UI (prototype scope), UX owner (validation)
+- **Gate / inputs:** UX-owner authorization to run prototype work; the frozen [compare/viewing question list](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux2) is the prototype input, not another task-acceptance contract. No code dependency (prototype may use fixture data, explicitly labelled); it runs in parallel with the §7 lanes.
+- **Evidence:** prototype build/run log + validation notes; screenshots where safe.
+- **Consumers:** MP-UX2/3/4, MP-NAV*, MP-DOCK*, MP-CMP1, MP-INS*.
+- **Design source / acceptance:** [DC-MP-UX1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-UX2 — UX-01 decision register closure (compare & viewing)
+- **Hard prereqs:** none.
+- **Priority:** P0 (decision) · **Status:** DESIGN_GATE_REQUIRED · **Owner:** Product/UX owner
+- **Consumers:** MP-CMP1, MP-IMG5, MP-DOCK2, MP-INS1.
+- **Design source / acceptance:** [DC-MP-UX2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-UX3 — Visual direction and token validation plan
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** DESIGN_GATE_REQUIRED · **Owner:** Product/UX + rendering owner
+- **Consumers:** MP-TYP1/2, MP-PL1.
+- **Design source / acceptance:** [DC-MP-UX3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-UX4 — Keyboard map and Command Palette inventory
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** DESIGN_GATE_REQUIRED · **Owner:** Product/UX owner
+- **Consumers:** MP-NAV1/4, MP-DOCK*, MP-INS*, MP-AX2.
+- **Design source / acceptance:** [DC-MP-UX4](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux4). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+---
+
+### 7.8 M4 — Design system, typography, DPI
+
+#### MP-TYP1 — Token, typography and geometry implementation
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** DESIGN_GATE_REQUIRED (DD-04a `SPEC_APPROVED` plus separate implementation authorization gate implementation; MP-R0D gates calibrated R1 evidence/threshold claims, and DD-04b governs final adoption) · **Owner:** `crates/desktop-gpui` (tokens/theme), `crates/ui-model` (density-independent semantics)
+- **Evidence:** native screenshots + golden/layout expectations stored beside images; recorded DPI matrix runs.
+- **Consumers:** every surface; MP-AX1/2.
+- **Design source / acceptance:** [DC-MP-TYP1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-typ1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-TYP2 — Colour, motion, icons and depth policy
+- **Hard prereqs:** MP-TYP1.
+- **Priority:** P2 · **Status:** EXPERIMENT_READY (after MP-TYP1 **and** DD-04b `DESIGN_SELECTED` — unadopted typography may not propagate into visual implementation) · **Owner:** `desktop-gpui`
+- **Consumers:** MP-PL1, MP-ACC2.
+- **Design source / acceptance:** [DC-MP-TYP2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-typ2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+---
+
+### 7.9 M5–M7 — Publication, navigation, candidates
+
+#### MP-NAV1 — Task Rail
+- **Hard prereqs:** MP-PUB2.
+- **Priority:** P1 · **Status:** A/B TECHNICALLY COMPLETE (independent remote review `PASS 0/0/0` on `b5761a6`; [Gate R2](evidence/README.md#historical-records) `SUCCEEDED` on `b5761a6`, [Gate R1](evidence/README.md#historical-records) `SUCCEEDED` on `84169ff`) — fixture/public seam (A) and Windows native reachable range (B) complete; A19 authenticated Runtime `NOT_RUN`, real screen-reader acceptance `NOT_MEASURED` and Product acceptance `NOT_RUN`; product release unapproved · **Owner:** `ui-model` (row derivation) + `desktop-gpui` (virtualized list)
+- **Evidence:** [native judgments](evidence/README.md#historical-records), [native manifest](evidence/README.md#historical-records), [round-1 reconciliation](evidence/README.md#historical-records), [quality](evidence/README.md#historical-records), [public smoke](evidence/README.md#historical-records), [test admission](evidence/README.md#historical-records), [Taskern context](evidence/README.md#historical-records), [independent Gate R1](evidence/README.md#historical-records)/[R2](evidence/README.md#historical-records), [remote review R1](evidence/README.md#historical-records)/[R2](evidence/README.md#historical-records), [authorized push](evidence/README.md#historical-records).
+- **Consumers:** MP-NAV2, MP-NAV3, MP-NAV5, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-NAV1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-nav1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-NAV2 — Task creation (Creative Brief)
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** UX_BLOCKED + RUNTIME_BLOCKED · **Owner:** `ui-model`/`desktop-gpui` (surface), `app-core` (command route)
+- **Prereqs/gates:** DD-06 (brief fields/validation), DD-25 (Start/iteration-advance command semantics — existing Runtime operation or a new one) and RC-01/RC-09 create contract; capability gate must report create availability honestly.
+- **Evidence:** tests over the command payload + a manual flow with the real adapter once available.
+- **Consumers:** MP-ACC1.
+- **Design source / acceptance:** [DC-MP-NAV2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-nav2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-NAV3 — History and reopen
+- **Hard prereqs:** none.
+- **Priority:** P2 · **Status:** DESIGN_GATE_REQUIRED (DD-07) · **Owner:** `ui-model` + protocol/Runtime contract
+- **Consumers:** MP-ACC1.
+- **Design source / acceptance:** [DC-MP-NAV3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-nav3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-NAV4 — Shell chrome: independent state axes and Stop
+- **Hard prereqs:** MP-PUB2.
+- **Priority:** P0 · **Status:** A/B TECHNICALLY COMPLETE (independent remote review `PASS 0/0/0` on `b9136b2`; [Gate R4](evidence/README.md#historical-records) `SUCCEEDED` on `3052525`) — fixture/headless (A) and Windows native reachable range (B) complete; the eight unreachable/unmeasured branches stay `NOT_RUN`/`NOT_MEASURED` with reasons; C authenticated Runtime `NOT_RUN` (RT4/RC-08/10 + real authorization) and D product acceptance `NOT_RUN`; product release and full acceptance unapproved · **Owner:** `desktop-gpui` + `ui-model`
+- **Evidence:** [Tern concrete directive](evidence/README.md#historical-records), [Taskern packet](evidence/README.md#historical-records), [public smoke](evidence/README.md#historical-records), [quality](evidence/README.md#historical-records), [independent Gate R3](evidence/README.md#historical-records), [independent tier B Gate R4](evidence/README.md#historical-records), [remote reviews R2](evidence/README.md#historical-records)/[R3](evidence/README.md#historical-records)/[R4](evidence/README.md#historical-records)/[final](evidence/README.md#historical-records), [test admission](evidence/README.md#historical-records), [tier B native evidence](evidence/README.md#historical-records) with the [r2 run index](evidence/README.md#historical-records), the [manifest](evidence/README.md#historical-records) and the [native scenario plan](evidence/README.md#historical-records). A/B technical completion is recorded; C/D acceptance is not claimed.
+- **Consumers:** MP-ACC1, MP-INS1, MP-NAV5.
+- **Design source / acceptance:** [DC-MP-NAV4](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-nav4). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-NAV5 — Command Palette (implementation)
+- **Hard prereqs:** MP-PUB2.
+- **Priority:** P1 (canon §21/§68 MVP) · **Status:** DESIGN_GATE_REQUIRED (needs MP-UX4 inventory/keymap) · **Owner:** `ui-model` (command model) + `desktop-gpui` (palette surface)
+- **Prereqs/gates:** MP-UX4 `SPEC_APPROVED` inventory + keymap; MP-PUB2 for live command availability.
+- **Evidence:** tests over descriptors/availability + native keyboard run (MP-AX2).
+- **Consumers:** MP-AX2, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-NAV5](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-nav5). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-DOCK1 — Candidate Dock
+- **Hard prereqs:** MP-PUB2.
+- **Priority:** P1 · **Status:** A/B TECHNICALLY COMPLETE ([independent remote R4 PASS 0/0/0](evidence/README.md#historical-records) on evidence `1be9ecd48d84ce49415c7216461b5c2ab675886f`, product `f1d0db1`; C Runtime/A19 and D Product acceptance remain NOT_RUN, applicable DD/UX/R0/release gates unchanged; thumbnails arrive with MP-IMG*) · **Owner:** `ui-model` + `desktop-gpui`
+- **Consumers:** MP-DOCK2, MP-CMP1, MP-ACC1.
+- **Evidence:** [technical completion](evidence/README.md#historical-records) binds product `f1d0db1406a01725ad4ff4e4ef1bef2e0f7d57e8`, [217-test warning-free quality](evidence/README.md#historical-records), [released independent Gate R2](evidence/README.md#historical-records), [Native crosswalk](evidence/README.md#historical-records), [raw artifact manifest](evidence/README.md#historical-records) and [remote R4](evidence/README.md#historical-records). The actual Native a11y panic was repaired; current N01–N07 evidence and explicit qualifications were independently accepted for A/B technical closure. Earlier r10 source gaps, r11 failure, r12 helper interruption, all control/input errors and both Gate histories remain intact, never relabelled current PASS. [Tern selected MP-IMG1](evidence/README.md#historical-records) under existing full-plan authority; no Runtime/Product/UX acceptance follows.
+- **Design source / acceptance:** [DC-MP-DOCK1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-dock1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-DOCK2 — Iteration/history timeline, viewed/compare persistence, unavailable policy
+- **Hard prereqs:** MP-DOCK1.
+- **Priority:** P1 · **Status:** DESIGN_GATE_REQUIRED (UX-01 subset) · **Owner:** `ui-model`
+- **Consumers:** MP-INS1, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-DOCK2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-dock2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+---
+
+### 7.10 M8 — Artifact/image presentation
+
+#### MP-IMG1 — Media representation keys and local-input feasibility (no Runtime)
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** IMPLEMENTED_BUT_INCOMPLETE (A source/quality/Gate/review PASS 0/0/0; B Native M09 HOLD pending actual live confirmation; C Runtime and D Product NOT_RUN) · **Owner:** `crates/media` (typed keys and local acquisition/cache; only `desktop-protocol` as a direct workspace dependency)
+- **Prereqs/gates:** none. **Inputs:** rendering §6 (representation separation), §6.1 (gates), ADR-0006 (media boundary), canon §32–35.
+- **Consumers:** MP-IMG2, MP-IMG3, MP-IMG4, MP-IMG5, MP-SEC3, MP-IMG6.
+- **Design source / acceptance:** [DC-MP-IMG1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+- **Current evidence:** [Taskern packet](evidence/README.md#historical-records), [A–H / M01–M09 admission](evidence/README.md#historical-records), [quality R5](evidence/README.md#historical-records): 225 Rust tests and 14 dependency regressions, zero warnings. [Native confirmation attempt](evidence/README.md#historical-records) timed out with `active: false`; M09 remains NOT_RUN, not a unit-test PASS. No Product import/format choice, decode/GPU, external authorization/acquisition, A19 or release acceptance follows.
+- **Independent source qualification:** product `3d57212dc807f33f729f9bdc2b43eb2d86e14aa7`, released Refine 0.3.1 [Gate R1](evidence/README.md#historical-records) `e3358e5a-5a1d-4ffe-ae98-03d613635ff8` SUCCEEDED; 9/9 checks, 16 outputs, cleanup complete, integrity rehash success, 225 Rust and 14 dependency tests. [Actual File consumer smoke](evidence/README.md#historical-records) proves acquisition/eviction/last-consumer release/oversize; [fixed-source probe build](evidence/README.md#historical-records) is not Native interaction proof.
+- **Remote R1 correction:** [independent review](evidence/README.md#historical-records) on `58f17c5` returned 0 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE plus Native M09 HOLD. A-NB-01 now validates the actual opened file against a pinned root handle rather than trusting a pre-open path check; [focused admission/dependency review](evidence/README.md#historical-records), four real Windows handle regressions, [229-test quality](evidence/README.md#historical-records) and [actual consumer smoke](evidence/README.md#historical-records) qualify the repair. Repaired product `9f0923500aa3b8df3586a3760a3ddee71fe9bbce` passed [Gate R2](evidence/README.md#historical-records) `88d48aed-aaf4-47a4-8b75-3f3d29ffd62c`: 9/9 checks, 19 outputs, no missing output, cleanup complete and integrity rehash success. [Remote R2](evidence/README.md#historical-records) on evidence `8d7cc2b` returned **0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE with A-NB-01 CLOSED**, separating Native M09 and C/D. Original Gate R1 is historical for the superseded source; [the rebuilt probe](evidence/README.md#historical-records) has not had Native input. The [same-MP Native resume directive](evidence/README.md#historical-records) remains pending real live confirmation.
+
+#### MP-IMG6 — Production media acquisition through authorized descriptors
+- **Hard prereqs:** MP-IMG1, MP-RT2, MP-RT6.
+- **Priority:** P1 · **Status:** RUNTIME_BLOCKED (RC-13 + RC-03) · **Owner:** `crates/media` (byte acquisition/verification); authorization interaction comes from MP-RT6; descriptor transport from MP-RT2
+- **Gate:** Runtime acceptance of RC-13 descriptor identity/expiry/audience and RC-03 read authorization gates production acquisition; MP-RT6 remains a hard implementation prerequisite. Local/fixture input is not a substitute for production media.
+- **Consumers:** MP-IMG2–5 (production path), MP-CMP1, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-IMG6](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img6). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-IMG2 — Decode admission gate (R4 "Decode")
+- **Hard prereqs:** MP-IMG1, MP-SEC3.
+- **Priority:** P1 · **Status:** EXPERIMENT_AUTHORIZED by [Caller approval](evidence/README.md#historical-records); decoder-agnostic preflight slice A/B TECHNICALLY COMPLETE (independent review 0/0/0 on `cd9e5d3`); full MP-IMG2 decoder comparison/adoption and R0 ratification remain incomplete · **Owner:** `crates/media` (decode side; no GPU handles)
+- **Evidence:** per-case peak concurrent bytes, cancellation latencies, format admission table.
+- **Consumers:** MP-IMG3.
+- **Design source / acceptance:** [DC-MP-IMG2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+- **Preparation (no implementation):** [eligibility matrix](evidence/README.md#historical-records) records that R0 harness/baselines, decoder comparison/adoption, a new decoder dependency and an unsafe/FFI boundary are all NOT_AUTHORIZED; [admission design draft](evidence/README.md#historical-records) defines the per-codec evidence fields, checked-budget checks and explicit outcomes without selecting a decoder or adding a dependency. Both canonical candidates (WIC/GDI+ worker, FFmpeg 8.0 external harness) remain NOT_RUN with their blockers. No product code, numeric budget, Native decode claim or format support follows.
+- **Preflight implementation:** `crates/media::decode` now admits declared dimensions/bit depth/channels/scratch against caller `DecodeLimits` with checked arithmetic, before any allocation; [decode_admission tests](../../crates/media/tests/decode_admission.rs) cover exact budgets, boundary rejection, invalid limits, cancellation and impossible declarations. No decoder, codec support, numeric SLO, GPU object or Native claim is added; R0/selection gates remain open.
+- **Independent verification:** [aggregate](evidence/README.md#historical-records) binds `eb4327a` to quality Gate `52bc394d-07e6-4938-9658-6d3d4efe2bf7` (8/8) and build Gate `89d6aead-cbd5-4e49-9b05-479d51248819` (3/3); both SUCCEEDED with identical 13 artifact digests and complete cleanup. Output ids were inherited from the SEC3 request generator and are labelled as such in the aggregate; paths and digests identify the artifacts.
+- **Preflight technical completion:** [bounded completion record](evidence/README.md#historical-records) independently verifies source/Gate review 0/0/0 on `cd9e5d37e5af0068652e259496f92faee04a0477` after docs-only `task` correction. Only arithmetic preflight is closed. IMG1 M09 Native remains HOLD; actual decoder comparison, selected codec capability, peak memory, R0 numeric gates, Product/DD/Runtime, main and release remain explicitly not accepted. Earlier [eligibility matrix](evidence/README.md#historical-records) is the historical pre-approval preparation snapshot; current bounded Caller authorization is [2026-10-21](evidence/README.md#historical-records).
+
+#### MP-IMG3 — Upload gate (R4 "Upload")
+- **Hard prereqs:** MP-IMG2.
+- **Priority:** P1 · **Status:** EXPERIMENT_READY (hard prerequisite MP-IMG2; MP-R0D and explicit experiment authorization gate measured Upload claims) · **Owner:** `desktop-gpui` (GPU side) + media boundary (CPU side)
+- **Consumers:** MP-IMG4, MP-CMP1, MP-REC1.
+- **Design source / acceptance:** [DC-MP-IMG3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-IMG4 — Eviction, lifetime and device generation (R4 "Eviction")
+- **Hard prereqs:** MP-IMG3.
+- **Priority:** P1 · **Status:** EXPERIMENT_READY (after MP-IMG3) · **Owner:** `desktop-gpui` + media cache
+- **Consumers:** MP-IMG5, MP-REC1, MP-REC2.
+- **Design source / acceptance:** [DC-MP-IMG4](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img4). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-IMG5 — Full view, zoom/pan/tiles, physical 1:1
+- **Hard prereqs:** MP-IMG4.
+- **Priority:** P1 · **Status:** DESIGN_GATE_REQUIRED (UX-01 fit/1:1 subset) + EXPERIMENT for tiling; local/fixture feasibility is not Runtime-blocked; production full-detail acceptance conditionally requires MP-IMG6 and ratified UX-01 decisions · **Owner:** `desktop-gpui` + `media`
+- **Consumers:** MP-CMP1, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-IMG5](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img5). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-CMP1 — Compare (R5)
+- **Hard prereqs:** MP-IMG5.
+- **Priority:** P1 · **Status:** UX_BLOCKED (DD-03/UX-01 for user-visible Compare semantics) + EXPERIMENT_READY for reuse/fairness · **Owner:** `desktop-gpui` + `ui-model` + media cache
+- **Gate:** UX-01 decision for Compare behavior; MP-R0D + experiment authorization for measured R5 reuse/fairness claims. Local/fixture Compare has no Runtime dependency; MP-ACC1 is the conditional product gate.
+- **Consumers:** MP-ACC1.
+- **Design source / acceptance:** [DC-MP-CMP1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-cmp1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+---
+
+### 7.11 M9 — Evaluation, Evidence, Inspector
+
+#### MP-INS1 — Inspector (why is this artifact here?)
+- **Hard prereqs:** MP-DOCK2.
+- **Priority:** P1 · **Status:** IMPLEMENTATION_READY (needs MP-DOCK2) · **Owner:** `ui-model` + `desktop-gpui`
+- **Consumers:** MP-INS2/3, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-INS1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ins1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-INS2 — Evidence detail and authorization
+- **Hard prereqs:** MP-INS1.
+- **Priority:** P2 · **Status:** RUNTIME_BLOCKED (evidence authorization) · **Owner:** `app-core`/`cos-client` + `ui-model`
+- **Consumers:** MP-ACC1.
+- **Design source / acceptance:** [DC-MP-INS2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ins2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-INS3 — Intervention strip
+- **Hard prereqs:** MP-INS1.
+- **Priority:** P2 · **Status:** DESIGN_GATE_REQUIRED (DD-26 = intervention priority policy; the strip may not invent ordering) · **Owner:** `ui-model` + `desktop-gpui`
+- **Consumers:** MP-ACC1.
+- **Design source / acceptance:** [DC-MP-INS3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ins3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+---
+
+### 7.12 M11 — Flow and graph
+
+#### MP-FLOW1 — Graph ingestion and accessible inspection list
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** A/B TECHNICALLY COMPLETE for fixture graph (R3 0/0/0; RC-12 real Runtime graph `RUNTIME_BLOCKED`; C/D not run) · **Owner:** `ui-model` + `desktop-gpui`
+- **Consumers:** MP-FLOW2/3, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-FLOW1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-flow1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+- **Current evidence:** [F01–F10 admission](evidence/README.md#historical-records); [quality](evidence/README.md#historical-records): 252 Rust tests, 14 dependency regressions, zero warnings; [native observation](evidence/README.md#historical-records): exact `fixture:graph/Task-184` version 3/digest header separate from projection revision 2, Nodes (9)/Edges (8), search `outcome` → 1 node/1 edge with exact NodeId/EdgeId, Tab/arrow AX focus, virtualized one-row mount per list, explicit empty/disconnected-withheld states, and a compact 10,000-node Native fixture (filter 271 ms; superseding query ended with zero rows and no stale result). [Independent Gate R3](evidence/README.md#historical-records) `c420427d-1224-4b4e-aa6d-e0deaac34d51` SUCCEEDED on exact `861c616…`: 9/9 checks, 20 outputs, no missing output, cleanup complete, 251 Rust and 14 dependency tests. [Remote review R2](evidence/README.md#historical-records) returned 1 BLOCKING (foreground-executor filtering) and 1 ACTIONABLE NON-BLOCKING (indistinguishable reused Native captures). [Independent Gate R4](evidence/README.md#historical-records) `5f48eb42-5cfe-4102-a1fa-ade4dc97b736` SUCCEEDED on exact `5c61266…`: 9/9 checks, 24 outputs, no missing output, cleanup complete, 252 Rust and 14 dependency tests. [Remote review R3](evidence/README.md#historical-records) returned 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE on exact Gate R4 candidate `5c61266…` and closed the fixture/public-seam technical scope. A later render-timing correction (Flow ListState reset moved from render to admitted-row installation to prevent an empty restored viewport) changed no graph identity/topology semantics and was included in REC3 Gate R4 and its R4 review. RC-12 real Runtime graph remains `RUNTIME_BLOCKED`; 10,000-edge rendering, exact cancellation latency, Native revoke/regrant, screen-reader/IME/DPI, A19, Product/main/release remain NOT_MEASURED/NOT_RUN.
+
+#### MP-FLOW2 — Culling and cached geometry (R6 stages A–C)
+- **Hard prereqs:** MP-FLOW1.
+- **Priority:** P2 · **Status:** EXPERIMENT_READY (after MP-R0D + MP-FLOW1) · **Owner:** `desktop-gpui`
+- **Consumers:** MP-FLOW3, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-FLOW2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-flow2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-FLOW3 — LOD/batching and the custom-element decision (R6 stages D–F)
+- **Hard prereqs:** MP-FLOW2.
+- **Priority:** P2 · **Status:** EXPERIMENT_READY for D/E; **NOT_AUTHORIZED** for F (narrow custom element/renderer path) · **Owner:** `desktop-gpui`
+- **Consumers:** MP-ACC2.
+- **Design source / acceptance:** [DC-MP-FLOW3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-flow3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+---
+
+### 7.13 M12–M13 — Runtime integration, security and capability
+
+MP-RT1–7 are **RUNTIME_BLOCKED**: Runtime-dependent work may only begin once the Runtime owner accepts corresponding RC contracts and the contract→server→client→compatibility→migration order is honoured (PROTOCOL_OWNERSHIP §order, LOCAL_DEVELOPMENT_TOPOLOGY §C). Desktop-side stand-ins that do not fake success (fixture mode, explicit unavailable states) remain allowed meanwhile; **no Desktop-side reimplementation of Runtime semantics is permitted**. MP-RT8's local native single-instance and shutdown slice is independently implementable; real service discovery and product lifecycle acceptance remain conditional on RC-16 and Runtime acceptance.
+
+#### MP-RT1 — Contract normalization and freeze (joint)
+- **Hard prereqs:** none.
+- **Priority:** P0 (integration) · **Status:** RUNTIME_BLOCKED · **Owner:** Desktop `desktop-protocol` (contract source) + Runtime owner
+- **Consumers:** all MP-RT*, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-RT1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rt1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-RT2 — Real transport binding
+- **Hard prereqs:** MP-RT1, MP-SEC1, MP-SEC2.
+- **Priority:** P0 · **Status:** RUNTIME_BLOCKED (RC-01/02/03/16) · **Owner:** `cos-client` (+ `platform` for credential access)
+- **Consumers:** MP-RT3/4/5/7, MP-RT6 → MP-IMG6.
+- **Design source / acceptance:** [DC-MP-RT2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rt2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-RT3 — Reconnect/resync/epoch campaign against a real server
+- **Hard prereqs:** MP-RT2.
+- **Priority:** P0 · **Status:** RUNTIME_BLOCKED · **Owner:** `cos-client` + Runtime owner
+- **Consumers:** MP-ACC1, MP-REC3.
+- **Design source / acceptance:** [DC-MP-RT3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rt3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-RT4 — Receipt reconciliation and dedupe retention
+- **Hard prereqs:** MP-RT2.
+- **Priority:** P1 · **Status:** RUNTIME_BLOCKED (RC-08/10) · **Owner:** `cos-client` + Runtime owner
+- **Consumers:** MP-NAV4, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-RT4](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rt4). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-RT5 — Capability-driven gating with real grants
+- **Hard prereqs:** MP-RT2.
+- **Priority:** P1 · **Status:** RUNTIME_BLOCKED (RC-11) · **Owner:** `app-core`/`cos-client` + Runtime owner
+- **Consumers:** MP-NAV2, MP-IMG*, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-RT5](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rt5). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-RT6 — Media authorization integration
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** RUNTIME_BLOCKED (RC-13 + RC-03) · **Owner:** `app-core`/`cos-client` + Runtime owner
+- **Consumers:** MP-IMG6 (production fetch), MP-IMG5 (authorized full-detail path), MP-SEC3.
+- **Design source / acceptance:** [DC-MP-RT6](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rt6). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-RT7 — Version negotiation with the real server
+- **Hard prereqs:** MP-RT2.
+- **Priority:** P2 · **Status:** RUNTIME_BLOCKED (RC-15) · **Owner:** `desktop-protocol`/`cos-client` + Runtime/protocol owners
+- **Consumers:** MP-RT2, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-RT7](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rt7). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-RT8 — Service lifecycle and discovery
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** RUNTIME_BLOCKED (RC-16 real service lifecycle); Desktop-local single-instance/bounded-shutdown slice A/B TECHNICALLY COMPLETE within the measured scope ([completion record](evidence/README.md#historical-records)), Tern R2 PASS 0/0/0 · **Owner:** `apps/desktop`/`app-core` + Runtime owner
+- **Consumers:** MP-REC3, MP-ACC1.
+- **Gate:** RC-16 and Runtime acceptance gate real service discovery/product lifecycle claims; the local single-instance/shutdown slice has no Runtime prerequisite.
+- **Design source / acceptance:** [DC-MP-RT8](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rt8). This task implements that frozen contract; the local and Runtime exits remain distinct.
+- **Current local evidence:** source `73ecebfe2674a78006072d169274e07cd9d2b0fe`; [Taskern context delivery](evidence/README.md#historical-records) binds the baseline and compiled packet; [L01–L13 admission](evidence/README.md#historical-records); [quality R2](evidence/README.md#historical-records): 268 Rust tests, 14 dependency-checker tests, zero warnings. The missed-deadline regression failed before repair and passes afterward. [Native r2](evidence/README.md#historical-records) records the executable matrix under live control on corrective `32a3af2`: ACTIVE launch, exit-3 collision with a usable incumbent, simultaneous one-owner acquisition, normal close with confirmed observation and confirmed save, restart restoration, exact-PID forced termination with reacquisition, zero-budget unconfirmed observation, and a failed save that preserved the existing entry — with no implicit Stop or command trace. The post-detach binary is separately bound to final code `ddd8d65` in [Native r3](evidence/README.md#historical-records). The earlier [HOLD observation](evidence/README.md#historical-records) stays historical. Crash-before-quit latest-change durability, real Runtime Task survival, DD-23, Compare restore and session-logoff shutdown remain NOT_RUN or RUNTIME_BLOCKED; no Task survival, RC-16, Product/main/release or full local-slice completion follows.
+
+- **Independent verification:** [aggregate and immutable receipts](evidence/README.md#historical-records) bind product/evidence candidate `6d2d88004ce89cb4d4fae9d298ef9063f804b3e0` to two sequential released-Refine 0.3.1 Gates: quality `9f8db312-c4c6-4375-b1d1-93b92f5cced3` (8/8) and build `fee8cfad-b179-4bdb-8393-2c32882ceb87` (3/3). Both SUCCEEDED, share the exact candidate and all 21 artifact digests, have no absent output, cleanup complete and successful native integrity verification. Their union covers all nine distinct required checks; this is not a single 9/9 Gate. The original full Gate `5dce7894-3957-4fa1-8ded-1a84becf937f` remains FAILED on the 600-second total deadline. Native and Product/Runtime acceptance are unchanged.
+- **R1 correction / Caller decision:** [source review R1](evidence/README.md#historical-records) is HOLD 2 BLOCKING / 1 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE. The Caller explicitly selected deadline-limited background save with unconfirmed reporting instead of preserving the contradictory save guarantee. [The limited design review](evidence/README.md#historical-records) is PASS 0/0/0; owning DC-MP-RT8/DC-MP-REC3 now require independent observation/save outcomes and callback-origin absolute deadlines, not guaranteed latest-settings persistence. Taskern revision 2 compiled packet `sha256:2f7fe404cae68aadd0f8944532456e40da8b7d49bcc0127af0430e273eaca1ce` with bounded corrective context; failed budget/identity attempts remain separate. Corrective local `quality-r4.txt` passes all seven commands, 272 Rust tests and 14 dependency tests with zero warnings; `quality-r3.txt` retains the resolved Clippy failure. Corrective independent verification: [aggregate](evidence/README.md#historical-records) binds candidate `ddd8d65202ba526e88e04e5f98bf0ee23094709b` (digest `sha256:4bd97e11…`) to released-Refine 0.3.1 quality Gate `51cbcd02-2bbf-4adf-900e-cd37c43d6d40` (8/8) and build Gate `6951ff1d-8da0-49bf-b80d-1dca18659665` (3/3); both SUCCEEDED, share all 21 artifact digests, cleaned up and passed native integrity verification, covering all nine distinct required checks across two Gates. Two earlier failing attempts remain preserved: rustc `STATUS_ACCESS_VIOLATION` in third-party `vswhom` (independent reproduction passed 272 tests) and an invalid prepared `head` binding. Tern R2 follow-up is PASS 0/0/0 on pushed evidence `63e1073`; the R2 identity HOLD, the R1 HOLD and both failed Gates remain preserved. [The completion record](evidence/README.md#historical-records) closes only this Desktop-local slice; RC-16, crash-before-quit durability, DD-23, Compare restore, session logoff, Product/main/release remain open.
+
+#### MP-SEC1 — Credential storage
+- **Hard prereqs:** none.
+- **Priority:** P0 (integration) · **Status:** RUNTIME_BLOCKED (RC-02) · **Owner:** new `crates/platform` (only when it owns this real responsibility) + `app-core`
+- **Consumers:** MP-RT2, MP-SEC2.
+- **Design source / acceptance:** [DC-MP-SEC1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-sec1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-SEC2 — Redaction, diagnostics and logging policy
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** IMPLEMENTED_BUT_INCOMPLETE (source/public-seam PASS through Gate R13 and remote R9; Native row12 crash diagnostics HOLD; DD-22 PENDING) · **Owner:** `app-core` (diagnostics facade) + `apps/desktop`
+- **Consumers:** MP-RT2, MP-REL3, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-SEC2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-sec2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+- **Current evidence:** [A–H / S01–S08 admission](evidence/README.md#historical-records); [quality](evidence/README.md#historical-records): 241 Rust tests, 14 dependency regressions, zero warnings; [actual startup error capture](evidence/README.md#historical-records) and [repaired-source fixture trace capture](evidence/README.md#historical-records): 15 bounded lines, max 299 bytes including newline, no raw query field, healthy fixture JSONL. [Remote R9](evidence/README.md#historical-records) independently reviewed exact candidate `976d3b7…` and returned 0 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE; B-06 is CLOSED and the [source closure record](evidence/README.md#historical-records) is preserved. Gate R13 is valid; Windows row12 and DD-22 remain HOLD/PENDING.
+- **Independent source qualification:** repaired product/evidence `976d3b79e1ee343f4c72bedc7355334584b529ea` passed constrained-environment [Gate R13](evidence/README.md#historical-records) `f2e220a5-b70b-43e7-9e63-acd86241be4d`: 9/9 checks, 16 outputs, no missing output, cleanup complete, integrity rehash success, 241 Rust and 14 dependency tests. [Remote R9](evidence/README.md#historical-records) then returned 0/0/0 on that exact candidate and CLOSED B-06. Gate R12/R11b/R11's disk-full failure and Gates R10/R9b/R8/R7/R6b/R6/R5/R4/R3/R2/R1 remain historical. Row12 Native crash diagnostics and DD-22 remain HOLD/PENDING; A/B technical completion is not claimed.
+
+#### MP-SEC3 — Untrusted media hardening
+- **Hard prereqs:** MP-IMG1.
+- **Priority:** P1 · **Status:** Desktop-local encoded admission TECHNICALLY COMPLETE (independent review PASS 0/0/0 on `1884702d`; MP-IMG1 M09 Native HOLD, IMG2/IMG6/RT6 and Product/Runtime gates unchanged) · **Owner:** media boundary
+- **Consumers:** MP-IMG2, MP-ACC1.
+- **Design source / acceptance:** [DC-MP-SEC3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-sec3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+- **Current local evidence:** [A–H admission](evidence/README.md#historical-records) records the narrowed encoded boundary and separates IMG2/IMG6/RT6 ownership. [S01–S09 security tests](../../crates/media/tests/security_contract.rs) cover hostile dimensions rejected after a bounded 33-byte header read with zero reservation, checked pixel arithmetic, type-identity bypass, opaque trailing text bytes, identifier path/URL shapes, oversize/short/malformed lengths, cancellation and bounded errors; IMG1 cache/eviction regressions run on a complete header fixture. No decoder, network, GPU, dependency or unsafe code is added. Native is not applicable to this admission-only slice; MP-IMG1 M09 remains HOLD.
+- **Independent verification:** [aggregate](evidence/README.md#historical-records) binds candidate `89e2bcbde769cf4b27e7c5684df20cd65e7b77b8` (digest `sha256:1501bc2d…`) to released-Refine 0.3.1 quality Gate `b212273b-2b8a-46a5-adfc-3978081b6ff1` (8/8) and build Gate `714139ad-ec10-4413-a5b4-3b4dab5bd13d` (3/3); both SUCCEEDED with identical 12 artifact digests, no absent output, complete cleanup and successful native integrity verification, covering all nine distinct required checks across two Gates. The local quality r1 Clippy failure is preserved. [Desktop-local technical completion](evidence/README.md#historical-records) records the final independent 0/0/0 review at `1884702dc199325eb5184600cf0843ec8dd2a270`; this is not Native, Runtime, Product, DD, main or release acceptance.
+
+---
+
+### 7.14 M14–M16 — Recovery, video, accessibility, polish
+
+#### MP-REC1 — Device-loss integration and recovery verification (R8)
+- **Hard prereqs:** MP-IMG4.
+- **Priority:** P1 · **Status:** EXPERIMENT_READY (after MP-IMG4; this task owns device-loss integration and verification) · **Owner:** `desktop-gpui`
+- **Consumers:** MP-REC2, MP-ACC2.
+- **Design source / acceptance:** [DC-MP-REC1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rec1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-REC2 — Cache plateau and release proofs (R8)
+- **Hard prereqs:** MP-IMG4.
+- **Priority:** P1 · **Status:** EXPERIMENT_READY (after MP-IMG4) · **Owner:** `desktop-gpui` + media boundary
+- **Consumers:** MP-ACC2.
+- **Design source / acceptance:** [DC-MP-REC2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rec2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-REC3 — Crash / restart / reopen recovery behaviour
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** A/B TECHNICALLY COMPLETE for the Desktop-local slice (R4 0/0/0; Runtime Task survival `RUNTIME_BLOCKED`, DD-23 `PENDING`; C/D not run) · **Owner:** `apps/desktop` + `app-core`
+- **Consumers:** MP-ACC1.
+- **Design source / acceptance:** [DC-MP-REC3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rec3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+- **Current evidence:** [REC-01–REC-17 admission](evidence/README.md#historical-records); [native observation](evidence/README.md#historical-records): normal save/restart restored Flow, Task-184 and Viewed B; corrupt file restored defaults with a bounded notice; off-screen geometry clamped to the present display; missing Viewed/Task identities produced explicit unavailable notices. [Preferences snapshot](evidence/README.md#historical-records) contains only the closed fields. [Remote review R1](evidence/README.md#historical-records) returned 2 BLOCKING: actual-I/O bounds and oversized-window dimensions. Both are remediated: load reads through the opened handle at MAX+1, save uses a bounded writer, and saved width/height clamp to the selected present display. [Independent Gate R2](evidence/README.md#historical-records) `fbf7676f-aba4-4e9c-af55-ed2d969e0c3b` SUCCEEDED on exact `2ab589d…` (9/9 checks, 27 outputs, zero absent output, cleanup complete). [Remote review R2](evidence/README.md#historical-records) then returned 1 BLOCKING (clone before borrowed bounds validation) and 1 ACTIONABLE (Native build identity). save_atomic now validates the borrowed schema before cloning; [build identity](evidence/README.md#historical-records) binds source `6ccef79` to executable `2f4420…`, and fresh r4 native save/restore/oversized-file/oversized-window runs used that binary. [Independent Gate R3](evidence/README.md#historical-records) `c5223e39-116d-444e-819a-bee6a6b5ea36` SUCCEEDED on exact `638aa5d…` (9/9 checks, 34 outputs, zero absent output, cleanup complete). [Remote review R3](evidence/README.md#historical-records) then found the complete borrowed document (including fixture IDs) was still cloned before the 64 KiB decision and the quit path cloned first. save_atomic now admits the complete borrowed document through the bounded writer before cloning, and quit saves the locked borrowed value. [Independent Gate R4](evidence/README.md#historical-records) `612a60c0-a35a-4452-a821-f800b4abd184` SUCCEEDED on exact `bc81b33…`: 9/9 checks, 39 outputs, zero absent output, cleanup complete, 262 Rust and 14 dependency tests. [Remote review R4](evidence/README.md#historical-records) returned 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE on exact Gate R4 candidate `bc81b33…`; the [Desktop-local technical completion](evidence/README.md#historical-records) records the closed slice. Runtime Task survival (MP-RT8/RC-16), DD-23 topology/mixed-DPI, crash-before-quit, live revoke/regrant and native Compare restore remain `NOT_MEASURED`/`RUNTIME_BLOCKED`; Product/main/release are unapproved.
+
+#### MP-VID1 — Video capability/interop probe
+- **Hard prereqs:** none.
+- **Priority:** P1 (MVP-required, gated) · **Status:** **NOT_AUTHORIZED** (explicit probe authorization required) · **Owner:** rendering owner (probe), `desktop-gpui` (later)
+- **Gate:** no probe until separately authorized; VID1 outcome informs but does not itself authorize implementation or close the MVP video requirement.
+- **Consumers:** MP-VID2.
+- **Design source / acceptance:** [DC-MP-VID1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-vid1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-VID2 — Video authorization decision package
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** **NOT_AUTHORIZED** (requires MP-VID1 capability evidence and an explicit owner decision) · **Owner:** Product/architecture owners (DD-11)
+- **Consumers:** MP-VID3/4, MP-ACC2.
+- **Design source / acceptance:** [DC-MP-VID2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-vid2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-VID3 — Video implementation
+- **Hard prereqs:** none.
+- **Priority:** P1 (MVP) · **Status:** **NOT_AUTHORIZED** (implementation only if VID2 explicitly authorizes a route, with separate implementation authorization) · **Owner:** `desktop-gpui` + media boundary
+- **Consumers:** MP-VID4, MP-ACC2.
+- **Design source / acceptance:** [DC-MP-VID3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-vid3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-VID4 — Video acceptance
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** **NOT_AUTHORIZED** (acceptance is conditional on VID3 and selected route; prerequisite authorization sequence is VID1 probe → VID2 explicit decision) · **Owner:** Product owner + rendering owner
+- **Consumers:** MP-ACC2.
+- **Design source / acceptance:** [DC-MP-VID4](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-vid4). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-AX1 — Accessibility, DPI and IME program (R10, continuous)
+- **Hard prereqs:** none.
+- **Priority:** P0 (continuous) · **Status:** A/B TECHNICALLY COMPLETE (independent remote review `PASS 0/0/0` on the repair SHA `0e59478`, product source `0129d9e`; [Gate R1](evidence/README.md#historical-records) `SUCCEEDED` on `0129d9e`) — the reachable accessibility, keyboard, non-color state, IME-helper and display-migration range is complete; `EntityInputHandler` integration stays UNVERIFIED, native TSF composition, mixed-scale DPI, screen-reader acceptance, High Contrast theme integration and dialog focus restoration stay `NOT_MEASURED`/`NOT_IMPLEMENTED` with reasons, reduced motion is `NOT_APPLICABLE` for application-defined motion by recorded audit; DD-23 pending, A19 Runtime and Product acceptance `NOT_RUN`; release unapproved · **Owner:** `desktop-gpui` + `ui-model`
+- **Evidence:** [native r1](evidence/README.md#historical-records) (UIA exposure), [native r2](evidence/README.md#historical-records) (non-color cue), [native r3](evidence/README.md#historical-records) (keyboard and display migration, IME/reduced-motion dispositions), [motion audit](evidence/README.md#historical-records), [test admission](evidence/README.md#historical-records), [quality](evidence/README.md#historical-records), [Taskern delivery](evidence/README.md#historical-records) + [amendment](evidence/README.md#historical-records), [independent Gate R1](evidence/README.md#historical-records), [remote review R1](evidence/README.md#historical-records)/[R2](evidence/README.md#historical-records), [repair record](evidence/README.md#historical-records).
+- **Consumers:** MP-AX2, MP-ACC2.
+- **Design source / acceptance:** [DC-MP-AX1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ax1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-AX2 — Usability and keyboard verification runs
+- **Hard prereqs:** MP-AX1.
+- **Priority:** P2 · **Status:** DESIGN_GATE_REQUIRED (DD-23) · **Owner:** Product/UX + Desktop
+- **Consumers:** MP-ACC2.
+- **Design source / acceptance:** [DC-MP-AX2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ax2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-PL1 — Visual polish (R9)
+- **Hard prereqs:** MP-TYP2.
+- **Priority:** P2 · **Status:** DESIGN_GATE_REQUIRED (depends on MP-TYP2 and on DD-04b typography adoption) · **Owner:** `desktop-gpui`
+- **Consumers:** MP-ACC2.
+- **Design source / acceptance:** [DC-MP-PL1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pl1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+---
+
+### 7.15 M17–M18 — Packaging and acceptance
+
+#### MP-REL1 — Packaging (installer + portable archive)
+- **Hard prereqs:** none.
+- **Priority:** P1 · **Status:** DESIGN_GATE_REQUIRED (DD-21) · **Owner:** release owner + `apps/desktop`
+- **Consumers:** MP-REL2, MP-ACC2.
+- **Design source / acceptance:** [DC-MP-REL1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rel1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-REL2 — Updater
+- **Hard prereqs:** MP-REL1.
+- **Priority:** P2 · **Status:** DESIGN_GATE_REQUIRED · **Owner:** release owner + `apps/desktop`
+- **Consumers:** MP-ACC2.
+- **Design source / acceptance:** [DC-MP-REL2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rel2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-REL3 — Diagnostics and support report
+- **Hard prereqs:** MP-SEC2.
+- **Priority:** P2 · **Status:** DESIGN_GATE_REQUIRED (DD-22 `SPEC_APPROVED` for report contents/retention); the minimal redacted report (versions, connection state, projection revision, redaction invariants) may be implemented once MP-SEC2 lands · **Owner:** `app-core` diagnostics facade + `apps/desktop`
+- **Consumers:** MP-ACC1.
+- **Design source / acceptance:** [DC-MP-REL3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rel3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-ACC1 — Golden Creative Workflow acceptance
+- **Hard prereqs:** none.
+- **Priority:** P0 (product) · **Status:** RUNTIME_BLOCKED · **Owner:** Desktop + Runtime (joint)
+- **Conditional gate:** acceptance requires the contract's real-integrated workflow and failure-injection evidence, including MP-NAV2, MP-IMG5/6, MP-CMP1, MP-INS1/2, MP-FLOW1, MP-NAV3, MP-RT3/4/5/7, MP-REC3 and MP-REL1; DD-25 must record command semantics before Start/Next steps can pass. See §7.2 and DC-MP-ACC1.
+- **Evidence:** recorded run with projection-revision trace per step, no secrets.
+- **Consumers:** MP-ACC2.
+- **Design source / acceptance:** [DC-MP-ACC1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-acc1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+#### MP-ACC2 — Product acceptance matrix (canon §63–66)
+- **Hard prereqs:** none.
+- **Priority:** P0 (product) · **Status:** RUNTIME_BLOCKED · **Owner:** Product owner
+- **Release gate:** requires MP-ACC1, MP-FLOW3, MP-REL2, MP-REC2, MP-NAV5, MP-PL1, MP-AX2, MP-PUB3, DD-04b typography adoption and MP-VID4 unless an explicit Product-owner scope exception is recorded. See §7.2 and DC-MP-ACC2.
+- **Consumers:** release.
+- **Design source / acceptance:** [DC-MP-ACC2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-acc2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+
+---
+
+## 8. Rendering R0–R10 crosswalk
+
+| Phase | Owning tasks | Product dependency | Evidence gate | Rollback |
+|---|---|---|---|---|
+| R0 Measurement | MP-R0A/B/C/D | implemented shell only; absent surfaces stay NOT_IMPLEMENTED/NOT_MEASURED | rendering §10.1/§11.1/§11.2, §13 R0 | disable faulty instrumentation; keep honest baseline |
+| R1 Tokens/typography | MP-TYP1 → DD-04b adoption (+MP-AX1 start) | surfaces as they appear; image fidelity from MP-IMG5 | §9/§11.3 native matrix | revert token/font without dropping information |
+| R2 State/invalidation | MP-PUB1..4, MP-COR1/2 | rail/dock/inspector consumers | §4.2/§13 R2 A/B + ratified gates | bounded atomic full refresh via MP-PUB1 |
+| R3 Virtualization | MP-NAV1, MP-DOCK1, MP-FLOW1, MP-NAV3, MP-INS1, MP-INS2 | task/candidate/history/evaluation/evidence surfaces | §5 tables + §13 R3 | bounded accessible viewport (not eager collection) |
+| R4 Image decode/upload/eviction | MP-IMG1..4, MP-IMG5, MP-IMG6, MP-SEC3 | artifact surface | §6/§6.1/§6.2 per-codec gates | disable failing detail path; proven preview/unavailable only |
+| R5 Compare | MP-CMP1 (+MP-UX2) | compare surface | §4.1/§13 R5 | independent bounded previews; preserve identities |
+| R6 Graph | MP-FLOW1..3 | flow surface | §8.1 stages A→F + §13 R6 | last passing stage / inspection list |
+| R7 Video | MP-VID1..4 | MVP video | §7/§13 R7 (**requires separate authorization**) | explicit video-unavailable mode |
+| R8 Hardening | MP-REC1/2, MP-RT3, MP-RT8, MP-REC3, MP-SEC3 | all implemented paths | §13 R8 saturation/pressure/device/reconnect | disable failing path only |
+| R9 Polish | MP-PL1, MP-TYP2 | all surfaces | §13 R9 | remove costly nonessential effect |
+| R10 AX/DPI/IME/device-loss | MP-AX1/2 (continuous), MP-REC1 | every surface | §11.3 + §13 R10 | block failing surface; honest limitation |
+The Windows-specific native acceptance matrix and its MP/DC mappings are owned by the [Desktop Design Contracts Windows native-requirements crosswalk](../architecture/DESKTOP_DESIGN_CONTRACTS.md#windows-native-requirements-crosswalk); this table only indexes the R0–R10 owners.
+
+R0–R10 do **not** replace the milestone order: they run *inside* the milestones above as quality gates for the surfaces they touch.
+
+---
+
+## 9. Runtime RC-01–RC-17 crosswalk
+
+Statuses: `GAP` (no current guarantee), `PRIMITIVE` (reusable current source material), `DECISION` (owner must choose policy/semantics). All are **Proposed requests**; nothing here authorizes Runtime work.
+
+| RC | Historical Runtime survey status (Desktop task mapping reconciled 2026-10-08; no fresh Runtime qualification) | Desktop plan tasks | Gate |
+|---|---|---|---|
+| RC-01 adapter/cosd | GAP | MP-RT1, MP-RT2 | contract freeze |
+| RC-02 principal/credentials | GAP + DECISION | MP-SEC1, MP-RT2 | issuance/scope/revocation |
+| RC-03 read authorization/audience | GAP + DECISION | MP-RT2, MP-RT6, MP-RT3 | auth policy; cursor invalidation rule |
+| RC-04 epoch/session identity | GAP | MP-RT3 | durable vs process epoch decision |
+| RC-05 atomic observation + durable journal | GAP (major) | MP-RT1, MP-RT3 | completeness proof/journal choice |
+| RC-06 projection revisions | GAP | MP-RT1, MP-PUB1 consumption | revision scope definition |
+| RC-07 structured errors/correlation | GAP + PRIMITIVE (typed codes) | MP-RT1, MP-SEC2 | error mapping freeze |
+| RC-08 dedupe retention/expiry | DECISION + GAP | MP-RT4 | advertised retention |
+| RC-09 `expected_revision` | GAP + DECISION | MP-NAV2, MP-RT1 | which commands require preconditions |
+| RC-10 stop projection/reflection | PRIMITIVE + GAP | MP-NAV4, MP-RT4 | reflection field/query |
+| RC-11 capability grants | PRIMITIVE + GAP | MP-RT5 | real grants wired |
+| RC-12 graph/plan read surface | PRIMITIVE + GAP | MP-FLOW1 | bounded display projection |
+| RC-13 media descriptor/auth | PRIMITIVE + GAP | MP-IMG6, MP-RT6, MP-IMG1 (key contract), MP-SEC3 | descriptor identity/expiry/audience |
+| RC-14 phase vocabulary | DECISION | MP-NAV4, MP-RT1 | freeze or open-with-unknown rule |
+| RC-15 version negotiation | GAP | MP-RT7 | server advertisement |
+| RC-16 lifecycle/discovery | GAP + DECISION | MP-RT8, MP-REC3 | supported service contract |
+| RC-17 resumable stream binding | DECISION (after RC-05) | MP-RT2 (transport binding detail) | only after RC-05; never the legacy bus |
+
+### 9.3 Refine / Taskern execution boundary
+
+Current workflow, producer-qualified contract references, Skill usage, actual CLI limits, candidate/Gate/result distinctions and Caller correlation obligations are owned by [REFINE_TASKERN_EXECUTION_BOUNDARY.md](../integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md). This is Desktop development policy, not a COS product feature, Runtime contract or compatibility qualification. The [STEP 1 record](evidence/README.md#historical-records) separates source/binary observations, historical MP-COR1 acceptance and unresolved host/environment qualification.
+
+### 9.4 Packet and request mapping (no invented fields)
+
+Markdown remains the editable planning source; Taskern Plan/TaskPacket/CompiledPacket are **derived, revisioned representations**, not a second canon or permission. Exact fields, Context/Budget rules and supplied-byte/digest validation belong to Taskern's current contracts and Skill. Caller pins the source/DC and preserves complete task acceptance, prerequisites and delivery evidence.
+
+Default existing-agent development does not use `adapt`: Caller separately prepares Refine 0.3 **GateRequest** for the fixed candidate under the boundary policy. The legacy AdapterBinding still translates to delegated **TaskRequest** with an executor; it is not GateRequest and does not start or authorize a Gate. Do not add invented packet/request/metadata fields or drop human criteria to satisfy adaptation.
+
+Packet constraints describe intent, not an OS-enforced filesystem sandbox. Caller owns allowed/forbidden scope, compile and execution budgets, authorization, durable correlation/history and acceptance; compiler accounting does not replace Gate limits. Human/native/product criteria remain with Caller alongside machine VerificationSpec.
+
+### 9.5 Gate, result and history ownership
+
+Hard/conditional/optional/advisory/release gate classes remain those of §7.4; Refine's independent quality Gate is not a DD approval. Taskern prerequisites/eligibility, a committed candidate, Gate SUCCEEDED, receipt integrity, Tern review and explicit Caller acceptance are separate facts. Caller retains source/Plan/context/packet/candidate correlation, approved scope/checks/budgets, attempt and accepted Gate ID, binary/environment identity, raw evidence, reconciliation, review and disposition as defined by the boundary policy.
+
+### 9.6 Bounded execution and correction loop
+
+Standard sequence: Canon → derived Taskern planning/context → authorized existing-Agent implementation/test → candidate commit → native preflight and explicit Caller resolution of FAIL/UNKNOWN → Refine 0.3 independent Gate/integrity → Tern review/corrections in the same conversation → explicit Caller acceptance → separately authorized Git/integration → Caller observations for Taskern next/revise/feedback. Repairs stay in the same Agent session and each changed candidate gets a new commit/Gate; no second implementation agent, dummy executor or automatic redispatch. Use the [bounded correction policy](../integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md#cos-development-task-mapping); a finite prior grant avoids new per-attempt DD approvals but does not silently authorize new candidates. Each user-gated step stops after its required checks and Tern **0 / 0 / 0**; no next step, product acceptance or integration is inferred.
+
+The [identified Runtime intervention/attention gap](../integration/COS_RUNTIME_REQUIRED_CHANGES.md#identified-gap--runtime-interventionattention-projection) is owned by the Runtime request register. MP-NAV1/MP-INS3's local scope and blocked Runtime exit are defined by their DC contracts; this plan neither defines a new issue DTO nor treats local attention as product completion.
+
+Desktop work reachable **without Runtime changes** includes local/fixture implementations and experiments, each still subject to its task's non-Runtime gate: MP-COR1/2; MP-PUB1..4; MP-NAV1/3/4/5; MP-DOCK1/2; MP-INS1/INS3 local-only; MP-FLOW1..3 fixture graph; MP-TYP1/2; MP-SEC2/3; MP-RT8 local native single-instance/shutdown; MP-R0A–D (R0 authorization still required); MP-IMG1..5 local/fixture inputs (IMG5 production full-detail conditional on IMG6); MP-REC1/2; MP-REC3 Desktop-local restoration (task-survival exit conditional on RT8); MP-AX1/2; MP-PL1; MP-REL3. Real Runtime transport/auth, production media, real History/Brief/evidence and product acceptance remain gated by their RC/DD requirements; fixture success does not close product acceptance.
+
+---
+
+## 10. UX prototype and decision gates (index)
+
+DD ownership, approval state and lifecycle are defined by the [Desktop Design Canon §6](../architecture/DESKTOP_DESIGN_CANON.md#6-decision-ownership-and-approval-state). This index maps DD gates to execution cards; it cannot authorize decisions or implementation.
+
+| Gate | Execution task |
+|---|---|
+| DD-03 / UX-01 | MP-UX2 → MP-CMP1, MP-IMG5, MP-DOCK2 |
+| DD-05 | MP-UX4 → MP-NAV5 |
+| DD-06 / DD-25 | MP-NAV2; Runtime create/advance contracts remain separately gated |
+| DD-22 | MP-SEC2 / MP-REL3 |
+| DD-23 | MP-AX2 |
+| DD-21 | MP-REL1/2 |
+
+---
+
+## 11. Correctness and security prerequisites (owner cross-reference)
+
+Hard implementation dependencies are only §7.2's DAG. Canonical cross-cutting correctness/security requirements live in the [Desktop Design Canon](../architecture/DESKTOP_DESIGN_CANON.md); task-specific failure, security and rollback requirements live in the single linked DC contract. Conditional gates for real transport, external media, Stop receipt reflection and acceptance are listed separately in §7.2/§9. No second ordered prerequisite list is maintained here.
+
+---
+
+## 12. Documentation integrity (DOC-01)
+
+Stale statements found and corrected minimally (historical text preserved, current state added):
+
+| Document | Stale statement (historical) | Correction applied |
+|---|---|---|
+| [GETTING_STARTED.md](GETTING_STARTED.md) | "Desktop contains Markdown documentation only… No Cargo workspace… exists"; phase table marked Deferred | Added a current-status banner naming the implemented workspace, the gates and this plan; historical observations retained and dated |
+| [BUILD_AND_RUN.md](BUILD_AND_RUN.md) | §1 environment and §3 "nothing below exists yet [bootstrap-after]" | Added current-state banner: workspace/pins exist, commands are observed; historical environment table retained |
+| [DEPENDENCY_RULES.md](../architecture/DEPENDENCY_RULES.md) | "No workspace exists yet"; "checker… not implemented" | Status line updated to current (workspace + implemented checker + self-test); plan references kept |
+| [LOCAL_DEVELOPMENT_TOPOLOGY.md](../integration/LOCAL_DEVELOPMENT_TOPOLOGY.md) | "Intended remote name only; creation, visibility and push await user decisions" | Added remote state as observed at private creation, retaining the dated historical statement |
+| [README.md](../../README.md) | Entry order implied pre-code state | "Read first" and Development sections now lead with current status and link this plan; historical documents remain linked |
+
+Rules honoured: Product Canon untouched; ADR-0007 untouched; no numeric SLO duplicated (all numbers stay in rendering §10 / evidence report); historical bootstrap facts preserved; document links verified (§15.3).
+
+---
+
+## 13. Test and acceptance strategy
+
+Test ownership, impact routes, quality gates and native/integration evidence are owned by [TESTING.md §1](TESTING.md#1-quality-gates-and-impact-routes). Each MP task's single linked DC contract defines its observable task acceptance; the testing owner and rendering owner provide the reusable verification routes. This execution index does not duplicate test policy.
+
+---
+
+## 14. Performance and resource gates
+
+Rendering/performance stage definitions, numeric targets, budgets, counters, workload sizes and measurement requirements are owned by [Rendering Performance and Visual Architecture](../architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md) and its ADR. Current observed values and endpoint/statistical limits belong in [finalization evidence](ARCHITECTURE_PLAN_FINALIZATION_REPORT.md) and [projection baseline](PROJECTION_MEASUREMENT_2026-10-08.md); [Tern analysis](TERN_BINARY_RENDERING_ANALYSIS.md) remains historical. MP cards and §8 only cross-reference those owners; no performance threshold or gate is defined here.
+
+## 15. Implementation readiness audit
+
+### 15.1 Method
+
+Each task was judged against: (A) specification sufficiency, (B) no room left for the implementer to decide product/Runtime/architecture, (C) experiment contract defined where measurement is required, (D) observable PASS/FAIL acceptance, (E) no duplicated/missing responsibility, (F) API/DTO/state ownership decided, (G) no over-design.
+
+### 15.2 Readiness distribution (single primary label; not permission)
+
+Readiness is a planning classification only. It is distinct from the independent `IMPLEMENTATION_AUTHORIZED`, `EXPERIMENT_AUTHORIZED`, real-Runtime acceptance, Product/UX approval and release decisions. No count below grants any authorization.
+
+| Verdict | Tasks |
+|---|---|
+| **COMPLETED_ACCEPTED** | MP-COR1, MP-PUB1 (2); explicit Caller decisions; PUB1 is accepted at Desktop fixture/public seam with A19 NOT_RUN |
+| **IMPLEMENTATION_READY** | MP-INS1, MP-SEC3 (2) |
+| **A/B_TECHNICALLY_COMPLETE** | MP-NAV4 (independent remote review `PASS 0/0/0` on `b9136b2` and [Gate R4](evidence/README.md#historical-records) SUCCEEDED on `3052525`; eight unreachable/unmeasured branches kept as `NOT_RUN`/`NOT_MEASURED` with reasons), MP-NAV1 (independent remote review `PASS 0/0/0` on `b5761a6` with [Gate R2](evidence/README.md#historical-records) SUCCEEDED on `b5761a6`), MP-AX1 (independent remote review `PASS 0/0/0` on the repair SHA `0e59478` with [Gate R1](evidence/README.md#historical-records) SUCCEEDED on `0129d9e`; handler integration, native IME, mixed-scale DPI, screen-reader, High Contrast and dialog focus kept `UNVERIFIED`/`NOT_MEASURED`), MP-DOCK1 ([remote R4 PASS 0/0/0](evidence/README.md#historical-records) on `1be9ecd`, product `f1d0db1`, [Gate R2](evidence/README.md#historical-records) SUCCEEDED; Native and model qualifications retained), MP-FLOW1 ([remote R3 PASS 0/0/0](evidence/README.md#historical-records) on Gate R4 product `5c61266`, fixture graph only; RC-12 Runtime graph blocked, 10,000-edge/exact-cancellation/Native-regrant `NOT_MEASURED`), MP-REC3 ([remote R4 PASS 0/0/0](evidence/README.md#historical-records) on Gate R4 product `bc81b33`, Desktop-local restoration only; Runtime Task survival blocked, DD-23/crash-before-quit/Native Compare restore `NOT_MEASURED`) (6); C Runtime and D Product acceptance `NOT_RUN` for all |
+| **IMPLEMENTED_BUT_INCOMPLETE** | MP-COR2, MP-PUB2, MP-PUB3, MP-IMG1, MP-SEC2 (5); COR2 technical Gate/review and dev integration complete; PUB2 implementation/quality/changed-path Native and independent Gate R3 complete ([Gate](evidence/README.md#historical-records)); [remote review R2](evidence/README.md#historical-records) is 0/0/0 PASS on `b4c2e8ee81c4f885083bf0bd92cdd556ffb6c342`, A-NB-1 CLOSED; PUB3 implementation, eight-invariant crosswalk, workspace quality and native startup smoke complete ([evidence](evidence/README.md#historical-records)) with [Gate R1](evidence/README.md#historical-records) SUCCEEDED on `60cf860a52090989a28b7bd05b75067d53755ae0`, [remote review R3](evidence/README.md#historical-records) is 0/0/0 PASS on `ae4bd713884ba941c3b4ba95d8d5f29761af2a3c` with both review findings CLOSED and [Gate R2](evidence/README.md#historical-records) SUCCEEDED on `2df45bd337ed65546c8d48074daf2e48cb525126`. IMG1 local source/quality, the [R1 opened-object correction](evidence/README.md#historical-records) and repaired-source [independent Gate R2](evidence/README.md#historical-records) are verified; [remote R2](evidence/README.md#historical-records) is 0/0/0 PASS with A-NB-01 CLOSED; Native M09 remains HOLD. Gate R1 remains historical for its superseded source. SEC2 source/public-seam qualification is CLOSED at Gate R13 and [remote R9 0/0/0](evidence/README.md#historical-records); row12 Native and DD-22 remain HOLD/PENDING and do not claim A/B technical completion. Historical Caller-acceptance records remain unchanged and do not add a continuation gate under §19.6. |
+| **DESIGN_GATE_REQUIRED** | MP-TYP1 (DD-04a), MP-UX2, MP-UX3, MP-UX4, MP-NAV5, MP-DOCK2, MP-INS3 (DD-26), MP-NAV3, MP-IMG5, MP-PL1, MP-REL1, MP-REL2, MP-REL3 (DD-22 for full contents), MP-AX2 (14) |
+| **EXPERIMENT_READY** | MP-PUB4, MP-IMG2, MP-IMG3, MP-IMG4, MP-FLOW2, MP-FLOW3, MP-TYP2, MP-REC1, MP-REC2 (9) |
+| **RUNTIME_BLOCKED** | MP-IMG6, MP-RT1, MP-RT2, MP-RT3, MP-RT4, MP-RT5, MP-RT6, MP-RT7, MP-RT8, MP-SEC1, MP-INS2, MP-ACC1, MP-ACC2 (13) |
+| **UX_BLOCKED** | MP-UX1, MP-CMP1, MP-NAV2 (3) |
+| **NOT_AUTHORIZED** | MP-R0A, MP-R0B, MP-R0C, MP-R0D, MP-VID1, MP-VID2, MP-VID3, MP-VID4 (8) |
+| Total | 62 task entries (R0 split into four; video into four; media feasibility and production fetch split) |
+
+Notes on borderline verdicts (explicit, not silent):
+
+- MP-NAV2 is counted UX-blocked (Brief field set/validation, DD-06) and additionally runtime-gated (create command contract RC-01/09); MP-REC3 is runtime-gated for acceptance but has an implementable non-faking portion (local restart restoration) — neither may claim completion without its gate.
+- MP-CMP1 has an EXPERIMENT-ready reuse/fairness core, but its UX semantics block completion.
+- MP-R0A–D and MP-VID1 are technically specified but require explicit authorization; the plan records both facts.
+- MP-RT8 is primarily RUNTIME_BLOCKED for the real service-discovery/product-lifecycle exit counted in §15.2; its local native single-instance/shutdown slice is independently implementable.
+- MP-FLOW3 stage F stays NOT_AUTHORIZED inside an EXPERIMENT_READY task.
+
+### 15.3 Structural reconciliation and evidence provenance
+
+| Check | Result |
+|---|---|
+| Traceability: canon §68 MVP items → tasks | Every item mapped (Video → MP-VID1..4 as gated; Command Palette → MP-NAV4/MP-NAV5; Start/Next Iteration → DD-25 + MP-NAV2/MP-ACC1); no item dropped |
+| Product Canon requirements → task/contracts | Product goals §2 and UX/surface requirements §§4–21 map to the navigation, image, dock, inspector, compare, flow, palette, accessibility and recovery cards in §7; architectural/security/platform requirements §§22–62 map through the corresponding single DC-MP contracts; quality/golden workflow/UX/performance/MVP §§63–68 map to MP-R0*, MP-UX*, MP-ACC1/2 and MP-VID1..4. ACC1/ACC2 retain every unaccepted or NOT_MEASURED requirement. |
+| Traceability: R0–R10 → tasks | Complete (§8) |
+| Traceability: RC-01–17 → tasks | Complete (§9) |
+| Traceability: baseline code responsibilities 1–17 → tasks | Complete (§2 → §7) |
+| DAG nodes/edges and prerequisites | 62 task cards ↔ 62 DAG nodes; 41 hard implementation edges (86 in the prior DAG; 45 ordering/decision/authorization/measurement/conditional Runtime or product-acceptance relations were removed from the hard graph and are now gates or non-blocking consumers). Each card explicitly lists its exact incoming hard-edge prerequisites; the remaining edge list is acyclic by forward task ordering. |
+| Readiness vs authorization | 2 completed/accepted + 2 ready + 5 implemented/incomplete + 1 implemented dock + 5 A/B technically complete (C/D NOT_RUN) + 14 design-gated + 9 experiment + 13 Runtime-blocked + 3 UX-blocked + 8 not-authorized = 62 primary labels. Accepted COR1/PUB1 retain explicit Caller receipts; technical review does not grant Runtime, Product UX or release acceptance. Current execution authority is recorded in §19.6. |
+| Task/DC cardinality | 62 MP IDs retained; each card links its one `DC-MP-*` contract. No IDs or contracts added/removed in this plan edit. |
+| Consumers references | No reference to a non-existent task ID |
+| Verdict counts (§15.2) vs per-task Status labels | Current distribution: 2 completed/accepted / 2 ready / 5 implemented-incomplete / 1 dock qualification / 5 A/B technically complete / 14 design-gated / 9 experiment / 13 Runtime-blocked / 3 UX-blocked / 8 not-authorized = 62. Historical distributions are not current task status. |
+| Independent plan audit (separate read-only agent) | Verdicts A–G reported; BLOCKING items 1–5 applied in the same correction round as review round 4 (NAV1/INS3/REC3/PUB1 behaviour freezes and the palette contract, media ownership split, required DAG gates, decision-task completion predicates, R0–R10 crosswalk completion); ACTIONABLE items 6–8 applied (experiment/proof label alignment, count correction, task owners/type contracts) |
+| Unfinished prerequisites never treated as done | R0/Video marked NOT_AUTHORIZED; Runtime items marked blocked; MP-PUB1 gated on DD-01 |
+| Numeric SLO duplication | None (single owner referenced) |
+| Protected canon/ADR/pin/dependency scope | This workflow update leaves Product Canon, DC contracts, DD registry, protocol/ADRs, Cargo manifests/lockfile, dependencies and pins unchanged |
+| Executable change scope | None in this step; accepted MP-COR1 implementation and earlier app-core test correction retain their own historical evidence |
+| Link integrity | Current relative links/anchors, 62 task/DC mappings, hard prerequisites, DAG, decision-gate preservation and updated status counts are checked in [STEP 1 evidence](evidence/README.md#historical-records); earlier audits remain historical |
+| External review rounds 1–7 (on the pre-migration plan document) | Applied as recorded below. Each round reviewed the single-file master plan (including its §7 design clauses) before the design-canon migration; the reviewed design text now lives in [Desktop Design Contracts](../architecture/DESKTOP_DESIGN_CONTRACTS.md) and [Desktop Design Canon](../architecture/DESKTOP_DESIGN_CANON.md) with the behavioral wording preserved. The rows below are the historical record of that document, not of the current normalized docs |
+| — round 1 | 7 BLOCKING + 3 ACTIONABLE findings applied (DAG/prerequisite integrity, media feasibility split, Command Palette task, approval-state ladder, canonical-event vs display-notification separation, video completion split, COR-01 rollback safety, R0C stress matrix, COR2 acceptance observability, compressed-task clauses) |
+| — round 2 | 5 BLOCKING + 3 ACTIONABLE findings applied: stale `RT6 → IMG1` edge removed (production media authority now targets MP-IMG6 only); publication derived state (including the command registry) is now complete in the publication, with the bounded event log demoted to a diagnostics/ordering aid plus `event_gap`; product-acceptance dependencies attached to MP-ACC1/MP-ACC2; MP-REL3 gated on DD-22; PUB1 rollback no longer implies UI-thread pumping or timer polling; lanes aligned to the DAG with the DAG declared canonical; RT2/RT7 completion boundary stated; DD-25 post-decision ownership recorded |
+| — round 3 | 3 BLOCKING + 2 ACTIONABLE findings applied: remaining MVP acceptance dependencies connected (IMG6/INS2/RT7/RT5 → ACC1; VID4/NAV5 → ACC2, with VID4 required unless a Product-owner scope exception is recorded); command registry bounded (unresolved always retained, `N` resolved entries, explicit not-retained result, publication also triggered by non-event state changes); DD-04 split into pre-approval (DD-04a) and final adoption (DD-04b) removing the approval/evidence circularity; §15.3 counts corrected; lane table and MP-RT6 consumers aligned with the DAG |
+| — round 4 | 3 BLOCKING + 2 ACTIONABLE findings applied: unresolved commands capped with explicit submission backpressure plus a registry/not-retained query contract and a long-run test; security/Stop/multi-window gates connected (SEC2 → RT2, SEC3 → IMG2, RT4 → NAV4, NAV4 → ACC1, PUB3 → ACC2); typography adoption enforced (TYP1 start = MP-R0D; TYP2/PL1 and release acceptance require DD-04b; R1 crosswalk updated); video scope-exception rule stated (contract and DAG updated in one change); MP-COR2 made independent of the unapproved R0 harness |
+| — round 5 | 5 BLOCKING + 2 ACTIONABLE findings applied: publication API contradiction removed (object-safe `DesktopClient` members enumerated); unsettled-state definition extended to `ResultUnknown` with all registry insertion paths bounded; Runtime-independent implementation unblocked by moving IMG5-production and NAV4-receipt requirements out of the DAG into documented conditional acceptance gates; MP-RT6 scope narrowed to authorization decisions only; NAV1 attention indicator and INS3 v1 restricted to data that actually exists (Desktop-local, labelled conditions) with the missing Runtime issue projection recorded as a §9 contract gap; Palette wording aligned with substring search; IMG2 decode candidates separated from the upload comparison |
+| — round 6 | 1 BLOCKING + 3 ACTIONABLE findings applied: registry capacity overflow no longer clears the registry or forces a resync — an unknown receipt at cap is kept in a bounded tombstone list (or raises `CommandCapacityExceeded`), every unsettled entry is preserved, and the registry survives resync/reconnect; eviction is restricted to zero-reference settled entries and never force-releases a displayed reference; MP-RT6 acceptance narrowed to authorization cases (digest/quarantine moved to MP-IMG6); API wording corrected to 4 groups / 5 methods and the recorded link count updated |
+| — round 7 | 0 BLOCKING + 2 ACTIONABLE clarifications applied: tombstone entries are published as `ResultUnknown`-class status, answered by `lookup_command` with an explicit unknown-outcome result (distinct from `NotRetained`), released only on settlement/session end, and `CommandCapacityExceeded` is reported through the existing `last_error` field (no new publication field or public API); the capacity-unsettled predicate is declared separate from the existing `CommandStatus::is_settled()` helper (which counts `Accepted` as settled) with a required unit test. **Historical verdict: design freeze approved by the external reviewer at commit 28aa921; this is not a blanket implementation authorization — DD-01 and the other design gates, R0/video authorizations and Runtime contract approvals remain in force.** |
+| External review round 8 (on `f3ea37e`, pre-migration plan) | 1 BLOCKING + 1 ACTIONABLE + 0 EXCESSIVE: B8-01 (ordinary-unsettled and tombstone budgets conflated — contract capped unsettled at 64 while publishing tombstones on top) closed by [DC-MP-PUB1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub1) disjoint budgets `max_unresolved = 64` / `max_tombstones = 64` with published combined bound 128 and an observable capacity-boundary test; A8-01 (capacity-error representation/lifetime and session-end definition) closed by the existing `InvalidCommand("CommandCapacityExceeded")` identifier in `last_error`, the documented error lifetime, and session end distinguished from resync/reconnect. This row records the closure; round-8 acceptance was the document freeze, not a code/test result |
+| External review, final (on `70df916`, normalized branch) | 0 BLOCKING + 1 ACTIONABLE (A9-01) + 0 EXCESSIVE. B8-01/A8-01 verified PASS; normalization audit items (qualified references, restored common-clause defaults, corrected provenance) verified PASS; structural audit confirmed 62/62 contracts, 62-node 86-edge acyclic DAG, ACC1/ACC2 required ancestors, 13/15/9/14/3/8 readiness and docs-only scope; DD-01/R0/Video/Runtime gates unchanged. A9-01 (contracts status-line provenance wording) applied as docs cleanup at the current HEAD; **Verdict: documentation freeze approved — no new review round required; not an implementation or gate authorization** |
+| Design canon normalization (docs-only, post-freeze) | The 62 MP design clauses were transferred into 62 DC sections without changing their behavioral text (round-8 capacity/error amendments then applied canon-side per the rows above); the plan is now a derivative execution index. Structural checks and proof limits are recorded in [DESIGN_CANON_NORMALIZATION_REVIEW.md](DESIGN_CANON_NORMALIZATION_REVIEW.md). The final verdict above covers this refactor as a documentation freeze only |
+
+---
+
+## 16. Risks, blockers and escalation
+
+| Risk | Impact | Mitigation / trigger |
+|---|---|---|
+| Runtime contract work stalls (RC-01/05/13) | MP-RT*, MP-ACC* remain blocked; MVP cannot close | Desktop-only lanes continue (fixture-mode surfaces, correctness, measurement); escalate to Runtime owner with MP-RT1's frozen field list |
+| Video route unavailable at the pin | MVP image/video requirement cannot be satisfied as specified | MP-VID1 authorized probe → MP-VID2 decision; honest capability restriction recorded, MVP acceptance stays open (never silently drop) |
+| UX-01 unanswered | Compare/fit/1:1 cannot be implemented without inventing product behaviour | Keep Compare DISABLED with reason; escalate to UX owner with the frozen question list |
+| R0 authorization absent | No ratified gates → numeric phase-exit claims remain unqualified | Request MP-R0A harness/experiment authorization first; capture R0B/C evidence, then MP-R0D ratification. Independently implementable contract work continues without inventing a numeric gate |
+| Snapshot-handle retention (COW) unnoticed | O(state) copy per delta under load | MP-PUB4 instrumentation before changing the boundary; MP-PUB2 must drop handles promptly |
+| Fixture success mistaken for integration | False product claims | Non-negotiable: fixture mode labelled, unreachable commands explicit, MP-ACC1 requires real projections |
+| Graph scale cost | Ingestion/validation dominates | MP-COR2 index + R6 staged choice |
+| Windows CI qualification (historical remote-runner failure) | Current remote execution not established by this documentation step | Preserve that the earlier run failed before execution; qualify current Windows CI through actual results in the separately authorized environment step, never infer PASS from a workflow file or another product's CI |
+| Pin/upstream churn | Regression risk on update | Pin KEEP; any update follows ADR-0001 policy with a concrete capability/fix need |
+
+Escalation rules: an implementer stops and escalates (rather than deciding) if a task requires (a) a new public API, (b) a change of state ownership, (c) a UX default the canon leaves open, (d) a Runtime semantic, (e) a dependency/pin change, (f) an unsafe-code exception, (g) a persistence change.
+
+---
+
+## 17. Historical next-task assessment (superseded by §19.6 authority)
+
+1. **MP-COR2 — separate Caller consideration, not another implementation dispatch.** MP-COR1 is already accepted; COR2's product candidate `951dfd493ddba019ee730b420148ffe4ce1f82bb` passed independent Gate and STEP 4 review, was fast-forwarded to dev and pushed under the explicit 2026-10-11 integration instructions. §19.2 and the final assessment distinguish technical GO from the interrupted zero-intervention demonstration. Caller acceptance, release and main merge remain separate decisions.
+2. **MP-PUB1 — COMPLETED_ACCEPTED at Desktop fixture/public seam.** [Explicit Caller acceptance](evidence/README.md#historical-records) follows actual native proof and independent technical/docs/Skill0/0/0. No remaining same-scope implementation or verification task. A19 stays NOT_RUN; next MP, push/merge, branch deletion and release are outside the decision.
+3. **MP-R0 authorization request** (MP-R0A) — needed before any numeric gate may be called a gate.
+4. **MP-UX2 question submission** to the UX owner — unblocks Compare and Dock behaviour decisions.
+
+This assessment records the earlier authority boundary, not a current request to repeat start approval. [§19.6](#196-current-user-authority-and-continuous-execution) now records the user's full-plan execution and explicit dev-integration/task-branch-cleanup instructions. Historical Gate failures, review decisions and acceptances retain their original source and scope; A19 remains NOT_RUN.
+
+---
+
+## 18. Reference index
+
+| Document | Role for this plan |
+|---|---|
+| [COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md](../architecture/COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md) | Sole product/UX canon (unchanged) |
+| [RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md](../architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md) | Rendering/performance/visual architecture, R0–R10, numeric ownership |
+| [ADR-0007](../decisions/ADR-0007-RENDERING-PERFORMANCE-VISUAL-ARCHITECTURE.md) | Accepted rendering direction, pin KEEP |
+| [ADR-0001](../decisions/ADR-0001-GPUI.md)–[ADR-0006](../decisions/ADR-0006-MEDIA-BOUNDARY.md) | Accepted boundary decisions |
+| [REPOSITORY_ARCHITECTURE.md](../architecture/REPOSITORY_ARCHITECTURE.md), [DEPENDENCY_RULES.md](../architecture/DEPENDENCY_RULES.md) | Physical ownership and allowed edges |
+| [DESKTOP_PROTOCOL.md](../architecture/DESKTOP_PROTOCOL.md) | Wire contract draft (atomicity, commands, media) |
+| [PROCESS_MODEL.md](../architecture/PROCESS_MODEL.md) | Process/thread/security/diagnostics model |
+| [COS_RUNTIME_REQUIRED_CHANGES.md](../integration/COS_RUNTIME_REQUIRED_CHANGES.md), [CURRENT_COS_RUNTIME_SURVEY.md](../integration/CURRENT_COS_RUNTIME_SURVEY.md), [PROTOCOL_OWNERSHIP.md](../integration/PROTOCOL_OWNERSHIP.md), [LOCAL_DEVELOPMENT_TOPOLOGY.md](../integration/LOCAL_DEVELOPMENT_TOPOLOGY.md) | Runtime requests, survey (historical), contract ownership, cross-repo workflow |
+| [BOOTSTRAP_REPORT.md](BOOTSTRAP_REPORT.md), [BOOTSTRAP_PLAN.md](BOOTSTRAP_PLAN.md) | Historical bootstrap evidence and stage order |
+| [TESTING.md](TESTING.md) | Quality gates and validation ownership |
+| [TERN_BINARY_RENDERING_ANALYSIS.md](TERN_BINARY_RENDERING_ANALYSIS.md) | Measured evidence and limitations |
+| [GETTING_STARTED.md](GETTING_STARTED.md), [BUILD_AND_RUN.md](BUILD_AND_RUN.md) | Onboarding and commands (current status banner added) |
+
+---
+
+## 19. Slice and packetization plan (recorded after the MP-COR1 E2E)
+
+**Status:** planning record only. This section grants no implementation authorization, adds no behavioural
+requirement and does not replace any design contract. It records how the 62 stable tasks are sliced for
+formal Taskern packetization after the first end-to-end slice completed.
+
+### 19.1 Completed slice (accepted)
+
+| Item | Value |
+|---|---|
+| Slice | **MP-COR1 — delta effective-state integrity** (DC-MP-COR1) |
+| Historical execution shape | three delegated Refine 0.2 executions (validator, wiring, regression), each with its own Taskern Plan revision, task identity, packet digest, binding and ExecutionReceipt; not the default subsequent Gate workflow |
+| Taskern tasks | `cor1-validator-v6`, `cor1-wiring-v7`, `cor1-tests-v8` (plan `cos-cor1-e2e`, revisions 6–8) |
+| Refine executions | `184f7a0a-…`, `02f96751-…`, `ca321824-…` — all SUCCEEDED with their checks passing |
+| Caller acceptance | [acceptance-mp-cor1.json](evidence/README.md#historical-records); accepted product candidate `a5b318d7d474e032393b6c17660b8d845e393b64`, reviewed evidence head `c39e6eaa2ee6b592e566f6c2ca8f3076fe7e3d5a` |
+| Independent review | round 1: BLOCKING 1 / ACTIONABLE 3 / EXCESSIVE 0; round 2: **0 / 0 / 0 — REVIEW PASS** |
+| Evidence | `docs/development/evidence/cor1/` (packets, bindings, receipts, hand-offs, gates, fail-before/after, review records) |
+
+### 19.2 Current MP-COR2 packet and historical boundary
+
+| Item | Value |
+|---|---|
+| Slice | **MP-COR2 — graph validation scaling** (DC-MP-COR2), P0, hard prereqs none |
+| Why this one | remaining independent P0 graph-scaling task in the same shared validator; no hard COR1 dependency is added |
+| Historical formalization | Taskern plan `cos-cor2-slice`, revision 1, task `cor2-index-v1`; old `check`, `compile`, `adapt` evidence in `docs/development/evidence/cor2-slice/` targets delegated TaskRequest, not GateRequest |
+| Current formalization | [STEP 2 plan](evidence/README.md#historical-records) `cos-cor2-gate-e2e`, revision 1, task `MP-COR2`; [check](evidence/README.md#historical-records) `plan_valid`; [compile](evidence/README.md#historical-records) `packet_compiled`; no `adapt` |
+| Source binding | latest observed dev `ec5772920711cd63b64c6254a9ba068bd96a875b`; separate STEP 1 workflow overlay `aca168dd8b970f2d15bfe7ff82259821273d320d`; [exact context provenance](evidence/README.md#historical-records), [consistency](evidence/README.md#historical-records) |
+| Current state | **IMPLEMENTED / GATE_SUCCEEDED / STEP4_REVIEW_CLEAN / MERGED_TO_DEV / NOT_CALLER_ACCEPTED**; candidate `951dfd493ddba019ee730b420148ffe4ce1f82bb`, Gate `8f0b985a-bc2d-42e7-bc80-46a0ddcaa042`; [closure](evidence/README.md#historical-records). STEP 2's no-dispatch statement remains historical; the old delegated request remains unused, never a GateRequest |
+| Next prerequisite | Separate explicit Caller acceptance/rejection decision on the dev-integrated candidate. No additional implementation/Gate allowance follows from the observer timeout; main merge, release and next MP remain unauthorized |
+| STEP 2 review | [Completion](evidence/README.md#historical-records): reviewed `5fd580f80d11003496ec63d488f8f169638730f7`, Tern 0 / 0 / 0; evidence-only later commits are not silently substituted as the reviewed candidate |
+| STEP 3 qualification | [Environment/Skill report](evidence/README.md#historical-records), [completion](evidence/README.md#historical-records): reviewed `6a2e82b37d7ebb4905380d1bf3ca425d8f5673f0`, Tern 0 / 0 / 0; selected packaged Refine 0.3 and [qualified request](evidence/README.md#historical-records); actual no-PATH Windows quality route, native preflight **UNKNOWN** preserved. No product implementation or Gate yet |
+| STEP 4 allowance | [Finite execution allowance](evidence/README.md#historical-records) and [exact minimal prompt](evidence/README.md#historical-records); candidate-bound checks/evidence, not product acceptance or an expanded implementation procedure |
+| STEP 5 assessment | [Independent DC/performance/regression/correlation/autonomy assessment](evidence/README.md#historical-records); technical recommendation and zero-intervention HOLD are separate. Final review/evidence SHA is recorded separately after review, never substituted for the product candidate |
+| Integration | [Dev fast-forward and remote cleanup receipt](evidence/README.md#historical-records): `ec57729` → `c82dbd5` (11 commits, no merge commit) fast-forwarded locally and pushed; `feature/cor2-workflow-step1` and the already-merged `feature/architecture-plan-quality-finalization` deleted locally, the latter also deleted remotely (no associated pull request). Main merge not performed |
+
+### 19.3 Slice boundaries and packetization triggers for the remaining tasks
+
+Each slice is one task (or a small group whose hard prerequisites are already accepted) formalized as its own
+Taskern Plan revision. The plan's `dependencies` are closed within a revision; ordering between slices is
+Caller-managed, as demonstrated by the MP-COR1 slices, whose revisions carried `dependencies: []` and whose
+sequence was fixed by the Caller ledger rather than by Taskern.
+
+The §19.3 group counts below preserve a historical packetization snapshot; they are **not a refreshed current status census**. For current disposition and authorization use each MP's §7 card, its fixed-SHA completion record and §19.6. In particular MP-SEC3 is now Desktop-local technically complete, while MP-IMG1 M09 Native remains HOLD and MP-IMG2 retains experiment/R0 gates.
+
+| Group | Count | Tasks | Packetization trigger |
+|---|---|---|---|
+| Ready, no hard prereqs | 2 | MP-IMG1, MP-SEC2 | current implementation authority under §19.6; packetize one eligible slice at a time |
+| Implemented, incomplete qualification | 3 | MP-COR2, MP-PUB2, MP-PUB3 | Preserve each card's evidence and historical disposition. |
+| A/B technically complete, C/D not run | 5 | MP-NAV4, MP-NAV1, MP-AX1, MP-FLOW1, MP-REC3 | MP-NAV4: independent remote review `PASS 0/0/0` on `b9136b2`; C needs RT4/RC-08/10 and real authorization, D needs C plus Product UX acceptance. MP-NAV1: independent remote review `PASS 0/0/0` on `b5761a6` with Gate R2 on `b5761a6`. MP-AX1: independent remote review `PASS 0/0/0` on the repair SHA `0e59478` with Gate R1 on `0129d9e`; handler integration, native IME, mixed-scale DPI, screen-reader acceptance, High Contrast theme integration and dialog focus stay `UNVERIFIED`/`NOT_MEASURED`. MP-FLOW1: R3 `PASS 0/0/0` on Gate R4 product `5c61266` for fixture graph only; RC-12, 10,000 edge/exact-cancellation/Native-regrant remain blocked or `NOT_MEASURED`. MP-REC3: R4 `PASS 0/0/0` on Gate R4 product `bc81b33` for the Desktop-local slice; Runtime Task survival, DD-23 and crash-before-quit remain blocked/`NOT_MEASURED`. Release remains unapproved for all five. |
+| Ready after a prerequisite | 2 | MP-INS1, MP-SEC3 | the named hard prerequisite result and current implementation authority under §19.6 |
+| Implemented, incomplete dock qualification | 1 | MP-DOCK1 | [historical observations and correction](evidence/README.md#historical-records); source-bound native evidence, retention, independent Gate and remote review remain open |
+| Design-gate required | 14 | MP-UX2, MP-UX3, MP-UX4, MP-TYP1, MP-NAV3, MP-NAV5, MP-DOCK2, MP-IMG5, MP-INS3, MP-AX2, MP-PL1, MP-REL1, MP-REL2, MP-REL3 | the named DD gate (`SPEC_APPROVED`) plus a separate `IMPLEMENTATION_AUTHORIZED` decision |
+| Experiment-ready | 9 | MP-PUB4, MP-TYP2, MP-IMG2, MP-IMG3, MP-IMG4, MP-FLOW2, MP-FLOW3, MP-REC1, MP-REC2 | R0 harness authorization and the task's own experiment/design-selection gate |
+| R0 measurement, not authorized | 4 | MP-R0A, MP-R0B, MP-R0C, MP-R0D | an explicit R0 implementation authorization (ADR-0007 §15, rendering §13) |
+| UX-blocked | 3 | MP-UX1, MP-NAV2, MP-CMP1 | UX/product authorization for prototype work, with prototype scope stated before code |
+| Runtime-blocked | 14 | MP-IMG6, MP-INS2, MP-RT1–MP-RT8, MP-SEC1, MP-REC3, MP-ACC1, MP-ACC2 | the named Runtime change (RC-*) plus Runtime-side approval; no fixture result substitutes for it |
+| Video, not authorized | 4 | MP-VID1–MP-VID4 | MP-VID1 probe authorization first; later stages require the preceding capability evidence and separate owner decisions |
+
+Note: the two ready rows cover the five pending `IMPLEMENTATION_READY` tasks (3 + 2 = 5). MP-DOCK1 remains
+`IMPLEMENTED_BUT_INCOMPLETE`, not technically closed. MP-COR1 and MP-PUB1 remain `COMPLETED_ACCEPTED` (2),
+with PUB1's boundary at the Desktop fixture/public seam and A19 NOT_RUN. The split follows each card's
+**Hard prereqs** line.
+
+### 19.4 Rules this record keeps
+
+1. Packetize one eligible task at a time; current implementation authority is the direct-user grant in §19.6, not this document or a Taskern output.
+2. Select and bound each task from its DC and observed prerequisites before execution. Do not ask again for the already-granted plan-internal start authorization.
+3. Machine/reviewer success is not a fabricated user acceptance or Domain truth. A historical pending-acceptance field alone does not create an additional stop gate for the continuation the user has expressly authorized.
+4. Cross-revision dependency satisfaction is Caller-managed evidence, never assumed to be tracked by Taskern.
+5. Every behavioural requirement stays in its owning design contract; this section only records execution order.
+
+### 19.5 MP-PUB1 current execution disposition (2026-10-17)
+
+| Item | Observed disposition |
+|---|---|
+| Fixed product candidate | `6b05dcc7df280ab6ef6f50d6a2cad28f90c4abeb`; subsequent documentation commits are not new product Gate candidates |
+| Implementation/review | R1 source, R2/R2b native and R3 source/workspace reviews retain their original candidate qualifications; R5 maps all A01–A20 and seven Taskern acceptance groups |
+| Current independent Gate | `c6e0e9e3-5591-4905-885a-9d3ad7232a9f`, released Refine 0.3.1, **SUCCEEDED**, 508446ms; [binding, qualification and HOLD](evidence/README.md#historical-records) |
+| Gate evidence | 9/9 PASS; tests 172/0/0; 7/7 outputs rehashed against the fixed Git blobs; 7 terminal-bound command logs / 14 private streams; cleanup complete, owner dead, no recovery required; integrity verify exit 0 |
+| Authority and timing | Caller removed the Gate-attempt count ceiling; each accepted batch remained max 1 / retry 0 with 600000ms overall and 300000ms per command. Cold estimate 485874ms exceeded the old 480000ms procedural goal; explicit Tern GO preserved that fact. No universal product-performance rationale for 600 seconds is claimed. |
+| History and boundaries | Failed Gates/partial native batches and pre-acceptance reviews remain immutable. Run2 plus final Tern0/0/0 qualify Desktop fixture/public seam; [explicit Caller ACCEPT](evidence/README.md#historical-records) completes that scope. A19 NOT_RUN; no new push/merge/branch deletion/release |
+| Current remaining work | None within the accepted scope. Caller chose ACCEPT for the fixed product and docs closure `68524496ba5383a195f151dee303ab5660905714`. Actual native proof and independent technical/docs/Skill0/0/0 are complete; next-MP/integration/real Runtime decisions remain separate. |
+
+
+### 19.6 Current user authority and continuous execution
+
+**Authority:** direct user instructions in this interactive session, recorded after the technical closures of MP-PUB2 and MP-PUB3. The user clarified **「すでに実装計画の全てを承認している」** and then instructed:
+
+> 計画に記録しdevへプッシュ、不要ブランチ削除、次タスクへ移行。実装 → 検証 → push → 評価時点のTernブラウザターゲット確認 → リモート固定SHAの評価 → 指摘解消 → 次タスク実装のループを回し、人間の明示的承認が必要となるまで継続すること。次タスク指示はTernより具体的指示を受けること。
+
+- **Execution:** the complete canonical implementation plan is already implementation-authorized. After each technically complete slice and clean remote review, continue with the next eligible task; do not repeat per-MP start approvals or invent a final-acceptance-wait stop. Earlier task-scoped prohibitions remain historical and are superseded to this extent.
+- **Current integration:** fast-forward `dev` from observed `31b9c7e477b84fdea5409443971999e42408c037` to the completed PUB2/PUB3 history at `003d6c3d7e857fbd59c720f932f190302db41a1b` plus this authority record, then push `dev`. No product code changes or redundant product Gate are required by this documentation/integration step.
+- **Cleanup:** delete local and remote `feature/mp-pub2-incremental-refresh` and `feature/mp-pub3-publication-conformance` only after their exact tips are ancestors of the pushed `dev` and no other worktree uses them. Keep all commits, immutable Gate/review evidence and `main`; do not force-delete, rewrite history or delete unrelated branches.
+- **Next instruction:** immediately before each request, inspect the current Tern browser tab, live CDP target and authenticated idle composer. Use the actually confirmed target, never navigate to a stale stored conversation merely to satisfy a pin. Obtain the next task's concrete, copy-ready directive from Tern; inspect its exact remote-source basis and reconcile it with the single owning DC, DAG and current decision gates before acting. A Tern response is guidance, not new authority.
+- **Per-task loop:** bounded Taskern context/packet → existing coding-agent implementation and affected-path smoke → required repository quality → fixed candidate and independent Refine Gate/integrity → feature-branch push → live-target confirmation → actual remote fixed-SHA Tern review → repair/reverify/re-pin/review until 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE → next eligible task. Preserve all failed/unknown attempts and source/Gate/review correlations; no blind retry or per-task orchestration framework.
+- **Human boundary:** stop the affected operation only for an actual unresolved decision assigned to a human/other authority, absent real prerequisite, exhausted explicit execution bounds, or ungranted consequential action. Full-plan execution approval is not a ratified DD/UX/performance/video result, authenticated Runtime evidence, approval to mutate `<runtime-root>`, release/main integration, security/credential change or persistent ComputerUse grant. Provider live confirmation remains separate; other independently eligible plan work should not be abandoned merely because one slice is blocked.
+- **Truthful disposition:** PUB2 and PUB3 implementation, quality, independent Gates and remote reviews are technically complete ([PUB2](evidence/README.md#historical-records), [PUB3](evidence/README.md#historical-records)). Their recorded historical acceptance fields are not silently rewritten or used to demand a new start approval. A19 remains NOT_RUN; no product-UX or real-Runtime success follows from dev integration.
+
+This section records execution authority only. It adds no MP, hard dependency, product behavior, acceptance criterion or waiver of the owning canonical contracts.
+- **2026-10-21 blanket approval (scoped):** the Caller replied 「すべて許可・承認する」 to the MP-wide owner-gate report. [[Caller approval](evidence/README.md#historical-records)](evidence/README.md#historical-records) records the grant: MP-R0A harness implementation, R0B/C measurement runs, R0D evidence production, the MP-IMG2 decoder comparison, experiment-only FFmpeg 8.0 harness use, WIC/GDI+ boundary evaluation under the unsafe policy, and Native verification sessions. It does not fabricate DD/UX design content, does not pre-ratify numeric thresholds or decoder adoption, does not accept unmeasured Product UX, and does not authorize main/release, Runtime mutation or credentials changes. R0D ratification, IMG2 decoder selection and every DD/UX decision still require their own recorded decision.
+
+
+### 19.7 MP-NAV4 implementation and actual native-confirmation boundary
+
+- **Selection:** Tern remotely read dev at `f2b93921402cabe774b261f9ecbcdc249525ba19`, returned authority review `0/0/0 PASS`, and selected P0 MP-NAV4 from the existing DAG; [the exact directive](evidence/README.md#historical-records) preserves all DC-MP-NAV4 A/B requirements and conditional C/D.
+- **Plan/context:** Taskern `prepare` compiled `cos-desktop-mp-nav4` revision 1 / `mp-nav4-ab-r1`; [context delivery](evidence/README.md#historical-records) records the packet, five required sources and actual budget diagnostics. No Taskern execution/adaptation or fabricated acceptance occurred.
+- **Implementation:** typed independent chrome axes and owner-routed, nonblocking single-flight Stop / explicit receipt check; no direct UI Runtime calls, canonical state mutation, implicit resend or second registry. [Public-seam smoke](evidence/README.md#historical-records) exercises actual owner/model behavior and real capacity refusals.
+- **Independent code verification:** [Gate R3](evidence/README.md#historical-records) `efed41d7-36de-4c53-8b29-4007ba5c7672` is `SUCCEEDED` on the repaired product `2f89b178dcdfdcf6e44ef0746ff34f8190ea8733`: 9 checks PASS, 189 tests/22 targets, zero warnings, 9 outputs, cleanup complete, native `gate verify` successful. [Gate R2](evidence/README.md#historical-records) `ecf8e4db-…` is `SUCCEEDED` on the superseded `5b39581…`, and [R1](evidence/README.md#historical-records) on `a53253b…`; both remain immutable and are not evidence for the repaired source. No automatic replay occurred. Code Gate success is not the missing native interaction proof.
+- **Remote review closure:** re-review of `2f89b178dcdfdcf6e44ef0746ff34f8190ea8733` ([verbatim](evidence/README.md#historical-records)) returned **0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE** with B-01 and B-02 **CLOSED**, and confirmed that no app-core API addition or Desktop-architect decision is required: the local failure classification is displayed only as a previous explicit attempt, and all current state still comes from the current authorized publication. It recorded that `stop.rs` unit tests prove only the transition logic; the actual GPUI retain/drop race and keyboard paths remain tier B evidence.
+- **Remote fixed-source review R1:** Tern read pushed `c074482d0bdd2e29a5a5f5373d1232373b14eacf` on GitHub and returned **2 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE** ([verbatim review](evidence/README.md#historical-records)): (B-01) an old window Stop intent kept blocking a new one after the task or observation generation changed, and (B-02) a safe receipt-read refusal could be discarded merely because its own diagnostic advanced the publication version. It confirmed 6-axis independence, outcome ownership, accepted-vs-completed distinction, no auto-settlement, app-core-only dispatch, no untrusted receipt text, counted retain/release, withholding, and no new dependency or excess test burden.
+- **Same-session repair:** the window-local intent now has an explicit task/generation lifetime with per-intent completion matching (late completions of another intent cannot authorize or confirm the current one), one counted release of a real credit, and the receipt check is a single-flight explicit read whose outcome is stored as **local attempt history** (`Checked`, `Capacity`, `Denied`, `Unavailable`, `Superseded`) instead of being compared against a publication notice; a `Found`/`NotRetained` value is still only usable while its own exact-tag read is current. The local record never becomes receipt truth, never exposes receipt content, and is retired on task/generation change or window close. No new public API, dependency, protocol or design decision was required; the alternative opaque authorization-continuity guard was not adopted and no owner amendment is requested.
+
+- **Actual boundary (resolved):** [B native verification](evidence/README.md#historical-records) records 23 runs ([index](evidence/README.md#historical-records), [manifest](evidence/README.md#historical-records)). The provider live confirmation that held the work is resolved: attempts 1–2/5–6 timed out after 120000 ms with `active: false` (kept as history) and attempts 7–8 succeeded, so the input-dependent matrix ran inside checked active grants and the grant was released after it. Measured with input: [N02 first native Stop](evidence/README.md#historical-records) (one `event=command`, `STOP_TASK`, one distinct id with occurrence 1, Task Status stays ACTIVE), [N03a](evidence/README.md#historical-records)/[N03b](evidence/README.md#historical-records) single-flight bursts, [N04d](evidence/README.md#historical-records)/[N04e](evidence/README.md#historical-records)/[N04f](evidence/README.md#historical-records) accepted/rejected/canonical-reflected, [N05](evidence/README.md#historical-records) 65 s unknown, [N07a](evidence/README.md#historical-records)/[N08d](evidence/README.md#historical-records) explicit read across revocation, [N08c](evidence/README.md#historical-records) OBSERVED, [N10a](evidence/README.md#historical-records) A→B→A, [N13a](evidence/README.md#historical-records)/[N13b](evidence/README.md#historical-records) close races, [N14](evidence/README.md#historical-records) keyboard/AX, [N15b](evidence/README.md#historical-records) inert disabled Stop, [N06b/N09b](evidence/README.md#historical-records) 64 admitted Stops with the 65th refused before dispatch and no re-send on retire/release. Measured without input: N01a/N01b/N01e, N01c, the N10a display-switch mechanism and N15. Unmeasured branches stay explicit: `NOT_RUN` N07b/N08a/N09a/N10b and `NOT_MEASURED` N04a/N11/N13c/N08c-NotRetained (the public seam proves the NotRetained branch in `app-core`'s `a16b_reads_report_exact_found_not_retained_and_denied`). No OS, security or persistent-permission change was made.
+- **Independent tier B Gate:** [Gate R4](evidence/README.md#historical-records) `5a196893-66e8-4d7e-ac82-e9d210d05192` is `SUCCEEDED` on the tier B candidate `3052525396608b4d8c93b7d08d35cce287c8c9d4` (nine checks pass, ten outputs, cleanup complete, `refine gate verify` successful). An earlier request on the same SHA (`3cb220e1-…`) failed only its `head` check because that request carried the previous round's head commit; the terminal state was known and the corrected request was re-run rather than resubmitting an unknown state.
+- **Remote review chain:** [R3](evidence/README.md#historical-records) on `3052525` returned `HOLD 0/3/0`; A-NB-1..3 were closed in `a08005e` and the follow-up A-NB-4 in `5fa85b3`, with the [final confirmation](evidence/README.md#historical-records) on `5fa85b3` at `PASS 0/0/0`. The tier B matrix review on `fc3976c` returned `HOLD 0 BLOCKING / 2 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE` and confirmed that the provider external HOLD is resolved and that the reachable A/B acceptance path is sufficiently verified; both remaining findings are documentation updates (the stale HOLD text and the N08c NotRetained expectation) and are closed in this candidate. The reviewer's rule stands: `NOT_RUN`/`NOT_MEASURED` branches are never converted into a PASS, and C/D stay `NOT_RUN`.
+- **A/B technical completion (recorded):** the final independent review on `b9136b2` returned `PASS 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE` ([verbatim](evidence/README.md#historical-records)), closing A-NB-3 and approving **MP-NAV4 A/B TECHNICALLY COMPLETE**. A (fixture/headless) and B (Windows native, reachable range) are complete; the eight unreachable/unmeasured branches stay `NOT_RUN`/`NOT_MEASURED` with their reasons and are never converted into a PASS.
+- **C/D unchanged:** C authenticated Runtime is `NOT_RUN` and requires RT4/RC-08/10 plus real authorization; D product acceptance is `NOT_RUN` and requires C plus applicable Product UX approval. Product release and full acceptance remain unapproved, and fixture/Gate/review success never implies C/D. The A/B completion transition therefore unlocks the next independently implementable MP under §19.6 and the existing DAG, not Runtime or product work.
+
+### 19.8 MP-NAV1 implementation and actual native-confirmation boundary
+
+- **Selection:** the Tern directive issued after MP-NAV4's A/B completion ordered the safe dev integration of the NAV4 completion SHA and then MP-NAV1 implementation, with DD-23, UX4 and the Runtime RC conditions explicitly not treated as approved. The fixture/public seam and the actual Windows GPUI Task Rail were both in scope.
+- **Plan/context:** Taskern `prepare` compiled the MP-NAV1 plan revision 3 packet; [context delivery](evidence/README.md#historical-records) records the packet, required sources and actual budget diagnostics, and [test admission](evidence/README.md#historical-records) records the admitted T01–T09 regressions plus the two defect regressions.
+- **Implementation:** authorized row derivation with stable identity and Desktop-local attention, variable-height virtualization with bounded overscan and stable scroll anchors, Unicode simple-case-folded substring search with query supersession, keyboard traversal with active-descendant semantics, and distinct empty/withheld/disconnected rail states. No Task Status, evaluation truth, best/winner, formal outcome, plan or artifact identity is derived locally.
+- **Defects found by actual native verification and repaired in this session:** (D1) the first native keyboard traversal aborted with `set_active_descendant called on the focused node` because the active row and the list container shared one focus handle — repaired in `dc87454` by keeping keyboard focus on the list and claiming only the active descendant; (D2) a 10,000-row transcript stalled with an empty rail because the owner driver parked after a saturated 64-frame pump step while the transport reported no deadline — repaired in `6306ff3`, with the permanent regression `crates/app-core/tests/observation_publication.rs::a_transcript_longer_than_one_pump_budget_completes_without_an_external_wake` (stalls at `pump frame 055` without the repair, reaches `pump frame 119` with it).
+- **Native scenarios:** [native judgments](evidence/README.md#historical-records) and [manifest](evidence/README.md#historical-records) record N01–N08 plus the fix-verification runs with per-file digests: 10,000 authorized logical rows with at most five mounted row callbacks per frame, keyboard and wheel traversal beyond the viewport with one stable active identity, the four Unicode simple-fold vectors with no diacritic expansion, anchor and selection preservation across insert/remove/state update, an eight-second one-shot revocation with a captured withholding frame and a fresh post-regrant publication, and distinct empty/withheld/disconnected states. Real screen-reader support and A19 authenticated Runtime remain `NOT_MEASURED`/`NOT_RUN`.
+- **Independent code verification:** [Gate R1](evidence/README.md#historical-records) `6fb8cf79-ff2d-4fd8-a9d0-1158dde75223` is `SUCCEEDED` on `84169ff` (9 checks, 203 tests/22 targets, ten outputs, cleanup complete, `gate verify` successful); after the review-driven Context Bar constraint, [Gate R2](evidence/README.md#historical-records) `0f2655f0-106d-48e6-b37e-462810bc9660` is `SUCCEEDED` on `b5761a6` with twelve outputs. Both receipts and every failed or mistimed native attempt remain immutable.
+- **Remote review chain:** [R1](evidence/README.md#historical-records) returned `HOLD 1 BLOCKING / 2 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE` (B-01 the candidate was not remotely reachable, A-NB-1 the insert-anchor capture condition, A-NB-2 the long-title Context Bar overlap). B-01 closed through the caller-authorized push ([push record](evidence/README.md#historical-records); `origin/feature/mp-nav1-task-rail` = `b5761a6`), A-NB-1 through the isolated insert run and the stated measurement point ([reconciliation](evidence/README.md#historical-records)), and A-NB-2 through `f102972` with its native verification. [R2](evidence/README.md#historical-records) returned `PASS 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE` on the pushed `b5761a6` and recorded **MP-NAV1 A/B TECHNICALLY COMPLETE**.
+- **C/D unchanged:** A19 authenticated Runtime, real assistive-technology acceptance, Product UX acceptance and R0 numeric gates remain `NOT_RUN`/`NOT_MEASURED`; no release, main merge or Runtime change follows. The A/B completion unlocks the next independently implementable MP under §19.6 and the existing DAG.
+
+### 19.9 MP-AX1 implementation and reachable accessibility boundary
+
+- **Selection:** the Tern directive issued after MP-NAV1's A/B completion ordered MP-AX1 (Accessibility, DPI and IME) from the existing DAG with DD-23, UX4 and the Runtime RC conditions explicitly not treated as approved.
+- **Plan/context:** Taskern `prepare` compiled `cos-desktop-mp-ax1` revision 1 / `mp-ax1-r1`; [context delivery](evidence/README.md#historical-records) records the six required context refs with their exact digests and budget, and the [amendment](evidence/README.md#historical-records) corrects the acceptance wording after review without rewriting the immutable packet.
+- **Implementation:** the shell's static status text (six state axes, selected task identity, data-source marker, Stop status/detail, dock ownership, formal-outcome line) now carries accessibility roles and values so the platform tree exposes it; Task Rail rows mark selection and the keyboard cursor with explicit text; the composition path shares one range-translation and splice implementation with five permanent tests.
+- **Native evidence:** [r1](evidence/README.md#historical-records) records the independent UIA enumeration (36 nodes, no unnamed text nodes) and the pin behaviour that `Role::Label` needs a value for a UIA name; [r2](evidence/README.md#historical-records) records the non-color cue with its AX exposure; [r3](evidence/README.md#historical-records) records keyboard-only traversal to row 32 of 10,000 with a single focused row, Enter-installed selection, and a window move to the second display preserving selection, anchor, focus and both markers.
+- **Independent code verification:** [Gate R1](evidence/README.md#historical-records) `75d74bd8-dded-45b7-acf2-fc67e356370f` is `SUCCEEDED` on `0129d9e` (nine checks, 208 tests, nine outputs, cleanup complete, `gate verify` successful); the product source is unchanged since.
+- **Remote review chain:** [R1](evidence/README.md#historical-records) returned `HOLD 0 BLOCKING / 2 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE`; A-NB-1 was closed by narrowing the AX05 claim to the pure range/splice guarantees with handler integration recorded as UNVERIFIED, and A-NB-2 by auditing application motion and recording Reduced Motion as `NOT_APPLICABLE` with the audit preserved. [R2](evidence/README.md#historical-records) returned `PASS 0/0/0` on the repair SHA `0e59478` and recorded **MP-AX1 A/B TECHNICALLY COMPLETE**.
+- **Unchanged boundaries:** `EntityInputHandler` integration stays UNVERIFIED, native TSF composition, mixed-scale DPI migration, screen-reader acceptance, High Contrast theme integration and dialog focus restoration stay `NOT_MEASURED`/`NOT_IMPLEMENTED` with their reasons, DD-23 stays pending, and A19 Runtime, R0 and Product acceptance remain `NOT_RUN`.
+
+### 19.10 MP-DOCK1 continuation and remote delivery (2026-10-19)
+
+- **Renewed direct-user authority:** the Caller again instructed: 「計画に記録しdevへプッシュ、不要ブランチ削除、次タスクへ移行。実装 → 検証 → push → 評価時点のTernブラウザターゲット確認 → リモート固定SHAの評価 → 指摘解消 → 次タスク実装のループを回し、人間の明示的承認が必要となるまで継続すること。次タスク指示はTernより具体的指示を受けること」. This renews §19.6 execution and dev-delivery authority, not Product acceptance or an unresolved owner decision.
+- **Observed starting state:** `dev` at `b231c4c84f4a1042ac1249d1c4b4bbd81a6d2928` already contains product `23a2a5fd7fc0a73c6a71d1b61184653af2d074d0`; fetched `origin/dev` is `c4b4b7699657dbce53dc743cee950c9bfd1c3f32`. The five local commits are not a new acceptance decision.
+- **Qualification correction:** [the mutable evidence summary](evidence/README.md#historical-records) now distinguishes historical observations from source-bound proof. Raw run files remain unchanged; the mismatched launch SHA, active/anchor loss, unexercised Compare retention and unestablished zero-count-frame cause are not PASS.
+- **Delivery order:** push this explicit incomplete disposition and fixed source to `dev`, then evaluate that actual remote SHA in the currently confirmed Tern conversation. Resolve findings and preserve each new candidate/Gate/review binding before requesting the next concrete task directive.
+- **Observed delivery/cleanup:** pushed `5a9de06dfb7db8e4760234b0e1e5c19d2cf3c80c` to `origin/dev` before R1 review. Deleted local and remote `feature/mp-nav4-shell-state-stop` at `3bd401f779181d431e17d46b2c7f1e2769197f7a` only after proving ancestry in pushed dev, no other worktree and no open PR. Kept `dev`, `main`, all commits and immutable evidence; no forced deletion or history rewrite.
+- **R1 remote finding:** [the fixed-`5a9de06` review](evidence/README.md#historical-records) returned **HOLD 3 BLOCKING / 2 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE**. The same task remains active: authoritative task/iteration membership, native negative-offset geometry, cancellable indexed derivation and publication-placeholder retention must be corrected before another MP starts.
+- **Corrective preparation:** [Taskern attempt 3](evidence/README.md#historical-records) compiled the full-contract corrective packet; earlier budget failures remain recorded. Regressions observed failing before repair cover cross-task membership, iteration-only ordering, cancellation and incremental/fresh ordering parity. [Clean local quality](evidence/README.md#historical-records) passes all seven commands with 217 Rust tests and 13 dependency-checker tests, without warnings after process-local removal of the inherited invalid linker argument. No global configuration changed.
+- **Independent source qualification:** released Refine 0.3.1 Gate `91a476d2-cb97-4e42-83f4-6fc4d620d085` is **SUCCEEDED** on corrective product `5de68b60ed3f841e07275f89b16d89ceb49dfdbf`: nine checks PASS, 217 Rust tests, zero warnings, ten outputs, complete cleanup, owner dead/no recovery and `gate verify` exit 0 ([receipt summary](evidence/README.md#historical-records)). Static preflight UNKNOWN remains UNKNOWN; later evidence/stimuli-only changes are not relabelled as this Gate's candidate.
+- **Actual human boundary:** live Native control confirmation timed out after 120000ms and the follow-up state is `active: false` ([record](evidence/README.md#historical-records)); no task UI input was performed or bypassed. N01–N07 are NOT_RUN, not PASS. [Viewed/Compare model smoke](evidence/README.md#historical-records) passes but is not native active/anchor or visible-geometry evidence. The same task remains HOLD; next-MP implementation must wait for its clean technical closure.
+- **Workload correction:** public fixture smoke rejected the single large membership frame, a shared membership chunk and then an overlong receive queue. Rejected inputs/logs remain separate. [R4 large input](evidence/README.md#historical-records) supplies all 10,000 explicit members across 157 authoritative iterations and 64 entities/chunk; [actual client smoke](evidence/README.md#historical-records) admits it under unchanged frame/bundle/queue ceilings. Small atomic insert/removal passed in [the preceding smoke](evidence/README.md#historical-records); iteration-only delta, multi-task, revoke-initial and empty inputs are also admitted. This is not Native or regrant success.
+- **Remote R2 disposition:** [independent review of actual pushed `31f49dd131fae121b4f2b951a74d606ec8df7c6a`](evidence/README.md#historical-records) returns **source PASS 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE**, no additional repository correction, but **MP-DOCK1 overall HOLD** for unperformed Native Tier B. [The verbatim next-action directive](evidence/README.md#historical-records) requires actual live provider confirmation, renewed source/binary binding, N01–N07 in new immutable runs, then evidence push/current-target confirmation/fixed-SHA review. Preserve the successful Gate while product source is unchanged; do not start MP-IMG1 or infer A/B completion from source-only 0/0/0.
+- **Caller-approved Native retry:** after the direct message 「承認」, a new ordinary `computer.control.acquire` attempt timed out after 120000ms; the follow-up state was again `active: false` and control was released ([attempt 2](evidence/README.md#historical-records)). Caller approval is present; this is not a missing implementation/start authorization. The provider reports capture/input/AX permissions granted and the screen unlocked, but task-scoped control did not become active ([capabilities](evidence/README.md#historical-records)). No evidence establishes whether a confirmation dialog was displayed or denied. Resume prerequisites passed at `faa8603`: clean dev equals origin/dev, one worktree, unchanged fixed Cargo/product source, and the actual executable digest still matches the detached Gate record. No Native launch/input, new Gate, product rebuild, permission change or bypass occurred; N01–N07 remain NOT_RUN/HOLD.
+- **Approved-boundary remote R3:** [independent evidence review](evidence/README.md#historical-records) of actual remote `241386a435f2ec90a57a93a4c96b84aaad355205` returns **0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE**, no repository correction, and confirms Native HOLD. The missing prerequisite is successful ordinary `computer.control.acquire` followed by measured `active: true` in the same task scope—not another generic chat/start approval. Its failure cause remains unknown. Preserve [the existing Native directive](evidence/README.md#historical-records), product/Gate bindings and N01–N07 NOT_RUN; no next-MP transition or unchanged-source test/Gate replay.
+- **Unchanged human boundaries:** no release/main integration, Runtime-owner mutation, credential/security change, fabricated Product/UX approval, or persistent ComputerUse permission change. Native interaction still requires provider live confirmation. Tern selects the next concrete task only within the canonical contract, prerequisites and current authority.
+
+### 19.11 MP-DOCK1 source-bound Native qualification and accessibility repair
+
+- **Observed Native defect:** the first source-bound run on `5de68b6` terminated with GPUI's `active descendant claimed by multiple nodes in one frame` ([raw failure](evidence/README.md#historical-records)). The Task Rail and Candidate Dock each marked their local cursor as the active descendant. Product `f1d0db1406a01725ad4ff4e4ef1bef2e0f7d57e8` keeps those independent local cursors but allows only the keyboard-focused collection to claim accessible active descent. This is the existing focus invariant, not a design change or a second focus registry.
+- **New fixed-source verification:** [quality](evidence/README.md#historical-records) passes all seven commands, 217 Rust tests and 13 dependency-checker tests without warnings. Released Refine 0.3.1 [Gate R2](evidence/README.md#historical-records) `0a48ea6d-4090-48db-928a-e0eee5a2809a` is SUCCEEDED on `f1d0db1`: nine checks, thirteen outputs, complete cleanup, owner dead/no recovery and native stored-integrity verification. The earlier Gate stays bound to its old product; preflight UNKNOWN is not PASS.
+- **Actual Native evidence:** the [crosswalk](evidence/README.md#historical-records) and [manifest](evidence/README.md#historical-records) retain N01 insertion/removal identity/Viewed/Active/anchor retention; N02 10,000 explicit candidates, Tab, focused C00024 after 24 Right keys, horizontal/vertical wheel and native maximize resize; N03 multi-task equal-number iteration membership; N04 iteration-only reorder; N05 sampled withholding in pixels/AX, guarded input, regrant and later revised content; N06 authorized empty versus unadmitted/disconnected data; N07 actual provider/source boundary audit. Seven task windows exited zero, shutdown was confirmed, provider sequence/clocks were ordered, no command events were emitted, no task window remains and live control was released.
+- **Preserved qualifications:** an absent referenced iteration is rejected by current client integrity, so that Native branch is not injected; public derivation covers its explicit-unattributed fallback. Compare remains separately verified through the existing model seam, not a fabricated Compare UX. No scrollbar is exposed; the attempted free-edge drag had no effect, while native maximize did resize. Raw geometry retains a one-pixel outer-edge discrepancy, not a perfect-border claim. N05 legitimately re-admits unchanged canonical revision 1 under a fresh grant before the later delta supplies revision 2; no earlier advance is claimed. These boundaries remain visible for independent review, not silently converted to extra Native PASS.
+- **Control and preparation history:** live confirmation eventually reported `active: true`. Failed r11 and the r12 helper-context interruption remain immutable; the verification helper was corrected to receive each current `computer.run` context rather than retaining an ended facade. Foreground-change safety stops were reconciled without blind input retry; the Caller explicitly selected an uninterrupted foreground interval. A normal-close destruction race reported an input safety error after actual exit zero and was reconciled, not retried. No OS permission, credential, Runtime or unrelated application change occurred.
+- **Final independent technical disposition:** [remote R4](evidence/README.md#historical-records) independently read pushed evidence `1be9ecd48d84ce49415c7216461b5c2ab675886f`, product `f1d0db1`, source/Gate/Native evidence and actual images, returning **PASS 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE** and **MP-DOCK1 A/B TECHNICALLY COMPLETE**. It explicitly accepted the recorded qualifications without waiving the owning scope. [The completion record](evidence/README.md#historical-records) closes the technical HOLD; C/A19 authenticated Runtime and D/Product UX remain NOT_RUN and DD/R0/release unapproved as applicable. This docs-only disposition does not rerun unchanged product tests/Native/Gate. Tern's [exact next directive](evidence/README.md#historical-records) selects MP-IMG1 after this closure is pushed; the resulting full dev SHA becomes its fixed baseline.
+
+

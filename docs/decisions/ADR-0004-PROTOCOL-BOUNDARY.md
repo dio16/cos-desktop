@@ -1,6 +1,6 @@
 # ADR-0004: Versioned projection and client boundary
 
-Status: **Accepted** ownership/architecture; interaction details **Proposed Draft**, 2026-09-21.
+Status: **Accepted** ownership/architecture, 2026-09-21; **SPEC_APPROVED scoped MP-PUB1 authorized-read amendment** by historical direct owner approval (see [disclosure](../development/evidence/README.md#historical-records)). Other interaction details remain Draft.
 
 Desktop consumes projections and sends explicit commands through app-core → cos-client. DTO imports may directly reference desktop-protocol as permitted by [dependency rules](../architecture/DEPENDENCY_RULES.md). cos-client is GPUI/UI-model/Domain-crate independent. Adding it is transport isolation, not transfer of semantic authority.
 
@@ -8,3 +8,5 @@ Choose hand-maintained Rust wire types in the future Desktop desktop-protocol cr
 
 
 Bootstrap implementation: `crates/desktop-protocol` is the sole machine-readable contract source; `cos-client` owns atomic staging/recovery and honest receipts behind object-safe `DesktopClient`; app-core orchestrates through that boundary and GPUI only renders explicit intents. Fixture `task-184-refine` tests negotiation, snapshot/delta staging, duplicate/gap/stale/overflow/epoch/unknown-event/authorization recovery and acceptance-vs-effect command handling. No real server guarantees are claimed.
+
+MP-PUB1 adopts [DC-MP-PUB1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub1) Option B: one background app-core owner, one immutable complete authorized publication, a mandatory close-only shared fence wired synchronously to client decode and adapter detection, tagged consumer reads and bounded internal registry. Runtime alone supplies validated read/context/scope/per-ID decisions under [Protocol](../architecture/DESKTOP_PROTOCOL.md#authorized-read-handoff); generations and retained receipts never grant permission. The required-field major target is2.0/2.0; current Rust/fixtures remain1.0 until separately instructed Desktop implementation. No extra service/crate/dependency or Runtime implementation is authorized. Offline Fixture success remains explicitly Fixture; real authenticated adapter/server compatibility is NOT_RUN. Product implementation start, Gate, acceptance and integration remain separate.

@@ -27,7 +27,7 @@ Commands used for identity included `git status --porcelain`, branch/HEAD/upstre
 
 | Field | Observed value |
 |---|---|
-| Executable | `<user-home>\AppData\Local\Programs\Tern\tern.exe` |
+| Executable | `<user-home>/AppData/Local/Programs/Tern/tern.exe` |
 | CLI companion | Same directory, `tern.com`; CLI reports **`tern 0.6.0 (0e39682)`**. No older version assumed. |
 | SHA-256 | **`7DC1ABE4DBE933E92043271FB1AE5C2E739197D9A3F1544B20EB5043C2D29DC8`** |
 | File size / modification time | 150,096,384 bytes; 2026-10-07T07:25:46+09:00. Time is filesystem metadata, not release provenance. |
@@ -57,7 +57,7 @@ The original running Tern window process was PID 19336; a second Tern process, P
 
 The initial user's session was unsuitable for attribution: multiple terminal/browser/agent surfaces and ongoing work were already present. It was not used for final comparative timings. A new temporary controlled window titled `COS-rendering-measurement` was launched with the installed binary, a temporary directory and loopback control endpoint `45187`; its actual window process was **PID 51572**. Its pane runtime used the existing daemon; daemon statistics therefore include unrelated sessions and cannot be charged entirely to the test window. The application was not instrumented by patching its code.
 
-CLI/control IPC was observed over our explicitly requested loopback endpoint; `<local-tern-pipe>` named-pipe evidence was also present. Packet contents and private session files were not inspected. Host/daemon versus window ownership below is corroborated by official documentation, not reverse-engineered solely from PID counts.
+CLI/control IPC was observed over our explicitly requested loopback endpoint; a Tern-specific named-pipe evidence label was also present. Packet contents and private session files were not inspected. Host/daemon versus window ownership below is corroborated by official documentation, not reverse-engineered solely from PID counts.
 
 ## 3. Current COS rendering path
 

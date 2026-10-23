@@ -1,5 +1,6 @@
 /// Desktop navigation only; never a Runtime command or canonical selection.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Surface {
     #[default]
     Artifact,
@@ -61,7 +62,7 @@ mod ownership_tests {
             artifact_ref: ArtifactId::new("fixture:artifact/a").expect("valid artifact identity"),
         };
         assert_eq!(core.navigation.surface(), Surface::Compare);
-        assert!(core.snapshot().is_none());
+        assert!(core.observation().is_none());
         assert_eq!(
             core.unavailable_reason(),
             "Disconnected — Runtime not configured"

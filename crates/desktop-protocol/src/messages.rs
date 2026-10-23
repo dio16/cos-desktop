@@ -17,8 +17,9 @@ use serde_json::Value;
 use crate::errors::{ProtocolError, RejectReason, ResyncReason};
 use crate::ids::{
     ArtifactDigest, ArtifactId, CommandId, Counter, Cursor, EpochId, GraphId, HarnessVersionId,
-    IntegrityDigest, IterationId, OutcomeId, ProfileId, ProjectionKind, RecipeId, ScopeId,
-    SnapshotId, TaskId, TransactionId,
+    IntegrityDigest, IterationId, OutcomeId, ProfileId, ProjectionKind, ReadContextId,
+    ReadRequestId, ReadRevision, ReceiptReadId, RecipeId, ScopeId, ServerId, SnapshotId, TaskId,
+    TransactionId,
 };
 use crate::macros::wire_enum;
 use crate::projections::{
@@ -57,12 +58,23 @@ pub struct ClientFrame {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ClientMessage {
-    /// Open (or resume) one atomic observation session.
-    OpenObservation(OpenObservation),
+    /// Open or resume observation with an authenticated read context request.
+    OpenObservation(OpenAuthorizedObservation),
     /// Send one command.
     Command(CommandEnvelope),
-    /// Look up the receipt for a previously sent command.
-    LookupReceipt(ReceiptLookup),
+    /// Read a command receipt under a current authorization stamp.
+    LookupReceipt(AuthorizedReceiptLookup),
+}
+
+/// Open or resume an observation session with explicit bounded retention interests.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OpenAuthorizedObservation {
+    /// Non-reused client-generated correlation identity.
+    pub request_id: ReadRequestId,
+    /// Requested observation scope and resume coordinates.
+    pub observation: OpenObservation,
+    /// Distinct retained command identities whose receipt visibility is requested.
+    pub retained_commands: Vec<CommandId>,
 }
 
 /// Open or resume an observation session as one logical operation.
@@ -79,6 +91,120 @@ pub struct OpenObservation {
     /// Expected runtime epoch, when resuming.
     #[serde(default)]
     pub epoch: Option<EpochId>,
+}
+
+/// Read a receipt under a current validated context.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuthorizedReceiptLookup {
+    /// Non-reused client-generated correlation identity.
+    pub lookup_id: ReceiptReadId,
+    /// Current authorization evidence.
+    pub stamp: ReadStamp,
+    /// Command identity to look up.
+    pub command_id: CommandId,
+}
+
+/// Exact Runtime-issued authorization binding for reads.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReadStamp {
+    /// Request which obtained the binding.
+    pub request_id: ReadRequestId,
+    /// Authenticated Runtime server identity.
+    pub server_id: ServerId,
+    /// Runtime epoch.
+    pub epoch: EpochId,
+    /// Read context binding authenticated principal and effective scope.
+    pub context_id: ReadContextId,
+    /// Monotonic read authorization revision.
+    pub read_revision: ReadRevision,
+    /// Granted observation scope identity.
+    pub scope_id: ScopeId,
+}
+
+/// Decision for one retained command identity.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CommandReadDecision {
+    /// Command identity.
+    pub command_id: CommandId,
+    /// Whether its receipt-bearing state is readable.
+    pub readable: bool,
+}
+
+/// Current authorization grant for one observation binding.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReadGrant {
+    /// Exact binding stamp.
+    pub stamp: ReadStamp,
+    /// Granted observation scope.
+    pub scope: ObservationScope,
+    /// Whether local lifecycle intents from this context are readable.
+    pub local_intents_readable: bool,
+    /// Per-command decisions, exactly for submitted retained IDs.
+    pub command_reads: Vec<CommandReadDecision>,
+}
+
+wire_enum! {
+    /// Reason a current read authorization binding was invalidated.
+    pub enum ReadInvalidationReason {
+        PrincipalChanged => "PRINCIPAL_CHANGED",
+        AuthenticationChanged => "AUTHENTICATION_CHANGED",
+        GrantRevoked => "GRANT_REVOKED",
+        ScopeChanged => "SCOPE_CHANGED",
+        ChannelLost => "CHANNEL_LOST",
+        EpochChanged => "EPOCH_CHANGED",
+    }
+}
+
+/// Control message invalidating the current authorization binding.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReadInvalidated {
+    /// Request which created the invalidated binding.
+    pub request_id: ReadRequestId,
+    /// Invalidated context.
+    pub context_id: ReadContextId,
+    /// Newer invalidation revision.
+    pub read_revision: ReadRevision,
+    /// Invalidation cause.
+    pub reason: ReadInvalidationReason,
+}
+
+/// Receipt read result without conflating denial with command execution.
+// Wire DTO: a transient parse/match value, boxed variants would allocate per frame.
+#[allow(clippy::large_enum_variant)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "outcome", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ReceiptReadOutcome {
+    /// Lookup was allowed; receipt may have expired or never existed.
+    Allowed {
+        /// Actual retained server receipt, if available.
+        receipt: Option<CommandReceipt>,
+    },
+    /// Lookup denied without disclosing receipt or execution facts.
+    Denied,
+}
+
+/// Correlated result for an authorized receipt lookup.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReceiptReadResult {
+    /// Lookup correlation identity.
+    pub lookup_id: ReceiptReadId,
+    /// Authorization binding used by the lookup.
+    pub stamp: ReadStamp,
+    /// Command identity requested.
+    pub command_id: CommandId,
+    /// Scoped read outcome.
+    pub outcome: ReceiptReadOutcome,
+}
+
+/// Receipt delivery with explicit current positive per-command permission.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuthorizedCommandReceipt {
+    /// Authorization binding for this receipt.
+    pub stamp: ReadStamp,
+    /// Current positive permission for the receipt's command.
+    pub permission: CommandReadDecision,
+    /// Actual server receipt.
+    pub receipt: CommandReceipt,
 }
 
 /// Client-requested observation scope. The security principal is bound by the
@@ -101,14 +227,9 @@ pub struct ScopeFilter {
     pub value: String,
 }
 
-/// Receipt lookup by command identity.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ReceiptLookup {
-    /// Command identity to look up.
-    pub command_id: CommandId,
-}
-
 /// Server wire frame.
+// Wire DTO: a transient parse/match value, boxed variants would allocate per frame.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ServerWire {
@@ -120,13 +241,16 @@ pub enum ServerWire {
     Frame(ServerFrame),
 }
 
-/// Server frame carrying the negotiated versions.
+/// Server frame carrying negotiated versions and optional authorization binding.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ServerFrame {
     /// Negotiated protocol version.
     pub protocol: Version,
     /// Negotiated schema version.
     pub schema: Version,
+    /// Authorization stamp for state-bearing messages after a grant.
+    #[serde(default)]
+    pub read_stamp: Option<ReadStamp>,
     /// Message body.
     pub message: ServerMessage,
 }
@@ -146,8 +270,14 @@ pub enum ServerMessage {
     SnapshotEnd(SnapshotEnd),
     /// One atomic delta transaction.
     DeltaTransaction(DeltaTransaction),
-    /// Receipt (initial response or pushed canonical reflection).
-    Receipt(CommandReceipt),
+    /// Receipt delivered under explicit authorization.
+    Receipt(AuthorizedCommandReceipt),
+    /// Read grant establishing the exact current binding.
+    ReadGrant(ReadGrant),
+    /// Immediate close-only authorization invalidation.
+    ReadInvalidated(ReadInvalidated),
+    /// Correlated authorized receipt lookup result.
+    ReceiptReadResult(ReceiptReadResult),
     /// Structured error.
     Error(ProtocolError),
     /// Unrecognized message kind, preserved for policy handling.
@@ -165,6 +295,9 @@ impl ServerMessage {
             Self::SnapshotEnd(_) => "SNAPSHOT_END",
             Self::DeltaTransaction(_) => "DELTA_TRANSACTION",
             Self::Receipt(_) => "RECEIPT",
+            Self::ReadGrant(_) => "READ_GRANT",
+            Self::ReadInvalidated(_) => "READ_INVALIDATED",
+            Self::ReceiptReadResult(_) => "RECEIPT_READ_RESULT",
             Self::Error(_) => "ERROR",
             Self::Unknown(unknown) => unknown.kind.as_str(),
         }
@@ -192,7 +325,11 @@ impl Serialize for ServerMessage {
             Self::SnapshotEnd(payload) => tagged("SNAPSHOT_END", payload),
             Self::DeltaTransaction(payload) => tagged("DELTA_TRANSACTION", payload),
             Self::Receipt(payload) => tagged("RECEIPT", payload),
+            Self::ReadGrant(payload) => tagged("READ_GRANT", payload),
+            Self::ReadInvalidated(payload) => tagged("READ_INVALIDATED", payload),
+            Self::ReceiptReadResult(payload) => tagged("RECEIPT_READ_RESULT", payload),
             Self::Error(payload) => tagged("ERROR", payload),
+
             Self::Unknown(payload) => serde_json::to_value(payload),
         }
         .map_err(serde::ser::Error::custom)?;
@@ -232,6 +369,15 @@ impl<'de> Deserialize<'de> for ServerMessage {
                 .map_err(de::Error::custom),
             "RECEIPT" => serde_json::from_value(value)
                 .map(Self::Receipt)
+                .map_err(de::Error::custom),
+            "READ_GRANT" => serde_json::from_value(value)
+                .map(Self::ReadGrant)
+                .map_err(de::Error::custom),
+            "READ_INVALIDATED" => serde_json::from_value(value)
+                .map(Self::ReadInvalidated)
+                .map_err(de::Error::custom),
+            "RECEIPT_READ_RESULT" => serde_json::from_value(value)
+                .map(Self::ReceiptReadResult)
                 .map_err(de::Error::custom),
             "ERROR" => serde_json::from_value(value)
                 .map(Self::Error)

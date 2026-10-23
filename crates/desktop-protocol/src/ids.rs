@@ -232,6 +232,71 @@ opaque_id! {
     pub struct Cursor
 }
 opaque_id! {
+    /// Client-generated observation request correlation identity.
+    pub struct ReadRequestId
+}
+opaque_id! {
+    /// Runtime-issued authorized read context identity.
+    pub struct ReadContextId
+}
+opaque_id! {
+    /// Client-generated receipt lookup correlation identity.
+    pub struct ReceiptReadId
+}
+
+/// Runtime-issued read authorization revision, encoded as a decimal string.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ReadRevision(Counter);
+
+impl ReadRevision {
+    /// Construct from a decimal counter.
+    pub fn new(counter: Counter) -> Self {
+        Self(counter)
+    }
+
+    /// Borrow the underlying decimal counter.
+    pub fn as_counter(&self) -> &Counter {
+        &self.0
+    }
+
+    /// Borrow the decimal revision string.
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl Serialize for ReadRevision {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for ReadRevision {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Counter::deserialize(deserializer).map(Self)
+    }
+}
+
+impl fmt::Display for ReadRevision {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl FromStr for ReadRevision {
+    type Err = IdError;
+
+    fn from_str(raw: &str) -> Result<Self, Self::Err> {
+        Counter::from_str(raw).map(Self)
+    }
+}
+opaque_id! {
     /// Canonical integrity digest of a staged snapshot or transaction bundle.
     pub struct IntegrityDigest
 }

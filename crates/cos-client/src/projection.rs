@@ -5,7 +5,7 @@
 //! state — there is no viewed/compare/selection field, and best-so-far or
 //! formal selection is never derived from the candidate list.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::fmt;
 
 use desktop_protocol::{
@@ -220,165 +220,27 @@ impl ProjectionState {
 
     /// Verify that every interdependent reference resolves inside this state.
     pub(crate) fn validate_integrity(&self) -> Result<(), ProjectionIntegrityError> {
-        for task in self.tasks.values() {
-            if let Some(iteration_ref) = &task.iteration_ref
-                && !self.iterations.contains_key(iteration_ref)
-            {
-                return Err(ProjectionIntegrityError::new(format!(
-                    "task {} references absent iteration {}",
-                    task.task_ref, iteration_ref
-                )));
-            }
-            if let Some(candidate_ref) = &task.best_candidate_ref {
-                if candidate_ref.task_id != task.task_ref {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "task {} projects a best candidate owned by {}",
-                        task.task_ref, candidate_ref.task_id
-                    )));
-                }
-                if !self.candidates.contains_key(candidate_ref) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "task {} references absent candidate {}",
-                        task.task_ref, candidate_ref.candidate_id
-                    )));
-                }
-            }
-            if let Some(outcome_ref) = &task.formal_outcome_ref
-                && !self.outcomes.contains_key(outcome_ref)
-            {
-                return Err(ProjectionIntegrityError::new(format!(
-                    "task {} references absent outcome {}",
-                    task.task_ref, outcome_ref
-                )));
-            }
-            if let Some(artifact_ref) = &task.accepted_brief_ref
-                && !self.artifacts.contains_key(artifact_ref)
-            {
-                return Err(ProjectionIntegrityError::new(format!(
-                    "task {} references absent brief artifact {}",
-                    task.task_ref, artifact_ref
-                )));
-            }
-            if !self.capabilities.contains_key(&task.capabilities_ref) {
-                return Err(ProjectionIntegrityError::new(format!(
-                    "task {} references absent capabilities {}",
-                    task.task_ref, task.capabilities_ref
-                )));
-            }
+        EffectiveState::current(self).validate()
+    }
+
+    /// Validate the effective state a transaction of `upserts` and `removals`
+    /// would produce, without applying it.
+    ///
+    /// The aggregate rules are shared with [`Self::validate_integrity`]; they
+    /// read the transaction through a borrowed view, so a key that is both
+    /// upserted and removed is decided by the effective-state rule and never by
+    /// argument order.
+    pub(crate) fn validate_effective_state(
+        &self,
+        upserts: &[Projection],
+        removals: &[RemoveTarget],
+    ) -> Result<(), ProjectionIntegrityError> {
+        EffectiveState {
+            base: self,
+            upserts,
+            removals,
         }
-        for candidate in self.candidates.values() {
-            if candidate.candidate_ref.task_id != candidate.task_ref {
-                return Err(ProjectionIntegrityError::new(format!(
-                    "candidate {} carries a mismatched task tuple",
-                    candidate.candidate_ref.candidate_id
-                )));
-            }
-            if !self.tasks.contains_key(&candidate.task_ref) {
-                return Err(ProjectionIntegrityError::new(format!(
-                    "candidate {} references absent task {}",
-                    candidate.candidate_ref.candidate_id, candidate.task_ref
-                )));
-            }
-            if !self.iterations.contains_key(&candidate.iteration_ref) {
-                return Err(ProjectionIntegrityError::new(format!(
-                    "candidate {} references absent iteration {}",
-                    candidate.candidate_ref.candidate_id, candidate.iteration_ref
-                )));
-            }
-            for artifact_ref in &candidate.artifact_refs {
-                if !self.artifacts.contains_key(artifact_ref) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "candidate {} references absent artifact {}",
-                        candidate.candidate_ref.candidate_id, artifact_ref
-                    )));
-                }
-            }
-            for evaluation_ref in &candidate.evaluation_refs {
-                if !self.evaluations.contains_key(evaluation_ref) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "candidate {} references absent evaluation {}",
-                        candidate.candidate_ref.candidate_id, evaluation_ref
-                    )));
-                }
-            }
-        }
-        for evaluation in self.evaluations.values() {
-            if !self.candidates.contains_key(&evaluation.candidate_ref) {
-                return Err(ProjectionIntegrityError::new(format!(
-                    "evaluation {} references absent candidate {}",
-                    evaluation.evaluation_ref, evaluation.candidate_ref.candidate_id
-                )));
-            }
-            for artifact_ref in &evaluation.artifact_refs {
-                if !self.artifacts.contains_key(artifact_ref) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "evaluation {} references absent artifact {}",
-                        evaluation.evaluation_ref, artifact_ref
-                    )));
-                }
-            }
-        }
-        for iteration in self.iterations.values() {
-            if !self.tasks.contains_key(&iteration.task_ref) {
-                return Err(ProjectionIntegrityError::new(format!(
-                    "iteration {} references absent task {}",
-                    iteration.iteration_ref, iteration.task_ref
-                )));
-            }
-            for candidate_ref in &iteration.candidate_refs {
-                match self.candidates.get(candidate_ref) {
-                    None => {
-                        return Err(ProjectionIntegrityError::new(format!(
-                            "iteration {} references absent candidate {}",
-                            iteration.iteration_ref, candidate_ref.candidate_id
-                        )));
-                    }
-                    Some(candidate) => {
-                        if candidate.iteration_ref != iteration.iteration_ref {
-                            return Err(ProjectionIntegrityError::new(format!(
-                                "iteration {} lists candidate {} owned by another iteration",
-                                iteration.iteration_ref, candidate_ref.candidate_id
-                            )));
-                        }
-                    }
-                }
-            }
-        }
-        for outcome in self.outcomes.values() {
-            if !self.tasks.contains_key(&outcome.task_ref) {
-                return Err(ProjectionIntegrityError::new(format!(
-                    "outcome {} references absent task {}",
-                    outcome.outcome_ref, outcome.task_ref
-                )));
-            }
-        }
-        for graph in self.graphs.values() {
-            let mut node_ids: Vec<_> = graph.nodes.iter().map(|node| &node.node_ref).collect();
-            let node_count = node_ids.len();
-            node_ids.sort();
-            node_ids.dedup();
-            if node_ids.len() != node_count {
-                return Err(ProjectionIntegrityError::new(format!(
-                    "graph {} contains duplicate inspection nodes",
-                    graph.graph_ref.graph_id
-                )));
-            }
-            for edge in &graph.edges {
-                if !graph.nodes.iter().any(|node| node.node_ref == edge.from) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "graph {} edge references absent source node",
-                        graph.graph_ref.graph_id
-                    )));
-                }
-                if !graph.nodes.iter().any(|node| node.node_ref == edge.to) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "graph {} edge references absent target node",
-                        graph.graph_ref.graph_id
-                    )));
-                }
-            }
-        }
-        Ok(())
+        .validate()
     }
 
     /// Validate one mutation against current state without applying it.
@@ -460,176 +322,6 @@ impl ProjectionState {
                 }
             }
         }
-    }
-
-    /// Validate references introduced by one mutation against current state
-    /// plus projections created earlier in the same transaction.
-    ///
-    /// Removal dangling-ness is not checked here: a transaction may remove and
-    /// rewire in any order.
-    pub(crate) fn validate_mutation_references(
-        &self,
-        mutation: &ProjectionMutation,
-        overlay: &BTreeSet<ProjectionKey>,
-    ) -> Result<(), ProjectionIntegrityError> {
-        let ProjectionMutation::Upsert { projection, .. } = mutation else {
-            return Ok(());
-        };
-        let exists =
-            |key: &ProjectionKey| overlay.contains(key) || self.revisions.contains_key(key);
-        match projection {
-            Projection::Task(snapshot) => {
-                if let Some(iteration_ref) = &snapshot.iteration_ref
-                    && !exists(&ProjectionKey::Iteration(iteration_ref.clone()))
-                {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "task {} references absent iteration {}",
-                        snapshot.task_ref, iteration_ref
-                    )));
-                }
-                if let Some(candidate_ref) = &snapshot.best_candidate_ref {
-                    if candidate_ref.task_id != snapshot.task_ref {
-                        return Err(ProjectionIntegrityError::new(format!(
-                            "task {} projects a best candidate owned by {}",
-                            snapshot.task_ref, candidate_ref.task_id
-                        )));
-                    }
-                    if !exists(&ProjectionKey::Candidate(candidate_ref.clone())) {
-                        return Err(ProjectionIntegrityError::new(format!(
-                            "task {} references absent candidate {}",
-                            snapshot.task_ref, candidate_ref.candidate_id
-                        )));
-                    }
-                }
-                if let Some(outcome_ref) = &snapshot.formal_outcome_ref
-                    && !exists(&ProjectionKey::Outcome(outcome_ref.clone()))
-                {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "task {} references absent outcome {}",
-                        snapshot.task_ref, outcome_ref
-                    )));
-                }
-                if let Some(brief_ref) = &snapshot.accepted_brief_ref
-                    && !exists(&ProjectionKey::Artifact(brief_ref.clone()))
-                {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "task {} references absent brief artifact {}",
-                        snapshot.task_ref, brief_ref
-                    )));
-                }
-                if !exists(&ProjectionKey::Capabilities(
-                    snapshot.capabilities_ref.clone(),
-                )) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "task {} references absent capabilities {}",
-                        snapshot.task_ref, snapshot.capabilities_ref
-                    )));
-                }
-            }
-            Projection::Candidate(snapshot) => {
-                if snapshot.candidate_ref.task_id != snapshot.task_ref {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "candidate {} carries a mismatched task tuple",
-                        snapshot.candidate_ref.candidate_id
-                    )));
-                }
-                if !exists(&ProjectionKey::Task(snapshot.task_ref.clone())) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "candidate {} references absent task {}",
-                        snapshot.candidate_ref.candidate_id, snapshot.task_ref
-                    )));
-                }
-                if !exists(&ProjectionKey::Iteration(snapshot.iteration_ref.clone())) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "candidate {} references absent iteration {}",
-                        snapshot.candidate_ref.candidate_id, snapshot.iteration_ref
-                    )));
-                }
-                for artifact_ref in &snapshot.artifact_refs {
-                    if !exists(&ProjectionKey::Artifact(artifact_ref.clone())) {
-                        return Err(ProjectionIntegrityError::new(format!(
-                            "candidate {} references absent artifact {}",
-                            snapshot.candidate_ref.candidate_id, artifact_ref
-                        )));
-                    }
-                }
-                for evaluation_ref in &snapshot.evaluation_refs {
-                    if !exists(&ProjectionKey::Evaluation(evaluation_ref.clone())) {
-                        return Err(ProjectionIntegrityError::new(format!(
-                            "candidate {} references absent evaluation {}",
-                            snapshot.candidate_ref.candidate_id, evaluation_ref
-                        )));
-                    }
-                }
-            }
-            Projection::Artifact(_) => {}
-            Projection::Evaluation(snapshot) => {
-                if !exists(&ProjectionKey::Candidate(snapshot.candidate_ref.clone())) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "evaluation {} references absent candidate {}",
-                        snapshot.evaluation_ref, snapshot.candidate_ref.candidate_id
-                    )));
-                }
-                for artifact_ref in &snapshot.artifact_refs {
-                    if !exists(&ProjectionKey::Artifact(artifact_ref.clone())) {
-                        return Err(ProjectionIntegrityError::new(format!(
-                            "evaluation {} references absent artifact {}",
-                            snapshot.evaluation_ref, artifact_ref
-                        )));
-                    }
-                }
-            }
-            Projection::Iteration(snapshot) => {
-                if !exists(&ProjectionKey::Task(snapshot.task_ref.clone())) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "iteration {} references absent task {}",
-                        snapshot.iteration_ref, snapshot.task_ref
-                    )));
-                }
-                for candidate_ref in &snapshot.candidate_refs {
-                    if !exists(&ProjectionKey::Candidate(candidate_ref.clone())) {
-                        return Err(ProjectionIntegrityError::new(format!(
-                            "iteration {} references absent candidate {}",
-                            snapshot.iteration_ref, candidate_ref.candidate_id
-                        )));
-                    }
-                    if let Some(existing) = self.candidates.get(candidate_ref)
-                        && existing.iteration_ref != snapshot.iteration_ref
-                    {
-                        return Err(ProjectionIntegrityError::new(format!(
-                            "iteration {} lists candidate {} owned by another iteration",
-                            snapshot.iteration_ref, candidate_ref.candidate_id
-                        )));
-                    }
-                }
-            }
-            Projection::Outcome(snapshot) => {
-                if !exists(&ProjectionKey::Task(snapshot.task_ref.clone())) {
-                    return Err(ProjectionIntegrityError::new(format!(
-                        "outcome {} references absent task {}",
-                        snapshot.outcome_ref, snapshot.task_ref
-                    )));
-                }
-            }
-            Projection::Graph(snapshot) => {
-                for edge in &snapshot.edges {
-                    if !snapshot.nodes.iter().any(|node| node.node_ref == edge.from) {
-                        return Err(ProjectionIntegrityError::new(format!(
-                            "graph {} edge references absent source node",
-                            snapshot.graph_ref.graph_id
-                        )));
-                    }
-                    if !snapshot.nodes.iter().any(|node| node.node_ref == edge.to) {
-                        return Err(ProjectionIntegrityError::new(format!(
-                            "graph {} edge references absent target node",
-                            snapshot.graph_ref.graph_id
-                        )));
-                    }
-                }
-            }
-            Projection::Capabilities(_) => {}
-        }
-        Ok(())
     }
 
     /// Apply already-validated mutations.
@@ -749,5 +441,388 @@ impl ProjectionState {
             }
         }
         self.revisions.remove(key);
+    }
+}
+
+/// Borrowed view of the effective state a transaction would produce.
+///
+/// The view overlays a transaction's `upserts` and `removals` onto the current
+/// store without cloning it. Each key is resolved on its own: an upsert shadows
+/// a removal of the same key and any existing entry, while a removal hides an
+/// existing entry only when no upsert recreates it. Consulting both slices per
+/// key makes the result independent of transaction argument order.
+struct EffectiveState<'a> {
+    base: &'a ProjectionState,
+    upserts: &'a [Projection],
+    removals: &'a [RemoveTarget],
+}
+
+impl<'a> EffectiveState<'a> {
+    /// Effective state of the current store with no pending transaction.
+    fn current(base: &'a ProjectionState) -> Self {
+        Self {
+            base,
+            upserts: &[],
+            removals: &[],
+        }
+    }
+
+    /// Upsert of a key inside the transaction, when present.
+    fn upserted(&self, key: &ProjectionKey) -> Option<&Projection> {
+        self.upserts
+            .iter()
+            .find(|projection| ProjectionKey::of_projection(projection) == *key)
+    }
+
+    /// Whether the transaction removes a key.
+    fn is_removed(&self, key: &ProjectionKey) -> bool {
+        self.removals
+            .iter()
+            .any(|target| ProjectionKey::of_remove_target(target) == *key)
+    }
+
+    /// Effective task, when present.
+    fn task(&self, id: &TaskId) -> Option<&TaskSnapshot> {
+        let key = ProjectionKey::Task(id.clone());
+        if let Some(Projection::Task(snapshot)) = self.upserted(&key) {
+            return Some(snapshot);
+        }
+        if self.is_removed(&key) {
+            return None;
+        }
+        self.base.tasks.get(id)
+    }
+
+    /// Effective candidate, when present.
+    fn candidate(&self, candidate_ref: &CandidateRef) -> Option<&CandidateSnapshot> {
+        let key = ProjectionKey::Candidate(candidate_ref.clone());
+        if let Some(Projection::Candidate(snapshot)) = self.upserted(&key) {
+            return Some(snapshot);
+        }
+        if self.is_removed(&key) {
+            return None;
+        }
+        self.base.candidates.get(candidate_ref)
+    }
+
+    /// Effective artifact, when present.
+    fn artifact(&self, id: &ArtifactId) -> Option<&ArtifactSnapshot> {
+        let key = ProjectionKey::Artifact(id.clone());
+        if let Some(Projection::Artifact(snapshot)) = self.upserted(&key) {
+            return Some(snapshot);
+        }
+        if self.is_removed(&key) {
+            return None;
+        }
+        self.base.artifacts.get(id)
+    }
+
+    /// Effective evaluation, when present.
+    fn evaluation(&self, id: &EvaluationId) -> Option<&EvaluationSnapshot> {
+        let key = ProjectionKey::Evaluation(id.clone());
+        if let Some(Projection::Evaluation(snapshot)) = self.upserted(&key) {
+            return Some(snapshot);
+        }
+        if self.is_removed(&key) {
+            return None;
+        }
+        self.base.evaluations.get(id)
+    }
+
+    /// Effective iteration, when present.
+    fn iteration(&self, id: &IterationId) -> Option<&IterationSnapshot> {
+        let key = ProjectionKey::Iteration(id.clone());
+        if let Some(Projection::Iteration(snapshot)) = self.upserted(&key) {
+            return Some(snapshot);
+        }
+        if self.is_removed(&key) {
+            return None;
+        }
+        self.base.iterations.get(id)
+    }
+
+    /// Effective outcome, when present.
+    fn outcome(&self, id: &OutcomeId) -> Option<&OutcomeSnapshot> {
+        let key = ProjectionKey::Outcome(id.clone());
+        if let Some(Projection::Outcome(snapshot)) = self.upserted(&key) {
+            return Some(snapshot);
+        }
+        if self.is_removed(&key) {
+            return None;
+        }
+        self.base.outcomes.get(id)
+    }
+
+    /// Effective capabilities, when present.
+    fn capabilities(&self, id: &CapabilitiesId) -> Option<&CreativeCapabilities> {
+        let key = ProjectionKey::Capabilities(id.clone());
+        if let Some(Projection::Capabilities(snapshot)) = self.upserted(&key) {
+            return Some(snapshot);
+        }
+        if self.is_removed(&key) {
+            return None;
+        }
+        self.base.capabilities.get(id)
+    }
+
+    /// Effective tasks: the transaction's upserts, then retained base entries.
+    fn tasks(&self) -> impl Iterator<Item = &TaskSnapshot> + '_ {
+        let upserted = self
+            .upserts
+            .iter()
+            .filter_map(|projection| match projection {
+                Projection::Task(snapshot) => Some(snapshot),
+                _ => None,
+            });
+        let retained = self.base.tasks.values().filter(|snapshot| {
+            let key = ProjectionKey::Task(snapshot.task_ref.clone());
+            self.upserted(&key).is_none() && !self.is_removed(&key)
+        });
+        upserted.chain(retained)
+    }
+
+    /// Effective candidates.
+    fn candidates(&self) -> impl Iterator<Item = &CandidateSnapshot> + '_ {
+        let upserted = self
+            .upserts
+            .iter()
+            .filter_map(|projection| match projection {
+                Projection::Candidate(snapshot) => Some(snapshot),
+                _ => None,
+            });
+        let retained = self.base.candidates.values().filter(|snapshot| {
+            let key = ProjectionKey::Candidate(snapshot.candidate_ref.clone());
+            self.upserted(&key).is_none() && !self.is_removed(&key)
+        });
+        upserted.chain(retained)
+    }
+
+    /// Effective evaluations.
+    fn evaluations(&self) -> impl Iterator<Item = &EvaluationSnapshot> + '_ {
+        let upserted = self
+            .upserts
+            .iter()
+            .filter_map(|projection| match projection {
+                Projection::Evaluation(snapshot) => Some(snapshot),
+                _ => None,
+            });
+        let retained = self.base.evaluations.values().filter(|snapshot| {
+            let key = ProjectionKey::Evaluation(snapshot.evaluation_ref.clone());
+            self.upserted(&key).is_none() && !self.is_removed(&key)
+        });
+        upserted.chain(retained)
+    }
+
+    /// Effective iterations.
+    fn iterations(&self) -> impl Iterator<Item = &IterationSnapshot> + '_ {
+        let upserted = self
+            .upserts
+            .iter()
+            .filter_map(|projection| match projection {
+                Projection::Iteration(snapshot) => Some(snapshot),
+                _ => None,
+            });
+        let retained = self.base.iterations.values().filter(|snapshot| {
+            let key = ProjectionKey::Iteration(snapshot.iteration_ref.clone());
+            self.upserted(&key).is_none() && !self.is_removed(&key)
+        });
+        upserted.chain(retained)
+    }
+
+    /// Effective outcomes.
+    fn outcomes(&self) -> impl Iterator<Item = &OutcomeSnapshot> + '_ {
+        let upserted = self
+            .upserts
+            .iter()
+            .filter_map(|projection| match projection {
+                Projection::Outcome(snapshot) => Some(snapshot),
+                _ => None,
+            });
+        let retained = self.base.outcomes.values().filter(|snapshot| {
+            let key = ProjectionKey::Outcome(snapshot.outcome_ref.clone());
+            self.upserted(&key).is_none() && !self.is_removed(&key)
+        });
+        upserted.chain(retained)
+    }
+
+    /// Effective graphs.
+    fn graphs(&self) -> impl Iterator<Item = &GraphSnapshot> + '_ {
+        let upserted = self
+            .upserts
+            .iter()
+            .filter_map(|projection| match projection {
+                Projection::Graph(snapshot) => Some(snapshot),
+                _ => None,
+            });
+        let retained = self.base.graphs.values().filter(|snapshot| {
+            let key = ProjectionKey::Graph(snapshot.graph_ref.graph_id.clone());
+            self.upserted(&key).is_none() && !self.is_removed(&key)
+        });
+        upserted.chain(retained)
+    }
+
+    /// Verify that every interdependent reference resolves inside this view.
+    fn validate(&self) -> Result<(), ProjectionIntegrityError> {
+        for task in self.tasks() {
+            if let Some(iteration_ref) = &task.iteration_ref
+                && self.iteration(iteration_ref).is_none()
+            {
+                return Err(ProjectionIntegrityError::new(format!(
+                    "task {} references absent iteration {}",
+                    task.task_ref, iteration_ref
+                )));
+            }
+            if let Some(candidate_ref) = &task.best_candidate_ref {
+                if candidate_ref.task_id != task.task_ref {
+                    return Err(ProjectionIntegrityError::new(format!(
+                        "task {} projects a best candidate owned by {}",
+                        task.task_ref, candidate_ref.task_id
+                    )));
+                }
+                if self.candidate(candidate_ref).is_none() {
+                    return Err(ProjectionIntegrityError::new(format!(
+                        "task {} references absent candidate {}",
+                        task.task_ref, candidate_ref.candidate_id
+                    )));
+                }
+            }
+            if let Some(outcome_ref) = &task.formal_outcome_ref
+                && self.outcome(outcome_ref).is_none()
+            {
+                return Err(ProjectionIntegrityError::new(format!(
+                    "task {} references absent outcome {}",
+                    task.task_ref, outcome_ref
+                )));
+            }
+            if let Some(artifact_ref) = &task.accepted_brief_ref
+                && self.artifact(artifact_ref).is_none()
+            {
+                return Err(ProjectionIntegrityError::new(format!(
+                    "task {} references absent brief artifact {}",
+                    task.task_ref, artifact_ref
+                )));
+            }
+            if self.capabilities(&task.capabilities_ref).is_none() {
+                return Err(ProjectionIntegrityError::new(format!(
+                    "task {} references absent capabilities {}",
+                    task.task_ref, task.capabilities_ref
+                )));
+            }
+        }
+        for candidate in self.candidates() {
+            if candidate.candidate_ref.task_id != candidate.task_ref {
+                return Err(ProjectionIntegrityError::new(format!(
+                    "candidate {} carries a mismatched task tuple",
+                    candidate.candidate_ref.candidate_id
+                )));
+            }
+            if self.task(&candidate.task_ref).is_none() {
+                return Err(ProjectionIntegrityError::new(format!(
+                    "candidate {} references absent task {}",
+                    candidate.candidate_ref.candidate_id, candidate.task_ref
+                )));
+            }
+            if self.iteration(&candidate.iteration_ref).is_none() {
+                return Err(ProjectionIntegrityError::new(format!(
+                    "candidate {} references absent iteration {}",
+                    candidate.candidate_ref.candidate_id, candidate.iteration_ref
+                )));
+            }
+            for artifact_ref in &candidate.artifact_refs {
+                if self.artifact(artifact_ref).is_none() {
+                    return Err(ProjectionIntegrityError::new(format!(
+                        "candidate {} references absent artifact {}",
+                        candidate.candidate_ref.candidate_id, artifact_ref
+                    )));
+                }
+            }
+            for evaluation_ref in &candidate.evaluation_refs {
+                if self.evaluation(evaluation_ref).is_none() {
+                    return Err(ProjectionIntegrityError::new(format!(
+                        "candidate {} references absent evaluation {}",
+                        candidate.candidate_ref.candidate_id, evaluation_ref
+                    )));
+                }
+            }
+        }
+        for evaluation in self.evaluations() {
+            if self.candidate(&evaluation.candidate_ref).is_none() {
+                return Err(ProjectionIntegrityError::new(format!(
+                    "evaluation {} references absent candidate {}",
+                    evaluation.evaluation_ref, evaluation.candidate_ref.candidate_id
+                )));
+            }
+            for artifact_ref in &evaluation.artifact_refs {
+                if self.artifact(artifact_ref).is_none() {
+                    return Err(ProjectionIntegrityError::new(format!(
+                        "evaluation {} references absent artifact {}",
+                        evaluation.evaluation_ref, artifact_ref
+                    )));
+                }
+            }
+        }
+        for iteration in self.iterations() {
+            if self.task(&iteration.task_ref).is_none() {
+                return Err(ProjectionIntegrityError::new(format!(
+                    "iteration {} references absent task {}",
+                    iteration.iteration_ref, iteration.task_ref
+                )));
+            }
+            for candidate_ref in &iteration.candidate_refs {
+                match self.candidate(candidate_ref) {
+                    None => {
+                        return Err(ProjectionIntegrityError::new(format!(
+                            "iteration {} references absent candidate {}",
+                            iteration.iteration_ref, candidate_ref.candidate_id
+                        )));
+                    }
+                    Some(candidate) => {
+                        if candidate.iteration_ref != iteration.iteration_ref {
+                            return Err(ProjectionIntegrityError::new(format!(
+                                "iteration {} lists candidate {} owned by another iteration",
+                                iteration.iteration_ref, candidate_ref.candidate_id
+                            )));
+                        }
+                    }
+                }
+            }
+        }
+        for outcome in self.outcomes() {
+            if self.task(&outcome.task_ref).is_none() {
+                return Err(ProjectionIntegrityError::new(format!(
+                    "outcome {} references absent task {}",
+                    outcome.outcome_ref, outcome.task_ref
+                )));
+            }
+        }
+        for graph in self.graphs() {
+            let mut node_ids: Vec<_> = graph.nodes.iter().map(|node| &node.node_ref).collect();
+            let node_count = node_ids.len();
+            node_ids.sort();
+            node_ids.dedup();
+            if node_ids.len() != node_count {
+                return Err(ProjectionIntegrityError::new(format!(
+                    "graph {} contains duplicate inspection nodes",
+                    graph.graph_ref.graph_id
+                )));
+            }
+            // Reuse the sorted, unique borrowed keys as a graph-local ordered
+            // index. Keep edge order and source-before-target error precedence.
+            for edge in &graph.edges {
+                if node_ids.binary_search(&&edge.from).is_err() {
+                    return Err(ProjectionIntegrityError::new(format!(
+                        "graph {} edge references absent source node",
+                        graph.graph_ref.graph_id
+                    )));
+                }
+                if node_ids.binary_search(&&edge.to).is_err() {
+                    return Err(ProjectionIntegrityError::new(format!(
+                        "graph {} edge references absent target node",
+                        graph.graph_ref.graph_id
+                    )));
+                }
+            }
+        }
+        Ok(())
     }
 }

@@ -9,12 +9,23 @@ publish.workspace = true
 name = "cos-desktop"
 path = "src/main.rs"
 
+[features]
+default = []
+r0-s2b-instrumentation = ["gpui/profiler", "desktop-gpui/r0-s2b-instrumentation"]
+
 [dependencies]
 gpui.workspace = true
 gpui_platform.workspace = true
 desktop-gpui = { path = "../../crates/desktop-gpui" }
 app-core = { path = "../../crates/app-core" }
 cos-client = { path = "../../crates/cos-client" }
+desktop-protocol = { path = "../../crates/desktop-protocol" }
+
+[dev-dependencies]
+media = { path = "../../crates/media" }
+
+[target.'cfg(windows)'.dev-dependencies]
+filepath = "=0.2.0"
 
 [lints]
 workspace = true

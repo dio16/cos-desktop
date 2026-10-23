@@ -4,11 +4,11 @@ Status: **Observed preparation**, not implementation. 2026-09-21. This report is
 
 ## Repository state
 
-Desktop initial state: **Observed** 2026-09-21. The Desktop repository was not initialized; repository-state commands failed as expected. It contained only the original root canonical Markdown. No Git initialization, remote change or history creation was performed.
+Desktop initial state: **Observed** 2026-09-21T01:00:19.464Z. `<desktop-root>` was not a Git repository: `rev-parse`, HEAD, status and remote commands failed; that was normal for an uninitialized Desktop. It contained only the original root canonical Markdown. No Git initialization, remote change or history creation was performed.
 
-COS Runtime initial state: **Observed** 2026-09-21. It was inspected read-only; checkout path, commit identity and repository URL are omitted. Nothing was written, launched, committed, installed or tested there.
+Runtime initial state: **Observed** 2026-09-21T01:00:19.464Z. `<runtime-root>`: branch `dev`, HEAD `f94985bd4c5a3a0714153f9d068f24439d57a1f2`, clean porcelain including untracked files, origin `<runtime-repository-url>`. Runtime reads were limited to authorized inspection; nothing was written, launched, committed, installed or tested there.
 
-Final containment check in this task: **Observed** with direct read-only Git commands. Desktop remained uninitialized, so branch, HEAD, status and remote stayed N/A. Runtime remained unchanged during the check. Desktop held only Markdown; no `.git`, Cargo manifest/source, fixture, script/config, CI or license/binary artifacts. Local digests and revision identifiers are omitted from this publication snapshot.
+Final containment check in this task: **Observed** with direct read-only Git commands. Desktop remained uninitialized, so branch, HEAD, status and remote stayed N/A. Runtime remained branch `dev`, HEAD `f94985bd4c5a3a0714153f9d068f24439d57a1f2`, clean worktree output and the same origin remote. Desktop held only Markdown; no `.git`, Cargo manifest/source, fixture, script/config, CI or license/binary artifacts. Canonical final digest: SHA-256 `42dcd4c1314f5f5bc34f3035e930933314ce2f9f209dc19674d34ac80398268e` (40,773 bytes). No independent canonical text remained at the root.
 
 ## Evidence scope
 
@@ -69,7 +69,7 @@ Required user decisions before relevant actions: Desktop license/rights holder; 
 
 ## Prohibited-operation status
 
-Runtime modification: `NO`. No <runtime-root> file was created/updated and no generated/install/test process was executed there.
+Runtime modification: **NO**. No `<runtime-root>` file was created/updated and no generated/install/test process was executed there.
 
 Code or build configuration: `NO`. No Rust file, Cargo manifest/lock, toolchain file, CI YAML, executable script or fixture/data file exists in Desktop.
 
@@ -94,7 +94,7 @@ PRESERVED
 Runtime survey:
 COMPLETE
 
-<runtime-root> modified by this task:
+`<runtime-root>` modified by this task:
 NO
 
 Code or build configuration created:

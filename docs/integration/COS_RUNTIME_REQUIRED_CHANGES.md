@@ -1,8 +1,8 @@
 # COS Runtime Required Changes
 
-Status: **Proposed** change requests. This register is addressed to COS Runtime (separate repository); Desktop can implement only its own protocol crate and fixtures. It is a proposal for the Desktop protocol draft, not an approved Runtime plan. Each entry states its owner, proposed API sketch, compatibility, migration path, Desktop dependency, priority and bootstrap-versus-real-integration split.
+Status: **Proposed** Runtime implementation requests, except the **scoped SPEC_APPROVED MP-PUB1 consumer handoff** in RC-02/03/08/15 ratified by historical direct owner approval (see [disclosure](../development/evidence/README.md#historical-records)). This register addresses the external Runtime repository at `<runtime-root>`; it authorizes no Runtime implementation/scheduling. Desktop may implement its own approved protocol/client/Fixture side only after its separate start instruction. Contract approval is not evidence of existing authenticated server capability or real integration.
 
-Historical initial-state and checkout identifiers are omitted from this publication snapshot. Evidence anchors are in [the COS Runtime survey](./CURRENT_COS_RUNTIME_SURVEY.md); revalidate that separate repository before acting.
+Initial state (2026-09-21T01:00:19.464Z): Runtime at `<runtime-root>`, branch `dev`, HEAD `f94985bd4c5a3a0714153f9d068f24439d57a1f2`, clean worktree including untracked; Desktop repository uninitialized except the canonical Markdown. Evidence anchors are in `./CURRENT_COS_RUNTIME_SURVEY.md` (§ references below). Survey date 2026-09-21; re-run §18 of the survey before acting.
 
 Priorities: **P0** = required before any real Desktop integration is meaningful; **P1** = required for the protocol guarantees the Draft claims; **P2** = valuable, schedulable after P0/P1.
 
@@ -49,6 +49,7 @@ Current Runtime frontend lanes exclude pause/resume, clear-history and operator/
 - **Required change:** Define a first-class Desktop principal and an issuance path for Desktop credentials (server-bound identity and scopes), instead of relying on a browser CSRF cookie or a loopback-issued generic bearer token whose caller string is a shared env value.
 - **Reason:** Today the only issuer is `POST /api/auth/token` gated by `X-Auth-Secret` (`ORCHESTRATOR_AUTH_SECRET`) with server-bound caller `ORCHESTRATOR_CALLER_ID` or `"loopback-client"` (`api.py:117-119`, `639-668`), and browser sessions get the reduced scope set. Task ownership (`created_by`) is part of stop authorization (`api.py:2935-2937`), so the Desktop's principal must be stable across its own lifetime. The protocol Draft binds dedupe to `(principal, command_id)` (`DESKTOP_PROTOCOL.md` §3) — a shared `"loopback-client"` string cannot express that.
 - **Owner:** Runtime (credential/identity owner).
+- **Approved MP-PUB1 boundary:** verified server/channel identity plus synchronous principal/auth-context/channel-change detection before new credentials/bytes/wake, using the client/adapter close-only control in DC-MP-PUB1. Actual issuer, secure storage and production adapter delivery remain external/unverified; no new issuer, OS permission or loopback trust is granted by this approval.
 - **Proposed API:** Operator-approved credential issuance bound to a stable Desktop principal and authenticated server, with scopes/expiry/revocation. Store credentials in an OS secure store, never plaintext; see Protocol sections 4 and 6 and PROCESS_MODEL security policy.
 - **Compatibility:** Additive; the browser session scopes and token endpoint remain. Rate limit and route policy registration (`_ROUTE_POLICY`, `api.py:199-232`) must gain entries for any new route.
 - **Migration:** Reuse `_issue_token` machinery with an explicit principal parameter; add issuance policy + audit record (existing `provenance_events` or a dedicated credential audit row), then document rotation/revocation.
@@ -61,12 +62,12 @@ Current Runtime frontend lanes exclude pause/resume, clear-history and operator/
 - **Required change:** Decide and implement read authorization for COS projections and media (scope or capability-based), and bind observation scopes/cursors to the authenticated principal and authorization context so that an authorization change invalidates cursors as the protocol Draft requires (`DESKTOP_PROTOCOL.md` §2).
 - **Reason:** COS projection/media reads lack caller authentication in the surveyed routes. Loopback binding restricts reachability but does not authenticate the server or same-user caller. Principal-scoped observation and authorization-change invalidation require stronger identity/access control.
 - **Owner:** Runtime (auth policy), with protocol surface in RC-01.
-- **Proposed API:** Read scopes (e.g. `cos:read` per task set or capability-scoped) with the same `_require_auth` machinery; observation scope includes principal + task set + filters + negotiated schema; cursor encodes/validates that scope server-side.
+- **Approved MP-PUB1 handoff:** [Protocol authorized read handoff](../architecture/DESKTOP_PROTOCOL.md#authorized-read-handoff) specifies fresh request/context/read-revision/scope/epoch binding, complete ≤448 retained-ID decisions, Runtime local-intent permission, ordered grant invalidation and stamped state/receipt outcomes. Runtime evaluates current principal/policy/cursor audience and never relies on Desktop Task/status inference. Scope/identity changes invalidate old reads synchronously at the client's detection boundary. Runtime enforcement, credentials and delivery need a separately authorized Runtime task; Desktop Fixture transcripts are not that enforcement.
 - **Compatibility:** Breaking for anonymous same-host readers. Keep an explicit loopback-trust mode only if the runtime owner wants it; otherwise gate reads and update the SPA bootstrap (the cookie session can carry read scopes).
 - **Migration:** Introduce scope checks on COS read routes behind a config switch; update smoke lanes; then flip. Media URLs in descriptors must remain usable by the desktop media fetch path (signed or session-bound; see RC-13).
 - **Desktop dependency:** `cos-client` must present credentials for reads and handle `Unauthorized/ResyncRequired`.
 - **Priority:** P0.
-- **Bootstrap vs real integration:** Bootstrap can only exercise "no auth" or fake auth; real integration requires the real decision.
+- **Bootstrap vs real integration:** the consumer contract is approved, so Desktop can verify scripted grant/revocation/denial handling in explicit Fixture mode. Real policy, authenticated adapter/server, cursor-audience enforcement and remote revocation delivery remain NOT_RUN; this is not a new MP-PUB1 hard prerequisite or simulated real success.
 
 ## RC-04 — Runtime epoch and session identity
 
@@ -121,6 +122,7 @@ Current Runtime frontend lanes exclude pause/resume, clear-history and operator/
 - **Required change:** Define and advertise the dedupe retention window and the behavior when a receipt is no longer retained (explicit expired/unknown outcome), instead of today's unbounded-though-immutable store with no expiry contract.
 - **Reason:** `cos_commands` never prunes and nothing advertises a window (survey §16.2); the Draft requires "Dedupe retention is negotiated and advertised as an expiry for lookup/replay safety" and forbids assuming equivalence beyond the window (`DESKTOP_PROTOCOL.md` §3).
 - **Owner:** Runtime.
+- **Approved MP-PUB1 read distinction:** current stamped Allowed/no receipt means absent/expired lookup, not non-execution; Denied reveals no receipt/retention/outcome and never converts a retained command to Failed or settles it. Existing retained unknown/receipt survives denial/expiry; positive read evidence plus true local absence alone permits NotRetained. Actual command rejection is separate Runtime truth. No server retention duration/pruning/longer dedupe guarantee or automatic resend is approved.
 - **Proposed API:** Retention policy in `Hello.capabilities`/`CreativeCapabilities`; receipt lookup returns an explicit expired/unknown distinction; command acceptance documents the retention promise per principal.
 - **Compatibility:** Additive; if the runtime later prunes tombstones, that is a semantic change requiring a review (tombstone triggers currently forbid delete; pruning would need an owner-approved archive path).
 - **Migration:** Publish the policy first (even "retained indefinitely") so the client can reason; add expiry only with a pruning design.
@@ -205,10 +207,10 @@ Current Runtime frontend lanes exclude pause/resume, clear-history and operator/
 - **Required change:** Add runtime-side protocol/schema version advertisement and negotiation for the Desktop protocol (`desktop_version`, `cosd_version`, `protocol_version`, `schema_version` ranges), distinct from the worker transport identity.
 - **Reason:** The only versioned cross-process contract today is `worker-session-runner-v1` + worker-message schema 1 (`worker-runtime/src/lib.rs:31-39`, `worker_message.rs:14-16`) and the OpenAPI snapshot (`frontend/contracts/cos-openapi.json:7-11`); there is no product protocol negotiation (survey §16.4.7). The Draft defines the negotiation handshake and refusal rules (`DESKTOP_PROTOCOL.md` §5).
 - **Owner:** Runtime (server side) with protocol ownership per `./PROTOCOL_OWNERSHIP.md`.
-- **Proposed API:** `Hello{supported:{protocol:[{major,min_minor,max_minor}], schema:[...]}}`; server selects the highest mutually supported pair and the client confirms before snapshots/commands; no intersection → `VersionIncompatible` with no side effects.
+- **Approved MP-PUB1 transition:** use the [Protocol](../architecture/DESKTOP_PROTOCOL.md#authorized-read-handoff) required-field/interaction major target2.0/2.0; negotiate/confirm before state/commands, reject1.0-only/unstamped/disjoint/mixed unsupported peers for authorized reads and never default missing grants/stamps. Target coordinate is not a released/deployed server. Other capability/transport choices remain separately owned; maintain contract→server→client→compatibility/migration.
 - **Compatibility:** Additive; the SPA does not use it.
 - **Migration:** Implement in the adapter; keep the negotiated pair fixed per session.
-- **Desktop dependency:** Bootstrap fixture negotiates protocol 1.0/schema 1.0 client-side only; real negotiation needs the server.
+- **Desktop dependency:** Observed bootstrap Rust/fixtures are1.0/1.0. Approved MP-PUB1 Desktop migration targets2.0/2.0 and compatibility refusal; the real authenticated server/adapter is separately delivered and NOT_RUN here.
 - **Priority:** P1.
 - **Bootstrap vs real integration:** Client-side negotiation logic is bootstrap-testable; the server half is real integration.
 
@@ -236,6 +238,12 @@ Current Runtime frontend lanes exclude pause/resume, clear-history and operator/
 - **Priority:** P1 if SSE is selected for real integration; no bootstrap transport implementation.
 - **Bootstrap vs real integration:** Real only.
 
+## Identified gap — Runtime intervention/attention projection
+
+**Status: Proposed / unapproved; no new RC ID or wire field.** Product Canon §18 requires Runtime-provided actionable issues. The current Desktop `TaskSnapshot`/`ProjectionState` and wire DTOs have no issue collection; the historical Runtime survey's task `issues` path is not a Desktop contract. Runtime and protocol owners must revalidate current source, choose the existing read/observation adapter or a separately approved request, and freeze identity/severity/visibility before implementation. Recommend reusing an authoritative existing read projection through the approved observation adapter, not creating an independent event bus or Desktop-derived severity.
+
+MP-NAV1/MP-INS3 can implement only the typed, labelled Desktop-local presentation conditions frozen in their DC contracts. Their Runtime-provided issue/attention acceptance remains blocked, as does that part of MP-ACC1/2; no scope downgrade, new endpoint, schema or Runtime work is authorized here. DD-26 still belongs to Product/UX for presentation priority; it cannot approve Runtime issue semantics.
+
 ---
 
 ## Do-not-build list (explicitly rejected / excluded)
@@ -257,8 +265,8 @@ Before executing any change request:
 ## Uncertainties
 
 - The runtime may already plan several of these under its own roadmap names (e.g. `cosd`, projection engine); this register asserts gaps in the surveyed revision, not absence of runtime plans. Runtime owners should re-map RCs to their existing packets before duplication.
-- API shapes remain Draft. [Protocol ownership](PROTOCOL_OWNERSHIP.md) defines the future single Rust-type source; this request register neither authorizes Runtime changes nor defines an independent schema.
+- Other API shapes remain Draft; the bounded MP-PUB1 handoff above is SPEC_APPROVED. [Protocol ownership](PROTOCOL_OWNERSHIP.md) keeps one Rust-type machine-readable source; this request register is not an independent schema or Runtime implementation permission.
 - RC-05's implementation choice (journal vs derived outbox) is deliberately left to the runtime; the requirement is the guarantee, not the mechanism.
 - Retention/pruning for RC-08 interacts with the immutable-tombstone design (`trg_cos_commands_no_delete`); any pruning design must be explicitly approved by the runtime owner.
 - Graph/media Runtime changes are gated by real feature integration, not fixture complexity. Bootstrap requires no Runtime implementation of these requests.
-- This document does not claim any runtime change has been accepted, scheduled or implemented.
+- Scoped MP-PUB1 contract decisions are ratified, but no Runtime implementation, scheduling, deployment or real verification is claimed by this task.

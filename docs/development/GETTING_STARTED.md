@@ -1,9 +1,17 @@
 # Getting started (COS Desktop)
 
-- **Status of this document:** Initial. Describes the bootstrap order and what is already true; every future command is clearly labeled.
+- **Status of this document:** Initial (2026-09-21) with a **current-status banner added 2026-10-08**. The "Where we are now" and phase tables below are **historical observations of 2026-09-21**; they describe the documentation-only starting point, not today's repository.
 - **Audience:** contributors preparing the first Desktop code, and the reviewer validating bootstrap gates.
-- **Date:** 2026-09-21
+- **Date:** 2026-09-21; current-status banner 2026-10-08
 - **Canonical inputs:** [product/UX architecture](../architecture/COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md) (canon), [repository architecture](../architecture/REPOSITORY_ARCHITECTURE.md), [dependency rules](../architecture/DEPENDENCY_RULES.md), [protocol draft](../architecture/DESKTOP_PROTOCOL.md), [ADR-0001 GPUI](../decisions/ADR-0001-GPUI.md).
+
+## Current status (2026-10-08) — read this before the historical phase tables
+
+- **[Observed]** The workspace exists and builds: `apps/desktop`, `crates/desktop-gpui`, `crates/ui-model`, `crates/app-core`, `crates/cos-client`, `crates/desktop-protocol`, committed `Cargo.lock`, pinned toolchain `1.98.1` and GPUI pin `395def7a…`. Commands and startup evidence: [BUILD_AND_RUN.md](BUILD_AND_RUN.md), [BOOTSTRAP_REPORT.md](BOOTSTRAP_REPORT.md).
+- **[Observed at private creation]** Git remote `origin` = `https://github.com/dio16/cos-desktop.git`; `main` and `dev` were published; branch policy `feature/*` → `dev` → `main`. Current visibility has not been verified by this document.
+- **[Observed]** Quality gates are implemented (`.github/workflows/ci.yml`, `scripts/quality.ps1`, `scripts/check_dependency_rules.py` + self-test); native startup smoke remains a manual gate; remote CI execution is **NOT_VERIFIED** (BOOTSTRAP_REPORT §6).
+- **[Deferred]** Product surfaces remain unimplemented (Artifact/Image, Compare, Flow, Task Rail, Brief, History, media pipeline, real transport, packaging/update).
+- **Implementation planning:** [IMPLEMENTATION_MASTER_PLAN.md](IMPLEMENTATION_MASTER_PLAN.md) owns milestones, task contracts, decision gates and readiness verdicts.
 
 ## Status vocabulary
 
@@ -16,12 +24,14 @@
 | **[Unverified]** | Upstream source fact not yet proven locally. |
 | **[Blocked]** | Requires an external change first. |
 
-## Where we are now
+## Where we were on 2026-09-21 (historical snapshot)
+
+The bullets below are preserved verbatim as the historical starting state; see the current-status banner above for today's state.
 
 - **[Observed]** Desktop contains Markdown documentation only. Build/test guides reside alongside this file. No Cargo workspace, source, fixture, script or CI file exists.
 - **[Accepted]** GPUI is the UI framework and Rust is the language (canon cover), consumed as a revision-pinned git dependency (ADR-0001).
 - **[Observed]** Rust `1.97.1` is installed; the pinned bootstrap toolchain `1.98.1` is not. Nothing has been built or launched.
-- **[Deferred]** No workspace, protocol implementation, fixture client, or shell exists yet; COS Runtime is a separate repository, never a Desktop dependency.
+- **[Deferred]** No workspace, protocol implementation, fixture client, or shell exists yet; the external Runtime repository at `<runtime-root>` is an inspection location, never a Desktop dependency.
 
 ## Phase order and status
 
@@ -77,7 +87,7 @@ Cargo.lock                 # committed
 
 The first build generated `Cargo.lock`; every later build/test command uses `--locked`. Binary package is `cos-desktop`; selectors use `cargo build --locked -p cos-desktop` and `cargo run --locked -p cos-desktop -- --fixture`. No repository `.cargo/config.toml` workaround was required for this dependency set.
 
-Acceptance evidence: the pinned revision appears in `Cargo.lock`; `cargo build --locked` succeeded (initial full build ≈3m07s); the native window rendered bootstrap text and a close-button invocation exited 0. The first process-supervised termination exited 1 and is not normal-close evidence. No Runtime path, launch, or import. The minimal experiment's code has since been replaced by the fixture shell. D3D feature level/device-loss handling remain unmeasured.
+Acceptance evidence: the pinned revision appears in `Cargo.lock`; `cargo build --locked` succeeded (initial full build ≈3m07s); the native window rendered bootstrap text and a close-button invocation exited 0. The first process-supervised termination exited 1 and is not normal-close evidence. No Runtime checkout path, launch, or import. The minimal experiment's code has since been replaced by the fixture shell. D3D feature level/device-loss handling remain unmeasured.
 
 If later dependencies reintroduce prerequisite failures, record the exact error and authorized resolution in [BUILD_AND_RUN.md](BUILD_AND_RUN.md) and the ADR before expanding further.
 

@@ -2,8 +2,10 @@
 
 #![allow(dead_code)]
 
-use cos_client::{ClientEvent, ConnectionState, MockCosClient};
-use desktop_protocol::{DeltaTransaction, ServerFrame, ServerMessage, ServerWire, TaskId, Version};
+use cos_client::{ClientEvent, CommandLookup, CommandState, ConnectionState, MockCosClient};
+use desktop_protocol::{
+    CommandId, DeltaTransaction, ServerFrame, ServerMessage, ServerWire, TaskId, Version,
+};
 
 /// Path of the committed Task-184 fixture.
 pub fn fixture_path() -> String {
@@ -33,11 +35,23 @@ pub fn task_id() -> TaskId {
     TaskId::fixture("task/Task-184")
 }
 
-/// Encode a server frame with the fixture's negotiated versions.
+/// Actual retained lifecycle state, without any authorization filtering.
+pub fn retained_state(mock: &MockCosClient, command_id: &CommandId) -> Option<CommandState> {
+    match mock.lookup_command(command_id) {
+        CommandLookup::Found(record) => Some(record.state().clone()),
+        CommandLookup::NotRetained => None,
+    }
+}
+
+/// Encode a server frame with the negotiated versions and an explicit null stamp.
+///
+/// The fixture provider stamps state-bearing frames it injects from its active
+/// binding, so this helper is used for transcripts that must stay unstamped.
 pub fn server_frame(message: ServerMessage) -> String {
     serde_json::to_string(&ServerWire::Frame(ServerFrame {
-        protocol: Version::new(1, 0),
-        schema: Version::new(1, 0),
+        protocol: Version::new(2, 0),
+        schema: Version::new(2, 0),
+        read_stamp: None,
         message,
     }))
     .expect("server frame serializes")

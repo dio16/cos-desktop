@@ -5,6 +5,10 @@ edition.workspace = true
 publish = false
 license = "Apache-2.0"
 
+[features]
+default = []
+r0-s2b-instrumentation = []
+
 [dependencies]
 gpui.workspace = true
 ui-model = { path = "../ui-model" }

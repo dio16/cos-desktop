@@ -1,0 +1,14 @@
+[package]
+name = "media"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Bounded local encoded media and representation identity; no Runtime acquisition or GPU ownership."
+
+[dependencies]
+desktop-protocol = { path = "../desktop-protocol" }
+sha2 = "0.10.9"
+
+[lints]
+workspace = true

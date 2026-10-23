@@ -11,11 +11,13 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::sync::Arc;
 
 use desktop_protocol::{
-    ClientFrame, ClientMessage, ClientWire, CommandEnvelope, CommandId, CommandPayload,
-    CommandReceipt, CommandTarget, Cursor, DeltaTransaction, EpochId, ErrorCode, HelloAccepted,
-    HelloRequest, IntegrityDigest, Limits, ObservationScope, ObservationScopeRequest,
-    OpenObservation, ProjectionMutation, ProtocolError, ProtocolVersions, ReceiptLookup,
-    ReceiptState, ReplayAccepted, ResyncReason, ResyncRequired, ServerFrame, ServerId,
+    AuthorizedCommandReceipt, AuthorizedReceiptLookup, ClientFrame, ClientMessage, ClientWire,
+    CommandEnvelope, CommandId, CommandPayload, CommandReceipt, CommandTarget, Cursor,
+    DeltaTransaction, EpochId, ErrorCode, HelloAccepted, HelloRequest, IntegrityDigest, Limits,
+    ObservationScope, ObservationScopeRequest, OpenAuthorizedObservation, OpenObservation,
+    Projection, ProjectionMutation, ProtocolError, ProtocolVersions, ReadGrant, ReadInvalidated,
+    ReadInvalidationReason, ReadStamp, ReceiptReadOutcome, ReceiptReadResult, ReceiptState,
+    RemoveTarget, ReplayAccepted, ResyncReason, ResyncRequired, ServerFrame, ServerId,
     ServerMessage, ServerWire, SnapshotBegin, SnapshotChunk, SnapshotCounts, SnapshotEnd,
     SnapshotId, StopTaskCommand, TaskId, TransactionId, UnknownMessage, Version,
     VersionAdvertisement, VersionRange, canonical_json, integrity_digest_of,
@@ -23,6 +25,13 @@ use desktop_protocol::{
 
 use crate::error::ClientError;
 use crate::projection::{ProjectionKey, ProjectionState};
+use crate::read::{
+    CommandLookup, CommandStatus, MAX_DISTINCT_RETAINED, MAX_PENDING_READS, MAX_RECENT,
+    MAX_REFERENCES, MAX_TOMBSTONES, MAX_UNRESOLVED, ObservationControl, PendingReceiptRead,
+    PublicationAccess, ReadBinding, ReadEvidence, ReadState, ReadUnavailable, ReadableCommands,
+    RetentionClass, TOMBSTONE_REASON, capacity_error, next_read_request_id, next_receipt_read_id,
+    tombstone_shape, unsettled,
+};
 use crate::transport::Transport as TransportTrait;
 use crate::transport::TransportError;
 
@@ -108,7 +117,7 @@ pub enum ClientSource {
 /// completion. `ResultUnknown` is surfaced, never resolved into success or
 /// failure by the client.
 #[derive(Clone, Debug, PartialEq)]
-pub enum CommandStatus {
+pub enum CommandState {
     /// Local intent only; not sent.
     Prepared,
     /// Delivery attempted; no claim of acceptance.
@@ -141,7 +150,7 @@ pub enum CommandStatus {
     },
 }
 
-impl CommandStatus {
+impl CommandState {
     /// Receipt associated with this status, if any.
     pub fn receipt(&self) -> Option<&CommandReceipt> {
         match self {
@@ -213,7 +222,7 @@ pub enum ClientEvent {
         /// Command identity.
         command_id: CommandId,
         /// New status.
-        status: CommandStatus,
+        status: CommandState,
     },
     /// A full resync was requested.
     ResyncRequested {
@@ -222,6 +231,14 @@ pub enum ClientEvent {
     },
     /// Error surfaced to the consumer (also recorded as [`CosClient::last_error`]).
     Error(ClientError),
+}
+
+/// A bounded nonblocking pump result, including event-free presentation changes.
+pub struct PumpReport {
+    pub frames: usize,
+    pub events: Vec<ClientEvent>,
+    pub changed: bool,
+    pub next_deadline_ms: Option<u64>,
 }
 
 /// Client configuration.
@@ -253,8 +270,8 @@ impl Default for ClientConfig {
     fn default() -> Self {
         Self {
             desktop_version: "cos-desktop/0.1.0".to_owned(),
-            protocol: vec![VersionRange::new(1, 0, 0)],
-            schema: vec![VersionRange::new(1, 0, 0)],
+            protocol: vec![VersionRange::new(2, 0, 0)],
+            schema: vec![VersionRange::new(2, 0, 0)],
             features: Vec::new(),
             command_timeout_ms: 30_000,
             max_resync_attempts: 5,
@@ -286,8 +303,31 @@ pub trait DesktopClient: Send {
     fn request_resync(&mut self, reason: ResyncReason) -> Vec<ClientEvent>;
     /// Send a Stop request for a task.
     fn stop_task(&mut self, task_id: &TaskId) -> Result<CommandId, ClientError>;
-    /// Local status of a command.
-    fn command_status(&self, command_id: &CommandId) -> Option<&CommandStatus>;
+    /// Bounded background progress and exact next deadline.
+    fn pump_step(&mut self, now_ms: u64, budget: usize) -> PumpReport;
+    /// The single authoritative retained registry, not an authorized UI view.
+    fn command_statuses(&self) -> &BTreeMap<CommandId, CommandStatus>;
+    fn lookup_command(&self, id: &CommandId) -> CommandLookup<'_>;
+    fn retain_command(&mut self, id: &CommandId) -> Result<(), ClientError>;
+    fn release_command(&mut self, id: &CommandId);
+    fn begin_authorized_observation(
+        &mut self,
+        request: OpenAuthorizedObservation,
+    ) -> Result<(), ClientError>;
+    fn publication_access(&self) -> PublicationAccess<'_>;
+    fn lookup_receipt_authorized(
+        &mut self,
+        request: AuthorizedReceiptLookup,
+    ) -> Result<(), ClientError>;
+    fn bind_observation_control(&mut self, control: ObservationControl);
+    /// Build a fresh authorized observation request for a scope intent.
+    fn observation_request(&self, scope: ObservationScopeRequest) -> OpenAuthorizedObservation;
+    /// Adopt a transferred registry and its surface references.
+    fn adopt_retained_registry(
+        &mut self,
+        records: BTreeMap<CommandId, CommandStatus>,
+        references: BTreeMap<CommandId, usize>,
+    ) -> Result<(), ClientError>;
 }
 
 struct Session {
@@ -310,11 +350,6 @@ struct AppliedTransaction {
     transaction_id: TransactionId,
     cursor: Cursor,
     digest: IntegrityDigest,
-}
-
-struct CommandRecord {
-    envelope: Option<CommandEnvelope>,
-    status: CommandStatus,
 }
 
 #[derive(Default)]
@@ -344,10 +379,14 @@ pub struct CosClient<T: TransportTrait> {
     last_seen_cursor: Option<Cursor>,
     applied: VecDeque<AppliedTransaction>,
     cancelled_snapshots: VecDeque<SnapshotId>,
-    commands: BTreeMap<CommandId, CommandRecord>,
+    commands: BTreeMap<CommandId, CommandStatus>,
     reconnect: ReconnectPlan,
     consecutive_overflows: u32,
     last_error: Option<ClientError>,
+    read: ReadState,
+    changed: bool,
+    settlement_sequence: u64,
+    capacity_blocked: bool,
 }
 
 impl<T: TransportTrait> CosClient<T> {
@@ -375,6 +414,10 @@ impl<T: TransportTrait> CosClient<T> {
             reconnect: ReconnectPlan::default(),
             consecutive_overflows: 0,
             last_error: None,
+            read: ReadState::default(),
+            changed: true,
+            settlement_sequence: 0,
+            capacity_blocked: false,
         }
     }
 
@@ -457,9 +500,47 @@ impl<T: TransportTrait> CosClient<T> {
         &mut self.transport
     }
 
-    /// Local status of a command.
-    pub fn command_status(&self, command_id: &CommandId) -> Option<&CommandStatus> {
-        self.commands.get(command_id).map(|record| &record.status)
+    /// The single authoritative retained registry.
+    ///
+    /// A retention fact for the owning background executor, not an
+    /// authorization-filtered view; consumers use [`Self::publication_access`].
+    pub fn command_statuses(&self) -> &BTreeMap<CommandId, CommandStatus> {
+        &self.commands
+    }
+
+    /// Retain one surface reference to a command record.
+    pub fn retain_command(&mut self, id: &CommandId) -> Result<(), ClientError> {
+        if !self.commands.contains_key(id) {
+            return Err(ClientError::InvalidCommand(format!(
+                "command {id} is not retained"
+            )));
+        }
+        if self.total_references() >= MAX_REFERENCES {
+            return Err(ClientError::InvalidCommand(
+                "CommandReferenceLimitExceeded".to_owned(),
+            ));
+        }
+        if let Some(record) = self.commands.get_mut(id) {
+            record.references += 1;
+        }
+        Ok(())
+    }
+
+    /// Release one surface reference to a command record.
+    pub fn release_command(&mut self, id: &CommandId) {
+        if let Some(record) = self.commands.get_mut(id) {
+            record.references = record.references.saturating_sub(1);
+        }
+    }
+
+    /// Number of identity-level read-evidence entries held right now.
+    pub fn read_evidence_len(&self) -> usize {
+        self.read.read_evidence.len()
+    }
+
+    /// Whether current evidence exists for one identity.
+    pub fn read_evidence_has(&self, id: &CommandId) -> bool {
+        self.read.read_evidence.contains_key(id)
     }
 
     /// Known command identities in order.
@@ -467,33 +548,130 @@ impl<T: TransportTrait> CosClient<T> {
         self.commands.keys().cloned().collect()
     }
 
+    /// Bind the actual close-only publication fence supplied by app-core.
+    pub fn bind_observation_control(&mut self, control: ObservationControl) {
+        self.transport.bind_observation_control(control.clone());
+        self.read.control = Some(control);
+    }
+
+    /// Begin (or restart) observation with explicit authorized retention interest.
+    ///
+    /// Local scope intent closes the shared visibility fence synchronously
+    /// before any queued work or new-context data.
+    pub fn begin_authorized_observation(
+        &mut self,
+        request: OpenAuthorizedObservation,
+    ) -> Result<(), ClientError> {
+        // A new authorized observation cancels the previous session: scope,
+        // principal and authentication intents all take this path.
+        match self.state {
+            ConnectionState::Disconnected
+            | ConnectionState::Incompatible { .. }
+            | ConnectionState::Unauthorized { .. }
+            | ConnectionState::Reconnecting { .. }
+            | ConnectionState::Negotiating
+            | ConnectionState::Synchronizing
+            | ConnectionState::Live => {}
+        }
+        let mut distinct = BTreeSet::new();
+        if !request
+            .retained_commands
+            .iter()
+            .all(|id| distinct.insert(id.clone()))
+        {
+            return Err(ClientError::InvalidCommand(
+                "retained command identities must be distinct".to_owned(),
+            ));
+        }
+        self.close_local_visibility();
+        self.requested_scope = Some(request.observation.scope.clone());
+        self.read.pending_retained = request.retained_commands.clone();
+        self.read.pending_request = Some(request);
+        self.read.request_sent = false;
+        self.reconnect = ReconnectPlan::default();
+        self.consecutive_overflows = 0;
+        let mut events = Vec::new();
+        self.begin_session(false, &mut events)
+    }
+
     /// Connect (or reconnect) and open the observation session.
     ///
-    /// The handshake, version negotiation and `OpenObservation` are sent here
-    /// and on later recovery; call [`Self::pump_bounded`] to drive the session.
+    /// Convenience wrapper over [`Self::begin_authorized_observation`] for
+    /// trusted callers that already own the scope; it submits the current
+    /// retained registry as the retention interest set.
     pub fn connect(
         &mut self,
         scope: ObservationScopeRequest,
         now_ms: u64,
     ) -> Result<(), ClientError> {
-        match self.state {
-            ConnectionState::Disconnected
-            | ConnectionState::Incompatible { .. }
-            | ConnectionState::Unauthorized { .. }
-            | ConnectionState::Reconnecting { .. } => {}
-            ref other => {
-                return Err(ClientError::NotConnected(format!(
-                    "connect is not valid while {}",
-                    other.label()
-                )));
-            }
-        }
         self.now_ms = now_ms;
-        self.requested_scope = Some(scope);
-        self.reconnect = ReconnectPlan::default();
-        self.consecutive_overflows = 0;
-        let mut events = Vec::new();
-        self.begin_session(false, &mut events)
+        let request = self.observation_request(scope);
+        self.begin_authorized_observation(request)
+    }
+
+    /// Build a fresh authorized observation request for a scope intent.
+    ///
+    /// Request identities are client-generated, non-reused correlation values;
+    /// the retention interest set is the current bounded registry.
+    pub fn observation_request(&self, scope: ObservationScopeRequest) -> OpenAuthorizedObservation {
+        OpenAuthorizedObservation {
+            request_id: next_read_request_id(),
+            observation: OpenObservation {
+                scope,
+                scope_id: None,
+                last_seen_cursor: None,
+                epoch: None,
+            },
+            retained_commands: self.commands.keys().cloned().collect(),
+        }
+    }
+
+    /// Transfer the retained registry and its surface references.
+    ///
+    /// Owner replacement keeps the same records and the same outstanding surface
+    /// references but drops all former-session decisions: nothing is readable
+    /// until a fresh matching grant arrives, and the reference budget stays
+    /// aligned with the credits the owner still holds.
+    pub fn adopt_retained_registry(
+        &mut self,
+        records: BTreeMap<CommandId, CommandStatus>,
+        references: BTreeMap<CommandId, usize>,
+    ) -> Result<(), ClientError> {
+        if !self.commands.is_empty() {
+            return Err(ClientError::InvalidCommand(
+                "retained registry is not empty".to_owned(),
+            ));
+        }
+        if records.len() > MAX_DISTINCT_RETAINED {
+            return Err(capacity_error());
+        }
+        let total_references: usize = references.values().sum();
+        if total_references > MAX_REFERENCES
+            || references.values().any(|count| *count > MAX_REFERENCES)
+        {
+            return Err(ClientError::InvalidCommand(
+                "CommandReferenceLimitExceeded".to_owned(),
+            ));
+        }
+        for (id, mut record) in records {
+            record.decision = None;
+            record.references = references.get(&id).copied().unwrap_or(0);
+            match record.class {
+                RetentionClass::Settled(sequence) => {
+                    self.settlement_sequence = self.settlement_sequence.max(sequence);
+                }
+                RetentionClass::Ordinary | RetentionClass::Tombstone => {}
+            }
+            if unsettled(&record.status)
+                && record.class == RetentionClass::Ordinary
+                && self.ordinary_unsettled() >= MAX_UNRESOLVED
+            {
+                return Err(capacity_error());
+            }
+            self.commands.insert(id, record);
+        }
+        self.changed = true;
+        Ok(())
     }
 
     /// Drive the session with the default frame budget.
@@ -504,21 +682,36 @@ impl<T: TransportTrait> CosClient<T> {
 
     /// Drive the session, processing at most `max_frames` inbound frames.
     pub fn pump_bounded(&mut self, now_ms: u64, max_frames: usize) -> Vec<ClientEvent> {
+        self.pump_step(now_ms, max_frames).events
+    }
+
+    /// Bounded nonblocking progress for the background owner.
+    pub fn pump_step(&mut self, now_ms: u64, budget: usize) -> PumpReport {
+        self.changed = false;
         let mut events = Vec::new();
         self.now_ms = now_ms;
         self.expire_pending(now_ms, &mut events);
+        self.expire_read_deadlines(now_ms, &mut events);
         if let ConnectionState::Reconnecting { .. } = self.state
             && self.reconnect.next_at_ms.is_some_and(|at| now_ms >= at)
         {
             let resume = self.reconnect.resume;
             if let Err(error) = self.begin_session(resume, &mut events) {
                 self.handle_send_error(error, &mut events);
-                return events;
+                return PumpReport {
+                    frames: 0,
+                    events,
+                    changed: self.changed,
+                    next_deadline_ms: self.next_deadline_ms(),
+                };
             }
         }
-        for _ in 0..max_frames {
+        self.drive_automatic_reads(now_ms, &mut events);
+        let mut frames = 0;
+        for _ in 0..budget {
             match self.transport.poll() {
                 Ok(Some(bytes)) => {
+                    frames += 1;
                     if !self.handle_frame(&bytes, &mut events) {
                         break;
                     }
@@ -530,7 +723,13 @@ impl<T: TransportTrait> CosClient<T> {
                 }
             }
         }
-        events
+        self.reconcile_capacity();
+        PumpReport {
+            frames,
+            events,
+            changed: self.changed,
+            next_deadline_ms: self.next_deadline_ms(),
+        }
     }
 
     /// Validate and record a command without sending it.
@@ -544,13 +743,22 @@ impl<T: TransportTrait> CosClient<T> {
                 "command {command_id} was already prepared; inspect its status instead of resending a new intent"
             )));
         }
-        self.commands.insert(
-            command_id.clone(),
-            CommandRecord {
-                envelope: Some(envelope),
-                status: CommandStatus::Prepared,
-            },
-        );
+        let origin = self
+            .read
+            .binding
+            .as_ref()
+            .map(|binding| Arc::clone(&binding.context));
+        let mut record = CommandStatus::prepared(envelope, origin);
+        match self.take_slot(&record.status) {
+            Ok(class) => record.class = class,
+            Err(error) => {
+                self.capacity_blocked = true;
+                self.last_error = Some(error.clone());
+                return Err(error);
+            }
+        }
+        self.commands.insert(command_id.clone(), record);
+        self.changed = true;
         Ok(command_id)
     }
 
@@ -574,7 +782,7 @@ impl<T: TransportTrait> CosClient<T> {
         let versions = session.versions;
         self.send_frame(versions, ClientMessage::Command(envelope))?;
         if let Some(record) = self.commands.get_mut(command_id) {
-            record.status = CommandStatus::Pending {
+            record.status = CommandState::Pending {
                 sent_at_ms: self.now_ms,
             };
         }
@@ -609,22 +817,6 @@ impl<T: TransportTrait> CosClient<T> {
         self.send_command(envelope)
     }
 
-    /// Look up a receipt for a previously sent command.
-    pub fn lookup_receipt(&mut self, command_id: &CommandId) -> Result<(), ClientError> {
-        self.require_live()?;
-        let session = self
-            .session
-            .as_ref()
-            .ok_or_else(|| ClientError::NotConnected("no negotiated session".to_owned()))?;
-        let versions = session.versions;
-        self.send_frame(
-            versions,
-            ClientMessage::LookupReceipt(ReceiptLookup {
-                command_id: command_id.clone(),
-            }),
-        )
-    }
-
     /// Request a full resync with bounded backoff.
     pub fn request_resync(&mut self, reason: ResyncReason) -> Vec<ClientEvent> {
         let mut events = Vec::new();
@@ -636,6 +828,7 @@ impl<T: TransportTrait> CosClient<T> {
     pub fn disconnect(&mut self) -> Vec<ClientEvent> {
         let mut events = Vec::new();
         self.cancel_staging();
+        self.withhold();
         self.transport.reset_stream();
         self.generation += 1;
         self.reconnect = ReconnectPlan::default();
@@ -643,13 +836,13 @@ impl<T: TransportTrait> CosClient<T> {
         let pending: Vec<CommandId> = self
             .commands
             .iter()
-            .filter(|(_, record)| matches!(&record.status, CommandStatus::Pending { .. }))
+            .filter(|(_, record)| matches!(&record.status, CommandState::Pending { .. }))
             .map(|(command_id, _)| command_id.clone())
             .collect();
         for command_id in pending {
             if let Some(record) = self.commands.get_mut(&command_id) {
                 let receipt = record.status.receipt().cloned();
-                record.status = CommandStatus::ResultUnknown {
+                record.status = CommandState::ResultUnknown {
                     reason:
                         "local disconnect while awaiting a receipt; execution may have happened"
                             .to_owned(),
@@ -670,10 +863,10 @@ impl<T: TransportTrait> CosClient<T> {
         let timeout = self.config.command_timeout_ms;
         let mut updates = Vec::new();
         for (command_id, record) in &mut self.commands {
-            if let CommandStatus::Pending { sent_at_ms } = &record.status {
+            if let CommandState::Pending { sent_at_ms } = &record.status {
                 let sent_at_ms = *sent_at_ms;
                 if now_ms.saturating_sub(sent_at_ms) > timeout {
-                    record.status = CommandStatus::ResultUnknown {
+                    record.status = CommandState::ResultUnknown {
                         reason: "no receipt before timeout; execution may have happened".to_owned(),
                         receipt: None,
                     };
@@ -682,7 +875,417 @@ impl<T: TransportTrait> CosClient<T> {
             }
         }
         for (command_id, status) in updates {
+            self.changed = true;
             events.push(ClientEvent::CommandUpdated { command_id, status });
+        }
+    }
+
+    /// Validated publication evidence for the background owner.
+    pub fn publication_access(&self) -> PublicationAccess<'_> {
+        let Some(binding) = self.read.binding.as_ref() else {
+            return PublicationAccess::Withheld {
+                reason: if self.read.control.is_none() {
+                    ReadUnavailable::AuthorizationUnavailable
+                } else if self.read.closed_sequence != 0 {
+                    ReadUnavailable::Superseded
+                } else {
+                    ReadUnavailable::AuthorizationUnavailable
+                },
+            };
+        };
+        if !matches!(self.state, ConnectionState::Live) {
+            return PublicationAccess::Withheld {
+                reason: ReadUnavailable::Synchronizing,
+            };
+        }
+        PublicationAccess::Validated {
+            stamp: binding.stamp.as_ref(),
+            scope: &binding.scope,
+            visibility_sequence: binding.visibility_sequence,
+            readable_commands: ReadableCommands {
+                records: self.commands.iter(),
+                binding,
+            },
+            read_evidence: &self.read.read_evidence,
+        }
+    }
+
+    /// Read the current local status of a command under the current binding.
+    ///
+    /// Authorization is checked separately: a consumer must hold a
+    /// [`PublicationAccess::Validated`] view and apply the per-record decision
+    /// before disclosure.
+    pub fn lookup_command(&self, id: &CommandId) -> CommandLookup<'_> {
+        match self.commands.get(id) {
+            Some(record) => CommandLookup::Found(record),
+            None => CommandLookup::NotRetained,
+        }
+    }
+
+    /// Issue an authorized receipt lookup within the shared read budget.
+    pub fn lookup_receipt_authorized(
+        &mut self,
+        request: AuthorizedReceiptLookup,
+    ) -> Result<(), ClientError> {
+        self.read.stalled.remove(&request.command_id);
+        let retained_reference = self
+            .commands
+            .get(&request.command_id)
+            .is_some_and(|record| record.references > 0);
+        let now_ms = self.now_ms;
+        self.send_lookup(&request, retained_reference, now_ms)
+    }
+
+    /// Withhold all projection/command data and close the shared fence.
+    fn withhold(&mut self) {
+        self.release_pending_reads();
+        self.read.close_binding();
+        self.changed = true;
+    }
+
+    /// Close the shared fence for a local scope/authorization intent.
+    fn close_local_visibility(&mut self) -> u64 {
+        self.withhold();
+        self.read.closed_sequence
+    }
+
+    fn release_pending_reads(&mut self) {
+        let retained: Vec<CommandId> = self
+            .read
+            .pending
+            .iter()
+            .filter(|(_, pending)| pending.retained_reference)
+            .map(|(id, _)| id.clone())
+            .collect();
+        for id in retained {
+            self.release_command(&id);
+        }
+        self.read.pending.clear();
+    }
+
+    fn total_references(&self) -> usize {
+        self.commands.values().map(|record| record.references).sum()
+    }
+
+    fn ordinary_unsettled(&self) -> usize {
+        self.commands
+            .values()
+            .filter(|record| record.class == RetentionClass::Ordinary)
+            .count()
+    }
+
+    fn tombstone_count(&self) -> usize {
+        self.commands
+            .values()
+            .filter(|record| record.class == RetentionClass::Tombstone)
+            .count()
+    }
+
+    /// Reserve a capacity class for a state before any registry mutation.
+    fn take_slot(&self, state: &CommandState) -> Result<RetentionClass, ClientError> {
+        if unsettled(state) {
+            if self.ordinary_unsettled() < MAX_UNRESOLVED {
+                return Ok(RetentionClass::Ordinary);
+            }
+            if tombstone_shape(state) && self.tombstone_count() < MAX_TOMBSTONES {
+                return Ok(RetentionClass::Tombstone);
+            }
+            return Err(capacity_error());
+        }
+        Ok(RetentionClass::Settled(0))
+    }
+
+    /// Recompute a record's capacity class after its state changed.
+    fn refresh_class(&mut self, id: &CommandId) -> Result<(), ClientError> {
+        let Some(class) = self.commands.get(id).map(|record| record.class) else {
+            return Ok(());
+        };
+        let state = match self.commands.get(id) {
+            Some(record) => record.status.clone(),
+            None => return Ok(()),
+        };
+        if !unsettled(&state) {
+            // Settled(0) is the unassigned placeholder: every settled record gets
+            // its own settlement sequence so eviction order is deterministic.
+            let needs_sequence = match class {
+                RetentionClass::Settled(sequence) => sequence == 0,
+                _ => true,
+            };
+            if needs_sequence {
+                self.settlement_sequence += 1;
+                let sequence = self.settlement_sequence;
+                if let Some(record) = self.commands.get_mut(id) {
+                    record.class = RetentionClass::Settled(sequence);
+                }
+            }
+        } else if matches!(class, RetentionClass::Settled(_)) {
+            let slot = self.take_slot(&state)?;
+            if let Some(record) = self.commands.get_mut(id) {
+                record.class = slot;
+            }
+        }
+        self.prune_settled();
+        Ok(())
+    }
+
+    /// Deterministic insertion-order eviction of zero-reference settled records.
+    fn prune_settled(&mut self) {
+        let mut settled: Vec<(u64, CommandId)> = self
+            .commands
+            .iter()
+            .filter_map(|(id, record)| match record.class {
+                RetentionClass::Settled(sequence) => Some((sequence, id.clone())),
+                _ => None,
+            })
+            .collect();
+        settled.sort();
+        let mut settled_count = settled.len();
+        let mut total = self.commands.len();
+        for (_, id) in settled {
+            if settled_count <= MAX_RECENT && total <= MAX_DISTINCT_RETAINED {
+                break;
+            }
+            let removable = self
+                .commands
+                .get(&id)
+                .is_some_and(|record| record.references == 0)
+                && !self.read.pending.contains_key(&id);
+            if !removable {
+                continue;
+            }
+            self.commands.remove(&id);
+            settled_count -= 1;
+            total -= 1;
+        }
+    }
+
+    /// Release tombstone slots that are no longer needed by genuine recovery.
+    fn promote_tombstones(&mut self) {
+        let candidates: Vec<CommandId> = self
+            .commands
+            .iter()
+            .filter(|(_, record)| record.class == RetentionClass::Tombstone)
+            .map(|(id, _)| id.clone())
+            .collect();
+        for id in candidates {
+            if self.ordinary_unsettled() >= MAX_UNRESOLVED {
+                break;
+            }
+            if let Some(record) = self.commands.get_mut(&id) {
+                record.class = RetentionClass::Ordinary;
+            }
+        }
+    }
+
+    fn record_capacity_error(&mut self, events: &mut Vec<ClientEvent>) {
+        let error = capacity_error();
+        self.capacity_blocked = true;
+        self.changed = true;
+        events.push(ClientEvent::Error(error.clone()));
+        self.last_error = Some(error);
+    }
+
+    fn reconcile_capacity(&mut self) {
+        let is_capacity_error = |error: &ClientError| matches!(error, ClientError::InvalidCommand(message) if message == "CommandCapacityExceeded");
+        if self.capacity_blocked {
+            let recovered = self.ordinary_unsettled() < MAX_UNRESOLVED;
+            let superseded = self
+                .last_error
+                .as_ref()
+                .is_some_and(|error| !is_capacity_error(error));
+            if recovered || superseded {
+                self.capacity_blocked = false;
+                if self.last_error.as_ref().is_some_and(is_capacity_error) {
+                    self.last_error = None;
+                    self.changed = true;
+                }
+            }
+        }
+    }
+
+    fn next_deadline_ms(&self) -> Option<u64> {
+        let mut next = self.reconnect.next_at_ms;
+        for pending in self.read.pending.values() {
+            next = Some(next.map_or(pending.deadline_ms, |at| at.min(pending.deadline_ms)));
+        }
+        next
+    }
+
+    fn expire_read_deadlines(&mut self, now_ms: u64, events: &mut Vec<ClientEvent>) {
+        let expired: Vec<CommandId> = self
+            .read
+            .pending
+            .iter()
+            .filter(|(_, pending)| now_ms >= pending.deadline_ms)
+            .map(|(id, _)| id.clone())
+            .collect();
+        if expired.is_empty() {
+            return;
+        }
+        for id in expired {
+            if let Some(pending) = self.read.pending.remove(&id)
+                && pending.retained_reference
+            {
+                self.release_command(&id);
+            }
+            self.read.record_stalled(id);
+            let error = ClientError::Protocol(
+                "authorized receipt read timed out; the outcome remains unknown".to_owned(),
+            );
+            events.push(ClientEvent::Error(error.clone()));
+            self.last_error = Some(error);
+        }
+        self.changed = true;
+    }
+
+    fn send_lookup(
+        &mut self,
+        request: &AuthorizedReceiptLookup,
+        retained_reference: bool,
+        now_ms: u64,
+    ) -> Result<(), ClientError> {
+        self.require_live()?;
+        let Some(binding) = self.read.binding.as_ref() else {
+            return Err(ClientError::NotConnected(
+                "no current read binding".to_owned(),
+            ));
+        };
+        if !binding.matches(&request.stamp) {
+            return Err(ClientError::Protocol(
+                "receipt lookup stamp is not the current binding".to_owned(),
+            ));
+        }
+        if self.read.pending.contains_key(&request.command_id) {
+            return Ok(());
+        }
+        if self.read.pending.len() >= MAX_PENDING_READS {
+            return Err(capacity_error());
+        }
+        if retained_reference {
+            self.retain_command(&request.command_id)?;
+        }
+        let versions = self
+            .session
+            .as_ref()
+            .ok_or_else(|| ClientError::NotConnected("no negotiated session".to_owned()))?
+            .versions;
+        let deadline_ms = now_ms.saturating_add(self.config.command_timeout_ms);
+        if let Err(error) = self.send_frame(versions, ClientMessage::LookupReceipt(request.clone()))
+        {
+            if retained_reference {
+                self.release_command(&request.command_id);
+            }
+            return Err(error);
+        }
+        self.read.pending.insert(
+            request.command_id.clone(),
+            PendingReceiptRead {
+                request: request.clone(),
+                deadline_ms,
+                retained_reference,
+            },
+        );
+        self.changed = true;
+        Ok(())
+    }
+
+    /// Fair, bounded automatic drain of receipt reads that lack current evidence.
+    fn drive_automatic_reads(&mut self, now_ms: u64, events: &mut Vec<ClientEvent>) {
+        if !matches!(self.state, ConnectionState::Live) || self.read.binding.is_none() {
+            return;
+        }
+        self.promote_tombstones();
+        if self.read.pending.len() >= MAX_PENDING_READS {
+            return;
+        }
+        let ids: Vec<CommandId> = self.commands.keys().cloned().collect();
+        if ids.is_empty() {
+            return;
+        }
+        let start = self
+            .read
+            .automatic_cursor
+            .as_ref()
+            .and_then(|cursor| ids.iter().position(|id| id == cursor))
+            .map_or(0, |index| index + 1);
+        let ordered: Vec<CommandId> = ids[start.min(ids.len())..]
+            .iter()
+            .chain(ids[..start.min(ids.len())].iter())
+            .cloned()
+            .collect();
+        let mut readable_now: Vec<CommandId> = Vec::new();
+        for id in ordered {
+            if self.read.pending.len() >= MAX_PENDING_READS {
+                break;
+            }
+            if self.read.pending.contains_key(&id) || self.read.stalled.contains_key(&id) {
+                continue;
+            }
+            let Some(stamp) = self
+                .read
+                .binding
+                .as_ref()
+                .map(|binding| Arc::clone(&binding.stamp))
+            else {
+                break;
+            };
+            let decision = self.commands.get(&id).map(|record| {
+                (
+                    record.server_derived(),
+                    record.references > 0,
+                    record.readable_with(stamp.as_ref()),
+                )
+            });
+            let Some((server_derived, referenced, readable)) = decision else {
+                continue;
+            };
+            if !server_derived {
+                continue;
+            }
+            if readable {
+                readable_now.push(id);
+                continue;
+            }
+            // An explicit denial under the current binding is a settled answer, not
+            // missing evidence: automatic reads must not re-query it.
+            let denied_now = self
+                .commands
+                .get(&id)
+                .is_some_and(|record| match &record.decision {
+                    Some((evidence, false)) => evidence.as_ref() == stamp.as_ref(),
+                    _ => false,
+                })
+                || matches!(
+                    self.read.read_evidence.get(&id),
+                    Some((_, ReadEvidence::Denied(held))) if held.as_ref() == stamp.as_ref()
+                );
+            if denied_now {
+                continue;
+            }
+            if referenced && self.total_references() >= MAX_REFERENCES {
+                continue;
+            }
+            let request = AuthorizedReceiptLookup {
+                lookup_id: next_receipt_read_id(),
+                stamp: stamp.as_ref().clone(),
+                command_id: id.clone(),
+            };
+            self.read.automatic_cursor = Some(id.clone());
+            if let Err(error) = self.send_lookup(&request, referenced, now_ms) {
+                if matches!(error, ClientError::InvalidCommand(_)) {
+                    break;
+                }
+                events.push(ClientEvent::Error(error.clone()));
+                self.last_error = Some(error);
+                break;
+            }
+        }
+        for id in readable_now {
+            if let Some(record) = self.commands.get_mut(&id)
+                && record.needs_read
+            {
+                record.needs_read = false;
+            }
         }
     }
 
@@ -741,6 +1344,7 @@ impl<T: TransportTrait> CosClient<T> {
         }
         self.generation += 1;
         self.cancel_staging();
+        self.withhold();
         self.transport.reset_stream();
         self.session = None;
         self.resume_cursor = None;
@@ -777,13 +1381,30 @@ impl<T: TransportTrait> CosClient<T> {
         } else {
             (None, None)
         };
-        let message = ClientMessage::OpenObservation(OpenObservation {
-            scope,
-            scope_id,
-            last_seen_cursor: last_seen_cursor.clone(),
-            epoch,
-        });
-        self.send_frame(versions, message)?;
+        // A new attempt always uses a fresh request identity: a former-session
+        // grant must never be reusable.
+        let request_id = if self.read.request_sent {
+            next_read_request_id()
+        } else {
+            self.read
+                .pending_request
+                .as_ref()
+                .map(|request| request.request_id.clone())
+                .unwrap_or_else(next_read_request_id)
+        };
+        self.read.request_sent = true;
+        let request = OpenAuthorizedObservation {
+            request_id,
+            observation: OpenObservation {
+                scope,
+                scope_id,
+                last_seen_cursor: last_seen_cursor.clone(),
+                epoch,
+            },
+            retained_commands: self.read.pending_retained.clone(),
+        };
+        self.send_frame(versions, ClientMessage::OpenObservation(request.clone()))?;
+        self.read.pending_request = Some(request);
         self.resume_cursor = last_seen_cursor;
         self.set_state(ConnectionState::Synchronizing, events);
         Ok(())
@@ -909,18 +1530,90 @@ impl<T: TransportTrait> CosClient<T> {
             );
             return false;
         }
+        let stamp_ok = self.stamp_is_current(frame.read_stamp.as_ref());
         match frame.message {
-            ServerMessage::ReplayAccepted(payload) => self.handle_replay_accepted(payload, events),
-            ServerMessage::ResyncRequired(payload) => self.handle_resync_required(payload, events),
-            ServerMessage::SnapshotBegin(payload) => self.handle_snapshot_begin(payload, events),
-            ServerMessage::SnapshotChunk(payload) => self.handle_snapshot_chunk(payload, events),
-            ServerMessage::SnapshotEnd(payload) => self.handle_snapshot_end(payload, events),
-            ServerMessage::DeltaTransaction(payload) => self.handle_delta(payload, events),
+            ServerMessage::ReplayAccepted(payload) => {
+                if !stamp_ok {
+                    return self.reject_unauthorized("replay acknowledgement", events);
+                }
+                self.handle_replay_accepted(payload, events)
+            }
+            ServerMessage::SnapshotBegin(payload) => {
+                if !stamp_ok {
+                    return self.reject_unauthorized("snapshot begin", events);
+                }
+                self.handle_snapshot_begin(payload, events)
+            }
+            ServerMessage::SnapshotChunk(payload) => {
+                if !stamp_ok {
+                    return self.reject_unauthorized("snapshot chunk", events);
+                }
+                self.handle_snapshot_chunk(payload, events)
+            }
+            ServerMessage::SnapshotEnd(payload) => {
+                if !stamp_ok {
+                    return self.reject_unauthorized("snapshot end", events);
+                }
+                self.handle_snapshot_end(payload, events)
+            }
+            ServerMessage::DeltaTransaction(payload) => {
+                if !stamp_ok {
+                    return self.reject_unauthorized("delta transaction", events);
+                }
+                self.handle_delta(payload, events)
+            }
             ServerMessage::Receipt(payload) => {
-                self.handle_receipt(payload, events);
+                if !stamp_ok {
+                    return self.reject_unauthorized("command receipt", events);
+                }
+                self.handle_authorized_receipt(payload, events)
+            }
+            ServerMessage::ReadGrant(payload) => {
+                // Grant, invalidation and receipt controls carry their own payload
+                // binding: a duplicate envelope stamp that contradicts the payload
+                // is invalid, never a second source of authority.
+                if let Some(outer) = frame.read_stamp.as_ref()
+                    && outer != &payload.stamp
+                {
+                    return self.reject_unauthorized(
+                        "read grant with a conflicting envelope stamp",
+                        events,
+                    );
+                }
+                self.handle_read_grant(payload, events)
+            }
+            ServerMessage::ReadInvalidated(payload) => {
+                if frame.read_stamp.is_some() && !stamp_ok {
+                    return self.reject_unauthorized(
+                        "read invalidation with a foreign envelope stamp",
+                        events,
+                    );
+                }
+                self.handle_read_invalidated(payload, events);
                 true
             }
-            ServerMessage::Error(payload) => self.handle_protocol_error(payload, events),
+            ServerMessage::ReceiptReadResult(payload) => {
+                if let Some(outer) = frame.read_stamp.as_ref()
+                    && outer != &payload.stamp
+                {
+                    return self.reject_unauthorized(
+                        "receipt read result with a conflicting envelope stamp",
+                        events,
+                    );
+                }
+                // The payload stamp is the binding for this control; its currency is
+                // validated by the handler, and an absent envelope stamp is valid.
+                self.handle_receipt_result(payload, events)
+            }
+            ServerMessage::ResyncRequired(payload) => self.handle_resync_required(payload, events),
+            ServerMessage::Error(payload) => {
+                // A state-bearing error settles a command: it needs the current
+                // binding, never an implied permission.
+                if payload.command_id.is_some() && !stamp_ok {
+                    return self.reject_unauthorized("state-bearing error", events);
+                }
+                self.handle_protocol_error(payload, events)
+            }
             ServerMessage::Unknown(payload) => self.handle_unknown(payload, events),
         }
     }
@@ -1290,7 +1983,8 @@ impl<T: TransportTrait> CosClient<T> {
                 return false;
             }
         }
-        let overlay: BTreeSet<ProjectionKey> = keys;
+        let mut upserts: Vec<Projection> = Vec::new();
+        let mut removals: Vec<RemoveTarget> = Vec::new();
         for mutation in &transaction.mutations {
             if let Err(error) = self.projection.validate_mutation(mutation) {
                 self.invalidate(
@@ -1300,22 +1994,31 @@ impl<T: TransportTrait> CosClient<T> {
                 );
                 return false;
             }
-            if let Err(error) = self
-                .projection
-                .validate_mutation_references(mutation, &overlay)
-            {
-                self.invalidate(
-                    ResyncReason::ProtocolViolation,
-                    ClientError::Protocol(format!("mutation references rejected: {error}")),
-                    events,
-                );
-                return false;
+            match mutation {
+                ProjectionMutation::Upsert { projection, .. } => upserts.push(projection.clone()),
+                ProjectionMutation::Remove { target, .. } => removals.push(target.clone()),
             }
+        }
+        if let Err(error) = self
+            .projection
+            .validate_effective_state(&upserts, &removals)
+        {
+            self.invalidate(
+                ResyncReason::ProtocolViolation,
+                ClientError::Protocol(format!("effective state rejected: {error}")),
+                events,
+            );
+            return false;
         }
         {
             let state = Arc::make_mut(&mut self.projection);
             state.apply(&transaction.mutations);
         }
+        // An applied delta changes the projection a publication exposes, and the
+        // owner publishes only when the report says the client changed; a
+        // re-delivered identical transaction is a duplicate and returns above
+        // without marking one.
+        self.changed = true;
         self.last_seen_cursor = Some(transaction.cursor.clone());
         self.applied.push_back(AppliedTransaction {
             transaction_id: transaction.transaction_id.clone(),
@@ -1332,32 +2035,322 @@ impl<T: TransportTrait> CosClient<T> {
         true
     }
 
-    fn handle_receipt(&mut self, receipt: CommandReceipt, events: &mut Vec<ClientEvent>) {
-        let status = match &receipt.state {
-            ReceiptState::Accepted => CommandStatus::Accepted(receipt.clone()),
-            ReceiptState::Rejected => CommandStatus::Rejected(receipt.clone()),
-            ReceiptState::CanonicalReflected => CommandStatus::CanonicalReflected(receipt.clone()),
-            ReceiptState::Unknown(raw) => CommandStatus::ResultUnknown {
+    /// Whether a frame's stamp is the exact current binding.
+    fn stamp_is_current(&self, stamp: Option<&ReadStamp>) -> bool {
+        match (stamp, self.read.binding.as_ref()) {
+            (Some(stamp), Some(binding)) => binding.matches(stamp),
+            _ => false,
+        }
+    }
+
+    /// Fail closed: withhold everything, then start bounded recovery.
+    fn reject_unauthorized(&mut self, what: &str, events: &mut Vec<ClientEvent>) -> bool {
+        self.withhold();
+        self.invalidate(
+            ResyncReason::ProtocolViolation,
+            ClientError::Protocol(format!(
+                "{what} arrived without the current authorization binding"
+            )),
+            events,
+        );
+        false
+    }
+
+    fn handle_read_grant(&mut self, grant: ReadGrant, events: &mut Vec<ClientEvent>) -> bool {
+        if !matches!(self.state, ConnectionState::Synchronizing) {
+            return self.reject_unauthorized("read grant outside synchronization", events);
+        }
+        let Some(session_epoch) = self.session.as_ref().map(|session| session.epoch.clone()) else {
+            return self.reject_unauthorized("read grant before the handshake completed", events);
+        };
+        let Some(verified) = self.transport.authenticated_server() else {
+            return self.reject_unauthorized("read grant on an unverified channel", events);
+        };
+        let Some(pending) = self.read.pending_request.clone() else {
+            return self.reject_unauthorized("read grant without a pending request", events);
+        };
+        if grant.stamp.request_id != pending.request_id
+            || grant.stamp.server_id != verified
+            || grant.stamp.epoch != session_epoch
+        {
+            return self.reject_unauthorized("read grant binding mismatch", events);
+        }
+        if self
+            .read
+            .is_late_grant(&grant.stamp.context_id, &grant.stamp.read_revision)
+        {
+            return self.reject_unauthorized("late or equal read grant rejected", events);
+        }
+        let mut decided: BTreeSet<&CommandId> = BTreeSet::new();
+        for decision in &grant.command_reads {
+            if !decided.insert(&decision.command_id) {
+                return self.reject_unauthorized("duplicate read decision", events);
+            }
+        }
+        let requested: BTreeSet<&CommandId> = self.read.pending_retained.iter().collect();
+        if decided != requested {
+            return self.reject_unauthorized(
+                "read decisions do not match the requested retained identities",
+                events,
+            );
+        }
+        if !self.scope_matches(&grant.scope) {
+            return self.reject_unauthorized("granted scope does not match the request", events);
+        }
+        if grant.stamp.scope_id != grant.scope.scope_id {
+            return self
+                .reject_unauthorized("granted stamp does not describe the granted scope", events);
+        }
+        let sequence = self.read.current_sequence();
+        let context = Arc::new(grant.stamp.context_id.clone());
+        let stamp = Arc::new(grant.stamp.clone());
+        for decision in &grant.command_reads {
+            if let Some(record) = self.commands.get_mut(&decision.command_id) {
+                record.decision = Some((Arc::clone(&stamp), decision.readable));
+                record.needs_read = !decision.readable && record.server_derived();
+            }
+        }
+        self.read.binding = Some(ReadBinding {
+            stamp,
+            context,
+            scope: grant.scope,
+            local_intents_readable: grant.local_intents_readable,
+            visibility_sequence: sequence,
+        });
+        self.changed = true;
+        true
+    }
+
+    fn handle_read_invalidated(&mut self, payload: ReadInvalidated, events: &mut Vec<ClientEvent>) {
+        let reason = payload.reason;
+        // Capture the binding identity before closing: only a notification that
+        // matches the binding this session actually holds may move the floor or
+        // drive recovery.
+        let bound = self
+            .read
+            .binding
+            .as_ref()
+            .map(|binding| (binding.context.clone(), binding.stamp.request_id.clone()));
+        // Detected invalidation always closes the shared fence first.
+        self.withhold();
+        let trusted = match &bound {
+            Some((context, request_id)) => {
+                context.as_ref() == &payload.context_id && request_id == &payload.request_id
+            }
+            None => false,
+        };
+        if !trusted {
+            // A notification that does not match the binding this session held is
+            // not usable evidence: stay closed, disclose nothing, and neither move
+            // the floor nor start recovery from unverified data.
+            events.push(ClientEvent::Error(ClientError::Protocol(
+                "read invalidation does not match the current binding".to_owned(),
+            )));
+            self.changed = true;
+            return;
+        }
+        // The floor only ever advances: a trusted notification moves it forward and
+        // an older revision cannot regress it.
+        self.read
+            .raise_floor(payload.context_id.clone(), payload.read_revision.clone());
+        let resync = match reason {
+            ReadInvalidationReason::EpochChanged => ResyncReason::EpochChanged,
+            _ => ResyncReason::Internal,
+        };
+        self.schedule_recovery(false, Some(resync), events);
+    }
+
+    fn handle_authorized_receipt(
+        &mut self,
+        authorized: AuthorizedCommandReceipt,
+        events: &mut Vec<ClientEvent>,
+    ) -> bool {
+        if !authorized.permission.readable
+            || authorized.permission.command_id != authorized.receipt.command_id
+        {
+            return self.reject_unauthorized(
+                "command receipt without current positive permission",
+                events,
+            );
+        }
+        // The outer frame stamp alone is not authorization evidence: the receipt's
+        // own stamp must be the current binding, or its state would change under a
+        // stale authorization context.
+        if !self.stamp_is_current(Some(&authorized.stamp)) {
+            return self
+                .reject_unauthorized("command receipt with a stale authorization stamp", events);
+        }
+        let evidence = Arc::new(authorized.stamp.clone());
+        match self.apply_receipt(&authorized.receipt, Some(evidence), events) {
+            Ok(()) => true,
+            Err(_) => {
+                self.record_capacity_error(events);
+                true
+            }
+        }
+    }
+
+    /// Apply one receipt under pre-validated authorization evidence.
+    fn apply_receipt(
+        &mut self,
+        receipt: &CommandReceipt,
+        evidence: Option<Arc<ReadStamp>>,
+        events: &mut Vec<ClientEvent>,
+    ) -> Result<(), ClientError> {
+        let tracked = self.commands.contains_key(&receipt.command_id);
+        let target = match &receipt.state {
+            ReceiptState::Accepted => CommandState::Accepted(receipt.clone()),
+            ReceiptState::Rejected => CommandState::Rejected(receipt.clone()),
+            ReceiptState::CanonicalReflected => CommandState::CanonicalReflected(receipt.clone()),
+            ReceiptState::Unknown(raw) if tracked => CommandState::ResultUnknown {
                 reason: format!("unrecognized receipt state {raw}"),
                 receipt: Some(receipt.clone()),
             },
+            ReceiptState::Unknown(_) => CommandState::ResultUnknown {
+                reason: TOMBSTONE_REASON.to_owned(),
+                receipt: Some(receipt.clone()),
+            },
+        };
+        let class = match self
+            .commands
+            .get(&receipt.command_id)
+            .map(|record| record.class)
+        {
+            Some(RetentionClass::Ordinary) if unsettled(&target) => RetentionClass::Ordinary,
+            Some(RetentionClass::Tombstone) if unsettled(&target) => RetentionClass::Tombstone,
+            _ => match self.take_slot(&target) {
+                Ok(class) => class,
+                Err(error) => {
+                    // Ordinary capacity is full: an actual new untracked
+                    // unsettled receipt takes a tombstone slot with its actual
+                    // ResultUnknown state instead of failing, exactly as the
+                    // contract's tombstone class describes. Both capacities full
+                    // keeps the existing capacity error.
+                    if tracked || !unsettled(&target) || self.tombstone_count() >= MAX_TOMBSTONES {
+                        return Err(error);
+                    }
+                    RetentionClass::Tombstone
+                }
+            },
+        };
+        let stored = match class {
+            RetentionClass::Tombstone => CommandState::ResultUnknown {
+                reason: TOMBSTONE_REASON.to_owned(),
+                receipt: Some(receipt.clone()),
+            },
+            _ => target.clone(),
         };
         match self.commands.get_mut(&receipt.command_id) {
-            Some(record) => record.status = status.clone(),
+            Some(record) => {
+                record.status = stored.clone();
+                record.class = class;
+                record.needs_read = false;
+                if let Some(evidence) = evidence {
+                    record.decision = Some((evidence, true));
+                }
+            }
             None => {
                 self.commands.insert(
                     receipt.command_id.clone(),
-                    CommandRecord {
+                    CommandStatus {
                         envelope: None,
-                        status: status.clone(),
+                        status: stored.clone(),
+                        origin: None,
+                        decision: evidence.map(|evidence| (evidence, true)),
+                        needs_read: false,
+                        class,
+                        references: 0,
                     },
                 );
             }
         }
+        self.read.read_evidence.remove(&receipt.command_id);
+        self.refresh_class(&receipt.command_id)?;
+        self.changed = true;
         events.push(ClientEvent::CommandUpdated {
             command_id: receipt.command_id.clone(),
-            status,
+            status: stored,
         });
+        Ok(())
+    }
+
+    fn handle_receipt_result(
+        &mut self,
+        payload: ReceiptReadResult,
+        events: &mut Vec<ClientEvent>,
+    ) -> bool {
+        let Some(binding) = self.read.binding.as_ref() else {
+            // A reply after a close cannot disclose anything; the read is cancelled.
+            return true;
+        };
+        if !binding.matches(&payload.stamp) {
+            return self.reject_unauthorized("receipt read result with a stale stamp", events);
+        }
+        let Some(pending) = self.read.pending.get(&payload.command_id).cloned() else {
+            return self.reject_unauthorized("uncorrelated receipt read result", events);
+        };
+        if pending.request.lookup_id != payload.lookup_id || pending.request.stamp != payload.stamp
+        {
+            return self
+                .reject_unauthorized("receipt read result does not match its lookup", events);
+        }
+        if let Some(pending) = self.read.pending.remove(&payload.command_id)
+            && pending.retained_reference
+        {
+            self.release_command(&payload.command_id);
+        }
+        self.read.stalled.remove(&payload.command_id);
+        let evidence = Arc::new(payload.stamp.clone());
+        match payload.outcome {
+            ReceiptReadOutcome::Denied => {
+                if let Some(record) = self.commands.get_mut(&payload.command_id) {
+                    record.decision = Some((Arc::clone(&evidence), false));
+                    record.needs_read = false;
+                } else {
+                    // The same public denial applies to an absent identity, and it
+                    // discloses no retention or execution fact.
+                    self.read.record_evidence(
+                        payload.command_id.clone(),
+                        ReadEvidence::Denied(evidence),
+                    );
+                }
+                self.read.record_stalled(payload.command_id.clone());
+                self.changed = true;
+                true
+            }
+            ReceiptReadOutcome::Allowed {
+                receipt: Some(receipt),
+            } => {
+                if receipt.command_id != payload.command_id {
+                    return self.reject_unauthorized(
+                        "receipt read result carries another command",
+                        events,
+                    );
+                }
+                match self.apply_receipt(&receipt, Some(evidence), events) {
+                    Ok(()) => true,
+                    Err(_) => {
+                        self.record_capacity_error(events);
+                        true
+                    }
+                }
+            }
+            ReceiptReadOutcome::Allowed { receipt: None } => {
+                if self.commands.contains_key(&payload.command_id) {
+                    if let Some(record) = self.commands.get_mut(&payload.command_id) {
+                        record.decision = Some((Arc::clone(&evidence), true));
+                        record.needs_read = false;
+                    }
+                } else {
+                    self.read.record_evidence(
+                        payload.command_id.clone(),
+                        ReadEvidence::AllowedNoReceipt(evidence),
+                    );
+                }
+                self.changed = true;
+                true
+            }
+        }
     }
 
     fn handle_protocol_error(
@@ -1365,18 +2358,21 @@ impl<T: TransportTrait> CosClient<T> {
         error: ProtocolError,
         events: &mut Vec<ClientEvent>,
     ) -> bool {
-        if let Some(command_id) = error.command_id.clone()
+        // Session-wide authorization failure invalidates read access and must not
+        // settle a correlated command.
+        if !matches!(error.code, ErrorCode::Unauthorized | ErrorCode::Forbidden)
+            && let Some(command_id) = error.command_id.clone()
             && let Some(record) = self.commands.get_mut(&command_id)
         {
             record.status = match error.code {
-                ErrorCode::UnsupportedCommand => CommandStatus::Unsupported {
+                ErrorCode::UnsupportedCommand => CommandState::Unsupported {
                     error: error.clone(),
                 },
-                ErrorCode::ReceiptExpired => CommandStatus::ResultUnknown {
+                ErrorCode::ReceiptExpired => CommandState::ResultUnknown {
                     reason: "receipt expired or unknown; execution may have happened".to_owned(),
                     receipt: record.status.receipt().cloned(),
                 },
-                _ => CommandStatus::Failed {
+                _ => CommandState::Failed {
                     error: error.clone(),
                 },
             };
@@ -1384,6 +2380,11 @@ impl<T: TransportTrait> CosClient<T> {
                 command_id,
                 status: record.status.clone(),
             });
+        }
+        if let Some(command_id) = error.command_id.clone()
+            && self.commands.contains_key(&command_id)
+        {
+            let _ = self.refresh_class(&command_id);
         }
         events.push(ClientEvent::Error(ClientError::server(error.clone())));
         self.last_error = Some(ClientError::server(error.clone()));
@@ -1396,6 +2397,7 @@ impl<T: TransportTrait> CosClient<T> {
                 false
             }
             ErrorCode::Unauthorized | ErrorCode::Forbidden => {
+                self.withhold();
                 self.cancel_staging();
                 self.transport.reset_stream();
                 self.projection_stale = true;
@@ -1494,6 +2496,7 @@ impl<T: TransportTrait> CosClient<T> {
         self.last_error = Some(error);
         if self.consecutive_overflows >= self.config.max_consecutive_overflows {
             self.cancel_staging();
+            self.withhold();
             self.transport.reset_stream();
             self.projection_stale = true;
             self.set_state(
@@ -1526,6 +2529,7 @@ impl<T: TransportTrait> CosClient<T> {
         events: &mut Vec<ClientEvent>,
     ) {
         self.cancel_staging();
+        self.withhold();
         self.transport.reset_stream();
         self.projection_stale = true;
         if self.requested_scope.is_none() || self.session.is_none() {
@@ -1568,6 +2572,7 @@ impl<T: TransportTrait> CosClient<T> {
         events.push(ClientEvent::Error(error.clone()));
         self.last_error = Some(error);
         self.cancel_staging();
+        self.withhold();
         self.transport.reset_stream();
         self.projection_stale = true;
         self.reconnect = ReconnectPlan::default();
@@ -1616,6 +2621,7 @@ impl<T: TransportTrait> CosClient<T> {
             return;
         }
         self.state = state.clone();
+        self.changed = true;
         events.push(ClientEvent::StateChanged(state));
     }
 }
@@ -1681,7 +2687,57 @@ impl<T: TransportTrait + Send> DesktopClient for CosClient<T> {
         CosClient::stop_task(self, task_id)
     }
 
-    fn command_status(&self, command_id: &CommandId) -> Option<&CommandStatus> {
-        CosClient::command_status(self, command_id)
+    fn pump_step(&mut self, now_ms: u64, budget: usize) -> PumpReport {
+        CosClient::pump_step(self, now_ms, budget)
+    }
+
+    fn command_statuses(&self) -> &BTreeMap<CommandId, CommandStatus> {
+        CosClient::command_statuses(self)
+    }
+
+    fn lookup_command(&self, id: &CommandId) -> CommandLookup<'_> {
+        CosClient::lookup_command(self, id)
+    }
+
+    fn retain_command(&mut self, id: &CommandId) -> Result<(), ClientError> {
+        CosClient::retain_command(self, id)
+    }
+
+    fn release_command(&mut self, id: &CommandId) {
+        CosClient::release_command(self, id);
+    }
+
+    fn begin_authorized_observation(
+        &mut self,
+        request: OpenAuthorizedObservation,
+    ) -> Result<(), ClientError> {
+        CosClient::begin_authorized_observation(self, request)
+    }
+
+    fn publication_access(&self) -> PublicationAccess<'_> {
+        CosClient::publication_access(self)
+    }
+
+    fn lookup_receipt_authorized(
+        &mut self,
+        request: AuthorizedReceiptLookup,
+    ) -> Result<(), ClientError> {
+        CosClient::lookup_receipt_authorized(self, request)
+    }
+
+    fn bind_observation_control(&mut self, control: ObservationControl) {
+        CosClient::bind_observation_control(self, control);
+    }
+
+    fn observation_request(&self, scope: ObservationScopeRequest) -> OpenAuthorizedObservation {
+        CosClient::observation_request(self, scope)
+    }
+
+    fn adopt_retained_registry(
+        &mut self,
+        records: BTreeMap<CommandId, CommandStatus>,
+        references: BTreeMap<CommandId, usize>,
+    ) -> Result<(), ClientError> {
+        CosClient::adopt_retained_registry(self, records, references)
     }
 }
