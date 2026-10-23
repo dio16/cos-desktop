@@ -2404,6 +2404,93 @@ fn cancelled_at_reason_requires_a_cancelled_class() {
     );
 }
 
+/// A2: the post-spawn digest check is load-bearing. The sampler helper replaces its own
+/// program file while it runs and then emits a valid row; the harness must discard that
+/// value because the executed bytes are no longer the verified ones.
+#[test]
+fn tool_replaced_while_the_sampler_runs_discards_the_value() {
+    let fixture = Fixture::new();
+    let tool = fixture.base.join("tool.exe");
+    std::fs::copy(std::env::current_exe().unwrap(), &tool).unwrap();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.sample_tool = Some(tool.clone());
+    config.sample_argv_prefix = vec![
+        std::ffi::OsString::from("--exact"),
+        std::ffi::OsString::from("fake_sampler_replacing_helper"),
+        std::ffi::OsString::from("--nocapture"),
+        std::ffi::OsString::from("--quiet"),
+    ];
+    config.sample_interval_ms = 10;
+    // Exactly one attempt, so no later pre-spawn check can mask a missing post-spawn
+    // check: only the harvest-time verification can discard this value.
+    config.max_samples = 1;
+    config.cancel_after_ms = Some(1_500);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(
+        observation.working_set_attempts, 1,
+        "the single sample ran before the program was replaced"
+    );
+    assert_eq!(
+        observation.working_set_samples, 0,
+        "the value must be discarded"
+    );
+    assert_eq!(observation.working_set_max_bytes, None);
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(
+        observation.working_set_reason,
+        Some("sample_tool_changed"),
+        "the post-spawn check must catch the replacement"
+    );
+}
+
+/// A3: the real record rendering carries the three sampler identity fields, in both the
+/// opt-out and the opt-in shape.
+#[test]
+fn rendered_header_records_the_sampler_identity() {
+    // Opt-out shape.
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    let report = harness::run(&config).unwrap();
+    let json = harness::render(&report).0;
+    assert!(json.contains("\"sample_tool\": null"), "{json}");
+    assert!(json.contains("\"sample_tool_sha256\": null"), "{json}");
+    assert!(
+        json.contains("\"sample_tool_reason\": \"sampling_disabled\""),
+        "{json}"
+    );
+
+    // Opt-in shape with the real tasklist.
+    let tool = system_tasklist();
+    fixture.case("a.png", "alloc-64m");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 10_000;
+    config.sample_tool = Some(tool.clone());
+    config.sample_interval_ms = 10;
+    let report = harness::run(&config).unwrap();
+    let json = harness::render(&report).0;
+    let digest = report
+        .sample_tool_sha256
+        .clone()
+        .expect("the tool is hashed");
+    let expected_path = tool.to_string_lossy().replace('\\', "\\\\");
+    assert!(
+        json.contains(&format!("\"sample_tool\": \"{expected_path}\"")),
+        "{json}"
+    );
+    assert!(
+        json.contains(&format!("\"sample_tool_sha256\": \"{digest}\"")),
+        "{json}"
+    );
+    assert!(json.contains("\"sample_tool_reason\": null"), "{json}");
+}
+
 /// The CLI surface: sampling is opt-in through `--sample-tool`, and a relative or
 /// non-local value is refused before anything runs.
 #[test]
@@ -2438,14 +2525,28 @@ fn sample_tool_flag_is_opt_in_and_validated() {
         "unexpected refusal: {error}"
     );
 
-    // So are UNC, verbatim and parent-traversal forms.
+    // Every non-local shape is refused with the canonical literal: UNC, verbatim,
+    // device, drive-relative and parent traversal.
     for bad in [
-        r"\\\\server\\share\\tasklist.exe",
-        r"\\\\?\\C:\\Windows\\System32\\tasklist.exe",
-        r"C:\\Windows\\..\\Windows\\System32\\tasklist.exe",
+        r"\\server\share\x.exe",
+        r"\\?\C:\x.exe",
+        r"\\.\C:\x.exe",
+        r"C:x.exe",
+        r"C:\Windows\..\x.exe",
     ] {
         assert!(with_tool(bad).is_err(), "{bad} must be refused");
     }
+
+    // A `.` component cannot change the target and the path parser normalises it
+    // away, so it is accepted (documented behaviour of `is_local_disk_absolute`).
+    assert_eq!(
+        with_tool(r"C:\Windows\.\System32\tasklist.exe")
+            .unwrap()
+            .sample_tool,
+        Some(std::path::PathBuf::from(
+            r"C:\Windows\.\System32\tasklist.exe"
+        ))
+    );
 }
 
 /// Opt-in with the real system tasklist path supplied on the command line: samples are
@@ -2538,9 +2639,50 @@ fn default_off_spawns_no_sampler_and_ignores_the_environment() {
     );
 }
 
+/// A `subst` mapping chosen at runtime and released on drop, so a failing assertion can
+/// never leave a drive letter behind.
+struct SubstDrive {
+    letter: String,
+}
+
+impl SubstDrive {
+    fn create(target: &std::path::Path) -> Option<Self> {
+        for letter in ('D'..='Z').map(|character| format!("{character}:")) {
+            // Only a letter that is not in use can be mapped.
+            if std::fs::metadata(format!("{letter}\\")).is_ok() {
+                continue;
+            }
+            let mapped = std::process::Command::new("subst")
+                .arg(&letter)
+                .arg(target.as_os_str())
+                .status()
+                .map(|status| status.success())
+                .unwrap_or(false);
+            if mapped {
+                return Some(Self { letter });
+            }
+        }
+        None
+    }
+
+    fn root(&self) -> std::ffi::OsString {
+        std::ffi::OsString::from(format!("{}\\", self.letter))
+    }
+}
+
+impl Drop for SubstDrive {
+    fn drop(&mut self) {
+        let _ = std::process::Command::new("subst")
+            .arg(&self.letter)
+            .arg("/D")
+            .status();
+    }
+}
+
 /// The subst/decoy-root scenario cannot fabricate any more: no environment value is
 /// consulted, so a decoy `SystemRoot` on a substituted drive changes nothing. With
-/// `--sample-tool` the operator path is the only sampler.
+/// `--sample-tool` the operator path is the only sampler. The mapping is released on
+/// drop, whatever the assertions do.
 #[test]
 fn subst_decoy_root_cannot_select_the_sampler() {
     let fixture = Fixture::new();
@@ -2553,16 +2695,10 @@ fn subst_decoy_root_cannot_select_the_sampler() {
     )
     .unwrap();
 
-    // A substituted drive for the decoy root, when the host allows it.
-    let subst = std::process::Command::new("subst")
-        .args(["S:", decoy.to_string_lossy().as_ref()])
-        .status()
-        .map(|status| status.success())
-        .unwrap_or(false);
-    let decoy_root = if subst {
-        std::ffi::OsString::from("S:\\\\")
-    } else {
-        decoy.clone().into_os_string()
+    let drive = SubstDrive::create(&decoy);
+    let decoy_root = match drive.as_ref() {
+        Some(drive) => drive.root(),
+        None => decoy.clone().into_os_string(),
     };
 
     let probe = |tool: Option<&std::path::Path>| {
@@ -2581,9 +2717,7 @@ fn subst_decoy_root_cannot_select_the_sampler() {
             )
             .env("DC_PROBE_OUT", fixture.record("probe"));
         if let Some(tool) = tool {
-            command
-                .arg("DC_PROBE_TOOL")
-                .env("DC_PROBE_TOOL", tool.as_os_str());
+            command.env("DC_PROBE_TOOL", tool.as_os_str());
         }
         let output = command.output().expect("the probe subprocess runs");
         String::from_utf8_lossy(&output.stdout).into_owned()
@@ -2597,21 +2731,12 @@ fn subst_decoy_root_cannot_select_the_sampler() {
     );
 
     // Opt in with the real tasklist: only the operator path is used.
-    let real = std::path::Path::new(&std::env::var("SystemRoot").unwrap())
-        .join("System32")
-        .join("tasklist.exe");
+    let real = system_tasklist();
     let on = probe(Some(&real));
     assert!(
         on.contains(&format!("tool={}", real.display())) && on.contains("fabricated=0"),
         "the operator path must win and the decoy must never be used; got {on}"
     );
-
-    if subst {
-        let _ = std::process::Command::new("subst")
-            .arg("S:")
-            .arg("/D")
-            .status();
-    }
 }
 
 /// Child harness for the opt-in probes: it prints what actually happened, so the parent
@@ -3176,6 +3301,23 @@ fn sampler_pid() -> u32 {
         }
     }
     0
+}
+
+/// A sampler that replaces its own program file while it runs and still emits a valid
+/// row, so only the post-spawn digest check can catch it.
+#[test]
+fn fake_sampler_replacing_helper() {
+    let pid = sampler_pid();
+    if pid == 0 {
+        return;
+    }
+    if let Ok(own) = std::env::current_exe() {
+        let retired = own.with_extension("retired");
+        let _ = std::fs::rename(&own, &retired);
+        let _ = std::fs::write(&own, b"a different program");
+    }
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
 }
 
 /// A sampler that prints the exact Windows row for the supervised pid. When it runs as

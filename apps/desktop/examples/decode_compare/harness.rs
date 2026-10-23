@@ -141,11 +141,15 @@
 //! Each sample is a bounded `tasklist /FI "PID eq <id>" /FO CSV /NH` call (argv only, no
 //! shell, hard per-sample timeout of 2000 ms — the sampler runs concurrently with the
 //! child, so its cost never moves the child's deadline — at most `max_samples` sampling
-//! *attempts*, successes or not). Failure accounting: opt-out and an unusable operator
-//! tool take zero attempts (`sampling_disabled`, `sample_tool_missing`,
-//! `sample_tool_unreadable`, `sample_tool_oversize`, `sample_tool_changed`), while a
-//! spawn or per-sample failure counts the attempt it made (`sample_tool_missing` for a
-//! spawn failure, `sample_timeout`, `sample_parse_failed`). No value is ever fabricated:
+//! *attempts*, successes or not). Failure accounting is exact: opt-out records
+//! `sampling_disabled` and a fingerprint failure records `sample_tool_unreadable` or
+//! `sample_tool_oversize`, both with `working_set_attempts: 0` because nothing was
+//! spawned; a spawn failure records `sample_tool_missing` with `working_set_attempts: 1`
+//! because the attempt was made; a per-sample failure records its own token
+//! (`sample_timeout`, `sample_parse_failed`) and also counts its attempt; and
+//! `sample_tool_changed` may appear with attempts above zero, because a sample that had
+//! already run is discarded when the program changed under it. No value is ever
+//! fabricated:
 //! `working_set_max_bytes` is `null` unless a validated row was read, and
 //! `working_set_sampling` is `not_measured` whenever no sample succeeded.
 //!
@@ -153,7 +157,7 @@
 //! `sample_tool_reason` additively; a reader that does not know them can ignore them,
 //! and no existing field changed shape. A sample is accepted only when the row is the
 //! documented five-column Windows layout, its PID column equals the supervised child and
-//! its memory column has the  form; anything else is .
+//! its memory column has the `12,000 K` form; anything else is `sample_parse_failed`.
 //!
 //! Capability rows are built only from observations that are `decoded`, complete, and
 //! whose validity is `presence_only`, `structure_verified` or `pixels_verified` (A1),
@@ -2403,8 +2407,13 @@ pub fn sample_tool_from_cli(value: &Path) -> Result<PathBuf, String> {
 }
 
 /// The rule the harness applies to candidate paths (see `local_absolute_path`):
-/// absolute, a plain local disk prefix, rooted, and no parent or current-directory
-/// component. UNC, verbatim and device forms are not a local disk prefix.
+/// absolute, a plain local disk prefix, rooted, and no `..` component. UNC, verbatim and
+/// device forms are not a local disk prefix.
+///
+/// `.` components are accepted because the path parser normalises them away and they
+/// cannot change the target (`C:\a\.\b` and `C:\a\b` name the same file); only `..`,
+/// which can escape a directory, is refused. Drive-relative forms (`C:x.exe`) are not
+/// absolute and are refused with the rest.
 fn is_local_disk_absolute(path: &Path) -> bool {
     if !path.is_absolute() {
         return false;
