@@ -1,11 +1,11 @@
-//! Exploratory, decoder-neutral MP-IMG2 Phase 2 comparison harness (record schema v7).
+//! Exploratory, decoder-neutral MP-IMG2 Phase 3 comparison harness (record schema v8).
 //!
 //! This module is shared by the operator-run `decode_compare` example and its
 //! contract tests. It is not a product decoder, selects no decoder, links no
 //! FFmpeg and makes no numeric claim: the emitted record is explicitly
 //! exploratory and every value it contains was actually observed.
 //!
-//! Candidate process protocol (v7), fixed so that no argv element or decoder path
+//! Candidate process protocol (v8), fixed so that no argv element or decoder path
 //! can be derived from media metadata. Three transports exist and all of them pass
 //! argv as a separate argument vector; no command string is ever built, quoted or
 //! interpreted:
@@ -40,6 +40,10 @@
 //!   declared format and its declared dimensions equal the operator expectation. This
 //!   means structural presence only: mandatory chunks/segments, their CRCs/lengths and
 //!   the declared dimensions were checked, never pixel content.
+//! - `pixels_verified` — the decoded RGBA bytes were hashed by the harness's own PNG
+//!   oracle and the digest equals the operator's `pixels:<sha256>` expectation.
+//! - `pixel_mismatch` — the decoded pixels contradict that expectation; demoted to
+//!   `error` with refusal `pixel_mismatch`.
 //! - `dimension_mismatch` — it parsed completely but the dimensions contradict the
 //!   expectation; the observation is demoted to `error` with refusal
 //!   `dimension_mismatch`.
@@ -84,9 +88,24 @@
 //! file_size`, with the 4-byte-aligned row size of the declared bit count and the
 //! height magnitude so top-down bitmaps are covered). Header-only, CRC-less or
 //! truncated outputs are therefore `error` + `output_incomplete`, never a success.
+//! Independent pixel verification (MP-IMG2 Phase 3): when a `cases.txt` line carries
+//! `pixels:<sha256>`, the harness decodes the candidate output with its own bounded
+//! PNG oracle ([`pixels`]) — its own DEFLATE and SHA-256, no dependency, no `unsafe`
+//! — expands the samples to row-major RGBA and compares the digest. The precedence is
+//! explicit: **pixel expectation > dimension expectation > structure**. Structure is
+//! checked first (pixels of an incomplete container are not claimed), a declared pixel
+//! digest then decides the verdict on its own, and the dimension rules of Phase 2 only
+//! apply without one. A mismatch is `error` + `pixel_mismatch`, an undecodable output
+//! is `error` + `pixel_unavailable` with the oracle's own reason token, and no digest
+//! is ever fabricated: `pixel_digest` is `null` unless the oracle actually decoded the
+//! bytes.
+//!
 //! Capability rows are built only from observations that are `decoded`, complete, and
 //! whose validity is `presence_only` or `structure_verified` (A1), after observation
-//! truncation (A3), so a mismatch, refusal or dropped row never contributes.
+//! truncation (A3), so a mismatch, refusal or dropped row never contributes. Each row
+//! carries `pixel_verified`, the number of its observations whose decoded pixels were
+//! verified; structure and pixel evidence are therefore labelled separately, and a
+//! `pixel_mismatch` row is `error` so it never counts at all.
 //! `max_width`/`max_height` are independent observed maxima and need not come from
 //! one output (N3). Colour-management markers are reported only when the parser
 //! actually saw them, a set the headers never stated is named in `not_measured` with
@@ -142,6 +161,7 @@
 //! blocked by an inherited capture handle.
 
 use crate::inspect::{self, ColourMarker, ColourType, Format, Inspection};
+use crate::pixels;
 use std::{
     collections::BTreeMap,
     ffi::OsString,
@@ -156,7 +176,7 @@ use std::{
 };
 
 /// Fixed record schema version; changing record semantics requires a new version.
-pub const SCHEMA_VERSION: u32 = 7;
+pub const SCHEMA_VERSION: u32 = 8;
 /// Refusal token for a run token whose directory already exists.
 pub const WORK_DIR_EXISTS: &str = "work_dir_exists";
 /// Fixed prefix of every per-run work-directory token.
@@ -218,6 +238,12 @@ const PRESENCE_ONLY: &str = "presence_only";
 const STRUCTURE_VERIFIED: &str = "structure_verified";
 /// Validity claim (and refusal) when the inspected output contradicts it.
 const DIMENSION_MISMATCH: &str = "dimension_mismatch";
+/// Validity claim when the decoded RGBA digest matches the operator expectation.
+const PIXELS_VERIFIED: &str = "pixels_verified";
+/// Validity claim (and refusal) when the decoded pixels contradict the expectation.
+const PIXEL_MISMATCH: &str = "pixel_mismatch";
+/// Refusal when a declared pixel expectation could not be checked at all.
+const PIXEL_UNAVAILABLE: &str = "pixel_unavailable";
 /// Reason tokens for a validity that could not be established.
 const OUTPUT_UNPARSABLE: &str = "output_unparsable";
 const OUTPUT_INCOMPLETE: &str = "output_incomplete";
@@ -401,6 +427,8 @@ pub struct Expectation {
     pub outcome: Option<OutcomeClass>,
     /// Declared output dimensions, when the line names `expected:WxH`.
     pub dimensions: Option<(u32, u32)>,
+    /// Declared SHA-256 of the decoded RGBA bytes, when the line names `pixels:<hex>`.
+    pub pixel_digest: Option<[u8; 32]>,
 }
 
 /// One validated comparison run configuration.
@@ -478,6 +506,16 @@ pub struct Observation {
     pub inspected_colour_markers: Vec<ColourMarker>,
     /// Operator expectation for this case, when the manifest declares one.
     pub expected_dimensions: Option<(u32, u32)>,
+    /// Declared RGBA digest, when the manifest declares `pixels:<hex>`.
+    pub pixel_expectation: Option<[u8; 32]>,
+    /// Gate of what the oracle produced: `verified`, `mismatch` or `not_measured`.
+    pub pixel_status: PixelStatus,
+    /// Digest of the decoded RGBA bytes; `None` when nothing was decoded.
+    pub pixel_digest: Option<[u8; 32]>,
+    /// Whether the decoded pixels matched the operator expectation.
+    pub pixel_verified: bool,
+    /// Stable token explaining the pixel verdict (`None` when there is none).
+    pub pixel_reason: Option<&'static str>,
     /// Claim standing on that evidence: `structure_verified`, `dimension_mismatch`,
     /// `presence_only` or `not_measured`.
     pub validity: &'static str,
@@ -508,6 +546,19 @@ pub struct Report {
     pub capabilities: Vec<CapabilityRow>,
 }
 
+/// What the independent pixel oracle concluded for one observation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PixelStatus {
+    /// No pixel expectation was declared, so nothing was decoded.
+    NotRequested,
+    /// Pixels decoded and their digest matched the expectation.
+    Verified,
+    /// Pixels decoded and their digest contradicted the expectation.
+    Mismatch,
+    /// An expectation exists but the pixels could not be decoded.
+    Unavailable,
+}
+
 /// One candidate × observed format capability row, derived only from outputs the
 /// harness parsed itself.
 ///
@@ -524,6 +575,10 @@ pub struct CapabilityRow {
     pub channels: Vec<u32>,
     pub colour_types: Vec<ColourType>,
     pub colour_markers: Vec<ColourMarker>,
+    /// How many of `observations` had their decoded pixels verified against an
+    /// operator digest. Structure and pixel evidence are labelled separately, and a
+    /// `pixel_mismatch` observation is `error` so it never reaches this row at all.
+    pub pixel_verified: usize,
 }
 
 struct Case {
@@ -901,7 +956,21 @@ fn load_manifest(cases: &Path) -> Result<BTreeMap<String, Expectation>, UsageErr
                     index + 1
                 )));
             }
-            if let Some(dimensions) = field.strip_prefix("expected:") {
+            if let Some(digest) = field.strip_prefix("pixels:") {
+                if expectation.pixel_digest.is_some() {
+                    return Err(UsageError::new(format!(
+                        "{MANIFEST_FILE} line {} declares more than one pixel digest",
+                        index + 1
+                    )));
+                }
+                expectation.pixel_digest = Some(pixels::parse_digest(digest).ok_or_else(|| {
+                    UsageError::new(format!(
+                        "{MANIFEST_FILE} line {} declares a pixel digest that is not 64 hex \
+                         digits",
+                        index + 1
+                    ))
+                })?);
+            } else if let Some(dimensions) = field.strip_prefix("expected:") {
                 if expectation.dimensions.is_some() {
                     return Err(UsageError::new(format!(
                         "{MANIFEST_FILE} line {} declares more than one expectation",
@@ -1531,6 +1600,14 @@ fn measure(
             .expectations
             .get(&case.id)
             .and_then(|expectation| expectation.dimensions),
+        pixel_expectation: config
+            .expectations
+            .get(&case.id)
+            .and_then(|expectation| expectation.pixel_digest),
+        pixel_status: PixelStatus::NotRequested,
+        pixel_digest: None,
+        pixel_verified: false,
+        pixel_reason: None,
         validity_reason: None,
         exit_code: None,
         timeout_fired: false,
@@ -1657,22 +1734,70 @@ fn measure(
             observation.inspected_colour_type =
                 inspection.colour_type.unwrap_or(ColourType::NotMeasured);
             observation.inspected_colour_markers = inspection.colour_markers.clone();
+            // Phase 3: when an operator declares pixel expectations, decode the
+            // output with the independent oracle and compare its RGBA digest.
+            if let Some(expected) = observation.pixel_expectation {
+                if output_present && inspection.complete {
+                    match fs::File::open(&output) {
+                        Ok(mut file) => match pixels::read_png(&mut file) {
+                            Ok(image) => {
+                                let digest = image.digest();
+                                observation.pixel_status = if digest == expected {
+                                    PixelStatus::Verified
+                                } else {
+                                    PixelStatus::Mismatch
+                                };
+                                observation.pixel_digest = Some(digest);
+                            }
+                            Err(error) => {
+                                observation.pixel_status = PixelStatus::Unavailable;
+                                observation.pixel_reason = Some(error.as_str());
+                            }
+                        },
+                        Err(_) => {
+                            observation.pixel_status = PixelStatus::Unavailable;
+                            observation.pixel_reason =
+                                Some(pixels::PixelError::Unreadable.as_str());
+                        }
+                    }
+                } else if observation.observed_outcome == OutcomeClass::Decoded {
+                    // Structurally not a complete container: the pixel verdict cannot
+                    // be claimed either, and the structure verdict already says why.
+                    observation.pixel_status = PixelStatus::Unavailable;
+                    observation.pixel_reason = Some(if inspection.complete {
+                        PIXEL_UNAVAILABLE
+                    } else {
+                        OUTPUT_INCOMPLETE
+                    });
+                }
+            }
             let (validity, reason) = verify(
                 observation.observed_outcome,
                 observation.expected_dimensions,
                 inspection.dimensions(),
                 inspection.complete,
+                observation.pixel_expectation.is_some(),
+                observation.pixel_status,
             );
             observation.validity = validity;
             observation.validity_reason = reason;
+            observation.pixel_verified = validity == PIXELS_VERIFIED;
             // A verdict the evidence contradicts can never keep a success class.
             // An expectation-bearing output that is contradicted, unparsable or
             // incomplete is a contract failure, so it is `error` with the named
             // refusal (N5) while the raw exit code stays recorded as evidence.
             match (validity, reason) {
+                (PIXEL_MISMATCH, _) => {
+                    observation.observed_outcome = OutcomeClass::Error;
+                    observation.refusal = Some(PIXEL_MISMATCH);
+                }
                 (DIMENSION_MISMATCH, _) => {
                     observation.observed_outcome = OutcomeClass::Error;
                     observation.refusal = Some(DIMENSION_MISMATCH);
+                }
+                (_, Some(PIXEL_UNAVAILABLE)) => {
+                    observation.observed_outcome = OutcomeClass::Error;
+                    observation.refusal = Some(PIXEL_UNAVAILABLE);
                 }
                 (_, Some(OUTPUT_UNPARSABLE)) => {
                     observation.observed_outcome = OutcomeClass::Error;
@@ -1715,7 +1840,10 @@ fn capability_rows(observations: &[Observation]) -> Vec<CapabilityRow> {
         if !observation.inspected_complete {
             continue;
         }
-        if !matches!(observation.validity, PRESENCE_ONLY | STRUCTURE_VERIFIED) {
+        if !matches!(
+            observation.validity,
+            PRESENCE_ONLY | STRUCTURE_VERIFIED | PIXELS_VERIFIED
+        ) {
             continue;
         }
         let format = observation.inspected_format;
@@ -1739,8 +1867,12 @@ fn capability_rows(observations: &[Observation]) -> Vec<CapabilityRow> {
                 channels: Vec::new(),
                 colour_types: Vec::new(),
                 colour_markers: Vec::new(),
+                pixel_verified: 0,
             });
         row.observations += 1;
+        if observation.validity == PIXELS_VERIFIED {
+            row.pixel_verified += 1;
+        }
         row.max_width = Some(row.max_width.map_or(width, |current| current.max(width)));
         row.max_height = Some(row.max_height.map_or(height, |current| current.max(height)));
         push_unique(&mut row.bit_depths, observation.inspected_bit_depth);
@@ -1775,22 +1907,51 @@ fn push_unique_colour(values: &mut Vec<ColourType>, value: ColourType) {
 /// mismatch, never a success class; an unparsable output with an expectation is
 /// `not_measured`, and the caller demotes the class so no unsupported success claim
 /// survives in the record.
+/// Decide the validity claim. Precedence is explicit: **pixel expectation >
+/// dimension expectation > structure**. Structure is checked first because nothing
+/// can be claimed about pixels or dimensions of a container that is not complete; a
+/// declared pixel digest then decides the verdict on its own (a matching digest is
+/// `pixels_verified`, a differing one `pixel_mismatch`, an undecodable one
+/// `not_measured` + `pixel_unavailable`); only without a pixel expectation do the
+/// dimension rules of Phase 2 apply.
 fn verify(
     outcome: OutcomeClass,
     expected: Option<(u32, u32)>,
     observed: Option<(u32, u32)>,
     complete: bool,
+    pixel_expected: bool,
+    pixel: PixelStatus,
 ) -> (&'static str, Option<&'static str>) {
     if outcome != OutcomeClass::Decoded {
         return (NOT_MEASURED, None);
     }
+    // A declared expectation needs a readable, complete container before anything can
+    // be claimed about its dimensions or pixels. Without an expectation the Phase 1
+    // presence contract applies unchanged: only presence is claimed, whatever the
+    // bytes turn out to be.
+    if (expected.is_some() || pixel_expected) && (!complete || observed.is_none()) {
+        return (
+            NOT_MEASURED,
+            Some(if observed.is_none() {
+                OUTPUT_UNPARSABLE
+            } else {
+                OUTPUT_INCOMPLETE
+            }),
+        );
+    }
+    if pixel_expected {
+        return match pixel {
+            PixelStatus::Verified => (PIXELS_VERIFIED, None),
+            PixelStatus::Mismatch => (PIXEL_MISMATCH, Some(PIXEL_MISMATCH)),
+            PixelStatus::Unavailable | PixelStatus::NotRequested => {
+                (NOT_MEASURED, Some(PIXEL_UNAVAILABLE))
+            }
+        };
+    }
     match (expected, observed) {
-        // Nothing could be read at all: unparsable, never a guess.
-        (Some(_), None) => (NOT_MEASURED, Some(OUTPUT_UNPARSABLE)),
-        // B2: a content claim needs a complete container, not just a header.
-        (Some(_), Some(_)) if !complete => (NOT_MEASURED, Some(OUTPUT_INCOMPLETE)),
         (Some(expected), Some(observed)) if expected == observed => (STRUCTURE_VERIFIED, None),
         (Some(_), Some(_)) => (DIMENSION_MISMATCH, Some(DIMENSION_MISMATCH)),
+        (Some(_), None) => (NOT_MEASURED, Some(OUTPUT_UNPARSABLE)),
         (None, _) => (PRESENCE_ONLY, Some(NO_EXPECTATION)),
     }
 }
@@ -2018,7 +2179,8 @@ fn observation_row(observation: &Observation) -> String {
          \"output_present\": {}, \"output_bytes\": {}, \"inspected_format\": {}, \
          \"inspected_complete\": {}, \"inspected_width\": {}, \"inspected_height\": {}, \
          \"inspected_bit_depth\": {}, \"inspected_channels\": {}, \"inspected_colour_type\": {}, \
-         \"inspected_colour_markers\": {}, \"expected_dimensions\": {}, \"validity\": {}, \
+         \"inspected_colour_markers\": {}, \"expected_dimensions\": {}, \"pixel_expectation\": {}, \
+         \"pixel_digest\": {}, \"pixel_verified\": {}, \"pixel_reason\": {}, \"validity\": {}, \
          \"validity_reason\": {}, \"refusal\": {}}}",
         quoted(&observation.candidate_id),
         quoted(&observation.case_id),
@@ -2047,6 +2209,10 @@ fn observation_row(observation: &Observation) -> String {
         quoted(observation.inspected_colour_type.as_str()),
         marker_array(&observation.inspected_colour_markers),
         dimensions_field(observation.expected_dimensions),
+        digest_field(observation.pixel_expectation),
+        digest_field(observation.pixel_digest),
+        observation.pixel_verified,
+        text_field(observation.pixel_reason),
         quoted(observation.validity),
         text_field(observation.validity_reason),
         text_field(observation.refusal),
@@ -2073,7 +2239,7 @@ fn capability_row(row: &CapabilityRow) -> String {
     format!(
         "    {{\"candidate_id\": {}, \"format\": {}, \"observations\": {}, \"max_width\": {}, \
          \"max_height\": {}, \"bit_depths\": {}, \"channels\": {}, \"colour_types\": {}, \
-         \"colour_markers\": {}, \"not_measured\": {}, \"not_measured_reason\": {}, \
+         \"colour_markers\": {}, \"pixel_verified\": {}, \"not_measured\": {}, \"not_measured_reason\": {}, \
          \"orientation\": {}, \"orientation_reason\": {}, \
          \"region\": {}, \"region_reason\": {}, \"sequential\": {}, \
          \"sequential_reason\": {}}}",
@@ -2086,6 +2252,7 @@ fn capability_row(row: &CapabilityRow) -> String {
         number_array(&row.channels),
         colour_type_array(&row.colour_types),
         marker_array(&row.colour_markers),
+        row.pixel_verified,
         string_list(&unmeasured),
         reason,
         quoted(NOT_MEASURED),
@@ -2100,6 +2267,13 @@ fn capability_row(row: &CapabilityRow) -> String {
 fn string_list(values: &[&str]) -> String {
     let rendered: Vec<String> = values.iter().map(|value| quoted(value)).collect();
     format!("[{}]", rendered.join(", "))
+}
+
+fn digest_field(digest: Option<[u8; 32]>) -> String {
+    match digest {
+        Some(digest) => quoted(&pixels::hex(&digest)),
+        None => "null".to_owned(),
+    }
 }
 
 fn dimensions_field(dimensions: Option<(u32, u32)>) -> String {

@@ -14,6 +14,8 @@
 mod harness;
 #[path = "decode_compare/inspect.rs"]
 mod inspect;
+#[path = "decode_compare/pixels.rs"]
+mod pixels;
 
 fn main() {
     std::process::exit(harness::run_from_args(std::env::args_os().skip(1)));

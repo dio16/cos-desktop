@@ -12,6 +12,8 @@
 mod harness;
 #[path = "../examples/decode_compare/inspect.rs"]
 mod inspect;
+#[path = "../examples/decode_compare/pixels.rs"]
+mod pixels;
 
 use harness::{Candidate, Invocation, OutcomeClass, Program, Report};
 use std::{
@@ -35,6 +37,9 @@ static NEXT: AtomicUsize = AtomicUsize::new(0);
 
 /// One manifest row: case name, optional `expected:WxH`, declared outcome class.
 type Declaration<'a> = (&'a str, Option<(u32, u32)>, OutcomeClass);
+
+/// One manifest row with an optional `pixels:<sha256>` expectation.
+type PixelDeclaration<'a> = (&'a str, Option<(u32, u32)>, Option<[u8; 32]>, OutcomeClass);
 
 struct Fixture {
     base: PathBuf,
@@ -63,6 +68,23 @@ impl Fixture {
             .map(|(name, class)| (*name, None, *class))
             .collect();
         self.declare_expected(&rows);
+    }
+
+    /// Write a manifest with optional `expected:WxH` and `pixels:<hex>` per case.
+    fn declare_pixels(&self, declarations: &[PixelDeclaration<'_>]) {
+        let mut text =
+            String::from("# case file name[|expected:WxH][|pixels:<sha256>][|declared-class]\n");
+        for (name, expected, digest, class) in declarations {
+            text.push_str(name);
+            if let Some((width, height)) = expected {
+                text.push_str(&format!("|expected:{width}x{height}"));
+            }
+            if let Some(digest) = digest {
+                text.push_str(&format!("|pixels:{}", pixels::hex(digest)));
+            }
+            text.push_str(&format!("|{}\n", class.as_str()));
+        }
+        std::fs::write(self.cases.join(harness::MANIFEST_FILE), text).unwrap();
     }
 
     /// Write a manifest with optional `expected:WxH` dimensions per case.
@@ -1456,6 +1478,424 @@ fn jpeg_sof_without_component_descriptors_is_incomplete() {
     assert!(report.capabilities.is_empty());
 }
 
+/// Phase 3: SHA-256 known-answer vectors (FIPS 180-4), independent of the harness.
+#[test]
+fn sha256_matches_the_fips_vectors() {
+    assert_eq!(
+        pixels::hex(&pixels::sha256(b"")),
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    );
+    assert_eq!(
+        pixels::hex(&pixels::sha256(b"abc")),
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    );
+    assert_eq!(
+        pixels::hex(&pixels::sha256(
+            b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+        )),
+        "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
+    );
+}
+
+/// Phase 3: the oracle decodes every supported colour type to the expected RGBA.
+#[test]
+fn png_oracle_decodes_all_supported_colour_types() {
+    // Gray: two pixels 7 and 9.
+    let gray = png_with_pixels(2, 1, 0, &[vec![7, 9]]);
+    let image = pixels::read_png(&mut std::io::Cursor::new(gray)).unwrap();
+    assert_eq!((image.width, image.height), (2, 1));
+    assert_eq!(image.pixels, vec![7, 7, 7, 255, 9, 9, 9, 255]);
+
+    // Gray + alpha.
+    let gray_alpha = png_with_pixels(1, 1, 4, &[vec![7, 200]]);
+    let image = pixels::read_png(&mut std::io::Cursor::new(gray_alpha)).unwrap();
+    assert_eq!(image.pixels, vec![7, 7, 7, 200]);
+
+    // RGB.
+    let rgb = png_with_pixels(1, 1, 2, &[vec![1, 2, 3]]);
+    let image = pixels::read_png(&mut std::io::Cursor::new(rgb)).unwrap();
+    assert_eq!(image.pixels, vec![1, 2, 3, 255]);
+
+    // RGBA, and the full 16x16 fixture used by the harness tests.
+    let rgba = png_with_pixels(1, 1, 6, &[vec![1, 2, 3, 4]]);
+    let image = pixels::read_png(&mut std::io::Cursor::new(rgba)).unwrap();
+    assert_eq!(image.pixels, vec![1, 2, 3, 4]);
+
+    let image = pixels::read_png(&mut std::io::Cursor::new(png_rgb_16(10))).unwrap();
+    assert_eq!(image.pixels, rgba_rgb_16(10));
+    assert_eq!(image.digest(), pixels::sha256(&rgba_rgb_16(10)));
+}
+
+/// Phase 3: every scanline filter (0-4) round-trips through the oracle. The encoder
+/// below is an independent implementation of the PNG filter definitions.
+#[test]
+fn png_oracle_reverses_every_scanline_filter() {
+    let previous = [1_u8, 2, 3, 4, 5, 6];
+    let row = [10_u8, 20, 30, 40, 50, 60];
+    for filter in 0..=4_u8 {
+        let mut encoded = Vec::new();
+        encoded.push(filter);
+        for index in 0..row.len() {
+            let left = if index >= 3 { row[index - 3] } else { 0 };
+            let up = previous[index];
+            let corner = if index >= 3 { previous[index - 3] } else { 0 };
+            let predict = match filter {
+                0 => 0,
+                1 => left,
+                2 => up,
+                3 => ((u16::from(left) + u16::from(up)) / 2) as u8,
+                _ => png_paeth(left, up, corner),
+            };
+            encoded.push(row[index].wrapping_sub(predict));
+        }
+        let mut raw = Vec::new();
+        raw.push(0);
+        raw.extend_from_slice(&previous);
+        raw.extend_from_slice(&encoded);
+
+        let mut bytes = png_signature();
+        bytes.extend_from_slice(&png_ihdr(2, 2, 2, 8));
+        bytes.extend_from_slice(&png_chunk(b"IDAT", &zlib_stored(&raw)));
+        bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
+        let image = pixels::read_png(&mut std::io::Cursor::new(bytes)).unwrap();
+        assert_eq!(
+            image.pixels,
+            vec![1, 2, 3, 255, 4, 5, 6, 255, 10, 20, 30, 255, 40, 50, 60, 255],
+            "filter {filter} must round-trip"
+        );
+    }
+}
+
+/// The PNG Paeth predictor, written independently of the oracle.
+fn png_paeth(left: u8, up: u8, corner: u8) -> u8 {
+    let estimate = i32::from(left) + i32::from(up) - i32::from(corner);
+    let to_left = (estimate - i32::from(left)).abs();
+    let to_up = (estimate - i32::from(up)).abs();
+    let to_corner = (estimate - i32::from(corner)).abs();
+    if to_left <= to_up && to_left <= to_corner {
+        left
+    } else if to_up <= to_corner {
+        up
+    } else {
+        corner
+    }
+}
+
+/// Phase 3: the in-repo inflate handles stored, fixed and dynamic Huffman blocks,
+/// and the dynamic one is a real stream produced by an independent compressor.
+#[test]
+fn inflate_handles_stored_fixed_and_dynamic_blocks() {
+    let raw = b"hello hello hello";
+    assert_eq!(pixels::inflate(&zlib_stored(raw), raw.len()).unwrap(), raw);
+
+    // Fixed Huffman: zlib stream from an independent compressor (BTYPE=1).
+    let fixed: Vec<u8> = vec![
+        0x78, 0xda, 0xcb, 0x48, 0xcd, 0xc9, 0xc9, 0x57, 0xc8, 0x40, 0x27, 0x01, 0x68, 0x03, 0x08,
+        0xb1,
+    ];
+    assert_eq!(
+        pixels::inflate(&fixed, 23).unwrap(),
+        b"hello hello hello hello"
+    );
+
+    // Dynamic Huffman (BTYPE=2), 111-byte zlib stream for 200 bytes of text.
+    let stream: Vec<u8> = vec![
+        0x78, 0xda, 0x0d, 0x8d, 0xc9, 0x01, 0x00, 0x30, 0x10, 0x01, 0x6b, 0x75, 0xec, 0x21, 0xfd,
+        0x17, 0x90, 0xf5, 0x64, 0x90, 0x24, 0x88, 0xb6, 0xf0, 0x5a, 0x78, 0x2f, 0xaa, 0x5e, 0x4f,
+        0x94, 0x85, 0xdd, 0x5e, 0xf0, 0xbd, 0x4e, 0x6f, 0x85, 0x21, 0x4a, 0x47, 0x07, 0x9e, 0x67,
+        0x1d, 0xe3, 0xda, 0xb7, 0x80, 0xe9, 0x0e, 0xb7, 0xa6, 0xae, 0x8c, 0x94, 0xf9, 0xda, 0x03,
+        0x8c, 0xa4, 0x81, 0xce, 0x23, 0x04, 0xcd, 0xb6, 0x4c, 0xee, 0x09, 0x8f, 0xd3, 0x36, 0xd3,
+        0x00, 0xee, 0x78, 0x2a, 0x76, 0x5e, 0x63, 0xe9, 0xdb, 0x45, 0xcf, 0x75, 0x79, 0x9f, 0x25,
+        0x46, 0x42, 0x76, 0xd6, 0xbe, 0x19, 0x8a, 0x47, 0x5f, 0xae, 0xc9, 0x72, 0xdd, 0x45, 0xd5,
+        0xfa, 0x7d, 0x1b, 0xf4, 0x4f, 0x03,
+    ];
+    let expected: Vec<u8> = vec![
+        0x69, 0x69, 0x69, 0x69, 0x61, 0x69, 0x63, 0x68, 0x65, 0x61, 0x6a, 0x66, 0x63, 0x61, 0x6a,
+        0x6a, 0x69, 0x63, 0x65, 0x66, 0x68, 0x64, 0x67, 0x69, 0x63, 0x69, 0x68, 0x61, 0x64, 0x64,
+        0x66, 0x64, 0x68, 0x61, 0x62, 0x6a, 0x6a, 0x66, 0x69, 0x66, 0x68, 0x65, 0x69, 0x62, 0x69,
+        0x62, 0x61, 0x65, 0x63, 0x69, 0x61, 0x69, 0x69, 0x61, 0x64, 0x67, 0x6a, 0x64, 0x63, 0x69,
+        0x63, 0x69, 0x64, 0x65, 0x68, 0x6a, 0x68, 0x61, 0x61, 0x64, 0x62, 0x64, 0x66, 0x69, 0x62,
+        0x68, 0x65, 0x67, 0x65, 0x65, 0x66, 0x68, 0x61, 0x69, 0x65, 0x64, 0x62, 0x6a, 0x66, 0x64,
+        0x67, 0x61, 0x61, 0x67, 0x63, 0x63, 0x63, 0x67, 0x61, 0x63, 0x66, 0x68, 0x61, 0x62, 0x61,
+        0x63, 0x61, 0x63, 0x67, 0x68, 0x66, 0x63, 0x64, 0x62, 0x62, 0x68, 0x68, 0x68, 0x68, 0x61,
+        0x6a, 0x62, 0x67, 0x66, 0x64, 0x64, 0x62, 0x69, 0x66, 0x61, 0x61, 0x61, 0x66, 0x63, 0x61,
+        0x67, 0x65, 0x69, 0x64, 0x64, 0x69, 0x6a, 0x66, 0x61, 0x68, 0x62, 0x64, 0x69, 0x63, 0x69,
+        0x61, 0x66, 0x67, 0x67, 0x63, 0x63, 0x62, 0x65, 0x69, 0x62, 0x65, 0x63, 0x62, 0x69, 0x63,
+        0x63, 0x61, 0x69, 0x68, 0x67, 0x68, 0x64, 0x64, 0x61, 0x62, 0x61, 0x62, 0x63, 0x62, 0x63,
+        0x61, 0x67, 0x61, 0x66, 0x67, 0x63, 0x67, 0x69, 0x68, 0x62, 0x68, 0x64, 0x66, 0x65, 0x62,
+        0x63, 0x65, 0x68, 0x64, 0x6a,
+    ];
+    assert_eq!(expected.len(), 200);
+    assert_eq!(((stream[2] >> 1) & 3), 2, "the fixture must be dynamic");
+    assert_eq!(pixels::inflate(&stream, expected.len()).unwrap(), expected);
+}
+
+/// Phase 3: malformed streams are refused, never panicked on.
+#[test]
+fn inflate_rejects_malformed_streams() {
+    // Bad zlib header.
+    assert_eq!(
+        pixels::inflate(&[0x00, 0x00, 0x00], 16),
+        Err(pixels::PixelError::InflateCorrupt)
+    );
+    // Bad FCHECK.
+    assert_eq!(
+        pixels::inflate(&[0x78, 0x9D], 16),
+        Err(pixels::PixelError::InflateCorrupt)
+    );
+    // Truncated stored block.
+    assert_eq!(
+        pixels::inflate(&[0x78, 0x01, 0x01, 0x10, 0x00], 16),
+        Err(pixels::PixelError::InflateCorrupt)
+    );
+    // Stored block whose NLEN does not complement LEN.
+    assert_eq!(
+        pixels::inflate(
+            &[
+                0x78, 0x01, 0x01, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+            ],
+            16
+        ),
+        Err(pixels::PixelError::InflateCorrupt)
+    );
+    // Reserved block type 3.
+    assert_eq!(
+        pixels::inflate(&[0x78, 0x01, 0x07], 16),
+        Err(pixels::PixelError::InflateCorrupt)
+    );
+    // Preset dictionary is outside the supported subset.
+    assert_eq!(
+        pixels::inflate(&[0x78, 0x20, 0x00, 0x00], 16),
+        Err(pixels::PixelError::UnsupportedSubset)
+    );
+}
+
+/// Phase 3 (4): a corrupt IDAT after a valid IHDR never verifies, never panics.
+#[test]
+fn corrupt_idat_never_verifies() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-corrupt-idat");
+    let expected = pixels::sha256(&rgba_rgb_16(10));
+    fixture.declare_pixels(&[(
+        "a.png",
+        Some((16, 16)),
+        Some(expected),
+        OutcomeClass::Decoded,
+    )]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("pixel_unavailable"));
+    assert_eq!(observation.validity, "not_measured");
+    assert!(!observation.pixel_verified);
+    assert_eq!(
+        observation.pixel_digest, None,
+        "no digest may be fabricated"
+    );
+    assert_eq!(observation.pixel_status, harness::PixelStatus::Unavailable);
+    assert!(
+        observation.pixel_reason.is_some(),
+        "the oracle must explain itself"
+    );
+    assert!(report.capabilities.is_empty());
+
+    // The oracle itself refuses the same bytes.
+    let mut bytes = png_signature();
+    bytes.extend_from_slice(&png_ihdr(16, 16, 6, 8));
+    bytes.extend_from_slice(&png_chunk(b"IDAT", &[0x78, 0x9C, 0xFF, 0x00, 0x13, 0x37]));
+    bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
+    assert!(pixels::read_png(&mut std::io::Cursor::new(bytes)).is_err());
+}
+
+/// Phase 3 (5): a huge claimed dimension is refused by the pixel cap before any
+/// allocation happens.
+#[test]
+fn huge_claimed_dimension_is_refused_by_the_pixel_cap() {
+    let mut bytes = png_signature();
+    bytes.extend_from_slice(&png_ihdr(40_000, 40_000, 6, 8));
+    bytes.extend_from_slice(&png_chunk(b"IDAT", &zlib_stored(&[0_u8; 8])));
+    bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
+    assert_eq!(
+        pixels::read_png(&mut std::io::Cursor::new(bytes)),
+        Err(pixels::PixelError::TooLarge),
+        "the cap is checked before the RGBA buffer exists"
+    );
+
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-huge-dims");
+    let expected = pixels::sha256(b"anything");
+    fixture.declare_pixels(&[(
+        "a.png",
+        Some((40_000, 40_000)),
+        Some(expected),
+        OutcomeClass::Decoded,
+    )]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let observation = &report.observations[0];
+    assert_eq!(observation.refusal, Some("pixel_unavailable"));
+    assert_eq!(observation.pixel_reason, Some("too_large"));
+    assert!(!observation.pixel_verified);
+    assert!(report.capabilities.is_empty());
+}
+
+/// Phase 3 (6): the inflate never produces more than the declared geometry needs.
+#[test]
+fn inflate_stops_at_the_bounded_output_cap() {
+    let bomb = zlib_stored(&vec![0_u8; 200 * 1024]);
+    assert_eq!(
+        pixels::inflate(&bomb, 1024),
+        Err(pixels::PixelError::InflateLimit),
+        "a bomb must stop at the cap, not grow to 200 KiB"
+    );
+    // The same stream is fine at its real size.
+    assert_eq!(
+        pixels::inflate(&bomb, 200 * 1024).unwrap().len(),
+        200 * 1024
+    );
+
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-inflate-bomb");
+    let expected = pixels::sha256(b"anything");
+    fixture.declare_pixels(&[(
+        "a.png",
+        Some((16, 16)),
+        Some(expected),
+        OutcomeClass::Decoded,
+    )]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let observation = &report.observations[0];
+    assert_eq!(observation.refusal, Some("pixel_unavailable"));
+    assert_eq!(observation.pixel_reason, Some("inflate_limit"));
+    assert!(!observation.pixel_verified);
+    assert!(report.capabilities.is_empty());
+}
+
+/// Phase 3 (1): identical dimensions, different pixels — one verifies, one mismatches.
+#[test]
+fn pixel_mismatch_when_dimensions_match_but_content_differs() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-rgb-a");
+    fixture.case("b.png", "png-rgb-b");
+    let digest_a = pixels::sha256(&rgba_rgb_16(10));
+    let digest_b = pixels::sha256(&rgba_rgb_16(200));
+    assert_ne!(digest_a, digest_b);
+    fixture.declare_pixels(&[
+        (
+            "a.png",
+            Some((16, 16)),
+            Some(digest_a),
+            OutcomeClass::Decoded,
+        ),
+        (
+            "b.png",
+            Some((16, 16)),
+            Some(digest_a),
+            OutcomeClass::Decoded,
+        ),
+    ]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let by_case = |case: &str| {
+        report
+            .observations
+            .iter()
+            .find(|observation| observation.case_id == case)
+            .unwrap()
+    };
+    let matched = by_case("a.png");
+    assert_eq!(matched.validity, "pixels_verified");
+    assert!(matched.pixel_verified);
+    assert_eq!(matched.observed_outcome, OutcomeClass::Decoded);
+    assert_eq!(matched.pixel_digest, Some(digest_a));
+
+    let mismatched = by_case("b.png");
+    assert_eq!(mismatched.validity, "pixel_mismatch");
+    assert!(!mismatched.pixel_verified);
+    assert_eq!(mismatched.observed_outcome, OutcomeClass::Error);
+    assert_eq!(mismatched.refusal, Some("pixel_mismatch"));
+    assert_eq!(mismatched.pixel_digest, Some(digest_b));
+
+    // Only the verified observation contributes a capability row, and it is counted.
+    assert_eq!(report.capabilities.len(), 1);
+    assert_eq!(report.capabilities[0].observations, 1);
+    assert_eq!(report.capabilities[0].pixel_verified, 1);
+}
+
+/// Phase 3 (2): same visible pixels but a different colour type/alpha — the digest
+/// compares decoded RGBA, so an alpha difference across colour types mismatches.
+#[test]
+fn pixel_mismatch_across_colour_types() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-rgb-a");
+    fixture.case("b.png", "png-rgba-low-a");
+    let rgb_digest = pixels::sha256(&rgba_rgb_16(10));
+    fixture.declare_pixels(&[
+        (
+            "a.png",
+            Some((16, 16)),
+            Some(rgb_digest),
+            OutcomeClass::Decoded,
+        ),
+        (
+            "b.png",
+            Some((16, 16)),
+            Some(rgb_digest),
+            OutcomeClass::Decoded,
+        ),
+    ]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let by_case = |case: &str| {
+        report
+            .observations
+            .iter()
+            .find(|observation| observation.case_id == case)
+            .unwrap()
+    };
+    // RGB expands to alpha 255, so it matches the expectation.
+    assert_eq!(by_case("a.png").validity, "pixels_verified");
+    // The RGBA file has the same RGB values but alpha 128 at one pixel.
+    let mismatched = by_case("b.png");
+    assert_eq!(mismatched.validity, "pixel_mismatch");
+    assert_eq!(mismatched.refusal, Some("pixel_mismatch"));
+    assert_ne!(mismatched.pixel_digest, Some(rgb_digest));
+}
+
+/// Phase 3 (3): a single wrong alpha value is a pixel mismatch.
+#[test]
+fn single_pixel_alpha_mismatch_is_detected() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-rgba-one-a");
+    let expected = pixels::sha256(&rgba_rgb_16(10));
+    fixture.declare_pixels(&[(
+        "a.png",
+        Some((16, 16)),
+        Some(expected),
+        OutcomeClass::Decoded,
+    )]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.validity, "pixel_mismatch");
+    assert_eq!(observation.refusal, Some("pixel_mismatch"));
+    assert!(!observation.pixel_verified);
+
+    // The oracle sees the difference in exactly one pixel.
+    let image = pixels::read_png(&mut std::io::Cursor::new(png_rgba_16(10, &[(137, 0)]))).unwrap();
+    let reference = rgba_rgb_16(10);
+    let differing = image
+        .pixels
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .zip(reference.as_chunks::<4>().0.iter())
+        .filter(|(left, right)| left != right)
+        .count();
+    assert_eq!(differing, 1);
+}
+
 /// A6: both global bounds truncate explicitly instead of growing the record.
 #[test]
 fn observation_and_record_caps_truncate_explicitly() {
@@ -1576,7 +2016,7 @@ fn record_is_deterministic_sorted_and_carries_no_decision_field() {
         json_values(&first_json, "case_id"),
         vec!["a.png", "a.png", "b.png", "b.png"]
     );
-    assert!(first_json.contains("\"schema_version\": 7"));
+    assert!(first_json.contains("\"schema_version\": 8"));
     assert!(first_json.contains("\"exploratory\": true"));
     assert!(first_json.contains("\"numeric_gate\": \"NOT_RATIFIED\""));
     for decision in ["\"pass\"", "\"winner\"", "\"score\"", "\"selected\""] {
@@ -1776,6 +2216,51 @@ fn fake_candidate(support: ProbeSupport) {
             std::fs::write(&output, png_iend_without_crc(16, 16)).unwrap();
             0
         }
+        "png-rgb-a" => {
+            std::fs::write(&output, png_rgb_16(10)).unwrap();
+            0
+        }
+        "png-rgb-b" => {
+            std::fs::write(&output, png_rgb_16(200)).unwrap();
+            0
+        }
+        "png-rgba-alpha" => {
+            std::fs::write(&output, png_rgba_16(10, &[])).unwrap();
+            0
+        }
+        "png-rgba-low-a" => {
+            std::fs::write(&output, png_rgba_16(10, &[(0, 128)])).unwrap();
+            0
+        }
+        "png-rgba-one-a" => {
+            std::fs::write(&output, png_rgba_16(10, &[(137, 0)])).unwrap();
+            0
+        }
+        "png-corrupt-idat" => {
+            let mut bytes = png_signature();
+            bytes.extend_from_slice(&png_ihdr(16, 16, 6, 8));
+            bytes.extend_from_slice(&png_chunk(b"IDAT", &[0x78, 0x9C, 0xFF, 0x00, 0x13, 0x37]));
+            bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
+            std::fs::write(&output, bytes).unwrap();
+            0
+        }
+        "png-huge-dims" => {
+            let mut bytes = png_signature();
+            bytes.extend_from_slice(&png_ihdr(40_000, 40_000, 6, 8));
+            bytes.extend_from_slice(&png_chunk(b"IDAT", &zlib_stored(&[0_u8; 8])));
+            bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
+            std::fs::write(&output, bytes).unwrap();
+            0
+        }
+        "png-inflate-bomb" => {
+            let mut bytes = png_signature();
+            bytes.extend_from_slice(&png_ihdr(16, 16, 6, 8));
+            // Declared geometry needs 16 * 65 = 1040 bytes; this stream carries 200 KiB.
+            bytes.extend_from_slice(&png_chunk(b"IDAT", &zlib_stored(&vec![0_u8; 200 * 1024])));
+            bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
+            std::fs::write(&output, bytes).unwrap();
+            0
+        }
         "jpeg-eoi-in-sos" => {
             std::fs::write(&output, jpeg_eoi_inside_sos(16, 16, 3)).unwrap();
             0
@@ -1957,6 +2442,105 @@ fn png_bytes_with(
     ));
     bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
     bytes
+}
+
+/// Adler-32 as zlib defines it, so the crafted streams are real zlib streams.
+fn adler32(raw: &[u8]) -> u32 {
+    let mut first = 1_u32;
+    let mut second = 0_u32;
+    for &byte in raw {
+        first = (first + u32::from(byte)) % 65521;
+        second = (second + first) % 65521;
+    }
+    (second << 16) | first
+}
+
+/// A zlib stream made of stored (uncompressed) DEFLATE blocks.
+fn zlib_stored(raw: &[u8]) -> Vec<u8> {
+    let mut out = vec![0x78, 0x01];
+    let mut chunks: Vec<&[u8]> = raw.chunks(65_535).collect();
+    if chunks.is_empty() {
+        chunks.push(&[]);
+    }
+    for (index, chunk) in chunks.iter().enumerate() {
+        let last = index + 1 == chunks.len();
+        out.push(u8::from(last));
+        let length = u16::try_from(chunk.len()).unwrap();
+        out.extend_from_slice(&length.to_le_bytes());
+        out.extend_from_slice(&(!length).to_le_bytes());
+        out.extend_from_slice(chunk);
+    }
+    out.extend_from_slice(&adler32(raw).to_be_bytes());
+    out
+}
+
+/// A PNG whose pixels are given as raw scanline bytes per row (filter 0).
+fn png_with_pixels(width: u32, height: u32, colour_type: u8, rows: &[Vec<u8>]) -> Vec<u8> {
+    assert_eq!(rows.len() as u32, height);
+    let mut raw = Vec::new();
+    for row in rows {
+        raw.push(0);
+        raw.extend_from_slice(row);
+    }
+    let mut bytes = png_signature();
+    bytes.extend_from_slice(&png_ihdr(width, height, colour_type, 8));
+    bytes.extend_from_slice(&png_chunk(b"IDAT", &zlib_stored(&raw)));
+    bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
+    bytes
+}
+
+/// A 16x16 RGB PNG filled with `seed`-derived pixels.
+fn png_rgb_16(seed: u8) -> Vec<u8> {
+    let rows: Vec<Vec<u8>> = (0..16)
+        .map(|y| {
+            let mut row = Vec::with_capacity(48);
+            for x in 0..16_u8 {
+                row.push(seed.wrapping_add(x));
+                row.push(seed.wrapping_add(y));
+                row.push(seed ^ x ^ y);
+            }
+            row
+        })
+        .collect();
+    png_with_pixels(16, 16, 2, &rows)
+}
+
+/// The RGBA expansion the oracle must produce for [`png_rgb_16`].
+fn rgba_rgb_16(seed: u8) -> Vec<u8> {
+    let mut pixels = Vec::with_capacity(16 * 16 * 4);
+    for y in 0..16_u8 {
+        for x in 0..16_u8 {
+            pixels.extend_from_slice(&[
+                seed.wrapping_add(x),
+                seed.wrapping_add(y),
+                seed ^ x ^ y,
+                255,
+            ]);
+        }
+    }
+    pixels
+}
+
+/// A 16x16 RGBA PNG with the pixels of [`png_rgb_16`] and one alpha override.
+fn png_rgba_16(seed: u8, overrides: &[(usize, u8)]) -> Vec<u8> {
+    let rows: Vec<Vec<u8>> = (0..16)
+        .map(|y: u8| {
+            let mut row = Vec::with_capacity(64);
+            for x in 0..16_u8 {
+                row.push(seed.wrapping_add(x));
+                row.push(seed.wrapping_add(y));
+                row.push(seed ^ x ^ y);
+                let index = usize::from(y) * 16 + usize::from(x);
+                let alpha = overrides
+                    .iter()
+                    .find(|(pixel, _)| *pixel == index)
+                    .map_or(255, |(_, alpha)| *alpha);
+                row.push(alpha);
+            }
+            row
+        })
+        .collect();
+    png_with_pixels(16, 16, 6, &rows)
 }
 
 /// A 33-byte PNG: signature and IHDR only, no IDAT and no IEND (B2).
