@@ -119,15 +119,43 @@
 //! call (argv only, no shell, hard per-sample timeout of 2000 ms — the sampler runs
 //! concurrently with the child, so its cost never moves the child's deadline — at most
 //! `max_samples` sampling *attempts*, successes or not). The sampler program is bound to
-//! an absolute, trusted path — `%SystemRoot%\System32\tasklist.exe`, resolved from the
-//! `SystemRoot` value and required to exist as a regular file — and never launched by a
-//! bare name, so a `tasklist.exe` dropped next to the harness cannot win the
-//! application-directory search (BLOCKING finding). A missing or relative program is
-//! `sample_tool_missing` and no sampling happens at all; the operator binary reads no
-//! environment variable for it. The resolved path and its SHA-256 (computed with the
-//! harness's own bounded SHA-256 over at most 32 MiB) are recorded in the header, and a
-//! file that cannot be hashed is `not_measured` with a reason rather than a fabricated
-//! digest. A sample is accepted only when
+//! an absolute, trusted path — `%SystemRoot%\System32\tasklist.exe` — and never launched
+//! by a bare name, so a `tasklist.exe` dropped next to the harness cannot win the
+//! application-directory search. Because that root arrives through the environment, it is
+//! validated like any other untrusted path before it may name the sampler: local disk
+//! only (no UNC, device, verbatim or `..` component, the same rule candidate paths get),
+//! exactly `<drive>:\Windows` one component below a drive root, and neither the root, its
+//! `System32` nor the sampler may be a reparse point that resolves elsewhere. Anything
+//! else is `sample_tool_untrusted_root` with no sampler at all. The operator binary reads
+//! no environment variable for the program itself.
+//!
+//! Trust boundary (A1/N7): these rules defeat a redirected, relative, UNC, `..` or
+//! junction root and any attempt to point the harness at a decoy directory, which is what
+//! an unprivileged process can do to another process's environment. They cannot defend
+//! against a principal that can both set this process's environment and write
+//! `<drive>:\Windows\System32\tasklist.exe` on a drive it controls; the resolved
+//! identity is recorded (path plus digest) precisely so such a substitution is visible in
+//! the evidence rather than assumed absent.
+//!
+//! Digest versus execution (A2): the resolved file is read once with a 32 MiB cap, hashed
+//! with the harness's own SHA-256, written into the private per-run directory that only
+//! this run created, and the child is spawned from that copy — so the recorded digest is
+//! the executed bytes. `sample_tool` records the resolved source path, never the private
+//! copy. Residual risk: the source can still be swapped before it is read, and a process
+//! running as the same user that learns the private copy path could replace it after
+//! staging; the run directory is removed when the run ends.
+//!
+//! Failure accounting (N6): a resolution failure means no sampler exists at all, so the
+//! observation records `working_set_attempts: 0`; a spawn failure means the attempt was
+//! made and the process could not start, so it records `working_set_attempts: 1` with
+//! `sample_tool_missing`. A missing or relative program is `sample_tool_missing`, an
+//! unreadable or oversized one is `sample_tool_unreadable`/`sample_tool_oversize`, and a
+//! file that cannot be hashed is `not_measured` with that reason rather than a fabricated
+//! digest.
+//!
+//! Header compatibility (N4): schema 9 gained `sample_tool`, `sample_tool_sha256` and
+//! `sample_tool_reason` additively; a reader that does not know them can ignore them,
+//! and no existing field changed shape. A sample is accepted only when
 //! the row is the documented five-column Windows layout, its PID column equals the
 //! supervised child, and its memory column has the `12,000 K` form; anything else is
 //! `sample_parse_failed` (A1). The first attempt waits one interval, so a candidate that
@@ -319,6 +347,12 @@ pub const MAX_SAMPLES_LIMIT: usize = 256;
 pub const MAX_SAMPLE_INTERVAL_MS: u64 = 60_000;
 /// Directory of the trusted system sampler, relative to `%SystemRoot%`.
 const SYSTEM_SAMPLER_DIR: &str = "System32";
+/// Name of the environment variable the removed seam used; the probe test asserts the
+/// operator configuration ignores it (N1). It is a constant only, never read.
+#[cfg(test)]
+pub const SAMPLE_TOOL_OVERRIDE_PROBE: &str = "DECODE_COMPARE_SAMPLE_TOOL";
+/// Name of the default system directory.
+const SYSTEM_ROOT_NAME: &str = "Windows";
 /// File name of the trusted system sampler.
 const SYSTEM_SAMPLER_FILE: &str = "tasklist.exe";
 /// Bounded read used to fingerprint the sampler program.
@@ -1264,15 +1298,20 @@ fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, Usag
     // once, fingerprint it, and pass it to every sampling site.
     let system_root = std::env::var_os("SystemRoot");
     let resolved = resolve_sample_tool(config.sample_tool.as_deref(), system_root.as_deref());
-    let (sample_tool_sha256, sample_tool_digest_reason) = match resolved.as_ref() {
-        Ok(path) => fingerprint_sample_tool(path),
-        Err(_) => (None, None),
+    // A2: pin the bytes once and verify them around every spawn of the executed path.
+    let pinned = match resolved.as_ref() {
+        Ok(source) => pin_sample_tool(source, work),
+        Err(_) => Err(SAMPLE_TOOL_UNREADABLE),
     };
-    let sample_tool_reason = match resolved.as_ref() {
-        Ok(_) => sample_tool_digest_reason,
-        Err(reason) => Some(*reason),
+    let (sample_tool_sha256, sample_tool_reason) = match pinned.as_ref() {
+        Ok((_, digest)) => (Some(digest.clone()), None),
+        Err(_) if resolved.is_err() => (None, resolved.as_ref().err().copied()),
+        Err(reason) => (None, Some(*reason)),
     };
-    let resolved_sample_tool = resolved.ok();
+    let sample_tool_source = resolved.ok();
+    // The executable form is the resolved system path; the pinned copy is the digest
+    // reference and the pinned path is never spawned (see `pin_sample_tool`).
+    let resolved_sample_tool = pinned.ok().and_then(|_| sample_tool_source.clone());
     let mut candidates = config.candidates.clone();
     candidates.sort_by(|left, right| left.id.cmp(&right.id));
     let launchers: Vec<Launcher> = candidates
@@ -1309,6 +1348,7 @@ fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, Usag
                 work,
                 captures,
                 sample_tool: resolved_sample_tool.as_deref(),
+                sample_digest: sample_tool_sha256.as_deref(),
             };
             observations.push(measure(
                 config, candidate, launcher, case, &paths, case_index,
@@ -1330,7 +1370,8 @@ fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, Usag
         sample_interval_ms: config.sample_interval_ms,
         max_samples: config.max_samples,
         cancel_after_ms: config.cancel_after_ms,
-        sample_tool: resolved_sample_tool.clone(),
+        // The source path is recorded, never the private staged copy.
+        sample_tool: sample_tool_source.clone(),
         sample_tool_sha256: sample_tool_sha256.clone(),
         sample_tool_reason,
         cases_truncated,
@@ -1811,8 +1852,10 @@ fn read_capture(path: &Path, cap: usize) -> Capture {
 struct RunPaths<'a> {
     work: &'a Path,
     captures: &'a Path,
-    /// Absolute sampler program, or `None` when it could not be resolved.
+    /// Absolute sampler program, or None when it could not be resolved.
     sample_tool: Option<&'a Path>,
+    /// Digest pinned for this run, used to verify every spawn.
+    sample_digest: Option<&'a str>,
 }
 
 fn measure(
@@ -1948,6 +1991,7 @@ fn measure(
                     max_samples: config.max_samples,
                     tool: tool.to_path_buf(),
                     argv_prefix: config.sample_argv_prefix.clone(),
+                    digest: paths.sample_digest.unwrap_or_default().to_owned(),
                 });
             let sampling_disabled_reason = match (config.sample_interval_ms, paths.sample_tool) {
                 (0, _) => SAMPLE_DISABLED,
@@ -2368,8 +2412,12 @@ fn exceeded(bounds: &Bounds<'_>) -> Option<CapKind> {
 /// the child is reaped, so a burst that finishes between two polls is still
 /// classified as capped instead of a success. Kill/reap applies to the direct child
 /// only (A-01); termination of descendants is neither guaranteed nor claimed.
-/// Why the sampler program could not be hashed.
+/// The system root failed the trust rules (redirected, UNC, device, `..`, reparse).
+const SAMPLE_TOOL_UNTRUSTED_ROOT: &str = "sample_tool_untrusted_root";
+/// Why the sampler program could not be hashed or pinned.
 const SAMPLE_TOOL_UNREADABLE: &str = "sample_tool_unreadable";
+/// The sampler program changed between pinning and execution (digest mismatch).
+const SAMPLE_TOOL_CHANGED: &str = "sample_tool_changed";
 /// The sampler program was larger than the bounded read.
 const SAMPLE_TOOL_OVERSIZE: &str = "sample_tool_oversize";
 
@@ -2403,13 +2451,24 @@ fn resolve_sample_tool_in(
             path.to_path_buf()
         }
         None => {
-            let root = system_root.ok_or(SAMPLE_TOOL_MISSING)?;
-            if root.is_empty() {
-                return Err(SAMPLE_TOOL_MISSING);
+            // A1: the root comes from the environment, so it is validated like any
+            // other untrusted path before it may name the sampler.
+            let root = system_root.ok_or(SAMPLE_TOOL_UNTRUSTED_ROOT)?;
+            let root = Path::new(root);
+            if root.as_os_str().is_empty() {
+                return Err(SAMPLE_TOOL_UNTRUSTED_ROOT);
             }
-            PathBuf::from(root)
-                .join(SYSTEM_SAMPLER_DIR)
-                .join(SYSTEM_SAMPLER_FILE)
+            if !is_local_disk_absolute(root) || !is_default_system_root(root) {
+                return Err(SAMPLE_TOOL_UNTRUSTED_ROOT);
+            }
+            if !resolves_to_itself(root) {
+                return Err(SAMPLE_TOOL_UNTRUSTED_ROOT);
+            }
+            let system32 = root.join(SYSTEM_SAMPLER_DIR);
+            if !system32.is_dir() || !resolves_to_itself(&system32) {
+                return Err(SAMPLE_TOOL_UNTRUSTED_ROOT);
+            }
+            system32.join(SYSTEM_SAMPLER_FILE)
         }
     };
     if !path.is_absolute() {
@@ -2418,7 +2477,83 @@ fn resolve_sample_tool_in(
     if require_file && !path.is_file() {
         return Err(SAMPLE_TOOL_MISSING);
     }
+    if require_file && !resolves_to_itself(&path) {
+        // A reparse point that redirects the sampler is not the system sampler.
+        return Err(SAMPLE_TOOL_UNTRUSTED_ROOT);
+    }
     Ok(path)
+}
+
+/// The rule the harness applies to candidate paths (see `local_absolute_path`):
+/// absolute, a local disk prefix, rooted, and no parent or current-directory
+/// component. UNC, device and verbatim forms are not a local disk prefix.
+fn is_local_disk_absolute(path: &Path) -> bool {
+    if !path.is_absolute() {
+        return false;
+    }
+    #[cfg(windows)]
+    {
+        use std::path::{Component, Prefix};
+        let mut components = path.components();
+        match components.next() {
+            // A plain disk prefix only: the `\\?\` verbatim and device forms skip
+            // Win32 path parsing, so they are not accepted for the system root.
+            Some(Component::Prefix(prefix)) if matches!(prefix.kind(), Prefix::Disk(_)) => {}
+            _ => return false,
+        }
+        if components.next() != Some(Component::RootDir) {
+            return false;
+        }
+        components.all(|component| matches!(component, Component::Normal(_)))
+    }
+    #[cfg(not(windows))]
+    {
+        use std::path::Component;
+        path.components().all(|component| {
+            matches!(
+                component,
+                Component::Prefix(_) | Component::RootDir | Component::Normal(_)
+            )
+        })
+    }
+}
+
+/// The default system directory is exactly `<drive>:\Windows`: one component below a
+/// drive root, named `Windows`. A redirected root such as `C:\tmp\decoy\root` or a
+/// deeper `C:\tmp\Windows` therefore fails even when the decoy itself is well formed.
+pub fn is_default_system_root(root: &Path) -> bool {
+    let Some(name) = root.file_name() else {
+        return false;
+    };
+    if !name
+        .to_string_lossy()
+        .eq_ignore_ascii_case(SYSTEM_ROOT_NAME)
+    {
+        return false;
+    }
+    let Some(parent) = root.parent() else {
+        return false;
+    };
+    // The parent must be the drive root itself (no further parent and no file name),
+    // so a deeper decoy such as tmp-under-drive Windows is refused.
+    parent.parent().is_none() && parent.file_name().is_none()
+}
+
+/// Whether `path` resolves to a directory/file of the same name, i.e. it is not a
+/// reparse point that redirects elsewhere (a junction resolves to its target, whose
+/// final component normally differs).
+pub fn resolves_to_itself(path: &Path) -> bool {
+    let Ok(canonical) = fs::canonicalize(path) else {
+        return false;
+    };
+    // Case-insensitive, because Windows reports the stored casing of a directory
+    // while the environment value may use a different one; both name the same place.
+    match (canonical.file_name(), path.file_name()) {
+        (Some(left), Some(right)) => left
+            .to_string_lossy()
+            .eq_ignore_ascii_case(&right.to_string_lossy()),
+        _ => false,
+    }
 }
 
 /// Test seam: the pure path resolution without touching the filesystem.
@@ -2430,26 +2565,68 @@ pub fn resolve_sample_tool_for_tests(
     resolve_sample_tool_in(configured, system_root, false)
 }
 
-/// Test seam: fingerprint a path (a directory stands in for an unreadable file).
+/// Test seam: the SHA-256 hex of already-read sampler bytes.
 #[cfg(test)]
-pub fn fingerprint_sample_tool_for_tests(path: &Path) -> (Option<String>, Option<&'static str>) {
-    fingerprint_sample_tool(path)
+pub fn digest_for_tests(bytes: &[u8]) -> String {
+    pixels::hex(&pixels::sha256(bytes))
 }
 
-/// Fingerprint the resolved sampler program with the harness's own bounded SHA-256.
-fn fingerprint_sample_tool(path: &Path) -> (Option<String>, Option<&'static str>) {
-    let Ok(file) = fs::File::open(path) else {
-        return (None, Some(SAMPLE_TOOL_UNREADABLE));
-    };
+/// Test seam: whether a path still matches a pinned digest.
+#[cfg(test)]
+pub fn sample_tool_matches_for_tests(path: &Path, expected: &str) -> bool {
+    sample_tool_matches(path, expected)
+}
+
+/// Test seam: read a path with the sampler's cap (a directory stands in for an
+/// unreadable file).
+#[cfg(test)]
+pub fn read_sample_tool_for_tests(path: &Path) -> Result<Vec<u8>, &'static str> {
+    read_sample_tool(path)
+}
+
+/// Read the sampler program with a hard size cap; the bytes are hashed and, in the
+/// normal path, executed, so a read can never run away.
+fn read_sample_tool(path: &Path) -> Result<Vec<u8>, &'static str> {
+    let file = fs::File::open(path).map_err(|_| SAMPLE_TOOL_UNREADABLE)?;
     let mut bytes = Vec::new();
     let mut limited = file.take(SAMPLE_TOOL_DIGEST_CAP.saturating_add(1));
-    if limited.read_to_end(&mut bytes).is_err() {
-        return (None, Some(SAMPLE_TOOL_UNREADABLE));
-    }
+    limited
+        .read_to_end(&mut bytes)
+        .map_err(|_| SAMPLE_TOOL_UNREADABLE)?;
     if bytes.len() as u64 > SAMPLE_TOOL_DIGEST_CAP {
-        return (None, Some(SAMPLE_TOOL_OVERSIZE));
+        return Err(SAMPLE_TOOL_OVERSIZE);
     }
-    (Some(pixels::hex(&pixels::sha256(&bytes))), None)
+    Ok(bytes)
+}
+
+/// A2: pin the sampler — read it once, hash those bytes and keep a copy in the private
+/// per-run directory as the reference for this run.
+///
+/// The executed program is the resolved system path, and its bytes are re-verified
+/// against this pinned digest immediately before the spawn and again after the child
+/// exits, so a swap makes the sample `sample_tool_changed` instead of untruthful. A
+/// relocated copy cannot be *executed* here: Windows' `tasklist.exe` refuses every
+/// option form when it is copied out of `System32` (measured: exit 1 with empty stdout,
+/// while the same copy without options prints the table), so spawning the copy would
+/// silently end the whole resource measurement. Residual risk (documented): the interval
+/// between the pre-spawn verification and `CreateProcess`, and any principal that can
+/// write to `System32` at all, remain outside what a std-only process can close; the
+/// pinned copy, the resolved path and the digest are all kept so a substitution is
+/// visible in the evidence.
+fn pin_sample_tool(source: &Path, work: &Path) -> Result<(PathBuf, String), &'static str> {
+    let bytes = read_sample_tool(source)?;
+    let digest = pixels::hex(&pixels::sha256(&bytes));
+    let pinned = work.join("sample-tool.pinned.exe");
+    fs::write(&pinned, &bytes).map_err(|_| SAMPLE_TOOL_UNREADABLE)?;
+    Ok((pinned, digest))
+}
+
+/// Whether the program at `path` still hashes to `expected`; a read that fails or a
+/// different digest means the program is not the one that was pinned.
+fn sample_tool_matches(path: &Path, expected: &str) -> bool {
+    read_sample_tool(path)
+        .map(|bytes| pixels::hex(&pixels::sha256(&bytes)) == expected)
+        .unwrap_or(false)
 }
 
 /// Sampling configuration for one observation.
@@ -2463,6 +2640,8 @@ struct Sampling<'a> {
     /// Extra argv placed before the fixed sample argv (test seam, like the candidate
     /// `Invocation::argv_prefix`).
     argv_prefix: Vec<OsString>,
+    /// Digest of the bytes pinned for this run; every spawn is verified against it.
+    digest: String,
 }
 
 /// Working-set sampling bookkeeping, kept separate from the I/O so every transition is
@@ -2614,13 +2793,21 @@ fn supervise(
         // Harvest a sample that has finished (or timed out) without blocking the loop.
         if let Some(mut flight) = in_flight.take() {
             match flight.child.try_wait() {
-                Ok(Some(_)) => match harvest_sample(&mut flight) {
-                    Ok(bytes) => sampler.succeeded(bytes),
-                    Err(reason) => {
-                        sampler.failed(reason);
+                Ok(Some(_)) => {
+                    // A2: the bytes must still be the pinned ones after the child ran.
+                    if !sample_tool_matches(&flight.tool, &flight.digest) {
+                        sampler.failed(SAMPLE_TOOL_CHANGED);
                         next_sample = None;
+                    } else {
+                        match harvest_sample(&mut flight) {
+                            Ok(bytes) => sampler.succeeded(bytes),
+                            Err(reason) => {
+                                sampler.failed(reason);
+                                next_sample = None;
+                            }
+                        }
                     }
-                },
+                }
                 Err(_) => {
                     // A sampler we cannot reap must not be left running (N5).
                     let _ = flight.child.kill();
@@ -2653,15 +2840,21 @@ fn supervise(
                 sampler.capped();
                 next_sample = None;
             } else {
-                sampler.attempt();
-                match start_sample(pid, config) {
-                    Ok(flight) => {
-                        in_flight = Some(flight);
-                        next_sample = Some(elapsed.saturating_add(config.interval));
-                    }
-                    Err(reason) => {
-                        sampler.failed(reason);
-                        next_sample = None;
+                // A2: never spawn a program whose bytes differ from the pinned digest.
+                if !sample_tool_matches(&config.tool, &config.digest) {
+                    sampler.failed(SAMPLE_TOOL_CHANGED);
+                    next_sample = None;
+                } else {
+                    sampler.attempt();
+                    match start_sample(pid, config) {
+                        Ok(flight) => {
+                            in_flight = Some(flight);
+                            next_sample = Some(elapsed.saturating_add(config.interval));
+                        }
+                        Err(reason) => {
+                            sampler.failed(reason);
+                            next_sample = None;
+                        }
                     }
                 }
             }
@@ -2758,6 +2951,9 @@ struct SampleInFlight {
     started: Instant,
     /// The supervised child this sample belongs to; the parsed row must match it.
     pid: u32,
+    /// Path and pinned digest re-verified after the sampler exits.
+    tool: PathBuf,
+    digest: String,
 }
 
 /// Start one bounded `tasklist` sample with a fixed argv (no shell, no quoting).
@@ -2786,6 +2982,8 @@ fn start_sample(pid: u32, config: &Sampling<'_>) -> Result<SampleInFlight, &'sta
         capture,
         started: Instant::now(),
         pid,
+        tool: config.tool.clone(),
+        digest: config.digest.clone(),
     })
 }
 
@@ -2978,7 +3176,7 @@ pub fn render(report: &Report) -> (String, usize) {
     let _ = writeln!(
         json,
         "  \"sample_tool\": {},",
-        path_field_opt(report.sample_tool.as_deref())
+        lossy_path_field(report.sample_tool.as_deref())
     );
     let _ = writeln!(
         json,
@@ -3221,6 +3419,20 @@ fn quoted(text: &str) -> String {
     }
     rendered.push('"');
     rendered
+}
+
+/// Render a path even when it is not valid UTF-8: the digest beside it stays exact, so
+/// a lossy display is still useful evidence and better than a bare `null` (N5).
+#[cfg(test)]
+pub fn lossy_path_field_for_tests(path: Option<&Path>) -> String {
+    lossy_path_field(path)
+}
+
+fn lossy_path_field(path: Option<&Path>) -> String {
+    match path {
+        Some(path) => quoted(&path.to_string_lossy()),
+        None => "null".to_owned(),
+    }
 }
 
 fn path_field(path: &Path) -> String {

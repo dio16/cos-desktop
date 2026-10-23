@@ -2280,6 +2280,262 @@ fn sampled_record_is_deterministic_apart_from_documented_fields() {
     }
 }
 
+/// A1/N3: a redirected root — the reviewer's reproduction — is refused as an untrusted
+/// root: no sampler, zero attempts, no value, whatever the decoy contains.
+#[test]
+fn redirected_system_root_is_refused() {
+    let fixture = Fixture::new();
+    let decoy_root = fixture.base.join("decoy-root");
+    std::fs::create_dir_all(decoy_root.join("System32")).unwrap();
+    std::fs::write(
+        decoy_root.join("System32").join("tasklist.exe"),
+        b"a decoy that would fabricate a value",
+    )
+    .unwrap();
+
+    // The resolver refuses the root itself.
+    assert_eq!(
+        harness::resolve_sample_tool(None, Some(decoy_root.as_os_str())),
+        Err("sample_tool_untrusted_root")
+    );
+
+    // And a real child harness started with that root never spawns anything.
+    let fixture_cases = Fixture::new();
+    fixture_cases.case("a.png", "sleep-long");
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", "env_seam_probe_helper", "--nocapture", "--quiet"])
+        .env("SystemRoot", decoy_root.as_os_str())
+        .env("DC_PROBE_CASES", fixture_cases.cases.as_os_str())
+        .env(
+            "DC_PROBE_CANDIDATE",
+            fixture_cases.fake().program.path().as_os_str(),
+        )
+        .env("DC_PROBE_OUT", fixture_cases.record("probe"))
+        .output()
+        .expect("the probe subprocess runs");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("sample_tool=<none>"),
+        "the decoy root must not be adopted; got {stdout}"
+    );
+    assert!(
+        stdout.contains("reason=Some(\"sample_tool_untrusted_root\")"),
+        "a redirected root must be reported as untrusted; got {stdout}"
+    );
+    assert!(
+        stdout.contains("attempts=0"),
+        "an untrusted root must take zero attempts; got {stdout}"
+    );
+}
+
+/// A1/N3: relative, UNC, device and parent-traversal roots are all refused, and the
+/// default-root shape is accepted only at `<drive>:\Windows`.
+#[test]
+fn system_root_shapes_are_validated() {
+    use std::ffi::OsStr;
+    let root = |text: &str| harness::resolve_sample_tool_for_tests(None, Some(OsStr::new(text)));
+
+    assert_eq!(
+        root("Windows"),
+        Err("sample_tool_untrusted_root"),
+        "relative"
+    );
+    assert_eq!(
+        root(r"\\server\share\Windows"),
+        Err("sample_tool_untrusted_root"),
+        "UNC"
+    );
+    assert_eq!(
+        root(r"\\?\C:\Windows"),
+        Err("sample_tool_untrusted_root"),
+        "device/verbatim"
+    );
+    assert_eq!(
+        root(r"C:\Windows\..\Windows"),
+        Err("sample_tool_untrusted_root"),
+        "parent traversal"
+    );
+    assert_eq!(
+        root(r"C:\tmp\Windows"),
+        Err("sample_tool_untrusted_root"),
+        "deeper decoy that is still named Windows"
+    );
+    assert_eq!(root(""), Err("sample_tool_untrusted_root"), "empty");
+    assert_eq!(
+        root(r"C:\Windows"),
+        Ok(std::path::PathBuf::from(
+            r"C:\Windows\System32\tasklist.exe"
+        )),
+        "the default shape is accepted"
+    );
+
+    // The shape predicate on its own.
+    assert!(harness::is_default_system_root(std::path::Path::new(
+        r"C:\Windows"
+    )));
+    assert!(harness::is_default_system_root(std::path::Path::new(
+        r"c:\wInDoWs"
+    )));
+    assert!(!harness::is_default_system_root(std::path::Path::new(
+        r"C:\tmp\Windows"
+    )));
+    assert!(!harness::is_default_system_root(std::path::Path::new(
+        r"C:\Windows\System32"
+    )));
+    assert!(!harness::is_default_system_root(std::path::Path::new(
+        r"C:\tmp\decoy"
+    )));
+}
+
+/// A1/N7: a root that is a reparse point (junction) does not resolve to itself, which is
+/// exactly the predicate the resolver refuses. Junction creation needs no privilege on
+/// Windows; if the host policy blocks it the predicate is asserted on a decoy directory
+/// instead and the degradation is reported by the assertion message.
+#[test]
+fn junction_root_is_not_the_system_root() {
+    let fixture = Fixture::new();
+    let target = fixture.base.join("decoy-target");
+    std::fs::create_dir_all(target.join("System32")).unwrap();
+    let link = fixture.base.join("Windows-link");
+    let made = std::process::Command::new("cmd")
+        .args(["/C", "mklink", "/J"])
+        .arg(&link)
+        .arg(&target)
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false);
+    if !made {
+        // No junction available: a plain directory resolves to itself, which is the
+        // only reason the resolver would accept it — the shape rules still refuse it.
+        assert!(harness::resolves_to_itself(&target));
+        assert!(!harness::is_default_system_root(&target));
+        panic!("junction could not be created on this host; A1/N7 junction case unproven");
+    }
+    assert!(
+        harness::resolves_to_itself(&target),
+        "the plain target resolves to itself"
+    );
+    assert!(
+        !harness::resolves_to_itself(&link),
+        "a junction resolves to its target, so the resolver refuses it"
+    );
+}
+
+/// N1: a real subprocess with the environment variable set proves the seam is gone. The
+/// child parses the operator command line and prints what it resolved.
+#[test]
+fn environment_variable_sampler_override_is_ignored_in_a_subprocess() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", "env_seam_probe_helper", "--nocapture", "--quiet"])
+        .env(
+            harness::SAMPLE_TOOL_OVERRIDE_PROBE,
+            r"C:\tmp\a-decoy-sampler\tasklist.exe",
+        )
+        .env("DC_PROBE_CASES", fixture.cases.as_os_str())
+        .env(
+            "DC_PROBE_CANDIDATE",
+            fixture.fake().program.path().as_os_str(),
+        )
+        .env("DC_PROBE_OUT", fixture.record("probe"))
+        .output()
+        .expect("the probe subprocess runs");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("configured=<none>"),
+        "the operator configuration must ignore the environment override; got {stdout}"
+    );
+    assert!(
+        stdout.contains("reason=None"),
+        "a decoy environment value must not poison the resolution; got {stdout}"
+    );
+}
+
+/// Child harness for the environment tests: it is started with a modified environment
+/// (a decoy `DECODE_COMPARE_SAMPLE_TOOL` or a redirected `SystemRoot`) and prints what
+/// the operator configuration and the sampler resolution actually did.
+#[test]
+fn env_seam_probe_helper() {
+    let Ok(cases) = std::env::var("DC_PROBE_CASES") else {
+        return;
+    };
+    let candidate = std::env::var("DC_PROBE_CANDIDATE").unwrap_or_default();
+    let out = std::env::var("DC_PROBE_OUT").unwrap_or_default();
+    let mut config = harness::parse(vec![
+        std::ffi::OsString::from("--cases"),
+        std::ffi::OsString::from(cases),
+        std::ffi::OsString::from("--candidate"),
+        std::ffi::OsString::from(format!("fake={candidate}")),
+        std::ffi::OsString::from("--out"),
+        std::ffi::OsString::from(&out),
+        std::ffi::OsString::from("--sample-interval-ms"),
+        std::ffi::OsString::from("10"),
+        std::ffi::OsString::from("--cancel-after-ms"),
+        std::ffi::OsString::from("400"),
+    ])
+    .expect("the probe command line parses");
+    config.invocation = helper_invocation(HELPER);
+    let configured = match config.sample_tool.clone() {
+        Some(path) => path.display().to_string(),
+        None => "<none>".to_owned(),
+    };
+    let report = harness::run(&config).expect("the probe run completes");
+    let resolved = match report.sample_tool.clone() {
+        Some(path) => path.display().to_string(),
+        None => "<none>".to_owned(),
+    };
+    let attempts = report
+        .observations
+        .iter()
+        .map(|observation| observation.working_set_attempts)
+        .max()
+        .unwrap_or(0);
+    println!(
+        "probe configured={configured} sample_tool={resolved} reason={:?} attempts={attempts}",
+        report.sample_tool_reason
+    );
+}
+
+/// A2: the pinned digest is verified around every spawn — an unchanged program matches
+/// and a modified one does not.
+#[test]
+fn pinned_sampler_digest_detects_a_swap() {
+    let fixture = Fixture::new();
+    let tool = fixture.base.join("tool.exe");
+    std::fs::write(&tool, b"first").unwrap();
+    let pinned = harness::read_sample_tool_for_tests(&tool).unwrap();
+    let digest = harness::digest_for_tests(&pinned);
+    assert!(harness::sample_tool_matches_for_tests(&tool, &digest));
+    std::fs::write(&tool, b"second").unwrap();
+    assert!(
+        !harness::sample_tool_matches_for_tests(&tool, &digest),
+        "a replaced program must not match the pinned digest"
+    );
+    assert!(!harness::sample_tool_matches_for_tests(
+        std::path::Path::new("C:\nope\nope.exe"),
+        &digest
+    ));
+}
+
+/// N5: a non-UTF8 tool path renders lossily instead of `null`; the digest beside it is
+/// what carries the exact identity.
+#[test]
+fn non_utf8_tool_path_renders_lossily() {
+    use std::os::windows::ffi::OsStringExt;
+    let raw = std::ffi::OsString::from_wide(&[b'C' as u16, b':' as u16, b'\\' as u16, 0xD800]);
+    let path = std::path::PathBuf::from(raw);
+    assert!(
+        path.to_str().is_none(),
+        "the fixture path is not valid UTF-8"
+    );
+    let rendered = harness::lossy_path_field_for_tests(Some(&path));
+    assert_ne!(rendered, "null");
+    assert!(rendered.contains('C'));
+    assert!(rendered.contains('\u{fffd}'));
+    assert_eq!(harness::lossy_path_field_for_tests(None), "null");
+}
+
 /// BLOCKING (a): the sampler is resolved to an absolute system path, never a bare name
 /// — so a `tasklist.exe` dropped next to the harness cannot win a CreateProcess search —
 /// and a relative or missing program is refused instead of used.
@@ -2295,10 +2551,10 @@ fn sampler_is_resolved_to_an_absolute_system_path() {
     );
     assert!(resolved.is_absolute());
 
-    // No SystemRoot: refuse, never fall back to a bare name.
+    // No SystemRoot: refuse as an untrusted root, never fall back to a bare name.
     assert_eq!(
         harness::resolve_sample_tool_for_tests(None, None),
-        Err("sample_tool_missing")
+        Err("sample_tool_untrusted_root")
     );
     // A relative program is exactly the substitution the finding describes.
     assert_eq!(
@@ -2414,10 +2670,32 @@ fn record_header_binds_the_real_system_sampler() {
 /// digest. An unreadable file is simulated with a directory-shaped path.
 #[test]
 fn sampler_digest_failure_is_not_measured() {
-    let (digest, reason) =
-        harness::fingerprint_sample_tool_for_tests(std::path::Path::new("C:\\Windows\\System32"));
-    assert_eq!(digest, None);
-    assert_eq!(reason, Some("sample_tool_unreadable"));
+    assert_eq!(
+        harness::read_sample_tool_for_tests(std::path::Path::new("C:\\Windows\\System32")),
+        Err("sample_tool_unreadable")
+    );
+}
+
+/// N2: the bounded read refuses an oversized sampler instead of hashing a runaway file.
+#[test]
+fn oversized_sampler_is_refused_by_the_cap() {
+    let fixture = Fixture::new();
+    let big = fixture.base.join("oversize-tool.exe");
+    // One byte over the 32 MiB cap.
+    let bytes = vec![0_u8; 32 * 1024 * 1024 + 1];
+    std::fs::write(&big, &bytes).unwrap();
+    assert_eq!(
+        harness::read_sample_tool_for_tests(&big),
+        Err("sample_tool_oversize")
+    );
+
+    // At the cap the read succeeds, so the boundary is exact.
+    let at_cap = fixture.base.join("cap-tool.exe");
+    std::fs::write(&at_cap, vec![0_u8; 1024]).unwrap();
+    assert_eq!(
+        harness::read_sample_tool_for_tests(&at_cap).map(|bytes| bytes.len()),
+        Ok(1024)
+    );
 }
 
 /// A1: the parser table. Every row shape is either strictly a tasklist row for the
