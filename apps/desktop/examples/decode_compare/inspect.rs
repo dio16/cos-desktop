@@ -20,11 +20,14 @@
 //! - PNG: a legal IHDR first and exactly once, at least one `IDAT` chunk with a
 //!   non-zero length, and an `IEND` chunk with length `0` after it.
 //! - JPEG: a full `SOF` segment, a well-formed `SOS` segment after it and a real `EOI`
-//!   (`FF D9`) at the end of the file. "Well-formed" means the segment ends inside the
-//!   file and its fields are consistent: `Ls >= 6`, `Ns` in `1..=4`,
-//!   `Ls == 6 + 2 * Ns`, a non-zero component id and a table-selector byte per
-//!   component, and the `Ss`/`Se`/`AhAl` bytes present. A malformed scan header such
-//!   as `FF DA 00 03 01 FF D9` never starts a scan.
+//!   (`FF D9`) at the end of the file. "Full" means the frame header carries one
+//!   descriptor per component (`payload >= 6 + 3 * Ns`, `Ns` in `1..=4`) inside the
+//!   file. "Well-formed" means the scan segment ends inside the file and its fields
+//!   are consistent: `Ls >= 6`, `Ns` in `1..=4`, `Ls == 6 + 2 * Ns`, a non-zero
+//!   component id and a table-selector byte per component, and the `Ss`/`Se`/`AhAl`
+//!   bytes present. The terminator must begin at or after that validated segment end,
+//!   so an `FF D9` inside the scan header is not an `EOI`. A malformed scan header
+//!   such as `FF DA 00 03 01 FF D9` never starts a scan.
 //! - BMP: the whole declared header present, a pixel-data offset inside the file,
 //!   and, for uncompressed bitmaps, `data_offset + row_bytes * height <= file_size`
 //!   with the 4-byte-aligned row size of the declared bit count (`height` is the
@@ -508,6 +511,14 @@ fn inspect_jpeg<R: Read + Seek>(reader: &mut R, mut budget: u64, file_len: u64) 
                 }
             }
             // Ss, Se and Ah/Al are the last three bytes and are covered by the length.
+            //
+            // B-R3-01: the terminator must be a real `EOI` *after* the scan header. An
+            // `FF D9` that sits inside the SOS payload (for example as the `Se`/`AhAl`
+            // bytes) is not a terminator, so the last two bytes must begin at or after
+            // the validated segment end.
+            if file_len < 2 || file_len - 2 < segment_end {
+                return inspection;
+            }
             inspection.complete = inspection.width.is_some() && ends_with_eoi(reader, file_len);
             return inspection;
         }
@@ -517,6 +528,12 @@ fn inspect_jpeg<R: Read + Seek>(reader: &mut R, mut budget: u64, file_len: u64) 
             if payload < 6 {
                 return Inspection::default();
             }
+            let Ok(header_start) = reader.stream_position() else {
+                return inspection;
+            };
+            let Some(segment_end) = header_start.checked_add(payload) else {
+                return inspection;
+            };
             let Some(header) = read_bytes(reader, 6, &mut budget) else {
                 return inspection;
             };
@@ -540,6 +557,14 @@ fn inspect_jpeg<R: Read + Seek>(reader: &mut R, mut budget: u64, file_len: u64) 
                 3 => Some(ColourType::Rgb),
                 _ => None,
             };
+            // B-R3-01: a frame header is only complete with one descriptor per
+            // component (`precision | height | width | Ns | Ns x (id, sampling, Tq)`),
+            // and the whole segment must stay inside the file.
+            let required = 6_u64.saturating_add(3_u64.saturating_mul(u64::from(components)));
+            if segment_end > file_len || payload < required {
+                inspection.complete = false;
+                return inspection;
+            }
             if payload > 6 && skip_bytes(reader, payload - 6).is_none() {
                 return inspection;
             }

@@ -1416,6 +1416,46 @@ fn jpeg_sos_with_short_length_is_incomplete() {
     assert!(report.capabilities.is_empty());
 }
 
+/// B-R3-01 hole 1: the only `FF D9` in the file sits inside the SOS header, so it is
+/// not an `EOI` and the image is never complete.
+#[test]
+fn jpeg_eoi_inside_the_scan_header_is_incomplete() {
+    let fixture = Fixture::new();
+    fixture.case("a.jpg", "jpeg-eoi-in-sos");
+    fixture.declare_expected(&[("a.jpg", Some((16, 16)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_incomplete"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.inspected_format, inspect::Format::Jpeg);
+    assert_eq!(observation.inspected_width, Some(16));
+    assert!(!observation.inspected_complete);
+    assert!(report.capabilities.is_empty());
+}
+
+/// B-R3-01 hole 2: a SOF that declares components without their descriptors is not a
+/// full frame header, so a following well-formed scan cannot complete the file.
+#[test]
+fn jpeg_sof_without_component_descriptors_is_incomplete() {
+    let fixture = Fixture::new();
+    fixture.case("a.jpg", "jpeg-sof-nodesc");
+    fixture.declare_expected(&[("a.jpg", Some((16, 16)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_incomplete"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.inspected_format, inspect::Format::Jpeg);
+    assert_eq!(observation.inspected_width, Some(16));
+    assert!(!observation.inspected_complete);
+    assert!(report.capabilities.is_empty());
+}
+
 /// A6: both global bounds truncate explicitly instead of growing the record.
 #[test]
 fn observation_and_record_caps_truncate_explicitly() {
@@ -1736,6 +1776,14 @@ fn fake_candidate(support: ProbeSupport) {
             std::fs::write(&output, png_iend_without_crc(16, 16)).unwrap();
             0
         }
+        "jpeg-eoi-in-sos" => {
+            std::fs::write(&output, jpeg_eoi_inside_sos(16, 16, 3)).unwrap();
+            0
+        }
+        "jpeg-sof-nodesc" => {
+            std::fs::write(&output, jpeg_sof_without_descriptors(16, 16)).unwrap();
+            0
+        }
         "jpeg-sos-short" => {
             std::fs::write(&output, jpeg_sos_short_length(24, 12, 3)).unwrap();
             0
@@ -2038,6 +2086,32 @@ fn png_iend_without_crc(width: u32, height: u32) -> Vec<u8> {
 fn jpeg_sos_without_length(width: u16, height: u16, components: u8) -> Vec<u8> {
     let mut bytes = jpeg_sof_only(width, height, components);
     bytes.extend_from_slice(&[0xFF, 0xDA, 0xFF, 0xD9]);
+    bytes
+}
+
+/// A valid SOF followed by `FF DA 00 08 01 01 00 00 FF D9`: the scan header is
+/// internally consistent (`Ls = 8 = 6 + 2*Ns`) but its last two payload bytes are
+/// `FF D9`, so the only `EOI` in the file sits inside the SOS segment (B-R3-01).
+fn jpeg_eoi_inside_sos(width: u16, height: u16, components: u8) -> Vec<u8> {
+    let mut bytes = jpeg_sof_only(width, height, components);
+    bytes.extend_from_slice(&[0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0xFF, 0xD9]);
+    bytes
+}
+
+/// A SOF that declares three components but carries no component descriptors
+/// (`payload = 6`), followed by a well-formed scan and a real `EOI` (B-R3-01).
+fn jpeg_sof_without_descriptors(width: u16, height: u16) -> Vec<u8> {
+    let mut bytes = vec![0xFF, 0xD8];
+    let mut payload = vec![8_u8];
+    payload.extend_from_slice(&height.to_be_bytes());
+    payload.extend_from_slice(&width.to_be_bytes());
+    payload.push(3);
+    bytes.extend_from_slice(&[0xFF, 0xC0]);
+    bytes.extend_from_slice(&u16::try_from(payload.len() + 2).unwrap().to_be_bytes());
+    bytes.extend_from_slice(&payload);
+    bytes.extend_from_slice(&[0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00]);
+    bytes.extend_from_slice(&[0x12, 0x34]);
+    bytes.extend_from_slice(&[0xFF, 0xD9]);
     bytes
 }
 
