@@ -1,11 +1,11 @@
-//! Exploratory, decoder-neutral MP-IMG2 Phase 2 comparison harness (record schema v6).
+//! Exploratory, decoder-neutral MP-IMG2 Phase 2 comparison harness (record schema v7).
 //!
 //! This module is shared by the operator-run `decode_compare` example and its
 //! contract tests. It is not a product decoder, selects no decoder, links no
 //! FFmpeg and makes no numeric claim: the emitted record is explicitly
 //! exploratory and every value it contains was actually observed.
 //!
-//! Candidate process protocol (v6), fixed so that no argv element or decoder path
+//! Candidate process protocol (v7), fixed so that no argv element or decoder path
 //! can be derived from media metadata. Three transports exist and all of them pass
 //! argv as a separate argument vector; no command string is ever built, quoted or
 //! interpreted:
@@ -72,12 +72,14 @@
 //! success class. Without an expectation the claim stays `presence_only`. The record
 //! also carries a `capabilities` table with one row per candidate × observed format.
 //!
-//! A claim requires a **complete** container (B2 / B-R1-01): PNG needs a legal IHDR,
-//! at least one non-empty `IDAT` and a real `IEND` of length `0` whose CRC is
-//! `AE 42 60 82`, and every counted chunk must have its payload *and* its 4-byte CRC
-//! inside the file; JPEG needs a full `SOF` segment, a well-formed `SOS` (length field
-//! `>= 2`, segment inside the file, header present) after it and a real `EOI` at the
-//! end of the file; BMP needs the whole declared header, a pixel-data offset inside the
+//! A claim requires a **complete** container (B2 / B-R1-01 / B-R2-01): PNG needs a
+//! legal IHDR, at least one non-empty `IDAT` and a real `IEND` of length `0` whose CRC
+//! *value* is `AE 42 60 82`; every counted chunk must have its whole payload and its
+//! four CRC bytes inside the file, and no CRC is computed for any other chunk. JPEG
+//! needs a full `SOF` segment, a well-formed `SOS` after it (`Ls >= 6`, `Ns` in
+//! `1..=4`, `Ls == 6 + 2 * Ns`, non-zero component ids with table selectors,
+//! `Ss`/`Se`/`AhAl` present, segment end inside the file) and a real `EOI` at the end
+//! of the file; BMP needs the whole declared header, a pixel-data offset inside the
 //! file and a declared pixel buffer that fits it (`data_offset + row_bytes * height <=
 //! file_size`, with the 4-byte-aligned row size of the declared bit count and the
 //! height magnitude so top-down bitmaps are covered). Header-only, CRC-less or

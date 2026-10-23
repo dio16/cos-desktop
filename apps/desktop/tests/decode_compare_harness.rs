@@ -1397,6 +1397,25 @@ fn jpeg_sos_without_length_is_incomplete() {
     assert!(report.capabilities.is_empty());
 }
 
+/// B-R2-01: `FF DA 00 03 01 FF D9` declares a 3-byte scan header, so it can never
+/// start a scan and the file is never complete, even after a valid SOF.
+#[test]
+fn jpeg_sos_with_short_length_is_incomplete() {
+    let fixture = Fixture::new();
+    fixture.case("a.jpg", "jpeg-sos-short");
+    fixture.declare_expected(&[("a.jpg", Some((24, 12)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_incomplete"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.inspected_format, inspect::Format::Jpeg);
+    assert!(!observation.inspected_complete);
+    assert!(report.capabilities.is_empty());
+}
+
 /// A6: both global bounds truncate explicitly instead of growing the record.
 #[test]
 fn observation_and_record_caps_truncate_explicitly() {
@@ -1717,6 +1736,10 @@ fn fake_candidate(support: ProbeSupport) {
             std::fs::write(&output, png_iend_without_crc(16, 16)).unwrap();
             0
         }
+        "jpeg-sos-short" => {
+            std::fs::write(&output, jpeg_sos_short_length(24, 12, 3)).unwrap();
+            0
+        }
         "jpeg-sos-nolen" => {
             std::fs::write(&output, jpeg_sos_without_length(24, 12, 3)).unwrap();
             0
@@ -2015,6 +2038,14 @@ fn png_iend_without_crc(width: u32, height: u32) -> Vec<u8> {
 fn jpeg_sos_without_length(width: u16, height: u16, components: u8) -> Vec<u8> {
     let mut bytes = jpeg_sof_only(width, height, components);
     bytes.extend_from_slice(&[0xFF, 0xDA, 0xFF, 0xD9]);
+    bytes
+}
+
+/// A valid SOF followed by exactly `FF DA 00 03 01 FF D9`: the scan header declares
+/// `Ls = 3`, which cannot carry the required SOS fields (B-R2-01).
+fn jpeg_sos_short_length(width: u16, height: u16, components: u8) -> Vec<u8> {
+    let mut bytes = jpeg_sof_only(width, height, components);
+    bytes.extend_from_slice(&[0xFF, 0xDA, 0x00, 0x03, 0x01, 0xFF, 0xD9]);
     bytes
 }
 

@@ -19,12 +19,21 @@
 //!
 //! - PNG: a legal IHDR first and exactly once, at least one `IDAT` chunk with a
 //!   non-zero length, and an `IEND` chunk with length `0` after it.
-//! - JPEG: a full `SOF` segment, a `SOS` marker after it, and a real `EOI`
-//!   (`FF D9`) at the end of the file.
+//! - JPEG: a full `SOF` segment, a well-formed `SOS` segment after it and a real `EOI`
+//!   (`FF D9`) at the end of the file. "Well-formed" means the segment ends inside the
+//!   file and its fields are consistent: `Ls >= 6`, `Ns` in `1..=4`,
+//!   `Ls == 6 + 2 * Ns`, a non-zero component id and a table-selector byte per
+//!   component, and the `Ss`/`Se`/`AhAl` bytes present. A malformed scan header such
+//!   as `FF DA 00 03 01 FF D9` never starts a scan.
 //! - BMP: the whole declared header present, a pixel-data offset inside the file,
 //!   and, for uncompressed bitmaps, `data_offset + row_bytes * height <= file_size`
 //!   with the 4-byte-aligned row size of the declared bit count (`height` is the
 //!   magnitude, so top-down bitmaps are covered too).
+//!
+//! For PNG, a chunk only exists when its 8-byte header, its whole payload and its
+//! 4-byte CRC are inside the file. The `IEND` CRC *value* is compared against
+//! `AE 42 60 82`; every other chunk is only checked for the *presence* of its four
+//! CRC bytes — no CRC is computed or verified anywhere in this module.
 //!
 //! This is framing evidence only: the inspector does not decode pixels, does not
 //! validate colour management, does not compare image content, and does not prove
@@ -459,18 +468,46 @@ fn inspect_jpeg<R: Read + Seek>(reader: &mut R, mut budget: u64, file_len: u64) 
         let payload = length - 2;
         if marker == 0xDA {
             // Start of scan: entropy-coded data follows, so the walk ends here. The
-            // marker only counts as a scan start when it is a well-formed segment: a
-            // non-empty header that fits inside the file (B-R1-01 residual). The image
-            // is complete only with a full SOF, that scan and a real EOI terminator.
+            // marker only counts as a scan start when the segment is well formed
+            // (B-R1-01 residual / B-R2-01): its declared end must stay inside the file
+            // and every required field must be present and consistent.
+            //
+            // Layout: Ls (2, already read) | Ns (1) | Ns × (id, Td/Ta) | Ss | Se | AhAl,
+            // so a consistent segment states `Ls == 6 + 2 * Ns`.
             let Ok(header_start) = reader.stream_position() else {
                 return inspection;
             };
             let Some(segment_end) = header_start.checked_add(payload) else {
                 return inspection;
             };
-            if payload == 0 || segment_end > file_len {
+            if segment_end > file_len {
                 return inspection;
             }
+            // 6 is the smallest consistent payload (Ns = 1); 12 the largest (Ns = 4).
+            if !(6..=12).contains(&payload) {
+                return inspection;
+            }
+            let Ok(header_len) = usize::try_from(payload) else {
+                return inspection;
+            };
+            let Some(header) = read_bytes(reader, header_len, &mut budget) else {
+                return inspection;
+            };
+            let components = usize::from(header[0]);
+            if !(1..=4).contains(&components) {
+                return inspection;
+            }
+            if payload != u64::try_from(4 + 2 * components).unwrap_or(u64::MAX) {
+                return inspection;
+            }
+            for index in 0..components {
+                // A component needs a non-zero id; its table selector byte is present
+                // because the length check above already covered the whole segment.
+                if header[1 + 2 * index] == 0 {
+                    return inspection;
+                }
+            }
+            // Ss, Se and Ah/Al are the last three bytes and are covered by the length.
             inspection.complete = inspection.width.is_some() && ends_with_eoi(reader, file_len);
             return inspection;
         }
