@@ -100,12 +100,21 @@
 //! is ever fabricated: `pixel_digest` is `null` unless the oracle actually decoded the
 //! bytes.
 //!
+//! What "verified" does not cover (NIT-1): the harness checks container structure,
+//! the declared dimensions and the decoded RGBA bytes — it does **not** recompute PNG
+//! chunk CRCs (only the `IEND` value is compared) and does **not** verify the zlib
+//! Adler-32 trailer, so an image whose decoded bytes are correct but whose CRC or
+//! Adler-32 is corrupt can still verify. Colour management, gamma chunks and EXIF are
+//! not interpreted either; pixel values are compared as stored.
+//!
 //! Capability rows are built only from observations that are `decoded`, complete, and
 //! whose validity is `presence_only` or `structure_verified` (A1), after observation
 //! truncation (A3), so a mismatch, refusal or dropped row never contributes. Each row
-//! carries `pixel_verified`, the number of its observations whose decoded pixels were
-//! verified; structure and pixel evidence are therefore labelled separately, and a
-//! `pixel_mismatch` row is `error` so it never counts at all.
+//! carries `pixels_verified`, the number of its observations whose decoded pixels were
+//! verified (an observation row's `pixel_verified` is the boolean for that single
+//! observation, a capability row's `pixels_verified` is the count — NIT-3); structure
+//! and pixel evidence are therefore labelled separately, and a `pixel_mismatch` row is
+//! `error` so it never counts at all.
 //! `max_width`/`max_height` are independent observed maxima and need not come from
 //! one output (N3). Colour-management markers are reported only when the parser
 //! actually saw them, a set the headers never stated is named in `not_measured` with
@@ -576,9 +585,11 @@ pub struct CapabilityRow {
     pub colour_types: Vec<ColourType>,
     pub colour_markers: Vec<ColourMarker>,
     /// How many of `observations` had their decoded pixels verified against an
-    /// operator digest. Structure and pixel evidence are labelled separately, and a
-    /// `pixel_mismatch` observation is `error` so it never reaches this row at all.
-    pub pixel_verified: usize,
+    /// operator digest (NIT-3: a count on this row, where an observation row carries
+    /// the boolean `pixel_verified`). Structure and pixel evidence are labelled
+    /// separately, and a `pixel_mismatch` observation is `error` so it never reaches
+    /// this row at all.
+    pub pixels_verified: usize,
 }
 
 struct Case {
@@ -1761,11 +1772,14 @@ fn measure(
                         }
                     }
                 } else if observation.observed_outcome == OutcomeClass::Decoded {
-                    // Structurally not a complete container: the pixel verdict cannot
-                    // be claimed either, and the structure verdict already says why.
+                    // Structurally not a usable container: the pixel verdict cannot be
+                    // claimed either, and the reason must match the refusal that
+                    // `verify` will produce (ANB-2): no dimensions at all means the
+                    // output is unparsable, dimensions without a terminator means it is
+                    // an incomplete container.
                     observation.pixel_status = PixelStatus::Unavailable;
-                    observation.pixel_reason = Some(if inspection.complete {
-                        PIXEL_UNAVAILABLE
+                    observation.pixel_reason = Some(if inspection.dimensions().is_none() {
+                        OUTPUT_UNPARSABLE
                     } else {
                         OUTPUT_INCOMPLETE
                     });
@@ -1867,11 +1881,11 @@ fn capability_rows(observations: &[Observation]) -> Vec<CapabilityRow> {
                 channels: Vec::new(),
                 colour_types: Vec::new(),
                 colour_markers: Vec::new(),
-                pixel_verified: 0,
+                pixels_verified: 0,
             });
         row.observations += 1;
         if observation.validity == PIXELS_VERIFIED {
-            row.pixel_verified += 1;
+            row.pixels_verified += 1;
         }
         row.max_width = Some(row.max_width.map_or(width, |current| current.max(width)));
         row.max_height = Some(row.max_height.map_or(height, |current| current.max(height)));
@@ -2239,7 +2253,7 @@ fn capability_row(row: &CapabilityRow) -> String {
     format!(
         "    {{\"candidate_id\": {}, \"format\": {}, \"observations\": {}, \"max_width\": {}, \
          \"max_height\": {}, \"bit_depths\": {}, \"channels\": {}, \"colour_types\": {}, \
-         \"colour_markers\": {}, \"pixel_verified\": {}, \"not_measured\": {}, \"not_measured_reason\": {}, \
+         \"colour_markers\": {}, \"pixels_verified\": {}, \"not_measured\": {}, \"not_measured_reason\": {}, \
          \"orientation\": {}, \"orientation_reason\": {}, \
          \"region\": {}, \"region_reason\": {}, \"sequential\": {}, \
          \"sequential_reason\": {}}}",
@@ -2252,7 +2266,7 @@ fn capability_row(row: &CapabilityRow) -> String {
         number_array(&row.channels),
         colour_type_array(&row.colour_types),
         marker_array(&row.colour_markers),
-        row.pixel_verified,
+        row.pixels_verified,
         string_list(&unmeasured),
         reason,
         quoted(NOT_MEASURED),

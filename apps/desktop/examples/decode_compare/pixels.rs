@@ -16,7 +16,13 @@
 //! Bounds: at most [`MAX_RGBA_BYTES`] of RGBA output (checked *before* anything is
 //! allocated), at most [`MAX_IDAT_BYTES`] of compressed image data, and the inflate
 //! output is capped at exactly the number of bytes the declared geometry needs, so a
-//! decompression bomb stops at the cap instead of growing. Every chunk walk is
+//! decompression bomb stops at the cap instead of growing.
+//!
+//! Integrity scope (NIT-1): this oracle verifies **decoded pixel values**, not
+//! checksums. PNG chunk CRCs are not recomputed and the zlib Adler-32 trailer is not
+//! checked, so bytes that decode to the expected RGBA can verify even when a CRC or
+//! the Adler-32 is corrupt. Palette, 16-bit and interlaced PNGs are outside the
+//! supported subset and are reported as `unsupported_subset`. Every chunk walk is
 //! bounded by [`MAX_CHUNKS`] and every read is checked, so a malformed or adversarial
 //! file yields an error instead of a panic or an unbounded allocation.
 

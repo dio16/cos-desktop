@@ -1820,7 +1820,7 @@ fn pixel_mismatch_when_dimensions_match_but_content_differs() {
     // Only the verified observation contributes a capability row, and it is counted.
     assert_eq!(report.capabilities.len(), 1);
     assert_eq!(report.capabilities[0].observations, 1);
-    assert_eq!(report.capabilities[0].pixel_verified, 1);
+    assert_eq!(report.capabilities[0].pixels_verified, 1);
 }
 
 /// Phase 3 (2): same visible pixels but a different colour type/alpha — the digest
@@ -1894,6 +1894,160 @@ fn single_pixel_alpha_mismatch_is_detected() {
         .filter(|(left, right)| left != right)
         .count();
     assert_eq!(differing, 1);
+}
+
+/// ANB-1: the pixel expectation wins over a dimension expectation. The output is a
+/// 16x16 image whose digest matches, while `expected:32x32` is wrong — the verdict
+/// must still be `pixels_verified`, which fails if the dimension rule runs first.
+#[test]
+fn pixel_expectation_takes_precedence_over_dimensions() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-rgb-a");
+    let digest = pixels::sha256(&rgba_rgb_16(10));
+    fixture.declare_pixels(&[("a.png", Some((32, 32)), Some(digest), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.inspected_width, Some(16));
+    assert_eq!(observation.expected_dimensions, Some((32, 32)));
+    assert_eq!(observation.validity, "pixels_verified");
+    assert!(observation.pixel_verified);
+    assert_eq!(observation.observed_outcome, OutcomeClass::Decoded);
+    assert_eq!(observation.refusal, None);
+    assert_eq!(report.capabilities.len(), 1);
+    assert_eq!(report.capabilities[0].pixels_verified, 1);
+}
+
+/// ANB-1: a mismatching digest wins over a matching dimension expectation, so the
+/// verdict is `pixel_mismatch` and never `structure_verified`.
+#[test]
+fn pixel_mismatch_takes_precedence_over_matching_dimensions() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-rgb-a");
+    let wrong = pixels::sha256(&rgba_rgb_16(200));
+    fixture.declare_pixels(&[("a.png", Some((16, 16)), Some(wrong), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.expected_dimensions, Some((16, 16)));
+    assert_eq!(observation.inspected_width, Some(16));
+    assert_eq!(observation.validity, "pixel_mismatch");
+    assert!(!observation.pixel_verified);
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("pixel_mismatch"));
+    assert_ne!(observation.pixel_digest, Some(wrong));
+    assert!(report.capabilities.is_empty());
+}
+
+/// ANB-2: a present-but-unparsable output reports the same token in the refusal and
+/// in `pixel_reason` (`output_unparsable`), never `output_incomplete`.
+#[test]
+fn unparsable_output_reports_output_unparsable_for_pixels() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let digest = pixels::sha256(&rgba_rgb_16(10));
+    fixture.declare_pixels(&[("a.png", Some((16, 16)), Some(digest), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert!(observation.output_present);
+    assert_eq!(observation.inspected_width, None, "no dimensions were read");
+    assert_eq!(observation.refusal, Some("output_unparsable"));
+    assert_eq!(observation.pixel_reason, Some("output_unparsable"));
+    assert_eq!(observation.validity_reason, Some("output_unparsable"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.pixel_digest, None);
+    assert!(!observation.pixel_verified);
+}
+
+/// A parsed-but-incomplete container keeps the `output_incomplete` token (ANB-2).
+#[test]
+fn incomplete_container_reports_output_incomplete_for_pixels() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-header-only");
+    let digest = pixels::sha256(&rgba_rgb_16(10));
+    fixture.declare_pixels(&[("a.png", Some((16, 16)), Some(digest), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.inspected_width, Some(16));
+    assert_eq!(observation.refusal, Some("output_incomplete"));
+    assert_eq!(observation.pixel_reason, Some("output_incomplete"));
+}
+
+/// NIT-2: the manifest refuses a repeated `pixels:` field and a digest that is not 64
+/// hex digits.
+#[test]
+fn manifest_rejects_bad_pixel_digests() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png16");
+    let valid = "789a0a2cba97f193f858638bb8d980e85d62d39a2a681e5b4c29585cd19046a8";
+
+    std::fs::write(
+        fixture.cases.join(harness::MANIFEST_FILE),
+        format!("a.png|pixels:{valid}|pixels:{valid}|decoded\n"),
+    )
+    .unwrap();
+    let error = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap_err();
+    assert!(
+        format!("{error}").contains("more than one pixel digest"),
+        "unexpected refusal: {error}"
+    );
+
+    for bad in [
+        "abc",
+        "",
+        "zz8a0a2cba97f193f858638bb8d980e85d62d39a2a681e5b4c29585cd19046a8",
+    ] {
+        std::fs::write(
+            fixture.cases.join(harness::MANIFEST_FILE),
+            format!("a.png|pixels:{bad}|decoded\n"),
+        )
+        .unwrap();
+        let error = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap_err();
+        assert!(
+            format!("{error}").contains("pixel digest"),
+            "digest {bad:?} must be refused: {error}"
+        );
+    }
+}
+
+/// NIT-2 + NIT-3: every schema-8 pixel field is present in each observation row with
+/// the documented nullability, and a capability row counts `pixels_verified`.
+#[test]
+fn record_carries_the_pixel_fields_with_documented_nullability() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png16");
+    // No expectation at all: all four pixel fields must still be present and null.
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let json = harness::render(&report).0;
+    for field in [
+        "\"pixel_expectation\": null",
+        "\"pixel_digest\": null",
+        "\"pixel_verified\": false",
+        "\"pixel_reason\": null",
+    ] {
+        assert!(json.contains(field), "missing {field} in {json}");
+    }
+
+    // With a matching expectation: digest and expectation are hex, verified is true.
+    fixture.declare_pixels(&[(
+        "a.png",
+        Some((16, 16)),
+        Some(pixels::sha256(&rgba_rgb_16(10))),
+        OutcomeClass::Decoded,
+    )]);
+    // The 16x16 fixture with a real IDAT: reuse the pixel fake here.
+    fixture.case("a.png", "png-rgb-a");
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let json = harness::render(&report).0;
+    let digest = pixels::hex(&pixels::sha256(&rgba_rgb_16(10)));
+    assert!(json.contains(&format!("\"pixel_expectation\": \"{digest}\"")));
+    assert!(json.contains(&format!("\"pixel_digest\": \"{digest}\"")));
+    assert!(json.contains("\"pixel_verified\": true"));
+    assert!(json.contains("\"validity\": \"pixels_verified\""));
+    // NIT-3: the capability row counts, the observation row is boolean.
+    assert!(json.contains("\"pixels_verified\": 1"), "{json}");
 }
 
 /// A6: both global bounds truncate explicitly instead of growing the record.
