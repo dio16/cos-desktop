@@ -2,7 +2,7 @@
   "build_version": 1,
   "baseline_source_commit": "19e06770ffd35364174f7719f38794773a8c8441",
   "source_commit": "edfebdaff1857f20fcf77e1bcf8440a557aaa758",
-  "observer_source_sha256": "sha256:9ae1084cdaf16fda83ec10ccc21d2cdb78a65a64f8abdabaeab42cd117796ea4",
+  "observer_source_sha256": "sha256:c2eb2515cfe24c667ebcafb6dfffdf91a7f61abbb5fa329eab55fde35717bb5f",
   "baseline_executable_sha256": "sha256:fe4787b547a57822935c1db83ac47b5f345596c53c9f634471a7c404d8cd5701",
   "executable_sha256": "sha256:a86f3758813b6237bd15b1350e245800469d5654234901928ff6c267b7b20043",
   "feature": "r0-s2b-instrumentation",

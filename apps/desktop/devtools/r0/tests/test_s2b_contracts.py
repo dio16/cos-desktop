@@ -292,6 +292,11 @@ class S2BWireContract(unittest.TestCase):
             ([("n02d//", b"")], "ZIP_MEMBER"),
             ([("/n02d/ledger.json", b"1")], "ZIP_MEMBER"),
             ([("n02d/", b"directory-payload")], "ZIP_SIZE"),
+            ([("n02d/NUL", b"x")], "ZIP_MEMBER"),
+            ([("n02d/nul", b"x")], "ZIP_MEMBER"),
+            ([("n02d/Con.txt", b"x")], "ZIP_MEMBER"),
+            ([("n02d/COM1", b"x")], "ZIP_MEMBER"),
+            ([("n02d/lpt9.log", b"x")], "ZIP_MEMBER"),
         ]
         for entries, code in cases:
             path, directory = archive(entries)
@@ -380,6 +385,22 @@ class S2BWireContract(unittest.TestCase):
             with tempfile.TemporaryDirectory() as target, self.assertRaises(s2b.ObservationError) as error:
                 s2b_validate.safe_extract(str(hidden), Path(target))
             self.assertEqual(str(error.exception), "ZIP_SIZE")
+
+    def test_windows_device_names_cannot_be_silently_dropped(self):
+        # Observed on this Windows host: writing a member literally named NUL through
+        # the OS succeeds without creating a file, so extraction would report a
+        # materialised member that does not exist. Refuse the device alias first.
+        import s2b_validate, zipfile
+        with tempfile.TemporaryDirectory() as work:
+            path = Path(work) / "device.zip"
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("n02d/ledger.json", b"kept")
+                archive.writestr("n02d/NUL", b"discarded-by-device")
+            with tempfile.TemporaryDirectory() as target:
+                with self.assertRaises(s2b.ObservationError) as error:
+                    s2b_validate.safe_extract(str(path), Path(target))
+                self.assertEqual(str(error.exception), "ZIP_MEMBER")
+                self.assertEqual(list(Path(target).iterdir()), [])
 
     def test_live_manifest_and_build_metadata_name_the_current_consumer_source(self):
         import contracts, s2b_capture

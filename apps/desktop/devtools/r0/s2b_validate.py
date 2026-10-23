@@ -28,6 +28,14 @@ ZIP_FAILURES = (zipfile.BadZipFile, zipfile.LargeZipFile, zlib.error, struct.err
 # A directory member may carry only an empty compression stream: nothing stored, or
 # zlib's canonical two-byte empty deflate stream. Anything longer can hide data.
 EMPTY_DIRECTORY_STREAM = {zipfile.ZIP_STORED: 0, zipfile.ZIP_DEFLATED: 2}
+# Win32 resolves these names to devices even below a directory (observed: a member
+# named NUL "writes" successfully without creating any file), so such a component is
+# never a materialised file; refuse it before any write.
+WINDOWS_DEVICES = frozenset(
+    ["CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"]
+    + [f"COM{index}" for index in range(1, 10)]
+    + [f"LPT{index}" for index in range(1, 10)]
+)
 
 
 def member_parts(info: zipfile.ZipInfo) -> list[str]:
@@ -41,6 +49,7 @@ def member_parts(info: zipfile.ZipInfo) -> list[str]:
     if (not name or any(part == "" for part in parts) or ".." in parts or "." in parts
             or ":" in name or "\0" in name
             or any(part.endswith(('.', ' ')) for part in parts)
+            or any(part.split(".", 1)[0].upper() in WINDOWS_DEVICES for part in parts)
             or (info.external_attr >> 16) & 0o170000 == 0o120000):
         s2b.fail("ZIP_MEMBER")
     return parts
