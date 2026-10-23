@@ -1,11 +1,11 @@
-//! Exploratory, decoder-neutral MP-IMG2 Phase 1 comparison harness (record schema v4).
+//! Exploratory, decoder-neutral MP-IMG2 Phase 1 comparison harness (record schema v5).
 //!
 //! This module is shared by the operator-run `decode_compare` example and its
 //! contract tests. It is not a product decoder, selects no decoder, links no
 //! FFmpeg and makes no numeric claim: the emitted record is explicitly
 //! exploratory and every value it contains was actually observed.
 //!
-//! Candidate process protocol (v4), fixed so that no argv element or decoder path
+//! Candidate process protocol (v5), fixed so that no argv element or decoder path
 //! can be derived from media metadata. Three transports exist and all of them pass
 //! argv as a separate argument vector; no command string is ever built, quoted or
 //! interpreted:
@@ -54,23 +54,18 @@
 //! never depends on a pipe, a descendant that inherits the child's handles cannot
 //! keep the harness waiting.
 //!
-//! Work directory ownership (B-01 / NF-1..NF-3): the operator-visible work
-//! directory `<out parent>/decode_compare_outputs` is only ever cleared when the
-//! harness owns it. Ownership requires the exact [`WORK_MARKER`] content, at most
-//! [`MAX_DIR_ENTRIES`] top-level entries (more is refused with
-//! [`WORK_DIR_TOO_LARGE`]), a `captures/` directory whose entries are all the
-//! harness's own `<stem>.stdout`/`<stem>.stderr` files, and top-level entries that
-//! are the marker, `captures/` or an `NNN_…` output. Cleanup is a single
-//! name-filtered, re-validating pass that aborts with [`WORK_DIR_NOT_OWNED`] on the
-//! first entry this tool did not create, so a directory the harness does not fully
-//! own survives with its foreign data. `remove_dir_all` is never used on the work
-//! or capture directory: every directory is removed with `remove_dir`, which the
-//! operating system only allows when it is empty. A directory the harness owns is
-//! cleared and re-created empty at the start of every run, and each observation's
-//! capture files are removed once read. Because the entry cap also covers a full
-//! run's outputs, an extreme `--max-observations` near [`MAX_OBSERVATIONS`] can
-//! leave a directory the next run refuses with `work_dir_too_large`; that refusal
-//! deletes nothing and the operator can clear the directory by hand.
+//! Work directory (B-R2-01): the harness never clears, reuses or rewrites an
+//! existing directory. `<out parent>/decode_compare_outputs` is created if it is
+//! missing and otherwise left exactly as it is; every run creates a fresh child
+//! `<run-token>` ([`run_token`]) with `create_dir`, so a token that already exists
+//! is refused as [`WORK_DIR_EXISTS`] instead of being reused. Candidate outputs and
+//! `captures/` live only inside that run directory, which this process created in
+//! this run and is therefore provably ours: it is removed when the run ends
+//! (success, refusal or error) and nothing outside it is ever deleted. A crash
+//! leaves the run directory behind for the operator to clear; the next run picks a
+//! new token and never touches it. Liability for foreign data is therefore zero by
+//! construction rather than by name matching. The run token and the work directory
+//! are internal plumbing and never appear in the record.
 //!
 //! Scratch and output bounds (B-03): the combined capture size is checked against
 //! `max_output_bytes * 8` (probe: [`PROBE_CAP_BYTES`]` * 8`), and the candidate
@@ -98,18 +93,17 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
+    sync::atomic::{AtomicU64, Ordering},
     thread,
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 /// Fixed record schema version; changing record semantics requires a new version.
 pub const SCHEMA_VERSION: u32 = 5;
-/// Ownership marker proving the work directory belongs to this tool.
-pub const WORK_MARKER: &str = ".decode_compare_owned";
-/// Refusal token for a work directory the harness does not own.
-pub const WORK_DIR_NOT_OWNED: &str = "work_dir_not_owned";
-/// Refusal token for a work directory above the entry cap.
-pub const WORK_DIR_TOO_LARGE: &str = "work_dir_too_large";
+/// Refusal token for a run token whose directory already exists.
+pub const WORK_DIR_EXISTS: &str = "work_dir_exists";
+/// Fixed prefix of every per-run work-directory token.
+pub const RUN_TOKEN_PREFIX: &str = "run-";
 /// Exploratory comparisons are not a ratified numeric gate.
 pub const NUMERIC_GATE: &str = "NOT_RATIFIED";
 /// Optional operator declaration of the expected outcome per case file name.
@@ -151,8 +145,7 @@ const MAX_CASE_NAME_BYTES: usize = 256;
 const MAX_IDENTITY_CHARS: usize = 256;
 const MAX_REASON_CHARS: usize = 32;
 const MAX_MANIFEST_LINES: usize = 1024;
-/// Entry cap for a scanned directory (cases and the work directory alike).
-pub const MAX_DIR_ENTRIES: usize = 4096;
+const MAX_DIR_ENTRIES: usize = 4096;
 const MAX_PATH_ENTRIES: usize = 64;
 const OUTPUT_NAME_CHARS: usize = 48;
 const PROBE_CAP_BYTES: usize = 4 * 1024;
@@ -162,7 +155,6 @@ const NOT_MEASURED: &str = "not_measured";
 /// Validity claim when the only evidence is a non-empty output file.
 const PRESENCE_ONLY: &str = "presence_only";
 /// Content of the work-directory ownership marker (tool label + schema version).
-const WORK_MARKER_CONTENT: &str = "cos-desktop decode_compare work dir schema=5";
 /// Bytes still to append after the last observation row: `\n  ]`, `\n`, `}`, `\n`.
 const OBSERVATIONS_TAIL: &str = "\n  ]\n}\n";
 const POLL_INTERVAL: Duration = Duration::from_millis(2);
@@ -796,6 +788,14 @@ fn load_manifest(cases: &Path) -> Result<BTreeMap<String, OutcomeClass>, UsageEr
 /// `observations_truncated` instead of silently shortening the record.
 pub fn run(config: &Config) -> Result<Report, UsageError> {
     let (work, captures) = output_directories(config)?;
+    let collected = collect(config, &work, &captures);
+    // Only this run's own directory is removed, whatever the outcome; anything that
+    // already lived in the work root is never touched.
+    remove_run_directory(&work);
+    collected
+}
+
+fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, UsageError> {
     let mut candidates = config.candidates.clone();
     candidates.sort_by(|left, right| left.id.cmp(&right.id));
     let launchers: Vec<Launcher> = candidates
@@ -806,7 +806,7 @@ pub fn run(config: &Config) -> Result<Report, UsageError> {
         .iter()
         .zip(&launchers)
         .map(|(candidate, launcher)| {
-            let probed = probe_identity(config, candidate, launcher, &captures);
+            let probed = probe_identity(config, candidate, launcher, captures);
             CandidateRecord {
                 id: candidate.id.clone(),
                 kind: candidate.program.kind(),
@@ -829,7 +829,7 @@ pub fn run(config: &Config) -> Result<Report, UsageError> {
                 break 'cases;
             }
             observations.push(measure(
-                config, candidate, launcher, case, &work, &captures, case_index,
+                config, candidate, launcher, case, work, captures, case_index,
             ));
         }
     }
@@ -865,181 +865,80 @@ pub fn run(config: &Config) -> Result<Report, UsageError> {
     Ok(report)
 }
 
-/// Prepare the operator work directory without ever deleting data the harness does
-/// not fully own (B-01 / NF-1..NF-3).
+/// Create the work root if needed and a fresh, unique run directory inside it.
 ///
-/// Ownership requires the exact marker content before anything is deleted. The
-/// directory is then enumerated without truncation (more than [`MAX_DIR_ENTRIES`]
-/// entries is refused with [`WORK_DIR_TOO_LARGE`]) and cleared in one name-filtered,
-/// re-validating pass that aborts on the first entry this tool did not create. The
-/// `captures/` directory is validated the same way: its entries must all be the
-/// harness's own `<stem>.stdout`/`<stem>.stderr` files. `remove_dir_all` is never
-/// used here; directories go away with `remove_dir`, which only succeeds when the
-/// operating system agrees they are empty.
+/// Nothing that already exists in the root is ever cleared, renamed or deleted:
+/// the run directory is created with `create_dir`, which fails if the token is
+/// already taken, and only that new directory is used for outputs and captures.
 fn output_directories(config: &Config) -> Result<(PathBuf, PathBuf), UsageError> {
     let parent = config
         .out
         .parent()
         .ok_or_else(|| UsageError::new("--out must name a file inside a directory"))?;
-    let work = parent.join(OUTPUT_DIR);
-    match fs::symlink_metadata(&work) {
-        Ok(metadata) if metadata.is_dir() => clear_owned_work(&work)?,
-        Ok(_) => return Err(not_owned(&work, "exists and is not a directory")),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-        Err(error) => {
-            return Err(UsageError::new(format!(
-                "cannot inspect {}: {error}",
-                work.display()
-            )));
-        }
-    }
+    let root = parent.join(OUTPUT_DIR);
+    fs::create_dir_all(&root)
+        .map_err(|error| UsageError::new(format!("cannot create {}: {error}", root.display())))?;
+    let work = create_run_directory(&root, &run_token())?;
     let captures = work.join(CAPTURE_DIR);
-    fs::create_dir_all(&captures).map_err(|error| {
-        UsageError::new(format!("cannot create {}: {error}", captures.display()))
-    })?;
-    fs::write(work.join(WORK_MARKER), WORK_MARKER_CONTENT).map_err(|error| {
-        UsageError::new(format!("cannot mark {} as owned: {error}", work.display()))
-    })?;
+    if let Err(error) = fs::create_dir_all(&captures) {
+        remove_run_directory(&work);
+        return Err(UsageError::new(format!(
+            "cannot create {}: {error}",
+            captures.display()
+        )));
+    }
     Ok((work, captures))
 }
 
-fn not_owned(path: &Path, detail: &str) -> UsageError {
-    UsageError::new(format!(
-        "{WORK_DIR_NOT_OWNED}: {} {detail}; nothing further was deleted",
-        path.display()
-    ))
+/// A fresh run token: process id, wall clock and a process-local sequence number.
+pub fn run_token() -> String {
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_nanos())
+        .unwrap_or(0);
+    let sequence = NEXT.fetch_add(1, Ordering::Relaxed);
+    format!(
+        "{RUN_TOKEN_PREFIX}{}-{nanos}-{sequence}",
+        std::process::id()
+    )
 }
 
-fn too_large(directory: &Path) -> UsageError {
-    UsageError::new(format!(
-        "{WORK_DIR_TOO_LARGE}: {} holds more than {MAX_DIR_ENTRIES} entries; nothing was deleted",
-        directory.display()
-    ))
-}
-
-/// Enumerate a directory without ever truncating it: the cap is enforced by
-/// refusing, so a listing that would be cut short can never look like ownership.
-fn bounded_entries(directory: &Path) -> Result<Vec<(String, PathBuf)>, UsageError> {
-    let listing = fs::read_dir(directory).map_err(|error| {
-        UsageError::new(format!("cannot list {}: {error}", directory.display()))
-    })?;
-    let mut entries: Vec<(String, PathBuf)> = Vec::new();
-    for entry in listing {
-        let entry = entry.map_err(|error| {
-            UsageError::new(format!(
-                "cannot read a {} entry: {error}",
-                directory.display()
-            ))
-        })?;
-        if entries.len() >= MAX_DIR_ENTRIES {
-            return Err(too_large(directory));
-        }
-        let name = entry
-            .file_name()
-            .into_string()
-            .map_err(|_| not_owned(directory, "contains a name that is not valid UTF-8"))?;
-        entries.push((name, entry.path()));
+/// Create this run's own directory; a token that already exists is refused rather
+/// than reused, so two runs can never share a directory.
+pub fn create_run_directory(root: &Path, token: &str) -> Result<PathBuf, UsageError> {
+    let token_ok = !token.is_empty()
+        && token.len() <= MAX_CASE_NAME_BYTES
+        && token
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_');
+    if !token_ok {
+        return Err(UsageError::new(format!(
+            "run token {token:?} is not usable as a directory name"
+        )));
     }
-    entries.sort_by(|left, right| left.0.cmp(&right.0));
-    Ok(entries)
-}
-
-/// Prove ownership of the marker and clear the directory in one re-validating pass.
-fn clear_owned_work(work: &Path) -> Result<(), UsageError> {
-    // The marker must match exactly before anything at all is deleted.
-    match read_small_file(&work.join(WORK_MARKER), MAX_IDENTITY_CHARS) {
-        Some(bytes) if bytes == WORK_MARKER_CONTENT.as_bytes() => {}
-        _ => return Err(not_owned(work, "has no matching ownership marker")),
+    let directory = root.join(token);
+    match fs::create_dir(&directory) {
+        Ok(()) => Ok(directory),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => Err(UsageError::new(
+            format!("{WORK_DIR_EXISTS}: {} already exists", directory.display()),
+        )),
+        Err(error) => Err(UsageError::new(format!(
+            "cannot create {}: {error}",
+            directory.display()
+        ))),
     }
-    for (name, path) in bounded_entries(work)? {
-        let file_type = file_type_of(&path, work)?;
-        if name == WORK_MARKER && file_type.is_file() {
-            remove_entry_file(&path)?;
-        } else if name == CAPTURE_DIR && file_type.is_dir() {
-            clear_owned_captures(&path)?;
-        } else if file_type.is_file() && owned_output_name(&name) {
-            remove_entry_file(&path)?;
-        } else {
-            return Err(not_owned(
-                work,
-                "contains an entry this tool did not create",
-            ));
-        }
+}
+
+/// Remove this run's own directory. Failure is reported but never fatal: the run
+/// directory is ours alone and nothing else is touched either way.
+fn remove_run_directory(directory: &Path) {
+    if let Err(error) = fs::remove_dir_all(directory) {
+        eprintln!(
+            "event=decode-compare cleanup-deferred dir={} error={error}",
+            directory.display()
+        );
     }
-    // `remove_dir` succeeds only when the operating system agrees it is empty.
-    fs::remove_dir(work).map_err(|error| {
-        not_owned(
-            work,
-            &format!("could not be verified empty after cleanup ({error})"),
-        )
-    })?;
-    Ok(())
-}
-
-/// Clear a capture directory whose entries are all the harness's own.
-fn clear_owned_captures(captures: &Path) -> Result<(), UsageError> {
-    for (name, path) in bounded_entries(captures)? {
-        let file_type = file_type_of(&path, captures)?;
-        if !file_type.is_file() || !owned_capture_name(&name) {
-            return Err(not_owned(
-                captures,
-                "contains an entry this tool did not create",
-            ));
-        }
-        remove_entry_file(&path)?;
-    }
-    fs::remove_dir(captures).map_err(|error| {
-        not_owned(
-            captures,
-            &format!("could not be verified empty after cleanup ({error})"),
-        )
-    })?;
-    Ok(())
-}
-
-/// Our measured outputs are always named `<3 digits>_…` in the work directory.
-fn owned_output_name(name: &str) -> bool {
-    let bytes = name.as_bytes();
-    bytes.len() > 4
-        && bytes.len() <= MAX_CASE_NAME_BYTES
-        && bytes[..3].iter().all(u8::is_ascii_digit)
-        && bytes[3] == b'_'
-}
-
-/// Our capture scratch files are always named `<stem>.stdout` / `<stem>.stderr`.
-fn owned_capture_name(name: &str) -> bool {
-    let Some(stem) = name
-        .strip_suffix(".stdout")
-        .or_else(|| name.strip_suffix(".stderr"))
-    else {
-        return false;
-    };
-    !stem.is_empty() && name.len() <= MAX_CASE_NAME_BYTES
-}
-
-fn file_type_of(path: &Path, directory: &Path) -> Result<fs::FileType, UsageError> {
-    fs::symlink_metadata(path)
-        .map(|metadata| metadata.file_type())
-        .map_err(|error| {
-            UsageError::new(format!(
-                "cannot inspect a {} entry: {error}",
-                directory.display()
-            ))
-        })
-}
-
-fn remove_entry_file(path: &Path) -> Result<(), UsageError> {
-    fs::remove_file(path)
-        .map_err(|error| UsageError::new(format!("cannot clear {}: {error}", path.display())))
-}
-
-/// Bounded read used by the ownership check.
-fn read_small_file(path: &Path, limit: usize) -> Option<Vec<u8>> {
-    let file = fs::File::open(path).ok()?;
-    let mut bytes = Vec::new();
-    let cap = u64::try_from(limit).unwrap_or(u64::MAX).saturating_add(1);
-    file.take(cap).read_to_end(&mut bytes).ok()?;
-    Some(bytes)
 }
 
 /// Admit only direct regular files with a UTF-8 name, sorted, bounded by max_cases.
@@ -1445,11 +1344,6 @@ fn measure(
         &candidate.id,
         suffix,
     );
-    if let Err(reason) = clear_output(&output) {
-        observation.observed_outcome = OutcomeClass::NotRun;
-        observation.refusal = Some(reason);
-        return observation;
-    }
     let stem = format!(
         "{:03}_{}.{}",
         case_index,
@@ -1540,22 +1434,6 @@ fn measure(
     }
     capture.release();
     observation
-}
-
-/// Remove any earlier output so a size can only come from this run, then prove the
-/// path is really gone; a stale or unreusable output path fails closed. The run
-/// already clears the whole work directory, so this is the per-observation guard
-/// that keeps `output_bytes` attributable.
-pub fn clear_output(path: &Path) -> Result<(), &'static str> {
-    match fs::remove_file(path) {
-        Ok(()) => {}
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-        Err(_) => return Err("output_stale_unremovable"),
-    }
-    if path.exists() {
-        return Err("output_stale_present");
-    }
-    Ok(())
 }
 
 fn sanitize_name(name: &str) -> String {

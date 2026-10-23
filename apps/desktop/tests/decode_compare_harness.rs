@@ -64,27 +64,9 @@ impl Fixture {
         self.base.join(format!("{name}.json"))
     }
 
+    /// The shared work root; the harness creates it but never clears it.
     fn work(&self) -> PathBuf {
         self.base.join(harness::OUTPUT_DIR)
-    }
-
-    fn captures(&self) -> PathBuf {
-        self.work().join(harness::CAPTURE_DIR)
-    }
-
-    /// Measured output files of the work directory, sorted; capture files are
-    /// removed by the harness, the capture directory is not a file, and the
-    /// ownership marker is not a measured output.
-    fn work_files(&self) -> Vec<PathBuf> {
-        let mut files: Vec<PathBuf> = std::fs::read_dir(self.work())
-            .unwrap()
-            .map(|entry| entry.unwrap())
-            .filter(|entry| entry.file_name() != harness::WORK_MARKER)
-            .filter(|entry| entry.file_type().unwrap().is_file())
-            .map(|entry| entry.path())
-            .collect();
-        files.sort();
-        files
     }
 
     /// The test binary itself: absolute, local-disk, and never derived from media.
@@ -589,89 +571,6 @@ fn scratch_cap_kills_a_flooding_candidate() {
     );
 }
 
-/// NB-2: every run clears the work and capture directories, so nothing from a
-/// previous run can be mistaken for this run's evidence.
-#[test]
-fn second_run_starts_from_an_empty_work_directory() {
-    let fixture = Fixture::new();
-    fixture.case("a.png", "ok");
-    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.invocation = helper_invocation(HELPER);
-    let first = harness::run(&config).unwrap();
-    assert_eq!(first.observations.len(), 1);
-    assert_eq!(fixture.work_files().len(), 1);
-    assert_eq!(std::fs::read_dir(fixture.captures()).unwrap().count(), 0);
-    assert!(
-        fixture.work().join(harness::WORK_MARKER).exists(),
-        "the work directory must carry its ownership marker"
-    );
-
-    // B-01: a left-over the harness recognises as its own is cleared; a foreign
-    // entry would make the directory unowned and is covered by its own test.
-    let marker = fixture.work().join("999_planted.png");
-    let capture = fixture.captures().join("stale.stdout");
-    std::fs::write(&marker, b"leftover").unwrap();
-    std::fs::write(&capture, b"leftover").unwrap();
-    let second = harness::run(&config).unwrap();
-    assert!(
-        !marker.exists(),
-        "the work directory must be cleared at the start of every run"
-    );
-    assert!(
-        !capture.exists(),
-        "the capture directory must be cleared too"
-    );
-    assert_eq!(second.observations.len(), 1);
-    assert_eq!(
-        second.observations[0].output_bytes,
-        Some(FAKE_OUTPUT.len() as u64)
-    );
-}
-
-/// B-01: a work directory the harness did not create is refused, nothing is
-/// deleted, and a directory that carries the marker but gains foreign data is
-/// refused as well.
-#[test]
-fn foreign_work_directory_is_refused_and_preserved() {
-    let fixture = Fixture::new();
-    fixture.case("a.png", "ok");
-    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.invocation = helper_invocation(HELPER);
-    let work = fixture.work();
-
-    // No marker at all: a directory the harness did not create.
-    std::fs::create_dir_all(&work).unwrap();
-    let foreign = work.join("holiday.jpg");
-    std::fs::write(&foreign, b"operator data").unwrap();
-    let error = harness::run(&config).unwrap_err();
-    let message = format!("{error}");
-    assert!(
-        message.contains(harness::WORK_DIR_NOT_OWNED),
-        "unexpected refusal: {message}"
-    );
-    assert_eq!(std::fs::read(&foreign).unwrap(), b"operator data");
-    assert!(
-        !fixture.captures().exists(),
-        "nothing may be created either"
-    );
-
-    // Owned directory (marker present) that gained a foreign entry.
-    std::fs::remove_file(&foreign).unwrap();
-    std::fs::remove_dir(&work).unwrap();
-    let owned = harness::run(&config).unwrap();
-    assert_eq!(owned.observations.len(), 1);
-    assert!(work.join(harness::WORK_MARKER).exists());
-    let foreign = work.join("notes.txt");
-    std::fs::write(&foreign, b"keep me").unwrap();
-    let error = harness::run(&config).unwrap_err();
-    let message = format!("{error}");
-    assert!(
-        message.contains(harness::WORK_DIR_NOT_OWNED),
-        "unexpected refusal: {message}"
-    );
-    assert_eq!(std::fs::read(&foreign).unwrap(), b"keep me");
-}
-
 /// B-02: a successful exit without an output file is not `decoded`.
 #[test]
 fn successful_exit_without_output_is_not_decoded() {
@@ -746,103 +645,152 @@ fn oversized_output_file_is_capped() {
     assert_ne!(observation.validity, "presence_only");
 }
 
-/// NF-1: a directory above the entry cap is refused before anything is deleted,
-/// even when the marker matches and every name looks like one of ours.
+/// B-R2-01: nothing that already lives in the shared work root is deleted or
+/// rewritten, even when its name looks exactly like one of the harness's own.
 #[test]
-fn work_directory_above_the_entry_cap_is_refused() {
+fn preexisting_work_root_is_never_modified() {
     let fixture = Fixture::new();
     fixture.case("a.png", "ok");
-    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.invocation = helper_invocation(HELPER);
-    let work = fixture.work();
-    let owned = harness::run(&config).unwrap();
-    assert_eq!(owned.observations.len(), 1);
-    assert!(work.join(harness::WORK_MARKER).exists());
-
-    // Marker + MAX_DIR_ENTRIES own-named files + a foreign directory.
-    for index in 0..harness::MAX_DIR_ENTRIES {
-        std::fs::write(work.join(format!("000_bulk{index}.png")), b"x").unwrap();
+    let base = fixture.work();
+    std::fs::create_dir_all(base.join("foreign")).unwrap();
+    let planted = [
+        (
+            base.join("123_operator_notes.txt"),
+            b"operator notes".to_vec(),
+        ),
+        (base.join("notes.stdout"), b"looks like a capture".to_vec()),
+        (base.join("foreign").join("keep.bin"), vec![7_u8; 1024]),
+        (
+            base.join(".decode_compare_owned"),
+            b"cos-desktop decode_compare work dir schema=5".to_vec(),
+        ),
+    ];
+    for (path, bytes) in &planted {
+        std::fs::write(path, bytes).unwrap();
     }
-    let foreign = work.join("operator_dir");
-    std::fs::create_dir(&foreign).unwrap();
-    std::fs::write(foreign.join("keep.txt"), b"operator data").unwrap();
 
-    let error = harness::run(&config).unwrap_err();
-    let message = format!("{error}");
-    assert!(
-        message.contains(harness::WORK_DIR_TOO_LARGE),
-        "unexpected refusal: {message}"
-    );
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    assert_eq!(report.observations.len(), 1);
     assert_eq!(
-        std::fs::read(foreign.join("keep.txt")).unwrap(),
-        b"operator data"
+        report.observations[0].observed_outcome,
+        OutcomeClass::Decoded
     );
-    assert!(
-        work.join(harness::WORK_MARKER).exists(),
-        "an over-large directory is refused before anything is deleted"
-    );
-    assert!(
-        work.join("000_bulk0.png").exists(),
-        "an over-large directory is refused before anything is deleted"
+
+    for (path, bytes) in &planted {
+        assert_eq!(
+            &std::fs::read(path).unwrap(),
+            bytes,
+            "{path:?} must be byte-identical after the run"
+        );
+    }
+    assert!(base.join("foreign").is_dir());
+    // The run removed only the directory it created itself.
+    let mut remaining: Vec<String> = std::fs::read_dir(&base)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    remaining.sort();
+    assert_eq!(
+        remaining,
+        vec![
+            ".decode_compare_owned",
+            "123_operator_notes.txt",
+            "foreign",
+            "notes.stdout"
+        ]
     );
 }
 
-/// NF-2: the `captures/` directory is validated too, so foreign data inside it is
-/// never deleted.
+/// B-R2-01: the run's own directory is removed when the run ends, so no `captures`
+/// directory and no output survives a completed run.
 #[test]
-fn captures_directory_with_foreign_data_is_refused() {
+fn run_directory_and_captures_are_removed_when_the_run_finishes() {
     let fixture = Fixture::new();
     fixture.case("a.png", "ok");
-    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.invocation = helper_invocation(HELPER);
-    let owned = harness::run(&config).unwrap();
-    assert_eq!(owned.observations.len(), 1);
-    assert_eq!(std::fs::read_dir(fixture.captures()).unwrap().count(), 0);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
 
-    let foreign = fixture.captures().join("operator.txt");
-    std::fs::write(&foreign, b"operator data").unwrap();
-    let error = harness::run(&config).unwrap_err();
-    let message = format!("{error}");
-    assert!(
-        message.contains(harness::WORK_DIR_NOT_OWNED),
-        "unexpected refusal: {message}"
+    assert_eq!(report.observations.len(), 1);
+    assert_eq!(
+        report.observations[0].output_bytes,
+        Some(FAKE_OUTPUT.len() as u64),
+        "the output is measured inside the run directory before cleanup"
     );
-    assert_eq!(std::fs::read(&foreign).unwrap(), b"operator data");
+    let base = fixture.work();
+    assert!(base.is_dir(), "the shared work root stays in place");
+    assert_eq!(
+        std::fs::read_dir(&base).unwrap().count(),
+        0,
+        "only the run's own directory existed, and it is gone"
+    );
 }
 
-/// NF-3: cleanup re-validates in a single name-filtered pass and aborts at the
-/// first entry that is not ours, so an unexpected entry that appears after the
-/// marker ownership check is never deleted. Our own entry sorts first, which proves
-/// the pass had already started deleting when it stopped.
+/// B-R2-01: two runs never share a directory. A token that is already taken is
+/// refused instead of reused, and two full runs both succeed on their own token.
 #[test]
-fn unexpected_entry_during_cleanup_is_refused_and_survives() {
-    let fixture = Fixture::new();
-    fixture.case("a.png", "ok");
-    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.invocation = helper_invocation(HELPER);
-    let work = fixture.work();
-    let owned = harness::run(&config).unwrap();
-    assert_eq!(owned.observations.len(), 1);
+fn two_runs_never_share_a_directory() {
+    let first = harness::run_token();
+    let second = harness::run_token();
+    assert_ne!(first, second, "run tokens must be unique per call");
+    assert!(first.starts_with(harness::RUN_TOKEN_PREFIX));
 
-    let ours = work.join("100_pending.png");
-    std::fs::write(&ours, b"ours").unwrap();
-    let foreign = work.join("200_foreign");
-    std::fs::create_dir(&foreign).unwrap();
-    std::fs::write(foreign.join("keep.txt"), b"operator data").unwrap();
-
-    let error = harness::run(&config).unwrap_err();
+    let root = std::env::temp_dir().join(format!(
+        "img2-run-token-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    std::fs::create_dir_all(&root).unwrap();
+    let token = harness::run_token();
+    let directory = harness::create_run_directory(&root, &token).unwrap();
+    assert!(directory.is_dir());
+    let error = harness::create_run_directory(&root, &token).unwrap_err();
     let message = format!("{error}");
     assert!(
-        message.contains(harness::WORK_DIR_NOT_OWNED),
+        message.contains(harness::WORK_DIR_EXISTS),
         "unexpected refusal: {message}"
     );
+    assert!(
+        directory.is_dir(),
+        "a refused token leaves the existing directory alone"
+    );
+    let other = harness::create_run_directory(&root, &harness::run_token()).unwrap();
+    assert_ne!(directory, other);
+    let _ = std::fs::remove_dir_all(&root);
+
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let first_run = measured(&fixture, &[fixture.fake()], HELPER);
+    let second_run = measured(&fixture, &[fixture.fake()], HELPER);
     assert_eq!(
-        std::fs::read(foreign.join("keep.txt")).unwrap(),
-        b"operator data"
+        first_run.observations[0].output_bytes,
+        Some(FAKE_OUTPUT.len() as u64)
+    );
+    assert_eq!(
+        second_run.observations[0].output_bytes,
+        Some(FAKE_OUTPUT.len() as u64)
+    );
+    assert_eq!(std::fs::read_dir(fixture.work()).unwrap().count(), 0);
+}
+
+/// B-R2-01: the record stays deterministic — the run token and the work directory
+/// are internal plumbing and never leak into the emitted JSON.
+#[test]
+fn run_token_never_appears_in_the_record() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let json = harness::render(&report).0;
+    assert!(
+        !json.contains(harness::RUN_TOKEN_PREFIX),
+        "the run token must not appear in the record"
     );
     assert!(
-        !ours.exists(),
-        "the re-validating pass deletes our own entries before it aborts"
+        !json.contains(harness::OUTPUT_DIR),
+        "the work directory must not appear in the record"
+    );
+    assert!(
+        !json.contains(&std::env::temp_dir().display().to_string()),
+        "temporary paths must not appear in the record"
     );
 }
 
@@ -889,44 +837,6 @@ fn observation_and_record_caps_truncate_explicitly() {
     let refused = fixture.record("oversized");
     assert!(harness::write_report(&oversized, &refused).is_err());
     assert!(!refused.exists());
-}
-
-/// A5/NB-2: an output path that cannot be cleared still fails closed, and a stale
-/// file is never attributed to a later run.
-#[test]
-fn stale_output_is_cleared_and_unverifiable_staleness_refuses() {
-    let fixture = Fixture::new();
-    fixture.case("a.png", "ok");
-    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.invocation = helper_invocation(HELPER);
-    let first = harness::run(&config).unwrap();
-    assert_eq!(
-        first.observations[0].output_bytes,
-        Some(FAKE_OUTPUT.len() as u64)
-    );
-
-    // A stale, larger file at the measured output path must never be reported.
-    let outputs = fixture.work_files();
-    assert_eq!(outputs.len(), 1, "one measured output file");
-    let output = outputs.into_iter().next().unwrap();
-    std::fs::write(&output, vec![b'S'; 64 * 1024]).unwrap();
-    let second = harness::run(&config).unwrap();
-    assert_eq!(
-        second.observations[0].output_bytes,
-        Some(FAKE_OUTPUT.len() as u64)
-    );
-
-    // The per-observation guard still refuses a path it cannot verify.
-    std::fs::remove_file(&output).unwrap();
-    std::fs::create_dir(&output).unwrap();
-    assert_eq!(
-        harness::clear_output(&output),
-        Err("output_stale_unremovable")
-    );
-    std::fs::remove_dir(&output).unwrap();
-    std::fs::write(&output, b"removable").unwrap();
-    assert_eq!(harness::clear_output(&output), Ok(()));
-    assert!(!output.exists());
 }
 
 /// N6: without a case suffix the candidate output format cannot be expressed, so
