@@ -2,10 +2,11 @@
 # Windows-first, repository root resolved from this script's location. The native startup
 # smoke (gate 6) stays a recorded manual gate on this workstation and is not simulated here.
 #
-# Usage:  pwsh scripts/quality.ps1
+# Usage:  pwsh scripts/quality.ps1             # required quality gates
+#         pwsh scripts/quality.ps1 -CheckOnly  # local feedback; no linking or tests
 
 [CmdletBinding()]
-param()
+param([switch]$CheckOnly)
 
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -26,9 +27,14 @@ try {
         "metadata"                         = { cargo metadata --locked --no-deps --format-version 1 | Out-Null }
         "dependency rules (self-test)"     = { Invoke-Python @("-B", "scripts/check_dependency_rules.py", "--self-test") }
         "dependency rules (workspace)"     = { Invoke-Python @("-B", "scripts/check_dependency_rules.py") }
-        "clippy"                           = { cargo clippy --locked --workspace --all-targets -- -D warnings }
-        "tests"                            = { cargo test --locked --workspace }
-        "build"                            = { cargo build --locked --workspace }
+    }
+    if ($CheckOnly) {
+        $gates["check (no link)"] = { cargo check --locked --workspace --all-targets }
+    }
+    else {
+        $gates["clippy"] = { cargo clippy --locked --workspace --all-targets -- -D warnings }
+        $gates["tests"] = { cargo test --locked --workspace }
+        $gates["build"] = { cargo build --locked --workspace }
     }
 
     foreach ($name in $gates.Keys) {
@@ -38,7 +44,12 @@ try {
             throw "gate failed: $name"
         }
     }
-    Write-Host "all quality gates passed" -ForegroundColor Green
+    if ($CheckOnly) {
+        Write-Host "local checks passed; clippy, tests, build and native smoke NOT_RUN" -ForegroundColor Yellow
+    }
+    else {
+        Write-Host "all quality gates passed (native smoke is separate)" -ForegroundColor Green
+    }
 }
 catch {
     Write-Host "quality gate failure: $($_.Exception.Message)" -ForegroundColor Red

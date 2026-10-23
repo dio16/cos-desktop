@@ -9,6 +9,10 @@ members = [
     "crates/desktop-protocol",
 ]
 
+[profile.dev]
+debug = 1
+incremental = false
+
 [workspace.package]
 edition = "2024"
 license = "Apache-2.0"

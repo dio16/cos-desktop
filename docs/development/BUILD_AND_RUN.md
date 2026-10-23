@@ -123,6 +123,33 @@ Notes:
 - Minimal-window validation comes first; later bootstrap grows the fixture shell. Real Runtime connectivity remains Deferred. Never address `<runtime-root>`, launch internal Runtime processes or read internal configuration. [ADR-0005](../decisions/ADR-0005-LOCAL-TRANSPORT.md) defines a future endpoint candidate, not a transport implemented in bootstrap.
 - No CI configuration is created during documentation preparation. Windows CI and necessary developer scripts belong to stage 8 of the subsequent [bootstrap plan](BOOTSTRAP_PLAN.md).
 
+### 4.1 Storage-bounded development workflow
+
+This stable-branch backport changes build storage and Agent operations, not the product source baseline. Full quality and Native requirements remain owned by [TESTING](TESTING.md); the [workflow boundary](../integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md#build-storage-and-terminal-retention) owns Gate evidence and scratch retention.
+
+```powershell
+# Inner edit loop: format, metadata, dependency checks and type checking; no link/test claim.
+pwsh scripts/quality.ps1 -CheckOnly
+
+# Completion: unchanged full quality gates, followed by actual Native smoke from TESTING §1.
+pwsh scripts/quality.ps1
+
+# Full debugger type/variable information only when needed, in the same local target.
+cargo --config profile.dev.debug=2 build --locked -p cos-desktop
+```
+
+`cargo check` skips final code generation/linking and cannot replace tests, link checks or Native startup. The no-switch quality command retains formatting, metadata, dependency checker/self-test, clippy, workspace tests and build. Use affected behavior checks during implementation and the required full route at completion.
+
+The workspace development profile uses `debug = 1` and `incremental = false`; tests inherit it. Debug assertions, overflow checks and optimization defaults remain unchanged; release/benchmark profiles are unchanged. This trades some changed-crate rebuild speed for less retained debug/incremental storage. Record effective environment/config overrides rather than assuming the manifest always wins.
+
+- Ordinary local development reuses one workspace `target`; do not create a target per edit, Agent, review round or feature toggle. Profile changes do not remove older artifacts. A one-time cleanup requires exact scope and preservation of any still-required executable; do not clean before/after every local command or while a process uses the tree.
+- Independent Refine checks retain their required fresh external targets. Do not replace real builds with copied executables or `cargo check`, share mutable independent-check targets, or archive a whole build tree for evidence.
+- For a successful authorized Gate, follow the [Gate-only workspace disposal procedure](../integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md#successful-gate-workspace-disposal): preserve the fixed Git source and durable private evidence, verify terminal/process/evidence conditions, remove only the exact approved `work/repo`/scratch, then verify stored integrity again. Failed/recovery material and delegated execution/Refinement checkouts are excluded. Refine 0.3.1 does not remove the workspace automatically.
+- Reuse the qualified toolchain rather than copying/installing rustup per Gate. A receipt's `cleanup: complete` does not mean external targets were deleted; record caller-side storage cleanup separately without rewriting immutable Gate records.
+- CI has no target/Cargo-home cache action and explicitly disables incremental compilation. If caching is introduced later, limit it to dependency downloads (`registry/index`, `registry/cache`, and `git/db` for GPUI) and a size-bounded sccache, not `target`, credentials/configuration or duplicate compressed/extracted sources. sccache does not remove final linking or all build output.
+
+Private evidence and predecessor history remain subject to the [publication boundary](evidence/README.md). This policy does not publish raw records, invoke a Gate, resume paused development or promote development product code to stable.
+
 ## 5. Environment risks and how they will be handled
 
 | Risk | Evidence | Handling |

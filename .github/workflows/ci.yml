@@ -14,8 +14,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Keep CI artifacts ephemeral: no target-directory or Cargo-home cache action.
+# Cargo's source caches (including git dependencies) are distinct from target build output;
+# this workflow trades repeat compilation/downloads for no third-party cache setup or archive churn.
+# Rust incremental artifacts are not portable compiler-cache results, and linker outputs are
+# outside sccache's Rust cache support.
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
 
 jobs:
   windows:

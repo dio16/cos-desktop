@@ -19,6 +19,8 @@
 
 Run from the repository root, in this order; every command uses `--locked` where supported. Binary package selector: `cos-desktop`, not the older planned `desktop`.
 
+**Inner edit loop, not a completion route:** `pwsh scripts/quality.ps1 -CheckOnly` runs formatting, metadata, dependency checker/self-test and `cargo check --locked --workspace --all-targets`. Clippy, test execution, normal build and Native smoke are explicitly `NOT_RUN`; they remain required at completion. The no-switch invocation retains every declared gate. Profiles and cache/target handling follow [BUILD_AND_RUN §4.1](BUILD_AND_RUN.md#41-storage-bounded-development-workflow).
+
 | # | Gate | Command | Failure policy |
 |---|---|---|---|
 | 1 | Formatting | `cargo fmt --all -- --check` | Fix formatting; never merge with a failing fmt gate. Requires the `rustfmt` component. |
@@ -86,6 +88,8 @@ Boundary note: `desktop-gpui` tests need the pinned GPU path and therefore run o
 ## 8. Evidence expectations
 
 Each completed gate records command, toolchain/revision and observed result; native smoke records screenshot/log and input/close behavior. Review minimal-window evidence before workspace expansion, then review the complete suite before bootstrap completion. Do not require the future full-workspace suite before the workspace exists.
+
+For an explicitly authorized Refine Gate, preserve the accepted ID, fixed candidate/request/configuration identity, real check outcomes, private logs and required artifacts. Close its storage lifecycle through the [Gate-only workspace disposal procedure](../integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md#successful-gate-workspace-disposal): retain the pinned source under a durable authorized Git reference and verify stored evidence before/after exact workspace disposal. Integrity verification is not a build or live-source revalidation. Failed/recovery material and delegated execution/Refinement checkouts are excluded; raw evidence remains [private](evidence/README.md#public-and-private-material).
 
 ## 9. Post-bootstrap rendering / performance / visual validation **[Accepted ownership; addendum 2026-10-08]**
 
