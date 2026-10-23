@@ -60,9 +60,11 @@
 //! container structure, the mandatory chunk/segment fields and the declared
 //! dimensions only; `pixels_verified` asserts that the harness's own PNG oracle
 //! decoded the bytes and that the resulting RGBA digest equals the operator's
-//! expectation. Neither value interprets colour values or colour management, neither
-//! proves format compatibility, and `structure_verified` alone says nothing about
-//! pixel content. Pixel verification covers 8-bit non-interlaced PNG outputs
+//! expectation. `pixels_verified` compares decoded RGBA sample values byte-for-byte
+//! through a SHA-256 digest; neither verification path performs colour management,
+//! profile conversion or colourimetric interpretation, and neither establishes
+//! general decoder or format compatibility. `structure_verified` alone says nothing
+//! about pixel content. Pixel verification covers 8-bit non-interlaced PNG outputs
 //! (colour types 0/2/4/6) only; every other pixel form is `not_measured` with a
 //! reason token rather than a guess.
 //!
