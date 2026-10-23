@@ -208,7 +208,7 @@ fn normal_admit_records_decoded_identity_and_output_size() {
     assert_eq!(observation.captured_stderr_bytes, "fake-marked\n".len());
     assert!(observation.captured_stdout_bytes > 0);
     assert!(!observation.stdout_truncated);
-    assert!(observation.scratch_bytes.unwrap() > 0);
+    assert!(observation.scratch_max_bytes.unwrap() > 0);
     // B-02: the evidence is recorded separately from the claim.
     assert!(observation.output_present);
     assert_eq!(observation.output_bytes, Some(FAKE_OUTPUT.len() as u64));
@@ -340,7 +340,7 @@ fn absent_candidate_is_not_run_instead_of_a_guessed_error() {
     assert_eq!(observation.refusal, Some("candidate_not_found"));
     assert_eq!(observation.exit_code, None);
     assert_eq!(observation.wall_ms, None);
-    assert_eq!(observation.scratch_bytes, None);
+    assert_eq!(observation.scratch_max_bytes, None);
     assert!(!observation.timeout_fired);
     assert!(!observation.output_present);
     assert_eq!(observation.validity, "not_measured");
@@ -593,6 +593,9 @@ fn scratch_cap_kills_a_flooding_candidate() {
     fixture.case("flood.png", "floodcap");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.max_output_bytes = 64;
+    // Sampling spawns a tool per interval and would slow the parent enough to change
+    // how much the child writes before the cap is noticed; the cap still applies.
+    config.sample_interval_ms = 0;
     config.invocation = helper_invocation(HELPER);
     let report = harness::run(&config).unwrap();
 
@@ -601,7 +604,7 @@ fn scratch_cap_kills_a_flooding_candidate() {
     assert_eq!(observation.refusal, Some("scratch_capped"));
     assert!(!observation.timeout_fired);
     assert_eq!(observation.exit_code, None);
-    let scratch = observation.scratch_bytes.unwrap();
+    let scratch = observation.scratch_max_bytes.unwrap();
     assert!(
         scratch > 64 * harness::SCRATCH_FACTOR,
         "the observed scratch size must exceed the bound ({scratch})"
@@ -658,7 +661,7 @@ fn fast_flood_finishing_immediately_is_still_capped() {
     let observation = &report.observations[0];
     assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
     assert_eq!(observation.refusal, Some("scratch_capped"));
-    let scratch = observation.scratch_bytes.unwrap();
+    let scratch = observation.scratch_max_bytes.unwrap();
     assert!(
         scratch > 64 * harness::SCRATCH_FACTOR,
         "the post-exit re-check must see the burst ({scratch})"
@@ -2050,6 +2053,208 @@ fn record_carries_the_pixel_fields_with_documented_nullability() {
     assert!(json.contains("\"pixels_verified\": 1"), "{json}");
 }
 
+/// Item 1: a helper that allocates a known amount is sampled at least that large.
+#[test]
+fn working_set_sample_lower_bounds_a_known_allocation() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "alloc-64m");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 10_000;
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert!(observation.working_set_samples >= 1, "at least one sample");
+    assert_eq!(observation.working_set_sampling, "sampled_lower_bound");
+    let bytes = observation
+        .working_set_max_bytes
+        .expect("a sample must produce a value");
+    assert!(
+        bytes >= 16 * 1024 * 1024,
+        "the sampled working set ({bytes}) must be at least the allocation"
+    );
+    assert_eq!(observation.working_set_reason, None);
+}
+
+/// Item 2: a helper that ends before the first sample is `not_measured`, never 0.
+#[test]
+fn working_set_is_not_measured_without_a_sample() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    // The first sample waits a full interval, and the child ends long before it.
+    config.sample_interval_ms = 5_000;
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.working_set_samples, 0);
+    assert_eq!(observation.working_set_max_bytes, None, "never a guessed 0");
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(observation.working_set_reason, Some("no_sample"));
+}
+
+/// Item 3: the configured sample cap is enforced.
+#[test]
+fn working_set_sampling_respects_the_cap() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.sample_interval_ms = 10;
+    config.max_samples = 2;
+    config.cancel_after_ms = Some(3_000);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(
+        observation.working_set_samples, 2,
+        "exactly the configured cap"
+    );
+    assert!(observation.working_set_max_bytes.is_some());
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+}
+
+/// Item 4: an operator cancellation records both latencies and the `cancelled` class.
+#[test]
+fn cancellation_records_latency_and_a_cancelled_class() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 10_000;
+    config.cancel_after_ms = Some(150);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert_eq!(observation.validity, "not_measured");
+    assert!(!observation.timeout_fired, "the operator deadline fired");
+    assert_eq!(observation.exit_code, None);
+    let requested = observation
+        .cancellation_requested_at_ms
+        .expect("the kill request must be timed");
+    assert!(
+        (140..600).contains(&requested),
+        "the request should land near the 150 ms deadline ({requested})"
+    );
+    let observed = observation
+        .cancellation_observed_ms
+        .expect("the kill round trip must be timed");
+    assert!(observed < 600, "cancel round trip took {observed} ms");
+    assert!(!observation.output_present);
+    assert_eq!(
+        observation.cancelled_at_reason, None,
+        "the helper said nothing"
+    );
+}
+
+/// Item 5: a hard timeout is `cancelled` and can never be `decoded`.
+#[test]
+fn timeout_never_yields_decoded() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 200;
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert!(observation.timeout_fired);
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert_ne!(observation.observed_outcome, OutcomeClass::Decoded);
+    assert_eq!(observation.validity, "not_measured");
+    assert!(observation.cancellation_requested_at_ms.is_some());
+    assert!(observation.cancellation_observed_ms.is_some());
+    assert!(report.capabilities.is_empty());
+    assert_eq!(report.resources[0].observations, 0);
+    assert_eq!(
+        report.resources[0].working_set_reason,
+        Some("no_contributing_observation")
+    );
+}
+
+/// Item 6: a cancelled run contributes neither a capability nor a resource row.
+#[test]
+fn resource_and_capability_rows_exclude_cancelled_runs() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-rgb-a");
+    fixture.case("b.png", "sleep-long");
+    fixture.declare_pixels(&[
+        (
+            "a.png",
+            Some((16, 16)),
+            Some(pixels::sha256(&rgba_rgb_16(10))),
+            OutcomeClass::Decoded,
+        ),
+        ("b.png", Some((16, 16)), None, OutcomeClass::Decoded),
+    ]);
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.cancel_after_ms = Some(300);
+
+    // The cancelled case must be the slow one: run the two cases separately so the
+    // cancellation deadline only applies to the slow helper.
+    let ok_only = Fixture::new();
+    ok_only.case("a.png", "png-rgb-a");
+    ok_only.declare_pixels(&[(
+        "a.png",
+        Some((16, 16)),
+        Some(pixels::sha256(&rgba_rgb_16(10))),
+        OutcomeClass::Decoded,
+    )]);
+    let mut ok_config = harness::parse(arguments(&ok_only, &[ok_only.fake()])).unwrap();
+    ok_config.invocation = helper_invocation(HELPER);
+    let mut report = harness::run(&ok_config).unwrap();
+    assert_eq!(report.capabilities.len(), 1);
+    assert_eq!(report.resources[0].observations, 1);
+    assert!(report.resources[0].observations >= 1);
+
+    // A cancelled observation is excluded even when it lives in the same candidate.
+    let cancelled = harness::run(&config).unwrap();
+    assert_eq!(
+        cancelled.capabilities.len(),
+        1,
+        "only the verified case counts"
+    );
+    assert_eq!(cancelled.resources.len(), 1);
+    assert_eq!(cancelled.resources[0].observations, 1);
+    // The report above is reused only for its shape; drop the extra binding.
+    report.observations.clear();
+}
+
+/// Item 7: two sampled runs differ only in the documented volatile fields.
+#[test]
+fn sampled_record_is_deterministic_apart_from_documented_fields() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png16");
+    let config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    let mut config = config;
+    config.invocation = helper_invocation(HELPER);
+    let first = harness::run(&config).unwrap();
+    let second = harness::run(&config).unwrap();
+    harness::write_report(&first, &fixture.record("first")).unwrap();
+    harness::write_report(&second, &fixture.record("second")).unwrap();
+    let first_json = std::fs::read_to_string(fixture.record("first")).unwrap();
+    let second_json = std::fs::read_to_string(fixture.record("second")).unwrap();
+    let normalized_first = normalize_volatile(&first_json);
+    let normalized_second = normalize_volatile(&second_json);
+    assert_eq!(
+        normalized_first, normalized_second,
+        "only the documented timing/sampling fields may differ between runs"
+    );
+    for field in [
+        "\"wall_ms\"",
+        "\"scratch_max_bytes\"",
+        "\"working_set_samples\"",
+        "\"working_set_max_bytes\"",
+        "\"cancellation_requested_at_ms\"",
+        "\"cancellation_observed_ms\"",
+    ] {
+        assert!(first_json.contains(field), "missing {field}");
+    }
+}
+
 /// A6: both global bounds truncate explicitly instead of growing the record.
 #[test]
 fn observation_and_record_caps_truncate_explicitly() {
@@ -2150,9 +2355,14 @@ fn record_is_deterministic_sorted_and_carries_no_decision_field() {
     };
     let candidates = [absent, present];
 
-    let first = measured(&fixture, &candidates, HELPER);
+    // Sampling is disabled here so the only legitimately variable field left is
+    // `wall_ms`; the module doc lists every field that may vary in a normal run.
+    let mut config = harness::parse(arguments(&fixture, &candidates)).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.sample_interval_ms = 0;
+    let first = harness::run(&config).unwrap();
     harness::write_report(&first, &fixture.record("first")).unwrap();
-    let second = measured(&fixture, &candidates, HELPER);
+    let second = harness::run(&config).unwrap();
     harness::write_report(&second, &fixture.record("second")).unwrap();
 
     let first_json = std::fs::read_to_string(fixture.record("first")).unwrap();
@@ -2163,14 +2373,16 @@ fn record_is_deterministic_sorted_and_carries_no_decision_field() {
         "the record must not depend on wall time for its structure"
     );
     assert_eq!(
-        json_values(&first_json, "candidate_id"),
-        vec!["absent", "fake", "absent", "fake"]
-    );
-    assert_eq!(
         json_values(&first_json, "case_id"),
         vec!["a.png", "a.png", "b.png", "b.png"]
     );
-    assert!(first_json.contains("\"schema_version\": 8"));
+    // The resources section carries one row per candidate, so `candidate_id` appears
+    // in both arrays; the observation rows are the first four.
+    let mut candidate_ids = json_values(&first_json, "candidate_id");
+    candidate_ids.truncate(4);
+    assert_eq!(candidate_ids, vec!["absent", "fake", "absent", "fake"]);
+    assert!(first_json.contains("\"resources\": ["));
+    assert!(first_json.contains("\"schema_version\": 9"));
     assert!(first_json.contains("\"exploratory\": true"));
     assert!(first_json.contains("\"numeric_gate\": \"NOT_RATIFIED\""));
     for decision in ["\"pass\"", "\"winner\"", "\"score\"", "\"selected\""] {
@@ -2370,6 +2582,21 @@ fn fake_candidate(support: ProbeSupport) {
             std::fs::write(&output, png_iend_without_crc(16, 16)).unwrap();
             0
         }
+        "alloc-64m" => {
+            // A known allocation the parent's sampler must see (at least) as its
+            // working set, held long enough for a few samples.
+            // Filled, not just reserved: zero pages are not resident, so the sampled
+            // working set would otherwise stay far below the allocation.
+            let block = vec![1_u8; 16 * 1024 * 1024];
+            std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(1_200));
+            drop(block);
+            0
+        }
+        "sleep-long" => {
+            std::thread::sleep(std::time::Duration::from_secs(5));
+            0
+        }
         "png-rgb-a" => {
             std::fs::write(&output, png_rgb_16(10)).unwrap();
             0
@@ -2503,6 +2730,35 @@ fn fake_candidate(support: ProbeSupport) {
         _ => 1,
     };
     std::process::exit(code);
+}
+
+/// Replace every documented volatile field's value with a placeholder, so two runs can
+/// be compared for structural determinism.
+fn normalize_volatile(json: &str) -> String {
+    let mut text = json.to_owned();
+    for field in [
+        "\"wall_ms\":",
+        "\"scratch_max_bytes\":",
+        "\"working_set_samples\":",
+        "\"working_set_max_bytes\":",
+        "\"cancellation_requested_at_ms\":",
+        "\"cancellation_observed_ms\":",
+    ] {
+        let mut search_from = 0;
+        while let Some(offset) = text[search_from..].find(field) {
+            let start = search_from + offset + field.len();
+            let rest = &text[start..];
+            let trimmed = rest.trim_start();
+            let skip = rest.len() - trimmed.len();
+            let end = trimmed
+                .find([',', '}'])
+                .map(|index| index + skip)
+                .unwrap_or(0);
+            text.replace_range(start..start + end, " volatile");
+            search_from = start + " volatile".len();
+        }
+    }
+    text
 }
 
 fn normalize_wall_ms(json: &str) -> String {
