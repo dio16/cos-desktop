@@ -2404,6 +2404,70 @@ fn cancelled_at_reason_requires_a_cancelled_class() {
     );
 }
 
+/// A1: a failure *after* a successful sample is decisive. The first invocation yields a
+/// value, the second exits non-zero; the observation must drop the value and keep the
+/// token instead of ending `sampled_lower_bound`.
+#[test]
+fn failure_after_a_success_discards_the_value_on_nonzero_exit() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let counter = fixture.base.join("spawns-success-then-fail.txt");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_success_then_failure_helper");
+    config.sample_argv_prefix.push(counter.into_os_string());
+    config.sample_interval_ms = 10;
+    config.max_samples = 3;
+    config.cancel_after_ms = Some(2_500);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert!(
+        observation.working_set_attempts >= 2,
+        "a success and then a failure were attempted ({} attempts)",
+        observation.working_set_attempts
+    );
+    assert_eq!(
+        observation.working_set_samples, 0,
+        "the earlier value is discarded"
+    );
+    assert_eq!(observation.working_set_max_bytes, None);
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(
+        observation.working_set_reason,
+        Some("sample_tool_failed"),
+        "the later failure is the observation's verdict"
+    );
+}
+
+/// A1: the same for a truncated capture after an earlier success.
+#[test]
+fn failure_after_a_success_discards_the_value_on_truncation() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let counter = fixture.base.join("spawns-success-then-truncate.txt");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_success_then_truncating_helper");
+    config.sample_argv_prefix.push(counter.into_os_string());
+    config.sample_interval_ms = 10;
+    config.max_samples = 3;
+    config.cancel_after_ms = Some(2_500);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert!(
+        observation.working_set_attempts >= 2,
+        "a success and then a truncation were attempted ({} attempts)",
+        observation.working_set_attempts
+    );
+    assert_eq!(observation.working_set_samples, 0);
+    assert_eq!(observation.working_set_max_bytes, None);
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(
+        observation.working_set_reason,
+        Some("sample_output_truncated")
+    );
+}
+
 /// BLOCKING B-R1-01 (a): a valid-looking row printed by a sampler that exits non-zero is
 /// refused; the attempt is counted and no value is taken.
 #[test]
@@ -3376,6 +3440,58 @@ fn sampler_pid() -> u32 {
         }
     }
     0
+}
+
+/// Count this spawn and report whether it is the first one (the counter file starts
+/// empty), so a helper can behave differently on its first and later invocations.
+fn count_spawn_first() -> bool {
+    let Some(path) = sampler_counter_path() else {
+        return true;
+    };
+    let first = std::fs::read(&path)
+        .map(|bytes| bytes.is_empty())
+        .unwrap_or(true);
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+    {
+        use std::io::Write as _;
+        let _ = file.write_all(b"x");
+    }
+    first
+}
+
+/// A sampler that succeeds on its first invocation and exits non-zero afterwards, so a
+/// value already exists when the failure arrives.
+#[test]
+fn fake_sampler_success_then_failure_helper() {
+    let pid = sampler_pid();
+    if pid == 0 {
+        return;
+    }
+    let first = count_spawn_first();
+    println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    if !first {
+        std::process::exit(1);
+    }
+}
+
+/// A sampler that succeeds once and then overflows the capture on later invocations.
+#[test]
+fn fake_sampler_success_then_truncating_helper() {
+    let pid = sampler_pid();
+    if pid == 0 {
+        return;
+    }
+    let first = count_spawn_first();
+    println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    if !first {
+        let padding = "x".repeat(1024);
+        for _ in 0..16 {
+            println!("{padding}");
+        }
+    }
 }
 
 /// A sampler that prints a perfectly valid row and then exits non-zero: the row is not

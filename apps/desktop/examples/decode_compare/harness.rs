@@ -140,9 +140,15 @@
 //!
 //! A sample is only harvested when the sampler **exited with code 0 and its stdout
 //! capture was not truncated**; a non-zero exit is `sample_tool_failed` and an output
-//! that filled the 8 KiB capture is `sample_output_truncated`, each counting its attempt
-//! and neither producing a value or `sampled_lower_bound`. A row printed before a failure
-//! is not evidence.
+//! that overflowed the 8 KiB capture is `sample_output_truncated`. Exactly 8192 bytes is
+//! not truncated — only overflow is. Both tokens are **decisive**: they count their
+//! attempt and discard every value the observation had collected, including one from an
+//! earlier successful sample, so an observation never ends `sampled_lower_bound` next to
+//! a tool-level failure (a per-sample anomaly such as `sample_timeout` or
+//! `sample_parse_failed` keeps an earlier value instead, because that value was
+//! validated when it was taken). A row printed before a failure is not evidence. The
+//! exit-status check runs **before** the digest re-check, so a tool that was both
+//! swapped and failing reports `sample_tool_failed`.
 //!
 //! Each sample is a bounded `tasklist /FI "PID eq <id>" /FO CSV /NH` call (argv only, no
 //! shell, hard per-sample timeout of 2000 ms — the sampler runs concurrently with the
@@ -152,10 +158,10 @@
 //! `sample_tool_oversize`, both with `working_set_attempts: 0` because nothing was
 //! spawned; a spawn failure records `sample_tool_missing` with `working_set_attempts: 1`
 //! because the attempt was made; a per-sample failure records its own token
-//! (`sample_timeout`, `sample_parse_failed`) and also counts its attempt; and
-//! `sample_tool_changed` may appear with attempts above zero, because a sample that had
-//! already run is discarded when the program changed under it. No value is ever
-//! fabricated:
+//! (`sample_timeout`, `sample_parse_failed`, `sample_tool_failed`,
+//! `sample_output_truncated`) and also counts its attempt; and `sample_tool_changed` may
+//! appear with attempts above zero, because a sample that had already run is discarded
+//! when the program changed under it. No value is ever fabricated:
 //! `working_set_max_bytes` is `null` unless a validated row was read, and
 //! `working_set_sampling` is `not_measured` whenever no sample succeeded.
 //!
@@ -2659,8 +2665,13 @@ fn supervise(
                     // A sampler that failed did not measure anything: a row printed
                     // before a non-zero exit is not evidence (BLOCKING B-R1-01).
                     if !status.success() {
+                        // Decisive: a sampler program that fails invalidates every value
+                        // it produced in this observation, including earlier ones, so the
+                        // value is discarded and the token survives (A1). This keeps the
+                        // A3 invariant that a failure token is never reported beside
+                        // `sampled_lower_bound`.
                         flight.capture.release();
-                        sampler.failed(SAMPLE_TOOL_FAILED);
+                        sampler.discarded(SAMPLE_TOOL_FAILED);
                         next_sample = None;
                     } else if !sample_tool_matches(&flight.tool, &flight.digest) {
                         // The bytes must still be the verified ones after the child ran;
@@ -2673,7 +2684,16 @@ fn supervise(
                         match harvest_sample(&mut flight) {
                             Ok(bytes) => sampler.succeeded(bytes),
                             Err(reason) => {
-                                sampler.failed(reason);
+                                // `sample_output_truncated` is a protocol failure of the
+                                // sampler program and is decisive like a non-zero exit;
+                                // a per-sample anomaly (`sample_timeout`,
+                                // `sample_parse_failed`) keeps an earlier measured value,
+                                // as the earlier A3 round required.
+                                if reason == SAMPLE_OUTPUT_TRUNCATED {
+                                    sampler.discarded(reason);
+                                } else {
+                                    sampler.failed(reason);
+                                }
                                 next_sample = None;
                             }
                         }
