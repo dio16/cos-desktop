@@ -2147,6 +2147,25 @@ fn cancellation_records_latency_and_a_cancelled_class() {
         observation.cancelled_at_reason, None,
         "the helper said nothing"
     );
+
+    // A candidate that claims cancellation and then hangs is killed, so the claim is
+    // recorded: the observed class really is `cancelled`.
+    fixture.case("c.png", "cancel-hang");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.cancel_after_ms = Some(300);
+    let report = harness::run(&config).unwrap();
+    let observation = &report
+        .observations
+        .iter()
+        .find(|observation| observation.case_id == "c.png")
+        .unwrap();
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert_eq!(
+        observation.cancelled_at_reason,
+        Some("cancelled_at_cancel"),
+        "a real cancellation must keep the candidate claim"
+    );
 }
 
 /// Item 5: a hard timeout is `cancelled` and can never be `decoded`.
@@ -2174,7 +2193,10 @@ fn timeout_never_yields_decoded() {
     );
 }
 
-/// Item 6: a cancelled run contributes neither a capability nor a resource row.
+/// Item 6 / A4: a cancelled run contributes neither a capability nor a resource row.
+/// One run, two cases: a fast verified decode and a slow one that the operator deadline
+/// cancels, both under the same candidate. The fast helper finishes in tens of
+/// milliseconds against a 400 ms deadline, so the split is deterministic.
 #[test]
 fn resource_and_capability_rows_exclude_cancelled_runs() {
     let fixture = Fixture::new();
@@ -2191,68 +2213,315 @@ fn resource_and_capability_rows_exclude_cancelled_runs() {
     ]);
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
-    config.cancel_after_ms = Some(300);
+    config.timeout_ms = 10_000;
+    config.cancel_after_ms = Some(400);
+    let report = harness::run(&config).unwrap();
 
-    // The cancelled case must be the slow one: run the two cases separately so the
-    // cancellation deadline only applies to the slow helper.
-    let ok_only = Fixture::new();
-    ok_only.case("a.png", "png-rgb-a");
-    ok_only.declare_pixels(&[(
-        "a.png",
-        Some((16, 16)),
-        Some(pixels::sha256(&rgba_rgb_16(10))),
-        OutcomeClass::Decoded,
-    )]);
-    let mut ok_config = harness::parse(arguments(&ok_only, &[ok_only.fake()])).unwrap();
-    ok_config.invocation = helper_invocation(HELPER);
-    let mut report = harness::run(&ok_config).unwrap();
-    assert_eq!(report.capabilities.len(), 1);
-    assert_eq!(report.resources[0].observations, 1);
-    assert!(report.resources[0].observations >= 1);
+    let by_case = |case: &str| {
+        report
+            .observations
+            .iter()
+            .find(|observation| observation.case_id == case)
+            .unwrap()
+    };
+    assert_eq!(by_case("a.png").validity, "pixels_verified");
+    let cancelled = by_case("b.png");
+    assert_eq!(cancelled.observed_outcome, OutcomeClass::Cancelled);
+    assert_eq!(cancelled.validity, "not_measured");
 
-    // A cancelled observation is excluded even when it lives in the same candidate.
-    let cancelled = harness::run(&config).unwrap();
     assert_eq!(
-        cancelled.capabilities.len(),
+        report.capabilities.len(),
         1,
         "only the verified case counts"
     );
-    assert_eq!(cancelled.resources.len(), 1);
-    assert_eq!(cancelled.resources[0].observations, 1);
-    // The report above is reused only for its shape; drop the extra binding.
-    report.observations.clear();
+    assert_eq!(report.capabilities[0].observations, 1);
+    assert_eq!(report.resources.len(), 1);
+    assert_eq!(report.resources[0].observations, 1);
+    assert!(report.resources[0].scratch_max_bytes.is_some());
 }
 
-/// Item 7: two sampled runs differ only in the documented volatile fields.
+/// Item 7 / A4: two sampled runs differ only in the documented volatile fields. The
+/// candidate lives long enough that the sampler really produces samples.
 #[test]
 fn sampled_record_is_deterministic_apart_from_documented_fields() {
     let fixture = Fixture::new();
-    fixture.case("a.png", "png16");
-    let config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    let mut config = config;
+    fixture.case("a.png", "alloc-64m");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 10_000;
+    config.sample_interval_ms = 10;
     let first = harness::run(&config).unwrap();
     let second = harness::run(&config).unwrap();
+    assert!(
+        first.observations[0].working_set_samples >= 1,
+        "the determinism case must actually sample"
+    );
     harness::write_report(&first, &fixture.record("first")).unwrap();
     harness::write_report(&second, &fixture.record("second")).unwrap();
     let first_json = std::fs::read_to_string(fixture.record("first")).unwrap();
     let second_json = std::fs::read_to_string(fixture.record("second")).unwrap();
-    let normalized_first = normalize_volatile(&first_json);
-    let normalized_second = normalize_volatile(&second_json);
     assert_eq!(
-        normalized_first, normalized_second,
+        normalize_volatile(&first_json),
+        normalize_volatile(&second_json),
         "only the documented timing/sampling fields may differ between runs"
     );
     for field in [
         "\"wall_ms\"",
         "\"scratch_max_bytes\"",
+        "\"working_set_attempts\"",
         "\"working_set_samples\"",
         "\"working_set_max_bytes\"",
+        "\"working_set_sampling\"",
+        "\"working_set_reason\"",
         "\"cancellation_requested_at_ms\"",
         "\"cancellation_observed_ms\"",
     ] {
         assert!(first_json.contains(field), "missing {field}");
     }
+}
+
+/// A1: the parser table. Every row shape is either strictly a tasklist row for the
+/// supervised pid, or it is refused — never turned into a byte count.
+#[test]
+fn working_set_parser_accepts_only_well_formed_rows() {
+    let pid = 4_242_u32;
+    let cases: Vec<(&str, Option<u64>)> = vec![
+        // valid rows
+        (
+            "\"System\",\"4242\",\"Services\",\"0\",\"6,408 K\"",
+            Some(6_408 * 1024),
+        ),
+        (
+            "\"pwsh.exe\",\"4242\",\"Console\",\"1\",\"12,000 K\"",
+            Some(12_000 * 1024),
+        ),
+        (
+            "\"a.exe\",\"4242\",\"Console\",\"1\",\"12000 K\"",
+            Some(12_000 * 1024),
+        ),
+        ("\"a.exe\",\"4242\",\"Console\",\"1\",\"0 K\"", Some(0)),
+        // OEM-byte image name decoded lossily: the row is still valid
+        (
+            "\"\u{00ea}\u{00e3}x\u{00e3}mple.exe\",\"4242\",\"Console\",\"1\",\"3,000 K\"",
+            Some(3_000 * 1024),
+        ),
+        // same row with surrounding noise (a header line first): the valid row wins
+        (
+            "\"Image Name\",\"PID\",\"Session Name\",\"Session#\",\"Mem Usage\"\n\
+             \"a.exe\",\"4242\",\"Console\",\"1\",\"7,500 K\"",
+            Some(7_500 * 1024),
+        ),
+        // foreign pid
+        ("\"a.exe\",\"4243\",\"Console\",\"1\",\"12,000 K\"", None),
+        // short row
+        ("\"a.exe\",\"4242\"", None),
+        // row without a memory column
+        ("\"a.exe\",\"4242\",\"Console\",\"1\"", None),
+        // localized / renamed column header
+        (
+            "\"a.exe\",\"4242\",\"Console\",\"1\",\"Speicher 12.000 K\"",
+            None,
+        ),
+        // last field is a session number, not memory
+        ("\"a.exe\",\"4242\",\"Console\",\"1\",\"2\"", None),
+        // fabricated extra column: the 999,999 K is not a Mem Usage column
+        (
+            "\"a.exe\",\"4242\",\"Console\",\"1\",\"12,000 K\",\"999,999 K\"",
+            None,
+        ),
+        // malformed digit grouping
+        ("\"a.exe\",\"4242\",\"Console\",\"1\",\"12,00 K\"", None),
+        ("\"a.exe\",\"4242\",\"Console\",\"1\",\"1,2345 K\"", None),
+        // negative-looking and unit-less forms
+        ("\"a.exe\",\"4242\",\"Console\",\"1\",\"-12 K\"", None),
+        ("\"a.exe\",\"4242\",\"Console\",\"1\",\"12000\"", None),
+        // empty output
+        ("", None),
+    ];
+    for (line, expected) in cases {
+        let parsed = harness::parse_working_set_for_tests(line, pid);
+        assert_eq!(
+            parsed, expected,
+            "line {line:?} parsed as {parsed:?}, expected {expected:?}"
+        );
+    }
+}
+
+/// A1/A4: an injected sampler that prints a valid row for the supervised pid yields a
+/// sampled working set; one that reports a foreign pid is `sample_parse_failed`.
+#[test]
+fn injected_sampler_valid_row_is_measured() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_valid_helper");
+    config.sample_interval_ms = 10;
+    config.cancel_after_ms = Some(2_000);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert!(observation.working_set_attempts >= 1);
+    assert!(observation.working_set_samples >= 1);
+    assert_eq!(observation.working_set_sampling, "sampled_lower_bound");
+    assert_eq!(observation.working_set_max_bytes, Some(12_000 * 1024));
+    assert_eq!(observation.working_set_reason, None);
+}
+
+/// A4: a sampler that reports a foreign pid is refused as `sample_parse_failed`.
+#[test]
+fn injected_sampler_foreign_pid_is_sample_parse_failed() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_foreign_helper");
+    config.sample_interval_ms = 10;
+    config.cancel_after_ms = Some(1_500);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(observation.working_set_reason, Some("sample_parse_failed"));
+    assert_eq!(
+        observation.working_set_max_bytes, None,
+        "never a fabricated value"
+    );
+    assert_eq!(observation.working_set_samples, 0);
+}
+
+/// A4: a missing sampler tool is `sample_tool_missing`, never a value.
+#[test]
+fn missing_sample_tool_is_not_measured() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.sample_tool = Some(fixture.base.join("no-such-sampler.exe"));
+    config.sample_interval_ms = 10;
+    config.cancel_after_ms = Some(1_000);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(observation.working_set_reason, Some("sample_tool_missing"));
+    assert_eq!(observation.working_set_max_bytes, None);
+}
+
+/// A4: a sampler that never returns hits the per-sample timeout, is killed and reaped,
+/// and the observation records `sample_timeout`.
+#[test]
+fn hanging_sampler_hits_the_sample_timeout() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_hang_helper");
+    config.sample_interval_ms = 10;
+    config.cancel_after_ms = Some(3_000);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(observation.working_set_reason, Some("sample_timeout"));
+    assert_eq!(observation.working_set_samples, 0);
+    assert_eq!(
+        observation.working_set_attempts, 1,
+        "one attempt, then no retry"
+    );
+}
+
+/// A2: the cap bounds attempts, not successes. An always-unparseable sampler stops
+/// after `--max-samples` attempts.
+#[test]
+fn sample_cap_bounds_attempts_not_successes() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_garbage_helper");
+    config.sample_interval_ms = 10;
+    config.max_samples = 2;
+    config.cancel_after_ms = Some(2_000);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert!(
+        observation.working_set_attempts <= 2,
+        "attempts {} must not exceed the cap",
+        observation.working_set_attempts
+    );
+    assert_eq!(observation.working_set_samples, 0);
+    // The failure stopped sampling first, so `sample_capped` is not claimed.
+    assert_eq!(observation.working_set_reason, Some("sample_parse_failed"));
+    assert_eq!(observation.working_set_sampling, "not_measured");
+}
+
+/// A3: the sampler bookkeeping for both mixed orders. A success clears an earlier
+/// failure, and a later failure never clears a value.
+#[test]
+fn sampler_bookkeeping_keeps_status_and_reason_consistent() {
+    // fail-then-success
+    let mut sampler = harness::Sampler::for_tests(4);
+    assert_eq!(sampler.sampling, "not_measured");
+    sampler.attempt();
+    sampler.failed("sample_parse_failed");
+    assert_eq!(sampler.sampling, "not_measured");
+    assert_eq!(sampler.reason, Some("sample_parse_failed"));
+    sampler.attempt();
+    sampler.succeeded(1_024);
+    assert_eq!(sampler.sampling, "sampled_lower_bound");
+    assert_eq!(sampler.reason, None, "a success clears the failure reason");
+    assert_eq!(sampler.max_bytes, Some(1_024));
+
+    // success-then-fail
+    let mut sampler = harness::Sampler::for_tests(4);
+    sampler.attempt();
+    sampler.succeeded(2_048);
+    sampler.attempt();
+    sampler.failed("sample_timeout");
+    assert_eq!(sampler.sampling, "sampled_lower_bound");
+    assert_eq!(sampler.reason, None, "a failure never clears a value");
+    assert_eq!(sampler.max_bytes, Some(2_048));
+
+    // never sampled: no_sample, and the cap is truthful
+    let mut sampler = harness::Sampler::for_tests(4);
+    sampler.finish();
+    assert_eq!(sampler.sampling, "not_measured");
+    assert_eq!(sampler.reason, Some("no_sample"));
+
+    let mut sampler = harness::Sampler::for_tests(1);
+    sampler.attempt();
+    sampler.capped();
+    assert!(!sampler.may_attempt());
+    sampler.finish();
+    assert_eq!(sampler.reason, Some("sample_capped"));
+}
+
+/// NIT-6: `cancelled_at_reason` is recorded only for a class that really is `cancelled`.
+#[test]
+fn cancelled_at_reason_requires_a_cancelled_class() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "reason-cancelled");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    let report = harness::run(&config).unwrap();
+    let observation = &report.observations[0];
+    // The candidate claims cancellation but exits successfully: not a cancelled class.
+    assert_ne!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert_eq!(observation.cancelled_at_reason, None);
+
+    fixture.case("b.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.cancel_after_ms = Some(150);
+    let report = harness::run(&config).unwrap();
+    let observation = &report
+        .observations
+        .iter()
+        .find(|observation| observation.case_id == "b.png")
+        .unwrap();
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert_eq!(
+        observation.cancelled_at_reason, None,
+        "the helper said nothing"
+    );
 }
 
 /// A6: both global bounds truncate explicitly instead of growing the record.
@@ -2469,6 +2738,77 @@ fn fake_candidate_no_probe_helper() {
     fake_candidate(ProbeSupport::None);
 }
 
+/// Point the harness at an in-test sampler helper: the test binary becomes the sample
+/// tool, with `--exact <helper>` as its argv prefix (the same seam shape as the
+/// candidate `Invocation::argv_prefix`).
+fn inject_sampler(config: &mut harness::Config, helper: &str) {
+    config.sample_tool = Some(std::env::current_exe().unwrap());
+    config.sample_argv_prefix = vec![
+        OsString::from("--exact"),
+        OsString::from(helper),
+        OsString::from("--nocapture"),
+        OsString::from("--quiet"),
+    ];
+    config.invocation = helper_invocation(HELPER);
+}
+
+/// Read the supervised pid out of the fixed `/FI "PID eq <id>"` argv the harness uses.
+fn sampler_pid() -> u32 {
+    let args: Vec<String> = std::env::args().collect();
+    for (index, argument) in args.iter().enumerate() {
+        if argument == "/FI"
+            && let Some(filter) = args.get(index + 1)
+            && let Some(rest) = filter.strip_prefix("PID eq ")
+            && let Ok(pid) = rest.trim().parse::<u32>()
+        {
+            return pid;
+        }
+    }
+    0
+}
+
+/// A sampler that prints the exact Windows row for the supervised pid. When it runs as
+/// an ordinary test (no `/FI` argv) it does nothing, so the suite is unaffected.
+#[test]
+fn fake_sampler_valid_helper() {
+    let pid = sampler_pid();
+    if pid == 0 {
+        return;
+    }
+    println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+}
+
+/// A sampler whose row is garbage.
+#[test]
+fn fake_sampler_garbage_helper() {
+    if sampler_pid() == 0 {
+        return;
+    }
+    println!("\"fake.exe\",\"1\",\"Console\",\"1\",\"twelve megabytes\"");
+}
+
+/// A sampler that reports a foreign pid.
+#[test]
+fn fake_sampler_foreign_helper() {
+    let pid = sampler_pid();
+    if pid == 0 {
+        return;
+    }
+    println!(
+        "\"fake.exe\",\"{}\",\"Console\",\"1\",\"12,000 K\"",
+        pid + 1
+    );
+}
+
+/// A sampler that never finishes inside the per-sample timeout.
+#[test]
+fn fake_sampler_hang_helper() {
+    if sampler_pid() == 0 {
+        return;
+    }
+    std::thread::sleep(std::time::Duration::from_secs(10));
+}
+
 /// The descendant that outlives the candidate in the A2 test.
 #[test]
 fn fake_sleeper_helper() {
@@ -2591,6 +2931,17 @@ fn fake_candidate(support: ProbeSupport) {
             std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
             std::thread::sleep(std::time::Duration::from_millis(1_200));
             drop(block);
+            0
+        }
+        "reason-cancelled" => {
+            println!("{{\"reason_code\":\"cancelled_at_cancel\"}}");
+            0
+        }
+        "cancel-hang" => {
+            // Claims cancellation, then hangs: the harness kills it, so the observed
+            // class really is `cancelled` and the claim must be recorded.
+            println!("{{\"reason_code\":\"cancelled_at_cancel\"}}");
+            std::thread::sleep(std::time::Duration::from_secs(5));
             0
         }
         "sleep-long" => {
@@ -2741,6 +3092,9 @@ fn normalize_volatile(json: &str) -> String {
         "\"scratch_max_bytes\":",
         "\"working_set_samples\":",
         "\"working_set_max_bytes\":",
+        "\"working_set_attempts\":",
+        "\"working_set_sampling\":",
+        "\"working_set_reason\":",
         "\"cancellation_requested_at_ms\":",
         "\"cancellation_observed_ms\":",
     ] {

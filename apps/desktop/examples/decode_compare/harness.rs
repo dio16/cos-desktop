@@ -116,27 +116,43 @@
 //!
 //! Observed resources and cancellation (schema 9): while a child lives the parent
 //! samples its working set through a bounded `tasklist /FI "PID eq <id>" /FO CSV /NH`
-//! call (argv only, no shell, hard per-sample timeout of 250 ms, at most `max_samples`
-//! samples, and only when enough time remains before the deadline). Every value is a
+//! call (argv only, no shell, hard per-sample timeout of 2000 ms — the sampler runs
+//! concurrently with the child, so its cost never moves the child's deadline — at most
+//! `max_samples` sampling *attempts*, successes or not). A sample is accepted only when
+//! the row is the documented five-column Windows layout, its PID column equals the
+//! supervised child, and its memory column has the `12,000 K` form; anything else is
+//! `sample_parse_failed` (A1). The first attempt waits one interval, so a candidate that
+//! ends sooner records `no_sample`, and a fast candidate may need a smaller
+//! `--sample-interval-ms` to be sampled at all (N7). Every value is a
 //! **sampled lower bound**: the record says `working_set_sampling: "sampled_lower_bound"`
 //! and a sample that cannot be read is `not_measured` with a reason token
 //! (`sample_tool_missing`, `sample_timeout`, `sample_parse_failed`, `no_sample`,
-//! `sampling_disabled`, `sample_capped`) — never `0` and never a guess. `--cancel-after-ms`
-//! makes the operator's cancellation deadline the earlier of itself and `--timeout-ms`;
-//! a deadline kill records `cancellation_requested_at_ms` (spawn to kill request),
-//! `cancellation_observed_ms` (kill request to confirmed exit) and, when the candidate
-//! itself reported one of the whitelisted `cancelled_at_*` tokens, `cancelled_at_reason`.
-//! Such a run is class `cancelled` and can never be `decoded`. `scratch_max_bytes` is the
-//! peak of the two capture files with the same cap semantics as before.
+//! `sampling_disabled`, `sample_capped`) — never `0` and never a guess. `sample_capped`
+//! is the only reason that accompanies a value, because it describes the attempt cap
+//! rather than a failure; a successful sample always clears a failure reason, and
+//! `not_measured` is only reported when no sample ever succeeded (A2/A3).
+//! `--cancel-after-ms` makes the operator's cancellation deadline the earlier of itself
+//! and `--timeout-ms`; a deadline kill records `cancellation_requested_at_ms` (**from
+//! supervision entry, not from spawn** — the harness starts measuring when it takes the
+//! child over), `cancellation_observed_ms` (kill request to confirmed exit) and, only
+//! when the class really is `cancelled` and the candidate reported one of the
+//! whitelisted `cancelled_at_*` tokens, `cancelled_at_reason` (N3/N6). Such a run can
+//! never be `decoded`. `scratch_max_bytes` is the observed peak of the two capture files
+//! during supervision; it is an observed maximum, not a sampled lower bound (N4).
 //!
 //! The record also carries a `resources` array with one row per candidate, aggregated over
 //! exactly the observations that contribute capability evidence (decoded, complete,
 //! `presence_only`/`structure_verified`/`pixels_verified`) and therefore never inflated by
 //! a cancelled, refused or mismatching run; capability rows gain the same
-//! `working_set_max_bytes` maximum. Fields that legitimately vary between two otherwise
-//! identical runs are `wall_ms`, `scratch_max_bytes`, `working_set_samples`,
-//! `working_set_max_bytes`, `cancellation_requested_at_ms` and `cancellation_observed_ms`
-//! (timing or sampled measurements); everything else stays byte-identical.
+//! `working_set_max_bytes` maximum. Cross-candidate comparison of these figures is
+//! biased by process lifetime, because a longer-lived process simply has more chances to
+//! be sampled and its platform working set grows with warm-up (N7).
+//!
+//! Fields that legitimately vary between two otherwise identical runs are `wall_ms`,
+//! `scratch_max_bytes`, `working_set_attempts`, `working_set_samples`,
+//! `working_set_max_bytes`, `working_set_sampling`, `working_set_reason`,
+//! `cancellation_requested_at_ms` and `cancellation_observed_ms` (timing or sampled
+//! measurements); everything else stays byte-identical.
 //!
 //! Capability rows are built only from observations that are `decoded`, complete, and
 //! whose validity is `presence_only`, `structure_verified` or `pixels_verified` (A1),
@@ -251,8 +267,9 @@ pub const MAX_OUTPUT_FILE_BYTES: usize = 1024 * 1024 * 1024;
 
 const USAGE: &str = "usage: decode_compare --cases DIR --candidate ID=ABSOLUTE_EXE|\
 ID=pwsh:ABSOLUTE_PS1 [--candidate ...]... --out FILE [--timeout-ms N] \
-[--max-output-bytes N] [--max-output-file-bytes N] [--max-cases N] \
-[--max-observations N] [--max-pixels N]";
+[--cancel-after-ms N] [--max-output-bytes N] [--max-output-file-bytes N] \
+[--max-cases N] [--max-observations N] [--max-pixels N] \
+[--sample-interval-ms N] [--max-samples N]";
 const DEFAULT_TIMEOUT_MS: u64 = 5_000;
 const DEFAULT_MAX_OUTPUT_BYTES: usize = 8 * 1024;
 const DEFAULT_MAX_OUTPUT_FILE_BYTES: usize = 64 * 1024 * 1024;
@@ -291,6 +308,10 @@ pub const DEFAULT_SAMPLE_INTERVAL_MS: u64 = 50;
 pub const MAX_SAMPLES_LIMIT: usize = 256;
 /// Largest accepted sampling interval.
 pub const MAX_SAMPLE_INTERVAL_MS: u64 = 60_000;
+/// Test/operator injection point for the sampler program (defaults to `tasklist`).
+pub const SAMPLE_TOOL_ENV: &str = "DECODE_COMPARE_SAMPLE_TOOL";
+/// Program used for sampling unless it is overridden.
+const DEFAULT_SAMPLE_TOOL: &str = "tasklist";
 /// Per-sample hard timeout for the sampling command.
 const SAMPLE_TIMEOUT: Duration = Duration::from_millis(2_000);
 /// Bounded read of one sample's stdout.
@@ -516,6 +537,11 @@ pub struct Config {
     /// Operator-requested cancellation deadline, applied when shorter than
     /// `timeout_ms`.
     pub cancel_after_ms: Option<u64>,
+    /// Sampler program override (tests only; `tasklist` otherwise). The
+    /// `DECODE_COMPARE_SAMPLE_TOOL` variable is the operator-facing injection point.
+    pub sample_tool: Option<PathBuf>,
+    /// Extra argv placed before the fixed sample argv (tests only).
+    pub sample_argv_prefix: Vec<OsString>,
     pub invocation: Invocation,
     /// Per-case operator expectations, keyed by case file name.
     pub expectations: BTreeMap<String, Expectation>,
@@ -559,7 +585,9 @@ pub struct Observation {
     /// Combined capture-file bytes observed when the child was reaped.
     /// Peak capture-file size observed while the child was supervised.
     pub scratch_max_bytes: Option<u64>,
-    /// Working-set samples taken while the child lived (0 when none were taken).
+    /// Sampling attempts made (bounded by `--max-samples`, successes or not).
+    pub working_set_attempts: usize,
+    /// Working-set samples that produced a value (0 when none were read).
     pub working_set_samples: usize,
     /// Largest sampled working set; `None` when sampling produced no value.
     pub working_set_max_bytes: Option<u64>,
@@ -707,10 +735,11 @@ struct Supervised {
     /// A deadline-triggered kill happened (timeout or operator cancellation).
     cancelled: bool,
     wall_ms: u64,
-    /// Peak size of the two capture files observed while supervising.
+    /// Observed peak of the two capture files (not a sampled lower bound).
     scratch_max_bytes: u64,
     capped: Option<CapKind>,
     /// Working-set sampling: a sampled lower bound, never a guess.
+    working_set_attempts: usize,
     working_set_samples: usize,
     working_set_max_bytes: Option<u64>,
     working_set_sampling: &'static str,
@@ -837,8 +866,9 @@ where
             other => {
                 return Err(UsageError::new(format!(
                     "unexpected argument {other:?}; expected one of --cases, --candidate, --out, \
-                     --timeout-ms, --max-output-bytes, --max-output-file-bytes, --max-cases, \
-                     --max-observations, --max-pixels"
+                     --timeout-ms, --cancel-after-ms, --max-output-bytes, \
+                     --max-output-file-bytes, --max-cases, --max-observations, --max-pixels, \
+                     --sample-interval-ms, --max-samples"
                 )));
             }
         }
@@ -910,6 +940,8 @@ where
         sample_interval_ms,
         max_samples,
         cancel_after_ms,
+        sample_tool: std::env::var_os(SAMPLE_TOOL_ENV).map(PathBuf::from),
+        sample_argv_prefix: Vec::new(),
         invocation: Invocation {
             argv_prefix: Vec::new(),
             env_transport: false,
@@ -1782,6 +1814,7 @@ fn measure(
         stderr_truncated: false,
         wall_ms: None,
         scratch_max_bytes: None,
+        working_set_attempts: 0,
         working_set_samples: 0,
         working_set_max_bytes: None,
         working_set_sampling: NOT_MEASURED,
@@ -1856,6 +1889,11 @@ fn measure(
                 stem: format!("{stem}.ws"),
                 interval: Duration::from_millis(config.sample_interval_ms),
                 max_samples: config.max_samples,
+                tool: config
+                    .sample_tool
+                    .clone()
+                    .unwrap_or_else(|| PathBuf::from(DEFAULT_SAMPLE_TOOL)),
+                argv_prefix: config.sample_argv_prefix.clone(),
             });
             let supervised = supervise(
                 child,
@@ -1871,6 +1909,7 @@ fn measure(
             };
             observation.wall_ms = Some(supervised.wall_ms);
             observation.scratch_max_bytes = Some(supervised.scratch_max_bytes);
+            observation.working_set_attempts = supervised.working_set_attempts;
             observation.working_set_samples = supervised.working_set_samples;
             observation.working_set_max_bytes = supervised.working_set_max_bytes;
             observation.working_set_sampling = supervised.working_set_sampling;
@@ -1884,8 +1923,6 @@ fn measure(
             observation.candidate_reason = candidate_reason(&stdout);
             observation.captured_stdout_bytes = stdout.bytes.len();
             observation.captured_stderr_bytes = stderr.bytes.len();
-            let reason = candidate_reason(&stdout);
-            observation.cancelled_at_reason = reason.starts_with("cancelled_at_").then_some(reason);
             observation.stdout_truncated = stdout.truncated;
             observation.stderr_truncated = stderr.truncated;
             // B-03: a capped run is never a success class, even when the child
@@ -1972,6 +2009,14 @@ fn measure(
             );
             observation.validity = validity;
             observation.validity_reason = reason;
+            // NIT-6: the candidate's own cancellation claim is only recorded when the
+            // observed class really is `cancelled`.
+            if observation.observed_outcome == OutcomeClass::Cancelled {
+                observation.cancelled_at_reason = observation
+                    .candidate_reason
+                    .starts_with("cancelled_at_")
+                    .then_some(observation.candidate_reason);
+            }
             observation.pixel_verified = validity == PIXELS_VERIFIED;
             // A verdict the evidence contradicts can never keep a success class.
             // An expectation-bearing output that is contradicted, unparsable or
@@ -2269,6 +2314,95 @@ struct Sampling<'a> {
     stem: String,
     interval: Duration,
     max_samples: usize,
+    /// Sampler program: `tasklist` unless a test injects one (A4).
+    tool: PathBuf,
+    /// Extra argv placed before the fixed sample argv (test seam, like the candidate
+    /// `Invocation::argv_prefix`).
+    argv_prefix: Vec<OsString>,
+}
+
+/// Working-set sampling bookkeeping, kept separate from the I/O so every transition is
+/// unit-testable (A3).
+///
+/// Invariants: `max_bytes` is `Some` exactly when at least one sample succeeded;
+/// `sampling` is `sampled_lower_bound` exactly then, and a failure reason is never kept
+/// next to a value (a later success clears it). `sample_capped` is the only reason that
+/// may accompany a value, because it describes the cap, not a failure.
+pub struct Sampler {
+    enabled: bool,
+    pub attempts: usize,
+    max_samples: usize,
+    pub samples: usize,
+    pub max_bytes: Option<u64>,
+    pub sampling: &'static str,
+    pub reason: Option<&'static str>,
+    stopped: bool,
+}
+
+impl Sampler {
+    fn new(enabled: bool, max_samples: usize) -> Self {
+        Self {
+            enabled,
+            attempts: 0,
+            max_samples,
+            samples: 0,
+            max_bytes: None,
+            sampling: NOT_MEASURED,
+            reason: if enabled { None } else { Some(SAMPLE_DISABLED) },
+            stopped: !enabled,
+        }
+    }
+
+    /// Test seam: an enabled sampler with the given attempt cap.
+    #[cfg(test)]
+    pub fn for_tests(max_samples: usize) -> Self {
+        Self::new(true, max_samples)
+    }
+
+    /// Whether another attempt may start now.
+    pub fn may_attempt(&self) -> bool {
+        self.enabled && !self.stopped && self.attempts < self.max_samples
+    }
+
+    /// The cap stopped scheduling further attempts.
+    pub fn capped(&mut self) {
+        self.stopped = true;
+        if self.reason.is_none() {
+            self.reason = Some(SAMPLE_CAPPED);
+        }
+    }
+
+    pub fn attempt(&mut self) {
+        self.attempts += 1;
+    }
+
+    /// A sample produced a working-set value.
+    pub fn succeeded(&mut self, bytes: u64) {
+        self.samples += 1;
+        self.max_bytes = Some(self.max_bytes.map_or(bytes, |current| current.max(bytes)));
+        self.sampling = SAMPLED_LOWER_BOUND;
+        // A success clears any earlier failure reason (A3).
+        self.reason = None;
+    }
+
+    /// A sample could not be read: record why and stop retrying.
+    pub fn failed(&mut self, reason: &'static str) {
+        self.stopped = true;
+        if self.samples == 0 {
+            self.sampling = NOT_MEASURED;
+            self.reason = Some(reason);
+        } else {
+            // Someone else already produced a value; keep the value and its label.
+            self.reason = None;
+        }
+    }
+
+    /// Settle the reason for a child that ended without producing anything.
+    pub fn finish(&mut self) {
+        if self.enabled && self.samples == 0 && self.reason.is_none() {
+            self.reason = Some(SAMPLE_NO_SAMPLE);
+        }
+    }
 }
 
 /// Supervise one child: enforce the deadline, watch the caps, sample its working set
@@ -2294,16 +2428,9 @@ fn supervise(
     let mut killed = false;
     let mut capped = None;
     let mut scratch_max_bytes = 0_u64;
-    let mut working_set_samples = 0_usize;
-    let mut working_set_max_bytes: Option<u64> = None;
-    let mut working_set_sampling = NOT_MEASURED;
-    let mut working_set_reason: Option<&'static str> = None;
     let mut cancellation_requested_at_ms = None;
     let mut cancellation_observed_ms = None;
-    if sampling.is_none() {
-        working_set_sampling = NOT_MEASURED;
-        working_set_reason = Some(SAMPLE_DISABLED);
-    }
+    let mut sampler = Sampler::new(sampling.is_some(), sampling.map_or(0, |c| c.max_samples));
     let deadline = match cancel_after {
         Some(early) => early.min(timeout),
         None => timeout,
@@ -2330,24 +2457,29 @@ fn supervise(
         // Harvest a sample that has finished (or timed out) without blocking the loop.
         if let Some(mut flight) = in_flight.take() {
             match flight.child.try_wait() {
-                Ok(Some(_)) | Err(_) => match harvest_sample(&mut flight) {
-                    Ok(bytes) => {
-                        working_set_samples += 1;
-                        working_set_max_bytes =
-                            Some(working_set_max_bytes.map_or(bytes, |current| current.max(bytes)));
-                        working_set_sampling = SAMPLED_LOWER_BOUND;
-                    }
+                Ok(Some(_)) => match harvest_sample(&mut flight) {
+                    Ok(bytes) => sampler.succeeded(bytes),
                     Err(reason) => {
-                        working_set_sampling = NOT_MEASURED;
-                        working_set_reason = Some(reason);
+                        sampler.failed(reason);
+                        next_sample = None;
                     }
                 },
+                Err(_) => {
+                    // A sampler we cannot reap must not be left running (N5).
+                    let _ = flight.child.kill();
+                    let _ = flight.child.wait();
+                    flight.capture.release();
+                    sampler.failed(SAMPLE_PARSE_FAILED);
+                    next_sample = None;
+                }
                 Ok(None) => {
                     if flight.started.elapsed() >= SAMPLE_TIMEOUT {
+                        // N5: kill, reap and release the timed-out sampler.
                         let _ = flight.child.kill();
                         let _ = flight.child.wait();
-                        working_set_sampling = NOT_MEASURED;
-                        working_set_reason = Some(SAMPLE_TIMEOUT_REASON);
+                        flight.capture.release();
+                        sampler.failed(SAMPLE_TIMEOUT_REASON);
+                        next_sample = None;
                     } else {
                         in_flight = Some(flight);
                     }
@@ -2359,22 +2491,19 @@ fn supervise(
             && elapsed >= due
             && in_flight.is_none()
         {
-            if working_set_samples >= config.max_samples {
-                // The cap is reached: stop sampling and say why.
-                working_set_reason = Some(SAMPLE_CAPPED);
-                if working_set_samples > 0 {
-                    working_set_sampling = SAMPLED_LOWER_BOUND;
-                }
+            if !sampler.may_attempt() {
+                // The attempt cap actually stopped sampling (A2).
+                sampler.capped();
                 next_sample = None;
             } else {
+                sampler.attempt();
                 match start_sample(pid, config) {
                     Ok(flight) => {
                         in_flight = Some(flight);
                         next_sample = Some(elapsed.saturating_add(config.interval));
                     }
                     Err(reason) => {
-                        working_set_sampling = NOT_MEASURED;
-                        working_set_reason = Some(reason);
+                        sampler.failed(reason);
                         next_sample = None;
                     }
                 }
@@ -2402,7 +2531,8 @@ fn supervise(
         }
         thread::sleep(remaining.min(POLL_INTERVAL));
     };
-    // A sample still in flight when the child ends is discarded, never counted.
+    // A sample still in flight when the child ends is killed, reaped and released,
+    // and it is never counted (N5).
     if let Some(mut flight) = in_flight {
         let _ = flight.child.kill();
         let _ = flight.child.wait();
@@ -2429,9 +2559,7 @@ fn supervise(
             capped = Some(CapKind::Output);
         }
     }
-    if working_set_samples == 0 && working_set_reason.is_none() {
-        working_set_reason = Some(SAMPLE_NO_SAMPLE);
-    }
+    sampler.finish();
     Supervised {
         exit_code: if killed {
             None
@@ -2443,10 +2571,11 @@ fn supervise(
         wall_ms: elapsed_millis(started.elapsed()),
         scratch_max_bytes,
         capped,
-        working_set_samples,
-        working_set_max_bytes,
-        working_set_sampling,
-        working_set_reason,
+        working_set_attempts: sampler.attempts,
+        working_set_samples: sampler.samples,
+        working_set_max_bytes: sampler.max_bytes,
+        working_set_sampling: sampler.sampling,
+        working_set_reason: sampler.reason,
         cancellation_requested_at_ms,
         cancellation_observed_ms,
     }
@@ -2470,6 +2599,8 @@ struct SampleInFlight {
     child: Child,
     capture: CaptureFiles,
     started: Instant,
+    /// The supervised child this sample belongs to; the parsed row must match it.
+    pid: u32,
 }
 
 /// Start one bounded `tasklist` sample with a fixed argv (no shell, no quoting).
@@ -2482,7 +2613,8 @@ fn start_sample(pid: u32, config: &Sampling<'_>) -> Result<SampleInFlight, &'sta
         return Err(SAMPLE_PARSE_FAILED);
     };
     let filter = format!("PID eq {pid}");
-    let mut command = Command::new("tasklist");
+    let mut command = Command::new(&config.tool);
+    command.args(&config.argv_prefix);
     command
         .args(["/FI", filter.as_str(), "/FO", "CSV", "/NH"])
         .stdin(Stdio::null())
@@ -2496,12 +2628,14 @@ fn start_sample(pid: u32, config: &Sampling<'_>) -> Result<SampleInFlight, &'sta
         child,
         capture,
         started: Instant::now(),
+        pid,
     })
 }
 
 /// Harvest a finished sample: read its bounded stdout, parse the working set and
 /// release the capture files. A failure is a token, never a guessed number.
 fn harvest_sample(flight: &mut SampleInFlight) -> Result<u64, &'static str> {
+    let pid = flight.pid;
     let capture = flight
         .capture
         .read(usize::try_from(SAMPLE_OUTPUT_BYTES).unwrap_or(usize::MAX));
@@ -2511,21 +2645,101 @@ fn harvest_sample(flight: &mut SampleInFlight) -> Result<u64, &'static str> {
         return Err(SAMPLE_PARSE_FAILED);
     }
     let Ok(text) = String::from_utf8(bytes) else {
+        // An OEM-encoded image name is not UTF-8; the row is unusable either way.
         return Err(SAMPLE_PARSE_FAILED);
     };
-    parse_working_set(&text).ok_or(SAMPLE_PARSE_FAILED)
+    let row = parse_working_set(&text, pid).ok_or(SAMPLE_PARSE_FAILED)?;
+    if row.pid != pid {
+        return Err(SAMPLE_PARSE_FAILED);
+    }
+    Ok(row.bytes)
 }
 
-/// Parse the working set out of one `tasklist /FO CSV /NH` row.
-fn parse_working_set(text: &str) -> Option<u64> {
-    let line = text.lines().find(|line| !line.trim().is_empty())?;
+/// One parsed working-set sample.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct SampleRow {
+    pid: u32,
+    bytes: u64,
+}
+
+/// Parse a `tasklist /FO CSV /NH` output into the row of `pid`.
+///
+/// Only the documented Windows layout is accepted — exactly five quoted fields
+/// (`Image Name`, `PID`, `Session Name`, `Session#`, `Mem Usage`), a PID column equal to
+/// the supervised child and a memory column of the form `12,000 K` — so a fabricated,
+/// localized, relocated or truncated row can never be read as a byte count (A1). A row
+/// that does not validate is skipped; no row at all means `None`.
+fn parse_working_set(text: &str, pid: u32) -> Option<SampleRow> {
+    text.lines()
+        .filter_map(|line| parse_sample_row(line, pid))
+        .next()
+}
+
+fn parse_sample_row(line: &str, pid: u32) -> Option<SampleRow> {
     let fields = csv_fields(line);
-    let field = fields.last()?;
-    let digits: String = field.chars().filter(char::is_ascii_digit).collect();
-    if digits.is_empty() {
+    // Exactly the five columns `tasklist /FO CSV /NH` emits; anything else (a header
+    // row, a fabricated extra column, a different locale) is not our row.
+    if fields.len() != 5 {
         return None;
     }
-    let kilobytes = digits.parse::<u64>().ok()?;
+    if fields[0].is_empty() || fields[2].is_empty() {
+        return None;
+    }
+    let row_pid = fields[1].trim().parse::<u32>().ok()?;
+    if row_pid != pid {
+        return None;
+    }
+    if fields[3].trim().parse::<u32>().is_err() {
+        return None;
+    }
+    let bytes = parse_memory_field(fields[4])?;
+    Some(SampleRow {
+        pid: row_pid,
+        bytes,
+    })
+}
+
+/// Test seam for the row parser: the byte count of the first valid row for `pid`.
+#[cfg(test)]
+pub fn parse_working_set_for_tests(text: &str, pid: u32) -> Option<u64> {
+    parse_working_set(text, pid).map(|row| row.bytes)
+}
+
+/// Parse the `Mem Usage` column: `12,000 K`, `6,408 K` or a plain `12000 K`, in
+/// kilobytes. Anything else (a session number, a localized unit, an empty field) is
+/// refused.
+fn parse_memory_field(field: &str) -> Option<u64> {
+    let number = field.trim().strip_suffix(" K")?;
+    if !number
+        .bytes()
+        .all(|byte| byte.is_ascii_digit() || byte == b',')
+    {
+        return None;
+    }
+    let kilobytes = if number.contains(',') {
+        // Grouped form: `12,000`, i.e. 1-3 digits then groups of exactly three.
+        let mut groups = number.split(',');
+        let first = groups.next()?;
+        if first.is_empty() || first.len() > 3 || !first.bytes().all(|byte| byte.is_ascii_digit()) {
+            return None;
+        }
+        let mut value = first.parse::<u64>().ok()?;
+        for group in groups {
+            if group.len() != 3 || !group.bytes().all(|byte| byte.is_ascii_digit()) {
+                return None;
+            }
+            value = value
+                .checked_mul(1000)?
+                .checked_add(group.parse::<u64>().ok()?)?;
+        }
+        value
+    } else {
+        // Plain form, also documented: `12000 K`.
+        if number.is_empty() || number.len() > 9 {
+            return None;
+        }
+        number.parse::<u64>().ok()?
+    };
     Some(kilobytes.saturating_mul(1024))
 }
 
@@ -2652,7 +2866,7 @@ fn observation_row(observation: &Observation) -> String {
          \"candidate_reason\": {}, \"exit_code\": {}, \"timeout_fired\": {}, \
          \"captured_stdout_bytes\": {}, \"captured_stderr_bytes\": {}, \"stdout_truncated\": {}, \
          \"stderr_truncated\": {}, \"wall_ms\": {}, \"scratch_max_bytes\": {}, \
-         \"working_set_samples\": {}, \"working_set_max_bytes\": {}, \
+         \"working_set_attempts\": {}, \"working_set_samples\": {}, \"working_set_max_bytes\": {}, \
          \"working_set_sampling\": {}, \"working_set_reason\": {}, \
          \"cancellation_requested_at_ms\": {}, \"cancellation_observed_ms\": {}, \
          \"cancelled_at_reason\": {}, \
@@ -2678,6 +2892,7 @@ fn observation_row(observation: &Observation) -> String {
         observation.stderr_truncated,
         number_field(observation.wall_ms),
         number_field(observation.scratch_max_bytes),
+        observation.working_set_attempts,
         observation.working_set_samples,
         number_field(observation.working_set_max_bytes),
         quoted(observation.working_set_sampling),
