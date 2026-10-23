@@ -114,82 +114,46 @@
 //! Adler-32 is corrupt can still verify. Colour management, gamma chunks and EXIF are
 //! not interpreted either; pixel values are compared as stored.
 //!
-//! Observed resources and cancellation (schema 9): while a child lives the parent
-//! samples its working set through a bounded `tasklist /FI "PID eq <id>" /FO CSV /NH`
-//! call (argv only, no shell, hard per-sample timeout of 2000 ms — the sampler runs
-//! concurrently with the child, so its cost never moves the child's deadline — at most
-//! `max_samples` sampling *attempts*, successes or not). The sampler program is bound to
-//! an absolute, trusted path — `%SystemRoot%\System32\tasklist.exe` — and never launched
-//! by a bare name, so a `tasklist.exe` dropped next to the harness cannot win the
-//! application-directory search. Because that root arrives through the environment, it is
-//! validated like any other untrusted path before it may name the sampler: local disk
-//! only (no UNC, device, verbatim or `..` component, the same rule candidate paths get),
-//! exactly `<drive>:\Windows` one component below a drive root, and neither the root, its
-//! `System32` nor the sampler may be a reparse point that resolves elsewhere. Anything
-//! else is `sample_tool_untrusted_root` with no sampler at all. The operator binary reads
-//! no environment variable for the program itself.
+//! Observed resources and cancellation (schema 9): sampling is **explicit opt-in**. The
+//! operator names the sampler program with `--sample-tool <absolute local disk path>`;
+//! without that flag nothing is sampled at all — `working_set_sampling: "not_measured"`,
+//! `working_set_reason: "sampling_disabled"`, `working_set_attempts: 0`, `sample_tool:
+//! null`, and no process is spawned. There is no default sampler, no `SystemRoot`
+//! derivation and no environment lookup anywhere in this path, so neither a redirected
+//! system directory, a substituted environment value nor a decoy executable next to the
+//! harness can select or influence the sampler: an operator who does not ask for sampling
+//! cannot be given a fabricated resource figure, and one who does asks for a specific
+//! file by name.
 //!
-//! Trust boundary (A1/N7): these rules defeat a redirected, relative, UNC, `..` or
-//! junction root and any attempt to point the harness at a decoy directory, which is what
-//! an unprivileged process can do to another process's environment. They cannot defend
-//! against a principal that can both set this process's environment and write
-//! `<drive>:\Windows\System32\tasklist.exe` on a drive it controls; the resolved
-//! identity is recorded (path plus digest) precisely so such a substitution is visible in
-//! the evidence rather than assumed absent.
+//! The flag is validated but never trusted: it must be an absolute local disk path (no
+//! UNC, verbatim or device form, no parent component), and it is used exactly as given.
+//! When sampling is enabled the harness reads that file once with a 32 MiB cap and
+//! records its SHA-256; the sampler child is spawned from that same path, and the digest
+//! is re-verified immediately before every spawn and again after each sample exits. A
+//! mismatch discards the value and records `sample_tool_changed` — including a value that
+//! already existed. The recorded digest therefore describes the file that was on disk at
+//! spawn time, not a copy and not a guess. Residual risk: between the pre-spawn
+//! verification and `CreateProcess` another process could still replace the file, and a
+//! principal that can write the operator-named file at all is outside what a std-only
+//! process can detect; the path, the digest and the per-sample re-verification make such
+//! a substitution visible in the evidence.
 //!
-//! Digest versus execution (A2): the resolved file is read once with a 32 MiB cap, hashed
-//! with the harness's own SHA-256, written into the private per-run directory that only
-//! this run created, and the child is spawned from that copy — so the recorded digest is
-//! the executed bytes. `sample_tool` records the resolved source path, never the private
-//! copy. Residual risk: the source can still be swapped before it is read, and a process
-//! running as the same user that learns the private copy path could replace it after
-//! staging; the run directory is removed when the run ends.
-//!
-//! Failure accounting (N6): a resolution failure means no sampler exists at all, so the
-//! observation records `working_set_attempts: 0`; a spawn failure means the attempt was
-//! made and the process could not start, so it records `working_set_attempts: 1` with
-//! `sample_tool_missing`. A missing or relative program is `sample_tool_missing`, an
-//! unreadable or oversized one is `sample_tool_unreadable`/`sample_tool_oversize`, and a
-//! file that cannot be hashed is `not_measured` with that reason rather than a fabricated
-//! digest.
+//! Each sample is a bounded `tasklist /FI "PID eq <id>" /FO CSV /NH` call (argv only, no
+//! shell, hard per-sample timeout of 2000 ms — the sampler runs concurrently with the
+//! child, so its cost never moves the child's deadline — at most `max_samples` sampling
+//! *attempts*, successes or not). Failure accounting: opt-out and an unusable operator
+//! tool take zero attempts (`sampling_disabled`, `sample_tool_missing`,
+//! `sample_tool_unreadable`, `sample_tool_oversize`, `sample_tool_changed`), while a
+//! spawn or per-sample failure counts the attempt it made (`sample_tool_missing` for a
+//! spawn failure, `sample_timeout`, `sample_parse_failed`). No value is ever fabricated:
+//! `working_set_max_bytes` is `null` unless a validated row was read, and
+//! `working_set_sampling` is `not_measured` whenever no sample succeeded.
 //!
 //! Header compatibility (N4): schema 9 gained `sample_tool`, `sample_tool_sha256` and
 //! `sample_tool_reason` additively; a reader that does not know them can ignore them,
-//! and no existing field changed shape. A sample is accepted only when
-//! the row is the documented five-column Windows layout, its PID column equals the
-//! supervised child, and its memory column has the `12,000 K` form; anything else is
-//! `sample_parse_failed` (A1). The first attempt waits one interval, so a candidate that
-//! ends sooner records `no_sample`, and a fast candidate may need a smaller
-//! `--sample-interval-ms` to be sampled at all (N7). Every value is a
-//! **sampled lower bound**: the record says `working_set_sampling: "sampled_lower_bound"`
-//! and a sample that cannot be read is `not_measured` with a reason token
-//! (`sample_tool_missing`, `sample_timeout`, `sample_parse_failed`, `no_sample`,
-//! `sampling_disabled`, `sample_capped`) — never `0` and never a guess. `sample_capped`
-//! is the only reason that accompanies a value, because it describes the attempt cap
-//! rather than a failure; a successful sample always clears a failure reason, and
-//! `not_measured` is only reported when no sample ever succeeded (A2/A3).
-//! `--cancel-after-ms` makes the operator's cancellation deadline the earlier of itself
-//! and `--timeout-ms`; a deadline kill records `cancellation_requested_at_ms` (**from
-//! supervision entry, not from spawn** — the harness starts measuring when it takes the
-//! child over), `cancellation_observed_ms` (kill request to confirmed exit) and, only
-//! when the class really is `cancelled` and the candidate reported one of the
-//! whitelisted `cancelled_at_*` tokens, `cancelled_at_reason` (N3/N6). Such a run can
-//! never be `decoded`. `scratch_max_bytes` is the observed peak of the two capture files
-//! during supervision; it is an observed maximum, not a sampled lower bound (N4).
-//!
-//! The record also carries a `resources` array with one row per candidate, aggregated over
-//! exactly the observations that contribute capability evidence (decoded, complete,
-//! `presence_only`/`structure_verified`/`pixels_verified`) and therefore never inflated by
-//! a cancelled, refused or mismatching run; capability rows gain the same
-//! `working_set_max_bytes` maximum. Cross-candidate comparison of these figures is
-//! biased by process lifetime, because a longer-lived process simply has more chances to
-//! be sampled and its platform working set grows with warm-up (N7).
-//!
-//! Fields that legitimately vary between two otherwise identical runs are `wall_ms`,
-//! `scratch_max_bytes`, `working_set_attempts`, `working_set_samples`,
-//! `working_set_max_bytes`, `working_set_sampling`, `working_set_reason`,
-//! `cancellation_requested_at_ms` and `cancellation_observed_ms` (timing or sampled
-//! measurements); everything else stays byte-identical.
+//! and no existing field changed shape. A sample is accepted only when the row is the
+//! documented five-column Windows layout, its PID column equals the supervised child and
+//! its memory column has the  form; anything else is .
 //!
 //! Capability rows are built only from observations that are `decoded`, complete, and
 //! whose validity is `presence_only`, `structure_verified` or `pixels_verified` (A1),
@@ -258,7 +222,7 @@ use crate::inspect::{self, ColourMarker, ColourType, Format, Inspection};
 use crate::pixels;
 use std::{
     collections::BTreeMap,
-    ffi::{OsStr, OsString},
+    ffi::OsString,
     fmt::Write as _,
     fs,
     io::Read,
@@ -306,7 +270,7 @@ const USAGE: &str = "usage: decode_compare --cases DIR --candidate ID=ABSOLUTE_E
 ID=pwsh:ABSOLUTE_PS1 [--candidate ...]... --out FILE [--timeout-ms N] \
 [--cancel-after-ms N] [--max-output-bytes N] [--max-output-file-bytes N] \
 [--max-cases N] [--max-observations N] [--max-pixels N] \
-[--sample-interval-ms N] [--max-samples N]";
+[--sample-tool ABSOLUTE_LOCAL_EXE] [--sample-interval-ms N] [--max-samples N]";
 const DEFAULT_TIMEOUT_MS: u64 = 5_000;
 const DEFAULT_MAX_OUTPUT_BYTES: usize = 8 * 1024;
 const DEFAULT_MAX_OUTPUT_FILE_BYTES: usize = 64 * 1024 * 1024;
@@ -345,16 +309,6 @@ pub const DEFAULT_SAMPLE_INTERVAL_MS: u64 = 50;
 pub const MAX_SAMPLES_LIMIT: usize = 256;
 /// Largest accepted sampling interval.
 pub const MAX_SAMPLE_INTERVAL_MS: u64 = 60_000;
-/// Directory of the trusted system sampler, relative to `%SystemRoot%`.
-const SYSTEM_SAMPLER_DIR: &str = "System32";
-/// Name of the environment variable the removed seam used; the probe test asserts the
-/// operator configuration ignores it (N1). It is a constant only, never read.
-#[cfg(test)]
-pub const SAMPLE_TOOL_OVERRIDE_PROBE: &str = "DECODE_COMPARE_SAMPLE_TOOL";
-/// Name of the default system directory.
-const SYSTEM_ROOT_NAME: &str = "Windows";
-/// File name of the trusted system sampler.
-const SYSTEM_SAMPLER_FILE: &str = "tasklist.exe";
 /// Bounded read used to fingerprint the sampler program.
 const SAMPLE_TOOL_DIGEST_CAP: u64 = 32 * 1024 * 1024;
 /// Per-sample hard timeout for the sampling command.
@@ -582,10 +536,9 @@ pub struct Config {
     /// Operator-requested cancellation deadline, applied when shorter than
     /// `timeout_ms`.
     pub cancel_after_ms: Option<u64>,
-    /// Absolute sampler program override, used only by tests: the operator binary
-    /// leaves this `None` and resolves the system tasklist under System32. There is no
-    /// environment-variable form on purpose (it would let a substituted program be used
-    /// with no other evidence); a relative value is refused by the resolver.
+    /// Operator-supplied sampler program (`--sample-tool`), absolute local disk path.
+    /// `None` disables sampling entirely: no default, no `SystemRoot` derivation and no
+    /// environment lookup exists, so nothing in the environment can select a sampler.
     pub sample_tool: Option<PathBuf>,
     /// Extra argv placed before the fixed sample argv (tests only).
     pub sample_argv_prefix: Vec<OsString>,
@@ -850,6 +803,7 @@ where
     let mut max_cases = DEFAULT_MAX_CASES;
     let mut max_observations = DEFAULT_MAX_OBSERVATIONS;
     let mut max_pixels = None;
+    let mut sample_tool: Option<PathBuf> = None;
     let mut sample_interval_ms = DEFAULT_SAMPLE_INTERVAL_MS;
     let mut max_samples = MAX_SAMPLES_LIMIT;
     let mut cancel_after_ms = None;
@@ -867,6 +821,13 @@ where
             "--timeout-ms" => timeout_ms = take_number(&mut arguments, "--timeout-ms")?,
             "--max-output-bytes" => {
                 max_output_bytes = take_size(&mut arguments, "--max-output-bytes")?;
+            }
+            "--sample-tool" => {
+                let value = take(&mut arguments, "--sample-tool")?;
+                let path = PathBuf::from(value);
+                let validated = sample_tool_from_cli(&path)
+                    .map_err(|message| UsageError::new(message.as_str()))?;
+                sample_tool = Some(validated);
             }
             "--sample-interval-ms" => {
                 let value = take(&mut arguments, "--sample-interval-ms")?;
@@ -921,7 +882,7 @@ where
                     "unexpected argument {other:?}; expected one of --cases, --candidate, --out, \
                      --timeout-ms, --cancel-after-ms, --max-output-bytes, \
                      --max-output-file-bytes, --max-cases, --max-observations, --max-pixels, \
-                     --sample-interval-ms, --max-samples"
+                     --sample-tool, --sample-interval-ms, --max-samples"
                 )));
             }
         }
@@ -993,10 +954,9 @@ where
         sample_interval_ms,
         max_samples,
         cancel_after_ms,
-        // Tests inject through `Config`; the operator binary never reads an
-        // environment variable for the sampler program (BLOCKING finding: the env
-        // seam let a substituted tool be used with no other evidence).
-        sample_tool: None,
+        // Opt-in only: the operator names the sampler with `--sample-tool`, and no
+        // environment value can supply or influence it.
+        sample_tool,
         sample_argv_prefix: Vec::new(),
         invocation: Invocation {
             argv_prefix: Vec::new(),
@@ -1294,24 +1254,23 @@ pub fn run(config: &Config) -> Result<Report, UsageError> {
 }
 
 fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, UsageError> {
-    // BLOCKING finding: the sampler must be an absolute, trusted program. Resolve it
-    // once, fingerprint it, and pass it to every sampling site.
-    let system_root = std::env::var_os("SystemRoot");
-    let resolved = resolve_sample_tool(config.sample_tool.as_deref(), system_root.as_deref());
-    // A2: pin the bytes once and verify them around every spawn of the executed path.
-    let pinned = match resolved.as_ref() {
-        Ok(source) => pin_sample_tool(source, work),
-        Err(_) => Err(SAMPLE_TOOL_UNREADABLE),
+    // Sampling is opt-in: without `--sample-tool` nothing is resolved, nothing is
+    // spawned, and every observation reports `sampling_disabled`.
+    let sample_tool_source = config.sample_tool.clone();
+    let fingerprint = match sample_tool_source.as_ref() {
+        Some(path) => read_sample_tool(path).map(|bytes| pixels::hex(&pixels::sha256(&bytes))),
+        None => Err(SAMPLE_DISABLED),
     };
-    let (sample_tool_sha256, sample_tool_reason) = match pinned.as_ref() {
-        Ok((_, digest)) => (Some(digest.clone()), None),
-        Err(_) if resolved.is_err() => (None, resolved.as_ref().err().copied()),
-        Err(reason) => (None, Some(*reason)),
+    let (sample_tool_sha256, sample_tool_reason) = match fingerprint {
+        Ok(digest) => (Some(digest), None),
+        Err(reason) => (None, Some(reason)),
     };
-    let sample_tool_source = resolved.ok();
-    // The executable form is the resolved system path; the pinned copy is the digest
-    // reference and the pinned path is never spawned (see `pin_sample_tool`).
-    let resolved_sample_tool = pinned.ok().and_then(|_| sample_tool_source.clone());
+    // The digest always describes the file that will be executed; it is re-verified
+    // around every spawn and a mismatch discards the sample.
+    let resolved_sample_tool = sample_tool_sha256
+        .as_ref()
+        .and_then(|_| sample_tool_source.clone());
+    let sample_tool_failure = sample_tool_reason;
     let mut candidates = config.candidates.clone();
     candidates.sort_by(|left, right| left.id.cmp(&right.id));
     let launchers: Vec<Launcher> = candidates
@@ -1349,6 +1308,7 @@ fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, Usag
                 captures,
                 sample_tool: resolved_sample_tool.as_deref(),
                 sample_digest: sample_tool_sha256.as_deref(),
+                sample_tool_failure,
             };
             observations.push(measure(
                 config, candidate, launcher, case, &paths, case_index,
@@ -1854,8 +1814,10 @@ struct RunPaths<'a> {
     captures: &'a Path,
     /// Absolute sampler program, or None when it could not be resolved.
     sample_tool: Option<&'a Path>,
-    /// Digest pinned for this run, used to verify every spawn.
+    /// Digest of the operator-supplied tool, verified around every spawn.
     sample_digest: Option<&'a str>,
+    /// Why the sampler is unusable, when it is (`sampling_disabled` for opt-out).
+    sample_tool_failure: Option<&'static str>,
 }
 
 fn measure(
@@ -1993,10 +1955,15 @@ fn measure(
                     argv_prefix: config.sample_argv_prefix.clone(),
                     digest: paths.sample_digest.unwrap_or_default().to_owned(),
                 });
-            let sampling_disabled_reason = match (config.sample_interval_ms, paths.sample_tool) {
-                (0, _) => SAMPLE_DISABLED,
-                (_, None) => SAMPLE_TOOL_MISSING,
-                (_, Some(_)) => SAMPLE_DISABLED,
+            // The observation-level reason is the resolved token, not a fixed one:
+            // opt-out is `sampling_disabled`, an unreadable or oversized operator tool
+            // keeps its own token, and a rejected one is `sample_tool_missing`.
+            let sampling_disabled_reason = if config.sample_interval_ms == 0 {
+                SAMPLE_DISABLED
+            } else if paths.sample_tool.is_none() {
+                paths.sample_tool_failure.unwrap_or(SAMPLE_DISABLED)
+            } else {
+                SAMPLE_DISABLED
             };
             let supervised = supervise(
                 child,
@@ -2412,8 +2379,6 @@ fn exceeded(bounds: &Bounds<'_>) -> Option<CapKind> {
 /// the child is reaped, so a burst that finishes between two polls is still
 /// classified as capped instead of a success. Kill/reap applies to the direct child
 /// only (A-01); termination of descendants is neither guaranteed nor claimed.
-/// The system root failed the trust rules (redirected, UNC, device, `..`, reparse).
-const SAMPLE_TOOL_UNTRUSTED_ROOT: &str = "sample_tool_untrusted_root";
 /// Why the sampler program could not be hashed or pinned.
 const SAMPLE_TOOL_UNREADABLE: &str = "sample_tool_unreadable";
 /// The sampler program changed between pinning and execution (digest mismatch).
@@ -2421,72 +2386,25 @@ const SAMPLE_TOOL_CHANGED: &str = "sample_tool_changed";
 /// The sampler program was larger than the bounded read.
 const SAMPLE_TOOL_OVERSIZE: &str = "sample_tool_oversize";
 
-/// Resolve the sampler program to an absolute path.
+/// The operator's `--sample-tool` value, validated as a local disk path.
 ///
-/// The default is `%SystemRoot%\System32\tasklist.exe` built from the trusted
-/// `SystemRoot` value, never a bare name: a bare name makes CreateProcess search the
-/// application directory first, so a `tasklist.exe` dropped next to the harness would
-/// win (BLOCKING finding). A configured (test-only) path is accepted only when it is
-/// absolute, so the same substitution cannot be reached through configuration either.
-/// A missing `SystemRoot`, a relative path or an absent file is `sample_tool_missing`.
-pub fn resolve_sample_tool(
-    configured: Option<&Path>,
-    system_root: Option<&OsStr>,
-) -> Result<PathBuf, &'static str> {
-    resolve_sample_tool_in(configured, system_root, true)
-}
-
-/// The path logic, with the existence check switchable so tests can assert the pure
-/// derivation without depending on what is installed.
-fn resolve_sample_tool_in(
-    configured: Option<&Path>,
-    system_root: Option<&OsStr>,
-    require_file: bool,
-) -> Result<PathBuf, &'static str> {
-    let path = match configured {
-        Some(path) => {
-            if !path.is_absolute() {
-                return Err(SAMPLE_TOOL_MISSING);
-            }
-            path.to_path_buf()
-        }
-        None => {
-            // A1: the root comes from the environment, so it is validated like any
-            // other untrusted path before it may name the sampler.
-            let root = system_root.ok_or(SAMPLE_TOOL_UNTRUSTED_ROOT)?;
-            let root = Path::new(root);
-            if root.as_os_str().is_empty() {
-                return Err(SAMPLE_TOOL_UNTRUSTED_ROOT);
-            }
-            if !is_local_disk_absolute(root) || !is_default_system_root(root) {
-                return Err(SAMPLE_TOOL_UNTRUSTED_ROOT);
-            }
-            if !resolves_to_itself(root) {
-                return Err(SAMPLE_TOOL_UNTRUSTED_ROOT);
-            }
-            let system32 = root.join(SYSTEM_SAMPLER_DIR);
-            if !system32.is_dir() || !resolves_to_itself(&system32) {
-                return Err(SAMPLE_TOOL_UNTRUSTED_ROOT);
-            }
-            system32.join(SYSTEM_SAMPLER_FILE)
-        }
-    };
-    if !path.is_absolute() {
-        return Err(SAMPLE_TOOL_MISSING);
+/// Sampling is opt-in: there is no default, no `SystemRoot` derivation and no
+/// environment lookup, so no redirect of the environment or of the system directory can
+/// select the sampler at all. The value is used exactly as given.
+pub fn sample_tool_from_cli(value: &Path) -> Result<PathBuf, String> {
+    if !is_local_disk_absolute(value) {
+        return Err(format!(
+            "--sample-tool must be an absolute local disk path (no UNC, verbatim or device form, \
+             no parent component), not {}",
+            value.display()
+        ));
     }
-    if require_file && !path.is_file() {
-        return Err(SAMPLE_TOOL_MISSING);
-    }
-    if require_file && !resolves_to_itself(&path) {
-        // A reparse point that redirects the sampler is not the system sampler.
-        return Err(SAMPLE_TOOL_UNTRUSTED_ROOT);
-    }
-    Ok(path)
+    Ok(value.to_path_buf())
 }
 
 /// The rule the harness applies to candidate paths (see `local_absolute_path`):
-/// absolute, a local disk prefix, rooted, and no parent or current-directory
-/// component. UNC, device and verbatim forms are not a local disk prefix.
+/// absolute, a plain local disk prefix, rooted, and no parent or current-directory
+/// component. UNC, verbatim and device forms are not a local disk prefix.
 fn is_local_disk_absolute(path: &Path) -> bool {
     if !path.is_absolute() {
         return false;
@@ -2496,8 +2414,6 @@ fn is_local_disk_absolute(path: &Path) -> bool {
         use std::path::{Component, Prefix};
         let mut components = path.components();
         match components.next() {
-            // A plain disk prefix only: the `\\?\` verbatim and device forms skip
-            // Win32 path parsing, so they are not accepted for the system root.
             Some(Component::Prefix(prefix)) if matches!(prefix.kind(), Prefix::Disk(_)) => {}
             _ => return false,
         }
@@ -2518,72 +2434,6 @@ fn is_local_disk_absolute(path: &Path) -> bool {
     }
 }
 
-/// The default system directory is exactly `<drive>:\Windows`: one component below a
-/// drive root, named `Windows`. A redirected root such as `C:\tmp\decoy\root` or a
-/// deeper `C:\tmp\Windows` therefore fails even when the decoy itself is well formed.
-pub fn is_default_system_root(root: &Path) -> bool {
-    let Some(name) = root.file_name() else {
-        return false;
-    };
-    if !name
-        .to_string_lossy()
-        .eq_ignore_ascii_case(SYSTEM_ROOT_NAME)
-    {
-        return false;
-    }
-    let Some(parent) = root.parent() else {
-        return false;
-    };
-    // The parent must be the drive root itself (no further parent and no file name),
-    // so a deeper decoy such as tmp-under-drive Windows is refused.
-    parent.parent().is_none() && parent.file_name().is_none()
-}
-
-/// Whether `path` resolves to a directory/file of the same name, i.e. it is not a
-/// reparse point that redirects elsewhere (a junction resolves to its target, whose
-/// final component normally differs).
-pub fn resolves_to_itself(path: &Path) -> bool {
-    let Ok(canonical) = fs::canonicalize(path) else {
-        return false;
-    };
-    // Case-insensitive, because Windows reports the stored casing of a directory
-    // while the environment value may use a different one; both name the same place.
-    match (canonical.file_name(), path.file_name()) {
-        (Some(left), Some(right)) => left
-            .to_string_lossy()
-            .eq_ignore_ascii_case(&right.to_string_lossy()),
-        _ => false,
-    }
-}
-
-/// Test seam: the pure path resolution without touching the filesystem.
-#[cfg(test)]
-pub fn resolve_sample_tool_for_tests(
-    configured: Option<&Path>,
-    system_root: Option<&OsStr>,
-) -> Result<PathBuf, &'static str> {
-    resolve_sample_tool_in(configured, system_root, false)
-}
-
-/// Test seam: the SHA-256 hex of already-read sampler bytes.
-#[cfg(test)]
-pub fn digest_for_tests(bytes: &[u8]) -> String {
-    pixels::hex(&pixels::sha256(bytes))
-}
-
-/// Test seam: whether a path still matches a pinned digest.
-#[cfg(test)]
-pub fn sample_tool_matches_for_tests(path: &Path, expected: &str) -> bool {
-    sample_tool_matches(path, expected)
-}
-
-/// Test seam: read a path with the sampler's cap (a directory stands in for an
-/// unreadable file).
-#[cfg(test)]
-pub fn read_sample_tool_for_tests(path: &Path) -> Result<Vec<u8>, &'static str> {
-    read_sample_tool(path)
-}
-
 /// Read the sampler program with a hard size cap; the bytes are hashed and, in the
 /// normal path, executed, so a read can never run away.
 fn read_sample_tool(path: &Path) -> Result<Vec<u8>, &'static str> {
@@ -2599,30 +2449,14 @@ fn read_sample_tool(path: &Path) -> Result<Vec<u8>, &'static str> {
     Ok(bytes)
 }
 
-/// A2: pin the sampler — read it once, hash those bytes and keep a copy in the private
-/// per-run directory as the reference for this run.
-///
-/// The executed program is the resolved system path, and its bytes are re-verified
-/// against this pinned digest immediately before the spawn and again after the child
-/// exits, so a swap makes the sample `sample_tool_changed` instead of untruthful. A
-/// relocated copy cannot be *executed* here: Windows' `tasklist.exe` refuses every
-/// option form when it is copied out of `System32` (measured: exit 1 with empty stdout,
-/// while the same copy without options prints the table), so spawning the copy would
-/// silently end the whole resource measurement. Residual risk (documented): the interval
-/// between the pre-spawn verification and `CreateProcess`, and any principal that can
-/// write to `System32` at all, remain outside what a std-only process can close; the
-/// pinned copy, the resolved path and the digest are all kept so a substitution is
-/// visible in the evidence.
-fn pin_sample_tool(source: &Path, work: &Path) -> Result<(PathBuf, String), &'static str> {
-    let bytes = read_sample_tool(source)?;
-    let digest = pixels::hex(&pixels::sha256(&bytes));
-    let pinned = work.join("sample-tool.pinned.exe");
-    fs::write(&pinned, &bytes).map_err(|_| SAMPLE_TOOL_UNREADABLE)?;
-    Ok((pinned, digest))
+/// Test seam: read a path with the sampler's 32 MiB cap.
+#[cfg(test)]
+pub fn read_sample_tool_for_tests(path: &Path) -> Result<Vec<u8>, &'static str> {
+    read_sample_tool(path)
 }
 
-/// Whether the program at `path` still hashes to `expected`; a read that fails or a
-/// different digest means the program is not the one that was pinned.
+/// Whether the program at `path` still matches the recorded digest; a read that fails or
+/// a different digest means the file is not the one that was sampled.
 fn sample_tool_matches(path: &Path, expected: &str) -> bool {
     read_sample_tool(path)
         .map(|bytes| pixels::hex(&pixels::sha256(&bytes)) == expected)
@@ -2717,6 +2551,17 @@ impl Sampler {
         self.reason = None;
     }
 
+    /// The sampler program changed: every value already taken is no longer attributable
+    /// to the recorded digest, so it is discarded and the reason is recorded even when a
+    /// value existed (NIT N1 — never cleared silently).
+    pub fn discarded(&mut self, reason: &'static str) {
+        self.stopped = true;
+        self.samples = 0;
+        self.max_bytes = None;
+        self.sampling = NOT_MEASURED;
+        self.reason = Some(reason);
+    }
+
     /// A sample could not be read: record why and stop retrying.
     pub fn failed(&mut self, reason: &'static str) {
         self.stopped = true;
@@ -2794,9 +2639,12 @@ fn supervise(
         if let Some(mut flight) = in_flight.take() {
             match flight.child.try_wait() {
                 Ok(Some(_)) => {
-                    // A2: the bytes must still be the pinned ones after the child ran.
+                    // The bytes must still be the verified ones after the child ran; a
+                    // changed program means the value is discarded and the capture is
+                    // released like every other completed sample (NIT N2).
                     if !sample_tool_matches(&flight.tool, &flight.digest) {
-                        sampler.failed(SAMPLE_TOOL_CHANGED);
+                        flight.capture.release();
+                        sampler.discarded(SAMPLE_TOOL_CHANGED);
                         next_sample = None;
                     } else {
                         match harvest_sample(&mut flight) {
@@ -2842,7 +2690,7 @@ fn supervise(
             } else {
                 // A2: never spawn a program whose bytes differ from the pinned digest.
                 if !sample_tool_matches(&config.tool, &config.digest) {
-                    sampler.failed(SAMPLE_TOOL_CHANGED);
+                    sampler.discarded(SAMPLE_TOOL_CHANGED);
                     next_sample = None;
                 } else {
                     sampler.attempt();

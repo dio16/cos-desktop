@@ -2061,6 +2061,7 @@ fn working_set_sample_lower_bounds_a_known_allocation() {
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.timeout_ms = 10_000;
+    config.sample_tool = Some(system_tasklist());
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -2083,7 +2084,8 @@ fn working_set_is_not_measured_without_a_sample() {
     fixture.case("a.png", "ok");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
-    // The first sample waits a full interval, and the child ends long before it.
+    // Opt in, but the first sample waits a full interval and the child ends first.
+    config.sample_tool = Some(system_tasklist());
     config.sample_interval_ms = 5_000;
     let report = harness::run(&config).unwrap();
 
@@ -2101,6 +2103,7 @@ fn working_set_sampling_respects_the_cap() {
     fixture.case("a.png", "sleep-long");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
+    config.sample_tool = Some(system_tasklist());
     config.sample_interval_ms = 10;
     config.max_samples = 2;
     config.cancel_after_ms = Some(3_000);
@@ -2249,6 +2252,7 @@ fn sampled_record_is_deterministic_apart_from_documented_fields() {
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.timeout_ms = 10_000;
+    config.sample_tool = Some(system_tasklist());
     config.sample_interval_ms = 10;
     let first = harness::run(&config).unwrap();
     let second = harness::run(&config).unwrap();
@@ -2280,244 +2284,6 @@ fn sampled_record_is_deterministic_apart_from_documented_fields() {
     }
 }
 
-/// A1/N3: a redirected root — the reviewer's reproduction — is refused as an untrusted
-/// root: no sampler, zero attempts, no value, whatever the decoy contains.
-#[test]
-fn redirected_system_root_is_refused() {
-    let fixture = Fixture::new();
-    let decoy_root = fixture.base.join("decoy-root");
-    std::fs::create_dir_all(decoy_root.join("System32")).unwrap();
-    std::fs::write(
-        decoy_root.join("System32").join("tasklist.exe"),
-        b"a decoy that would fabricate a value",
-    )
-    .unwrap();
-
-    // The resolver refuses the root itself.
-    assert_eq!(
-        harness::resolve_sample_tool(None, Some(decoy_root.as_os_str())),
-        Err("sample_tool_untrusted_root")
-    );
-
-    // And a real child harness started with that root never spawns anything.
-    let fixture_cases = Fixture::new();
-    fixture_cases.case("a.png", "sleep-long");
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", "env_seam_probe_helper", "--nocapture", "--quiet"])
-        .env("SystemRoot", decoy_root.as_os_str())
-        .env("DC_PROBE_CASES", fixture_cases.cases.as_os_str())
-        .env(
-            "DC_PROBE_CANDIDATE",
-            fixture_cases.fake().program.path().as_os_str(),
-        )
-        .env("DC_PROBE_OUT", fixture_cases.record("probe"))
-        .output()
-        .expect("the probe subprocess runs");
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(
-        stdout.contains("sample_tool=<none>"),
-        "the decoy root must not be adopted; got {stdout}"
-    );
-    assert!(
-        stdout.contains("reason=Some(\"sample_tool_untrusted_root\")"),
-        "a redirected root must be reported as untrusted; got {stdout}"
-    );
-    assert!(
-        stdout.contains("attempts=0"),
-        "an untrusted root must take zero attempts; got {stdout}"
-    );
-}
-
-/// A1/N3: relative, UNC, device and parent-traversal roots are all refused, and the
-/// default-root shape is accepted only at `<drive>:\Windows`.
-#[test]
-fn system_root_shapes_are_validated() {
-    use std::ffi::OsStr;
-    let root = |text: &str| harness::resolve_sample_tool_for_tests(None, Some(OsStr::new(text)));
-
-    assert_eq!(
-        root("Windows"),
-        Err("sample_tool_untrusted_root"),
-        "relative"
-    );
-    assert_eq!(
-        root(r"\\server\share\Windows"),
-        Err("sample_tool_untrusted_root"),
-        "UNC"
-    );
-    assert_eq!(
-        root(r"\\?\C:\Windows"),
-        Err("sample_tool_untrusted_root"),
-        "device/verbatim"
-    );
-    assert_eq!(
-        root(r"C:\Windows\..\Windows"),
-        Err("sample_tool_untrusted_root"),
-        "parent traversal"
-    );
-    assert_eq!(
-        root(r"C:\tmp\Windows"),
-        Err("sample_tool_untrusted_root"),
-        "deeper decoy that is still named Windows"
-    );
-    assert_eq!(root(""), Err("sample_tool_untrusted_root"), "empty");
-    assert_eq!(
-        root(r"C:\Windows"),
-        Ok(std::path::PathBuf::from(
-            r"C:\Windows\System32\tasklist.exe"
-        )),
-        "the default shape is accepted"
-    );
-
-    // The shape predicate on its own.
-    assert!(harness::is_default_system_root(std::path::Path::new(
-        r"C:\Windows"
-    )));
-    assert!(harness::is_default_system_root(std::path::Path::new(
-        r"c:\wInDoWs"
-    )));
-    assert!(!harness::is_default_system_root(std::path::Path::new(
-        r"C:\tmp\Windows"
-    )));
-    assert!(!harness::is_default_system_root(std::path::Path::new(
-        r"C:\Windows\System32"
-    )));
-    assert!(!harness::is_default_system_root(std::path::Path::new(
-        r"C:\tmp\decoy"
-    )));
-}
-
-/// A1/N7: a root that is a reparse point (junction) does not resolve to itself, which is
-/// exactly the predicate the resolver refuses. Junction creation needs no privilege on
-/// Windows; if the host policy blocks it the predicate is asserted on a decoy directory
-/// instead and the degradation is reported by the assertion message.
-#[test]
-fn junction_root_is_not_the_system_root() {
-    let fixture = Fixture::new();
-    let target = fixture.base.join("decoy-target");
-    std::fs::create_dir_all(target.join("System32")).unwrap();
-    let link = fixture.base.join("Windows-link");
-    let made = std::process::Command::new("cmd")
-        .args(["/C", "mklink", "/J"])
-        .arg(&link)
-        .arg(&target)
-        .status()
-        .map(|status| status.success())
-        .unwrap_or(false);
-    if !made {
-        // No junction available: a plain directory resolves to itself, which is the
-        // only reason the resolver would accept it — the shape rules still refuse it.
-        assert!(harness::resolves_to_itself(&target));
-        assert!(!harness::is_default_system_root(&target));
-        panic!("junction could not be created on this host; A1/N7 junction case unproven");
-    }
-    assert!(
-        harness::resolves_to_itself(&target),
-        "the plain target resolves to itself"
-    );
-    assert!(
-        !harness::resolves_to_itself(&link),
-        "a junction resolves to its target, so the resolver refuses it"
-    );
-}
-
-/// N1: a real subprocess with the environment variable set proves the seam is gone. The
-/// child parses the operator command line and prints what it resolved.
-#[test]
-fn environment_variable_sampler_override_is_ignored_in_a_subprocess() {
-    let fixture = Fixture::new();
-    fixture.case("a.png", "ok");
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", "env_seam_probe_helper", "--nocapture", "--quiet"])
-        .env(
-            harness::SAMPLE_TOOL_OVERRIDE_PROBE,
-            r"C:\tmp\a-decoy-sampler\tasklist.exe",
-        )
-        .env("DC_PROBE_CASES", fixture.cases.as_os_str())
-        .env(
-            "DC_PROBE_CANDIDATE",
-            fixture.fake().program.path().as_os_str(),
-        )
-        .env("DC_PROBE_OUT", fixture.record("probe"))
-        .output()
-        .expect("the probe subprocess runs");
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(
-        stdout.contains("configured=<none>"),
-        "the operator configuration must ignore the environment override; got {stdout}"
-    );
-    assert!(
-        stdout.contains("reason=None"),
-        "a decoy environment value must not poison the resolution; got {stdout}"
-    );
-}
-
-/// Child harness for the environment tests: it is started with a modified environment
-/// (a decoy `DECODE_COMPARE_SAMPLE_TOOL` or a redirected `SystemRoot`) and prints what
-/// the operator configuration and the sampler resolution actually did.
-#[test]
-fn env_seam_probe_helper() {
-    let Ok(cases) = std::env::var("DC_PROBE_CASES") else {
-        return;
-    };
-    let candidate = std::env::var("DC_PROBE_CANDIDATE").unwrap_or_default();
-    let out = std::env::var("DC_PROBE_OUT").unwrap_or_default();
-    let mut config = harness::parse(vec![
-        std::ffi::OsString::from("--cases"),
-        std::ffi::OsString::from(cases),
-        std::ffi::OsString::from("--candidate"),
-        std::ffi::OsString::from(format!("fake={candidate}")),
-        std::ffi::OsString::from("--out"),
-        std::ffi::OsString::from(&out),
-        std::ffi::OsString::from("--sample-interval-ms"),
-        std::ffi::OsString::from("10"),
-        std::ffi::OsString::from("--cancel-after-ms"),
-        std::ffi::OsString::from("400"),
-    ])
-    .expect("the probe command line parses");
-    config.invocation = helper_invocation(HELPER);
-    let configured = match config.sample_tool.clone() {
-        Some(path) => path.display().to_string(),
-        None => "<none>".to_owned(),
-    };
-    let report = harness::run(&config).expect("the probe run completes");
-    let resolved = match report.sample_tool.clone() {
-        Some(path) => path.display().to_string(),
-        None => "<none>".to_owned(),
-    };
-    let attempts = report
-        .observations
-        .iter()
-        .map(|observation| observation.working_set_attempts)
-        .max()
-        .unwrap_or(0);
-    println!(
-        "probe configured={configured} sample_tool={resolved} reason={:?} attempts={attempts}",
-        report.sample_tool_reason
-    );
-}
-
-/// A2: the pinned digest is verified around every spawn — an unchanged program matches
-/// and a modified one does not.
-#[test]
-fn pinned_sampler_digest_detects_a_swap() {
-    let fixture = Fixture::new();
-    let tool = fixture.base.join("tool.exe");
-    std::fs::write(&tool, b"first").unwrap();
-    let pinned = harness::read_sample_tool_for_tests(&tool).unwrap();
-    let digest = harness::digest_for_tests(&pinned);
-    assert!(harness::sample_tool_matches_for_tests(&tool, &digest));
-    std::fs::write(&tool, b"second").unwrap();
-    assert!(
-        !harness::sample_tool_matches_for_tests(&tool, &digest),
-        "a replaced program must not match the pinned digest"
-    );
-    assert!(!harness::sample_tool_matches_for_tests(
-        std::path::Path::new("C:\nope\nope.exe"),
-        &digest
-    ));
-}
-
 /// N5: a non-UTF8 tool path renders lossily instead of `null`; the digest beside it is
 /// what carries the exact identity.
 #[test]
@@ -2536,136 +2302,6 @@ fn non_utf8_tool_path_renders_lossily() {
     assert_eq!(harness::lossy_path_field_for_tests(None), "null");
 }
 
-/// BLOCKING (a): the sampler is resolved to an absolute system path, never a bare name
-/// — so a `tasklist.exe` dropped next to the harness cannot win a CreateProcess search —
-/// and a relative or missing program is refused instead of used.
-#[test]
-fn sampler_is_resolved_to_an_absolute_system_path() {
-    // The default is built from the trusted SystemRoot value.
-    let resolved =
-        harness::resolve_sample_tool_for_tests(None, Some(std::ffi::OsStr::new("C:\\Windows")))
-            .expect("the system path is derived, existence is checked by the caller");
-    assert_eq!(
-        resolved,
-        std::path::PathBuf::from("C:\\Windows\\System32\\tasklist.exe")
-    );
-    assert!(resolved.is_absolute());
-
-    // No SystemRoot: refuse as an untrusted root, never fall back to a bare name.
-    assert_eq!(
-        harness::resolve_sample_tool_for_tests(None, None),
-        Err("sample_tool_untrusted_root")
-    );
-    // A relative program is exactly the substitution the finding describes.
-    assert_eq!(
-        harness::resolve_sample_tool_for_tests(
-            Some(std::path::Path::new("tasklist.exe")),
-            Some(std::ffi::OsStr::new("C:\\Windows"))
-        ),
-        Err("sample_tool_missing")
-    );
-    // An absolute program that does not exist is refused too (the real resolver also
-    // checks that the path is an existing regular file).
-    assert_eq!(
-        harness::resolve_sample_tool(
-            Some(std::path::Path::new(
-                "C:\\definitely\\not\\here\\tasklist.exe"
-            )),
-            Some(std::ffi::OsStr::new("C:\\Windows"))
-        ),
-        Err("sample_tool_missing")
-    );
-}
-
-/// BLOCKING (a), end to end: with a relative sampler path and a decoy `tasklist.exe`
-/// sitting in the working directory, sampling refuses with `sample_tool_missing` and
-/// records no value at all.
-#[test]
-fn relative_sampler_never_runs_and_never_records_a_value() {
-    let fixture = Fixture::new();
-    fixture.case("a.png", "sleep-long");
-    // The decoy a bare-name search would find in the application/working directory.
-    let decoy = fixture.base.join("tasklist.exe");
-    std::fs::write(&decoy, b"not a real sampler").unwrap();
-    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.invocation = helper_invocation(HELPER);
-    config.sample_interval_ms = 10;
-    config.cancel_after_ms = Some(500);
-    config.sample_tool = Some(std::path::PathBuf::from("tasklist.exe"));
-    let report = harness::run(&config).unwrap();
-
-    let observation = &report.observations[0];
-    assert_eq!(observation.working_set_attempts, 0, "nothing was spawned");
-    assert_eq!(observation.working_set_samples, 0);
-    assert_eq!(
-        observation.working_set_max_bytes, None,
-        "never a fabricated value"
-    );
-    assert_eq!(observation.working_set_sampling, "not_measured");
-    assert_eq!(observation.working_set_reason, Some("sample_tool_missing"));
-    assert_eq!(report.sample_tool, None, "the decoy must not be adopted");
-    assert_eq!(report.sample_tool_reason, Some("sample_tool_missing"));
-    assert_eq!(report.sample_tool_sha256, None);
-}
-
-/// BLOCKING (b): the operator binary reads no environment variable for the sampler; the
-/// seam is gone and only the `Config` injection used by tests remains.
-#[test]
-fn operator_configuration_never_reads_a_sampler_environment_variable() {
-    let fixture = Fixture::new();
-    fixture.case("a.png", "ok");
-    let config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    assert_eq!(
-        config.sample_tool, None,
-        "the operator configuration must not take the sampler program from the environment"
-    );
-    assert!(config.sample_argv_prefix.is_empty());
-}
-
-/// BLOCKING (3): the header binds the real system sampler — absolute System32 path and a
-/// SHA-256 that matches an independent read of that file.
-#[test]
-fn record_header_binds_the_real_system_sampler() {
-    let fixture = Fixture::new();
-    fixture.case("a.png", "ok");
-    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.invocation = helper_invocation(HELPER);
-    // No injection: this is the operator path, so the system tasklist is resolved.
-    let report = harness::run(&config).unwrap();
-
-    let tool = report
-        .sample_tool
-        .as_ref()
-        .expect("the system sampler resolves");
-    assert!(tool.is_absolute());
-    let expected = std::path::Path::new(&std::env::var("SystemRoot").unwrap())
-        .join("System32")
-        .join("tasklist.exe");
-    assert_eq!(
-        tool, &expected,
-        "the resolved path must be the system tasklist"
-    );
-    assert!(tool.is_file());
-
-    let digest = report
-        .sample_tool_sha256
-        .as_ref()
-        .expect("the system sampler is hashed");
-    assert_eq!(digest.len(), 64);
-    assert!(digest.bytes().all(|byte| byte.is_ascii_hexdigit()));
-    let bytes = std::fs::read(tool).unwrap();
-    assert_eq!(
-        digest,
-        &pixels::hex(&pixels::sha256(&bytes)),
-        "the recorded digest must be the real file's digest"
-    );
-    assert_eq!(report.sample_tool_reason, None);
-
-    let json = harness::render(&report).0;
-    assert!(json.contains("\"sample_tool\": "));
-    assert!(json.contains(&format!("\"sample_tool_sha256\": \"{digest}\"")));
-}
-
 /// BLOCKING (3): a hash failure is `not_measured` with a reason, never a fabricated
 /// digest. An unreadable file is simulated with a directory-shaped path.
 #[test]
@@ -2676,26 +2312,394 @@ fn sampler_digest_failure_is_not_measured() {
     );
 }
 
-/// N2: the bounded read refuses an oversized sampler instead of hashing a runaway file.
+/// N2/NIT N3: the bounded read sits exactly at the cap and refuses one byte over.
 #[test]
 fn oversized_sampler_is_refused_by_the_cap() {
     let fixture = Fixture::new();
-    let big = fixture.base.join("oversize-tool.exe");
-    // One byte over the 32 MiB cap.
-    let bytes = vec![0_u8; 32 * 1024 * 1024 + 1];
-    std::fs::write(&big, &bytes).unwrap();
-    assert_eq!(
-        harness::read_sample_tool_for_tests(&big),
-        Err("sample_tool_oversize")
-    );
-
-    // At the cap the read succeeds, so the boundary is exact.
-    let at_cap = fixture.base.join("cap-tool.exe");
-    std::fs::write(&at_cap, vec![0_u8; 1024]).unwrap();
+    let at_cap = fixture.base.join("at-cap-tool.exe");
+    std::fs::write(&at_cap, vec![0_u8; 32 * 1024 * 1024]).unwrap();
     assert_eq!(
         harness::read_sample_tool_for_tests(&at_cap).map(|bytes| bytes.len()),
-        Ok(1024)
+        Ok(32 * 1024 * 1024),
+        "a file exactly at the cap is read"
     );
+
+    let over_cap = fixture.base.join("over-cap-tool.exe");
+    std::fs::write(&over_cap, vec![0_u8; 32 * 1024 * 1024 + 1]).unwrap();
+    assert_eq!(
+        harness::read_sample_tool_for_tests(&over_cap),
+        Err("sample_tool_oversize"),
+        "one byte over the cap is refused"
+    );
+}
+
+/// A3: the sampler bookkeeping for both mixed orders. A success clears an earlier
+/// failure, and a later failure never clears a value.
+#[test]
+fn sampler_bookkeeping_keeps_status_and_reason_consistent() {
+    // fail-then-success
+    let mut sampler = harness::Sampler::for_tests(4);
+    assert_eq!(sampler.sampling, "not_measured");
+    sampler.attempt();
+    sampler.failed("sample_parse_failed");
+    assert_eq!(sampler.sampling, "not_measured");
+    assert_eq!(sampler.reason, Some("sample_parse_failed"));
+    sampler.attempt();
+    sampler.succeeded(1_024);
+    assert_eq!(sampler.sampling, "sampled_lower_bound");
+    assert_eq!(sampler.reason, None, "a success clears the failure reason");
+    assert_eq!(sampler.max_bytes, Some(1_024));
+
+    // success-then-fail
+    let mut sampler = harness::Sampler::for_tests(4);
+    sampler.attempt();
+    sampler.succeeded(2_048);
+    sampler.attempt();
+    sampler.failed("sample_timeout");
+    assert_eq!(sampler.sampling, "sampled_lower_bound");
+    assert_eq!(sampler.reason, None, "a failure never clears a value");
+    assert_eq!(sampler.max_bytes, Some(2_048));
+
+    // never sampled: no_sample, and the cap is truthful
+    let mut sampler = harness::Sampler::for_tests(4);
+    sampler.finish();
+    assert_eq!(sampler.sampling, "not_measured");
+    assert_eq!(sampler.reason, Some("no_sample"));
+
+    let mut sampler = harness::Sampler::for_tests(1);
+    sampler.attempt();
+    sampler.capped();
+    assert!(!sampler.may_attempt());
+    sampler.finish();
+    assert_eq!(sampler.reason, Some("sample_capped"));
+}
+
+/// NIT-6: `cancelled_at_reason` is recorded only for a class that really is `cancelled`.
+#[test]
+fn cancelled_at_reason_requires_a_cancelled_class() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "reason-cancelled");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    let report = harness::run(&config).unwrap();
+    let observation = &report.observations[0];
+    // The candidate claims cancellation but exits successfully: not a cancelled class.
+    assert_ne!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert_eq!(observation.cancelled_at_reason, None);
+
+    fixture.case("b.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.cancel_after_ms = Some(150);
+    let report = harness::run(&config).unwrap();
+    let observation = &report
+        .observations
+        .iter()
+        .find(|observation| observation.case_id == "b.png")
+        .unwrap();
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert_eq!(
+        observation.cancelled_at_reason, None,
+        "the helper said nothing"
+    );
+}
+
+/// The CLI surface: sampling is opt-in through `--sample-tool`, and a relative or
+/// non-local value is refused before anything runs.
+#[test]
+fn sample_tool_flag_is_opt_in_and_validated() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+
+    // No flag: nothing is configured, so no sampler can be spawned at all.
+    let config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    assert_eq!(config.sample_tool, None);
+
+    let with_tool = |value: &str| {
+        harness::parse(
+            arguments(&fixture, &[fixture.fake()])
+                .into_iter()
+                .chain(["--sample-tool".into(), std::ffi::OsString::from(value)])
+                .collect::<Vec<std::ffi::OsString>>(),
+        )
+    };
+
+    // The accepted form: an absolute local disk path, used exactly as given.
+    let absolute = r"C:\\Windows\\System32\\tasklist.exe";
+    assert_eq!(
+        with_tool(absolute).unwrap().sample_tool,
+        Some(std::path::PathBuf::from(absolute))
+    );
+
+    // A relative value is refused outright, before any run.
+    let error = with_tool("tasklist.exe").unwrap_err();
+    assert!(
+        format!("{error}").contains("--sample-tool"),
+        "unexpected refusal: {error}"
+    );
+
+    // So are UNC, verbatim and parent-traversal forms.
+    for bad in [
+        r"\\\\server\\share\\tasklist.exe",
+        r"\\\\?\\C:\\Windows\\System32\\tasklist.exe",
+        r"C:\\Windows\\..\\Windows\\System32\\tasklist.exe",
+    ] {
+        assert!(with_tool(bad).is_err(), "{bad} must be refused");
+    }
+}
+
+/// Opt-in with the real system tasklist path supplied on the command line: samples are
+/// taken from that path and the header digest is that file's digest.
+#[test]
+fn opt_in_samples_the_operator_supplied_tasklist() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "alloc-64m");
+    let tool = std::path::Path::new(&std::env::var("SystemRoot").unwrap())
+        .join("System32")
+        .join("tasklist.exe");
+    let mut config = harness::parse(
+        arguments(&fixture, &[fixture.fake()])
+            .into_iter()
+            .chain([
+                "--sample-tool".into(),
+                std::ffi::OsString::from(tool.as_os_str()),
+            ])
+            .collect::<Vec<std::ffi::OsString>>(),
+    )
+    .unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 10_000;
+    config.sample_interval_ms = 10;
+    let report = harness::run(&config).unwrap();
+
+    assert_eq!(report.sample_tool.as_ref(), Some(&tool));
+    let digest = report
+        .sample_tool_sha256
+        .clone()
+        .expect("the tool is hashed");
+    assert_eq!(
+        digest,
+        pixels::hex(&pixels::sha256(&std::fs::read(&tool).unwrap())),
+        "the recorded digest is the operator-supplied file's digest"
+    );
+    let observation = &report.observations[0];
+    assert!(observation.working_set_attempts >= 1);
+    assert!(observation.working_set_samples >= 1);
+    assert_eq!(observation.working_set_sampling, "sampled_lower_bound");
+    assert_eq!(observation.working_set_reason, None);
+    assert!(observation.working_set_max_bytes.unwrap() > 0);
+}
+
+/// Default off: without `--sample-tool` no sampler is spawned, and a decoy
+/// `DECODE_COMPARE_SAMPLE_TOOL` in the environment changes nothing. `attempts == 0` is
+/// the spawn count, because every spawn increments it at the single spawn site.
+#[test]
+fn default_off_spawns_no_sampler_and_ignores_the_environment() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.sample_interval_ms = 10;
+    config.cancel_after_ms = Some(400);
+    let report = harness::run(&config).unwrap();
+
+    assert_eq!(report.sample_tool, None);
+    assert_eq!(report.sample_tool_sha256, None);
+    assert_eq!(report.sample_tool_reason, Some("sampling_disabled"));
+    let observation = &report.observations[0];
+    assert_eq!(
+        observation.working_set_attempts, 0,
+        "no sampler was spawned"
+    );
+    assert_eq!(observation.working_set_samples, 0);
+    assert_eq!(observation.working_set_max_bytes, None);
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(observation.working_set_reason, Some("sampling_disabled"));
+
+    // Same run in a child process whose environment names a decoy sampler: still nothing.
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", "sampler_probe_helper", "--nocapture", "--quiet"])
+        .env(
+            "DECODE_COMPARE_SAMPLE_TOOL",
+            r"C:\\tmp\\a-decoy-sampler\\tasklist.exe",
+        )
+        .env("DC_PROBE_CASES", fixture.cases.as_os_str())
+        .env(
+            "DC_PROBE_CANDIDATE",
+            fixture.fake().program.path().as_os_str(),
+        )
+        .env("DC_PROBE_OUT", fixture.record("probe"))
+        .output()
+        .expect("the probe subprocess runs");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("tool=<none>") && stdout.contains("attempts=0"),
+        "the environment must not select or spawn a sampler; got {stdout}"
+    );
+}
+
+/// The subst/decoy-root scenario cannot fabricate any more: no environment value is
+/// consulted, so a decoy `SystemRoot` on a substituted drive changes nothing. With
+/// `--sample-tool` the operator path is the only sampler.
+#[test]
+fn subst_decoy_root_cannot_select_the_sampler() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "alloc-64m");
+    let decoy = fixture.base.join("decoy-root");
+    std::fs::create_dir_all(decoy.join("System32")).unwrap();
+    std::fs::write(
+        decoy.join("System32").join("tasklist.exe"),
+        b"a decoy that would fabricate a value",
+    )
+    .unwrap();
+
+    // A substituted drive for the decoy root, when the host allows it.
+    let subst = std::process::Command::new("subst")
+        .args(["S:", decoy.to_string_lossy().as_ref()])
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false);
+    let decoy_root = if subst {
+        std::ffi::OsString::from("S:\\\\")
+    } else {
+        decoy.clone().into_os_string()
+    };
+
+    let probe = |tool: Option<&std::path::Path>| {
+        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+        command
+            .args(["--exact", "sampler_probe_helper", "--nocapture", "--quiet"])
+            .env("SystemRoot", decoy_root.as_os_str())
+            .env(
+                "DECODE_COMPARE_SAMPLE_TOOL",
+                decoy.join("System32").join("tasklist.exe"),
+            )
+            .env("DC_PROBE_CASES", fixture.cases.as_os_str())
+            .env(
+                "DC_PROBE_CANDIDATE",
+                fixture.fake().program.path().as_os_str(),
+            )
+            .env("DC_PROBE_OUT", fixture.record("probe"));
+        if let Some(tool) = tool {
+            command
+                .arg("DC_PROBE_TOOL")
+                .env("DC_PROBE_TOOL", tool.as_os_str());
+        }
+        let output = command.output().expect("the probe subprocess runs");
+        String::from_utf8_lossy(&output.stdout).into_owned()
+    };
+
+    // Default off under a decoy root: nothing is spawned, nothing is fabricated.
+    let off = probe(None);
+    assert!(
+        off.contains("tool=<none>") && off.contains("attempts=0") && off.contains("fabricated=0"),
+        "a decoy root must not select a sampler; got {off}"
+    );
+
+    // Opt in with the real tasklist: only the operator path is used.
+    let real = std::path::Path::new(&std::env::var("SystemRoot").unwrap())
+        .join("System32")
+        .join("tasklist.exe");
+    let on = probe(Some(&real));
+    assert!(
+        on.contains(&format!("tool={}", real.display())) && on.contains("fabricated=0"),
+        "the operator path must win and the decoy must never be used; got {on}"
+    );
+
+    if subst {
+        let _ = std::process::Command::new("subst")
+            .arg("S:")
+            .arg("/D")
+            .status();
+    }
+}
+
+/// Child harness for the opt-in probes: it prints what actually happened, so the parent
+/// can assert on a run whose environment it controls.
+#[test]
+fn sampler_probe_helper() {
+    let Ok(cases) = std::env::var("DC_PROBE_CASES") else {
+        return;
+    };
+    let candidate = std::env::var("DC_PROBE_CANDIDATE").unwrap_or_default();
+    let out = std::env::var("DC_PROBE_OUT").unwrap_or_default();
+    let mut argv: Vec<std::ffi::OsString> = vec![
+        "--cases".into(),
+        cases.into(),
+        "--candidate".into(),
+        format!("fake={candidate}").into(),
+        "--out".into(),
+        out.into(),
+        "--sample-interval-ms".into(),
+        "10".into(),
+        "--cancel-after-ms".into(),
+        "500".into(),
+    ];
+    if let Ok(tool) = std::env::var("DC_PROBE_TOOL") {
+        argv.push("--sample-tool".into());
+        argv.push(tool.into());
+    }
+    let mut config = harness::parse(argv).expect("the probe command line parses");
+    config.invocation = helper_invocation(HELPER);
+    let report = harness::run(&config).expect("the probe run completes");
+    let tool = match report.sample_tool.clone() {
+        Some(path) => path.display().to_string(),
+        None => "<none>".to_owned(),
+    };
+    let attempts = report
+        .observations
+        .iter()
+        .map(|observation| observation.working_set_attempts)
+        .max()
+        .unwrap_or(0);
+    let fabricated = report
+        .observations
+        .iter()
+        .filter(|observation| observation.working_set_max_bytes == Some(12_288_000))
+        .count();
+    println!(
+        "probe tool={tool} digest={} attempts={attempts} fabricated={fabricated} reason={:?}",
+        report.sample_tool_sha256.is_some(),
+        report.sample_tool_reason
+    );
+}
+
+/// NIT N1 + N3: the digest is verified at the supervise call sites, and a changed tool
+/// discards a value that already existed instead of silently keeping it.
+#[test]
+fn changing_tool_after_a_success_discards_the_value() {
+    let mut sampler = harness::Sampler::for_tests(8);
+    sampler.attempt();
+    sampler.succeeded(4_096);
+    assert_eq!(sampler.sampling, "sampled_lower_bound");
+    sampler.discarded("sample_tool_changed");
+    assert_eq!(sampler.samples, 0);
+    assert_eq!(sampler.max_bytes, None, "the untrusted value is discarded");
+    assert_eq!(sampler.sampling, "not_measured");
+    assert_eq!(sampler.reason, Some("sample_tool_changed"));
+}
+
+/// NIT N3: a sampler program rewritten while the run is in flight is caught before the
+/// spawn, records `sample_tool_changed`, and takes no attempt.
+#[test]
+fn tool_rewritten_before_the_spawn_records_sample_tool_changed() {
+    let fixture = Fixture::new();
+    let tool = fixture.base.join("tool.exe");
+    std::fs::copy(std::env::current_exe().unwrap(), &tool).unwrap();
+    fixture.case("a.png", "mutate-tool");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.sample_interval_ms = 100;
+    config.cancel_after_ms = Some(1_500);
+    config.sample_tool = Some(tool.clone());
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.working_set_attempts, 0, "the spawn was refused");
+    assert_eq!(observation.working_set_samples, 0);
+    assert_eq!(observation.working_set_max_bytes, None);
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(observation.working_set_reason, Some("sample_tool_changed"));
 }
 
 /// A1: the parser table. Every row shape is either strictly a tasklist row for the
@@ -2820,7 +2824,10 @@ fn missing_sample_tool_is_not_measured() {
 
     let observation = &report.observations[0];
     assert_eq!(observation.working_set_sampling, "not_measured");
-    assert_eq!(observation.working_set_reason, Some("sample_tool_missing"));
+    assert_eq!(
+        observation.working_set_reason,
+        Some("sample_tool_unreadable")
+    );
     assert_eq!(observation.working_set_max_bytes, None);
 }
 
@@ -2918,77 +2925,6 @@ fn sampler_failure_stops_scheduling_before_the_cap() {
         observation.working_set_reason,
         Some("sample_capped"),
         "the cap did not stop sampling"
-    );
-}
-
-/// A3: the sampler bookkeeping for both mixed orders. A success clears an earlier
-/// failure, and a later failure never clears a value.
-#[test]
-fn sampler_bookkeeping_keeps_status_and_reason_consistent() {
-    // fail-then-success
-    let mut sampler = harness::Sampler::for_tests(4);
-    assert_eq!(sampler.sampling, "not_measured");
-    sampler.attempt();
-    sampler.failed("sample_parse_failed");
-    assert_eq!(sampler.sampling, "not_measured");
-    assert_eq!(sampler.reason, Some("sample_parse_failed"));
-    sampler.attempt();
-    sampler.succeeded(1_024);
-    assert_eq!(sampler.sampling, "sampled_lower_bound");
-    assert_eq!(sampler.reason, None, "a success clears the failure reason");
-    assert_eq!(sampler.max_bytes, Some(1_024));
-
-    // success-then-fail
-    let mut sampler = harness::Sampler::for_tests(4);
-    sampler.attempt();
-    sampler.succeeded(2_048);
-    sampler.attempt();
-    sampler.failed("sample_timeout");
-    assert_eq!(sampler.sampling, "sampled_lower_bound");
-    assert_eq!(sampler.reason, None, "a failure never clears a value");
-    assert_eq!(sampler.max_bytes, Some(2_048));
-
-    // never sampled: no_sample, and the cap is truthful
-    let mut sampler = harness::Sampler::for_tests(4);
-    sampler.finish();
-    assert_eq!(sampler.sampling, "not_measured");
-    assert_eq!(sampler.reason, Some("no_sample"));
-
-    let mut sampler = harness::Sampler::for_tests(1);
-    sampler.attempt();
-    sampler.capped();
-    assert!(!sampler.may_attempt());
-    sampler.finish();
-    assert_eq!(sampler.reason, Some("sample_capped"));
-}
-
-/// NIT-6: `cancelled_at_reason` is recorded only for a class that really is `cancelled`.
-#[test]
-fn cancelled_at_reason_requires_a_cancelled_class() {
-    let fixture = Fixture::new();
-    fixture.case("a.png", "reason-cancelled");
-    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.invocation = helper_invocation(HELPER);
-    let report = harness::run(&config).unwrap();
-    let observation = &report.observations[0];
-    // The candidate claims cancellation but exits successfully: not a cancelled class.
-    assert_ne!(observation.observed_outcome, OutcomeClass::Cancelled);
-    assert_eq!(observation.cancelled_at_reason, None);
-
-    fixture.case("b.png", "sleep-long");
-    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.invocation = helper_invocation(HELPER);
-    config.cancel_after_ms = Some(150);
-    let report = harness::run(&config).unwrap();
-    let observation = &report
-        .observations
-        .iter()
-        .find(|observation| observation.case_id == "b.png")
-        .unwrap();
-    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
-    assert_eq!(
-        observation.cancelled_at_reason, None,
-        "the helper said nothing"
     );
 }
 
@@ -3204,6 +3140,13 @@ fn fake_candidate_long_probe_helper() {
 #[test]
 fn fake_candidate_no_probe_helper() {
     fake_candidate(ProbeSupport::None);
+}
+
+/// The real system tasklist, the program an operator passes with `--sample-tool`.
+fn system_tasklist() -> std::path::PathBuf {
+    std::path::Path::new(&std::env::var("SystemRoot").unwrap())
+        .join("System32")
+        .join("tasklist.exe")
 }
 
 /// Point the harness at an in-test sampler helper: the test binary becomes the sample
@@ -3445,6 +3388,24 @@ fn fake_candidate(support: ProbeSupport) {
             std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
             std::thread::sleep(std::time::Duration::from_millis(1_200));
             drop(block);
+            0
+        }
+        "mutate-tool" => {
+            // The sampler program sits one level above the case directory; rewrite it
+            // before the first sample attempt so the digest no longer matches.
+            if let Some(base) = std::path::Path::new(&input)
+                .parent()
+                .and_then(|dir| dir.parent())
+            {
+                let tool = base.join("tool.exe");
+                if let Ok(mut file) = std::fs::OpenOptions::new().append(true).open(&tool) {
+                    use std::io::Write as _;
+                    let _ = file.write_all(b"mutated-by-the-candidate");
+                }
+            }
+            std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
+            // Stay alive long enough for the first sample attempt to be scheduled.
+            std::thread::sleep(std::time::Duration::from_millis(600));
             0
         }
         "reason-cancelled" => {
