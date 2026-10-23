@@ -55,11 +55,16 @@
 //!   refusal while the raw exit code stays recorded as evidence (N5).
 //!
 //! Exit `0` with a missing or zero-byte output is `error` with refusal
-//! `output_missing`. "Verified" means container structure, mandatory chunk/segment
-//! presence and the declared dimensions — never pixel content: this harness does not
-//! decode pixels, does not validate colour values or colour management, and does not
-//! prove that the compressed image data is decodable, so no claim here implies
-//! pixel-level validation or format compatibility.
+//! `output_missing`. What "verified" means depends on the declared claim and is
+//! always narrower than the value name suggests: `structure_verified` asserts
+//! container structure, the mandatory chunk/segment fields and the declared
+//! dimensions only; `pixels_verified` asserts that the harness's own PNG oracle
+//! decoded the bytes and that the resulting RGBA digest equals the operator's
+//! expectation. Neither value interprets colour values or colour management, neither
+//! proves format compatibility, and `structure_verified` alone says nothing about
+//! pixel content. Pixel verification covers 8-bit non-interlaced PNG outputs
+//! (colour types 0/2/4/6) only; every other pixel form is `not_measured` with a
+//! reason token rather than a guess.
 //!
 //! Verified evidence and capability facts (MP-IMG2 Phase 2): the harness inspects
 //! the bytes the candidate wrote itself with the bounded dependency-free parser in
