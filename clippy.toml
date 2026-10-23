@@ -1,0 +1,2 @@
+# clippy.toml — no project-specific lint overrides in bootstrap.
+# Workspace lints live in each Cargo.toml [lints] section if ever needed.

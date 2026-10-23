@@ -1,0 +1,647 @@
+{
+  "scenario_id": "task-184-refine",
+  "fixture": true,
+  "simulated": true,
+  "server_identity": "fixture:server/local",
+  "epoch": "fixture:epoch/1",
+  "hello": {
+    "server_build": "fixture-adapter-0.1.0",
+    "protocol": [{ "major": 1, "min_minor": 0, "max_minor": 0 }],
+    "schema": [{ "major": 1, "min_minor": 0, "max_minor": 0 }],
+    "dedupe_retention_ms": 86400000
+  },
+  "scope": {
+    "scope_id": "fixture:scope/task-184",
+    "task_ids": ["fixture:task/Task-184"],
+    "filters": [{ "name": "fixture_view", "value": "task" }]
+  },
+  "observation_mode": "replay",
+  "journal_capacity": 32,
+  "snapshot_chunk_entities": 6,
+  "initial_state": {
+    "tasks": [
+      {
+        "task_ref": "fixture:task/Task-184",
+        "display_id": "Task-184",
+        "title": "新製品キービジュアル",
+        "task_status": "ACTIVE",
+        "inner_phase": "REFINE",
+        "iteration_ref": "fixture:iteration/Task-184/3",
+        "iteration_index": 3,
+        "best_candidate_ref": {
+          "task_id": "fixture:task/Task-184",
+          "run_id": "fixture:run/Task-184/1",
+          "iteration": 2,
+          "candidate_id": "fixture:candidate/d",
+          "artifact_ref": "fixture:artifact/d"
+        },
+        "formal_outcome_ref": null,
+        "accepted_brief_ref": null,
+        "capabilities_ref": "fixture:capabilities/Task-184",
+        "projection_revision": "7"
+      }
+    ],
+    "artifacts": [
+      {
+        "artifact_ref": "fixture:artifact/a",
+        "artifact_digest": "fixture:digest/artifact-a",
+        "media_type": "image/png",
+        "availability": "AVAILABLE",
+        "descriptor_refs": [
+          { "representation": "THUMBNAIL", "descriptor_id": "fixture:descriptor/a/thumbnail" },
+          { "representation": "ORIGINAL", "descriptor_id": "fixture:descriptor/a/original" }
+        ],
+        "verification": {
+          "state": "VERIFIED",
+          "algorithm": "sha256",
+          "expected_digest": "fixture:digest/artifact-a",
+          "observed_digest": "fixture:digest/artifact-a"
+        },
+        "projection_revision": "1"
+      },
+      {
+        "artifact_ref": "fixture:artifact/b",
+        "artifact_digest": "fixture:digest/artifact-b",
+        "media_type": "image/png",
+        "availability": "AVAILABLE",
+        "descriptor_refs": [
+          { "representation": "THUMBNAIL", "descriptor_id": "fixture:descriptor/b/thumbnail" },
+          { "representation": "ORIGINAL", "descriptor_id": "fixture:descriptor/b/original" }
+        ],
+        "verification": {
+          "state": "VERIFIED",
+          "algorithm": "sha256",
+          "expected_digest": "fixture:digest/artifact-b",
+          "observed_digest": "fixture:digest/artifact-b"
+        },
+        "projection_revision": "1"
+      },
+      {
+        "artifact_ref": "fixture:artifact/c",
+        "artifact_digest": "fixture:digest/artifact-c",
+        "media_type": "image/png",
+        "availability": "AVAILABLE",
+        "descriptor_refs": [
+          { "representation": "THUMBNAIL", "descriptor_id": "fixture:descriptor/c/thumbnail" },
+          { "representation": "ORIGINAL", "descriptor_id": "fixture:descriptor/c/original" }
+        ],
+        "verification": {
+          "state": "VERIFIED",
+          "algorithm": "sha256",
+          "expected_digest": "fixture:digest/artifact-c",
+          "observed_digest": "fixture:digest/artifact-c"
+        },
+        "projection_revision": "1"
+      },
+      {
+        "artifact_ref": "fixture:artifact/d",
+        "artifact_digest": "fixture:digest/artifact-d",
+        "media_type": "image/png",
+        "availability": "AVAILABLE",
+        "descriptor_refs": [
+          { "representation": "THUMBNAIL", "descriptor_id": "fixture:descriptor/d/thumbnail" },
+          { "representation": "ORIGINAL", "descriptor_id": "fixture:descriptor/d/original" }
+        ],
+        "verification": {
+          "state": "VERIFIED",
+          "algorithm": "sha256",
+          "expected_digest": "fixture:digest/artifact-d",
+          "observed_digest": "fixture:digest/artifact-d"
+        },
+        "projection_revision": "1"
+      },
+      {
+        "artifact_ref": "fixture:artifact/e",
+        "artifact_digest": "fixture:digest/artifact-e",
+        "media_type": "image/png",
+        "availability": "AVAILABLE",
+        "descriptor_refs": [
+          { "representation": "THUMBNAIL", "descriptor_id": "fixture:descriptor/e/thumbnail" },
+          { "representation": "ORIGINAL", "descriptor_id": "fixture:descriptor/e/original" }
+        ],
+        "verification": {
+          "state": "VERIFIED",
+          "algorithm": "sha256",
+          "expected_digest": "fixture:digest/artifact-e",
+          "observed_digest": "fixture:digest/artifact-e"
+        },
+        "projection_revision": "1"
+      }
+    ],
+    "candidates": [
+      {
+        "candidate_ref": {
+          "task_id": "fixture:task/Task-184",
+          "run_id": "fixture:run/Task-184/1",
+          "iteration": 1,
+          "candidate_id": "fixture:candidate/a",
+          "artifact_ref": "fixture:artifact/a"
+        },
+        "task_ref": "fixture:task/Task-184",
+        "iteration_ref": "fixture:iteration/Task-184/1",
+        "artifact_refs": ["fixture:artifact/a"],
+        "evaluation_refs": ["fixture:evaluation/a"],
+        "display_label": "A",
+        "projection_revision": "1"
+      },
+      {
+        "candidate_ref": {
+          "task_id": "fixture:task/Task-184",
+          "run_id": "fixture:run/Task-184/1",
+          "iteration": 1,
+          "candidate_id": "fixture:candidate/b",
+          "artifact_ref": "fixture:artifact/b"
+        },
+        "task_ref": "fixture:task/Task-184",
+        "iteration_ref": "fixture:iteration/Task-184/1",
+        "artifact_refs": ["fixture:artifact/b"],
+        "evaluation_refs": ["fixture:evaluation/b"],
+        "display_label": "B",
+        "projection_revision": "2"
+      },
+      {
+        "candidate_ref": {
+          "task_id": "fixture:task/Task-184",
+          "run_id": "fixture:run/Task-184/1",
+          "iteration": 2,
+          "candidate_id": "fixture:candidate/c",
+          "artifact_ref": "fixture:artifact/c"
+        },
+        "task_ref": "fixture:task/Task-184",
+        "iteration_ref": "fixture:iteration/Task-184/2",
+        "artifact_refs": ["fixture:artifact/c"],
+        "evaluation_refs": ["fixture:evaluation/c"],
+        "display_label": "C",
+        "projection_revision": "3"
+      },
+      {
+        "candidate_ref": {
+          "task_id": "fixture:task/Task-184",
+          "run_id": "fixture:run/Task-184/1",
+          "iteration": 2,
+          "candidate_id": "fixture:candidate/d",
+          "artifact_ref": "fixture:artifact/d"
+        },
+        "task_ref": "fixture:task/Task-184",
+        "iteration_ref": "fixture:iteration/Task-184/2",
+        "artifact_refs": ["fixture:artifact/d"],
+        "evaluation_refs": ["fixture:evaluation/d"],
+        "display_label": "D",
+        "projection_revision": "4"
+      },
+      {
+        "candidate_ref": {
+          "task_id": "fixture:task/Task-184",
+          "run_id": "fixture:run/Task-184/1",
+          "iteration": 3,
+          "candidate_id": "fixture:candidate/e",
+          "artifact_ref": "fixture:artifact/e"
+        },
+        "task_ref": "fixture:task/Task-184",
+        "iteration_ref": "fixture:iteration/Task-184/3",
+        "artifact_refs": ["fixture:artifact/e"],
+        "evaluation_refs": ["fixture:evaluation/e"],
+        "display_label": "E",
+        "projection_revision": "5"
+      }
+    ],
+    "evaluations": [
+      {
+        "evaluation_ref": "fixture:evaluation/a",
+        "candidate_ref": {
+          "task_id": "fixture:task/Task-184",
+          "run_id": "fixture:run/Task-184/1",
+          "iteration": 1,
+          "candidate_id": "fixture:candidate/a",
+          "artifact_ref": "fixture:artifact/a"
+        },
+        "artifact_refs": ["fixture:artifact/a"],
+        "decision": "FAIL",
+        "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": 58.0 }],
+        "evidence_refs": [
+          {
+            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-a" },
+            "status": "AVAILABLE",
+            "summary": "contrast banding across the key visual",
+            "detail": null
+          }
+        ],
+        "authority": "HARNESS",
+        "confidence": 0.55,
+        "projection_revision": "1"
+      },
+      {
+        "evaluation_ref": "fixture:evaluation/b",
+        "candidate_ref": {
+          "task_id": "fixture:task/Task-184",
+          "run_id": "fixture:run/Task-184/1",
+          "iteration": 1,
+          "candidate_id": "fixture:candidate/b",
+          "artifact_ref": "fixture:artifact/b"
+        },
+        "artifact_refs": ["fixture:artifact/b"],
+        "decision": "FAIL",
+        "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": 66.0 }],
+        "evidence_refs": [
+          {
+            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-b" },
+            "status": "AVAILABLE",
+            "summary": "product silhouette reads as flat",
+            "detail": null
+          }
+        ],
+        "authority": "HARNESS",
+        "confidence": 0.62,
+        "projection_revision": "1"
+      },
+      {
+        "evaluation_ref": "fixture:evaluation/c",
+        "candidate_ref": {
+          "task_id": "fixture:task/Task-184",
+          "run_id": "fixture:run/Task-184/1",
+          "iteration": 2,
+          "candidate_id": "fixture:candidate/c",
+          "artifact_ref": "fixture:artifact/c"
+        },
+        "artifact_refs": ["fixture:artifact/c"],
+        "decision": "ABSTAIN",
+        "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": null }],
+        "evidence_refs": [
+          {
+            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-c" },
+            "status": "MISSING",
+            "summary": "evaluator could not score this candidate",
+            "detail": null
+          }
+        ],
+        "authority": "HARNESS",
+        "confidence": null,
+        "projection_revision": "1"
+      },
+      {
+        "evaluation_ref": "fixture:evaluation/d",
+        "candidate_ref": {
+          "task_id": "fixture:task/Task-184",
+          "run_id": "fixture:run/Task-184/1",
+          "iteration": 2,
+          "candidate_id": "fixture:candidate/d",
+          "artifact_ref": "fixture:artifact/d"
+        },
+        "artifact_refs": ["fixture:artifact/d"],
+        "decision": "PASS",
+        "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": 81.0 }],
+        "evidence_refs": [
+          {
+            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-d" },
+            "status": "AVAILABLE",
+            "summary": "composition and lighting direction accepted",
+            "detail": null
+          }
+        ],
+        "authority": "HARNESS",
+        "confidence": 0.74,
+        "projection_revision": "1"
+      },
+      {
+        "evaluation_ref": "fixture:evaluation/e",
+        "candidate_ref": {
+          "task_id": "fixture:task/Task-184",
+          "run_id": "fixture:run/Task-184/1",
+          "iteration": 3,
+          "candidate_id": "fixture:candidate/e",
+          "artifact_ref": "fixture:artifact/e"
+        },
+        "artifact_refs": ["fixture:artifact/e"],
+        "decision": "PASS",
+        "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": 88.0 }],
+        "evidence_refs": [
+          {
+            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-e" },
+            "status": "AVAILABLE",
+            "summary": "refined lighting reads as the strongest candidate",
+            "detail": null
+          }
+        ],
+        "authority": "HARNESS",
+        "confidence": 0.81,
+        "projection_revision": "1"
+      }
+    ],
+    "iterations": [
+      {
+        "iteration_ref": "fixture:iteration/Task-184/1",
+        "task_ref": "fixture:task/Task-184",
+        "index": 1,
+        "candidate_refs": [
+          {
+            "task_id": "fixture:task/Task-184",
+            "run_id": "fixture:run/Task-184/1",
+            "iteration": 1,
+            "candidate_id": "fixture:candidate/a",
+            "artifact_ref": "fixture:artifact/a"
+          },
+          {
+            "task_id": "fixture:task/Task-184",
+            "run_id": "fixture:run/Task-184/1",
+            "iteration": 1,
+            "candidate_id": "fixture:candidate/b",
+            "artifact_ref": "fixture:artifact/b"
+          }
+        ],
+        "refinement_refs": [],
+        "evidence_refs": [
+          {
+            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-a" },
+            "status": "AVAILABLE",
+            "summary": "baseline iteration evidence",
+            "detail": null
+          }
+        ],
+        "projection_revision": "3"
+      },
+      {
+        "iteration_ref": "fixture:iteration/Task-184/2",
+        "task_ref": "fixture:task/Task-184",
+        "index": 2,
+        "candidate_refs": [
+          {
+            "task_id": "fixture:task/Task-184",
+            "run_id": "fixture:run/Task-184/1",
+            "iteration": 2,
+            "candidate_id": "fixture:candidate/c",
+            "artifact_ref": "fixture:artifact/c"
+          },
+          {
+            "task_id": "fixture:task/Task-184",
+            "run_id": "fixture:run/Task-184/1",
+            "iteration": 2,
+            "candidate_id": "fixture:candidate/d",
+            "artifact_ref": "fixture:artifact/d"
+          }
+        ],
+        "refinement_refs": ["fixture:refinement/Task-184/2"],
+        "evidence_refs": [
+          {
+            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-d" },
+            "status": "AVAILABLE",
+            "summary": "refinement driven by iteration 1 contrast findings",
+            "detail": null
+          }
+        ],
+        "projection_revision": "4"
+      },
+      {
+        "iteration_ref": "fixture:iteration/Task-184/3",
+        "task_ref": "fixture:task/Task-184",
+        "index": 3,
+        "candidate_refs": [
+          {
+            "task_id": "fixture:task/Task-184",
+            "run_id": "fixture:run/Task-184/1",
+            "iteration": 3,
+            "candidate_id": "fixture:candidate/e",
+            "artifact_ref": "fixture:artifact/e"
+          }
+        ],
+        "refinement_refs": ["fixture:refinement/Task-184/3"],
+        "evidence_refs": [
+          {
+            "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-e" },
+            "status": "AVAILABLE",
+            "summary": "refinement from iteration 2 lighting direction",
+            "detail": null
+          }
+        ],
+        "projection_revision": "5"
+      }
+    ],
+    "graphs": [
+      {
+        "graph_ref": {
+          "graph_id": "fixture:graph/Task-184",
+          "version": 3,
+          "digest": "fixture:digest/graph-3"
+        },
+        "plan_refs": [
+          {
+            "plan_id": "fixture:plan/Task-184/3",
+            "plan_digest": "fixture:digest/plan-3"
+          }
+        ],
+        "nodes": [
+          { "node_ref": "fixture:node/goal", "label": "Goal", "layer": "GOAL" },
+          { "node_ref": "fixture:node/context", "label": "Context", "layer": "CONTEXT" },
+          { "node_ref": "fixture:node/capability", "label": "Capability", "layer": "CAPABILITY" },
+          { "node_ref": "fixture:node/generation", "label": "Generation", "layer": "CREATION" },
+          { "node_ref": "fixture:node/evaluation", "label": "Evaluation", "layer": "EVALUATION" },
+          { "node_ref": "fixture:node/select", "label": "Select", "layer": null },
+          { "node_ref": "fixture:node/feedback", "label": "Feedback", "layer": "FEEDBACK" },
+          { "node_ref": "fixture:node/refine", "label": "Refine", "layer": "FEEDBACK" },
+          { "node_ref": "fixture:node/outcome", "label": "Outcome", "layer": null }
+        ],
+        "edges": [
+          { "edge_ref": "fixture:edge/goal-context", "from": "fixture:node/goal", "to": "fixture:node/context", "kind": "FLOW" },
+          { "edge_ref": "fixture:edge/context-capability", "from": "fixture:node/context", "to": "fixture:node/capability", "kind": "FLOW" },
+          { "edge_ref": "fixture:edge/capability-generation", "from": "fixture:node/capability", "to": "fixture:node/generation", "kind": "FLOW" },
+          { "edge_ref": "fixture:edge/generation-evaluation", "from": "fixture:node/generation", "to": "fixture:node/evaluation", "kind": "FLOW" },
+          { "edge_ref": "fixture:edge/evaluation-select", "from": "fixture:node/evaluation", "to": "fixture:node/select", "kind": "FLOW" },
+          { "edge_ref": "fixture:edge/select-feedback", "from": "fixture:node/select", "to": "fixture:node/feedback", "kind": "FLOW" },
+          { "edge_ref": "fixture:edge/feedback-refine", "from": "fixture:node/feedback", "to": "fixture:node/refine", "kind": "FLOW" },
+          { "edge_ref": "fixture:edge/refine-outcome", "from": "fixture:node/refine", "to": "fixture:node/outcome", "kind": "FLOW" }
+        ],
+        "provenance_refs": ["fixture:provenance/Task-184/3"],
+        "refinement_refs": [
+          "fixture:refinement/Task-184/2",
+          "fixture:refinement/Task-184/3"
+        ],
+        "projection_revision": "2"
+      }
+    ],
+    "capabilities": [
+      {
+        "capabilities_ref": "fixture:capabilities/Task-184",
+        "scope": { "kind": "TASK", "task_id": "fixture:task/Task-184" },
+        "commands": [
+          { "operation": "STOP_TASK", "support": "SUPPORTED", "reason": null },
+          { "operation": "CREATE_TASK", "support": "UNSUPPORTED", "reason": "fixture does not script task creation" },
+          { "operation": "REUSE_TASK", "support": "UNSUPPORTED", "reason": "fixture does not script task reuse" }
+        ],
+        "media": [
+          { "representation": "METADATA", "support": "SUPPORTED", "reason": null },
+          { "representation": "THUMBNAIL", "support": "SUPPORTED", "reason": null },
+          { "representation": "PREVIEW", "support": "SUPPORTED", "reason": null },
+          { "representation": "ORIGINAL", "support": "SUPPORTED", "reason": null }
+        ],
+        "features": [
+          { "feature": "artifact.view", "support": "SUPPORTED", "reason": null },
+          { "feature": "compare.pair", "support": "SUPPORTED", "reason": null },
+          { "feature": "media.playback", "support": "UNSUPPORTED", "reason": "bootstrap has no media pipeline" }
+        ],
+        "constraints": [{ "name": "max_candidates_per_iteration", "value": "8" }],
+        "availability": "SUPPORTED",
+        "reason": null,
+        "projection_revision": "2"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "delta-evaluation-e",
+      "trigger": "after_open",
+      "actions": [
+        {
+          "delta": {
+            "mutations": [
+              {
+                "op": "UPSERT",
+                "base_revision": "1",
+                "projection": {
+                  "projection": "EVALUATION",
+                  "evaluation_ref": "fixture:evaluation/e",
+                  "candidate_ref": {
+                    "task_id": "fixture:task/Task-184",
+                    "run_id": "fixture:run/Task-184/1",
+                    "iteration": 3,
+                    "candidate_id": "fixture:candidate/e",
+                    "artifact_ref": "fixture:artifact/e"
+                  },
+                  "artifact_refs": ["fixture:artifact/e"],
+                  "decision": "PASS",
+                  "axes": [{ "name": "visual_quality", "unit": "score_0_100", "value": 89.0 }],
+                  "evidence_refs": [
+                    {
+                      "record_ref": { "kind": "EVIDENCE", "id": "fixture:evidence/evaluation-e" },
+                      "status": "AVAILABLE",
+                      "summary": "rescore after refinement: strongest candidate so far",
+                      "detail": null
+                    }
+                  ],
+                  "authority": "HARNESS",
+                  "confidence": 0.83,
+                  "projection_revision": "2"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delta-best-candidate",
+      "trigger": "after_open",
+      "actions": [
+        {
+          "delta": {
+            "mutations": [
+              {
+                "op": "UPSERT",
+                "base_revision": "7",
+                "projection": {
+                  "projection": "TASK",
+                  "task_ref": "fixture:task/Task-184",
+                  "display_id": "Task-184",
+                  "title": "新製品キービジュアル",
+                  "task_status": "ACTIVE",
+                  "inner_phase": "REFINE",
+                  "iteration_ref": "fixture:iteration/Task-184/3",
+                  "iteration_index": 3,
+                  "best_candidate_ref": {
+                    "task_id": "fixture:task/Task-184",
+                    "run_id": "fixture:run/Task-184/1",
+                    "iteration": 3,
+                    "candidate_id": "fixture:candidate/e",
+                    "artifact_ref": "fixture:artifact/e"
+                  },
+                  "formal_outcome_ref": null,
+                  "accepted_brief_ref": null,
+                  "capabilities_ref": "fixture:capabilities/Task-184",
+                  "projection_revision": "8"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "stop-ack",
+      "trigger": "on_command:STOP_TASK",
+      "actions": [
+        {
+          "receipt": {
+            "state": "ACCEPTED",
+            "task_id": "fixture:task/Task-184",
+            "accepted_at": "2026-09-21T00:00:03Z",
+            "message": "stop intent recorded; acceptance is not completion"
+          }
+        }
+      ]
+    },
+    {
+      "id": "stop-effect",
+      "trigger": "on_command:STOP_TASK",
+      "actions": [
+        {
+          "delta": {
+            "mutations": [
+              {
+                "op": "UPSERT",
+                "base_revision": "8",
+                "projection": {
+                  "projection": "TASK",
+                  "task_ref": "fixture:task/Task-184",
+                  "display_id": "Task-184",
+                  "title": "新製品キービジュアル",
+                  "task_status": "CANCELLED",
+                  "inner_phase": "STOPPED",
+                  "iteration_ref": "fixture:iteration/Task-184/3",
+                  "iteration_index": 3,
+                  "best_candidate_ref": {
+                    "task_id": "fixture:task/Task-184",
+                    "run_id": "fixture:run/Task-184/1",
+                    "iteration": 3,
+                    "candidate_id": "fixture:candidate/e",
+                    "artifact_ref": "fixture:artifact/e"
+                  },
+                  "formal_outcome_ref": "fixture:outcome/Task-184",
+                  "accepted_brief_ref": null,
+                  "capabilities_ref": "fixture:capabilities/Task-184",
+                  "projection_revision": "9"
+                }
+              },
+              {
+                "op": "UPSERT",
+                "base_revision": null,
+                "projection": {
+                  "projection": "OUTCOME",
+                  "outcome_ref": "fixture:outcome/Task-184",
+                  "task_ref": "fixture:task/Task-184",
+                  "formal_status": "CANCELLED",
+                  "selected_refs": [],
+                  "stop_reason": "HUMAN_STOP",
+                  "provenance_refs": ["fixture:provenance/Task-184/stop"],
+                  "evidence_refs": [],
+                  "projection_revision": "1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "receipt": {
+            "state": "CANONICAL_REFLECTED",
+            "task_id": "fixture:task/Task-184",
+            "accepted_at": "2026-09-21T00:00:04Z",
+            "effect_refs": [{ "kind": "OUTCOME", "id": "fixture:outcome/Task-184" }],
+            "message": "simulated terminal projection: canonical stop effect recorded"
+          }
+        }
+      ]
+    }
+  ],
+  "commands": {
+    "STOP_TASK": { "default": "accepted" },
+    "CREATE_TASK": { "default": "unsupported" },
+    "REUSE_TASK": { "default": "unsupported" }
+  }
+}

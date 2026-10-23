@@ -1,0 +1,15 @@
+[package]
+name = "desktop-gpui"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+license = "Apache-2.0"
+
+[dependencies]
+gpui.workspace = true
+ui-model = { path = "../ui-model" }
+app-core = { path = "../app-core" }
+desktop-protocol = { path = "../desktop-protocol" }
+
+[lints]
+workspace = true

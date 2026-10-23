@@ -1,0 +1,22 @@
+[workspace]
+resolver = "3"
+members = [
+    "apps/desktop",
+    "crates/desktop-gpui",
+    "crates/ui-model",
+    "crates/app-core",
+    "crates/cos-client",
+    "crates/desktop-protocol",
+]
+
+[workspace.package]
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.dependencies]
+gpui = { git = "https://github.com/zed-industries/zed", rev = "395def7a067b32ed598fcb3f048969ada9b54942", default-features = false, features = ["windows-manifest"] }
+gpui_platform = { git = "https://github.com/zed-industries/zed", rev = "395def7a067b32ed598fcb3f048969ada9b54942", default-features = false }

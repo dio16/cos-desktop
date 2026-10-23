@@ -1,0 +1,42 @@
+# Rust build outputs
+/target/
+**/target/
+
+# Cargo lock backup / credentials
+*.orig
+
+# Logs and caches
+logs/
+*.log
+.cache/
+
+# Temporary media / verification artifacts
+tmp/
+temp/
+*.tmp
+
+# IDE and editor temp files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local secrets / machine-specific config
+.local/
+*.local.toml
+secrets.toml
+
+# OS artifacts
+
+# Historical development evidence is withheld; keep only its public disclosure.
+/docs/development/evidence/*
+!/docs/development/evidence/README.md
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+Desktop.ini

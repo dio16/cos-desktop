@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# The gates only read the repository.
+permissions:
+  contents: read
+
+# One run per ref; superseded pushes cancel in-progress runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    name: Windows quality gates
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # Channel, components and target come from rust-toolchain.toml; no second toolchain is installed.
+      - name: Toolchain (pinned by rust-toolchain.toml)
+        run: rustup show
+
+      - name: "Gate 1: formatting"
+        run: cargo fmt --all -- --check
+
+      - name: "Gate 2: metadata resolves"
+        run: cargo metadata --locked --no-deps --format-version 1 | Out-Null
+
+      - name: "Gate 2b: dependency rules regression cases"
+        run: python -B scripts/check_dependency_rules.py --self-test
+
+      - name: "Gate 2c: dependency rules workspace check"
+        run: python -B scripts/check_dependency_rules.py
+
+      - name: "Gate 3: clippy (warnings are errors)"
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
+
+      - name: "Gate 4: tests"
+        run: cargo test --locked --workspace
+
+      - name: "Gate 5: build"
+        run: cargo build --locked --workspace
+
+      # Gate 6 (native startup smoke) stays a recorded manual gate on a GPU workstation:
+      # a hosted runner has no supported GPU/desktop session, so CI must not claim it.
+      # The dependency-rules checker is stdlib-only Python, preinstalled on the runner;
+      # it is separate from the metadata gate and also fails on unknown members and cycles.
