@@ -1,11 +1,11 @@
-//! Exploratory, decoder-neutral MP-IMG2 Phase 1 comparison harness (record schema v3).
+//! Exploratory, decoder-neutral MP-IMG2 Phase 1 comparison harness (record schema v4).
 //!
 //! This module is shared by the operator-run `decode_compare` example and its
 //! contract tests. It is not a product decoder, selects no decoder, links no
 //! FFmpeg and makes no numeric claim: the emitted record is explicitly
 //! exploratory and every value it contains was actually observed.
 //!
-//! Candidate process protocol (v3), fixed so that no argv element or decoder path
+//! Candidate process protocol (v4), fixed so that no argv element or decoder path
 //! can be derived from media metadata. Three transports exist and all of them pass
 //! argv as a separate argument vector; no command string is ever built, quoted or
 //! interpreted:
@@ -29,12 +29,21 @@
 //! outside that closed vocabulary, a malformed line or no token at all yields
 //! `not_measured`; foreign text is never copied into the record.
 //!
-//! Outcome mapping: exit code `0` decoded, `2` unsupported, `3` corrupt, `4`
-//! oversize, `5` cancelled; any other code is `error`, a process that cannot be
-//! started is `not_run`, a process without an observed exit code is
-//! `not_measured`, and a hard-timeout or scratch-cap kill is `cancelled`. Exit
-//! codes are the operating-system code as a **signed 32-bit value**
-//! (Rust `ExitStatus::code()`), so e.g. FFmpeg's `0xABAAAA08` appears as
+//! Evidence versus validity (B-02): an exit code alone never produces `decoded`.
+//! `decoded` requires exit code `0` **and** a candidate output that exists as a
+//! regular file with size `> 0`; the record keeps the evidence separated
+//! (`output_present`, `output_bytes`) from the claim (`validity`), and that claim
+//! is only ever `presence_only`. Exit `0` with a missing or zero-byte output is
+//! `error` with refusal `output_missing`. No pixel, checksum or colour content is
+//! validated here, so `validity: "presence_only"` never means the image was
+//! verified, and `not_measured` means the image itself was not validated at all.
+//!
+//! Outcome mapping: exit code `0` with a present output is `decoded`, `2`
+//! unsupported, `3` corrupt, `4` oversize, `5` cancelled; any other code is
+//! `error`, a process that cannot be started is `not_run`, a process without an
+//! observed exit code is `not_measured`, and a hard-timeout or capped-scratch kill
+//! is `cancelled`. Exit codes are the operating-system code as a **signed 32-bit
+//! value** (Rust `ExitStatus::code()`), so e.g. FFmpeg's `0xABAAAA08` appears as
 //! `-1414549496`.
 //!
 //! Safety: only the operator-nominated program is launched (never a shell), every
@@ -43,14 +52,43 @@
 //! reaped (at most `max_output_bytes` each, never re-emitted as text except the
 //! bounded identity line), and each child has a hard deadline. Because capture
 //! never depends on a pipe, a descendant that inherits the child's handles cannot
-//! keep the harness waiting. Scratch files live under
-//! `<out parent>/decode_compare_outputs/captures`: the whole work directory is
-//! deleted and recreated empty at the start of every run ([`output_directories`]),
-//! each observation's capture files are removed once read, and during the poll
-//! loop the combined capture size is checked against `max_output_bytes * 8`
-//! (probe: [`PROBE_CAP_BYTES`]` * 8`). Exceeding that bound kills and reaps the
-//! child and records `cancelled` with refusal `scratch_capped` plus the observed
-//! `scratch_bytes`, so a flooding candidate cannot fill the disk unchecked.
+//! keep the harness waiting.
+//!
+//! Work directory ownership (B-01 / NF-1..NF-3): the operator-visible work
+//! directory `<out parent>/decode_compare_outputs` is only ever cleared when the
+//! harness owns it. Ownership requires the exact [`WORK_MARKER`] content, at most
+//! [`MAX_DIR_ENTRIES`] top-level entries (more is refused with
+//! [`WORK_DIR_TOO_LARGE`]), a `captures/` directory whose entries are all the
+//! harness's own `<stem>.stdout`/`<stem>.stderr` files, and top-level entries that
+//! are the marker, `captures/` or an `NNN_…` output. Cleanup is a single
+//! name-filtered, re-validating pass that aborts with [`WORK_DIR_NOT_OWNED`] on the
+//! first entry this tool did not create, so a directory the harness does not fully
+//! own survives with its foreign data. `remove_dir_all` is never used on the work
+//! or capture directory: every directory is removed with `remove_dir`, which the
+//! operating system only allows when it is empty. A directory the harness owns is
+//! cleared and re-created empty at the start of every run, and each observation's
+//! capture files are removed once read. Because the entry cap also covers a full
+//! run's outputs, an extreme `--max-observations` near [`MAX_OBSERVATIONS`] can
+//! leave a directory the next run refuses with `work_dir_too_large`; that refusal
+//! deletes nothing and the operator can clear the directory by hand.
+//!
+//! Scratch and output bounds (B-03): the combined capture size is checked against
+//! `max_output_bytes * 8` (probe: [`PROBE_CAP_BYTES`]` * 8`), and the candidate
+//! output file against [`Config::max_output_file_bytes`], both while polling and
+//! again after the child has exited, so a flood that finishes between two polls
+//! cannot be missed. Exceeding either bound records `cancelled` with refusal
+//! `scratch_capped` / `output_capped` and the observed size, never a success
+//! class. This is **observation-based detection, not an enforced quota**: the
+//! harness only samples sizes, so a child's write burst is not bounded by the
+//! harness at all — it can write arbitrarily much between two observations, and the
+//! overshoot is merely detected at the next poll or after the child exits. The
+//! harness never stops or throttles that write, and a descendant that keeps writing
+//! after the child exits is neither observed nor stopped.
+//!
+//! Termination scope (A-01): kill/reap covers the direct child only. Termination
+//! of descendants is neither guaranteed nor claimed anywhere, and no test or
+//! record asserts it; the descendant test proves only that the parent is not
+//! blocked by an inherited capture handle.
 
 use std::{
     collections::BTreeMap,
@@ -65,7 +103,13 @@ use std::{
 };
 
 /// Fixed record schema version; changing record semantics requires a new version.
-pub const SCHEMA_VERSION: u32 = 3;
+pub const SCHEMA_VERSION: u32 = 5;
+/// Ownership marker proving the work directory belongs to this tool.
+pub const WORK_MARKER: &str = ".decode_compare_owned";
+/// Refusal token for a work directory the harness does not own.
+pub const WORK_DIR_NOT_OWNED: &str = "work_dir_not_owned";
+/// Refusal token for a work directory above the entry cap.
+pub const WORK_DIR_TOO_LARGE: &str = "work_dir_too_large";
 /// Exploratory comparisons are not a ratified numeric gate.
 pub const NUMERIC_GATE: &str = "NOT_RATIFIED";
 /// Optional operator declaration of the expected outcome per case file name.
@@ -90,12 +134,16 @@ pub const MAX_RECORD_BYTES: usize = 512 * 1024;
 pub const SCRATCH_FACTOR: u64 = 8;
 /// Largest accepted `--max-observations`, so one run stays bounded.
 pub const MAX_OBSERVATIONS: usize = 4096;
+/// Largest accepted `--max-output-file-bytes`, so the output bound stays bounded.
+pub const MAX_OUTPUT_FILE_BYTES: usize = 1024 * 1024 * 1024;
 
 const USAGE: &str = "usage: decode_compare --cases DIR --candidate ID=ABSOLUTE_EXE|\
 ID=pwsh:ABSOLUTE_PS1 [--candidate ...]... --out FILE [--timeout-ms N] \
-[--max-output-bytes N] [--max-cases N] [--max-observations N] [--max-pixels N]";
+[--max-output-bytes N] [--max-output-file-bytes N] [--max-cases N] \
+[--max-observations N] [--max-pixels N]";
 const DEFAULT_TIMEOUT_MS: u64 = 5_000;
 const DEFAULT_MAX_OUTPUT_BYTES: usize = 8 * 1024;
+const DEFAULT_MAX_OUTPUT_FILE_BYTES: usize = 64 * 1024 * 1024;
 const DEFAULT_MAX_CASES: usize = 64;
 const DEFAULT_MAX_OBSERVATIONS: usize = 256;
 const MAX_ID_BYTES: usize = 64;
@@ -103,13 +151,18 @@ const MAX_CASE_NAME_BYTES: usize = 256;
 const MAX_IDENTITY_CHARS: usize = 256;
 const MAX_REASON_CHARS: usize = 32;
 const MAX_MANIFEST_LINES: usize = 1024;
-const MAX_DIR_ENTRIES: usize = 4096;
+/// Entry cap for a scanned directory (cases and the work directory alike).
+pub const MAX_DIR_ENTRIES: usize = 4096;
 const MAX_PATH_ENTRIES: usize = 64;
 const OUTPUT_NAME_CHARS: usize = 48;
 const PROBE_CAP_BYTES: usize = 4 * 1024;
 const PWSH_PROGRAM: &str = "pwsh";
 const INPUT_FLAG: &str = "-i";
 const NOT_MEASURED: &str = "not_measured";
+/// Validity claim when the only evidence is a non-empty output file.
+const PRESENCE_ONLY: &str = "presence_only";
+/// Content of the work-directory ownership marker (tool label + schema version).
+const WORK_MARKER_CONTENT: &str = "cos-desktop decode_compare work dir schema=5";
 /// Bytes still to append after the last observation row: `\n  ]`, `\n`, `}`, `\n`.
 const OBSERVATIONS_TAIL: &str = "\n  ]\n}\n";
 const POLL_INTERVAL: Duration = Duration::from_millis(2);
@@ -284,6 +337,8 @@ pub struct Config {
     pub candidates: Vec<Candidate>,
     pub timeout_ms: u64,
     pub max_output_bytes: usize,
+    /// Observed bound for the candidate's own output file (B-03).
+    pub max_output_file_bytes: usize,
     pub max_cases: usize,
     pub max_observations: usize,
     /// Hard per-record byte budget; [`MAX_RECORD_BYTES`] unless a test lowers it.
@@ -331,8 +386,13 @@ pub struct Observation {
     pub wall_ms: Option<u64>,
     /// Combined capture-file bytes observed when the child was reaped.
     pub scratch_bytes: Option<u64>,
+    /// Whether a non-empty regular output file was observed for this case.
+    pub output_present: bool,
+    /// Observed output size when a regular file exists (may be `0`), else `None`.
     pub output_bytes: Option<u64>,
-    /// Stable refusal reason when the case was not measured, else `None`.
+    /// Claim standing on that evidence: `presence_only` or `not_measured`.
+    pub validity: &'static str,
+    /// Stable refusal reason when the case was not fully measured, else `None`.
     pub refusal: Option<&'static str>,
 }
 
@@ -345,6 +405,7 @@ pub struct Report {
     pub cases_dir: PathBuf,
     pub timeout_ms: u64,
     pub max_output_bytes: usize,
+    pub max_output_file_bytes: usize,
     pub max_cases: usize,
     pub max_observations: usize,
     pub max_record_bytes: usize,
@@ -373,7 +434,23 @@ struct Supervised {
     timeout_fired: bool,
     wall_ms: u64,
     scratch_bytes: u64,
-    scratch_capped: bool,
+    capped: Option<CapKind>,
+}
+
+/// Which observed bound a run exceeded; the refusal token follows from it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CapKind {
+    Scratch,
+    Output,
+}
+
+impl CapKind {
+    fn refusal(self) -> &'static str {
+        match self {
+            Self::Scratch => "scratch_capped",
+            Self::Output => "output_capped",
+        }
+    }
 }
 
 #[derive(Default)]
@@ -384,11 +461,14 @@ struct ProbedIdentity {
     refusal: Option<&'static str>,
 }
 
-/// Combined scratch size a child may reach before it is killed.
-struct ScratchBound<'a> {
+/// Observed byte bounds for one child. This is detection, not an enforced quota:
+/// the sizes are sampled while polling and re-read after the child is reaped.
+struct Bounds<'a> {
     first: &'a Path,
     second: &'a Path,
-    limit: u64,
+    scratch_limit: u64,
+    output: Option<&'a Path>,
+    output_limit: u64,
 }
 
 /// Parse and validate the operator CLI; any failure is a refusal, not a guess.
@@ -401,6 +481,7 @@ where
     let mut candidates: Vec<Candidate> = Vec::new();
     let mut timeout_ms = DEFAULT_TIMEOUT_MS;
     let mut max_output_bytes = DEFAULT_MAX_OUTPUT_BYTES;
+    let mut max_output_file_bytes = DEFAULT_MAX_OUTPUT_FILE_BYTES;
     let mut max_cases = DEFAULT_MAX_CASES;
     let mut max_observations = DEFAULT_MAX_OBSERVATIONS;
     let mut max_pixels = None;
@@ -419,6 +500,9 @@ where
             "--max-output-bytes" => {
                 max_output_bytes = take_size(&mut arguments, "--max-output-bytes")?;
             }
+            "--max-output-file-bytes" => {
+                max_output_file_bytes = take_size(&mut arguments, "--max-output-file-bytes")?;
+            }
             "--max-cases" => max_cases = take_size(&mut arguments, "--max-cases")?,
             "--max-observations" => {
                 max_observations = take_size(&mut arguments, "--max-observations")?;
@@ -433,8 +517,8 @@ where
             other => {
                 return Err(UsageError::new(format!(
                     "unexpected argument {other:?}; expected one of --cases, --candidate, --out, \
-                     --timeout-ms, --max-output-bytes, --max-cases, --max-observations, \
-                     --max-pixels"
+                     --timeout-ms, --max-output-bytes, --max-output-file-bytes, --max-cases, \
+                     --max-observations, --max-pixels"
                 )));
             }
         }
@@ -453,6 +537,11 @@ where
         return Err(UsageError::new(
             "--max-output-bytes must be greater than zero",
         ));
+    }
+    if max_output_file_bytes == 0 || max_output_file_bytes > MAX_OUTPUT_FILE_BYTES {
+        return Err(UsageError::new(format!(
+            "--max-output-file-bytes must be 1-{MAX_OUTPUT_FILE_BYTES}"
+        )));
     }
     if max_cases == 0 {
         return Err(UsageError::new("--max-cases must be greater than zero"));
@@ -493,6 +582,7 @@ where
         candidates,
         timeout_ms,
         max_output_bytes,
+        max_output_file_bytes,
         max_cases,
         max_observations,
         max_record_bytes: MAX_RECORD_BYTES,
@@ -750,6 +840,7 @@ pub fn run(config: &Config) -> Result<Report, UsageError> {
         cases_dir: config.cases.clone(),
         timeout_ms: config.timeout_ms,
         max_output_bytes: config.max_output_bytes,
+        max_output_file_bytes: config.max_output_file_bytes,
         max_cases: config.max_cases,
         max_observations: config.max_observations,
         max_record_bytes: config.max_record_bytes,
@@ -774,23 +865,181 @@ pub fn run(config: &Config) -> Result<Report, UsageError> {
     Ok(report)
 }
 
-/// Delete and recreate the operator work directory so every run starts empty.
+/// Prepare the operator work directory without ever deleting data the harness does
+/// not fully own (B-01 / NF-1..NF-3).
+///
+/// Ownership requires the exact marker content before anything is deleted. The
+/// directory is then enumerated without truncation (more than [`MAX_DIR_ENTRIES`]
+/// entries is refused with [`WORK_DIR_TOO_LARGE`]) and cleared in one name-filtered,
+/// re-validating pass that aborts on the first entry this tool did not create. The
+/// `captures/` directory is validated the same way: its entries must all be the
+/// harness's own `<stem>.stdout`/`<stem>.stderr` files. `remove_dir_all` is never
+/// used here; directories go away with `remove_dir`, which only succeeds when the
+/// operating system agrees they are empty.
 fn output_directories(config: &Config) -> Result<(PathBuf, PathBuf), UsageError> {
     let parent = config
         .out
         .parent()
         .ok_or_else(|| UsageError::new("--out must name a file inside a directory"))?;
     let work = parent.join(OUTPUT_DIR);
-    if work.exists() {
-        fs::remove_dir_all(&work).map_err(|error| {
-            UsageError::new(format!("cannot clear {}: {error}", work.display()))
-        })?;
+    match fs::symlink_metadata(&work) {
+        Ok(metadata) if metadata.is_dir() => clear_owned_work(&work)?,
+        Ok(_) => return Err(not_owned(&work, "exists and is not a directory")),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => {
+            return Err(UsageError::new(format!(
+                "cannot inspect {}: {error}",
+                work.display()
+            )));
+        }
     }
     let captures = work.join(CAPTURE_DIR);
     fs::create_dir_all(&captures).map_err(|error| {
         UsageError::new(format!("cannot create {}: {error}", captures.display()))
     })?;
+    fs::write(work.join(WORK_MARKER), WORK_MARKER_CONTENT).map_err(|error| {
+        UsageError::new(format!("cannot mark {} as owned: {error}", work.display()))
+    })?;
     Ok((work, captures))
+}
+
+fn not_owned(path: &Path, detail: &str) -> UsageError {
+    UsageError::new(format!(
+        "{WORK_DIR_NOT_OWNED}: {} {detail}; nothing further was deleted",
+        path.display()
+    ))
+}
+
+fn too_large(directory: &Path) -> UsageError {
+    UsageError::new(format!(
+        "{WORK_DIR_TOO_LARGE}: {} holds more than {MAX_DIR_ENTRIES} entries; nothing was deleted",
+        directory.display()
+    ))
+}
+
+/// Enumerate a directory without ever truncating it: the cap is enforced by
+/// refusing, so a listing that would be cut short can never look like ownership.
+fn bounded_entries(directory: &Path) -> Result<Vec<(String, PathBuf)>, UsageError> {
+    let listing = fs::read_dir(directory).map_err(|error| {
+        UsageError::new(format!("cannot list {}: {error}", directory.display()))
+    })?;
+    let mut entries: Vec<(String, PathBuf)> = Vec::new();
+    for entry in listing {
+        let entry = entry.map_err(|error| {
+            UsageError::new(format!(
+                "cannot read a {} entry: {error}",
+                directory.display()
+            ))
+        })?;
+        if entries.len() >= MAX_DIR_ENTRIES {
+            return Err(too_large(directory));
+        }
+        let name = entry
+            .file_name()
+            .into_string()
+            .map_err(|_| not_owned(directory, "contains a name that is not valid UTF-8"))?;
+        entries.push((name, entry.path()));
+    }
+    entries.sort_by(|left, right| left.0.cmp(&right.0));
+    Ok(entries)
+}
+
+/// Prove ownership of the marker and clear the directory in one re-validating pass.
+fn clear_owned_work(work: &Path) -> Result<(), UsageError> {
+    // The marker must match exactly before anything at all is deleted.
+    match read_small_file(&work.join(WORK_MARKER), MAX_IDENTITY_CHARS) {
+        Some(bytes) if bytes == WORK_MARKER_CONTENT.as_bytes() => {}
+        _ => return Err(not_owned(work, "has no matching ownership marker")),
+    }
+    for (name, path) in bounded_entries(work)? {
+        let file_type = file_type_of(&path, work)?;
+        if name == WORK_MARKER && file_type.is_file() {
+            remove_entry_file(&path)?;
+        } else if name == CAPTURE_DIR && file_type.is_dir() {
+            clear_owned_captures(&path)?;
+        } else if file_type.is_file() && owned_output_name(&name) {
+            remove_entry_file(&path)?;
+        } else {
+            return Err(not_owned(
+                work,
+                "contains an entry this tool did not create",
+            ));
+        }
+    }
+    // `remove_dir` succeeds only when the operating system agrees it is empty.
+    fs::remove_dir(work).map_err(|error| {
+        not_owned(
+            work,
+            &format!("could not be verified empty after cleanup ({error})"),
+        )
+    })?;
+    Ok(())
+}
+
+/// Clear a capture directory whose entries are all the harness's own.
+fn clear_owned_captures(captures: &Path) -> Result<(), UsageError> {
+    for (name, path) in bounded_entries(captures)? {
+        let file_type = file_type_of(&path, captures)?;
+        if !file_type.is_file() || !owned_capture_name(&name) {
+            return Err(not_owned(
+                captures,
+                "contains an entry this tool did not create",
+            ));
+        }
+        remove_entry_file(&path)?;
+    }
+    fs::remove_dir(captures).map_err(|error| {
+        not_owned(
+            captures,
+            &format!("could not be verified empty after cleanup ({error})"),
+        )
+    })?;
+    Ok(())
+}
+
+/// Our measured outputs are always named `<3 digits>_…` in the work directory.
+fn owned_output_name(name: &str) -> bool {
+    let bytes = name.as_bytes();
+    bytes.len() > 4
+        && bytes.len() <= MAX_CASE_NAME_BYTES
+        && bytes[..3].iter().all(u8::is_ascii_digit)
+        && bytes[3] == b'_'
+}
+
+/// Our capture scratch files are always named `<stem>.stdout` / `<stem>.stderr`.
+fn owned_capture_name(name: &str) -> bool {
+    let Some(stem) = name
+        .strip_suffix(".stdout")
+        .or_else(|| name.strip_suffix(".stderr"))
+    else {
+        return false;
+    };
+    !stem.is_empty() && name.len() <= MAX_CASE_NAME_BYTES
+}
+
+fn file_type_of(path: &Path, directory: &Path) -> Result<fs::FileType, UsageError> {
+    fs::symlink_metadata(path)
+        .map(|metadata| metadata.file_type())
+        .map_err(|error| {
+            UsageError::new(format!(
+                "cannot inspect a {} entry: {error}",
+                directory.display()
+            ))
+        })
+}
+
+fn remove_entry_file(path: &Path) -> Result<(), UsageError> {
+    fs::remove_file(path)
+        .map_err(|error| UsageError::new(format!("cannot clear {}: {error}", path.display())))
+}
+
+/// Bounded read used by the ownership check.
+fn read_small_file(path: &Path, limit: usize) -> Option<Vec<u8>> {
+    let file = fs::File::open(path).ok()?;
+    let mut bytes = Vec::new();
+    let cap = u64::try_from(limit).unwrap_or(u64::MAX).saturating_add(1);
+    file.take(cap).read_to_end(&mut bytes).ok()?;
+    Some(bytes)
 }
 
 /// Admit only direct regular files with a UTF-8 name, sorted, bounded by max_cases.
@@ -1006,7 +1255,7 @@ fn probe_identity(
             supervise(
                 child,
                 Duration::from_millis(config.timeout_ms),
-                Some(probe_scratch(&capture)),
+                Some(probe_bounds(&capture)),
             )
         });
         let (stdout, stderr) = capture.read(PROBE_CAP_BYTES);
@@ -1015,7 +1264,9 @@ fn probe_identity(
             continue;
         };
         probed.exit_codes[index] = supervised.exit_code;
-        if supervised.timeout_fired || supervised.scratch_capped || supervised.exit_code != Some(0)
+        if supervised.timeout_fired
+            || supervised.capped.is_some()
+            || supervised.exit_code != Some(0)
         {
             continue;
         }
@@ -1033,13 +1284,15 @@ fn probe_identity(
     probed
 }
 
-fn probe_scratch(capture: &CaptureFiles) -> ScratchBound<'_> {
-    ScratchBound {
+fn probe_bounds(capture: &CaptureFiles) -> Bounds<'_> {
+    Bounds {
         first: &capture.stdout,
         second: &capture.stderr,
-        limit: u64::try_from(PROBE_CAP_BYTES)
+        scratch_limit: u64::try_from(PROBE_CAP_BYTES)
             .unwrap_or(u64::MAX)
             .saturating_mul(SCRATCH_FACTOR),
+        output: None,
+        output_limit: 0,
     }
 }
 
@@ -1172,7 +1425,9 @@ fn measure(
         stderr_truncated: false,
         wall_ms: None,
         scratch_bytes: None,
+        output_present: false,
         output_bytes: None,
+        validity: NOT_MEASURED,
         refusal: None,
     };
     // Without a case suffix the case identity cannot be expressed in the record,
@@ -1223,21 +1478,29 @@ fn measure(
     }
     match command.spawn() {
         Ok(child) => {
-            let scratch = ScratchBound {
+            let bounds = Bounds {
                 first: &capture.stdout,
                 second: &capture.stderr,
-                limit: u64::try_from(config.max_output_bytes)
+                scratch_limit: u64::try_from(config.max_output_bytes)
                     .unwrap_or(u64::MAX)
                     .saturating_mul(SCRATCH_FACTOR),
+                output: Some(&output),
+                output_limit: u64::try_from(config.max_output_file_bytes).unwrap_or(u64::MAX),
             };
             let supervised = supervise(
                 child,
                 Duration::from_millis(config.timeout_ms),
-                Some(scratch),
+                Some(bounds),
             );
             let (stdout, stderr) = capture.read(config.max_output_bytes);
+            let (output_bytes, output_present) = match fs::metadata(&output) {
+                Ok(metadata) if metadata.is_file() => (Some(metadata.len()), metadata.len() > 0),
+                _ => (None, false),
+            };
             observation.wall_ms = Some(supervised.wall_ms);
             observation.scratch_bytes = Some(supervised.scratch_bytes);
+            observation.output_bytes = output_bytes;
+            observation.output_present = output_present;
             observation.timeout_fired = supervised.timeout_fired;
             observation.exit_code = supervised.exit_code;
             observation.candidate_reason = candidate_reason(&stdout);
@@ -1245,15 +1508,27 @@ fn measure(
             observation.captured_stderr_bytes = stderr.bytes.len();
             observation.stdout_truncated = stdout.truncated;
             observation.stderr_truncated = stderr.truncated;
-            observation.observed_outcome = if supervised.scratch_capped || supervised.timeout_fired
-            {
-                OutcomeClass::Cancelled
-            } else {
-                classify(supervised.exit_code)
+            // B-03: a capped run is never a success class, even when the child
+            // exited normally before the post-exit re-check saw the size.
+            // B-02: exit 0 alone is not evidence; a non-empty present output is.
+            observation.observed_outcome = match supervised.capped {
+                Some(kind) => {
+                    observation.refusal = Some(kind.refusal());
+                    OutcomeClass::Cancelled
+                }
+                None if supervised.timeout_fired => OutcomeClass::Cancelled,
+                None if supervised.exit_code == Some(0) && output_present => OutcomeClass::Decoded,
+                None if supervised.exit_code == Some(0) => {
+                    observation.refusal = Some("output_missing");
+                    OutcomeClass::Error
+                }
+                None => classify(supervised.exit_code),
             };
-            if supervised.scratch_capped {
-                observation.refusal = Some("scratch_capped");
-            }
+            observation.validity = if observation.observed_outcome == OutcomeClass::Decoded {
+                PRESENCE_ONLY
+            } else {
+                NOT_MEASURED
+            };
         }
         Err(error) => {
             observation.refusal = Some(if error.kind() == std::io::ErrorKind::NotFound {
@@ -1264,10 +1539,6 @@ fn measure(
         }
     }
     capture.release();
-    observation.output_bytes = fs::metadata(&output)
-        .ok()
-        .filter(std::fs::Metadata::is_file)
-        .map(|metadata| metadata.len());
     observation
 }
 
@@ -1300,9 +1571,11 @@ fn sanitize_name(name: &str) -> String {
         .collect()
 }
 
+/// Map a non-zero exit code to its class. Exit code `0` never reaches this
+/// function: the evidence rule in [`measure`] decides it, so a bare success code
+/// can never become `decoded` here.
 fn classify(exit_code: Option<i32>) -> OutcomeClass {
     match exit_code {
-        Some(0) => OutcomeClass::Decoded,
         Some(2) => OutcomeClass::Unsupported,
         Some(3) => OutcomeClass::Corrupt,
         Some(4) => OutcomeClass::Oversize,
@@ -1320,13 +1593,33 @@ fn file_len(path: &Path) -> u64 {
         .unwrap_or(0)
 }
 
-/// Supervise one child under a hard deadline and a combined scratch-byte bound.
+/// Which documented bound the observed sizes exceed, if any.
+fn exceeded(bounds: &Bounds<'_>) -> Option<CapKind> {
+    let scratch = file_len(bounds.first).saturating_add(file_len(bounds.second));
+    if scratch > bounds.scratch_limit {
+        return Some(CapKind::Scratch);
+    }
+    if let Some(output) = bounds.output
+        && file_len(output) > bounds.output_limit
+    {
+        return Some(CapKind::Output);
+    }
+    None
+}
+
+/// Supervise one child under a hard deadline and the observed byte bounds.
+///
 /// Capture lives in files, so nothing here can block on a descendant that
-/// inherited the child's handles.
-fn supervise(mut child: Child, timeout: Duration, scratch: Option<ScratchBound<'_>>) -> Supervised {
+/// inherited the child's handles. The size limits are **observed**, not enforced
+/// by the operating system: they are sampled while polling and checked again after
+/// the child is reaped, so a burst that finishes between two polls is still
+/// classified as capped instead of a success. Kill/reap applies to the direct child
+/// only (A-01); termination of descendants is neither guaranteed nor claimed.
+fn supervise(mut child: Child, timeout: Duration, bounds: Option<Bounds<'_>>) -> Supervised {
     let started = Instant::now();
     let mut timeout_fired = false;
-    let mut scratch_capped = false;
+    let mut killed = false;
+    let mut capped = None;
     let status = loop {
         match child.try_wait() {
             Ok(Some(status)) => break Some(status),
@@ -1335,33 +1628,50 @@ fn supervise(mut child: Child, timeout: Duration, scratch: Option<ScratchBound<'
             Err(_) => {
                 let _ = child.kill();
                 let _ = child.wait();
+                killed = true;
                 break None;
             }
         }
-        if let Some(bound) = scratch.as_ref() {
-            let written = file_len(bound.first).saturating_add(file_len(bound.second));
-            if written > bound.limit {
-                let _ = child.kill();
-                let _ = child.wait();
-                scratch_capped = true;
-                break None;
-            }
+        if let Some(bounds) = bounds.as_ref()
+            && let Some(kind) = exceeded(bounds)
+        {
+            let _ = child.kill();
+            let _ = child.wait();
+            killed = true;
+            capped = Some(kind);
+            break None;
         }
         let remaining = timeout.saturating_sub(started.elapsed());
         if remaining.is_zero() {
             let _ = child.kill();
             let _ = child.wait();
+            killed = true;
             timeout_fired = true;
             break None;
         }
         thread::sleep(remaining.min(POLL_INTERVAL));
     };
-    let scratch_bytes = scratch.map_or(0, |bound| {
-        file_len(bound.first).saturating_add(file_len(bound.second))
-    });
-    let reaped_without_status = timeout_fired || scratch_capped;
+    let scratch_bytes = bounds
+        .as_ref()
+        .map_or(0, |bounds| file_len(bounds.first) + file_len(bounds.second));
+    let output_bytes = bounds
+        .as_ref()
+        .and_then(|bounds| bounds.output)
+        .map_or(0, file_len);
+    // B-03: re-check after exit, because an exited child may have written more
+    // than a single poll could observe.
+    if let Some(bounds) = bounds.as_ref()
+        && capped.is_none()
+        && !timeout_fired
+    {
+        if scratch_bytes > bounds.scratch_limit {
+            capped = Some(CapKind::Scratch);
+        } else if output_bytes > bounds.output_limit && bounds.output.is_some() {
+            capped = Some(CapKind::Output);
+        }
+    }
     Supervised {
-        exit_code: if reaped_without_status {
+        exit_code: if killed {
             None
         } else {
             status.and_then(|status| status.code())
@@ -1369,7 +1679,7 @@ fn supervise(mut child: Child, timeout: Duration, scratch: Option<ScratchBound<'
         timeout_fired,
         wall_ms: elapsed_millis(started.elapsed()),
         scratch_bytes,
-        scratch_capped,
+        capped,
     }
 }
 
@@ -1409,6 +1719,11 @@ pub fn render(report: &Report) -> (String, usize) {
     let _ = writeln!(json, "  \"cases_dir\": {},", path_field(&report.cases_dir));
     let _ = writeln!(json, "  \"timeout_ms\": {},", report.timeout_ms);
     let _ = writeln!(json, "  \"max_output_bytes\": {},", report.max_output_bytes);
+    let _ = writeln!(
+        json,
+        "  \"max_output_file_bytes\": {},",
+        report.max_output_file_bytes
+    );
     let _ = writeln!(json, "  \"max_cases\": {},", report.max_cases);
     let _ = writeln!(json, "  \"max_observations\": {},", report.max_observations);
     let _ = writeln!(json, "  \"max_record_bytes\": {},", report.max_record_bytes);
@@ -1460,8 +1775,8 @@ fn observation_row(observation: &Observation) -> String {
          \"input_bytes\": {}, \"declared_outcome\": {}, \"observed_outcome\": {}, \
          \"candidate_reason\": {}, \"exit_code\": {}, \"timeout_fired\": {}, \
          \"captured_stdout_bytes\": {}, \"captured_stderr_bytes\": {}, \"stdout_truncated\": {}, \
-         \"stderr_truncated\": {}, \"wall_ms\": {}, \"scratch_bytes\": {}, \"output_bytes\": {}, \
-         \"refusal\": {}}}",
+         \"stderr_truncated\": {}, \"wall_ms\": {}, \"scratch_bytes\": {}, \
+         \"output_present\": {}, \"output_bytes\": {}, \"validity\": {}, \"refusal\": {}}}",
         quoted(&observation.candidate_id),
         quoted(&observation.case_id),
         path_field(&observation.input_path),
@@ -1478,7 +1793,9 @@ fn observation_row(observation: &Observation) -> String {
         observation.stderr_truncated,
         number_field(observation.wall_ms),
         number_field(observation.scratch_bytes),
+        observation.output_present,
         number_field(observation.output_bytes),
+        quoted(observation.validity),
         text_field(observation.refusal),
     )
 }

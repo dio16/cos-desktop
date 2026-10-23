@@ -73,11 +73,13 @@ impl Fixture {
     }
 
     /// Measured output files of the work directory, sorted; capture files are
-    /// removed by the harness and the capture directory is not a file.
+    /// removed by the harness, the capture directory is not a file, and the
+    /// ownership marker is not a measured output.
     fn work_files(&self) -> Vec<PathBuf> {
         let mut files: Vec<PathBuf> = std::fs::read_dir(self.work())
             .unwrap()
             .map(|entry| entry.unwrap())
+            .filter(|entry| entry.file_name() != harness::WORK_MARKER)
             .filter(|entry| entry.file_type().unwrap().is_file())
             .map(|entry| entry.path())
             .collect();
@@ -185,7 +187,10 @@ fn normal_admit_records_decoded_identity_and_output_size() {
     assert!(observation.captured_stdout_bytes > 0);
     assert!(!observation.stdout_truncated);
     assert!(observation.scratch_bytes.unwrap() > 0);
+    // B-02: the evidence is recorded separately from the claim.
+    assert!(observation.output_present);
     assert_eq!(observation.output_bytes, Some(FAKE_OUTPUT.len() as u64));
+    assert_eq!(observation.validity, "presence_only");
     assert_eq!(observation.refusal, None);
     assert!(observation.wall_ms.is_some());
 }
@@ -315,6 +320,8 @@ fn absent_candidate_is_not_run_instead_of_a_guessed_error() {
     assert_eq!(observation.wall_ms, None);
     assert_eq!(observation.scratch_bytes, None);
     assert!(!observation.timeout_fired);
+    assert!(!observation.output_present);
+    assert_eq!(observation.validity, "not_measured");
 }
 
 /// A1: the manifest reader allocates at most cap + 1 bytes, so the documented cap
@@ -594,9 +601,15 @@ fn second_run_starts_from_an_empty_work_directory() {
     assert_eq!(first.observations.len(), 1);
     assert_eq!(fixture.work_files().len(), 1);
     assert_eq!(std::fs::read_dir(fixture.captures()).unwrap().count(), 0);
+    assert!(
+        fixture.work().join(harness::WORK_MARKER).exists(),
+        "the work directory must carry its ownership marker"
+    );
 
-    let marker = fixture.work().join("stale-marker");
-    let capture = fixture.captures().join("stale.capture");
+    // B-01: a left-over the harness recognises as its own is cleared; a foreign
+    // entry would make the directory unowned and is covered by its own test.
+    let marker = fixture.work().join("999_planted.png");
+    let capture = fixture.captures().join("stale.stdout");
     std::fs::write(&marker, b"leftover").unwrap();
     std::fs::write(&capture, b"leftover").unwrap();
     let second = harness::run(&config).unwrap();
@@ -612,6 +625,224 @@ fn second_run_starts_from_an_empty_work_directory() {
     assert_eq!(
         second.observations[0].output_bytes,
         Some(FAKE_OUTPUT.len() as u64)
+    );
+}
+
+/// B-01: a work directory the harness did not create is refused, nothing is
+/// deleted, and a directory that carries the marker but gains foreign data is
+/// refused as well.
+#[test]
+fn foreign_work_directory_is_refused_and_preserved() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    let work = fixture.work();
+
+    // No marker at all: a directory the harness did not create.
+    std::fs::create_dir_all(&work).unwrap();
+    let foreign = work.join("holiday.jpg");
+    std::fs::write(&foreign, b"operator data").unwrap();
+    let error = harness::run(&config).unwrap_err();
+    let message = format!("{error}");
+    assert!(
+        message.contains(harness::WORK_DIR_NOT_OWNED),
+        "unexpected refusal: {message}"
+    );
+    assert_eq!(std::fs::read(&foreign).unwrap(), b"operator data");
+    assert!(
+        !fixture.captures().exists(),
+        "nothing may be created either"
+    );
+
+    // Owned directory (marker present) that gained a foreign entry.
+    std::fs::remove_file(&foreign).unwrap();
+    std::fs::remove_dir(&work).unwrap();
+    let owned = harness::run(&config).unwrap();
+    assert_eq!(owned.observations.len(), 1);
+    assert!(work.join(harness::WORK_MARKER).exists());
+    let foreign = work.join("notes.txt");
+    std::fs::write(&foreign, b"keep me").unwrap();
+    let error = harness::run(&config).unwrap_err();
+    let message = format!("{error}");
+    assert!(
+        message.contains(harness::WORK_DIR_NOT_OWNED),
+        "unexpected refusal: {message}"
+    );
+    assert_eq!(std::fs::read(&foreign).unwrap(), b"keep me");
+}
+
+/// B-02: a successful exit without an output file is not `decoded`.
+#[test]
+fn successful_exit_without_output_is_not_decoded() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "nooutput");
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_missing"));
+    assert!(!observation.output_present);
+    assert_eq!(observation.output_bytes, None);
+    assert_eq!(observation.validity, "not_measured");
+}
+
+/// B-02: a zero-byte output file is not evidence of a decode either.
+#[test]
+fn zero_byte_output_is_not_decoded() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "emptyoutput");
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_missing"));
+    assert!(!observation.output_present);
+    assert_eq!(observation.output_bytes, Some(0));
+    assert_eq!(observation.validity, "not_measured");
+}
+
+/// B-03: a flood that finishes between two polls is still capped after exit.
+#[test]
+fn fast_flood_finishing_immediately_is_still_capped() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "burst");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    // The scratch bound is max_output_bytes * 8 = 512 bytes.
+    config.max_output_bytes = 64;
+    config.invocation = helper_invocation(HELPER);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert_eq!(observation.refusal, Some("scratch_capped"));
+    let scratch = observation.scratch_bytes.unwrap();
+    assert!(
+        scratch > 64 * harness::SCRATCH_FACTOR,
+        "the post-exit re-check must see the burst ({scratch})"
+    );
+    assert_ne!(observation.validity, "presence_only");
+}
+
+/// B-03: an oversized candidate output is capped even though the exit code is 0.
+#[test]
+fn oversized_output_file_is_capped() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "bigoutput");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.max_output_file_bytes = 1024;
+    config.invocation = helper_invocation(HELPER);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert_eq!(observation.refusal, Some("output_capped"));
+    assert!(
+        observation.output_bytes.unwrap() > 1024,
+        "the observed output size must exceed the bound"
+    );
+    assert_ne!(observation.validity, "presence_only");
+}
+
+/// NF-1: a directory above the entry cap is refused before anything is deleted,
+/// even when the marker matches and every name looks like one of ours.
+#[test]
+fn work_directory_above_the_entry_cap_is_refused() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    let work = fixture.work();
+    let owned = harness::run(&config).unwrap();
+    assert_eq!(owned.observations.len(), 1);
+    assert!(work.join(harness::WORK_MARKER).exists());
+
+    // Marker + MAX_DIR_ENTRIES own-named files + a foreign directory.
+    for index in 0..harness::MAX_DIR_ENTRIES {
+        std::fs::write(work.join(format!("000_bulk{index}.png")), b"x").unwrap();
+    }
+    let foreign = work.join("operator_dir");
+    std::fs::create_dir(&foreign).unwrap();
+    std::fs::write(foreign.join("keep.txt"), b"operator data").unwrap();
+
+    let error = harness::run(&config).unwrap_err();
+    let message = format!("{error}");
+    assert!(
+        message.contains(harness::WORK_DIR_TOO_LARGE),
+        "unexpected refusal: {message}"
+    );
+    assert_eq!(
+        std::fs::read(foreign.join("keep.txt")).unwrap(),
+        b"operator data"
+    );
+    assert!(
+        work.join(harness::WORK_MARKER).exists(),
+        "an over-large directory is refused before anything is deleted"
+    );
+    assert!(
+        work.join("000_bulk0.png").exists(),
+        "an over-large directory is refused before anything is deleted"
+    );
+}
+
+/// NF-2: the `captures/` directory is validated too, so foreign data inside it is
+/// never deleted.
+#[test]
+fn captures_directory_with_foreign_data_is_refused() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    let owned = harness::run(&config).unwrap();
+    assert_eq!(owned.observations.len(), 1);
+    assert_eq!(std::fs::read_dir(fixture.captures()).unwrap().count(), 0);
+
+    let foreign = fixture.captures().join("operator.txt");
+    std::fs::write(&foreign, b"operator data").unwrap();
+    let error = harness::run(&config).unwrap_err();
+    let message = format!("{error}");
+    assert!(
+        message.contains(harness::WORK_DIR_NOT_OWNED),
+        "unexpected refusal: {message}"
+    );
+    assert_eq!(std::fs::read(&foreign).unwrap(), b"operator data");
+}
+
+/// NF-3: cleanup re-validates in a single name-filtered pass and aborts at the
+/// first entry that is not ours, so an unexpected entry that appears after the
+/// marker ownership check is never deleted. Our own entry sorts first, which proves
+/// the pass had already started deleting when it stopped.
+#[test]
+fn unexpected_entry_during_cleanup_is_refused_and_survives() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    let work = fixture.work();
+    let owned = harness::run(&config).unwrap();
+    assert_eq!(owned.observations.len(), 1);
+
+    let ours = work.join("100_pending.png");
+    std::fs::write(&ours, b"ours").unwrap();
+    let foreign = work.join("200_foreign");
+    std::fs::create_dir(&foreign).unwrap();
+    std::fs::write(foreign.join("keep.txt"), b"operator data").unwrap();
+
+    let error = harness::run(&config).unwrap_err();
+    let message = format!("{error}");
+    assert!(
+        message.contains(harness::WORK_DIR_NOT_OWNED),
+        "unexpected refusal: {message}"
+    );
+    assert_eq!(
+        std::fs::read(foreign.join("keep.txt")).unwrap(),
+        b"operator data"
+    );
+    assert!(
+        !ours.exists(),
+        "the re-validating pass deletes our own entries before it aborts"
     );
 }
 
@@ -773,7 +1004,7 @@ fn record_is_deterministic_sorted_and_carries_no_decision_field() {
         json_values(&first_json, "case_id"),
         vec!["a.png", "a.png", "b.png", "b.png"]
     );
-    assert!(first_json.contains("\"schema_version\": 3"));
+    assert!(first_json.contains("\"schema_version\": 5"));
     assert!(first_json.contains("\"exploratory\": true"));
     assert!(first_json.contains("\"numeric_gate\": \"NOT_RATIFIED\""));
     for decision in ["\"pass\"", "\"winner\"", "\"score\"", "\"selected\""] {
@@ -907,6 +1138,23 @@ fn fake_candidate(support: ProbeSupport) {
             eprintln!("fake-marked");
             0
         }
+        // B-02: exit 0 with no output, and exit 0 with a zero-byte output.
+        "nooutput" => 0,
+        "emptyoutput" => {
+            std::fs::write(&output, b"").unwrap();
+            0
+        }
+        // B-03: a burst that finishes before a poll can observe it, and an output
+        // file above the operator bound.
+        "burst" => {
+            let chunk = [b'B'; 2048];
+            let _ = std::io::stdout().write_all(&chunk);
+            0
+        }
+        "bigoutput" => {
+            std::fs::write(&output, vec![b'O'; 8192]).unwrap();
+            0
+        }
         "oversize" => 4,
         "corrupt" => 3,
         "unsupported" => 2,
@@ -916,6 +1164,7 @@ fn fake_candidate(support: ProbeSupport) {
         }
         // A2: leave a descendant holding the inherited capture handles, then exit.
         "orphan" => {
+            std::fs::write(&output, FAKE_OUTPUT).unwrap();
             let _ = std::process::Command::new(std::env::current_exe().unwrap())
                 .args(["--exact", SLEEPER, "--nocapture", "--quiet"])
                 .env(SLEEP_ENV, "1")
@@ -933,6 +1182,7 @@ fn fake_candidate(support: ProbeSupport) {
         }
         // A6/read cap: below the scratch bound, so the case completes normally.
         "flood" => {
+            std::fs::write(&output, FAKE_OUTPUT).unwrap();
             let chunk = [b'x'; 250];
             for _ in 0..6 {
                 let _ = std::io::stdout().write_all(&chunk);
