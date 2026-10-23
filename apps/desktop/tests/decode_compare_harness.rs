@@ -1276,6 +1276,88 @@ fn empty_capability_sets_are_explicit() {
     assert!(json.contains("\"not_measured_reason\": \"header_field_not_observed\""));
 }
 
+/// B-R1-01 positive controls: the hand-built fixtures really are structurally
+/// complete, so the adversarial fixtures below differ only in the rule they break.
+#[test]
+fn structurally_complete_fixtures_are_verified() {
+    let mut png = std::io::Cursor::new(png_bytes(16, 16, 2, false));
+    let inspected = inspect::inspect(&mut png);
+    assert!(inspected.complete, "IHDR + IDAT + IEND is complete");
+    assert_eq!(inspected.dimensions(), Some((16, 16)));
+
+    let mut jpeg = std::io::Cursor::new(jpeg_bytes(24, 12, 3));
+    let inspected = inspect::inspect(&mut jpeg);
+    assert!(inspected.complete, "SOF + SOS + EOI is complete");
+    assert_eq!(inspected.dimensions(), Some((24, 12)));
+
+    let mut bmp = std::io::Cursor::new(bmp_bytes(8, 4, 24));
+    let inspected = inspect::inspect(&mut bmp);
+    assert!(
+        inspected.complete,
+        "the declared pixel buffer fits the file"
+    );
+    assert_eq!(inspected.dimensions(), Some((8, 4)));
+}
+
+/// B-R1-01: a PNG with IHDR and IEND but no image data is never verified.
+#[test]
+fn png_without_image_data_is_incomplete() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "png-no-idat");
+    fixture.declare_expected(&[("a.png", Some((16, 16)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_incomplete"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.validity_reason, Some("output_incomplete"));
+    assert_eq!(observation.inspected_format, inspect::Format::Png);
+    assert_eq!(observation.inspected_width, Some(16));
+    assert!(!observation.inspected_complete);
+    assert!(report.capabilities.is_empty());
+}
+
+/// B-R1-01: a JPEG that reaches its scan but never terminates it is never verified.
+#[test]
+fn jpeg_without_terminator_is_incomplete() {
+    let fixture = Fixture::new();
+    fixture.case("a.jpg", "jpeg-no-eoi");
+    fixture.declare_expected(&[("a.jpg", Some((24, 12)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_incomplete"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.inspected_format, inspect::Format::Jpeg);
+    assert_eq!(observation.inspected_width, Some(24));
+    assert!(!observation.inspected_complete);
+    assert!(report.capabilities.is_empty());
+}
+
+/// B-R1-01: a BMP whose declared pixel buffer does not fit the file is never
+/// verified.
+#[test]
+fn bmp_with_short_pixel_data_is_incomplete() {
+    let fixture = Fixture::new();
+    fixture.case("a.bmp", "bmp-short-pixels");
+    fixture.declare_expected(&[("a.bmp", Some((8, 4)), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.exit_code, Some(0));
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_incomplete"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.inspected_format, inspect::Format::Bmp);
+    assert_eq!(observation.inspected_width, Some(8));
+    assert!(!observation.inspected_complete);
+    assert!(report.capabilities.is_empty());
+}
+
 /// A6: both global bounds truncate explicitly instead of growing the record.
 #[test]
 fn observation_and_record_caps_truncate_explicitly() {
@@ -1583,6 +1665,19 @@ fn fake_candidate(support: ProbeSupport) {
             std::fs::write(&output, bmp_header_only(8, 4, 24)).unwrap();
             0
         }
+        // B-R1-01: structurally short containers that must never verify.
+        "png-no-idat" => {
+            std::fs::write(&output, png_without_idat(16, 16)).unwrap();
+            0
+        }
+        "jpeg-no-eoi" => {
+            std::fs::write(&output, jpeg_without_eoi(24, 12, 3)).unwrap();
+            0
+        }
+        "bmp-short-pixels" => {
+            std::fs::write(&output, bmp_short_pixels(8, 4, 24)).unwrap();
+            0
+        }
         "bmp-paletted" => {
             std::fs::write(&output, bmp_bytes(8, 4, 8)).unwrap();
             0
@@ -1778,6 +1873,10 @@ fn png_duplicate_ihdr(width: u32, height: u32) -> Vec<u8> {
 fn bmp_bytes(width: i32, height: i32, bit_count: u16) -> Vec<u8> {
     let header_size = 40_u32;
     let data_offset = 14 + header_size;
+    // B-R1-01: the file must really carry the declared pixel buffer, so the harness
+    // can prove `data_offset + row_bytes * height <= file_size`.
+    let row_bytes = (u64::from(width.unsigned_abs()) * u64::from(bit_count)).div_ceil(32) * 4;
+    let pixel_bytes = row_bytes * u64::from(height.unsigned_abs());
     let mut bytes = Vec::new();
     bytes.extend_from_slice(b"BM");
     bytes.extend_from_slice(&(data_offset + 16).to_le_bytes());
@@ -1794,7 +1893,9 @@ fn bmp_bytes(width: i32, height: i32, bit_count: u16) -> Vec<u8> {
     bytes.extend_from_slice(&2835_i32.to_le_bytes());
     bytes.extend_from_slice(&0_u32.to_le_bytes());
     bytes.extend_from_slice(&0_u32.to_le_bytes());
-    bytes.extend_from_slice(&[0_u8; 16]);
+    bytes.extend_from_slice(&0_u32.to_le_bytes());
+    bytes.extend_from_slice(&0_u32.to_le_bytes());
+    bytes.resize(bytes.len() + usize::try_from(pixel_bytes).unwrap(), 0);
     bytes
 }
 
@@ -1822,20 +1923,43 @@ fn bmp_header_only(width: i32, height: i32, bit_count: u16) -> Vec<u8> {
     bytes
 }
 
-/// Minimal structurally valid JPEG: SOI, SOF0 with the given geometry, EOI.
+/// Minimal structurally valid JPEG: SOI, SOF0, SOS, a few scan bytes and EOI.
 fn jpeg_bytes(width: u16, height: u16, components: u8) -> Vec<u8> {
-    let mut payload = Vec::new();
-    payload.push(8);
-    payload.extend_from_slice(&height.to_be_bytes());
-    payload.extend_from_slice(&width.to_be_bytes());
-    payload.push(components);
+    let mut bytes = jpeg_sof_only(width, height, components);
+    let mut scan = Vec::new();
+    scan.push(components);
     for index in 0..components {
-        payload.extend_from_slice(&[index + 1, 0x11, 0]);
+        scan.extend_from_slice(&[index + 1, 0x00]);
     }
-    let mut bytes = vec![0xFF, 0xD8];
-    bytes.extend_from_slice(&[0xFF, 0xC0]);
-    bytes.extend_from_slice(&u16::try_from(payload.len() + 2).unwrap().to_be_bytes());
-    bytes.extend_from_slice(&payload);
+    scan.extend_from_slice(&[0, 63, 0]);
+    bytes.extend_from_slice(&[0xFF, 0xDA]);
+    bytes.extend_from_slice(&u16::try_from(scan.len() + 2).unwrap().to_be_bytes());
+    bytes.extend_from_slice(&scan);
+    // Entropy-coded bytes: the harness checks framing only, never this content.
+    bytes.extend_from_slice(&[0x12, 0x34, 0x56]);
     bytes.extend_from_slice(&[0xFF, 0xD9]);
+    bytes
+}
+
+/// IHDR and IEND with no image data at all (B-R1-01).
+fn png_without_idat(width: u32, height: u32) -> Vec<u8> {
+    let mut bytes = png_signature();
+    bytes.extend_from_slice(&png_ihdr(width, height, 2, 8));
+    bytes.extend_from_slice(&png_chunk(b"IEND", &[]));
+    bytes
+}
+
+/// A JPEG that reaches its scan but never terminates it (B-R1-01).
+fn jpeg_without_eoi(width: u16, height: u16, components: u8) -> Vec<u8> {
+    let mut bytes = jpeg_bytes(width, height, components);
+    bytes.truncate(bytes.len() - 2);
+    bytes
+}
+
+/// A BMP whose declared pixel buffer is longer than the file (B-R1-01).
+fn bmp_short_pixels(width: i32, height: i32, bit_count: u16) -> Vec<u8> {
+    let mut bytes = bmp_bytes(width, height, bit_count);
+    let trimmed = bytes.len() - 10;
+    bytes.truncate(trimmed);
     bytes
 }

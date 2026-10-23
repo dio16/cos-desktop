@@ -30,16 +30,30 @@
 //! outside that closed vocabulary, a malformed line or no token at all yields
 //! `not_measured`; foreign text is never copied into the record.
 //!
-//! Evidence versus validity (B-02): an exit code alone never produces `decoded`.
-//! `decoded` requires exit code `0` **and** a candidate output that exists as a
-//! regular file with size `> 0`; the record keeps the evidence separated
-//! (`output_present`, `output_bytes`) from the claim (`validity`), and that claim
-//! is only ever `presence_only`. Exit `0` with a missing or zero-byte output is
-//! `error` with refusal `output_missing`, and an expectation-bearing output that the
-//! inspector cannot verify is `error` with refusal `output_unparsable` or
-//! `output_incomplete` while its validity stays `not_measured` (N5). No pixel, checksum or colour content is
-//! validated here, so `validity: "presence_only"` never means the image was
-//! verified, and `not_measured` means the image itself was not validated at all.
+//! Evidence versus validity (B-02 / A-R1-01): an exit code alone never produces
+//! `decoded`. `decoded` requires exit code `0` **and** a candidate output that exists
+//! as a regular file with size `> 0`. The record keeps the evidence (`output_present`,
+//! `output_bytes`, the `inspected_*` fields) separate from the claim, and `validity`
+//! is exactly one of:
+//!
+//! - `content_verified` — the output parsed as a **complete** container of the
+//!   declared format and its declared dimensions equal the operator expectation.
+//! - `dimension_mismatch` — it parsed completely but the dimensions contradict the
+//!   expectation; the observation is demoted to `error` with refusal
+//!   `dimension_mismatch`.
+//! - `presence_only` — no expectation was declared, so only the presence of a
+//!   non-empty output is claimed; nothing about its content is asserted.
+//! - `not_measured` — nothing about the image was established: no output, a
+//!   non-success class, an unparsable output (`output_unparsable`) or an incomplete
+//!   one (`output_incomplete`). Both demote the observation to `error` with that
+//!   refusal while the raw exit code stays recorded as evidence (N5).
+//!
+//! Exit `0` with a missing or zero-byte output is `error` with refusal
+//! `output_missing`. "Verified" means container structure, mandatory chunk/segment
+//! presence and the declared dimensions — never pixel content: this harness does not
+//! decode pixels, does not validate colour values or colour management, and does not
+//! prove that the compressed image data is decodable, so no claim here implies
+//! pixel-level validation or format compatibility.
 //!
 //! Verified evidence and capability facts (MP-IMG2 Phase 2): the harness inspects
 //! the bytes the candidate wrote itself with the bounded dependency-free parser in
@@ -48,21 +62,22 @@
 //! count, JPEG `SOF0`/`SOF2` precision, dimensions and component count). Nothing is
 //! taken from the candidate's own report and nothing is guessed: an output the parser
 //! cannot read is `not_measured`, and when an expectation exists that also demotes
-//! the observation class to `not_measured` with refusal `output_unparsable`, so the
-//! record never keeps a `decoded` claim it cannot support. A `cases.txt` line may
-//! declare
+//! the observation class to `error` with refusal `output_unparsable`, so the record
+//! never keeps a `decoded` claim it cannot support. A `cases.txt` line may declare
 //! `name[|expected:WxH][|declared-class]`; when an expectation exists and the output
 //! parses, matching dimensions yield `validity: content_verified`, and a mismatch
 //! demotes the observation to `error` with refusal `dimension_mismatch` — never a
 //! success class. Without an expectation the claim stays `presence_only`. The record
 //! also carries a `capabilities` table with one row per candidate × observed format.
 //!
-//! A content claim requires a **complete** container (B2): PNG needs a real `IEND`
-//! chunk of length `0`, BMP needs the whole declared header plus a pixel-data offset
-//! inside the file, and JPEG needs a full `SOF` payload inside its declared segment.
-//! Incomplete or unparsable outputs with an expectation are recorded as `error` with
-//! refusal `output_incomplete` / `output_unparsable` (N5) — the raw exit code stays
-//! recorded, but the record never keeps a success class the bytes cannot support.
+//! A content claim requires a **complete** container (B2 / B-R1-01): PNG needs a legal
+//! IHDR, at least one non-empty `IDAT` and a real `IEND` of length `0`; JPEG needs a
+//! full `SOF` segment, a `SOS` after it and a real `EOI` at the end of the file; BMP
+//! needs the whole declared header, a pixel-data offset inside the file and a declared
+//! pixel buffer that fits it (`data_offset + row_bytes * height <= file_size`, with the
+//! 4-byte-aligned row size of the declared bit count and the height magnitude so
+//! top-down bitmaps are covered). Header-only or truncated outputs are therefore
+//! `error` + `output_incomplete`, never a success class.
 //! Capability rows are built only from observations that are `decoded`, complete, and
 //! whose validity is `presence_only` or `content_verified` (A1), after observation
 //! truncation (A3), so a mismatch, refusal or dropped row never contributes.

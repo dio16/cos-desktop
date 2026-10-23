@@ -11,8 +11,24 @@
 //! [`MAX_INSPECT_STEPS`], and payloads the inspector does not need are skipped with
 //! seeks rather than read, so a multi-megabyte PNG costs only its chunk headers.
 //! Anything the inspector cannot recognise or cannot read stays `None`, which the
-//! record renders as `not_measured`: this module never guesses, never repairs and
-//! never validates pixel content, colour management or image data.
+//! record renders as `not_measured`: this module never guesses and never repairs.
+//!
+//! `Inspection::complete` is the structural statement "this file is a whole container
+//! of the recognised format", and it is deliberately stricter than "the header was
+//! readable":
+//!
+//! - PNG: a legal IHDR first and exactly once, at least one `IDAT` chunk with a
+//!   non-zero length, and an `IEND` chunk with length `0` after it.
+//! - JPEG: a full `SOF` segment, a `SOS` marker after it, and a real `EOI`
+//!   (`FF D9`) at the end of the file.
+//! - BMP: the whole declared header present, a pixel-data offset inside the file,
+//!   and, for uncompressed bitmaps, `data_offset + row_bytes * height <= file_size`
+//!   with the 4-byte-aligned row size of the declared bit count (`height` is the
+//!   magnitude, so top-down bitmaps are covered too).
+//!
+//! This is framing evidence only: the inspector does not decode pixels, does not
+//! validate colour management, does not compare image content, and does not prove
+//! that the compressed image data is decodable at all.
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -149,7 +165,7 @@ pub fn inspect<R: Read + Seek>(reader: &mut R) -> Inspection {
         if reader.seek(SeekFrom::Start(0)).is_err() {
             return Inspection::default();
         }
-        return inspect_jpeg(reader, budget);
+        return inspect_jpeg(reader, budget, length);
     }
     Inspection::default()
 }
@@ -160,6 +176,7 @@ fn inspect_png<R: Read + Seek>(reader: &mut R, mut budget: u64) -> Inspection {
         ..Inspection::default()
     };
     let mut ihdr_seen = false;
+    let mut idat_seen = false;
     for _ in 0..MAX_INSPECT_STEPS {
         let Some(length_bytes) = read_bytes(reader, 4, &mut budget) else {
             return inspection;
@@ -216,15 +233,22 @@ fn inspect_png<R: Read + Seek>(reader: &mut R, mut budget: u64) -> Inspection {
                 inspection.channels = channels_of_colour_type(colour_type);
                 ihdr_seen = true;
             }
+            b"IDAT" => {
+                // At least one image-data chunk must actually carry data (B-R1-01).
+                if length > 0 {
+                    idat_seen = true;
+                }
+            }
             b"iCCP" => inspection.record(ColourMarker::Icc),
             b"sRGB" => inspection.record(ColourMarker::Srgb),
             b"gAMA" => inspection.record(ColourMarker::Gamma),
             b"IEND" => {
-                // A real IEND states length 0 and terminates the image (N1).
+                // A real IEND states length 0 and terminates the image (N1), and it
+                // may only do so after some image data exists (B-R1-01).
                 if length != 0 {
                     return inspection;
                 }
-                inspection.complete = true;
+                inspection.complete = ihdr_seen && idat_seen;
                 return inspection;
             }
             _ => {}
@@ -332,11 +356,34 @@ fn inspect_bmp<R: Read + Seek>(reader: &mut R, mut budget: u64, file_len: u64) -
             ColourType::Rgba
         });
     }
+    // B-R1-01: the declared pixel buffer must fit the file. Uncompressed bitmaps use
+    // the 4-byte-aligned row size of the declared bit count; the height magnitude is
+    // used so top-down (negative height) bitmaps are checked the same way.
+    if compression == 0 {
+        let Some(bits) = u64::from(width).checked_mul(u64::from(bit_count)) else {
+            return Inspection::default();
+        };
+        let Some(row_bytes) = bits.div_ceil(32).checked_mul(4) else {
+            return Inspection::default();
+        };
+        let Some(pixel_bytes) = row_bytes.checked_mul(u64::from(height)) else {
+            return Inspection::default();
+        };
+        let Some(pixel_end) = u64::from(data_offset).checked_add(pixel_bytes) else {
+            return Inspection::default();
+        };
+        if pixel_end > file_len {
+            // A real header with truncated pixel data: known format and dimensions,
+            // but not a complete image.
+            inspection.complete = false;
+            return inspection;
+        }
+    }
     inspection.complete = true;
     inspection
 }
 
-fn inspect_jpeg<R: Read + Seek>(reader: &mut R, mut budget: u64) -> Inspection {
+fn inspect_jpeg<R: Read + Seek>(reader: &mut R, mut budget: u64, file_len: u64) -> Inspection {
     let mut inspection = Inspection {
         format: Some(Format::Jpeg),
         ..Inspection::default()
@@ -367,13 +414,15 @@ fn inspect_jpeg<R: Read + Seek>(reader: &mut R, mut budget: u64) -> Inspection {
             0x00 | 0xFF => return inspection,
             0xD8 => continue,
             0xD9 => {
-                inspection.complete = true;
+                // An EOI before any scan carries no image data: not complete.
                 return inspection;
             }
             0x01 | 0xD0..=0xD7 => continue,
             0xDA => {
                 // Start of scan: entropy-coded data follows, so the walk ends here.
-                inspection.complete = inspection.width.is_some();
+                // B-R1-01: the image is only complete with a full SOF, a scan after
+                // it, and a real EOI terminator at the end of the file.
+                inspection.complete = inspection.width.is_some() && ends_with_eoi(reader, file_len);
                 return inspection;
             }
             _ => {}
@@ -425,6 +474,16 @@ fn inspect_jpeg<R: Read + Seek>(reader: &mut R, mut budget: u64) -> Inspection {
         }
     }
     inspection
+}
+
+/// A JPEG ends with the `EOI` marker; two bytes at the end prove the terminator
+/// without reading the entropy-coded scan data.
+fn ends_with_eoi<R: Read + Seek>(reader: &mut R, file_len: u64) -> bool {
+    if file_len < 2 || reader.seek(SeekFrom::Start(file_len - 2)).is_err() {
+        return false;
+    }
+    let mut tail = [0_u8; 2];
+    reader.read_exact(&mut tail).is_ok() && tail == [0xFF, 0xD9]
 }
 
 fn read_bytes<R: Read>(reader: &mut R, count: usize, budget: &mut u64) -> Option<Vec<u8>> {
