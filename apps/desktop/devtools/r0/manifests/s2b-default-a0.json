@@ -16,7 +16,7 @@
     },
     "schema_hash": "sha256:772eed7fd2bcc71b929052eded3f7ec67c881a7261d06089806c7d037d8ee84e",
     "definition_hash": "sha256:e1b50c1a14b65e2e52928064207d943a0ade9b06e81f6de435053f086ab78b2c",
-    "driver_hash": "sha256:5fa0c978d046f5bd7c2e838673c139966865b0148d3066c83ea89650e6b8bfef",
+    "driver_hash": "sha256:9ae1084cdaf16fda83ec10ccc21d2cdb78a65a64f8abdabaeab42cd117796ea4",
     "gpui_revision": "395def7a067b32ed598fcb3f048969ada9b54942",
     "build": {
       "profile": "dev",

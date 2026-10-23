@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -240,10 +241,17 @@ class S2BWireContract(unittest.TestCase):
                 s2b_capture.materialized_copy(root, allowed)
             self.assertEqual(str(error.exception), "COMMIT_INVALID")
             marker.write_bytes(b"")
-            s2b_capture.materialized_copy(root, allowed)
-            with self.assertRaises(s2b.ObservationError) as error:
-                s2b_capture.materialized_copy(root, {"s2b-committed-" + "c" * 64})
-            self.assertEqual(str(error.exception), "MARKER_UNEXPECTED")
+            created = None
+            try:
+                # The successful copy owns a temporary directory; a test must not
+                # discard that owner and leak it into the shared temp root.
+                _, created = s2b_capture.materialized_copy(root, allowed)
+                with self.assertRaises(s2b.ObservationError) as error:
+                    s2b_capture.materialized_copy(root, {"s2b-committed-" + "c" * 64})
+                self.assertEqual(str(error.exception), "MARKER_UNEXPECTED")
+            finally:
+                if created is not None:
+                    shutil.rmtree(created, ignore_errors=True)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for index in range(9):
@@ -280,6 +288,10 @@ class S2BWireContract(unittest.TestCase):
             ([("n02d/./ledger.json", b"1")], "ZIP_MEMBER"),
             ([("n02d/ledger.json", b"1"), ("n02d/Ledger.json", b"2")], "ZIP_DUPLICATE"),
             ([("other/", b"")], "ZIP_UNEXPECTED"),
+            ([("n02d//ledger.json", b"1")], "ZIP_MEMBER"),
+            ([("n02d//", b"")], "ZIP_MEMBER"),
+            ([("/n02d/ledger.json", b"1")], "ZIP_MEMBER"),
+            ([("n02d/", b"directory-payload")], "ZIP_SIZE"),
         ]
         for entries, code in cases:
             path, directory = archive(entries)
@@ -287,8 +299,101 @@ class S2BWireContract(unittest.TestCase):
                     self.assertRaises(s2b.ObservationError) as error:
                 s2b_validate.safe_extract(str(path), Path(target))
             self.assertEqual(str(error.exception), code)
-            import shutil
             shutil.rmtree(directory, ignore_errors=True)
+
+    def test_terminal_directory_slash_and_zero_size_directories_remain_valid(self):
+        import s2b_validate, zipfile
+        with tempfile.TemporaryDirectory() as work:
+            path = Path(work) / "bundle.zip"
+            with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+                # Matches the retained Native archive: an empty deflated directory
+                # entry has zero file data but a nonzero compressed stream.
+                archive.writestr("n02d/", b"")
+                archive.writestr("n02d/ledger.json", b'{"ok":true}')
+            with tempfile.TemporaryDirectory() as target:
+                s2b_validate.safe_extract(str(path), Path(target))
+                self.assertEqual((Path(target) / "n02d/ledger.json").read_bytes(), b'{"ok":true}')
+
+    def test_malformed_and_crc_invalid_archives_use_one_closed_code(self):
+        import s2b_validate, zipfile
+        with tempfile.TemporaryDirectory() as work:
+            broken = Path(work) / "broken.zip"
+            broken.write_bytes(b"PK\x03\x04 truncated archive")
+            with tempfile.TemporaryDirectory() as target, self.assertRaises(s2b.ObservationError) as error:
+                s2b_validate.safe_extract(str(broken), Path(target))
+            self.assertEqual(str(error.exception), "ZIP_INVALID")
+            payload = b"crc-invalid-payload"
+            corrupt = Path(work) / "crc.zip"
+            with zipfile.ZipFile(corrupt, "w", zipfile.ZIP_STORED) as archive:
+                archive.writestr("n02d/ledger.json", payload)
+            raw = bytearray(corrupt.read_bytes())
+            offset = raw.find(payload)
+            self.assertGreaterEqual(offset, 0)
+            raw[offset] ^= 0xFF
+            corrupt.write_bytes(bytes(raw))
+            with tempfile.TemporaryDirectory() as target, self.assertRaises(s2b.ObservationError) as error:
+                s2b_validate.safe_extract(str(corrupt), Path(target))
+            self.assertEqual(str(error.exception), "ZIP_INVALID")
+
+    def test_bundle_replay_reports_a_broken_zip_without_a_traceback(self):
+        with tempfile.TemporaryDirectory() as work:
+            broken = Path(work) / "broken.zip"
+            broken.write_bytes(b"not a zip archive")
+            owned = Path(tempfile.gettempdir())
+            before = {path.name for path in owned.glob("s2b-bundle-*")}
+            outcome = subprocess.run(
+                [sys.executable, "-B", str(ROOT / "s2b_validate.py"), "bundle",
+                 "--bundle-zip", str(broken), "--bundle-tag", "n02d", "--timeout-ms", "1000"],
+                capture_output=True, check=False, timeout=10,
+            )
+            after = {path.name for path in owned.glob("s2b-bundle-*")}
+        self.assertEqual(outcome.returncode, 1)
+        self.assertEqual(json.loads(outcome.stdout), {"ok": False, "error": "ZIP_INVALID"})
+        self.assertNotIn(b"Traceback", outcome.stderr)
+        self.assertEqual(outcome.stderr, b"")
+        # A refused replay must not leave its owned extraction directory behind.
+        self.assertEqual(after - before, set())
+
+    def test_refused_archive_is_not_partially_expanded_or_overwritten(self):
+        import s2b_validate, struct, zipfile
+        with tempfile.TemporaryDirectory() as work:
+            collision = Path(work) / "collision.zip"
+            with zipfile.ZipFile(collision, "w") as archive:
+                archive.writestr("n02d/ledger.json", b"original")
+                archive.writestr("n02d//ledger.json", b"replacement")
+            with tempfile.TemporaryDirectory() as target:
+                with self.assertRaises(s2b.ObservationError) as error:
+                    s2b_validate.safe_extract(str(collision), Path(target))
+                self.assertEqual(str(error.exception), "ZIP_MEMBER")
+                self.assertEqual(list(Path(target).iterdir()), [])
+            hidden = Path(work) / "hidden.zip"
+            with zipfile.ZipFile(hidden, "w", zipfile.ZIP_DEFLATED) as archive:
+                archive.writestr("n02d/", b"payload-hidden")
+            # A directory entry can declare empty data while keeping a compressed
+            # payload; the declared sizes alone cannot prove the member is empty.
+            raw = bytearray(hidden.read_bytes())
+            central = raw.rfind(b"PK\x01\x02")
+            self.assertGreaterEqual(central, 0)
+            struct.pack_into("<I", raw, central + 16, 0)  # CRC of empty data
+            struct.pack_into("<I", raw, central + 24, 0)  # declared uncompressed size
+            hidden.write_bytes(bytes(raw))
+            with tempfile.TemporaryDirectory() as target, self.assertRaises(s2b.ObservationError) as error:
+                s2b_validate.safe_extract(str(hidden), Path(target))
+            self.assertEqual(str(error.exception), "ZIP_SIZE")
+
+    def test_live_manifest_and_build_metadata_name_the_current_consumer_source(self):
+        import contracts, s2b_capture
+        current = s2b.source_digest()
+        for name in ("s2b-default-a0.json", "s2b-feature-a1.json"):
+            document = contracts.validate_manifest(
+                contracts.load_document(str(ROOT / "manifests" / name), contracts.MAX_MANIFEST_BYTES))
+            self.assertEqual(document["identity"]["driver_hash"], current, name)
+        feature = contracts.load_document(
+            str(ROOT / "manifests/s2b-feature-a1.json"), contracts.MAX_MANIFEST_BYTES)
+        self.assertEqual(s2b.validate_manifest(feature)["identity"]["driver_hash"], current)
+        build = contracts.load_document(str(ROOT / "s2b-build.json"), contracts.MAX_MANIFEST_BYTES)
+        self.assertEqual(
+            s2b_capture.validate_build_record(build, live=True)["observer_source_sha256"], current)
 
     def test_recorded_build_and_source_identity_must_agree(self):
         import s2b_capture
