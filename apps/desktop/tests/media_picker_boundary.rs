@@ -29,6 +29,12 @@ impl Inputs {
         ));
         let root = base.join("fixture");
         std::fs::create_dir_all(&root).unwrap();
+        // The probe reaches this boundary with an already canonical root (`main`
+        // canonicalizes before opening) and the boundary compares the handle-derived
+        // path. An 8.3 short component in `%TEMP%` would otherwise make the expected
+        // and opened spellings disagree for a directory that is in fact correct.
+        let root = root.canonicalize().unwrap();
+        let base = root.parent().unwrap().to_path_buf();
         let selected = root.join("inside.png");
         let outside = base.join("outside.png");
         std::fs::write(&selected, b"\x89PNG\r\n\x1a\ninside").unwrap();
