@@ -41,11 +41,12 @@ INDEPENDENT PROBE (the gap this file used to report as NOT_MEASURED)
 `n06_probe.ps1` supplies the missing OS-level endpoints for one declared wall-clock window,
 and each one degrades on its own to NOT_MEASURED with a closed reason code:
 
-* `window_content_changes` - `PrintWindow(PW_RENDERFULLCONTENT)` samples the compositor-held
-  content of the target window at a requested interval. A change between consecutive samples
-  proves a newly composed window content. It is a sampled *lower bound* on composed frames,
-  not a frame counter, not display scanout and not an app-reported number. The achieved
-  cadence is recorded because the sampler itself costs time.
+* `window_content_changes` - `PrintWindow(PW_RENDERFULLCONTENT)` asks the owning window to
+  render its content into a device context at a requested interval; the reported count is how
+  many times consecutive sampled captures differed. `PrintWindow` is not a compositor or
+  presentation counter, so these image differences have an unknown relationship to presented
+  frames; they are not a frame count, not scanout, not a displayed-frame signal and not an
+  app-reported number. The achieved cadence is recorded because the sampler itself costs time.
 * `compositor_desktop_wide` - `DwmGetCompositionTimingInfo` deltas. These counters cover the
   whole desktop compositor, not one app; they can never be reported `per_app`.
 * `process_cpu` - `GetProcessTimes` for the target pid over the same window
@@ -53,16 +54,18 @@ and each one degrades on its own to NOT_MEASURED with a closed reason code:
 * `gpu_engine_utilization` - PDH `GPU Engine(*)/Utilization Percentage` for the engine
   instances attributed to the target pid, sampled once per second and summed over engines
   (so it can exceed 100); NOT_MEASURED when PDH or the pid's instances are unavailable.
-* `app_displayed_frames` stays NOT_MEASURED (`NO_PER_WINDOW_DISPLAY_COUNTER`): neither
-  endpoint observes this app's scanout.
+* `app_displayed_frames` stays NOT_MEASURED (`NO_PER_WINDOW_DISPLAY_COUNTER`): this tool has
+  no independent presentation counter, so N06's independent-frame-count criterion is
+  NOT_MEASURED until such a basis exists. No field in a record is a presented/dispatched
+  frame count.
 * `per_frame_cpu` is only ever a *derived ratio* over the declared window
-  (cpu_ms / observed content changes). The denominator is a sampled lower bound on composed
-  frames, so the ratio tends to overstate CPU per composed frame; it is not a per-frame
-  measurement. It is NOT_MEASURED when there is no CPU value (`CPU_NOT_MEASURED`), no
-  observed frame endpoint (`FRAMES_NOT_MEASURED`), no frame change (`NO_FRAME_CHANGES`), or
-  a CPU delta at or below the scheduler clock resolution
-  (`CPU_BELOW_CLOCK_RESOLUTION`): a zero numerator is a resolution floor, never a measured
-  zero ratio.
+  (cpu_ms / observed sampled content changes). The denominator is sampled image
+  differences, not frames, so the ratio is per observed content change and never per frame;
+  it is not a per-frame measurement. It is NOT_MEASURED when there is no CPU value
+  (`CPU_NOT_MEASURED`), no observed content-change endpoint (`FRAMES_NOT_MEASURED`), no
+  sampled change (`NO_FRAME_CHANGES`), or a CPU delta at or below the scheduler clock
+  resolution (`CPU_BELOW_CLOCK_RESOLUTION`): a zero numerator is a resolution floor, never a
+  measured zero ratio.
 
 The probe stdout is accepted under a 1 MiB READ cap (the consumer reads at most 1 MiB + 1
 byte and refuses anything larger). That cap bounds what this tool reads; it is not an
@@ -256,7 +259,8 @@ def feasibility() -> dict[str, Any]:
                     "status": "AVAILABLE",
                     "unit": "sampled_window_content_changes",
                     "reason": "",
-                    "note": "sampled lower bound on composed window content; not a frame counter",
+                    "note": "sampled image differences with an unknown relationship to "
+                            "presented frames; not a frame count",
                 },
                 "compositor_desktop_wide": {
                     "status": "AVAILABLE",
@@ -280,10 +284,17 @@ def feasibility() -> dict[str, Any]:
                     "status": "NOT_MEASURED",
                     "reason": APP_DISPLAYED_REASON,
                 },
+                "frame_criterion": {
+                    "status": "NOT_MEASURED",
+                    "reason": "NO_INDEPENDENT_PRESENTATION_COUNTER",
+                    "note": "N06's independent frame count stays NOT_MEASURED until an "
+                            "independent presentation counter exists; sampled image differences "
+                            "are not presented frames",
+                },
                 "per_frame_cpu": {
-                    "status": "DERIVED_RATIO_IF_FRAMES",
+                    "status": "DERIVED_RATIO_IF_CHANGES",
                     "reason": "",
-                    "note": "derived over the declared window; not a measurement",
+                    "note": "derived per observed sampled content change; never per frame",
                 },
             },
             "app_reported_stand_in": False,
@@ -710,18 +721,19 @@ def build_record(document: dict[str, Any], *, probe: Path, probe_sha256: str | N
         "largest visible top-level window owned by the target pid when the probe started; "
         "title/geometry are the OS values, not app-reported ones")
     frames_observation = (
-        "sampled compositor-held window content: PrintWindow(PW_RENDERFULLCONTENT) at the "
-        "requested interval. Each observed change proves newly composed window content. "
-        "Content that does not change between samples is not counted and the sampler cadence "
-        "can miss changes, so this is a lower bound on composed frames of the window, never a "
-        "frame counter and never display scanout.")
+        "sampled window-content differences: PrintWindow(PW_RENDERFULLCONTENT) asks the owning "
+        "window to render its content into a device context at the requested interval; the "
+        "count is how many times consecutive sampled captures differed. PrintWindow is not a "
+        "compositor or presentation counter, so the relationship of these image differences to "
+        "presented frames is unknown and unquantified; this is not a frame count, not scanout "
+        "and not a displayed-frame signal.")
     frames_caveat = (
-        "observer effect not quantified: the sampler asks the compositor for the window "
-        "surface and the sampler's own cost is outside the measured process CPU. "
-        "Subsampling: one byte (the blue channel) is read per sampled pixel group, at a "
-        "stride of 64, 128 or 256 bytes depending on window size, so un-sampled pixels are "
-        "invisible and a small or localised change can be missed; the count is a lower bound "
-        "for that reason too")
+        "PrintWindow asks the owning window to render into a device context, so a possible "
+        "observer effect cannot be excluded and is not quantified; the sampler's own cost is "
+        "outside the measured process CPU. Subsampling: one byte (the blue channel) is read "
+        "per sampled pixel group, at a stride of 64, 128 or 256 bytes depending on window "
+        "size, so un-sampled pixels are invisible and a small or localised change can be "
+        "missed; the count is sampled image differences, not frames.")
     compositor_observation = (
         "DwmGetCompositionTimingInfo deltas read before and after the declared sampling "
         "window, for the whole desktop compositor; desktop-wide and never attributable to "
@@ -735,10 +747,14 @@ def build_record(document: dict[str, Any], *, probe: Path, probe_sha256: str | N
     gpu_observation = (
         "mean of sampled sums of PDH \\GPU Engine(*)\\Utilization Percentage over the engine "
         "instances attributed to the target pid; sampled about once per second, summed over "
-        "engines so it can exceed 100; not a frame count")
+        "engines so it can exceed 100; not a count of frames presented by this app")
     gpu_caveat = (
         "PDH attributes GPU work to the process that submits it; helper or child processes "
         "are not included")
+    content_observed = frames["status"] == "OBSERVED"
+    compositor_observed = dwm["status"] == "OBSERVED"
+    cpu_observed = cpu["status"] == "OBSERVED"
+    gpu_observed = gpu["status"] == "OBSERVED"
 
     record: dict[str, Any] = {
         "attribution_version": ATTRIBUTION_VERSION,
@@ -784,8 +800,8 @@ def build_record(document: dict[str, Any], *, probe: Path, probe_sha256: str | N
             "samples": samples,
             "achieved_mean_interval_ms": achieved,
             "note": (
-                "measured_ms brackets the frame-sampling loop; the CPU and DWM deltas are read "
-                "immediately before and after that loop"),
+                "measured_ms brackets the content-sampling loop; the CPU and DWM deltas are "
+                "read immediately before and after that loop"),
         },
         "frames": {
             "window_content_changes": {
@@ -794,7 +810,9 @@ def build_record(document: dict[str, Any], *, probe: Path, probe_sha256: str | N
                 "unit": "sampled_window_content_changes",
                 "method": frames["method"],
                 "samples": samples,
-                "changes": frames["changes"],
+                # The value is null when the endpoint is NOT_MEASURED; the sample counts
+                # above stay as diagnostics of what was attempted.
+                "changes": frames["changes"] if content_observed else None,
                 "uniform_captures": frames["uniform_captures"],
                 "failed_captures": frames["failed_captures"],
                 "requested_interval_ms": frames["interval_ms"],
@@ -808,20 +826,23 @@ def build_record(document: dict[str, Any], *, probe: Path, probe_sha256: str | N
                 "error": dwm["error"],
                 "unit": "compositor_frames_whole_desktop",
                 "per_app": False,
-                "composed_delta": dwm["composed_delta"],
-                "displayed_delta": dwm["displayed_delta"],
-                "dropped_delta": dwm["dropped_delta"],
-                "missed_delta": dwm["missed_delta"],
-                "late_delta": dwm["late_delta"],
+                "composed_delta": dwm["composed_delta"] if compositor_observed else None,
+                "displayed_delta": dwm["displayed_delta"] if compositor_observed else None,
+                "dropped_delta": dwm["dropped_delta"] if compositor_observed else None,
+                "missed_delta": dwm["missed_delta"] if compositor_observed else None,
+                "late_delta": dwm["late_delta"] if compositor_observed else None,
                 "observation": compositor_observation,
             },
             "app_displayed_frames": {
                 "status": "NOT_MEASURED",
                 "reason": APP_DISPLAYED_REASON,
                 "observation": (
-                    "no per-window display counter exists here: the compositor counters are "
-                    "desktop-wide and the content sampler observes composed window content, "
-                    "not what the display scanned out for this app"),
+                    "independent frame count: NOT_MEASURED. No independent presentation or "
+                    "compositor counter for this app exists in this tool, so N06's "
+                    "independent-frame-count criterion stays NOT_MEASURED until such a basis "
+                    "exists; the content sampler counts sampled image differences only and its "
+                    "relationship to presented frames is unknown. No field in this record is a "
+                    "presented or displayed frame count."),
             },
         },
         "cpu": {
@@ -829,7 +850,7 @@ def build_record(document: dict[str, Any], *, probe: Path, probe_sha256: str | N
             "reason": cpu["reason"],
             "attribution": "process_over_window",
             "source": "GetProcessTimes",
-            "cpu_ms": cpu["cpu_ms"],
+            "cpu_ms": cpu["cpu_ms"] if cpu_observed else None,
             "window_ms": measured_ms,
             "observation": cpu_observation,
             "quantisation_note": (
@@ -841,11 +862,14 @@ def build_record(document: dict[str, Any], *, probe: Path, probe_sha256: str | N
             "reason": gpu["reason"],
             "error": gpu["error"],
             "unit": "pdh_gpu_engine_percent_summed_over_engines",
-            "samples": gpu["samples"],
-            "engine_instances": gpu["engine_instances"],
-            "engine_types": gpu["engine_types"],
-            "mean_percent_summed_over_engines": gpu["mean_percent_summed_over_engines"],
-            "max_percent_summed_over_engines": gpu["max_percent_summed_over_engines"],
+            # No engine/sample count is reported without an observed sample.
+            "samples": gpu["samples"] if gpu_observed else None,
+            "engine_instances": gpu["engine_instances"] if gpu_observed else None,
+            "engine_types": gpu["engine_types"] if gpu_observed else "",
+            "mean_percent_summed_over_engines": (
+                gpu["mean_percent_summed_over_engines"] if gpu_observed else None),
+            "max_percent_summed_over_engines": (
+                gpu["max_percent_summed_over_engines"] if gpu_observed else None),
             "observation": gpu_observation,
             "caveat": gpu_caveat,
         },
@@ -878,12 +902,13 @@ def _derived_ratio(cpu: dict[str, Any], frames: dict[str, Any],
         "value_ms_per_observed_change": round(float(cpu["cpu_ms"]) / changes, 6),
         "window_ms": measured_ms,
         "direction": (
-            "the denominator is a sampled lower bound on composed frames, so the ratio tends "
-            "to overstate CPU per composed frame; CPU clock quantisation and sampler cadence "
-            "make it approximate in both directions"),
+            "the denominator is sampled image differences, not frames, so this ratio is per "
+            "observed sampled content change and never per presented frame; it says nothing "
+            "about per-frame CPU cost"),
         "reason": "",
         "note": (
-            "derived over the declared window; not a per-frame measurement"),
+            "derived over the declared window; per observed sampled content change; not a "
+            "per-frame measurement"),
     }
 
 
@@ -919,77 +944,352 @@ def load_record(path: str | Path) -> dict[str, Any]:
 RECORD_FIELDS = ("attribution_version", "record_kind", "record_version", "observed_utc",
                  "probe", "target", "declared_window", "frames", "cpu", "gpu",
                  "per_frame_cpu", "app_reported_stand_in", "caps")
+WINDOW_RECORD_FIELDS = ("status", "reason", "title", "handle", "left", "top", "width",
+                        "height", "visible", "minimized")
+EXECUTABLE_FIELDS = ("status", "reason", "sha256", "identity_source", "observation")
+DECLARED_FIELDS = ("requested_seconds", "measured_ms", "requested_interval_ms", "samples",
+                   "achieved_mean_interval_ms", "note")
+CAPS_FIELDS = ("seconds", "interval_ms", "max_samples", "max_window_pixels")
 CPU_FIELDS = ("status", "reason", "attribution", "source", "cpu_ms", "window_ms",
               "observation", "quantisation_note")
 FRAME_BLOCK_FIELDS = ("status", "reason", "unit", "method", "samples", "changes",
                       "uniform_captures", "failed_captures", "requested_interval_ms",
                       "achieved_mean_interval_ms", "observation", "caveat")
+COMPOSITOR_FIELDS = ("status", "reason", "error", "unit", "per_app", "composed_delta",
+                     "displayed_delta", "dropped_delta", "missed_delta", "late_delta",
+                     "observation")
+APP_DISPLAYED_FIELDS = ("status", "reason", "observation")
 GPU_FIELDS = ("status", "reason", "error", "unit", "samples", "engine_instances",
               "engine_types", "mean_percent_summed_over_engines",
               "max_percent_summed_over_engines", "observation", "caveat")
+RATIO_DERIVED_FIELDS = ("status", "kind", "numerator_ms", "denominator", "denominator_unit",
+                        "value_ms_per_observed_change", "window_ms", "direction", "reason",
+                        "note")
+RATIO_NOT_MEASURED_FIELDS = ("status", "reason")
+CONTENT_UNIT = "sampled_window_content_changes"
+COMPOSITOR_UNIT = "compositor_frames_whole_desktop"
+GPU_UNIT = "pdh_gpu_engine_percent_summed_over_engines"
+IDENTITY_SOURCE = "calling_runner_prelaunch_digest_verification"
+PROBE_SHA_REASONS = {"PROBE_SOURCE_UNREADABLE"}
+OBSERVED_UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+
+def _compare_fail() -> None:
+    fail("COMPARE_INPUT")
+
+
+def _record_str(value: Any, *, allow_empty: bool = False) -> str:
+    if not isinstance(value, str) or (not allow_empty and not value.strip()):
+        _compare_fail()
+    return value
+
+
+def _record_int(value: Any, *, minimum: int = 0,
+                maximum: int | None = None) -> int:
+    if type(value) is not int or value < minimum or (
+            maximum is not None and value > maximum):
+        _compare_fail()
+    return value
+
+
+def _record_number(value: Any, *, minimum: float = 0.0,
+                   maximum: float | None = None) -> float:
+    if type(value) is bool or not isinstance(value, (int, float)):
+        _compare_fail()
+    number = float(value)
+    if not math.isfinite(number) or number < minimum or (
+            maximum is not None and number > maximum):
+        _compare_fail()
+    return number
+
+
+def _record_bool(value: Any) -> bool:
+    if type(value) is not bool:
+        _compare_fail()
+    return value
+
+
+def _absent(value: Any) -> bool:
+    """A NOT_MEASURED value is null. The explicit legacy zero written by pre-null records
+    (the retained N06 runs) is also accepted for replay; it is still not a claimed value."""
+    if value is None:
+        return True
+    if type(value) is bool:
+        return False
+    return isinstance(value, (int, float)) and float(value) == 0.0
+
+
+def _record_status(value: Any, allowed: tuple[str, ...]) -> str:
+    if value not in allowed:
+        _compare_fail()
+    return value
+
+
+def _record_reason(value: Any, allowed: set[str] | tuple[str, ...]) -> str:
+    if not isinstance(value, str) or value not in allowed:
+        _compare_fail()
+    return value
+
+
+def _validate_window_record(window: dict[str, Any]) -> None:
+    status = _record_status(window["status"], ("OBSERVED", "NOT_MEASURED"))
+    _record_str(window["title"], allow_empty=True)
+    handle = _record_int(window["handle"])
+    left = _record_int(window["left"], minimum=-10_000_000)
+    top = _record_int(window["top"], minimum=-10_000_000)
+    width = _record_int(window["width"])
+    height = _record_int(window["height"])
+    visible = _record_bool(window["visible"])
+    _record_bool(window["minimized"])
+    if status == "OBSERVED":
+        if window["reason"] != "":
+            _compare_fail()
+        if handle < 1 or width < 1 or height < 1 or visible is not True:
+            _compare_fail()
+    else:
+        _record_reason(window["reason"], NOT_MEASURED_PATHS)
+        if handle or width or height or left or top or visible is not False:
+            _compare_fail()
+
+
+def _validate_executable_record(executable: dict[str, Any]) -> None:
+    # ASSERTED is the current caller assertion; OBSERVED is the documented legacy tolerance
+    # for retained pre-C-4 records only. Neither is a probe measurement.
+    status = executable["status"]
+    if status in ("ASSERTED", "OBSERVED"):
+        if not isinstance(executable["sha256"], str) or not SHA256.fullmatch(
+                executable["sha256"]):
+            _compare_fail()
+        if executable["identity_source"] != IDENTITY_SOURCE:
+            _compare_fail()
+        _record_str(executable["observation"])
+    elif status == "NOT_MEASURED":
+        _record_reason(executable["reason"], EXECUTABLE_IDENTITY_REASONS)
+        if executable["sha256"] is not None or executable["identity_source"] != "":
+            _compare_fail()
+        _record_str(executable["observation"])
+    else:
+        _compare_fail()
 
 
 def validate_record(document: Any) -> dict[str, Any]:
-    """Closed shape for a record this module wrote; compare refuses anything else."""
+    """Closed *semantic* validation of a record this module wrote.
+
+    Field presence alone is not enough: every endpoint's status/value/reason triple is
+    checked against the invariants the writer guarantees, so a tampered record cannot smuggle
+    a value into a NOT_MEASURED endpoint (or a reason into an observed one). NOT_MEASURED
+    numeric values are null; the explicit legacy zero from pre-null retained records is
+    accepted for replay only.
+    """
     _object(document, RECORD_FIELDS)
+    if document["attribution_version"] != ATTRIBUTION_VERSION:
+        _compare_fail()
     if document["record_kind"] != "n06_independent_attribution":
-        fail("COMPARE_INPUT")
+        _compare_fail()
     if document["record_version"] != PROBE_RECORD_VERSION:
-        fail("COMPARE_INPUT")
+        _compare_fail()
     if document["app_reported_stand_in"] is not False:
         # An app-supplied value must never become an independent endpoint.
-        fail("COMPARE_INPUT")
+        _compare_fail()
+    if not isinstance(document["observed_utc"], str) or not OBSERVED_UTC.fullmatch(
+            document["observed_utc"]):
+        _compare_fail()
+
+    probe = _object(document["probe"], ("path", "sha256", "sha256_reason", "version"))
+    _record_str(probe["path"])
+    _record_int(probe["version"], minimum=PROBE_VERSION, maximum=PROBE_VERSION)
+    if probe["sha256"] is None:
+        _record_reason(probe["sha256_reason"], PROBE_SHA_REASONS)
+    else:
+        if not isinstance(probe["sha256"], str) or not SHA256.fullmatch(probe["sha256"]):
+            _compare_fail()
+        if probe["sha256_reason"] != "":
+            _compare_fail()
+
     target = _object(document["target"], ("pid", "window", "window_observation",
                                           "executable"))
-    _integer(target["pid"], minimum=1)
-    executable = _object(target["executable"],
-                         ("status", "reason", "sha256", "identity_source", "observation"))
-    # The executable block is a caller assertion, never a probe observation. ASSERTED is
-    # the current status; OBSERVED is accepted only as a documented legacy tolerance for
-    # attribution records written before C-4 (the retained N06 runs), so those records still
-    # replay rather than being edited. New records always write ASSERTED.
-    if executable["status"] in ("ASSERTED", "OBSERVED"):
-        if not isinstance(executable["sha256"], str) or not SHA256.fullmatch(
-                executable["sha256"]):
-            fail("COMPARE_INPUT")
-        if not executable["identity_source"]:
-            fail("COMPARE_INPUT")
-    elif executable["status"] == "NOT_MEASURED":
-        if executable["sha256"] is not None or executable["reason"] not in (
-                EXECUTABLE_IDENTITY_REASONS):
-            fail("COMPARE_INPUT")
+    _record_int(target["pid"], minimum=1)
+    _validate_window_record(_object(target["window"], WINDOW_RECORD_FIELDS))
+    _record_str(target["window_observation"])
+    _validate_executable_record(_object(target["executable"], EXECUTABLE_FIELDS))
+
+    declared = _object(document["declared_window"], DECLARED_FIELDS)
+    seconds = _record_int(declared["requested_seconds"], minimum=SECONDS_RANGE[0],
+                          maximum=SECONDS_RANGE[1])
+    measured = _record_number(declared["measured_ms"], minimum=1.0,
+                              maximum=(seconds + WINDOW_MS_CEILING_SLACK_S) * 1000.0)
+    interval = _record_int(declared["requested_interval_ms"], minimum=INTERVAL_RANGE[0],
+                           maximum=INTERVAL_RANGE[1])
+    samples = _record_int(declared["samples"], maximum=MAX_SAMPLES_RANGE[1])
+    achieved = declared["achieved_mean_interval_ms"]
+    if samples == 0:
+        if achieved is not None:
+            _compare_fail()
     else:
-        fail("COMPARE_INPUT")
-    _object(document["probe"], ("path", "sha256", "sha256_reason", "version"))
-    _object(document["declared_window"], ("requested_seconds", "measured_ms",
-                                          "requested_interval_ms", "samples",
-                                          "achieved_mean_interval_ms", "note"))
+        achieved_number = _record_number(achieved, minimum=1.0)
+        if abs(achieved_number - round(measured / samples, 3)) > 1e-6:
+            _compare_fail()
+    _record_str(declared["note"])
+    caps = _object(document["caps"], CAPS_FIELDS)
+    if _record_int(caps["seconds"], minimum=SECONDS_RANGE[0],
+                   maximum=SECONDS_RANGE[1]) != seconds:
+        _compare_fail()
+    if _record_int(caps["interval_ms"], minimum=INTERVAL_RANGE[0],
+                   maximum=INTERVAL_RANGE[1]) != interval:
+        _compare_fail()
+    max_samples = _record_int(caps["max_samples"], minimum=MAX_SAMPLES_RANGE[0],
+                              maximum=MAX_SAMPLES_RANGE[1])
+    if samples > max_samples:
+        _compare_fail()
+    _record_int(caps["max_window_pixels"], minimum=MAX_WINDOW_PIXELS_RANGE[0],
+                maximum=MAX_WINDOW_PIXELS_RANGE[1])
+
     frames = _object(document["frames"], ("window_content_changes",
                                           "compositor_desktop_wide",
                                           "app_displayed_frames"))
-    _object(frames["window_content_changes"], FRAME_BLOCK_FIELDS)
-    _object(frames["compositor_desktop_wide"],
-            ("status", "reason", "error", "unit", "per_app", "composed_delta",
-             "displayed_delta", "dropped_delta", "missed_delta", "late_delta",
-             "observation"))
-    _object(frames["app_displayed_frames"], ("status", "reason", "observation"))
-    _object(document["cpu"], CPU_FIELDS)
-    _object(document["gpu"], GPU_FIELDS)
-    if not isinstance(document["per_frame_cpu"], dict):
-        fail("COMPARE_INPUT")
-    ratio = _object(document["per_frame_cpu"],
-                    ("status", "kind", "numerator_ms", "denominator", "denominator_unit",
-                     "value_ms_per_observed_change", "window_ms", "direction", "reason",
-                     "note") if document["per_frame_cpu"].get("status") == "DERIVED"
-                    else ("status", "reason"))
-    if ratio["status"] not in ("DERIVED", "NOT_MEASURED"):
-        fail("COMPARE_INPUT")
-    if ratio["status"] == "NOT_MEASURED" and (
-            ratio["reason"] not in PER_FRAME_NOT_MEASURED_REASONS):
-        fail("COMPARE_INPUT")
-    if ratio["status"] == "DERIVED" and float(ratio["numerator_ms"]) <= 0.0:
-        # A derived ratio over a zero numerator is the C-1 defect: refuse it on input too.
-        fail("COMPARE_INPUT")
+    content = _object(frames["window_content_changes"], FRAME_BLOCK_FIELDS)
+    content_status = _record_status(content["status"], ("OBSERVED", "NOT_MEASURED"))
+    if content["unit"] != CONTENT_UNIT or content["method"] != PROBE_FRAME_METHOD:
+        _compare_fail()
+    _record_str(content["observation"])
+    _record_str(content["caveat"])
+    content_samples = _record_int(content["samples"], maximum=max_samples)
+    uniform = _record_int(content["uniform_captures"], maximum=content_samples)
+    failed = _record_int(content["failed_captures"], maximum=content_samples)
+    if content["requested_interval_ms"] != interval:
+        _compare_fail()
+    if content["achieved_mean_interval_ms"] != achieved:
+        _compare_fail()
+    changes: int | None
+    if content_status == "OBSERVED":
+        if content["reason"] != "":
+            _compare_fail()
+        if content_samples < 1 or uniform >= content_samples:
+            _compare_fail()
+        changes = _record_int(content["changes"], maximum=content_samples - failed)
+    else:
+        _record_reason(content["reason"], NOT_MEASURED_PATHS)
+        if not _absent(content["changes"]):
+            _compare_fail()
+        changes = None
+
+    compositor = _object(frames["compositor_desktop_wide"], COMPOSITOR_FIELDS)
+    compositor_status = _record_status(compositor["status"], ("OBSERVED", "NOT_MEASURED"))
+    if compositor["per_app"] is not False:
+        # These counters are whole-desktop by construction; a per-app claim is invalid.
+        _compare_fail()
+    if compositor["unit"] != COMPOSITOR_UNIT:
+        _compare_fail()
+    _record_str(compositor["error"], allow_empty=True)
+    _record_str(compositor["observation"])
+    delta_fields = ("composed_delta", "displayed_delta", "dropped_delta", "missed_delta",
+                    "late_delta")
+    if compositor_status == "OBSERVED":
+        if compositor["reason"] != "":
+            _compare_fail()
+        for name in delta_fields:
+            _record_int(compositor[name])
+    else:
+        _record_reason(compositor["reason"], NOT_MEASURED_PATHS)
+        for name in delta_fields:
+            if not _absent(compositor[name]):
+                _compare_fail()
+
+    displayed = _object(frames["app_displayed_frames"], APP_DISPLAYED_FIELDS)
+    if displayed["status"] != "NOT_MEASURED":
+        # No per-window display counter exists; an OBSERVED claim is fabricated.
+        _compare_fail()
+    if displayed["reason"] != APP_DISPLAYED_REASON:
+        _compare_fail()
+    _record_str(displayed["observation"])
+
+    cpu = _object(document["cpu"], CPU_FIELDS)
+    cpu_status = _record_status(cpu["status"], ("OBSERVED", "NOT_MEASURED"))
+    if cpu["attribution"] != "process_over_window" or cpu["source"] != "GetProcessTimes":
+        _compare_fail()
+    _record_str(cpu["observation"])
+    _record_str(cpu["quantisation_note"])
+    if abs(_record_number(cpu["window_ms"], minimum=1.0) - measured) > 1e-6:
+        _compare_fail()
+    cpu_ms: float | None
+    if cpu_status == "OBSERVED":
+        if cpu["reason"] != "":
+            _compare_fail()
+        cpu_ms = _record_number(cpu["cpu_ms"])
+    else:
+        _record_reason(cpu["reason"], NOT_MEASURED_PATHS)
+        if not _absent(cpu["cpu_ms"]):
+            _compare_fail()
+        cpu_ms = None
+
+    gpu = _object(document["gpu"], GPU_FIELDS)
+    gpu_status = _record_status(gpu["status"], ("OBSERVED", "NOT_MEASURED"))
+    if gpu["unit"] != GPU_UNIT:
+        _compare_fail()
+    _record_str(gpu["error"], allow_empty=True)
+    _record_str(gpu["engine_types"], allow_empty=True)
+    _record_str(gpu["observation"])
+    _record_str(gpu["caveat"])
+    if gpu_status == "OBSERVED":
+        if gpu["reason"] != "":
+            _compare_fail()
+        # No engine or sample count without an observed sample.
+        _record_int(gpu["samples"], minimum=1, maximum=10_000)
+        _record_int(gpu["engine_instances"], minimum=1, maximum=10_000)
+        mean = _record_number(gpu["mean_percent_summed_over_engines"], maximum=1_000_000.0)
+        maximum = _record_number(gpu["max_percent_summed_over_engines"], maximum=1_000_000.0)
+        if maximum < mean:
+            _compare_fail()
+    else:
+        _record_reason(gpu["reason"], NOT_MEASURED_PATHS)
+        for name in ("samples", "engine_instances", "mean_percent_summed_over_engines",
+                     "max_percent_summed_over_engines"):
+            if not _absent(gpu[name]):
+                _compare_fail()
+        if gpu["engine_types"] != "":
+            _compare_fail()
+
+    ratio_value = document["per_frame_cpu"]
+    if not isinstance(ratio_value, dict):
+        _compare_fail()
+    ratio_status = ratio_value.get("status")
+    if ratio_status == "DERIVED":
+        ratio = _object(ratio_value, RATIO_DERIVED_FIELDS)
+        if ratio["kind"] != "ratio" or ratio["reason"] != "":
+            _compare_fail()
+        numerator = _record_number(ratio["numerator_ms"], minimum=1e-12)
+        denominator = _record_int(ratio["denominator"], minimum=1)
+        if ratio["denominator_unit"] != CONTENT_UNIT:
+            _compare_fail()
+        value = _record_number(ratio["value_ms_per_observed_change"], minimum=1e-12)
+        if abs(value - round(numerator / denominator, 6)) > 1e-9:
+            _compare_fail()
+        if abs(_record_number(ratio["window_ms"], minimum=1.0) - measured) > 1e-6:
+            _compare_fail()
+        _record_str(ratio["direction"])
+        _record_str(ratio["note"])
+        # A derived ratio requires an observed positive CPU numerator and an observed
+        # content-change denominator that equals the record's own observed changes.
+        if cpu_status != "OBSERVED" or cpu_ms is None or cpu_ms <= 0:
+            _compare_fail()
+        if content_status != "OBSERVED" or denominator != changes:
+            _compare_fail()
+    elif ratio_status == "NOT_MEASURED":
+        ratio = _object(ratio_value, RATIO_NOT_MEASURED_FIELDS)
+        reason = _record_reason(ratio["reason"], PER_FRAME_NOT_MEASURED_REASONS)
+        if reason == "CPU_NOT_MEASURED" and cpu_status != "NOT_MEASURED":
+            _compare_fail()
+        elif reason == "FRAMES_NOT_MEASURED" and content_status != "NOT_MEASURED":
+            _compare_fail()
+        elif reason == "NO_FRAME_CHANGES" and (
+                content_status != "OBSERVED" or changes is None or changes >= 1):
+            _compare_fail()
+        elif reason == "CPU_BELOW_CLOCK_RESOLUTION" and (
+                cpu_status != "OBSERVED" or cpu_ms is None or cpu_ms > 0
+                or content_status != "OBSERVED"):
+            _compare_fail()
+    else:
+        _compare_fail()
     return document
 
 
@@ -1074,7 +1374,7 @@ def compare_records(a0: dict[str, Any], a1: dict[str, Any],
             "status": "DERIVED", "a0": value0, "a1": value1,
             "a1_minus_a0": round(float(value1) - float(value0), 6),
             "unit": "ms_per_sampled_window_content_change",
-            "label": "derived ratio, descriptive only",
+            "label": "derived ratio per observed sampled content change, descriptive only",
         }
     else:
         deltas["cpu_ms_per_observed_change"] = {
@@ -1155,11 +1455,12 @@ def compare_records(a0: dict[str, Any], a1: dict[str, Any],
         "residual_not_measured": residual,
         "qualifications": declared,
         "note": (
-            "one declared window per binary, run sequentially with a single repetition; there "
-            "is no noise floor, no repetition spread and no randomized order, so the deltas are "
-            "descriptive and are not a controlled estimator, a threshold or a ratification. CPU "
-            "values are quantised by the OS scheduler clock, so small CPU deltas are within one "
-            "tick of each other"),
+            "one declared window per binary, run sequentially; this comparison contains one "
+            "repetition and makes no claim about repetition spread, no noise floor is "
+            "established and there is no randomized order, so the deltas are descriptive and "
+            "are not a controlled estimator, a threshold or a ratification. CPU values are "
+            "quantised by the OS scheduler clock, so small CPU deltas are within one tick of "
+            "each other"),
     }
 
 

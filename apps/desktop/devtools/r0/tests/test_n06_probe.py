@@ -92,7 +92,13 @@ class ProbeDocumentTests(unittest.TestCase):
         self.assertFalse(probe["app_reported_stand_in"])
         self.assertEqual(probe["endpoints"]["app_displayed_frames"],
                          {"status": "NOT_MEASURED", "reason": "NO_PER_WINDOW_DISPLAY_COUNTER"})
+        self.assertEqual(probe["endpoints"]["frame_criterion"]["status"], "NOT_MEASURED")
+        self.assertEqual(probe["endpoints"]["frame_criterion"]["reason"],
+                         "NO_INDEPENDENT_PRESENTATION_COUNTER")
         self.assertFalse(probe["endpoints"]["compositor_desktop_wide"]["per_app"])
+        self.assertIn("unknown relationship to presented frames",
+                      probe["endpoints"]["window_content_changes"]["note"])
+        self.assertIn("never per frame", probe["endpoints"]["per_frame_cpu"]["note"])
         self.assertIn("capability", probe["capability_note"])
         # The journal table's own claims are unchanged: an idle baseline is not a present
         # baseline and the probe availability does not turn journal events into frames.
@@ -145,7 +151,21 @@ class ProbeDocumentTests(unittest.TestCase):
         self.assertEqual(ratio["denominator"], 120)
         self.assertAlmostEqual(ratio["value_ms_per_observed_change"], 125.5 / 120, places=6)
         self.assertIn("not a per-frame measurement", ratio["note"])
-        self.assertIn("sampled lower bound", ratio["direction"])
+        self.assertIn("sampled image differences, not frames", ratio["direction"])
+        self.assertIn("never per presented frame", ratio["direction"])
+        # The frame criterion is explicitly unmeasured, not hidden in a disclaimer.
+        displayed = record["frames"]["app_displayed_frames"]
+        self.assertEqual(displayed["status"], "NOT_MEASURED")
+        self.assertEqual(displayed["reason"], "NO_PER_WINDOW_DISPLAY_COUNTER")
+        self.assertIn("independent frame count: NOT_MEASURED", displayed["observation"])
+        self.assertIn("independent presentation", displayed["observation"])
+        frames_observation = record["frames"]["window_content_changes"]["observation"]
+        self.assertIn("unknown", frames_observation)
+        self.assertIn("not a frame count", frames_observation)
+        # Regex spellings keep the withdrawn phrases out of the source while still asserting
+        # that no record text carries the old frame framing.
+        for pattern in (r"composed\s+frame", r"lower\s+bound", r"compositor[-\s]+held"):
+            self.assertNotRegex(json.dumps(record).lower(), pattern)
 
     # ------------------------------------------------------------- value absent
     def test_absent_values_stay_not_measured_with_reasons(self) -> None:
@@ -153,7 +173,7 @@ class ProbeDocumentTests(unittest.TestCase):
         frames = record["frames"]["window_content_changes"]
         self.assertEqual(frames["status"], "NOT_MEASURED")
         self.assertEqual(frames["reason"], "WINDOW_NOT_FOUND")
-        self.assertEqual(frames["changes"], 0)
+        self.assertIsNone(frames["changes"], "a NOT_MEASURED value is null, not a number")
         self.assertEqual(record["frames"]["compositor_desktop_wide"]["status"], "NOT_MEASURED")
         self.assertEqual(record["frames"]["compositor_desktop_wide"]["reason"],
                          "DWM_TIMING_UNAVAILABLE")
@@ -163,8 +183,8 @@ class ProbeDocumentTests(unittest.TestCase):
                          {"status": "NOT_MEASURED", "reason": "FRAMES_NOT_MEASURED"})
         self.assertFalse(record["app_reported_stand_in"])
         # An unmeasured endpoint carries no smuggled number.
-        self.assertEqual(record["gpu"]["mean_percent_summed_over_engines"], 0)
-        self.assertEqual(record["frames"]["compositor_desktop_wide"]["composed_delta"], 0)
+        self.assertIsNone(record["gpu"]["mean_percent_summed_over_engines"])
+        self.assertIsNone(record["frames"]["compositor_desktop_wide"]["composed_delta"])
 
     def test_zero_changes_is_not_measured_not_a_zero_ratio(self) -> None:
         document = probe_document(frames={
@@ -216,6 +236,10 @@ class ProbeDocumentTests(unittest.TestCase):
         self.assertIn("stride", caveat)
         self.assertIn("blue channel", caveat)
         self.assertIn("un-sampled pixels are invisible", caveat)
+        self.assertIn("sampled image differences, not frames", caveat)
+        self.assertIn("owning window", caveat)
+        for pattern in (r"composed\s+frame", r"lower\s+bound", r"compositor[-\s]+held"):
+            self.assertNotRegex(caveat.lower(), pattern)
 
     # ------------------------------------------------------------- closed codes
     def test_unregistered_reason_code_is_refused(self) -> None:
@@ -324,6 +348,9 @@ class RecordAndCompareTests(unittest.TestCase):
         self.assertNotIn("per_frame_cpu.derived_ratio", residual)
         self.assertFalse(comparison["app_reported_stand_in"])
         self.assertIn("not a controlled estimator", comparison["note"])
+        self.assertIn("makes no claim about repetition spread", comparison["note"])
+        self.assertNotIn("no repetition spread", comparison["note"],
+                         "one comparison of one pair must not deny the experiment's spread")
         a0_inputs = comparison["inputs"]["a0"]
         self.assertEqual(a0_inputs["executable_sha256"], "sha256:" + "1" * 64)
         self.assertEqual(a0_inputs["executable_identity_status"], "ASSERTED")
@@ -410,6 +437,134 @@ class RecordAndCompareTests(unittest.TestCase):
             n06.write_record(record, self.base / "huge.json")
         self.assertEqual(error.exception.code, "RECORD_TOO_LARGE")
         self.assertFalse((self.base / "huge.json").exists())
+
+
+class RecordInvariantTests(unittest.TestCase):
+    """Tern BLOCKING 3: the validator enforces the writer's endpoint invariants.
+
+    Every mutation below is applied to a real record built by this module; the validator and
+    `compare_records` must both refuse it with a closed code. This is semantic validation, not
+    field presence.
+    """
+
+    def record(self) -> dict:
+        return build(n06.validate_probe(probe_document(),
+                                        {"pid": 4242, "caps": dict(CAPS)}))
+
+    def assert_rejected(self, mutate) -> None:
+        tampered = self.record()
+        mutate(tampered)
+        with self.assertRaises(n06.AttributionError) as error:
+            n06.validate_record(tampered)
+        self.assertEqual(error.exception.code, "COMPARE_INPUT")
+        with self.assertRaises(n06.AttributionError):
+            n06.compare_records(tampered, self.record())
+
+    @staticmethod
+    def set_path(*keys, value):
+        def mutate(record: dict) -> None:
+            container = record
+            for key in keys[:-1]:
+                container = container[key]
+            container[keys[-1]] = value
+        return mutate
+
+    @staticmethod
+    def as_not_measured(*keys, reason: str, **values):
+        def mutate(record: dict) -> None:
+            container = record
+            for key in keys[:-1]:
+                container = container[key]
+            container[keys[-1]].update({"status": "NOT_MEASURED", "reason": reason})
+            container[keys[-1]].update(values)
+        return mutate
+
+    def test_tern_mutations_are_rejected(self) -> None:
+        # Tern reproduced exactly these two; both are writer invariants, not preferences.
+        self.assert_rejected(lambda record: record["frames"]["app_displayed_frames"].update(
+            {"status": "OBSERVED", "reason": ""}))
+        self.assert_rejected(self.set_path(
+            "frames", "compositor_desktop_wide", "per_app", value=True))
+
+    def test_every_endpoint_invariant_is_enforced(self) -> None:
+        cases = (
+            ("content_observed_with_reason",
+             self.set_path("frames", "window_content_changes", "reason", value="WHY")),
+            ("content_wrong_unit",
+             self.set_path("frames", "window_content_changes", "unit", value="frames")),
+            ("content_not_measured_with_value",
+             self.as_not_measured("frames", "window_content_changes",
+                                  reason="WINDOW_NOT_FOUND", changes=5)),
+            ("compositor_not_measured_with_delta",
+             self.set_path("frames", "compositor_desktop_wide", "displayed_delta", value=7)),
+            ("compositor_observed_with_reason",
+             self.set_path("frames", "compositor_desktop_wide", "reason", value="WHY")),
+            ("compositor_observed_with_null_delta",
+             lambda record: record["frames"]["compositor_desktop_wide"].update(
+                 {"status": "OBSERVED", "reason": "", "composed_delta": None})),
+            ("cpu_wrong_attribution",
+             self.set_path("cpu", "attribution", value="frame_over_window")),
+            ("cpu_wrong_source", self.set_path("cpu", "source", value="WMI")),
+            ("cpu_not_measured_with_value",
+             self.as_not_measured("cpu", reason="PROCESS_NOT_READABLE", cpu_ms=15.625)),
+            ("cpu_unregistered_reason",
+             self.as_not_measured("cpu", reason="SOMETHING_ELSE", cpu_ms=None)),
+            ("gpu_observed_without_instance",
+             self.set_path("gpu", "engine_instances", value=0)),
+            ("gpu_observed_without_samples", self.set_path("gpu", "samples", value=0)),
+            ("gpu_max_below_mean",
+             self.set_path("gpu", "max_percent_summed_over_engines", value=1.0)),
+            ("gpu_not_measured_with_samples",
+             self.as_not_measured("gpu", reason="GPU_NO_SAMPLES", samples=3)),
+            ("gpu_not_measured_with_mean",
+             self.as_not_measured("gpu", reason="GPU_NO_SAMPLES",
+                                  mean_percent_summed_over_engines=1.0)),
+            ("ratio_zero_numerator",
+             self.set_path("per_frame_cpu", "numerator_ms", value=0.0)),
+            ("ratio_inconsistent_value",
+             self.set_path("per_frame_cpu", "value_ms_per_observed_change", value=1.0)),
+            ("ratio_denominator_mismatch",
+             self.set_path("per_frame_cpu", "denominator", value=5)),
+            ("ratio_cpu_reason_inconsistent",
+             self.set_path("per_frame_cpu", value={"status": "NOT_MEASURED",
+                                                   "reason": "CPU_NOT_MEASURED"})),
+            ("executable_unknown_status",
+             self.set_path("target", "executable", "status", value="MEASURED")),
+            ("executable_asserted_without_source",
+             self.set_path("target", "executable", "identity_source", value="")),
+            ("executable_not_measured_with_digest",
+             self.as_not_measured("target", "executable",
+                                  reason="EXECUTABLE_IDENTITY_NOT_SUPPLIED",
+                                  sha256="sha256:" + "1" * 64, identity_source="")),
+            ("app_stand_in_true", self.set_path("app_reported_stand_in", value=True)),
+            ("window_observed_with_reason",
+             self.set_path("target", "window", "reason", value="WHY")),
+            ("probe_sha_malformed", self.set_path("probe", "sha256", value="sha256:zz")),
+            ("declared_caps_disagree",
+             self.set_path("caps", "interval_ms", value=50)),
+            ("record_version_wrong", self.set_path("record_version", value=1)),
+        )
+        for name, mutate in cases:
+            with self.subTest(name=name):
+                self.assert_rejected(mutate)
+
+    def test_legacy_zero_representation_still_replays(self) -> None:
+        """Records written before the null form store an explicit 0 on NOT_MEASURED fields."""
+        record = self.record()
+        self.assertEqual(record["frames"]["compositor_desktop_wide"]["status"], "NOT_MEASURED")
+        record["frames"]["compositor_desktop_wide"].update({
+            "composed_delta": 0, "displayed_delta": 0, "dropped_delta": 0,
+            "missed_delta": 0, "late_delta": 0})
+        n06.validate_record(record)  # documented legacy tolerance, not a value claim
+
+    def test_frame_criterion_statement_is_in_every_record(self) -> None:
+        for document in (probe_document(), windowless_document()):
+            record = build(n06.validate_probe(document,
+                                              {"pid": 4242, "caps": dict(CAPS)}))
+            displayed = record["frames"]["app_displayed_frames"]
+            self.assertEqual(displayed["status"], "NOT_MEASURED")
+            self.assertEqual(displayed["reason"], "NO_PER_WINDOW_DISPLAY_COUNTER")
+            self.assertIn("independent frame count: NOT_MEASURED", displayed["observation"])
 
 
 class CliFailClosedTests(unittest.TestCase):

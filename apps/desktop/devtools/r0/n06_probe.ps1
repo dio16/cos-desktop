@@ -1,9 +1,12 @@
-# N06 independent attribution probe: window-content frames, process CPU, DWM counters, GPU engines.
+# N06 independent attribution probe: sampled window-content differences, process CPU,
+# DWM composition counters (desktop-wide) and GPU engine utilisation.
 #
 # Emits one bounded JSON document on stdout. Every endpoint degrades independently to
 # NOT_MEASURED with a closed reason code; a refused endpoint never becomes a zero or an
-# app-supplied number. Nothing here reads application-private state: the window content is
-# obtained from the OS compositor, CPU from GetProcessTimes, GPU from PDH counters.
+# app-supplied number. The window content is sampled by asking the owning window to render
+# itself into a device context with PrintWindow(PW_RENDERFULLCONTENT); that is not a
+# compositor or presentation observation, and image differences have an unknown relationship
+# to presented frames. CPU comes from GetProcessTimes and GPU from PDH counters.
 #
 # Bounded by -Seconds, -IntervalMs, -MaxSamples and -MaxWindowPixels. Every failure is a
 # closed code in one JSON object, never a traceback.
