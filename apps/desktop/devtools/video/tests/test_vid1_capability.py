@@ -4,6 +4,14 @@ Every test drives the real CLI path with a real PowerShell interpreter and a gen
 probe script (`--probe` is the documented seam), so the runner's own spawn/hash/capture
 logic is exercised rather than mocked. The probe's *host* observations are represented by
 scripted documents; the real capability run is a separate, explicitly opted-in test.
+
+Route honesty
+-------------
+A string scan of the product sources can never conclude that the pinned GPUI revision has
+no presentation route, so these tests pin the rule that ``CONFIRMED_LIMITATION`` is
+unreachable without an inspection of the pinned API, a fully bound complete scan and an
+observed decode side; everything else must be ``UNEXAMINED`` with a closed reason and the
+list of evidence a route decision still needs.
 """
 from __future__ import annotations
 
@@ -27,8 +35,10 @@ import vid1_capability as vid1  # noqa: E402
 PWSH = shutil.which("pwsh") or shutil.which("pwsh.exe")
 PROBE = HERE / "vid1_probe.ps1"
 FFMPEG = Path(r"C:\ffmpeg\bin\ffmpeg.exe")
+GIT = Path(r"C:\Program Files\Git\cmd\git.exe")
 CAPS = {"timeout_ms": 1000, "max_output_bytes": 65536, "max_fixture_bytes": 1048576}
 SURFACE_TOKENS = ["draw_surfaces", "IDXGISurface"]
+HEAD_SHA = "3120a27467d580f5a0c22eb2f44e62314032e2d0"
 
 
 def software_row(**overrides) -> dict:
@@ -98,11 +108,86 @@ def hardware_row(**overrides) -> dict:
     return row
 
 
+def scan(**overrides) -> dict:
+    body = {
+        "status": "OBSERVED",
+        "reason": "",
+        "root": "C:\\repo",
+        "git_head_sha": HEAD_SHA,
+        "git_tree_clean": True,
+        "git_status_reason": "",
+        "git_path": r"C:\Program Files\Git\cmd\git.exe",
+        "file_cap": 3000,
+        "file_size_cap": 1048576,
+        "files_scanned": 80,
+        "files_skipped_size": 0,
+        "cap_hit": False,
+        "bytes_scanned": 2073428,
+        "tokens": list(SURFACE_TOKENS),
+        "matches": [],
+        "signal": "COMPLETE_BOUND",
+    }
+    body.update(overrides)
+    return body
+
+
+def not_run_scan() -> dict:
+    return scan(
+        status="NOT_MEASURED",
+        reason="SOURCE_SCAN_NOT_RUN",
+        root="",
+        git_head_sha="",
+        git_tree_clean=None,
+        git_status_reason="GIT_UNAVAILABLE",
+        git_path="",
+        files_scanned=0,
+        bytes_scanned=0,
+        signal="NOT_RUN",
+    )
+
+
+def inspection(status: str = "NOT_RUN", **overrides) -> dict:
+    body = {
+        "status": status,
+        "reason": "PIN_API_NOT_INSPECTED" if status == "NOT_RUN" else "",
+        "pin": "" if status == "NOT_RUN" else "gpui 395def7a067b32ed598fcb3f048969ada9b54942",
+        "api_surface": "" if status == "NOT_RUN" else "gpui::Window::draw_surfaces",
+        "findings": [] if status == "NOT_RUN" else ["no surface import entry point exported by the pin"],
+    }
+    body.update(overrides)
+    return body
+
+
+def route(**overrides) -> dict:
+    body = {
+        "route_id": "mf-d3d11va-decode:d3d11-texture:gpui-surface-presentation",
+        "status": "UNEXAMINED",
+        "reason": "PIN_API_NOT_INSPECTED",
+        "decode_side_observed": True,
+        "scan_signal": "COMPLETE_BOUND",
+        "scan_usable_as_support": True,
+        "pin_api_inspection": "NOT_RUN",
+        "grounds": [
+            {"id": "decode_side_capability", "status": "OBSERVED", "detail": "hardware frames observed for h264"},
+            {"id": "presentation_call_site_scan", "status": "OBSERVED", "detail": "signal=COMPLETE_BOUND; 80 files"},
+            {
+                "id": "pin_surface_documented_noop",
+                "status": "DOCUMENTED",
+                "detail": "DC-MP-VID1 records the pinned Windows surface path as a no-op",
+            },
+            {"id": "pin_api_inspection", "status": "NOT_MEASURED", "detail": "the pinned API was not inspected"},
+        ],
+        "missing_evidence": ["PIN_API_INSPECTION", "PIN_SURFACE_API", "COPY_COUNT"],
+    }
+    body.update(overrides)
+    return body
+
+
 def document(**overrides) -> dict:
     """A schema-valid probe document; each test overrides only the field it exercises."""
     body = {
         "ok": True,
-        "probe_version": 2,
+        "probe_version": 3,
         "caps": dict(CAPS, max_experiments=24),
         "mft_flags": {"sync": "0x1", "async": "0x2", "hardware": "0x4", "all": "0x3F"},
         "host": {
@@ -165,34 +250,9 @@ def document(**overrides) -> dict:
             }
         ],
         "interop": [software_row(), hardware_row()],
-        "source_scan": {
-            "status": "OBSERVED",
-            "reason": "",
-            "root": "C:\\repo",
-            "files_scanned": 79,
-            "files_truncated": False,
-            "bytes_scanned": 1989597,
-            "tokens": list(SURFACE_TOKENS),
-            "matches": [],
-        },
-        "route": {
-            "route_id": "mf-d3d11va-decode:d3d11-texture:gpui-surface-presentation",
-            "status": "CONFIRMED_LIMITATION",
-            "reason": "",
-            "decode_side_observed": True,
-            "presentation_call_site_scan": "OBSERVED",
-            "presentation_call_site_absent": True,
-            "grounds": [
-                {"id": "decode_side_capability", "status": "OBSERVED", "detail": "hardware frames observed for h264"},
-                {"id": "presentation_call_site_scan", "status": "OBSERVED", "detail": "0 of 79 scanned .rs files"},
-                {
-                    "id": "pin_surface_documented_noop",
-                    "status": "DOCUMENTED",
-                    "detail": "DC-MP-VID1 records the pinned Windows surface path as a no-op",
-                },
-            ],
-            "missing_evidence": ["PIN_SURFACE_API", "COPY_COUNT"],
-        },
+        "source_scan": scan(),
+        "pin_api_inspection": inspection(),
+        "route": route(),
         "endpoints": [
             {"endpoint": name, "status": "NOT_MEASURED", "reason": why}
             for name, why in vid1.UNOBSERVABLE_ENDPOINTS.items()
@@ -202,7 +262,12 @@ def document(**overrides) -> dict:
                 "id": "mft_hardware_flag",
                 "status": "CORRECTED_IN_THIS_RECORD",
                 "detail": "the earlier hardware count used 0x2 (ASYNCMFT); hardware is 0x4",
-            }
+            },
+            {
+                "id": "route_claim_from_scan_only",
+                "status": "CORRECTED_IN_THIS_RECORD",
+                "detail": "a scan alone no longer concludes a route limitation",
+            },
         ],
     }
     for key, value in overrides.items():
@@ -218,18 +283,6 @@ def observed_tool() -> dict:
         "sha256": "81b5832f6c548d64feba0ec7d643397e2351d9f3460a65c6c296956045eebaea",
         "hwaccels": ["d3d11va", "dxva2"],
     }
-
-
-def unexamined_route(reason: str) -> dict:
-    return dict(
-        document()["route"],
-        status="UNEXAMINED",
-        reason=reason,
-        decode_side_observed=False,
-        presentation_call_site_scan="NOT_MEASURED",
-        presentation_call_site_absent=False,
-        grounds=[],
-    )
 
 
 class TempProbes:
@@ -361,6 +414,7 @@ class CapabilityRecordTests(unittest.TestCase):
                     "fixtures",
                     "interop",
                     "source_scan",
+                    "pin_api_inspection",
                     "route",
                     "endpoints",
                     "corrections",
@@ -371,17 +425,22 @@ class CapabilityRecordTests(unittest.TestCase):
             ),
         )
         self.assertEqual(record["task"], "MP-VID1")
-        self.assertEqual(record["record_version"], 2)
+        self.assertEqual(record["record_version"], 3)
         self.assertEqual(record["mft_flags"], {"sync": "0x1", "async": "0x2", "hardware": "0x4", "all": "0x3F"})
         self.assertEqual(record["media_foundation"]["mft_enumeration"][0]["hardware"], 1)
-        self.assertEqual(record["route"]["status"], "CONFIRMED_LIMITATION")
-        self.assertEqual(record["summary"]["route_status"], "CONFIRMED_LIMITATION")
-        self.assertEqual(record["summary"]["source_files_scanned"], 79)
-        self.assertEqual(record["summary"]["source_matches"], 0)
+        # The honest outcome: no route conclusion without inspecting the pinned API.
+        self.assertEqual(record["route"]["status"], "UNEXAMINED")
+        self.assertEqual(record["route"]["reason"], "PIN_API_NOT_INSPECTED")
+        self.assertEqual(record["summary"]["route_status"], "UNEXAMINED")
+        self.assertEqual(record["summary"]["route_reason"], "PIN_API_NOT_INSPECTED")
+        self.assertEqual(record["summary"]["scan_signal"], "COMPLETE_BOUND")
+        self.assertTrue(record["summary"]["scan_usable_as_support"])
+        self.assertIn("PIN_API_INSPECTION", record["route"]["missing_evidence"])
+        self.assertEqual(record["pin_api_inspection"]["status"], "NOT_RUN")
         self.assertEqual(record["corrections"][0]["id"], "mft_hardware_flag")
         self.assertEqual(record["fixtures"][0]["sha256"], "a" * 64)
         self.assertEqual(record["probe"]["exit_code"], 0)
-        self.assertIn("route=CONFIRMED_LIMITATION", out)
+        self.assertIn("route=UNEXAMINED", out)
         # No decision field may ever appear: VID1 reports, MP-VID2 decides.
         self.assertNotIn('"decision"', json.dumps(record))
 
@@ -399,7 +458,11 @@ class CapabilityRecordTests(unittest.TestCase):
             reason="INTEROP_DISABLED",
             frames_decoded=None,
         )
-        body = document(interop=[disabled], route=unexamined_route("HW_DECODE_NOT_OBSERVED"))
+        body = document(
+            interop=[disabled],
+            source_scan=not_run_scan(),
+            route=route(scan_signal="NOT_RUN", scan_usable_as_support=False, decode_side_observed=False),
+        )
         code, _out, err = self.run_cli(self.probe_for(body))
         self.assertEqual(code, 0, err)
         record = self.record()
@@ -412,6 +475,7 @@ class CapabilityRecordTests(unittest.TestCase):
         self.assertEqual(carried["hardware_pix_fmt"], "")
         self.assertEqual(record["tool"]["path"], "")
         self.assertEqual(record["route"]["status"], "UNEXAMINED")
+        self.assertFalse(record["summary"]["scan_usable_as_support"])
         self.assertIn(
             "endpoint:presentation_route NOT_MEASURED PRESENTATION_PATH_UNMEASURED",
             record["vid2_material"]["unavailable"],
@@ -426,12 +490,111 @@ class CapabilityRecordTests(unittest.TestCase):
         tradeoffs = " ".join(record["vid2_material"]["tradeoffs"])
         self.assertIn("no video route is selected", tradeoffs)
         self.assertIn("importing those frames into the pinned GPUI revision remains unverified", tradeoffs)
+        self.assertIn("the route statement is UNEXAMINED", tradeoffs)
         self.assertIn(
             "hw_decode:hw_d3d11va_h264_decode codec=h264 hwaccel=d3d11va hardware_pix_fmt=d3d11",
             record["vid2_material"]["observed_paths"][0],
         )
 
-    # -- fail-closed refusals ----------------------------------------------------
+    # -- BLOCKING (this round): the scan cannot conclude a route ------------------
+    def test_scan_truncated_by_the_file_cap_cannot_yield_a_limitation(self) -> None:
+        truncated = scan(cap_hit=True, files_skipped_size=3, signal="TRUNCATED")
+        body = document(source_scan=truncated, route=route(scan_signal="TRUNCATED", scan_usable_as_support=False))
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assertEqual(code, 0, err)
+        record = self.record()
+        self.assertEqual(record["summary"]["scan_signal"], "TRUNCATED")
+        self.assertFalse(record["summary"]["scan_usable_as_support"])
+        self.assertEqual(record["route"]["status"], "UNEXAMINED")
+
+        body = document(source_scan=scan(cap_hit=True, files_skipped_size=3, signal="COMPLETE_BOUND"))
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
+        self.assertIn("COMPLETE_BOUND conflicts with a truncated scan", err)
+
+        body = document(
+            source_scan=truncated,
+            route=route(status="CONFIRMED_LIMITATION", reason="", scan_signal="TRUNCATED", scan_usable_as_support=False),
+        )
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
+
+    def test_unbound_scan_cannot_yield_a_limitation(self) -> None:
+        unbound = scan(git_head_sha="", git_tree_clean=None, git_status_reason="GIT_STATUS_NOT_MEASURED", signal="UNBOUND")
+        body = document(source_scan=unbound, route=route(scan_signal="UNBOUND", scan_usable_as_support=False))
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assertEqual(code, 0, err)
+        record = self.record()
+        self.assertEqual(record["summary"]["scan_signal"], "UNBOUND")
+        self.assertFalse(record["summary"]["scan_usable_as_support"])
+        self.assertEqual(record["route"]["status"], "UNEXAMINED")
+
+        body = document(
+            source_scan=unbound,
+            route=route(status="CONFIRMED_LIMITATION", reason="", scan_signal="UNBOUND", scan_usable_as_support=False),
+        )
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
+
+        dirty = scan(git_tree_clean=False)
+        body = document(source_scan=dirty)
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
+        self.assertIn("COMPLETE_BOUND requires a clean tree", err)
+
+    def test_confirmed_limitation_from_scan_only_is_refused(self) -> None:
+        body = document(route=route(status="CONFIRMED_LIMITATION", reason="", pin_api_inspection="NOT_RUN"))
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
+        self.assertIn("requires an inspection of the pinned API", err)
+
+    def test_unexamined_route_with_closed_reason_is_accepted_and_names_missing_evidence(self) -> None:
+        body = document()
+        body["route"] = route(missing_evidence=["PIN_API_INSPECTION", "PIN_SURFACE_API", "COPY_COUNT", "DEVICE_LOSS"])
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assertEqual(code, 0, err)
+        record = self.record()
+        self.assertEqual(record["route"]["status"], "UNEXAMINED")
+        self.assertEqual(record["route"]["reason"], "PIN_API_NOT_INSPECTED")
+        self.assertEqual(
+            record["route"]["missing_evidence"],
+            ["PIN_API_INSPECTION", "PIN_SURFACE_API", "COPY_COUNT", "DEVICE_LOSS"],
+        )
+        self.assertEqual(record["pin_api_inspection"]["status"], "NOT_RUN")
+
+    def test_unexamined_route_needs_a_registered_reason(self) -> None:
+        body = document(route=route(reason=""))
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
+        self.assertIn("UNEXAMINED route must carry a registered reason", err)
+        body = document(route=route(reason="SOMETHING_NEW"))
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
+
+    def test_route_and_inspection_must_agree_with_their_sections(self) -> None:
+        body = document(route=route(scan_signal="UNBOUND", scan_usable_as_support=False))
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
+        self.assertIn("does not match source_scan.signal", err)
+
+        body = document(route=route(pin_api_inspection="OBSERVED"))
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
+        self.assertIn("does not match pin_api_inspection.status", err)
+
+    def test_pin_api_inspection_observed_requires_pin_and_findings(self) -> None:
+        body = document(pin_api_inspection=inspection("OBSERVED", pin="", api_surface="", findings=[]))
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
+        self.assertIn("must name the pin, the API surface and findings", err)
+
+    def test_pin_api_inspection_not_run_cannot_carry_findings(self) -> None:
+        body = document(pin_api_inspection=inspection("NOT_RUN", findings=["something"]))
+        code, _out, err = self.run_cli(self.probe_for(body))
+        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
+        self.assertIn("cannot report findings", err)
+
+    # -- other closed-schema checks -----------------------------------------
     def test_probe_nonzero_exit_is_refused_even_after_a_valid_document(self) -> None:
         code, _out, err = self.run_cli(self.probe_for(document(), exit_code=3))
         self.assert_refused(code, err, "PROBE_EXIT_NONZERO")
@@ -505,7 +668,7 @@ class CapabilityRecordTests(unittest.TestCase):
         )
         self.assert_refused(code, err, "CAPS_MISMATCH")
 
-    # -- BLOCKING 1: MFT flags -----------------------------------------------
+    # -- BLOCKING (previous round, unchanged): MFT flags ---------------------
     def test_mft_flags_are_pinned_to_the_sdk_values(self) -> None:
         body = document()
         body["mft_flags"] = dict(body["mft_flags"], hardware="0x2")
@@ -521,7 +684,7 @@ class CapabilityRecordTests(unittest.TestCase):
         self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
         self.assertIn("a NOT_MEASURED count must not carry a value", err)
 
-    # -- BLOCKING 2: GUIDs are not hardware evidence -------------------------
+    # -- BLOCKING (previous round, unchanged): GUIDs are not evidence --------
     def test_hardware_decode_without_hardware_evidence_is_refused(self) -> None:
         body = document(interop=[hardware_row(decoder_pix_fmts=["yuv420p"], hardware_pix_fmt="", hardware_frame_evidence="NONE")])
         code, _out, err = self.run_cli(self.probe_for(body))
@@ -538,7 +701,7 @@ class CapabilityRecordTests(unittest.TestCase):
             reason="HWACCEL_SOFTWARE_FALLBACK",
             dxva_profile_guids=[guid],
         )
-        body = document(interop=[negative], route=unexamined_route("HW_DECODE_NOT_OBSERVED"))
+        body = document(interop=[negative])
         code, _out, err = self.run_cli(self.probe_for(body))
         self.assertEqual(code, 0, err)
         self.assertEqual(self.record()["interop"][0]["status"], "UNSUPPORTED")
@@ -553,7 +716,7 @@ class CapabilityRecordTests(unittest.TestCase):
         self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
         self.assertIn("hardware pix_fmt must appear in the decoder log", err)
 
-    # -- ACTIONABLE: fixture identity ---------------------------------------
+    # -- ACTIONABLE (previous round, unchanged): fixture identity ------------
     def test_fixture_without_digest_or_generator_is_refused(self) -> None:
         body = document()
         body["fixtures"][0]["sha256"] = ""
@@ -566,55 +729,12 @@ class CapabilityRecordTests(unittest.TestCase):
         self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
         self.assertIn("must carry its generator argv", err)
 
-    # -- BLOCKING 4: route statement ----------------------------------------
-    def test_route_limitation_requires_observation_and_missing_evidence(self) -> None:
-        body = document()
-        body["route"] = dict(body["route"], decode_side_observed=False)
-        code, _out, err = self.run_cli(self.probe_for(body))
-        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
-        self.assertIn("requires an observed decode side", err)
-
-        body = document()
-        body["route"] = dict(body["route"], missing_evidence=[])
-        code, _out, err = self.run_cli(self.probe_for(body))
-        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
-        self.assertIn("must still name the missing evidence", err)
-
-        body = document()
-        body["route"] = dict(body["route"], presentation_call_site_scan="NOT_MEASURED")
-        code, _out, err = self.run_cli(self.probe_for(body))
-        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
-        self.assertIn("requires an observed absent call site", err)
-
-    def test_route_limitation_requires_an_observed_hardware_row(self) -> None:
-        body = document(interop=[software_row()])
-        code, _out, err = self.run_cli(self.probe_for(body))
-        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
-        self.assertIn("requires an observed hardware decode row", err)
-
-    def test_route_limitation_requires_an_observed_clean_scan(self) -> None:
-        body = document()
-        body["source_scan"] = dict(
-            body["source_scan"], matches=[{"file": "crates/x/src/lib.rs", "line": 3, "token": "draw_surfaces"}]
-        )
-        code, _out, err = self.run_cli(self.probe_for(body))
-        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
-        self.assertIn("requires a scan with no presentation call site", err)
-
-    def test_unexamined_route_needs_a_registered_reason(self) -> None:
-        body = document(interop=[software_row()])
-        body["route"] = dict(unexamined_route("HW_DECODE_NOT_OBSERVED"), reason="")
-        code, _out, err = self.run_cli(self.probe_for(body))
-        self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
-        self.assertIn("UNEXAMINED route must carry a registered reason", err)
-
     def test_corrections_are_required(self) -> None:
         body = document(corrections=[])
         code, _out, err = self.run_cli(self.probe_for(body))
         self.assert_refused(code, err, "PROBE_DOCUMENT_INVALID")
         self.assertIn("pre-fix observation must be preserved", err)
 
-    # -- other closed-schema checks -----------------------------------------
     def test_presentation_and_copy_endpoints_cannot_be_observed(self) -> None:
         body = document()
         body["endpoints"][0]["status"] = "OBSERVED"
@@ -685,13 +805,11 @@ class CapabilityRecordTests(unittest.TestCase):
         self.assertIn("REFUSED OUT_NOT_ABSOLUTE", err.getvalue())
         self.assertFalse((HERE / "relative-record.json").exists())
 
-    # -- BLOCKING 3: bounded capture (both streams, just below / just over) --
+    # -- BLOCKING (previous round, unchanged): bounded capture ---------------
     def test_stdout_capture_cap_is_enforced_while_reading(self) -> None:
-        # The document is exactly as long as the cap it echoes: accepted at the boundary.
         body, length = self.with_cap(document())
         code, _out, err = self.run_cli(self.probe_for(body), caps=self.caps_with(length))
         self.assertEqual(code, 0, f"a document exactly at the cap must be accepted: {err}")
-        # One byte short of the document: the reader must stop, kill the child and refuse.
         code, _out, err = self.run_cli(self.probe_for(body), caps=self.caps_with(length - 1))
         self.assert_refused(code, err, "PROBE_OUTPUT_OVERSIZED")
 
@@ -708,7 +826,9 @@ class CapabilityRecordTests(unittest.TestCase):
             ],
         )
         started = time.monotonic()
-        code, _out, err = self.run_cli(probe, caps={"timeout_ms": 1000, "max_output_bytes": 4096, "max_fixture_bytes": 1048576})
+        code, _out, err = self.run_cli(
+            probe, caps={"timeout_ms": 1000, "max_output_bytes": 4096, "max_fixture_bytes": 1048576}
+        )
         elapsed = time.monotonic() - started
         self.assert_refused(code, err, "PROBE_OUTPUT_OVERSIZED")
         self.assertLess(elapsed, 4, "the child must be terminated on overflow, not waited out")
@@ -785,9 +905,13 @@ class VocabularyTests(unittest.TestCase):
     def test_reason_vocabulary_is_closed_and_documented(self) -> None:
         self.assertIn("HWACCEL_SOFTWARE_FALLBACK", vid1.REASONS)
         self.assertIn("PRESENTATION_PATH_UNMEASURED", vid1.REASONS)
+        self.assertIn("PIN_API_NOT_INSPECTED", vid1.REASONS)
+        self.assertIn("SOURCE_SCAN_INSUFFICIENT", vid1.REASONS)
         self.assertNotIn("SOMETHING_NEW", vid1.REASONS)
         self.assertEqual(set(vid1.UNOBSERVABLE_ENDPOINTS.values()) - vid1.REASONS, set())
         self.assertEqual(set(vid1.MFT_FLAGS.values()), {"0x1", "0x2", "0x4", "0x3F"})
+        self.assertIn("COMPLETE_BOUND", vid1.SCAN_SIGNALS)
+        self.assertIn("PIN_API_INSPECTION", vid1.MISSING_EVIDENCE)
 
     def test_every_refusal_code_is_registered(self) -> None:
         for code in vid1.REFUSAL_CODES:
@@ -806,6 +930,7 @@ class RealHostProbeTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, root, True)
         out = root / "record.json"
         err = io.StringIO()
+        extra = ["--git", str(GIT)] if GIT.is_file() else []
         with contextlib.redirect_stderr(err):
             code = vid1.main(
                 [
@@ -819,6 +944,7 @@ class RealHostProbeTests(unittest.TestCase):
                     str(root),
                     "--source-root",
                     str(REPO_ROOT),
+                    *extra,
                     "--out",
                     str(out),
                 ]
@@ -830,8 +956,15 @@ class RealHostProbeTests(unittest.TestCase):
         self.assertGreaterEqual(record["summary"]["fixtures"], 1)
         self.assertEqual(record["mft_flags"]["hardware"], "0x4")
         self.assertGreaterEqual(record["source_scan"]["files_scanned"], 1)
-        self.assertEqual(record["route"]["status"], "CONFIRMED_LIMITATION")
-        self.assertTrue(record["route"]["missing_evidence"])
+        # The honest outcome: no route conclusion from a scan; the pin API was not inspected.
+        self.assertEqual(record["route"]["status"], "UNEXAMINED")
+        self.assertEqual(record["route"]["reason"], "PIN_API_NOT_INSPECTED")
+        self.assertIn("PIN_API_INSPECTION", record["route"]["missing_evidence"])
+        self.assertEqual(record["pin_api_inspection"]["status"], "NOT_RUN")
+        self.assertIn(
+            record["source_scan"]["signal"],
+            {"COMPLETE_BOUND", "SHA_BOUND_TREE_STATE_UNKNOWN", "TRUNCATED", "UNBOUND"},
+        )
         for row in record["interop"]:
             if row["status"] in {"NOT_MEASURED", "UNSUPPORTED"}:
                 self.assertTrue(row["reason"], row["id"])

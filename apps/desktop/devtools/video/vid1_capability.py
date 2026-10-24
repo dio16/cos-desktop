@@ -48,8 +48,8 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
-PROBE_VERSION = 2
-RECORD_VERSION = 2
+PROBE_VERSION = 3
+RECORD_VERSION = 3
 TASK = "MP-VID1"
 
 STATUS_OBSERVED = "OBSERVED"
@@ -65,16 +65,17 @@ REASONS = frozenset(
     DXVA_PROFILE_NAMES_NOT_RESOLVED
     FIXTURE_GENERATION_FAILED
     FIXTURE_TOO_LARGE
+    GIT_STATUS_NOT_MEASURED
+    GIT_UNAVAILABLE
     GPU_SURFACE_IMPORT_UNVERIFIED
     HWACCEL_REQUEST_REJECTED
     HWACCEL_SOFTWARE_FALLBACK
     HWOUTPUT_CONVERT_FAILED
-    HW_DECODE_NOT_OBSERVED
     INTEROP_DISABLED
     MF_COMPONENT_MISSING
     MF_STARTUP_FAILED
     MFT_ENUMERATION_FAILED
-    PRESENTATION_CALL_SITE_FOUND
+    PIN_API_NOT_INSPECTED
     PRESENTATION_PATH_UNMEASURED
     PROCESS_FAILED
     PROCESS_OUTPUT_CAPPED
@@ -85,8 +86,11 @@ REASONS = frozenset(
     RAW_OUTPUT_SIZE_UNEXPECTED
     SCRATCH_NOT_SUPPLIED
     SCRATCH_UNAVAILABLE
+    SOURCE_SCAN_INSUFFICIENT
     SOURCE_SCAN_NOT_RUN
+    SOURCE_SCAN_TRUNCATED
     SOURCE_SCAN_UNAVAILABLE
+    SOURCE_SCAN_UNBOUND
     SYNC_STALL_NOT_INSTRUMENTED
     TOOL_NOT_FOUND
     TOOL_NOT_SUPPLIED
@@ -106,9 +110,20 @@ HARDWARE_PIX_FMTS = frozenset({"d3d11", "d3d11va", "dxva2_vld", "cuda", "qsv", "
 GROUND_STATUSES = frozenset({"OBSERVED", "DOCUMENTED", "NOT_MEASURED"})
 ROUTE_STATUSES = frozenset({"CONFIRMED_LIMITATION", "UNEXAMINED"})
 CORRECTION_STATUSES = frozenset({"CORRECTED_IN_THIS_RECORD", "PRE_FIX_OBSERVATION"})
+#: How far the bounded source scan is bound to what it actually scanned.
+SCAN_SIGNALS = frozenset({"COMPLETE_BOUND", "SHA_BOUND_TREE_STATE_UNKNOWN", "TRUNCATED", "UNBOUND", "NOT_RUN"})
+INSPECTION_STATUSES = frozenset({"NOT_RUN", "OBSERVED"})
 #: Evidence a completed route would still need; closed so it cannot drift into prose.
 MISSING_EVIDENCE = frozenset(
-    {"PIN_SURFACE_API", "COPY_COUNT", "SYNC_STALLS", "COLOR_METADATA", "DEVICE_LOSS", "PLAYBACK_LATENCY"}
+    {
+        "PIN_API_INSPECTION",
+        "PIN_SURFACE_API",
+        "COPY_COUNT",
+        "SYNC_STALLS",
+        "COLOR_METADATA",
+        "DEVICE_LOSS",
+        "PLAYBACK_LATENCY",
+    }
 )
 
 #: The MFTEnumFlag values (Windows SDK 10.0.19041.0 `mfapi.h`) a probe must record.
@@ -325,6 +340,7 @@ def run_probe(
     ffmpeg: str | None,
     scratch: str | None,
     source_root: str | None,
+    git: str | None,
     keep_scratch: bool,
     caps: dict[str, int],
 ) -> dict:
@@ -348,6 +364,8 @@ def run_probe(
         scratch or "",
         "-SourceRoot",
         source_root or "",
+        "-GitPath",
+        git or "",
         "-TimeoutMs",
         str(caps["timeout_ms"]),
         "-MaxOutputBytes",
@@ -451,6 +469,7 @@ TOP_LEVEL_KEYS = (
     "fixtures",
     "interop",
     "source_scan",
+    "pin_api_inspection",
     "route",
     "endpoints",
     "corrections",
@@ -516,6 +535,7 @@ def validate_document(document: dict, *, caps: dict[str, int]) -> None:
     validate_fixtures(document["fixtures"])
     validate_interop(document["interop"])
     validate_source_scan(document["source_scan"])
+    validate_pin_api_inspection(document["pin_api_inspection"])
     validate_route(document["route"])
     validate_endpoints(document["endpoints"])
     validate_corrections(document["corrections"])
@@ -523,8 +543,14 @@ def validate_document(document: dict, *, caps: dict[str, int]) -> None:
 
 
 def validate_route_cross_checks(document: dict) -> None:
-    """The route statement must be grounded in the rows and the scan it cites."""
+    """The route statement must be grounded in the sections it cites."""
     route = document["route"]
+    scan = document["source_scan"]
+    inspection = document["pin_api_inspection"]
+    if route["scan_signal"] != scan["signal"]:
+        _fail("route.scan_signal", "does not match source_scan.signal")
+    if route["pin_api_inspection"] != inspection["status"]:
+        _fail("route.pin_api_inspection", "does not match pin_api_inspection.status")
     if route["status"] != "CONFIRMED_LIMITATION":
         return
     hardware = [
@@ -536,12 +562,10 @@ def validate_route_cross_checks(document: dict) -> None:
     ]
     if not hardware:
         _fail("route.decode_side_observed", "a confirmed limitation requires an observed hardware decode row")
-    scan = document["source_scan"]
-    if scan["status"] != STATUS_OBSERVED or scan["matches"]:
-        _fail(
-            "route.presentation_call_site_absent",
-            "a confirmed limitation requires a scan with no presentation call site",
-        )
+    if scan["signal"] != "COMPLETE_BOUND" or scan["git_tree_clean"] is not True:
+        _fail("route.scan_signal", "a confirmed limitation requires a fully bound, complete scan")
+    if inspection["status"] != "OBSERVED":
+        _fail("route.pin_api_inspection", "a confirmed limitation requires an inspection of the pinned API")
 
 
 def validate_mft_flags(flags: dict) -> None:
@@ -831,17 +855,50 @@ def validate_source_scan(section: object) -> None:
     scan = _object(
         section,
         "source_scan",
-        ("status", "reason", "root", "files_scanned", "files_truncated", "bytes_scanned", "tokens", "matches"),
+        (
+            "status",
+            "reason",
+            "root",
+            "git_head_sha",
+            "git_tree_clean",
+            "git_status_reason",
+            "git_path",
+            "file_cap",
+            "file_size_cap",
+            "files_scanned",
+            "files_skipped_size",
+            "cap_hit",
+            "bytes_scanned",
+            "tokens",
+            "matches",
+            "signal",
+        ),
     )
     state, _why = _status_reason(scan, "source_scan")
     _text(scan["root"], "source_scan.root")
+    sha = _text(scan["git_head_sha"], "source_scan.git_head_sha", maximum=64)
+    if sha and not re.match(r"^[0-9a-f]{40}([0-9a-f]{24})?$", sha):
+        _fail("source_scan.git_head_sha", "expected a lowercase commit SHA or empty")
+    clean = scan["git_tree_clean"]
+    if clean is not None:
+        _bool(clean, "source_scan.git_tree_clean")
+    git_reason = _text(scan["git_status_reason"], "source_scan.git_status_reason", maximum=MAX_TOKEN_CHARS)
+    if git_reason and git_reason not in REASONS:
+        _fail("source_scan.git_status_reason", f"unregistered reason {git_reason!r}")
+    if sha and clean is None and not git_reason:
+        _fail("source_scan.git_status_reason", "an unmeasured tree state must carry a reason")
+    _text(scan["git_path"], "source_scan.git_path")
+    _int(scan["file_cap"], "source_scan.file_cap", minimum=1, maximum=100_000)
+    _int(scan["file_size_cap"], "source_scan.file_size_cap", minimum=1, maximum=1 << 40)
     _int(scan["files_scanned"], "source_scan.files_scanned", maximum=100_000)
-    _bool(scan["files_truncated"], "source_scan.files_truncated")
+    _int(scan["files_skipped_size"], "source_scan.files_skipped_size", maximum=100_000)
+    _bool(scan["cap_hit"], "source_scan.cap_hit")
     _int(scan["bytes_scanned"], "source_scan.bytes_scanned", maximum=1 << 34)
+    signal = _text(scan["signal"], "source_scan.signal", maximum=32, empty=False)
+    if signal not in SCAN_SIGNALS:
+        _fail("source_scan.signal", f"unregistered scan signal {signal!r}")
     tokens = _list(scan["tokens"], "source_scan.tokens", maximum=MAX_SOURCE_TOKENS)
     for index, token in enumerate(tokens):
-        # Scanned tokens are code identifiers (`draw_surfaces`, `IDXGISurface`, ...), so they
-        # keep their language spelling; they only have to be declared and bounded.
         value = _text(token, f"source_scan.tokens[{index}]", maximum=MAX_TOKEN_CHARS, empty=False)
         if not _IDENTIFIER.match(value):
             _fail(f"source_scan.tokens[{index}]", "not a code identifier")
@@ -854,14 +911,57 @@ def validate_source_scan(section: object) -> None:
         token = _text(row["token"], f"{field}.token", maximum=MAX_TOKEN_CHARS, empty=False)
         if token not in tokens:
             _fail(f"{field}.token", "matched token is not in the declared token list")
-    if state == STATUS_OBSERVED:
-        if not scan["root"]:
-            _fail("source_scan.root", "an OBSERVED scan must name its root")
-        if scan["files_scanned"] < 1:
-            _fail("source_scan.files_scanned", "an OBSERVED scan must have scanned files")
-    else:
+
+    # The signal must match the binding it claims, so a partial scan can never look whole.
+    if signal == "NOT_RUN":
+        if state == STATUS_OBSERVED:
+            _fail("source_scan.signal", "NOT_RUN conflicts with OBSERVED")
         if matches:
             _fail("source_scan.matches", "a scan that did not run cannot report matches")
+    else:
+        if state != STATUS_OBSERVED:
+            _fail("source_scan.status", f"signal {signal} requires an OBSERVED scan")
+        if scan["files_scanned"] < 1:
+            _fail("source_scan.files_scanned", "an observed scan must have scanned files")
+        if signal == "UNBOUND":
+            if sha:
+                _fail("source_scan.signal", "UNBOUND conflicts with a recorded commit SHA")
+        elif not sha:
+            _fail("source_scan.git_head_sha", f"signal {signal} requires a commit binding")
+        if signal == "TRUNCATED" and not (scan["cap_hit"] or scan["files_skipped_size"] > 0):
+            _fail("source_scan.signal", "TRUNCATED requires a cap hit or skipped files")
+        if signal in {"COMPLETE_BOUND", "SHA_BOUND_TREE_STATE_UNKNOWN"} and (
+            scan["cap_hit"] or scan["files_skipped_size"] > 0
+        ):
+            _fail("source_scan.signal", f"{signal} conflicts with a truncated scan")
+        if signal == "COMPLETE_BOUND":
+            if clean is not True:
+                _fail("source_scan.git_tree_clean", "COMPLETE_BOUND requires a clean tree")
+        if signal == "SHA_BOUND_TREE_STATE_UNKNOWN" and clean is True:
+            _fail("source_scan.git_tree_clean", "a clean tree is COMPLETE_BOUND, not unknown")
+
+
+def validate_pin_api_inspection(section: object) -> None:
+    inspection = _object(section, "pin_api_inspection", ("status", "reason", "pin", "api_surface", "findings"))
+    state = _text(inspection["status"], "pin_api_inspection.status", maximum=32, empty=False)
+    if state not in INSPECTION_STATUSES:
+        _fail("pin_api_inspection.status", f"unregistered status {state!r}")
+    why = _text(inspection["reason"], "pin_api_inspection.reason", maximum=MAX_TOKEN_CHARS)
+    pin = _text(inspection["pin"], "pin_api_inspection.pin", maximum=128)
+    surface = _text(inspection["api_surface"], "pin_api_inspection.api_surface", maximum=128)
+    findings = _list(inspection["findings"], "pin_api_inspection.findings", maximum=16)
+    for index, finding in enumerate(findings):
+        _text(finding, f"pin_api_inspection.findings[{index}]", maximum=512, empty=False)
+    if state == "NOT_RUN":
+        if why not in REASONS:
+            _fail("pin_api_inspection.reason", "a NOT_RUN inspection must carry a registered reason")
+        if findings or pin or surface:
+            _fail("pin_api_inspection", "an inspection that did not run cannot report findings")
+    else:
+        if why:
+            _fail("pin_api_inspection.reason", "an OBSERVED inspection must carry no reason")
+        if not pin or not surface or not findings:
+            _fail("pin_api_inspection", "an OBSERVED inspection must name the pin, the API surface and findings")
 
 
 def validate_route(section: object) -> None:
@@ -873,8 +973,9 @@ def validate_route(section: object) -> None:
             "status",
             "reason",
             "decode_side_observed",
-            "presentation_call_site_scan",
-            "presentation_call_site_absent",
+            "scan_signal",
+            "scan_usable_as_support",
+            "pin_api_inspection",
             "grounds",
             "missing_evidence",
         ),
@@ -892,10 +993,15 @@ def validate_route(section: object) -> None:
     elif why:
         _fail("route.reason", "a concluded route must carry no reason")
     decode_side = _bool(route["decode_side_observed"], "route.decode_side_observed")
-    scan_state = _text(route["presentation_call_site_scan"], "route.presentation_call_site_scan", maximum=32)
-    if scan_state not in STATUSES:
-        _fail("route.presentation_call_site_scan", f"unregistered status {scan_state!r}")
-    absent = _bool(route["presentation_call_site_absent"], "route.presentation_call_site_absent")
+    signal = _text(route["scan_signal"], "route.scan_signal", maximum=32, empty=False)
+    if signal not in SCAN_SIGNALS:
+        _fail("route.scan_signal", f"unregistered scan signal {signal!r}")
+    usable = _bool(route["scan_usable_as_support"], "route.scan_usable_as_support")
+    if usable != (signal == "COMPLETE_BOUND"):
+        _fail("route.scan_usable_as_support", "only a COMPLETE_BOUND scan is usable as support")
+    inspection = _text(route["pin_api_inspection"], "route.pin_api_inspection", maximum=32, empty=False)
+    if inspection not in INSPECTION_STATUSES:
+        _fail("route.pin_api_inspection", f"unregistered status {inspection!r}")
     grounds = _list(route["grounds"], "route.grounds", maximum=8)
     for index, ground in enumerate(grounds):
         field = f"route.grounds[{index}]"
@@ -911,17 +1017,21 @@ def validate_route(section: object) -> None:
         if value not in MISSING_EVIDENCE:
             _fail(f"route.missing_evidence[{index}]", f"unregistered missing-evidence token {value!r}")
     if state == "CONFIRMED_LIMITATION":
+        # A scan alone can never conclude a route: the pinned API itself must have been
+        # inspected, the scan must be fully bound and complete, and the decode side observed.
         if not decode_side:
             _fail("route.decode_side_observed", "a confirmed limitation requires an observed decode side")
-        if scan_state != STATUS_OBSERVED or not absent:
-            _fail(
-                "route.presentation_call_site_absent",
-                "a confirmed limitation requires an observed absent call site",
-            )
+        if signal != "COMPLETE_BOUND" or not usable:
+            _fail("route.scan_signal", "a confirmed limitation requires a COMPLETE_BOUND scan")
+        if inspection != "OBSERVED":
+            _fail("route.pin_api_inspection", "a confirmed limitation requires an inspection of the pinned API")
         if not grounds:
             _fail("route.grounds", "a confirmed limitation requires recorded grounds")
         if not missing:
             _fail("route.missing_evidence", "a confirmed limitation must still name the missing evidence")
+    else:
+        if not missing:
+            _fail("route.missing_evidence", "an UNEXAMINED route must name what a route decision still needs")
 
 
 def validate_endpoints(endpoints: list) -> None:
@@ -1007,7 +1117,8 @@ def build_record(*, provenance: dict, document: dict, caps: dict[str, int]) -> d
             "at least one requested hardware path fell back to software or failed; the exact reason is recorded per row"
         )
     tradeoffs.append(
-        "the route statement is a limitation of the examined route for this checkout, not a claim that video is impossible"
+        "the route statement is UNEXAMINED: the pinned GPUI presentation API was not inspected, so the scan is "
+        "supporting material with its commit binding, caps and skipped files stated, not a conclusion"
     )
 
     return {
@@ -1024,6 +1135,7 @@ def build_record(*, provenance: dict, document: dict, caps: dict[str, int]) -> d
         "fixtures": fixtures,
         "interop": interop,
         "source_scan": document["source_scan"],
+        "pin_api_inspection": document["pin_api_inspection"],
         "route": route,
         "endpoints": endpoints,
         "corrections": document["corrections"],
@@ -1042,6 +1154,9 @@ def build_record(*, provenance: dict, document: dict, caps: dict[str, int]) -> d
                 [row for row in interop if row["kind"] == "hw_download" and row["status"] == STATUS_OBSERVED]
             ),
             "route_status": route["status"],
+            "route_reason": route["reason"],
+            "scan_signal": document["source_scan"]["signal"],
+            "scan_usable_as_support": route["scan_usable_as_support"],
             "source_files_scanned": document["source_scan"]["files_scanned"],
             "source_matches": len(document["source_scan"]["matches"]),
         },
@@ -1077,6 +1192,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--source-root", default="", help="absolute path of the checkout scanned for a presentation call site"
     )
+    parser.add_argument("--git", default="", help="absolute path of git.exe used to bind the scan to a clean tree")
     parser.add_argument("--keep-scratch", action="store_true", help="keep the probe's scratch directory and its fixtures")
     parser.add_argument("--out", default="", help="absolute record path (prints to stdout when omitted)")
     parser.add_argument("--timeout-ms", type=int, default=15_000)
@@ -1097,6 +1213,7 @@ def main(argv: list[str]) -> int:
             ffmpeg=args.ffmpeg or None,
             scratch=args.scratch or None,
             source_root=args.source_root or None,
+            git=args.git or None,
             keep_scratch=args.keep_scratch,
             caps=caps,
         )
