@@ -689,6 +689,22 @@ def observe_window(
     fail(last_code)
 
 
+def grant_foreground_permission() -> bool:
+    """Let the launched application activate the window it creates itself.
+
+    This changes no window: it only permits the child to take the foreground, which is
+    what happens when a human runs the documented command from a foreground terminal. A
+    denied grant is recorded, not retried, and never replaced by a raise/focus call.
+    """
+    try:
+        user32 = ctypes.windll.user32
+        user32.AllowSetForegroundWindow.argtypes = [ctypes.c_uint]
+        user32.AllowSetForegroundWindow.restype = ctypes.c_bool
+        return bool(user32.AllowSetForegroundWindow(0xFFFFFFFF))  # ASFW_ANY
+    except (AttributeError, OSError, TypeError, ValueError):
+        return False
+
+
 def launch(exe: Path, log_path: Path) -> subprocess.Popen:
     try:
         log = open(log_path, "wb")
@@ -806,6 +822,17 @@ def build_record(
             "mixed_script_examples": analysis["mixed_script_examples"],
         },
         "scale": scale,
+        "launch": {
+            "procedure": "the documented human command: the fixture binary is started "
+            "with --fixture and creates/shows its own window",
+            "foreground_permission": {
+                "call": "AllowSetForegroundWindow(ASFW_ANY)",
+                "granted": observed.get("foreground_permission_granted"),
+            },
+            "window_created_by": "the application",
+            "probe_state_change": "none: no raise, focus, move or z-order operation",
+        },
+        "desktop_state_changed": False,
         "checks": checks,
         "result": result_of(checks),
         "app_stop": stop_record,
@@ -851,6 +878,7 @@ def main(argv: list[str] | None = None) -> int:
         probe_record = out / "probe.json"
         screenshot = out / "screenshot.png"
         exe_digest = sha256_bytes(exe.read_bytes())
+        granted = grant_foreground_permission()
         process = launch(exe, out / "app.log")
         document = observe_window(
             args.powershell, probe, process.pid, screenshot
@@ -875,6 +903,7 @@ def main(argv: list[str] | None = None) -> int:
                 "status": "NOT_MEASURED",
                 "reason": observed["screenshot"]["reason"],
             }
+        observed["foreground_permission_granted"] = granted
         scale = host_scale(observed["window"]["handle"])
         analysis = analyze_elements(observed["uia"]["elements"])
         stop_record = stop(process)
