@@ -372,6 +372,35 @@ These rules are fixed for every later session; they exist because the default `p
 
 Rollback: restore the alias names (`python.exe.dsh-disabled-20261024` -> `python.exe`, likewise `python3`/`pythonw`), delete `python.cmd` from the WindowsApps directory and `~/bin/python`, and remove the uv entry from the user PATH. No repository file participates in this environment setup.
 
+### 4.12 MP-R0B/C measurement readiness (2026-10-24)
+
+**Preparation only:** no startup/idle/present baseline, stall or cadence measurement is executed here, no numeric SLO or threshold is set, and nothing here authorizes R0D ratification or a change to the manifest/result contracts. Fixed baseline `a93ac794a4ae574cbda5282a9198dcab5252ec38` (**OBSERVED** by `git rev-parse HEAD` at drafting time).
+
+Labels: **OBSERVED** = verified on this baseline; **PROPOSED** = plan plus precondition, not executed; **NOT_MEASURED** = no valid measurement exists (reason given). `PROPOSED`/`NOT_MEASURED` are the [§11.2](../architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md#112-machine-readable-result-contract) result terms; the [Status vocabulary](#status-vocabulary) above lacks them (**source conflict**, reported below).
+
+**Blocking precondition — R0A first:** [DC-MP-R0B](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0b) and [DC-MP-R0C](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0c) both list MP-R0A as hard prereq; [DC-MP-R0A](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0a) exit requires a reproducible manifest/driver, retained hashes and the §11.2 result contract. **OBSERVED:** R0A is IN_PROGRESS — S1/S2A are complete, S2B/S3 tooling exists, S2B Native N01–N06 are `NOT_RUN` on this host (approved A0/A1 executables and a matching helper digest are absent), and no R0B/R0C result record exists. R0B/C formal measurement completion must not be declared before those R0A preconditions hold; missing probes block only their own claim.
+
+**R0B — baseline capture, noise and endpoints (all need the locked Release shell and the R0A driver):**
+- startup / idle / present baseline — **PROPOSED**; the [§10.1](../architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md#101-reproducible-benchmark-contract-r0) startup milestones stay separate; present/displayed are **NOT_MEASURED** until an independent native present capture exists.
+- noise floor, instrumentation on/off overhead, measurement floor — **PROPOSED**; repeated baseline-vs-baseline and feature-OFF/ON pairs, spread/confidence method, §11.2 `instrumentation`.
+- warm/cold policy, repetitions, run order — **PROPOSED**; declare warm conditions and repeats, balanced or recorded randomized paired order; true cold reset is **NOT_MEASURED** unless a declared reset actually runs (§10.1).
+- exclusion policy, clock and correlation — **PROPOSED**; excluded/failed/censored samples retained with reasons and counts, no silent tail deletion; clock resolution and cross-process/tool mapping stay **NOT_MEASURED** (S2B `common_clock` crosswalk); no cross-domain subtraction.
+- stall-detector exploration settings — **PROPOSED**; manifest-declared exploratory settings plus raw gaps ([§10.2](../architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md#102-additional-calibration-decisions)); their thresholds stay **UNRATIFIED**.
+
+**R0C — Windows scheduling and stall attribution (same preconditions, plus a timestamped visible-change demand trace):**
+- native stress matrix (continuous keyboard, held-key/repeat, pointer, scroll, popup, entity-update bursts, and keyboard+projection / scroll+projection combinations) — **PROPOSED**.
+- controlled posted/foreground-task saturation with declared traffic and cadence; requested vs achieved producer cadence — **PROPOSED**; a missed producer schedule is not a faster renderer (§10.1).
+- demand-to-present correlation by local frame serial (input → model mutation → invalidate → frame request/start → scene → submit → present), with coalescing and superseded-change accounting — **PROPOSED**; internal counters are not screen completion ([§11.1](../architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md#111-windows-scheduling-endpoints-and-starvation-attribution-r0)).
+- stall and restoration classification — **PROPOSED**; gap since the last new Present under continuous visible demand; idle/occluded/minimized/suppressed spans classified separately; a stall censored at observation end stays in accounting; restoration only through the declared bounded queue/cancel/restoration policy (DC-MP-R0C, §11.1).
+
+**Shared items:** execution matrix = one aggregate per scenario × variant × machine × cache state × endpoint combination (§11.2); native endpoints = the §11.1 table — when an endpoint does not exist record `NOT_MEASURED`/`NOT_IMPLEMENTED` with provider/reason and null, never zero, and never relabel an internal counter as that endpoint (§11.1/§11.2); Release shell identity = executable SHA-256, repository SHA and dirty-state/content hash, GPUI pin, build profile/features/flags and toolchain (§10.1 Identity) — **OBSERVED** only for the 2026-10-08 shell ([TERN §10.1](TERN_BINARY_RENDERING_ANALYSIS.md#101-release-cos-build-identity)); a Release shell and fixture/build/environment hashes bound to baseline `a93ac79`, plus the warm/cold definition, are **NOT_MEASURED** in R0 terms; missing-endpoint reasons are carried in each run's `endpoints` map.
+
+**Model/counter-based vs natively measured:** in-process request/start/scene/submit counts, local frame serial, queue depth, mutation/derivation timing and derived durations are COS observer counters (model/counter-based); process-launch/S2A lifecycle facts and, only when the sampler is explicitly enabled, `working_set` as a **sampled lower bound** are the available native observations. Independent present/displayed timing, input-to-photon, clock calibration/resolution and tool mapping are **NOT_MEASURED** (S2A endpoint table; S2B crosswalk `common_clock`/`unsupported`).
+
+**Source conflicts (reported, not resolved here):** (a) §7.6 states all R0 tasks are `NOT_AUTHORIZED` until an explicit authorization, while the R0B card says measurement-authorized and R0C says `NOT_AUTHORIZED`; §19.14 grants R0B/C work — R0C's status and the preamble are unreconciled. (b) The R0A card still carries the 2026-10-23 "S2B HOLD" text while §19.14 releases the hold and §19.15–§19.17 record S2B/S3 work. (c) DC-MP-R0B puts a "present baseline" in scope while §11.1 present/displayed endpoints are currently unavailable — such a baseline cannot be called measured until an endpoint exists. (d) The [Status vocabulary](#status-vocabulary) above does not define `PROPOSED`/`NOT_MEASURED`, although §11.2 uses them, so this section declares its own label meanings.
+
+Related: [TESTING.md](TESTING.md) §17–§18; [IMPLEMENTATION_MASTER_PLAN.md](IMPLEMENTATION_MASTER_PLAN.md) §7.6 and §19.15–§19.17; R0A evidence: [S1 completion](evidence/r0a-s1/technical-completion.json), [S2A endpoint availability](evidence/r0a-s2a/endpoint-availability.json), [S2B crosswalk](evidence/r0a-s2b/endpoint-source-crosswalk.json).
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |
@@ -388,4 +417,4 @@ Rollback: restore the alias names (`python.exe.dsh-disabled-20261024` -> `python
 - Installers, code signing, updater, packaging, and distribution checks.
 - Real runtime connectivity, media pipeline, and any runtime-side changes (owned elsewhere; see `docs/architecture/DESKTOP_PROTOCOL.md` and the integration documents).
 - CI configuration. The proposed pipeline lives in [TESTING.md](TESTING.md); no workflow files are created by this delivery.
-- Performance measurement; canon §37–38 targets are design targets and are **not measured**.
+- Performance measurement execution and results; canon §37–38 targets are design targets and are **not measured**. §4.12 records only R0B/R0C readiness, preconditions and labels.
