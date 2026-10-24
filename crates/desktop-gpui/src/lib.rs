@@ -25,6 +25,7 @@ mod flow;
 #[cfg(feature = "r0-s2b-instrumentation")]
 pub mod r0_probe;
 mod stop;
+pub mod tokens;
 mod trace;
 use stop::{ReadCompletion, ReadFailure, ReceiptData, ReceiptFeedback, StopProgress, StopTracker};
 
