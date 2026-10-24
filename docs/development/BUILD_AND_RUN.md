@@ -492,24 +492,17 @@ Refine 0.3.1 is now installed from source (`https://github.com/dio16/refine`, bu
 
 Native pixel acceptance cannot be produced by an unattended session: it needs the user to foreground the window and to change the Windows display scale. The measurement path itself is automated and side-effect free, so the human work is only those two actions.
 
-**Setup per scale.** Set Settings → System → Display → Scale to the step under test, then run:
-
-```text
-cargo run --locked -p cos-desktop -- --fixture
-```
-
-Then, with the COS Desktop window visible, run the observation (absolute paths only; the harness never raises, focuses, moves or changes z-order, and it waits read-only for the window to be foregrounded):
+**Setup per scale.** Set Settings → System → Display → Scale to the step under test, then start the observation:
 
 ```text
 python -B apps/desktop/devtools/typography/host_observe.py --out <evidence-dir>/host --wait-for-foreground 120
 ```
 
-`--exe` (default the debug fixture binary), `--powershell`, `--probe` and `--out` also exist; run `python -B apps/desktop/devtools/typography/host_observe.py --help` on the pinned revision for the authoritative flag list. The harness launches the fixture itself and calls the repository's independent probe (`devtools/r0/n03_probe.ps1`); it never raises, focuses, moves or reorders windows.
-```
+The observation launches **its own** fixture process, so the window to foreground is the one that appears when this command runs — not a copy started separately (`--exe` selects a different binary; `--powershell`, `--probe` and `--out` also exist, and `--help` on the pinned revision is the authoritative flag list). While the bounded wait runs, bring **that** window to the foreground and leave it visible; the harness never raises, focuses, moves, reorders windows or asks for foreground permission, it only reads which window is foreground and re-checks the handle, pid and pinned title each poll. A capture is accepted only when the image comes from the bound target window, the handle still matches and the sampled display agreement holds.
 
 Do the steps in this order: **100 %, then 125 %, 150 %, 175 %, 200 %**, and repeat once with the window dragged to a monitor of a different scale.
 
-**What each step must establish, and where it is recorded.** Body text size/line height and the Japanese/Latin mixed runs with no missing glyphs or clipping; the structural hairline actually drawn and its physical pixel width matching `1 / scale_factor`; the focus outline at 2 DIP and independent of the hairline; which face the run resolves to; High Contrast focus rendering; and text/layout frame cost. A step whose screenshot is refused (`WINDOW_OCCLUDED`, an occluded target) or cannot be judged stays `NOT_MEASURED`; a refused capture leaves no file and no digest by design.
+**What each step must establish, and where it is recorded.** Body text size/line height and the Japanese/Latin mixed runs with no missing glyphs or clipping; the structural hairline actually drawn with a **DIP width of `1 / scale_factor` that resolves to exactly one physical pixel** at every scale (1.000 DIP at 100 %, 0.800 at 125 %, 0.667 at 150 %, 0.571 at 175 %, 0.500 at 200 %, each one physical pixel); the focus outline at 2 DIP and independent of the hairline; which face the run resolves to; High Contrast focus rendering; and text/layout frame cost. A step whose screenshot is refused (`WINDOW_OCCLUDED`, an occluded target) or cannot be judged stays `NOT_MEASURED`; a refused capture leaves no file and no digest by design.
 
 **Boundary.** Until evidence exists for the steps above, MP-TYP1 stays **not complete**: the DPI matrix, the AX geometry (Task Rail 240, Inspector 320) and the label/mixed-script presence are the only OBSERVED typography results, and they are not pixel claims. A real rendering defect found by this runbook opens a new repair slice; the runbook itself changes no product code.
 
