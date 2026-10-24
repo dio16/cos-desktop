@@ -2955,8 +2955,12 @@ fn changing_tool_after_a_success_discards_the_value() {
     assert_eq!(sampler.reason, Some("sample_tool_changed"));
 }
 
-/// NIT N3: a sampler program rewritten while the run is in flight is caught before the
-/// spawn, records `sample_tool_changed`, and takes no attempt.
+/// NIT N3: a sampler program rewritten while the run is in flight records
+/// `sample_tool_changed` and never yields a value. Either comparison can produce the
+/// token (refused before the spawn, or discarded after it), so this test bounds the
+/// attempt count instead of pinning it; the distinct proof for the *pre-spawn* call site
+/// is `pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool`, which restores the
+/// file before the post-spawn check would run.
 #[test]
 fn tool_rewritten_before_the_spawn_records_sample_tool_changed() {
     let fixture = Fixture::new();
@@ -2990,6 +2994,105 @@ fn tool_rewritten_before_the_spawn_records_sample_tool_changed() {
         observation.working_set_max_bytes, None,
         "no value from a swapped tool"
     );
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    assert_eq!(observation.working_set_reason, Some("sample_tool_changed"));
+}
+
+/// How the rewrite window closed, so a failure names the reason instead of a write error.
+enum Window {
+    /// The rewrite and the restore both happened inside the run.
+    Opened,
+    /// The sampler was already running from the rewritten file.
+    SamplerAlreadyRunning,
+    /// The candidate never announced its start.
+    Timeout,
+}
+
+/// The pre-spawn digest check has its own proof: the sampler is rewritten *after* the
+/// harness hashed it and restored before the sample would exit, so a missing pre-spawn
+/// comparison would let a value through while the post-spawn comparison still matches.
+///
+/// Ordering is causal, not a sleep: the harness hashes the tool, then spawns the
+/// candidate, and the candidate's sentinel is what releases the rewrite. The first
+/// attempt is scheduled inside the rewritten window, and the restore happens before the
+/// run ends, so the file the post-spawn check reads is the original again.
+#[test]
+fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
+    let fixture = Fixture::new();
+    let tool = fixture.base.join("tool.exe");
+    std::fs::copy(std::env::current_exe().unwrap(), &tool).unwrap();
+    let original = std::fs::read(&tool).unwrap();
+    let sentinel = fixture.base.join("candidate-started");
+    fixture.case("a.png", "announce-sleep");
+
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.sample_tool = Some(tool.clone());
+    config.sample_argv_prefix = vec![
+        std::ffi::OsString::from("--exact"),
+        std::ffi::OsString::from("fake_sampler_valid_helper"),
+        std::ffi::OsString::from("--nocapture"),
+        std::ffi::OsString::from("--quiet"),
+    ];
+    // The first attempt is late enough that the rewrite always precedes it, and the
+    // restore is later still, so the rewritten state is what the pre-spawn check sees.
+    config.sample_interval_ms = 1_500;
+    config.cancel_after_ms = Some(5_000);
+
+    let mutator = {
+        let tool = tool.clone();
+        let original = original.clone();
+        std::thread::spawn(move || {
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
+            while !sentinel.exists() {
+                if std::time::Instant::now() > deadline {
+                    return Window::Timeout;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            }
+            // Rewrite while the harness is running, then restore before the run ends.
+            let mut rewritten = original.clone();
+            rewritten.extend_from_slice(b"rewritten-during-the-run");
+            if std::fs::write(&tool, &rewritten).is_err() {
+                // The sampler is already executing this image: the attempt was not
+                // refused before the spawn, which is exactly what this test forbids.
+                return Window::SamplerAlreadyRunning;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(3_000));
+            if std::fs::write(&tool, &original).is_err() {
+                return Window::SamplerAlreadyRunning;
+            }
+            Window::Opened
+        })
+    };
+    let report = harness::run(&config).unwrap();
+    match mutator.join().unwrap() {
+        Window::Opened => {}
+        Window::SamplerAlreadyRunning => panic!(
+            "the sampler was already executing the rewritten file: the pre-spawn digest \
+             comparison did not refuse the attempt"
+        ),
+        Window::Timeout => panic!("the candidate never announced its start"),
+    }
+
+    // The tool the post-spawn check reads is the original again: only the pre-spawn
+    // comparison could have refused this attempt.
+    assert_eq!(
+        std::fs::read(&tool).unwrap(),
+        original,
+        "the sampler file was restored"
+    );
+
+    let observation = &report.observations[0];
+    assert_eq!(
+        observation.working_set_attempts, 0,
+        "the attempt was refused before any spawn"
+    );
+    assert_eq!(
+        observation.working_set_samples, 0,
+        "no value from an unverified tool"
+    );
+    assert_eq!(observation.working_set_max_bytes, None);
     assert_eq!(observation.working_set_sampling, "not_measured");
     assert_eq!(observation.working_set_reason, Some("sample_tool_changed"));
 }
@@ -3796,6 +3899,19 @@ fn fake_candidate(support: ProbeSupport) {
             std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
             std::thread::sleep(std::time::Duration::from_millis(1_200));
             drop(block);
+            0
+        }
+        "announce-sleep" => {
+            // Announce that the candidate started (which happens strictly after the
+            // harness hashed the sampler), then outlive the deadline.
+            if let Some(base) = std::path::Path::new(&input)
+                .parent()
+                .and_then(|dir| dir.parent())
+            {
+                std::fs::write(base.join("candidate-started"), b"started").unwrap();
+            }
+            std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
+            std::thread::sleep(std::time::Duration::from_secs(5));
             0
         }
         "mutate-tool" => {
