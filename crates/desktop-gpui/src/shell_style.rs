@@ -4,6 +4,12 @@
 //! constant, keeps a default or re-derives a token set, so the composition root
 //! stays the only resolution point and an override cannot be bypassed by a
 //! surface. The adapters are pure: they never touch a window, GPU or texture.
+//!
+//! Two limits are declared rather than hidden. The Japanese fallback line
+//! height token is not applied by [`TextSpec`]: one GPUI text run carries one
+//! line height, and mixed-script line height/clipping is outside drawing
+//! acceptance until it is verified natively. An unusable platform scale factor
+//! is refused by [`separator`] instead of being replaced with a width.
 
 use std::sync::Arc;
 
@@ -11,7 +17,7 @@ use gpui::{
     Div, Font, FontFallbacks, FontFeatures, FontStyle, FontWeight, Pixels, SharedString, Styled, px,
 };
 
-use crate::tokens::{DesignTokens, TextStyle};
+use crate::tokens::{DesignTokens, TextStyle, TokenError};
 
 /// GPUI text inputs for one accepted type scale entry.
 #[derive(Clone, Debug, PartialEq)]
@@ -29,6 +35,12 @@ impl TextSpec {
     /// (`Segoe UI`, then `Yu Gothic UI`, then `Meiryo`) is handed to the
     /// platform shaping layer instead of being resolved or split per glyph here.
     /// The lighter end of the entry's accepted weight range is the default.
+    ///
+    /// The Japanese fallback line height token is **not** applied: one GPUI text
+    /// run carries one line height, so the Latin `line_height_dip` is what the
+    /// shell draws with, and the mixed-script fallback line height stays outside
+    /// drawing acceptance until mixed-script line height and clipping are
+    /// verified natively.
     pub(crate) fn ui(tokens: &DesignTokens, style: TextStyle) -> Self {
         let metrics = tokens.typography.metrics(style);
         let weight = FontWeight(f32::from(metrics.weight_min));
@@ -38,7 +50,7 @@ impl TextSpec {
             line_height: px(metrics.line_height_dip),
             font: Font {
                 family: SharedString::from(tokens.typography.latin_ui.as_ref()),
-                features: FontFeatures::default(),
+                features: font_features(tokens),
                 fallbacks: Some(FontFallbacks(Arc::new(vec![
                     tokens.typography.latin_ui_fallback.to_string(),
                     tokens.typography.japanese_ui.to_string(),
@@ -60,6 +72,23 @@ impl TextSpec {
     }
 }
 
+/// The pinned revision's own OpenType feature channel.
+///
+/// `gpui::FontFeatures` is this revision's tag/value list
+/// (`FontFeatures::tag_value_list`), and the pinned Windows backend maps each
+/// entry to `DWRITE_FONT_FEATURE` in `gpui_windows::apply_font_features`. The
+/// revision has no named `tnum` helper, so the accepted `tabular_numerals`
+/// token writes the standard OpenType `tnum` tag (value `1` = enabled) through
+/// that list. `false` requests no feature at all instead of relying on a
+/// backend default.
+fn font_features(tokens: &DesignTokens) -> FontFeatures {
+    if tokens.typography.tabular_numerals {
+        FontFeatures(Arc::new(vec![("tnum".to_string(), 1)]))
+    } else {
+        FontFeatures::default()
+    }
+}
+
 /// The task rail width from the resolved token set.
 pub(crate) fn rail_width(tokens: &DesignTokens) -> Pixels {
     px(tokens.geometry.task_rail_dip)
@@ -77,14 +106,12 @@ pub(crate) fn focus_outline(tokens: &DesignTokens) -> Pixels {
 
 /// One physical pixel of structural separator at `scale_factor`, in DIP.
 ///
-/// A platform scale factor that cannot be consumed (never observed in a live
-/// window) yields the declared physical-pixel count in DIP instead of a
-/// fabricated width; the refusal itself stays in the token layer.
-pub(crate) fn separator(tokens: &DesignTokens, scale_factor: f32) -> Pixels {
-    tokens
-        .geometry
-        .separator_dip(scale_factor)
-        .map_or_else(|_| px(tokens.geometry.separator_physical_pixels), px)
+/// Fails closed: an unusable platform scale factor (zero, negative,
+/// non-finite) returns the closed [`TokenError`] instead of substituting a
+/// width. The render path consumes only `Ok` and draws no separator for that
+/// frame, so an invalid scale factor can never render a fabricated hairline.
+pub(crate) fn separator(tokens: &DesignTokens, scale_factor: f32) -> Result<Pixels, TokenError> {
+    tokens.geometry.separator_dip(scale_factor).map(px)
 }
 
 #[cfg(test)]
@@ -98,10 +125,10 @@ mod tests {
         assert_eq!(rail_width(&tokens), px(240.0));
         assert_eq!(inspector_width(&tokens), px(320.0));
         assert_eq!(focus_outline(&tokens), px(2.0));
-        assert_eq!(separator(&tokens, 1.0), px(1.0));
-        assert_eq!(separator(&tokens, 1.25), px(0.8));
-        assert_eq!(separator(&tokens, 1.5), px(1.0 / 1.5));
-        assert_eq!(separator(&tokens, 2.0), px(0.5));
+        assert_eq!(separator(&tokens, 1.0), Ok(px(1.0)));
+        assert_eq!(separator(&tokens, 1.25), Ok(px(0.8)));
+        assert_eq!(separator(&tokens, 1.5), Ok(px(1.0 / 1.5)));
+        assert_eq!(separator(&tokens, 2.0), Ok(px(0.5)));
     }
 
     #[test]
@@ -118,7 +145,7 @@ mod tests {
         assert_eq!(rail_width(&tokens), px(300.0));
         assert_eq!(inspector_width(&tokens), px(400.0));
         assert_eq!(focus_outline(&tokens), px(3.0));
-        assert_eq!(separator(&tokens, 2.0), px(1.0));
+        assert_eq!(separator(&tokens, 2.0), Ok(px(1.0)));
         // An unaffected surface keeps its accepted value: nothing re-derives.
         assert_eq!(tokens.geometry.thumbnail_dip, 72.0);
     }
@@ -176,5 +203,55 @@ mod tests {
         assert_eq!(spec.line_height, px(21.0));
         // Other entries keep the accepted values.
         assert_eq!(TextSpec::ui(&tokens, TextStyle::Xs).size, px(12.0));
+    }
+
+    #[test]
+    fn the_tabular_numerals_token_reaches_the_font_features() {
+        let accepted = DesignTokens::accepted();
+        assert!(accepted.typography.tabular_numerals);
+        // The enabled token writes the pinned revision's OpenType feature
+        // through its own tag/value list, which the Windows backend consumes.
+        for style in TextStyle::ALL {
+            let spec = TextSpec::ui(&accepted, style);
+            assert_eq!(
+                spec.font.features.tag_value_list(),
+                [("tnum".to_string(), 1)],
+                "{}",
+                style.name()
+            );
+        }
+        // Disabling the token requests no feature at all: a real off, not a
+        // backend default that happens to match.
+        let disabled = DesignTokensOverride {
+            tabular_numerals: Some(false),
+            ..DesignTokensOverride::default()
+        }
+        .resolve_accepted()
+        .expect("a valid override resolves");
+        let spec = TextSpec::ui(&disabled, TextStyle::Body);
+        assert!(spec.font.features.tag_value_list().is_empty());
+        assert_eq!(spec.font.features, FontFeatures::default());
+    }
+
+    #[test]
+    fn an_unusable_scale_factor_produces_no_rendered_width() {
+        let tokens = DesignTokens::accepted();
+        for scale_factor in [0.0_f32, -1.0, f32::NAN, f32::INFINITY] {
+            assert!(
+                matches!(
+                    separator(&tokens, scale_factor),
+                    Err(TokenError::NonPositiveScaleFactor { .. })
+                ),
+                "{scale_factor}"
+            );
+            // The render path consumes `Ok` only: an error yields no width,
+            // never a substituted one.
+            assert_eq!(
+                separator(&tokens, scale_factor).ok(),
+                None,
+                "{scale_factor}"
+            );
+        }
+        assert_eq!(separator(&tokens, 1.25).ok(), Some(px(0.8)));
     }
 }

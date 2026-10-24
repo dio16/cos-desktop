@@ -1721,7 +1721,9 @@ impl Render for Shell {
         let rail_width = shell_style::rail_width(&self.tokens);
         let inspector_width = shell_style::inspector_width(&self.tokens);
         let focus_outline = shell_style::focus_outline(&self.tokens);
-        let hairline = shell_style::separator(&self.tokens, window.scale_factor());
+        // A usable scale factor yields the physical hairline; an unusable one
+        // yields no separator at all (fail closed, never a substituted width).
+        let hairline = shell_style::separator(&self.tokens, window.scale_factor()).ok();
         if let Ok(mut preferences) = self.preferences.lock() {
             let bounds = window.bounds();
             preferences.window = Some(WindowGeometry {
@@ -2728,7 +2730,7 @@ impl Render for Shell {
                         div()
                             .w(px(DOCK_GROUP_GUTTER_PX))
                             .flex_none()
-                            .border_r(hairline)
+                            .when_some(hairline, |element, width| element.border_r(width))
                             .border_color(rgb(if group_start { 0xaeccec } else { 0x3c4046 }))
                             .px_1()
                             .truncate()
