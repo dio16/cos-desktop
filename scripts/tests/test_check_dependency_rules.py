@@ -13,6 +13,8 @@ Run directly or through the checker:
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -292,6 +294,109 @@ class DependencyRulesTests(unittest.TestCase):
         )
         self.assertEqual(1, failed.returncode)
         self.assertIn("forbidden-edge", failed.stderr)
+
+
+class CargoResolutionTests(unittest.TestCase):
+    """The cargo program resolution rule: CARGO when set (cargo's convention), otherwise "cargo".
+
+    Every case is hermetic: it asserts on the built argv or on the closed launch-failure path, so it
+    never depends on this machine's PATH and never needs a real cargo executable.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory(prefix="cos-desktop-cargo-")
+        self.root = Path(self._tmp.name).resolve()
+        self._original_cargo = os.environ.get("CARGO")
+
+    def tearDown(self):
+        self.set_cargo(self._original_cargo)
+        self._tmp.cleanup()
+
+    @staticmethod
+    def set_cargo(value):
+        if value is None:
+            os.environ.pop("CARGO", None)
+        else:
+            os.environ["CARGO"] = value
+
+    def metadata(self, packages):
+        return {
+            "version": 1,
+            "workspace_root": str(self.root),
+            "workspace_members": [package["id"] for package in packages],
+            "workspace_default_members": [package["id"] for package in packages],
+            "target_directory": str(self.root / "target"),
+            "packages": packages,
+            "resolve": None,
+        }
+
+    def member(self, name):
+        return {
+            "name": name,
+            "id": f"path+file:///{name}#{name}@0.1.0",
+            "source": None,
+            "manifest_path": str(self.root / "crates" / name / "Cargo.toml"),
+            "dependencies": [],
+        }
+
+    def test_cargo_program_comes_from_environment(self):
+        # sys.executable is an existing executable on every machine, so the argv assertion needs
+        # neither PATH nor a real cargo, and nothing is launched.
+        self.set_cargo(sys.executable)
+        self.assertEqual(sys.executable, cdr._cargo_program())
+        self.assertEqual(
+            [sys.executable, "metadata", "--locked", "--no-deps", "--format-version", "1"],
+            cdr._cargo_metadata_command(),
+        )
+
+    def test_cargo_program_falls_back_to_bare_cargo(self):
+        self.set_cargo(None)
+        self.assertEqual("cargo", cdr._cargo_program())
+        self.assertEqual(
+            ["cargo", "metadata", "--locked", "--no-deps", "--format-version", "1"],
+            cdr._cargo_metadata_command(),
+        )
+        # An empty value is not a usable program name, so it falls back as well.
+        self.set_cargo("")
+        self.assertEqual("cargo", cdr._cargo_program())
+
+    def test_unlaunchable_cargo_is_a_closed_input_error(self):
+        missing = self.root / "no-such-cargo.exe"
+        self.set_cargo(str(missing))
+        with self.assertRaises(RuntimeError) as raised:
+            cdr.run_cargo_metadata(str(self.root))
+        self.assertIn(str(missing), str(raised.exception))
+        self.assertIn("CARGO", str(raised.exception))
+
+        # The closed CLI path: exit 2 with the resolved program named, never a crash or a result.
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            code = cdr.main([])
+        self.assertEqual(2, code)
+        self.assertIn("input error", stderr.getvalue())
+        self.assertIn(str(missing), stderr.getvalue())
+
+    def test_resolution_does_not_change_rule_outcomes_or_exit_codes(self):
+        # --metadata bypasses the cargo invocation, so a CARGO value must never change rule
+        # outcomes, the clean exit code (0) or the violation exit code (1).
+        self.set_cargo(str(self.root / "no-such-cargo.exe"))
+        clean = self.metadata([self.member("desktop-protocol")])
+        failing = self.metadata([self.member("unapproved-layer")])
+        self.assertEqual([], cdr.check_metadata(clean, str(self.root)))
+
+        clean_file = self.root / "clean.json"
+        clean_file.write_text(json.dumps(clean), encoding="utf-8")
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            self.assertEqual(0, cdr.main(["--metadata", str(clean_file)]))
+        self.assertIn("OK", stdout.getvalue())
+
+        failing_file = self.root / "unapproved.json"
+        failing_file.write_text(json.dumps(failing), encoding="utf-8")
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            self.assertEqual(1, cdr.main(["--metadata", str(failing_file)]))
+        self.assertIn("unknown-package", stderr.getvalue())
 
 
 if __name__ == "__main__":

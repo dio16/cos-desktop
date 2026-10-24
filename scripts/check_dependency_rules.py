@@ -333,11 +333,20 @@ def check_metadata(metadata: dict, repo_root: str) -> list[Violation]:
     return sorted(violations, key=lambda violation: (violation.code, violation.message))
 
 
+def _cargo_program() -> str:
+    """The cargo executable to invoke: CARGO when set (cargo's own convention), else "cargo"."""
+    return os.environ.get("CARGO") or "cargo"
+
+
+def _cargo_metadata_command() -> list[str]:
+    """The metadata argv, kept separate so resolution is testable without launching cargo."""
+    return [_cargo_program(), "metadata", "--locked", "--no-deps", "--format-version", "1"]
+
+
 def run_cargo_metadata(repo_root: str) -> dict:
     # CARGO is cargo's own convention for naming the cargo executable, so a caller with a bounded
     # or empty PATH (for example an isolated gate runner) can pass the program explicitly.
-    cargo = os.environ.get("CARGO") or "cargo"
-    command = [cargo, "metadata", "--locked", "--no-deps", "--format-version", "1"]
+    command = _cargo_metadata_command()
     try:
         completed = subprocess.run(
             command,
@@ -349,7 +358,7 @@ def run_cargo_metadata(repo_root: str) -> dict:
         )
     except OSError as error:
         raise RuntimeError(
-            f"cannot launch the cargo program {cargo!r} ({error}); set the CARGO environment variable"
+            f"cannot launch the cargo program '{command[0]}' ({error}); set the CARGO environment variable"
             f" when the current PATH cannot resolve cargo"
         ) from error
     if completed.returncode != 0:
