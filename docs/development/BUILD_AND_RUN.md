@@ -501,9 +501,10 @@ cargo run --locked -p cos-desktop -- --fixture
 Then, with the COS Desktop window visible, run the observation (absolute paths only; the harness never raises, focuses, moves or changes z-order, and it waits read-only for the window to be foregrounded):
 
 ```text
-python -B apps/desktop/devtools/typography/host_observe.py ^
-  --probe apps/desktop/devtools/typography/^
-  --wait-for-foreground 120 --out <evidence-dir>\host
+python -B apps/desktop/devtools/typography/host_observe.py --out <evidence-dir>/host --wait-for-foreground 120
+```
+
+`--exe` (default the debug fixture binary), `--powershell`, `--probe` and `--out` also exist; run `python -B apps/desktop/devtools/typography/host_observe.py --help` on the pinned revision for the authoritative flag list. The harness launches the fixture itself and calls the repository's independent probe (`devtools/r0/n03_probe.ps1`); it never raises, focuses, moves or reorders windows.
 ```
 
 Do the steps in this order: **100 %, then 125 %, 150 %, 175 %, 200 %**, and repeat once with the window dragged to a monitor of a different scale.
