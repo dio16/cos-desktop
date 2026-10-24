@@ -63,6 +63,7 @@ procedure; nothing here declares MP-TYP1 complete.
 from __future__ import annotations
 
 import argparse
+import copy
 import ctypes
 import datetime
 import hashlib
@@ -93,6 +94,24 @@ MAX_FOREGROUND_WAIT_S = 120.0
 REASON_FOREGROUND_WAIT_EXPIRED = "FOREGROUND_WAIT_EXPIRED"
 # Closed token only: the record must never identify a window that is not the target.
 REASON_FOREGROUND_IS_NOT_THE_TARGET = "FOREGROUND_IS_NOT_THE_TARGET"
+# A capture refused with one of these codes is a failed integrity check (FAIL), not an
+# honest NOT_MEASURED state such as an occluded window or an expired wait.
+REFUSAL_CODES = frozenset(
+    {
+        "CAPTURE_NOT_BOUND",
+        "CAPTURE_IDENTITY_MISMATCH",
+        "CAPTURE_CONTENT_MISMATCH",
+        "FOREGROUND_HANDLE_MISMATCH",
+        "PNG_INVALID",
+        "PNG_TRUNCATED",
+        "PNG_UNDECODABLE",
+        "PNG_TRAILING_DATA",
+        "PNG_TOO_LARGE",
+        "SCREENSHOT_MISMATCH",
+        "SCREENSHOT_GEOMETRY_MISMATCH",
+        "WINDOW_TITLE_MISMATCH",
+    }
+)
 MAX_SCREENSHOT_BYTES = 32 * 1024 * 1024
 STOP_TIMEOUT_S = 10.0
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -220,6 +239,44 @@ def fail(code: str) -> None:
 
 def sha256_bytes(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def sanitise_probe_document(document: dict[str, Any]) -> dict[str, Any]:
+    """Drop global focus information before the probe record is persisted.
+
+    UIA's focused element is session-global: it can belong to another application, so it
+    is never written. Element-level state inside the target window's subtree is kept.
+    """
+    sanitised = copy.deepcopy(document)
+    uia = sanitised.get("uia")
+    if isinstance(uia, dict):
+        uia.pop("focused", None)
+    return sanitised
+
+
+def write_probe_record(out: Path, document: dict[str, Any]) -> None:
+    """Persist the sanitised probe record; global focus never reaches the file."""
+    try:
+        (out / "probe.json").write_text(
+            json.dumps(
+                sanitise_probe_document(document),
+                sort_keys=True,
+                separators=(",", ":"),
+            ),
+            encoding="utf-8",
+        )
+    except OSError:
+        fail("WRITE_FAILED")
+
+
+def remove_capture(path: Path) -> None:
+    """Delete the probe image from the scratch directory (explicit disposition)."""
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        return
+    except OSError:
+        fail("WRITE_FAILED")
 
 
 def read_bounded_stream(stream: Any, cap: int) -> bytes:
@@ -770,12 +827,18 @@ def discard_capture(path: Path, wait: dict[str, Any]) -> None:
     """Delete any probe image when the wait expired, so no screenshot can be recorded."""
     if wait.get("outcome") != REASON_FOREGROUND_WAIT_EXPIRED:
         return
-    try:
-        path.unlink()
-    except FileNotFoundError:
-        return
-    except OSError:
-        fail("WRITE_FAILED")
+    remove_capture(path)
+
+
+def refuse_capture(path: Path, code: str) -> dict[str, Any]:
+    """A refused capture is deleted and recorded without a path to a dead artifact."""
+    remove_capture(path)
+    return {
+        "status": "NOT_MEASURED",
+        "reason": code,
+        "detail": "capture refused; the rejected image was deleted from the scratch "
+        "directory",
+    }
 
 
 def verify_waited_handle(
@@ -790,6 +853,32 @@ def verify_waited_handle(
         "status": "OBSERVED",
         "handle": window["handle"],
         "captured_handle_matches_waited": True,
+    }
+
+
+def finalise_screenshot(
+    observed: dict[str, Any],
+    wait: dict[str, Any],
+    pid: int,
+    *,
+    live_lookup: Any = None,
+) -> dict[str, Any]:
+    """Expiry first, then the OBSERVED branch: an expired wait can never yield an image."""
+    resolved = resolve_screenshot(observed["screenshot"], wait)
+    if resolved["status"] != "OBSERVED":
+        return resolved
+    live = (live_lookup or live_window)(observed["window"]["handle"])
+    identity = verify_capture_identity(
+        resolved["raw"], observed["window"], pid, live
+    )
+    return {
+        "status": "OBSERVED",
+        "method": identity["method"],
+        "identity": identity,
+        "digest": resolved["digest"],
+        "ihdr": resolved["ihdr"],
+        "bytes": resolved["bytes"],
+        "path": resolved["path"],
     }
 
 
@@ -921,7 +1010,15 @@ def build_record(
         },
         {
             "name": "screenshot_is_the_target_window",
-            "status": "PASS" if screenshot["status"] == "OBSERVED" else "NOT_MEASURED",
+            "status": (
+                "PASS"
+                if screenshot["status"] == "OBSERVED"
+                else (
+                    "FAIL"
+                    if screenshot.get("reason") in REFUSAL_CODES
+                    else "NOT_MEASURED"
+                )
+            ),
             "detail": shot_detail,
         },
         {
@@ -980,6 +1077,12 @@ def build_record(
         if binding is not None
         else {"status": "NOT_APPLICABLE"},
         "desktop_state_changed": False,
+        "capture_refusal": (
+            screenshot.get("reason")
+            if screenshot["status"] == "NOT_MEASURED"
+            and screenshot.get("reason") in REFUSAL_CODES
+            else None
+        ),
         "acceptance_procedure": {
             "human_step": "the user brings COS Desktop to the foreground (click its window "
             "or taskbar entry) or runs the documented command from a terminal that is "
@@ -1028,6 +1131,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     process: subprocess.Popen | None = None
+    screenshot: Path | None = None
     try:
         exe = Path(args.exe)
         if not exe.is_file():
@@ -1052,24 +1156,15 @@ def main(argv: list[str] | None = None) -> int:
             args.powershell, probe, process.pid, screenshot
         )
         observed = validate_probe_record(document, process.pid, screenshot)
-        binding = verify_waited_handle(wait, observed["window"])
         discard_capture(screenshot, wait)
-        if observed["screenshot"]["status"] == "OBSERVED":
-            live = live_window(observed["window"]["handle"])
-            identity = verify_capture_identity(
-                observed["screenshot"]["raw"], observed["window"], process.pid, live
+        try:
+            binding = verify_waited_handle(wait, observed["window"])
+            observed["screenshot"] = finalise_screenshot(
+                observed, wait, process.pid
             )
-            observed["screenshot"] = {
-                "status": "OBSERVED",
-                "method": identity["method"],
-                "identity": identity,
-                "digest": observed["screenshot"]["digest"],
-                "ihdr": observed["screenshot"]["ihdr"],
-                "bytes": observed["screenshot"]["bytes"],
-                "path": observed["screenshot"]["path"],
-            }
-        else:
-            observed["screenshot"] = resolve_screenshot(observed["screenshot"], wait)
+        except ObserveError as refusal:
+            observed["screenshot"] = refuse_capture(screenshot, refusal.code)
+            binding = {"status": "NOT_APPLICABLE"}
         scale = host_scale(observed["window"]["handle"])
         analysis = analyze_elements(observed["uia"]["elements"])
         stop_record = stop(process)
@@ -1077,12 +1172,7 @@ def main(argv: list[str] | None = None) -> int:
         record = build_record(
             exe, exe_digest, observed, scale, analysis, stop_record, wait, binding
         )
-        try:
-            (out / "probe.json").write_text(
-                json.dumps(document, sort_keys=True, separators=(",", ":")), encoding="utf-8"
-            )
-        except OSError:
-            fail("WRITE_FAILED")
+        write_probe_record(out, document)
         digest = write_record(record, out / "observation.json")
         print(
             json.dumps(
@@ -1116,6 +1206,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2 if record["result"] == "FAIL" else 0
     except ObserveError as error:
+        if screenshot is not None:
+            try:
+                remove_capture(screenshot)
+            except ObserveError:
+                pass
         print(json.dumps({"ok": False, "error": error.code}, separators=(",", ":")))
     except (OSError, ValueError, TypeError):
         print(json.dumps({"ok": False, "error": "PROBE_FAILED"}, separators=(",", ":")))

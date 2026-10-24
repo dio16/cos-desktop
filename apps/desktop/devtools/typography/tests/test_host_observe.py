@@ -688,6 +688,181 @@ class ForegroundWaitTest(unittest.TestCase):
             self.assertEqual(raised.exception.code, "ARGS")
 
 
+class PrivacySweepTest(unittest.TestCase):
+    MARKER = "FOREIGN_FOCUS_MARKER"
+
+    def _document(self) -> dict:
+        return {
+            "ok": True,
+            "window": dict(WINDOW),
+            "screenshot": {"status": "NOT_MEASURED", "reason": "WINDOW_OCCLUDED"},
+            "uia": {
+                "status": "OBSERVED",
+                "reason": "",
+                "elements": [element("Task Rail")],
+                "focused": {
+                    "name": self.MARKER,
+                    "control_type": "ControlType.Hyperlink",
+                    "automation_id": "",
+                },
+                "truncated": False,
+                "depth_limited": False,
+                "elements_visited": 1,
+            },
+        }
+
+    def test_the_probe_record_is_sanitised_before_it_is_written(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            observe.write_probe_record(out, self._document())
+            body = (out / "probe.json").read_text(encoding="utf-8")
+        self.assertNotIn(self.MARKER, body)
+        # The global focus element is gone; per-element state inside the target subtree
+        # (for example "focused": false) is not a foreign identity and is kept.
+        self.assertNotIn("focused", json.loads(body)["uia"])
+
+    def test_no_file_this_harness_writes_carries_a_foreign_identifier(self) -> None:
+        document = self._document()
+        observed = {
+            "window": dict(WINDOW),
+            "screenshot": {
+                "status": "NOT_MEASURED",
+                "reason": observe.REASON_FOREGROUND_WAIT_EXPIRED,
+                "elapsed_s": 30.0,
+            },
+            "uia": document["uia"],
+        }
+        wait = {
+            "outcome": observe.REASON_FOREGROUND_WAIT_EXPIRED,
+            "elapsed_s": 30.0,
+            "polls": 121,
+            "observed": observe.REASON_FOREGROUND_IS_NOT_THE_TARGET,
+        }
+        record = observe.build_record(
+            Path("cos-desktop.exe"),
+            "sha256:" + "0" * 64,
+            observed,
+            {"status": "OBSERVED", "dpi": 96, "scale": 1.0, "method": "GetDpiForWindow",
+             "controlled_ladder_step": False},
+            observe.analyze_elements([element("Task Rail")]),
+            {"method": "taskkill /T /F", "exit_code": 1},
+            wait,
+            {"status": "NOT_APPLICABLE"},
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            observe.write_probe_record(out, document)
+            observe.write_record(record, out / "observation.json")
+            (out / "app.log").write_bytes(b"")
+            import dpi_matrix
+
+            with contextlib.redirect_stdout(io.StringIO()):
+                dpi_matrix.main(["--out", str(out / "dpi_matrix.json")])
+            for name in ("probe.json", "observation.json", "app.log", "dpi_matrix.json"):
+                body = (out / name).read_text(encoding="utf-8")
+                self.assertNotIn(self.MARKER, body, name)
+
+
+class ExpiredWaitCaptureTest(unittest.TestCase):
+    def test_an_expired_wait_with_a_successful_probe_capture_writes_no_image(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(png(640, 480))
+            observed = {
+                "window": dict(WINDOW),
+                "screenshot": {
+                    "status": "OBSERVED",
+                    "digest": observe.sha256_bytes(path.read_bytes()),
+                    "ihdr": {"width": 640, "height": 480},
+                    "bytes": path.stat().st_size,
+                    "path": str(path),
+                    "raw": captured(),
+                },
+                "uia": {
+                    "status": "OBSERVED",
+                    "reason": "",
+                    "elements": [element("Task Rail")],
+                    "truncated": False,
+                    "depth_limited": False,
+                    "elements_visited": 1,
+                },
+            }
+            wait = {
+                "outcome": observe.REASON_FOREGROUND_WAIT_EXPIRED,
+                "elapsed_s": 30.0,
+                "polls": 121,
+            }
+            observe.discard_capture(path, wait)
+            resolved = observe.finalise_screenshot(
+                observed, wait, 4242, live_lookup=lambda _handle: LIVE
+            )
+            self.assertEqual(resolved["status"], "NOT_MEASURED")
+            self.assertEqual(resolved["reason"], observe.REASON_FOREGROUND_WAIT_EXPIRED)
+            self.assertNotIn("digest", resolved)
+            self.assertNotIn("path", resolved)
+            self.assertFalse(path.exists())
+            observed["screenshot"] = resolved
+            record = observe.build_record(
+                Path("cos-desktop.exe"),
+                "sha256:" + "0" * 64,
+                observed,
+                {"status": "OBSERVED", "dpi": 96, "scale": 1.0,
+                 "method": "GetDpiForWindow", "controlled_ladder_step": False},
+                observe.analyze_elements([element("Task Rail")]),
+                {"method": "taskkill /T /F", "exit_code": 1},
+                wait,
+                {"status": "NOT_APPLICABLE"},
+            )
+        self.assertNotIn("digest", record["screenshot"])
+        self.assertNotIn("path", record["screenshot"])
+
+
+class RefusedCaptureTest(unittest.TestCase):
+    def test_a_refused_capture_is_deleted_and_recorded_without_a_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(png(640, 480))
+            shot = observe.refuse_capture(path, "FOREGROUND_HANDLE_MISMATCH")
+            self.assertFalse(path.exists())
+            self.assertEqual(shot["status"], "NOT_MEASURED")
+            self.assertEqual(shot["reason"], "FOREGROUND_HANDLE_MISMATCH")
+            self.assertNotIn("path", shot)
+            self.assertNotIn("digest", shot)
+            record = observe.build_record(
+                Path("cos-desktop.exe"),
+                "sha256:" + "0" * 64,
+                {
+                    "window": dict(WINDOW),
+                    "screenshot": shot,
+                    "uia": {
+                        "status": "OBSERVED",
+                        "reason": "",
+                        "elements": [element("Task Rail")],
+                        "truncated": False,
+                        "depth_limited": False,
+                        "elements_visited": 1,
+                    },
+                },
+                {"status": "OBSERVED", "dpi": 96, "scale": 1.0,
+                 "method": "GetDpiForWindow", "controlled_ladder_step": False},
+                observe.analyze_elements([element("Task Rail")]),
+                {"method": "taskkill /T /F", "exit_code": 1},
+                {"outcome": "FOREGROUNDED", "elapsed_s": 1.0, "handle": 7},
+                {"status": "NOT_APPLICABLE"},
+            )
+        check = next(
+            item
+            for item in record["checks"]
+            if item["name"] == "screenshot_is_the_target_window"
+        )
+        self.assertEqual(check["status"], "FAIL")
+        self.assertEqual(record["result"], "FAIL")
+        self.assertEqual(record["capture_refusal"], "FOREGROUND_HANDLE_MISMATCH")
+        self.assertNotIn("digest", record["screenshot"])
+        self.assertNotIn("path", record["screenshot"])
+        self.assertFalse(path.exists())
+
+
 class NoDesktopStateChangeTest(unittest.TestCase):
     FORBIDDEN = (
         "AllowSetForegroundWindow",
