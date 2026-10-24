@@ -2,31 +2,39 @@
 #
 # Emits exactly one bounded JSON document on stdout. Every endpoint degrades independently
 # to NOT_MEASURED with a closed reason code; an endpoint the host refuses never becomes a
-# zero, a guess or an app-reported stand-in. This probe observes *decode-side* capability
-# only: it establishes nothing about presenting decoded frames through the pinned GPUI
-# revision, about copies/synchronisation into that path, colour metadata, device loss or
-# product playback latency, and it chooses no video route.
+# zero, a guess or an app-reported stand-in. Capture is bounded while reading: the probe
+# stops reading at -MaxOutputBytes, kills the child and records PROCESS_OUTPUT_CAPPED, so
+# the cap is a memory bound rather than a post-hoc size check.
 #
 # What it observes:
 #   * Media Foundation platform startup (MFStartup HRESULT), the MF component versions and
-#     the registered transform counts per MFT category (MFTEnumEx with the category GUIDs
-#     taken from the Windows SDK 10.0.19041.0 `mfapi.h` on the probe host).
+#     the registered transform counts per MFT category. The category GUIDs come from the
+#     Windows SDK `mfapi.h` on the probe host, and every count carries the MFTEnumFlag it
+#     was produced with: 0x1 SYNCMFT (software V1), 0x2 ASYNCMFT (software V2), 0x4
+#     HARDWARE, 0x3F ALL. A count without its flag is meaningless, so the flag values are
+#     recorded in the document.
 #   * D3D11 device creation (hardware and WARP) with the resulting feature level, plus the
 #     display-adapter identity (identity only, never a decode-capability claim).
 #   * Optional interop experiments through an operator-supplied FFmpeg (absolute path):
 #     software decode, seek, raw NV12/P010 output, D3D11VA/DXVA2 decode and an explicit
-#     hardware-frame download. Hardware decoding counts as OBSERVED only when the decoder
-#     log demonstrates hardware frames (a hardware `pix_fmt` or reported DXVA decoder GUIDs)
-#     and at least one frame decoded; a silent software fallback is recorded as
-#     UNSUPPORTED/HWACCEL_SOFTWARE_FALLBACK, never as success.
+#     hardware-frame download. Hardware decoding is OBSERVED only when the decoder log shows
+#     a hardware `pix_fmt` and at least one frame decoded; a reported DXVA GUID list is
+#     recorded as information but is never treated as hardware evidence, and a silent
+#     software fallback is UNSUPPORTED/HWACCEL_SOFTWARE_FALLBACK.
+#   * A bounded, read-only scan of the pinned product sources for a surface-presentation call
+#     site, which grounds the route-limitation statement MP-VID1 must produce (either a
+#     working presentation route, or the limitation of the examined route with grounds).
 #
 # Safety: only absolute operator-supplied program paths are used (no PATH search, which is
 # empty under a Refine Gate); argv is passed as a separate argument vector (no command
-# string is built or interpolated); every child has a timeout, every capture is capped, the
-# scratch directory is created by this probe and only that directory is deleted.
+# string is built or interpolated); every child has a timeout, both captured streams are
+# bounded and the child is killed on overflow; the scratch directory is created by this
+# probe and only that directory is deleted unless -KeepScratch was requested.
 param(
     [string]$FfmpegPath = '',
     [string]$ScratchRoot = '',
+    [string]$SourceRoot = '',
+    [switch]$KeepScratch,
     [int]$TimeoutMs = 15000,
     [int]$MaxOutputBytes = 262144,
     [int]$MaxFixtureBytes = 67108864
@@ -36,11 +44,28 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
-$ProbeVersion = 1
+$ProbeVersion = 2
 $MaxExperiments = 24
 $MaxPixFmts = 8
 $MaxDxvaGuids = 16
-$MaxArgv = 32
+$MaxSourceFiles = 3000
+$MaxSourceFileBytes = 1048576
+$MaxSourceMatches = 20
+
+# MFTEnumFlag values, copied from the Windows SDK header (mfapi.h 10.0.19041.0):
+#   0x1 MFT_ENUM_FLAG_SYNCMFT, 0x2 MFT_ENUM_FLAG_ASYNCMFT (software V2),
+#   0x4 MFT_ENUM_FLAG_HARDWARE (V2 hardware), 0x3F MFT_ENUM_FLAG_ALL.
+$MftFlagSync = 0x1
+$MftFlagAsync = 0x2
+$MftFlagHardware = 0x4
+$MftFlagAll = 0x3F
+
+# Decoder pixel formats that can only come from a hardware decoder surface.
+$HardwarePixFmts = @('d3d11', 'd3d11va', 'dxva2_vld', 'cuda', 'qsv', 'vaapi', 'vulkan')
+
+# Tokens of a surface-presentation route into the pinned UI path. A match means the route
+# may exist; no match means this checkout contains no such call site.
+$SurfaceTokens = @('draw_surfaces', 'IDXGISurface', 'ID3D11Texture2D', 'ID3D11VideoDevice', 'SurfaceHandle', 'import_surface')
 
 function Emit($Value) {
     $Value | ConvertTo-Json -Depth 8 -Compress
@@ -55,8 +80,6 @@ if ($TimeoutMs -lt 1000 -or $TimeoutMs -gt 120000) { Fail 'CAP_RANGE' }
 if ($MaxOutputBytes -lt 1024 -or $MaxOutputBytes -gt 1048576) { Fail 'CAP_RANGE' }
 if ($MaxFixtureBytes -lt 1048576 -or $MaxFixtureBytes -gt 134217728) { Fail 'CAP_RANGE' }
 
-# The closed vocabulary this probe may print. The Python validator owns the authoritative
-# copy; every value here is one of its tokens, never free text.
 function New-Section([string]$Status, [string]$Reason) {
     [ordered]@{ status = $Status; reason = $Reason }
 }
@@ -100,6 +123,20 @@ $mftRows = @()
 $adapters = @()
 $mftGuidSource = 'Windows SDK 10.0.19041.0 um/mfapi.h'
 
+function Get-MftCount([Guid]$Category, [uint32]$Flag) {
+    $activates = [IntPtr]::Zero
+    $count = 0
+    $hr = [Vid1Native]::MFTEnumEx($Category, $Flag, [IntPtr]::Zero, [IntPtr]::Zero, [ref]$activates, [ref]$count)
+    if ($activates -ne [IntPtr]::Zero -and $count -gt 0) {
+        for ($i = 0; $i -lt $count; $i++) {
+            $pointer = [System.Runtime.InteropServices.Marshal]::ReadIntPtr($activates, $i * [IntPtr]::Size)
+            if ($pointer -ne [IntPtr]::Zero) { [void][System.Runtime.InteropServices.Marshal]::Release($pointer) }
+        }
+        [Vid1Native]::CoTaskMemFree($activates)
+    }
+    return @{ hresult = $hr; count = $(if ($hr -eq 0) { $count } else { $null }) }
+}
+
 try {
     foreach ($component in @('mfplat.dll', 'mf.dll', 'mfreadwrite.dll', 'd3d11.dll', 'dxva2.dll')) {
         $path = [System.IO.Path]::Combine($env:WINDIR, 'System32', $component)
@@ -125,52 +162,20 @@ try {
             'audio_decoder' = '9ea73fb4-ef7a-4559-8d5d-719d8f0426c7'
         }
         foreach ($name in $categoryGuids.Keys) {
+            $guid = [Guid]$categoryGuids[$name]
+            $all = Get-MftCount $guid ([uint32]$MftFlagAll)
+            $sync = Get-MftCount $guid ([uint32]$MftFlagSync)
+            $async = Get-MftCount $guid ([uint32]$MftFlagAsync)
+            $hardware = Get-MftCount $guid ([uint32]$MftFlagHardware)
             $row = [ordered]@{
-                category = $name; guid = ([Guid]$categoryGuids[$name]).ToString()
-                all_status = 'NOT_MEASURED'; all = $null; hardware_status = 'NOT_MEASURED'; hardware = $null
-                sync = $null; reason = 'MFT_ENUMERATION_FAILED'; hresult = ''
-            }
-            try {
-                $all = 0; $hardware = 0; $sync = 0; $hr = 0
-                $activates = [IntPtr]::Zero; $count = 0
-                $hr = [Vid1Native]::MFTEnumEx([Guid]$categoryGuids[$name], 0x3F, [IntPtr]::Zero, [IntPtr]::Zero, [ref]$activates, [ref]$count)
-                $all = $count
-                if ($activates -ne [IntPtr]::Zero -and $count -gt 0) {
-                    for ($i = 0; $i -lt $count; $i++) {
-                        $p = [System.Runtime.InteropServices.Marshal]::ReadIntPtr($activates, $i * [IntPtr]::Size)
-                        if ($p -ne [IntPtr]::Zero) { [void][System.Runtime.InteropServices.Marshal]::Release($p) }
-                    }
-                    [Vid1Native]::CoTaskMemFree($activates)
-                }
-                $activates = [IntPtr]::Zero; $count = 0
-                $hrHw = [Vid1Native]::MFTEnumEx([Guid]$categoryGuids[$name], 0x2, [IntPtr]::Zero, [IntPtr]::Zero, [ref]$activates, [ref]$count)
-                $hardware = $count
-                if ($activates -ne [IntPtr]::Zero -and $count -gt 0) {
-                    for ($i = 0; $i -lt $count; $i++) {
-                        $p = [System.Runtime.InteropServices.Marshal]::ReadIntPtr($activates, $i * [IntPtr]::Size)
-                        if ($p -ne [IntPtr]::Zero) { [void][System.Runtime.InteropServices.Marshal]::Release($p) }
-                    }
-                    [Vid1Native]::CoTaskMemFree($activates)
-                }
-                $activates = [IntPtr]::Zero; $count = 0
-                $hrSync = [Vid1Native]::MFTEnumEx([Guid]$categoryGuids[$name], 0x1, [IntPtr]::Zero, [IntPtr]::Zero, [ref]$activates, [ref]$count)
-                $sync = $count
-                if ($activates -ne [IntPtr]::Zero -and $count -gt 0) {
-                    for ($i = 0; $i -lt $count; $i++) {
-                        $p = [System.Runtime.InteropServices.Marshal]::ReadIntPtr($activates, $i * [IntPtr]::Size)
-                        if ($p -ne [IntPtr]::Zero) { [void][System.Runtime.InteropServices.Marshal]::Release($p) }
-                    }
-                    [Vid1Native]::CoTaskMemFree($activates)
-                }
-                if ($hr -eq 0) {
-                    $row.all_status = 'OBSERVED'; $row.all = $all; $row.reason = ''
-                }
-                if ($hrHw -eq 0) { $row.hardware_status = 'OBSERVED'; $row.hardware = $hardware }
-                $row.sync = $sync
-                $row.hresult = (Get-Hex $hr)
-            }
-            catch {
-                $row.reason = 'MFT_ENUMERATION_FAILED'
+                category = $name
+                guid = $guid.ToString()
+                hresult = (Get-Hex ([int]$all.hresult))
+                all = $all.count; sync = $sync.count; async = $async.count; hardware = $hardware.count
+                sync_status = $(if ($null -ne $sync.count) { 'OBSERVED' } else { 'NOT_MEASURED' })
+                async_status = $(if ($null -ne $async.count) { 'OBSERVED' } else { 'NOT_MEASURED' })
+                hardware_status = $(if ($null -ne $hardware.count) { 'OBSERVED' } else { 'NOT_MEASURED' })
+                reason = $(if ($null -eq $all.count) { 'MFT_ENUMERATION_FAILED' } else { '' })
             }
             $mftRows += $row
         }
@@ -200,14 +205,15 @@ try {
         status = 'OBSERVED'; reason = ''
         hardware_hresult = (Get-Hex $hardwareHr); hardware_feature_level = $hardwareLevel
         warp_hresult = (Get-Hex $warpHr); warp_feature_level = $warpLevel
+        adapters = @()
     }
 }
 catch {
     $d3d11 = [ordered]@{
-    status = 'NOT_MEASURED'; reason = 'D3D11_DEVICE_UNAVAILABLE'
-    hardware_hresult = ''; hardware_feature_level = ''; warp_hresult = ''; warp_feature_level = ''
-    adapters = @()
-}
+        status = 'NOT_MEASURED'; reason = 'D3D11_DEVICE_UNAVAILABLE'
+        hardware_hresult = ''; hardware_feature_level = ''; warp_hresult = ''; warp_feature_level = ''
+        adapters = @()
+    }
 }
 
 try {
@@ -221,22 +227,24 @@ try {
 catch {
     $adapters = @()
 }
+$d3d11.adapters = @($adapters)
 
 # ---------------------------------------------------------------------------
-# Interop experiments through an operator-supplied FFmpeg
+# Absolute-path helpers, bounded child capture
 # ---------------------------------------------------------------------------
-function Resolve-AbsoluteLocal([string]$Path, [string]$Label, [switch]$Directory) {
-    if ([string]::IsNullOrWhiteSpace($Path)) { return @{ ok = $false; reason = $Label } }
-    if (-not [System.IO.Path]::IsPathRooted($Path)) { return @{ ok = $false; reason = $Label } }
-    if ($Path -notmatch '^[A-Za-z]:[\\/]') { return @{ ok = $false; reason = $Label } }
-    foreach ($segment in ($Path -split '[\\/]')) { if ($segment -eq '..') { return @{ ok = $false; reason = $Label } } }
+function Resolve-AbsoluteLocal([string]$Path, [string]$Reason, [string]$Code = '', [switch]$Directory) {
+    $failure = @{ ok = $false; reason = $Reason; code = $Code }
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $failure }
+    if (-not [System.IO.Path]::IsPathRooted($Path)) { return $failure }
+    if ($Path -notmatch '^[A-Za-z]:[\\/]') { return $failure }
+    foreach ($segment in ($Path -split '[\\/]')) { if ($segment -eq '..') { return $failure } }
     if ($Directory) {
-        if (-not (Test-Path -LiteralPath $Path -PathType Container)) { return @{ ok = $false; reason = 'SCRATCH_UNAVAILABLE' } }
+        if (-not (Test-Path -LiteralPath $Path -PathType Container)) { return $failure }
     }
     elseif (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
-        return @{ ok = $false; reason = 'TOOL_NOT_FOUND' }
+        return @{ ok = $false; reason = 'TOOL_NOT_FOUND'; code = 'TOOL_NOT_FOUND' }
     }
-    return @{ ok = $true; path = [System.IO.Path]::GetFullPath($Path) }
+    return @{ ok = $true; path = [System.IO.Path]::GetFullPath($Path); reason = ''; code = '' }
 }
 
 function Invoke-Tool([string[]]$Argv) {
@@ -246,38 +254,73 @@ function Invoke-Tool([string[]]$Argv) {
     $psi.CreateNoWindow = $true
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
-    for ($i = 1; $i -lt $Argv.Count; $i++) { $psi.ArgumentList.Add($Argv[$i]) }
+    for ($index = 1; $index -lt $Argv.Count; $index++) { $psi.ArgumentList.Add($Argv[$index]) }
     $watch = [System.Diagnostics.Stopwatch]::StartNew()
     try {
         $process = [System.Diagnostics.Process]::Start($psi)
     }
     catch {
-        return @{ status = 'NOT_MEASURED'; reason = 'PROCESS_SPAWN_FAILED'; exit_code = $null; wall_ms = $null; stdout = ''; stderr = ''; truncated = $false; timed_out = $false }
+        return @{ status = 'NOT_MEASURED'; reason = 'PROCESS_SPAWN_FAILED'; exit_code = $null; wall_ms = $null
+            stdout = ''; stderr = ''; capped = $false; timed_out = $false }
     }
-    $outTask = $process.StandardOutput.ReadToEndAsync()
-    $errTask = $process.StandardError.ReadToEndAsync()
-    $finished = $process.WaitForExit($TimeoutMs)
-    if (-not $finished) {
-        try { $process.Kill($true) } catch { }
-        try { [void]$process.WaitForExit(2000) } catch { }
-    }
-    $watch.Stop()
+    $exitCode = $null
+    $capped = $false
+    $timedOut = $false
     $stdout = ''
     $stderr = ''
-    $truncated = $false
+    $outStream = $process.StandardOutput.BaseStream
+    $errStream = $process.StandardError.BaseStream
+    $outBuffer = [byte[]]::new(4096)
+    $errBuffer = [byte[]]::new(4096)
+    $out = [System.IO.MemoryStream]::new()
+    $err = [System.IO.MemoryStream]::new()
+    $outTask = $outStream.ReadAsync($outBuffer, 0, $outBuffer.Length)
+    $errTask = $errStream.ReadAsync($errBuffer, 0, $errBuffer.Length)
     try {
-        $stdout = $outTask.GetAwaiter().GetResult()
-        $stderr = $errTask.GetAwaiter().GetResult()
+        while ($null -ne $outTask -or $null -ne $errTask) {
+            if ($watch.ElapsedMilliseconds -gt $TimeoutMs) { $timedOut = $true; break }
+            $pending = [System.Collections.Generic.List[System.Threading.Tasks.Task]]::new()
+            if ($null -ne $outTask) { $pending.Add($outTask) }
+            if ($null -ne $errTask) { $pending.Add($errTask) }
+            [void][System.Threading.Tasks.Task]::WaitAny($pending.ToArray(), 100)
+            if ($null -ne $outTask -and $outTask.IsCompleted) {
+                $read = $outTask.Result
+                if ($read -le 0) { $outTask = $null }
+                elseif ($out.Length + $read -gt $MaxOutputBytes) { $capped = $true; break }
+                else {
+                    $out.Write($outBuffer, 0, $read)
+                    $outTask = $outStream.ReadAsync($outBuffer, 0, $outBuffer.Length)
+                }
+            }
+            if ($null -ne $errTask -and $errTask.IsCompleted) {
+                $read = $errTask.Result
+                if ($read -le 0) { $errTask = $null }
+                elseif ($err.Length + $read -gt $MaxOutputBytes) { $capped = $true; break }
+                else {
+                    $err.Write($errBuffer, 0, $read)
+                    $errTask = $errStream.ReadAsync($errBuffer, 0, $errBuffer.Length)
+                }
+            }
+        }
+        if (-not $capped -and -not $timedOut) {
+            if (-not $process.WaitForExit($TimeoutMs)) { $timedOut = $true }
+            else { $exitCode = $process.ExitCode }
+        }
+        if ($capped -or $timedOut) {
+            try { $process.Kill($true) } catch { }
+            try { [void]$process.WaitForExit(2000) } catch { }
+        }
+        if ($out.Length -gt 0) { $stdout = [System.Text.Encoding]::UTF8.GetString($out.ToArray()) }
+        if ($err.Length -gt 0) { $stderr = [System.Text.Encoding]::UTF8.GetString($err.ToArray()) }
     }
-    catch {
-        $truncated = $true
+    finally {
+        $watch.Stop()
+        $out.Dispose(); $err.Dispose()
+        try { $process.Dispose() } catch { }
     }
-    if ($stdout.Length -gt $MaxOutputBytes) { $stdout = $stdout.Substring(0, $MaxOutputBytes); $truncated = $true }
-    if ($stderr.Length -gt $MaxOutputBytes) { $stderr = $stderr.Substring(0, $MaxOutputBytes); $truncated = $true }
-    $exitCode = if ($finished) { $process.ExitCode } else { $null }
     return @{
         status = 'OBSERVED'; reason = ''; exit_code = $exitCode; wall_ms = $watch.ElapsedMilliseconds
-        stdout = $stdout; stderr = $stderr; truncated = $truncated; timed_out = (-not $finished)
+        stdout = $stdout; stderr = $stderr; capped = $capped; timed_out = $timedOut
     }
 }
 
@@ -291,7 +334,7 @@ function Get-FramesDecoded([string]$Text) {
 
 function Get-PixFmts([string]$Text) {
     $values = @()
-    foreach ($match in [regex]::Matches($Text, 'pix_fmt: ([a-z0-9_]+)')) {
+    foreach ($match in [regex]::Matches($Text, 'pix_?fmt:\s*([a-z0-9_]+)')) {
         $value = $match.Groups[1].Value
         if ($values -notcontains $value -and $values.Count -lt $MaxPixFmts) { $values += $value }
     }
@@ -311,13 +354,16 @@ function Get-DxvaGuids([string]$Text) {
     return $guids
 }
 
-function Test-HardwareFrames([string[]]$PixFmts, [string[]]$DxvaGuids) {
+function Get-HardwarePixFmt([string[]]$PixFmts) {
     foreach ($format in $PixFmts) {
-        if ($format -in @('d3d11', 'd3d11va', 'dxva2_vld', 'cuda', 'qsv', 'vaapi', 'vulkan')) { return $true }
+        if ($HardwarePixFmts -contains $format) { return $format }
     }
-    return ($DxvaGuids.Count -gt 0)
+    return ''
 }
 
+# ---------------------------------------------------------------------------
+# Interop experiments
+# ---------------------------------------------------------------------------
 function New-ToolSection([string]$Status, [string]$Reason, [string]$Path, [string]$Sha256, [string[]]$Hwaccels) {
     [ordered]@{ status = $Status; reason = $Reason; path = $Path; sha256 = $Sha256; hwaccels = @($Hwaccels) }
 }
@@ -335,12 +381,20 @@ function New-ObservedToolSection([string]$Path) {
 }
 
 $interop = @()
-$toolSection = New-ToolSection 'NOT_MEASURED' 'TOOL_NOT_SUPPLIED' '' '' @()
 $fixtures = @()
+$toolSection = New-ToolSection 'NOT_MEASURED' 'TOOL_NOT_SUPPLIED' '' '' @()
 $scratch = $null
-$expected = [ordered]@{ h264 = @{ width = 640; height = 360; bytes_nv12 = 640 * 360 * 3 / 2; bytes_p010 = 640 * 360 * 3 }
-                         hevc10 = @{ width = 320; height = 180; bytes_nv12 = 320 * 180 * 3 / 2; bytes_p010 = 320 * 180 * 3 }
-                         vp8 = @{ width = 160; height = 90; bytes_nv12 = 160 * 90 * 3 / 2; bytes_p010 = 160 * 90 * 3 } }
+$scratchRetained = $false
+$expected = [ordered]@{
+    h264 = @{ width = 640; height = 360; bytes_nv12 = 640 * 360 * 3 / 2; bytes_p010 = 640 * 360 * 3 }
+    hevc10 = @{ width = 320; height = 180; bytes_nv12 = 320 * 180 * 3 / 2; bytes_p010 = 320 * 180 * 3 }
+    vp8 = @{ width = 160; height = 90; bytes_nv12 = 160 * 90 * 3 / 2; bytes_p010 = 160 * 90 * 3 }
+}
+$fixtureSpecs = @(
+    @{ id = 'h264'; container = 'mp4'; file = 'fixture_h264_8bit.mp4'; codec = 'h264'; pixel = 'yuv420p'; rate = 30; seconds = 2; width = 640; height = 360; encoder = @('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast') }
+    @{ id = 'hevc10'; container = 'mp4'; file = 'fixture_hevc_10bit.mp4'; codec = 'hevc'; pixel = 'yuv420p10le'; rate = 30; seconds = 1; width = 320; height = 180; encoder = @('-c:v', 'libx265', '-pix_fmt', 'yuv420p10le', '-preset', 'ultrafast', '-x265-params', 'log-level=none') }
+    @{ id = 'vp8'; container = 'webm'; file = 'fixture_vp8.webm'; codec = 'vp8'; pixel = 'yuv420p'; rate = 30; seconds = 1; width = 160; height = 90; encoder = @('-c:v', 'libvpx', '-pix_fmt', 'yuv420p') }
+)
 
 function New-InteropRow([string]$Id, [string]$Kind, [string]$Container, [string]$Codec,
                         [string]$PixelFormat, [string]$Hwaccel) {
@@ -348,8 +402,9 @@ function New-InteropRow([string]$Id, [string]$Kind, [string]$Container, [string]
         id = $Id; kind = $Kind; container = $Container; codec = $Codec
         pixel_format = $PixelFormat; hwaccel = $Hwaccel
         argv = @(); exit_code = $null; wall_ms = $null
-        status = 'NOT_MEASURED'; reason = ''; stdout_bytes = 0; stderr_bytes = 0; truncated = $false
-        frames_decoded = $null; decoder_pix_fmts = @(); dxva_profile_guids = @()
+        status = 'NOT_MEASURED'; reason = ''; stdout_bytes = 0; stderr_bytes = 0; capped = $false
+        frames_decoded = $null; decoder_pix_fmts = @(); hardware_pix_fmt = ''
+        hardware_frame_evidence = 'NONE'; dxva_profile_guids = @()
         output_bytes = $null; expected_output_bytes = $null
     }
 }
@@ -358,38 +413,34 @@ function Set-RowFailure($Row, [string]$Reason) {
     $Row.status = 'NOT_MEASURED'; $Row.reason = $Reason
 }
 
+function New-DisabledInterop([string]$Reason) {
+    @([ordered]@{ id = 'interop_disabled'; kind = 'decode'; container = ''; codec = ''; pixel_format = ''; hwaccel = ''
+        argv = @(); exit_code = $null; wall_ms = $null; status = 'NOT_MEASURED'; reason = $Reason
+        stdout_bytes = 0; stderr_bytes = 0; capped = $false; frames_decoded = $null
+        decoder_pix_fmts = @(); hardware_pix_fmt = ''; hardware_frame_evidence = 'NONE'
+        dxva_profile_guids = @(); output_bytes = $null; expected_output_bytes = $null })
+}
+
 if ([string]::IsNullOrWhiteSpace($FfmpegPath)) {
     $toolSection = New-ToolSection 'NOT_MEASURED' 'TOOL_NOT_SUPPLIED' '' '' @()
-    $interop = @([ordered]@{ id = 'interop_disabled'; kind = 'decode'; container = ''; codec = ''; pixel_format = ''; hwaccel = ''
-        argv = @(); exit_code = $null; wall_ms = $null; status = 'NOT_MEASURED'; reason = 'INTEROP_DISABLED'
-        stdout_bytes = 0; stderr_bytes = 0; truncated = $false; frames_decoded = $null
-        decoder_pix_fmts = @(); dxva_profile_guids = @(); output_bytes = $null; expected_output_bytes = $null })
+    $interop = New-DisabledInterop 'INTEROP_DISABLED'
 }
 elseif ([string]::IsNullOrWhiteSpace($ScratchRoot)) {
     $toolSection = New-ToolSection 'NOT_MEASURED' 'SCRATCH_NOT_SUPPLIED' '' '' @()
-    $interop = @([ordered]@{ id = 'interop_disabled'; kind = 'decode'; container = ''; codec = ''; pixel_format = ''; hwaccel = ''
-        argv = @(); exit_code = $null; wall_ms = $null; status = 'NOT_MEASURED'; reason = 'INTEROP_DISABLED'
-        stdout_bytes = 0; stderr_bytes = 0; truncated = $false; frames_decoded = $null
-        decoder_pix_fmts = @(); dxva_profile_guids = @(); output_bytes = $null; expected_output_bytes = $null })
+    $interop = New-DisabledInterop 'INTEROP_DISABLED'
 }
 else {
     $tool = Resolve-AbsoluteLocal $FfmpegPath 'TOOL_PATH_INVALID'
     $scratchCheck = Resolve-AbsoluteLocal $ScratchRoot 'SCRATCH_UNAVAILABLE' -Directory
     if (-not $tool.ok) {
         $toolSection = New-ToolSection 'NOT_MEASURED' $tool.reason '' '' @()
-        $interop = @([ordered]@{ id = 'interop_disabled'; kind = 'decode'; container = ''; codec = ''; pixel_format = ''; hwaccel = ''
-            argv = @(); exit_code = $null; wall_ms = $null; status = 'NOT_MEASURED'; reason = 'INTEROP_DISABLED'
-            stdout_bytes = 0; stderr_bytes = 0; truncated = $false; frames_decoded = $null
-            decoder_pix_fmts = @(); dxva_profile_guids = @(); output_bytes = $null; expected_output_bytes = $null })
+        $interop = New-DisabledInterop 'INTEROP_DISABLED'
     }
     elseif (-not $scratchCheck.ok) {
         # The tool stays observable (hash + -hwaccels need no scratch), but no experiment
         # runs in an undeclared directory: the declared scratch root is never created here.
         $toolSection = New-ObservedToolSection $tool.path
-        $interop = @([ordered]@{ id = 'interop_disabled'; kind = 'decode'; container = ''; codec = ''; pixel_format = ''; hwaccel = ''
-            argv = @(); exit_code = $null; wall_ms = $null; status = 'NOT_MEASURED'; reason = 'SCRATCH_UNAVAILABLE'
-            stdout_bytes = 0; stderr_bytes = 0; truncated = $false; frames_decoded = $null
-            decoder_pix_fmts = @(); dxva_profile_guids = @(); output_bytes = $null; expected_output_bytes = $null })
+        $interop = New-DisabledInterop 'SCRATCH_UNAVAILABLE'
     }
     else {
         $toolSection = New-ObservedToolSection $tool.path
@@ -397,44 +448,42 @@ else {
             $token = 'vid1-probe-{0}-{1}' -f $PID, ([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())
             $scratch = [System.IO.Path]::Combine($scratchCheck.path, $token)
             [System.IO.Directory]::CreateDirectory($scratch) | Out-Null
+            $scratchRetained = [bool]$KeepScratch
 
-            $fixtureSpecs = @(
-                @{ id = 'h264'; container = 'mp4'; file = 'fixture_h264_8bit.mp4'; codec = 'h264'; pixel = 'yuv420p'; rate = 30; seconds = 2; width = 640; height = 360; encoder = @('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast') }
-                @{ id = 'hevc10'; container = 'mp4'; file = 'fixture_hevc_10bit.mp4'; codec = 'hevc'; pixel = 'yuv420p10le'; rate = 30; seconds = 1; width = 320; height = 180; encoder = @('-c:v', 'libx265', '-pix_fmt', 'yuv420p10le', '-preset', 'ultrafast', '-x265-params', 'log-level=none') }
-                @{ id = 'vp8'; container = 'webm'; file = 'fixture_vp8.webm'; codec = 'vp8'; pixel = 'yuv420p'; rate = 30; seconds = 1; width = 160; height = 90; encoder = @('-c:v', 'libvpx', '-pix_fmt', 'yuv420p') }
-            )
+            $fixturePath = @{}
             foreach ($spec in $fixtureSpecs) {
                 $path = [System.IO.Path]::Combine($scratch, $spec.file)
                 $argv = @($tool.path, '-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi',
                     '-i', ("testsrc2=size={0}x{1}:rate={2}" -f $spec.width, $spec.height, $spec.rate),
                     '-t', [string]$spec.seconds) + $spec.encoder + @($path)
                 $generated = Invoke-Tool $argv
-                if ($generated.status -eq 'OBSERVED' -and $generated.exit_code -eq 0 -and (Test-Path -LiteralPath $path)) {
-                    $bytes = (Get-Item -LiteralPath $path).Length
-                    if ($bytes -le $MaxFixtureBytes) {
-                        $fixtures += [ordered]@{ id = $spec.id; container = $spec.container; codec = $spec.codec; pixel_format = $spec.pixel
-                            status = 'OBSERVED'; reason = ''; bytes = $bytes; width = $spec.width; height = $spec.height; seconds = $spec.seconds }
-                    }
-                    else {
-                        $fixtures += [ordered]@{ id = $spec.id; container = $spec.container; codec = $spec.codec; pixel_format = $spec.pixel
-                            status = 'NOT_MEASURED'; reason = 'FIXTURE_TOO_LARGE'; bytes = $bytes; width = $spec.width; height = $spec.height; seconds = $spec.seconds }
-                    }
+                $row = [ordered]@{
+                    id = $spec.id; container = $spec.container; codec = $spec.codec; pixel_format = $spec.pixel
+                    status = 'NOT_MEASURED'; reason = 'FIXTURE_GENERATION_FAILED'
+                    bytes = $null; sha256 = ''; width = $spec.width; height = $spec.height
+                    seconds = $spec.seconds; generator_argv = @($argv)
                 }
+                if ($generated.capped) { $row.reason = 'PROCESS_OUTPUT_CAPPED' }
+                elseif ($generated.timed_out) { $row.reason = 'PROCESS_TIMEOUT' }
+                elseif ($generated.status -ne 'OBSERVED' -or $generated.exit_code -ne 0) { $row.reason = 'FIXTURE_GENERATION_FAILED' }
+                elseif (-not (Test-Path -LiteralPath $path)) { $row.reason = 'FIXTURE_GENERATION_FAILED' }
                 else {
-                    $reason = 'FIXTURE_GENERATION_FAILED'
-                    if ($generated.timed_out) { $reason = 'PROCESS_TIMEOUT' }
-                    elseif ($generated.truncated) { $reason = 'PROCESS_OUTPUT_CAPPED' }
-                    $fixtures += [ordered]@{ id = $spec.id; container = $spec.container; codec = $spec.codec; pixel_format = $spec.pixel
-                        status = 'NOT_MEASURED'; reason = $reason; bytes = $null; width = $spec.width; height = $spec.height; seconds = $spec.seconds }
+                    $bytes = (Get-Item -LiteralPath $path).Length
+                    if ($bytes -gt $MaxFixtureBytes) { $row.reason = 'FIXTURE_TOO_LARGE' }
+                    else {
+                        $digest = ''
+                        try { $digest = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() } catch { $digest = '' }
+                        if ($digest -match '^[0-9a-f]{64}$') {
+                            $row.status = 'OBSERVED'; $row.reason = ''
+                            $row.bytes = $bytes; $row.sha256 = $digest
+                            $fixturePath[$spec.id] = $path
+                        }
+                        else {
+                            $row.reason = 'FIXTURE_GENERATION_FAILED'
+                        }
+                    }
                 }
-            }
-
-            $fixturePath = @{}
-            foreach ($fixture in $fixtures) {
-                if ($fixture.status -eq 'OBSERVED') {
-                    $file = ($fixtureSpecs | Where-Object { $_.id -eq $fixture.id } | Select-Object -First 1).file
-                    $fixturePath[$fixture.id] = [System.IO.Path]::Combine($scratch, $file)
-                }
+                $fixtures += $row
             }
 
             function Add-Experiment([string]$Id, [string]$Kind, [string]$FixtureId,
@@ -449,7 +498,6 @@ else {
                     $script:interop += $row
                     return
                 }
-                $outputPath = ''
                 if ($ExpectedKey) {
                     $outputPath = [System.IO.Path]::Combine($scratch, ("{0}.raw" -f $Id))
                     $argv = @($tool.path, '-hide_banner', '-loglevel', $LogLevel, '-stats', '-y') + $PreInputArgv +
@@ -461,36 +509,45 @@ else {
                     $argv = @($tool.path, '-hide_banner', '-loglevel', $LogLevel, '-stats', '-y') + $PreInputArgv +
                         @('-i', $fixturePath[$FixtureId]) + $limit + $PostInputArgv + @('-f', 'null', '-')
                 }
-                $row.argv = $argv
+                $row.argv = @($argv)
                 $run = Invoke-Tool $argv
                 $row.stdout_bytes = $run.stdout.Length
                 $row.stderr_bytes = $run.stderr.Length
-                $row.truncated = $run.truncated
+                $row.capped = $run.capped
                 $row.wall_ms = $run.wall_ms
                 $row.exit_code = $run.exit_code
                 if ($run.timed_out) { Set-RowFailure $row 'PROCESS_TIMEOUT' }
-                elseif ($run.truncated) { Set-RowFailure $row 'PROCESS_OUTPUT_CAPPED' }
-                elseif ($run.exit_code -ne 0) { Set-RowFailure $row ($(if ($Kind -eq 'hw_download') { 'HWOUTPUT_CONVERT_FAILED' } else { 'PROCESS_FAILED' })) }
+                elseif ($run.capped) { Set-RowFailure $row 'PROCESS_OUTPUT_CAPPED' }
+                elseif ($run.exit_code -ne 0) {
+                    Set-RowFailure $row $(if ($Kind -eq 'hw_download' -or $Kind -eq 'hw_decode') { 'HWACCEL_REQUEST_REJECTED' } else { 'PROCESS_FAILED' })
+                }
                 else {
-                    $row.status = 'OBSERVED'
                     $row.frames_decoded = Get-FramesDecoded $run.stderr
                     $row.decoder_pix_fmts = @(Get-PixFmts $run.stderr)
                     $row.dxva_profile_guids = @(Get-DxvaGuids $run.stderr)
-                    if ($Kind -eq 'hw_decode') {
-                        if (Test-HardwareFrames $row.decoder_pix_fmts $row.dxva_profile_guids) {
+                    $row.hardware_pix_fmt = Get-HardwarePixFmt $row.decoder_pix_fmts
+                    if ($row.hardware_pix_fmt -ne '') { $row.hardware_frame_evidence = 'PIX_FMT_OBSERVED' }
+                    $row.status = 'OBSERVED'
+                    if ($Kind -eq 'hw_decode' -or $Kind -eq 'hw_download') {
+                        if ($row.hardware_frame_evidence -eq 'PIX_FMT_OBSERVED' -and $null -ne $row.frames_decoded -and $row.frames_decoded -ge 1) {
                             $row.status = 'OBSERVED'; $row.reason = ''
                         }
                         else {
                             $row.status = 'UNSUPPORTED'; $row.reason = 'HWACCEL_SOFTWARE_FALLBACK'
                         }
                     }
-                    if ($outputPath -ne '' -and (Test-Path -LiteralPath $outputPath)) {
-                        $bytes = (Get-Item -LiteralPath $outputPath).Length
-                        $row.output_bytes = $bytes
+                    if ($ExpectedKey) {
+                        $outputPath = [System.IO.Path]::Combine($scratch, ("{0}.raw" -f $Id))
                         $specForBytes = $expected[$FixtureId]
                         $row.expected_output_bytes = if ($ExpectedKey -eq 'nv12') { $specForBytes.bytes_nv12 } else { $specForBytes.bytes_p010 }
-                        if ($bytes -ne $row.expected_output_bytes) {
+                        if (-not (Test-Path -LiteralPath $outputPath)) {
                             $row.status = 'NOT_MEASURED'; $row.reason = 'RAW_OUTPUT_SIZE_UNEXPECTED'
+                        }
+                        else {
+                            $row.output_bytes = (Get-Item -LiteralPath $outputPath).Length
+                            if ($row.output_bytes -ne $row.expected_output_bytes) {
+                                $row.status = 'NOT_MEASURED'; $row.reason = 'RAW_OUTPUT_SIZE_UNEXPECTED'
+                            }
                         }
                     }
                 }
@@ -501,15 +558,15 @@ else {
             Add-Experiment 'sw_h264_decode_all' 'decode' 'h264' 'none' @() @() '' 'error' 0
             Add-Experiment 'sw_h264_seek_1s' 'seek' 'h264' 'none' @() @('-ss', '1.0') '' 'error'
             Add-Experiment 'sw_h264_nv12' 'raw_output' 'h264' 'none' @() @('-pix_fmt', 'nv12') 'nv12' 'error'
-            Add-Experiment 'hw_d3d11va_h264_decode' 'hw_decode' 'h264' 'd3d11va' @('-hwaccel', 'd3d11va') @() '' 'verbose'
+            Add-Experiment 'hw_d3d11va_h264_decode' 'hw_decode' 'h264' 'd3d11va' @('-hwaccel', 'd3d11va', '-hwaccel_output_format', 'd3d11') @() '' 'verbose'
             Add-Experiment 'hw_d3d11va_h264_download' 'hw_download' 'h264' 'd3d11va' @('-hwaccel', 'd3d11va', '-hwaccel_output_format', 'd3d11') @('-vf', 'hwdownload,format=nv12') 'nv12' 'verbose'
             Add-Experiment 'hw_dxva2_h264_decode' 'hw_decode' 'h264' 'dxva2' @('-hwaccel', 'dxva2') @() '' 'verbose'
             Add-Experiment 'sw_hevc10_first_frame' 'decode' 'hevc10' 'none' @() @() '' 'error'
             Add-Experiment 'sw_hevc10_p010' 'raw_output' 'hevc10' 'none' @() @('-pix_fmt', 'p010le') 'p010' 'error'
-            Add-Experiment 'hw_d3d11va_hevc10_decode' 'hw_decode' 'hevc10' 'd3d11va' @('-hwaccel', 'd3d11va') @() '' 'verbose'
+            Add-Experiment 'hw_d3d11va_hevc10_decode' 'hw_decode' 'hevc10' 'd3d11va' @('-hwaccel', 'd3d11va', '-hwaccel_output_format', 'd3d11') @() '' 'verbose'
             Add-Experiment 'hw_d3d11va_hevc10_download' 'hw_download' 'hevc10' 'd3d11va' @('-hwaccel', 'd3d11va', '-hwaccel_output_format', 'd3d11') @('-vf', 'hwdownload,format=p010le') 'p010' 'verbose'
             Add-Experiment 'sw_vp8_first_frame' 'decode' 'vp8' 'none' @() @() '' 'error'
-            Add-Experiment 'hw_d3d11va_vp8_decode' 'hw_decode' 'vp8' 'd3d11va' @('-hwaccel', 'd3d11va') @() '' 'verbose'
+            Add-Experiment 'hw_d3d11va_vp8_decode' 'hw_decode' 'vp8' 'd3d11va' @('-hwaccel', 'd3d11va', '-hwaccel_output_format', 'd3d11') @() '' 'verbose'
         }
         catch {
             if ($toolSection.status -ne 'OBSERVED') {
@@ -517,11 +574,89 @@ else {
             }
         }
         finally {
-            if ($null -ne $scratch -and (Test-Path -LiteralPath $scratch)) {
+            if (-not $KeepScratch -and $null -ne $scratch -and (Test-Path -LiteralPath $scratch)) {
                 try { Remove-Item -LiteralPath $scratch -Recurse -Force -ErrorAction SilentlyContinue } catch { }
+                $scratchRetained = $false
             }
         }
     }
+}
+
+# ---------------------------------------------------------------------------
+# Bounded read-only scan for a surface-presentation call site (route limitation)
+# ---------------------------------------------------------------------------
+$sourceScan = [ordered]@{
+    status = 'NOT_MEASURED'; reason = 'SOURCE_SCAN_NOT_RUN'; root = ''
+    files_scanned = 0; files_truncated = $false; bytes_scanned = 0
+    tokens = @($SurfaceTokens); matches = @()
+}
+
+if (-not [string]::IsNullOrWhiteSpace($SourceRoot)) {
+    $source = Resolve-AbsoluteLocal $SourceRoot 'SOURCE_SCAN_UNAVAILABLE' -Directory
+    if (-not $source.ok) {
+        $sourceScan.status = 'NOT_MEASURED'; $sourceScan.reason = 'SOURCE_SCAN_UNAVAILABLE'
+    }
+    else {
+        try {
+            $sourceScan.root = $source.path
+            $files = @(Get-ChildItem -LiteralPath $source.path -Recurse -File -Filter '*.rs' -ErrorAction Stop |
+                Where-Object { $_.FullName -notmatch '[\\/](\.git|target|node_modules)[\\/]' } |
+                Select-Object -First $MaxSourceFiles)
+            $sourceScan.files_truncated = ($files.Count -ge $MaxSourceFiles)
+            foreach ($file in $files) {
+                if ($file.Length -gt $MaxSourceFileBytes) { continue }
+                $sourceScan.files_scanned++
+                $sourceScan.bytes_scanned += $file.Length
+                $lineNumber = 0
+                foreach ($line in [System.IO.File]::ReadLines($file.FullName)) {
+                    $lineNumber++
+                    foreach ($token in $SurfaceTokens) {
+                        if ($line.IndexOf($token, [System.StringComparison]::Ordinal) -ge 0) {
+                            if ($sourceScan.matches.Count -lt $MaxSourceMatches) {
+                                $relative = $file.FullName.Substring($source.path.Length).TrimStart([char[]]@('\', '/'))
+                                $sourceScan.matches += [ordered]@{ file = $relative.Replace('\', '/'); line = $lineNumber; token = $token }
+                            }
+                        }
+                    }
+                }
+            }
+            $sourceScan.status = 'OBSERVED'; $sourceScan.reason = ''
+        }
+        catch {
+            $sourceScan.status = 'NOT_MEASURED'; $sourceScan.reason = 'SOURCE_SCAN_UNAVAILABLE'
+        }
+    }
+}
+
+$hardwareRows = @($interop | Where-Object { $_.kind -eq 'hw_decode' -or $_.kind -eq 'hw_download' })
+$hardwareObserved = @($hardwareRows | Where-Object { $_.status -eq 'OBSERVED' -and $_.hardware_frame_evidence -eq 'PIX_FMT_OBSERVED' })
+$presentationCallSiteAbsent = ($sourceScan.status -eq 'OBSERVED' -and $sourceScan.matches.Count -eq 0)
+$missingEvidence = @('PIN_SURFACE_API', 'COPY_COUNT', 'SYNC_STALLS', 'COLOR_METADATA', 'DEVICE_LOSS', 'PLAYBACK_LATENCY')
+$route = [ordered]@{
+    route_id = 'mf-d3d11va-decode:d3d11-texture:gpui-surface-presentation'
+    status = 'UNEXAMINED'
+    reason = ''
+    decode_side_observed = ($hardwareObserved.Count -gt 0)
+    presentation_call_site_scan = $sourceScan.status
+    presentation_call_site_absent = $presentationCallSiteAbsent
+    grounds = @()
+    missing_evidence = @()
+}
+if ($hardwareObserved.Count -gt 0 -and $presentationCallSiteAbsent) {
+    $route.status = 'CONFIRMED_LIMITATION'
+    $route.grounds = @(
+        [ordered]@{ id = 'decode_side_capability'; status = 'OBSERVED'; detail = ("hardware frames observed for " + (($hardwareObserved | ForEach-Object { $_.codec } | Sort-Object -Unique) -join ', ')) }
+        [ordered]@{ id = 'presentation_call_site_scan'; status = 'OBSERVED'; detail = ("0 of " + $sourceScan.files_scanned + " scanned .rs files contain a surface-presentation call site for " + ($SurfaceTokens -join ', ')) }
+        [ordered]@{ id = 'pin_surface_documented_noop'; status = 'DOCUMENTED'; detail = 'DC-MP-VID1 records the pinned GPUI Windows surface path as a no-op' }
+        [ordered]@{ id = 'copy_sync_color_device_loss_uninstrumented'; status = 'NOT_MEASURED'; detail = 'copy counts, synchronisation stalls, colour metadata and device loss were not instrumented' }
+    )
+    $route.missing_evidence = @($missingEvidence)
+}
+else {
+    $route.reason = if ($sourceScan.status -ne 'OBSERVED') { 'SOURCE_SCAN_NOT_RUN' }
+        elseif ($hardwareObserved.Count -eq 0) { 'HW_DECODE_NOT_OBSERVED' }
+        else { 'PRESENTATION_CALL_SITE_FOUND' }
+    $route.missing_evidence = @($missingEvidence)
 }
 
 $endpoints = @(
@@ -535,16 +670,30 @@ $endpoints = @(
     [ordered]@{ endpoint = 'product_playback_latency'; status = 'NOT_MEASURED'; reason = 'PRODUCT_PATH_NOT_IMPLEMENTED' }
 )
 
+$corrections = @(
+    [ordered]@{
+        id = 'mft_hardware_flag'
+        status = 'CORRECTED_IN_THIS_RECORD'
+        detail = 'The earlier VID1 record reported video_decoder hardware=0 and video_encoder hardware=1 from MFTEnumEx with flag 0x2, which is MFT_ENUM_FLAG_ASYNCMFT (software V2), not MFT_ENUM_FLAG_HARDWARE (0x4). Those numbers are async-software counts and were never hardware counts; this record measures hardware with 0x4 and keeps the earlier observation as a pre-fix observation only.'
+    }
+)
+
 $document = [ordered]@{
     ok = $true
     probe_version = $ProbeVersion
-    caps = [ordered]@{ timeout_ms = $TimeoutMs; max_output_bytes = $MaxOutputBytes; max_fixture_bytes = $MaxFixtureBytes; max_experiments = $MaxExperiments }
+    caps = [ordered]@{
+        timeout_ms = $TimeoutMs; max_output_bytes = $MaxOutputBytes
+        max_fixture_bytes = $MaxFixtureBytes; max_experiments = $MaxExperiments
+    }
+    mft_flags = [ordered]@{ sync = '0x1'; async = '0x2'; hardware = '0x4'; all = '0x3F' }
     host = [ordered]@{
         status = 'OBSERVED'; reason = ''
         os_description = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription
         arch = [string][System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
         pwsh = ($PSVersionTable.PSVersion).ToString()
         interop_enabled = (-not [string]::IsNullOrWhiteSpace($FfmpegPath))
+        scratch_retained = $scratchRetained
+        scratch_path = $(if ($scratchRetained -and $null -ne $scratch) { $scratch } else { '' })
     }
     media_foundation = [ordered]@{
         status = $mediaFoundation.status; reason = $mediaFoundation.reason
@@ -561,7 +710,10 @@ $document = [ordered]@{
     tool = $toolSection
     fixtures = @($fixtures)
     interop = @($interop)
+    source_scan = $sourceScan
+    route = $route
     endpoints = @($endpoints)
+    corrections = @($corrections)
 }
 
 Emit $document
