@@ -33,9 +33,11 @@ revision therefore refuses any capture that is not provably the target window:
 Nothing on the desktop is changed to make a capture possible: there is no raise, no
 focus request, no z-order operation and no foreground-permission grant. The foreground
 is the user's action: bring COS Desktop to the front (or run the documented command from
-a terminal that is already foreground) before observing. An occluded target is
-`NOT_MEASURED` with the closed reason `WINDOW_OCCLUDED`, so an observation never leaves
-a side effect behind and never takes over the desktop.
+a terminal that is already foreground) while `--wait-for-foreground <seconds>` (bounded
+0..120, polled every 250 ms with `GetForegroundWindow` only) watches for it. A wait that
+expires records `NOT_MEASURED / FOREGROUND_WAIT_EXPIRED` with the elapsed wait and writes
+no screenshot; an occluded target is `NOT_MEASURED / WINDOW_OCCLUDED`. An observation
+never leaves a side effect behind and never takes over the desktop.
 
 The acceptance order is 100 % first, then 125/150/175/200 %: each scale is a separate
 human-driven observation, and this tool cannot change the display scale itself.
@@ -65,6 +67,7 @@ import ctypes
 import datetime
 import hashlib
 import json
+import math
 import re
 import struct
 import subprocess
@@ -85,6 +88,9 @@ MAX_RECORD_BYTES = 16 * 1024 * 1024
 MAX_ATTEMPTS = 40
 ATTEMPT_DELAY_S = 0.4
 PROBE_TIMEOUT_S = 130.0
+FOREGROUND_POLL_INTERVAL_S = 0.25
+MAX_FOREGROUND_WAIT_S = 120.0
+REASON_FOREGROUND_WAIT_EXPIRED = "FOREGROUND_WAIT_EXPIRED"
 MAX_SCREENSHOT_BYTES = 32 * 1024 * 1024
 STOP_TIMEOUT_S = 10.0
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -664,6 +670,94 @@ def verify_capture_identity(
     }
 
 
+def foreground_identity() -> dict[str, Any]:
+    """Read-only identity of the current foreground window."""
+    try:
+        user32 = ctypes.windll.user32
+        user32.GetForegroundWindow.restype = ctypes.c_void_p
+        handle = int(user32.GetForegroundWindow() or 0)
+        if handle == 0:
+            return {"status": "OBSERVED", "handle": 0, "pid": 0, "title": ""}
+        info = live_window(handle)
+        if info.get("status") == "OBSERVED":
+            info["handle"] = handle
+        return info
+    except (AttributeError, OSError, TypeError, ValueError):
+        return {"status": "NOT_MEASURED", "reason": "WIN32_UNAVAILABLE"}
+
+
+def bounded_wait(value: str) -> float:
+    """Validate --wait-for-foreground: 0..MAX, finite; anything else is ARGS."""
+    try:
+        seconds = float(value)
+    except (TypeError, ValueError):
+        fail("ARGS")
+    if not math.isfinite(seconds) or seconds < 0.0 or seconds > MAX_FOREGROUND_WAIT_S:
+        fail("ARGS")
+    return seconds
+
+
+def wait_for_foreground(
+    pid: int,
+    timeout_s: float,
+    *,
+    poll: Any = None,
+    clock: Any = time.monotonic,
+    sleep: Any = time.sleep,
+    interval_s: float = FOREGROUND_POLL_INTERVAL_S,
+) -> dict[str, Any]:
+    """Observe only: poll GetForegroundWindow until it is our window, or the wait expires.
+
+    No window is raised, focused, moved, restacked or granted foreground rights. The poll
+    results and the clock are injectable so the transition and expiry paths are testable.
+    """
+    observed_foreground = poll if poll is not None else foreground_identity
+    started = clock()
+    polls = 0
+    last: dict[str, Any] = {"status": "NOT_MEASURED", "reason": "WIN32_UNAVAILABLE"}
+    while True:
+        polls += 1
+        last = observed_foreground()
+        if (
+            last.get("status") == "OBSERVED"
+            and last.get("pid") == pid
+            and last.get("title") == EXPECTED_TITLE
+        ):
+            return {
+                "mode": "read-only observation of GetForegroundWindow",
+                "outcome": "FOREGROUNDED",
+                "requested_s": timeout_s,
+                "elapsed_s": round(clock() - started, 3),
+                "polls": polls,
+                "handle": last.get("handle"),
+            }
+        elapsed = clock() - started
+        if elapsed >= timeout_s:
+            return {
+                "mode": "read-only observation of GetForegroundWindow",
+                "outcome": REASON_FOREGROUND_WAIT_EXPIRED,
+                "requested_s": timeout_s,
+                "elapsed_s": round(elapsed, 3),
+                "polls": polls,
+                "last_foreground": {"pid": last.get("pid"), "title": last.get("title")},
+            }
+        sleep(interval_s)
+
+
+def resolve_screenshot(shot: dict[str, Any], wait: dict[str, Any]) -> dict[str, Any]:
+    """A capture always wins; otherwise the wait decides the closed NOT_MEASURED reason."""
+    if shot.get("status") == "OBSERVED":
+        return shot
+    if wait.get("outcome") == REASON_FOREGROUND_WAIT_EXPIRED:
+        return {
+            "status": "NOT_MEASURED",
+            "reason": REASON_FOREGROUND_WAIT_EXPIRED,
+            "detail": shot.get("reason"),
+            "elapsed_s": wait.get("elapsed_s"),
+        }
+    return {"status": "NOT_MEASURED", "reason": shot.get("reason")}
+
+
 def observe_window(
     powershell: str, probe: Path, pid: int, screenshot: Path
 ) -> dict[str, Any]:
@@ -762,6 +856,7 @@ def build_record(
     scale: dict[str, Any],
     analysis: dict[str, Any],
     stop_record: dict[str, Any],
+    wait: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     window = observed["window"]
     screenshot = observed["screenshot"]
@@ -777,6 +872,10 @@ def build_record(
         )
     else:
         shot_detail = f"refused: {screenshot['reason']}"
+        if screenshot.get("detail"):
+            shot_detail += f" (probe: {screenshot['detail']})"
+        if screenshot.get("elapsed_s") is not None:
+            shot_detail += f" after {screenshot['elapsed_s']}s of read-only waiting"
     checks: list[dict[str, Any]] = [
         {
             "name": "window_observed",
@@ -838,6 +937,9 @@ def build_record(
             "foreground_grant": "none",
             "probe_state_change": "none: no raise, focus, move or z-order operation",
         },
+        "foreground_wait": wait
+        if wait is not None
+        else {"outcome": "NOT_REQUESTED", "requested_s": 0.0},
         "desktop_state_changed": False,
         "acceptance_procedure": {
             "human_step": "the user brings COS Desktop to the foreground (click its window "
@@ -878,6 +980,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", required=True, help="fresh output directory")
     parser.add_argument("--powershell", default="powershell")
     parser.add_argument("--probe", default=str(default_probe()))
+    parser.add_argument(
+        "--wait-for-foreground",
+        default="0",
+        help="bounded read-only wait in seconds (0..%s) for the user to foreground the "
+        "window; polled every %ss with GetForegroundWindow only"
+        % (MAX_FOREGROUND_WAIT_S, FOREGROUND_POLL_INTERVAL_S),
+    )
     args = parser.parse_args(argv)
     process: subprocess.Popen | None = None
     try:
@@ -897,7 +1006,9 @@ def main(argv: list[str] | None = None) -> int:
         probe_record = out / "probe.json"
         screenshot = out / "screenshot.png"
         exe_digest = sha256_bytes(exe.read_bytes())
+        wait_s = bounded_wait(args.wait_for_foreground)
         process = launch(exe, out / "app.log")
+        wait = wait_for_foreground(process.pid, wait_s)
         document = observe_window(
             args.powershell, probe, process.pid, screenshot
         )
@@ -917,15 +1028,14 @@ def main(argv: list[str] | None = None) -> int:
                 "path": observed["screenshot"]["path"],
             }
         else:
-            observed["screenshot"] = {
-                "status": "NOT_MEASURED",
-                "reason": observed["screenshot"]["reason"],
-            }
+            observed["screenshot"] = resolve_screenshot(observed["screenshot"], wait)
         scale = host_scale(observed["window"]["handle"])
         analysis = analyze_elements(observed["uia"]["elements"])
         stop_record = stop(process)
         process = None
-        record = build_record(exe, exe_digest, observed, scale, analysis, stop_record)
+        record = build_record(
+            exe, exe_digest, observed, scale, analysis, stop_record, wait
+        )
         try:
             (out / "probe.json").write_text(
                 json.dumps(document, sort_keys=True, separators=(",", ":")), encoding="utf-8"
@@ -950,6 +1060,10 @@ def main(argv: list[str] | None = None) -> int:
                         if record["screenshot"]["status"] == "OBSERVED"
                         else f"NOT_MEASURED:{record['screenshot']['reason']}"
                     ),
+                    "foreground_wait": {
+                        "outcome": record["foreground_wait"]["outcome"],
+                        "elapsed_s": record["foreground_wait"].get("elapsed_s"),
+                    },
                     "scale": record["scale"]["scale"],
                     "ax_elements": record["uia"]["element_count"],
                     "labels_missing": record["labels"]["missing_latin"]

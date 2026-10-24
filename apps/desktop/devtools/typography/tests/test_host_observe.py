@@ -482,6 +482,13 @@ class AcceptanceRecordTest(unittest.TestCase):
             "method": "GetDpiForWindow",
             "controlled_ladder_step": False,
         }
+        wait = {
+            "mode": "read-only observation of GetForegroundWindow",
+            "outcome": observe.REASON_FOREGROUND_WAIT_EXPIRED,
+            "requested_s": 30.0,
+            "elapsed_s": 30.001,
+            "polls": 121,
+        }
         return observe.build_record(
             Path("cos-desktop.exe"),
             "sha256:" + "0" * 64,
@@ -489,6 +496,7 @@ class AcceptanceRecordTest(unittest.TestCase):
             scale,
             analysis,
             {"method": "taskkill /T /F", "exit_code": 1},
+            wait,
         )
 
     def test_the_record_claims_no_foreground_grant_and_states_the_human_step(self) -> None:
@@ -505,8 +513,111 @@ class AcceptanceRecordTest(unittest.TestCase):
         self.assertFalse(record["desktop_state_changed"])
         self.assertNotIn("AllowSetForegroundWindow", json.dumps(record))
         self.assertEqual(record["screenshot"]["status"], "NOT_MEASURED")
+        self.assertEqual(
+            record["foreground_wait"]["outcome"],
+            observe.REASON_FOREGROUND_WAIT_EXPIRED,
+        )
+        self.assertEqual(record["foreground_wait"]["elapsed_s"], 30.001)
         self.assertEqual(record["result"], "PASS_WITH_NOT_MEASURED")
         self.assertFalse(record["declares_mptyp1_complete"])
+
+
+class ForegroundWaitTest(unittest.TestCase):
+    def _clock(self, step: float = 0.3):
+        state = {"now": 0.0}
+
+        def clock() -> float:
+            value = state["now"]
+            state["now"] += step
+            return value
+
+        return clock
+
+    def _poll(self, seen: list[dict]):
+        state = {"index": 0}
+
+        def poll() -> dict:
+            index = min(state["index"], len(seen) - 1)
+            state["index"] += 1
+            return seen[index]
+
+        return poll
+
+    def _foreground(self, pid: int, title: str = observe.EXPECTED_TITLE) -> dict:
+        return {"status": "OBSERVED", "handle": 42, "pid": pid, "title": title,
+                "rect": {"left": 0, "top": 0, "width": 640, "height": 480}}
+
+    def test_the_wait_uses_only_read_only_observation(self) -> None:
+        source = HOST_OBSERVE.read_text(encoding="utf-8")
+        self.assertIn("GetForegroundWindow", source)
+        self.assertIn("def wait_for_foreground(", source)
+        for forbidden in NoDesktopStateChangeTest.FORBIDDEN:
+            self.assertNotIn(forbidden, source, forbidden)
+
+    def test_a_foreground_transition_to_the_target_is_detected(self) -> None:
+        polls = self._poll(
+            [
+                self._foreground(1, "other"),
+                self._foreground(1, "other"),
+                self._foreground(4242),
+            ]
+        )
+        wait = observe.wait_for_foreground(
+            4242, 10.0, poll=polls, clock=self._clock(), sleep=lambda _s: None
+        )
+        self.assertEqual(wait["outcome"], "FOREGROUNDED")
+        self.assertEqual(wait["polls"], 3)
+        self.assertEqual(wait["handle"], 42)
+        self.assertGreaterEqual(wait["elapsed_s"], 0.0)
+        self.assertEqual(wait["requested_s"], 10.0)
+
+    def test_a_transition_to_a_different_window_does_not_count(self) -> None:
+        polls = self._poll([self._foreground(7, "some other app")])
+        wait = observe.wait_for_foreground(
+            4242, 1.0, poll=polls, clock=self._clock(), sleep=lambda _s: None
+        )
+        self.assertEqual(wait["outcome"], observe.REASON_FOREGROUND_WAIT_EXPIRED)
+        self.assertEqual(wait["last_foreground"]["pid"], 7)
+        self.assertGreaterEqual(wait["elapsed_s"], 1.0)
+
+    def test_a_same_pid_untitled_window_does_not_count(self) -> None:
+        polls = self._poll([self._foreground(4242, "COS Desktop (other)")])
+        wait = observe.wait_for_foreground(
+            4242, 0.5, poll=polls, clock=self._clock(), sleep=lambda _s: None
+        )
+        self.assertEqual(wait["outcome"], observe.REASON_FOREGROUND_WAIT_EXPIRED)
+
+    def test_an_expired_wait_is_the_closed_not_measured_reason(self) -> None:
+        wait = {
+            "outcome": observe.REASON_FOREGROUND_WAIT_EXPIRED,
+            "elapsed_s": 30.0,
+            "requested_s": 30.0,
+        }
+        shot = observe.resolve_screenshot(
+            {"status": "NOT_MEASURED", "reason": "WINDOW_OCCLUDED"}, wait
+        )
+        self.assertEqual(shot["status"], "NOT_MEASURED")
+        self.assertEqual(shot["reason"], "FOREGROUND_WAIT_EXPIRED")
+        self.assertEqual(shot["detail"], "WINDOW_OCCLUDED")
+        self.assertEqual(shot["elapsed_s"], 30.0)
+        self.assertNotIn("digest", shot)
+        self.assertNotIn("path", shot)
+
+    def test_a_capture_wins_over_the_wait_outcome(self) -> None:
+        captured_shot = {"status": "OBSERVED", "digest": "sha256:" + "a" * 64}
+        resolved = observe.resolve_screenshot(
+            captured_shot, {"outcome": "FOREGROUNDED", "elapsed_s": 1.0}
+        )
+        self.assertEqual(resolved["status"], "OBSERVED")
+        self.assertEqual(resolved["digest"], captured_shot["digest"])
+
+    def test_the_wait_bound_is_validated(self) -> None:
+        self.assertEqual(observe.bounded_wait("30"), 30.0)
+        self.assertEqual(observe.bounded_wait("0"), 0.0)
+        for value in ("-1", "120.5", "nan", "inf", "soon"):
+            with self.assertRaises(observe.ObserveError) as raised:
+                observe.bounded_wait(value)
+            self.assertEqual(raised.exception.code, "ARGS")
 
 
 class NoDesktopStateChangeTest(unittest.TestCase):
