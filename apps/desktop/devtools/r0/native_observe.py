@@ -11,6 +11,9 @@ The probe returns one bounded JSON document and every failure here is a closed c
     SCHEMA, SCREENSHOT_MISSING, SCREENSHOT_MISMATCH, SCREENSHOT_TOO_LARGE,
     RECORD_TOO_LARGE, WRITE_FAILED
 
+`--probe` selects the probe script (the packaged `n03_probe.ps1` by default); it exists so
+a test can drive the real CLI with a fake probe, and it changes nothing in production.
+
 The probe reports its own closed codes, which are passed through unchanged:
     TARGET_REQUIRED, CAP_RANGE, SCREENSHOT_PATH_REQUIRED, WIN32_UNAVAILABLE,
     WINDOW_NOT_FOUND, WINDOW_RECT_UNAVAILABLE
@@ -125,11 +128,11 @@ def validate_target(title: str | None, pid: int | None) -> None:
 # --------------------------------------------------------------------------- probe
 
 
-def probe_command(powershell: str, *, title: str | None, pid: int | None,
+def probe_command(powershell: str, probe: Path, *, title: str | None, pid: int | None,
                   screenshot: Path, max_elements: int, max_depth: int,
                   max_screenshot_bytes: int) -> list[str]:
     command = [powershell, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
-               "-File", str(PROBE),
+               "-File", str(probe),
                "-Screenshot", str(screenshot),
                "-MaxElements", str(max_elements),
                "-MaxDepth", str(max_depth),
@@ -348,6 +351,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-depth", default="12")
     parser.add_argument("--max-screenshot-bytes", default=str(32 * 1024 * 1024))
     parser.add_argument("--powershell", default="powershell")
+    # Test seam: the packaged probe is the default, and a test may point the *real* CLI at
+    # a fake probe so the fail-closed path is exercised end to end rather than monkeypatched.
+    parser.add_argument("--probe", default=str(PROBE))
     args = parser.parse_args(argv)
     try:
         validate_target(args.title, args.pid)
@@ -357,7 +363,8 @@ def main(argv: list[str] | None = None) -> int:
         screenshot = Path(args.screenshot)
         caps = {"max_elements": max_elements, "max_depth": max_depth,
                 "max_screenshot_bytes": max_screenshot}
-        command = probe_command(args.powershell, title=args.title, pid=args.pid,
+        command = probe_command(args.powershell, Path(args.probe), title=args.title,
+                                pid=args.pid,
                                 screenshot=screenshot, max_elements=max_elements,
                                 max_depth=max_depth,
                                 max_screenshot_bytes=max_screenshot)

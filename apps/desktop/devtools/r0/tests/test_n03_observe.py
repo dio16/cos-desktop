@@ -10,6 +10,7 @@ import contextlib
 import io
 import json
 import os
+import shutil
 import struct
 import subprocess
 import sys
@@ -245,6 +246,47 @@ class N03Observation(unittest.TestCase):
         with self.assertRaises(observe.ObservationError) as error:
             observe.build_record(document, self.screenshot, caps)
         self.assertEqual(error.exception.code, "SCREENSHOT_TOO_LARGE")
+
+    # ------------------------------------------------- genuine CLI fail-closed
+    def fake_probe_script(self, body: str) -> Path:
+        """A real PowerShell probe, so the CLI runs it exactly as it runs the packaged one."""
+        if shutil.which("powershell") is None:
+            self.skipTest("NOT_RUN: Windows PowerShell is not on PATH")
+        path = self.base / "fake_probe.ps1"
+        path.write_text(body, encoding="utf-8")
+        return path
+
+    def run_cli_with_probe(self, probe: Path) -> tuple[subprocess.CompletedProcess, Path]:
+        record = self.base / "never-written.json"
+        result = subprocess.run(
+            [sys.executable, "-B", str(ROOT / "native_observe.py"),
+             "--title", "COS Desktop", "--probe", str(probe),
+             "--out", str(record), "--screenshot", str(self.screenshot)],
+            capture_output=True, check=False, timeout=120)
+        return result, record
+
+    def test_cli_refuses_a_probe_that_reports_success_then_fails(self) -> None:
+        """Valid `ok: true` JSON followed by exit 3 must not become an observation."""
+        document = json.dumps(probe_document([element(0)]))
+        probe = self.fake_probe_script(
+            "Write-Output '" + document + "'\nexit 3\n")
+        result, record = self.run_cli_with_probe(probe)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertEqual(result.stdout.decode().strip(), '{"ok":false,"error":"PROBE_FAILED"}',
+                         "exactly one closed JSON object")
+        self.assertEqual(result.stdout.count(b"\n"), 1, "a single line of output")
+        self.assertNotIn(b"Traceback", result.stderr)
+        self.assertFalse(record.exists(), "no observation file may be written")
+
+    def test_cli_refuses_an_unregistered_probe_code(self) -> None:
+        """An unknown probe code becomes closed JSON, not a traceback."""
+        probe = self.fake_probe_script(
+            "Write-Output '{\"ok\":false,\"error\":\"UNKNOWN_ERROR\"}'\nexit 0\n")
+        result, record = self.run_cli_with_probe(probe)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertEqual(result.stdout.decode().strip(), '{"ok":false,"error":"PROBE_FAILED"}')
+        self.assertNotIn(b"Traceback", result.stderr)
+        self.assertFalse(record.exists())
 
     # ------------------------------------------------------------- OS path
     def test_real_observation_of_a_window(self) -> None:
