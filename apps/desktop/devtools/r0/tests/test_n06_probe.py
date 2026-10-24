@@ -549,13 +549,51 @@ class RecordInvariantTests(unittest.TestCase):
                 self.assert_rejected(mutate)
 
     def test_legacy_zero_representation_still_replays(self) -> None:
-        """Records written before the null form store an explicit 0 on NOT_MEASURED fields."""
+        """A retained record identifies itself by a documented pre-null probe digest."""
         record = self.record()
+        record["probe"]["sha256"] = sorted(n06.LEGACY_ZERO_PROBE_SHA256)[0]
         self.assertEqual(record["frames"]["compositor_desktop_wide"]["status"], "NOT_MEASURED")
         record["frames"]["compositor_desktop_wide"].update({
             "composed_delta": 0, "displayed_delta": 0, "dropped_delta": 0,
             "missed_delta": 0, "late_delta": 0})
         n06.validate_record(record)  # documented legacy tolerance, not a value claim
+
+    def test_legacy_zero_requires_a_legacy_probe_digest(self) -> None:
+        """The explicit-zero form is not a blanket representation: a current record using it
+        (any other probe digest) is refused, while null is always accepted."""
+        current = self.record()  # built with sha256:000... , not a legacy digest
+        self.assertNotIn(current["probe"]["sha256"], n06.LEGACY_ZERO_PROBE_SHA256)
+        current["frames"]["compositor_desktop_wide"]["composed_delta"] = 0
+        with self.assertRaises(n06.AttributionError) as error:
+            n06.validate_record(current)
+        self.assertEqual(error.exception.code, "COMPARE_INPUT")
+        with self.assertRaises(n06.AttributionError):
+            n06.compare_records(current, self.record())
+
+        legacy = self.record()
+        legacy["probe"]["sha256"] = sorted(n06.LEGACY_ZERO_PROBE_SHA256)[0]
+        legacy["frames"]["compositor_desktop_wide"]["composed_delta"] = 7
+        with self.assertRaises(n06.AttributionError) as error:
+            n06.validate_record(legacy)
+        self.assertEqual(error.exception.code, "COMPARE_INPUT")
+
+    def test_derived_numerator_must_equal_the_measured_cpu(self) -> None:
+        """A self-consistent fabricated numerator/value pair is still a tamper."""
+        record = self.record()
+        ratio = record["per_frame_cpu"]
+        self.assertEqual(ratio["status"], "DERIVED")
+        self.assertNotEqual(record["cpu"]["cpu_ms"], 250.0)
+        ratio["numerator_ms"] = 250.0
+        ratio["value_ms_per_observed_change"] = round(250.0 / ratio["denominator"], 6)
+        # The internal recompute and denominator still agree; only the CPU binding differs.
+        self.assertEqual(
+            round(ratio["value_ms_per_observed_change"], 6),
+            round(ratio["numerator_ms"] / ratio["denominator"], 6))
+        with self.assertRaises(n06.AttributionError) as error:
+            n06.validate_record(record)
+        self.assertEqual(error.exception.code, "COMPARE_INPUT")
+        with self.assertRaises(n06.AttributionError):
+            n06.compare_records(record, self.record())
 
     def test_frame_criterion_statement_is_in_every_record(self) -> None:
         for document in (probe_document(), windowless_document()):

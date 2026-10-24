@@ -972,6 +972,13 @@ GPU_UNIT = "pdh_gpu_engine_percent_summed_over_engines"
 IDENTITY_SOURCE = "calling_runner_prelaunch_digest_verification"
 PROBE_SHA_REASONS = {"PROBE_SOURCE_UNREADABLE"}
 OBSERVED_UTC = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+# The retained N06 records predate the null form for NOT_MEASURED values and store an
+# explicit 0 instead. That representation is tolerated only for records that bind one of
+# these documented probe digests; any other record must use null. Verifiable, not blanket.
+LEGACY_ZERO_PROBE_SHA256 = frozenset((
+    "sha256:faaa3b129b2f82ef6cb906c94a4e7f7d2e3b249cdcc963a002e72a63c96dd89a",
+    "sha256:45433d6d29bfac83a5f8d93e0af37e30f1e3800384882e51210398a2a85bc1d5",
+))
 
 
 def _compare_fail() -> None:
@@ -1009,14 +1016,21 @@ def _record_bool(value: Any) -> bool:
     return value
 
 
-def _absent(value: Any) -> bool:
-    """A NOT_MEASURED value is null. The explicit legacy zero written by pre-null records
-    (the retained N06 runs) is also accepted for replay; it is still not a claimed value."""
+def _absent(value: Any, *, legacy_zero: bool) -> bool:
+    """A NOT_MEASURED value is null.
+
+    The explicit numeric zero is the pre-null *legacy representation* that the retained N06
+    records carry. It is accepted only when the record is identifiably legacy, i.e. it binds
+    one of the documented pre-null probe digests (`LEGACY_ZERO_PROBE_SHA256`), the endpoint
+    status is NOT_MEASURED (the caller is already in that branch), and the value is exactly
+    zero. A current-form record (any other probe digest) must use null here, and a nonzero
+    value is never accepted.
+    """
     if value is None:
         return True
     if type(value) is bool:
         return False
-    return isinstance(value, (int, float)) and float(value) == 0.0
+    return legacy_zero and isinstance(value, (int, float)) and float(value) == 0.0
 
 
 def _record_status(value: Any, allowed: tuple[str, ...]) -> str:
@@ -1105,6 +1119,9 @@ def validate_record(document: Any) -> dict[str, Any]:
             _compare_fail()
         if probe["sha256_reason"] != "":
             _compare_fail()
+    # The explicit-zero legacy representation is admissible only for records that bind a
+    # documented pre-null probe digest; a current-form record must use null.
+    legacy_zero = probe["sha256"] in LEGACY_ZERO_PROBE_SHA256
 
     target = _object(document["target"], ("pid", "window", "window_observation",
                                           "executable"))
@@ -1169,7 +1186,7 @@ def validate_record(document: Any) -> dict[str, Any]:
         changes = _record_int(content["changes"], maximum=content_samples - failed)
     else:
         _record_reason(content["reason"], NOT_MEASURED_PATHS)
-        if not _absent(content["changes"]):
+        if not _absent(content["changes"], legacy_zero=legacy_zero):
             _compare_fail()
         changes = None
 
@@ -1192,7 +1209,7 @@ def validate_record(document: Any) -> dict[str, Any]:
     else:
         _record_reason(compositor["reason"], NOT_MEASURED_PATHS)
         for name in delta_fields:
-            if not _absent(compositor[name]):
+            if not _absent(compositor[name], legacy_zero=legacy_zero):
                 _compare_fail()
 
     displayed = _object(frames["app_displayed_frames"], APP_DISPLAYED_FIELDS)
@@ -1218,7 +1235,7 @@ def validate_record(document: Any) -> dict[str, Any]:
         cpu_ms = _record_number(cpu["cpu_ms"])
     else:
         _record_reason(cpu["reason"], NOT_MEASURED_PATHS)
-        if not _absent(cpu["cpu_ms"]):
+        if not _absent(cpu["cpu_ms"], legacy_zero=legacy_zero):
             _compare_fail()
         cpu_ms = None
 
@@ -1244,7 +1261,7 @@ def validate_record(document: Any) -> dict[str, Any]:
         _record_reason(gpu["reason"], NOT_MEASURED_PATHS)
         for name in ("samples", "engine_instances", "mean_percent_summed_over_engines",
                      "max_percent_summed_over_engines"):
-            if not _absent(gpu[name]):
+            if not _absent(gpu[name], legacy_zero=legacy_zero):
                 _compare_fail()
         if gpu["engine_types"] != "":
             _compare_fail()
@@ -1269,8 +1286,12 @@ def validate_record(document: Any) -> dict[str, Any]:
         _record_str(ratio["direction"])
         _record_str(ratio["note"])
         # A derived ratio requires an observed positive CPU numerator and an observed
-        # content-change denominator that equals the record's own observed changes.
+        # content-change denominator that equals the record's own observed changes. The
+        # numerator must be the record's measured CPU value: a self-consistent fabricated
+        # numerator/value pair is still a tamper, not a derived measurement.
         if cpu_status != "OBSERVED" or cpu_ms is None or cpu_ms <= 0:
+            _compare_fail()
+        if numerator != cpu_ms:
             _compare_fail()
         if content_status != "OBSERVED" or denominator != changes:
             _compare_fail()
