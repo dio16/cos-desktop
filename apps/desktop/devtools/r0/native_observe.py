@@ -8,7 +8,8 @@ window the OS exposes.
 The probe returns one bounded JSON document and every failure here is a closed code:
 
     ARGS_TARGET, ARGS_CAP, PROBE_MISSING, PROBE_FAILED, PROBE_TIMEOUT, PROBE_JSON,
-    SCHEMA, SCREENSHOT_MISSING, SCREENSHOT_MISMATCH, RECORD_TOO_LARGE, WRITE_FAILED
+    SCHEMA, SCREENSHOT_MISSING, SCREENSHOT_MISMATCH, SCREENSHOT_TOO_LARGE,
+    RECORD_TOO_LARGE, WRITE_FAILED
 
 The probe reports its own closed codes, which are passed through unchanged:
     TARGET_REQUIRED, CAP_RANGE, SCREENSHOT_PATH_REQUIRED, WIN32_UNAVAILABLE,
@@ -67,6 +68,7 @@ ERROR_CODES = (
     "SCHEMA",
     "SCREENSHOT_MISSING",
     "SCREENSHOT_MISMATCH",
+    "SCREENSHOT_TOO_LARGE",
     "RECORD_TOO_LARGE",
     "WRITE_FAILED",
     # Reported by n03_probe.ps1; kept in the same closed vocabulary.
@@ -96,8 +98,9 @@ class ObservationError(Exception):
 
 
 def fail(code: str) -> None:
-    assert code in ERROR_CODES
-    raise ObservationError(code)
+    """Raise one closed code. An unregistered code is itself a probe failure, never an
+    assertion error: a probe that starts emitting a new word must not crash the tool."""
+    raise ObservationError(code if code in ERROR_CODES else "PROBE_FAILED")
 
 
 # --------------------------------------------------------------------------- arguments
@@ -147,6 +150,10 @@ def run_probe(command: list[str]) -> dict[str, Any]:
     except subprocess.TimeoutExpired:
         fail("PROBE_TIMEOUT")
     except OSError:
+        fail("PROBE_FAILED")
+    if done.returncode != 0:
+        # A probe that reports `ok: true` but fails is not evidence: the exit code is part
+        # of the contract, exactly like the record's own `ok`.
         fail("PROBE_FAILED")
     if len(done.stdout) > MAX_PROBE_BYTES:
         fail("PROBE_FAILED")
@@ -238,7 +245,8 @@ def png_size(path: Path) -> tuple[int, int]:
     return width, height
 
 
-def screenshot_record(document: dict[str, Any], path: Path) -> dict[str, Any]:
+def screenshot_record(document: dict[str, Any], path: Path,
+                      max_bytes: int) -> dict[str, Any]:
     reported = document["screenshot"]
     if not isinstance(reported, dict) or reported.get("status") not in (
             "OBSERVED", "NOT_MEASURED"):
@@ -249,10 +257,24 @@ def screenshot_record(document: dict[str, Any], path: Path) -> dict[str, Any]:
                 "reason": reason if isinstance(reason, str) else "SCREENSHOT_FAILED"}
     if not path.is_file():
         fail("SCREENSHOT_MISSING")
+    # Check the size before touching the bytes, then read at most one byte past the cap so
+    # a file that grows between the two calls is still refused instead of loaded.
+    try:
+        size = path.stat().st_size
+    except OSError:
+        fail("SCREENSHOT_MISSING")
+    if size > max_bytes:
+        fail("SCREENSHOT_TOO_LARGE")
+    try:
+        with open(path, "rb") as handle:
+            data = handle.read(max_bytes + 1)
+    except OSError:
+        fail("SCREENSHOT_MISSING")
+    if len(data) > max_bytes:
+        fail("SCREENSHOT_TOO_LARGE")
     width, height = png_size(path)
     if (width, height) != (_integer(reported.get("width")), _integer(reported.get("height"))):
         fail("SCREENSHOT_MISMATCH")
-    data = path.read_bytes()
     return {
         "status": "OBSERVED",
         "path": str(path),
@@ -294,7 +316,7 @@ def build_record(document: dict[str, Any], screenshot: Path,
         "observation_version": OBSERVATION_VERSION,
         "observed_utc": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "window": window,
-        "screenshot": screenshot_record(document, screenshot),
+        "screenshot": screenshot_record(document, screenshot, caps["max_screenshot_bytes"]),
         "uia": uia_record,
         "caps": caps,
         "ok": True,

@@ -191,6 +191,61 @@ class N03Observation(unittest.TestCase):
             observe.build_record(broken, self.screenshot, CAPS)
         self.assertEqual(error.exception.code, "SCHEMA")
 
+    # ------------------------------------------------- probe contract regressions
+    def fake_probe(self, *, returncode: int, stdout: bytes):
+        """Replace subprocess.run inside the module; returns the CompletedProcess shape."""
+        original = observe.subprocess.run
+        self.addCleanup(setattr, observe.subprocess, "run", original)
+
+        class Done:
+            pass
+
+        done = Done()
+        done.returncode = returncode
+        done.stdout = stdout
+        done.stderr = b""
+        observe.subprocess.run = lambda *args, **kwargs: done
+        return done
+
+    def test_nonzero_probe_exit_is_refused(self) -> None:
+        """Valid `ok: true` JSON from a process that exits non-zero is not evidence."""
+        self.fake_probe(returncode=3,
+                        stdout=json.dumps(probe_document([element(0)])).encode())
+        with self.assertRaises(observe.ObservationError) as error:
+            observe.run_probe(["powershell", "-File", "probe.ps1"])
+        self.assertEqual(error.exception.code, "PROBE_FAILED")
+
+    def test_unknown_probe_code_is_closed(self) -> None:
+        """An unregistered code must become closed JSON, never an assertion error."""
+        self.fake_probe(returncode=0,
+                        stdout=b'{"ok":false,"error":"UNKNOWN_ERROR"}')
+        with self.assertRaises(observe.ObservationError) as error:
+            observe.run_probe(["powershell", "-File", "probe.ps1"])
+        self.assertEqual(error.exception.code, "PROBE_FAILED")
+        # And through the CLI it is closed JSON with no traceback.
+        result = self.invoke("--title", "COS Desktop", "--out", str(self.record),
+                             "--screenshot", str(self.screenshot))
+        self.assertNotIn(b"Traceback", result.stderr)
+
+    def test_valid_png_with_exit_zero_is_observed(self) -> None:
+        self.fake_probe(returncode=0,
+                        stdout=json.dumps(probe_document([element(0)])).encode())
+        self.screenshot.write_bytes(png_bytes())
+        document = observe.run_probe(["powershell", "-File", "probe.ps1"])
+        record = observe.build_record(document, self.screenshot, CAPS)
+        self.assertEqual(record["screenshot"]["status"], "OBSERVED")
+        self.assertEqual(record["uia"]["status"], "OBSERVED")
+
+    def test_oversize_screenshot_is_refused(self) -> None:
+        payload = png_bytes()
+        self.screenshot.write_bytes(payload)
+        caps = dict(CAPS, max_screenshot_bytes=len(payload) - 1)
+        document = probe_document()
+        document["caps"] = caps  # the probe reports the caps it was given
+        with self.assertRaises(observe.ObservationError) as error:
+            observe.build_record(document, self.screenshot, caps)
+        self.assertEqual(error.exception.code, "SCREENSHOT_TOO_LARGE")
+
     # ------------------------------------------------------------- OS path
     def test_real_observation_of_a_window(self) -> None:
         """Needs a desktop session, PowerShell and a window that is not ours."""
