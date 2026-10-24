@@ -1,0 +1,53 @@
+{
+ "correction_version": 1,
+ "old_capture_is_evidence_of": "the foreign window that occupied the rectangle, never of the COS Desktop window",
+ "old_capture_preserved": true,
+ "recorded_utc": "2026-10-24T16:28:40Z",
+ "repair": {
+  "capture": "PrintWindow(PW_RENDERFULLCONTENT) on the target HWND only; any failure is a closed NOT_MEASURED refusal, never a fallback image.",
+  "content": "A 7x7 sampled grid of the bound capture must agree with the display over the window's on-screen region (>= 45/49 samples within 24 RGB levels); the capture must also be non-blank (>= 4 distinct sampled colours, >= 45 non-black samples). The target is briefly raised topmost without activation for the comparison and restored immediately; both are recorded. A foreign window on top makes the sampled agreement fail.",
+  "identity": "The record carries the capture method, HWND, pid, title, the rectangle at capture and still_current; the harness re-queries the HWND itself (IsWindow, GetWindowThreadProcessId, GetWindowTextW, GetWindowRect) before the application is stopped.",
+  "labels": "Every expected Latin surface label and the Japanese fixture title must be present in the UI Automation tree; a missing label fails the run."
+ },
+ "replacement": {
+  "capture_method": "PrintWindow(PW_RENDERFULLCONTENT)",
+  "content_cross_check": {
+   "matched": 49,
+   "samples": 49,
+   "tolerance": 24
+  },
+  "note": "The replacement image was opened and visually confirmed to be the COS Desktop window during this repair.",
+  "observation": "apps/desktop/devtools/typography/records/20261024T162816Z/host/observation.json",
+  "observation_sha256": "sha256:a8d95ddac981a14cfcd0c08f825a63b38a11b52f9cdd32376fc62d35bc47c3b1",
+  "result": "PASS",
+  "screenshot": "apps/desktop/devtools/typography/records/20261024T162816Z/host/screenshot.png",
+  "screenshot_ihdr": {
+   "height": 839,
+   "width": 1296
+  },
+  "screenshot_sha256": "sha256:f4dd5e17111ef57ced55cb3340b151ae440e98bedc30fd7e676cb6aa394c128f"
+ },
+ "reviewer_finding": {
+  "confirmed_here": "The stored PNG was opened again during MP-TYP1-C-R1 and is a foreign web page, not the shell window.",
+  "content_failed": true,
+  "hash_matched": true,
+  "reviewer": "Tern",
+  "severity": "BLOCKING",
+  "summary": "The saved screenshot is not the COS Desktop window; it shows a foreign Chinese video web page. Its PNG size, byte count and sha256 matched the record, so the hash was right and the content was wrong."
+ },
+ "root_cause": {
+  "capture": "apps/desktop/devtools/r0/n03_probe.ps1 captured Graphics.CopyFromScreen over the window rectangle, unbound to the target HWND; whatever window occupied the rectangle (here a fullscreen video player) was recorded as this window.",
+  "verification": "apps/desktop/devtools/typography/host_observe.py only compared PNG dimensions with the window rectangle, which cannot detect foreign content."
+ },
+ "supersedes": {
+  "observation": "apps/desktop/devtools/typography/records/20261024T160705Z/host/observation.json",
+  "observation_sha256": "sha256:e04afbfb1fa06056cad764279f61422d76593558c270ecab8c3b258aad7dee80",
+  "screenshot": "apps/desktop/devtools/typography/records/20261024T160705Z/host/screenshot.png",
+  "screenshot_bytes": 588195,
+  "screenshot_ihdr": {
+   "height": 839,
+   "width": 1296
+  },
+  "screenshot_sha256": "sha256:67119a37a4595b5be4b0bcabe2de9a9e08c9f65dc0d2535c1229b5785251591c"
+ }
+}

@@ -1,24 +1,43 @@
-"""MP-TYP1-C: observe the built fixture shell through the existing independent probe.
+"""MP-TYP1-C-R1: observe the fixture shell through the independent probe, with proof.
 
-Python standard library only. This module launches the already-built fixture binary
-and hands the window to the repository's independent observer,
-`apps/desktop/devtools/r0/native_observe.py` (which runs `n03_probe.ps1`). It never
-reads application-private state and never claims a controlled DPI step: the window is
-captured at whatever scale this host currently uses.
+Python standard library only. This module launches the already-built fixture binary and
+runs the repository's independent probe, `apps/desktop/devtools/r0/n03_probe.ps1`,
+through its documented invocation
+(`powershell -NoProfile -File n03_probe.ps1 -ProcessId <pid> -Screenshot <png>`). The
+probe's own record is validated here, including the identity fields, because the r0
+driver normalizes the screenshot record down to status/size/digest.
 
-Observed here:
-    window identity and rectangle, a real PNG capture (digest + IHDR dimensions),
-    the UI Automation tree, and the host scale factor of that window.
+MP-TYP1-C recorded a screenshot whose hash matched its record but whose pixels belonged
+to a foreign window: the probe copied the screen rectangle, not the target HWND. This
+revision therefore refuses any capture that is not provably the target window:
 
-Closed error vocabulary (never a traceback, never a value from an input file):
+    binding      the PNG must come from `PrintWindow(PW_RENDERFULLCONTENT)` on the
+                 target HWND - a screen copy can never satisfy this
+    identity     the record's handle, pid, title and capture rectangle must equal the
+                 observed window, and `still_current` must be true
+    content      the probe must have agreed, on a 7x7 sampled grid, between the bound
+                 capture and the display over the window's on-screen region
+                 (>= 45 of 49 samples within 24 RGB levels), and the capture must not
+                 be a blank composite (>= 4 distinct sampled colours, >= 45 non-black
+                 samples). A foreground window is not required: the binding is the HWND,
+                 and a foreign window on top makes the sampled agreement fail.
+    live check   this process re-queries the HWND itself (IsWindow,
+                 GetWindowThreadProcessId, GetWindowTextW, GetWindowRect) before the
+                 application is stopped; any disagreement refuses the capture
+
+If the probe cannot capture or cannot prove identity, the screenshot becomes
+`NOT_MEASURED` with the closed reason and the run keeps the UI Automation evidence; a
+missing expected label is a failure, never a silent pass.
+
+Closed error vocabulary (never a traceback):
 
     ARGS, ARGS_EXE, EXE_MISSING, OUT_EXISTS, LAUNCH_FAILED, PROBE_FAILED,
     PROBE_TIMEOUT, WINDOW_NOT_FOUND, RECORD_READ, RECORD_SCHEMA,
-    SCREENSHOT_MISMATCH, PNG_INVALID, DPI_UNAVAILABLE, STOP_FAILED, WRITE_FAILED
+    SCREENSHOT_MISMATCH, PNG_INVALID, DPI_UNAVAILABLE, STOP_FAILED, WRITE_FAILED,
+    CAPTURE_NOT_BOUND, CAPTURE_IDENTITY_MISMATCH, CAPTURE_CONTENT_MISMATCH
 
-Everything this process cannot establish (the display-scale ladder, visual quality and
-the rest) is written as NOT_MEASURED with a reason and a human procedure; nothing here
-declares MP-TYP1 complete.
+Everything this process cannot establish stays NOT_MEASURED with a reason and a human
+procedure; nothing here declares MP-TYP1 complete.
 """
 
 from __future__ import annotations
@@ -35,19 +54,22 @@ import time
 from pathlib import Path
 from typing import Any
 
-OBSERVATION_VERSION = 1
+OBSERVATION_VERSION = 2
 WINDOW_TITLE = "COS Desktop"
 MAX_RECORD_BYTES = 16 * 1024 * 1024
-MAX_LOG_BYTES = 256 * 1024
 MAX_ATTEMPTS = 40
 ATTEMPT_DELAY_S = 0.4
 PROBE_TIMEOUT_S = 130.0
+MAX_SCREENSHOT_BYTES = 32 * 1024 * 1024
 STOP_TIMEOUT_S = 10.0
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 
-# Anchors the wired shell exposes: Latin region labels and the fixture's Japanese task
-# title, which the task-rail row exposes as "<display id> — <title>".
+BOUND_CAPTURE_METHOD = "PrintWindow(PW_RENDERFULLCONTENT)"
+CROSS_CHECK_SAMPLES = 49
+CROSS_CHECK_REQUIRED = 45
+CROSS_CHECK_DISTINCT_COLORS = 4
+
 EXPECTED_LATIN = ("Task Rail", "Inspector", "Context Bar", "Candidate Dock")
 EXPECTED_JAPANESE = ("新製品キービジュアル",)
 MIXED_SCRIPT_CAP = 8
@@ -68,6 +90,9 @@ ERROR_CODES = (
     "DPI_UNAVAILABLE",
     "STOP_FAILED",
     "WRITE_FAILED",
+    "CAPTURE_NOT_BOUND",
+    "CAPTURE_IDENTITY_MISMATCH",
+    "CAPTURE_CONTENT_MISMATCH",
 )
 
 NOT_MEASURED = (
@@ -195,10 +220,100 @@ def analyze_elements(elements: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def evaluate_labels(analysis: dict[str, Any], ax_status: str) -> list[dict[str, Any]]:
+    """Every expected label must be present; a subset or a missing label fails."""
+    if ax_status != "OBSERVED":
+        return [
+            {
+                "name": "latin_labels_present",
+                "status": "NOT_MEASURED",
+                "detail": "UI Automation tree unavailable",
+            },
+            {
+                "name": "japanese_label_present",
+                "status": "NOT_MEASURED",
+                "detail": "UI Automation tree unavailable",
+            },
+            {
+                "name": "mixed_script_presence_in_ax_tree",
+                "status": "NOT_MEASURED",
+                "detail": "UI Automation tree unavailable",
+            },
+        ]
+    return [
+        {
+            "name": "latin_labels_present",
+            "status": "PASS" if not analysis["expected_latin_missing"] else "FAIL",
+            "detail": f"found {analysis['expected_latin_found']}, missing "
+            f"{analysis['expected_latin_missing']}",
+        },
+        {
+            "name": "japanese_label_present",
+            "status": "PASS" if not analysis["expected_japanese_missing"] else "FAIL",
+            "detail": f"found {analysis['expected_japanese_found']}, missing "
+            f"{analysis['expected_japanese_missing']}",
+        },
+        {
+            "name": "mixed_script_presence_in_ax_tree",
+            "status": "PASS" if analysis["mixed_script_count"] > 0 else "FAIL",
+            "detail": f"{analysis['mixed_script_count']} element names carry both scripts",
+        },
+    ]
+
+
 def scale_from_dpi(dpi: int) -> float:
     if type(dpi) is not int or dpi <= 0:
         fail("DPI_UNAVAILABLE")
     return dpi / 96.0
+
+
+class RECT(ctypes.Structure):
+    _fields_ = [
+        ("left", ctypes.c_long),
+        ("top", ctypes.c_long),
+        ("right", ctypes.c_long),
+        ("bottom", ctypes.c_long),
+    ]
+
+
+def live_window(handle: int) -> dict[str, Any]:
+    """Independent re-query of the captured HWND through Win32, or a closed reason."""
+    try:
+        user32 = ctypes.windll.user32
+        user32.IsWindow.argtypes = [ctypes.c_void_p]
+        user32.IsWindow.restype = ctypes.c_bool
+        user32.GetWindowThreadProcessId.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_uint),
+        ]
+        user32.GetWindowThreadProcessId.restype = ctypes.c_uint
+        user32.GetWindowTextW.argtypes = [ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_int]
+        user32.GetWindowTextW.restype = ctypes.c_int
+        user32.GetWindowRect.argtypes = [ctypes.c_void_p, ctypes.POINTER(RECT)]
+        user32.GetWindowRect.restype = ctypes.c_bool
+        handle_pointer = ctypes.c_void_p(handle)
+        if not user32.IsWindow(handle_pointer):
+            return {"status": "NOT_MEASURED", "reason": "WINDOW_GONE"}
+        pid = ctypes.c_uint(0)
+        user32.GetWindowThreadProcessId(handle_pointer, ctypes.byref(pid))
+        title = ctypes.create_unicode_buffer(512)
+        user32.GetWindowTextW(handle_pointer, title, 511)
+        rect = RECT()
+        if not user32.GetWindowRect(handle_pointer, ctypes.byref(rect)):
+            return {"status": "NOT_MEASURED", "reason": "WINDOW_RECT_UNAVAILABLE"}
+        return {
+            "status": "OBSERVED",
+            "pid": int(pid.value),
+            "title": title.value,
+            "rect": {
+                "left": int(rect.left),
+                "top": int(rect.top),
+                "width": int(rect.right - rect.left),
+                "height": int(rect.bottom - rect.top),
+            },
+        }
+    except (AttributeError, OSError, TypeError, ValueError):
+        return {"status": "NOT_MEASURED", "reason": "WIN32_UNAVAILABLE"}
 
 
 def host_scale(handle: int) -> dict[str, Any]:
@@ -253,24 +368,52 @@ def read_json(path: Path) -> dict[str, Any]:
     return document
 
 
-def validate_probe_record(record: dict[str, Any], pid: int, screenshot: Path) -> dict[str, Any]:
-    window = record.get("window")
-    shot = record.get("screenshot")
-    uia = record.get("uia")
-    if not isinstance(window, dict) or window.get("status") != "OBSERVED":
+def _window(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict) or value.get("status") != "OBSERVED":
         fail("RECORD_SCHEMA")
+    for key in ("pid", "handle", "left", "top", "width", "height"):
+        if type(value.get(key)) is not int:
+            fail("RECORD_SCHEMA")
+    if not isinstance(value.get("title"), str) or not value["title"]:
+        fail("RECORD_SCHEMA")
+    if value["width"] <= 0 or value["height"] <= 0:
+        fail("RECORD_SCHEMA")
+    return value
+
+
+def _rect(window: dict[str, Any]) -> dict[str, int]:
+    return {
+        "left": window["left"],
+        "top": window["top"],
+        "width": window["width"],
+        "height": window["height"],
+    }
+
+
+def validate_probe_record(document: dict[str, Any], pid: int, screenshot: Path) -> dict[str, Any]:
+    """Validate the probe record; image bytes are hashed here, identity is proven later."""
+    if not isinstance(document, dict) or document.get("ok") is not True:
+        fail("RECORD_SCHEMA")
+    window = _window(document.get("window"))
+    shot = document.get("screenshot")
+    uia = document.get("uia")
     if not isinstance(shot, dict) or not isinstance(uia, dict):
         fail("RECORD_SCHEMA")
-    if window.get("pid") != pid:
+    if window["pid"] != pid:
         fail("RECORD_SCHEMA")
-    if not isinstance(window.get("title"), str) or not window["title"]:
+    if uia.get("status") not in ("OBSERVED", "NOT_MEASURED"):
         fail("RECORD_SCHEMA")
-    if window.get("width", 0) <= 0 or window.get("height", 0) <= 0:
+    if not isinstance(uia.get("elements"), list):
         fail("RECORD_SCHEMA")
+    if shot.get("status") == "NOT_MEASURED":
+        if not isinstance(shot.get("reason"), str) or not shot["reason"]:
+            fail("RECORD_SCHEMA")
+        return {
+            "window": window,
+            "screenshot": {"status": "NOT_MEASURED", "reason": shot["reason"]},
+            "uia": uia,
+        }
     if shot.get("status") != "OBSERVED":
-        fail("SCREENSHOT_MISMATCH")
-    digest = shot.get("digest")
-    if not isinstance(digest, str) or not SHA256.fullmatch(digest):
         fail("RECORD_SCHEMA")
     try:
         data = screenshot.read_bytes()
@@ -279,60 +422,110 @@ def validate_probe_record(record: dict[str, Any], pid: int, screenshot: Path) ->
     width, height = ihdr_dimensions(data)
     if (width, height) != (shot.get("width"), shot.get("height")):
         fail("SCREENSHOT_MISMATCH")
-    if sha256_bytes(data) != digest:
-        fail("SCREENSHOT_MISMATCH")
-    if uia.get("status") not in ("OBSERVED", "NOT_MEASURED"):
-        fail("RECORD_SCHEMA")
-    elements = uia.get("elements")
-    if not isinstance(elements, list):
-        fail("RECORD_SCHEMA")
     return {
-        "window": {
-            "title": window["title"],
-            "pid": window["pid"],
-            "handle": window["handle"],
-            "left": window["left"],
-            "top": window["top"],
-            "width": window["width"],
-            "height": window["height"],
-        },
+        "window": window,
         "screenshot": {
             "status": "OBSERVED",
-            "path": str(screenshot).replace("\\", "/"),
-            "digest": digest,
-            "digest_recomputed": sha256_bytes(data),
+            "digest": sha256_bytes(data),
             "ihdr": {"width": width, "height": height},
             "bytes": len(data),
+            "path": str(screenshot).replace("\\", "/"),
+            "raw": shot,
         },
-        "uia": {
-            "status": uia["status"],
-            "reason": uia.get("reason", ""),
-            "elements": elements,
-            "truncated": uia.get("truncated", False),
-            "depth_limited": uia.get("depth_limited", False),
-            "elements_visited": uia.get("elements_visited", 0),
+        "uia": uia,
+    }
+
+
+def verify_capture_identity(
+    captured: dict[str, Any],
+    window: dict[str, Any],
+    launched_pid: int,
+    live: dict[str, Any],
+) -> dict[str, Any]:
+    """Refuse a capture that is not provably the target window (pure)."""
+    if captured.get("method") != BOUND_CAPTURE_METHOD:
+        fail("CAPTURE_NOT_BOUND")
+    if captured.get("handle") != window["handle"]:
+        fail("CAPTURE_IDENTITY_MISMATCH")
+    if captured.get("pid") != launched_pid or window["pid"] != launched_pid:
+        fail("CAPTURE_IDENTITY_MISMATCH")
+    if captured.get("title") != window["title"]:
+        fail("CAPTURE_IDENTITY_MISMATCH")
+    expected_rect = _rect(window)
+    if captured.get("rect") != expected_rect:
+        fail("CAPTURE_IDENTITY_MISMATCH")
+    if captured.get("still_current") is not True:
+        fail("CAPTURE_IDENTITY_MISMATCH")
+    cross = captured.get("content_cross_check")
+    if not isinstance(cross, dict) or cross.get("status") != "OBSERVED":
+        fail("CAPTURE_CONTENT_MISMATCH")
+    samples = cross.get("samples")
+    matched = cross.get("matched")
+    colors = cross.get("distinct_sampled_colors")
+    non_black = cross.get("non_black_samples")
+    if type(samples) is not int or type(matched) is not int:
+        fail("CAPTURE_CONTENT_MISMATCH")
+    if type(colors) is not int or type(non_black) is not int:
+        fail("CAPTURE_CONTENT_MISMATCH")
+    if samples < CROSS_CHECK_SAMPLES or matched < CROSS_CHECK_REQUIRED:
+        fail("CAPTURE_CONTENT_MISMATCH")
+    if colors < CROSS_CHECK_DISTINCT_COLORS or non_black < CROSS_CHECK_REQUIRED:
+        fail("CAPTURE_CONTENT_MISMATCH")
+    if live.get("status") != "OBSERVED":
+        fail("CAPTURE_IDENTITY_MISMATCH")
+    if (
+        live.get("pid") != launched_pid
+        or live.get("title") != window["title"]
+        or live.get("rect") != expected_rect
+    ):
+        fail("CAPTURE_IDENTITY_MISMATCH")
+    return {
+        "method": captured["method"],
+        "handle": captured["handle"],
+        "pid": launched_pid,
+        "title": captured["title"],
+        "rect": expected_rect,
+        "still_current": True,
+        "foreground_at_capture": captured.get("foreground_at_capture"),
+        "raised_for_capture": captured.get("raised_for_capture"),
+        "content_cross_check": {
+            "status": "OBSERVED",
+            "samples": samples,
+            "matched": matched,
+            "tolerance": cross.get("tolerance"),
+            "distinct_sampled_colors": colors,
+            "non_black_samples": non_black,
+            "visible_region": cross.get("visible_region"),
+            "method": cross.get("method"),
         },
+        "live_reverification": "IsWindow, GetWindowThreadProcessId, GetWindowTextW and "
+        "GetWindowRect agreed with the capture before the application was stopped",
+        "screen_copy_used_for_capture": False,
     }
 
 
 def observe_window(
-    python: str, observer: Path, pid: int, probe_record: Path, screenshot: Path
+    powershell: str, probe: Path, pid: int, screenshot: Path
 ) -> dict[str, Any]:
-    """Run the packaged independent observer until the new window exists."""
+    """Run the packaged independent probe until the new window exists."""
     command = [
-        python,
-        "-B",
-        str(observer),
-        "--pid",
-        str(pid),
-        "--out",
-        str(probe_record),
-        "--screenshot",
+        powershell,
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        str(probe),
+        "-Screenshot",
         str(screenshot),
-        "--max-elements",
+        "-ProcessId",
+        str(pid),
+        "-MaxElements",
         "400",
-        "--max-depth",
+        "-MaxDepth",
         "12",
+        "-MaxScreenshotBytes",
+        str(MAX_SCREENSHOT_BYTES),
     ]
     last_code = "WINDOW_NOT_FOUND"
     for _ in range(MAX_ATTEMPTS):
@@ -349,7 +542,7 @@ def observe_window(
         except (UnicodeDecodeError, json.JSONDecodeError):
             fail("PROBE_FAILED")
         if isinstance(summary, dict) and summary.get("ok") is True:
-            return read_json(probe_record)
+            return summary
         last_code = (
             summary.get("error") if isinstance(summary.get("error"), str) else "PROBE_FAILED"
         )
@@ -394,66 +587,66 @@ def stop(process: subprocess.Popen) -> dict[str, Any]:
     return {"method": "taskkill /T /F", "exit_code": code}
 
 
+def result_of(checks: list[dict[str, Any]]) -> str:
+    if any(check["status"] == "FAIL" for check in checks):
+        return "FAIL"
+    if any(check["status"] == "NOT_MEASURED" for check in checks):
+        return "PASS_WITH_NOT_MEASURED"
+    return "PASS"
+
+
 def build_record(
-    exe: Path, exe_digest: str, observed: dict[str, Any], scale: dict[str, Any],
-    analysis: dict[str, Any], stop_record: dict[str, Any]
+    exe: Path,
+    exe_digest: str,
+    observed: dict[str, Any],
+    scale: dict[str, Any],
+    analysis: dict[str, Any],
+    stop_record: dict[str, Any],
 ) -> dict[str, Any]:
+    window = observed["window"]
+    screenshot = observed["screenshot"]
     uia = observed["uia"]
-    mixed = analysis["mixed_script_count"] > 0
     ax_status = "OBSERVED" if uia["status"] == "OBSERVED" else "NOT_MEASURED"
-    checks = [
+    if screenshot["status"] == "OBSERVED":
+        identity = screenshot["identity"]
+        shot_detail = (
+            f"{identity['method']} on HWND {identity['handle']} with a verified "
+            f"foreground content cross-check "
+            f"({identity['content_cross_check']['matched']}/"
+            f"{identity['content_cross_check']['samples']} samples)"
+        )
+    else:
+        shot_detail = f"refused: {screenshot['reason']}"
+    checks: list[dict[str, Any]] = [
         {
             "name": "window_observed",
             "status": "PASS",
-            "detail": f"{observed['window']['title']} {observed['window']['width']}x"
-            f"{observed['window']['height']} at ({observed['window']['left']},"
-            f"{observed['window']['top']})",
+            "detail": f"{window['title']} {window['width']}x{window['height']} at "
+            f"({window['left']}, {window['top']})",
         },
         {
-            "name": "screenshot_is_a_real_capture",
-            "status": "PASS",
-            "detail": f"IHDR {observed['screenshot']['ihdr']['width']}x"
-            f"{observed['screenshot']['ihdr']['height']}, "
-            f"{observed['screenshot']['bytes']} bytes, digest recomputed equal",
+            "name": "screenshot_is_the_target_window",
+            "status": "PASS" if screenshot["status"] == "OBSERVED" else "NOT_MEASURED",
+            "detail": shot_detail,
         },
         {
             "name": "ax_tree_observed",
             "status": "PASS" if ax_status == "OBSERVED" else "NOT_MEASURED",
-            "detail": f"{analysis['element_count']} elements, "
-            f"{analysis['named_element_count']} named"
-            if ax_status == "OBSERVED"
-            else uia.get("reason", ""),
-        },
-        {
-            "name": "latin_labels_present",
-            "status": "PASS"
-            if ax_status == "OBSERVED" and analysis["expected_latin_found"]
-            else ("NOT_MEASURED" if ax_status != "OBSERVED" else "FAIL"),
-            "detail": f"found {analysis['expected_latin_found']}, missing "
-            f"{analysis['expected_latin_missing']}",
-        },
-        {
-            "name": "japanese_label_present",
-            "status": "PASS"
-            if ax_status == "OBSERVED" and analysis["expected_japanese_found"]
-            else ("NOT_MEASURED" if ax_status != "OBSERVED" else "FAIL"),
-            "detail": f"found {analysis['expected_japanese_found']}, missing "
-            f"{analysis['expected_japanese_missing']}",
-        },
-        {
-            "name": "mixed_script_presence_in_ax_tree",
-            "status": "PASS"
-            if ax_status == "OBSERVED" and mixed
-            else ("NOT_MEASURED" if ax_status != "OBSERVED" else "FAIL"),
-            "detail": f"{analysis['mixed_script_count']} element names carry both scripts",
+            "detail": (
+                f"{analysis['element_count']} elements, "
+                f"{analysis['named_element_count']} named"
+                if ax_status == "OBSERVED"
+                else uia.get("reason", "")
+            ),
         },
     ]
+    checks.extend(evaluate_labels(analysis, ax_status))
     return {
         "typography_observation_version": OBSERVATION_VERSION,
         "observed_utc": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "executable": {"path": str(exe).replace("\\", "/"), "digest": exe_digest},
-        "window": observed["window"],
-        "screenshot": observed["screenshot"],
+        "window": window,
+        "screenshot": screenshot,
         "uia": {
             "status": uia["status"],
             "reason": uia.get("reason", ""),
@@ -477,11 +670,12 @@ def build_record(
         },
         "scale": scale,
         "checks": checks,
+        "result": result_of(checks),
         "app_stop": stop_record,
         "not_measured": list(NOT_MEASURED),
         "declares_mptyp1_complete": False,
-        "statement": "Host-scale observation only; the display-scale ladder, mixed-script "
-        "visual quality and every NOT_MEASURED item still need native runs. This does not "
+        "statement": "Host-scale observation only. A screenshot is recorded only with a "
+        "bound-capture identity proof; otherwise it stays NOT_MEASURED. This does not "
         "declare MP-TYP1 complete.",
     }
 
@@ -499,16 +693,16 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--exe", default=str(default_exe()))
     parser.add_argument("--out", required=True, help="fresh output directory")
-    parser.add_argument("--python", default=sys.executable)
-    parser.add_argument("--observer", default=str(default_observer()))
+    parser.add_argument("--powershell", default="powershell")
+    parser.add_argument("--probe", default=str(default_probe()))
     args = parser.parse_args(argv)
     process: subprocess.Popen | None = None
     try:
         exe = Path(args.exe)
         if not exe.is_file():
             fail("EXE_MISSING")
-        observer = Path(args.observer)
-        if not observer.is_file():
+        probe = Path(args.probe)
+        if not probe.is_file():
             fail("PROBE_FAILED")
         out = Path(args.out)
         if out.exists():
@@ -519,18 +713,42 @@ def main(argv: list[str] | None = None) -> int:
             fail("WRITE_FAILED")
         probe_record = out / "probe.json"
         screenshot = out / "screenshot.png"
-        log_path = out / "app.log"
         exe_digest = sha256_bytes(exe.read_bytes())
-        process = launch(exe, log_path)
+        process = launch(exe, out / "app.log")
         document = observe_window(
-            args.python, observer, process.pid, probe_record, screenshot
+            args.powershell, probe, process.pid, screenshot
         )
         observed = validate_probe_record(document, process.pid, screenshot)
+        if observed["screenshot"]["status"] == "OBSERVED":
+            live = live_window(observed["window"]["handle"])
+            identity = verify_capture_identity(
+                observed["screenshot"]["raw"], observed["window"], process.pid, live
+            )
+            observed["screenshot"] = {
+                "status": "OBSERVED",
+                "method": identity["method"],
+                "identity": identity,
+                "digest": observed["screenshot"]["digest"],
+                "ihdr": observed["screenshot"]["ihdr"],
+                "bytes": observed["screenshot"]["bytes"],
+                "path": observed["screenshot"]["path"],
+            }
+        else:
+            observed["screenshot"] = {
+                "status": "NOT_MEASURED",
+                "reason": observed["screenshot"]["reason"],
+            }
         scale = host_scale(observed["window"]["handle"])
         analysis = analyze_elements(observed["uia"]["elements"])
         stop_record = stop(process)
         process = None
         record = build_record(exe, exe_digest, observed, scale, analysis, stop_record)
+        try:
+            (out / "probe.json").write_text(
+                json.dumps(document, sort_keys=True, separators=(",", ":")), encoding="utf-8"
+            )
+        except OSError:
+            fail("WRITE_FAILED")
         digest = write_record(record, out / "observation.json")
         print(
             json.dumps(
@@ -538,23 +756,27 @@ def main(argv: list[str] | None = None) -> int:
                     "ok": True,
                     "record": str(out / "observation.json"),
                     "record_digest": digest,
+                    "result": record["result"],
                     "window": {
                         "title": record["window"]["title"],
                         "width": record["window"]["width"],
                         "height": record["window"]["height"],
                     },
-                    "screenshot": record["screenshot"]["digest"],
-                    "ihdr": record["screenshot"]["ihdr"],
-                    "scale": record["scale"],
+                    "screenshot": (
+                        record["screenshot"]["digest"]
+                        if record["screenshot"]["status"] == "OBSERVED"
+                        else f"NOT_MEASURED:{record['screenshot']['reason']}"
+                    ),
+                    "scale": record["scale"]["scale"],
                     "ax_elements": record["uia"]["element_count"],
+                    "labels_missing": record["labels"]["missing_latin"]
+                    + record["labels"]["missing_japanese"],
                     "mixed_script_count": record["labels"]["mixed_script_count"],
-                    "found_latin": record["labels"]["found_latin"],
-                    "found_japanese": record["labels"]["found_japanese"],
                 },
                 separators=(",", ":"),
             )
         )
-        return 0
+        return 2 if record["result"] == "FAIL" else 0
     except ObserveError as error:
         print(json.dumps({"ok": False, "error": error.code}, separators=(",", ":")))
     except (OSError, ValueError, TypeError):
@@ -577,8 +799,8 @@ def default_exe() -> Path:
     return Path(__file__).resolve().parents[4] / "target/debug/cos-desktop.exe"
 
 
-def default_observer() -> Path:
-    return Path(__file__).resolve().parents[1] / "r0/native_observe.py"
+def default_probe() -> Path:
+    return Path(__file__).resolve().parents[1] / "r0/n03_probe.ps1"
 
 
 if __name__ == "__main__":

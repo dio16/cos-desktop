@@ -43,6 +43,11 @@ public static class NativeWindow {
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr handle, out uint pid);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr handle, out RECT rect);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr handle);
+    [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr handle, IntPtr hdc, uint flags);
+    [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr handle);
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr handle, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
 }
 '@
@@ -118,20 +123,137 @@ $window = @{
 }
 
 # ----------------------------------------------------------------- screenshot
+# Capture the target HWND itself: PrintWindow renders that window's surface, so a
+# foreign window occupying the same screen rectangle cannot be recorded as this
+# window. The bound image is then verified against the display over the window's
+# on-screen region: an occluding foreign window disagrees and the capture is refused.
+# Every failure is a closed refusal, never a fallback image.
 $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "screenshot was not attempted" }
 try {
     $bitmap = New-Object System.Drawing.Bitmap $width, $height
+    # Briefly raise the target topmost without activating it so the display at its
+    # rectangle can be compared with the bound capture; the previous z-order state
+    # (HWND_NOTOPMOST) is restored immediately after the capture. Nothing but z-order
+    # changes, and both the raise and the restore are recorded.
+    $raised = [NativeWindow]::SetWindowPos($target.Handle, [IntPtr](-1), 0, 0, 0, 0, 0x0001 -bor 0x0002 -bor 0x0010)
+    Start-Sleep -Milliseconds 250
     $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-    $graphics.CopyFromScreen($rect.Left, $rect.Top, 0, 0, $bitmap.Size)
-    $bitmap.Save($Screenshot, [System.Drawing.Imaging.ImageFormat]::Png)
+    $hdc = $graphics.GetHdc()
+    # PW_RENDERFULLCONTENT (2) asks the window to render its composed content.
+    $printed = [NativeWindow]::PrintWindow($target.Handle, $hdc, 2)
+    $graphics.ReleaseHdc($hdc)
     $graphics.Dispose()
-    $bitmap.Dispose()
-    $info = Get-Item -LiteralPath $Screenshot
-    if ($info.Length -gt $MaxScreenshotBytes) {
-        Remove-Item -LiteralPath $Screenshot -Force -ErrorAction SilentlyContinue
-        $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "SCREENSHOT_TOO_LARGE" }
+    if (-not $printed) {
+        $bitmap.Dispose()
+        $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "WINDOW_CAPTURE_FAILED" }
     } else {
-        $screenshotRecord = @{ status = "OBSERVED"; width = $width; height = $height; bytes = $info.Length }
+        # Identity signal 1: the same window must still be current, at the same
+        # rectangle, after the capture.
+        $after = New-Object NativeWindow+RECT
+        $sameWindow = [NativeWindow]::IsWindow($target.Handle) -and [NativeWindow]::GetWindowRect($target.Handle, [ref]$after)
+        $sameRect = $sameWindow -and ($after.Left -eq $rect.Left) -and ($after.Top -eq $rect.Top) -and (($after.Right - $after.Left) -eq $width) -and (($after.Bottom - $after.Top) -eq $height)
+        # Content signal: sampled agreement between the bound capture and the display
+        # over the intersection of the window rectangle with the virtual screen.
+        $vx = [NativeWindow]::GetSystemMetrics(76)
+        $vy = [NativeWindow]::GetSystemMetrics(77)
+        $vw = [NativeWindow]::GetSystemMetrics(78)
+        $vh = [NativeWindow]::GetSystemMetrics(79)
+        $ix = [Math]::Max($rect.Left, $vx)
+        $iy = [Math]::Max($rect.Top, $vy)
+        $ir = [Math]::Min($rect.Right, $vx + $vw)
+        $ib = [Math]::Min($rect.Bottom, $vy + $vh)
+        $iw = $ir - $ix
+        $ih = $ib - $iy
+        # Sampled content statistics of the bound capture: a blank/failed composite is
+        # refused instead of being recorded as an image.
+        $colors = @{}
+        $nonBlack = 0
+        for ($gx = 1; $gx -le 7; $gx++) {
+            for ($gy = 1; $gy -le 7; $gy++) {
+                $px = [int]([double]$width * $gx / 8.0)
+                $py = [int]([double]$height * $gy / 8.0)
+                if ($px -ge $width) { $px = $width - 1 }
+                if ($py -ge $height) { $py = $height - 1 }
+                $pixel = $bitmap.GetPixel($px, $py)
+                $colors["$($pixel.R),$($pixel.G),$($pixel.B)"] = 1
+                if ($pixel.R + $pixel.G + $pixel.B -gt 12) { $nonBlack++ }
+            }
+        }
+        $samples = 0
+        $matched = 0
+        if ($sameRect -and $iw -gt 0 -and $ih -gt 0) {
+            $screen = New-Object System.Drawing.Bitmap $iw, $ih
+            $screenGraphics = [System.Drawing.Graphics]::FromImage($screen)
+            $screenGraphics.CopyFromScreen($ix, $iy, 0, 0, $screen.Size)
+            $screenGraphics.Dispose()
+            for ($gx = 1; $gx -le 7; $gx++) {
+                for ($gy = 1; $gy -le 7; $gy++) {
+                    $sx = [int]([double]$iw * $gx / 8.0)
+                    $sy = [int]([double]$ih * $gy / 8.0)
+                    if ($sx -ge $iw) { $sx = $iw - 1 }
+                    if ($sy -ge $ih) { $sy = $ih - 1 }
+                    $capturedPixel = $bitmap.GetPixel($ix - $rect.Left + $sx, $iy - $rect.Top + $sy)
+                    $screenPixel = $screen.GetPixel($sx, $sy)
+                    $samples++
+                    if ([Math]::Abs([int]$capturedPixel.R - [int]$screenPixel.R) -le 24 -and
+                        [Math]::Abs([int]$capturedPixel.G - [int]$screenPixel.G) -le 24 -and
+                        [Math]::Abs([int]$capturedPixel.B - [int]$screenPixel.B) -le 24) {
+                        $matched++
+                    }
+                }
+            }
+            $screen.Dispose()
+        }
+        $restored = [NativeWindow]::SetWindowPos($target.Handle, [IntPtr](-2), 0, 0, 0, 0, 0x0001 -bor 0x0002 -bor 0x0010)
+        $content = @{
+            status = "NOT_MEASURED"
+            method = "bound capture versus display over the on-screen region"
+            samples = $samples
+            matched = $matched
+            tolerance = 24
+            distinct_sampled_colors = $colors.Count
+            non_black_samples = $nonBlack
+        }
+        if (-not $sameRect) {
+            $bitmap.Dispose()
+            $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "WINDOW_CHANGED_DURING_CAPTURE" }
+        } elseif ($iw -le 0 -or $ih -le 0) {
+            $bitmap.Dispose()
+            $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "WINDOW_OFFSCREEN"; content = $content }
+        } elseif ($colors.Count -lt 4 -or $nonBlack -lt 45) {
+            $bitmap.Dispose()
+            $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "WINDOW_CAPTURE_EMPTY"; content = $content }
+        } elseif ($matched -lt 45) {
+            $bitmap.Dispose()
+            $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "WINDOW_CAPTURE_UNVERIFIED"; content = $content }
+        } else {
+            $content.status = "OBSERVED"
+            $content.visible_region = @{ left = $ix; top = $iy; width = $iw; height = $ih }
+            $bitmap.Save($Screenshot, [System.Drawing.Imaging.ImageFormat]::Png)
+            $bitmap.Dispose()
+            $info = Get-Item -LiteralPath $Screenshot
+            if ($info.Length -gt $MaxScreenshotBytes) {
+                Remove-Item -LiteralPath $Screenshot -Force -ErrorAction SilentlyContinue
+                $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "SCREENSHOT_TOO_LARGE" }
+            } else {
+                $screenshotRecord = @{
+                    status = "OBSERVED"
+                    width = $width
+                    height = $height
+                    bytes = $info.Length
+                    method = "PrintWindow(PW_RENDERFULLCONTENT)"
+                    handle = $target.Handle.ToInt64()
+                    pid = $target.Pid
+                    title = $target.Title
+                    rect = @{ left = $rect.Left; top = $rect.Top; width = $width; height = $height }
+                    still_current = $true
+                    foreground_at_capture = ([NativeWindow]::GetForegroundWindow() -eq $target.Handle)
+                    raised_for_capture = $raised
+                    restored_after_capture = $restored
+                    content_cross_check = $content
+                }
+            }
+        }
     }
 } catch {
     $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "SCREENSHOT_FAILED" }
