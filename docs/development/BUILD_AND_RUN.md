@@ -448,6 +448,26 @@ Bounded inventory only: no measurement, no executable launch, no plan/DC change 
 - **Quality entry point now fails closed:** `pwsh scripts/quality.ps1` resolves **and proves** `python` (`python.exe` → `python.cmd` → `python.bat` → `py.exe` → `py.cmd` → `py.bat`, each answering a bounded `-c 'print(...)'` probe) and `cargo` (`cargo.exe` → `cargo.cmd` → `cargo.bat`, each answering `--version`), prints the two proven paths, uses those absolute paths, resets `$LASTEXITCODE` per gate, and rejects a gate that leaves no status; the two dependency-rules gates are additionally held to their documented success line (`Ran N tests`, `allowlist edges verified for N workspace member(s)`), while the cargo-driven gates rely on the per-gate status reset plus the proven tool. The probes run with the repository root as working directory, so the proven `cargo` is the toolchain `rust-toolchain.toml` pins for the gates rather than whatever the caller's cwd would select (observed difference: `1.97.1` from `C:\tmp` vs the pinned `1.98.1`). An unprovable interpreter/tool aborts the run with an explicit message instead of skipping a gate. Cost: one bounded probe per candidate (20 s cap each) — up to six Python candidates plus one cargo, so the worst case is roughly two minutes on a host where every earlier candidate is a hang; a host whose only Python or cargo is an extensionless launcher now fails closed.
 - **Verification commands used for that fix:** `pwsh -NoProfile -File scripts/quality.ps1 -CheckOnly`, `pwsh -NoProfile -File scripts/quality.ps1`, and negative runs with a process-local PATH pointing at a broken shim (expect exit 1 with the explicit message). The native startup smoke remains a separate manual gate (§4.10, TESTING §6).
 
+### 4.15 N06 attribution probe (2026-10-24)
+
+Current reading for the N06 admission case; the §4.13 table stays as the 2026-10-24 inventory and is not rewritten. [Plan §19.26](IMPLEMENTATION_MASTER_PLAN.md#1926-n06-attribution-probe-and-the-measured-a0a1-comparison-2026-10-24) owns the disposition and every number; [DC-MP-R0A](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0a) owns the exit.
+
+```powershell
+# one attribution record for a live window's process
+python -B apps/desktop/devtools/r0/n06_attribution.py attribute --pid <pid> --seconds 8 --interval-ms 20 `
+    --out <record.json> --executable-sha256 sha256:<approved executable digest>
+# compare two records (descriptive, no verdict is emitted)
+python -B apps/desktop/devtools/r0/n06_attribution.py compare --a0 <a0.json> --a1 <a1.json> --out <comparison.json> `
+    --qualification "<one bounded qualification string>"
+# the R0 suite
+python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p "test_*.py"
+```
+
+- **Endpoints:** sampled window-content changes (`sampled_window_content_changes`, a lower bound, never a frame counter), process CPU (`GetProcessTimes`, `process_over_window`), PDH GPU-engine utilisation (pid-attributed, ~1 Hz), and a desktop-wide DWM counter set that is `per_app:false` and refused on this host (`hr=0x88980090` → `DWM_TIMING_UNAVAILABLE`). `frames.app_displayed_frames` is always `NOT_MEASURED / NO_PER_WINDOW_DISPLAY_COUNTER`; `app_reported_stand_in` is `false` everywhere.
+- **Identity:** a caller-supplied executable digest is recorded as `ASSERTED`, never as a probe measurement; `OBSERVED` survives only as a legacy tolerance for the pre-review retained records so they still replay.
+- **Caps and seams:** seconds 1–120, interval 10–1000 ms, samples ≤10000, window ≤4 M px (CLI default; the accepted ceiling is 16 M), probe stdout read cap 1 MiB (a read cap, not a write quota), probe timeout seconds+30, record ≤4 MiB, absolute probe/interpreter paths, and a documented `--probe` seam so the real CLI is exercised against a fake probe.
+- **Reading a record:** a `DERIVED` ratio is descriptive over the declared window and becomes `NOT_MEASURED / CPU_BELOW_CLOCK_RESOLUTION` when the CPU numerator is zero. Two repetitions per binary still showed within-binary spread larger than every A0/A1 delta, so no cost conclusion follows from the recorded runs.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |
