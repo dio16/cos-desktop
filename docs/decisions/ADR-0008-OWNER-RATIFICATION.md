@@ -75,7 +75,8 @@ The MP-VID1 capability/interop probe is now authorised (it was the blocking auth
 
 ## 7. Boundaries this ADR does not move
 
-- No Runtime acceptance, no Runtime mutation, no `cos-desktop`-side reimplementation of COS semantics.
+- No Runtime acceptance, no Runtime mutation, no `cos-desktop`-side reimplementation of COS semantics. The RC-* Runtime-acceptance gates in the Design Contracts and the master plan are **not** closed by this ADR, and no task card may read this ratification as Runtime permission.
+- **Task-card statuses are not overwritten:** where a §7 card still shows its pre-ratification status (for example a `DESIGN_GATE_REQUIRED` label), this ADR supplies the gate decision for the DD design gates, the declared-basis numeric ratification and the VID1 probe authorisation only. Any prerequisite a card names that is not one of those (a real Runtime operation, measured native evidence, Product/UX validation) stays unfulfilled and keeps blocking its own acceptance.
 - No Product/UX validation claim, no release or `main` integration approval, no credentials or permission change, no GPUI pin change.
 - A ratified budget is not a measured result; a PASS from an external reviewer is not owner acceptance.
 - `refine` remains unavailable on this host, so independent Refine Gates for future candidates remain `NOT_RUN` unless the tool is installed.

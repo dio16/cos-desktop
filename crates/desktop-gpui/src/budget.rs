@@ -16,10 +16,22 @@
 //! media, GPU upload or bounded-scheduling work lands, it reads the resolved
 //! budget instead of restating a value; an existing limit that is not one of
 //! these budgets (a trace quota, dock geometry) keeps owning its own constant.
+//!
+//! The minimum upload unit below is a **declared assumption** — one 256 x 256
+//! RGBA8 tile — not a measurement, and these rules follow from it: a
+//! per-frame upload cap may not be smaller than one unit, and the upload
+//! staging budget, the combined in-flight decoded/upload payload budget and
+//! the image/graph GPU cache must each be able to hold at least one unit. A
+//! smaller unit would have to be proven before any of those rules is relaxed.
 
-/// Smallest indivisible upload unit: one 256 x 256 RGBA8 tile, declared
-/// provisional. A resolved per-frame upload cap may not be smaller than this,
-/// because such a cap could never admit one complete unit.
+/// Smallest indivisible upload unit: one 256 x 256 RGBA8 tile, a declared
+/// assumption rather than a measurement.
+///
+/// A per-frame upload cap below this could never admit one complete unit, and
+/// staging, the combined in-flight payload or the image/graph GPU cache below
+/// it could never make progress at all. Resolution refuses those combinations
+/// instead of clamping them; a smaller unit would have to be proven before the
+/// rule is relaxed.
 pub const MIN_UPLOAD_UNIT_BYTES: u64 = 262_144;
 
 const MIB: u64 = 1024 * 1024;
@@ -147,8 +159,9 @@ impl RenderBudgets {
 
     /// Refuse a budget that cannot bound the work it claims to bound.
     ///
-    /// Zero concurrency, zero byte ceilings and an upload cap below one
-    /// indivisible upload unit are errors, never clamped values.
+    /// Zero concurrency, zero byte ceilings, a byte ceiling that cannot hold
+    /// one indivisible upload unit and an upload cap below that unit are
+    /// errors, never clamped values.
     pub fn validate(&self) -> Result<(), RenderBudgetError> {
         if self.cpu_decoded_image_cache_bytes == 0 {
             return Err(RenderBudgetError::ZeroCpuDecodedImageCacheBytes);
@@ -179,6 +192,21 @@ impl RenderBudgets {
         }
         if self.background_search_index_jobs_per_window == 0 {
             return Err(RenderBudgetError::ZeroBackgroundSearchIndexJobsPerWindow);
+        }
+        if self.upload_staging_bytes < MIN_UPLOAD_UNIT_BYTES {
+            return Err(RenderBudgetError::UploadStagingBelowMinimumUnit {
+                staging_bytes: self.upload_staging_bytes,
+            });
+        }
+        if self.in_flight_payload_bytes < MIN_UPLOAD_UNIT_BYTES {
+            return Err(RenderBudgetError::InFlightPayloadBelowMinimumUnit {
+                payload_bytes: self.in_flight_payload_bytes,
+            });
+        }
+        if self.gpu_image_graph_cache_bytes < MIN_UPLOAD_UNIT_BYTES {
+            return Err(RenderBudgetError::GpuImageGraphCacheBelowMinimumUnit {
+                cache_bytes: self.gpu_image_graph_cache_bytes,
+            });
         }
         let caps = [
             (FrameRate::Hz60, self.upload_cap_bytes_60_hz),
@@ -289,6 +317,9 @@ pub enum RenderBudgetError {
     ZeroGraphLayoutJobsPerGraph,
     ZeroGraphLayoutPendingRevisions,
     ZeroBackgroundSearchIndexJobsPerWindow,
+    UploadStagingBelowMinimumUnit { staging_bytes: u64 },
+    InFlightPayloadBelowMinimumUnit { payload_bytes: u64 },
+    GpuImageGraphCacheBelowMinimumUnit { cache_bytes: u64 },
     UploadCapBelowMinimumUnit { rate_hz: u16, cap_bytes: u64 },
 }
 
@@ -321,6 +352,18 @@ impl std::fmt::Display for RenderBudgetError {
                 .write_str("pending graph-layout revisions per graph must be greater than zero"),
             Self::ZeroBackgroundSearchIndexJobsPerWindow => formatter.write_str(
                 "background search/index concurrency per window must be greater than zero",
+            ),
+            Self::UploadStagingBelowMinimumUnit { .. } => write!(
+                formatter,
+                "the upload staging budget cannot hold even one indivisible upload unit of {MIN_UPLOAD_UNIT_BYTES} bytes"
+            ),
+            Self::InFlightPayloadBelowMinimumUnit { .. } => write!(
+                formatter,
+                "the combined in-flight decoded/upload payload budget cannot hold even one indivisible upload unit of {MIN_UPLOAD_UNIT_BYTES} bytes"
+            ),
+            Self::GpuImageGraphCacheBelowMinimumUnit { .. } => write!(
+                formatter,
+                "the image/graph GPU cache budget cannot hold even one indivisible upload unit of {MIN_UPLOAD_UNIT_BYTES} bytes"
             ),
             Self::UploadCapBelowMinimumUnit { rate_hz, cap_bytes } => write!(
                 formatter,
@@ -718,5 +761,70 @@ mod tests {
         // budget type does not take over a trace quota or a dock geometry.
         assert_eq!(crate::trace::MAX_DOCK_LINES, 4096);
         assert_eq!(crate::trace::MAX_RAIL_LINES, 8192);
+    }
+
+    #[test]
+    fn byte_ceilings_that_cannot_hold_one_upload_unit_are_refused() {
+        let base = RenderBudgets::ratified();
+        let refusals: [RefusalCase; 3] = [
+            (
+                "upload staging one byte below one unit",
+                |overrides| overrides.upload_staging_bytes = Some(MIN_UPLOAD_UNIT_BYTES - 1),
+                RenderBudgetError::UploadStagingBelowMinimumUnit {
+                    staging_bytes: MIN_UPLOAD_UNIT_BYTES - 1,
+                },
+            ),
+            (
+                "in-flight payload one byte below one unit",
+                |overrides| overrides.in_flight_payload_bytes = Some(MIN_UPLOAD_UNIT_BYTES - 1),
+                RenderBudgetError::InFlightPayloadBelowMinimumUnit {
+                    payload_bytes: MIN_UPLOAD_UNIT_BYTES - 1,
+                },
+            ),
+            (
+                "GPU cache one byte below one unit",
+                |overrides| overrides.gpu_image_graph_cache_bytes = Some(MIN_UPLOAD_UNIT_BYTES - 1),
+                RenderBudgetError::GpuImageGraphCacheBelowMinimumUnit {
+                    cache_bytes: MIN_UPLOAD_UNIT_BYTES - 1,
+                },
+            ),
+        ];
+        for (case, set, expected) in refusals {
+            let mut overrides = RenderBudgetsOverride::default();
+            set(&mut overrides);
+            assert_eq!(overrides.resolve(base), Err(expected), "{case}");
+        }
+
+        // The reviewer's exact combination: two ceilings that cannot hold one
+        // unit are refused, and the first violated ceiling is named.
+        let unworkable = RenderBudgetsOverride {
+            upload_staging_bytes: Some(1),
+            in_flight_payload_bytes: Some(1),
+            ..RenderBudgetsOverride::default()
+        };
+        assert_eq!(
+            unworkable.resolve_default(),
+            Err(RenderBudgetError::UploadStagingBelowMinimumUnit { staging_bytes: 1 })
+        );
+
+        // Exactly one indivisible unit is the smallest accepted ceiling for
+        // each capacity the minimum unit has to fit into.
+        let smallest = RenderBudgetsOverride {
+            gpu_image_graph_cache_bytes: Some(MIN_UPLOAD_UNIT_BYTES),
+            upload_staging_bytes: Some(MIN_UPLOAD_UNIT_BYTES),
+            in_flight_payload_bytes: Some(MIN_UPLOAD_UNIT_BYTES),
+            ..RenderBudgetsOverride::default()
+        }
+        .resolve_default()
+        .expect("one indivisible unit per capacity is representable");
+        assert_eq!(smallest.upload_staging_bytes, MIN_UPLOAD_UNIT_BYTES);
+        assert_eq!(smallest.in_flight_payload_bytes, MIN_UPLOAD_UNIT_BYTES);
+        assert_eq!(smallest.gpu_image_graph_cache_bytes, MIN_UPLOAD_UNIT_BYTES);
+
+        // The refusal is legible and names the declared minimum unit.
+        assert_eq!(
+            RenderBudgetError::InFlightPayloadBelowMinimumUnit { payload_bytes: 1 }.to_string(),
+            "the combined in-flight decoded/upload payload budget cannot hold even one indivisible upload unit of 262144 bytes"
+        );
     }
 }
