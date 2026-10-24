@@ -26,6 +26,10 @@ Usage (from the repository root):
     python scripts/check_dependency_rules.py --metadata m.json
     python scripts/check_dependency_rules.py --self-test     # regression cases
 
+The cargo program is taken from the CARGO environment variable when it is set (cargo's own
+convention) and otherwise from PATH as the bare command "cargo". A program that cannot be
+launched is a closed input error (exit 2), never a fabricated pass.
+
 Exit codes: 0 clean, 1 dependency-rule violations, 2 usage/input error.
 """
 
@@ -330,15 +334,24 @@ def check_metadata(metadata: dict, repo_root: str) -> list[Violation]:
 
 
 def run_cargo_metadata(repo_root: str) -> dict:
-    command = ["cargo", "metadata", "--locked", "--no-deps", "--format-version", "1"]
-    completed = subprocess.run(
-        command,
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
+    # CARGO is cargo's own convention for naming the cargo executable, so a caller with a bounded
+    # or empty PATH (for example an isolated gate runner) can pass the program explicitly.
+    cargo = os.environ.get("CARGO") or "cargo"
+    command = [cargo, "metadata", "--locked", "--no-deps", "--format-version", "1"]
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except OSError as error:
+        raise RuntimeError(
+            f"cannot launch the cargo program {cargo!r} ({error}); set the CARGO environment variable"
+            f" when the current PATH cannot resolve cargo"
+        ) from error
     if completed.returncode != 0:
         sys.stderr.write(completed.stderr)
         raise RuntimeError(f"cargo metadata failed (exit {completed.returncode}): {' '.join(command)}")
