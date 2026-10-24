@@ -86,6 +86,19 @@ def verdict_for(items: list[dict]) -> dict:
     return {"status": "VERIFIED", "reason": ""}
 
 
+def unavailable(name: str, expected: object, observed: object, command: str,
+                claim: str, reason: str) -> dict:
+    return {
+        "item": name,
+        "status": "NOT_MEASURED",
+        "expected": expected,
+        "observed": observed,
+        "command": command,
+        "claim": claim,
+        "reason": reason,
+    }
+
+
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -128,17 +141,37 @@ def verify(args: argparse.Namespace) -> dict:
 
     artifacts = record.get("artifacts", {})
     feature_approval = approval_entry(approvals, product_commit, A1_CLAIM)
-    relative = feature_approval.get("helper_relative_path") if feature_approval else None
     approved_delivery = (
-        (Path(args.repo_root).resolve() / relative).resolve() if relative else None)
+        driver.approved_helper_path(feature_approval, args.repo_root)
+        if feature_approval and feature_approval.get("helper_relative_path") else None)
     supplied_delivery = Path(args.helper).resolve()
+    helper_exists = supplied_delivery.is_file()
+    approved_exists = approved_delivery is not None and approved_delivery.is_file()
+    delivery_missing = not helper_exists or not approved_exists
+    helper_hash = digest(paths["helper"]) if helper_exists else None
+    path_expected = (
+        os.path.normcase(str(approved_delivery)) if approved_delivery is not None else None)
+    path_observed = os.path.normcase(str(supplied_delivery))
+    path_command = ("resolve --helper and the approval helper_relative_path from --repo-root; "
+                    "compare normalized paths")
+    path_item = (
+        unavailable("helper.path_is_approved_delivery_point", path_expected, path_observed,
+                    path_command, "approval entry helper_relative_path",
+                    "DELIVERY_POINT_MISSING")
+        if delivery_missing else
+        item("helper.path_is_approved_delivery_point", path_expected, path_observed,
+             path_command, "approval entry helper_relative_path"))
+    hash_item = (
+        unavailable("helper.executable_sha256", artifacts.get("helper", {}).get("sha256"),
+                    helper_hash, sha_command(paths["helper"]),
+                    "approval entry / baseline record; helper must live at the approved relative path",
+                    "DELIVERY_POINT_MISSING")
+        if delivery_missing else
+        item("helper.executable_sha256", artifacts.get("helper", {}).get("sha256"),
+             helper_hash, sha_command(paths["helper"]),
+             "approval entry / baseline record; helper must live at the approved relative path"))
     items = [
-        item("helper.path_is_approved_delivery_point",
-             os.path.normcase(str(approved_delivery)) if approved_delivery is not None else None,
-             os.path.normcase(str(supplied_delivery)),
-             "resolve --helper and the approval helper_relative_path from --repo-root; "
-             "compare normalized paths",
-             "approval entry helper_relative_path"),
+        path_item,
         item("bundle.file_sha256", BUNDLE_CLAIM, digest(paths["bundle"]),
              sha_command(paths["bundle"]), "Lead task-96 retained bundle claim"),
         item("baseline_a0.executable_sha256", A0_CLAIM, digest(paths["a0"]),
@@ -154,9 +187,7 @@ def verify(args: argparse.Namespace) -> dict:
              and paths["helper_copy"].is_file() else None,
              sha_command(paths["helper_copy"]) if paths["helper_copy"] is not None else "n/a",
              "baseline record artifacts.helper (build-scratch copy)"),
-        item("helper.executable_sha256", artifacts.get("helper", {}).get("sha256"),
-             digest(paths["helper"]), sha_command(paths["helper"]),
-             "approval entry / baseline record; helper must live at the approved relative path"),
+        hash_item,
         item("helper.source_sha256", artifacts.get("helper", {}).get("source_sha256"),
              helper_source, "python -B -c \"import driver; print(driver.helper_source_digest())\"",
              "approval entry / baseline record"),

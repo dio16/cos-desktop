@@ -32,7 +32,7 @@ REQUIRED = (
 
 
 def args(bundle: Path, manifest_a0: Path, output: Path, record: Path,
-         helper: Path = DELIVERY) -> list[str]:
+         helper: Path = DELIVERY, repo_root: Path = REPO) -> list[str]:
     return [
         sys.executable, "-B", str(ROOT / "n07_verify.py"),
         "--bundle", str(bundle),
@@ -41,7 +41,7 @@ def args(bundle: Path, manifest_a0: Path, output: Path, record: Path,
         "--manifest-a0", str(manifest_a0),
         "--manifest-a1", str(EVIDENCE / "s2b-feature-a1-nb1.json"),
         "--approvals", str(REPO / "apps/desktop/devtools/r0/approved-executables.json"),
-        "--repo-root", str(REPO),
+        "--repo-root", str(repo_root),
         "--helper", str(helper),
         "--a0", str(SCRATCH / "a0/cos-desktop.exe"),
         "--a1", str(SCRATCH / "a1/cos-desktop.exe"),
@@ -51,8 +51,8 @@ def args(bundle: Path, manifest_a0: Path, output: Path, record: Path,
 
 
 def run(bundle: Path, manifest_a0: Path, output: Path, record: Path,
-        helper: Path = DELIVERY) -> subprocess.CompletedProcess:
-    command = args(bundle, manifest_a0, output, record, helper)
+        helper: Path = DELIVERY, repo_root: Path = REPO) -> subprocess.CompletedProcess:
+    command = args(bundle, manifest_a0, output, record, helper, repo_root)
     if SCRATCH_HELPER.is_file():
         command.extend(["--helper-copy", str(SCRATCH_HELPER)])
     return subprocess.run(command, capture_output=True, text=True, timeout=120, check=False)
@@ -90,6 +90,39 @@ class N07Verifier(unittest.TestCase):
             self.assertEqual(item["helper.path_is_approved_delivery_point"]["status"], "MISMATCH")
             # The bytes happen to match the approved identity, but that is only corroboration.
             self.assertEqual(item["helper.executable_sha256"]["status"], "MATCH")
+
+    def test_missing_helper_file_is_unverified_not_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            missing = Path(directory) / "r0_owner.exe"
+            output = Path(directory) / "n07.json"
+            completed = run(BUNDLE, EVIDENCE / "s2b-default-a0-nb1.json", output,
+                            EVIDENCE / "record.json", helper=missing)
+            self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
+            payload = json.loads(completed.stdout)
+            self.assertEqual(payload["verdict"]["status"], "UNVERIFIED")
+            self.assertIn("helper.path_is_approved_delivery_point", payload["verdict"]["reason"])
+            record = json.loads(output.read_text(encoding="utf-8"))
+            item = {entry["item"]: entry for entry in record["items"]}
+            self.assertEqual(item["helper.path_is_approved_delivery_point"]["status"], "NOT_MEASURED")
+            self.assertEqual(item["helper.path_is_approved_delivery_point"]["reason"], "DELIVERY_POINT_MISSING")
+            self.assertEqual(item["helper.executable_sha256"]["status"], "NOT_MEASURED")
+            self.assertEqual(item["helper.executable_sha256"]["reason"], "DELIVERY_POINT_MISSING")
+            self.assertEqual(record["totals"]["MISMATCH"], 0)
+
+    def test_missing_resolved_approved_path_is_unverified(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "n07.json"
+            completed = run(BUNDLE, EVIDENCE / "s2b-default-a0-nb1.json", output,
+                            EVIDENCE / "record.json", repo_root=Path(directory))
+            self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
+            payload = json.loads(completed.stdout)
+            self.assertEqual(payload["verdict"]["status"], "UNVERIFIED")
+            record = json.loads(output.read_text(encoding="utf-8"))
+            item = {entry["item"]: entry for entry in record["items"]}
+            self.assertEqual(item["helper.path_is_approved_delivery_point"]["status"], "NOT_MEASURED")
+            self.assertEqual(item["helper.path_is_approved_delivery_point"]["reason"], "DELIVERY_POINT_MISSING")
+            self.assertEqual(item["helper.executable_sha256"]["status"], "NOT_MEASURED")
+            self.assertEqual(record["totals"]["MISMATCH"], 0)
 
     def test_missing_expected_value_is_unverified_and_names_the_item(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

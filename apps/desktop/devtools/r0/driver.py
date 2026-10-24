@@ -271,11 +271,26 @@ SOURCE_FILES = (
 )
 
 
+def repository_root() -> Path:
+    return Path(__file__).resolve().parents[4]
+
+
+def approved_helper_path(binding: dict, repo_root: Path | str | None = None) -> Path:
+    """One resolution of the approved helper delivery point.
+
+    The launcher uses the repository root inferred from this module; the N07 verifier
+    passes its --repo-root so both consumers resolve the approved relative path with the
+    same canonical form and cannot disagree.
+    """
+    root = Path(repo_root).resolve() if repo_root is not None else repository_root()
+    return (root / binding["helper_relative_path"]).resolve()
+
+
 def helper_source_digest() -> str:
     digest = hashlib.sha256()
     for name in sorted(SOURCE_FILES):
         digest.update(name.encode() + b"\0")
-        digest.update((Path(__file__).resolve().parents[4] / name).read_bytes())
+        digest.update((repository_root() / name).read_bytes())
     return "sha256:" + digest.hexdigest()
 
 
@@ -443,8 +458,8 @@ def launch(args: argparse.Namespace) -> int:
     if len(entries) != 1:
         raise RuntimeError("product source is not approved")
     binding = entries[0]
-    expected_helper = Path(__file__).resolve().parents[4] / binding["helper_relative_path"]
-    if os.path.normcase(os.path.abspath(helper)) != os.path.normcase(str(expected_helper)):
+    expected_helper = approved_helper_path(binding)
+    if os.path.normcase(str(Path(helper).resolve())) != os.path.normcase(str(expected_helper)):
         raise RuntimeError("helper location is not approved")
     if manifest["identity"]["executable_sha256"] != binding["executable_sha256"]:
         raise RuntimeError("manifest executable identity does not match approval")
