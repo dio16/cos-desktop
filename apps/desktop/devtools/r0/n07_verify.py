@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -106,6 +107,7 @@ def verify(args: argparse.Namespace) -> dict:
         "manifest_a0": Path(args.manifest_a0),
         "manifest_a1": Path(args.manifest_a1),
         "approvals": Path(args.approvals),
+        "repo_root": Path(args.repo_root),
         "helper": Path(args.helper),
         "helper_copy": Path(args.helper_copy) if args.helper_copy else None,
         "a0": Path(args.a0),
@@ -125,7 +127,18 @@ def verify(args: argparse.Namespace) -> dict:
     current_identity = s2b_contracts.source_identity()
 
     artifacts = record.get("artifacts", {})
+    feature_approval = approval_entry(approvals, product_commit, A1_CLAIM)
+    relative = feature_approval.get("helper_relative_path") if feature_approval else None
+    approved_delivery = (
+        (Path(args.repo_root).resolve() / relative).resolve() if relative else None)
+    supplied_delivery = Path(args.helper).resolve()
     items = [
+        item("helper.path_is_approved_delivery_point",
+             os.path.normcase(str(approved_delivery)) if approved_delivery is not None else None,
+             os.path.normcase(str(supplied_delivery)),
+             "resolve --helper and the approval helper_relative_path from --repo-root; "
+             "compare normalized paths",
+             "approval entry helper_relative_path"),
         item("bundle.file_sha256", BUNDLE_CLAIM, digest(paths["bundle"]),
              sha_command(paths["bundle"]), "Lead task-96 retained bundle claim"),
         item("baseline_a0.executable_sha256", A0_CLAIM, digest(paths["a0"]),
@@ -273,7 +286,7 @@ def verify(args: argparse.Namespace) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("bundle", "build-record", "source-identity", "manifest-a0", "manifest-a1",
-                 "approvals", "helper", "a0", "a1", "baseline-record", "output"):
+                 "approvals", "repo-root", "helper", "a0", "a1", "baseline-record", "output"):
         parser.add_argument("--" + name, required=True)
     parser.add_argument("--helper-copy")
     args = parser.parse_args(argv)

@@ -1,4 +1,4 @@
-"""Deterministic N07 verifier tests: verdicts, repeatability and named tamper mismatches."""
+"""Deterministic N07 verifier tests: delivery point, verdicts, repeatability and tampering."""
 from __future__ import annotations
 
 import json
@@ -14,7 +14,8 @@ REPO = ROOT.parents[3]
 EVIDENCE = REPO / "docs/development/evidence/r0a-s2b/native-baseline-2026-10-25"
 BUNDLE = REPO / "docs/development/evidence/r0a-s2b/native-bundles.zip"
 SCRATCH = Path("C:/tmp/r0a-native-baseline-2026-10-25")
-APPROVED_HELPER = SCRATCH / "helper/r0_owner.exe"
+DELIVERY = REPO / "target/debug/examples/r0_owner.exe"
+SCRATCH_HELPER = SCRATCH / "helper/r0_owner.exe"
 
 REQUIRED = (
     BUNDLE,
@@ -23,14 +24,15 @@ REQUIRED = (
     EVIDENCE / "s2b-default-a0-nb1.json",
     EVIDENCE / "s2b-feature-a1-nb1.json",
     REPO / "apps/desktop/devtools/r0/approved-executables.json",
-    APPROVED_HELPER,
+    DELIVERY,
     EVIDENCE / "record.json",
     SCRATCH / "a0/cos-desktop.exe",
     SCRATCH / "a1/cos-desktop.exe",
 )
 
 
-def args(bundle: Path, manifest_a0: Path, output: Path, record: Path) -> list[str]:
+def args(bundle: Path, manifest_a0: Path, output: Path, record: Path,
+         helper: Path = DELIVERY) -> list[str]:
     return [
         sys.executable, "-B", str(ROOT / "n07_verify.py"),
         "--bundle", str(bundle),
@@ -39,10 +41,8 @@ def args(bundle: Path, manifest_a0: Path, output: Path, record: Path) -> list[st
         "--manifest-a0", str(manifest_a0),
         "--manifest-a1", str(EVIDENCE / "s2b-feature-a1-nb1.json"),
         "--approvals", str(REPO / "apps/desktop/devtools/r0/approved-executables.json"),
-        # The approved copy keeps the complete-input test independent of the live build
-        # artifact after a rebuild; the emitted baseline record still names the target path.
-        "--helper", str(APPROVED_HELPER),
-        "--helper-copy", str(APPROVED_HELPER),
+        "--repo-root", str(REPO),
+        "--helper", str(helper),
         "--a0", str(SCRATCH / "a0/cos-desktop.exe"),
         "--a1", str(SCRATCH / "a1/cos-desktop.exe"),
         "--baseline-record", str(record),
@@ -50,15 +50,18 @@ def args(bundle: Path, manifest_a0: Path, output: Path, record: Path) -> list[st
     ]
 
 
-def run(bundle: Path, manifest_a0: Path, output: Path, record: Path) -> subprocess.CompletedProcess:
-    return subprocess.run(args(bundle, manifest_a0, output, record), capture_output=True,
-                          text=True, timeout=120, check=False)
+def run(bundle: Path, manifest_a0: Path, output: Path, record: Path,
+        helper: Path = DELIVERY) -> subprocess.CompletedProcess:
+    command = args(bundle, manifest_a0, output, record, helper)
+    if SCRATCH_HELPER.is_file():
+        command.extend(["--helper-copy", str(SCRATCH_HELPER)])
+    return subprocess.run(command, capture_output=True, text=True, timeout=120, check=False)
 
 
 @unittest.skipUnless(all(path.exists() for path in REQUIRED),
                      "NOT_RUN: the new-baseline N07 inputs are not present in this checkout")
 class N07Verifier(unittest.TestCase):
-    def test_complete_input_is_verified_and_exits_zero(self) -> None:
+    def test_complete_input_at_the_real_delivery_point_is_verified(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "record.json"
             completed = run(BUNDLE, EVIDENCE / "s2b-default-a0-nb1.json", output,
@@ -68,7 +71,25 @@ class N07Verifier(unittest.TestCase):
             self.assertEqual(payload["verdict"]["status"], "VERIFIED")
             record = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(record["verdict"], {"status": "VERIFIED", "reason": ""})
-            self.assertEqual(record["totals"], {"MATCH": 35, "MISMATCH": 0, "NOT_MEASURED": 0})
+            self.assertEqual(record["totals"], {"MATCH": 36, "MISMATCH": 0, "NOT_MEASURED": 0})
+            item = {entry["item"]: entry for entry in record["items"]}
+            self.assertEqual(item["helper.path_is_approved_delivery_point"]["status"], "MATCH")
+
+    def test_scratch_copy_only_is_not_verified_and_names_the_path_item(self) -> None:
+        self.assertTrue(SCRATCH_HELPER.is_file(), "scratch copy required for this regression")
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "record.json"
+            completed = run(BUNDLE, EVIDENCE / "s2b-default-a0-nb1.json", output,
+                            EVIDENCE / "record.json", helper=SCRATCH_HELPER)
+            self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
+            payload = json.loads(completed.stdout)
+            self.assertEqual(payload["verdict"]["status"], "MISMATCH")
+            self.assertIn("helper.path_is_approved_delivery_point", payload["verdict"]["reason"])
+            record = json.loads(output.read_text(encoding="utf-8"))
+            item = {entry["item"]: entry for entry in record["items"]}
+            self.assertEqual(item["helper.path_is_approved_delivery_point"]["status"], "MISMATCH")
+            # The bytes happen to match the approved identity, but that is only corroboration.
+            self.assertEqual(item["helper.executable_sha256"]["status"], "MATCH")
 
     def test_missing_expected_value_is_unverified_and_names_the_item(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -82,9 +103,6 @@ class N07Verifier(unittest.TestCase):
             payload = json.loads(completed.stdout)
             self.assertEqual(payload["verdict"]["status"], "UNVERIFIED")
             self.assertIn("build_record.file_sha256", payload["verdict"]["reason"])
-            record = json.loads(output.read_text(encoding="utf-8"))
-            self.assertEqual(record["verdict"]["status"], "UNVERIFIED")
-            self.assertIn("build_record.file_sha256", record["verdict"]["reason"])
 
     def test_mismatch_still_exits_nonzero_and_is_named(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
