@@ -6,6 +6,13 @@ baseline records claim; a mismatch is reported as MISMATCH, never smoothed. The 
 no timestamp, host or random content, so identical inputs (same paths and bytes) produce
 identical record bytes. It never writes outside `--output` and never touches historical
 records, bundle copies, approvals or Gate records.
+
+Root trust boundary: the canonical repository root is derived from this module's location
+(`driver.repository_root()`, the same derivation the Native launcher uses); a caller cannot
+choose it. `--repo-root` is retained only as an explicit assertion for reproducibility: it
+must resolve to that canonical root, and any other value is refused with the closed error
+`REPO_ROOT_NOT_CANONICAL` (exit 2, no record written). The approved helper delivery point is
+always resolved with the shared `driver.approved_helper_path` against the canonical root.
 """
 
 from __future__ import annotations
@@ -317,10 +324,18 @@ def verify(args: argparse.Namespace) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("bundle", "build-record", "source-identity", "manifest-a0", "manifest-a1",
-                 "approvals", "repo-root", "helper", "a0", "a1", "baseline-record", "output"):
+                 "approvals", "helper", "a0", "a1", "baseline-record", "output"):
         parser.add_argument("--" + name, required=True)
+    parser.add_argument("--repo-root")
     parser.add_argument("--helper-copy")
     args = parser.parse_args(argv)
+    canonical = driver.repository_root()
+    if args.repo_root is not None:
+        supplied = Path(args.repo_root).resolve()
+        if os.path.normcase(str(supplied)) != os.path.normcase(str(canonical)):
+            print(json.dumps({"ok": False, "error": "REPO_ROOT_NOT_CANONICAL"}))
+            return 2
+    args.repo_root = str(canonical)
     result = verify(args)
     output = Path(args.output)
     output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
