@@ -399,17 +399,18 @@ class ProbeRecordTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             screenshot = Path(directory) / "screenshot.png"
             screenshot.write_bytes(png(641, 480))
-            with self.assertRaises(observe.ObserveError) as raised:
-                observe.validate_probe_record(record, 4242, screenshot)
-        self.assertEqual(raised.exception.code, "SCREENSHOT_GEOMETRY_MISMATCH")
+            observed = observe.validate_probe_record(record, 4242, screenshot)
+        self.assertEqual(observed["screenshot"]["status"], "NOT_MEASURED")
+        self.assertEqual(observed["refused"], "SCREENSHOT_GEOMETRY_MISMATCH")
 
     def test_a_truncated_png_in_the_record_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             screenshot = Path(directory) / "screenshot.png"
             screenshot.write_bytes(png(640, 480)[:-200])
-            with self.assertRaises(observe.ObserveError) as raised:
-                observe.validate_probe_record(self._record(640, 480), 4242, screenshot)
-        self.assertIn(raised.exception.code, ("PNG_TRUNCATED", "PNG_UNDECODABLE"))
+            observed = observe.validate_probe_record(
+                self._record(640, 480), 4242, screenshot
+            )
+        self.assertIn(observed["refused"], ("PNG_TRUNCATED", "PNG_UNDECODABLE"))
 
     def test_a_wrong_or_missing_title_is_refused(self) -> None:
         for title in ("COS Desktop (other instance)", ""):
@@ -861,6 +862,132 @@ class RefusedCaptureTest(unittest.TestCase):
         self.assertNotIn("digest", record["screenshot"])
         self.assertNotIn("path", record["screenshot"])
         self.assertFalse(path.exists())
+
+
+class RejectionDispositionTest(unittest.TestCase):
+    def _observed(self, path: Path) -> dict:
+        return {
+            "window": dict(WINDOW),
+            "screenshot": {
+                "status": "OBSERVED",
+                "digest": observe.sha256_bytes(path.read_bytes()),
+                "ihdr": {"width": 640, "height": 480},
+                "bytes": path.stat().st_size,
+                "path": str(path),
+                "raw": captured(),
+            },
+            "uia": {
+                "status": "OBSERVED",
+                "reason": "",
+                "elements": [element("Task Rail")],
+                "truncated": False,
+                "depth_limited": False,
+                "elements_visited": 1,
+            },
+        }
+
+    def _dispose(self, observed: dict, wait: dict, path: Path, live=None):
+        return observe.dispose_capture(
+            observed,
+            wait,
+            4242,
+            path,
+            live_lookup=((lambda _handle: live) if live is not None else (lambda _handle: LIVE)),
+        )
+
+    def test_a_png_invalid_capture_is_deleted_and_recorded_with_a_closed_code(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(png(640, 480)[:-200])
+            observed = observe.validate_probe_record(
+                {
+                    "ok": True,
+                    "window": dict(WINDOW),
+                    "screenshot": {"status": "OBSERVED", "width": 640, "height": 480,
+                                   "bytes": 64},
+                    "uia": {"status": "OBSERVED", "reason": "",
+                            "elements": [element("Task Rail")]},
+                },
+                4242,
+                path,
+            )
+            observed, _binding, refusal = self._dispose(
+                observed, {"outcome": "FOREGROUNDED", "handle": 7}, path
+            )
+            self.assertFalse(path.exists())
+        self.assertIn(refusal, ("PNG_TRUNCATED", "PNG_UNDECODABLE"))
+        self.assertEqual(observed["screenshot"]["status"], "NOT_MEASURED")
+        self.assertEqual(observed["screenshot"]["reason"], refusal)
+        self.assertNotIn("path", observed["screenshot"])
+        self.assertNotIn("digest", observed["screenshot"])
+
+    def test_a_hwnd_mismatch_capture_is_deleted_and_recorded(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(png(640, 480))
+            observed, binding, refusal = self._dispose(
+                self._observed(path), {"outcome": "FOREGROUNDED", "handle": 999}, path
+            )
+            self.assertFalse(path.exists())
+        self.assertEqual(refusal, "FOREGROUND_HANDLE_MISMATCH")
+        self.assertEqual(binding, {"status": "NOT_APPLICABLE"})
+        self.assertEqual(observed["screenshot"]["reason"], "FOREGROUND_HANDLE_MISMATCH")
+        self.assertNotIn("path", observed["screenshot"])
+        self.assertNotIn("digest", observed["screenshot"])
+
+    def test_an_identity_mismatch_capture_is_deleted_and_recorded(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(png(640, 480))
+            wrong_live = {"status": "OBSERVED", "pid": 1, "title": observe.EXPECTED_TITLE,
+                          "rect": dict(RECT)}
+            observed, _binding, refusal = self._dispose(
+                self._observed(path), {"outcome": "FOREGROUNDED", "handle": 7}, path,
+                live=wrong_live,
+            )
+            self.assertFalse(path.exists())
+        self.assertEqual(refusal, "CAPTURE_IDENTITY_MISMATCH")
+        self.assertEqual(observed["screenshot"]["reason"], "CAPTURE_IDENTITY_MISMATCH")
+        self.assertNotIn("path", observed["screenshot"])
+        self.assertNotIn("digest", observed["screenshot"])
+
+    def test_a_rejected_capture_record_has_no_path_digest_and_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(png(640, 480))
+            observed, binding, refusal = self._dispose(
+                self._observed(path), {"outcome": "FOREGROUNDED", "handle": 999}, path
+            )
+        record = observe.build_record(
+            Path("cos-desktop.exe"),
+            "sha256:" + "0" * 64,
+            observed,
+            {"status": "OBSERVED", "dpi": 96, "scale": 1.0,
+             "method": "GetDpiForWindow", "controlled_ladder_step": False},
+            observe.analyze_elements(observed["uia"]["elements"]),
+            {"method": "taskkill /T /F", "exit_code": 1},
+            {"outcome": "FOREGROUNDED", "elapsed_s": 1.0, "handle": 999},
+            binding,
+        )
+        self.assertNotIn("digest", record["screenshot"])
+        self.assertNotIn("path", record["screenshot"])
+        self.assertEqual(record["capture_refusal"], refusal)
+        self.assertEqual(record["result"], "FAIL")
+
+    def test_an_unaccepted_capture_never_survives_an_abnormal_exit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(png(640, 480))
+            with self.assertRaises(RuntimeError):
+                try:
+                    raise RuntimeError("validation failed after the probe wrote the image")
+                finally:
+                    observe.cleanup_unaccepted_capture(path, False)
+            self.assertFalse(path.exists())
+            kept = Path(directory) / "kept.png"
+            kept.write_bytes(png(8, 8))
+            observe.cleanup_unaccepted_capture(kept, True)
+            self.assertTrue(kept.exists())
 
 
 class NoDesktopStateChangeTest(unittest.TestCase):

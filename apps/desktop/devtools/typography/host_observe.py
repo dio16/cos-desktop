@@ -96,6 +96,17 @@ REASON_FOREGROUND_WAIT_EXPIRED = "FOREGROUND_WAIT_EXPIRED"
 REASON_FOREGROUND_IS_NOT_THE_TARGET = "FOREGROUND_IS_NOT_THE_TARGET"
 # A capture refused with one of these codes is a failed integrity check (FAIL), not an
 # honest NOT_MEASURED state such as an occluded window or an expired wait.
+CAPTURE_REJECTION_CODES = frozenset(
+    {
+        "PNG_INVALID",
+        "PNG_TRUNCATED",
+        "PNG_UNDECODABLE",
+        "PNG_TRAILING_DATA",
+        "PNG_TOO_LARGE",
+        "SCREENSHOT_MISMATCH",
+        "SCREENSHOT_GEOMETRY_MISMATCH",
+    }
+)
 REFUSAL_CODES = frozenset(
     {
         "CAPTURE_NOT_BOUND",
@@ -618,7 +629,12 @@ def _rect(window: dict[str, Any]) -> dict[str, int]:
 
 
 def validate_probe_record(document: dict[str, Any], pid: int, screenshot: Path) -> dict[str, Any]:
-    """Validate the probe record; image bytes are hashed here, identity is proven later."""
+    """Validate the probe record; a capture-level rejection is returned as a closed record.
+
+    Window schema/title failures still raise (there is no usable window to record), but a
+    PNG that fails integrity or geometry is returned as NOT_MEASURED with `refused`, so
+    the single disposition point can delete the file and record the closed code.
+    """
     if not isinstance(document, dict) or document.get("ok") is not True:
         fail("RECORD_SCHEMA")
     window = _window(document.get("window"))
@@ -642,12 +658,22 @@ def validate_probe_record(document: dict[str, Any], pid: int, screenshot: Path) 
         }
     if shot.get("status") != "OBSERVED":
         fail("RECORD_SCHEMA")
-    data = read_bounded(screenshot)
-    width, height = png_dimensions_verified(data)
-    if (width, height) != (shot.get("width"), shot.get("height")):
-        fail("SCREENSHOT_MISMATCH")
-    if (width, height) != (window["width"], window["height"]):
-        fail("SCREENSHOT_GEOMETRY_MISMATCH")
+    try:
+        data = read_bounded(screenshot)
+        width, height = png_dimensions_verified(data)
+        if (width, height) != (shot.get("width"), shot.get("height")):
+            fail("SCREENSHOT_MISMATCH")
+        if (width, height) != (window["width"], window["height"]):
+            fail("SCREENSHOT_GEOMETRY_MISMATCH")
+    except ObserveError as refusal:
+        if refusal.code not in CAPTURE_REJECTION_CODES:
+            raise
+        return {
+            "window": window,
+            "screenshot": {"status": "NOT_MEASURED", "reason": refusal.code},
+            "uia": uia,
+            "refused": refusal.code,
+        }
     return {
         "window": window,
         "screenshot": {
@@ -854,6 +880,48 @@ def verify_waited_handle(
         "handle": window["handle"],
         "captured_handle_matches_waited": True,
     }
+
+
+def dispose_capture(
+    observed: dict[str, Any],
+    wait: dict[str, Any],
+    pid: int,
+    path: Path,
+    *,
+    live_lookup: Any = None,
+) -> tuple[dict[str, Any], dict[str, Any], str | None]:
+    """Own the capture's disposition: accept, or reject -> delete -> record a closed code.
+
+    Every rejection (PNG integrity, HWND mismatch, identity/misalignment, expiry) goes
+    through this one place. A rejected capture leaves no file and no path/digest in the
+    record; an accepted capture is kept and recorded with its digest.
+    """
+    refused = observed.pop("refused", None)
+    if refused is not None:
+        observed["screenshot"] = refuse_capture(path, refused)
+        return observed, {"status": "NOT_APPLICABLE"}, refused
+    try:
+        binding = verify_waited_handle(wait, observed["window"])
+        screenshot = finalise_screenshot(
+            observed, wait, pid, live_lookup=live_lookup
+        )
+    except ObserveError as refusal:
+        observed["screenshot"] = refuse_capture(path, refusal.code)
+        return observed, {"status": "NOT_APPLICABLE"}, refusal.code
+    observed["screenshot"] = screenshot
+    if screenshot["status"] != "OBSERVED":
+        remove_capture(path)
+    return observed, binding, None
+
+
+def cleanup_unaccepted_capture(path: Path | None, accepted: bool) -> None:
+    """Abnormal-exit guarantee: no unaccepted image survives the run."""
+    if path is None or accepted:
+        return
+    try:
+        remove_capture(path)
+    except ObserveError:
+        pass
 
 
 def finalise_screenshot(
@@ -1132,6 +1200,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     process: subprocess.Popen | None = None
     screenshot: Path | None = None
+    accepted_capture = False
     try:
         exe = Path(args.exe)
         if not exe.is_file():
@@ -1156,15 +1225,9 @@ def main(argv: list[str] | None = None) -> int:
             args.powershell, probe, process.pid, screenshot
         )
         observed = validate_probe_record(document, process.pid, screenshot)
-        discard_capture(screenshot, wait)
-        try:
-            binding = verify_waited_handle(wait, observed["window"])
-            observed["screenshot"] = finalise_screenshot(
-                observed, wait, process.pid
-            )
-        except ObserveError as refusal:
-            observed["screenshot"] = refuse_capture(screenshot, refusal.code)
-            binding = {"status": "NOT_APPLICABLE"}
+        observed, binding, _refusal = dispose_capture(
+            observed, wait, process.pid, screenshot
+        )
         scale = host_scale(observed["window"]["handle"])
         analysis = analyze_elements(observed["uia"]["elements"])
         stop_record = stop(process)
@@ -1174,6 +1237,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         write_probe_record(out, document)
         digest = write_record(record, out / "observation.json")
+        if (
+            record["screenshot"]["status"] == "OBSERVED"
+            and record["screenshot"].get("digest")
+        ):
+            accepted_capture = True
         print(
             json.dumps(
                 {
@@ -1215,6 +1283,7 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, TypeError):
         print(json.dumps({"ok": False, "error": "PROBE_FAILED"}, separators=(",", ":")))
     finally:
+        cleanup_unaccepted_capture(screenshot, accepted_capture)
         if process is not None:
             try:
                 subprocess.run(
