@@ -93,6 +93,16 @@ def _raise_with(code: str, path: str) -> NoReturn:
     raise ContractError([_error(code, path)])
 
 
+def loads_document(text: str) -> Any:
+    """Parse one bounded JSON document with the same duplicate-key/non-finite rules."""
+    try:
+        return json.loads(text, object_pairs_hook=_pairs, parse_constant=_reject_constant)
+    except ContractError:
+        raise
+    except (json.JSONDecodeError, RecursionError, ValueError, OverflowError):
+        _raise_with("MALFORMED_JSON", "$")
+
+
 def load_document(path: str, limit: int) -> Any:
     """Read bounded UTF-8 JSON with duplicate-key and non-finite rejection."""
     data = _bounded_bytes(path, limit)
@@ -100,12 +110,7 @@ def load_document(path: str, limit: int) -> Any:
         text = data.decode("utf-8")
     except UnicodeDecodeError:
         _raise_with("INVALID_UTF8", "$")
-    try:
-        return json.loads(text, object_pairs_hook=_pairs, parse_constant=_reject_constant)
-    except ContractError:
-        raise
-    except (json.JSONDecodeError, RecursionError, ValueError, OverflowError):
-        _raise_with("MALFORMED_JSON", "$")
+    return loads_document(text)
 
 
 def _object(value: Any, path: str, required: tuple[str, ...], optional: tuple[str, ...] = ()) -> dict[str, Any]:
