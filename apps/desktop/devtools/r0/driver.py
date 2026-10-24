@@ -58,7 +58,9 @@ def validate_approval(document: object) -> list[dict]:
                 raise RuntimeError("approval artifact identity is invalid")
         if type(entry["helper_protocol"]) is not int or entry["helper_protocol"] != 2 or entry["helper_relative_path"] != "target/debug/examples/r0_owner.exe":
             raise RuntimeError("approval helper identity is invalid")
-    if len({entry["product_commit"] for entry in entries}) != len(entries):
+    if len({(entry["product_commit"], entry["executable_sha256"]) for entry in entries}) != len(entries):
+        # One source line may approve several build variants (default/feature) as long as
+        # each executable digest is distinct; the launcher selects by commit *and* digest.
         raise RuntimeError("approval source is ambiguous")
     return entries
 
@@ -433,7 +435,11 @@ def launch(args: argparse.Namespace) -> int:
     source = manifest["workload"]["source"]["sha256"]
     if not isinstance(source, str):
         raise RuntimeError("a real fixture digest is required in the workload manifest")
-    entries = [item for item in approved_digests() if item["product_commit"] == manifest["identity"]["repository"]["sha"]]
+    entries = [
+        item for item in approved_digests()
+        if item["product_commit"] == manifest["identity"]["repository"]["sha"]
+        and item["executable_sha256"] == manifest["identity"]["executable_sha256"]
+    ]
     if len(entries) != 1:
         raise RuntimeError("product source is not approved")
     binding = entries[0]
