@@ -12,7 +12,10 @@ pub use cache::{
     Acquisition, Cancellation, EncodedMedia, ExpectedDigest, LocalLimits, MediaCache, Sha256Digest,
     Usage, Verification,
 };
-pub use decode::{DecodeAdmission, DecodeLimits, DecodeRequest, admit_decode};
+pub use decode::{
+    DecodeAdmission, DecodeBudget, DecodeLimits, DecodeLimitsOverride, DecodeRequest,
+    MAX_SUPPORTED_BIT_DEPTH, MAX_SUPPORTED_CHANNELS, admit_decode,
+};
 pub use key::{
     DecodePolicy, LocalId, LocalProvenance, Orientation, PixelSize, RepresentationKey,
     RepresentationSource,
