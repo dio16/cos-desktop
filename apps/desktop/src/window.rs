@@ -344,18 +344,24 @@ mod tests {
     #[test]
     fn saved_preferences_are_reported_while_observation_is_still_pending() {
         let profile = Profile::new();
+        let path = profile.0.join("preferences.json");
         let outcome = Arc::new(Mutex::new(ExitReport {
             observation: ObservationExit::Unconfirmed,
             preferences: PreferencesExit::Unconfirmed,
         }));
-        let watch = ExitWatch::new(
-            Arc::new(AtomicBool::new(false)),
-            Arc::new(Mutex::new(None)),
-            Instant::now() + Duration::from_secs(5),
-        );
-        let path = profile.0.join("preferences.json");
+        // The synchronous save stands in for production's background save. An
+        // observation watch caps every deadline at five seconds from its own
+        // construction, so the pending window has to start at the poll that
+        // asserts it: a cold filesystem write before that poll can consume the
+        // whole budget and decide this assertion by machine speed instead of by
+        // the reported contract.
         let mut exit = std::pin::pin!(confirm_exit(
             async move {
+                let watch = ExitWatch::new(
+                    Arc::new(AtomicBool::new(false)),
+                    Arc::new(Mutex::new(None)),
+                    Instant::now() + Duration::from_secs(5),
+                );
                 if watch.wait().await {
                     ObservationExit::Confirmed
                 } else {
