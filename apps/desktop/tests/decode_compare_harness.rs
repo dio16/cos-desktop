@@ -2965,8 +2965,13 @@ fn tool_rewritten_before_the_spawn_records_sample_tool_changed() {
     fixture.case("a.png", "mutate-tool");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
-    config.sample_interval_ms = 100;
-    config.cancel_after_ms = Some(1_500);
+    // A late first attempt makes the ordering deterministic: the candidate has long
+    // finished rewriting the tool before the sampler is considered, and the child
+    // outlives the deadline, so neither a slow start nor a slow poll can flip the
+    // verdict. Both orderings still end as `sample_tool_changed` (refused before the
+    // spawn, or the sample is discarded after the swap).
+    config.sample_interval_ms = 2_000;
+    config.cancel_after_ms = Some(6_000);
     config.sample_tool = Some(tool.clone());
     let report = harness::run(&config).unwrap();
 
@@ -2981,7 +2986,10 @@ fn tool_rewritten_before_the_spawn_records_sample_tool_changed() {
         observation.working_set_attempts
     );
     assert_eq!(observation.working_set_samples, 0);
-    assert_eq!(observation.working_set_max_bytes, None, "no value from a swapped tool");
+    assert_eq!(
+        observation.working_set_max_bytes, None,
+        "no value from a swapped tool"
+    );
     assert_eq!(observation.working_set_sampling, "not_measured");
     assert_eq!(observation.working_set_reason, Some("sample_tool_changed"));
 }
@@ -3430,10 +3438,7 @@ fn fake_candidate_no_probe_helper() {
 /// `sample_timeout`/`no_sample` safe failures: a heavily loaded machine can exceed the
 /// harness's per-sample bound, and that is a recorded `not_measured`, not a defect. The
 /// caller still asserts the real proof (a value, a digest) on the successful run.
-fn run_until_sampled(
-    config: &harness::Config,
-    attempts: usize,
-) -> harness::Report {
+fn run_until_sampled(config: &harness::Config, attempts: usize) -> harness::Report {
     let mut last = None;
     for _ in 0..attempts {
         let report = harness::run(config).unwrap();
