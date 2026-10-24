@@ -488,6 +488,30 @@ Refine 0.3.1 is now installed from source (`https://github.com/dio16/refine`, bu
 - **First two accepted Gates:** build `77740749-4ada-43ef-999f-1ae3b3db87a4` on `5316c5e` (SUCCEEDED, 1/1) and a first quality attempt `bc223df1-b646-4908-9bd1-d47fa1b7d04f` on the same commit that FAILED at `dep-rules` (the PATH cause above) and stays recorded as history, never relabelled. After the checker fix, quality `26ff48f8-9451-4bb1-9830-096a0bfc934c` on `358843b` is SUCCEEDED with 6/6 checks.
 - **Boundary:** a Gate receipt is independent verification of a pinned commit, not product or Caller acceptance, and not merge permission. A FAILED Gate is repaired by a new candidate commit plus an explicitly authorized new Gate; the old request is never mutated or silently redispatched.
 
+### 4.18 MP-TYP1-E native typography acceptance runbook (human-driven)
+
+Native pixel acceptance cannot be produced by an unattended session: it needs the user to foreground the window and to change the Windows display scale. The measurement path itself is automated and side-effect free, so the human work is only those two actions.
+
+**Setup per scale.** Set Settings → System → Display → Scale to the step under test, then run:
+
+```text
+cargo run --locked -p cos-desktop -- --fixture
+```
+
+Then, with the COS Desktop window visible, run the observation (absolute paths only; the harness never raises, focuses, moves or changes z-order, and it waits read-only for the window to be foregrounded):
+
+```text
+python -B apps/desktop/devtools/typography/host_observe.py ^
+  --probe apps/desktop/devtools/typography/^
+  --wait-for-foreground 120 --out <evidence-dir>\host
+```
+
+Do the steps in this order: **100 %, then 125 %, 150 %, 175 %, 200 %**, and repeat once with the window dragged to a monitor of a different scale.
+
+**What each step must establish, and where it is recorded.** Body text size/line height and the Japanese/Latin mixed runs with no missing glyphs or clipping; the structural hairline actually drawn and its physical pixel width matching `1 / scale_factor`; the focus outline at 2 DIP and independent of the hairline; which face the run resolves to; High Contrast focus rendering; and text/layout frame cost. A step whose screenshot is refused (`WINDOW_OCCLUDED`, an occluded target) or cannot be judged stays `NOT_MEASURED`; a refused capture leaves no file and no digest by design.
+
+**Boundary.** Until evidence exists for the steps above, MP-TYP1 stays **not complete**: the DPI matrix, the AX geometry (Task Rail 240, Inspector 320) and the label/mixed-script presence are the only OBSERVED typography results, and they are not pixel claims. A real rendering defect found by this runbook opens a new repair slice; the runbook itself changes no product code.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |
