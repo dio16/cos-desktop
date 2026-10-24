@@ -12,6 +12,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+REPO = ROOT.parents[3]
 sys.path.insert(0, str(ROOT))
 import s2b_contracts as s2b  # noqa: E402
 
@@ -180,6 +181,85 @@ class S2BWireContract(unittest.TestCase):
         value["summary"]["kind_counts"] = [0] * 10
         value = s2b.validate_capture(value)
         self.assertEqual(s2b.disposition(value, {"timed_out": False, "exit_code": 0}), "NOT_MEASURED")
+
+    def test_early_close_is_cancelled_with_a_closed_reason(self) -> None:
+        value = s2b.validate_capture(example())
+        self.assertTrue(value["summary"]["cancelled"])
+        self.assertEqual(
+            s2b.disposition_detail(
+                value, {"timed_out": False, "exit_code": 0, "elapsed_ms": 5,
+                        "cleanup": "complete"}, duration_ms=1000),
+            {"status": "CANCELLED", "reason": "CLOSED_BEFORE_DECLARED_DURATION"})
+        self.assertEqual(
+            s2b.disposition_detail(
+                value, {"timed_out": False, "exit_code": 0, "elapsed_ms": 5000,
+                        "cleanup": "complete"}, duration_ms=1000),
+            {"status": "OBSERVED", "reason": "RETAINED_SOURCE_OBSERVATION"})
+        self.assertEqual(
+            s2b.disposition_detail(value, {"timed_out": True, "exit_code": 1},
+                                   duration_ms=1000),
+            {"status": "FAILED", "reason": "LAUNCHER_FAILED"})
+        self.assertEqual(
+            s2b.disposition_detail(
+                value, {"timed_out": False, "exit_code": 0, "elapsed_ms": 5000,
+                        "cleanup": "incomplete"}, duration_ms=1000),
+            {"status": "FAILED", "reason": "CLEANUP_UNCONFIRMED"})
+
+    def test_refused_publication_removes_only_its_own_partial_artifacts(self) -> None:
+        import s2b_capture
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            owned_file = root / "s2b-capture.json"
+            owned_file.write_text("partial", encoding="utf-8")
+            owned_dir = root / "s2b-committed-partial"
+            owned_dir.mkdir()
+            driver_owned = root / "ledger.json"
+            driver_owned.write_text("driver", encoding="utf-8")
+            s2b_capture.discard_partial([owned_file, owned_dir])
+            self.assertFalse(owned_file.exists())
+            self.assertFalse(owned_dir.exists())
+            self.assertTrue(driver_owned.exists(), "the S2A driver publication is not ours")
+
+    def test_local_surface_and_notify_endpoints_are_produced_from_retained_records(self) -> None:
+        value = s2b.validate_capture(example())
+        self.assertGreaterEqual(value["summary"]["kind_counts"][8], 1)
+        self.assertGreaterEqual(value["summary"]["kind_counts"][9], 1)
+        matrix = s2b.endpoint_matrix(value)
+        self.assertEqual(matrix["local-surface-mutation"],
+                         {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"})
+        self.assertEqual(matrix["local-notify"],
+                         {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"})
+        for name in ("app-main-entry", "frame-request", "first-frame", "useful-shell",
+                     "present-call", "present-return", "present", "displayed",
+                     "scanout", "input-to-photon"):
+            self.assertEqual(
+                matrix[name],
+                {"status": "NOT_MEASURED", "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"}, name)
+        without_local = copy.deepcopy(value)
+        without_local["summary"]["kind_counts"][8] = 0
+        without_local["summary"]["kind_counts"][9] = 0
+        without_local = s2b.endpoint_matrix(without_local)
+        self.assertEqual(without_local["local-surface-mutation"],
+                         {"status": "NOT_MEASURED", "reason": "NO_RETAINED_VALID_RECORD"})
+        self.assertEqual(without_local["local-notify"],
+                         {"status": "NOT_MEASURED", "reason": "NO_RETAINED_VALID_RECORD"})
+
+    def test_retained_bundles_are_classified_cancelled_and_observed(self) -> None:
+        bundle = REPO / "docs/development/evidence/r0a-s2b/native-bundles.zip"
+        if not bundle.is_file():
+            self.skipTest("NOT_RUN: the retained S2B bundle is not present in this checkout")
+        for tag, status, reason, retained in (
+                ("n02d", "OBSERVED", "RETAINED_SOURCE_OBSERVATION", 256),
+                ("n04b", "CANCELLED", "CLOSED_BEFORE_DECLARED_DURATION", 34)):
+            completed = subprocess.run(
+                [sys.executable, "-B", str(ROOT / "s2b_validate.py"), "bundle",
+                 "--bundle-zip", str(bundle), "--bundle-tag", tag, "--timeout-ms", "60000"],
+                capture_output=True, text=True, timeout=120)
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            payload = json.loads(completed.stdout)
+            self.assertEqual(payload["disposition"], status, tag)
+            self.assertEqual(payload["disposition_reason"], reason, tag)
+            self.assertEqual(payload["retained"], retained, tag)
 
     def test_power_boundary_cannot_be_crossed_by_a_valid_duration(self):
         value = example()

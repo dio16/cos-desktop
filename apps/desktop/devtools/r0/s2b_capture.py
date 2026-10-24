@@ -295,15 +295,35 @@ def verify_bundle(manifest_path: Path, output: Path, timeout_ms: int) -> dict:
             s2b.fail("OBSERVATION_BINDING")
         require_marker(output, "s2b-committed-" + hashlib.sha256(observation_bytes).hexdigest())
         root.verify()
+    detail = s2b.disposition_detail(
+        capture, ledger, duration_ms=manifest["workload"]["duration_ms"])
     return {
         "ok": True, "scope": "SOURCE_BOUND_REPLAY",
         "execution_id": capture["execution_id"],
-        "disposition": s2b.disposition(capture, ledger),
+        "disposition": detail["status"],
+        "disposition_reason": detail["reason"],
         "retained": capture["summary"]["retained"],
         "retention_dropped": capture["summary"]["retention_dropped"],
         "endpoints": expected["endpoints"],
         "full_coverage": False,
     }
+
+
+def discard_partial(paths: list[Path]) -> None:
+    """Remove S2B artifacts written by a refused publication, newest first.
+
+    The S2A ledger/result/completion stay driver-owned and are never touched here; only
+    the files this adapter created before a validation failure are removed, so a refused
+    capture leaves no partially published S2B artifact.
+    """
+    for path in reversed(paths):
+        try:
+            if path.is_dir():
+                path.rmdir()
+            else:
+                path.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def launch(args: argparse.Namespace) -> int:
@@ -326,25 +346,40 @@ def launch(args: argparse.Namespace) -> int:
         profile_pin.verify()
         temp_pin.verify()
         root.verify()
-        with (output / s2b.FILE_NAME).open("xb") as file:
-            file.write(raw)
-            file.flush()
-            os.fsync(file.fileno())
-        # Preserve the producer's verified completion for standalone archive replay.
-        (output / producer_marker).mkdir()
-        build_bytes = read_pinned(BUILD_FILE, contracts.MAX_MANIFEST_BYTES)
-        with (output / "build-record.json").open("xb") as handle:
-            handle.write(build_bytes)
-            handle.flush()
-            os.fsync(handle.fileno())
-        document = observation_document(manifest, driver.sha256_file(manifest_path), sha(build_bytes),
-                                       s2b.source_digest(), entry, capture, raw, output)
-        driver.exclusive_write(output / s2b.OBSERVATION_NAME, document)
-        driver.exclusive_write(output / "source-identity.json", s2b.source_identity())
-        data = read_pinned(output / s2b.OBSERVATION_NAME, contracts.MAX_MANIFEST_BYTES)
-        root.verify()
-        (output / ("s2b-committed-" + hashlib.sha256(data).hexdigest())).mkdir()
-        result = verify_bundle(manifest_path, output, args.timeout_ms)
+        # Publish the S2B artifacts last, and remove every one of them if validation or the
+        # bounded completion check fails: a refused capture leaves no partially published
+        # S2B artifact behind (the S2A ledger/result/completion stay driver-owned).
+        created: list[Path] = []
+        try:
+            with (output / s2b.FILE_NAME).open("xb") as file:
+                file.write(raw)
+                file.flush()
+                os.fsync(file.fileno())
+            created.append(output / s2b.FILE_NAME)
+            # Preserve the producer's verified completion for standalone archive replay.
+            (output / producer_marker).mkdir()
+            created.append(output / producer_marker)
+            build_bytes = read_pinned(BUILD_FILE, contracts.MAX_MANIFEST_BYTES)
+            with (output / "build-record.json").open("xb") as handle:
+                handle.write(build_bytes)
+                handle.flush()
+                os.fsync(handle.fileno())
+            created.append(output / "build-record.json")
+            document = observation_document(manifest, driver.sha256_file(manifest_path),
+                                            sha(build_bytes), s2b.source_digest(), entry,
+                                            capture, raw, output)
+            driver.exclusive_write(output / s2b.OBSERVATION_NAME, document)
+            created.append(output / s2b.OBSERVATION_NAME)
+            driver.exclusive_write(output / "source-identity.json", s2b.source_identity())
+            created.append(output / "source-identity.json")
+            data = read_pinned(output / s2b.OBSERVATION_NAME, contracts.MAX_MANIFEST_BYTES)
+            root.verify()
+            (output / ("s2b-committed-" + hashlib.sha256(data).hexdigest())).mkdir()
+            created.append(output / ("s2b-committed-" + hashlib.sha256(data).hexdigest()))
+            result = verify_bundle(manifest_path, output, args.timeout_ms)
+        except BaseException:
+            discard_partial(created)
+            raise
     print(json.dumps(result, separators=(",", ":")))
     return 0
 

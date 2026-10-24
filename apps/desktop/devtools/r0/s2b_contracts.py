@@ -316,10 +316,29 @@ def endpoint_matrix(capture: dict) -> dict:
     return result
 
 
-def disposition(capture: dict, ledger: dict) -> str:
-    """Called after both contracts validate; process failure cannot become success."""
-    if ledger["timed_out"] or ledger["exit_code"] != 0:
-        return "FAILED"
+def disposition_detail(capture: dict, ledger: dict, *, duration_ms: int | None = None) -> dict[str, str]:
+    """Classify one validated capture with a closed reason.
+
+    Called only after both contracts validate. A process failure never becomes success; a
+    capture that ended before the run's declared completion condition (its scope closed
+    early and the launcher observed the child for less than the declared workload
+    duration) is CANCELLED, not OBSERVED. Owned cleanup must be confirmed before either an
+    observed or a cancelled classification is allowed.
+    """
+    if ledger.get("timed_out") or ledger.get("exit_code") != 0:
+        return {"status": "FAILED", "reason": "LAUNCHER_FAILED"}
+    cleanup = ledger.get("cleanup")
+    if cleanup is not None and cleanup != "complete":
+        return {"status": "FAILED", "reason": "CLEANUP_UNCONFIRMED"}
+    if (duration_ms is not None
+            and capture["summary"]["cancelled"]
+            and ledger.get("elapsed_ms", duration_ms) < duration_ms):
+        return {"status": "CANCELLED", "reason": "CLOSED_BEFORE_DECLARED_DURATION"}
     if any(capture["summary"]["kind_counts"][kind] for kind in SUPPORTED.values()):
-        return "OBSERVED"
-    return "NOT_MEASURED"
+        return {"status": "OBSERVED", "reason": "RETAINED_SOURCE_OBSERVATION"}
+    return {"status": "NOT_MEASURED", "reason": "NO_RETAINED_VALID_RECORD"}
+
+
+def disposition(capture: dict, ledger: dict, *, duration_ms: int | None = None) -> str:
+    """Status-only compatibility wrapper around `disposition_detail`."""
+    return disposition_detail(capture, ledger, duration_ms=duration_ms)["status"]

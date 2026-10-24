@@ -1,5 +1,15 @@
 //! Explicit-feature Windows fixture observer. No frame requests, Runtime operations,
 //! private GPUI access, user payloads or S3 statistics. All I/O stays on one worker.
+//!
+//! Endpoint coverage of this build: `input-dispatch`, `gpui-dirty`, `gpui-cpu-draw` and
+//! `gpui-platform-submission` come from the selected GPUI profiler journal;
+//! `local-surface-mutation` and `local-notify` are recorded only at a real
+//! feature-gated `Shell::navigate` surface change / notify call. The following endpoints
+//! have no probe in this build and stay `NOT_MEASURED`, never synthesized:
+//! `app-main-entry`, `frame-request`, `first-frame`, `useful-shell`, `present-call`,
+//! `present-return`, `present`, `displayed`, `scanout` and `input-to-photon`. The journal
+//! exposes neither the frame-request/present completion hooks nor display scanout, and no
+//! OS/DWM/GPU probe is part of this observer, so those values cannot be produced here.
 
 #[path = "../examples/r0_owner/sha256.rs"]
 mod sha256;
@@ -694,4 +704,47 @@ fn capture(
         .compare_exchange(RUNNING, COMMITTED, Ordering::AcqRel, Ordering::Acquire)
         .map_err(|_| io::Error::from(io::ErrorKind::TimedOut))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn real_local_surface_and_notify_events_become_retained_records() -> io::Result<()> {
+        let origin = Instant::now();
+        let mut observer = Observer {
+            origin,
+            start: 0,
+            end: DURATION_NS,
+            barrier: 0,
+            windows: Vec::new(),
+            counts: Counts::default(),
+        };
+        let at = Instant::now();
+        let mut out = Vec::new();
+        let surface = observer.local(Event {
+            at,
+            window: 11,
+            kind: EventKind::SurfaceChanged(app_core::navigation::Surface::Compare),
+        })?;
+        assert_eq!(surface.kind, 8);
+        assert_eq!(surface.category, Some(1));
+        observer.retain(surface, &mut out)?;
+        let notify = observer.local(Event {
+            at,
+            window: 11,
+            kind: EventKind::Notify,
+        })?;
+        assert_eq!(notify.kind, 9);
+        assert_eq!(notify.category, None);
+        observer.retain(notify, &mut out)?;
+        let records = String::from_utf8(out).expect("records are UTF-8 JSON");
+        assert!(records.contains("\"kind\":8"));
+        assert!(records.contains("\"kind\":9"));
+        assert_eq!(observer.counts.kinds[8], 1);
+        assert_eq!(observer.counts.kinds[9], 1);
+        assert_eq!(observer.counts.retained, 2);
+        Ok(())
+    }
 }
