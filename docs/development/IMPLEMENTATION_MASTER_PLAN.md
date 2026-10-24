@@ -1260,3 +1260,22 @@ The new baseline's capture path was exercised with a real mouse click into the w
 - **Endpoints still absent:** `local-surface-mutation` and `local-notify` report `NO_RETAINED_VALID_RECORD`; `gpui-platform-submission` now reports OBSERVED. The remaining `NOT_EXPOSED_BY_SELECTED_PROBE` endpoints (frame request/start, present family, displayed, scanout, input-to-photon) have no probe in this build.
 
 **Boundaries:** these are Native admissions on a **new** baseline; they do not complete MP-R0A as a whole, do not measure R0B/C, do not ratify R0D, do not select a PUB4 design and do not grant UX/Product acceptance.
+
+
+### 19.22 Native admissions reached on the new baseline (2026-10-25, final)
+
+With the new baseline's capture path, a real click-driven interaction and the independent observation tool, five of the seven admission cases now have real evidence:
+
+| Case | Result | Evidence |
+|---|---|---|
+| N01 start + clean shutdown | **PASS** | ledger exit_code 0 / timed_out false / approved / child_reaped / cleanup complete; run-n01 NOT_MEASURED with the documented reason |
+| N02 feature capture | **PASS** | published capture, source-backed endpoints retained |
+| N03 navigation/focus/input with independent AX/screenshot | **PASS** | surface-switcher clicks produced `local-surface-mutation` and `local-notify` **OBSERVED** alongside `input-dispatch`, `gpui-dirty`, `gpui-cpu-draw` and `gpui-platform-submission` (six endpoints), while the independent tool recorded the window identity, a screenshot digest that changed with the interaction and a UI Automation tree (35 → 42 elements) captured outside the app |
+| N04 early close / cancelled | **PASS** | real early close published as `CANCELLED` / `CLOSED_BEFORE_DECLARED_DURATION` with retained 65 and complete cleanup; the historical replay keeps its own recorded disposition |
+| N05 retention pressure | **PASS** | retained 256 with `retention_dropped` 33 under real key pressure |
+| N06 settled A0-versus-A1 cost | **NOT_RUN / NOT_MEASURED** | needs independent frame count and CPU attribution, which this build does not expose |
+| N07 identity relation for the new baseline | **NOT_RUN** | the historical N07 binds the old identities; a new-baseline N07 has not been produced |
+
+- **Independent observation tool:** `apps/desktop/devtools/r0/native_observe.py` records a window's identity and rectangle, a screenshot with its digest and IHDR dimensions, and a bounded UI Automation tree, with explicit NOT_MEASURED fields for whatever the OS refuses; the app never supplies this evidence.
+- **Residual gap recorded, not hidden:** the `Ctrl+Tab` surface shortcut calls `next()` plus `notify()` directly instead of `navigate`, so that one path emits no local event; fixing it changes the feature-on binary and would require rebuilding and re-approving A1. Every other navigation path (the surface switcher buttons) does emit.
+- **Boundaries unchanged:** this is five admission cases on a **new** baseline. MP-R0A is still incomplete (N06/N07), R0B/C measurement, R0D ratification, PUB4 design selection and UX/Product acceptance remain unapproved, and the endpoints without a probe stay NOT_MEASURED.
