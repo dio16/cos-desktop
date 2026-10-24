@@ -13,6 +13,13 @@
 //! supported configuration path. Resolution is pure and refuses an unworkable
 //! set with [`TokenError`] instead of clamping it.
 //!
+//! A font family is a declaration, not a resolved resource: nothing here
+//! loads fonts, probes installed families or reorders the stack. Validation
+//! only refuses a name no platform could consume as a family — empty or
+//! whitespace-only, padded with leading/trailing whitespace, or containing
+//! control characters — and the platform shaping layer still resolves the
+//! primary family and then its fallback.
+//!
 //! Scope boundaries: this is a **token foundation**, not MP-TYP1-wide
 //! completion. Native DPI evidence at 100/125/150/175/200 % is `NOT_MEASURED`
 //! here: this environment cannot drive native window scales or capture
@@ -345,6 +352,62 @@ impl Dimension {
 }
 
 impl std::fmt::Display for Dimension {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(self.name())
+    }
+}
+
+/// One accepted font-family declaration named by rendering §9.1.
+///
+/// A family is a declaration only: this module neither loads fonts nor probes
+/// installed families, and the platform shaping layer still resolves the
+/// primary family and then its fallback.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FamilyToken {
+    LatinUi,
+    LatinUiFallback,
+    JapaneseUi,
+    JapaneseUiFallback,
+    Monospace,
+    MonospaceFallback,
+}
+
+impl FamilyToken {
+    /// The rendering §9.1 token name.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::LatinUi => "latin-ui",
+            Self::LatinUiFallback => "latin-ui-fallback",
+            Self::JapaneseUi => "japanese-ui",
+            Self::JapaneseUiFallback => "japanese-ui-fallback",
+            Self::Monospace => "monospace",
+            Self::MonospaceFallback => "monospace-fallback",
+        }
+    }
+
+    /// Refuse a declaration that no platform can consume as a family name.
+    ///
+    /// The rule is exact: a usable name is non-empty after trimming (so empty
+    /// and whitespace-only names are refused), is identical to its trimmed
+    /// form (so leading/trailing padding is refused) and contains no Unicode
+    /// control character.
+    fn unusable(self, name: &str) -> Option<TokenError> {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Some(TokenError::FamilyNameEmpty { family: self });
+        }
+        if trimmed != name {
+            return Some(TokenError::FamilyNameUntrimmed { family: self });
+        }
+        if name.chars().any(char::is_control) {
+            return Some(TokenError::FamilyNameContainsControl { family: self });
+        }
+        None
+    }
+}
+
+impl std::fmt::Display for FamilyToken {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str(self.name())
     }
@@ -757,12 +820,36 @@ impl DesignTokens {
 
     /// Refuse a token set that cannot render faithfully.
     ///
-    /// Zero, negative, non-finite or mutually contradictory values are
-    /// errors, never clamped values. Unlike an upload-law assumption these
-    /// are the accepted design tokens, so their documented floors (the 2-DIP
-    /// focus outline and the 24-DIP control target) are the accepted values
-    /// themselves.
+    /// Zero, negative, non-finite or mutually contradictory values, and a
+    /// font family declaration no platform could consume, are errors, never
+    /// clamped values. The documented floors (the 2-DIP focus outline and the
+    /// 24-DIP control target) are the accepted values, so an override cannot
+    /// drop below them.
     pub fn validate(&self) -> Result<(), TokenError> {
+        for (family, name) in [
+            (FamilyToken::LatinUi, self.typography.latin_ui.as_ref()),
+            (
+                FamilyToken::LatinUiFallback,
+                self.typography.latin_ui_fallback.as_ref(),
+            ),
+            (
+                FamilyToken::JapaneseUi,
+                self.typography.japanese_ui.as_ref(),
+            ),
+            (
+                FamilyToken::JapaneseUiFallback,
+                self.typography.japanese_ui_fallback.as_ref(),
+            ),
+            (FamilyToken::Monospace, self.typography.monospace.as_ref()),
+            (
+                FamilyToken::MonospaceFallback,
+                self.typography.monospace_fallback.as_ref(),
+            ),
+        ] {
+            if let Some(error) = family.unusable(name) {
+                return Err(error);
+            }
+        }
         for style in TextStyle::ALL {
             let metrics = self.typography.metrics(style);
             if !metrics.size_dip.is_finite() || metrics.size_dip <= 0.0 {
@@ -1020,6 +1107,9 @@ pub enum TokenError {
     WeightRangeInverted { style: TextStyle },
     LineHeightBelowTypeSize { style: TextStyle },
     JapaneseLineHeightBelowLineHeight { style: TextStyle },
+    FamilyNameEmpty { family: FamilyToken },
+    FamilyNameUntrimmed { family: FamilyToken },
+    FamilyNameContainsControl { family: FamilyToken },
     NonPositiveDimension { dimension: Dimension },
     NegativeRadius { dimension: Dimension },
     RadiiNotAscending,
@@ -1052,6 +1142,18 @@ impl std::fmt::Display for TokenError {
             Self::JapaneseLineHeightBelowLineHeight { style } => write!(
                 formatter,
                 "the {style} Japanese fallback line height is below its Latin line height"
+            ),
+            Self::FamilyNameEmpty { family } => write!(
+                formatter,
+                "the {family} font family declaration must not be empty or whitespace-only"
+            ),
+            Self::FamilyNameUntrimmed { family } => write!(
+                formatter,
+                "the {family} font family declaration must not carry leading or trailing whitespace"
+            ),
+            Self::FamilyNameContainsControl { family } => write!(
+                formatter,
+                "the {family} font family declaration must not contain control characters"
             ),
             Self::NonPositiveDimension { dimension } => write!(
                 formatter,
@@ -1924,5 +2026,90 @@ mod tests {
         let comfortable =
             rows * geometry.row_comfortable_dip + (rows - 1.0) * geometry.spacing_12_dip;
         assert_eq!(comfortable, 144.0);
+    }
+
+    /// One family override setter paired with the token it addresses.
+    type FamilySetter = (
+        FamilyToken,
+        fn(&mut DesignTokensOverride, Cow<'static, str>),
+    );
+
+    /// One unusable declaration paired with the error it must produce.
+    type FamilyDefect = (Cow<'static, str>, fn(FamilyToken) -> TokenError);
+
+    #[test]
+    fn unusable_font_family_declarations_are_refused_for_every_field() {
+        let accepted = DesignTokens::accepted();
+        assert!(accepted.validate().is_ok());
+        // The one-line resolution path still returns the accepted tokens.
+        assert_eq!(
+            DesignTokensOverride::default().resolve_accepted(),
+            Ok(accepted.clone())
+        );
+
+        let setters: [FamilySetter; 6] = [
+            (FamilyToken::LatinUi, |overrides, value| {
+                overrides.latin_ui = Some(value);
+            }),
+            (FamilyToken::LatinUiFallback, |overrides, value| {
+                overrides.latin_ui_fallback = Some(value);
+            }),
+            (FamilyToken::JapaneseUi, |overrides, value| {
+                overrides.japanese_ui = Some(value);
+            }),
+            (FamilyToken::JapaneseUiFallback, |overrides, value| {
+                overrides.japanese_ui_fallback = Some(value);
+            }),
+            (FamilyToken::Monospace, |overrides, value| {
+                overrides.monospace = Some(value);
+            }),
+            (FamilyToken::MonospaceFallback, |overrides, value| {
+                overrides.monospace_fallback = Some(value);
+            }),
+        ];
+        let defects: [FamilyDefect; 6] = [
+            (Cow::Borrowed(""), |family| TokenError::FamilyNameEmpty {
+                family,
+            }),
+            (Cow::Borrowed("   "), |family| TokenError::FamilyNameEmpty {
+                family,
+            }),
+            (Cow::Borrowed("\t\r\n"), |family| {
+                TokenError::FamilyNameEmpty { family }
+            }),
+            (Cow::Borrowed(" Segoe UI"), |family| {
+                TokenError::FamilyNameUntrimmed { family }
+            }),
+            (Cow::Borrowed("Segoe UI "), |family| {
+                TokenError::FamilyNameUntrimmed { family }
+            }),
+            (Cow::Borrowed("Segoe\u{0}UI"), |family| {
+                TokenError::FamilyNameContainsControl { family }
+            }),
+        ];
+        for (family, set) in setters {
+            for (value, expected) in defects.clone() {
+                let mut overrides = DesignTokensOverride::default();
+                set(&mut overrides, value);
+                assert_eq!(
+                    overrides.resolve_accepted(),
+                    Err(expected(family)),
+                    "{family}"
+                );
+            }
+        }
+        // A family is a declaration, never resolved here: a well-formed name
+        // that happens not to be installed is accepted, and the platform
+        // shaping layer owns the primary-then-fallback walk.
+        let declared = DesignTokensOverride {
+            japanese_ui: Some(Cow::Borrowed("Not Installed CJK Candidate")),
+            ..DesignTokensOverride::default()
+        }
+        .resolve_accepted()
+        .expect("a well-formed declaration is not resolved against installed fonts");
+        assert_eq!(
+            declared.typography.japanese_ui.as_ref(),
+            "Not Installed CJK Candidate"
+        );
     }
 }
