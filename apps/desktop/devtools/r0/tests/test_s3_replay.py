@@ -6,6 +6,7 @@ being simulated.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -157,6 +158,25 @@ class S3Replay(unittest.TestCase):
         return subprocess.run(
             [sys.executable, "-B", str(ROOT / "s3_import.py"), "import", *arguments],
             capture_output=True, check=False, timeout=20)
+
+    def manifest_flags(self, manifest: dict | None = None) -> list[str]:
+        manifest = manifest or MANIFEST
+        return ["--scenario-id", manifest["scenario_id"],
+                "--scenario-version", manifest["scenario_version"],
+                "--benchmark-revision", manifest["benchmark_revision"],
+                "--definition-hash", manifest["definition_hash"]]
+
+    def bundle_metadata(self) -> dict[str, bytes]:
+        with zipfile.ZipFile(BUNDLE) as archive:
+            return {name: archive.read(name) for name in (
+                "n02d/build-record.json", "n02d/source-identity.json")}
+
+    def write_zip(self, name: str, members: dict[str, bytes]) -> Path:
+        path = Path(self.directory.name) / name
+        with zipfile.ZipFile(path, "w") as archive:
+            for member, data in members.items():
+                archive.writestr(member, data)
+        return path
 
     # ---------------------------------------------------------------- case 1
     def test_canonical_result_round_trip(self) -> None:
@@ -436,6 +456,109 @@ class S3Replay(unittest.TestCase):
         self.assertEqual(semantics["s2_source"], "runs[].frames.processed")
         self.assertIn("no S3 counter definition", semantics["risk"])
 
+    # ------------------------------------- B-R1-01: --bundle binds its own result
+    def test_cli_bundle_refuses_a_different_result(self) -> None:
+        if not BUNDLE.is_file():
+            self.skipTest("NOT_RUN: the retained S2 bundle is not present in this checkout")
+        path = self.write_result(run_document())  # OBSERVED, same manifest, different content
+        refused = self.cli("--result", str(path), "--ledger", str(self.ledger),
+                           "--bundle", str(BUNDLE), *self.manifest_flags())
+        self.assertEqual(refused.returncode, 1)
+        self.assertEqual(json.loads(refused.stdout)["error"], "IMPORT_IDENTITY")
+        self.assertFalse(self.ledger.exists(),
+                         "a cross-binding refusal must not create the ledger")
+
+    def test_api_expected_result_digest_is_refused_before_write(self) -> None:
+        other = imp.canonical_digest(run_document(run_id="elsewhere"))
+        with self.assertRaises(imp.S3ImportError) as error:
+            import_document(run_document(), self.ledger, source=SOURCE,
+                            program_digest=PROGRAM, expected_result_sha256=other)
+        self.assertEqual(error.exception.code, "IMPORT_IDENTITY")
+        self.assertFalse(self.ledger.exists())
+
+    def test_bundle_without_its_own_result_refuses_a_separate_file(self) -> None:
+        if not BUNDLE.is_file():
+            self.skipTest("NOT_RUN: the retained S2 bundle is not present in this checkout")
+        path = self.write_zip("no-result.zip", self.bundle_metadata())
+        result_path = self.write_result(run_document())
+        refused = self.cli("--result", str(result_path), "--ledger", str(self.ledger),
+                           "--bundle", str(path), *self.manifest_flags())
+        self.assertEqual(refused.returncode, 1)
+        self.assertEqual(json.loads(refused.stdout)["error"], "IMPORT_IDENTITY")
+        self.assertFalse(self.ledger.exists(),
+                         "a tag without its own result cannot prove a separate file")
+
+    def test_bundle_without_its_own_result_needs_caller_acknowledgement(self) -> None:
+        if not BUNDLE.is_file():
+            self.skipTest("NOT_RUN: the retained S2 bundle is not present in this checkout")
+        path = self.write_zip("no-result.zip", self.bundle_metadata())
+        result_path = self.write_result(run_document())
+        completed = self.cli("--result", str(result_path), "--ledger", str(self.ledger),
+                             "--bundle", str(path), "--allow-caller-identity",
+                             "--git-sha", SOURCE["git_sha"],
+                             "--worktree-digest", SOURCE["worktree_digest"],
+                             "--program-digest", PROGRAM, *self.manifest_flags())
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["identity"]["origin"], "caller")
+        self.assertEqual(payload["identity"]["candidate_id"], "s2-candidate-caller")
+        self.assertNotIn("record_sha256", payload["identity"])
+        entry = s3.load_ledger(str(self.ledger))[0]
+        self.assertEqual(entry["candidate"]["id"], "s2-candidate-caller",
+                         "a later ledger reader can tell this is not a record proof")
+
+    def test_bundle_with_its_own_result_refuses_caller_acknowledgement(self) -> None:
+        if not BUNDLE.is_file():
+            self.skipTest("NOT_RUN: the retained S2 bundle is not present in this checkout")
+        with zipfile.ZipFile(BUNDLE) as archive:
+            result = json.loads(archive.read("n02d/result.json"))
+        path = self.write_result(result)
+        refused = self.cli("--result", str(path), "--ledger", str(self.ledger),
+                           "--bundle", str(BUNDLE), "--allow-caller-identity",
+                           *self.manifest_flags(result["manifest"]))
+        self.assertEqual(refused.returncode, 1)
+        self.assertEqual(json.loads(refused.stdout)["error"], "IMPORT_IDENTITY")
+        self.assertFalse(self.ledger.exists())
+
+    # ------------------------------------- A-R1-01: bounded bundle reads
+    def test_bundle_limit_rejects_an_oversized_bundle(self) -> None:
+        if not BUNDLE.is_file():
+            self.skipTest("NOT_RUN: the retained S2 bundle is not present in this checkout")
+        original = imp.MAX_BUNDLE_BYTES
+        self.addCleanup(setattr, imp, "MAX_BUNDLE_BYTES", original)
+        imp.MAX_BUNDLE_BYTES = 64
+        with self.assertRaises(imp.S3ImportError) as error:
+            imp._bundle_identity(str(BUNDLE), "n02d")
+        self.assertEqual(error.exception.code, "IMPORT_BUNDLE_LIMIT")
+
+    def test_bundle_limit_rejects_an_oversized_member(self) -> None:
+        path = self.write_zip("big-member.zip", {
+            "n02d/build-record.json": b"x" * (imp.MAX_BUNDLE_MEMBER_BYTES + 1),
+            "n02d/source-identity.json": b"{}",
+        })
+        with self.assertRaises(imp.S3ImportError) as error:
+            imp._bundle_identity(str(path), "n02d")
+        self.assertEqual(error.exception.code, "IMPORT_BUNDLE_LIMIT")
+
+    def test_bundle_limit_rejects_too_many_members(self) -> None:
+        members = {f"n02d/filler-{index}": b""
+                   for index in range(imp.MAX_BUNDLE_MEMBERS + 1)}
+        path = self.write_zip("many-members.zip", members)
+        with self.assertRaises(imp.S3ImportError) as error:
+            imp._bundle_identity(str(path), "n02d")
+        self.assertEqual(error.exception.code, "IMPORT_BUNDLE_LIMIT")
+
+    def test_bundle_unreadable_is_a_named_failure(self) -> None:
+        path = self.write_zip("missing-member.zip", {"n02d/source-identity.json": b"{}"})
+        with self.assertRaises(imp.S3ImportError) as error:
+            imp._bundle_identity(str(path), "n02d")
+        self.assertEqual(error.exception.code, "IMPORT_BUNDLE_UNREADABLE")
+        bad = Path(self.directory.name) / "bad.zip"
+        bad.write_bytes(b"not a zip archive")
+        with self.assertRaises(imp.S3ImportError) as error:
+            imp._bundle_identity(str(bad), "n02d")
+        self.assertEqual(error.exception.code, "IMPORT_BUNDLE_UNREADABLE")
+
     # --------------------------------------------------------- real replay
     def test_retained_s2_bundle_replays_deterministically(self) -> None:
         if not BUNDLE.is_file():
@@ -547,6 +670,14 @@ class S3Replay(unittest.TestCase):
         entries = s3.load_ledger(str(self.ledger))
         self.assertEqual(entries[0]["source"], source)
         self.assertEqual(entries[0]["candidate"]["program_digest"], program)
+        self.assertEqual(entries[0]["candidate"]["id"], "s2-candidate")
+        self.assertEqual(set(entries[0]), s3.ENTRY_FIELDS,
+                         "the fixed entry schema stays unchanged; the bundle digest is "
+                         "reported out of band, not embedded")
+        self.assertEqual(payload["identity"]["record_sha256"],
+                         "sha256:" + hashlib.sha256(BUNDLE.read_bytes()).hexdigest())
+        self.assertEqual(payload["ledger_digest"],
+                         "sha256:606ac5cdc076bdc7c4aad86e2952bf076bc1ec800ad94fe2eb78060d4e3785f2")
 
 
 if __name__ == "__main__":

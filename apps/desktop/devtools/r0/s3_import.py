@@ -36,6 +36,24 @@ interpreter `cpython 3.13.14`, both UTC timestamps `1970-01-01T00:00:00Z`); the 
 response records those placeholders and the identity origin, and unbound runs are excluded
 with `SOURCE_NOT_BOUND`/`CANDIDATE_NOT_BOUND` instead of being silently dropped.
 
+RESULT BINDING. With `--bundle`, the identity proof also binds the result: the tag's own
+`result.json` is read from the bundle and the supplied `--result` must have the same
+canonical digest, otherwise the import is refused with `IMPORT_IDENTITY` before any
+write. A tag whose bundle carries no `result.json` cannot prove a separate file, so it is
+refused unless `--allow-caller-identity` explicitly falls back to caller-provided identity
+(that fallback is visibly distinct: `candidate.id = "s2-candidate-caller"`, origin
+`caller`, no `record_sha256`).
+
+BUNDLE BOUNDS. Every retained-bundle read is bounded: at most 16 MiB for the file, 1 MiB
+per member we open, and 256 members in the archive. A violation is refused with the named
+codes `IMPORT_BUNDLE_LIMIT` / `IMPORT_BUNDLE_UNREADABLE` before anything is written.
+
+PROVENANCE CONVENTION. The ledger entry schema is fixed, so the bundle digest is not
+embedded in the entry; it is reported in the import response as `identity.record_sha256`
+and must be retained alongside the ledger (this is the documented convention). Record-bound
+entries use `candidate.id = "s2-candidate"`; caller-acknowledged imports use
+`s2-candidate-caller`, which a later ledger reader can distinguish.
+
 SCENARIO BINDING. The four manifest expectations (`--scenario-id`, `--scenario-version`,
 `--benchmark-revision`, `--definition-hash`) must be supplied together or not at all; a
 partial set is refused with `IMPORT_IDENTITY`. Supplying none is a refusal unless
@@ -57,6 +75,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import re
 import sys
@@ -114,7 +133,19 @@ IMPORT_ERRORS = (
     "IMPORT_RUN_ID",
     "IMPORT_EMPTY",
     "IMPORT_RESULT_VERSION",
+    "IMPORT_BUNDLE_LIMIT",
+    "IMPORT_BUNDLE_UNREADABLE",
 )
+
+# Bounds for every retained-bundle read: the whole file, each member we open, and the
+# number of members the archive may contain. A named code is reported, never a traceback.
+MAX_BUNDLE_BYTES = 16 * 1024 * 1024
+MAX_BUNDLE_MEMBER_BYTES = 1 * 1024 * 1024
+MAX_BUNDLE_MEMBERS = 256
+
+# Caller-acknowledged imports are marked in the ledger body so a later reader can tell
+# them apart from record-bound imports; the entry schema itself stays unchanged.
+CALLER_CANDIDATE_ID = "s2-candidate-caller"
 
 SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -239,6 +270,7 @@ def bodies_for_result(
     expected_manifest: dict[str, str] | None = None,
     host: dict[str, str] | None = None,
     interpreter: dict[str, str] | None = None,
+    candidate_id: str = "s2-candidate",
 ) -> list[dict[str, Any]]:
     """Validate a canonical S2 result and turn every run into an S3 entry body."""
     try:
@@ -267,7 +299,7 @@ def bodies_for_result(
             "entry_version": ledger.ENTRY_VERSION,
             "run_id": run_id,
             "source": source or {"git_sha": None, "worktree_digest": None},
-            "candidate": {"id": "s2-candidate", "program_digest": program_digest},
+            "candidate": {"id": candidate_id, "program_digest": program_digest},
             "host": host or {"os": "windows", "arch": "x86_64"},
             "interpreter": interpreter or {"name": "cpython", "version": "3.13.14"},
             "start_utc": "1970-01-01T00:00:00Z",
@@ -290,14 +322,20 @@ def import_result(
     host: dict[str, str] | None = None,
     interpreter: dict[str, str] | None = None,
     record_sha256: str | None = None,
+    expected_result_sha256: str | None = None,
+    candidate_id: str = "s2-candidate",
 ) -> dict[str, Any]:
     """Append every run of one S2 result; nothing is written when validation fails.
 
     With `build_record`, source and program identity come from that retained record and a
-    conflicting explicit value is refused. Without it the identity is caller-provided and
-    the response marks it as such. The whole batch is validated by
-    `s3_ledger.append_entries` before the first byte is written.
+    conflicting explicit value is refused. With `expected_result_sha256` the loaded result
+    must match that canonical digest, so a bundle can bind both identity and result. Without
+    a record the identity is caller-provided, the response marks it as such, and
+    `candidate_id` can mark the ledger body (the CLI uses "s2-candidate-caller"). The whole
+    batch is validated by `s3_ledger.append_entries` before the first byte is written.
     """
+    if not SAFE_ID.fullmatch(candidate_id):
+        fail("IMPORT_IDENTITY")
     origin = "caller"
     if build_record is not None:
         recorded = source_identity_from_build_record(
@@ -310,14 +348,19 @@ def import_result(
         source, program_digest = recorded, recorded_program
         origin = "build-record"
     document = contracts.load_document(path, contracts.MAX_RESULT_BYTES)
+    if expected_result_sha256 is not None and \
+            canonical_digest(document) != expected_result_sha256:
+        # The result is part of the retained-record proof: a different (even schema-valid)
+        # result must never be imported under that record's identity.
+        fail("IMPORT_IDENTITY")
     bodies = bodies_for_result(document, source=source, program_digest=program_digest,
                                expected_manifest=expected_manifest, host=host,
-                               interpreter=interpreter)
+                               interpreter=interpreter, candidate_id=candidate_id)
     appended = ledger.append_entries(ledger_path, bodies)
     entries = ledger.load_ledger(ledger_path)
     identity = {
         "origin": origin,
-        "candidate_id": "s2-candidate",
+        "candidate_id": candidate_id,
         "placeholders": ["candidate.id", "host", "interpreter", "start_utc", "end_utc"],
         "note": ("candidate.id, host, interpreter and the UTC timestamps are defaults/"
                  "placeholders unless a retained record supplies them; a run is "
@@ -339,22 +382,68 @@ def import_result(
 # --------------------------------------------------------------------------- cli
 
 
-def _bundle_identity(bundle: str, tag: str) -> tuple[dict[str, Any], dict[str, str], str]:
-    """Read the retained bundle's build record and source file set, and hash the bundle."""
+def _bundle_member(archive: zipfile.ZipFile, name: str,
+                   *, required: bool = True) -> bytes | None:
+    """Read one archive member within the per-member bound; closed codes only."""
     try:
-        data = Path(bundle).read_bytes()
-        digest = "sha256:" + hashlib.sha256(data).hexdigest()
-        with zipfile.ZipFile(bundle) as archive:
-            build = json.loads(archive.read(f"{tag}/build-record.json"))
-            identity = json.loads(archive.read(f"{tag}/source-identity.json"))
-    except (OSError, KeyError, ValueError, zipfile.BadZipFile):
-        fail("IMPORT_IDENTITY")
+        info = archive.getinfo(name)
+    except KeyError:
+        if required:
+            fail("IMPORT_BUNDLE_UNREADABLE")
+        return None
+    if info.file_size > MAX_BUNDLE_MEMBER_BYTES:
+        fail("IMPORT_BUNDLE_LIMIT")
+    with archive.open(name) as handle:
+        data = handle.read(MAX_BUNDLE_MEMBER_BYTES + 1)
+    if len(data) > MAX_BUNDLE_MEMBER_BYTES:
+        fail("IMPORT_BUNDLE_LIMIT")
+    return data
+
+
+def _bundle_identity(
+    bundle: str, tag: str
+) -> tuple[dict[str, Any], dict[str, str], str, dict[str, Any] | None]:
+    """Read the retained bundle bounded: build record, source set, digest and its result.
+
+    Returns the bundle digest and the tag's own `result.json` (None when the tag carries
+    none) so the caller can bind the supplied result to the retained record.
+    """
+    try:
+        size = Path(bundle).stat().st_size
+    except OSError:
+        fail("IMPORT_BUNDLE_UNREADABLE")
+    if size > MAX_BUNDLE_BYTES:
+        fail("IMPORT_BUNDLE_LIMIT")
+    try:
+        with open(bundle, "rb") as handle:
+            data = handle.read(MAX_BUNDLE_BYTES + 1)
+    except OSError:
+        fail("IMPORT_BUNDLE_UNREADABLE")
+    if len(data) > MAX_BUNDLE_BYTES:
+        fail("IMPORT_BUNDLE_LIMIT")
+    digest = "sha256:" + hashlib.sha256(data).hexdigest()
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(data))
+    except zipfile.BadZipFile:
+        fail("IMPORT_BUNDLE_UNREADABLE")
+    with archive:
+        if len(archive.infolist()) > MAX_BUNDLE_MEMBERS:
+            fail("IMPORT_BUNDLE_LIMIT")
+        build_raw = _bundle_member(archive, f"{tag}/build-record.json")
+        identity_raw = _bundle_member(archive, f"{tag}/source-identity.json")
+        result_raw = _bundle_member(archive, f"{tag}/result.json", required=False)
+        try:
+            build = json.loads(build_raw)
+            identity = json.loads(identity_raw)
+            result = None if result_raw is None else json.loads(result_raw)
+        except ValueError:
+            fail("IMPORT_BUNDLE_UNREADABLE")
     if not isinstance(build, dict) or not isinstance(identity, dict):
-        fail("IMPORT_IDENTITY")
+        fail("IMPORT_BUNDLE_UNREADABLE")
     files = identity.get("files")
     if not isinstance(files, dict) or not files:
-        fail("IMPORT_IDENTITY")
-    return build, files, digest
+        fail("IMPORT_BUNDLE_UNREADABLE")
+    return build, files, digest, result
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -392,13 +481,26 @@ def main(argv: list[str] | None = None) -> int:
         manifest_values = (args.scenario_id, args.scenario_version,
                            args.benchmark_revision, args.definition_hash)
         build_record = build_files = record_sha = None
+        expected_result_digest = None
+        candidate_id = "s2-candidate"
         if args.bundle:
-            if any(identity_flags):
-                fail("IMPORT_IDENTITY")
-            build_record, build_files, record_sha = _bundle_identity(
+            build_record, build_files, record_sha, bundle_result = _bundle_identity(
                 args.bundle, args.bundle_tag)
+            if bundle_result is None:
+                # No retained result means no result proof: a separate file is trusted
+                # only after the caller explicitly acknowledges caller identity.
+                if not args.allow_caller_identity:
+                    fail("IMPORT_IDENTITY")
+                build_record = build_files = record_sha = None
+                candidate_id = CALLER_CANDIDATE_ID
+            else:
+                if any(identity_flags) or args.allow_caller_identity:
+                    fail("IMPORT_IDENTITY")
+                expected_result_digest = canonical_digest(bundle_result)
         elif not args.allow_caller_identity:
             fail("IMPORT_IDENTITY")
+        if build_record is None and args.allow_caller_identity:
+            candidate_id = CALLER_CANDIDATE_ID
         if any(manifest_values) and not all(manifest_values):
             fail("IMPORT_IDENTITY")
         if not any(manifest_values) and not args.allow_unbound_scenario:
@@ -421,6 +523,8 @@ def main(argv: list[str] | None = None) -> int:
             build_files=build_files,
             expected_manifest=expected,
             record_sha256=record_sha,
+            expected_result_sha256=expected_result_digest,
+            candidate_id=candidate_id,
         )
         print(json.dumps(result, separators=(",", ":")))
         return 0
