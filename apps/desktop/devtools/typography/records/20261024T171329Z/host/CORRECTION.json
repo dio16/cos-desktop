@@ -1,0 +1,43 @@
+{
+ "correction_version": 1,
+ "finding": {
+  "reviewer": "Tern",
+  "rule": "the record must carry no pid, title, handle or path of any non-target window",
+  "severity": "BLOCKING",
+  "summary": "the record carried an identifier of a window unrelated to the observation"
+ },
+ "old_record_preserved": true,
+ "recorded_utc": "2026-10-24T17:24:22Z",
+ "repair": {
+  "removed": "foreground_wait.last_foreground",
+  "replaced_by": {
+   "field": "foreground_wait.observed",
+   "kept": [
+    "polls",
+    "elapsed_s",
+    "requested_s",
+    "outcome"
+   ],
+   "value": "FOREGROUND_IS_NOT_THE_TARGET"
+  },
+  "tests": "a record built from a wait that observed a foreign window is asserted to contain no foreign pid, title, handle or the last_foreground field"
+ },
+ "replacement": {
+  "foreground_wait": {
+   "elapsed_s": 30.045,
+   "observed": "FOREGROUND_IS_NOT_THE_TARGET",
+   "outcome": "FOREGROUND_WAIT_EXPIRED",
+   "polls": 121
+  },
+  "note": "the replacement record contains no identifier of any non-target window",
+  "observation": "apps/desktop/devtools/typography/records/20261024T172324Z/host/observation.json",
+  "observation_sha256": "sha256:244c058d130ec302575caf90ecaa98819e3e9b182366bae3ad7b38eeaf9e874e"
+ },
+ "statement": "The old record is retained as history. Its foreign-window identifier is superseded for privacy and must not be cited or reproduced.",
+ "supersedes": {
+  "leaked_content": "the pid and window title of the user's unrelated foreground window; the values are intentionally not reproduced in this correction entry",
+  "leaked_field": "foreground_wait.last_foreground",
+  "observation": "apps/desktop/devtools/typography/records/20261024T171329Z/host/observation.json",
+  "observation_sha256": "sha256:62251373baf93dcde105fd704484dd51b3c3f43229e0da0d5832cd773a5e2abc"
+ }
+}

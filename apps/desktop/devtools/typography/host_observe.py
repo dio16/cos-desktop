@@ -91,6 +91,8 @@ PROBE_TIMEOUT_S = 130.0
 FOREGROUND_POLL_INTERVAL_S = 0.25
 MAX_FOREGROUND_WAIT_S = 120.0
 REASON_FOREGROUND_WAIT_EXPIRED = "FOREGROUND_WAIT_EXPIRED"
+# Closed token only: the record must never identify a window that is not the target.
+REASON_FOREGROUND_IS_NOT_THE_TARGET = "FOREGROUND_IS_NOT_THE_TARGET"
 MAX_SCREENSHOT_BYTES = 32 * 1024 * 1024
 STOP_TIMEOUT_S = 10.0
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -130,6 +132,7 @@ ERROR_CODES = (
     "PNG_TRAILING_DATA",
     "PNG_TOO_LARGE",
     "SCREENSHOT_GEOMETRY_MISMATCH",
+    "FOREGROUND_HANDLE_MISMATCH",
 )
 
 NOT_MEASURED = (
@@ -739,15 +742,18 @@ def wait_for_foreground(
                 "requested_s": timeout_s,
                 "elapsed_s": round(elapsed, 3),
                 "polls": polls,
-                "last_foreground": {"pid": last.get("pid"), "title": last.get("title")},
+                "observed": REASON_FOREGROUND_IS_NOT_THE_TARGET,
             }
         sleep(interval_s)
 
 
 def resolve_screenshot(shot: dict[str, Any], wait: dict[str, Any]) -> dict[str, Any]:
-    """A capture always wins; otherwise the wait decides the closed NOT_MEASURED reason."""
-    if shot.get("status") == "OBSERVED":
-        return shot
+    """An expired wait can never yield a capture; a foregrounded wait can.
+
+    The expiry check comes first on purpose: even if the probe happened to produce an
+    image, an expired wait records NOT_MEASURED with no digest and no path, and
+    `discard_capture` removes the file.
+    """
     if wait.get("outcome") == REASON_FOREGROUND_WAIT_EXPIRED:
         return {
             "status": "NOT_MEASURED",
@@ -755,7 +761,36 @@ def resolve_screenshot(shot: dict[str, Any], wait: dict[str, Any]) -> dict[str, 
             "detail": shot.get("reason"),
             "elapsed_s": wait.get("elapsed_s"),
         }
+    if shot.get("status") == "OBSERVED":
+        return shot
     return {"status": "NOT_MEASURED", "reason": shot.get("reason")}
+
+
+def discard_capture(path: Path, wait: dict[str, Any]) -> None:
+    """Delete any probe image when the wait expired, so no screenshot can be recorded."""
+    if wait.get("outcome") != REASON_FOREGROUND_WAIT_EXPIRED:
+        return
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        return
+    except OSError:
+        fail("WRITE_FAILED")
+
+
+def verify_waited_handle(
+    wait: dict[str, Any], window: dict[str, Any]
+) -> dict[str, Any]:
+    """The waited HWND and the captured HWND must be the same window (pure)."""
+    if wait.get("outcome") != "FOREGROUNDED":
+        return {"status": "NOT_APPLICABLE"}
+    if wait.get("handle") != window.get("handle"):
+        fail("FOREGROUND_HANDLE_MISMATCH")
+    return {
+        "status": "OBSERVED",
+        "handle": window["handle"],
+        "captured_handle_matches_waited": True,
+    }
 
 
 def observe_window(
@@ -857,6 +892,7 @@ def build_record(
     analysis: dict[str, Any],
     stop_record: dict[str, Any],
     wait: dict[str, Any] | None = None,
+    binding: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     window = observed["window"]
     screenshot = observed["screenshot"]
@@ -940,6 +976,9 @@ def build_record(
         "foreground_wait": wait
         if wait is not None
         else {"outcome": "NOT_REQUESTED", "requested_s": 0.0},
+        "foreground_binding": binding
+        if binding is not None
+        else {"status": "NOT_APPLICABLE"},
         "desktop_state_changed": False,
         "acceptance_procedure": {
             "human_step": "the user brings COS Desktop to the foreground (click its window "
@@ -1013,6 +1052,8 @@ def main(argv: list[str] | None = None) -> int:
             args.powershell, probe, process.pid, screenshot
         )
         observed = validate_probe_record(document, process.pid, screenshot)
+        binding = verify_waited_handle(wait, observed["window"])
+        discard_capture(screenshot, wait)
         if observed["screenshot"]["status"] == "OBSERVED":
             live = live_window(observed["window"]["handle"])
             identity = verify_capture_identity(
@@ -1034,7 +1075,7 @@ def main(argv: list[str] | None = None) -> int:
         stop_record = stop(process)
         process = None
         record = build_record(
-            exe, exe_digest, observed, scale, analysis, stop_record, wait
+            exe, exe_digest, observed, scale, analysis, stop_record, wait, binding
         )
         try:
             (out / "probe.json").write_text(

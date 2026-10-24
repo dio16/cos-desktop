@@ -577,7 +577,10 @@ class ForegroundWaitTest(unittest.TestCase):
             4242, 1.0, poll=polls, clock=self._clock(), sleep=lambda _s: None
         )
         self.assertEqual(wait["outcome"], observe.REASON_FOREGROUND_WAIT_EXPIRED)
-        self.assertEqual(wait["last_foreground"]["pid"], 7)
+        self.assertEqual(wait["observed"], observe.REASON_FOREGROUND_IS_NOT_THE_TARGET)
+        self.assertNotIn("last_foreground", wait)
+        self.assertNotIn("pid", wait)
+        self.assertNotIn("title", wait)
         self.assertGreaterEqual(wait["elapsed_s"], 1.0)
 
     def test_a_same_pid_untitled_window_does_not_count(self) -> None:
@@ -603,13 +606,78 @@ class ForegroundWaitTest(unittest.TestCase):
         self.assertNotIn("digest", shot)
         self.assertNotIn("path", shot)
 
-    def test_a_capture_wins_over_the_wait_outcome(self) -> None:
+    def test_a_capture_is_kept_only_when_the_wait_foregrounded(self) -> None:
         captured_shot = {"status": "OBSERVED", "digest": "sha256:" + "a" * 64}
-        resolved = observe.resolve_screenshot(
+        kept = observe.resolve_screenshot(
             captured_shot, {"outcome": "FOREGROUNDED", "elapsed_s": 1.0}
         )
-        self.assertEqual(resolved["status"], "OBSERVED")
-        self.assertEqual(resolved["digest"], captured_shot["digest"])
+        self.assertEqual(kept["status"], "OBSERVED")
+        self.assertEqual(kept["digest"], captured_shot["digest"])
+        # An expired wait must be incapable of recording a capture, even one that exists.
+        expired = observe.resolve_screenshot(
+            captured_shot,
+            {"outcome": observe.REASON_FOREGROUND_WAIT_EXPIRED, "elapsed_s": 30.0},
+        )
+        self.assertEqual(expired["status"], "NOT_MEASURED")
+        self.assertEqual(expired["reason"], observe.REASON_FOREGROUND_WAIT_EXPIRED)
+        self.assertNotIn("digest", expired)
+        self.assertNotIn("path", expired)
+
+    def test_an_expired_wait_removes_any_capture_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            kept_path = Path(directory) / "kept.png"
+            kept_path.write_bytes(png(8, 8))
+            observe.discard_capture(kept_path, {"outcome": "FOREGROUNDED"})
+            self.assertTrue(kept_path.exists())
+            observe.discard_capture(
+                kept_path, {"outcome": observe.REASON_FOREGROUND_WAIT_EXPIRED}
+            )
+            self.assertFalse(kept_path.exists())
+
+    def test_the_record_carries_no_foreign_window_identifier(self) -> None:
+        sentinel_title = "FOREIGN_WINDOW_MARKER"
+        sentinel_pid = 987654
+        polls = self._poll(
+            [{"status": "OBSERVED", "handle": 5, "pid": sentinel_pid, "title": sentinel_title}]
+        )
+        wait = observe.wait_for_foreground(
+            4242, 0.5, poll=polls, clock=self._clock(), sleep=lambda _s: None
+        )
+        self.assertEqual(wait["outcome"], observe.REASON_FOREGROUND_WAIT_EXPIRED)
+        self.assertEqual(wait["observed"], observe.REASON_FOREGROUND_IS_NOT_THE_TARGET)
+        record = observe.build_record(
+            Path("cos-desktop.exe"),
+            "sha256:" + "0" * 64,
+            {
+                "window": dict(WINDOW),
+                "screenshot": {"status": "NOT_MEASURED", "reason": "FOREGROUND_WAIT_EXPIRED"},
+                "uia": {"status": "OBSERVED", "reason": "", "elements": [element("Task Rail")],
+                        "truncated": False, "depth_limited": False, "elements_visited": 1},
+            },
+            {"status": "OBSERVED", "dpi": 96, "scale": 1.0, "method": "GetDpiForWindow",
+             "controlled_ladder_step": False},
+            observe.analyze_elements([element("Task Rail")]),
+            {"method": "taskkill /T /F", "exit_code": 1},
+            wait,
+            {"status": "NOT_APPLICABLE"},
+        )
+        body = json.dumps(record)
+        self.assertNotIn(sentinel_title, body)
+        self.assertNotIn(str(sentinel_pid), body)
+        self.assertNotIn("last_foreground", body)
+        self.assertEqual(record["foreground_binding"], {"status": "NOT_APPLICABLE"})
+
+    def test_a_capture_with_a_different_waited_handle_is_refused(self) -> None:
+        binding = observe.verify_waited_handle(
+            {"outcome": "FOREGROUNDED", "handle": 11}, {"handle": 11}
+        )
+        self.assertEqual(binding["status"], "OBSERVED")
+        self.assertTrue(binding["captured_handle_matches_waited"])
+        with self.assertRaises(observe.ObserveError) as raised:
+            observe.verify_waited_handle(
+                {"outcome": "FOREGROUNDED", "handle": 11}, {"handle": 22}
+            )
+        self.assertEqual(raised.exception.code, "FOREGROUND_HANDLE_MISMATCH")
 
     def test_the_wait_bound_is_validated(self) -> None:
         self.assertEqual(observe.bounded_wait("30"), 30.0)
