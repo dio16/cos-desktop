@@ -370,19 +370,6 @@ These rules are fixed for every later session; they exist because the default `p
 
 Rollback: restore the alias names (`python.exe.dsh-disabled-20261024` -> `python.exe`, likewise `python3`/`pythonw`), delete `python.cmd` from the WindowsApps directory and `~/bin/python`, and remove the uv entry from the user PATH. No repository file participates in this environment setup.
 
-### 4.11 Fixed interpreter and environment rules (2026-10-24)
-
-These rules are fixed for every later session; they exist because the default `python` on this host was a broken app-execution alias that failed every script invocation with `No runtime installed that matches 3`.
-
-| Rule | What was done | How it is verified |
-|---|---|---|
-| `python` must be the uv CPython 3.13.14 | The user PATH starts with `C:\Users\diobrando\AppData\Roaming\uv\python\cpython-3.13.14-windows-x86_64-none`, and the WindowsApps `python.exe`/`python3.exe`/`pythonw.exe` alias stubs were renamed to `*.dsh-disabled-20261024` so they can no longer shadow it | `python --version`, `python -c "import sys; print(sys.executable)"` and `python -B scripts/check_dependency_rules.py` all resolve the uv path and exit 0 |
-| Shells that inherit an old PATH still get the uv interpreter | `%LOCALAPPDATA%\Microsoft\WindowsApps\python.cmd` forwards to the uv interpreter for cmd/PowerShell, and `~/bin/python` does the same for bash (Git Bash ignores `.cmd`) | plain `python --version` in bash, PowerShell and a registry-composed (new-logon) environment prints `Python 3.13.14` |
-| Out-of-tree verification builds never share the repository target directory | stale artifacts from deleted Gate worktrees embed `CARGO_MANIFEST_DIR` and break fixtures (observed as a `cos-client` NotFound until `cargo clean -p cos-client`) | every export/scratch build sets its own `CARGO_TARGET_DIR` |
-| Parallel streams are gated on a fixed commit, not on a live worktree | one gate ran while another stream edited sources; it was detected by mtime overlap, the evidence was discarded and re-taken from a pristine export | gate briefs require a clean tree, a fixed SHA and a scope check |
-
-Rollback: restore the alias names (`python.exe.dsh-disabled-20261024` -> `python.exe`, likewise `python3`/`pythonw`), delete `python.cmd` from the WindowsApps directory and `~/bin/python`, and remove the uv entry from the user PATH. No repository file participates in this environment setup.
-
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |
