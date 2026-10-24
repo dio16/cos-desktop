@@ -47,6 +47,33 @@ def png(width: int, height: int, rgb: tuple[int, int, int] = (23, 25, 28)) -> by
     )
 
 
+def scanlines(width: int, height: int, rgb: tuple[int, int, int] = (23, 25, 28)) -> bytes:
+    return b"".join(b"\x00" + bytes(rgb) * width for _ in range(height))
+
+
+def png_with_idat(width: int, height: int, image_data: bytes) -> bytes:
+    header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return (
+        observe.PNG_SIGNATURE
+        + chunk(b"IHDR", header)
+        + chunk(b"IDAT", image_data)
+        + chunk(b"IEND", b"")
+    )
+
+
+class CountingStream(io.BytesIO):
+    """A bounded reader that records how many bytes were actually read."""
+
+    def __init__(self, data: bytes) -> None:
+        super().__init__(data)
+        self.bytes_read = 0
+
+    def read(self, size: int = -1) -> bytes:
+        data = super().read(size)
+        self.bytes_read += len(data)
+        return data
+
+
 def png_header_only(width: int, height: int) -> bytes:
     """A header fragment: signature plus IHDR, no IDAT and no IEND."""
     return (
@@ -159,6 +186,42 @@ class PngIntegrityTest(unittest.TestCase):
         with self.assertRaises(observe.ObserveError) as raised:
             observe.png_dimensions_verified(data)
         self.assertEqual(raised.exception.code, "PNG_INVALID")
+
+    def test_a_stripped_adler32_tail_is_refused(self) -> None:
+        # Every scanline expands, but the zlib stream never ends: length alone is not
+        # proof of a complete stream.
+        image_data = zlib.compress(scanlines(16, 16))[:-4]
+        with self.assertRaises(observe.ObserveError) as raised:
+            observe.png_dimensions_verified(png_with_idat(16, 16, image_data))
+        self.assertEqual(raised.exception.code, "PNG_UNDECODABLE")
+
+    def test_surplus_compressed_data_after_the_stream_is_refused(self) -> None:
+        image_data = zlib.compress(scanlines(16, 16)) + b"\x00\x00\x00\x00"
+        with self.assertRaises(observe.ObserveError) as raised:
+            observe.png_dimensions_verified(png_with_idat(16, 16, image_data))
+        self.assertEqual(raised.exception.code, "PNG_TRAILING_DATA")
+
+    def test_the_cumulative_idat_bound_is_enforced(self) -> None:
+        with self.assertRaises(observe.ObserveError) as raised:
+            observe.png_dimensions_verified(png(8, 8), max_idat=1)
+        self.assertEqual(raised.exception.code, "PNG_TOO_LARGE")
+
+    def test_an_oversized_screenshot_is_refused_before_a_full_read(self) -> None:
+        cap = 1024
+        stream = CountingStream(b"\x89PNG" + b"\x00" * (cap * 4))
+        with self.assertRaises(observe.ObserveError) as raised:
+            observe.read_bounded_stream(stream, cap)
+        self.assertEqual(raised.exception.code, "PNG_TOO_LARGE")
+        self.assertLessEqual(stream.bytes_read, cap + 1)
+        self.assertLess(stream.bytes_read, cap * 4)
+
+    def test_an_oversized_file_is_refused_from_its_size(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(b"x" * 4096)
+            with self.assertRaises(observe.ObserveError) as raised:
+                observe.read_bounded(path, cap=1024)
+        self.assertEqual(raised.exception.code, "PNG_TOO_LARGE")
 
     def test_an_oversized_decode_is_refused_without_decoding_it(self) -> None:
         header = struct.pack(">IIBBBBB", 4096, 4096, 8, 6, 0, 0, 0)  # 67 MiB decoded

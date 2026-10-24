@@ -23,7 +23,10 @@ revision therefore refuses any capture that is not provably the target window:
                  and a foreign window on top makes the sampled agreement fail.
     geometry     the PNG must decode to exactly the target window rectangle and the
                  capture rectangle; a structurally incomplete or undecodable image, or
-                 a dimension mismatch, is refused (IHDR-only checks are not enough).
+                 a dimension mismatch, is refused (IHDR-only checks are not enough). The
+                 zlib stream must be complete (`eof`, no unused data, no unconsumed tail),
+                 and the image file is read with a hard cap so an oversized screenshot is
+                 refused before it is loaded.
     title        the window title must equal the pinned `COS Desktop`; a different or
                  missing title is refused, never recorded as whatever was found.
 
@@ -70,6 +73,7 @@ OBSERVATION_VERSION = 2
 EXPECTED_TITLE = "COS Desktop"
 MAX_PNG_CHUNKS = 4096
 MAX_CHUNK_BYTES = 4 * 1024 * 1024
+MAX_IDAT_BYTES = 32 * 1024 * 1024
 MAX_DECODED_BYTES = 64 * 1024 * 1024
 MAX_RECORD_BYTES = 16 * 1024 * 1024
 MAX_ATTEMPTS = 40
@@ -111,6 +115,7 @@ ERROR_CODES = (
     "WINDOW_TITLE_MISMATCH",
     "PNG_TRUNCATED",
     "PNG_UNDECODABLE",
+    "PNG_TRAILING_DATA",
     "PNG_TOO_LARGE",
     "SCREENSHOT_GEOMETRY_MISMATCH",
 )
@@ -185,7 +190,44 @@ def sha256_bytes(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
-def png_dimensions_verified(data: bytes) -> tuple[int, int]:
+def read_bounded_stream(stream: Any, cap: int) -> bytes:
+    """Read at most cap + 1 bytes; more than cap is a closed PNG_TOO_LARGE."""
+    try:
+        data = stream.read(cap + 1)
+    except OSError:
+        fail("SCREENSHOT_MISMATCH")
+    if not isinstance(data, bytes):
+        fail("SCREENSHOT_MISMATCH")
+    if len(data) > cap:
+        fail("PNG_TOO_LARGE")
+    return data
+
+
+def read_bounded(path: Path, *, cap: int = MAX_SCREENSHOT_BYTES) -> bytes:
+    """Read the screenshot with the cap enforced at read time.
+
+    The size is checked before opening, and the open handle is read with `cap + 1` as its
+    maximum so an oversized input is never loaded into memory in full.
+    """
+    try:
+        size = path.stat().st_size
+    except OSError:
+        fail("SCREENSHOT_MISMATCH")
+    if size > cap:
+        fail("PNG_TOO_LARGE")
+    try:
+        with open(path, "rb") as handle:
+            return read_bounded_stream(handle, cap)
+    except OSError:
+        fail("SCREENSHOT_MISMATCH")
+
+
+def png_dimensions_verified(
+    data: bytes,
+    *,
+    max_idat: int = MAX_IDAT_BYTES,
+    max_decoded: int = MAX_DECODED_BYTES,
+) -> tuple[int, int]:
     """Verify the PNG is structurally complete and decodable within bounded caps.
 
     Walks every chunk to IEND with matching CRCs, requires IHDR first and IDAT present,
@@ -220,6 +262,9 @@ def png_dimensions_verified(data: bytes) -> tuple[int, int]:
                 fail("PNG_INVALID")
             header = struct.unpack(">IIBBBBB", payload)
         elif kind == b"IDAT":
+            if len(image_data) + length > max_idat:
+                # The effective bound is enforced while walking, before accumulating.
+                fail("PNG_TOO_LARGE")
             image_data += payload
         elif kind == b"IEND":
             if length != 0:
@@ -247,15 +292,22 @@ def png_dimensions_verified(data: bytes) -> tuple[int, int]:
         fail("PNG_INVALID")
     scanline = (width * bit_depth * channels + 7) // 8
     expected = height * (1 + scanline)
-    if expected > MAX_DECODED_BYTES:
+    if expected > max_decoded:
         fail("PNG_TOO_LARGE")
     try:
         inflater = zlib.decompressobj()
         raw = inflater.decompress(bytes(image_data), expected + 1)
     except zlib.error:
         fail("PNG_UNDECODABLE")
+    if not inflater.eof:
+        # The stream never reached its end marker (for example a stripped Adler-32):
+        # complete scanlines are not proof of a complete stream.
+        fail("PNG_UNDECODABLE")
     if len(raw) != expected:
         fail("PNG_UNDECODABLE")
+    if inflater.unused_data or inflater.unconsumed_tail:
+        # Bytes after the end of the zlib stream are not this image.
+        fail("PNG_TRAILING_DATA")
     for row in range(height):
         if raw[row * (1 + scanline)] > 4:
             fail("PNG_UNDECODABLE")
@@ -501,10 +553,7 @@ def validate_probe_record(document: dict[str, Any], pid: int, screenshot: Path) 
         }
     if shot.get("status") != "OBSERVED":
         fail("RECORD_SCHEMA")
-    try:
-        data = screenshot.read_bytes()
-    except OSError:
-        fail("SCREENSHOT_MISMATCH")
+    data = read_bounded(screenshot)
     width, height = png_dimensions_verified(data)
     if (width, height) != (shot.get("width"), shot.get("height")):
         fail("SCREENSHOT_MISMATCH")
