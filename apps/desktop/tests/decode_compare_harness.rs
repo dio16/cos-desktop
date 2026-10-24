@@ -484,34 +484,52 @@ fn argv_assembly_matches_the_documented_transports() {
     assert_eq!(config.max_pixels, Some(1_048_576));
 }
 
-/// NB-1: the script transport always asks for a decodable `.wic.png`, so a valid
-/// `.jpg`/`.tif`/`.gif` input can no longer be reported as `unsupported` merely
-/// because the encoder has no matching format; an executable still keeps the case
-/// suffix because a format-inferring tool needs it.
+/// Schema 10 (was NB-1): **every** transport is asked for a canonical PNG output, so a
+/// `pixels:<sha256>` expectation can verify each leg's decoded raster regardless of the
+/// input suffix, and the case suffix never selects the output container. The candidate id
+/// stays part of the name (B1), so two candidates can never share a path.
 #[test]
-fn script_transport_writes_a_fixed_png_output_for_any_input_suffix() {
+fn every_transport_writes_a_canonical_png_for_any_input_suffix() {
     let work = PathBuf::from(r"C:\work");
     let scripted = Program::PwshScript(PathBuf::from(r"C:\tools\wic_probe.ps1"));
     let executable = Program::Executable(PathBuf::from(r"C:\tools\ffmpeg.exe"));
 
     for suffix in ["jpg", "jpeg", "tif", "tiff", "gif", "png", "bmp"] {
         let case_id = format!("photo.{suffix}");
-        let path = harness::output_path(&scripted, &work, 3, &case_id, "wic", suffix);
+        let scripted_path = harness::output_path(&scripted, &work, 3, &case_id, "wic");
         assert_eq!(
-            path.extension().and_then(|extension| extension.to_str()),
+            scripted_path
+                .extension()
+                .and_then(|extension| extension.to_str()),
             Some("png"),
             "{case_id} must be decoded into a PNG the probe can always encode"
         );
         assert_eq!(
-            path.file_name().and_then(|name| name.to_str()),
+            scripted_path.file_name().and_then(|name| name.to_str()),
             Some(format!("003_photo.{suffix}.wic.wic.png").as_str()),
+            "B1: the candidate id is part of the name"
+        );
+        let executable_path = harness::output_path(&executable, &work, 3, &case_id, "ffmpeg8");
+        assert_eq!(
+            executable_path
+                .extension()
+                .and_then(|extension| extension.to_str()),
+            Some("png"),
+            "{case_id} must be decoded into the same canonical PNG container"
+        );
+        assert_eq!(
+            executable_path.file_name().and_then(|name| name.to_str()),
+            Some(format!("003_photo.{suffix}.ffmpeg8.png").as_str()),
             "B1: the candidate id is part of the name"
         );
     }
 
+    // The suffix no longer reaches the output name at all: a `.jpg` case and an
+    // identically named case that differs only in suffix land on the same canonical
+    // container name, and the candidate id is what separates two legs.
     assert_eq!(
-        harness::output_path(&executable, &work, 3, "photo.jpg", "ffmpeg8", "jpg"),
-        work.join("003_photo.jpg.ffmpeg8.jpg")
+        harness::output_path(&executable, &work, 3, "photo.jpg", "ffmpeg8"),
+        work.join("003_photo.jpg.ffmpeg8.png")
     );
 }
 
@@ -628,6 +646,36 @@ fn successful_exit_without_output_is_not_decoded() {
     assert_eq!(observation.refusal, Some("output_missing"));
     assert!(!observation.output_present);
     assert_eq!(observation.output_bytes, None);
+    assert_eq!(observation.validity, "not_measured");
+}
+
+/// Schema 10: a declared raster that cannot be checked because the leg produced no output
+/// must say so — the row is `not_measured` with `pixel_reason: "no_output"`, not a silent
+/// absence of a digest. This covers both a silent success (exit 0, no file) and a leg that
+/// rejected the input.
+#[test]
+fn a_declared_raster_with_no_output_is_explicitly_not_measured() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "nooutput");
+    let digest = pixels::sha256(&rgba_rgb_16(10));
+    fixture.declare_pixels(&[("a.png", Some((16, 16)), Some(digest), OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_missing"));
+    assert_eq!(observation.pixel_digest, None);
+    assert_eq!(observation.pixel_reason, Some("no_output"));
+    assert!(!observation.pixel_verified);
+    assert_eq!(observation.validity, "not_measured");
+
+    // A leg that rejects the input (non-zero exit, no output) keeps its own class and
+    // exit code, and the declared raster is still explained as `no_output`.
+    fixture.case("a.png", "corrupt");
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Corrupt);
+    assert_eq!(observation.exit_code, Some(3));
+    assert_eq!(observation.pixel_reason, Some("no_output"));
     assert_eq!(observation.validity, "not_measured");
 }
 
@@ -1035,8 +1083,8 @@ fn capability_table_is_deterministic() {
 fn output_names_are_per_candidate_and_stale_paths_are_refused() {
     let work = PathBuf::from(r"C:\work");
     let scripted = Program::PwshScript(PathBuf::from(r"C:\tools\wic_probe.ps1"));
-    let first = harness::output_path(&scripted, &work, 0, "a.png", "wic", "png");
-    let second = harness::output_path(&scripted, &work, 0, "a.png", "wic-alt", "png");
+    let first = harness::output_path(&scripted, &work, 0, "a.png", "wic");
+    let second = harness::output_path(&scripted, &work, 0, "a.png", "wic-alt");
     assert_ne!(
         first, second,
         "two script candidates on one case must never share a path"
@@ -1826,6 +1874,110 @@ fn pixel_mismatch_when_dimensions_match_but_content_differs() {
     assert_eq!(report.capabilities[0].pixels_verified, 1);
 }
 
+/// Schema 10 closes the gap this slice exists for: one declared `pixels:<sha256>`
+/// expectation verifies **every** leg that decoded, not only the legs whose output
+/// container the oracle happened to be able to read, because every transport is asked for
+/// a canonical PNG. Two independent candidates on the same manifest, on a case whose name
+/// carries a non-PNG suffix, must both reach `pixels_verified` against the same
+/// independently computed raster.
+#[test]
+fn one_declared_raster_verifies_every_leg() {
+    let fixture = Fixture::new();
+    // The case is named `.bmp` on purpose: the declared raster is container-independent,
+    // so the input suffix must not restrict which legs can be verified. The helper writes
+    // the container the requested output name implies, exactly like the real transports.
+    fixture.case("photo.bmp", "suffix-honest");
+    let digest = pixels::sha256(&rgba_rgb_16(10));
+    fixture.declare_pixels(&[(
+        "photo.bmp",
+        Some((16, 16)),
+        Some(digest),
+        OutcomeClass::Decoded,
+    )]);
+    let candidates = [
+        Candidate {
+            id: "wic".to_owned(),
+            program: Program::Executable(std::env::current_exe().unwrap()),
+        },
+        Candidate {
+            id: "ffmpeg8".to_owned(),
+            program: Program::Executable(std::env::current_exe().unwrap()),
+        },
+    ];
+    let report = measured(&fixture, &candidates, HELPER);
+
+    assert_eq!(report.observations.len(), 2);
+    for observation in &report.observations {
+        assert_eq!(
+            observation.observed_outcome,
+            OutcomeClass::Decoded,
+            "{}",
+            observation.candidate_id
+        );
+        assert_eq!(
+            observation.validity, "pixels_verified",
+            "{} must be verified against the same raster",
+            observation.candidate_id
+        );
+        assert!(observation.pixel_verified);
+        assert_eq!(observation.pixel_digest, Some(digest));
+    }
+    assert_eq!(
+        report.observations[0].pixel_digest, report.observations[1].pixel_digest,
+        "both legs decoded the same raster"
+    );
+    // Pixel evidence is now per leg, not per one-candidate accident: every candidate has
+    // its own capability row and each counts its own verified observation.
+    assert_eq!(report.capabilities.len(), 2);
+    for row in &report.capabilities {
+        assert_eq!(row.observations, 1);
+        assert_eq!(row.pixels_verified, 1);
+        assert_eq!(row.working_set_max_bytes, None);
+    }
+}
+
+/// Schema 10: a leg that ignores the canonical PNG request can never pass silently. A BMP
+/// container written to the `.png` output path is a complete container, so the structural
+/// claim survives — but with a declared raster the verdict is `error` + `pixel_unavailable`
+/// carrying the oracle's own token, and without a declared raster the same token explains
+/// the missing digest instead of leaving it unexplained.
+#[test]
+fn a_non_png_container_never_passes_pixel_verification() {
+    // Without an expectation: the structure claim stands, and the absent digest has a reason.
+    let fixture = Fixture::new();
+    fixture.case("a.bmp", "bmp");
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let observation = &report.observations[0];
+    assert_eq!(observation.inspected_format, inspect::Format::Bmp);
+    assert!(observation.inspected_complete);
+    assert_eq!(observation.validity, "presence_only");
+    assert_eq!(observation.pixel_digest, None);
+    assert_eq!(
+        observation.pixel_reason,
+        Some(pixels::PixelError::NotPng.as_str())
+    );
+    assert!(!observation.pixel_verified);
+
+    // With an expectation: no claim can be made, so the row is an error with the reason.
+    fixture.declare_pixels(&[(
+        "a.bmp",
+        None,
+        Some(pixels::sha256(&rgba_rgb_16(10))),
+        OutcomeClass::Decoded,
+    )]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("pixel_unavailable"));
+    assert_eq!(observation.validity_reason, Some("pixel_unavailable"));
+    assert_eq!(observation.pixel_digest, None);
+    assert_eq!(
+        observation.pixel_reason,
+        Some(pixels::PixelError::NotPng.as_str())
+    );
+    assert!(!observation.pixel_verified);
+}
+
 /// Phase 3 (2): same visible pixels but a different colour type/alpha — the digest
 /// compares decoded RGBA, so an alpha difference across colour types mismatches.
 #[test]
@@ -2015,23 +2167,57 @@ fn manifest_rejects_bad_pixel_digests() {
     }
 }
 
-/// NIT-2 + NIT-3: every schema-8 pixel field is present in each observation row with
-/// the documented nullability, and a capability row counts `pixels_verified`.
+/// NIT-2 + NIT-3, extended by schema 10: every pixel field is present in each
+/// observation row with the documented nullability, a capability row counts
+/// `pixels_verified`, and — the schema-10 difference from schema 9 — a decodable raster
+/// without a declared expectation carries its digest plus `no_pixel_expectation`, while a
+/// missing digest always carries a reason instead of two bare nulls.
 #[test]
 fn record_carries_the_pixel_fields_with_documented_nullability() {
     let fixture = Fixture::new();
-    fixture.case("a.png", "png16");
-    // No expectation at all: all four pixel fields must still be present and null.
+    // Schema 10: no expectation at all, but the raster is decodable, so the digest is
+    // recorded and the reason says why nothing is claimed. Schema 9 left both null.
+    fixture.case("a.png", "png-rgb-a");
     let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let observation = &report.observations[0];
+    assert_eq!(report.schema_version, 10);
+    assert_eq!(observation.pixel_expectation, None);
+    assert_eq!(
+        observation.pixel_digest,
+        Some(pixels::sha256(&rgba_rgb_16(10)))
+    );
+    assert!(!observation.pixel_verified);
+    assert_eq!(observation.pixel_reason, Some("no_pixel_expectation"));
+    // No expectation at all was declared for this case, so the claim stays as narrow as
+    // it was before: presence of a decode, no structure or dimension claim.
+    assert_eq!(observation.validity, "presence_only");
     let json = harness::render(&report).0;
     for field in [
+        "\"schema_version\": 10",
         "\"pixel_expectation\": null",
-        "\"pixel_digest\": null",
         "\"pixel_verified\": false",
-        "\"pixel_reason\": null",
+        "\"pixel_reason\": \"no_pixel_expectation\"",
     ] {
         assert!(json.contains(field), "missing {field} in {json}");
     }
+    assert!(json.contains("\"pixel_digest\": \""), "{json}");
+
+    // An output the oracle cannot decode still leaves the digest null, and the reason
+    // token (never a bare null) says why.
+    fixture.case("b.png", "png16");
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let observation = report
+        .observations
+        .iter()
+        .find(|observation| observation.case_id == "b.png")
+        .expect("b.png was measured");
+    assert_eq!(observation.pixel_expectation, None);
+    assert_eq!(observation.pixel_digest, None);
+    assert!(
+        observation.pixel_reason.is_some(),
+        "a missing digest must carry a reason"
+    );
+    assert_eq!(observation.validity, "presence_only");
 
     // With a matching expectation: digest and expectation are hex, verified is true.
     fixture.declare_pixels(&[(
@@ -2040,6 +2226,7 @@ fn record_carries_the_pixel_fields_with_documented_nullability() {
         Some(pixels::sha256(&rgba_rgb_16(10))),
         OutcomeClass::Decoded,
     )]);
+    std::fs::remove_file(fixture.cases.join("b.png")).unwrap();
     // The 16x16 fixture with a real IDAT: reuse the pixel fake here.
     fixture.case("a.png", "png-rgb-a");
     let report = measured(&fixture, &[fixture.fake()], HELPER);
@@ -3376,8 +3563,10 @@ fn observation_and_record_caps_truncate_explicitly() {
     assert!(!refused.exists());
 }
 
-/// N6: without a case suffix the candidate output format cannot be expressed, so
-/// nothing is measured and no unusable `.output` name is invented.
+/// N6, updated for schema 10: the case suffix no longer reaches the output path (every
+/// transport writes a canonical PNG), so the reason an extensionless case is refused is
+/// the recorded input format, not an unusable output name: the manifest token is what
+/// lets a row say which codec was measured, and without it nothing is claimed.
 #[test]
 fn extensionless_case_is_not_measured_with_a_reason() {
     let fixture = Fixture::new();
@@ -3458,7 +3647,7 @@ fn record_is_deterministic_sorted_and_carries_no_decision_field() {
     candidate_ids.truncate(4);
     assert_eq!(candidate_ids, vec!["absent", "fake", "absent", "fake"]);
     assert!(first_json.contains("\"resources\": ["));
-    assert!(first_json.contains("\"schema_version\": 9"));
+    assert!(first_json.contains("\"schema_version\": 10"));
     assert!(first_json.contains("\"exploratory\": true"));
     assert!(first_json.contains("\"numeric_gate\": \"NOT_RATIFIED\""));
     for decision in ["\"pass\"", "\"winner\"", "\"score\"", "\"selected\""] {
@@ -4065,6 +4254,23 @@ fn fake_candidate(support: ProbeSupport) {
         }
         "png-rgb-a" => {
             std::fs::write(&output, png_rgb_16(10)).unwrap();
+            0
+        }
+        // Schema 10: behaves like the real transports — it writes the container the
+        // requested output name implies. If the harness ever goes back to naming the
+        // output after the case suffix, this leg writes BMP and can no longer be verified,
+        // which is exactly the gap the canonical PNG transport closes.
+        "suffix-honest" => {
+            let requested_png = std::path::Path::new(&output)
+                .extension()
+                .and_then(|extension| extension.to_str())
+                == Some("png");
+            let bytes = if requested_png {
+                png_rgb_16(10)
+            } else {
+                bmp_bytes(16, 16, 24)
+            };
+            std::fs::write(&output, bytes).unwrap();
             0
         }
         "png-rgb-b" => {

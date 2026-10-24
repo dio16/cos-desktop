@@ -1,29 +1,44 @@
-//! Exploratory, decoder-neutral MP-IMG2 comparison harness (record schema v9).
+//! Exploratory, decoder-neutral MP-IMG2 comparison harness (record schema v10).
 //!
 //! This module is shared by the operator-run `decode_compare` example and its
 //! contract tests. It is not a product decoder, selects no decoder, links no
 //! FFmpeg and makes no numeric claim: the emitted record is explicitly
 //! exploratory and every value it contains was actually observed.
 //!
-//! Candidate process protocol (v9), fixed so that no argv element or decoder path
+//! Candidate process protocol (v10), fixed so that no argv element or decoder path
 //! can be derived from media metadata. Three transports exist and all of them pass
 //! argv as a separate argument vector; no command string is ever built, quoted or
 //! interpreted:
 //!
 //! - executable: `-i <absolute case path> <absolute output path>`, identity probe
-//!   `--version` then `-version`. The output keeps the case suffix, because a
-//!   format-inferring tool needs it.
+//!   `--version` then `-version`. The output path always ends in `.png`, so a
+//!   format-inferring tool is asked for a **canonical PNG** instead of a copy of the
+//!   input container.
 //! - pwsh script (`--candidate id=pwsh:<absolute script.ps1>`): the interpreter is
 //!   launched by name with
 //!   `-NoProfile -File <script> -InputPath <in> -OutputPath <out> [-MaxPixels N]`
 //!   and the identity probe is `-Version`. The interpreter path resolved from
 //!   `PATH` is recorded as `launcher` (null when it could not be resolved, in
 //!   which case the bare name is launched). The script transport always writes
-//!   `<stem>.<candidate>.wic.png`, so its encoder format never depends on the input
-//!   suffix and no two candidates can ever share an output path.
+//!   `<stem>.<candidate>.wic.png`, which is a canonical PNG as well, and no two
+//!   candidates can ever share an output path.
 //! - environment (contract tests only): the case paths and the probe form travel
 //!   in [`ENV_INPUT`], [`ENV_OUTPUT`] and [`ENV_PROBE`], because a libtest helper
 //!   process's argv is not free.
+//!
+//! Why a canonical PNG output (schema 10): MP-IMG2 compares the **decoded raster** of
+//! the candidates, not the container each candidate would choose for its own output.
+//! The case suffix used to be appended to the executable transport's output name, so a
+//! JPEG input produced a JPEG output and the in-repo 8-bit PNG oracle could not read it;
+//! a declared `pixels:<sha256>` expectation then verified the script legs only and
+//! demoted the executable leg to `pixel_unavailable`, i.e. pixel verification silently
+//! applied to one candidate. Every leg is now asked for a lossless PNG re-encode of its
+//! own decode, so one expected raster can be checked against every leg that decoded. The
+//! observed cost is explicit: `inspected_format` and the capability table now describe the
+//! **transport container** (always PNG), not the container the candidate would have
+//! produced natively under the case suffix, and a candidate that ignores the requested
+//! `.png` output name is caught as `not_measured` with the oracle's own reason token
+//! rather than being silently structure-verified.
 //!
 //! Candidate reasons: the first [`MAX_REASON_CHARS`]-bounded `"reason_code":"..."`
 //! token found in the captured stdout is mapped through [`KNOWN_REASONS`]. A token
@@ -107,6 +122,28 @@
 //! is ever fabricated: `pixel_digest` is `null` unless the oracle actually decoded the
 //! bytes.
 //!
+//! What `pixels_verified` establishes (schema 10): the declared SHA-256 names row-major
+//! 8-bit RGBA samples of the **raster the candidate produced**, transported losslessly.
+//! The candidate decodes the input with its own decoder and writes a PNG; the harness's
+//! oracle reads that PNG and expands it to RGBA (an RGB output becomes R,G,B,255). The
+//! comparison is container-independent — the same expectation verifies a leg whose native
+//! container would have been JPEG, BMP or PNG — and it establishes that every verifying
+//! leg produced the same RGBA samples as the operator's independently computed
+//! expectation. It does **not** establish anything about the container a candidate would
+//! have written had the case suffix been used, nor colour management, profiles, bit depths
+//! above 8, or that the candidate's own exit code was right: the oracle never trusts the
+//! candidate's claim.
+//!
+//! Digest versus claim (schema 10): the oracle runs on every complete decoded output, so
+//! `pixel_digest` is populated whenever the bytes decode, with or without an operator
+//! expectation. Without an expectation `pixel_verified` stays false and `pixel_reason`
+//! names why no claim is made — `no_pixel_expectation` when the raster was decoded, the
+//! oracle's own token when the output could not be decoded, or `no_output` when the leg
+//! produced no output at all. A record can therefore compare two legs' rasters directly,
+//! and a missing digest always carries a reason. A lossy input (JPEG) has no independent
+//! exact raster, so such a case declares dimensions only and its rows carry each leg's
+//! digest with `no_pixel_expectation`.
+//!
 //! What "verified" does not cover (NIT-1): the harness checks container structure,
 //! the declared dimensions and the decoded RGBA bytes — it does **not** recompute PNG
 //! chunk CRCs (only the `IEND` value is compared) and does **not** verify the zlib
@@ -170,6 +207,17 @@
 //! and no existing field changed shape. A sample is accepted only when the row is the
 //! documented five-column Windows layout, its PID column equals the supervised child and
 //! its memory column has the `12,000 K` form; anything else is `sample_parse_failed`.
+//!
+//! Schema 10 changes semantics, not shape: (a) every transport's measurement output is a
+//! canonical PNG, so `inspected_format` and the capability table describe the transport
+//! container rather than a suffix-derived one; (b) `pixel_digest` is populated for every
+//! complete decoded output even without a declared expectation, and `pixel_reason` then
+//! carries `no_pixel_expectation` (or the oracle's failure token); (c) as a consequence a
+//! `pixels:` expectation is no longer limited to PNG-capable legs — every leg that decodes
+//! is verified against the same raster or is `pixel_unavailable` with a reason. The field
+//! set and every field's nullability rule are unchanged, which is why this is a semantic
+//! version bump rather than an additive one; a reader that tolerates a populated
+//! `pixel_digest` beside `pixel_verified: false` reads schema 10 correctly.
 //!
 //! Capability rows are built only from observations that are `decoded`, complete, and
 //! whose validity is `presence_only`, `structure_verified` or `pixels_verified` (A1),
@@ -250,7 +298,9 @@ use std::{
 };
 
 /// Fixed record schema version; changing record semantics requires a new version.
-pub const SCHEMA_VERSION: u32 = 9;
+/// Schema 10: canonical PNG transport for every leg and a `pixel_digest` that is
+/// recorded for every decoded raster, not only for declared expectations.
+pub const SCHEMA_VERSION: u32 = 10;
 /// Refusal token for a run token whose directory already exists.
 pub const WORK_DIR_EXISTS: &str = "work_dir_exists";
 /// Fixed prefix of every per-run work-directory token.
@@ -346,6 +396,10 @@ const RESOURCE_NO_OBSERVATION: &str = "no_contributing_observation";
 const OUTPUT_UNPARSABLE: &str = "output_unparsable";
 const OUTPUT_INCOMPLETE: &str = "output_incomplete";
 const NO_EXPECTATION: &str = "no_expectation";
+/// `pixel_reason` when the raster was decoded but the operator declared no expectation.
+const NO_PIXEL_EXPECTATION: &str = "no_pixel_expectation";
+/// `pixel_reason` when an expectation was declared but the leg produced no output at all.
+const NO_OUTPUT: &str = "no_output";
 /// Capability facts this harness never observes, with the reason it does not.
 const ORIENTATION_REASON: &str = "exif_orientation_not_parsed";
 const REGION_REASON: &str = "partial_decode_not_observed";
@@ -1564,10 +1618,15 @@ fn resolve_on_path(program: &str) -> Option<PathBuf> {
     None
 }
 
-/// The case output path. An executable keeps the case suffix because a
-/// format-inferring tool needs it; the script transport always writes a PNG, so its
-/// encoder format never depends on the input suffix and a valid `.jpg`/`.tif`/`.gif`
-/// input is decoded instead of reported as unsupported.
+/// The case output path: a **canonical PNG** for every transport (schema 10).
+///
+/// The comparison verifies a candidate's decoded raster, not the container it would
+/// choose for its own output, so both transports are asked for a lossless PNG re-encode
+/// and the case suffix is deliberately not part of the name. This is what lets one
+/// `pixels:<sha256>` expectation verify every leg that decoded, including a leg whose
+/// native container would have been BMP or JPEG. A candidate that writes another
+/// container to this name is caught by the oracle as `not_measured` with a reason token,
+/// never silently structure-verified.
 ///
 /// The candidate id is part of every name (B1): two candidates on the same case can
 /// therefore never share a path, so one candidate's output can never be attributed
@@ -1578,11 +1637,10 @@ pub fn output_path(
     case_index: usize,
     case_id: &str,
     candidate_id: &str,
-    suffix: &str,
 ) -> PathBuf {
     let stem = format!("{:03}_{}", case_index, sanitize_name(case_id));
     match program {
-        Program::Executable(_) => work.join(format!("{stem}.{candidate_id}.{suffix}")),
+        Program::Executable(_) => work.join(format!("{stem}.{candidate_id}.png")),
         Program::PwshScript(_) => work.join(format!("{stem}.{candidate_id}.wic.png")),
     }
 }
@@ -1901,20 +1959,21 @@ fn measure(
         validity: NOT_MEASURED,
         refusal: None,
     };
-    // Without a case suffix the case identity cannot be expressed in the record,
-    // so no child is started and nothing is claimed.
-    let Some(suffix) = case.suffix.as_deref() else {
+    // Without a case suffix the input codec cannot be named in the record, so no child
+    // is started and nothing is claimed. Retained from schema 9 although the output
+    // container no longer depends on the suffix: every row stays attributable to a
+    // declared input format.
+    if case.suffix.is_none() {
         observation.observed_outcome = OutcomeClass::NotMeasured;
         observation.refusal = Some("extension_needed_for_output");
         return observation;
-    };
+    }
     let output = output_path(
         &candidate.program,
         paths.work,
         case_index,
         &case.id,
         &candidate.id,
-        suffix,
     );
     let stem = format!(
         "{:03}_{}.{}",
@@ -2048,45 +2107,67 @@ fn measure(
             observation.inspected_colour_type =
                 inspection.colour_type.unwrap_or(ColourType::NotMeasured);
             observation.inspected_colour_markers = inspection.colour_markers.clone();
-            // Phase 3: when an operator declares pixel expectations, decode the
-            // output with the independent oracle and compare its RGBA digest.
-            if let Some(expected) = observation.pixel_expectation {
-                if output_present && inspection.complete {
-                    match fs::File::open(&output) {
-                        Ok(mut file) => match pixels::read_png(&mut file) {
-                            Ok(image) => {
-                                let digest = image.digest();
-                                observation.pixel_status = if digest == expected {
-                                    PixelStatus::Verified
-                                } else {
-                                    PixelStatus::Mismatch
-                                };
-                                observation.pixel_digest = Some(digest);
+            // Phase 3 (schema 10): decode every complete output with the independent
+            // oracle. The digest is recorded whenever the bytes decode, with or without
+            // an operator expectation, so two legs' rasters can be compared directly from
+            // the record; only a declared expectation produces a verdict.
+            if output_present && inspection.complete {
+                match fs::File::open(&output) {
+                    Ok(mut file) => match pixels::read_png(&mut file) {
+                        Ok(image) => {
+                            let digest = image.digest();
+                            observation.pixel_digest = Some(digest);
+                            match observation.pixel_expectation {
+                                Some(expected) => {
+                                    observation.pixel_status = if digest == expected {
+                                        PixelStatus::Verified
+                                    } else {
+                                        PixelStatus::Mismatch
+                                    };
+                                }
+                                None => {
+                                    // A raster exists and no operator expectation was
+                                    // declared: nothing is claimed, and the reason says so
+                                    // instead of leaving the absence unexplained.
+                                    observation.pixel_reason = Some(NO_PIXEL_EXPECTATION);
+                                }
                             }
-                            Err(error) => {
-                                observation.pixel_status = PixelStatus::Unavailable;
-                                observation.pixel_reason = Some(error.as_str());
-                            }
-                        },
-                        Err(_) => {
-                            observation.pixel_status = PixelStatus::Unavailable;
-                            observation.pixel_reason =
-                                Some(pixels::PixelError::Unreadable.as_str());
                         }
+                        Err(error) => {
+                            if observation.pixel_expectation.is_some() {
+                                observation.pixel_status = PixelStatus::Unavailable;
+                            }
+                            observation.pixel_reason = Some(error.as_str());
+                        }
+                    },
+                    Err(_) => {
+                        if observation.pixel_expectation.is_some() {
+                            observation.pixel_status = PixelStatus::Unavailable;
+                        }
+                        observation.pixel_reason = Some(pixels::PixelError::Unreadable.as_str());
                     }
-                } else if observation.observed_outcome == OutcomeClass::Decoded {
-                    // Structurally not a usable container: the pixel verdict cannot be
-                    // claimed either, and the reason must match the refusal that
-                    // `verify` will produce (ANB-2): no dimensions at all means the
-                    // output is unparsable, dimensions without a terminator means it is
-                    // an incomplete container.
-                    observation.pixel_status = PixelStatus::Unavailable;
-                    observation.pixel_reason = Some(if inspection.dimensions().is_none() {
-                        OUTPUT_UNPARSABLE
-                    } else {
-                        OUTPUT_INCOMPLETE
-                    });
                 }
+            } else if observation.observed_outcome == OutcomeClass::Decoded {
+                // Structurally not a usable container, so no digest exists. With an
+                // expectation the pixel verdict cannot be claimed either, and the reason
+                // must match the refusal that `verify` will produce (ANB-2): no dimensions
+                // at all means the output is unparsable, dimensions without a terminator
+                // means it is an incomplete container. Without an expectation the reason
+                // still explains the missing digest and nothing is demoted.
+                if observation.pixel_expectation.is_some() {
+                    observation.pixel_status = PixelStatus::Unavailable;
+                }
+                observation.pixel_reason = Some(if inspection.dimensions().is_none() {
+                    OUTPUT_UNPARSABLE
+                } else {
+                    OUTPUT_INCOMPLETE
+                });
+            } else if observation.pixel_expectation.is_some() && !output_present {
+                // A raster was declared but this leg wrote no output at all (a rejected
+                // input or a silent success): say so instead of leaving the absence of a
+                // digest unexplained. The observation's own class and exit code carry why
+                // the leg failed.
+                observation.pixel_reason = Some(NO_OUTPUT);
             }
             let (validity, reason) = verify(
                 observation.observed_outcome,
