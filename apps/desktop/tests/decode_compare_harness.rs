@@ -3008,14 +3008,31 @@ enum Window {
     Timeout,
 }
 
-/// The pre-spawn digest check has its own proof: the sampler is rewritten *after* the
-/// harness hashed it and restored before the sample would exit, so a missing pre-spawn
-/// comparison would let a value through while the post-spawn comparison still matches.
+/// The pre-spawn digest check has its own proof, and the discriminator is the **attempt
+/// count**, not the value. The sampler is rewritten after the harness hashed it and
+/// restored later in the run, so:
+///
+/// * with the pre-spawn comparison, the attempt is refused before any spawn and the
+///   observation records `working_set_attempts == 0`;
+/// * without it, the sample is spawned and its *post*-spawn comparison also sees the
+///   rewritten file (the sample's post-check runs roughly 1.7 s into the run, well before
+///   the 3 s restore), so it discards the value with `attempts == 1`.
+///
+/// Both paths end `not_measured` / `sample_tool_changed` with no value, so the token alone
+/// does not distinguish the call sites -- only `working_set_attempts == 0` does. The
+/// restore at roughly 3 s does not rescue the missing pre-spawn comparison either: it
+/// happens after a spawned sample's post-check at roughly 1.7 s, so the swap would still
+/// be discarded, merely with `attempts == 1`.
 ///
 /// Ordering is causal, not a sleep: the harness hashes the tool, then spawns the
-/// candidate, and the candidate's sentinel is what releases the rewrite. The first
-/// attempt is scheduled inside the rewritten window, and the restore happens before the
-/// run ends, so the file the post-spawn check reads is the original again.
+/// candidate, and the candidate's sentinel is what releases the rewrite, so the rewrite
+/// is provably after the hash. The first attempt is scheduled at 1.5 s and the restore at
+/// roughly 3 s, so the attempt falls inside the rewritten window. Scheduling margin: the
+/// 1.5 s delay is what keeps the rewrite ahead of the attempt; under extreme load a
+/// candidate that takes longer than ~1.5 s to start would let the attempt precede the
+/// rewrite, in which case the pre-spawn comparison legitimately passes, a sample runs and
+/// this test fails as a false negative. That margin is a deliberate trade against a
+/// longer test, not a correctness assumption of the harness.
 #[test]
 fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
     let fixture = Fixture::new();
@@ -3034,8 +3051,9 @@ fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
         std::ffi::OsString::from("--nocapture"),
         std::ffi::OsString::from("--quiet"),
     ];
-    // The first attempt is late enough that the rewrite always precedes it, and the
-    // restore is later still, so the rewritten state is what the pre-spawn check sees.
+    // The first attempt is late enough that the rewrite normally precedes it; the restore
+    // is later still, so the rewritten state is what the pre-spawn check sees. The 1.5 s
+    // margin is the false-failure risk documented above, not a guarantee.
     config.sample_interval_ms = 1_500;
     config.cancel_after_ms = Some(5_000);
 
@@ -3075,8 +3093,8 @@ fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
         Window::Timeout => panic!("the candidate never announced its start"),
     }
 
-    // The tool the post-spawn check reads is the original again: only the pre-spawn
-    // comparison could have refused this attempt.
+    // The file is back to its original bytes, so the run ended in the restored state; the
+    // attempt count below is still what distinguishes the two call sites.
     assert_eq!(
         std::fs::read(&tool).unwrap(),
         original,
