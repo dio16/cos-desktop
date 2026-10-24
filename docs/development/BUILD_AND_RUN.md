@@ -368,6 +368,8 @@ These rules are fixed for every later session; they exist because the default `p
 | Out-of-tree verification builds never share the repository target directory | stale artifacts from deleted Gate worktrees embed `CARGO_MANIFEST_DIR` and break fixtures (observed as a `cos-client` NotFound until `cargo clean -p cos-client`) | every export/scratch build sets its own `CARGO_TARGET_DIR` |
 | Parallel streams are gated on a fixed commit, not on a live worktree | one gate ran while another stream edited sources; it was detected by mtime overlap, the evidence was discarded and re-taken from a pristine export | gate briefs require a clean tree, a fixed SHA and a scope check |
 
+| Fresh dedicated target builds must disable sccache | with the inherited `rustc-wrapper=sccache.exe`, a build in a brand-new `CARGO_TARGET_DIR` panicked inside rustc (`rustc_mir_dataflow` index out of bounds while compiling `syn`) | set `RUSTC_WRAPPER=` for that build; the repository's warm target directory is unaffected, and the same export then builds and tests cleanly |
+
 Rollback: restore the alias names (`python.exe.dsh-disabled-20261024` -> `python.exe`, likewise `python3`/`pythonw`), delete `python.cmd` from the WindowsApps directory and `~/bin/python`, and remove the uv entry from the user PATH. No repository file participates in this environment setup.
 
 ## 6. Troubleshooting (evidence-anchored)

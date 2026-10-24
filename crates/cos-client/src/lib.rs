@@ -16,6 +16,10 @@ pub mod fixture;
 pub mod mock;
 pub mod projection;
 pub mod read;
+/// Development-only MP-PUB4 representation experiment (off by default; not a
+/// product API and never consulted by product modules).
+#[doc(hidden)]
+pub mod representation;
 pub mod transport;
 
 pub use client::{
