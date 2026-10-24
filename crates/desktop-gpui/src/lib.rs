@@ -19,6 +19,7 @@ use ui_model::task_rail::{TaskRailCache, TaskRailState};
 use ui_model::{DerivationCache, DisplayCache, Workbench, presentation::ViewedCandidate};
 
 mod accessibility;
+pub mod budget;
 mod dock;
 mod flow;
 #[cfg(feature = "r0-s2b-instrumentation")]
