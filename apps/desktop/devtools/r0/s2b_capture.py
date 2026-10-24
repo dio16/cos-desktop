@@ -139,8 +139,9 @@ def validate_build_record(document: object, *, live: bool) -> dict:
     for field in ("source_commit", "baseline_source_commit"):
         if not isinstance(value[field], str) or not contracts.GIT_SHA.fullmatch(value[field]):
             s2b.fail("SOURCE_IDENTITY")
-    if value["source_commit"] == value["baseline_source_commit"]:
-        s2b.fail("BUILD_IDENTITY")
+    # A baseline/feature pair may share one product-source commit when the two builds
+    # differ only by feature and executable digest (the 2026-10-25 baseline line does);
+    # the identical-binary rule below still keeps the pair distinguishable.
     for key in ("observer_source_sha256", "executable_sha256", "baseline_executable_sha256"):
         s2b.digest(value[key])
     if ((live and value["observer_source_sha256"] != s2b.source_digest())
@@ -163,8 +164,14 @@ def approval_entry(manifest: dict) -> dict:
     """Replay lookup: bind only the manifest's own recorded identity to approvals."""
     identity = manifest["identity"]
     approved = driver.approved_digests()
-    entries = [entry for entry in approved if entry["product_commit"] == identity["repository"]["sha"]]
-    if len(entries) != 1 or entries[0]["executable_sha256"] != identity["executable_sha256"]:
+    # Select by commit *and* executable digest: one source line may approve several
+    # build variants (default/feature), so the commit alone is not unique.
+    entries = [
+        entry for entry in approved
+        if entry["product_commit"] == identity["repository"]["sha"]
+        and entry["executable_sha256"] == identity["executable_sha256"]
+    ]
+    if len(entries) != 1:
         s2b.fail("APPROVAL")
     return entries[0]
 
@@ -176,10 +183,17 @@ def binding(manifest: dict) -> dict:
             or identity["executable_sha256"] != build["executable_sha256"]):
         s2b.fail("BUILD_IDENTITY")
     approved = driver.approved_digests()
-    entries = [entry for entry in approved if entry["product_commit"] == build["source_commit"]]
-    baseline = [entry for entry in approved if entry["product_commit"] == build["baseline_source_commit"]]
-    if (len(entries) != 1 or entries[0]["executable_sha256"] != build["executable_sha256"]
-            or len(baseline) != 1 or baseline[0]["executable_sha256"] != build["baseline_executable_sha256"]):
+    entries = [
+        entry for entry in approved
+        if entry["product_commit"] == build["source_commit"]
+        and entry["executable_sha256"] == build["executable_sha256"]
+    ]
+    baseline = [
+        entry for entry in approved
+        if entry["product_commit"] == build["baseline_source_commit"]
+        and entry["executable_sha256"] == build["baseline_executable_sha256"]
+    ]
+    if len(entries) != 1 or len(baseline) != 1:
         s2b.fail("APPROVAL")
     if any(entries[0][field] != baseline[0][field] for field in ("helper_sha256", "helper_source_sha256")):
         s2b.fail("HELPER_IDENTITY")
