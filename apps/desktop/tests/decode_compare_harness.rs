@@ -162,6 +162,19 @@ fn measured(fixture: &Fixture, candidates: &[Candidate], helper: &str) -> Report
     harness::run(&config).unwrap()
 }
 
+/// Run the harness in an explicitly selected output-container policy.
+fn measured_in(
+    fixture: &Fixture,
+    candidates: &[Candidate],
+    helper: &str,
+    policy: harness::OutputPolicy,
+) -> Report {
+    let mut config = harness::parse(arguments(fixture, candidates)).unwrap();
+    config.invocation = helper_invocation(helper);
+    config.output_policy = policy;
+    harness::run(&config).unwrap()
+}
+
 fn as_strings(argv: &[OsString]) -> Vec<String> {
     argv.iter()
         .map(|argument| argument.to_string_lossy().into_owned())
@@ -367,6 +380,41 @@ fn manifest_read_is_bounded_at_the_documented_limit() {
     assert!(message.contains("exceeds"), "{message}");
 }
 
+/// BLOCKING 1: `--output-policy` selects the output-container mode explicitly, defaults to
+/// `native`, accepts its documented spellings case-insensitively, and refuses an unknown
+/// token instead of silently guessing a mode.
+#[test]
+fn output_policy_flag_is_explicit_and_refuses_unknown_modes() {
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let candidate = fixture.fake();
+
+    let mut args = arguments(&fixture, std::slice::from_ref(&candidate));
+    args.push(OsString::from("--output-policy"));
+    args.push(OsString::from("canonical-png"));
+    let config = harness::parse(args).unwrap();
+    assert_eq!(config.output_policy, harness::OutputPolicy::CanonicalPng);
+    assert_eq!(config.output_policy.as_str(), "canonical-png");
+
+    let mut args = arguments(&fixture, std::slice::from_ref(&candidate));
+    args.push(OsString::from("--output-policy"));
+    args.push(OsString::from("Native"));
+    assert_eq!(
+        harness::parse(args).unwrap().output_policy,
+        harness::OutputPolicy::Native
+    );
+
+    let mut args = arguments(&fixture, std::slice::from_ref(&candidate));
+    args.push(OsString::from("--output-policy"));
+    args.push(OsString::from("png"));
+    let error = harness::parse(args).unwrap_err();
+    let message = format!("{error}");
+    assert!(
+        message.contains("canonical-png"),
+        "the refusal must name the accepted modes: {message}"
+    );
+}
+
 /// A3/A4/NIT-4: the shipped argv vectors are the documented ones for both
 /// transports and every probe form, including the forwarded pixel bound, and the
 /// CLI recognizes the `pwsh:` script transport. No shell string is ever assembled.
@@ -484,52 +532,84 @@ fn argv_assembly_matches_the_documented_transports() {
     assert_eq!(config.max_pixels, Some(1_048_576));
 }
 
-/// Schema 10 (was NB-1): **every** transport is asked for a canonical PNG output, so a
-/// `pixels:<sha256>` expectation can verify each leg's decoded raster regardless of the
-/// input suffix, and the case suffix never selects the output container. The candidate id
-/// stays part of the name (B1), so two candidates can never share a path.
+/// BLOCKING 1: the output-container policy is explicit and the **default is `native`**.
+/// `native` keeps the historical suffix-derived executable name (this is the tamper
+/// assertion: it fails if the default silently reverts to `.png`), while the explicit
+/// `canonical-png` mode asks every leg for the same lossless PNG container. The script
+/// transport is already PNG in both modes, and the candidate id stays part of every name
+/// (B1), so two candidates can never share a path.
 #[test]
-fn every_transport_writes_a_canonical_png_for_any_input_suffix() {
+fn output_policy_defaults_to_native_and_canonical_mode_is_explicit() {
     let work = PathBuf::from(r"C:\work");
     let scripted = Program::PwshScript(PathBuf::from(r"C:\tools\wic_probe.ps1"));
     let executable = Program::Executable(PathBuf::from(r"C:\tools\ffmpeg.exe"));
 
+    // Default policy, from the CLI: no --output-policy means native.
+    let fixture = Fixture::new();
+    fixture.case("a.png", "ok");
+    let config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    assert_eq!(config.output_policy, harness::OutputPolicy::Native);
+    assert_eq!(config.output_policy.as_str(), "native");
+
     for suffix in ["jpg", "jpeg", "tif", "tiff", "gif", "png", "bmp"] {
         let case_id = format!("photo.{suffix}");
-        let scripted_path = harness::output_path(&scripted, &work, 3, &case_id, "wic");
-        assert_eq!(
-            scripted_path
-                .extension()
-                .and_then(|extension| extension.to_str()),
-            Some("png"),
-            "{case_id} must be decoded into a PNG the probe can always encode"
+        // Native (default): the executable output keeps the case suffix, exactly as before.
+        let native = harness::output_path(
+            &executable,
+            &work,
+            3,
+            &case_id,
+            "ffmpeg8",
+            suffix,
+            harness::OutputPolicy::Native,
         );
         assert_eq!(
-            scripted_path.file_name().and_then(|name| name.to_str()),
-            Some(format!("003_photo.{suffix}.wic.wic.png").as_str()),
-            "B1: the candidate id is part of the name"
+            native.file_name().and_then(|name| name.to_str()),
+            Some(format!("003_photo.{suffix}.ffmpeg8.{suffix}").as_str()),
+            "the native default must keep the suffix-derived output name"
         );
-        let executable_path = harness::output_path(&executable, &work, 3, &case_id, "ffmpeg8");
-        assert_eq!(
-            executable_path
-                .extension()
-                .and_then(|extension| extension.to_str()),
-            Some("png"),
-            "{case_id} must be decoded into the same canonical PNG container"
+        // Canonical comparison mode: one lossless PNG container for every leg.
+        let canonical = harness::output_path(
+            &executable,
+            &work,
+            3,
+            &case_id,
+            "ffmpeg8",
+            suffix,
+            harness::OutputPolicy::CanonicalPng,
         );
         assert_eq!(
-            executable_path.file_name().and_then(|name| name.to_str()),
+            canonical.file_name().and_then(|name| name.to_str()),
             Some(format!("003_photo.{suffix}.ffmpeg8.png").as_str()),
-            "B1: the candidate id is part of the name"
+            "canonical-png mode must ask every executable for a PNG"
         );
+        // The script transport is already PNG in both modes.
+        for policy in [
+            harness::OutputPolicy::Native,
+            harness::OutputPolicy::CanonicalPng,
+        ] {
+            let scripted_path =
+                harness::output_path(&scripted, &work, 3, &case_id, "wic", suffix, policy);
+            assert_eq!(
+                scripted_path.file_name().and_then(|name| name.to_str()),
+                Some(format!("003_photo.{suffix}.wic.wic.png").as_str()),
+                "the script transport is PNG in every mode"
+            );
+        }
     }
 
-    // The suffix no longer reaches the output name at all: a `.jpg` case and an
-    // identically named case that differs only in suffix land on the same canonical
-    // container name, and the candidate id is what separates two legs.
+    // The tamper assertion: one exact native name, so a silent switch to `.png` fails here.
     assert_eq!(
-        harness::output_path(&executable, &work, 3, "photo.jpg", "ffmpeg8"),
-        work.join("003_photo.jpg.ffmpeg8.png")
+        harness::output_path(
+            &executable,
+            &work,
+            3,
+            "photo.jpg",
+            "ffmpeg8",
+            "jpg",
+            harness::OutputPolicy::Native
+        ),
+        work.join("003_photo.jpg.ffmpeg8.jpg")
     );
 }
 
@@ -1083,8 +1163,24 @@ fn capability_table_is_deterministic() {
 fn output_names_are_per_candidate_and_stale_paths_are_refused() {
     let work = PathBuf::from(r"C:\work");
     let scripted = Program::PwshScript(PathBuf::from(r"C:\tools\wic_probe.ps1"));
-    let first = harness::output_path(&scripted, &work, 0, "a.png", "wic");
-    let second = harness::output_path(&scripted, &work, 0, "a.png", "wic-alt");
+    let first = harness::output_path(
+        &scripted,
+        &work,
+        0,
+        "a.png",
+        "wic",
+        "png",
+        harness::OutputPolicy::Native,
+    );
+    let second = harness::output_path(
+        &scripted,
+        &work,
+        0,
+        "a.png",
+        "wic-alt",
+        "png",
+        harness::OutputPolicy::Native,
+    );
     assert_ne!(
         first, second,
         "two script candidates on one case must never share a path"
@@ -1904,8 +2000,14 @@ fn one_declared_raster_verifies_every_leg() {
             program: Program::Executable(std::env::current_exe().unwrap()),
         },
     ];
-    let report = measured(&fixture, &candidates, HELPER);
+    let report = measured_in(
+        &fixture,
+        &candidates,
+        HELPER,
+        harness::OutputPolicy::CanonicalPng,
+    );
 
+    assert_eq!(report.output_policy, "canonical-png");
     assert_eq!(report.observations.len(), 2);
     for observation in &report.observations {
         assert_eq!(
@@ -1943,39 +2045,105 @@ fn one_declared_raster_verifies_every_leg() {
 /// the missing digest instead of leaving it unexplained.
 #[test]
 fn a_non_png_container_never_passes_pixel_verification() {
-    // Without an expectation: the structure claim stands, and the absent digest has a reason.
     let fixture = Fixture::new();
     fixture.case("a.bmp", "bmp");
-    let report = measured(&fixture, &[fixture.fake()], HELPER);
-    let observation = &report.observations[0];
+
+    // Shape 1 — no expectation declared at all. This is also the BLOCKING 2 tamper
+    // assertion: accepting the non-PNG output would make the row `presence_only`.
+    let canonical = measured_in(
+        &fixture,
+        &[fixture.fake()],
+        HELPER,
+        harness::OutputPolicy::CanonicalPng,
+    );
+    assert_eq!(canonical.output_policy, "canonical-png");
+    let observation = &canonical.observations[0];
     assert_eq!(observation.inspected_format, inspect::Format::Bmp);
     assert!(observation.inspected_complete);
-    assert_eq!(observation.validity, "presence_only");
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_container_not_canonical"));
+    assert_eq!(observation.validity, "not_measured");
     assert_eq!(observation.pixel_digest, None);
     assert_eq!(
         observation.pixel_reason,
-        Some(pixels::PixelError::NotPng.as_str())
+        Some("output_container_not_canonical")
     );
     assert!(!observation.pixel_verified);
+    assert!(
+        canonical.capabilities.is_empty(),
+        "a failed canonicalisation must not contribute a capability row"
+    );
 
-    // With an expectation: no claim can be made, so the row is an error with the reason.
+    // Shape 2 — `expected:WxH` only: no structure claim either.
+    fixture.declare_expected(&[("a.bmp", Some((8, 4)), OutcomeClass::Decoded)]);
+    let canonical = measured_in(
+        &fixture,
+        &[fixture.fake()],
+        HELPER,
+        harness::OutputPolicy::CanonicalPng,
+    );
+    let observation = &canonical.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_container_not_canonical"));
+    assert_eq!(observation.validity, "not_measured");
+    assert_eq!(observation.pixel_digest, None);
+    assert!(canonical.capabilities.is_empty());
+
+    // Shape 3 — a declared raster: the refusal replaces any pixel verdict.
+    fixture.declare_pixels(&[(
+        "a.bmp",
+        Some((8, 4)),
+        Some(pixels::sha256(&rgba_rgb_16(10))),
+        OutcomeClass::Decoded,
+    )]);
+    let canonical = measured_in(
+        &fixture,
+        &[fixture.fake()],
+        HELPER,
+        harness::OutputPolicy::CanonicalPng,
+    );
+    let observation = &canonical.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    assert_eq!(observation.refusal, Some("output_container_not_canonical"));
+    assert_eq!(observation.pixel_digest, None);
+    assert_eq!(
+        observation.pixel_reason,
+        Some("output_container_not_canonical")
+    );
+    assert!(!observation.pixel_verified);
+    assert!(canonical.capabilities.is_empty());
+
+    // Native mode (the default) is untouched: the same non-PNG output keeps the
+    // historical presence/structure behaviour and only the pixel claim is refused.
+    fixture.declare(&[("a.bmp", OutcomeClass::Decoded)]);
+    let native = measured(&fixture, &[fixture.fake()], HELPER);
+    assert_eq!(native.output_policy, "native");
+    let observation = &native.observations[0];
+    assert_eq!(observation.validity, "presence_only");
+    assert_eq!(
+        observation.pixel_reason,
+        Some(pixels::PixelError::NotPng.as_str()),
+        "the absent digest still carries the oracle's own reason"
+    );
+
+    fixture.declare_expected(&[("a.bmp", Some((8, 4)), OutcomeClass::Decoded)]);
+    let native = measured(&fixture, &[fixture.fake()], HELPER);
+    assert_eq!(native.observations[0].validity, "structure_verified");
+
     fixture.declare_pixels(&[(
         "a.bmp",
         None,
         Some(pixels::sha256(&rgba_rgb_16(10))),
         OutcomeClass::Decoded,
     )]);
-    let report = measured(&fixture, &[fixture.fake()], HELPER);
-    let observation = &report.observations[0];
-    assert_eq!(observation.observed_outcome, OutcomeClass::Error);
+    let native = measured(&fixture, &[fixture.fake()], HELPER);
+    let observation = &native.observations[0];
     assert_eq!(observation.refusal, Some("pixel_unavailable"));
     assert_eq!(observation.validity_reason, Some("pixel_unavailable"));
-    assert_eq!(observation.pixel_digest, None);
     assert_eq!(
         observation.pixel_reason,
         Some(pixels::PixelError::NotPng.as_str())
     );
-    assert!(!observation.pixel_verified);
 }
 
 /// Phase 3 (2): same visible pixels but a different colour type/alpha — the digest
@@ -2180,7 +2348,7 @@ fn record_carries_the_pixel_fields_with_documented_nullability() {
     fixture.case("a.png", "png-rgb-a");
     let report = measured(&fixture, &[fixture.fake()], HELPER);
     let observation = &report.observations[0];
-    assert_eq!(report.schema_version, 10);
+    assert_eq!(report.schema_version, 11);
     assert_eq!(observation.pixel_expectation, None);
     assert_eq!(
         observation.pixel_digest,
@@ -2193,7 +2361,7 @@ fn record_carries_the_pixel_fields_with_documented_nullability() {
     assert_eq!(observation.validity, "presence_only");
     let json = harness::render(&report).0;
     for field in [
-        "\"schema_version\": 10",
+        "\"schema_version\": 11",
         "\"pixel_expectation\": null",
         "\"pixel_verified\": false",
         "\"pixel_reason\": \"no_pixel_expectation\"",
@@ -2238,6 +2406,50 @@ fn record_carries_the_pixel_fields_with_documented_nullability() {
     assert!(json.contains("\"validity\": \"pixels_verified\""));
     // NIT-3: the capability row counts, the observation row is boolean.
     assert!(json.contains("\"pixels_verified\": 1"), "{json}");
+    // Schema 11: the record says which output policy produced it.
+    assert!(
+        json.contains("\"output_policy\": \"native\""),
+        "the default policy must be recorded: {json}"
+    );
+
+    // ACTIONABLE shape (b): no expectation and no output at all — the digest is absent and
+    // the reason is still closed (`no_output`), not a bare null.
+    std::fs::remove_file(fixture.cases.join("a.png")).unwrap();
+    fixture.case("c.png", "nooutput");
+    fixture.declare(&[("c.png", OutcomeClass::Decoded)]);
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let observation = &report.observations[0];
+    assert_eq!(observation.pixel_expectation, None);
+    assert!(!observation.output_present);
+    assert_eq!(observation.pixel_digest, None);
+    assert_eq!(observation.pixel_reason, Some("no_output"));
+
+    // ACTIONABLE shape (a): a declared raster, an output file that exists but is not a
+    // complete container, and an outcome that is not `Decoded` (a cancelled leg that left
+    // a partial file). The digest is absent and its reason is recorded.
+    std::fs::remove_file(fixture.cases.join("c.png")).unwrap();
+    fixture.case("partial.png", "partial-sleep");
+    fixture.declare_pixels(&[(
+        "partial.png",
+        Some((16, 16)),
+        Some(pixels::sha256(&rgba_rgb_16(10))),
+        OutcomeClass::Cancelled,
+    )]);
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 10_000;
+    config.cancel_after_ms = Some(150);
+    let report = harness::run(&config).unwrap();
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert!(
+        observation.output_present,
+        "the cancelled leg left a partial file"
+    );
+    assert!(!observation.inspected_complete);
+    assert_eq!(observation.pixel_digest, None);
+    assert_eq!(observation.pixel_reason, Some("output_incomplete"));
+    assert_eq!(observation.validity, "not_measured");
 }
 
 /// Item 1: a helper that allocates a known amount is sampled at least that large.
@@ -3647,7 +3859,7 @@ fn record_is_deterministic_sorted_and_carries_no_decision_field() {
     candidate_ids.truncate(4);
     assert_eq!(candidate_ids, vec!["absent", "fake", "absent", "fake"]);
     assert!(first_json.contains("\"resources\": ["));
-    assert!(first_json.contains("\"schema_version\": 10"));
+    assert!(first_json.contains("\"schema_version\": 11"));
     assert!(first_json.contains("\"exploratory\": true"));
     assert!(first_json.contains("\"numeric_gate\": \"NOT_RATIFIED\""));
     for decision in ["\"pass\"", "\"winner\"", "\"score\"", "\"selected\""] {
@@ -4256,10 +4468,21 @@ fn fake_candidate(support: ProbeSupport) {
             std::fs::write(&output, png_rgb_16(10)).unwrap();
             0
         }
+        // ACTIONABLE shape (a): write a complete IHDR and then an unfinished chunk, and
+        // outlive the deadline. The output file exists but is not a complete container, and
+        // the observed class is `cancelled` — the digest must still carry a reason.
+        "partial-sleep" => {
+            let mut bytes = png_signature();
+            bytes.extend_from_slice(&png_ihdr(16, 16, 2, 8));
+            bytes.extend_from_slice(&[0x00, 0x00, 0x00, 0x20]);
+            std::fs::write(&output, bytes).unwrap();
+            std::thread::sleep(std::time::Duration::from_secs(5));
+            0
+        }
         // Schema 10: behaves like the real transports — it writes the container the
-        // requested output name implies. If the harness ever goes back to naming the
-        // output after the case suffix, this leg writes BMP and can no longer be verified,
-        // which is exactly the gap the canonical PNG transport closes.
+        // requested output name implies. If the harness ever names the output after the
+        // case suffix, this leg writes BMP and can no longer be verified, which is exactly
+        // the gap the canonical PNG transport closes.
         "suffix-honest" => {
             let requested_png = std::path::Path::new(&output)
                 .extension()

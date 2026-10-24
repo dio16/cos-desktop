@@ -1,19 +1,20 @@
-//! Exploratory, decoder-neutral MP-IMG2 comparison harness (record schema v10).
+//! Exploratory, decoder-neutral MP-IMG2 comparison harness (record schema v11).
 //!
 //! This module is shared by the operator-run `decode_compare` example and its
 //! contract tests. It is not a product decoder, selects no decoder, links no
 //! FFmpeg and makes no numeric claim: the emitted record is explicitly
 //! exploratory and every value it contains was actually observed.
 //!
-//! Candidate process protocol (v10), fixed so that no argv element or decoder path
+//! Candidate process protocol (v11), fixed so that no argv element or decoder path
 //! can be derived from media metadata. Three transports exist and all of them pass
 //! argv as a separate argument vector; no command string is ever built, quoted or
 //! interpreted:
 //!
 //! - executable: `-i <absolute case path> <absolute output path>`, identity probe
-//!   `--version` then `-version`. The output path always ends in `.png`, so a
-//!   format-inferring tool is asked for a **canonical PNG** instead of a copy of the
-//!   input container.
+//!   `--version` then `-version`. The output name depends on the selected
+//!   [`OutputPolicy`]: `native` (the default) keeps the case suffix, so the candidate
+//!   writes its own container, and `canonical-png` appends `.png` so the candidate is
+//!   asked for a lossless PNG re-encode of the same decode.
 //! - pwsh script (`--candidate id=pwsh:<absolute script.ps1>`): the interpreter is
 //!   launched by name with
 //!   `-NoProfile -File <script> -InputPath <in> -OutputPath <out> [-MaxPixels N]`
@@ -26,19 +27,28 @@
 //!   in [`ENV_INPUT`], [`ENV_OUTPUT`] and [`ENV_PROBE`], because a libtest helper
 //!   process's argv is not free.
 //!
-//! Why a canonical PNG output (schema 10): MP-IMG2 compares the **decoded raster** of
-//! the candidates, not the container each candidate would choose for its own output.
-//! The case suffix used to be appended to the executable transport's output name, so a
-//! JPEG input produced a JPEG output and the in-repo 8-bit PNG oracle could not read it;
-//! a declared `pixels:<sha256>` expectation then verified the script legs only and
-//! demoted the executable leg to `pixel_unavailable`, i.e. pixel verification silently
-//! applied to one candidate. Every leg is now asked for a lossless PNG re-encode of its
-//! own decode, so one expected raster can be checked against every leg that decoded. The
-//! observed cost is explicit: `inspected_format` and the capability table now describe the
-//! **transport container** (always PNG), not the container the candidate would have
-//! produced natively under the case suffix, and a candidate that ignores the requested
-//! `.png` output name is caught as `not_measured` with the oracle's own reason token
-//! rather than being silently structure-verified.
+//! Output policy (schema 11) — two modes, the historical one is the default. MP-IMG2
+//! compares the **decoded raster** of the candidates, not the container each candidate
+//! would choose for its own output, but changing that silently would change the meaning
+//! of every existing record. So the mode is operator-selected and recorded:
+//!
+//! - `--output-policy native` (default): the executable's output name keeps the case
+//!   suffix, exactly as before. A `.bmp` case is measured through a BMP output and a
+//!   `.jpg` case through a JPEG output, so a declared `pixels:<sha256>` expectation can
+//!   only verify a leg whose output the PNG oracle can read (the script legs); the other
+//!   leg is `pixel_unavailable` with a reason. The record carries
+//!   `output_policy: "native"`.
+//! - `--output-policy canonical-png`: every leg is asked for `<stem>.<candidate>.png`, so
+//!   one expected raster can be verified against every leg that decoded, whichever
+//!   container that leg would have chosen natively. A leg that nevertheless produces a
+//!   complete non-PNG container is a closed refusal — `error` with refusal
+//!   `output_container_not_canonical` and the same token as its `pixel_reason`, whatever
+//!   the case declares — and it contributes no decoded/capability row. The record carries
+//!   `output_policy: "canonical-png"`, and `inspected_format`/capability rows then describe
+//!   the transport container rather than a suffix-derived one.
+//!
+//! The script transport always writes `<stem>.<candidate>.wic.png`, which is already a
+//! canonical PNG, so the policy only changes executable output names.
 //!
 //! Candidate reasons: the first [`MAX_REASON_CHARS`]-bounded `"reason_code":"..."`
 //! token found in the captured stdout is mapped through [`KNOWN_REASONS`]. A token
@@ -122,27 +132,31 @@
 //! is ever fabricated: `pixel_digest` is `null` unless the oracle actually decoded the
 //! bytes.
 //!
-//! What `pixels_verified` establishes (schema 10): the declared SHA-256 names row-major
+//! What `pixels_verified` establishes (schema 11): the declared SHA-256 names row-major
 //! 8-bit RGBA samples of the **raster the candidate produced**, transported losslessly.
-//! The candidate decodes the input with its own decoder and writes a PNG; the harness's
-//! oracle reads that PNG and expands it to RGBA (an RGB output becomes R,G,B,255). The
-//! comparison is container-independent — the same expectation verifies a leg whose native
-//! container would have been JPEG, BMP or PNG — and it establishes that every verifying
-//! leg produced the same RGBA samples as the operator's independently computed
-//! expectation. It does **not** establish anything about the container a candidate would
-//! have written had the case suffix been used, nor colour management, profiles, bit depths
+//! In `canonical-png` mode the candidate decodes the input with its own decoder and writes
+//! a PNG, so the same expectation verifies a leg whose native container would have been
+//! JPEG, BMP or PNG; in `native` mode only a leg whose own output is a readable PNG can be
+//! verified. Either way the harness's oracle reads the output and expands it to RGBA (an
+//! RGB output becomes R,G,B,255), and `pixels_verified` means those samples equal the
+//! operator's independently computed expectation. It does **not** establish anything about
+//! a native container that was not produced, nor colour management, profiles, bit depths
 //! above 8, or that the candidate's own exit code was right: the oracle never trusts the
 //! candidate's claim.
 //!
-//! Digest versus claim (schema 10): the oracle runs on every complete decoded output, so
+//! Digest versus claim (schema 11): the oracle runs on every complete decoded output, so
 //! `pixel_digest` is populated whenever the bytes decode, with or without an operator
 //! expectation. Without an expectation `pixel_verified` stays false and `pixel_reason`
-//! names why no claim is made — `no_pixel_expectation` when the raster was decoded, the
-//! oracle's own token when the output could not be decoded, or `no_output` when the leg
-//! produced no output at all. A record can therefore compare two legs' rasters directly,
-//! and a missing digest always carries a reason. A lossy input (JPEG) has no independent
-//! exact raster, so such a case declares dimensions only and its rows carry each leg's
-//! digest with `no_pixel_expectation`.
+//! names why no claim is made — `no_pixel_expectation` when the raster was decoded. A
+//! **missing** digest always carries a reason, for every outcome and every expectation
+//! shape: the oracle's own token when a complete container could not be decoded,
+//! `output_unparsable`/`output_incomplete` when the output exists but is not a complete
+//! container (including a cancelled leg that left a partial file),
+//! `output_container_not_canonical` in `canonical-png` mode when the leg wrote another
+//! container, and `no_output` when the leg produced no output file at all. A record can
+//! therefore compare two legs' rasters directly, and an absent digest is never a bare
+//! null. A lossy input (JPEG) has no independent exact raster, so such a case declares
+//! dimensions only and its rows carry each leg's digest with `no_pixel_expectation`.
 //!
 //! What "verified" does not cover (NIT-1): the harness checks container structure,
 //! the declared dimensions and the decoded RGBA bytes — it does **not** recompute PNG
@@ -208,16 +222,19 @@
 //! documented five-column Windows layout, its PID column equals the supervised child and
 //! its memory column has the `12,000 K` form; anything else is `sample_parse_failed`.
 //!
-//! Schema 10 changes semantics, not shape: (a) every transport's measurement output is a
-//! canonical PNG, so `inspected_format` and the capability table describe the transport
-//! container rather than a suffix-derived one; (b) `pixel_digest` is populated for every
-//! complete decoded output even without a declared expectation, and `pixel_reason` then
-//! carries `no_pixel_expectation` (or the oracle's failure token); (c) as a consequence a
-//! `pixels:` expectation is no longer limited to PNG-capable legs — every leg that decodes
-//! is verified against the same raster or is `pixel_unavailable` with a reason. The field
-//! set and every field's nullability rule are unchanged, which is why this is a semantic
-//! version bump rather than an additive one; a reader that tolerates a populated
-//! `pixel_digest` beside `pixel_verified: false` reads schema 10 correctly.
+//! Schema 10 changed semantics, not shape: the measurement output became a canonical PNG,
+//! `pixel_digest` became populated for every complete decoded output, and a `pixels:`
+//! expectation stopped being limited to PNG-capable legs.
+//!
+//! Schema 11 changes shape **and** semantics: (a) it adds the `output_policy` field
+//! (`native` | `canonical-png`) so a reader can tell which mode produced a record; (b) it
+//! restores `native` as the default transport and keeps `canonical-png` as the explicit
+//! comparison mode, which refuses a non-PNG output as `output_container_not_canonical`
+//! whatever the case declares; (c) it makes the "a missing digest carries a reason"
+//! invariant true for every row, adding the `no_output` and
+//! `output_container_not_canonical` tokens. A schema-10 reader would not understand the
+//! new field or the new refusal token, so the version is bumped; everything else about the
+//! field set and nullability rules is unchanged.
 //!
 //! Capability rows are built only from observations that are `decoded`, complete, and
 //! whose validity is `presence_only`, `structure_verified` or `pixels_verified` (A1),
@@ -298,9 +315,11 @@ use std::{
 };
 
 /// Fixed record schema version; changing record semantics requires a new version.
-/// Schema 10: canonical PNG transport for every leg and a `pixel_digest` that is
-/// recorded for every decoded raster, not only for declared expectations.
-pub const SCHEMA_VERSION: u32 = 10;
+/// Schema 11 adds the `output_policy` field (an operator-selected mode, default
+/// `native`), records `pixel_reason` for every absent digest and refuses a non-PNG
+/// output in `canonical-png` mode. Schema 10 had made the canonical PNG transport
+/// unconditional and recorded a `pixel_digest` for every decoded raster.
+pub const SCHEMA_VERSION: u32 = 11;
 /// Refusal token for a run token whose directory already exists.
 pub const WORK_DIR_EXISTS: &str = "work_dir_exists";
 /// Fixed prefix of every per-run work-directory token.
@@ -336,7 +355,7 @@ const USAGE: &str = "usage: decode_compare --cases DIR --candidate ID=ABSOLUTE_E
 ID=pwsh:ABSOLUTE_PS1 [--candidate ...]... --out FILE [--timeout-ms N] \
 [--cancel-after-ms N] [--max-output-bytes N] [--max-output-file-bytes N] \
 [--max-cases N] [--max-observations N] [--max-pixels N] \
-[--sample-tool ABSOLUTE_LOCAL_EXE] [--sample-interval-ms N] [--max-samples N]";
+[--output-policy native|canonical-png] [--sample-tool ABSOLUTE_LOCAL_EXE] [--sample-interval-ms N] [--max-samples N]";
 const DEFAULT_TIMEOUT_MS: u64 = 5_000;
 const DEFAULT_MAX_OUTPUT_BYTES: usize = 8 * 1024;
 const DEFAULT_MAX_OUTPUT_FILE_BYTES: usize = 64 * 1024 * 1024;
@@ -400,6 +419,11 @@ const NO_EXPECTATION: &str = "no_expectation";
 const NO_PIXEL_EXPECTATION: &str = "no_pixel_expectation";
 /// `pixel_reason` when an expectation was declared but the leg produced no output at all.
 const NO_OUTPUT: &str = "no_output";
+/// Refusal (canonical-png mode only): the leg produced a complete container that is not a
+/// PNG, so the requested canonical transport did not happen. The row is an `error` with
+/// this token as its refusal and its `pixel_reason`; it never contributes a decoded or
+/// capability claim, whatever the case declares.
+const OUTPUT_CONTAINER_NOT_CANONICAL: &str = "output_container_not_canonical";
 /// Capability facts this harness never observes, with the reason it does not.
 const ORIENTATION_REASON: &str = "exif_orientation_not_parsed";
 const REGION_REASON: &str = "partial_decode_not_observed";
@@ -585,6 +609,40 @@ pub struct Expectation {
     pub pixel_digest: Option<[u8; 32]>,
 }
 
+/// Which output container every candidate is asked for (operator-selected mode).
+///
+/// The historical behaviour is [`Self::Native`] and stays the default: an executable's
+/// output name keeps the case suffix, so a `.bmp` case is measured through a BMP output
+/// and a `.jpg` case through a JPEG output. [`Self::CanonicalPng`] is the explicit
+/// comparison mode: every leg is asked for `<stem>.<candidate>.png` so one expected raster
+/// can be verified against every leg that decoded, whichever container that leg would have
+/// chosen natively. The selected policy is recorded in every record.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OutputPolicy {
+    /// Historical, default: the executable output carries the case suffix.
+    Native,
+    /// Explicit comparison mode: every leg is asked for a lossless canonical PNG.
+    CanonicalPng,
+}
+
+impl OutputPolicy {
+    /// Stable wire token used on the command line and in the record.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Native => "native",
+            Self::CanonicalPng => "canonical-png",
+        }
+    }
+
+    fn from_token(token: &str) -> Option<Self> {
+        Some(match token {
+            "native" => Self::Native,
+            "canonical-png" => Self::CanonicalPng,
+            _ => return None,
+        })
+    }
+}
+
 /// One validated comparison run configuration.
 #[derive(Debug)]
 pub struct Config {
@@ -601,6 +659,8 @@ pub struct Config {
     pub max_record_bytes: usize,
     /// Optional operator pixel bound forwarded to the script transport.
     pub max_pixels: Option<u64>,
+    /// Output-container policy (`--output-policy`, default [`OutputPolicy::Native`]).
+    pub output_policy: OutputPolicy,
     /// Interval between working-set samples; `0` disables sampling.
     pub sample_interval_ms: u64,
     /// Maximum number of working-set samples per observation.
@@ -723,6 +783,8 @@ pub struct Report {
     pub max_observations: usize,
     pub max_record_bytes: usize,
     pub max_pixels: Option<u64>,
+    /// Output-container policy this run used (`native` or `canonical-png`).
+    pub output_policy: &'static str,
     /// Sampling interval used for this run (`0` = sampling disabled).
     pub sample_interval_ms: u64,
     /// Sample cap used for this run.
@@ -875,6 +937,7 @@ where
     let mut max_cases = DEFAULT_MAX_CASES;
     let mut max_observations = DEFAULT_MAX_OBSERVATIONS;
     let mut max_pixels = None;
+    let mut output_policy = OutputPolicy::Native;
     let mut sample_tool: Option<PathBuf> = None;
     let mut sample_interval_ms = DEFAULT_SAMPLE_INTERVAL_MS;
     let mut max_samples = MAX_SAMPLES_LIMIT;
@@ -949,12 +1012,21 @@ where
                 }
                 max_pixels = Some(pixels);
             }
+            "--output-policy" => {
+                let value = take(&mut arguments, "--output-policy")?;
+                let text = value.to_string_lossy().into_owned().to_ascii_lowercase();
+                output_policy = OutputPolicy::from_token(&text).ok_or_else(|| {
+                    UsageError::new(format!(
+                        "--output-policy expects native or canonical-png, not {text:?}"
+                    ))
+                })?;
+            }
             other => {
                 return Err(UsageError::new(format!(
                     "unexpected argument {other:?}; expected one of --cases, --candidate, --out, \
                      --timeout-ms, --cancel-after-ms, --max-output-bytes, \
                      --max-output-file-bytes, --max-cases, --max-observations, --max-pixels, \
-                     --sample-tool, --sample-interval-ms, --max-samples"
+                     --output-policy, --sample-tool, --sample-interval-ms, --max-samples"
                 )));
             }
         }
@@ -1023,6 +1095,7 @@ where
         max_observations,
         max_record_bytes: MAX_RECORD_BYTES,
         max_pixels,
+        output_policy,
         sample_interval_ms,
         max_samples,
         cancel_after_ms,
@@ -1399,6 +1472,7 @@ fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, Usag
         max_observations: config.max_observations,
         max_record_bytes: config.max_record_bytes,
         max_pixels: config.max_pixels,
+        output_policy: config.output_policy.as_str(),
         sample_interval_ms: config.sample_interval_ms,
         max_samples: config.max_samples,
         cancel_after_ms: config.cancel_after_ms,
@@ -1618,15 +1692,19 @@ fn resolve_on_path(program: &str) -> Option<PathBuf> {
     None
 }
 
-/// The case output path: a **canonical PNG** for every transport (schema 10).
+/// The case output path for the selected [`OutputPolicy`].
 ///
-/// The comparison verifies a candidate's decoded raster, not the container it would
-/// choose for its own output, so both transports are asked for a lossless PNG re-encode
-/// and the case suffix is deliberately not part of the name. This is what lets one
-/// `pixels:<sha256>` expectation verify every leg that decoded, including a leg whose
-/// native container would have been BMP or JPEG. A candidate that writes another
-/// container to this name is caught by the oracle as `not_measured` with a reason token,
-/// never silently structure-verified.
+/// `Native` (the default) is the historical behaviour: an executable's output name keeps
+/// the case suffix, so a `.bmp` case is measured through a BMP output and a `.jpg` case
+/// through a JPEG output. `CanonicalPng` is the explicit comparison mode and asks every
+/// executable for a lossless PNG (`<stem>.<candidate>.png`), so one `pixels:<sha256>`
+/// expectation can verify every leg that decoded, whichever container that leg would have
+/// chosen natively. The script transport always writes `<stem>.<candidate>.wic.png`, which
+/// is already a canonical PNG, in both modes.
+///
+/// The policy is not a fallback: the default path is exactly the pre-existing one, and a
+/// run records which policy produced it so a reader can tell a native container from a
+/// canonicalised one.
 ///
 /// The candidate id is part of every name (B1): two candidates on the same case can
 /// therefore never share a path, so one candidate's output can never be attributed
@@ -1637,10 +1715,18 @@ pub fn output_path(
     case_index: usize,
     case_id: &str,
     candidate_id: &str,
+    suffix: &str,
+    policy: OutputPolicy,
 ) -> PathBuf {
     let stem = format!("{:03}_{}", case_index, sanitize_name(case_id));
     match program {
-        Program::Executable(_) => work.join(format!("{stem}.{candidate_id}.png")),
+        Program::Executable(_) => {
+            let extension = match policy {
+                OutputPolicy::Native => suffix,
+                OutputPolicy::CanonicalPng => "png",
+            };
+            work.join(format!("{stem}.{candidate_id}.{extension}"))
+        }
         Program::PwshScript(_) => work.join(format!("{stem}.{candidate_id}.wic.png")),
     }
 }
@@ -1960,20 +2046,22 @@ fn measure(
         refusal: None,
     };
     // Without a case suffix the input codec cannot be named in the record, so no child
-    // is started and nothing is claimed. Retained from schema 9 although the output
-    // container no longer depends on the suffix: every row stays attributable to a
-    // declared input format.
-    if case.suffix.is_none() {
+    // is started and nothing is claimed. In `native` mode the suffix is also the output
+    // container; in `canonical-png` mode it stays the recorded input-format evidence.
+    let Some(suffix) = case.suffix.as_deref() else {
         observation.observed_outcome = OutcomeClass::NotMeasured;
         observation.refusal = Some("extension_needed_for_output");
+        observation.pixel_reason = Some(NO_OUTPUT);
         return observation;
-    }
+    };
     let output = output_path(
         &candidate.program,
         paths.work,
         case_index,
         &case.id,
         &candidate.id,
+        suffix,
+        config.output_policy,
     );
     let stem = format!(
         "{:03}_{}.{}",
@@ -1984,12 +2072,14 @@ fn measure(
     if let Err(reason) = require_absent_output(&output) {
         observation.observed_outcome = OutcomeClass::NotRun;
         observation.refusal = Some(reason);
+        observation.pixel_reason = Some(NO_OUTPUT);
         return observation;
     }
     let Some((capture, stdout_stdio, stderr_stdio)) = CaptureFiles::open(paths.captures, &stem)
     else {
         observation.observed_outcome = OutcomeClass::NotRun;
         observation.refusal = Some("capture_uncreatable");
+        observation.pixel_reason = Some(NO_OUTPUT);
         return observation;
     };
     let mut command = Command::new(&launcher.command);
@@ -2107,11 +2197,27 @@ fn measure(
             observation.inspected_colour_type =
                 inspection.colour_type.unwrap_or(ColourType::NotMeasured);
             observation.inspected_colour_markers = inspection.colour_markers.clone();
-            // Phase 3 (schema 10): decode every complete output with the independent
-            // oracle. The digest is recorded whenever the bytes decode, with or without
-            // an operator expectation, so two legs' rasters can be compared directly from
-            // the record; only a declared expectation produces a verdict.
-            if output_present && inspection.complete {
+            // Canonical-png mode (BLOCKING 2): the requested transport is a PNG, so a leg
+            // that produced another container did not deliver what was asked for. That is
+            // a closed refusal whatever the case declares — it must never pass as
+            // `presence_only` or `structure_verified`, and it contributes no capability or
+            // resource row. Native mode keeps the historical behaviour untouched.
+            let not_canonical = config.output_policy == OutputPolicy::CanonicalPng
+                && output_present
+                && observation.observed_outcome == OutcomeClass::Decoded
+                && observation.inspected_format != Format::Png;
+            if not_canonical {
+                observation.observed_outcome = OutcomeClass::Error;
+                observation.refusal = Some(OUTPUT_CONTAINER_NOT_CANONICAL);
+            }
+            // Phase 3 (schema 11): every absent `pixel_digest` carries a closed
+            // `pixel_reason`, and every present one records the raster. The digest is
+            // recorded with or without an operator expectation, so two legs' rasters can be
+            // compared directly from the record; only a declared expectation produces a
+            // verdict.
+            if not_canonical {
+                observation.pixel_reason = Some(OUTPUT_CONTAINER_NOT_CANONICAL);
+            } else if output_present && inspection.complete {
                 match fs::File::open(&output) {
                     Ok(mut file) => match pixels::read_png(&mut file) {
                         Ok(image) => {
@@ -2147,14 +2253,16 @@ fn measure(
                         observation.pixel_reason = Some(pixels::PixelError::Unreadable.as_str());
                     }
                 }
-            } else if observation.observed_outcome == OutcomeClass::Decoded {
-                // Structurally not a usable container, so no digest exists. With an
+            } else if output_present {
+                // A file exists but is not a complete container, so no digest exists — for
+                // any outcome, including a cancelled leg that left a partial file. With an
                 // expectation the pixel verdict cannot be claimed either, and the reason
                 // must match the refusal that `verify` will produce (ANB-2): no dimensions
                 // at all means the output is unparsable, dimensions without a terminator
-                // means it is an incomplete container. Without an expectation the reason
-                // still explains the missing digest and nothing is demoted.
-                if observation.pixel_expectation.is_some() {
+                // means it is an incomplete container.
+                if observation.pixel_expectation.is_some()
+                    && observation.observed_outcome == OutcomeClass::Decoded
+                {
                     observation.pixel_status = PixelStatus::Unavailable;
                 }
                 observation.pixel_reason = Some(if inspection.dimensions().is_none() {
@@ -2162,11 +2270,11 @@ fn measure(
                 } else {
                     OUTPUT_INCOMPLETE
                 });
-            } else if observation.pixel_expectation.is_some() && !output_present {
-                // A raster was declared but this leg wrote no output at all (a rejected
-                // input or a silent success): say so instead of leaving the absence of a
-                // digest unexplained. The observation's own class and exit code carry why
-                // the leg failed.
+            } else {
+                // No output file at all (a rejected input, a silent success, or a rejected
+                // spawn): the same closed reason whether or not an expectation was
+                // declared. The observation's own class and exit code carry why the leg
+                // produced nothing.
                 observation.pixel_reason = Some(NO_OUTPUT);
             }
             let (validity, reason) = verify(
@@ -2222,6 +2330,7 @@ fn measure(
             } else {
                 "candidate_spawn_failed"
             });
+            observation.pixel_reason = Some(NO_OUTPUT);
         }
     }
     capture.release();
@@ -3139,6 +3248,11 @@ pub fn render(report: &Report) -> (String, usize) {
         json,
         "  \"max_pixels\": {},",
         number_field(report.max_pixels)
+    );
+    let _ = writeln!(
+        json,
+        "  \"output_policy\": {},",
+        quoted(report.output_policy)
     );
     let _ = writeln!(
         json,
