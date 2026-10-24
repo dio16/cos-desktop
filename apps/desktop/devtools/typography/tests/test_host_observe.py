@@ -1000,12 +1000,21 @@ class CleanupFailureTest(unittest.TestCase):
                 Path("screenshot.png"), False, unlink=denied
             )
         self.assertEqual(raised.exception.code, "CAPTURE_CLEANUP_FAILED")
-        emitted: list[str] = []
-        code = observe.exit_after_cleanup(
-            Path("screenshot.png"), False, unlink=denied, emit=emitted.append
+        code = observe.cleanup_failure_code(
+            Path("screenshot.png"), False, unlink=denied
         )
-        self.assertEqual(code, 1, "a failed cleanup must not report normal completion")
-        self.assertEqual(json.loads(emitted[0])["error"], "CAPTURE_CLEANUP_FAILED")
+        self.assertEqual(code, "CAPTURE_CLEANUP_FAILED")
+        doc, exit_code = observe.terminal_outcome(
+            {"ok": True, "result": "PASS"},
+            0,
+            None,
+            None,
+            Path("screenshot.png"),
+            False,
+            unlink=denied,
+        )
+        self.assertEqual(exit_code, 1, "a failed cleanup must not report normal completion")
+        self.assertNotIn('"ok": true', json.dumps(doc))
 
     def test_an_accepted_capture_is_not_deleted_by_the_cleanup_path(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -1013,12 +1022,116 @@ class CleanupFailureTest(unittest.TestCase):
             path.write_bytes(png(8, 8))
             observe.cleanup_unaccepted_capture(path, True)
             self.assertTrue(path.exists(), "accepted evidence must survive")
-            emitted: list[str] = []
-            self.assertEqual(
-                observe.exit_after_cleanup(path, True, emit=emitted.append), 0
+            self.assertIsNone(observe.cleanup_failure_code(path, True))
+            doc, exit_code = observe.terminal_outcome(
+                {"ok": True, "result": "PASS"}, 0, None, None, path, True
             )
-            self.assertEqual(emitted, [])
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(doc["ok"])
             self.assertTrue(path.exists())
+
+
+class TerminalUniquenessTest(unittest.TestCase):
+    def _record(self, screenshot: dict, result: str = "PASS") -> dict:
+        checks = [{"name": "screenshot_is_the_target_window", "status": "PASS", "detail": ""}]
+        return {
+            "window": dict(WINDOW),
+            "screenshot": screenshot,
+            "uia": {"status": "OBSERVED", "reason": "", "element_count": 1},
+            "checks": checks,
+            "result": result,
+        }
+
+    def test_a_cleanup_failure_emits_exactly_one_failure_document(self) -> None:
+        def denied(_path) -> None:
+            raise PermissionError(13, "denied")
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(png(640, 480))
+            record_path = Path(directory) / "observation.json"
+            record = self._record(
+                {"status": "NOT_MEASURED", "reason": "FOREGROUND_WAIT_EXPIRED"},
+                "PASS_WITH_NOT_MEASURED",
+            )
+            observe.write_record(record, record_path)
+            doc, exit_code = observe.terminal_outcome(
+                {"ok": True, "result": "PASS_WITH_NOT_MEASURED"},
+                0,
+                record,
+                record_path,
+                path,
+                False,
+                unlink=denied,
+            )
+            written = json.loads(record_path.read_text(encoding="utf-8"))
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(doc["error"], "CAPTURE_CLEANUP_FAILED")
+        self.assertNotIn('"ok": true', json.dumps(doc))
+        # The record cannot contradict the exit status.
+        self.assertEqual(written["result"], "FAIL")
+        self.assertEqual(written["cleanup_failure"], "CAPTURE_CLEANUP_FAILED")
+        self.assertEqual(written["screenshot"]["status"], "NOT_MEASURED")
+        self.assertNotIn("digest", written["screenshot"])
+        self.assertNotIn("path", written["screenshot"])
+
+    def test_a_normal_run_emits_exactly_one_success_document_after_cleanup(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(png(640, 480))
+            record_path = Path(directory) / "observation.json"
+            record = self._record(
+                {"status": "OBSERVED", "digest": observe.sha256_bytes(path.read_bytes())}
+            )
+            observe.write_record(record, record_path)
+            doc, exit_code = observe.terminal_outcome(
+                {"ok": True, "result": "PASS"}, 0, record, record_path, path, True
+            )
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(doc["ok"])
+        self.assertEqual(json.dumps(doc, separators=(",", ":")).count('"ok":true'), 1)
+        # An honest NOT_MEASURED run is also a single success document after cleanup.
+        doc, exit_code = observe.terminal_outcome(
+            {"ok": True, "result": "PASS_WITH_NOT_MEASURED"},
+            0,
+            self._record({"status": "NOT_MEASURED", "reason": "FOREGROUND_WAIT_EXPIRED"},
+                         "PASS_WITH_NOT_MEASURED"),
+            None,
+            None,
+            False,
+        )
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(doc["ok"])
+        self.assertEqual(json.dumps(doc, separators=(",", ":")).count('"ok":true'), 1)
+
+    def test_a_record_that_exists_but_whose_cleanup_failed_is_reported_as_failure(self) -> None:
+        def denied(_path) -> None:
+            raise PermissionError(13, "denied")
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(png(640, 480))
+            record_path = Path(directory) / "observation.json"
+            record = self._record(
+                {"status": "NOT_MEASURED", "reason": "FOREGROUND_WAIT_EXPIRED"},
+                "PASS_WITH_NOT_MEASURED",
+            )
+            observe.write_record(record, record_path)
+            doc, exit_code = observe.terminal_outcome(
+                {"ok": True, "result": "PASS_WITH_NOT_MEASURED"},
+                0,
+                record,
+                record_path,
+                path,
+                False,
+                unlink=denied,
+            )
+            written = json.loads(record_path.read_text(encoding="utf-8"))
+        self.assertEqual(exit_code, 1)
+        self.assertFalse(doc["ok"])
+        self.assertEqual(doc["error"], "CAPTURE_CLEANUP_FAILED")
+        self.assertEqual(written["result"], "FAIL")
+        self.assertEqual(written["cleanup_failure"], "CAPTURE_CLEANUP_FAILED")
 
 
 class NoDesktopStateChangeTest(unittest.TestCase):

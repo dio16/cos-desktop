@@ -942,20 +942,63 @@ def cleanup_unaccepted_capture(
         fail("CAPTURE_CLEANUP_FAILED")
 
 
-def exit_after_cleanup(
+def cleanup_failure_code(
     path: Path | None,
     accepted: bool,
     *,
     unlink: Any = None,
-    emit: Any = print,
-) -> int:
-    """Terminal cleanup: 0 when nothing needed deleting, 1 with a closed code otherwise."""
+) -> str | None:
+    """The closed cleanup failure code, or None when cleanup succeeded or was a no-op."""
     try:
         cleanup_unaccepted_capture(path, accepted, unlink=unlink)
     except ObserveError as error:
-        emit(json.dumps({"ok": False, "error": error.code}, separators=(",", ":")))
-        return 1
-    return 0
+        return error.code
+    return None
+
+
+def mark_cleanup_failure(record: dict[str, Any], path: Path) -> None:
+    """A record whose cleanup failed must not read as an accepted observation."""
+    record["cleanup_failure"] = "CAPTURE_CLEANUP_FAILED"
+    record["capture_refusal"] = "CAPTURE_CLEANUP_FAILED"
+    record["screenshot"] = {
+        "status": "NOT_MEASURED",
+        "reason": "CAPTURE_CLEANUP_FAILED",
+        "detail": "cleanup failed; the unaccepted capture is not recorded as evidence",
+    }
+    for check in record.get("checks", []):
+        if check.get("name") == "screenshot_is_the_target_window":
+            check["status"] = "FAIL"
+    record["result"] = "FAIL"
+    write_record(record, path)
+
+
+def terminal_outcome(
+    outcome: dict[str, Any] | None,
+    exit_code: int,
+    record: dict[str, Any] | None,
+    record_path: Path | None,
+    screenshot: Path | None,
+    accepted: bool,
+    *,
+    unlink: Any = None,
+) -> tuple[dict[str, Any], int]:
+    """The single terminal decision: cleanup first, then exactly one document.
+
+    A successful `ok: true` is only returned after cleanup succeeded; a cleanup failure
+    overrides any success-looking outcome and rewrites the record so it cannot claim an
+    accepted observation.
+    """
+    code = cleanup_failure_code(screenshot, accepted, unlink=unlink)
+    if code is not None:
+        if record is not None and record_path is not None:
+            try:
+                mark_cleanup_failure(record, record_path)
+            except ObserveError:
+                pass
+        return {"ok": False, "error": code}, 1
+    if outcome is None:
+        return {"ok": False, "error": "PROBE_FAILED"}, 1
+    return outcome, exit_code
 
 
 def finalise_screenshot(
@@ -1235,6 +1278,10 @@ def main(argv: list[str] | None = None) -> int:
     process: subprocess.Popen | None = None
     screenshot: Path | None = None
     accepted_capture = False
+    record: dict[str, Any] | None = None
+    record_path: Path | None = None
+    outcome: dict[str, Any] | None = None
+    exit_code = 1
     try:
         exe = Path(args.exe)
         if not exe.is_file():
@@ -1270,52 +1317,50 @@ def main(argv: list[str] | None = None) -> int:
             exe, exe_digest, observed, scale, analysis, stop_record, wait, binding
         )
         write_probe_record(out, document)
-        digest = write_record(record, out / "observation.json")
+        record_path = out / "observation.json"
+        digest = write_record(record, record_path)
         if (
             record["screenshot"]["status"] == "OBSERVED"
             and record["screenshot"].get("digest")
         ):
             accepted_capture = True
-        print(
-            json.dumps(
-                {
-                    "ok": True,
-                    "record": str(out / "observation.json"),
-                    "record_digest": digest,
-                    "result": record["result"],
-                    "window": {
-                        "title": record["window"]["title"],
-                        "width": record["window"]["width"],
-                        "height": record["window"]["height"],
-                    },
-                    "screenshot": (
-                        record["screenshot"]["digest"]
-                        if record["screenshot"]["status"] == "OBSERVED"
-                        else f"NOT_MEASURED:{record['screenshot']['reason']}"
-                    ),
-                    "foreground_wait": {
-                        "outcome": record["foreground_wait"]["outcome"],
-                        "elapsed_s": record["foreground_wait"].get("elapsed_s"),
-                    },
-                    "scale": record["scale"]["scale"],
-                    "ax_elements": record["uia"]["element_count"],
-                    "labels_missing": record["labels"]["missing_latin"]
-                    + record["labels"]["missing_japanese"],
-                    "mixed_script_count": record["labels"]["mixed_script_count"],
-                },
-                separators=(",", ":"),
-            )
-        )
-        return 2 if record["result"] == "FAIL" else 0
+        outcome = {
+            "ok": True,
+            "record": str(record_path),
+            "record_digest": digest,
+            "result": record["result"],
+            "window": {
+                "title": record["window"]["title"],
+                "width": record["window"]["width"],
+                "height": record["window"]["height"],
+            },
+            "screenshot": (
+                record["screenshot"]["digest"]
+                if record["screenshot"]["status"] == "OBSERVED"
+                else f"NOT_MEASURED:{record['screenshot']['reason']}"
+            ),
+            "foreground_wait": {
+                "outcome": record["foreground_wait"]["outcome"],
+                "elapsed_s": record["foreground_wait"].get("elapsed_s"),
+            },
+            "scale": record["scale"]["scale"],
+            "ax_elements": record["uia"]["element_count"],
+            "labels_missing": record["labels"]["missing_latin"]
+            + record["labels"]["missing_japanese"],
+            "mixed_script_count": record["labels"]["mixed_script_count"],
+        }
+        exit_code = 2 if record["result"] == "FAIL" else 0
     except ObserveError as error:
         if screenshot is not None:
             try:
                 remove_capture(screenshot)
             except ObserveError:
                 pass
-        print(json.dumps({"ok": False, "error": error.code}, separators=(",", ":")))
+        outcome = {"ok": False, "error": error.code}
+        exit_code = 1
     except (OSError, ValueError, TypeError):
-        print(json.dumps({"ok": False, "error": "PROBE_FAILED"}, separators=(",", ":")))
+        outcome = {"ok": False, "error": "PROBE_FAILED"}
+        exit_code = 1
     finally:
         if process is not None:
             try:
@@ -1327,9 +1372,16 @@ def main(argv: list[str] | None = None) -> int:
                 )
             except (OSError, subprocess.TimeoutExpired):
                 pass
-        if exit_after_cleanup(screenshot, accepted_capture) != 0:
-            raise SystemExit(1)
-    return 1
+        outcome, exit_code = terminal_outcome(
+            outcome,
+            exit_code,
+            record,
+            record_path,
+            screenshot,
+            accepted_capture,
+        )
+    print(json.dumps(outcome, separators=(",", ":")))
+    return exit_code
 
 
 def default_exe() -> Path:
