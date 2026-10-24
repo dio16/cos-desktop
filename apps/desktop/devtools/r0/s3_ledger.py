@@ -8,22 +8,39 @@ Ledger format (version 1): UTF-8 JSON Lines, one record per line, append-only.
 The first line is the header `{"record":"ledger_header","ledger_version":1}`; every
 later line is one run entry:
 
-    record          "run_entry"
-    entry_version   1
-    run_id          safe id, unique within the ledger
-    source          {"git_sha": <40/64 hex>|null, "worktree_digest": "sha256:..."|null}
-    candidate       {"id": safe id, "program_digest": "sha256:..."|null}
-    host            {"os": windows|linux|macos, "arch": x86_64|aarch64}
-    interpreter     {"name": safe id, "version": "X.Y.Z"}
-    start_utc/end_utc  ISO-8601 UTC seconds, end >= start
-    outcome         OBSERVED | CANCELLED | FAILED | NOT_MEASURED | NOT_IMPLEMENTED
-    counters        every name in COUNTERS, an integer when measured, `null` when not
-    entry_sha256    "sha256:" + SHA-256 of the canonical entry without this field
+    record            "run_entry"
+    entry_version     1
+    run_id            safe id, unique within the ledger
+    source            {"git_sha": <40/64 hex>|null, "worktree_digest": "sha256:..."|null}
+    candidate         {"id": safe id, "program_digest": "sha256:..."|null}
+    host              {"os": windows|linux|macos, "arch": x86_64|aarch64}
+    interpreter       {"name": safe id, "version": "X.Y.Z"}
+    start_utc/end_utc ISO-8601 UTC seconds, end >= start
+    outcome           OBSERVED | CANCELLED | FAILED | NOT_MEASURED | NOT_IMPLEMENTED
+    counters          every name in COUNTERS, an integer when measured, `null` when not
+    previous_sha256   the preceding record's digest (the header digest for the first
+                      entry)
+    entry_sha256      "sha256:" + SHA-256 of the canonical entry without this field
 
-The per-run digest covers the entry body serialized with sorted keys and no whitespace,
-so any later edit of a stored line is detected by `ledger verify` as DIGEST_MISMATCH.
+INTEGRITY GUARANTEE (exact wording): every stored record commits to its predecessor, so
+`ledger verify` detects a corrupted or hand-edited line, a deleted interior line, a
+reordered pair of entries and a changed header -- each as DIGEST_MISMATCH or
+LEDGER_CHAIN_BROKEN. The digests are unkeyed SHA-256, so they are evidence of
+*accidental* damage and of edits made without recomputing the chain, not cryptographic
+proof against an adversary who can rewrite the whole file: anyone able to recompute every
+digest can produce a self-consistent chain. Deleting the *last* line leaves a valid
+shorter chain, so `verify` and `summary` report the chain head as `ledger_digest`; record
+that value out of band to make truncation detectable later. The ledger therefore gives
+structural integrity, not adversarial tamper evidence, and it is never a substitute for
+the source-bound evidence bundle.
+
 An append writes the header once and then only ever adds a line: no existing byte is
-rewritten, and a duplicate `run_id` is refused.
+rewritten, a duplicate `run_id` is refused, and a file whose last line lacks the final
+newline gets the separator before the new record (never a concatenated, corrupted line).
+
+Concurrency: append is a single-writer developer tool. It takes no lock, so two
+concurrent appends may interleave or drop a record, and that is detected only by the
+next `load_ledger`/`verify` (as a malformed line, a chain break or a duplicate run id).
 
 Loading is bounded on three axes: the file (MAX_LEDGER_BYTES), the number of entries
 (MAX_LEDGER_ENTRIES) and a single line (MAX_ENTRY_BYTES). Each line is parsed with the
@@ -97,6 +114,7 @@ ERROR_CODES = (
     "LEDGER_ENTRY_LIMIT",
     "LEDGER_ENTRY_TOO_LARGE",
     "LEDGER_TOO_LARGE",
+    "LEDGER_CHAIN_BROKEN",
     "SCHEMA",
     "UNKNOWN_FIELD",
     "MISSING_FIELD",
@@ -113,7 +131,7 @@ IDENTITY_FIELDS = {"git_sha", "worktree_digest"}
 CANDIDATE_FIELDS = {"id", "program_digest"}
 HOST_FIELDS = {"os", "arch"}
 INTERPRETER_FIELDS = {"name", "version"}
-ENTRY_FIELDS = {
+BODY_FIELDS = {
     "record",
     "entry_version",
     "run_id",
@@ -125,8 +143,8 @@ ENTRY_FIELDS = {
     "end_utc",
     "outcome",
     "counters",
-    "entry_sha256",
 }
+ENTRY_FIELDS = BODY_FIELDS | {"previous_sha256", "entry_sha256"}
 
 SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 GIT_SHA = re.compile(r"^[0-9a-f]{40}([0-9a-f]{24})?$")
@@ -241,55 +259,82 @@ def validate_counters(value: Any) -> dict[str, int | None]:
     return counters
 
 
-def canonical(entry: dict[str, Any]) -> bytes:
-    """Deterministic bytes for the per-run digest: sorted keys, no whitespace."""
-    body = {key: value for key, value in entry.items() if key != "entry_sha256"}
+def canonical(record: dict[str, Any]) -> bytes:
+    """Deterministic bytes for a digest: sorted keys, no whitespace."""
+    body = {key: value for key, value in record.items() if key != "entry_sha256"}
     return json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()
 
 
-def entry_digest(entry: dict[str, Any]) -> str:
-    return "sha256:" + hashlib.sha256(canonical(entry)).hexdigest()
+def record_digest(record: dict[str, Any]) -> str:
+    return "sha256:" + hashlib.sha256(canonical(record)).hexdigest()
 
 
-def validate_entry(value: Any) -> dict[str, Any]:
-    """Validate one run entry, including its per-run digest."""
-    entry = _object(value, ENTRY_FIELDS)
-    if entry["record"] != RECORD_RUN:
+def header() -> dict[str, Any]:
+    return {"record": RECORD_HEADER, "ledger_version": LEDGER_VERSION}
+
+
+def header_digest() -> str:
+    return record_digest(header())
+
+
+def validate_body(value: Any) -> dict[str, Any]:
+    """Validate the operator-supplied part of an entry (no digest fields)."""
+    body = _object(value, BODY_FIELDS)
+    if body["record"] != RECORD_RUN:
         fail("INVALID_VALUE")
-    if entry["entry_version"] != ENTRY_VERSION:
+    if body["entry_version"] != ENTRY_VERSION:
         fail("LEDGER_VERSION")
     validated: dict[str, Any] = {
         "record": RECORD_RUN,
         "entry_version": ENTRY_VERSION,
-        "run_id": _text(entry["run_id"], SAFE_ID),
-        "source": validate_identity(entry["source"]),
-        "candidate": validate_candidate(entry["candidate"]),
-        "host": validate_host(entry["host"]),
-        "interpreter": validate_interpreter(entry["interpreter"]),
-        "start_utc": _text(entry["start_utc"], TIMESTAMP),
-        "end_utc": _text(entry["end_utc"], TIMESTAMP),
-        "outcome": entry["outcome"],
-        "counters": validate_counters(entry["counters"]),
-        "entry_sha256": _digest(entry["entry_sha256"]),
+        "run_id": _text(body["run_id"], SAFE_ID),
+        "source": validate_identity(body["source"]),
+        "candidate": validate_candidate(body["candidate"]),
+        "host": validate_host(body["host"]),
+        "interpreter": validate_interpreter(body["interpreter"]),
+        "start_utc": _text(body["start_utc"], TIMESTAMP),
+        "end_utc": _text(body["end_utc"], TIMESTAMP),
+        "outcome": body["outcome"],
+        "counters": validate_counters(body["counters"]),
     }
     if validated["outcome"] not in OUTCOMES:
         fail("INVALID_VALUE")
     if validated["end_utc"] < validated["start_utc"]:
         fail("INVALID_VALUE")
-    if entry_digest(validated) != validated["entry_sha256"]:
-        fail("DIGEST_MISMATCH")
     return validated
+
+
+def seal(body: dict[str, Any], previous_sha256: str | None) -> dict[str, Any]:
+    """Fill the chain link and the per-run digest; the tool does this, never the caller."""
+    entry = dict(body)
+    entry["previous_sha256"] = previous_sha256
+    entry["entry_sha256"] = record_digest(entry)
+    return entry
+
+
+def validate_entry(value: Any, *, previous_sha256: str | None) -> dict[str, Any]:
+    """Validate one stored entry, its chain link and its per-run digest."""
+    entry = _object(value, ENTRY_FIELDS)
+    body = validate_body({key: entry[key] for key in BODY_FIELDS})
+    link = entry["previous_sha256"]
+    if link is not None:
+        link = _digest(link)
+    stored = _digest(entry["entry_sha256"])
+    sealed = {**body, "previous_sha256": link, "entry_sha256": stored}
+    if record_digest(sealed) != stored:
+        fail("DIGEST_MISMATCH")
+    if link != previous_sha256:
+        # The chain commits to its predecessor: a deleted, reordered or inserted record
+        # breaks here instead of silently verifying.
+        fail("LEDGER_CHAIN_BROKEN")
+    return sealed
 
 
 # --------------------------------------------------------------------------- ledger
 
 
-def _header() -> dict[str, Any]:
-    return {"record": RECORD_HEADER, "ledger_version": LEDGER_VERSION}
-
-
-def _encode(document: dict[str, Any]) -> str:
-    return json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+def _encode(record: dict[str, Any]) -> str:
+    return json.dumps(record, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
 
 
 def _read_bytes(path: str) -> bytes:
@@ -330,11 +375,11 @@ def _parse_line(text: str, line: int) -> Any:
 
 
 def load_ledger(path: str) -> list[dict[str, Any]]:
-    """Read the append-only ledger: one header line, then run entries.
+    """Read the append-only ledger: one header line, then the chained run entries.
 
-    Bounded on three axes (file size, entry count, entry size); the first line must be
-    the versioned header and every later line a validated run entry with a matching
-    per-run digest.
+    Bounded on three axes (file size, entry count, entry size). The first line must be
+    the versioned header, every later line a validated run entry whose `previous_sha256`
+    is the preceding record's digest (the header digest for the first entry).
     """
     data = _read_bytes(path)
     try:
@@ -352,61 +397,84 @@ def load_ledger(path: str) -> list[dict[str, Any]]:
             fail("MALFORMED_JSON", line=index)
     if len(lines) - 1 > MAX_LEDGER_ENTRIES:
         fail("LEDGER_ENTRY_LIMIT")
-    header = _parse_line(lines[0], 1)
-    if not isinstance(header, dict) or "record" not in header:
+    parsed_header = _parse_line(lines[0], 1)
+    if not isinstance(parsed_header, dict) or parsed_header.get("record") != RECORD_HEADER:
         fail("LEDGER_HEADER_INVALID")
-    if header.get("record") != RECORD_HEADER:
+    if set(parsed_header) != HEADER_FIELDS:
         fail("LEDGER_HEADER_INVALID")
-    if set(header) != HEADER_FIELDS:
-        fail("LEDGER_HEADER_INVALID")
-    if header.get("ledger_version") != LEDGER_VERSION:
+    if parsed_header.get("ledger_version") != LEDGER_VERSION:
         fail("LEDGER_VERSION")
+    previous: str | None = record_digest(parsed_header)
     entries: list[dict[str, Any]] = []
     seen: set[str] = set()
     for index, line in enumerate(lines[1:], start=2):
         entry = _parse_line(line, index)
         try:
-            validated = validate_entry(entry)
+            validated = validate_entry(entry, previous_sha256=previous)
         except LedgerError as error:
             # The line is what an operator needs; the code stays closed.
             fail(error.code, line=error.line if error.line is not None else index)
         if validated["run_id"] in seen:
             fail("DUPLICATE_RUN", line=index)
         seen.add(validated["run_id"])
+        previous = validated["entry_sha256"]
         entries.append(validated)
     return entries
 
 
-def append_entry(path: str, entry: dict[str, Any]) -> dict[str, Any]:
+def chain_head(entries: list[dict[str, Any]]) -> str:
+    """The digest a consumer should record out of band to detect truncation later."""
+    return entries[-1]["entry_sha256"] if entries else header_digest()
+
+
+def append_entry(path: str, body: dict[str, Any]) -> dict[str, Any]:
     """Append one run entry without rewriting a single existing byte."""
-    validated = validate_entry(entry)
+    validated = validate_body(body)
     target = Path(path)
+    entries: list[dict[str, Any]] = []
     if target.exists():
         entries = load_ledger(path)
         if any(existing["run_id"] == validated["run_id"] for existing in entries):
             fail("DUPLICATE_RUN")
         existing_lines = len(entries)
         prefix = ""
+        separator = ""
+        if target.stat().st_size > 0:
+            with open(target, "rb") as handle:
+                handle.seek(-1, 2)
+                # A2: never concatenate onto a record that lacks its newline.
+                separator = "" if handle.read(1) == b"\n" else "\n"
+        previous = chain_head(entries)
     else:
         existing_lines = 0
-        prefix = _encode(_header()) + "\n"
+        prefix = _encode(header()) + "\n"
+        separator = ""
+        previous = header_digest()
     if existing_lines + 1 > MAX_LEDGER_ENTRIES:
         fail("LEDGER_ENTRY_LIMIT")
-    line = _encode(validated)
+    entry = seal(validated, previous)
+    line = _encode(entry)
     if len(line.encode("utf-8")) > MAX_ENTRY_BYTES:
         fail("LEDGER_ENTRY_TOO_LARGE")
-    if target.exists() and target.stat().st_size + len(line) + 1 > MAX_LEDGER_BYTES:
+    addition = prefix + separator + line + "\n"
+    if target.exists() and target.stat().st_size + len(addition) > MAX_LEDGER_BYTES:
         fail("LEDGER_TOO_LARGE")
     with open(target, "a", encoding="utf-8", newline="\n") as handle:
-        handle.write(prefix + line + "\n")
-    return {"run_id": validated["run_id"], "entry_sha256": validated["entry_sha256"],
-            "entries": existing_lines + 1}
+        handle.write(addition)
+    return {
+        "run_id": entry["run_id"],
+        "entry_sha256": entry["entry_sha256"],
+        "previous_sha256": entry["previous_sha256"],
+        "entries": existing_lines + 1,
+        "ledger_digest": chain_head(entries + [entry]),
+    }
 
 
 def verify_ledger(path: str) -> dict[str, Any]:
     entries = load_ledger(path)
     return {"entries": len(entries),
-            "run_ids": [entry["run_id"] for entry in entries]}
+            "run_ids": [entry["run_id"] for entry in entries],
+            "ledger_digest": chain_head(entries)}
 
 
 # --------------------------------------------------------------------------- summary
@@ -455,6 +523,7 @@ def summarise(entries: list[dict[str, Any]]) -> dict[str, Any]:
             counters[name] = {"status": "OBSERVED", "value": total, "runs": measured}
     return {
         "ledger_version": LEDGER_VERSION,
+        "ledger_digest": chain_head(entries),
         "entries_total": len(entries),
         "contributing": contributing,
         "excluded": excluded,
@@ -476,15 +545,15 @@ def main(argv: list[str] | None = None) -> int:
     append_parser = ledger_commands.add_parser("append", help="append one validated run entry")
     append_parser.add_argument("--ledger", required=True)
     append_parser.add_argument("--entry", required=True)
-    verify_parser = ledger_commands.add_parser("verify", help="verify every per-run digest")
+    verify_parser = ledger_commands.add_parser("verify", help="verify the digest chain")
     verify_parser.add_argument("--ledger", required=True)
     summary_parser = commands.add_parser("summary", help="aggregate with provenance")
     summary_parser.add_argument("--ledger", required=True)
     args = parser.parse_args(argv)
     try:
         if args.operation == "ledger" and args.ledger_operation == "append":
-            entry = contracts.load_document(args.entry, MAX_ENTRY_BYTES)
-            appended = append_entry(args.ledger, entry)
+            body = contracts.load_document(args.entry, MAX_ENTRY_BYTES)
+            appended = append_entry(args.ledger, body)
             result = {"ok": True, **appended}
         elif args.operation == "ledger":
             verified = verify_ledger(args.ledger)

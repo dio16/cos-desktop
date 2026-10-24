@@ -12,15 +12,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import s3_ledger as s3  # noqa: E402
 
-DIGEST = "sha256:" + "0" * 64
 PROGRAM = "sha256:" + "1" * 64
 WORKTREE = "sha256:" + "2" * 64
 
 
-def entry(run_id: str, *, outcome: str = "OBSERVED", git_sha: str | None = "a" * 40,
-          counters: dict | None = None) -> dict:
-    """One valid run entry, digest included."""
-    body = {
+def body(run_id: str, *, outcome: str = "OBSERVED", git_sha: str | None = "a" * 40,
+         counters: dict | None = None) -> dict:
+    """One valid entry body (no digest fields): what an operator or producer supplies."""
+    return {
         "record": s3.RECORD_RUN,
         "entry_version": s3.ENTRY_VERSION,
         "run_id": run_id,
@@ -33,18 +32,26 @@ def entry(run_id: str, *, outcome: str = "OBSERVED", git_sha: str | None = "a" *
         "outcome": outcome,
         "counters": {name: (counters or {}).get(name) for name in s3.COUNTERS},
     }
-    body["entry_sha256"] = s3.entry_digest(body)
-    return body
+
+
+def sealed_chain(bodies: list[dict]) -> list[str]:
+    """Seal bodies into a chain: the header digest first, then each entry's digest."""
+    previous = s3.header_digest()
+    lines = []
+    for item in bodies:
+        entry = s3.seal(s3.validate_body(item), previous)
+        previous = entry["entry_sha256"]
+        lines.append(s3._encode(entry))
+    return lines
 
 
 def header_line() -> str:
-    return s3._encode(s3._header())
+    return s3._encode(s3.header())
 
 
-def write_ledger(path: Path, entries: list[dict], *, header: str | None = None) -> None:
-    lines = [header_line() if header is None else header]
-    lines.extend(s3._encode(entry) for entry in entries)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+def write_ledger(path: Path, bodies: list[dict], *, newline: bool = True) -> None:
+    lines = [header_line(), *sealed_chain(bodies)]
+    path.write_text("\n".join(lines) + ("\n" if newline else ""), encoding="utf-8")
 
 
 def invoke(*arguments: str) -> subprocess.CompletedProcess:
@@ -63,29 +70,43 @@ class S3LedgerContract(unittest.TestCase):
     # ------------------------------------------------------------------ append
 
     def test_append_never_rewrites_an_existing_record(self) -> None:
-        first = entry("run-a")
-        s3.append_entry(str(self.path), first)
+        first = s3.append_entry(str(self.path), body("run-a"))
         before = self.path.read_bytes()
-        s3.append_entry(str(self.path), entry("run-b", counters={"frames_observed": 3}))
+        second = s3.append_entry(
+            str(self.path), body("run-b", counters={"frames_observed": 3}))
         after = self.path.read_bytes()
         self.assertTrue(after.startswith(before), "an append must not touch existing bytes")
         self.assertEqual(len(after.splitlines()), 3, "header plus two entries")
+        # The chain links the header to the first entry and the entries to each other.
+        self.assertEqual(first["previous_sha256"], s3.header_digest())
+        self.assertEqual(second["previous_sha256"], first["entry_sha256"])
+        self.assertEqual(second["ledger_digest"], second["entry_sha256"])
 
     def test_duplicate_run_id_is_refused(self) -> None:
-        s3.append_entry(str(self.path), entry("run-a"))
+        s3.append_entry(str(self.path), body("run-a"))
         with self.assertRaises(s3.LedgerError) as error:
-            s3.append_entry(str(self.path), entry("run-a"))
+            s3.append_entry(str(self.path), body("run-a"))
         self.assertEqual(error.exception.code, "DUPLICATE_RUN")
-        # A ledger assembled by hand with a duplicate is refused as well.
-        write_ledger(self.path, [entry("run-a"), entry("run-a")])
+        write_ledger(self.path, [body("run-a"), body("run-a")])
         with self.assertRaises(s3.LedgerError) as error:
             s3.load_ledger(str(self.path))
         self.assertEqual(error.exception.code, "DUPLICATE_RUN")
 
-    # -------------------------------------------------------------- tampering
+    def test_append_after_a_missing_newline_does_not_corrupt(self) -> None:
+        """A2: a last line without its newline must not be concatenated onto."""
+        write_ledger(self.path, [body("run-a")], newline=False)
+        self.assertTrue(self.path.read_bytes().endswith(b"}"), "no trailing newline")
+        self.assertEqual(len(s3.load_ledger(str(self.path))), 1)
+
+        s3.append_entry(str(self.path), body("run-b"))
+        entries = s3.load_ledger(str(self.path))
+        self.assertEqual([entry["run_id"] for entry in entries], ["run-a", "run-b"])
+        self.assertTrue(self.path.read_bytes().endswith(b"\n"))
+
+    # ------------------------------------------------------- integrity / tamper
 
     def test_tampered_entry_is_detected(self) -> None:
-        write_ledger(self.path, [entry("run-a", counters={"frames_observed": 5})])
+        write_ledger(self.path, [body("run-a", counters={"frames_observed": 5})])
         text = self.path.read_text(encoding="utf-8")
         self.path.write_text(text.replace('"frames_observed":5', '"frames_observed":6'),
                              encoding="utf-8")
@@ -93,16 +114,47 @@ class S3LedgerContract(unittest.TestCase):
             s3.verify_ledger(str(self.path))
         self.assertEqual(error.exception.code, "DIGEST_MISMATCH")
 
+    def test_deleted_interior_line_breaks_the_chain(self) -> None:
+        write_ledger(self.path, [body("run-a"), body("run-b"), body("run-c")])
+        lines = self.path.read_text(encoding="utf-8").split("\n")
+        # Drop run-b: run-c still carries run-b's digest as its predecessor.
+        self.path.write_text("\n".join([lines[0], lines[1], lines[3]]) + "\n",
+                             encoding="utf-8")
+        with self.assertRaises(s3.LedgerError) as error:
+            s3.load_ledger(str(self.path))
+        self.assertEqual(error.exception.code, "LEDGER_CHAIN_BROKEN")
+
+    def test_reordered_entries_break_the_chain(self) -> None:
+        write_ledger(self.path, [body("run-a"), body("run-b")])
+        lines = self.path.read_text(encoding="utf-8").split("\n")
+        self.path.write_text("\n".join([lines[0], lines[2], lines[1]]) + "\n",
+                             encoding="utf-8")
+        with self.assertRaises(s3.LedgerError) as error:
+            s3.load_ledger(str(self.path))
+        self.assertEqual(error.exception.code, "LEDGER_CHAIN_BROKEN")
+
+    def test_truncated_tail_is_visible_through_the_ledger_digest(self) -> None:
+        """Documented residual: a dropped last line leaves a valid chain, so the head
+        digest is the anchor a consumer must record out of band."""
+        write_ledger(self.path, [body("run-a"), body("run-b")])
+        full = s3.verify_ledger(str(self.path))
+        lines = self.path.read_text(encoding="utf-8").split("\n")
+        self.path.write_text("\n".join(lines[:2]) + "\n", encoding="utf-8")
+        truncated = s3.verify_ledger(str(self.path))
+        self.assertEqual(truncated["entries"], 1)
+        self.assertNotEqual(truncated["ledger_digest"], full["ledger_digest"])
+
     # -------------------------------------------------------------- provenance
 
     def test_exclusion_provenance_and_not_measured_counters(self) -> None:
-        entries = [
-            entry("run-observed", counters={"frames_observed": 4, "scope_ns": 10}),
-            entry("run-failed", outcome="FAILED", counters={"frames_observed": 9}),
-            entry("run-cancelled", outcome="CANCELLED", counters={"frames_observed": 9}),
-            entry("run-not-measured", outcome="NOT_MEASURED"),
-            entry("run-unbound", git_sha=None),
-        ]
+        write_ledger(self.path, [
+            body("run-observed", counters={"frames_observed": 4, "scope_ns": 10}),
+            body("run-failed", outcome="FAILED", counters={"frames_observed": 9}),
+            body("run-cancelled", outcome="CANCELLED", counters={"frames_observed": 9}),
+            body("run-not-measured", outcome="NOT_MEASURED"),
+            body("run-unbound", git_sha=None),
+        ])
+        entries = s3.load_ledger(str(self.path))
         summary = s3.summarise(entries)
         self.assertEqual(summary["contributing"], ["run-observed"])
         self.assertEqual(
@@ -119,11 +171,10 @@ class S3LedgerContract(unittest.TestCase):
         self.assertEqual(summary["counters"]["dirty_frames"],
                          {"status": "NOT_MEASURED", "reason": "NO_RUN_MEASURED_THIS_COUNTER"})
         self.assertEqual(summary["runs"], {"status": "OBSERVED", "value": 1})
+        self.assertEqual(summary["ledger_digest"], entries[-1]["entry_sha256"])
 
     def test_unbound_source_never_contributes(self) -> None:
-        # A run may declare itself unbound (`null`), and the loader accepts it; the
-        # aggregation is what excludes it, with an explicit reason.
-        write_ledger(self.path, [entry("run-unbound", git_sha=None)])
+        write_ledger(self.path, [body("run-unbound", git_sha=None)])
         entries = s3.load_ledger(str(self.path))
         self.assertEqual(len(entries), 1)
         summary = s3.summarise(entries)
@@ -143,9 +194,8 @@ class S3LedgerContract(unittest.TestCase):
             "LEDGER_HEADER_INVALID": ['{"record":"something_else","ledger_version":1}'],
             "LEDGER_VERSION": ['{"record":"ledger_header","ledger_version":9}'],
             "LEDGER_EMPTY": [],
+            "MALFORMED_JSON_BLANK": [header_line(), "", "{}"],
         }
-        # A blank line inside the ledger is malformed, not skipped.
-        cases["MALFORMED_JSON_BLANK"] = [header_line(), "", "{}"]
         for code, lines in cases.items():
             self.path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
             with self.assertRaises(s3.LedgerError) as error:
@@ -154,10 +204,11 @@ class S3LedgerContract(unittest.TestCase):
             self.assertEqual(error.exception.code, expected, code)
 
     def test_invalid_entry_schema_is_named(self) -> None:
-        broken = entry("run-a")
-        broken["counters"].pop("scope_ns")
-        broken["entry_sha256"] = s3.entry_digest(broken)
-        self.path.write_text(header_line() + "\n" + s3._encode(broken) + "\n",
+        complete = body("run-a")
+        broken = {**complete, "counters": {name: complete["counters"][name]
+                                           for name in s3.COUNTERS if name != "scope_ns"}}
+        entry = s3.seal(broken, s3.header_digest())
+        self.path.write_text(header_line() + "\n" + s3._encode(entry) + "\n",
                              encoding="utf-8")
         with self.assertRaises(s3.LedgerError) as error:
             s3.load_ledger(str(self.path))
@@ -167,21 +218,18 @@ class S3LedgerContract(unittest.TestCase):
     # -------------------------------------------------------------------- caps
 
     def test_caps_are_enforced(self) -> None:
-        # Entry count.
-        write_ledger(self.path, [entry(f"run-{index:04d}") for index in
+        write_ledger(self.path, [body(f"run-{index:04d}") for index in
                                  range(s3.MAX_LEDGER_ENTRIES + 1)])
         with self.assertRaises(s3.LedgerError) as error:
             s3.load_ledger(str(self.path))
         self.assertEqual(error.exception.code, "LEDGER_ENTRY_LIMIT")
 
-        # Entry size: one oversized line is refused before parsing.
         self.path.write_text(header_line() + "\n" + "x" * (s3.MAX_ENTRY_BYTES + 1) + "\n",
                              encoding="utf-8")
         with self.assertRaises(s3.LedgerError) as error:
             s3.load_ledger(str(self.path))
         self.assertEqual(error.exception.code, "LEDGER_ENTRY_TOO_LARGE")
 
-        # Ledger size.
         self.path.write_bytes(b"x" * (s3.MAX_LEDGER_BYTES + 1))
         with self.assertRaises(s3.LedgerError) as error:
             s3.load_ledger(str(self.path))
@@ -199,10 +247,11 @@ class S3LedgerContract(unittest.TestCase):
         for name in s3.COUNTERS:
             self.assertEqual(summary["counters"][name],
                              {"status": "NOT_MEASURED", "reason": "NO_CONTRIBUTING_RUNS"})
+        self.assertEqual(summary["ledger_digest"], s3.header_digest())
 
     def test_summary_is_deterministic(self) -> None:
-        write_ledger(self.path, [entry("run-b", counters={"frames_observed": 1}),
-                                 entry("run-a", counters={"frames_observed": 2})])
+        write_ledger(self.path, [body("run-b", counters={"frames_observed": 1}),
+                                 body("run-a", counters={"frames_observed": 2})])
         first = invoke("summary", "--ledger", str(self.path))
         second = invoke("summary", "--ledger", str(self.path))
         self.assertEqual(first.returncode, 0, first.stdout)
@@ -215,7 +264,7 @@ class S3LedgerContract(unittest.TestCase):
 
     def test_cli_round_trip_and_help(self) -> None:
         entry_path = Path(self.directory.name) / "entry.json"
-        entry_path.write_text(json.dumps(entry("run-cli", counters={"frames_observed": 7})),
+        entry_path.write_text(json.dumps(body("run-cli", counters={"frames_observed": 7})),
                               encoding="utf-8")
         appended = invoke("ledger", "append", "--ledger", str(self.path),
                           "--entry", str(entry_path))
@@ -224,7 +273,10 @@ class S3LedgerContract(unittest.TestCase):
 
         verified = invoke("ledger", "verify", "--ledger", str(self.path))
         self.assertEqual(verified.returncode, 0, verified.stdout)
-        self.assertEqual(json.loads(verified.stdout)["entries"], 1)
+        verified_payload = json.loads(verified.stdout)
+        self.assertEqual(verified_payload["entries"], 1)
+        self.assertEqual(verified_payload["ledger_digest"],
+                         json.loads(appended.stdout)["entry_sha256"])
 
         summary = invoke("summary", "--ledger", str(self.path))
         self.assertEqual(summary.returncode, 0, summary.stdout)
@@ -246,7 +298,6 @@ class S3LedgerContract(unittest.TestCase):
         self.assertEqual(payload["line"], 2)
         self.assertNotIn(b"Traceback", result.stderr)
 
-        # A missing ledger is a closed read failure, not a traceback.
         missing = invoke("summary", "--ledger", str(self.path) + ".absent")
         self.assertEqual(missing.returncode, 1)
         self.assertEqual(json.loads(missing.stdout)["error"], "READ_FAILED")
