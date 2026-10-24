@@ -47,6 +47,9 @@ refused unless `--allow-caller-identity` explicitly falls back to caller-provide
 BUNDLE BOUNDS. Every retained-bundle read is bounded: at most 16 MiB for the file, 1 MiB
 per member we open, and 256 members in the archive. A violation is refused with the named
 codes `IMPORT_BUNDLE_LIMIT` / `IMPORT_BUNDLE_UNREADABLE` before anything is written.
+Corrupt, truncated or CRC-mismatched members and invalid compression streams are part of
+`IMPORT_BUNDLE_UNREADABLE`: every member open/read/close and the member listing are guarded,
+so a bad archive fails closed with a closed code and no traceback.
 
 PROVENANCE CONVENTION. The ledger entry schema is fixed, so the bundle digest is not
 embedded in the entry; it is reported in the import response as `identity.record_sha256`
@@ -80,6 +83,7 @@ import json
 import re
 import sys
 import zipfile
+import zlib
 from pathlib import Path
 from typing import Any, NoReturn
 
@@ -382,6 +386,23 @@ def import_result(
 # --------------------------------------------------------------------------- cli
 
 
+# Member reads can fail after construction: a CRC mismatch raises BadZipFile on close, an
+# invalid deflate stream raises zlib.error, a truncated member raises BadZipFile/EOFError,
+# an encrypted or unsupported member raises RuntimeError/NotImplementedError, and the
+# underlying stream can raise OSError. All of them are the same closed failure; `fail()`
+# raises S3ImportError, which is deliberately not in this tuple, so caps still report
+# IMPORT_BUNDLE_LIMIT.
+MEMBER_READ_ERRORS = (
+    zipfile.BadZipFile,
+    zlib.error,
+    EOFError,
+    OSError,
+    RuntimeError,
+    NotImplementedError,
+    ValueError,
+)
+
+
 def _bundle_member(archive: zipfile.ZipFile, name: str,
                    *, required: bool = True) -> bytes | None:
     """Read one archive member within the per-member bound; closed codes only."""
@@ -391,10 +412,16 @@ def _bundle_member(archive: zipfile.ZipFile, name: str,
         if required:
             fail("IMPORT_BUNDLE_UNREADABLE")
         return None
+    except MEMBER_READ_ERRORS:
+        fail("IMPORT_BUNDLE_UNREADABLE")
     if info.file_size > MAX_BUNDLE_MEMBER_BYTES:
         fail("IMPORT_BUNDLE_LIMIT")
-    with archive.open(name) as handle:
-        data = handle.read(MAX_BUNDLE_MEMBER_BYTES + 1)
+    try:
+        with archive.open(name) as handle:
+            data = handle.read(MAX_BUNDLE_MEMBER_BYTES + 1)
+    except MEMBER_READ_ERRORS:
+        # Includes the close-time CRC check; no traceback escapes the boundary.
+        fail("IMPORT_BUNDLE_UNREADABLE")
     if len(data) > MAX_BUNDLE_MEMBER_BYTES:
         fail("IMPORT_BUNDLE_LIMIT")
     return data
@@ -424,10 +451,15 @@ def _bundle_identity(
     digest = "sha256:" + hashlib.sha256(data).hexdigest()
     try:
         archive = zipfile.ZipFile(io.BytesIO(data))
-    except zipfile.BadZipFile:
+    except (zipfile.BadZipFile, zlib.error, EOFError, OSError, ValueError):
         fail("IMPORT_BUNDLE_UNREADABLE")
     with archive:
-        if len(archive.infolist()) > MAX_BUNDLE_MEMBERS:
+        try:
+            members = archive.infolist()
+        except MEMBER_READ_ERRORS:
+            # A member listing that cannot be parsed is the same closed failure.
+            fail("IMPORT_BUNDLE_UNREADABLE")
+        if len(members) > MAX_BUNDLE_MEMBERS:
             fail("IMPORT_BUNDLE_LIMIT")
         build_raw = _bundle_member(archive, f"{tag}/build-record.json")
         identity_raw = _bundle_member(archive, f"{tag}/source-identity.json")

@@ -178,6 +178,54 @@ class S3Replay(unittest.TestCase):
                 archive.writestr(member, data)
         return path
 
+    def corrupt_bundle(self, kind: str) -> Path:
+        """A bundle whose first member is CRC-corrupt, truncated or has a bad stream."""
+        path = Path(self.directory.name) / f"corrupt-{kind}.zip"
+        compression = (zipfile.ZIP_DEFLATED if kind == "deflate"
+                       else zipfile.ZIP_STORED)
+        with zipfile.ZipFile(path, "w", compression=compression) as archive:
+            archive.writestr("n02d/build-record.json", json.dumps({
+                "baseline_source_commit": "a" * 40,
+                "files": {"x": "sha256:" + "0" * 64},
+            }).encode())
+            archive.writestr("n02d/source-identity.json", json.dumps({
+                "files": {"x": "sha256:" + "0" * 64},
+            }).encode())
+        data = bytearray(path.read_bytes())
+        local = data.find(b"PK\x03\x04")
+        name_len = int.from_bytes(data[local + 26:local + 28], "little")
+        extra_len = int.from_bytes(data[local + 28:local + 30], "little")
+        start = local + 30 + name_len + extra_len
+        if kind == "crc":
+            data[start] ^= 0xFF
+        elif kind == "truncated":
+            declared = len(data) - start + 1
+            self.assertLess(declared, imp.MAX_BUNDLE_MEMBER_BYTES,
+                            "the truncated member must stay under the cap")
+            data[local + 18:local + 22] = declared.to_bytes(4, "little")
+            data[local + 22:local + 26] = declared.to_bytes(4, "little")
+            central = data.find(b"PK\x01\x02")
+            data[central + 20:central + 24] = declared.to_bytes(4, "little")
+            data[central + 24:central + 28] = declared.to_bytes(4, "little")
+        else:
+            data[start:start + 8] = b"\xff" * 8
+        path.write_bytes(bytes(data))
+        return path
+
+    def assert_bundle_fails_closed(self, kind: str) -> None:
+        path = self.corrupt_bundle(kind)
+        with self.assertRaises(imp.S3ImportError) as error:
+            imp._bundle_identity(str(path), "n02d")
+        self.assertEqual(error.exception.code, "IMPORT_BUNDLE_UNREADABLE")
+        result_path = self.write_result(run_document())
+        refused = self.cli("--result", str(result_path), "--ledger", str(self.ledger),
+                           "--bundle", str(path), *self.manifest_flags())
+        self.assertEqual(refused.returncode, 1)
+        self.assertEqual(json.loads(refused.stdout)["error"], "IMPORT_BUNDLE_UNREADABLE")
+        self.assertNotIn(b"Traceback", refused.stderr)
+        self.assertFalse(self.ledger.exists(),
+                         "a corrupt bundle must not create the ledger")
+
     # ---------------------------------------------------------------- case 1
     def test_canonical_result_round_trip(self) -> None:
         imported = import_document(run_document(), self.ledger,
@@ -547,6 +595,15 @@ class S3Replay(unittest.TestCase):
         with self.assertRaises(imp.S3ImportError) as error:
             imp._bundle_identity(str(path), "n02d")
         self.assertEqual(error.exception.code, "IMPORT_BUNDLE_LIMIT")
+
+    def test_member_with_a_corrupted_crc_fails_closed(self) -> None:
+        self.assert_bundle_fails_closed("crc")
+
+    def test_truncated_member_fails_closed(self) -> None:
+        self.assert_bundle_fails_closed("truncated")
+
+    def test_invalid_compression_stream_fails_closed(self) -> None:
+        self.assert_bundle_fails_closed("deflate")
 
     def test_bundle_unreadable_is_a_named_failure(self) -> None:
         path = self.write_zip("missing-member.zip", {"n02d/source-identity.json": b"{}"})
