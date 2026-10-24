@@ -2099,17 +2099,13 @@ fn working_set_is_not_measured_without_a_sample() {
 /// Item 3: the configured sample cap is enforced.
 #[test]
 fn working_set_sampling_respects_the_cap() {
+    let _guard = sampling_guard();
     let fixture = Fixture::new();
-    fixture.case("a.png", "sleep-long");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    // The injected helper keeps the per-sample cost low, so the cap is what is measured
-    // here rather than the machine's load.
-    inject_sampler(&mut config, "fake_sampler_valid_helper");
-    config.sample_interval_ms = 10;
+    // The injected helper keeps the per-sample cost low and the candidate waits for both
+    // samples, so the cap is what is measured here rather than the machine's load.
+    await_sampler(&fixture, &mut config, "fake_sampler_valid_helper", 2);
     config.max_samples = 2;
-    // Two serialised samples need well under a second even on a loaded machine; the
-    // deadline bounds the window by the harness clock, not by the child.
-    config.cancel_after_ms = Some(6_000);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -2122,7 +2118,6 @@ fn working_set_sampling_respects_the_cap() {
         "exactly the configured cap"
     );
     assert!(observation.working_set_max_bytes.is_some());
-    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
 }
 
 /// Item 4: an operator cancellation records both latencies and the `cancelled` class.
@@ -2254,16 +2249,14 @@ fn resource_and_capability_rows_exclude_cancelled_runs() {
 /// candidate lives long enough that the sampler really produces samples.
 #[test]
 fn sampled_record_is_deterministic_apart_from_documented_fields() {
+    let _guard = sampling_guard();
     let fixture = Fixture::new();
-    // A child that outlives the deadline: the sampling window is bounded by the harness
-    // clock, so a slow poll under load cannot empty it.
-    fixture.case("a.png", "sleep-long");
+    // The candidate ends the run once a sample has landed, so neither a slow spawn nor a
+    // late poll can empty the sampling window.
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.timeout_ms = 10_000;
-    inject_sampler(&mut config, "fake_sampler_valid_helper");
-    config.sample_interval_ms = 10;
-    config.cancel_after_ms = Some(3_000);
+    await_sampler(&fixture, &mut config, "fake_sampler_valid_helper", 1);
     let first = harness::run(&config).unwrap();
     let second = harness::run(&config).unwrap();
     assert!(
@@ -2482,13 +2475,11 @@ fn failure_after_a_success_discards_the_value_on_truncation() {
 /// refused; the attempt is counted and no value is taken.
 #[test]
 fn nonzero_sampler_exit_is_sample_tool_failed() {
+    let _guard = sampling_guard();
     let fixture = Fixture::new();
-    fixture.case("a.png", "sleep-long");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    inject_sampler(&mut config, "fake_sampler_failing_helper");
-    config.sample_interval_ms = 10;
+    await_sampler(&fixture, &mut config, "fake_sampler_failing_helper", 1);
     config.max_samples = 1;
-    config.cancel_after_ms = Some(1_500);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -2510,13 +2501,13 @@ fn nonzero_sampler_exit_is_sample_tool_failed() {
 /// and is refused.
 #[test]
 fn truncated_sample_capture_is_refused() {
+    let _guard = sampling_guard();
     let fixture = Fixture::new();
-    fixture.case("a.png", "sleep-long");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    inject_sampler(&mut config, "fake_sampler_truncating_helper");
+    await_sampler(&fixture, &mut config, "fake_sampler_truncating_helper", 1);
     config.sample_interval_ms = 10;
     config.max_samples = 1;
-    config.cancel_after_ms = Some(1_500);
+    config.cancel_after_ms = Some(60_000);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -2535,15 +2526,14 @@ fn truncated_sample_capture_is_refused() {
 /// produces the value — the new checks must not reject good samples.
 #[test]
 fn successful_sampler_still_records_the_value() {
+    let _guard = sampling_guard();
     let fixture = Fixture::new();
-    fixture.case("a.png", "sleep-long");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    inject_sampler(&mut config, "fake_sampler_valid_helper");
-    // The sampling window is bounded by the harness deadline, not by the child's
-    // lifetime: `sleep-long` outlives the deadline, the interval is small and the cap is
-    // the default, so neither a slow spawn nor a late poll can empty the window.
-    config.sample_interval_ms = 10;
-    config.cancel_after_ms = Some(3_000);
+    // The candidate ends the run once the sampler has landed, so a slow spawn cannot
+    // empty the window; the interval stays small and the cap is the default.
+    await_sampler(&fixture, &mut config, "fake_sampler_valid_helper", 1);
+    // A cap well above what the short window can reach, so  stays empty.
+    config.max_samples = 256;
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -2559,24 +2549,31 @@ fn successful_sampler_still_records_the_value() {
 /// value because the executed bytes are no longer the verified ones.
 #[test]
 fn tool_replaced_while_the_sampler_runs_discards_the_value() {
+    let _guard = sampling_guard();
     let fixture = Fixture::new();
     let tool = fixture.base.join("tool.exe");
     std::fs::copy(std::env::current_exe().unwrap(), &tool).unwrap();
-    fixture.case("a.png", "sleep-long");
+    // This test supplies its own tool path, so it sets the candidate mode directly.
+    fixture.case("a.png", "await-sampler");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.sample_tool = Some(tool.clone());
+    let sentinel = fixture.base.join("sampler.done");
+    let _ = std::fs::remove_file(&sentinel);
     config.sample_argv_prefix = vec![
         std::ffi::OsString::from("--exact"),
         std::ffi::OsString::from("fake_sampler_replacing_helper"),
         std::ffi::OsString::from("--nocapture"),
         std::ffi::OsString::from("--quiet"),
+        sentinel.into_os_string(),
     ];
     config.sample_interval_ms = 10;
     // Exactly one attempt, so no later pre-spawn check can mask a missing post-spawn
     // check: only the harvest-time verification can discard this value.
     config.max_samples = 1;
-    config.cancel_after_ms = Some(1_500);
+    // The candidate ends the run once the replaced sampler has finished; the bound only
+    // stops a broken helper from hanging the suite.
+    config.cancel_after_ms = Some(60_000);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -3271,22 +3268,19 @@ fn hanging_sampler_hits_the_sample_timeout() {
 /// the child lives far longer than the two allowed attempts.
 #[test]
 fn sample_cap_bounds_attempts_and_stops_spawning() {
+    let _guard = sampling_guard();
     let fixture = Fixture::new();
-    fixture.case("a.png", "sleep-long");
-    let counter = fixture.base.join("spawns.txt");
+    let sentinel = fixture.base.join("sampler.done");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    inject_sampler(&mut config, "fake_sampler_counting_helper");
-    config
-        .sample_argv_prefix
-        .push(counter.clone().into_os_string());
-    config.sample_interval_ms = 10;
+    // The completion sentinel is also the spawn log: one line per sampler run, written by
+    // the sampler itself, so the count is independent of the harness's bookkeeping.
+    await_sampler(&fixture, &mut config, "fake_sampler_counting_helper", 2);
     config.max_samples = 2;
-    config.cancel_after_ms = Some(3_000);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
-    let spawns = std::fs::read(&counter)
-        .map(|bytes| bytes.len())
+    let spawns = std::fs::read_to_string(&sentinel)
+        .map(|text| text.lines().count())
         .unwrap_or(0);
     assert_eq!(
         spawns, 2,
@@ -3303,32 +3297,28 @@ fn sample_cap_bounds_attempts_and_stops_spawning() {
         Some("sample_capped"),
         "the cap, not a failure, stopped sampling"
     );
-    assert!(
-        observation.wall_ms.unwrap() > 1_000,
-        "the child outlived the cap"
-    );
 }
 
 /// A2: a failure stops scheduling immediately, so the cap is never reached and
 /// `sample_capped` is not claimed.
 #[test]
 fn sampler_failure_stops_scheduling_before_the_cap() {
+    let _guard = sampling_guard();
     let fixture = Fixture::new();
-    fixture.case("a.png", "sleep-long");
-    let counter = fixture.base.join("spawns-fail.txt");
+    let sentinel = fixture.base.join("sampler.done");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    inject_sampler(&mut config, "fake_sampler_counting_garbage_helper");
-    config
-        .sample_argv_prefix
-        .push(counter.clone().into_os_string());
-    config.sample_interval_ms = 10;
+    await_sampler(
+        &fixture,
+        &mut config,
+        "fake_sampler_counting_garbage_helper",
+        1,
+    );
     config.max_samples = 5;
-    config.cancel_after_ms = Some(2_000);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
-    let spawns = std::fs::read(&counter)
-        .map(|bytes| bytes.len())
+    let spawns = std::fs::read_to_string(&sentinel)
+        .map(|text| text.lines().count())
         .unwrap_or(0);
     assert_eq!(spawns, 1, "one failing attempt, then no retry");
     assert_eq!(observation.working_set_attempts, 1);
@@ -3582,6 +3572,44 @@ fn system_tasklist() -> std::path::PathBuf {
         .join("tasklist.exe")
 }
 
+/// Sampling tests spawn this test binary as the sampler. Run concurrently on a loaded
+/// machine, several of those spawns can exceed the harness's per-sample bound (a
+/// documented `sample_timeout`), so the handshake tests take this lock and measure one at a
+/// time; the serialisation is test-local and does not change what they prove.
+static SAMPLING_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn sampling_guard() -> std::sync::MutexGuard<'static, ()> {
+    SAMPLING_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+/// Wire a sampling test so the candidate cannot exit before the sampler has finished:
+/// the test binary becomes the sample tool (with the sentinel as its extra argv element),
+/// the candidate waits for `samples` completions, and the run ends when the candidate
+/// exits instead of at a deadline. Nothing here depends on how fast the machine is.
+fn await_sampler(fixture: &Fixture, config: &mut harness::Config, helper: &str, samples: usize) {
+    // The requested count *is* the candidate mode, so a test cannot ask for two samples
+    // and then run a candidate that waits for one.
+    fixture.case(
+        "a.png",
+        if samples >= 2 {
+            "await2-sampler"
+        } else {
+            "await-sampler"
+        },
+    );
+    let sentinel = fixture.base.join("sampler.done");
+    let _ = std::fs::remove_file(&sentinel);
+    inject_sampler(config, helper);
+    config.sample_argv_prefix.push(sentinel.into_os_string());
+    config.sample_interval_ms = 10;
+    // Upper bounds only: the candidate ends the run once the samples have landed, and
+    // neither the child timeout nor the cancellation deadline may cut it short.
+    config.timeout_ms = 60_000;
+    config.cancel_after_ms = Some(60_000);
+}
+
 /// Point the harness at an in-test sampler helper: the test binary becomes the sample
 /// tool, with `--exact <helper>` as its argv prefix (the same seam shape as the
 /// candidate `Invocation::argv_prefix`).
@@ -3672,6 +3700,7 @@ fn fake_sampler_failing_helper() {
         return;
     }
     println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    mark_sampler_done();
     std::process::exit(1);
 }
 
@@ -3684,6 +3713,7 @@ fn fake_sampler_truncating_helper() {
         return;
     }
     println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    mark_sampler_done();
     let padding = "x".repeat(1024);
     for _ in 0..16 {
         println!("{padding}");
@@ -3705,10 +3735,12 @@ fn fake_sampler_replacing_helper() {
     }
     std::thread::sleep(std::time::Duration::from_millis(300));
     println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    mark_sampler_done();
 }
 
-/// A sampler that prints the exact Windows row for the supervised pid. When it runs as
-/// an ordinary test (no `/FI` argv) it does nothing, so the suite is unaffected.
+/// A sampler that prints the exact Windows row for the supervised pid and announces
+/// completion. When it runs as an ordinary test (no `/FI` argv) it does nothing, so the
+/// suite is unaffected.
 #[test]
 fn fake_sampler_valid_helper() {
     let pid = sampler_pid();
@@ -3716,6 +3748,7 @@ fn fake_sampler_valid_helper() {
         return;
     }
     println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    mark_sampler_done();
 }
 
 /// Append one byte to the counter file passed as the last argument, so the test can
@@ -3729,6 +3762,50 @@ fn sampler_counter_path() -> Option<std::path::PathBuf> {
     candidate
         .ends_with(".txt")
         .then(|| std::path::PathBuf::from(candidate))
+}
+
+/// The completion sentinel passed as the extra argv element right before `/FI`, so the
+/// sampler can tell the candidate that it has finished. This is what removes the timing
+/// dependency: the candidate cannot exit until the sampler has actually run.
+fn sampler_done_path() -> Option<std::path::PathBuf> {
+    let args: Vec<String> = std::env::args().collect();
+    let index = args.iter().position(|argument| argument == "/FI")?;
+    let candidate = args.get(index.checked_sub(1)?)?;
+    candidate
+        .ends_with(".done")
+        .then(|| std::path::PathBuf::from(candidate))
+}
+
+/// Announce one finished sample; a line per run lets a candidate wait for the second one.
+fn mark_sampler_done() {
+    if let Some(path) = sampler_done_path() {
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .unwrap();
+        use std::io::Write as _;
+        let _ = file.write_all(b"x\n");
+    }
+}
+
+/// Wait until at least `samples` samples have announced completion, then linger briefly so
+/// the harness harvests the last one before the candidate exits. The bound only stops a
+/// broken helper from hanging the suite; it is never the reason the test passes.
+fn await_samples(sentinel: &std::path::Path, samples: usize) -> bool {
+    let started = std::time::Instant::now();
+    while started.elapsed() < std::time::Duration::from_secs(60) {
+        if let Ok(text) = std::fs::read_to_string(sentinel)
+            && text.lines().count() >= samples
+        {
+            // One poll interval is enough for the harness to reap the sample; a short
+            // linger keeps the window below the attempt cap of the positive control.
+            std::thread::sleep(std::time::Duration::from_millis(150));
+            return true;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    false
 }
 
 fn count_spawn() {
@@ -3752,6 +3829,7 @@ fn fake_sampler_counting_helper() {
     }
     count_spawn();
     println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    mark_sampler_done();
 }
 
 /// A sampler that counts its spawns and prints an unparseable row.
@@ -3762,6 +3840,7 @@ fn fake_sampler_counting_garbage_helper() {
     }
     count_spawn();
     println!("\"fake.exe\",\"1\",\"Console\",\"1\",\"twelve megabytes\"");
+    mark_sampler_done();
 }
 
 /// A sampler whose row is garbage.
@@ -3917,6 +3996,24 @@ fn fake_candidate(support: ProbeSupport) {
             std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
             std::thread::sleep(std::time::Duration::from_millis(1_200));
             drop(block);
+            0
+        }
+        "await-sampler" | "await2-sampler" => {
+            // Stay alive until the sampler has actually finished (one or two samples), so
+            // no assertion depends on how fast the machine schedules a spawn.
+            let samples = if marker == "await2-sampler" { 2 } else { 1 };
+            let sentinel = std::path::Path::new(&input)
+                .parent()
+                .and_then(|cases| cases.parent())
+                .map(|base| base.join("sampler.done"));
+            let Some(sentinel) = sentinel else {
+                std::process::exit(9);
+            };
+            if !await_samples(&sentinel, samples) {
+                // A helper that never announces completion must not hang the suite.
+                std::process::exit(9);
+            }
+            std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
             0
         }
         "announce-sleep" => {
