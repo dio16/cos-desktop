@@ -29,7 +29,10 @@ fn generated(config: &WorkloadConfig) -> workload::Workload {
 fn switch_defaults_to_disabled_baseline() {
     let switch = RepresentationSwitch::default();
     assert!(!switch.is_enabled());
-    assert_eq!(switch.strategy(), RepresentationStrategy::BaselineArcMakeMut);
+    assert_eq!(
+        switch.strategy(),
+        RepresentationStrategy::BaselineArcMakeMut
+    );
     assert!(!RepresentationSwitch::disabled().is_enabled());
     assert!(RepresentationSwitch::enabled(RepresentationStrategy::EntityIndex).is_enabled());
 }
@@ -42,7 +45,12 @@ fn on_and_off_switch_produce_equal_observation_values() {
     for strategy in RepresentationStrategy::COMPARED {
         let enabled = observe_with_switch(RepresentationSwitch::enabled(strategy), &workload)
             .expect("the candidate replay matches the product baseline");
-        assert_eq!(enabled, disabled, "{} changed the observed values", strategy.id());
+        assert_eq!(
+            enabled,
+            disabled,
+            "{} changed the observed values",
+            strategy.id()
+        );
     }
 }
 
@@ -108,11 +116,9 @@ fn experiment_cannot_leak_into_default_product_behaviour() {
         .expect("the disabled path observes the product store");
     // A disabled switch ignores whatever strategy it names.
     for strategy in RepresentationStrategy::COMPARED {
-        let disabled = observe_with_switch(
-            RepresentationSwitch::disabled_naming(strategy),
-            &workload,
-        )
-        .expect("the disabled switch ignores the named strategy");
+        let disabled =
+            observe_with_switch(RepresentationSwitch::disabled_naming(strategy), &workload)
+                .expect("the disabled switch ignores the named strategy");
         assert_eq!(disabled, product);
     }
     // The product store itself produces exactly the disabled observation.
@@ -124,7 +130,7 @@ fn experiment_cannot_leak_into_default_product_behaviour() {
         expected_observations(&workload)
             .expect("the stream is valid")
             .first()
-            .cloned()
+            .map(|(_, values)| values.clone())
     );
 }
 
@@ -163,10 +169,12 @@ fn workload_is_deterministic_and_mixes_insert_update_and_remove() {
         "the workload must drop a snapshot handle"
     );
     let has_removal = first.transactions.iter().any(|transaction| {
-        transaction
-            .mutations
-            .iter()
-            .any(|mutation| matches!(mutation, desktop_protocol::ProjectionMutation::Remove { .. }))
+        transaction.mutations.iter().any(|mutation| {
+            matches!(
+                mutation,
+                desktop_protocol::ProjectionMutation::Remove { .. }
+            )
+        })
     });
     assert!(has_removal, "the workload must remove an entity");
 }
@@ -176,15 +184,15 @@ fn revision_cache_derives_fewer_tasks_than_the_baseline() {
     let workload = generated(&small());
     let baseline = run_strategy(&workload, RepresentationStrategy::BaselineArcMakeMut)
         .expect("baseline replay");
-    let cache = run_strategy(&workload, RepresentationStrategy::RevisionCache)
-        .expect("cache replay");
+    let cache =
+        run_strategy(&workload, RepresentationStrategy::RevisionCache).expect("cache replay");
     assert!(
         cache.counters.derivations < baseline.counters.derivations,
         "cache derivations {} must stay below baseline {}",
         cache.counters.derivations,
         baseline.counters.derivations
     );
-    assert_eq!(cache.counters.bytes_copied > 0, true);
+    assert!(cache.counters.bytes_copied > 0);
 }
 
 #[test]
@@ -192,8 +200,7 @@ fn entity_index_traverses_fewer_entries_than_the_baseline() {
     let workload = generated(&small());
     let baseline = run_strategy(&workload, RepresentationStrategy::BaselineArcMakeMut)
         .expect("baseline replay");
-    let index = run_strategy(&workload, RepresentationStrategy::EntityIndex)
-        .expect("index replay");
+    let index = run_strategy(&workload, RepresentationStrategy::EntityIndex).expect("index replay");
     assert!(
         index.counters.collection_traversals < baseline.counters.collection_traversals,
         "index traversals {} must stay below baseline {}",
@@ -222,6 +229,26 @@ fn documented_summary_covers_every_contract_size_within_bounds() {
                 facts.strategy.id(),
                 size.entities
             );
+        }
+    }
+}
+
+/// The 100k curve is reproducible on demand, not part of the fast test budget:
+/// `cargo test --locked -p cos-client --lib -- --ignored extended_summary`.
+#[test]
+#[ignore = "records the 100k exploratory curve on demand"]
+fn extended_summary_records_the_100k_curve() {
+    let report = run_experiment(&WorkloadConfig::extended()).expect("the extended summary runs");
+    assert_eq!(report.sizes().len(), WorkloadConfig::EXTENDED_SIZES.len());
+    for size in report.sizes() {
+        assert_eq!(size.entities, 112_500);
+        for facts in &size.strategies {
+            assert!(
+                facts.within_bound,
+                "{} exceeded its bound",
+                facts.strategy.id()
+            );
+            assert!(facts.counters.peak_live_bytes > 0);
         }
     }
 }

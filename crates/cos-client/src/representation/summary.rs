@@ -4,15 +4,16 @@
 //! stream per representation and never states a gate, an SLO or an adoption
 //! decision; identical inputs produce byte-identical output.
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::{
-    ExperimentCounters, RepresentationStrategy, SUMMARY_STATUS, WorkloadConfig, EXPERIMENT_ID,
-    EXPERIMENT_VERSION,
+    EXPERIMENT_ID, EXPERIMENT_VERSION, ExperimentCounters, RepresentationStrategy, SUMMARY_STATUS,
+    WorkloadConfig,
 };
 
 /// Accounting method recorded in the summary.
-pub(crate) const SUMMARY_ACCOUNTING: &str = "explicit logical-byte capacity counters (no allocator hook, no wall-clock measurement)";
+pub(crate) const SUMMARY_ACCOUNTING: &str =
+    "explicit logical-byte capacity counters (no allocator hook, no wall-clock measurement)";
 
 /// Fixed logical-byte overhead allowed for every strategy.
 const FIXED_OVERHEAD_BYTES: u64 = 64 * 1024;
@@ -119,6 +120,7 @@ impl ExperimentReport {
                 json!({
                     "entities": size.entities,
                     "transactions": size.transactions,
+                    "observation_stride": super::observation_stride(size.entities),
                     "strategies": strategies,
                 })
             })

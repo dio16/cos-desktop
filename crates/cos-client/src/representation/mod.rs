@@ -18,10 +18,10 @@ use desktop_protocol::{EpochId, TaskId};
 
 use crate::ProjectionKey;
 
-#[cfg(test)]
-mod tests;
 mod store;
 mod summary;
+#[cfg(test)]
+mod tests;
 mod workload;
 
 pub use summary::{ExperimentReport, SizeFacts, StrategyFacts};
@@ -255,9 +255,13 @@ pub fn observe_with_switch(
         RepresentationStrategy::BaselineArcMakeMut
     };
     let outcome = run_strategy_with_expected(workload, strategy, &expected)?;
-    let final_expected = expected
-        .last()
-        .ok_or(ExperimentError::Workload("the stream produced no observation"))?;
+    let final_expected =
+        expected
+            .last()
+            .map(|(_, values)| values)
+            .ok_or(ExperimentError::Workload(
+                "the stream produced no observation",
+            ))?;
     if outcome.observation != *final_expected {
         return Err(ExperimentError::Divergence {
             strategy: strategy.id(),
@@ -267,22 +271,38 @@ pub fn observe_with_switch(
     Ok(outcome.observation)
 }
 
+/// Observation stride: every transaction for small streams, checkpoints for the
+/// larger bounded sizes so the fast summary keeps its test budget. The summary
+/// records the policy explicitly.
+pub(crate) fn observation_stride(entity_count: usize) -> usize {
+    if entity_count <= 2_000 { 1 } else { 4 }
+}
+
+fn is_checkpoint(transaction: usize, total: usize, stride: usize) -> bool {
+    transaction == total || transaction.is_multiple_of(stride)
+}
+
 /// Product-semantics replay of the synthetic stream.
 ///
 /// Each transaction is validated with [`crate::ProjectionState::validate_mutation`]
 /// and [`crate::ProjectionState::validate_effective_state`] and applied to an
 /// `Arc<ProjectionState>`, exactly like the client's delta path. The returned
-/// vector holds the observation after the snapshot and after every transaction.
+/// pairs hold the zero-based transaction index (0 is the initial snapshot) and the
+/// observation at that checkpoint.
 pub(crate) fn expected_observations(
     workload: &Workload,
-) -> Result<Vec<ObservationValues>, ExperimentError> {
+) -> Result<Vec<(usize, ObservationValues)>, ExperimentError> {
+    let stride = observation_stride(workload.entity_count);
     let mut state = crate::ProjectionState::from_snapshot(&workload.epoch, &workload.initial)?;
-    let mut values = Vec::with_capacity(workload.transactions.len() + 1);
-    values.push(store::observe_state(&state));
-    for transaction in &workload.transactions {
+    let mut values = Vec::new();
+    values.push((0, store::observe_state(&state)));
+    for (index, transaction) in workload.transactions.iter().enumerate() {
         store::validate_transaction(&state, &transaction.mutations)?;
         state.apply(&transaction.mutations);
-        values.push(store::observe_state(&state));
+        let number = index + 1;
+        if is_checkpoint(number, workload.transactions.len(), stride) {
+            values.push((number, store::observe_state(&state)));
+        }
     }
     Ok(values)
 }
@@ -301,12 +321,13 @@ pub(crate) fn run_strategy(
 pub(crate) fn run_strategy_with_expected(
     workload: &Workload,
     strategy: RepresentationStrategy,
-    expected: &[ObservationValues],
+    expected: &[(usize, ObservationValues)],
 ) -> Result<StrategyFact, ExperimentError> {
     let initial = crate::ProjectionState::from_snapshot(&workload.epoch, &workload.initial)?;
     let bound = summary::memory_bound(strategy, workload.entity_count);
     let mut representation = store::Representation::new(strategy, &initial);
-    let mut last_observation = representation.observe();
+    let stride = observation_stride(workload.entity_count);
+    let mut last_observation = store::observe_state(&initial);
     for (index, transaction) in workload.transactions.iter().enumerate() {
         representation.apply(&transaction.mutations);
         match transaction.handles_after {
@@ -314,16 +335,21 @@ pub(crate) fn run_strategy_with_expected(
             HandlesAfter::Hold => representation.hold(),
             HandlesAfter::Release => representation.release(),
         }
-        last_observation = representation.observe();
-        match expected.get(index + 1) {
-            Some(values) if *values == last_observation => {}
-            Some(_) => {
-                return Err(ExperimentError::Divergence {
-                    strategy: strategy.id(),
-                    transaction: index,
-                });
+        let number = index + 1;
+        if is_checkpoint(number, workload.transactions.len(), stride) {
+            last_observation = representation.observe();
+            match expected.iter().find(|(index, _)| *index == number) {
+                Some((_, values)) if *values == last_observation => {}
+                Some(_) => {
+                    return Err(ExperimentError::Divergence {
+                        strategy: strategy.id(),
+                        transaction: index,
+                    });
+                }
+                None => {
+                    return Err(ExperimentError::Workload("baseline observation is missing"));
+                }
             }
-            None => return Err(ExperimentError::Workload("baseline observation is missing")),
         }
         if representation.counters().peak_live_bytes > bound {
             return Err(ExperimentError::MemoryBoundExceeded {

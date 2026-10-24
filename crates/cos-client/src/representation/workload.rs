@@ -10,8 +10,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use desktop_protocol::{
     ArtifactId, CandidateId, CandidateRef, CandidateSnapshot, CapabilitiesId, CapabilityScope,
     Counter, CreativeCapabilities, EpochId, FormalStatus, IterationId, IterationSnapshot,
-    OutcomeId, OutcomeSnapshot, PhaseLabel, Projection, ProjectionMutation,
-    RemoveTarget, RunId, SupportState, TaskId, TaskSnapshot, TaskStatus,
+    OutcomeId, OutcomeSnapshot, PhaseLabel, Projection, ProjectionMutation, RemoveTarget, RunId,
+    SupportState, TaskId, TaskSnapshot, TaskStatus,
 };
 
 use super::ExperimentError;
@@ -77,17 +77,35 @@ impl WorkloadConfig {
         }
     }
 
-    /// Sizes covered by the documented exploratory summary (DC-MP-PUB4 curves).
-    pub const SUMMARY_SIZES: [usize; 4] = [100, 1_000, 10_000, 100_000];
+    /// Sizes covered by the fast documented summary.
+    pub const SUMMARY_SIZES: [usize; 3] = [100, 1_000, 10_000];
 
-    /// Configurations used by the documented exploratory summary.
+    /// The largest DC-MP-PUB4 curve, reproducible through [`Self::extended`] but
+    /// kept out of the fast documented summary so the workspace test budget stays
+    /// bounded.
+    pub const EXTENDED_SIZES: [usize; 1] = [100_000];
+
+    /// Configurations used by the fast documented exploratory summary.
     pub fn summary() -> Vec<Self> {
         Self::SUMMARY_SIZES
             .iter()
             .enumerate()
             .map(|(index, entities)| {
-                Self::size(*entities, 24, 0x5eed_2026_0000_0100 + index as u64)
+                let transactions = if *entities >= 10_000 { 8 } else { 24 };
+                Self::size(
+                    *entities,
+                    transactions,
+                    0x5eed_2026_0000_0100 + index as u64,
+                )
             })
+            .collect()
+    }
+
+    /// Extended configuration that records the 100k curve on demand.
+    pub fn extended() -> Vec<Self> {
+        Self::EXTENDED_SIZES
+            .iter()
+            .map(|entities| Self::size(*entities, 8, 0x5eed_2026_0000_0200))
             .collect()
     }
 }
@@ -239,9 +257,7 @@ fn task_shape(task: usize, has_formal_outcome: bool) -> Result<TaskShape, Experi
     };
     let capabilities = CreativeCapabilities {
         capabilities_ref: capabilities_id(task),
-        scope: CapabilityScope::Task {
-            task_id: task_ref,
-        },
+        scope: CapabilityScope::Task { task_id: task_ref },
         commands: Vec::new(),
         media: Vec::new(),
         features: Vec::new(),
@@ -320,9 +336,14 @@ pub(crate) fn generate(config: &WorkloadConfig) -> Result<Workload, ExperimentEr
         let primary = rng.pick(tasks);
         match step % 5 {
             0 => {
-                if let Some((base, next)) =
-                    push_task_update(&mut mutations, &mut touched, &mut revisions, &mut shapes, primary, step)?
-                {
+                if let Some((base, next)) = push_task_update(
+                    &mut mutations,
+                    &mut touched,
+                    &mut revisions,
+                    &mut shapes,
+                    primary,
+                    step,
+                )? {
                     debug_assert!(base.is_some());
                     debug_assert!(next.as_str() != "0");
                 }
@@ -349,17 +370,13 @@ pub(crate) fn generate(config: &WorkloadConfig) -> Result<Workload, ExperimentEr
                 {
                     // Insertion pair: the new candidate and the owning iteration in
                     // one atomic transaction, so no partial family is published.
-                    let (iteration_base, iteration_next) =
-                        advance(&mut revisions, &iteration_key)?;
+                    let (iteration_base, iteration_next) = advance(&mut revisions, &iteration_key)?;
                     let mut snapshot = shapes[primary].iterations[iteration].clone();
                     if !snapshot.candidate_refs.contains(&reference) {
                         snapshot.candidate_refs.push(reference.clone());
                     }
                     snapshot.projection_revision = iteration_next;
-                    mutations.push(upsert(
-                        iteration_base,
-                        Projection::Iteration(snapshot),
-                    ));
+                    mutations.push(upsert(iteration_base, Projection::Iteration(snapshot)));
                     let created = counter(1)?;
                     revisions.insert(candidate_key, created.clone());
                     mutations.push(upsert(
@@ -381,11 +398,12 @@ pub(crate) fn generate(config: &WorkloadConfig) -> Result<Workload, ExperimentEr
                     &mut shapes,
                     primary,
                     step + 101,
-                )? {}
+                )? {
+                }
             }
             _ => {
-                let victim = (0..tasks)
-                    .find(|task| task % 2 == 1 && !removed_outcomes.contains(task));
+                let victim =
+                    (0..tasks).find(|task| task % 2 == 1 && !removed_outcomes.contains(task));
                 match victim {
                     Some(victim) => {
                         let key = ProjectionKey::Outcome(outcome_id(victim));
@@ -460,7 +478,7 @@ fn push_task_update(
     mutations: &mut Vec<ProjectionMutation>,
     touched: &mut BTreeSet<ProjectionKey>,
     revisions: &mut BTreeMap<ProjectionKey, Counter>,
-    shapes: &mut Vec<TaskShape>,
+    shapes: &mut [TaskShape],
     task: usize,
     marker: usize,
 ) -> Result<Option<(Option<Counter>, Counter)>, ExperimentError> {

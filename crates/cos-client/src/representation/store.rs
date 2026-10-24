@@ -33,24 +33,21 @@ fn candidate_bytes(snapshot: &CandidateSnapshot) -> u64 {
     (size_of::<CandidateSnapshot>()
         + snapshot.display_label.len()
         + snapshot.artifact_refs.len() * size_of::<desktop_protocol::ArtifactId>()
-        + snapshot.evaluation_refs.len() * size_of::<desktop_protocol::EvaluationId>())
-        as u64
+        + snapshot.evaluation_refs.len() * size_of::<desktop_protocol::EvaluationId>()) as u64
 }
 
 fn iteration_bytes(snapshot: &IterationSnapshot) -> u64 {
     (size_of::<IterationSnapshot>()
         + snapshot.candidate_refs.len() * size_of::<CandidateRef>()
         + snapshot.refinement_refs.len() * size_of::<desktop_protocol::RefinementId>()
-        + snapshot.evidence_refs.len() * size_of::<desktop_protocol::EvidenceRef>())
-        as u64
+        + snapshot.evidence_refs.len() * size_of::<desktop_protocol::EvidenceRef>()) as u64
 }
 
 fn outcome_bytes(snapshot: &OutcomeSnapshot) -> u64 {
     (size_of::<OutcomeSnapshot>()
         + snapshot.selected_refs.len() * size_of::<desktop_protocol::FormalSelectionRef>()
         + snapshot.provenance_refs.len() * size_of::<desktop_protocol::ProvenanceId>()
-        + snapshot.evidence_refs.len() * size_of::<desktop_protocol::EvidenceRef>())
-        as u64
+        + snapshot.evidence_refs.len() * size_of::<desktop_protocol::EvidenceRef>()) as u64
 }
 
 fn capabilities_bytes(snapshot: &CreativeCapabilities) -> u64 {
@@ -66,19 +63,24 @@ fn projection_bytes(projection: &Projection) -> u64 {
     match projection {
         Projection::Task(snapshot) => task_bytes(snapshot),
         Projection::Candidate(snapshot) => candidate_bytes(snapshot),
-        Projection::Artifact(snapshot) => (size_of::<desktop_protocol::ArtifactSnapshot>()
-            + snapshot.media_type.as_ref().map_or(0, String::len))
-            as u64,
-        Projection::Evaluation(snapshot) => (size_of::<desktop_protocol::EvaluationSnapshot>()
-            + snapshot.axes.len() * size_of::<desktop_protocol::NamedScore>()
-            + snapshot.evidence_refs.len() * size_of::<desktop_protocol::EvidenceRef>())
-            as u64,
+        Projection::Artifact(snapshot) => {
+            (size_of::<desktop_protocol::ArtifactSnapshot>()
+                + snapshot.media_type.as_ref().map_or(0, String::len)) as u64
+        }
+        Projection::Evaluation(snapshot) => {
+            (size_of::<desktop_protocol::EvaluationSnapshot>()
+                + snapshot.axes.len() * size_of::<desktop_protocol::NamedScore>()
+                + snapshot.evidence_refs.len() * size_of::<desktop_protocol::EvidenceRef>())
+                as u64
+        }
         Projection::Iteration(snapshot) => iteration_bytes(snapshot),
         Projection::Outcome(snapshot) => outcome_bytes(snapshot),
-        Projection::Graph(snapshot) => (size_of::<desktop_protocol::GraphSnapshot>()
-            + snapshot.nodes.len() * size_of::<desktop_protocol::GraphNode>()
-            + snapshot.edges.len() * size_of::<desktop_protocol::GraphEdge>())
-            as u64,
+        Projection::Graph(snapshot) => {
+            (size_of::<desktop_protocol::GraphSnapshot>()
+                + snapshot.nodes.len() * size_of::<desktop_protocol::GraphNode>()
+                + snapshot.edges.len() * size_of::<desktop_protocol::GraphEdge>())
+                as u64
+        }
         Projection::Capabilities(snapshot) => capabilities_bytes(snapshot),
     }
 }
@@ -214,7 +216,11 @@ impl HandleState {
     }
 
     fn retained(&self) -> u64 {
-        if self.held == 0 { 0 } else { self.retained_bytes }
+        if self.held == 0 {
+            0
+        } else {
+            self.retained_bytes
+        }
     }
 }
 
@@ -389,7 +395,8 @@ impl FamilyMaps {
             ProjectionKey::Capabilities(capabilities_id) => {
                 Arc::make_mut(&mut self.capabilities).remove(capabilities_id);
             }
-            ProjectionKey::Artifact(_) | ProjectionKey::Evaluation(_) | ProjectionKey::Graph(_) => {}
+            ProjectionKey::Artifact(_) | ProjectionKey::Evaluation(_) | ProjectionKey::Graph(_) => {
+            }
         }
         Arc::make_mut(&mut self.revisions).remove(key);
     }
@@ -482,8 +489,14 @@ impl FamilyStore {
             RepresentationStrategy::EntityIndex => {
                 let candidates_by_task = build_candidate_index(initial);
                 let iterations_by_task = build_iteration_index(initial);
-                let entries = candidates_by_task.values().map(BTreeSet::len).sum::<usize>()
-                    + iterations_by_task.values().map(BTreeSet::len).sum::<usize>();
+                let entries = candidates_by_task
+                    .values()
+                    .map(BTreeSet::len)
+                    .sum::<usize>()
+                    + iterations_by_task
+                        .values()
+                        .map(BTreeSet::len)
+                        .sum::<usize>();
                 (
                     Extra::Index {
                         candidates_by_task: Arc::new(candidates_by_task),
@@ -543,9 +556,16 @@ impl FamilyStore {
             Extra::Index {
                 candidates_by_task,
                 iterations_by_task,
-            } => (candidates_by_task.values().map(BTreeSet::len).sum::<usize>()
-                + iterations_by_task.values().map(BTreeSet::len).sum::<usize>())
-                as u64,
+            } => {
+                (candidates_by_task
+                    .values()
+                    .map(BTreeSet::len)
+                    .sum::<usize>()
+                    + iterations_by_task
+                        .values()
+                        .map(BTreeSet::len)
+                        .sum::<usize>()) as u64
+            }
             Extra::Cache { entries } => entries.len() as u64,
         }
     }
@@ -657,12 +677,8 @@ impl FamilyStore {
                     return self.observe_fallback(counts, tasks);
                 };
                 for (task_id, formal_outcome) in tasks {
-                    let candidates = candidates_by_task
-                        .get(&task_id)
-                        .map_or(0, BTreeSet::len);
-                    let iterations = iterations_by_task
-                        .get(&task_id)
-                        .map_or(0, BTreeSet::len);
+                    let candidates = candidates_by_task.get(&task_id).map_or(0, BTreeSet::len);
+                    let iterations = iterations_by_task.get(&task_id).map_or(0, BTreeSet::len);
                     self.counters.derivations += 1;
                     self.counters.collection_traversals += (candidates + iterations) as u64;
                     derivations.push(TaskDerivation {
