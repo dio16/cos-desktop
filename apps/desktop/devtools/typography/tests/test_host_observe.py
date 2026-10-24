@@ -990,6 +990,37 @@ class RejectionDispositionTest(unittest.TestCase):
             self.assertTrue(kept.exists())
 
 
+class CleanupFailureTest(unittest.TestCase):
+    def test_a_failed_cleanup_is_a_closed_failure_and_a_nonzero_exit(self) -> None:
+        def denied(_path) -> None:
+            raise PermissionError(13, "denied")
+
+        with self.assertRaises(observe.ObserveError) as raised:
+            observe.cleanup_unaccepted_capture(
+                Path("screenshot.png"), False, unlink=denied
+            )
+        self.assertEqual(raised.exception.code, "CAPTURE_CLEANUP_FAILED")
+        emitted: list[str] = []
+        code = observe.exit_after_cleanup(
+            Path("screenshot.png"), False, unlink=denied, emit=emitted.append
+        )
+        self.assertEqual(code, 1, "a failed cleanup must not report normal completion")
+        self.assertEqual(json.loads(emitted[0])["error"], "CAPTURE_CLEANUP_FAILED")
+
+    def test_an_accepted_capture_is_not_deleted_by_the_cleanup_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "screenshot.png"
+            path.write_bytes(png(8, 8))
+            observe.cleanup_unaccepted_capture(path, True)
+            self.assertTrue(path.exists(), "accepted evidence must survive")
+            emitted: list[str] = []
+            self.assertEqual(
+                observe.exit_after_cleanup(path, True, emit=emitted.append), 0
+            )
+            self.assertEqual(emitted, [])
+            self.assertTrue(path.exists())
+
+
 class NoDesktopStateChangeTest(unittest.TestCase):
     FORBIDDEN = (
         "AllowSetForegroundWindow",

@@ -163,6 +163,7 @@ ERROR_CODES = (
     "PNG_TOO_LARGE",
     "SCREENSHOT_GEOMETRY_MISMATCH",
     "FOREGROUND_HANDLE_MISMATCH",
+    "CAPTURE_CLEANUP_FAILED",
 )
 
 NOT_MEASURED = (
@@ -914,14 +915,47 @@ def dispose_capture(
     return observed, binding, None
 
 
-def cleanup_unaccepted_capture(path: Path | None, accepted: bool) -> None:
-    """Abnormal-exit guarantee: no unaccepted image survives the run."""
+def _unlink(path: Path) -> None:
+    path.unlink()
+
+
+def cleanup_unaccepted_capture(
+    path: Path | None,
+    accepted: bool,
+    *,
+    unlink: Any = None,
+) -> None:
+    """Abnormal-exit guarantee: no unaccepted image survives the run.
+
+    A failed deletion is not silence: it raises the closed CAPTURE_CLEANUP_FAILED, so a
+    run that could not remove an unaccepted capture never reports normal success. The
+    unlink call is injectable so the failure path is testable without touching the disk.
+    """
     if path is None or accepted:
         return
+    delete = unlink if unlink is not None else _unlink
     try:
-        remove_capture(path)
-    except ObserveError:
-        pass
+        delete(path)
+    except FileNotFoundError:
+        return
+    except OSError:
+        fail("CAPTURE_CLEANUP_FAILED")
+
+
+def exit_after_cleanup(
+    path: Path | None,
+    accepted: bool,
+    *,
+    unlink: Any = None,
+    emit: Any = print,
+) -> int:
+    """Terminal cleanup: 0 when nothing needed deleting, 1 with a closed code otherwise."""
+    try:
+        cleanup_unaccepted_capture(path, accepted, unlink=unlink)
+    except ObserveError as error:
+        emit(json.dumps({"ok": False, "error": error.code}, separators=(",", ":")))
+        return 1
+    return 0
 
 
 def finalise_screenshot(
@@ -1283,7 +1317,6 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError, TypeError):
         print(json.dumps({"ok": False, "error": "PROBE_FAILED"}, separators=(",", ":")))
     finally:
-        cleanup_unaccepted_capture(screenshot, accepted_capture)
         if process is not None:
             try:
                 subprocess.run(
@@ -1294,6 +1327,8 @@ def main(argv: list[str] | None = None) -> int:
                 )
             except (OSError, subprocess.TimeoutExpired):
                 pass
+        if exit_after_cleanup(screenshot, accepted_capture) != 0:
+            raise SystemExit(1)
     return 1
 
 
