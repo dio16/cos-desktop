@@ -24,12 +24,29 @@ reason}`, `resources.{process,media,gpu,devices,sampling}`, `endpoints`, `metric
 `manifest.{scenario_version,benchmark_revision,definition_hash}` (the manifest fields are
 verified for identity, not counted).
 
-IDENTITY. A run entry is only *contributing* when the source and the candidate are bound:
-`git_sha` and `worktree_digest` come from the retained bundle (`build-record.json`'s
-`baseline_source_commit` and a digest over its recorded source file set), `program_digest`
-from `build-record.json`'s `executable_sha256`. If the caller cannot supply them the entry
-is still appended with `null`s, so the run is traceable and excluded with
-`SOURCE_NOT_BOUND`/`CANDIDATE_NOT_BOUND` instead of being silently dropped.
+IDENTITY. A run entry is only *contributing* when the source and the candidate are bound.
+The operational input is the retained record: `--bundle` reads `build-record.json`'s
+`baseline_source_commit` and `executable_sha256` plus `source-identity.json`'s file set, so
+the identity is a property of the retained artifact, not of caller text. Free-form
+`--git-sha/--worktree-digest/--program-digest` are accepted only with the explicit
+`--allow-caller-identity` acknowledgement and are reported as caller-provided. Without
+either, the CLI refuses with `IMPORT_IDENTITY`. When a field is not taken from a record the
+entry body uses defaults (`candidate.id = "s2-candidate"`, `host = windows/x86_64`,
+interpreter `cpython 3.13.14`, both UTC timestamps `1970-01-01T00:00:00Z`); the import
+response records those placeholders and the identity origin, and unbound runs are excluded
+with `SOURCE_NOT_BOUND`/`CANDIDATE_NOT_BOUND` instead of being silently dropped.
+
+SCENARIO BINDING. The four manifest expectations (`--scenario-id`, `--scenario-version`,
+`--benchmark-revision`, `--definition-hash`) must be supplied together or not at all; a
+partial set is refused with `IMPORT_IDENTITY`. Supplying none is a refusal unless
+`--allow-unbound-scenario` explicitly acknowledges the caller obligation, in which case the
+response records `manifest_binding = "NOT_ASSERTED"`; supplying all four refuses any result
+whose manifest does not match before anything is written.
+
+COUNTER SEMANTICS. The S3 counter definition for `frames_observed` is not present in this
+repository, so the matched mapping to S2 `frames.processed` carries the semantic risk
+recorded in `COUNTER_SEMANTICS` (a processed frame need not be a frame the renderer
+observed); it is a declared equivalence, not a proven one.
 
 OUTCOME. The S2 status is propagated verbatim (OBSERVED, NOT_MEASURED, NOT_IMPLEMENTED,
 FAILED) and nothing else; the S3 vocabulary's CANCELLED has no S2 producer and is never
@@ -43,7 +60,9 @@ import hashlib
 import json
 import re
 import sys
-from typing import Any
+import zipfile
+from pathlib import Path
+from typing import Any, NoReturn
 
 import contracts
 import s3_ledger as ledger
@@ -102,7 +121,7 @@ HEX64 = re.compile(r"^[0-9a-f]{64}$")
 GIT_SHA = re.compile(r"^[0-9a-f]{40}([0-9a-f]{24})?$")
 
 
-class ImportError_(Exception):
+class S3ImportError(Exception):
     """One closed public code; never input text, a path or a traceback."""
 
     def __init__(self, code: str):
@@ -110,9 +129,9 @@ class ImportError_(Exception):
         self.code = code
 
 
-def fail(code: str) -> None:
+def fail(code: str) -> NoReturn:
     assert code in IMPORT_ERRORS
-    raise ImportError_(code)
+    raise S3ImportError(code)
 
 
 # --------------------------------------------------------------------------- mapping
@@ -140,6 +159,27 @@ def counters_for(run: dict[str, Any]) -> dict[str, int | None]:
     return counters
 
 
+# No S3 counter definition for `frames_observed` exists in this repository: the "matched"
+# mapping is asserted by this adapter, and its semantic risk is recorded as data rather
+# than hidden in the docstring.
+COUNTER_SEMANTICS: dict[str, dict[str, str]] = {
+    "frames_observed": {
+        "s2_source": "runs[].frames.processed",
+        "state": "matched (semantic risk recorded)",
+        "risk": ("no S3 counter definition is present in this repository; S2 "
+                 "frames.processed may include frames the renderer did not observe "
+                 "(skipped or duplicated), so this is a declared wire-level mapping, "
+                 "not a proven S3 semantic equivalence"),
+    },
+    "present_calls": {
+        "s2_source": "runs[].frames.present",
+        "state": "matched (same definition gap)",
+        "risk": ("no S3 counter definition is present in this repository; the mapping "
+                 "to the S2 present count is asserted, not proven"),
+    },
+}
+
+
 def reconciliation_report() -> dict[str, Any]:
     """The A1 table, as data so a test can assert it instead of trusting the docstring."""
     return {
@@ -147,6 +187,7 @@ def reconciliation_report() -> dict[str, Any]:
                             "state": "matched" if source else "UNMATCHED"}
                      for name, source in RECONCILIATION.items()},
         "unmatched_s2_fields": list(UNMATCHED_S2_FIELDS),
+        "counter_semantics": COUNTER_SEMANTICS,
     }
 
 
@@ -237,19 +278,60 @@ def bodies_for_result(
     return bodies
 
 
-def import_result(path: str, ledger_path: str, **kwargs: Any) -> dict[str, Any]:
-    """Append every run of one S2 result; nothing is written when validation fails."""
+def import_result(
+    path: str,
+    ledger_path: str,
+    *,
+    source: dict[str, str | None] | None = None,
+    program_digest: str | None = None,
+    build_record: dict[str, Any] | None = None,
+    build_files: dict[str, str] | None = None,
+    expected_manifest: dict[str, str] | None = None,
+    host: dict[str, str] | None = None,
+    interpreter: dict[str, str] | None = None,
+    record_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Append every run of one S2 result; nothing is written when validation fails.
+
+    With `build_record`, source and program identity come from that retained record and a
+    conflicting explicit value is refused. Without it the identity is caller-provided and
+    the response marks it as such. The whole batch is validated by
+    `s3_ledger.append_entries` before the first byte is written.
+    """
+    origin = "caller"
+    if build_record is not None:
+        recorded = source_identity_from_build_record(
+            {**build_record, **({"files": build_files} if build_files is not None else {})})
+        recorded_program = program_digest_from_build_record(build_record)
+        if source is not None and source != recorded:
+            fail("IMPORT_IDENTITY")
+        if program_digest is not None and program_digest != recorded_program:
+            fail("IMPORT_IDENTITY")
+        source, program_digest = recorded, recorded_program
+        origin = "build-record"
     document = contracts.load_document(path, contracts.MAX_RESULT_BYTES)
-    bodies = bodies_for_result(document, **kwargs)
-    appended = []
-    for body in bodies:
-        appended.append(ledger.append_entry(ledger_path, body))
+    bodies = bodies_for_result(document, source=source, program_digest=program_digest,
+                               expected_manifest=expected_manifest, host=host,
+                               interpreter=interpreter)
+    appended = ledger.append_entries(ledger_path, bodies)
     entries = ledger.load_ledger(ledger_path)
+    identity = {
+        "origin": origin,
+        "candidate_id": "s2-candidate",
+        "placeholders": ["candidate.id", "host", "interpreter", "start_utc", "end_utc"],
+        "note": ("candidate.id, host, interpreter and the UTC timestamps are defaults/"
+                 "placeholders unless a retained record supplies them; a run is "
+                 "contributing only when the source and program digests are bound"),
+    }
+    if record_sha256 is not None:
+        identity["record_sha256"] = record_sha256
     return {
         "ok": True,
         "import_version": IMPORT_VERSION,
         "runs": appended,
         "ledger_digest": ledger.chain_head(entries),
+        "identity": identity,
+        "manifest_binding": "ASSERTED" if expected_manifest is not None else "NOT_ASSERTED",
         "reconciliation": reconciliation_report(),
     }
 
@@ -257,12 +339,43 @@ def import_result(path: str, ledger_path: str, **kwargs: Any) -> dict[str, Any]:
 # --------------------------------------------------------------------------- cli
 
 
+def _bundle_identity(bundle: str, tag: str) -> tuple[dict[str, Any], dict[str, str], str]:
+    """Read the retained bundle's build record and source file set, and hash the bundle."""
+    try:
+        data = Path(bundle).read_bytes()
+        digest = "sha256:" + hashlib.sha256(data).hexdigest()
+        with zipfile.ZipFile(bundle) as archive:
+            build = json.loads(archive.read(f"{tag}/build-record.json"))
+            identity = json.loads(archive.read(f"{tag}/source-identity.json"))
+    except (OSError, KeyError, ValueError, zipfile.BadZipFile):
+        fail("IMPORT_IDENTITY")
+    if not isinstance(build, dict) or not isinstance(identity, dict):
+        fail("IMPORT_IDENTITY")
+    files = identity.get("files")
+    if not isinstance(files, dict) or not files:
+        fail("IMPORT_IDENTITY")
+    return build, files, digest
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        epilog=("Caller obligation: identity comes from the retained bundle "
+                "(--bundle) unless --allow-caller-identity is given, and the four "
+                "manifest expectations must be supplied together or explicitly "
+                "waived with --allow-unbound-scenario."),
+    )
     commands = parser.add_subparsers(dest="operation", required=True)
     import_parser = commands.add_parser("import", help="import one S2 result into a ledger")
     import_parser.add_argument("--result", required=True)
     import_parser.add_argument("--ledger", required=True)
+    import_parser.add_argument("--bundle",
+                               help="retained S2 bundle zip; identity comes from its "
+                                    "build-record.json and source-identity.json")
+    import_parser.add_argument("--bundle-tag", default="n02d")
+    import_parser.add_argument("--allow-caller-identity", action="store_true",
+                               help="acknowledge that the free-form identity flags below "
+                                    "are caller-provided, not from a retained record")
     import_parser.add_argument("--git-sha")
     import_parser.add_argument("--worktree-digest")
     import_parser.add_argument("--program-digest")
@@ -270,11 +383,28 @@ def main(argv: list[str] | None = None) -> int:
     import_parser.add_argument("--scenario-id")
     import_parser.add_argument("--scenario-version")
     import_parser.add_argument("--benchmark-revision")
+    import_parser.add_argument("--allow-unbound-scenario", action="store_true",
+                               help="acknowledge that the scenario is not bound to an "
+                                    "expected manifest; the response records NOT_ASSERTED")
     args = parser.parse_args(argv)
     try:
-        source = {"git_sha": args.git_sha, "worktree_digest": args.worktree_digest}
+        identity_flags = (args.git_sha, args.worktree_digest, args.program_digest)
+        manifest_values = (args.scenario_id, args.scenario_version,
+                           args.benchmark_revision, args.definition_hash)
+        build_record = build_files = record_sha = None
+        if args.bundle:
+            if any(identity_flags):
+                fail("IMPORT_IDENTITY")
+            build_record, build_files, record_sha = _bundle_identity(
+                args.bundle, args.bundle_tag)
+        elif not args.allow_caller_identity:
+            fail("IMPORT_IDENTITY")
+        if any(manifest_values) and not all(manifest_values):
+            fail("IMPORT_IDENTITY")
+        if not any(manifest_values) and not args.allow_unbound_scenario:
+            fail("IMPORT_IDENTITY")
         expected = None
-        if args.definition_hash or args.scenario_id:
+        if all(manifest_values):
             expected = {
                 "scenario_id": args.scenario_id,
                 "scenario_version": args.scenario_version,
@@ -284,13 +414,17 @@ def main(argv: list[str] | None = None) -> int:
         result = import_result(
             args.result,
             args.ledger,
-            source=source,
-            program_digest=args.program_digest,
+            source=None if build_record is not None else {
+                "git_sha": args.git_sha, "worktree_digest": args.worktree_digest},
+            program_digest=None if build_record is not None else args.program_digest,
+            build_record=build_record,
+            build_files=build_files,
             expected_manifest=expected,
+            record_sha256=record_sha,
         )
         print(json.dumps(result, separators=(",", ":")))
         return 0
-    except ImportError_ as error:
+    except S3ImportError as error:
         print(json.dumps({"ok": False, "error": error.code}, separators=(",", ":")))
     except ledger.LedgerError as error:
         payload = {"ok": False, "error": error.code}

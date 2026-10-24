@@ -115,11 +115,48 @@ def import_document(document: dict, ledger_path: Path, **kwargs) -> dict:
     return imp.import_result(path, str(ledger_path), **kwargs)
 
 
+def multi_document(*runs: dict) -> dict:
+    """One canonical S2 result carrying several runs (for batch refusal cases)."""
+    document = run_document()
+    document["runs"] = list(runs)
+    return document
+
+
+def fill_ledger(path: Path, count: int) -> None:
+    """Write a valid chained ledger with `count` filler entries (cap boundary tests)."""
+    lines = [s3._encode(s3.header())]
+    previous = s3.header_digest()
+    for index in range(count):
+        entry = s3.seal({
+            "record": s3.RECORD_RUN, "entry_version": s3.ENTRY_VERSION,
+            "run_id": f"filler-{index:04d}", "source": SOURCE,
+            "candidate": {"id": "s2-candidate", "program_digest": PROGRAM},
+            "host": {"os": "windows", "arch": "x86_64"},
+            "interpreter": {"name": "cpython", "version": "3.13.14"},
+            "start_utc": "1970-01-01T00:00:00Z", "end_utc": "1970-01-01T00:00:00Z",
+            "outcome": "OBSERVED",
+            "counters": {name: None for name in s3.COUNTERS},
+        }, previous)
+        previous = entry["entry_sha256"]
+        lines.append(s3._encode(entry))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 class S3Replay(unittest.TestCase):
     def setUp(self) -> None:
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.ledger = Path(self.directory.name) / "s3-ledger.jsonl"
+
+    def write_result(self, document: dict) -> Path:
+        path = Path(self.directory.name) / "result.json"
+        path.write_text(json.dumps(document), encoding="utf-8")
+        return path
+
+    def cli(self, *arguments: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, "-B", str(ROOT / "s3_import.py"), "import", *arguments],
+            capture_output=True, check=False, timeout=20)
 
     # ---------------------------------------------------------------- case 1
     def test_canonical_result_round_trip(self) -> None:
@@ -284,7 +321,7 @@ class S3Replay(unittest.TestCase):
     # ------------------------------------------------------------- identity
     def test_manifest_mismatch_is_refused_before_any_write(self) -> None:
         wrong = dict(MANIFEST, definition_hash="sha256:" + "9" * 64)
-        with self.assertRaises(imp.ImportError_) as error:
+        with self.assertRaises(imp.S3ImportError) as error:
             import_document(run_document(), self.ledger, source=SOURCE,
                             program_digest=PROGRAM, expected_manifest=wrong)
         self.assertEqual(error.exception.code, "IMPORT_IDENTITY")
@@ -293,7 +330,7 @@ class S3Replay(unittest.TestCase):
     def test_invalid_result_is_refused_before_any_write(self) -> None:
         broken = run_document()
         broken["result_version"] = 99
-        with self.assertRaises(imp.ImportError_) as error:
+        with self.assertRaises(imp.S3ImportError) as error:
             import_document(broken, self.ledger, source=SOURCE, program_digest=PROGRAM)
         self.assertEqual(error.exception.code, "IMPORT_RESULT_VERSION")
         self.assertFalse(self.ledger.exists())
@@ -309,6 +346,95 @@ class S3Replay(unittest.TestCase):
         self.assertEqual(report["counters"]["scope_ns"],
                          {"source": None, "state": "UNMATCHED"})
         self.assertIn("resources.process", report["unmatched_s2_fields"])
+
+    # ------------------------------------- BLOCKING: batch refusals, no partial write
+    def test_multi_run_duplicate_is_refused_without_partial_write(self) -> None:
+        import_document(run_document(run_id="run-b"), self.ledger,
+                        source=SOURCE, program_digest=PROGRAM)
+        before = self.ledger.read_bytes()
+        document = multi_document(run_document(run_id="run-a")["runs"][0],
+                                  run_document(run_id="run-b")["runs"][0])
+        with self.assertRaises(s3.LedgerError) as error:
+            import_document(document, self.ledger, source=SOURCE,
+                            program_digest=PROGRAM)
+        self.assertEqual(error.exception.code, "DUPLICATE_RUN")
+        self.assertEqual(self.ledger.read_bytes(), before,
+                         "a refused batch must not append its earlier runs")
+        self.assertEqual([entry["run_id"] for entry in s3.load_ledger(str(self.ledger))],
+                         ["run-b.instrumented"])
+
+    def test_multi_run_integer_bound_is_refused_before_write(self) -> None:
+        oversized = run_document(run_id="run-b")
+        oversized["runs"][0]["frames"]["processed"] = 2 ** 63
+        document = multi_document(run_document(run_id="run-a")["runs"][0],
+                                  oversized["runs"][0])
+        # The S2 contract accepts the value; only the ledger's integer bound refuses it.
+        contracts.validate_result(document)
+        with self.assertRaises(s3.LedgerError) as error:
+            import_document(document, self.ledger, source=SOURCE,
+                            program_digest=PROGRAM)
+        self.assertEqual(error.exception.code, "INVALID_VALUE")
+        self.assertFalse(self.ledger.exists(),
+                         "nothing may be written when a later run is invalid")
+
+    def test_multi_run_entry_cap_is_refused_without_partial_write(self) -> None:
+        fill_ledger(self.ledger, s3.MAX_LEDGER_ENTRIES - 1)
+        before = self.ledger.read_bytes()
+        document = multi_document(run_document(run_id="run-a")["runs"][0],
+                                  run_document(run_id="run-b")["runs"][0])
+        with self.assertRaises(s3.LedgerError) as error:
+            import_document(document, self.ledger, source=SOURCE,
+                            program_digest=PROGRAM)
+        self.assertEqual(error.exception.code, "LEDGER_ENTRY_LIMIT")
+        self.assertEqual(self.ledger.read_bytes(), before,
+                         "a refused batch must not append its earlier runs")
+        self.assertEqual(len(s3.load_ledger(str(self.ledger))),
+                         s3.MAX_LEDGER_ENTRIES - 1)
+
+    # ------------------------------------------------- identity origin and scenario
+    def test_identity_origin_and_placeholders_are_reported(self) -> None:
+        imported = import_document(run_document(), self.ledger, source=SOURCE,
+                                   program_digest=PROGRAM)
+        self.assertEqual(imported["identity"]["origin"], "caller")
+        self.assertIn("candidate.id", imported["identity"]["placeholders"])
+        self.assertIn("start_utc", imported["identity"]["placeholders"])
+        self.assertEqual(imported["manifest_binding"], "NOT_ASSERTED")
+
+    def test_cli_refuses_caller_identity_without_acknowledgement(self) -> None:
+        path = self.write_result(run_document())
+        refused = self.cli("--result", str(path), "--ledger", str(self.ledger),
+                           "--git-sha", SOURCE["git_sha"],
+                           "--worktree-digest", SOURCE["worktree_digest"],
+                           "--program-digest", PROGRAM,
+                           "--scenario-id", MANIFEST["scenario_id"],
+                           "--scenario-version", MANIFEST["scenario_version"],
+                           "--benchmark-revision", MANIFEST["benchmark_revision"],
+                           "--definition-hash", MANIFEST["definition_hash"])
+        self.assertEqual(refused.returncode, 1)
+        self.assertEqual(json.loads(refused.stdout)["error"], "IMPORT_IDENTITY")
+        self.assertFalse(self.ledger.exists(), "a refusal must not create the ledger")
+
+    def test_cli_requires_the_four_manifest_flags_together(self) -> None:
+        path = self.write_result(run_document())
+        refused = self.cli("--result", str(path), "--ledger", str(self.ledger),
+                           "--allow-caller-identity",
+                           "--scenario-id", MANIFEST["scenario_id"])
+        self.assertEqual(refused.returncode, 1)
+        self.assertEqual(json.loads(refused.stdout)["error"], "IMPORT_IDENTITY")
+        self.assertFalse(self.ledger.exists())
+
+    def test_cli_refuses_unbound_scenario_without_acknowledgement(self) -> None:
+        path = self.write_result(run_document())
+        refused = self.cli("--result", str(path), "--ledger", str(self.ledger),
+                           "--allow-caller-identity")
+        self.assertEqual(refused.returncode, 1)
+        self.assertEqual(json.loads(refused.stdout)["error"], "IMPORT_IDENTITY")
+        self.assertFalse(self.ledger.exists())
+
+    def test_counter_semantic_risk_for_frames_observed_is_recorded(self) -> None:
+        semantics = imp.reconciliation_report()["counter_semantics"]["frames_observed"]
+        self.assertEqual(semantics["s2_source"], "runs[].frames.processed")
+        self.assertIn("no S3 counter definition", semantics["risk"])
 
     # --------------------------------------------------------- real replay
     def test_retained_s2_bundle_replays_deterministically(self) -> None:
@@ -350,28 +476,77 @@ class S3Replay(unittest.TestCase):
     def test_cli_import_reports_closed_json(self) -> None:
         path = Path(self.directory.name) / "result.json"
         path.write_text(json.dumps(run_document()), encoding="utf-8")
-        result = subprocess.run(
-            [sys.executable, "-B", str(ROOT / "s3_import.py"), "import",
-             "--result", str(path), "--ledger", str(self.ledger),
-             "--git-sha", SOURCE["git_sha"],
-             "--worktree-digest", SOURCE["worktree_digest"],
-             "--program-digest", PROGRAM],
-            capture_output=True, check=False, timeout=20)
+        result = self.cli(
+            "--result", str(path), "--ledger", str(self.ledger),
+            "--allow-caller-identity",
+            "--git-sha", SOURCE["git_sha"],
+            "--worktree-digest", SOURCE["worktree_digest"],
+            "--program-digest", PROGRAM,
+            "--scenario-id", MANIFEST["scenario_id"],
+            "--scenario-version", MANIFEST["scenario_version"],
+            "--benchmark-revision", MANIFEST["benchmark_revision"],
+            "--definition-hash", MANIFEST["definition_hash"])
         self.assertEqual(result.returncode, 0, result.stdout)
         payload = json.loads(result.stdout)
         self.assertEqual(payload["ok"], True)
         self.assertIn("ledger_digest", payload)
+        self.assertEqual(payload["identity"]["origin"], "caller")
+        self.assertEqual(payload["manifest_binding"], "ASSERTED")
         self.assertNotIn(b"Traceback", result.stderr)
 
         broken = Path(self.directory.name) / "broken.json"
         broken.write_text("{}", encoding="utf-8")
-        refused = subprocess.run(
-            [sys.executable, "-B", str(ROOT / "s3_import.py"), "import",
-             "--result", str(broken), "--ledger", str(self.ledger)],
-            capture_output=True, check=False, timeout=20)
+        refused = self.cli(
+            "--result", str(broken), "--ledger", str(self.ledger),
+            "--allow-caller-identity",
+            "--scenario-id", MANIFEST["scenario_id"],
+            "--scenario-version", MANIFEST["scenario_version"],
+            "--benchmark-revision", MANIFEST["benchmark_revision"],
+            "--definition-hash", MANIFEST["definition_hash"])
         self.assertEqual(refused.returncode, 1)
         self.assertEqual(json.loads(refused.stdout)["error"], "IMPORT_SCHEMA")
         self.assertNotIn(b"Traceback", refused.stderr)
+
+    def test_cli_refuses_bundle_and_free_form_identity_together(self) -> None:
+        if not BUNDLE.is_file():
+            self.skipTest("NOT_RUN: the retained S2 bundle is not present in this checkout")
+        path = self.write_result(run_document())
+        refused = self.cli("--result", str(path), "--ledger", str(self.ledger),
+                           "--bundle", str(BUNDLE),
+                           "--program-digest", PROGRAM,
+                           "--scenario-id", MANIFEST["scenario_id"],
+                           "--scenario-version", MANIFEST["scenario_version"],
+                           "--benchmark-revision", MANIFEST["benchmark_revision"],
+                           "--definition-hash", MANIFEST["definition_hash"])
+        self.assertEqual(refused.returncode, 1)
+        self.assertEqual(json.loads(refused.stdout)["error"], "IMPORT_IDENTITY")
+        self.assertFalse(self.ledger.exists())
+
+    def test_cli_bundle_binds_identity_from_the_retained_record(self) -> None:
+        if not BUNDLE.is_file():
+            self.skipTest("NOT_RUN: the retained S2 bundle is not present in this checkout")
+        with zipfile.ZipFile(BUNDLE) as archive:
+            result = json.loads(archive.read("n02d/result.json"))
+            build = json.loads(archive.read("n02d/build-record.json"))
+            identity = json.loads(archive.read("n02d/source-identity.json"))
+        path = Path(self.directory.name) / "bundle-result.json"
+        path.write_text(json.dumps(result), encoding="utf-8")
+        completed = self.cli(
+            "--result", str(path), "--ledger", str(self.ledger),
+            "--bundle", str(BUNDLE),
+            "--scenario-id", result["manifest"]["scenario_id"],
+            "--scenario-version", result["manifest"]["scenario_version"],
+            "--benchmark-revision", result["manifest"]["benchmark_revision"],
+            "--definition-hash", result["manifest"]["definition_hash"])
+        self.assertEqual(completed.returncode, 0, completed.stdout)
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["identity"]["origin"], "build-record")
+        self.assertTrue(payload["identity"]["record_sha256"].startswith("sha256:"))
+        source = imp.source_identity_from_build_record({**build, "files": identity["files"]})
+        program = imp.program_digest_from_build_record(build)
+        entries = s3.load_ledger(str(self.ledger))
+        self.assertEqual(entries[0]["source"], source)
+        self.assertEqual(entries[0]["candidate"]["program_digest"], program)
 
 
 if __name__ == "__main__":

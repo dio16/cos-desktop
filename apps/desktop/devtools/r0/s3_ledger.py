@@ -427,16 +427,32 @@ def chain_head(entries: list[dict[str, Any]]) -> str:
     return entries[-1]["entry_sha256"] if entries else header_digest()
 
 
-def append_entry(path: str, body: dict[str, Any]) -> dict[str, Any]:
-    """Append one run entry without rewriting a single existing byte."""
-    validated = validate_body(body)
+def append_entries(path: str, bodies: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Append a batch of run entries, validating the whole batch before the first byte.
+
+    Every body is validated with the ledger's own `validate_body` (so the integer bound
+    rejects a value the S2 contract accepts), duplicates are checked against the existing
+    ledger and inside the batch, and the entry-count and byte caps are checked for the
+    whole batch; only then is the file opened once and the concatenation appended. A
+    failure on a later run therefore cannot leave earlier runs behind (append-only file).
+    Returns one result per body, in order.
+    """
+    if not bodies:
+        return []
+    validated = [validate_body(body) for body in bodies]
     target = Path(path)
     entries: list[dict[str, Any]] = []
     if target.exists():
         entries = load_ledger(path)
-        if any(existing["run_id"] == validated["run_id"] for existing in entries):
+    existing_lines = len(entries)
+    seen = {existing["run_id"] for existing in entries}
+    for record in validated:
+        if record["run_id"] in seen:
             fail("DUPLICATE_RUN")
-        existing_lines = len(entries)
+        seen.add(record["run_id"])
+    if existing_lines + len(validated) > MAX_LEDGER_ENTRIES:
+        fail("LEDGER_ENTRY_LIMIT")
+    if target.exists():
         prefix = ""
         separator = ""
         if target.stat().st_size > 0:
@@ -445,29 +461,42 @@ def append_entry(path: str, body: dict[str, Any]) -> dict[str, Any]:
                 # A2: never concatenate onto a record that lacks its newline.
                 separator = "" if handle.read(1) == b"\n" else "\n"
         previous = chain_head(entries)
+        file_size = target.stat().st_size
     else:
-        existing_lines = 0
         prefix = _encode(header()) + "\n"
         separator = ""
         previous = header_digest()
-    if existing_lines + 1 > MAX_LEDGER_ENTRIES:
-        fail("LEDGER_ENTRY_LIMIT")
-    entry = seal(validated, previous)
-    line = _encode(entry)
-    if len(line.encode("utf-8")) > MAX_ENTRY_BYTES:
-        fail("LEDGER_ENTRY_TOO_LARGE")
-    addition = prefix + separator + line + "\n"
-    if target.exists() and target.stat().st_size + len(addition) > MAX_LEDGER_BYTES:
+        file_size = 0
+    additions: list[str] = []
+    results: list[dict[str, Any]] = []
+    for position, record in enumerate(validated, start=1):
+        entry = seal(record, previous)
+        line = _encode(entry)
+        if len(line.encode("utf-8")) > MAX_ENTRY_BYTES:
+            fail("LEDGER_ENTRY_TOO_LARGE")
+        lead = ""
+        if position == 1:
+            lead = prefix + separator
+        additions.append(lead + line + "\n")
+        previous = entry["entry_sha256"]
+        results.append({
+            "run_id": entry["run_id"],
+            "entry_sha256": entry["entry_sha256"],
+            "previous_sha256": entry["previous_sha256"],
+            "entries": existing_lines + position,
+            "ledger_digest": previous,
+        })
+    addition = "".join(additions)
+    if file_size + len(addition.encode("utf-8")) > MAX_LEDGER_BYTES:
         fail("LEDGER_TOO_LARGE")
     with open(target, "a", encoding="utf-8", newline="\n") as handle:
         handle.write(addition)
-    return {
-        "run_id": entry["run_id"],
-        "entry_sha256": entry["entry_sha256"],
-        "previous_sha256": entry["previous_sha256"],
-        "entries": existing_lines + 1,
-        "ledger_digest": chain_head(entries + [entry]),
-    }
+    return results
+
+
+def append_entry(path: str, body: dict[str, Any]) -> dict[str, Any]:
+    """Append one run entry without rewriting a single existing byte."""
+    return append_entries(path, [body])[0]
 
 
 def verify_ledger(path: str) -> dict[str, Any]:
