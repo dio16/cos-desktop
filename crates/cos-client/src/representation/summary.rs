@@ -24,11 +24,14 @@ const INDEX_PER_ENTITY_BYTES: u64 = 96;
 /// Additional logical bytes per entity allowed for a revision-keyed cache.
 const CACHE_PER_ENTITY_BYTES: u64 = 128;
 
-/// Declared logical-byte bound for one strategy and entity count.
+/// Declared logical-byte ceiling for one strategy and entity count.
 ///
-/// The bound is a structural consequence of the representation, not a measured
+/// This is a declared structural ceiling, not a DC-derived gate or measured
 /// threshold: it exists so that a structurally impossible strategy (unbounded
 /// version retention) is rejected instead of silently polluting the comparison.
+/// The runner aborts with `MemoryBoundExceeded` when a strategy crosses it, so
+/// every fact returned to callers is within the ceiling; rejection is proven by
+/// the structurally unbounded strategy regression test.
 pub(crate) fn memory_bound(strategy: RepresentationStrategy, entities: usize) -> u64 {
     let per_entity = match strategy {
         RepresentationStrategy::EntityIndex => PER_ENTITY_BYTES + INDEX_PER_ENTITY_BYTES,
@@ -49,7 +52,12 @@ pub struct StrategyFacts {
     pub counters: ExperimentCounters,
     /// Declared logical-byte bound.
     pub bound_bytes: u64,
-    /// Whether the peak stayed within the bound.
+    /// Whether the peak stayed within the declared ceiling.
+    ///
+    /// Always `true` for facts returned by the runner: it aborts with
+    /// [`super::ExperimentError::MemoryBoundExceeded`] instead of returning an
+    /// over-bound strategy. The field is the declared-ceiling assertion; the
+    /// structurally unbounded strategy test proves that rejection happens.
     pub within_bound: bool,
 }
 
@@ -137,7 +145,20 @@ impl ExperimentReport {
                 "Exploratory representation facts only; no numeric gate, SLO or adoption claim.",
                 "Representation selection remains a separate owner decision (DD-02b after EXPERIMENT_COMPLETED).",
                 "Wall-clock latency is intentionally not measured; counters are structural.",
+                "within_bound is a declared ceiling: the runner rejects an over-bound strategy with MemoryBoundExceeded before returning facts, and the structurally unbounded strategy test proves that rejection.",
             ],
+            "accounting_limitations": [
+                "peak_live_bytes counts logical payload bytes of the current version plus bytes retained by held snapshot handles.",
+                "Transient old+new copies that coexist only during an index rebuild, BTree node overhead and allocator padding are excluded.",
+                "collection_traversals counts the derivation and index-maintenance scans the representation performs, not harness setup.",
+                "Logical sizes use in-memory field sizes plus string/vector lengths; they are deterministic but not allocator measurements.",
+            ],
+            "observation_policy": {
+                "stride_one_max_entities": super::STRIDE_ONE_MAX_ENTITIES,
+                "stride_above_one": super::STRIDE_ABOVE_ONE,
+                "final_transaction_always_observed": true,
+                "note": "Divergence between checkpoints is not compared above the stride-1 limit; the stride-1 child-removal regression proves removals are observed and the final transaction is always compared.",
+            },
         });
         let json = serde_json::to_string_pretty(&summary).unwrap_or_default();
         Self {

@@ -429,6 +429,32 @@ fn owner_of_projection(projection: &Projection) -> Option<TaskId> {
     }
 }
 
+/// Task that owns a removal target, resolved before the entry disappears.
+fn owner_of_target(maps: &FamilyMaps, target: &RemoveTarget) -> Option<TaskId> {
+    match target {
+        RemoveTarget::Task { task_id } => Some(task_id.clone()),
+        RemoveTarget::Candidate { candidate_ref } => Some(candidate_ref.task_id.clone()),
+        RemoveTarget::Iteration { iteration_id } => maps
+            .iterations
+            .get(iteration_id)
+            .map(|iteration| iteration.task_ref.clone()),
+        RemoveTarget::Outcome { outcome_id } => maps
+            .outcomes
+            .get(outcome_id)
+            .map(|outcome| outcome.task_ref.clone()),
+        RemoveTarget::Capabilities { capabilities_id } => maps
+            .capabilities
+            .get(capabilities_id)
+            .and_then(|capabilities| match &capabilities.scope {
+                desktop_protocol::CapabilityScope::Task { task_id } => Some(task_id.clone()),
+                _ => None,
+            }),
+        RemoveTarget::Artifact { .. }
+        | RemoveTarget::Evaluation { .. }
+        | RemoveTarget::Graph { .. } => None,
+    }
+}
+
 fn build_candidate_index(state: &ProjectionState) -> BTreeMap<TaskId, BTreeSet<CandidateRef>> {
     let mut index: BTreeMap<TaskId, BTreeSet<CandidateRef>> = BTreeMap::new();
     for candidate in state.candidates.values() {
@@ -573,12 +599,15 @@ impl FamilyStore {
     fn apply(&mut self, mutations: &[ProjectionMutation]) {
         let mut touched = [false; FAMILY_COUNT];
         let mut invalidated = 0_u64;
+        let mut index_touched = false;
         for mutation in mutations {
             match mutation {
                 ProjectionMutation::Upsert { projection, .. } => {
+                    let family = family_of_projection(projection);
                     self.cow_family(Family::Revisions, &mut touched);
-                    self.cow_family(family_of_projection(projection), &mut touched);
+                    self.cow_family(family, &mut touched);
                     self.maps.upsert(projection);
+                    index_touched |= matches!(family, Family::Candidates | Family::Iterations);
                     if let Some(owner) = owner_of_projection(projection) {
                         invalidated += self.invalidate_cache(&owner);
                     }
@@ -586,16 +615,23 @@ impl FamilyStore {
                 ProjectionMutation::Remove { target, .. } => {
                     let key = ProjectionKey::of_remove_target(target);
                     let family = family_of_key(&key);
+                    // The owner must be resolved while the removed entry is still
+                    // readable: a child removal invalidates that task's derivation.
+                    let owner = owner_of_target(&self.maps, target);
                     self.cow_family(Family::Revisions, &mut touched);
                     if family != Family::Revisions {
                         self.cow_family(family, &mut touched);
                     }
                     self.maps.remove(&key);
+                    index_touched |= matches!(family, Family::Candidates | Family::Iterations);
+                    if let Some(owner) = owner {
+                        invalidated += self.invalidate_cache(&owner);
+                    }
                 }
             }
         }
         self.counters.stale_cancels += invalidated;
-        if matches!(self.kind, RepresentationStrategy::EntityIndex) {
+        if index_touched && matches!(self.kind, RepresentationStrategy::EntityIndex) {
             self.rebuild_index();
         }
         self.counters.allocations += mutations.len() as u64;
@@ -609,11 +645,7 @@ impl FamilyStore {
         self.counters.operations_applied += 1;
         self.handles.generation += 1;
         self.totals = self.maps.totals();
-        self.counters.bytes_held = self.totals.iter().sum::<u64>() + self.extra_bytes;
-        self.counters.peak_live_bytes = self
-            .counters
-            .peak_live_bytes
-            .max(self.counters.bytes_held + self.handles.retained());
+        self.refresh_sizes();
     }
 
     fn invalidate_cache(&mut self, task_id: &TaskId) -> u64 {
@@ -624,7 +656,10 @@ impl FamilyStore {
         let Extra::Cache { entries } = &mut self.extra else {
             return 0;
         };
-        u64::from(Arc::make_mut(entries).remove(task_id).is_some())
+        let entries = Arc::make_mut(entries);
+        let removed = entries.remove(task_id).is_some();
+        self.extra_bytes = entries.len() as u64 * CACHE_ENTRY_BYTES;
+        u64::from(removed)
     }
 
     fn rebuild_index(&mut self) {
@@ -632,12 +667,17 @@ impl FamilyStore {
             return;
         }
         self.cow_extra();
+        // The rebuild scans every indexed family member and allocates new entry
+        // references; both are counted so the index cannot look cheaper than the
+        // maintenance work it really performs.
+        let scanned = (self.maps.candidates.len() + self.maps.iterations.len()) as u64;
         let candidates = build_candidate_index_from(&self.maps);
         let iterations = build_iteration_index_from(&self.maps);
         let entries = candidates.values().map(BTreeSet::len).sum::<usize>()
             + iterations.values().map(BTreeSet::len).sum::<usize>();
-        self.counters.bytes_copied += self.extra_bytes;
-        self.counters.allocations += self.extra_entries();
+        self.counters.collection_traversals += scanned;
+        self.counters.allocations += entries as u64;
+        self.counters.bytes_copied += entries as u64 * INDEX_ENTRY_BYTES;
         let Extra::Index {
             candidates_by_task,
             iterations_by_task,
@@ -648,6 +688,7 @@ impl FamilyStore {
         Arc::make_mut(candidates_by_task).clone_from(&candidates);
         Arc::make_mut(iterations_by_task).clone_from(&iterations);
         self.extra_bytes = entries as u64 * INDEX_ENTRY_BYTES;
+        self.refresh_sizes();
     }
 
     fn observe(&mut self) -> ObservationValues {
@@ -691,6 +732,7 @@ impl FamilyStore {
             }
             RepresentationStrategy::RevisionCache => {
                 let mut inserted = Vec::new();
+                let mut counted_scan = false;
                 for (task_id, formal_outcome) in tasks {
                     let cached = match &self.extra {
                         Extra::Cache { entries } => entries.get(&task_id).cloned(),
@@ -704,7 +746,12 @@ impl FamilyStore {
                             let (candidates, iterations) =
                                 per_task.get(&task_id).copied().unwrap_or((0, 0));
                             self.counters.derivations += 1;
-                            self.counters.collection_traversals += scanned;
+                            // Every miss of one observation is derived from the
+                            // same pass over the indexed families: count one scan.
+                            if !counted_scan {
+                                self.counters.collection_traversals += scanned;
+                                counted_scan = true;
+                            }
                             let derivation = TaskDerivation {
                                 task_id: task_id.clone(),
                                 candidates,
@@ -788,17 +835,23 @@ impl FamilyStore {
             + counts.iterations as u64
             + counts.outcomes as u64
             + counts.capabilities as u64;
-        self.counters.bytes_held = self.totals.iter().sum::<u64>() + self.extra_bytes;
-        self.counters.peak_live_bytes = self
-            .counters
-            .peak_live_bytes
-            .max(self.counters.bytes_held + self.handles.retained());
+        self.refresh_sizes();
         ObservationValues {
             epoch: self.maps.epoch.clone(),
             entries: observed_entries(&self.maps.revisions),
             counts,
             derivations,
         }
+    }
+
+    /// Refresh `bytes_held`/`peak_live_bytes` after any size change (cache
+    /// insertion or invalidation, index rebuild), so the accounting never goes stale.
+    fn refresh_sizes(&mut self) {
+        self.counters.bytes_held = self.totals.iter().sum::<u64>() + self.extra_bytes;
+        self.counters.peak_live_bytes = self
+            .counters
+            .peak_live_bytes
+            .max(self.counters.bytes_held + self.handles.retained());
     }
 
     fn hold(&mut self) {

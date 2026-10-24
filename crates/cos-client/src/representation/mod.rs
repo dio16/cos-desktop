@@ -271,11 +271,24 @@ pub fn observe_with_switch(
     Ok(outcome.observation)
 }
 
+/// Maximum entity count observed at every transaction.
+pub(crate) const STRIDE_ONE_MAX_ENTITIES: usize = 2_000;
+/// Checkpoint stride above [`STRIDE_ONE_MAX_ENTITIES`].
+///
+/// The final transaction is always observed. Divergence between checkpoints is
+/// therefore not compared at the larger sizes; the stride-1 child-removal
+/// regression proves that candidate/iteration removals are observed, and the
+/// summary records this policy explicitly.
+pub(crate) const STRIDE_ABOVE_ONE: usize = 4;
+
 /// Observation stride: every transaction for small streams, checkpoints for the
-/// larger bounded sizes so the fast summary keeps its test budget. The summary
-/// records the policy explicitly.
+/// larger bounded sizes so the fast summary keeps its test budget.
 pub(crate) fn observation_stride(entity_count: usize) -> usize {
-    if entity_count <= 2_000 { 1 } else { 4 }
+    if entity_count <= STRIDE_ONE_MAX_ENTITIES {
+        1
+    } else {
+        STRIDE_ABOVE_ONE
+    }
 }
 
 fn is_checkpoint(transaction: usize, total: usize, stride: usize) -> bool {

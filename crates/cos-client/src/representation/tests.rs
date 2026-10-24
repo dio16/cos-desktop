@@ -177,6 +177,37 @@ fn workload_is_deterministic_and_mixes_insert_update_and_remove() {
         })
     });
     assert!(has_removal, "the workload must remove an entity");
+    let baseline = run_strategy(&first, RepresentationStrategy::BaselineArcMakeMut)
+        .expect("baseline replay over the mixed workload");
+    assert!(
+        baseline.counters.cow_clones > 0,
+        "the retained-handle path must copy at least once"
+    );
+}
+
+#[test]
+fn held_handle_covers_the_insertion_path() {
+    let workload = workload::held_insertion_workload().expect("the held-insertion stream is valid");
+    assert_eq!(super::observation_stride(workload.entity_count), 1);
+    let expected = expected_observations(&workload).expect("the insertion stream is valid");
+    let first = &expected.first().expect("initial observation").1;
+    let last = &expected.last().expect("final observation").1;
+    assert_eq!(
+        last.derivations[0].candidates,
+        first.derivations[0].candidates + 1,
+        "the insertion must be observed"
+    );
+    for strategy in RepresentationStrategy::COMPARED {
+        let facts = run_strategy_with_expected(&workload, strategy, &expected)
+            .unwrap_or_else(|error| panic!("{} diverged: {error}", strategy.id()));
+        assert_eq!(facts.observation, *last);
+    }
+    let baseline = run_strategy(&workload, RepresentationStrategy::BaselineArcMakeMut)
+        .expect("baseline replay over the held insertion");
+    assert!(
+        baseline.counters.cow_clones > 0,
+        "the insertion must run behind a retained handle copy-on-write"
+    );
 }
 
 #[test]
@@ -192,6 +223,16 @@ fn revision_cache_derives_fewer_tasks_than_the_baseline() {
         cache.counters.derivations,
         baseline.counters.derivations
     );
+    // One family scan per observation with misses, never one per missed task.
+    assert!(
+        cache.counters.collection_traversals * 2 < baseline.counters.collection_traversals,
+        "cache traversals {} must stay far below baseline {}",
+        cache.counters.collection_traversals,
+        baseline.counters.collection_traversals
+    );
+    // A cache miss inserts entries and must refresh size accounting at once.
+    assert!(cache.counters.bytes_held >= baseline.counters.bytes_held);
+    assert!(cache.counters.peak_live_bytes >= cache.counters.bytes_held);
     assert!(cache.counters.bytes_copied > 0);
 }
 
@@ -207,6 +248,68 @@ fn entity_index_traverses_fewer_entries_than_the_baseline() {
         index.counters.collection_traversals,
         baseline.counters.collection_traversals
     );
+}
+
+#[test]
+fn child_removals_are_observed_identically_by_every_strategy() {
+    let workload = workload::child_removal_workload().expect("the child-removal stream is valid");
+    assert_eq!(
+        super::observation_stride(workload.entity_count),
+        1,
+        "the full-equality case must not be checkpointed"
+    );
+    let expected = expected_observations(&workload).expect("the product accepts the removals");
+    let initial = &expected
+        .first()
+        .expect("the stream has an initial observation")
+        .1;
+    let final_values = &expected
+        .last()
+        .expect("the stream has a final observation")
+        .1;
+    assert!(
+        initial.derivations[0].candidates > final_values.derivations[0].candidates,
+        "the candidate removal must change the derived candidate count"
+    );
+    assert!(
+        initial.derivations[0].iterations > final_values.derivations[0].iterations,
+        "the iteration removal must change the derived iteration count"
+    );
+    for strategy in RepresentationStrategy::COMPARED {
+        let facts = run_strategy_with_expected(&workload, strategy, &expected)
+            .unwrap_or_else(|error| panic!("{} diverged: {error}", strategy.id()));
+        assert_eq!(facts.observation, *final_values);
+    }
+}
+
+#[test]
+fn index_maintenance_scan_is_counted_in_traversals() {
+    let workload = workload::child_removal_workload().expect("the child-removal stream is valid");
+    let index = run_strategy(&workload, RepresentationStrategy::EntityIndex)
+        .expect("index replay over removals");
+    // Two removals rebuild the index twice; each rebuild scans five candidates and
+    // three iterations, so at least sixteen maintenance traversals are counted.
+    assert!(
+        index.counters.collection_traversals >= 16,
+        "index maintenance must be counted, got {}",
+        index.counters.collection_traversals
+    );
+    assert!(index.counters.allocations > 0);
+}
+
+#[test]
+fn child_removals_leave_no_stale_cache_accounting() {
+    let workload = workload::child_removal_workload().expect("the child-removal stream is valid");
+    let expected = expected_observations(&workload).expect("the product accepts the removals");
+    let cache =
+        run_strategy_with_expected(&workload, RepresentationStrategy::RevisionCache, &expected)
+            .expect("cache replay over removals");
+    assert!(
+        cache.counters.stale_cancels >= 2,
+        "both removals invalidate a cached task"
+    );
+    assert!(cache.counters.peak_live_bytes >= cache.counters.bytes_held);
+    assert_eq!(cache.observation, expected[expected.len() - 1].1);
 }
 
 #[test]

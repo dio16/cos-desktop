@@ -494,3 +494,134 @@ fn push_task_update(
     mutations.push(upsert(base.clone(), Projection::Task(snapshot)));
     Ok(Some((base, next)))
 }
+
+/// Targeted bounded stream exercising a candidate and an iteration removal.
+///
+/// The removed child is unreferenced by the task and by every iteration list, so
+/// the product's effective-state validation accepts it; removing it still changes
+/// the task's derived candidate/iteration counts, which is exactly what a cache
+/// keyed only by upsert ownership would miss.
+#[cfg(test)]
+pub(crate) fn child_removal_workload() -> Result<Workload, ExperimentError> {
+    let task = 0_usize;
+    let task_ref = task_id(task);
+    let mut shape = task_shape(task, true)?;
+    let unlisted = CandidateRef {
+        task_id: task_ref.clone(),
+        run_id: run_id(task),
+        iteration: 0,
+        candidate_id: candidate_id(task, 4),
+        artifact_ref: ArtifactId::fixture(format!("r2/artifact/{task}/4")),
+    };
+    shape.candidates.push(CandidateSnapshot {
+        candidate_ref: unlisted.clone(),
+        task_ref: task_ref.clone(),
+        iteration_ref: iteration_id(task, 0),
+        artifact_refs: Vec::new(),
+        evaluation_refs: Vec::new(),
+        display_label: "L4-unlisted".to_owned(),
+        projection_revision: counter(1)?,
+    });
+    shape.iterations.push(IterationSnapshot {
+        iteration_ref: iteration_id(task, 2),
+        task_ref: task_ref.clone(),
+        index: 2,
+        candidate_refs: Vec::new(),
+        refinement_refs: Vec::new(),
+        evidence_refs: Vec::new(),
+        projection_revision: counter(1)?,
+    });
+    let mut initial = vec![upsert(
+        None,
+        Projection::Capabilities(shape.capabilities.clone()),
+    )];
+    for iteration in &shape.iterations {
+        initial.push(upsert(None, Projection::Iteration(iteration.clone())));
+    }
+    for candidate in &shape.candidates {
+        initial.push(upsert(None, Projection::Candidate(candidate.clone())));
+    }
+    initial.push(upsert(None, Projection::Outcome(shape.outcome.clone())));
+    initial.push(upsert(None, Projection::Task(shape.task.clone())));
+    let transactions = vec![
+        StreamTransaction {
+            mutations: vec![ProjectionMutation::Remove {
+                base_revision: counter(1)?,
+                target: RemoveTarget::Candidate {
+                    candidate_ref: unlisted,
+                },
+            }],
+            handles_after: HandlesAfter::Hold,
+        },
+        StreamTransaction {
+            mutations: vec![ProjectionMutation::Remove {
+                base_revision: counter(1)?,
+                target: RemoveTarget::Iteration {
+                    iteration_id: iteration_id(task, 2),
+                },
+            }],
+            handles_after: HandlesAfter::Release,
+        },
+    ];
+    let entity_count = 1 + shape.candidates.len() + shape.iterations.len() + 1 + 1;
+    Ok(Workload {
+        epoch: EpochId::fixture("r2/epoch/child-removal"),
+        initial,
+        transactions,
+        entity_count,
+    })
+}
+
+/// Targeted bounded stream where an insertion runs while a snapshot handle is
+/// retained, so the hold/release copy-on-write path covers insertion codes too.
+#[cfg(test)]
+pub(crate) fn held_insertion_workload() -> Result<Workload, ExperimentError> {
+    let task = 0_usize;
+    let shape = task_shape(task, false)?;
+    let mut initial = vec![upsert(
+        None,
+        Projection::Capabilities(shape.capabilities.clone()),
+    )];
+    for iteration in &shape.iterations {
+        initial.push(upsert(None, Projection::Iteration(iteration.clone())));
+    }
+    for candidate in &shape.candidates {
+        initial.push(upsert(None, Projection::Candidate(candidate.clone())));
+    }
+    initial.push(upsert(None, Projection::Outcome(shape.outcome.clone())));
+    initial.push(upsert(None, Projection::Task(shape.task.clone())));
+
+    let mut updated_task = shape.task.clone();
+    updated_task.title = "representation entity 0 held".to_owned();
+    updated_task.projection_revision = counter(2)?;
+    let mut updated_iteration = shape.iterations[0].clone();
+    let created = candidate_ref(task, 4);
+    if !updated_iteration.candidate_refs.contains(&created) {
+        updated_iteration.candidate_refs.push(created.clone());
+    }
+    updated_iteration.projection_revision = counter(2)?;
+    let mut new_candidate = shape.candidates[0].clone();
+    new_candidate.candidate_ref = created.clone();
+    new_candidate.display_label = "L4-held".to_owned();
+    new_candidate.projection_revision = counter(1)?;
+    let transactions = vec![
+        StreamTransaction {
+            mutations: vec![upsert(Some(counter(1)?), Projection::Task(updated_task))],
+            handles_after: HandlesAfter::Hold,
+        },
+        StreamTransaction {
+            mutations: vec![
+                upsert(Some(counter(1)?), Projection::Iteration(updated_iteration)),
+                upsert(None, Projection::Candidate(new_candidate)),
+            ],
+            handles_after: HandlesAfter::Release,
+        },
+    ];
+    let entity_count = 1 + shape.candidates.len() + shape.iterations.len() + 1 + 1;
+    Ok(Workload {
+        epoch: EpochId::fixture("r2/epoch/held-insertion"),
+        initial,
+        transactions,
+        entity_count,
+    })
+}
