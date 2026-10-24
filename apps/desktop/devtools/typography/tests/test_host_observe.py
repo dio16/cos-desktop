@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT))
 import host_observe as observe  # noqa: E402
 
 PROBE = Path(__file__).resolve().parents[2] / "r0" / "n03_probe.ps1"
+HOST_OBSERVE = Path(observe.__file__)
 
 
 def chunk(kind: bytes, payload: bytes) -> bytes:
@@ -453,22 +454,82 @@ class ProbeRecordTest(unittest.TestCase):
         self.assertEqual(json.loads(stdout.getvalue())["error"], "OUT_EXISTS")
 
 
+class AcceptanceRecordTest(unittest.TestCase):
+    def _record(self) -> dict:
+        observed = {
+            "window": dict(WINDOW),
+            "screenshot": {"status": "NOT_MEASURED", "reason": "WINDOW_OCCLUDED"},
+            "uia": {
+                "status": "OBSERVED",
+                "reason": "",
+                "elements": [
+                    element("Task Rail"),
+                    element("Inspector"),
+                    element("Context Bar"),
+                    element("Candidate Dock"),
+                    element("Task-184 — 新製品キービジュアル"),
+                ],
+                "truncated": False,
+                "depth_limited": False,
+                "elements_visited": 5,
+            },
+        }
+        analysis = observe.analyze_elements(observed["uia"]["elements"])
+        scale = {
+            "status": "OBSERVED",
+            "dpi": 96,
+            "scale": 1.0,
+            "method": "GetDpiForWindow",
+            "controlled_ladder_step": False,
+        }
+        return observe.build_record(
+            Path("cos-desktop.exe"),
+            "sha256:" + "0" * 64,
+            observed,
+            scale,
+            analysis,
+            {"method": "taskkill /T /F", "exit_code": 1},
+        )
+
+    def test_the_record_claims_no_foreground_grant_and_states_the_human_step(self) -> None:
+        record = self._record()
+        launch = record["launch"]
+        self.assertEqual(launch["foreground_grant"], "none")
+        self.assertNotIn("foreground_permission", launch)
+        self.assertIn("the user", launch["foreground"])
+        self.assertIn("brings COS Desktop to the foreground", record["acceptance_procedure"]["human_step"])
+        self.assertEqual(
+            record["acceptance_procedure"]["scale_order"],
+            ["100 %", "125 %", "150 %", "175 %", "200 %"],
+        )
+        self.assertFalse(record["desktop_state_changed"])
+        self.assertNotIn("AllowSetForegroundWindow", json.dumps(record))
+        self.assertEqual(record["screenshot"]["status"], "NOT_MEASURED")
+        self.assertEqual(record["result"], "PASS_WITH_NOT_MEASURED")
+        self.assertFalse(record["declares_mptyp1_complete"])
+
+
 class NoDesktopStateChangeTest(unittest.TestCase):
-    def test_the_probe_performs_no_z_order_or_focus_operation(self) -> None:
-        # The BLOCKING fix: no temporary topmost, no focus request, nothing that could be
-        # left behind. An occluded target is refused instead.
-        source = PROBE.read_text(encoding="utf-8")
-        for forbidden in (
-            "SetWindowPos",
-            "SetForegroundWindow",
-            "BringWindowToTop",
-            "ShowWindow",
-            "SetActiveWindow",
-            "SetFocus",
-            "MoveWindow",
-        ):
-            self.assertNotIn(forbidden, source, forbidden)
-        self.assertIn("WINDOW_OCCLUDED", source)
+    FORBIDDEN = (
+        "AllowSetForegroundWindow",
+        "SetWindowPos",
+        "SetForegroundWindow",
+        "BringWindowToTop",
+        "ShowWindow",
+        "SetActiveWindow",
+        "SetFocus",
+        "MoveWindow",
+    )
+
+    def test_the_observation_code_performs_no_foreground_or_z_order_operation(self) -> None:
+        # The border is absolute: neither the probe nor the harness may influence which
+        # window is in front. The user foregrounds COS Desktop; an occluded target is
+        # refused instead.
+        for source_path in (PROBE, HOST_OBSERVE):
+            source = source_path.read_text(encoding="utf-8")
+            for forbidden in self.FORBIDDEN:
+                self.assertNotIn(forbidden, source, f"{forbidden} in {source_path.name}")
+        self.assertIn("WINDOW_OCCLUDED", PROBE.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

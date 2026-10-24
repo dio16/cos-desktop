@@ -31,8 +31,14 @@ revision therefore refuses any capture that is not provably the target window:
                  missing title is refused, never recorded as whatever was found.
 
 Nothing on the desktop is changed to make a capture possible: there is no raise, no
-focus request and no z-order operation. An occluded target is `NOT_MEASURED` with the
-closed reason `WINDOW_OCCLUDED`, so an observation never leaves a side effect behind.
+focus request, no z-order operation and no foreground-permission grant. The foreground
+is the user's action: bring COS Desktop to the front (or run the documented command from
+a terminal that is already foreground) before observing. An occluded target is
+`NOT_MEASURED` with the closed reason `WINDOW_OCCLUDED`, so an observation never leaves
+a side effect behind and never takes over the desktop.
+
+The acceptance order is 100 % first, then 125/150/175/200 %: each scale is a separate
+human-driven observation, and this tool cannot change the display scale itself.
     live check   this process re-queries the HWND itself (IsWindow,
                  GetWindowThreadProcessId, GetWindowTextW, GetWindowRect) before the
                  application is stopped; any disagreement refuses the capture
@@ -125,8 +131,25 @@ NOT_MEASURED = (
         "item": "display_scale_ladder",
         "reason": "changing the display scale needs interactive Windows display control; "
         "the observation below is the host's current scale, not a ladder step",
-        "human_procedure": "Settings > System > Display > Scale: 100/125/150/175/200 %, "
-        "one run per scale: cargo run --locked -p cos-desktop -- --fixture",
+        "human_procedure": "bring COS Desktop to the foreground (or run from a foreground "
+        "terminal), then Settings > System > Display > Scale: 100 % first, then 125/150/"
+        "175/200 %, one observation per scale: cargo run --locked -p cos-desktop -- "
+        "--fixture",
+    },
+    {
+        "item": "pixel_evidence_for_wired_typography",
+        "reason": "no identity-proven screenshot exists for this run; the window cannot be "
+        "foregrounded from here, and a pixel claim without that capture would be fabricated",
+        "human_procedure": "bring COS Desktop to the foreground, then run: python -B "
+        "apps/desktop/devtools/typography/host_observe.py --out <fresh dir>; require "
+        "screenshot.status OBSERVED with identity in the record",
+    },
+    {
+        "item": "structural_hairline_drawn",
+        "reason": "a drawn hairline is a pixel fact; it cannot be read from the AX tree and "
+        "no identity-proven screenshot exists for this run",
+        "human_procedure": "after foregrounding and capturing as above, check the dock group "
+        "separator is a visible one-physical-pixel line in the screenshot",
     },
     {
         "item": "cross_monitor_move",
@@ -689,22 +712,6 @@ def observe_window(
     fail(last_code)
 
 
-def grant_foreground_permission() -> bool:
-    """Let the launched application activate the window it creates itself.
-
-    This changes no window: it only permits the child to take the foreground, which is
-    what happens when a human runs the documented command from a foreground terminal. A
-    denied grant is recorded, not retried, and never replaced by a raise/focus call.
-    """
-    try:
-        user32 = ctypes.windll.user32
-        user32.AllowSetForegroundWindow.argtypes = [ctypes.c_uint]
-        user32.AllowSetForegroundWindow.restype = ctypes.c_bool
-        return bool(user32.AllowSetForegroundWindow(0xFFFFFFFF))  # ASFW_ANY
-    except (AttributeError, OSError, TypeError, ValueError):
-        return False
-
-
 def launch(exe: Path, log_path: Path) -> subprocess.Popen:
     try:
         log = open(log_path, "wb")
@@ -825,14 +832,26 @@ def build_record(
         "launch": {
             "procedure": "the documented human command: the fixture binary is started "
             "with --fixture and creates/shows its own window",
-            "foreground_permission": {
-                "call": "AllowSetForegroundWindow(ASFW_ANY)",
-                "granted": observed.get("foreground_permission_granted"),
-            },
             "window_created_by": "the application",
+            "foreground": "the user's action: the tool never grants, requests or takes "
+            "the foreground, so whether the window ends up in front is not the tool",
+            "foreground_grant": "none",
             "probe_state_change": "none: no raise, focus, move or z-order operation",
         },
         "desktop_state_changed": False,
+        "acceptance_procedure": {
+            "human_step": "the user brings COS Desktop to the foreground (click its window "
+            "or taskbar entry) or runs the documented command from a terminal that is "
+            "already foreground; the tool never does this",
+            "capture_step": "the observation then captures the target HWND with "
+            "PrintWindow, re-queries the HWND identity and cross-checks the display over "
+            "the window's on-screen region",
+            "no_automation": "no raise, focus, move, z-order change or foreground grant is "
+            "performed by the tool; an occluded window is NOT_MEASURED / WINDOW_OCCLUDED",
+            "scale_order": ["100 %", "125 %", "150 %", "175 %", "200 %"],
+            "scale_procedure": "Settings > System > Display > Scale; one observation per "
+            "scale, 100 % first",
+        },
         "checks": checks,
         "result": result_of(checks),
         "app_stop": stop_record,
@@ -878,7 +897,6 @@ def main(argv: list[str] | None = None) -> int:
         probe_record = out / "probe.json"
         screenshot = out / "screenshot.png"
         exe_digest = sha256_bytes(exe.read_bytes())
-        granted = grant_foreground_permission()
         process = launch(exe, out / "app.log")
         document = observe_window(
             args.powershell, probe, process.pid, screenshot
@@ -903,7 +921,6 @@ def main(argv: list[str] | None = None) -> int:
                 "status": "NOT_MEASURED",
                 "reason": observed["screenshot"]["reason"],
             }
-        observed["foreground_permission_granted"] = granted
         scale = host_scale(observed["window"]["handle"])
         analysis = analyze_elements(observed["uia"]["elements"])
         stop_record = stop(process)
