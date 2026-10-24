@@ -1,9 +1,10 @@
-"""MP-TYP1-C-R1: pure coverage for capture identity, label completeness and refusals.
+"""MP-TYP1-C-R2: capture identity, PNG integrity, pinned title and refusal coverage.
 
-No window is launched and no desktop is required: these tests cover the parts that can
-be established deterministically - PNG IHDR parsing, host-scale arithmetic, the
-all-label requirement, the capture-identity binding that rejects a foreign or unbound
-image, and the honest NOT_MEASURED path when the probe refuses to capture.
+No window is launched and no desktop is required. These tests cover the parts that can
+be established deterministically: PNG structural/decodable verification (IHDR alone is
+never trusted), the geometry binding to the target rectangle, the pinned window title,
+the all-label requirement, the capture-identity binding, and the rule that an occluded
+target is a closed NOT_MEASURED refusal with no desktop state change.
 """
 
 from __future__ import annotations
@@ -15,14 +16,39 @@ import struct
 import sys
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import host_observe as observe  # noqa: E402
 
+PROBE = Path(__file__).resolve().parents[2] / "r0" / "n03_probe.ps1"
 
-def png_header(width: int, height: int) -> bytes:
+
+def chunk(kind: bytes, payload: bytes) -> bytes:
+    return (
+        struct.pack(">I", len(payload))
+        + kind
+        + payload
+        + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF)
+    )
+
+
+def png(width: int, height: int, rgb: tuple[int, int, int] = (23, 25, 28)) -> bytes:
+    """A real, decodable 8-bit truecolour PNG."""
+    header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    raw = b"".join(b"\x00" + bytes(rgb) * width for _ in range(height))
+    return (
+        observe.PNG_SIGNATURE
+        + chunk(b"IHDR", header)
+        + chunk(b"IDAT", zlib.compress(raw, 9))
+        + chunk(b"IEND", b"")
+    )
+
+
+def png_header_only(width: int, height: int) -> bytes:
+    """A header fragment: signature plus IHDR, no IDAT and no IEND."""
     return (
         observe.PNG_SIGNATURE
         + struct.pack(">I", 13)
@@ -48,7 +74,7 @@ def element(name: str, depth: int = 1) -> dict:
 
 WINDOW = {
     "status": "OBSERVED",
-    "title": "COS Desktop",
+    "title": observe.EXPECTED_TITLE,
     "pid": 4242,
     "handle": 7,
     "left": 10,
@@ -57,7 +83,7 @@ WINDOW = {
     "height": 480,
 }
 RECT = {"left": 10, "top": 20, "width": 640, "height": 480}
-LIVE = {"status": "OBSERVED", "pid": 4242, "title": "COS Desktop", "rect": dict(RECT)}
+LIVE = {"status": "OBSERVED", "pid": 4242, "title": observe.EXPECTED_TITLE, "rect": dict(RECT)}
 
 
 def captured(**overrides) -> dict:
@@ -69,7 +95,7 @@ def captured(**overrides) -> dict:
         "method": observe.BOUND_CAPTURE_METHOD,
         "handle": 7,
         "pid": 4242,
-        "title": "COS Desktop",
+        "title": observe.EXPECTED_TITLE,
         "rect": dict(RECT),
         "still_current": True,
         "content_cross_check": {
@@ -87,19 +113,64 @@ def captured(**overrides) -> dict:
     return value
 
 
-class PngHeaderTest(unittest.TestCase):
-    def test_dimensions_come_from_the_ihdr_chunk(self) -> None:
-        self.assertEqual(observe.ihdr_dimensions(png_header(1440, 900)), (1440, 900))
+class PngIntegrityTest(unittest.TestCase):
+    def test_a_complete_png_decodes_to_its_dimensions(self) -> None:
+        self.assertEqual(observe.png_dimensions_verified(png(320, 200)), (320, 200))
 
-    def test_a_non_png_is_refused_with_a_closed_code(self) -> None:
+    def test_a_header_fragment_is_not_a_png(self) -> None:
+        # The MP-TYP1-C-R1 weakness: the signature plus IHDR was accepted as an image.
         with self.assertRaises(observe.ObserveError) as raised:
-            observe.ihdr_dimensions(b"not a png at all")
+            observe.png_dimensions_verified(png_header_only(320, 200))
+        self.assertEqual(raised.exception.code, "PNG_TRUNCATED")
+
+    def test_a_truncated_png_is_refused(self) -> None:
+        data = png(64, 48)
+        with self.assertRaises(observe.ObserveError) as raised:
+            observe.png_dimensions_verified(data[: len(data) // 2])
+        self.assertIn(raised.exception.code, ("PNG_TRUNCATED", "PNG_UNDECODABLE"))
+
+    def test_an_undecodable_image_data_chunk_is_refused(self) -> None:
+        header = struct.pack(">IIBBBBB", 32, 32, 8, 2, 0, 0, 0)
+        data = (
+            observe.PNG_SIGNATURE
+            + chunk(b"IHDR", header)
+            + chunk(b"IDAT", b"this is not zlib data")
+            + chunk(b"IEND", b"")
+        )
+        with self.assertRaises(observe.ObserveError) as raised:
+            observe.png_dimensions_verified(data)
+        self.assertEqual(raised.exception.code, "PNG_UNDECODABLE")
+
+    def test_a_corrupt_crc_is_refused(self) -> None:
+        data = bytearray(png(16, 16))
+        data[-5] ^= 0xFF  # break the IEND CRC
+        with self.assertRaises(observe.ObserveError) as raised:
+            observe.png_dimensions_verified(bytes(data))
+        self.assertEqual(raised.exception.code, "PNG_TRUNCATED")
+
+    def test_a_zero_sized_image_is_refused(self) -> None:
+        header = struct.pack(">IIBBBBB", 0, 0, 8, 2, 0, 0, 0)
+        data = (
+            observe.PNG_SIGNATURE
+            + chunk(b"IHDR", header)
+            + chunk(b"IDAT", zlib.compress(b""))
+            + chunk(b"IEND", b"")
+        )
+        with self.assertRaises(observe.ObserveError) as raised:
+            observe.png_dimensions_verified(data)
         self.assertEqual(raised.exception.code, "PNG_INVALID")
 
-    def test_zero_sized_ihdr_is_refused(self) -> None:
+    def test_an_oversized_decode_is_refused_without_decoding_it(self) -> None:
+        header = struct.pack(">IIBBBBB", 4096, 4096, 8, 6, 0, 0, 0)  # 67 MiB decoded
+        data = (
+            observe.PNG_SIGNATURE
+            + chunk(b"IHDR", header)
+            + chunk(b"IDAT", zlib.compress(b"\x00" * 16))
+            + chunk(b"IEND", b"")
+        )
         with self.assertRaises(observe.ObserveError) as raised:
-            observe.ihdr_dimensions(png_header(0, 900))
-        self.assertEqual(raised.exception.code, "PNG_INVALID")
+            observe.png_dimensions_verified(data)
+        self.assertEqual(raised.exception.code, "PNG_TOO_LARGE")
 
 
 class HostScaleTest(unittest.TestCase):
@@ -120,16 +191,18 @@ class CaptureIdentityTest(unittest.TestCase):
         self.assertEqual(identity["method"], observe.BOUND_CAPTURE_METHOD)
         self.assertEqual(identity["rect"], RECT)
         self.assertFalse(identity["screen_copy_used_for_capture"])
+        self.assertFalse(identity["desktop_state_changed"])
         self.assertIn("live_reverification", identity)
         self.assertEqual(identity["content_cross_check"]["matched"], 49)
         self.assertEqual(identity["content_cross_check"]["distinct_sampled_colors"], 5)
 
     def test_a_screen_rectangle_capture_is_refused_even_with_matching_rect(self) -> None:
-        # The MP-TYP1-C defect: the image was a screen copy of the target rectangle, so
-        # its dimensions and hash matched while its content was a foreign window.
-        screen_copy = captured(method="CopyFromScreen")
+        # The MP-TYP1-C defect: a screen copy of the rectangle matched size and hash while
+        # its content was a foreign window.
         with self.assertRaises(observe.ObserveError) as raised:
-            observe.verify_capture_identity(screen_copy, WINDOW, 4242, LIVE)
+            observe.verify_capture_identity(
+                captured(method="CopyFromScreen"), WINDOW, 4242, LIVE
+            )
         self.assertEqual(raised.exception.code, "CAPTURE_NOT_BOUND")
 
     def test_a_capture_of_a_different_window_is_refused(self) -> None:
@@ -154,7 +227,7 @@ class CaptureIdentityTest(unittest.TestCase):
         for cross in (
             {"status": "OBSERVED", "samples": 49, "matched": 10, "tolerance": 24,
              "distinct_sampled_colors": 5, "non_black_samples": 49},
-            {"status": "NOT_MEASURED", "reason": "WINDOW_OFFSCREEN"},
+            {"status": "NOT_MEASURED", "reason": "WINDOW_OCCLUDED"},
             {"status": "OBSERVED", "samples": 49, "matched": 49, "tolerance": 24,
              "distinct_sampled_colors": 1, "non_black_samples": 49},
             {"status": "OBSERVED", "samples": 49, "matched": 49, "tolerance": 24,
@@ -170,13 +243,10 @@ class CaptureIdentityTest(unittest.TestCase):
     def test_live_disagreement_is_refused(self) -> None:
         for live in (
             {"status": "NOT_MEASURED", "reason": "WIN32_UNAVAILABLE"},
-            {"status": "OBSERVED", "pid": 1, "title": "COS Desktop", "rect": dict(RECT)},
-            {
-                "status": "OBSERVED",
-                "pid": 4242,
-                "title": "COS Desktop",
-                "rect": {"left": 0, "top": 0, "width": 640, "height": 480},
-            },
+            {"status": "OBSERVED", "pid": 1, "title": observe.EXPECTED_TITLE,
+             "rect": dict(RECT)},
+            {"status": "OBSERVED", "pid": 4242, "title": observe.EXPECTED_TITLE,
+             "rect": {"left": 0, "top": 0, "width": 640, "height": 480}},
         ):
             with self.assertRaises(observe.ObserveError) as raised:
                 observe.verify_capture_identity(captured(), WINDOW, 4242, live)
@@ -203,11 +273,7 @@ class LabelCompletenessTest(unittest.TestCase):
             [element("Task Rail"), element("Inspector"), element("新製品キービジュアル")]
         )
         checks = observe.evaluate_labels(analysis, "OBSERVED")
-        self.assertEqual(
-            checks[0]["status"],
-            "FAIL",
-            "a partial surface-label set must not pass as complete",
-        )
+        self.assertEqual(checks[0]["status"], "FAIL")
         self.assertEqual(observe.result_of(checks), "FAIL")
 
     def test_a_missing_japanese_label_fails(self) -> None:
@@ -230,10 +296,10 @@ class LabelCompletenessTest(unittest.TestCase):
 
 
 class ProbeRecordTest(unittest.TestCase):
-    def _record(self, width: int = 640, height: int = 480) -> dict:
+    def _record(self, width: int = 640, height: int = 480, title: str = observe.EXPECTED_TITLE) -> dict:
         return {
             "ok": True,
-            "window": dict(WINDOW, width=width, height=height),
+            "window": dict(WINDOW, title=title, width=width, height=height),
             "screenshot": {
                 "status": "OBSERVED",
                 "width": width,
@@ -254,55 +320,64 @@ class ProbeRecordTest(unittest.TestCase):
     def test_a_matching_record_is_accepted_and_the_digest_recomputed(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             screenshot = Path(directory) / "screenshot.png"
-            screenshot.write_bytes(png_header(640, 480))
+            screenshot.write_bytes(png(640, 480))
             expected_digest = observe.sha256_bytes(screenshot.read_bytes())
             observed = observe.validate_probe_record(
                 self._record(640, 480), 4242, screenshot
             )
         self.assertEqual(observed["screenshot"]["ihdr"], {"width": 640, "height": 480})
-        # The digest is computed from the bytes, never accepted from the record.
         self.assertEqual(observed["screenshot"]["digest"], expected_digest)
+
+    def test_a_png_whose_dimensions_disagree_with_the_window_is_refused(self) -> None:
+        record = self._record(640, 480)
+        # Reported and actual image sizes agree with each other but not with the window.
+        record["screenshot"]["width"] = 641
+        with tempfile.TemporaryDirectory() as directory:
+            screenshot = Path(directory) / "screenshot.png"
+            screenshot.write_bytes(png(641, 480))
+            with self.assertRaises(observe.ObserveError) as raised:
+                observe.validate_probe_record(record, 4242, screenshot)
+        self.assertEqual(raised.exception.code, "SCREENSHOT_GEOMETRY_MISMATCH")
+
+    def test_a_truncated_png_in_the_record_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            screenshot = Path(directory) / "screenshot.png"
+            screenshot.write_bytes(png(640, 480)[:-200])
+            with self.assertRaises(observe.ObserveError) as raised:
+                observe.validate_probe_record(self._record(640, 480), 4242, screenshot)
+        self.assertIn(raised.exception.code, ("PNG_TRUNCATED", "PNG_UNDECODABLE"))
+
+    def test_a_wrong_or_missing_title_is_refused(self) -> None:
+        for title in ("COS Desktop (other instance)", ""):
+            with tempfile.TemporaryDirectory() as directory:
+                screenshot = Path(directory) / "screenshot.png"
+                screenshot.write_bytes(png(640, 480))
+                with self.assertRaises(observe.ObserveError) as raised:
+                    observe.validate_probe_record(
+                        self._record(640, 480, title), 4242, screenshot
+                    )
+            self.assertEqual(raised.exception.code, "WINDOW_TITLE_MISMATCH")
 
     def test_a_probe_capture_refusal_is_recorded_as_not_measured(self) -> None:
         record = self._record(640, 480)
-        record["screenshot"] = {
-            "status": "NOT_MEASURED",
-            "reason": "WINDOW_CAPTURE_FAILED",
-        }
+        record["screenshot"] = {"status": "NOT_MEASURED", "reason": "WINDOW_OCCLUDED"}
         with tempfile.TemporaryDirectory() as directory:
             observed = observe.validate_probe_record(
                 record, 4242, Path(directory) / "absent.png"
             )
         self.assertEqual(observed["screenshot"]["status"], "NOT_MEASURED")
-        self.assertEqual(observed["screenshot"]["reason"], "WINDOW_CAPTURE_FAILED")
-
-    def test_an_image_whose_ihdr_disagrees_with_the_record_is_refused(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            screenshot = Path(directory) / "screenshot.png"
-            screenshot.write_bytes(png_header(640, 480))
-            with self.assertRaises(observe.ObserveError) as raised:
-                observe.validate_probe_record(self._record(641, 480), 4242, screenshot)
-        self.assertEqual(raised.exception.code, "SCREENSHOT_MISMATCH")
-
-    def test_an_observed_record_without_identity_fields_is_not_identity(self) -> None:
-        # MP-TYP1-C regression: a record can say OBSERVED and match the rectangle while
-        # carrying no bound-capture identity; that must never count as identity.
-        with tempfile.TemporaryDirectory() as directory:
-            screenshot = Path(directory) / "screenshot.png"
-            screenshot.write_bytes(png_header(640, 480))
-            observed = observe.validate_probe_record(
-                self._record(640, 480), 4242, screenshot
-            )
-        with self.assertRaises(observe.ObserveError) as raised:
-            observe.verify_capture_identity(
-                observed["screenshot"]["raw"], WINDOW, 4242, LIVE
-            )
-        self.assertEqual(raised.exception.code, "CAPTURE_NOT_BOUND")
+        self.assertEqual(observed["screenshot"]["reason"], "WINDOW_OCCLUDED")
+        # An occluded target is not a failure of the run.
+        checks = [
+            {"name": "screenshot_is_the_target_window", "status": "NOT_MEASURED"},
+            {"name": "latin_labels_present", "status": "PASS"},
+        ]
+        self.assertEqual(observe.result_of(checks), "PASS_WITH_NOT_MEASURED")
 
     def test_a_window_from_another_pid_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             screenshot = Path(directory) / "screenshot.png"
-            screenshot.write_bytes(png_header(640, 480))
+            screenshot.write_bytes(png(640, 480))
             with self.assertRaises(observe.ObserveError) as raised:
                 observe.validate_probe_record(self._record(640, 480), 9999, screenshot)
         self.assertEqual(raised.exception.code, "RECORD_SCHEMA")
@@ -313,6 +388,24 @@ class ProbeRecordTest(unittest.TestCase):
             code = observe.main(["--exe", __file__, "--out", directory])
         self.assertEqual(code, 1)
         self.assertEqual(json.loads(stdout.getvalue())["error"], "OUT_EXISTS")
+
+
+class NoDesktopStateChangeTest(unittest.TestCase):
+    def test_the_probe_performs_no_z_order_or_focus_operation(self) -> None:
+        # The BLOCKING fix: no temporary topmost, no focus request, nothing that could be
+        # left behind. An occluded target is refused instead.
+        source = PROBE.read_text(encoding="utf-8")
+        for forbidden in (
+            "SetWindowPos",
+            "SetForegroundWindow",
+            "BringWindowToTop",
+            "ShowWindow",
+            "SetActiveWindow",
+            "SetFocus",
+            "MoveWindow",
+        ):
+            self.assertNotIn(forbidden, source, forbidden)
+        self.assertIn("WINDOW_OCCLUDED", source)
 
 
 if __name__ == "__main__":

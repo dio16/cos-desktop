@@ -42,12 +42,10 @@ public static class NativeWindow {
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr handle);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr handle, out uint pid);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr handle, out RECT rect);
-    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr handle);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr handle, IntPtr hdc, uint flags);
     [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr handle);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
-    [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr handle, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
 }
 '@
@@ -127,16 +125,12 @@ $window = @{
 # foreign window occupying the same screen rectangle cannot be recorded as this
 # window. The bound image is then verified against the display over the window's
 # on-screen region: an occluding foreign window disagrees and the capture is refused.
-# Every failure is a closed refusal, never a fallback image.
+# Nothing about the window is changed: no raise, no focus, no z-order operation, so an
+# occluded target is simply NOT_MEASURED. Every failure is a closed refusal, never a
+# fallback image.
 $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "screenshot was not attempted" }
 try {
     $bitmap = New-Object System.Drawing.Bitmap $width, $height
-    # Briefly raise the target topmost without activating it so the display at its
-    # rectangle can be compared with the bound capture; the previous z-order state
-    # (HWND_NOTOPMOST) is restored immediately after the capture. Nothing but z-order
-    # changes, and both the raise and the restore are recorded.
-    $raised = [NativeWindow]::SetWindowPos($target.Handle, [IntPtr](-1), 0, 0, 0, 0, 0x0001 -bor 0x0002 -bor 0x0010)
-    Start-Sleep -Milliseconds 250
     $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
     $hdc = $graphics.GetHdc()
     # PW_RENDERFULLCONTENT (2) asks the window to render its composed content.
@@ -204,7 +198,6 @@ try {
             }
             $screen.Dispose()
         }
-        $restored = [NativeWindow]::SetWindowPos($target.Handle, [IntPtr](-2), 0, 0, 0, 0, 0x0001 -bor 0x0002 -bor 0x0010)
         $content = @{
             status = "NOT_MEASURED"
             method = "bound capture versus display over the on-screen region"
@@ -224,8 +217,10 @@ try {
             $bitmap.Dispose()
             $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "WINDOW_CAPTURE_EMPTY"; content = $content }
         } elseif ($matched -lt 45) {
+            # The display at the target rectangle is not the target: it is occluded.
+            # Nothing was changed to make it visible; this is a closed refusal.
             $bitmap.Dispose()
-            $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "WINDOW_CAPTURE_UNVERIFIED"; content = $content }
+            $screenshotRecord = @{ status = "NOT_MEASURED"; reason = "WINDOW_OCCLUDED"; content = $content }
         } else {
             $content.status = "OBSERVED"
             $content.visible_region = @{ left = $ix; top = $iy; width = $iw; height = $ih }
@@ -248,8 +243,6 @@ try {
                     rect = @{ left = $rect.Left; top = $rect.Top; width = $width; height = $height }
                     still_current = $true
                     foreground_at_capture = ([NativeWindow]::GetForegroundWindow() -eq $target.Handle)
-                    raised_for_capture = $raised
-                    restored_after_capture = $restored
                     content_cross_check = $content
                 }
             }

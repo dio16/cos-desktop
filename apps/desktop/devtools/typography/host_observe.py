@@ -21,6 +21,15 @@ revision therefore refuses any capture that is not provably the target window:
                  be a blank composite (>= 4 distinct sampled colours, >= 45 non-black
                  samples). A foreground window is not required: the binding is the HWND,
                  and a foreign window on top makes the sampled agreement fail.
+    geometry     the PNG must decode to exactly the target window rectangle and the
+                 capture rectangle; a structurally incomplete or undecodable image, or
+                 a dimension mismatch, is refused (IHDR-only checks are not enough).
+    title        the window title must equal the pinned `COS Desktop`; a different or
+                 missing title is refused, never recorded as whatever was found.
+
+Nothing on the desktop is changed to make a capture possible: there is no raise, no
+focus request and no z-order operation. An occluded target is `NOT_MEASURED` with the
+closed reason `WINDOW_OCCLUDED`, so an observation never leaves a side effect behind.
     live check   this process re-queries the HWND itself (IsWindow,
                  GetWindowThreadProcessId, GetWindowTextW, GetWindowRect) before the
                  application is stopped; any disagreement refuses the capture
@@ -48,14 +57,20 @@ import datetime
 import hashlib
 import json
 import re
+import struct
 import subprocess
 import sys
 import time
+import zlib
 from pathlib import Path
 from typing import Any
 
 OBSERVATION_VERSION = 2
-WINDOW_TITLE = "COS Desktop"
+# Pinned: a window with any other title is not the shell this harness observes.
+EXPECTED_TITLE = "COS Desktop"
+MAX_PNG_CHUNKS = 4096
+MAX_CHUNK_BYTES = 4 * 1024 * 1024
+MAX_DECODED_BYTES = 64 * 1024 * 1024
 MAX_RECORD_BYTES = 16 * 1024 * 1024
 MAX_ATTEMPTS = 40
 ATTEMPT_DELAY_S = 0.4
@@ -93,6 +108,11 @@ ERROR_CODES = (
     "CAPTURE_NOT_BOUND",
     "CAPTURE_IDENTITY_MISMATCH",
     "CAPTURE_CONTENT_MISMATCH",
+    "WINDOW_TITLE_MISMATCH",
+    "PNG_TRUNCATED",
+    "PNG_UNDECODABLE",
+    "PNG_TOO_LARGE",
+    "SCREENSHOT_GEOMETRY_MISMATCH",
 )
 
 NOT_MEASURED = (
@@ -165,14 +185,80 @@ def sha256_bytes(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
-def ihdr_dimensions(data: bytes) -> tuple[int, int]:
-    """Width and height from the PNG IHDR chunk, or a closed PNG_INVALID."""
-    if len(data) < 24 or data[:8] != PNG_SIGNATURE or data[12:16] != b"IHDR":
+def png_dimensions_verified(data: bytes) -> tuple[int, int]:
+    """Verify the PNG is structurally complete and decodable within bounded caps.
+
+    Walks every chunk to IEND with matching CRCs, requires IHDR first and IDAT present,
+    refuses interlaced/unsupported layouts, then inflates the image data at a bounded
+    length and checks every scanline filter byte. IHDR alone is never trusted.
+    """
+    if len(data) < 8 or data[:8] != PNG_SIGNATURE:
         fail("PNG_INVALID")
-    width = int.from_bytes(data[16:20], "big")
-    height = int.from_bytes(data[20:24], "big")
+    offset = 8
+    chunks = 0
+    header = None
+    image_data = bytearray()
+    seen_end = False
+    while offset < len(data):
+        if chunks >= MAX_PNG_CHUNKS:
+            fail("PNG_TOO_LARGE")
+        if offset + 8 > len(data):
+            fail("PNG_TRUNCATED")
+        length = int.from_bytes(data[offset:offset + 4], "big")
+        kind = data[offset + 4:offset + 8]
+        if length > MAX_CHUNK_BYTES:
+            fail("PNG_TOO_LARGE")
+        payload_end = offset + 8 + length
+        if payload_end + 4 > len(data):
+            fail("PNG_TRUNCATED")
+        payload = data[offset + 8:payload_end]
+        crc = int.from_bytes(data[payload_end:payload_end + 4], "big")
+        if zlib.crc32(kind + payload) & 0xFFFFFFFF != crc:
+            fail("PNG_TRUNCATED")
+        if chunks == 0:
+            if kind != b"IHDR" or length != 13:
+                fail("PNG_INVALID")
+            header = struct.unpack(">IIBBBBB", payload)
+        elif kind == b"IDAT":
+            image_data += payload
+        elif kind == b"IEND":
+            if length != 0:
+                fail("PNG_INVALID")
+            seen_end = True
+            offset = payload_end + 4
+            break
+        offset = payload_end + 4
+        chunks += 1
+    if not seen_end:
+        fail("PNG_TRUNCATED")
+    if offset != len(data):
+        fail("PNG_INVALID")
+    if header is None or not image_data:
+        fail("PNG_INVALID")
+    width, height, bit_depth, color_type, compression, filter_method, interlace = header
     if width <= 0 or height <= 0:
         fail("PNG_INVALID")
+    if compression != 0 or filter_method != 0 or interlace != 0:
+        # Interlaced/palette/low-bit-depth images are not produced by the probe and would
+        # need a full decoder; refuse rather than guess.
+        fail("PNG_INVALID")
+    channels = {0: 1, 2: 3, 4: 2, 6: 4}.get(color_type)
+    if channels is None or bit_depth not in (8, 16):
+        fail("PNG_INVALID")
+    scanline = (width * bit_depth * channels + 7) // 8
+    expected = height * (1 + scanline)
+    if expected > MAX_DECODED_BYTES:
+        fail("PNG_TOO_LARGE")
+    try:
+        inflater = zlib.decompressobj()
+        raw = inflater.decompress(bytes(image_data), expected + 1)
+    except zlib.error:
+        fail("PNG_UNDECODABLE")
+    if len(raw) != expected:
+        fail("PNG_UNDECODABLE")
+    for row in range(height):
+        if raw[row * (1 + scanline)] > 4:
+            fail("PNG_UNDECODABLE")
     return width, height
 
 
@@ -374,8 +460,8 @@ def _window(value: Any) -> dict[str, Any]:
     for key in ("pid", "handle", "left", "top", "width", "height"):
         if type(value.get(key)) is not int:
             fail("RECORD_SCHEMA")
-    if not isinstance(value.get("title"), str) or not value["title"]:
-        fail("RECORD_SCHEMA")
+    if value.get("title") != EXPECTED_TITLE:
+        fail("WINDOW_TITLE_MISMATCH")
     if value["width"] <= 0 or value["height"] <= 0:
         fail("RECORD_SCHEMA")
     return value
@@ -419,9 +505,11 @@ def validate_probe_record(document: dict[str, Any], pid: int, screenshot: Path) 
         data = screenshot.read_bytes()
     except OSError:
         fail("SCREENSHOT_MISMATCH")
-    width, height = ihdr_dimensions(data)
+    width, height = png_dimensions_verified(data)
     if (width, height) != (shot.get("width"), shot.get("height")):
         fail("SCREENSHOT_MISMATCH")
+    if (width, height) != (window["width"], window["height"]):
+        fail("SCREENSHOT_GEOMETRY_MISMATCH")
     return {
         "window": window,
         "screenshot": {
@@ -487,7 +575,6 @@ def verify_capture_identity(
         "rect": expected_rect,
         "still_current": True,
         "foreground_at_capture": captured.get("foreground_at_capture"),
-        "raised_for_capture": captured.get("raised_for_capture"),
         "content_cross_check": {
             "status": "OBSERVED",
             "samples": samples,
@@ -500,6 +587,7 @@ def verify_capture_identity(
         },
         "live_reverification": "IsWindow, GetWindowThreadProcessId, GetWindowTextW and "
         "GetWindowRect agreed with the capture before the application was stopped",
+        "desktop_state_changed": False,
         "screen_copy_used_for_capture": False,
     }
 
