@@ -85,6 +85,7 @@ ERROR_CODES = (
     "READ_FAILED",
     "SCHEMA",
     "CAPTURE_TOO_LARGE",
+    "CAPTURE_SCHEMA",
     "CAPTURE_RECORD_LIMIT",
     "CPU_PROBE_MISSING",
     "CPU_PROBE_FAILED",
@@ -146,6 +147,12 @@ def feasibility() -> dict[str, Any]:
 
 
 def load_capture(path: str) -> dict[str, Any]:
+    """Bounded load plus the existing S2B contract; nothing is counted from raw JSON.
+
+    `s2b_contracts.validate_capture` is the only capture validator, so a document that is
+    merely shaped like a capture (say `{"records": [{"kind": 1}]}`) is refused instead of
+    being elevated into an observation.
+    """
     try:
         size = Path(path).stat().st_size
     except OSError:
@@ -156,8 +163,12 @@ def load_capture(path: str) -> dict[str, Any]:
         document = contracts.load_document(path, MAX_CAPTURE_BYTES)
     except contracts.ContractError:
         fail("SCHEMA")
-    if not isinstance(document, dict) or "records" not in document:
+    if not isinstance(document, dict):
         fail("SCHEMA")
+    try:
+        s2b.validate_capture(document)
+    except s2b.ObservationError:
+        fail("CAPTURE_SCHEMA")
     return document
 
 
@@ -188,7 +199,19 @@ def count_journal(document: dict[str, Any]) -> dict[str, Any]:
         else:
             unknown += 1
     counted = sum(by_kind.values())
+    # A contract capture binds the executable and the gpui pin, but it carries no source
+    # identity (no commit, no worktree digest), so these counts are observation-level and
+    # are never claimed as source-bound evidence.
+    provenance = {
+        "status": "NOT_MEASURED",
+        "reason": "NO_SOURCE_IDENTITY_IN_CAPTURE",
+        "source_bound": False,
+        "executable_sha256": document.get("executable_sha256"),
+        "gpui_pin": document.get("gpui_pin"),
+        "execution_id": document.get("execution_id"),
+    }
     return {
+        "provenance": provenance,
         "status": "OBSERVED" if counted else "NOT_MEASURED",
         "reason": "" if counted else "NO_JOURNAL_RECORDS",
         # These are journal events, never displayed frames: the label is the point.

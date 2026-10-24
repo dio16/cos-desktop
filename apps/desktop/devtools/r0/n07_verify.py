@@ -69,6 +69,22 @@ def item(name: str, expected: object, observed: object, command: str, claim: str
     return entry
 
 
+def verdict_for(items: list[dict]) -> dict:
+    """A record is VERIFIED only when every item is MATCH.
+
+    MISMATCH takes precedence over UNVERIFIED; both are named item-by-item so a reader
+    cannot mistake an incomplete or contradicted check for a passing one.
+    """
+    mismatched = [entry["item"] for entry in items if entry["status"] == "MISMATCH"]
+    unmeasured = [entry["item"] for entry in items if entry["status"] == "NOT_MEASURED"]
+    if mismatched:
+        return {"status": "MISMATCH", "reason": "MISMATCH items: " + ", ".join(mismatched)}
+    if unmeasured:
+        return {"status": "UNVERIFIED",
+                "reason": "NOT_MEASURED items: " + ", ".join(unmeasured)}
+    return {"status": "VERIFIED", "reason": ""}
+
+
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -247,6 +263,7 @@ def verify(args: argparse.Namespace) -> dict:
                        "modify or reinterpret the historical identity-n07.json, bundle "
                        "copies, manifests, approvals or Gate records."),
         "authority": "Lead task-96, MP-R0A Native admission",
+        "verdict": verdict_for(items),
         "inputs": {name: str(path) for name, path in paths.items() if path is not None},
         "items": items,
         "totals": totals,
@@ -263,10 +280,12 @@ def main(argv: list[str] | None = None) -> int:
     result = verify(args)
     output = Path(args.output)
     output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"ok": result["totals"]["MISMATCH"] == 0,
+    verdict = result["verdict"]
+    print(json.dumps({"ok": verdict["status"] == "VERIFIED",
+                      "verdict": verdict,
                       "record": str(output),
                       "totals": result["totals"]}, separators=(",", ":")))
-    return 1 if result["totals"]["MISMATCH"] else 0
+    return 0 if verdict["status"] == "VERIFIED" else 1
 
 
 if __name__ == "__main__":

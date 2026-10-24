@@ -18,15 +18,62 @@ REPO = ROOT.parents[3]
 BUNDLE = REPO / "docs/development/evidence/r0a-s2b/native-bundles.zip"
 
 
+# A contract-valid capture is the only accepted input, so the fixtures start from the
+# repository's own S2B wire example and clone its records with unique sequence numbers and
+# spans; nothing here invents a shape the contract would reject.
+FIXTURE = ROOT / "fixtures/s2b-wire-v1.json"
+
+
+def base_capture() -> dict:
+    return json.loads(FIXTURE.read_text(encoding="utf-8"))
+
+
 def capture(records: list[dict]) -> dict:
-    return {"records": records}
+    """A capture whose summary agrees with the records it carries."""
+    document = base_capture()
+    document["records"] = records
+    kinds = [0] * 10
+    for item in records:
+        kinds[item["kind"]] += 1
+    local_received = kinds[8] + kinds[9]
+    document["summary"].update({
+        "kind_counts": kinds,
+        "journal_seen": sum(kinds[:8]),
+        "local_received": local_received,
+        "local_enqueued": local_received,
+        "local_undrained": 0,
+        "eligible": len(records),
+        "retained": len(records),
+        "retention_dropped": 0,
+        "excluded": 0,
+        "pre_scope": 0,
+        "post_scope": 0,
+        "invalid_clock": 0,
+        "barrier_spans": 0,
+        "correlation_invalid": 0,
+        "input_unassociated": 0,
+        "unmatched_submission": sum(1 for item in records if item["kind"] == 3
+                                    and item["paired_draw_start_ns"] is None),
+        "journal_lost": sum(item["lost"] or 0 for item in records),
+    })
+    return document
 
 
-def record(kind: str, window: int = 0) -> dict:
-    return {"seq": 0, "kind": kind, "window": window, "lifetime": 0,
-            "start_ns": 0, "end_ns": 0, "dirty_ns": 0, "invalidations": 0,
-            "paired_draw_start_ns": 0, "paired_draw_end_ns": 0, "category": 0,
-            "caused_invalidation": 0, "lost": 0}
+def record(kind: int, window: int = 0, seq: int = 1, offset: int = 0) -> dict:
+    """One contract-valid record of the requested kind."""
+    item = {"seq": seq, "kind": kind, "window": None, "lifetime": None,
+            "start_ns": 10 + offset, "end_ns": 10 + offset, "dirty_ns": None,
+            "invalidations": None, "paired_draw_start_ns": None, "paired_draw_end_ns": None,
+            "category": None, "caused_invalidation": None, "lost": None}
+    if kind in (1, 2, 3, 4, 8):
+        item.update({"window": window, "lifetime": 1})
+    if kind == 2:
+        item["invalidations"] = 0
+    if kind == 8:
+        item["category"] = 0
+    if kind == 5:
+        item["lost"] = 1
+    return item
 
 
 class N06Attribution(unittest.TestCase):
@@ -63,25 +110,56 @@ class N06Attribution(unittest.TestCase):
 
     # ------------------------------------------------------------- frames
     def test_journal_events_are_counted_and_labelled(self) -> None:
-        path = self.write_capture([
-            record("gpui-dirty", 1), record("gpui-dirty", 1), record("gpui-cpu-draw", 2),
-            record("gpui-platform-submission", 2), record("present", 2),
-            # The wire stores the numeric kind code; it must count the same way.
-            record(1, 3), record(2, 3),
-        ])
+        records = [record(1, 1, seq=1, offset=1), record(1, 1, seq=2, offset=2),
+                   record(1, 1, seq=3, offset=3), record(2, 1, seq=4, offset=4),
+                   record(2, 1, seq=5, offset=5), record(6, seq=6, offset=6)]
+        path = self.write_capture(records)
         result = n06.count_journal(n06.load_capture(str(path)))
         self.assertEqual(result["status"], "OBSERVED")
         self.assertEqual(result["unit"], "journal_events",
                          "journal events are not displayed frames")
-        self.assertEqual(result["by_kind"]["gpui-dirty"], 3, "names and codes count alike")
+        self.assertEqual(result["by_kind"]["gpui-dirty"], 3)
         self.assertEqual(result["by_kind"]["gpui-cpu-draw"], 2)
-        self.assertEqual(result["total"], 6)
-        self.assertEqual(result["unclassified"], 1, "present is not a journal kind here")
-        self.assertEqual(result["by_window"], {"1": 2, "2": 2, "3": 2})
+        self.assertEqual(result["by_kind"]["gpui-platform-submission"], 0)
+        self.assertEqual(result["total"], 5)
+        self.assertEqual(result["unclassified"], 1, "kind 6 is not a counted journal kind")
+        self.assertEqual(result["by_window"], {"1": 5})
         self.assertEqual(result["frames_displayed"],
                          {"status": "NOT_MEASURED", "reason": "DWM_PROBE_UNAVAILABLE"})
 
+    def test_unvalidated_capture_is_refused(self) -> None:
+        """A document that is only shaped like a capture is not an observation."""
+        path = self.base / "minimal.json"
+        path.write_text('{"records":[{"kind":1}]}', encoding="utf-8")
+        with self.assertRaises(n06.AttributionError) as error:
+            n06.load_capture(str(path))
+        self.assertEqual(error.exception.code, "CAPTURE_SCHEMA")
+        # And through the CLI: closed JSON, no traceback, nothing counted.
+        result = subprocess.run([sys.executable, "-B", str(ROOT / "n06_attribution.py"),
+                                 "frames", "--capture", str(path)],
+                                capture_output=True, check=False, timeout=30)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(json.loads(result.stdout)["error"], "CAPTURE_SCHEMA")
+        self.assertNotIn(b"Traceback", result.stderr)
+
+    def test_contract_capture_is_counted_and_not_claimed_source_bound(self) -> None:
+        fixture = ROOT / "fixtures/s2b-wire-v1.json"
+        if not fixture.is_file():
+            self.skipTest("NOT_RUN: the S2B wire fixture is not present")
+        result = n06.count_journal(n06.load_capture(str(fixture)))
+        self.assertEqual(result["status"], "OBSERVED")
+        self.assertEqual(result["unit"], "journal_events")
+        self.assertGreater(result["total"], 0)
+        # Contract-valid is not source-bound: the capture carries no source identity.
+        self.assertFalse(result["provenance"]["source_bound"])
+        self.assertEqual(result["provenance"]["status"], "NOT_MEASURED")
+        self.assertEqual(result["provenance"]["reason"], "NO_SOURCE_IDENTITY_IN_CAPTURE")
+        self.assertTrue(result["provenance"]["executable_sha256"].startswith("sha256:"))
+        self.assertEqual(result["provenance"]["gpui_pin"], n06.s2b.GPUI_PIN)
+
     def test_empty_capture_is_not_measured(self) -> None:
+        # A contract-valid capture with no records is still a capture: it reports the
+        # explicit NOT_MEASURED status rather than a fabricated zero.
         path = self.write_capture([])
         result = n06.count_journal(n06.load_capture(str(path)))
         self.assertEqual(result["status"], "NOT_MEASURED")
@@ -90,17 +168,23 @@ class N06Attribution(unittest.TestCase):
         self.assertEqual(result["frames_displayed"]["status"], "NOT_MEASURED")
 
     def test_record_and_window_caps_are_enforced(self) -> None:
-        path = self.write_capture([record("gpui-dirty") for _ in
-                                   range(n06.MAX_RECORDS + 1)])
+        # The S2B contract caps a capture at 256 records; the tool cap sits above it, so an
+        # over-long capture is refused by the contract and stays a closed failure.
+        records = [record(1, index, seq=index + 1, offset=index)
+                   for index in range(n06.s2b.MAX_RECORDS + 1)]
+        path = self.write_capture(records)
         with self.assertRaises(n06.AttributionError) as error:
-            n06.count_journal(n06.load_capture(str(path)))
-        self.assertEqual(error.exception.code, "CAPTURE_RECORD_LIMIT")
+            n06.load_capture(str(path))
+        self.assertEqual(error.exception.code, "CAPTURE_SCHEMA")
 
-        path = self.write_capture([record("gpui-dirty", window)
-                                   for window in range(n06.MAX_WINDOWS + 1)])
+        # The window limit is the contract's too (16), so an over-windowed capture is
+        # refused there first; the tool keeps its own bound as defence in depth.
+        records = [record(1, window, seq=window + 1, offset=window)
+                   for window in range(n06.MAX_WINDOWS + 1)]
+        path = self.write_capture(records)
         with self.assertRaises(n06.AttributionError) as error:
-            n06.count_journal(n06.load_capture(str(path)))
-        self.assertEqual(error.exception.code, "CAPTURE_RECORD_LIMIT")
+            n06.load_capture(str(path))
+        self.assertEqual(error.exception.code, "CAPTURE_SCHEMA")
 
     # ------------------------------------------------------------- cpu
     def test_cpu_labels_are_explicit(self) -> None:
