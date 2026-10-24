@@ -413,14 +413,22 @@ impl std::fmt::Display for FamilyToken {
     }
 }
 
-/// Metrics of one [`TextStyle`] entry.
-#[derive(Clone, Copy)]
-struct StyleMetrics {
-    size_dip: f32,
-    weight_min: u16,
-    weight_max: u16,
-    line_height_dip: f32,
-    japanese_line_height_dip: f32,
+/// Resolved metrics of one [`TextStyle`] entry (rendering §9.1).
+///
+/// Produced only by [`Typography::metrics`] from a resolved token set, so a
+/// consumer never restates a size, weight or line height at its use site.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TypeScale {
+    /// Type size in DIP.
+    pub size_dip: f32,
+    /// Lightest accepted CSS-like weight.
+    pub weight_min: u16,
+    /// Heaviest accepted CSS-like weight.
+    pub weight_max: u16,
+    /// Latin line height in DIP.
+    pub line_height_dip: f32,
+    /// Japanese fallback line height in DIP.
+    pub japanese_line_height_dip: f32,
 }
 
 /// Accepted typography tokens: the ratified font stack and the type scale
@@ -528,51 +536,53 @@ pub struct Typography {
 }
 
 impl Typography {
-    fn metrics(&self, style: TextStyle) -> StyleMetrics {
+    /// Resolved metrics for one accepted type scale entry.
+    #[must_use]
+    pub fn metrics(&self, style: TextStyle) -> TypeScale {
         match style {
-            TextStyle::Xs => StyleMetrics {
+            TextStyle::Xs => TypeScale {
                 size_dip: self.xs_size_dip,
                 weight_min: self.xs_weight_min,
                 weight_max: self.xs_weight_max,
                 line_height_dip: self.xs_line_height_dip,
                 japanese_line_height_dip: self.xs_japanese_line_height_dip,
             },
-            TextStyle::Sm => StyleMetrics {
+            TextStyle::Sm => TypeScale {
                 size_dip: self.sm_size_dip,
                 weight_min: self.sm_weight_min,
                 weight_max: self.sm_weight_max,
                 line_height_dip: self.sm_line_height_dip,
                 japanese_line_height_dip: self.sm_japanese_line_height_dip,
             },
-            TextStyle::Body => StyleMetrics {
+            TextStyle::Body => TypeScale {
                 size_dip: self.body_size_dip,
                 weight_min: self.body_weight_min,
                 weight_max: self.body_weight_max,
                 line_height_dip: self.body_line_height_dip,
                 japanese_line_height_dip: self.body_japanese_line_height_dip,
             },
-            TextStyle::BodyStrong => StyleMetrics {
+            TextStyle::BodyStrong => TypeScale {
                 size_dip: self.body_strong_size_dip,
                 weight_min: self.body_strong_weight_min,
                 weight_max: self.body_strong_weight_max,
                 line_height_dip: self.body_strong_line_height_dip,
                 japanese_line_height_dip: self.body_strong_japanese_line_height_dip,
             },
-            TextStyle::Control => StyleMetrics {
+            TextStyle::Control => TypeScale {
                 size_dip: self.control_size_dip,
                 weight_min: self.control_weight_min,
                 weight_max: self.control_weight_max,
                 line_height_dip: self.control_line_height_dip,
                 japanese_line_height_dip: self.control_japanese_line_height_dip,
             },
-            TextStyle::Title => StyleMetrics {
+            TextStyle::Title => TypeScale {
                 size_dip: self.title_size_dip,
                 weight_min: self.title_weight_min,
                 weight_max: self.title_weight_max,
                 line_height_dip: self.title_line_height_dip,
                 japanese_line_height_dip: self.title_japanese_line_height_dip,
             },
-            TextStyle::Display => StyleMetrics {
+            TextStyle::Display => TypeScale {
                 size_dip: self.display_size_dip,
                 weight_min: self.display_weight_min,
                 weight_max: self.display_weight_max,

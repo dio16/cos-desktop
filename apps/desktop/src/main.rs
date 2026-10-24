@@ -45,6 +45,15 @@ fn main() {
             std::process::exit(2);
         }
     };
+    // One resolution point for the whole process: the shell receives this
+    // resolved set and never reads a token constant of its own.
+    let tokens = match app::resolve_tokens() {
+        Ok(tokens) => tokens,
+        Err(error) => {
+            eprintln!("Desktop token resolution failed: {error}");
+            std::process::exit(2);
+        }
+    };
     let outcome = std::sync::Arc::clone(&exit_outcome);
     #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
     let capture = r0_s2b::Report::default();
@@ -89,7 +98,9 @@ fn main() {
         };
         let opened = window::open(
             cx,
-            move |window, cx, preferences| Shell::new(core, handle, window, cx, preferences),
+            move |window, cx, preferences| {
+                Shell::new(core, handle, window, cx, preferences, tokens)
+            },
             host,
             outcome,
         );

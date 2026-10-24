@@ -24,10 +24,13 @@ mod dock;
 mod flow;
 #[cfg(feature = "r0-s2b-instrumentation")]
 pub mod r0_probe;
+mod shell_style;
 mod stop;
 pub mod tokens;
 mod trace;
+use shell_style::TextSpec;
 use stop::{ReadCompletion, ReadFailure, ReceiptData, ReceiptFeedback, StopProgress, StopTracker};
+use tokens::{DesignTokens, TextStyle};
 
 actions!(
     cos_desktop,
@@ -204,6 +207,9 @@ pub struct Shell {
     flow_jobs: Arc<Mutex<Option<flow::Job>>>,
     _flow_worker: Option<Task<()>>,
     preferences: Arc<Mutex<Preferences>>,
+    /// The single resolved typography/geometry token set injected by the
+    /// composition root. No surface constructs or re-derives a set of its own.
+    tokens: DesignTokens,
     pending_restore_task: Option<TaskId>,
     pending_restore_viewed: Option<desktop_protocol::CandidateRef>,
     pending_restore_compare: Option<[desktop_protocol::CandidateRef; 2]>,
@@ -248,6 +254,7 @@ impl Shell {
         window: &mut Window,
         cx: &mut Context<Self>,
         preferences: Arc<Mutex<Preferences>>,
+        tokens: DesignTokens,
     ) -> Self {
         let restored = preferences
             .lock()
@@ -329,6 +336,7 @@ impl Shell {
             flow_jobs,
             _flow_worker: flow_worker,
             preferences,
+            tokens,
             pending_restore_task: restored.last_task_id,
             pending_restore_viewed: restored.viewed,
             pending_restore_compare: restored.compare,
@@ -1705,6 +1713,15 @@ impl Render for Shell {
             self.synchronize_stop_context();
         }
         let text = self.cache.text();
+        // One resolved token set feeds every layout and text input below; a
+        // surface reads these adapters instead of a constant, and nothing here
+        // resolves a second set.
+        let body_text = TextSpec::ui(&self.tokens, TextStyle::Body);
+        let xs_text = TextSpec::ui(&self.tokens, TextStyle::Xs);
+        let rail_width = shell_style::rail_width(&self.tokens);
+        let inspector_width = shell_style::inspector_width(&self.tokens);
+        let focus_outline = shell_style::focus_outline(&self.tokens);
+        let hairline = shell_style::separator(&self.tokens, window.scale_factor());
         if let Ok(mut preferences) = self.preferences.lock() {
             let bounds = window.bounds();
             preferences.window = Some(WindowGeometry {
@@ -1990,8 +2007,9 @@ impl Render for Shell {
                 .aria_label(accessible.clone())
                 .aria_value(accessible)
                 .child(
-                    div()
-                        .text_size(px(12.0))
+                    xs_text
+                        .clone()
+                        .apply(div())
                         .text_color(rgb(0x9da7b1))
                         .child(label),
                 )
@@ -2473,75 +2491,80 @@ impl Render for Shell {
         } else {
             reconcile_button
         };
-        let stop_controls =
-            div()
-                .id("stop-controls")
-                .role(Role::Group)
-                .aria_label("Stop command controls and current authorized status")
-                .flex()
-                .flex_col()
-                .gap_2()
-                .child(
-                    div()
-                        .flex()
-                        .gap_2()
-                        .child(accessibility::DisabledState {
-                            inner: stop_button,
-                            disabled: !stop_enabled,
-                        })
-                        .child(accessibility::DisabledState {
-                            inner: reconcile_button,
-                            disabled: !reconcile_enabled,
-                        }),
-                )
-                .child(
-                    div()
-                        .id("stop-status")
-                        .role(Role::Label)
-                        .aria_label(stop_label.clone())
-                        .aria_value(stop_label.clone())
-                        .text_color(rgb(0xe6c278))
-                        .child(stop_label),
-                )
-                .child(
-                    div()
-                        .id("stop-detail")
-                        .role(Role::Label)
-                        .aria_label(stop_detail.clone())
-                        .aria_value(stop_detail.clone())
-                        .child(stop_detail),
-                )
-                .children(retention_warning.map(|display| {
-                    div()
-                        .text_color(rgb(0xe6c278))
-                        .child(SharedString::from(display.label.clone()))
-                        .child(SharedString::from(display.detail.clone()))
-                }))
-                .children(receipt_note.map(|(label, detail)| {
-                    div()
-                        .text_size(px(12.0))
-                        .text_color(rgb(0xbcc6d0))
-                        .child(SharedString::from(label))
-                        .child(SharedString::from(detail))
-                }))
-                .child(div().text_size(px(12.0)).text_color(rgb(0xbcc6d0)).child(
-                    SharedString::from(if stop_enabled {
+        let stop_controls = div()
+            .id("stop-controls")
+            .role(Role::Group)
+            .aria_label("Stop command controls and current authorized status")
+            .flex()
+            .flex_col()
+            .gap_2()
+            .child(
+                div()
+                    .flex()
+                    .gap_2()
+                    .child(accessibility::DisabledState {
+                        inner: stop_button,
+                        disabled: !stop_enabled,
+                    })
+                    .child(accessibility::DisabledState {
+                        inner: reconcile_button,
+                        disabled: !reconcile_enabled,
+                    }),
+            )
+            .child(
+                div()
+                    .id("stop-status")
+                    .role(Role::Label)
+                    .aria_label(stop_label.clone())
+                    .aria_value(stop_label.clone())
+                    .text_color(rgb(0xe6c278))
+                    .child(stop_label),
+            )
+            .child(
+                div()
+                    .id("stop-detail")
+                    .role(Role::Label)
+                    .aria_label(stop_detail.clone())
+                    .aria_value(stop_detail.clone())
+                    .child(stop_detail),
+            )
+            .children(retention_warning.map(|display| {
+                div()
+                    .text_color(rgb(0xe6c278))
+                    .child(SharedString::from(display.label.clone()))
+                    .child(SharedString::from(display.detail.clone()))
+            }))
+            .children(receipt_note.map(|(label, detail)| {
+                xs_text
+                    .clone()
+                    .apply(div())
+                    .text_color(rgb(0xbcc6d0))
+                    .child(SharedString::from(label))
+                    .child(SharedString::from(detail))
+            }))
+            .child(
+                xs_text
+                    .clone()
+                    .apply(div())
+                    .text_color(rgb(0xbcc6d0))
+                    .child(SharedString::from(if stop_enabled {
                         "Explicit action only. Automatic resend and replacement are disabled."
                     } else {
                         stop_disabled_reason.as_ref()
-                    }),
-                ))
-                .children(manual_intervention_required.then(|| {
-                    div()
-                        .text_color(rgb(0xe6c278))
-                        .child("Manual intervention may be required; do not resend Stop.")
-                }))
-                .child(
-                    div()
-                        .text_size(px(12.0))
-                        .text_color(rgb(0x9da7b1))
-                        .child(SharedString::from(reconcile_description.as_ref())),
-                );
+                    })),
+            )
+            .children(manual_intervention_required.then(|| {
+                div()
+                    .text_color(rgb(0xe6c278))
+                    .child("Manual intervention may be required; do not resend Stop.")
+            }))
+            .child(
+                xs_text
+                    .clone()
+                    .apply(div())
+                    .text_color(rgb(0x9da7b1))
+                    .child(SharedString::from(reconcile_description.as_ref())),
+            );
         self.dock_frame = self.dock_frame.saturating_add(1);
         let dock_frame = self.dock_frame;
         let previous_dock_mounts = self.dock_mounts.swap(0, Ordering::Relaxed);
@@ -2705,7 +2728,7 @@ impl Render for Shell {
                         div()
                             .w(px(DOCK_GROUP_GUTTER_PX))
                             .flex_none()
-                            .border_r_1()
+                            .border_r(hairline)
                             .border_color(rgb(if group_start { 0xaeccec } else { 0x3c4046 }))
                             .px_1()
                             .truncate()
@@ -2723,7 +2746,7 @@ impl Render for Shell {
                             .flex()
                             .flex_col()
                             .child(div().truncate().child(SharedString::from(label.clone())))
-                            .child(div().text_size(px(10.0)).truncate().child(state_label)),
+                            .child(xs_text.clone().apply(div()).truncate().child(state_label)),
                     )
                     .on_click(cx.listener(move |this, _, window, cx| {
                         this.view_candidate(activate_identity.clone(), window, cx);
@@ -2807,6 +2830,7 @@ impl Render for Shell {
         let shell_entity = cx.entity();
         let rail_trace_lines = self.rail_trace_lines.clone();
         let rail_list = rail_collection.clone().zip(rail_search.clone()).map(|(collection, search)| {
+            let xs_text = xs_text.clone();
             list(self.rail_list.clone(), move |index, _window, _app| {
                 let Some(row_index) = search.indices.get(index).copied() else {
                     return div().into_any_element();
@@ -2859,12 +2883,13 @@ impl Render for Shell {
                         .into_iter()
                         .flatten()
                         .map(|(text, id)| {
-                            div()
+                            xs_text
+                                .clone()
+                                .apply(div())
                                 .id(id)
                                 .role(Role::Label)
                                 .aria_label(text)
                                 .aria_value(text)
-                                .text_size(px(12.0))
                                 .text_color(rgb(0xe6e8eb))
                                 .child(text)
                         }),
@@ -2893,7 +2918,12 @@ impl Render for Shell {
                         ]
                         .into_iter()
                         .flatten()
-                        .map(|label| div().text_size(px(12.0)).child(format!("Desktop-local: {label}"))),
+                        .map(|label| {
+                            xs_text
+                                .clone()
+                                .apply(div())
+                                .child(format!("Desktop-local: {label}"))
+                        }),
                     )
                     .on_click({
                         let shell_entity = shell_entity.clone();
@@ -2980,8 +3010,10 @@ impl Render for Shell {
             .flex_col()
             .bg(rgb(0x17191c))
             .text_color(rgb(0xe6e8eb))
-            .text_size(px(15.0))
-            .font_family("Yu Gothic UI")
+            .text_size(body_text.size)
+            .line_height(body_text.line_height)
+            .font_weight(body_text.weight)
+            .font(body_text.font.clone())
             .child(
                 div()
                     .id("context-bar")
@@ -3053,7 +3085,7 @@ impl Render for Shell {
                             .id("task-rail")
                             .role(Role::Region)
                             .aria_label("Task Rail")
-                            .w(px(210.0))
+                            .w(rail_width)
                             .flex_none()
                             .p_4()
                             .flex()
@@ -3185,7 +3217,7 @@ impl Render for Shell {
                             .id("inspector")
                             .role(Role::Region)
                             .aria_label("Inspector")
-                            .w(px(310.0))
+                            .w(inspector_width)
                             .flex_none()
                             .p_4()
                             .flex()
@@ -3307,7 +3339,7 @@ impl Render for Shell {
                             .track_focus(&self.surface_focus[index])
                             .px_5()
                             .py_2()
-                            .border_2()
+                            .border(focus_outline)
                             .border_color(rgb(if focused { 0xe6c278 } else { 0x343940 }))
                             .bg(rgb(if surface == item { 0x3c5268 } else { 0x24272c }))
                             .cursor_pointer()
