@@ -78,15 +78,18 @@ impl TextSpec {
 /// (`FontFeatures::tag_value_list`), and the pinned Windows backend maps each
 /// entry to `DWRITE_FONT_FEATURE` in `gpui_windows::apply_font_features`. The
 /// revision has no named `tnum` helper, so the accepted `tabular_numerals`
-/// token writes the standard OpenType `tnum` tag (value `1` = enabled) through
-/// that list. `false` requests no feature at all instead of relying on a
-/// backend default.
+/// token writes the standard OpenType `tnum` tag through that list with an
+/// explicit parameter: `1` enables tabular figures and `0` disables them.
+/// `tnum` is not one of the backend's ligature special cases, so the parameter
+/// reaches `AddFontFeature` unchanged; the token never leaves the feature
+/// unspecified for the font or backend default.
 fn font_features(tokens: &DesignTokens) -> FontFeatures {
-    if tokens.typography.tabular_numerals {
-        FontFeatures(Arc::new(vec![("tnum".to_string(), 1)]))
+    let parameter = if tokens.typography.tabular_numerals {
+        1
     } else {
-        FontFeatures::default()
-    }
+        0
+    };
+    FontFeatures(Arc::new(vec![("tnum".to_string(), parameter)]))
 }
 
 /// The task rail width from the resolved token set.
@@ -206,11 +209,11 @@ mod tests {
     }
 
     #[test]
-    fn the_tabular_numerals_token_reaches_the_font_features() {
+    fn the_tabular_numerals_token_explicitly_enables_or_disables_the_feature() {
         let accepted = DesignTokens::accepted();
         assert!(accepted.typography.tabular_numerals);
-        // The enabled token writes the pinned revision's OpenType feature
-        // through its own tag/value list, which the Windows backend consumes.
+        // The enabled token writes an explicit OpenType enable (value 1)
+        // through the pinned revision's own tag/value list.
         for style in TextStyle::ALL {
             let spec = TextSpec::ui(&accepted, style);
             assert_eq!(
@@ -220,8 +223,9 @@ mod tests {
                 style.name()
             );
         }
-        // Disabling the token requests no feature at all: a real off, not a
-        // backend default that happens to match.
+        // Disabling the token writes an explicit OpenType disable (value 0),
+        // so the feature is decided by the token rather than by the font or
+        // backend default; the pinned backend passes the parameter through.
         let disabled = DesignTokensOverride {
             tabular_numerals: Some(false),
             ..DesignTokensOverride::default()
@@ -229,8 +233,11 @@ mod tests {
         .resolve_accepted()
         .expect("a valid override resolves");
         let spec = TextSpec::ui(&disabled, TextStyle::Body);
-        assert!(spec.font.features.tag_value_list().is_empty());
-        assert_eq!(spec.font.features, FontFeatures::default());
+        assert_eq!(
+            spec.font.features.tag_value_list(),
+            [("tnum".to_string(), 0)]
+        );
+        assert_ne!(spec.font.features, FontFeatures::default());
     }
 
     #[test]
