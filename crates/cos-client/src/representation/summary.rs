@@ -151,6 +151,7 @@ impl ExperimentReport {
                 "peak_live_bytes counts logical payload bytes of the current version plus bytes retained by held snapshot handles.",
                 "Transient old+new copies that coexist only during an index rebuild, BTree node overhead and allocator padding are excluded.",
                 "collection_traversals counts the derivation and index-maintenance scans the representation performs, not harness setup.",
+                "The per-task count map is built lazily only by the model that charges a scan: the family model one scan per task, the cache one scan per observation with misses, and the index strategy none.",
                 "Logical sizes use in-memory field sizes plus string/vector lengths; they are deterministic but not allocator measurements.",
             ],
             "observation_policy": {

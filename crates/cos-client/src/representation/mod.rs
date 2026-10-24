@@ -13,6 +13,12 @@
 //! wall-clock time, makes no SLO claim and selects no design; the emitted summary
 //! is [`SUMMARY_STATUS`] and must never be read as a numeric gate. Adoption
 //! remains a separate owner decision (`DD-02b`).
+//!
+//! DC-MP-PUB4 variant (e), allocation-reduced text ownership, is explicitly out
+//! of scope for this experiment: it would change protocol-owned string layout and
+//! is not a representation choice this harness can bound. No persistent
+//! collection is used either, per the contract's "only if a simpler option cannot
+//! meet the gates" clause.
 
 use desktop_protocol::{EpochId, TaskId};
 

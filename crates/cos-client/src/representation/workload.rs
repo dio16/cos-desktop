@@ -543,7 +543,16 @@ pub(crate) fn child_removal_workload() -> Result<Workload, ExperimentError> {
     }
     initial.push(upsert(None, Projection::Outcome(shape.outcome.clone())));
     initial.push(upsert(None, Projection::Task(shape.task.clone())));
+    let mut warmed_task = shape.task.clone();
+    warmed_task.title = "representation entity 0 cache warm-up".to_owned();
+    warmed_task.projection_revision = counter(2)?;
     let transactions = vec![
+        // Harmless update first: the stride-1 observation after it populates the
+        // cache, so the candidate removal below is what must invalidate it.
+        StreamTransaction {
+            mutations: vec![upsert(Some(counter(1)?), Projection::Task(warmed_task))],
+            handles_after: HandlesAfter::None,
+        },
         StreamTransaction {
             mutations: vec![ProjectionMutation::Remove {
                 base_revision: counter(1)?,

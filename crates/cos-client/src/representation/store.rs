@@ -432,8 +432,15 @@ fn owner_of_projection(projection: &Projection) -> Option<TaskId> {
 /// Task that owns a removal target, resolved before the entry disappears.
 fn owner_of_target(maps: &FamilyMaps, target: &RemoveTarget) -> Option<TaskId> {
     match target {
-        RemoveTarget::Task { task_id } => Some(task_id.clone()),
-        RemoveTarget::Candidate { candidate_ref } => Some(candidate_ref.task_id.clone()),
+        // The stored snapshot is the same source the derivation and the secondary
+        // index read; product validation keeps `candidate_ref.task_id == task_ref`
+        // for every retained candidate, so the key and the snapshot agree, while a
+        // mismatched-but-valid entry could never invalidate the wrong task here.
+        RemoveTarget::Task { task_id } => maps.tasks.get(task_id).map(|task| task.task_ref.clone()),
+        RemoveTarget::Candidate { candidate_ref } => maps
+            .candidates
+            .get(candidate_ref)
+            .map(|candidate| candidate.task_ref.clone()),
         RemoveTarget::Iteration { iteration_id } => maps
             .iterations
             .get(iteration_id)
@@ -480,7 +487,7 @@ fn build_iteration_index(state: &ProjectionState) -> BTreeMap<TaskId, BTreeSet<I
 /// Fixed logical bytes of one secondary-index reference.
 const INDEX_ENTRY_BYTES: u64 = 80;
 /// Fixed logical bytes of one cached derivation.
-const CACHE_ENTRY_BYTES: u64 = 120;
+pub(crate) const CACHE_ENTRY_BYTES: u64 = 120;
 
 #[derive(Clone, Debug, Default)]
 enum Extra {
@@ -701,7 +708,11 @@ impl FamilyStore {
             capabilities: self.maps.capabilities.len(),
         };
         let mut derivations = Vec::with_capacity(counts.tasks);
-        let per_task = per_task_counts(&self.maps.candidates, &self.maps.iterations);
+        // Built lazily: the index strategy never needs a family pass, and the
+        // cache only needs one when it actually misses; whichever model charges a
+        // scan is also the one that builds the map (the family model charges one
+        // scan per task, the cache one per observation with misses).
+        let mut per_task: Option<BTreeMap<TaskId, (usize, usize)>> = None;
         let tasks: Vec<(TaskId, bool)> = self
             .maps
             .tasks
@@ -743,8 +754,11 @@ impl FamilyStore {
                         None => {
                             let scanned =
                                 (self.maps.candidates.len() + self.maps.iterations.len()) as u64;
+                            let counts = per_task.get_or_insert_with(|| {
+                                per_task_counts(&self.maps.candidates, &self.maps.iterations)
+                            });
                             let (candidates, iterations) =
-                                per_task.get(&task_id).copied().unwrap_or((0, 0));
+                                counts.get(&task_id).copied().unwrap_or((0, 0));
                             self.counters.derivations += 1;
                             // Every miss of one observation is derived from the
                             // same pass over the indexed families: count one scan.
@@ -777,9 +791,11 @@ impl FamilyStore {
             }
             _ => {
                 let scanned = (self.maps.candidates.len() + self.maps.iterations.len()) as u64;
+                let counts = per_task.get_or_insert_with(|| {
+                    per_task_counts(&self.maps.candidates, &self.maps.iterations)
+                });
                 for (task_id, formal_outcome) in tasks {
-                    let (candidates, iterations) =
-                        per_task.get(&task_id).copied().unwrap_or((0, 0));
+                    let (candidates, iterations) = counts.get(&task_id).copied().unwrap_or((0, 0));
                     self.counters.derivations += 1;
                     self.counters.collection_traversals += scanned;
                     derivations.push(TaskDerivation {

@@ -230,8 +230,24 @@ fn revision_cache_derives_fewer_tasks_than_the_baseline() {
         cache.counters.collection_traversals,
         baseline.counters.collection_traversals
     );
-    // A cache miss inserts entries and must refresh size accounting at once.
-    assert!(cache.counters.bytes_held >= baseline.counters.bytes_held);
+    let family =
+        run_strategy(&workload, RepresentationStrategy::FamilyScopedArc).expect("family replay");
+    let tasks = expected_observations(&workload)
+        .expect("the stream is valid")
+        .first()
+        .expect("the initial observation exists")
+        .1
+        .derivations
+        .len() as u64;
+    // The final observation refills every task, so bytes_held must include exactly
+    // one cache entry per task on top of the family maps: this proves the cache
+    // refreshed size accounting instead of merely being non-decreasing.
+    assert_eq!(
+        cache.counters.bytes_held,
+        family.counters.bytes_held + tasks * super::store::CACHE_ENTRY_BYTES,
+        "bytes_held must charge the {tasks} cached derivations"
+    );
+    assert!(cache.counters.bytes_held > baseline.counters.bytes_held);
     assert!(cache.counters.peak_live_bytes >= cache.counters.bytes_held);
     assert!(cache.counters.bytes_copied > 0);
 }
@@ -259,6 +275,11 @@ fn child_removals_are_observed_identically_by_every_strategy() {
         "the full-equality case must not be checkpointed"
     );
     let expected = expected_observations(&workload).expect("the product accepts the removals");
+    assert_eq!(
+        expected.len(),
+        workload.transactions.len() + 1,
+        "stride 1 must observe every transaction, so the cache is populated before the candidate removal"
+    );
     let initial = &expected
         .first()
         .expect("the stream has an initial observation")
@@ -287,13 +308,15 @@ fn index_maintenance_scan_is_counted_in_traversals() {
     let workload = workload::child_removal_workload().expect("the child-removal stream is valid");
     let index = run_strategy(&workload, RepresentationStrategy::EntityIndex)
         .expect("index replay over removals");
-    // Two removals rebuild the index twice; each rebuild scans five candidates and
-    // three iterations, so at least sixteen maintenance traversals are counted.
-    assert!(
-        index.counters.collection_traversals >= 16,
-        "index maintenance must be counted, got {}",
-        index.counters.collection_traversals
+    // Exact expectation for this stride-1 workload: three observations visit
+    // 5+3, 4+3 and 4+2 index entries (18 + 16 + 14 = 48), and the two removals
+    // rebuild the index, scanning 4+3 and 4+2 entries (7 + 6 = 13). Total 61.
+    assert_eq!(
+        index.counters.collection_traversals, 61,
+        "3 observations (48) + 2 maintenance rebuild scans (13) must be counted exactly"
     );
+    // Maintenance also allocates index entries; the exact traversal assertion
+    // above is the load-bearing check for the scan count.
     assert!(index.counters.allocations > 0);
 }
 
@@ -304,9 +327,13 @@ fn child_removals_leave_no_stale_cache_accounting() {
     let cache =
         run_strategy_with_expected(&workload, RepresentationStrategy::RevisionCache, &expected)
             .expect("cache replay over removals");
-    assert!(
-        cache.counters.stale_cancels >= 2,
-        "both removals invalidate a cached task"
+    // Exact expectation: the candidate removal invalidates the cached task, the
+    // iteration removal invalidates it again, and the release of the handle held
+    // across the second removal cancels one stale handle. Deleting either removal
+    // invalidation (or the candidate-owner branch) drops this to two or fewer.
+    assert_eq!(
+        cache.counters.stale_cancels, 3,
+        "2 removal invalidations + 1 stale-handle release"
     );
     assert!(cache.counters.peak_live_bytes >= cache.counters.bytes_held);
     assert_eq!(cache.observation, expected[expected.len() - 1].1);
