@@ -455,6 +455,21 @@ Frame/staging/rx limits remain Protocol-owned; grant IDs ≤448, pending reads/i
 - **Non-goals:** no inference of "current iteration" from local ordering; no canonical selection edits.
 - **Acceptance:** *detects: compare silently swapping in another candidate, viewed identity lost on removal, history order derived locally.*
 
+- **Determined behaviour (UX-01 closure, [ADR-0010](../decisions/ADR-0010-UX01-DOCK-CLOSURE.md); each line individually rejectable):**
+  - **D-1 Initial view:** with no persisted reference the viewed candidate is *explicitly empty*; nothing is auto-selected and no Runtime "current" candidate is auto-shown.
+  - **D-2 Cardinality:** zero candidates gives an empty dock and surface; one candidate allows viewing while Compare is unavailable **with a stated reason**.
+  - **D-3 Pair creation:** the first explicit selection sets side A only when Compare is not active, the second sets B and switches the surface to Compare; afterwards a plain selection changes *viewed only* and a side changes only through an explicit change-side action.
+  - **D-4 Viewed disappearing:** the reference is kept and the surface shows an explicit unavailable state until the user acts — no automatic clear, no automatic replacement.
+  - **D-5 One compare side disappearing:** Compare stays open with that side explicitly unavailable; changing the side or closing Compare resolves it, never automatically.
+  - **D-6 Resolution:** changing the affected side or closing Compare; if the same identity reappears while the reference is held it becomes available again, which is not a substitution.
+  - **D-7 Close:** returns to the artifact surface with the *viewed* candidate and that candidate's own framing; compare-session transforms are discarded and no other history is replayed.
+  - **D-8 Persistence:** REC3 stays authoritative (one viewed reference, all-or-nothing pair, documented identity rule); no per-task memory map in the MVP.
+  - **D-9 Task switch:** the window carries one reference set; after a task switch the dock follows D-1.
+  - **D-10 Timeline content:** only authoritative iteration records carrying candidate rows, in their authoritative order — no synthesised nodes, no local "current iteration" inference; the formal-outcome display belongs to the inspector.
+  - **D-11 "History":** the per-task iteration timeline only; an application-level history surface stays with DC-MP-NAV3 and DD-07 (Runtime-contract-gated).
+  - **D-12 Focus:** independent of viewed and Compare; a disappearing focus target moves to the nearest valid neighbour and never changes selection.
+  - **D-13 Formal marker:** display only — clicking it issues no canonical command.
+
 ## Media input admission and integrity
 
 This is the single cross-task owner of media trust/provenance, expected-digest status and admission boundaries. [Rendering Architecture](RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md) consumes this contract for measurement; it does not define a second admission policy. Product media UX remains the Product Canon. These are unapproved requirements, not evidence that media/runtime integration exists.
