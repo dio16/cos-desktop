@@ -50,15 +50,17 @@ ACTION_KINDS = ("keyboard", "held-key", "pointer", "scroll", "posted-saturation"
 
 KEYS = ("TAB", "ENTER", "SPACE", "LEFT", "RIGHT", "UP", "DOWN", "ESCAPE")
 
-# Journal endpoints the S2B instrumentation actually exports at the pin.
-ENDPOINTS_OBSERVED = (
-    "input-dispatch",
-    "gpui-dirty",
-    "gpui-cpu-draw",
-    "gpui-platform-submission",
-    "local-surface-mutation",
-    "local-notify",
-)
+# Journal endpoints the S2B instrumentation implements at the pin. Whether one was
+# actually observed in a run is decided from retained records, never assumed.
+JOURNAL_KINDS = {
+    "input-dispatch": 0,
+    "gpui-dirty": 1,
+    "gpui-cpu-draw": 2,
+    "gpui-platform-submission": 3,
+    "local-surface-mutation": 8,
+    "local-notify": 9,
+}
+ENDPOINTS_OBSERVED = tuple(JOURNAL_KINDS)
 # Everything else has no probe in this build. The reason is a closed code.
 ENDPOINTS_NOT_MEASURED = {
     "frame-request": "NO_ENDPOINT: app-side frame request has no probe at the pin",
@@ -222,7 +224,11 @@ def validate_manifest(document: Any) -> dict[str, Any]:
     end = _int(scenario["active_end_ms"], "$.scenario.active_end_ms", start, duration)
     if end <= start:
         _fail("OUT_OF_RANGE", "$.scenario.active_end_ms")
-    _int(scenario["repeats"], "$.scenario.repeats", 1, MAX_REPEATS)
+    repeats = _int(scenario["repeats"], "$.scenario.repeats", 1, MAX_REPEATS)
+    if repeats != 1:
+        # S1 executes one pass; a multi-pass contract needs its own trace/capture
+        # alignment before it can be accepted.
+        _fail("NOT_IMPLEMENTED", "$.scenario.repeats")
     order = _array(scenario["order"], "$.scenario.order", nonempty=True, maximum=MAX_REPEATS)
     for index, item in enumerate(order):
         _enum(item, f"$.scenario.order[{index}]", FAMILIES + NOT_IMPLEMENTED_FAMILIES)
@@ -249,6 +255,22 @@ def validate_manifest(document: Any) -> dict[str, Any]:
     actions = _array(manifest["actions"], "$.actions", nonempty=True, maximum=32)
     for index, action in enumerate(actions):
         _validate_action(action, f"$.actions[{index}]")
+    kinds: list[str] = []
+    for action in actions:
+        if action["kind"] not in kinds:
+            kinds.append(action["kind"])
+    if order != kinds:
+        # The declared execution order must be exactly the action-kind order the
+        # planner emits; an unexecuted order entry is not accepted.
+        _fail("INVALID_VALUE", "$.scenario.order")
+    if sum(action["count"] for action in actions) > MAX_ACTIONS:
+        _fail("OUT_OF_RANGE", "$.actions")
+    if family == "combined":
+        if len(kinds) < 2:
+            _fail("INVALID_VALUE", "$.scenario.family")
+    elif kinds != [family]:
+        # A single-family scenario must declare exactly its family's actions.
+        _fail("INVALID_VALUE", "$.scenario.family")
 
     lifecycle = _object(
         manifest["lifecycle"],
@@ -340,6 +362,9 @@ def plan_trace(manifest: dict[str, Any]) -> dict[str, Any]:
             sequence += 1
             counts[kind] = counts.get(kind, 0) + 1
     actions.sort(key=lambda item: (item["planned_ns"], item["sequence"]))
+    end_ns = scenario["active_end_ms"] * 1_000_000
+    if actions and actions[-1]["planned_ns"] > end_ns:
+        _fail("OUT_OF_RANGE", "$.actions")
     trace = {
         "trace_version": TRACE_VERSION,
         "scenario": {
@@ -376,6 +401,8 @@ def _payload(kind: str, action: dict[str, Any], seed: int, sequence: int) -> dic
 
 def validate_trace(trace: Any, manifest: dict[str, Any]) -> dict[str, Any]:
     document = _object(trace, "$", ("trace_version", "scenario", "counts", "actions", "trace_sha256"))
+    if len(canonical(document).encode("ascii")) > MAX_TRACE_BYTES:
+        _fail("OUT_OF_RANGE", "$")
     if document["trace_version"] != TRACE_VERSION:
         _fail("INVALID_VERSION", "$.trace_version")
     scenario = _object(document["scenario"], "$.scenario", ("id", "version", "family", "seed", "fixture_sha256", "active_start_ms", "active_end_ms"))
@@ -389,6 +416,8 @@ def validate_trace(trace: Any, manifest: dict[str, Any]) -> dict[str, Any]:
         _int(entry["sequence"], f"$.actions[{index}].sequence", 0, MAX_ACTIONS)
         _enum(entry["kind"], f"$.actions[{index}].kind", ACTION_KINDS)
         _int(entry["planned_ns"], f"$.actions[{index}].planned_ns", 0, MAX_DURATION_MS * 1_000_000)
+        if not (scenario["active_start_ms"] * 1_000_000 <= entry["planned_ns"] <= scenario["active_end_ms"] * 1_000_000):
+            _fail("OUT_OF_RANGE", f"$.actions[{index}].planned_ns")
     digest = _digest(document["trace_sha256"], "$.trace_sha256")
     body = {key: value for key, value in document.items() if key != "trace_sha256"}
     if digest != digest_of(body):
@@ -423,9 +452,23 @@ def classify(
     return "dropped"
 
 
-def endpoint_matrix() -> list[dict[str, str]]:
-    """The declared endpoint availability for this build."""
-    endpoints = [{"name": name, "status": "OBSERVED"} for name in ENDPOINTS_OBSERVED]
+def endpoint_matrix(records: dict[int, int] | None = None) -> list[dict]:
+    """Endpoint availability: implemented and observed are separate decisions.
+
+    A journal endpoint is OBSERVED only when the verified capture actually retained
+    records of that kind in this run; an implemented endpoint with no retained record
+    is NOT_MEASURED, never a zero and never an observation.
+    """
+    counts = records or {}
+    endpoints: list[dict] = []
+    for name, kind in JOURNAL_KINDS.items():
+        count = int(counts.get(kind, 0))
+        if count > 0:
+            endpoints.append({"name": name, "status": "OBSERVED", "records": count})
+        else:
+            endpoints.append(
+                {"name": name, "status": "NOT_MEASURED", "reason": "NO_RETAINED_VALID_RECORD"}
+            )
     endpoints.extend(
         {"name": name, "status": "NOT_MEASURED", "reason": reason}
         for name, reason in ENDPOINTS_NOT_MEASURED.items()
@@ -448,6 +491,7 @@ def validate_result(document: Any) -> dict[str, Any]:
             "endpoints",
             "cleanup",
             "limits",
+            "delivered_actions",
             "status",
         ),
         ("reason",),
@@ -469,16 +513,32 @@ def validate_result(document: Any) -> dict[str, Any]:
     for kind in requested:
         _enum(kind, "$.requested_cadence", ACTION_KINDS)
         _number(requested[kind], f"$.requested_cadence.{kind}", 0.0, MAX_HZ)
-        _number(achieved[kind], f"$.achieved_cadence.{kind}", 0.0, MAX_HZ)
+        value = achieved[kind]
+        if value is not None:
+            _number(value, f"$.achieved_cadence.{kind}", 0.0, MAX_HZ)
+    delivered = _int(result["delivered_actions"], "$.delivered_actions", 0, MAX_ACTIONS)
     actions = _array(result["actions"], "$.actions", nonempty=True, maximum=MAX_ACTIONS)
     for index, item in enumerate(actions):
-        entry = _object(item, f"$.actions[{index}]", ("sequence", "kind", "planned_ns", "actual_ns", "classification"), optional=("excluded_reason",))
+        entry = _object(
+            item,
+            f"$.actions[{index}]",
+            ("sequence", "kind", "planned_ns", "actual_ns", "delivered", "suppressed", "classification"),
+            optional=("excluded_reason",),
+        )
         _int(entry["sequence"], f"$.actions[{index}].sequence", 0, MAX_ACTIONS)
         _enum(entry["kind"], f"$.actions[{index}].kind", ACTION_KINDS)
         _int(entry["planned_ns"], f"$.actions[{index}].planned_ns", 0, MAX_DURATION_MS * 1_000_000)
         if entry["actual_ns"] is not None:
             _int(entry["actual_ns"], f"$.actions[{index}].actual_ns", 0, 2 * MAX_DURATION_MS * 1_000_000)
-        _enum(entry["classification"], f"$.actions[{index}].classification", ("on-time", "early", "late", "dropped", "suppressed", "cancelled", "failed"))
+        _boolean(entry["delivered"], f"$.actions[{index}].delivered")
+        _boolean(entry["suppressed"], f"$.actions[{index}].suppressed")
+        _enum(
+            entry["classification"],
+            f"$.actions[{index}].classification",
+            # The v1 probe can produce only these classes. A class it cannot emit
+            # is not accepted in a result.
+            ("on-time", "early", "late", "suppressed", "failed"),
+        )
         if "excluded_reason" in entry:
             _string(entry["excluded_reason"], f"$.actions[{index}].excluded_reason")
     journal = _object(result["journal"], "$.journal", ("source", "counts", "note"), optional=("capture_sha256",))
@@ -495,9 +555,14 @@ def validate_result(document: Any) -> dict[str, Any]:
     endpoints = _array(result["endpoints"], "$.endpoints", nonempty=True, maximum=64)
     seen: set[str] = set()
     for index, item in enumerate(endpoints):
-        entry = _object(item, f"$.endpoints[{index}]", ("name", "status"), optional=("reason",))
+        entry = _object(item, f"$.endpoints[{index}]", ("name", "status"), optional=("reason", "records"))
         name = _string(entry["name"], f"$.endpoints[{index}].name")
         status = _enum(entry["status"], f"$.endpoints[{index}].status", ("OBSERVED", "NOT_MEASURED"))
+        if status == "OBSERVED":
+            if name not in JOURNAL_KINDS:
+                _fail("PROMOTED_ENDPOINT", f"$.endpoints[{index}].status")
+            if _int(entry.get("records", 0), f"$.endpoints[{index}].records", 1, MAX_ACTIONS) < 1:
+                _fail("PROMOTED_ENDPOINT", f"$.endpoints[{index}].records")
         if name in seen:
             _fail("DUPLICATE_ENDPOINT", f"$.endpoints[{index}].name")
         seen.add(name)
@@ -512,7 +577,9 @@ def validate_result(document: Any) -> dict[str, Any]:
     limits = _object(result["limits"], "$.limits", ("max_actions", "max_lag_ms", "probe_timeout_ms", "capture_timeout_ms", "output_bytes"))
     for key in ("max_actions", "max_lag_ms", "probe_timeout_ms", "capture_timeout_ms", "output_bytes"):
         _int(limits[key], f"$.limits.{key}", 0, MAX_ACTIONS * 1024)
-    _enum(result["status"], "$.status", ("COMPLETE", "FAILED", "CANCELLED", "NOT_RUN"))
+    status = _enum(result["status"], "$.status", ("COMPLETE", "FAILED", "CANCELLED", "NOT_RUN"))
+    if status == "COMPLETE" and delivered != len(actions):
+        _fail("INVALID_VALUE", "$.delivered_actions")
     if "reason" in result:
         _string(result["reason"], "$.reason")
     return result
@@ -527,5 +594,12 @@ def check_identity(manifest: dict[str, Any], result: dict[str, Any]) -> None:
 
 def write_trace(trace: dict[str, Any], path: str) -> None:
     text = json.dumps(trace, sort_keys=True, indent=2) + "\n"
+    if len(text.encode("utf-8")) > MAX_TRACE_BYTES:
+        _fail("OUT_OF_RANGE", "$")
     with open(path, "x", encoding="utf-8", newline="\n") as handle:
         handle.write(text)
+
+
+def result_bytes(document: dict[str, Any]) -> int:
+    """Encoded size of a result document, used to enforce the write cap."""
+    return len((json.dumps(document, sort_keys=True, indent=2) + "\n").encode("utf-8"))
