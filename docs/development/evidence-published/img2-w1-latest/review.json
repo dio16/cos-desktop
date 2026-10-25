@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "candidate": "faa3a7e91c3987c14cc053dad03456980827c810",
+  "final_evidence_head": "cc7651549bcd435a39dbbf38d1ab2e43b848aea9",
+  "attachment_bound": true,
+  "rounds": [
+    {
+      "round": 1,
+      "candidate": "90a756ddf57caa64430c1ff64c89b4d7a227a99c",
+      "verdict": {
+        "blocking": 4,
+        "actionable": 1,
+        "excessive": 0
+      },
+      "findings": [
+        "B-W1-01",
+        "B-W1-02",
+        "B-W1-03",
+        "B-W1-04",
+        "A-W1-01"
+      ],
+      "outcome": "HOLD"
+    },
+    {
+      "round": 2,
+      "candidate": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
+      "verdict": {
+        "blocking": 0,
+        "actionable": 1,
+        "excessive": 0
+      },
+      "findings": [
+        "A-W1-R2-01"
+      ],
+      "outcome": "HOLD"
+    },
+    {
+      "round": 3,
+      "candidate": "faa3a7e91c3987c14cc053dad03456980827c810",
+      "verdict": {
+        "blocking": 0,
+        "actionable": 0,
+        "excessive": 0,
+        "passLine": [
+          0,
+          0,
+          0
+        ],
+        "parsed": true,
+        "conflict": false,
+        "partialFinal": false,
+        "incomplete": false,
+        "unreadable": false,
+        "clean": true,
+        "sawPassLine": true
+      },
+      "findings": [],
+      "outcome": "PASS"
+    }
+  ],
+  "final": {
+    "candidate": "faa3a7e91c3987c14cc053dad03456980827c810",
+    "assistant_ids": [
+      "004383a9-eeba-41f5-a643-2b7eb2f1486d"
+    ],
+    "request_ids": [
+      "44942926-e6c1-43d5-9a1f-162b1dd05dc1"
+    ],
+    "response_sha256": "sha256:0694963cf555a5696dc59ae0878ffcaac232379c336311713e656122d2ea0f84",
+    "streaming": false,
+    "two_full_reads_identical": true,
+    "read_separation_ms": 30000,
+    "verdict_parser_exit": 0,
+    "completion_verified": true,
+    "verdict": {
+      "blocking": 0,
+      "actionable": 0,
+      "excessive": 0,
+      "passLine": [
+        0,
+        0,
+        0
+      ],
+      "parsed": true,
+      "conflict": false,
+      "partialFinal": false,
+      "incomplete": false,
+      "unreadable": false,
+      "clean": true,
+      "sawPassLine": true
+    }
+  },
+  "limited_closure": {
+    "slice": "MP-IMG2-W1",
+    "status": "LIMITED TECHNICAL COMPLETION",
+    "scope": "real Windows WIC pre-materialization decode admission and exact budget boundaries",
+    "excluded": [
+      "WIC internal scratch peak",
+      "concurrent resident memory",
+      "in-decoder cancellation granularity",
+      "region/sequential/tiled capability",
+      "colour management and orientation",
+      "JPEG absolute raster equality",
+      "Bgr565 real WIC fixture (NOT_RUN)",
+      "16K full decode",
+      "DC-MP-IMG2 Decode exit",
+      "MP-IMG2-wide completion",
+      "R0A/R0C/R0D",
+      "FLOW2",
+      "Runtime",
+      "main/release",
+      "push/merge"
+    ]
+  }
+}

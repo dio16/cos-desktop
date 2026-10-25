@@ -1,0 +1,249 @@
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 0
+
+EXCESSIVE 0
+
+判定：PASS — A-W1-R2-01 CLOSED
+
+製品候補 faa3a7e91c3987c14cc053dad03456980827c810 に対し、添付7ファイル限定の独立再レビューを実施しました。
+
+前回の唯一の残件 A-W1-R2-01は解消しています。新規指摘はありません。
+
+1. A-W1-R2-01の解消確認
+
+対象：run_matrix.py:123–172、416–431
+
+修正後のcancellation_problems()を添付SOURCEから直接実行し、正常系・負例を検証しました。
+
+検証条件
+
+	
+
+結果
+
+
+
+
+正常な全件cancelled
+
+	
+
+PASS
+
+
+
+
+record欠落
+
+	
+
+拒否
+
+
+
+
+observations空配列
+
+	
+
+拒否
+
+
+
+
+非ゼロexit
+
+	
+
+拒否
+
+
+
+
+case ID欠落
+
+	
+
+拒否
+
+
+
+
+case ID重複
+
+	
+
+拒否
+
+
+
+
+cancelled以外のoutcome
+
+	
+
+拒否
+
+
+
+
+余分なcase ID（独立追加検証）
+
+	
+
+拒否
+
+selftest 7件、失敗0件を独立再現しました。
+
+さらに、matrix.jsonの実測cancellation recordを新しい検証関数へ直接入力し、以下を確認しました。
+
+exit code：0
+
+生成fixture：9件
+
+cancellation観測：9件
+
+case IDの集合：完全一致、重複なし
+
+全9件：cancelled
+
+cancellation_problems()：空リスト
+
+verification.ok=true、mismatches=[]
+
+前回問題だったall([])による空配列の偽陽性経路は解消されています。
+
+2. Gate・証拠の独立照合
+
+項目
+
+	
+
+結果
+
+
+
+
+Quality 814469df-ee8d-4f87-842f-806bd136bf47
+
+	
+
+SUCCEEDED 7/7
+
+
+
+
+Build 87d18235-e8aa-4e49-9f65-7c263e9f4b59
+
+	
+
+SUCCEEDED 1/1
+
+
+
+
+固定candidate
+
+	
+
+両Gate一致
+
+
+
+
+Candidate SHA256
+
+	
+
+両Gate一致
+
+
+
+
+13 artifactsの台帳
+
+	
+
+両Gate一致
+
+
+
+
+添付runner・matrix・behaviorの実バイト
+
+	
+
+LF正規化後、3件ともSHA256・サイズ一致
+
+
+
+
+status / inspect / verify
+
+	
+
+整合
+
+
+
+
+Storage verify前後
+
+	
+
+完全一致
+
+
+
+
+Cleanup
+
+	
+
+complete
+
+
+
+
+削除記録
+
+	
+
+6ディレクトリ、4,884,733,988 logical bytes
+
+
+
+
+旧e78f32a Gate
+
+	
+
+supersededとして分離
+
+
+
+
+Preflight
+
+	
+
+UNKNOWN維持
+
+未添付の10成果物はGate台帳間の整合性確認に限定しています。ローカルGit commit全体、未添付SOURCE、および実Windows上のWIC処理を今回直接再実行したものではありません。
+
+3. MP-IMG2-W1限定closure
+
+MP-IMG2-W1のattachment-bound限定技術完了を承認します。
+
+前回の4件のBLOCKINGと1件のACTIONABLE、今回のA-W1-R2-01はすべてCLOSEDです。
+
+ただし、WIC内部scratch peak、同時常駐memory、in-decoder cancellation粒度、region/sequential/tiled、色管理・orientation、JPEG絶対raster、Bgr565実WIC fixture、16Kフルデコードは未達です。
+
+また、DC-MP-IMG2全体のDecode Exit、MP-IMG2全体、R0A/R0C/R0D、FLOW2、Runtime、main/releaseは承認対象外です。既存MP/DCのExit条件は変更しません。
+
+今回の判定はレビュー結果のみであり、push・merge・releaseの許可ではありません。
+
+PASS 0 / 0 / 0
