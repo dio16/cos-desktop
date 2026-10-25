@@ -506,6 +506,47 @@ Do the steps in this order: **100 %, then 125 %, 150 %, 175 %, 200 %**, and repe
 
 **Boundary.** Until evidence exists for the steps above, MP-TYP1 stays **not complete**: the DPI matrix, the AX geometry (Task Rail 240, Inspector 320) and the label/mixed-script presence are the only OBSERVED typography results, and they are not pixel claims. A real rendering defect found by this runbook opens a new repair slice; the runbook itself changes no product code.
 
+### 4.19 MP-R0C-S1 failed-result attribution (2026-10-26)
+
+`r0c_driver.py` saves a failed workload through the same `finalize_result` path as
+a successful workload. Missing and corrupt probe records keep their existing
+precedence; otherwise the independently collected verification failures determine
+the persisted primary reason before an ordinary binding loss. A binding-only
+loss is `PROBE_BINDING_LOST`; a simultaneous PID, generation, launcher, title,
+trace or classification mismatch retains its own higher-priority reason.
+
+The result distinguishes `delivered_actions` (the accepted count) from
+`probe_self_reported_delivered` and the original action detail (probe reports,
+not proof of application processing). `probe_failures` retains all failed checks.
+`delivery_attribution=CONFIRMED` requires no probe verification failure;
+`UNATTRIBUTED` records that full verification did not succeed. Identity or trace
+failure yields zero accepted deliveries even if action detail says `delivered`.
+A legitimate binding-only partial run can retain its independently checked
+pre-loss posting count while remaining `UNATTRIBUTED` and `FAILED`; it is never
+a complete measurement. The public `verify` command refuses every non-`COMPLETE`
+result, and successful results still require the original identity, correspondence,
+cleanup and action-count checks.
+
+N06's `attribute` CLI likewise validates a caller-supplied executable digest
+before resolving PowerShell or the probe file: malformed identity returns
+`ARGS_IDENTITY` even when those prerequisites are missing. A well-formed identity
+with missing prerequisites still returns `PROBE_MISSING`; no probe is started.
+
+Run the deterministic contract and driver regressions from the repository root:
+
+```text
+python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p "test_r0c_*.py"
+python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p "test_*.py"
+```
+
+The [latest qualification records](evidence-published/r0c-s1-latest/behavior.json)
+separate deterministic save/reload evidence from Native delivery and list every
+skip. Eleven historical N07 assertions remain `NOT_RUN` because their original
+baseline binaries are unavailable; a rebuild is not restoration. No Present,
+displayed-frame, scanout, input-to-photon or GPU measurement follows from these
+tests. Qualification and review status belong to the
+[master plan](IMPLEMENTATION_MASTER_PLAN.md#1952-mp-r0c-s1-r15-source-qualification-2026-10-26).
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |

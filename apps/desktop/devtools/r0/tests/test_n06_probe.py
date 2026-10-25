@@ -735,8 +735,10 @@ class CliFailClosedTests(unittest.TestCase):
             # 1000 requested samples cannot fit a cap of 10.
             ("attribute", "--pid", "4242", "--seconds", "10", "--interval-ms", "10",
              "--max-samples", "10"),
-            # An executable identity is a full sha256 or it is refused.
-            ("attribute", "--pid", "4242", "--executable-sha256", "deadbeef"),
+            # Invalid caller identity is refused before unavailable probe prerequisites.
+            ("attribute", "--pid", "4242", "--executable-sha256", "deadbeef",
+             "--powershell", str(self.base / "missing-shell.exe"),
+             "--probe", str(self.base / "missing-probe.ps1")),
         )
         expected = ("ARGS_PID", "ARGS_CAP", "ARGS_CAP", "ARGS_CAP", "ARGS_CAP", "ARGS_CAP",
                     "ARGS_CAP", "ARGS_IDENTITY")
@@ -843,6 +845,7 @@ class RealHostProbeTests(unittest.TestCase):
         if shutil.which("powershell") is None:
             self.skipTest("NOT_RUN: Windows PowerShell is not on PATH")
         child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+        self.addCleanup(child.wait, timeout=5)
         self.addCleanup(child.kill)
         record_path = self.base / "record.json"
         result = subprocess.run(

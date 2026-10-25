@@ -1,0 +1,43 @@
+{
+  "protocol": 1,
+  "op": "prepare",
+  "args": {
+    "draft": {
+      "draft_version": 1,
+      "plan_id": "cos-desktop-r0c-s1-r15-qualification",
+      "revision": 1,
+      "goal": "Qualify existing failed-result attribution without duplicate implementation or fabricated Native measurements.",
+      "invariants": [],
+      "milestones": [],
+      "tasks": [{
+        "task_id": "r0c-s1-r15",
+        "goal": "Exercise saved FAILED reason priority and confirmed-versus-self-reported deliveries; repair demonstrated defects, verify a pinned candidate and obtain Tern disposition.",
+        "inputs": [{
+          "id": "scope",
+          "description": "Observed baseline dev d74699a3d92a44bc4bee7f32754e9fd3b2a0a4c4, initially clean. DC-MP-R0C owns Windows stress, requested/achieved cadence, bounded cancellation/restoration and truthful stall attribution. Missing present observation keeps visible stall gate UNVERIFIED. Existing R14 review requests identity/trace/classification failures outrank bare binding loss while preserving MISSING/CORRUPT priority, actual finalize_result save/reload proof and explicit distinction between confirmed count and probe self-report. HEAD already contains R15 priority, delivery_attribution, probe_self_reported_delivered and six passing targeted regressions; no duplicate fix is presumed necessary. Current Tern reconciliation is pending in the restored existing conversation. ADR-0009 accepts technically completed slices, ADR-0012 releases Caller holds but not evidence requirements, ADR-0013 requires tracked latest evidence. Eleven historical N07 binary assertions stay NOT_RUN because original artifacts are absent. No Runtime mutation, main integration, release or invented measurement is authorized.",
+          "context_ids": []
+        }],
+        "constraints": [
+          {"id":"scope","level":"MUST","text":"Reuse existing implementation. Do not change successful workload semantics, S2B original evidence, dependencies, GPUI pin or Runtime. No new field or abstraction without demonstrated need."},
+          {"id":"truth","level":"MUST","text":"Distinguish saved FAILED diagnostic proof from real Native delivery. Unattributed probe actions are self-report, never confirmed measurements. Preserve missing present/GPU/N07 dispositions."},
+          {"id":"workflow","level":"MUST","text":"Existing coding agent owns repair and smoke; Taskern plans only. Use full committed Refine candidate, native status/inspect/verify and exact-SHA Tern review. Preserve failures, never redispatch unknown outcomes; latest sanitized evidence lives in tracked repository paths, not temp."}
+        ],
+        "outputs": [{"id":"qualification","description":"Necessary source repair, persisted behavioral proof, verification and pinned Gate/Tern disposition with explicit limitations.","media_type":"application/json"}],
+        "acceptance": [
+          {"id":"priority","statement":"Saved FAILED reason is PROBE_BINDING_LOST for binding-only loss and the correct higher-priority failure for binding plus pid, generation, launcher, title, trace or classification failure; corrupt/missing precedence remains.","output_ids":["qualification"],"evaluation_ids":["behavior"]},
+          {"id":"attribution","statement":"Saved action self-report remains distinct from confirmed deliveries; success behavior is preserved and no unverified count becomes a measurement.","output_ids":["qualification"],"evaluation_ids":["behavior"]},
+          {"id":"disposition","statement":"Independent pinned Gate and Tern review establish limited closure or a precise blocker; no unmeasured full-MP completion is claimed.","output_ids":["qualification"],"evaluation_ids":["quality"]}
+        ],
+        "evaluation": [
+          {"id":"behavior","kind":"automated","requirement":"Exercise actual finalize_result save/reload with independently specified failure identities, affected regressions and public development CLI. Tests do not claim real Native delivery.","metric":[]},
+          {"id":"quality","kind":"automated","requirement":"Run affected Python verification and required impact-route checks, independent Refine integrity on full candidate and Tern fixed-SHA review. Do not count historical unavailable N07 assertions as PASS.","metric":[]}
+        ],
+        "dependencies": [],
+        "context": [],
+        "annotations": []
+      }]
+    },
+    "handoff": [{"task_id":"r0c-s1-r15","context":{"schema_version":1,"items":[]},"budget":{"schema_version":1,"window_tokens":32000,"reserved_output_tokens":4000,"tool_reserve_tokens":4000,"max_input_bytes":24000}}],
+    "emit": "both"
+  }
+}

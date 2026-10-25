@@ -1,0 +1,202 @@
+現状確認と次タスク
+
+GitHubコネクタで固定SHAの実コード、MP §19.50–19.51、ADR-0009/0012/0013を確認しました。
+
+次タスクはMP-R0C-S1 R15の検証・Gate・独立再レビューです。重複実装は不要です。
+
+現行ソースには以下が存在します。
+
+failure_reason()：failure-setを優先したFAILED理由の決定
+
+delivery_attribution：確認済み配達数と帰属不明の区別
+
+probe_self_reported_delivered：probe自己申告値の分離
+
+ReasonPriorityR15Tests / DeliveryAttributionR15Tests：R15回帰テスト
+
+ただし、R15のGate完了と独立レビューPASSは未確認です。MP §19.51に記録されたN07の旧バイナリ欠落も解消していません。
+
+したがって、以下の1タスクからループを再開します。
+
+プレーンテキスト
+
+# COS Desktop — MP-R0C-S1 R15 検証・Gate・独立再レビュー
+
+Repository: dio16/cos-desktop
+Branch: dev
+開始固定HEAD: d74699a3d92a44bc4bee7f32754e9fd3b2a0a4c4
+前回R14レビュー対象: 0ca19345a0ab54a6d139f8adb7c6fc8259bd468a
+前回判定: BLOCKING 1 / ACTIONABLE 1 / EXCESSIVE 0
+
+## 目的
+
+既存のR15修正を検証し、Refine Gateと既存Tern会話による独立再レビューを完了させる。
+
+R15の実装を最初からやり直さないこと。
+R15が完了するまでは次のMPカードへ進まないこと。
+
+全MP実装の継続承認は有効。
+ADR-0009/0012/0013およびMP正典を遵守する。
+
+## STEP 1 — 固定状態と既存実装の確認
+
+1. dev、origin/dev、HEAD、作業ツリーのcleanを確認する。
+2. 次の実コードを確認する。
+   - apps/desktop/devtools/r0/r0c_driver.py
+   - apps/desktop/devtools/r0/r0c_contracts.py
+   - apps/desktop/devtools/r0/tests/test_r0c_driver.py
+3. R14からの差分を確認する。
+4. 次が実装済みであることを検証する。
+   - failure_reasonのfailure-set優先順位
+   - PID、generation、launcher、title等の失敗理由の永続帰属
+   - delivery_attributionのCONFIRMED/UNATTRIBUTED
+   - probe_self_reported_deliveredの独立記録
+   - R15の負例回帰テスト
+
+すでに条件を満たしている実装には手を加えない。
+
+## STEP 2 — R15検証
+
+既存のWindows開発環境で以下を実施する。
+
+1. R15対象の回帰テスト
+2. R0C契約・consumerの関連テスト
+3. R0全体の回帰テスト
+4. 必要なRust default/feature品質検査
+5. R14の2指摘を再現する負例検証
+
+特に次を確認する。
+
+- 複数の失敗が重なっても主原因がbinding lossに隠されない。
+- FAILEDの永続結果に正しい主原因とfailure-setが残る。
+- 未確認actionを配達確認済みとして集計しない。
+- probe自己申告値は、検証済み配達数と区別される。
+- COMPLETEの条件を緩めない。
+- 不正な結果や不整合な集計はfail-closedとなる。
+
+N07の旧baseline binaryが失われた11アサーションはNOT_RUNとして扱う。
+
+再ビルドした別バイナリを過去の実行物として代用しない。
+skippedをPASSと数えない。
+全テスト件数、実行件数、skipped、expectedFailureを個別報告する。
+
+失敗があれば原因を特定し、必要最小限の修正とテスト追加を行う。
+修正した場合のみ新しいcommitを作成し、devへpushする。
+
+## STEP 3 — Refine独立Gate
+
+STEP 2が正常に完了したら製品候補SHAを固定する。
+
+既存Gate受領書を先に調べ、同一SHAに対する有効な検証が存在するか確認する。
+未実施なら、既存の正典Gate設定を使って以下を実行する。
+
+- Refine Quality Gate
+- Refine Build Gate
+- 両Gateのinspect / verify
+- 候補SHA、実行チェック、成果物、cleanupの整合確認
+
+Gate失敗時は原因修正後に新候補SHAで再実行する。
+旧SHAのGate結果を新候補に流用しない。
+
+Gate成功だけでR15完了を宣言しない。
+
+## STEP 4 — 既存Tern会話で独立再レビュー
+
+新しいレビュー会話は作成しない。
+MP §19.50に記載された既存のTern-ChatGPTレビュー会話を再使用する。
+
+Tern-OMP経路を使用する。omp -p経路は禁止。
+
+レビューには以下を提示する。
+
+- 固定製品候補SHA
+- 証拠HEAD（異なる場合）
+- R14のBLOCKING 1 / ACTIONABLE 1の修正根拠
+- R15関連コードと回帰テスト
+- テスト結果とskippedの内訳
+- Refine Quality/Build Gate IDとverify結果
+- N07の未回復境界
+- 未測定項目と未完了MP項目
+
+レビュー依頼は固定SHAの実コード評価とし、
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE
+の件数、根拠箇所、最終判定を要求する。
+
+## STEP 5 — レビュー完了の厳密判定
+
+MP §19.50の部分回答事故を再発させない。
+
+`gpt-review.cjs ask --wait` の終了だけで
+レビュー取得完了と判断してはならない。
+
+既存の /c/tmp/ask-complete.sh の動作を確認し、
+以下をすべて満たすまでレビュー結果を採用しない。
+
+- 保存状態に解析済みverdictが存在する
+- incompleteフラグがない
+- 全指摘本文を取得している
+- レビュアーの最終判定行まで取得済み
+- 連続2回の確認で応答長が安定している
+- 検証スクリプトがexit 0を返す
+
+スクリプトが利用不能なら、同等の完了確認が成立するまで停止する。
+
+途中取得した応答を修正指示に利用しない。
+回答の欠落を推測で補わない。
+
+## STEP 6 — 評価ループ
+
+判定が0/0/0でなければ、指摘を分類し、必要最小限の修正を行う。
+
+修正 → 回帰検証 → 固定SHA更新 → Refine Gate → Tern再レビュー
+
+この順序で反復する。
+
+0/0/0に到達し、必要な証拠が揃った場合のみ、
+MP-R0C-S1の限定技術完了を記録する。
+
+## STEP 7 — 証拠保存と次タスク
+
+ADR-0013に従う。
+
+- 証拠の正典はリポジトリ内のtrackedファイルのみ
+- 一時ディレクトリを証拠保管場所にしない
+- 各領域の最新版だけを維持
+- 置換した証拠は旧対象とdigestを記録
+- 大容量成果物は原則digest/sizeで記録
+- 実際に取得・検証できないbytesに基づくPASSは禁止
+
+MP計画と証拠記録を整合させ、devへ統合・pushする。
+
+ADR-0009により、技術的に完了したスライスについて
+Caller acceptanceの再要求は不要。
+
+ただし以下は禁止する。
+
+- Runtimeの変更またはRuntime責務のDesktopへの移動
+- main merge、release、公開
+- 未測定値のPASS扱い
+- Present/displayed/scanout/input-to-photonの架空測定
+- N07旧バイナリの架空復旧
+- 不完全なTern回答からの自動修正
+
+最後に以下を報告する。
+
+1. 実装変更の有無と固定SHA
+2. テスト結果・skipped/NOT_RUN内訳
+3. Refine Gate IDと結果
+4. Tern最終判定と完全応答の取得確認
+5. 完了範囲と残る制約
+6. MP依存DAGに基づく次タスク1件
+
+R15が未完了なら次タスクに進まず、停止理由を提示する。
+0/0/0で完了した場合は、MP全体の継続実装ループへ復帰する。
+
+次タスクも必ず
+実装 → 検証 → Refine Gate → Tern評価 → 完了記録
+の単位で処理する。
+
+以上を追加承認待ちなしで実行する。
+
+
+DIRECTIVE COMPLETE

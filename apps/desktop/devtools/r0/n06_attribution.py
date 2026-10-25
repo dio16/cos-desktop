@@ -1500,14 +1500,14 @@ def _run_attribute(args: argparse.Namespace) -> dict[str, Any]:
     # The caps must be self-consistent: the requested cadence can never exceed the sample cap.
     if math.ceil(seconds * 1000 / interval_ms) > max_samples:
         fail("ARGS_CAP")
-    powershell = _resolve_powershell(args.powershell)
-    probe = Path(args.probe)
-    if not probe.is_file():
-        fail("PROBE_MISSING")
     executable_sha256 = args.executable_sha256
     if executable_sha256 is not None:
         if not isinstance(executable_sha256, str) or not SHA256.fullmatch(executable_sha256):
             fail("ARGS_IDENTITY")
+    powershell = _resolve_powershell(args.powershell)
+    probe = Path(args.probe)
+    if not probe.is_file():
+        fail("PROBE_MISSING")
     caps = {"seconds": seconds, "interval_ms": interval_ms, "max_samples": max_samples,
             "max_window_pixels": max_window_pixels}
     document = run_probe(

@@ -1,0 +1,206 @@
+{
+  "source_commit": "d74699a3d92a44bc4bee7f32754e9fd3b2a0a4c4",
+  "implementation_changed_this_session": true,
+  "scope": "R15 source qualification; no real Native delivery or performance claim",
+  "affected_r0c_tests": {
+    "total": 129,
+    "passed": 129,
+    "failed": 0
+  },
+  "full_r0_tests": {
+    "total": 340,
+    "executed": 328,
+    "passed": 328,
+    "skipped": 12,
+    "expected_failures": 0,
+    "unexpected_successes": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped_cases": [
+      {
+        "test": "test_real_observation_of_a_window (test_n03_observe.N03Observation.test_real_observation_of_a_window)",
+        "reason": "NOT_RUN: no COS Desktop window is running in this session"
+      },
+      {
+        "test": "test_arbitrary_repo_root_is_refused_with_a_closed_error (test_n07_verify.N07Verifier.test_arbitrary_repo_root_is_refused_with_a_closed_error)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_historical_record_matches_its_recorded_archive_and_names_live_drift (test_n07_verify.N07Verifier.test_historical_record_matches_its_recorded_archive_and_names_live_drift)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_live_tree_matches_the_recorded_baseline (test_n07_verify.N07Verifier.test_live_tree_matches_the_recorded_baseline)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_mismatch_still_exits_nonzero_and_is_named (test_n07_verify.N07Verifier.test_mismatch_still_exits_nonzero_and_is_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_missing_expected_value_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_expected_value_is_not_measured_while_live_drift_stays_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_missing_helper_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_helper_is_not_measured_while_live_drift_stays_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_omitted_repo_root_uses_the_canonical_root (test_n07_verify.N07Verifier.test_omitted_repo_root_uses_the_canonical_root)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_same_inputs_produce_identical_record_bytes (test_n07_verify.N07Verifier.test_same_inputs_produce_identical_record_bytes)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_scratch_copy_only_is_not_verified_and_names_the_path_item (test_n07_verify.N07Verifier.test_scratch_copy_only_is_not_verified_and_names_the_path_item)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_tampered_manifest_names_the_manifest_mismatch (test_n07_verify.N07Verifier.test_tampered_manifest_names_the_manifest_mismatch)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_verdict_precedence_names_both_kinds (test_n07_verify.N07Verifier.test_verdict_precedence_names_both_kinds)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      }
+    ]
+  },
+  "save_reload_smoke": {
+    "input": "deterministic synthetic probe values, not OS input",
+    "cases": [
+      {
+        "case": "binding",
+        "reason": "PROBE_BINDING_LOST",
+        "confirmed_deliveries": 460,
+        "probe_self_reported_delivered": 460,
+        "delivery_attribution": "UNATTRIBUTED",
+        "failure_keys": [
+          "binding"
+        ],
+        "serialized_bytes": 113446,
+        "serialized_sha256": "sha256:0e5bcbf7f873d43335fd72d922accd7f3ed6b425c555e0472a4d49afea121837"
+      },
+      {
+        "case": "pid",
+        "reason": "WINDOW_PID_MISMATCH",
+        "confirmed_deliveries": 0,
+        "probe_self_reported_delivered": 460,
+        "delivery_attribution": "UNATTRIBUTED",
+        "failure_keys": [
+          "binding",
+          "pid"
+        ],
+        "serialized_bytes": 113479,
+        "serialized_sha256": "sha256:2d82d97e3e5b743cd023875debd9f75c34b08f7221e8901500cd2f381a6291a9"
+      },
+      {
+        "case": "generation",
+        "reason": "WINDOW_GENERATION_MISMATCH",
+        "confirmed_deliveries": 0,
+        "probe_self_reported_delivered": 460,
+        "delivery_attribution": "UNATTRIBUTED",
+        "failure_keys": [
+          "binding",
+          "generation"
+        ],
+        "serialized_bytes": 113500,
+        "serialized_sha256": "sha256:17bc7d35e06f4a45580bb4dfd4487fab35937fe03901b12c29a5407e9a0fc80d"
+      },
+      {
+        "case": "launcher",
+        "reason": "WINDOW_LAUNCHER_MISMATCH",
+        "confirmed_deliveries": 0,
+        "probe_self_reported_delivered": 460,
+        "delivery_attribution": "UNATTRIBUTED",
+        "failure_keys": [
+          "binding",
+          "launcher"
+        ],
+        "serialized_bytes": 113494,
+        "serialized_sha256": "sha256:5db3bf0cf6e3400c04d629f4cee60403654d804fe6cafb13e22f7ff0f338779b"
+      },
+      {
+        "case": "title",
+        "reason": "WINDOW_IDENTITY_MISMATCH",
+        "confirmed_deliveries": 0,
+        "probe_self_reported_delivered": 460,
+        "delivery_attribution": "UNATTRIBUTED",
+        "failure_keys": [
+          "binding",
+          "title"
+        ],
+        "serialized_bytes": 113491,
+        "serialized_sha256": "sha256:2c14419f6f6fa0ff20fa07018a3ce5e6b0fd5aaa700dc1befabc39ad49575b5f"
+      },
+      {
+        "case": "trace",
+        "reason": "PROBE_TRACE_MISMATCH",
+        "confirmed_deliveries": 0,
+        "probe_self_reported_delivered": 460,
+        "delivery_attribution": "UNATTRIBUTED",
+        "failure_keys": [
+          "binding",
+          "trace"
+        ],
+        "serialized_bytes": 113483,
+        "serialized_sha256": "sha256:94f05a6d661106838069341ee55a5c6e43c482dd1e8c7a8c0099dbfaf267e4ff"
+      },
+      {
+        "case": "classification",
+        "reason": "PROBE_CLASSIFICATION_MISMATCH",
+        "confirmed_deliveries": 0,
+        "probe_self_reported_delivered": 460,
+        "delivery_attribution": "UNATTRIBUTED",
+        "failure_keys": [
+          "binding",
+          "classification"
+        ],
+        "serialized_bytes": 113507,
+        "serialized_sha256": "sha256:0b721447eddd1ae688503dae6cfd2862b4b2c099d283779a2c5f57c7de88f28f"
+      }
+    ],
+    "scratch": "disposable and removed; no claim depends on scratch retention"
+  },
+  "public_cli": {
+    "command": "r0c_driver.py plan --manifest manifests/r0c-s1-keyboard.json --out DISPOSABLE/plan.json",
+    "exit": 0,
+    "actions": 460,
+    "trace_sha256": "sha256:cf99bc0ab470c6df49f7cfc2853c64fbe036a4ac0ebb5dc0ae028b93e73c39d4"
+  },
+  "limitations": [
+    "Eleven historical N07 assertions NOT_RUN: original binaries absent; not restored by rebuilding.",
+    "N03 Native observation NOT_RUN: no COS Desktop window during offline suite.",
+    "Present/displayed/scanout/input-to-photon/GPU endpoints remain NOT_MEASURED; no visible stall PASS."
+  ],
+  "implementation_changes": [
+    "N06 validates malformed executable identity before unavailable shell/probe prerequisites.",
+    "Existing N06 CLI regression now specifies missing dependencies explicitly.",
+    "Windowless-process probe test kills and reaps its child during cleanup."
+  ],
+  "n06_cli_smoke": [
+    {
+      "identity": "malformed",
+      "powershell": "explicit missing executable",
+      "probe": "explicit missing file",
+      "path": "empty",
+      "exit": 1,
+      "error": "ARGS_IDENTITY"
+    },
+    {
+      "identity": "well-formed",
+      "powershell": "explicit missing executable",
+      "probe": "explicit missing file",
+      "path": "empty",
+      "exit": 1,
+      "error": "PROBE_MISSING"
+    }
+  ],
+  "n06_tests": {
+    "total": 39,
+    "passed": 39,
+    "resource_warning": false
+  },
+  "source_binding_note": "R15 files match the base source commit; N06 repair is pinned by the subsequent candidate commit and Gate, not by the base source_commit field."
+}

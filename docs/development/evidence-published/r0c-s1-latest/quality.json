@@ -1,0 +1,61 @@
+{
+  "source_commit": "d74699a3d92a44bc4bee7f32754e9fd3b2a0a4c4",
+  "default_quality": {
+    "command": "pwsh scripts/quality.ps1",
+    "exit": 0,
+    "rust_tests": {
+      "passed": 532,
+      "failed": 0,
+      "ignored": 1
+    },
+    "warnings": [],
+    "ignored_tests": [
+      "test representation::tests::extended_summary_records_the_100k_curve ... ignored, records the 100k exploratory curve on demand"
+    ]
+  },
+  "feature_quality": [
+    {
+      "command": "clippy --locked --workspace --all-targets --features cos-desktop/r0-s2b-instrumentation -- -D warnings",
+      "exit": 0,
+      "rust_tests": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "ignored_tests": []
+    },
+    {
+      "command": "test --locked --workspace --features cos-desktop/r0-s2b-instrumentation",
+      "exit": 0,
+      "rust_tests": {
+        "passed": 536,
+        "failed": 0,
+        "ignored": 1
+      },
+      "ignored_tests": [
+        "test representation::tests::extended_summary_records_the_100k_curve ... ignored, records the 100k exploratory curve on demand"
+      ]
+    },
+    {
+      "command": "build --locked -p cos-desktop --features r0-s2b-instrumentation",
+      "exit": 0,
+      "rust_tests": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "ignored_tests": []
+    }
+  ],
+  "native_startup": "NOT_RUN in this session: no Rust/product executable behavior changed; deterministic driver persistence and public CLI exercised. Offline native observation remains skipped, never PASS.",
+  "post_repair_default_quality": {
+    "exit": 0,
+    "rust_tests": {
+      "passed": 532,
+      "failed": 0,
+      "ignored": 1
+    },
+    "scope": "After N06 production validation repair; final additional edit only adds child reaping in the Python test. No Rust source changed."
+  },
+  "feature_binding": "Feature checks exercised the same unchanged Rust source tree as the repaired candidate; not a new Native or performance measurement."
+}
