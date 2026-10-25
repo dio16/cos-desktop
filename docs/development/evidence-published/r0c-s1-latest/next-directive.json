@@ -1,0 +1,22 @@
+{
+  "starting_head": "f15253b95d2f92812c72a3449337e414affa2a33",
+  "previous_review": [
+    "047c27b3-cb44-486a-babc-0981c8bd2ae4"
+  ],
+  "request_user_ids": [
+    "0afce3d0-7a0d-472a-b32d-5b577be4fb1d"
+  ],
+  "response_assistant_ids": [
+    "a916c5c9-d60a-4639-a3d1-a41ba3f5311f"
+  ],
+  "complete": true,
+  "streaming": false,
+  "identical_complete_reads": 2,
+  "stability_interval_ms": 30000,
+  "terminal_marker": "NEXT DIRECTIVE COMPLETE",
+  "directive_sha256": "sha256:242ed2bf83d2c9384a51c0163f49d737af556744e3a5602a1d0602204ac588af",
+  "response_sha256": "sha256:87da84ea10fa6fb1ba9a74c463480e5c7faa3d800a72dbcca39333b992adb65a",
+  "directive_characters": 5945,
+  "extraction": "Unique code.block element in the actual Tern renderer; code content copied verbatim. Initial pre-code selector matched zero and was not adopted.",
+  "verification_exit": 0
+}

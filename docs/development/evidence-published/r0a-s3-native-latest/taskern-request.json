@@ -1,0 +1,29 @@
+{
+  "protocol":1,"op":"prepare","args":{
+    "draft":{"draft_version":1,"plan_id":"cos-desktop-r0a-s3-native-n1","revision":1,
+      "goal":"Reproduce bounded source-record aggregates from all six published Native S2B journals, preserving missing measurement and provenance limits.",
+      "invariants":[],"milestones":[],"tasks":[{
+        "task_id":"r0a-s3-native-n1",
+        "goal":"Reuse existing strict S2B/S1 contracts and S3 canonical encoding for a narrow published Native replay adapter; validate inputs, independently reproduce aggregates, verify pinned candidate and obtain limited Tern closure.",
+        "inputs":[{"id":"scope","description":"Observed dev, origin/dev and HEAD equal f15253b95d2f92812c72a3449337e414affa2a33; only the newly received Tern next-directive receipts are untracked. Owning DC-MP-R0A exit permits reproducible aggregates from retained definitions/hashes, missing probes block only their claims. Tern directive MP-R0A-S3-N1 is saved verbatim in r0c-s1-latest/next-directive.txt. Published r0c-2026-10-25 has keyboard, held-key, pointer, scroll, navigation and combined captures, observations, launch ledgers, old S1 manifests/results, raw drivers and README. All 37 SHA256SUMS entries passed byte-level verification. S3 ledger frame counters are not semantically equivalent to S2B journal event counts; do not force mappings or invent UTC/host metadata. Original observation references include inputs not published; expose these verification limits and do not claim full bundle replay or independent executable/source verification.","context_ids":[]}],
+        "constraints":[
+          {"id":"reuse","level":"MUST","text":"Reuse strict S2B capture, S1 manifest/result and canonical byte helpers where applicable. Preserve S3 schema. Add only narrow Native replay behavior; no generic benchmark framework, dependency or Runtime changes."},
+          {"id":"truth","level":"MUST","text":"Retained counts are not whole-population or displayed frames. Submission is not Present; gap is not visible stall; invalidation coalescing is not queue depth. Keep unknown endpoints and missing provenance NOT_MEASURED/NOT_VERIFIED, never zero-fill or silently reconstruct missing originals."},
+          {"id":"inputs","level":"MUST","text":"Read and checksum the complete published 37-file set, verify all available cross-file identities, preserve original Native evidence. Aggregate exact retained records with record IDs, integer ns units, denominators, exclusions and window/lifetime boundaries."},
+          {"id":"workflow","level":"MUST","text":"Use actual CLI twice for identical canonical bytes; independent six-scenario oracle and fail-closed negative tests. Run affected/full Python and Rust default/feature quality, independent full pinned Refine Quality/Build, verify correlation and successful exact-workspace disposal. Save latest sanitized evidence in tracked files, complete Tern fixed-SHA 0/0/0 review before limited closure."}
+        ],
+        "outputs":[{"id":"replay","description":"Narrow real Native replay CLI and regression coverage, canonical six-scenario aggregate, independent oracle, provenance/coverage limits, quality and Gate/Tern evidence.","media_type":"application/json"}],
+        "acceptance":[
+          {"id":"real-inputs","statement":"All six actual published captures are accepted with complete checksum verification and available identity/clock/scope consistency checks; unavailable original inputs remain explicit limits.","output_ids":["replay"],"evaluation_ids":["behavior"]},
+          {"id":"aggregates","statement":"Record-kind counts, accounting, interval/gap and invalidation aggregation are reproducible with units, record references and denominators, independently agree with six real records and README meaning, and preserve missing endpoints and retention loss.","output_ids":["replay"],"evaluation_ids":["behavior"]},
+          {"id":"fail-closed","statement":"Hash/identity/sequence/time/count mismatch, duplicate/missing/corrupt inputs and output bounds fail closed without partial output or persistent scratch; identical inputs produce identical canonical output and digest.","output_ids":["replay"],"evaluation_ids":["behavior"]},
+          {"id":"limited-closure","statement":"Full required quality, independent pinned Gate integrity and Tern clean review justify only S3-N1 completion, never full MP-R0A/R0C or unmeasured Native performance acceptance.","output_ids":["replay"],"evaluation_ids":["quality"]}
+        ],
+        "evaluation":[
+          {"id":"behavior","kind":"automated","requirement":"Exercise public replay CLI against all six tracked captures twice, independent arithmetic oracle and meaningful contract-boundary negative tests; observe real output, exact canonical equality and clean refusal.","metric":[]},
+          {"id":"quality","kind":"automated","requirement":"Record actual affected/full suite and default/feature quality results including skip reasons, independent Quality/Build Gate status/inspect/verify/artifact correlation/cleanup and complete-read Tern review.","metric":[]}
+        ],"dependencies":[],"context":[],"annotations":[]
+      }]},
+    "handoff":[{"task_id":"r0a-s3-native-n1","context":{"schema_version":1,"items":[]},"budget":{"schema_version":1,"window_tokens":32000,"reserved_output_tokens":4000,"tool_reserve_tokens":4000,"max_input_bytes":24000}}],"emit":"both"
+  }
+}

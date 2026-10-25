@@ -1,0 +1,303 @@
+
+# COS Desktop — 次タスク実行指示
+# MP-R0A-S3-N1: Published Native Journal Replay and Aggregation
+
+Repository: dio16/cos-desktop
+Branch: dev
+開始固定SHA: f15253b95d2f92812c72a3449337e414affa2a33
+
+対象MP: MP-R0A
+単一所有Contract: DC-MP-R0A
+対象slice: S3-N1 — 公開済みNative記録の再生・集計検証
+
+## 1. 目的
+
+既存のS3 ledger/import実装を再利用し、保存済みの実Native S2B journalから、再現可能で出典が検証された集計結果を生成する。
+
+単なるschema追加、mock成功、足場構築では完了としない。
+
+6シナリオの実記録を実際に読み込み、検証・集計・再計算まで成功させること。
+
+本sliceの完了はMP-R0A全体またはMP-R0C全体の完了を意味しない。
+
+## 2. 依存と権限
+
+確認済み:
+- MP-R0Aのhard prereqsはnone
+- R0A-S1、S2A、S2B、既存S3の限定技術完了記録が存在
+- R0C-S1 R15 SOURCE限定PASS 0/0/0
+- ADR-0009: 完了sliceのCaller受入れと継続実行
+- ADR-0012: Caller HOLD解除。ただし実測要件は維持
+- ADR-0013: 証拠はtracked repositoryに最新版を保存
+
+未達:
+- MP-R0A全体のexit
+- MP-R0Cの全Native stress matrix
+- popup/entity-update/saturation実測
+- queue/cancel/restorationの実証
+- Present/displayed/scanout/GPU/input-to-photon
+- visible-demandからpresentまでの対応
+- 可視stallの原因帰属
+- 測定分布とMP-R0Dの最終ratification
+
+したがって、これらを満たした前提でR0C-S2を完了させない。
+
+## 3. 実入力
+
+以下のtracked evidenceを使用する。
+
+docs/development/evidence-published/r0c-2026-10-25/
+
+対象シナリオ:
+- keyboard
+- held-key
+- pointer
+- scroll
+- navigation
+- combined
+
+各シナリオの実入力:
+- capture-run/<scenario>/s2b-capture.json
+- capture-run/<scenario>/s2b-observation.json
+- capture-run/<scenario>/ledger.json
+- r0c/<scenario>-manifest.json
+- r0c/<scenario>-result.json
+
+必ずREADME.mdとSHA256SUMSも検証する。
+
+これらは承認済み計測経路から保存された実Native記録だが、入力はsynthetic PostMessageである。
+
+実ユーザー操作、可視フレーム実測、性能分布に読み替えない。
+
+N07の消失した旧バイナリは使用しない。
+再ビルド品を旧バイナリの代替としない。
+
+## 4. STEP 1 — 現行コードと入力の検証
+
+作業開始前に以下を実施する。
+
+1. dev/origin/dev/HEAD/cleanを確認
+2. 固定SHAの実コードを読む
+3. MPとDCの現行Contractを確認
+4. 6シナリオの入力ファイルの実在を確認
+5. SHA256SUMSを全件検証
+6. 各入力のexecution ID、capture digest、source identity、executable digest、GPUI pin、clock、scopeを照合
+7. 公開済み資料に含まれない検証要素を列挙
+
+既存コード:
+- apps/desktop/devtools/r0/s3_ledger.py
+- apps/desktop/devtools/r0/s3_import.py
+- apps/desktop/devtools/r0/s2b_contracts.py
+- apps/desktop/devtools/r0/s2b_validate.py
+- apps/desktop/devtools/r0/s2b_capture.py
+- apps/desktop/devtools/r0/r0c_contracts.py
+- apps/desktop/devtools/r0/r0c_driver.py
+- apps/desktop/devtools/r0/tests/
+
+既存の検証・集計機能を重複実装しない。
+
+## 5. STEP 2 — 実Native journal再生
+
+S3の既存機能で扱える部分を再利用する。
+
+S2の結果とS2B journalの意味が一致しない項目を無理に変換しない。
+
+特に以下の同一視は禁止する。
+
+- gpui-cpu-draw = displayed frame
+- gpui-platform-submission = Present
+- retained count = 全発生event数
+- dirty notification = lost frame
+- coalescing = queue depth
+- journal gap = visible stall
+- source-bound record = full Native acceptance
+
+必要な場合のみ、S2B用の狭い再生・集計adapterを追加する。
+
+推奨候補:
+apps/desktop/devtools/r0/s3_native_replay.py
+apps/desktop/devtools/r0/tests/test_s3_native_replay.py
+
+既存S3 schemaの互換性を破壊しない。
+新しい汎用benchmark frameworkを作らない。
+
+## 6. STEP 3 — 実集計
+
+各シナリオについて、保存されたrecordから以下を再計算する。
+
+- 有効record件数とkind別件数
+- retained/eligible/drop/excludedの対応
+- sequenceとclock/scopeの整合
+- 同一clock domainで確認可能な区間
+- retained draw intervalの実測gap
+- retained submission intervalの実測gap
+- invalidationの集約件数と根拠
+- 入力recordのcoverage
+- 観測不能な範囲とその理由
+
+観測値を計算する場合は、使用したrecord、母数、単位、除外条件を明示する。
+
+retention lossがある場合は、集計を完全母集団の値として扱わない。
+
+イベント対応が不完全な場合は相関を推測しない。
+
+navigationの約475msのdraw gapは、500msの入力間隔との関係を明示し、可視stallとして扱わない。
+
+scrollでdraw記録がない場合は「観測されたdrawは0件」と「draw性能はNOT_MEASURED」を区別する。
+
+同一入力の再実行でcanonical outputとdigestが一致することを確認する。
+
+## 7. STEP 4 — 独立oracleと負例
+
+最低限、次を検証する。
+
+- 6件の実Native captureを正常に受理
+- SHA256の不一致を拒否
+- execution identity不一致を拒否
+- 不正sequence/時刻/件数を拒否
+- 重複・欠落・破損をfail-closedで処理
+- retention lossを隠さない
+- 未観測endpointを数値0へ変換しない
+- 集計結果が保存済みrecordから再計算できる
+- 同一入力の2回実行がbyte-identical
+- 出力上限とcleanupが成立
+
+実入力の6件について、既存READMEの記録との対応も検証する。
+
+独立oracleは同じ集計関数の再呼出しだけにしない。
+別実装の計算、明示した手計算または独立した保存済み期待値と照合する。
+
+## 8. STEP 5 — 終了条件
+
+次がすべて成立した場合に限りS3-N1を限定技術完了候補とする。
+
+1. 6件のtracked Native journalを実際に読み込んだ
+2. 出典・digest・identity検証を通過
+3. event集計と観測可能gapを再計算
+4. 独立oracleとの一致
+5. 負例がfail-closed
+6. 再実行でdeterministic
+7. 未測定・不完全coverageを正しく維持
+8. 回帰・品質検証が成功
+9. 独立Refine Gateが成功
+10. Tern固定SHAレビューが0/0/0
+
+いずれかを満たせなければPASSを宣言しない。
+
+実ファイルが欠落している、必要な同一性を検証できない、clock domainが対応しない場合は、その理由と対象値を記録し、該当結果をBLOCKED/NOT_MEASUREDとする。
+
+実証なしに代用入力を生成しない。
+
+## 9. STEP 6 — 検証・Refine Gate
+
+必要な変更のみ実装して回帰テストを実行する。
+
+最低限:
+- S3関連テスト
+- S2B関連テスト
+- R0C consumer関連テスト
+- R0全体のPython suite
+- Rust default/feature impact route
+- fmt/clippy/dependency/build
+
+N07旧binary依存11件はNOT_RUN。
+そのほかのskipも実件数と理由を保存する。
+
+合格後に製品候補SHAを固定する。
+
+同一候補に対して:
+- Refine Quality Gate
+- Refine Build Gate
+- inspect
+- verify
+- artifact digest照合
+- cleanup/integrity確認
+
+既存の正典Gate設定・絶対ツールパス・許可済み環境を使う。
+preflight UNKNOWNはUNKNOWNのまま保持する。
+失敗Gateは履歴として保持し、修復後のPASSへ変えない。
+
+## 10. STEP 7 — Tern独立評価ループ
+
+Tern-OMPの既存ChatGPTレビュー会話を再使用する。
+omp -pは禁止。
+
+レビュー対象:
+- 固定製品SHA
+- 証拠HEAD
+- DC-MP-R0Aとの対応
+- Native入力6件の再計算根拠
+- 新規adapterまたは変更コード
+- 負例と独立oracle
+- Gate status/inspect/verify
+- NOT_MEASURED/NOT_RUNの全境界
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE
+を明示した独立判定を要求する。
+
+MP §19.50の完全応答確認を必須とする。
+
+- fresh message ID
+- requestとの対応
+- streaming=false
+- incomplete=false
+- 最終判定行あり
+- 30秒間隔の2回完全一致
+- parsed verdict正常
+- completion verification exit 0
+
+途中取得した回答では実装修正を指示しない。
+
+0/0/0未達なら、指摘修正→再検証→新固定SHA→Gate→再レビューを反復する。
+
+## 11. STEP 8 — 証拠保存と完了記録
+
+ADR-0013に従い、最新版のみをtracked repositoryへ保存する。
+
+例:
+docs/development/evidence-published/r0a-s3-native-latest/
+
+記録:
+- 入力SHA256と出典
+- 検証結果
+- 6シナリオの実集計
+- independent oracle
+- 負例
+- coverageとexclusion
+- NOT_MEASURED/NOT_RUN
+- Quality/Build Gate
+- Tern最終レビュー全文と完全性証明
+- supersessionとdigest
+- cleanup/integrity
+
+大容量ファイルを無制限に複製しない。
+既存Native証拠を書き換えない。
+一時ファイルを永続証拠にしない。
+
+MPへS3-N1の結果を追記する。
+
+技術完了・0/0/0が成立したらADR-0009の既存受入れに従ってdevへ統合・pushし、次タスク指示を依頼する。
+
+## 12. 非対象
+
+以下は禁止する。
+
+- MP-R0A全体の無根拠な完了宣言
+- MP-R0C-S2/fullの無根拠な完了宣言
+- visible stallやPresentの架空測定
+- popup/entity-update/queue/restorationのfake成功
+- 実データなしのpercentile/SLO達成
+- Runtime変更またはRuntime責務の代行
+- GPUI pin変更
+- 新しい依存関係の無断採用
+- N07旧バイナリの架空復旧
+- provider control未成立でのNative画面操作
+- credentials/security権限変更
+- main merge、release、公開
+- R0D ratification、FLOW2の無断開始
+
+実際の所有ContractのExitは一切縮小しない。
+
+今回の完了主張は「保存済み実Native journalから再現可能なS3集計」に限る。
+
+以上を既存のMP継続承認に基づいて実行する。
