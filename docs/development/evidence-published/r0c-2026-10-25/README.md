@@ -137,3 +137,7 @@ Files are bounded records only: no credentials, no user content, no absolute loc
 | `raw/scroll-driver.json` | `49b434e610df67ed6c32d486e4ed45b33b37872cd7fa9b8911447d07dfe499dc` | `b354aac7c57b56a5ca7bbfa0209fe0650899e98791dd0e15b500cf3f2ac8f180` |
 
 No measurement, record field or recorded digest was edited for this table; it only states both digest forms.
+
+## Self-reference
+
+`SHA256SUMS` lists this README too, so its entry is computed after the README is final. If the README is edited again, that single entry must be regenerated; the 36 record entries are unaffected and the correspondence table covers only records.
