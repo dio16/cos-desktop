@@ -33,6 +33,10 @@ param(
     [string] $InputPath = '',
     [string] $OutputPath = '',
     [int] $MaxPixels = 0,
+    [long] $MaxDimension = 0,
+    [long] $MaxBitDepth = 0,
+    [long] $MaxDecodedBytes = 0,
+    [long] $MaxScratchBytes = 0,
     [switch] $Version
 )
 

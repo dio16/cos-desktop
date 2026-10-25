@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "scope": "source order and probe-local literal check; behaviour evidence is matrix.json",
+  "probe": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+  "anchors": {
+    "declared_metadata_read": 354,
+    "admission_block_start": 359,
+    "decoded_byte_refusal": 410,
+    "onload_materialization": 436,
+    "format_conversion": 437,
+    "encoder_save": 460
+  },
+  "ordering_proven": true,
+  "forbidden_budget_literals": [],
+  "budget_literals_absent": true,
+  "limits_source": "harness-resolved media DecodeBudget ratified_default plus operator overrides, forwarded as argv; the probe holds only ordering and checked arithmetic",
+  "note": "This is a structural guard for the pre-materialization placement, not a memory measurement or a WIC-internal allocation claim."
+}

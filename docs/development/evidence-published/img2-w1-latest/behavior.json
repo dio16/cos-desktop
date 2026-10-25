@@ -1,0 +1,609 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W1",
+  "scope": "WIC pre-materialization decode admission; exploratory real-Windows matrix",
+  "directive_sha256": "sha256:450ce31e92d97b991993ff68167b0e3bf43455ecfe0392acf6a79f47e5bcc61b",
+  "probe_identity": "wic_probe 1.1 (managed WIC/WPF, pre-materialization decode budget, PowerShell 7.6.7, .NET 10.0.13)",
+  "fixtures": [
+    {
+      "bytes": 79,
+      "name": "ok.png",
+      "sha256": "sha256:3b3a65a28db8b1135500e6f3cdd858a37685caacf73228230db593b19fbf3f51"
+    },
+    {
+      "bytes": 80,
+      "name": "at17.png",
+      "sha256": "sha256:351ad9f0b0c9d5eff66a96e645aad36bb6e38aa9fe692894447d620af4d7224d"
+    },
+    {
+      "bytes": 822,
+      "name": "ok.bmp",
+      "sha256": "sha256:9a4ab0193cbe49d474cc39240d789c2e2662d6bd5cd83369b5c8a69897be5341"
+    },
+    {
+      "bytes": 65,
+      "name": "huge.png",
+      "sha256": "sha256:7c8ae330e4c44a99e1cbc07347f1477c775e25cd4a2abd485344c3a39fec2f3d"
+    },
+    {
+      "bytes": 104,
+      "name": "junk.bin",
+      "sha256": "sha256:fe67a3b283c73f3e753cf6c0ffd8ea4f7560e20a318638fb5e0c6530dd6df5fc"
+    },
+    {
+      "bytes": 79,
+      "name": "zero.png",
+      "sha256": "sha256:fc8376bffe5d922c12281f4f183cacd3fd918eb7f096ca277b13b18331e39a5a"
+    },
+    {
+      "bytes": 59,
+      "name": "truncated.png",
+      "sha256": "sha256:dff0a8a560688f1e8eb5d5e20591d55a63d0c7f689ba26b5c16ed47781aef74e"
+    },
+    {
+      "bytes": 40,
+      "name": "truncated-file.png",
+      "sha256": "sha256:641ce27ae6e409bb62eb72c49102038fb2c28c564db5635502f66ccf955547c4"
+    },
+    {
+      "bytes": 645,
+      "name": "ok.jpg",
+      "sha256": "sha256:d91dac005225394c27b7571b48d2bc9937b9f070bc1c52dac3190689742e8c37"
+    }
+  ],
+  "expected_rgba_sha256": "614fd59f81a4457909acaa056573427fd8dc8a4095f60a70a72a8b170b321c8a",
+  "harness": {
+    "exit_code": 0,
+    "schema_version": 12,
+    "decode_budget": {
+      "declared_basis": "RATIFIED_DECLARED_BASIS_NOT_MEASURED",
+      "max_bit_depth": 16,
+      "max_decoded_bytes": 268435456,
+      "max_dimension": 16384,
+      "max_pixels": 268435456,
+      "max_scratch_bytes": 268435456,
+      "source": "ratified_default_with_operator_overrides"
+    },
+    "observations": [
+      {
+        "case_id": "at17.png",
+        "observed_outcome": "decoded",
+        "candidate_reason": "not_measured",
+        "validity": "presence_only",
+        "pixel_digest": "ea1295778937fcbfbe8e96678b5d45644f54bc6a04a81fd3ee5a268a39befe65",
+        "output_bytes": 142,
+        "exit_code": 0
+      },
+      {
+        "case_id": "huge.png",
+        "observed_outcome": "oversize",
+        "candidate_reason": "max_dimension_exceeded",
+        "validity": "not_measured",
+        "pixel_digest": null,
+        "output_bytes": null,
+        "exit_code": 4
+      },
+      {
+        "case_id": "junk.bin",
+        "observed_outcome": "unsupported",
+        "candidate_reason": "win_component_not_found",
+        "validity": "not_measured",
+        "pixel_digest": null,
+        "output_bytes": null,
+        "exit_code": 2
+      },
+      {
+        "case_id": "ok.bmp",
+        "observed_outcome": "decoded",
+        "candidate_reason": "not_measured",
+        "validity": "pixels_verified",
+        "pixel_digest": "614fd59f81a4457909acaa056573427fd8dc8a4095f60a70a72a8b170b321c8a",
+        "output_bytes": 140,
+        "exit_code": 0
+      },
+      {
+        "case_id": "ok.jpg",
+        "observed_outcome": "decoded",
+        "candidate_reason": "not_measured",
+        "validity": "structure_verified",
+        "pixel_digest": "51809b773a40b2940c0bc18dbfe72aa8f7be4f33cde4eb4de599f5ef27047744",
+        "output_bytes": 154,
+        "exit_code": 0
+      },
+      {
+        "case_id": "ok.png",
+        "observed_outcome": "decoded",
+        "candidate_reason": "not_measured",
+        "validity": "pixels_verified",
+        "pixel_digest": "614fd59f81a4457909acaa056573427fd8dc8a4095f60a70a72a8b170b321c8a",
+        "output_bytes": 140,
+        "exit_code": 0
+      },
+      {
+        "case_id": "truncated-file.png",
+        "observed_outcome": "unsupported",
+        "candidate_reason": "win_unknown_image_format",
+        "validity": "not_measured",
+        "pixel_digest": null,
+        "output_bytes": null,
+        "exit_code": 2
+      },
+      {
+        "case_id": "truncated.png",
+        "observed_outcome": "decoded",
+        "candidate_reason": "not_measured",
+        "validity": "presence_only",
+        "pixel_digest": "9503245a0161a939de15c2414db2d336e761822fa6cff8136e4148f58f1f782e",
+        "output_bytes": 140,
+        "exit_code": 0
+      },
+      {
+        "case_id": "zero.png",
+        "observed_outcome": "corrupt",
+        "candidate_reason": "win_bad_header",
+        "validity": "not_measured",
+        "pixel_digest": null,
+        "output_bytes": null,
+        "exit_code": 3
+      }
+    ],
+    "rerun_observations_identical": true
+  },
+  "narrow_boundary": {
+    "decode_budget": {
+      "declared_basis": "RATIFIED_DECLARED_BASIS_NOT_MEASURED",
+      "max_bit_depth": 16,
+      "max_decoded_bytes": 1048576,
+      "max_dimension": 16,
+      "max_pixels": 65536,
+      "max_scratch_bytes": 1048576,
+      "source": "ratified_default_with_operator_overrides"
+    },
+    "observations": [
+      {
+        "case_id": "at17.png",
+        "observed_outcome": "oversize",
+        "candidate_reason": "max_dimension_exceeded",
+        "validity": "not_measured"
+      },
+      {
+        "case_id": "ok.bmp",
+        "observed_outcome": "decoded",
+        "candidate_reason": "not_measured",
+        "validity": "pixels_verified"
+      },
+      {
+        "case_id": "ok.png",
+        "observed_outcome": "decoded",
+        "candidate_reason": "not_measured",
+        "validity": "pixels_verified"
+      }
+    ]
+  },
+  "probe_boundaries": [
+    {
+      "case": "max_pixels_at",
+      "limits": {
+        "MaxBitDepth": 8,
+        "MaxDecodedBytes": 65536,
+        "MaxDimension": 64,
+        "MaxPixels": 256,
+        "MaxScratchBytes": 65536
+      },
+      "exit_code": 0,
+      "reason_code": null,
+      "admission_status": "admitted",
+      "materialization": "completed",
+      "decoded_bytes_required": 768,
+      "bgra32_bytes_required": 1024,
+      "scratch_bytes_required": 1024,
+      "output_exists": true,
+      "elapsed_ms": 721
+    },
+    {
+      "case": "max_pixels_over",
+      "limits": {
+        "MaxBitDepth": 8,
+        "MaxDecodedBytes": 65536,
+        "MaxDimension": 64,
+        "MaxPixels": 255,
+        "MaxScratchBytes": 65536
+      },
+      "exit_code": 4,
+      "reason_code": "max_pixels_exceeded",
+      "admission_status": "refused",
+      "materialization": "not_requested",
+      "decoded_bytes_required": null,
+      "bgra32_bytes_required": null,
+      "scratch_bytes_required": null,
+      "output_exists": false,
+      "elapsed_ms": 671
+    },
+    {
+      "case": "max_dimension_at",
+      "limits": {
+        "MaxBitDepth": 8,
+        "MaxDecodedBytes": 65536,
+        "MaxDimension": 16,
+        "MaxPixels": 4096,
+        "MaxScratchBytes": 65536
+      },
+      "exit_code": 0,
+      "reason_code": null,
+      "admission_status": "admitted",
+      "materialization": "completed",
+      "decoded_bytes_required": 768,
+      "bgra32_bytes_required": 1024,
+      "scratch_bytes_required": 1024,
+      "output_exists": true,
+      "elapsed_ms": 704
+    },
+    {
+      "case": "max_dimension_over",
+      "limits": {
+        "MaxBitDepth": 8,
+        "MaxDecodedBytes": 65536,
+        "MaxDimension": 15,
+        "MaxPixels": 4096,
+        "MaxScratchBytes": 65536
+      },
+      "exit_code": 4,
+      "reason_code": "max_dimension_exceeded",
+      "admission_status": "refused",
+      "materialization": "not_requested",
+      "decoded_bytes_required": null,
+      "bgra32_bytes_required": null,
+      "scratch_bytes_required": null,
+      "output_exists": false,
+      "elapsed_ms": 661
+    },
+    {
+      "case": "max_decoded_at",
+      "limits": {
+        "MaxBitDepth": 8,
+        "MaxDecodedBytes": 768,
+        "MaxDimension": 64,
+        "MaxPixels": 4096,
+        "MaxScratchBytes": 65536
+      },
+      "exit_code": 0,
+      "reason_code": null,
+      "admission_status": "admitted",
+      "materialization": "completed",
+      "decoded_bytes_required": 768,
+      "bgra32_bytes_required": 1024,
+      "scratch_bytes_required": 1024,
+      "output_exists": true,
+      "elapsed_ms": 738
+    },
+    {
+      "case": "max_decoded_over",
+      "limits": {
+        "MaxBitDepth": 8,
+        "MaxDecodedBytes": 767,
+        "MaxDimension": 64,
+        "MaxPixels": 4096,
+        "MaxScratchBytes": 65536
+      },
+      "exit_code": 4,
+      "reason_code": "max_decoded_bytes_exceeded",
+      "admission_status": "refused",
+      "materialization": "not_requested",
+      "decoded_bytes_required": 768,
+      "bgra32_bytes_required": null,
+      "scratch_bytes_required": null,
+      "output_exists": false,
+      "elapsed_ms": 680
+    },
+    {
+      "case": "max_scratch_at",
+      "limits": {
+        "MaxBitDepth": 8,
+        "MaxDecodedBytes": 65536,
+        "MaxDimension": 64,
+        "MaxPixels": 4096,
+        "MaxScratchBytes": 1024
+      },
+      "exit_code": 0,
+      "reason_code": null,
+      "admission_status": "admitted",
+      "materialization": "completed",
+      "decoded_bytes_required": 768,
+      "bgra32_bytes_required": 1024,
+      "scratch_bytes_required": 1024,
+      "output_exists": true,
+      "elapsed_ms": 748
+    },
+    {
+      "case": "max_scratch_over",
+      "limits": {
+        "MaxBitDepth": 8,
+        "MaxDecodedBytes": 65536,
+        "MaxDimension": 64,
+        "MaxPixels": 4096,
+        "MaxScratchBytes": 1023
+      },
+      "exit_code": 4,
+      "reason_code": "max_scratch_bytes_exceeded",
+      "admission_status": "refused",
+      "materialization": "not_requested",
+      "decoded_bytes_required": 768,
+      "bgra32_bytes_required": 1024,
+      "scratch_bytes_required": 1024,
+      "output_exists": false,
+      "elapsed_ms": 680
+    },
+    {
+      "case": "max_bit_depth_at",
+      "limits": {
+        "MaxBitDepth": 8,
+        "MaxDecodedBytes": 65536,
+        "MaxDimension": 64,
+        "MaxPixels": 4096,
+        "MaxScratchBytes": 65536
+      },
+      "exit_code": 0,
+      "reason_code": null,
+      "admission_status": "admitted",
+      "materialization": "completed",
+      "decoded_bytes_required": 768,
+      "bgra32_bytes_required": 1024,
+      "scratch_bytes_required": 1024,
+      "output_exists": true,
+      "elapsed_ms": 725
+    },
+    {
+      "case": "max_bit_depth_over",
+      "limits": {
+        "MaxBitDepth": 7,
+        "MaxDecodedBytes": 65536,
+        "MaxDimension": 64,
+        "MaxPixels": 4096,
+        "MaxScratchBytes": 65536
+      },
+      "exit_code": 4,
+      "reason_code": "max_bit_depth_exceeded",
+      "admission_status": "refused",
+      "materialization": "not_requested",
+      "decoded_bytes_required": null,
+      "bgra32_bytes_required": null,
+      "scratch_bytes_required": null,
+      "output_exists": false,
+      "elapsed_ms": 668
+    },
+    {
+      "case": "legacy_max_pixels_over",
+      "limits": {
+        "MaxPixels": 255
+      },
+      "exit_code": 4,
+      "reason_code": "max_pixels_exceeded",
+      "admission_status": "refused",
+      "materialization": "not_requested",
+      "decoded_bytes_required": null,
+      "bgra32_bytes_required": null,
+      "scratch_bytes_required": null,
+      "output_exists": false,
+      "elapsed_ms": 661
+    },
+    {
+      "case": "legacy_max_pixels_at",
+      "limits": {
+        "MaxPixels": 256
+      },
+      "exit_code": 0,
+      "reason_code": null,
+      "admission_status": "not_enforced",
+      "materialization": "completed",
+      "decoded_bytes_required": 768,
+      "bgra32_bytes_required": 1024,
+      "scratch_bytes_required": 1024,
+      "output_exists": true,
+      "elapsed_ms": 714
+    }
+  ],
+  "probe_edge_cases": [
+    {
+      "case": "partial_budget",
+      "exit_code": 1,
+      "reason_code": "invalid_limits",
+      "admission_status": "not_enforced",
+      "materialization": "not_requested",
+      "output_exists": false,
+      "hresult": null
+    },
+    {
+      "case": "negative_budget",
+      "exit_code": 1,
+      "reason_code": "invalid_limits",
+      "admission_status": "not_enforced",
+      "materialization": "not_requested",
+      "output_exists": false,
+      "hresult": null
+    },
+    {
+      "case": "declared_scratch_over",
+      "exit_code": 4,
+      "reason_code": "max_scratch_bytes_exceeded",
+      "admission_status": "refused",
+      "materialization": "not_requested",
+      "output_exists": false,
+      "hresult": null
+    },
+    {
+      "case": "missing_input",
+      "exit_code": 1,
+      "reason_code": "input_missing",
+      "admission_status": "not_enforced",
+      "materialization": "not_requested",
+      "output_exists": false,
+      "hresult": null
+    },
+    {
+      "case": "huge_declared",
+      "exit_code": 4,
+      "reason_code": "max_dimension_exceeded",
+      "admission_status": "refused",
+      "materialization": "not_requested",
+      "output_exists": false,
+      "hresult": null
+    },
+    {
+      "case": "unknown_format",
+      "exit_code": 2,
+      "reason_code": "win_component_not_found",
+      "admission_status": "not_enforced",
+      "materialization": "not_requested",
+      "output_exists": false,
+      "hresult": "0x88982F50"
+    },
+    {
+      "case": "truncated_idat",
+      "exit_code": 0,
+      "reason_code": null,
+      "admission_status": "admitted",
+      "materialization": "completed",
+      "output_exists": true,
+      "hresult": null
+    },
+    {
+      "case": "truncated_container",
+      "exit_code": 2,
+      "reason_code": "win_unknown_image_format",
+      "admission_status": "not_enforced",
+      "materialization": "not_requested",
+      "output_exists": false,
+      "hresult": "0x88982F07"
+    },
+    {
+      "case": "zero_dimension",
+      "exit_code": 3,
+      "reason_code": "win_bad_header",
+      "admission_status": "not_enforced",
+      "materialization": "not_requested",
+      "output_exists": false,
+      "hresult": "0x88982F61"
+    }
+  ],
+  "probe_repeat_identical": true,
+  "cancellation": {
+    "exit_code": 0,
+    "all_cancelled": true,
+    "observations": [
+      {
+        "case_id": "at17.png",
+        "observed_outcome": "cancelled",
+        "cancellation_requested_at_ms": 1,
+        "cancellation_observed_ms": 1,
+        "cancelled_at_reason": null
+      },
+      {
+        "case_id": "huge.png",
+        "observed_outcome": "cancelled",
+        "cancellation_requested_at_ms": 1,
+        "cancellation_observed_ms": 1,
+        "cancelled_at_reason": null
+      },
+      {
+        "case_id": "junk.bin",
+        "observed_outcome": "cancelled",
+        "cancellation_requested_at_ms": 1,
+        "cancellation_observed_ms": 1,
+        "cancelled_at_reason": null
+      },
+      {
+        "case_id": "ok.bmp",
+        "observed_outcome": "cancelled",
+        "cancellation_requested_at_ms": 1,
+        "cancellation_observed_ms": 1,
+        "cancelled_at_reason": null
+      },
+      {
+        "case_id": "ok.jpg",
+        "observed_outcome": "cancelled",
+        "cancellation_requested_at_ms": 1,
+        "cancellation_observed_ms": 1,
+        "cancelled_at_reason": null
+      },
+      {
+        "case_id": "ok.png",
+        "observed_outcome": "cancelled",
+        "cancellation_requested_at_ms": 1,
+        "cancellation_observed_ms": 1,
+        "cancelled_at_reason": null
+      },
+      {
+        "case_id": "truncated-file.png",
+        "observed_outcome": "cancelled",
+        "cancellation_requested_at_ms": 1,
+        "cancellation_observed_ms": 1,
+        "cancelled_at_reason": null
+      },
+      {
+        "case_id": "truncated.png",
+        "observed_outcome": "cancelled",
+        "cancellation_requested_at_ms": 1,
+        "cancellation_observed_ms": 1,
+        "cancelled_at_reason": null
+      },
+      {
+        "case_id": "zero.png",
+        "observed_outcome": "cancelled",
+        "cancellation_requested_at_ms": 1,
+        "cancellation_observed_ms": 1,
+        "cancelled_at_reason": null
+      }
+    ]
+  },
+  "observed_interpretation": {
+    "corrupt_png": "no PNG fixture produced the corrupt class through IDAT or CRC damage; the corrupt class is represented by the zero-dimension header",
+    "truncated_container": "a file cut inside its first IDAT was rejected as an unknown image format (exit 2), not as stream corruption",
+    "truncated_idat": "WIC accepted a self-consistent PNG whose IDAT decompresses to a truncated zlib stream and produced a deterministic raster; this is measured WIC tolerance, not a fail-closed corrupt result",
+    "zero_dimension": "a zero-width IHDR was rejected by WIC itself as BADHEADER before the probe metadata check could run"
+  },
+  "tests": {
+    "rust_default": {
+      "passed": 534,
+      "failed": 0,
+      "ignored": 1
+    },
+    "rust_feature": [
+      {
+        "name": "feature-clippy",
+        "elapsed_ms": 4174
+      },
+      {
+        "name": "feature-tests",
+        "elapsed_ms": 19812,
+        "passed": 538,
+        "failed": 0,
+        "ignored": 1
+      },
+      {
+        "name": "feature-build",
+        "elapsed_ms": 1281
+      }
+    ],
+    "python_r0": {
+      "total": 352,
+      "passed": 340,
+      "skipped": 12,
+      "failures": 0,
+      "errors": 0,
+      "expected_failures": 0,
+      "skip_reasons": [
+        "NOT_RUN: no COS Desktop window is running in this session",
+        "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      ]
+    }
+  },
+  "not_measured": [
+    "WIC internal scratch/conversion peak",
+    "concurrent resident memory ceiling",
+    "in-decoder cancellation granularity",
+    "region/sequential/tiled decode capability",
+    "colour management, ICC, orientation",
+    "JPEG absolute raster equality",
+    "percentiles or performance distribution"
+  ]
+}

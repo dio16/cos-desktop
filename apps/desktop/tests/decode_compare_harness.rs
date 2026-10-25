@@ -437,6 +437,7 @@ fn argv_assembly_matches_the_documented_transports() {
             &executable,
             &input,
             &output,
+            None,
             None
         )),
         vec![r"-i", r"C:\cases\a.png", r"C:\work\000_a.png.wic.png"]
@@ -464,7 +465,8 @@ fn argv_assembly_matches_the_documented_transports() {
             &scripted,
             &input,
             &output,
-            Some(1_048_576)
+            Some(1_048_576),
+            None
         )),
         vec![
             "-NoProfile",
@@ -478,9 +480,46 @@ fn argv_assembly_matches_the_documented_transports() {
             "1048576",
         ]
     );
+    // Budget mode forwards all five resolved limits and never the legacy single flag.
+    let limits = media::DecodeLimits {
+        max_dimension: 512,
+        max_pixels: 262_144,
+        max_bit_depth: 8,
+        max_decoded_bytes: 1_048_576,
+        max_scratch_bytes: 1_048_576,
+    };
     assert_eq!(
         as_strings(&harness::measurement_argv(
-            &plain, &scripted, &input, &output, None
+            &plain,
+            &scripted,
+            &input,
+            &output,
+            None,
+            Some(limits)
+        )),
+        vec![
+            "-NoProfile",
+            "-File",
+            r"C:\tools\wic_probe.ps1",
+            "-InputPath",
+            r"C:\cases\a.png",
+            "-OutputPath",
+            r"C:\work\000_a.png.wic.png",
+            "-MaxPixels",
+            "262144",
+            "-MaxDimension",
+            "512",
+            "-MaxBitDepth",
+            "8",
+            "-MaxDecodedBytes",
+            "1048576",
+            "-MaxScratchBytes",
+            "1048576",
+        ]
+    );
+    assert_eq!(
+        as_strings(&harness::measurement_argv(
+            &plain, &scripted, &input, &output, None, None
         )),
         vec![
             "-NoProfile",
@@ -508,6 +547,7 @@ fn argv_assembly_matches_the_documented_transports() {
             &executable,
             &input,
             &output,
+            None,
             None
         )),
         vec!["--exact", HELPER]
@@ -635,6 +675,90 @@ fn candidate_reason_is_whitelisted_and_never_copied() {
         !json.contains("totally_made_up"),
         "an unknown token must never be copied"
     );
+}
+
+#[test]
+fn admission_refusal_token_is_whitelisted_and_classified_oversize() {
+    let fixture = Fixture::new();
+    fixture.case("a-refused.png", "reason-budget");
+    let report = measured(&fixture, &[fixture.fake()], HELPER);
+    let observation = &report.observations[0];
+    assert_eq!(observation.candidate_reason, "max_dimension_exceeded");
+    assert_eq!(observation.observed_outcome, OutcomeClass::Oversize);
+    // A refusal contributes no capability or resource evidence.
+    assert!(report.capabilities.is_empty());
+    let json = harness::render(&report).0;
+    assert!(json.contains("\"candidate_reason\": \"max_dimension_exceeded\""));
+    assert!(json.contains("\"decode_budget\": null"));
+}
+
+/// W1: budget mode is opt-in, resolves from the ratified bundle, forwards all five
+/// limits and records them; the legacy `--max-pixels` run keeps `decode_budget: null`
+/// and a byte-identical argv.
+#[test]
+fn decode_budget_is_opt_in_recorded_and_rejects_unusable_values() {
+    let fixture = Fixture::new();
+    let base = vec![
+        OsString::from("--cases"),
+        fixture.cases.clone().into_os_string(),
+        OsString::from("--out"),
+        fixture.record("record").into_os_string(),
+        OsString::from("--candidate"),
+        OsString::from(r"wic=pwsh:C:\tools\wic_probe.ps1"),
+    ];
+    let legacy = harness::parse(
+        base.iter()
+            .cloned()
+            .chain([OsString::from("--max-pixels"), OsString::from("4096")]),
+    )
+    .unwrap();
+    assert_eq!(legacy.max_pixels, Some(4096));
+    assert!(legacy.decode_limits.is_none());
+
+    let mut budget = base.clone();
+    budget.extend([
+        OsString::from("--max-dimension"),
+        OsString::from("512"),
+        OsString::from("--max-bit-depth"),
+        OsString::from("8"),
+        OsString::from("--max-decoded-bytes"),
+        OsString::from("1048576"),
+        OsString::from("--max-scratch-bytes"),
+        OsString::from("2097152"),
+    ]);
+    let config = harness::parse(budget).unwrap();
+    let limits = config.decode_limits.expect("budget resolved");
+    assert_eq!(limits.max_dimension, 512);
+    // Untouched fields keep the ratified declared value, never a probe-local literal.
+    assert_eq!(limits.max_pixels, media::DecodeBudget::MAX_PIXELS);
+    assert_eq!(limits.max_bit_depth, 8);
+    assert_eq!(limits.max_decoded_bytes, 1_048_576);
+    assert_eq!(limits.max_scratch_bytes, 2_097_152);
+
+    // A zero override is unusable and refused instead of silently clamped.
+    let mut zero = base.clone();
+    zero.extend([
+        OsString::from("--max-dimension"),
+        OsString::from("0"),
+        OsString::from("--max-bit-depth"),
+        OsString::from("8"),
+        OsString::from("--max-decoded-bytes"),
+        OsString::from("1048576"),
+        OsString::from("--max-scratch-bytes"),
+        OsString::from("2097152"),
+    ]);
+    let error = harness::parse(zero).expect_err("zero dimension is unusable");
+    assert!(format!("{error:?}").contains("nothing is clamped"));
+
+    // The resolved bundle is visible in the record header, with its declared basis.
+    fixture.case("a.png", "ok");
+    let mut report = measured(&fixture, &[fixture.fake()], HELPER);
+    report.decode_limits = Some(limits);
+    let json = harness::render(&report).0;
+    assert!(json.contains("\"decode_budget\": {"));
+    assert!(json.contains("\"declared_basis\": \"RATIFIED_DECLARED_BASIS_NOT_MEASURED\""));
+    assert!(json.contains("\"max_dimension\": 512"));
+    assert!(json.contains("\"max_scratch_bytes\": 2097152"));
 }
 
 /// A3: the long probe form is preferred when it works, and an absent identity is
@@ -2368,7 +2492,7 @@ fn record_carries_the_pixel_fields_with_documented_nullability() {
     fixture.case("a.png", "png-rgb-a");
     let report = measured(&fixture, &[fixture.fake()], HELPER);
     let observation = &report.observations[0];
-    assert_eq!(report.schema_version, 11);
+    assert_eq!(report.schema_version, 12);
     assert_eq!(observation.pixel_expectation, None);
     assert_eq!(
         observation.pixel_digest,
@@ -2381,7 +2505,7 @@ fn record_carries_the_pixel_fields_with_documented_nullability() {
     assert_eq!(observation.validity, "presence_only");
     let json = harness::render(&report).0;
     for field in [
-        "\"schema_version\": 11",
+        "\"schema_version\": 12",
         "\"pixel_expectation\": null",
         "\"pixel_verified\": false",
         "\"pixel_reason\": \"no_pixel_expectation\"",
@@ -3879,7 +4003,7 @@ fn record_is_deterministic_sorted_and_carries_no_decision_field() {
     candidate_ids.truncate(4);
     assert_eq!(candidate_ids, vec!["absent", "fake", "absent", "fake"]);
     assert!(first_json.contains("\"resources\": ["));
-    assert!(first_json.contains("\"schema_version\": 11"));
+    assert!(first_json.contains("\"schema_version\": 12"));
     assert!(first_json.contains("\"exploratory\": true"));
     assert!(first_json.contains("\"numeric_gate\": \"NOT_RATIFIED\""));
     for decision in ["\"pass\"", "\"winner\"", "\"score\"", "\"selected\""] {
@@ -4622,6 +4746,13 @@ fn fake_candidate(support: ProbeSupport) {
         "reason-unknown" => {
             println!("{{\"reason_code\":\"totally_made_up\"}}");
             3
+        }
+        "reason-budget" => {
+            println!(
+                "{{\"reason_code\":\"max_dimension_exceeded\",\"admission_status\":\"refused\",\
+                 \"materialization\":\"not_requested\",\"wic_internal_scratch\":\"not_measured\"}}"
+            );
+            4
         }
         // A6/read cap: below the scratch bound, so the case completes normally.
         "flood" => {

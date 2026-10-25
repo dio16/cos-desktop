@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "candidate_reviewed": "f1e12dd59d96f4c9de89a4c0886bb92ce8715751",
+  "prior_evidence_head": "cb8d68e81908d44ddc308b55cfd4be99e03c9741",
+  "assistant_ids": [
+    "5594d21f-9b76-432c-a2a7-5e46b23b962c"
+  ],
+  "request_ids": [
+    "488162ad-7742-4d36-af52-f855a128198a"
+  ],
+  "response_sha256": "sha256:efa24cc7941bbd92a8283484932a792d84f63446515191d3bb78ebebbfb63498",
+  "two_full_reads_identical": true,
+  "read_separation_ms": 30096,
+  "streaming": false,
+  "completion_verified": true,
+  "directive_sha256": "sha256:450ce31e92d97b991993ff68167b0e3bf43455ecfe0392acf6a79f47e5bcc61b",
+  "directive_chars": 8583
+}

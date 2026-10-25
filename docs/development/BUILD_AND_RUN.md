@@ -601,6 +601,47 @@ S3's frame counters. Present/displayed/GPU/input-to-photon, complete event
 populations, visible stalls, queue/cancellation/restoration and full R0A/R0C
 acceptance are not established.
 
+### 4.21 MP-IMG2-W1 WIC decode admission before materialization (2026-10-26)
+
+Budget mode is opt-in. Supplying any of the four new limits makes the harness
+resolve the complete bundle from `media::DecodeBudget::ratified_default()` and
+forward all five values to `wic_probe.ps1`; an unusable bundle is refused without
+clamping. Omitting them keeps the byte-identical legacy argv, so existing
+comparison records keep their meaning.
+
+```text
+cargo run --locked -p cos-desktop --example decode_compare -- \
+  --cases <dir> --out <record.json> --candidate wic=pwsh:<abs>/wic_probe.ps1 \
+  --output-policy canonical-png \
+  --max-dimension 512 --max-bit-depth 8 \
+  --max-decoded-bytes 1048576 --max-scratch-bytes 2097152
+```
+
+The probe checks the declared width/height, the closed pixel-format/depth
+mapping, `max_dimension`, `max_pixels`, source decoded bytes
+(`ceil(area * bits-per-pixel / 8)`), the BGRA32 conversion destination plus the
+declared scratch allowance against the scratch ceiling, and the bundle's own
+validity — with exact integer arithmetic — **before**
+`BitmapDecoder.Create(..., CacheOption::OnLoad)`. A refusal exits 4 (`oversize`)
+with a distinct reason code, or 1/2/3 for invalid limits, unsupported format and
+invalid metadata; it writes no output. `admission_status`/`materialization` in
+the probe's own JSON show the stage, and `matrix.json` records real cases.
+
+The BGRA32 conversion charge to `max_scratch_bytes` is a W1 interpretation, not
+measured decoder behaviour. WIC-internal temporaries remain `not_measured`; the
+probe never substitutes zero or an estimate, and no claim is made that a
+container parse allocates nothing. `scratch_max_bytes` in the harness record is
+still only the two capture files' peak, and `working_set_max_bytes` remains a
+sampled lower bound. Real WIC tolerance is recorded, not wished away: a
+truncated IDAT and a bad Adler checksum were accepted and decoded by this WIC,
+a file cut inside IDAT was `unsupported`, and a zero-width IHDR was rejected as
+`BADHEADER` before the probe's metadata check.
+
+JPEG stays `structure_verified` only (no absolute raster claim). Region/
+sequential/tiled capability, colour management, orientation, concurrent resident
+memory, decoder scratch peak and in-decoder cancellation remain unmeasured. This
+is not the full DC-MP-IMG2 Decode gate and not a memory-safety proof.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |

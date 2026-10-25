@@ -1,0 +1,429 @@
+# COS Desktop — NEXT DIRECTIVE
+# MP-IMG2-W1: WIC Decode Admission Before Materialization
+
+Repository: dio16/cos-desktop
+Branch: dev
+開始固定SHA:
+2824e1b53070fd0140eaf45a661ecd9919dc6db3
+
+前回限定完了:
+MP-R0A-S3-N1
+製品候補:
+f1e12dd59d96f4c9de89a4c0886bb92ce8715751
+完了証拠:
+cb8d68e81908d44ddc308b55cfd4be99e03c9741
+
+## 1. 単一タスクの定義
+
+MP: MP-IMG2
+単一所有Contract: DC-MP-IMG2
+対象slice: MP-IMG2-W1
+
+目的:
+ADR-0008で採用済みのWindows Imaging Component
+(WIC/WPF)デコード経路について、実際の画像デコード・
+フレーム実体化より前に、宣言された寸法およびメモリ
+予算を検査する境界を実装・実証する。
+
+実装対象は、既存WIC decoder probeの実動作を使った
+admission enforcementとその検証である。
+
+単なる契約文書、mock、未接続のpreflight関数、
+新しい足場のみでは完了としない。
+
+本sliceはDC-MP-IMG2のExitを縮小しない。
+MP-IMG2全体の完了は本タスクの完了条件ではない。
+
+## 2. 依存関係と権限
+
+成立済み:
+- MP-IMG1: A/B TECHNICALLY COMPLETE
+- MP-SEC3: Desktop-local admission TECHNICALLY COMPLETE
+- MP-IMG2のhard prereqsはIMG1とSEC3
+- ADR-0008: WICをProduct decoder経路として採用
+- ADR-0008: DecodeBudgetの暫定値を批准
+- DecodeLimitsOverrideによる設定変更を批准
+- ADR-0009: 完了sliceの受入れと継続実行
+- ADR-0012: Caller HOLD解除
+- ADR-0013: tracked repositoryを証拠の正典とする
+
+依然として未達:
+- WICの実decoder scratch最大値
+- 実際の同時常駐メモリ上限
+- in-decoder cancellation granularity
+- codec別のregion/sequential/tiled decode能力
+- 色管理・orientationの完全な実証
+- MP-IMG2のfull Decode gate
+- R0A/R0B/R0Cの全Exit
+
+本タスクは上記未達を批准済みとみなさない。
+
+R0C-S2は引き続き実観測不足によりfull closure不可。
+Present/displayed/scanout、可視stallの原因帰属、
+popup/entity-update、queue/restoration等を
+IMG2の結果で代用してはならない。
+
+## 3. 正典と既存実装
+
+最初に固定HEADの以下を実際に読む。
+
+- docs/development/IMPLEMENTATION_MASTER_PLAN.md
+  MP-IMG2、§19.13、§19.15、§19.16、
+  §19.25、§19.27、§19.28
+- docs/architecture/DESKTOP_DESIGN_CONTRACTS.md
+  DC-MP-IMG2
+  Media input admission and integrity
+- docs/architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md
+  §6、§6.1、§10
+- docs/decisions/ADR-0008-OWNER-RATIFICATION.md
+- docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md
+- docs/decisions/ADR-0012-HOLD-RELEASE.md
+- docs/decisions/ADR-0013-EVIDENCE-RETENTION.md
+
+既存SOURCE:
+- crates/media/src/decode.rs
+- crates/media/src/lib.rs
+- crates/media/tests/decode_admission.rs
+- crates/media/tests/decode_budget.rs
+- apps/desktop/examples/decode_compare.rs
+- apps/desktop/examples/decode_compare/harness.rs
+- apps/desktop/examples/decode_compare/inspect.rs
+- apps/desktop/examples/decode_compare/pixels.rs
+- apps/desktop/examples/decode_compare/wic_probe.ps1
+- apps/desktop/examples/decode_compare/gdiplus_probe.ps1
+- apps/desktop/tests/decode_compare_harness.rs
+
+既存のadmit_decode、DecodeLimits、
+DecodeBudget、DecodeLimitsOverride、Cancellation、
+比較ハーネスとpixel oracleを再利用する。
+
+同じ機能を別の汎用frameworkとして再実装しない。
+
+## 4. 現状の具体的ギャップ
+
+現在のwic_probe.ps1は次の順序で動く。
+
+1. BitmapDecoder.Create / DelayCreation
+2. ヘッダー由来の寸法取得
+3. MaxPixelsのみを確認
+4. BitmapDecoder.Create / OnLoad
+5. FormatConvertedBitmap(Bgra32)
+6. CopyPixelsおよび必要時の出力再エンコード
+
+この経路では、現在のMaxPixels判定だけでは
+DecodeLimitsのmax_dimension、
+max_decoded_bytes、max_scratch_bytesと
+実際のconversion用allocationの関係が
+検証されていない。
+
+一方、crates/media::admit_decodeは
+算術preflightのみで、実decoderは呼ばない。
+
+この両者を混同せず、WICの実materialization経路で
+検証できる安全境界を追加する。
+
+## 5. 実装範囲
+
+主な変更候補:
+- apps/desktop/examples/decode_compare/wic_probe.ps1
+- apps/desktop/tests/decode_compare_harness.rs
+
+必要な場合のみ:
+- apps/desktop/examples/decode_compare/harness.rs
+- crates/media/src/decode.rs
+- crates/media/tests/decode_admission.rs
+- crates/media/tests/decode_budget.rs
+
+これ以外の製品SOURCE変更は原則禁止。
+
+実装要件:
+
+A. Decode予算の入口
+
+既存のDecodeBudget/DecodeLimitsと整合した
+可変予算を使用する。
+
+独立した数値定数をprobe内に複製して、
+それを別の公式予算にしてはならない。
+
+既存--max-pixelsの意味と既定の比較動作を
+無断変更しない。
+
+必要な追加オプションは、既存CLIとの互換性と
+候補別argvの扱いを検証して導入する。
+
+B. Pre-materialization判定
+
+WICの宣言されたwidth/height、
+pixel format、bit depthの利用可能性を確認する。
+
+少なくとも以下をchecked arithmeticで検査する。
+
+- max_dimension
+- max_pixels
+- decoded bytes
+- 必要なBGRA32変換先のバイト数
+- 宣言されたscratch/conversion allowance
+- 予算値そのものの妥当性
+
+overflow、ゼロ寸法、形式不明、矛盾したmetadata、
+検証不能なallocation要求はfail-closed。
+
+OnLoad、FormatConvertedBitmap、CopyPixels、
+encoder.Saveへ進む前に予算判定を行う。
+
+WIC内部で事前に発生する実allocationについては、
+観測も保証もないのに「ゼロ」と宣言しない。
+
+C. Memory accounting
+
+decoded output、conversion buffer、
+明示的に確保するscratchを区別する。
+
+WIC内部の一時領域を直接測定できない場合、
+その値を0や推定peakで埋めない。
+
+既存のworking_set_max_bytesは
+sampled_lower_boundであり、peak RSSではない。
+
+scratch_max_bytesがcapture filesのサイズである
+既存schemaを、decoder scratchへ読み替えない。
+
+測定可能な範囲と不明な範囲をそれぞれ保存する。
+
+D. 既存経路の保全
+
+GDI+はADR-0008によりProduct decoder非採用。
+FFmpeg 8.0は外部比較専用。
+
+両者を新たにProductへ組み込まない。
+
+WICの拒否・正常処理を変更した場合は、
+既存のcomparison protocol、出力policy、
+reason code、capability tableへの影響を検証する。
+
+過去のschemaと証拠を暗黙に再解釈しない。
+
+## 6. 実入力とNative Windows検証
+
+Windows上の実WIC decoderで実行する。
+
+入力は、制限されたローカルfixture generatorで
+生成した実ファイルとする。
+
+最低限のcase matrix:
+
+1. 有効な小型PNG
+2. 有効なBMP
+3. 有効なJPEG
+4. 許容最大値の境界直下・境界上
+5. max_pixelsを1超過
+6. max_dimensionを1超過
+7. decoded/conversion byte予算を超過
+8. 極端な大寸法を宣言する小さなencoded file
+9. 壊れたPNG IDATまたはCRC
+10. 不正なmetadata/未知形式
+11. 入力欠落とキャンセル・タイムアウト
+12. 同じ入力での再実行
+
+各fixtureについて以下を記録する。
+
+- 生成方法、seed、encoded length、SHA256
+- 宣言形式、寸法、bit depth
+- 予算設定の出典
+- 実probe/decoder identity
+- WIC処理結果、reason code
+- decoder materializationに進んだか
+- 実行時間と中断/cleanup
+- output pixel oracleの結果
+- 観測されたメモリ値と測定器の限界
+
+有効画像は本当にデコードし、
+既存の独立pixel oracleで確認する。
+
+不正・超過入力は、本当にmaterialization前の
+判定経路を通り、適切なclosed refusalを返す。
+
+この順序はmockの戻り値ではなく、
+実WIC処理のtraceまたは到達性証明で検証する。
+
+大寸法fixtureの検証では、意図的に危険な
+フルデコードを実行してはならない。
+安全な事前拒否を先に確立する。
+
+OSのメモリ圧迫を試すためだけの巨大allocationは禁止。
+
+## 7. 観測可能な受入条件
+
+以下をすべて満たすこと。
+
+1. 実WICが実際に正常な画像をデコードする
+2. 有効入力のpixel oracleが一致する
+3. 寸法・byte超過を実materialization前に拒否
+4. 境界値は誤って拒否・許可されない
+5. overflowや矛盾したmetadataをfail-closed
+6. admission拒否時にdecoded outputを公開しない
+7. 既存canonical-png/native policyを破壊しない
+8. 既存comparison候補の意味を変更しない
+9. cancellation/timeout時に直接子を適切に回収
+10. 出力・scratch・証拠のサイズが有界
+11. 新規依存なし、unsafe/FFI追加なし
+12. 既存テストを削除・緩和しない
+13. 実Windows WIC検証結果をtracked evidenceへ保存
+14. deterministicな独立検証を成立させる
+
+内部scratchの真のpeakが証明できなければ
+その能力はNOT_MEASUREDのまま保持する。
+
+この場合でも、WIC実materialization前の
+上記admission限定検証が成立すれば、
+W1限定技術完了候補とすることは可能。
+
+ただし、当該能力をfull Decode gate PASS、
+実decoderの全メモリ安全性証明、
+MP-IMG2-wide completionへ昇格しない。
+
+## 8. テスト・独立Gate・Tern再レビュー
+
+実装後、最低限以下を実行する。
+
+- 変更箇所のfocused unit/regression tests
+- 実WICを用いたWindows case matrix
+- 既存decode_compare harness tests
+- crates/media decode admission/budget tests
+- cargo fmt --all -- --check
+- cargo clippy --locked --workspace --all-targets -- -D warnings
+- cargo test --locked --workspace
+- cargo build --locked --workspace
+- scripts/quality.ps1 の既存正典経路
+- Python R0 suite（既存影響を確認）
+
+失われたN07旧binary依存11件はNOT_RUN。
+実行できない他のケースも、その理由を個別記録する。
+
+製品候補SHAを固定し、
+Refine Quality/Build Gateを独立実行する。
+
+Gateでは実際の:
+status / inspect / verify / cleanup / artifact integrity
+を保存する。
+
+SUCCEEDEDとverify成功だけを合格として扱う。
+FAILEDやpreflight UNKNOWNを成功へ書き換えない。
+
+修正時は新候補SHAと独立Gateを使用する。
+
+Tern-OMPのみで固定SHA外部レビューを行う。
+omp -pは禁止。
+
+レビューでは:
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE
+を分類し、0/0/0まで修正・再評価する。
+
+MP §19.50の完全応答確認を必須とする。
+
+- fresh message ID
+- request対応
+- streaming=false
+- parsed/incomplete=false
+- terminal verdict
+- 30秒間隔2回完全一致
+- completion verification exit 0
+
+不完全回答を修正指示として採用しない。
+
+## 9. 証拠と記録
+
+ADR-0013に従う。
+
+推奨保存先:
+docs/development/evidence-published/img2-w1-latest/
+
+保持:
+- 源となるfixture generatorと入力digest
+- 再実行可能な実コマンド
+- WICおよびtoolchainのidentity
+- 実ケースごとの結果とrefusal reason
+- pixel oracle
+- materialization境界の証明
+- memory measurementの有無と限界
+- actual quality/Gate記録
+- 独立レビュー全文と完全性証明
+- NOT_RUN/NOT_MEASURED一覧
+
+巨大一時ファイルや実行バイナリを大量保存しない。
+scratchは証拠ではない。
+過去の記録や失敗Gateを書き換えない。
+
+MPの完了記録は限定範囲を明示する。
+他MPのstatusを便宜上変更しない。
+
+## 10. 真の停止条件
+
+次のいずれかなら停止し、BLOCKEDを報告する。
+
+- 実WICの起動・実行が不可
+- 有効入力の実デコードを検証できない
+- admission前に危険なallocationが不可避
+- 許容バイト数の根拠を確立できないのに
+  bounded materialization成功を主張する必要がある
+- 新しい依存/unsafe/FFIが不可避で承認がない
+- 既存Contractの変更が必要
+- 独立GateがFAILED
+- Ternレビューが0/0/0未達
+- source/実出力/証拠の一致が成立しない
+
+停止時は未達の具体的条件、実測結果、
+安全に継続できない理由を報告する。
+
+回避のためにfake worker、mock-success、
+緩和したContract、未実装APIを作らない。
+
+## 11. 非対象・権限BLOCKER
+
+本directiveは以下を許可しない。
+
+- 未承認のdecoder/library/dependency採用
+- GDI+またはFFmpegのProduct採用
+- Runtimeまたは別リポジトリの変更
+- GPUI pin変更
+- credential/security/OS permission変更
+- provider未許可でのNative UI操作
+- メモリ安全を根拠なく保証すること
+- GPU upload/MP-IMG3の開始
+- MP-R0D ratification
+- MP-FLOW2の開始
+- main merge / release / 公開操作
+
+Windows WICのCLI検証は本タスクの対象だが、
+アプリGUI制御やtask-scoped live confirmationが
+必要な操作は、実際のgrant成立前に実行しない。
+
+新しい設計決定、追加の依存/unsafe/FFI、
+別リポジトリ変更、Runtime変更が必要になれば、
+Tern指示を承認の代替にせず権限BLOCKERを報告する。
+
+Remote pushは本directiveの自動実行対象外。
+固定候補と検証証拠を準備し、独立0/0/0後に
+既存のdev統合権限と当該push操作の可否を
+別途確認する。main/releaseは常に別権限。
+
+## 12. 最終報告
+
+次の順序で報告する。
+
+1. 固定開始SHAと変更範囲
+2. 実装したadmission境界
+3. 実WICケースごとの観測結果
+4. 未観測のdecoder能力
+5. テスト実数とskip理由
+6. 独立Refine Quality/Build Gate
+7. Tern固定SHA verdict
+8. tracked evidenceとstorage integrity
+9. W1限定closure可否
+10. full MP-IMG2と他MPの残余条件
+
+本タスクはMP-IMG2の一部分であり、
+既存DC-MP-IMG2のExitを一切縮小しない。
+
+END OF DIRECTIVE

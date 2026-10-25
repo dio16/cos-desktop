@@ -132,7 +132,17 @@ param(
 
     [switch] $Version,
 
-    [long] $MaxPixels = 0
+    [long] $MaxPixels = 0,
+
+    # Accepted and ignored, so the harness argv stays identical for every script
+    # transport. This probe performs no pre-materialization decode-budget admission.
+    [long] $MaxDimension = 0,
+
+    [long] $MaxBitDepth = 0,
+
+    [long] $MaxDecodedBytes = 0,
+
+    [long] $MaxScratchBytes = 0
 )
 
 Set-StrictMode -Version 3.0

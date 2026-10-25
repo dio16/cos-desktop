@@ -80,6 +80,44 @@
     Optional operator-declared pixel bound, checked before any pixel decode;
     0 (the default) declares no bound.
 
+.PARAMETER MaxDimension
+    Optional decode-budget maximum edge. Supplying any of the four budget limits
+    switches on budget admission: all four must then be positive and `-MaxPixels`
+    must be positive too. The harness resolves these numbers from the ratified
+    `DecodeBudget`; this script holds no budget constant of its own.
+
+.PARAMETER MaxBitDepth
+    Decode-budget maximum bits per channel.
+
+.PARAMETER MaxDecodedBytes
+    Decode-budget ceiling for the declared source raster
+    (`ceil(width * height * bits-per-pixel / 8)`).
+
+.PARAMETER MaxScratchBytes
+    Decode-budget ceiling for the required scratch/conversion bytes. This probe
+    charges the BGRA32 conversion destination and the explicitly declared scratch
+    allowance to it; that mapping is a W1 interpretation, not a measured decoder
+    peak.
+
+.PARAMETER DeclaredScratchBytes
+    Explicit scratch allowance the adapter declares in addition to the BGRA32
+    conversion destination. It is a declared request, never a measurement.
+
+.NOTES
+    With budget admission enabled, the script refuses before
+    `BitmapDecoder.Create(..., CacheOption::OnLoad)` when the declared width,
+    height, format/depth, decoded bytes or scratch requirement exceeds a limit,
+    and reports `admission_status`/`materialization` so the refusal point is
+    visible. WIC's internal temporaries remain unmeasured: the probe reports
+    `wic_internal_scratch = not_measured` and never substitutes zero or a guess.
+    A container parse performed by `DelayCreation`/`CacheOption::None` may still
+    allocate; no claim of zero allocation is made.
+
+    Budget refusal codes are `max_dimension_exceeded`, `max_pixels_exceeded`,
+    `max_bit_depth_exceeded`, `max_decoded_bytes_exceeded` and
+    `max_scratch_bytes_exceeded` (exit 4), `unsupported_pixel_format` (exit 2),
+    `invalid_metadata` (exit 3) and `invalid_limits` (exit 1).
+
 .EXAMPLE
     pwsh -NoProfile -File wic_probe.ps1 -InputPath C:\tmp\img2-compare\cases\ok.png -OutputPath C:\tmp\img2-compare\wic-out.png
 #>
@@ -92,7 +130,17 @@ param(
 
     [switch] $Version,
 
-    [long] $MaxPixels = 0
+    [long] $MaxPixels = 0,
+
+    [long] $MaxDimension = 0,
+
+    [long] $MaxBitDepth = 0,
+
+    [long] $MaxDecodedBytes = 0,
+
+    [long] $MaxScratchBytes = 0,
+
+    [long] $DeclaredScratchBytes = 0
 )
 
 Set-StrictMode -Version 3.0
@@ -131,8 +179,74 @@ function Test-LocalDiskPath {
     return $true
 }
 
+# Declared format support is a closed mapping, not a guess. An unmodelled WIC format is
+# refused before materialization rather than assumed to be 8-bit RGBA. Depth is the
+# bits-per-channel used for the bit-depth ceiling; BitsPerPixel is WIC's own declared
+# storage width and drives the decoded-byte requirement.
+function Get-DeclaredFormatSpec {
+    param([string] $Name)
+
+    switch ($Name) {
+        'Bgra32' { return @{ Depth = 8; BitsPerPixel = 32 } }
+        'Pbgra32' { return @{ Depth = 8; BitsPerPixel = 32 } }
+        'Prgba64' { return @{ Depth = 16; BitsPerPixel = 64 } }
+        'Rgba64' { return @{ Depth = 16; BitsPerPixel = 64 } }
+        'Bgr32' { return @{ Depth = 8; BitsPerPixel = 32 } }
+        'Bgr24' { return @{ Depth = 8; BitsPerPixel = 24 } }
+        'Rgb24' { return @{ Depth = 8; BitsPerPixel = 24 } }
+        'Rgb48' { return @{ Depth = 16; BitsPerPixel = 48 } }
+        'Gray8' { return @{ Depth = 8; BitsPerPixel = 8 } }
+        'Gray16' { return @{ Depth = 16; BitsPerPixel = 16 } }
+        'Bgr565' { return @{ Depth = 5; BitsPerPixel = 16 } }
+        'Bgr555' { return @{ Depth = 5; BitsPerPixel = 16 } }
+        'Bgr101010' { return @{ Depth = 10; BitsPerPixel = 32 } }
+        'BlackWhite' { return @{ Depth = 1; BitsPerPixel = 1 } }
+        'Indexed1' { return @{ Depth = 1; BitsPerPixel = 1 } }
+        'Indexed2' { return @{ Depth = 2; BitsPerPixel = 2 } }
+        'Indexed4' { return @{ Depth = 4; BitsPerPixel = 4 } }
+        'Indexed8' { return @{ Depth = 8; BitsPerPixel = 8 } }
+        default { return $null }
+    }
+}
+
+# Exact required-byte arithmetic. BigInteger is used only as an exact integer, so a
+# hostile declared dimension cannot wrap a 64-bit value into an admitting one.
+function Get-AdmissionArithmetic {
+    param(
+        [long] $Width,
+        [long] $Height,
+        [int] $BitsPerPixel,
+        [long] $DeclaredScratch
+    )
+
+    $area = [System.Numerics.BigInteger]::Multiply(
+        [System.Numerics.BigInteger] $Width,
+        [System.Numerics.BigInteger] $Height)
+    $bits = [System.Numerics.BigInteger]::Multiply(
+        $area,
+        [System.Numerics.BigInteger] $BitsPerPixel)
+    $decoded = ([System.Numerics.BigInteger]::Add($bits, 7)) / 8
+    $bgra32 = [System.Numerics.BigInteger]::Multiply($area, 4)
+    $scratch = [System.Numerics.BigInteger]::Add($bgra32, [System.Numerics.BigInteger] $DeclaredScratch)
+    return @{
+        Area = $area
+        Decoded = $decoded
+        Bgra32 = $bgra32
+        Scratch = $scratch
+    }
+}
+
+function ConvertTo-ReportedLong {
+    param([System.Numerics.BigInteger] $Value)
+
+    if ($Value -gt [System.Numerics.BigInteger]::Parse([long]::MaxValue.ToString())) {
+        return $null
+    }
+    return [long] $Value
+}
+
 if ($Version) {
-    $identity = 'wic_probe 1.0 (managed WIC/WPF, PowerShell {0}, {1})' -f `
+    $identity = 'wic_probe 1.1 (managed WIC/WPF, pre-materialization decode budget, PowerShell {0}, {1})' -f `
         $PSVersionTable.PSVersion, `
         [System.Runtime.InteropServices.RuntimeInformation]::FrameworkDescription
     [Console]::Out.WriteLine($identity)
@@ -153,6 +267,16 @@ $result = [ordered]@{
     hresult      = $null
     reason_code  = 'probe_error'
     reason       = $null
+    admission_status          = 'not_enforced'
+    materialization           = 'not_requested'
+    limits_source             = 'none'
+    bits_per_channel          = $null
+    bits_per_pixel            = $null
+    decoded_bytes_required    = $null
+    bgra32_bytes_required     = $null
+    declared_scratch_bytes    = $DeclaredScratchBytes
+    scratch_bytes_required    = $null
+    wic_internal_scratch      = 'not_measured'
 }
 
 if ([string]::IsNullOrWhiteSpace($InputPath)) {
@@ -182,6 +306,27 @@ if (-not $file.Exists) {
 $result.input_bytes = $file.Length
 $result.suffix = $file.Extension.TrimStart('.')
 
+# Budget admission is opt-in through the four limit parameters. When any of them is
+# present the whole bundle must be usable: a partial, negative or zero budget is a
+# closed refusal, never an implicit default or a clamp. The numbers themselves come
+# from the harness's ratified DecodeBudget; no budget constant lives in this script.
+$budgetDeclared = ($MaxDimension -ne 0 -or $MaxBitDepth -ne 0 -or
+    $MaxDecodedBytes -ne 0 -or $MaxScratchBytes -ne 0)
+if ($DeclaredScratchBytes -lt 0 -or $MaxPixels -lt 0 -or $MaxDimension -lt 0 -or
+    $MaxBitDepth -lt 0 -or $MaxDecodedBytes -lt 0 -or $MaxScratchBytes -lt 0) {
+    $result.outcome = 'error'
+    $result.reason_code = 'invalid_limits'
+    $result.reason = 'decode budget values must not be negative'
+    Write-ProbeResult -Result $result -ExitCode $exitError
+}
+if ($budgetDeclared -and ($MaxPixels -le 0 -or $MaxDimension -le 0 -or $MaxBitDepth -le 0 -or
+        $MaxDecodedBytes -le 0 -or $MaxScratchBytes -le 0)) {
+    $result.outcome = 'error'
+    $result.reason_code = 'invalid_limits'
+    $result.reason = 'budget admission requires every limit to be positive'
+    Write-ProbeResult -Result $result -ExitCode $exitError
+}
+
 try {
     Add-Type -AssemblyName PresentationCore
 }
@@ -208,16 +353,82 @@ try {
     $result.decoder = $declared.GetType().Name
     $result.width = [long] $declaredFrame.PixelWidth
     $result.height = [long] $declaredFrame.PixelHeight
-    $result.pixel_format = $declaredFrame.Format.ToString()
+    $formatName = $declaredFrame.Format.ToString()
+    $result.pixel_format = $formatName
 
-    if ($MaxPixels -gt 0 -and ($result.width * $result.height) -gt $MaxPixels) {
+    # Admission happens here, strictly before the OnLoad materialization below. The
+    # declared metadata must be usable and the closed format mapping must know the
+    # declared depth; neither is inferred from the file suffix or a fallback.
+    if ($result.width -lt 1 -or $result.height -lt 1 -or
+        $result.width -gt [int]::MaxValue -or $result.height -gt [int]::MaxValue) {
+        $result.outcome = 'corrupt'
+        $result.reason_code = 'invalid_metadata'
+        $result.reason = 'declared dimensions are empty or outside the WIC integer range'
+        $result.admission_status = 'refused'
+        Write-ProbeResult -Result $result -ExitCode $exitCorrupt
+    }
+    $formatSpec = Get-DeclaredFormatSpec $formatName
+    if ($null -eq $formatSpec) {
+        $result.outcome = 'unsupported'
+        $result.reason_code = 'unsupported_pixel_format'
+        $result.reason = 'declared pixel format is outside the probed format mapping'
+        $result.admission_status = 'refused'
+        Write-ProbeResult -Result $result -ExitCode $exitUnsupported
+    }
+    $result.bits_per_channel = $formatSpec.Depth
+    $result.bits_per_pixel = $formatSpec.BitsPerPixel
+    $math = Get-AdmissionArithmetic -Width $result.width -Height $result.height `
+        -BitsPerPixel $formatSpec.BitsPerPixel -DeclaredScratch $DeclaredScratchBytes
+
+    if ($budgetDeclared) {
+        $result.limits_source = 'argv'
+    }
+    if ($budgetDeclared -and ($result.width -gt $MaxDimension -or $result.height -gt $MaxDimension)) {
         $result.outcome = 'oversize'
-        $result.reason_code = 'max_pixels_exceeded'
-        $result.reason = 'declared dimensions exceed the operator max-pixels bound'
+        $result.reason_code = 'max_dimension_exceeded'
+        $result.reason = 'declared edge exceeds the decode-budget maximum dimension'
+        $result.admission_status = 'refused'
         Write-ProbeResult -Result $result -ExitCode $exitOversize
     }
+    if ($MaxPixels -gt 0 -and $math.Area -gt [System.Numerics.BigInteger] $MaxPixels) {
+        $result.outcome = 'oversize'
+        $result.reason_code = 'max_pixels_exceeded'
+        $result.reason = 'declared dimensions exceed the declared max-pixels bound'
+        $result.admission_status = 'refused'
+        Write-ProbeResult -Result $result -ExitCode $exitOversize
+    }
+    if ($budgetDeclared -and $formatSpec.Depth -gt $MaxBitDepth) {
+        $result.outcome = 'oversize'
+        $result.reason_code = 'max_bit_depth_exceeded'
+        $result.reason = 'declared bit depth exceeds the decode-budget maximum'
+        $result.admission_status = 'refused'
+        Write-ProbeResult -Result $result -ExitCode $exitOversize
+    }
+    if ($budgetDeclared -and $math.Decoded -gt [System.Numerics.BigInteger] $MaxDecodedBytes) {
+        $result.decoded_bytes_required = ConvertTo-ReportedLong $math.Decoded
+        $result.outcome = 'oversize'
+        $result.reason_code = 'max_decoded_bytes_exceeded'
+        $result.reason = 'declared source raster exceeds the decode-budget decoded bytes'
+        $result.admission_status = 'refused'
+        Write-ProbeResult -Result $result -ExitCode $exitOversize
+    }
+    if ($budgetDeclared -and $math.Scratch -gt [System.Numerics.BigInteger] $MaxScratchBytes) {
+        $result.decoded_bytes_required = ConvertTo-ReportedLong $math.Decoded
+        $result.bgra32_bytes_required = ConvertTo-ReportedLong $math.Bgra32
+        $result.scratch_bytes_required = ConvertTo-ReportedLong $math.Scratch
+        $result.outcome = 'oversize'
+        $result.reason_code = 'max_scratch_bytes_exceeded'
+        $result.reason = 'required conversion plus declared scratch exceeds the decode budget'
+        $result.admission_status = 'refused'
+        Write-ProbeResult -Result $result -ExitCode $exitOversize
+    }
+    $result.decoded_bytes_required = ConvertTo-ReportedLong $math.Decoded
+    $result.bgra32_bytes_required = ConvertTo-ReportedLong $math.Bgra32
+    $result.scratch_bytes_required = ConvertTo-ReportedLong $math.Scratch
+    $result.admission_status = if ($budgetDeclared) { 'admitted' } else { 'not_enforced' }
 
     # Admit and materialize the whole frame, then require real pixel access.
+    $result.materialization = 'requested'
     $stream.Position = 0
     $decoded = [System.Windows.Media.Imaging.BitmapDecoder]::Create(
         $stream,
@@ -256,6 +467,7 @@ try {
 
     $result.outcome = 'decoded'
     $result.reason_code = $null
+    $result.materialization = 'completed'
     Write-ProbeResult -Result $result -ExitCode $exitDecoded
 }
 catch {

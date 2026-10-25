@@ -1,14 +1,25 @@
-//! Exploratory, decoder-neutral MP-IMG2 comparison harness (record schema v11).
+//! Exploratory, decoder-neutral MP-IMG2 comparison harness (record schema v12).
 //!
 //! This module is shared by the operator-run `decode_compare` example and its
 //! contract tests. It is not a product decoder, selects no decoder, links no
 //! FFmpeg and makes no numeric claim: the emitted record is explicitly
 //! exploratory and every value it contains was actually observed.
 //!
-//! Candidate process protocol (v11), fixed so that no argv element or decoder path
+//! Candidate process protocol (v12), fixed so that no argv element or decoder path
 //! can be derived from media metadata. Three transports exist and all of them pass
 //! argv as a separate argument vector; no command string is ever built, quoted or
 //! interpreted:
+//!
+//! - pwsh script budget transport: when the operator supplies any of
+//!   `--max-dimension`, `--max-bit-depth`, `--max-decoded-bytes` or
+//!   `--max-scratch-bytes`, the harness resolves the complete `DecodeLimits` from
+//!   `media::DecodeBudget::ratified_default()` plus those overrides and appends all
+//!   five limits (`-MaxPixels`, `-MaxDimension`, `-MaxBitDepth`,
+//!   `-MaxDecodedBytes`, `-MaxScratchBytes`). Refusal of an unusable bundle happens
+//!   in the harness; nothing is clamped. Without those flags the argv is byte-identical
+//!   to v11, so no existing record's meaning changes. A script that accepts and ignores
+//!   the limits performs no decode-budget admission; the harness never treats its own
+//!   forwarded numbers as a measured admission.
 //!
 //! - executable: `-i <absolute case path> <absolute output path>`, identity probe
 //!   `--version` then `-version`. The output name depends on the selected
@@ -18,7 +29,8 @@
 //! - pwsh script (`--candidate id=pwsh:<absolute script.ps1>`): the interpreter is
 //!   launched by name with
 //!   `-NoProfile -File <script> -InputPath <in> -OutputPath <out> [-MaxPixels N]`
-//!   and the identity probe is `-Version`. The interpreter path resolved from
+//!   plus the five `-Max*` limit elements in budget mode, and the identity probe is
+//!   `-Version`. The interpreter path resolved from
 //!   `PATH` is recorded as `launcher` (null when it could not be resolved, in
 //!   which case the bare name is launched). The script transport always writes
 //!   `<stem>.<candidate>.wic.png`, which is a canonical PNG as well, and no two
@@ -301,6 +313,7 @@
 
 use crate::inspect::{self, ColourMarker, ColourType, Format, Inspection};
 use crate::pixels;
+use media::{DecodeBudget, DecodeLimits, DecodeLimitsOverride};
 use std::{
     collections::BTreeMap,
     ffi::OsString,
@@ -315,11 +328,10 @@ use std::{
 };
 
 /// Fixed record schema version; changing record semantics requires a new version.
-/// Schema 11 adds the `output_policy` field (an operator-selected mode, default
-/// `native`), records `pixel_reason` for every absent digest and refuses a non-PNG
-/// output in `canonical-png` mode. Schema 10 had made the canonical PNG transport
-/// unconditional and recorded a `pixel_digest` for every decoded raster.
-pub const SCHEMA_VERSION: u32 = 11;
+/// Schema 12 adds `decode_budget`: the resolved `DecodeLimits` a budget-enabled run
+/// forwarded to the script transport, or `null` when only the legacy operator
+/// `--max-pixels` bound was declared. Schema 11 added `output_policy`.
+pub const SCHEMA_VERSION: u32 = 12;
 /// Refusal token for a run token whose directory already exists.
 pub const WORK_DIR_EXISTS: &str = "work_dir_exists";
 /// Fixed prefix of every per-run work-directory token.
@@ -355,6 +367,7 @@ const USAGE: &str = "usage: decode_compare --cases DIR --candidate ID=ABSOLUTE_E
 ID=pwsh:ABSOLUTE_PS1 [--candidate ...]... --out FILE [--timeout-ms N] \
 [--cancel-after-ms N] [--max-output-bytes N] [--max-output-file-bytes N] \
 [--max-cases N] [--max-observations N] [--max-pixels N] \
+[--max-dimension N] [--max-bit-depth N] [--max-decoded-bytes N] [--max-scratch-bytes N] \
 [--output-policy native|canonical-png] [--sample-tool ABSOLUTE_LOCAL_EXE] [--sample-interval-ms N] [--max-samples N]";
 const DEFAULT_TIMEOUT_MS: u64 = 5_000;
 const DEFAULT_MAX_OUTPUT_BYTES: usize = 8 * 1024;
@@ -441,10 +454,17 @@ const KNOWN_REASONS: &[&str] = &[
     "imaging_unavailable",
     "input_missing",
     "input_not_local",
+    "invalid_limits",
+    "invalid_metadata",
+    "max_bit_depth_exceeded",
+    "max_decoded_bytes_exceeded",
+    "max_dimension_exceeded",
     "max_pixels_exceeded",
+    "max_scratch_bytes_exceeded",
     "output_not_local",
     "probe_error",
     "unsupported_output_extension",
+    "unsupported_pixel_format",
     "win_bad_header",
     "win_bad_image",
     "win_bad_stream_data",
@@ -659,6 +679,9 @@ pub struct Config {
     pub max_record_bytes: usize,
     /// Optional operator pixel bound forwarded to the script transport.
     pub max_pixels: Option<u64>,
+    /// Resolved decode budget forwarded to the script transport when any new
+    /// `--max-*` limit flag was given; `None` keeps the legacy transport.
+    pub decode_limits: Option<DecodeLimits>,
     /// Output-container policy (`--output-policy`, default [`OutputPolicy::Native`]).
     pub output_policy: OutputPolicy,
     /// Interval between working-set samples; `0` disables sampling.
@@ -783,6 +806,9 @@ pub struct Report {
     pub max_observations: usize,
     pub max_record_bytes: usize,
     pub max_pixels: Option<u64>,
+    /// Resolved decode budget forwarded to the script transport (`null` when the run
+    /// used only the legacy operator pixel bound).
+    pub decode_limits: Option<DecodeLimits>,
     /// Output-container policy this run used (`native` or `canonical-png`).
     pub output_policy: &'static str,
     /// Sampling interval used for this run (`0` = sampling disabled).
@@ -937,6 +963,10 @@ where
     let mut max_cases = DEFAULT_MAX_CASES;
     let mut max_observations = DEFAULT_MAX_OBSERVATIONS;
     let mut max_pixels = None;
+    let mut max_dimension: Option<u32> = None;
+    let mut max_bit_depth: Option<u8> = None;
+    let mut max_decoded_bytes: Option<u64> = None;
+    let mut max_scratch_bytes: Option<u64> = None;
     let mut output_policy = OutputPolicy::Native;
     let mut sample_tool: Option<PathBuf> = None;
     let mut sample_interval_ms = DEFAULT_SAMPLE_INTERVAL_MS;
@@ -1012,6 +1042,24 @@ where
                 }
                 max_pixels = Some(pixels);
             }
+            "--max-dimension" => {
+                let value = take_number(&mut arguments, "--max-dimension")?;
+                max_dimension = Some(u32::try_from(value).map_err(|_| {
+                    UsageError::new("--max-dimension exceeds the u32 dimension range")
+                })?);
+            }
+            "--max-bit-depth" => {
+                let value = take_number(&mut arguments, "--max-bit-depth")?;
+                max_bit_depth = Some(u8::try_from(value).map_err(|_| {
+                    UsageError::new("--max-bit-depth exceeds the supported 1-16 range")
+                })?);
+            }
+            "--max-decoded-bytes" => {
+                max_decoded_bytes = Some(take_number(&mut arguments, "--max-decoded-bytes")?);
+            }
+            "--max-scratch-bytes" => {
+                max_scratch_bytes = Some(take_number(&mut arguments, "--max-scratch-bytes")?);
+            }
             "--output-policy" => {
                 let value = take(&mut arguments, "--output-policy")?;
                 let text = value.to_string_lossy().into_owned().to_ascii_lowercase();
@@ -1026,6 +1074,8 @@ where
                     "unexpected argument {other:?}; expected one of --cases, --candidate, --out, \
                      --timeout-ms, --cancel-after-ms, --max-output-bytes, \
                      --max-output-file-bytes, --max-cases, --max-observations, --max-pixels, \
+                     --max-dimension, --max-bit-depth, --max-decoded-bytes, \
+                     --max-scratch-bytes, \
                      --output-policy, --sample-tool, --sample-interval-ms, --max-samples"
                 )));
             }
@@ -1084,6 +1134,31 @@ where
         ids.push(candidate.id.as_str());
     }
     let expectations = load_manifest(&cases)?;
+    // Budget mode is opt-in: only a new limit flag enables it, so a run that declares
+    // just `--max-pixels` keeps the byte-identical legacy argv. When enabled, every
+    // value comes from the ratified bundle plus the operator's per-field replacement;
+    // an unusable bundle is refused here rather than forwarded and silently clamped.
+    let budget_requested = max_dimension.is_some()
+        || max_bit_depth.is_some()
+        || max_decoded_bytes.is_some()
+        || max_scratch_bytes.is_some();
+    let decode_limits = if budget_requested {
+        let replacement = DecodeLimitsOverride {
+            max_dimension,
+            max_pixels,
+            max_bit_depth,
+            max_decoded_bytes,
+            max_scratch_bytes,
+        };
+        Some(replacement.resolve_from(DecodeBudget::ratified_default()).map_err(|_| {
+            UsageError::new(
+                "decode budget is unusable: a limit is zero or outside the supported range, \
+                 and nothing is clamped",
+            )
+        })?)
+    } else {
+        None
+    };
     Ok(Config {
         cases,
         out,
@@ -1095,6 +1170,7 @@ where
         max_observations,
         max_record_bytes: MAX_RECORD_BYTES,
         max_pixels,
+        decode_limits,
         output_policy,
         sample_interval_ms,
         max_samples,
@@ -1472,6 +1548,7 @@ fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, Usag
         max_observations: config.max_observations,
         max_record_bytes: config.max_record_bytes,
         max_pixels: config.max_pixels,
+        decode_limits: config.decode_limits,
         output_policy: config.output_policy.as_str(),
         sample_interval_ms: config.sample_interval_ms,
         max_samples: config.max_samples,
@@ -1756,6 +1833,7 @@ pub fn measurement_argv(
     input: &Path,
     output: &Path,
     max_pixels: Option<u64>,
+    limits: Option<DecodeLimits>,
 ) -> Vec<OsString> {
     let mut argv: Vec<OsString> = invocation.argv_prefix.iter().map(OsString::from).collect();
     if invocation.env_transport {
@@ -1775,7 +1853,18 @@ pub fn measurement_argv(
             argv.push(input.as_os_str().to_os_string());
             argv.push(OsString::from("-OutputPath"));
             argv.push(output.as_os_str().to_os_string());
-            if let Some(pixels) = max_pixels {
+            if let Some(limits) = limits {
+                for (flag, value) in [
+                    ("-MaxPixels", limits.max_pixels.to_string()),
+                    ("-MaxDimension", limits.max_dimension.to_string()),
+                    ("-MaxBitDepth", limits.max_bit_depth.to_string()),
+                    ("-MaxDecodedBytes", limits.max_decoded_bytes.to_string()),
+                    ("-MaxScratchBytes", limits.max_scratch_bytes.to_string()),
+                ] {
+                    argv.push(OsString::from(flag));
+                    argv.push(OsString::from(value));
+                }
+            } else if let Some(pixels) = max_pixels {
                 argv.push(OsString::from("-MaxPixels"));
                 argv.push(OsString::from(pixels.to_string()));
             }
@@ -2093,6 +2182,7 @@ fn measure(
             &case.path,
             &output,
             config.max_pixels,
+            config.decode_limits,
         ))
         .stdin(Stdio::null())
         .stdout(stdout_stdio)
@@ -3254,6 +3344,11 @@ pub fn render(report: &Report) -> (String, usize) {
     );
     let _ = writeln!(
         json,
+        "  \"decode_budget\": {},",
+        decode_budget_field(report.decode_limits.as_ref())
+    );
+    let _ = writeln!(
+        json,
         "  \"output_policy\": {},",
         quoted(report.output_policy)
     );
@@ -3494,6 +3589,25 @@ fn json_array(rows: &[String]) -> String {
     }
     array.push_str("  ]");
     array
+}
+
+/// Render the resolved budget a budget-enabled run forwarded, or `null` for the
+/// legacy transport. This is configuration provenance, not a measurement.
+fn decode_budget_field(limits: Option<&DecodeLimits>) -> String {
+    match limits {
+        None => "null".to_owned(),
+        Some(limits) => format!(
+            "{{\"source\": \"ratified_default_with_operator_overrides\", \
+             \"declared_basis\": \"RATIFIED_DECLARED_BASIS_NOT_MEASURED\", \
+             \"max_dimension\": {}, \"max_pixels\": {}, \"max_bit_depth\": {}, \
+             \"max_decoded_bytes\": {}, \"max_scratch_bytes\": {}}}",
+            limits.max_dimension,
+            limits.max_pixels,
+            limits.max_bit_depth,
+            limits.max_decoded_bytes,
+            limits.max_scratch_bytes
+        ),
+    }
 }
 
 fn quoted(text: &str) -> String {
