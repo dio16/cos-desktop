@@ -5,9 +5,10 @@
   "hard_prereqs_unchanged": true,
   "canonical_dag_edges_unchanged": true,
   "changed_card_bodies": [
-    "MP-R0A"
+    "MP-R0A",
+    "MP-IMG2"
   ],
-  "changed_card_scope": "MP-R0A status wording only; documented in section 19.53",
+  "changed_card_scope": "MP-R0A status wording (section 19.53) and MP-IMG2 status wording (section 19.54); no hard prerequisite or DC link changed",
   "new_section_relative_links": 20,
   "missing_links": 0
 }
