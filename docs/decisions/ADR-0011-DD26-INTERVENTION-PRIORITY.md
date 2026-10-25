@@ -31,3 +31,10 @@
 - **Unblocked once `IMPLEMENTATION_AUTHORIZED` exists:** DC-MP-INS3's fixture/local strip — deterministic ordering, provenance labels, dedupe, empty and resolved rules, read-only actions only.
 - **Still blocked, and this record does not pretend otherwise:** Runtime-issued interventions (the Runtime contract gap stands), OS notification delivery (crosswalk row 8), any destructive automation, MP-INS2's Runtime authorisation, and every Runtime-owned projection.
 - **Rollback:** revert this ADR and the DD-26 registry row. MP-INS3 returns to `DESIGN_GATE_REQUIRED` and DC-MP-INS3's interim ordering becomes the only rule again.
+
+## 4. Implementation authorisation (separate step, granted)
+
+- **Owner statement, 2026-10-25:** 「承認する。ほかの承認事項に関しても承認する。」 — the Caller authorises implementation.
+- **Scope granted:** the **fixture/local** MP-INS3 intervention strip within ADR-0011's determinations — deterministic ordering, dedupe with the opaque-id tie-break, explicit empty and resolved rules, provenance labels, read-only actions only, no destructive operation and no Stop in the strip, in-app only with no OS notification call.
+- **Scope NOT granted (the owner's own boundary, quoted):** "Runtime-issued interventions・OS 通知・MP-INS2 の Evidence 認可・Stop 発行・新 canonical command" — those stay blocked exactly as §3 says, and nothing in the implementation may reach them.
+- **Effect:** MP-INS3 moves from `DESIGN_GATE_REQUIRED` to `IMPLEMENTATION_AUTHORIZED (fixture/local)`; its card and the DD-26 registry note the authorisation. Runtime-owned projections, Formal Selected and the Runtime contract gap are untouched.
