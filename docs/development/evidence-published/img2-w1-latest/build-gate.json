@@ -1,0 +1,500 @@
+{
+  "schema_version": 1,
+  "id": "e2c38061-b951-491d-bfc9-e26d7346486f",
+  "candidate": "90a756ddf57caa64430c1ff64c89b4d7a227a99c",
+  "root": "<W1_GATE_ROOT>",
+  "status": {
+    "cli_interface_version": 2,
+    "operation": "gate.status",
+    "outcome": {
+      "schema_version": 1,
+      "result": {
+        "schema_version": 1,
+        "gate_id": "e2c38061-b951-491d-bfc9-e26d7346486f",
+        "gate_label": "cos-desktop-img2-w1-build-90a756dd",
+        "state": "SUCCEEDED",
+        "updated_at": "2026-10-25T19:09:51.083343700Z",
+        "owner_alive": false,
+        "recovery_required": false
+      }
+    }
+  },
+  "inspect": {
+    "cli_interface_version": 2,
+    "operation": "gate.inspect",
+    "outcome": {
+      "schema_version": 1,
+      "result": {
+        "schema_version": 1,
+        "gate_id": "e2c38061-b951-491d-bfc9-e26d7346486f",
+        "gate_label": "cos-desktop-img2-w1-build-90a756dd",
+        "request_sha256": "sha256:766f1a84969dc7ca7abe67e0f2d20430e704a4a2bf614a48ef2bba879bb2f6df",
+        "terminal_state_sha256": "sha256:fcb5560783aabd554562cb092702120351a0548bfcfb8f26f4918665b70b43fe",
+        "runtime": {
+          "refine_version": "0.3.1",
+          "os": "windows",
+          "architecture": "x86_64",
+          "git_version": "git version 2.51.0.windows.1"
+        },
+        "repository": {
+          "location": "<REPOSITORY>",
+          "requested_revision": "90a756ddf57caa64430c1ff64c89b4d7a227a99c",
+          "resolved_base_commit": "90a756ddf57caa64430c1ff64c89b4d7a227a99c",
+          "object_format": "sha1",
+          "final_head": "90a756ddf57caa64430c1ff64c89b4d7a227a99c"
+        },
+        "limits": {
+          "timeout_ms": 600000,
+          "termination_grace_ms": 5000,
+          "max_output_bytes": 16777216,
+          "max_artifact_bytes": 16777216
+        },
+        "accepted_at": "2026-10-25T19:07:27.716723600Z",
+        "ended_at": "2026-10-25T19:09:51.083343700Z",
+        "candidate_sha256": "sha256:a31ae1909e96a571e1ad27bc922b786c36da795fcdb6394e1302f4bbd578f93e",
+        "verification": [
+          {
+            "id": "build",
+            "kind": "command",
+            "outcome": "pass",
+            "duration_ms": 132729,
+            "observed_exit": 0,
+            "candidate_binding": "sha256:a31ae1909e96a571e1ad27bc922b786c36da795fcdb6394e1302f4bbd578f93e"
+          }
+        ],
+        "check_logs": [
+          {
+            "check_id": "build",
+            "stdout": {
+              "relative_path": "logs/build/stdout",
+              "size_bytes": 0,
+              "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truncated": false,
+              "secret": true
+            },
+            "stderr": {
+              "relative_path": "logs/build/stderr",
+              "size_bytes": 12705,
+              "sha256": "sha256:ead539eb866db4885093db419381e80045724c6890fbe37d34ca224f9fb2f5f4",
+              "truncated": false,
+              "secret": true
+            }
+          }
+        ],
+        "artifacts": [
+          {
+            "id": "behavior",
+            "relative_path": "artifacts/behavior",
+            "size_bytes": 17858,
+            "sha256": "sha256:1a58a57469a4c1442a1e5f1bfb13c18d8513e700bfc1d3e26e95655256d33a96"
+          },
+          {
+            "id": "cli-doc",
+            "relative_path": "artifacts/cli-doc",
+            "size_bytes": 82934,
+            "sha256": "sha256:780a1467da6faabbe17bd93f881b8b2811eee70446130f30156f16ad1608c745"
+          },
+          {
+            "id": "fixture-probe",
+            "relative_path": "artifacts/fixture-probe",
+            "size_bytes": 1971,
+            "sha256": "sha256:11b753983b69e215fbf0ccd7328b67f33b30e91af8ff880c76bb0f81957bc7f2"
+          },
+          {
+            "id": "gdiplus-probe",
+            "relative_path": "artifacts/gdiplus-probe",
+            "size_bytes": 15826,
+            "sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef"
+          },
+          {
+            "id": "harness",
+            "relative_path": "artifacts/harness",
+            "size_bytes": 159533,
+            "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+          },
+          {
+            "id": "harness-tests",
+            "relative_path": "artifacts/harness-tests",
+            "size_bytes": 203223,
+            "sha256": "sha256:2e106eca693cad5458b015fafa15deebefabc434131e878e22136ecbe752a3d3"
+          },
+          {
+            "id": "matrix",
+            "relative_path": "artifacts/matrix",
+            "size_bytes": 72024,
+            "sha256": "sha256:36037a74c1935b586cf70187539a09c193a503e4dacdef8195106b1ff652b52a"
+          },
+          {
+            "id": "runner",
+            "relative_path": "artifacts/runner",
+            "size_bytes": 15178,
+            "sha256": "sha256:7e94b3b22974632c04e1fad4d2029fe367069b5a01ca335ed7f479d5857b8849"
+          },
+          {
+            "id": "silent-probe",
+            "relative_path": "artifacts/silent-probe",
+            "size_bytes": 1943,
+            "sha256": "sha256:72780b672d85c5591bb05b3ac85e6d34c82ddc97223d3562cfbf816c0108bb33"
+          },
+          {
+            "id": "source-order",
+            "relative_path": "artifacts/source-order",
+            "size_bytes": 802,
+            "sha256": "sha256:e2b6444fa2f07832439b94e365016ee3c45c84e54b07040d9885c81f60c69741"
+          },
+          {
+            "id": "wic-probe",
+            "relative_path": "artifacts/wic-probe",
+            "size_bytes": 22527,
+            "sha256": "sha256:961f9a7ec588697be9609b635352e5d821133388fb5a1c5b02be7d34b698a378"
+          }
+        ],
+        "absent_outputs": [],
+        "cleanup": "complete",
+        "timings": {
+          "preparation_ms": 8101,
+          "execution_ms": 0,
+          "verification_ms": 134430,
+          "collection_ms": 788,
+          "finalization_ms": 2
+        },
+        "duration_ms": 143361
+      }
+    }
+  },
+  "verify": {
+    "cli_interface_version": 2,
+    "operation": "gate.verify",
+    "outcome": {
+      "schema_version": 1,
+      "result": {
+        "schema_version": 1,
+        "gate_id": "e2c38061-b951-491d-bfc9-e26d7346486f",
+        "state": "SUCCEEDED",
+        "request_sha256": "sha256:766f1a84969dc7ca7abe67e0f2d20430e704a4a2bf614a48ef2bba879bb2f6df",
+        "terminal_state_sha256": "sha256:fcb5560783aabd554562cb092702120351a0548bfcfb8f26f4918665b70b43fe",
+        "observations_sha256": "sha256:bdc3de8945538d010312dd89fb0ac5d42822d972307146411b6793fc131b2f30",
+        "candidate_sha256": "sha256:a31ae1909e96a571e1ad27bc922b786c36da795fcdb6394e1302f4bbd578f93e",
+        "artifacts": [
+          {
+            "id": "behavior",
+            "relative_path": "artifacts/behavior",
+            "size_bytes": 17858,
+            "sha256": "sha256:1a58a57469a4c1442a1e5f1bfb13c18d8513e700bfc1d3e26e95655256d33a96"
+          },
+          {
+            "id": "cli-doc",
+            "relative_path": "artifacts/cli-doc",
+            "size_bytes": 82934,
+            "sha256": "sha256:780a1467da6faabbe17bd93f881b8b2811eee70446130f30156f16ad1608c745"
+          },
+          {
+            "id": "fixture-probe",
+            "relative_path": "artifacts/fixture-probe",
+            "size_bytes": 1971,
+            "sha256": "sha256:11b753983b69e215fbf0ccd7328b67f33b30e91af8ff880c76bb0f81957bc7f2"
+          },
+          {
+            "id": "gdiplus-probe",
+            "relative_path": "artifacts/gdiplus-probe",
+            "size_bytes": 15826,
+            "sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef"
+          },
+          {
+            "id": "harness",
+            "relative_path": "artifacts/harness",
+            "size_bytes": 159533,
+            "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+          },
+          {
+            "id": "harness-tests",
+            "relative_path": "artifacts/harness-tests",
+            "size_bytes": 203223,
+            "sha256": "sha256:2e106eca693cad5458b015fafa15deebefabc434131e878e22136ecbe752a3d3"
+          },
+          {
+            "id": "matrix",
+            "relative_path": "artifacts/matrix",
+            "size_bytes": 72024,
+            "sha256": "sha256:36037a74c1935b586cf70187539a09c193a503e4dacdef8195106b1ff652b52a"
+          },
+          {
+            "id": "runner",
+            "relative_path": "artifacts/runner",
+            "size_bytes": 15178,
+            "sha256": "sha256:7e94b3b22974632c04e1fad4d2029fe367069b5a01ca335ed7f479d5857b8849"
+          },
+          {
+            "id": "silent-probe",
+            "relative_path": "artifacts/silent-probe",
+            "size_bytes": 1943,
+            "sha256": "sha256:72780b672d85c5591bb05b3ac85e6d34c82ddc97223d3562cfbf816c0108bb33"
+          },
+          {
+            "id": "source-order",
+            "relative_path": "artifacts/source-order",
+            "size_bytes": 802,
+            "sha256": "sha256:e2b6444fa2f07832439b94e365016ee3c45c84e54b07040d9885c81f60c69741"
+          },
+          {
+            "id": "wic-probe",
+            "relative_path": "artifacts/wic-probe",
+            "size_bytes": 22527,
+            "sha256": "sha256:961f9a7ec588697be9609b635352e5d821133388fb5a1c5b02be7d34b698a378"
+          }
+        ],
+        "check_logs": [
+          {
+            "check_id": "build",
+            "stdout": {
+              "relative_path": "logs/build/stdout",
+              "size_bytes": 0,
+              "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truncated": false,
+              "secret": true
+            },
+            "stderr": {
+              "relative_path": "logs/build/stderr",
+              "size_bytes": 12705,
+              "sha256": "sha256:ead539eb866db4885093db419381e80045724c6890fbe37d34ca224f9fb2f5f4",
+              "truncated": false,
+              "secret": true
+            }
+          }
+        ]
+      }
+    }
+  },
+  "preflight": {
+    "schema_version": 1,
+    "product_version": "0.3.1",
+    "outcome": "unknown",
+    "effective_limits": {
+      "timeout_ms": 600000,
+      "termination_grace_ms": 5000,
+      "max_output_bytes": 16777216,
+      "max_artifact_bytes": 16777216
+    },
+    "diagnostics": [
+      {
+        "id": "binary",
+        "outcome": "pass",
+        "message": "this installed native binary supplies the reported product version"
+      },
+      {
+        "id": "admission",
+        "outcome": "pass",
+        "message": "native config, request, policy, capability, allowlist and environment admission passed"
+      },
+      {
+        "id": "state_boundary",
+        "outcome": "pass",
+        "message": "state root is separate from protected source ownership paths; no state was created"
+      },
+      {
+        "id": "candidate",
+        "outcome": "pass",
+        "message": "local pinned commit and Git tree satisfy the native repository owner"
+      },
+      {
+        "id": "build",
+        "outcome": "pass",
+        "message": "check executable exists and matches its configured identity pin"
+      },
+      {
+        "id": "build",
+        "outcome": "pass",
+        "message": "`CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
+      },
+      {
+        "id": "build",
+        "outcome": "pass",
+        "message": "`CC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
+      },
+      {
+        "id": "build",
+        "outcome": "pass",
+        "message": "`CXX` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
+      },
+      {
+        "id": "build",
+        "outcome": "pass",
+        "message": "`RUSTC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
+      },
+      {
+        "id": "build",
+        "outcome": "pass",
+        "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
+      },
+      {
+        "id": "check_runtime",
+        "outcome": "unknown",
+        "message": "toolchain/SDK runtime compatibility, command results and timeout sufficiency require a real check; none was launched"
+      },
+      {
+        "id": "outputs",
+        "outcome": "unknown",
+        "message": "declared output paths are structurally admitted; existence, scope and delivery remain candidate/runtime and caller checks"
+      },
+      {
+        "id": "authorization",
+        "outcome": "unknown",
+        "message": "caller permission and domain acceptance are external and cannot be established by preflight"
+      }
+    ]
+  },
+  "request": {
+    "schema_version": 1,
+    "gate_label": "cos-desktop-img2-w1-build-90a756dd",
+    "repository": {
+      "kind": "local_git",
+      "location": "<REPOSITORY>",
+      "revision": "90a756ddf57caa64430c1ff64c89b4d7a227a99c",
+      "expected_commit": "90a756ddf57caa64430c1ff64c89b4d7a227a99c"
+    },
+    "policy": {
+      "trust": "trusted_local",
+      "timeout_ms": 600000,
+      "termination_grace_ms": 5000,
+      "max_output_bytes": 16777216,
+      "max_artifact_bytes": 16777216,
+      "expected_changes": "none",
+      "required_capabilities": []
+    },
+    "verification": [
+      {
+        "id": "build",
+        "kind": "command",
+        "executable": "<USER_HOME>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+        "args": [
+          "build",
+          "--locked",
+          "--workspace"
+        ],
+        "cwd": ".",
+        "timeout_ms": 300000,
+        "env": {
+          "CARGO_HOME": "<USER_HOME>/.cargo",
+          "CARGO_NET_OFFLINE": "true",
+          "CARGO": "<USER_HOME>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+          "RUSTC": "<USER_HOME>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustc.exe",
+          "RUSTDOC": "<USER_HOME>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustdoc.exe",
+          "RUSTFMT": "<USER_HOME>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustfmt.exe",
+          "RUSTC_WRAPPER": "",
+          "CARGO_BUILD_RUSTC_WRAPPER": "",
+          "CARGO_ENCODED_RUSTFLAGS": "",
+          "CC": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+          "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+          "AR": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe",
+          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/link.exe",
+          "INCLUDE": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/include;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/cppwinrt",
+          "LIB": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/ucrt/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x64",
+          "LIBPATH": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x86/store/references;C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0;C:/Program Files (x86)/Windows Kits/10/References/10.0.19041.0;C:/Windows/Microsoft.NET/Framework64/v4.0.30319",
+          "CARGO_INCREMENTAL": "0",
+          "CARGO_BUILD_JOBS": "4",
+          "CARGO_PROFILE_DEV_DEBUG": "0",
+          "CARGO_TARGET_DIR": "<W1_GATE_ROOT>/targets/build-build"
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "id": "wic-probe",
+        "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+        "required": true
+      },
+      {
+        "id": "gdiplus-probe",
+        "path": "apps/desktop/examples/decode_compare/gdiplus_probe.ps1",
+        "required": true
+      },
+      {
+        "id": "fixture-probe",
+        "path": "apps/desktop/examples/decode_compare/fixture_probe.ps1",
+        "required": true
+      },
+      {
+        "id": "silent-probe",
+        "path": "apps/desktop/examples/decode_compare/silent_probe.ps1",
+        "required": true
+      },
+      {
+        "id": "harness",
+        "path": "apps/desktop/examples/decode_compare/harness.rs",
+        "required": true
+      },
+      {
+        "id": "harness-tests",
+        "path": "apps/desktop/tests/decode_compare_harness.rs",
+        "required": true
+      },
+      {
+        "id": "matrix",
+        "path": "docs/development/evidence-published/img2-w1-latest/matrix.json",
+        "required": true
+      },
+      {
+        "id": "behavior",
+        "path": "docs/development/evidence-published/img2-w1-latest/behavior.json",
+        "required": true
+      },
+      {
+        "id": "source-order",
+        "path": "docs/development/evidence-published/img2-w1-latest/source-order.json",
+        "required": true
+      },
+      {
+        "id": "runner",
+        "path": "docs/development/evidence-published/img2-w1-latest/run_matrix.py",
+        "required": true
+      },
+      {
+        "id": "cli-doc",
+        "path": "docs/development/BUILD_AND_RUN.md",
+        "required": true
+      }
+    ]
+  },
+  "operator": {
+    "schema_version": 1,
+    "git_executable": "C:/Program Files/Git/cmd/git.exe",
+    "executables": [
+      {
+        "path": "<USER_HOME>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+        "expected_sha256": "sha256:c37545ec61d48d31bdefce53280ecab61c4ea54eaace372fac6a0316c6e165d9"
+      },
+      {
+        "path": "<USER_HOME>/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+        "expected_sha256": "sha256:623f669041a962346e6a377408193e628bfc409d12e5851042a727685980813e"
+      },
+      {
+        "path": "C:/Program Files/PowerShell/7/pwsh.exe",
+        "expected_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
+      }
+    ],
+    "local_repository_roots": [
+      "<REPOSITORY>"
+    ],
+    "https_origins": [],
+    "ambient_env": [],
+    "secret_sources": [],
+    "limits": {
+      "timeout_ms": 600000,
+      "termination_grace_ms": 5000,
+      "max_output_bytes": 16777216,
+      "max_artifact_bytes": 16777216,
+      "max_refinement_steps": 1,
+      "max_evaluation_timeout_ms": 30000,
+      "max_total_evaluation_ms": 30000
+    },
+    "state_dir": "<W1_GATE_ROOT>/state"
+  },
+  "correlation": {
+    "candidate": "90a756ddf57caa64430c1ff64c89b4d7a227a99c",
+    "candidate_sha256": "sha256:a31ae1909e96a571e1ad27bc922b786c36da795fcdb6394e1302f4bbd578f93e",
+    "quality_gate": "9de12fe9-fb0c-4453-bda1-cfcf45a0e415",
+    "build_gate": "e2c38061-b951-491d-bfc9-e26d7346486f",
+    "artifact_tuples_identical": true,
+    "artifact_count": 11
+  }
+}
