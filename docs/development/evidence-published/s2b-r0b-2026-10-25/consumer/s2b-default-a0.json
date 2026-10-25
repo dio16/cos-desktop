@@ -1,0 +1,164 @@
+{
+  "manifest_version": 1,
+  "scenario": {
+    "id": "shell-startup",
+    "version": "v2",
+    "benchmark_revision": "r0a-s2b"
+  },
+  "identity": {
+    "repository": {
+      "sha": "bcce8167591f6f142232b3c5ca7c5c14c7da5cdf",
+      "dirty": false,
+      "content_hash": {
+        "status": "NOT_MEASURED",
+        "reason": "source blobs verified separately"
+      }
+    },
+    "schema_hash": "sha256:4369cd068880745f2c384f0fd5395f4038b1a4d55a3d89c224f3af0a3832444b",
+    "definition_hash": "sha256:e1b50c1a14b65e2e52928064207d943a0ade9b06e81f6de435053f086ab78b2c",
+    "driver_hash": "sha256:ee17f2b1a450253ebd508562647232684432e378f2a23e40e876deffa7dbaec5",
+    "gpui_revision": "395def7a067b32ed598fcb3f048969ada9b54942",
+    "build": {
+      "profile": "dev",
+      "features": [],
+      "flags": []
+    },
+    "executable_sha256": "sha256:ec3a0ad906a1818377416ffc0ffe61cf35952d3548f6c0e7fd5e27f3567a226e",
+    "toolchain": {
+      "rustc": "1.98.1",
+      "cargo": "1.98.1",
+      "target": "x86_64-pc-windows-msvc"
+    }
+  },
+  "machine": {
+    "os": {
+      "edition": "Windows 11 Pro",
+      "build": "10.0.26300"
+    },
+    "cpu": {
+      "model": "AMD Ryzen 7 3700X 8-Core Processor",
+      "logical_count": 16
+    },
+    "ram_bytes": 34267746304,
+    "gpu": {
+      "adapter": "NVIDIA GeForce RTX 2080 SUPER",
+      "driver": "32.0.16.1742"
+    },
+    "displays": [
+      {
+        "width": 3440,
+        "height": 1440,
+        "refresh_hz": 99,
+        "dpi": 96
+      }
+    ],
+    "window": {
+      "geometry": "1280x832",
+      "visibility": "VISIBLE",
+      "occlusion": {
+        "status": "NOT_MEASURED",
+        "reason": "no independent occlusion probe"
+      }
+    },
+    "power_profile": {
+      "status": "NOT_MEASURED",
+      "reason": "power scheme not changed or verified"
+    },
+    "background_contention": {
+      "status": "NOT_MEASURED",
+      "reason": "no isolated desktop"
+    },
+    "thermal_state": {
+      "status": "NOT_MEASURED",
+      "reason": "thermal controls are not applied"
+    }
+  },
+  "workload": {
+    "generator": {
+      "version": "v1",
+      "revision": "r0a-s1",
+      "seed": 7
+    },
+    "distribution": "fixed-list",
+    "parameters": {},
+    "source": {
+      "identity": "fixture-task-184",
+      "sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52"
+    },
+    "representation_policy": "encoded-only",
+    "actions": [
+      {
+        "step": "open-shell",
+        "requested_cadence_hz": {
+          "status": "NOT_MEASURED",
+          "reason": "no cadence driver"
+        },
+        "burst": 1
+      },
+      {
+        "step": "drive-navigation",
+        "requested_cadence_hz": {
+          "status": "NOT_MEASURED",
+          "reason": "human/provider paced input"
+        },
+        "burst": 1
+      },
+      {
+        "step": "close-window",
+        "requested_cadence_hz": {
+          "status": "NOT_MEASURED",
+          "reason": "single close"
+        },
+        "burst": 1
+      }
+    ],
+    "duration_ms": 30000,
+    "repetitions": 1,
+    "warmup": 0,
+    "cache_actions": [],
+    "cache_state": {
+      "status": "NOT_MEASURED",
+      "reason": "no OS or GPU cache reset is claimed"
+    },
+    "viewport": "1280x832",
+    "endpoints": [
+      {
+        "id": "local-surface-mutation",
+        "definition": "real local Surface before/after change",
+        "start": "before assignment",
+        "end": "after assignment",
+        "correlation": "session/window/serial"
+      },
+      {
+        "id": "gpui-cpu-draw",
+        "definition": "GPUI CPU draw start/end for one real frame",
+        "start": "draw start",
+        "end": "draw end",
+        "correlation": "source WindowId"
+      },
+      {
+        "id": "gpui-platform-submission",
+        "definition": "CPU interval around platform submission",
+        "start": "present start",
+        "end": "present end",
+        "correlation": "source WindowId, optional paired draw"
+      }
+    ],
+    "run_id": "run-n01",
+    "pair_id": "pair-n06",
+    "variant": "baseline",
+    "order": "first",
+    "expected_state": "explicit fixture shell visible; navigation changes only local surface",
+    "recovery": "close the dedicated owned window",
+    "tool": {
+      "name": "r0-s2b-capture",
+      "version": "1",
+      "config": "explicit-fixture-opt-in"
+    }
+  },
+  "surface": {
+    "id": "shell",
+    "status": "IMPLEMENTED",
+    "reason": ""
+  }
+}

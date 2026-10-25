@@ -1,0 +1,519 @@
+{
+  "result_version": 1,
+  "manifest": {
+    "scenario_id": "shell-startup",
+    "scenario_version": "v2",
+    "benchmark_revision": "r0a-s2b",
+    "definition_hash": "sha256:4ce0e2353d3a6db22b212790a52dcdf9ebe0e622df4a9056ea440650d21de1cb"
+  },
+  "runs": [
+    {
+      "run_id": "run-n02",
+      "pair_id": "pair-n06",
+      "scenario_id": "shell-startup",
+      "variant": "instrumented",
+      "status": "NOT_MEASURED",
+      "reason": "process exited 0; visual/frame endpoints were not measured",
+      "endpoints": [
+        {
+          "id": "process-launch",
+          "status": "NOT_MEASURED",
+          "reason": "launcher-only observation; not a visual endpoint",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "app-main-entry",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "model-mutation",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "invalidate-notify",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "frame-request",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "frame-start",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "scene-prepared",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "gpu-submission",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "input-received",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "present-call",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "present-return",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "first-frame",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "useful-shell",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "present",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "displayed",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        },
+        {
+          "id": "input-to-photon",
+          "status": "NOT_MEASURED",
+          "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B",
+          "provider": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "version": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "unit": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "clock": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          },
+          "correlation": {
+            "status": "NOT_IMPLEMENTED",
+            "reason": "no visual probe"
+          }
+        }
+      ],
+      "metrics": [
+        {
+          "id": "startup-launch",
+          "unit": "ms",
+          "method": "launcher-monotonic",
+          "sample_unit": "launch",
+          "counts": {
+            "eligible": 0,
+            "observed": 0,
+            "failed": 0,
+            "censored": 0,
+            "excluded": 0
+          },
+          "percentiles": {
+            "min": null,
+            "max": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "estimator": "none",
+          "validity": "launcher facts live in the sidecar ledger; no estimator in S2A",
+          "spread": "not-estimated"
+        }
+      ],
+      "resources": {
+        "process": {
+          "private_bytes": null,
+          "working_set_bytes": null,
+          "status": "NOT_MEASURED",
+          "reason": "no process-memory probe"
+        },
+        "media": {
+          "decoded_bytes": null,
+          "scratch_bytes": null,
+          "staging_bytes": null,
+          "cache_bytes": null,
+          "status": "NOT_MEASURED",
+          "reason": "no media path"
+        },
+        "gpu": {
+          "dedicated_bytes": null,
+          "shared_bytes": null,
+          "committed_bytes": null,
+          "status": "NOT_MEASURED",
+          "reason": "no GPU probe"
+        },
+        "devices": {
+          "count": null,
+          "generations": null,
+          "status": "NOT_MEASURED",
+          "reason": "no device probe"
+        },
+        "sampling": "sidecar ledger only"
+      },
+      "frames": {
+        "requested": null,
+        "processed": null,
+        "submitted": null,
+        "present": null,
+        "displayed": null,
+        "missed": null,
+        "dropped": null,
+        "stalled": null,
+        "eligibility": null,
+        "idle": null,
+        "rule": "no frame counters are observed in S2A",
+        "reason": "frame probes are deferred to S2B"
+      },
+      "instrumentation": {
+        "tool": "r0a-s2a",
+        "revision": "2",
+        "config": "approved dedicated fixture process",
+        "probes": {
+          "supported": [
+            "launcher"
+          ],
+          "missing": [
+            "gpui-frame",
+            "present",
+            "displayed",
+            "gpu"
+          ]
+        },
+        "overhead": "not measured",
+        "loss": "not measured",
+        "floor": "not measured"
+      },
+      "failures": [],
+      "outliers": [],
+      "evidence": [
+        "ledger.json",
+        "endpoint-availability.json"
+      ]
+    }
+  ],
+  "evidence": [
+    "ledger.json",
+    "endpoint-availability.json"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "execution_id": "34d0e01eee96466d83a9e6987bfc7ccb",
+  "wrapper_command": [
+    "<REDACTED-LOCAL-PATH>",
+    "-B",
+    "<REDACTED-LOCAL-PATH>",
+    "--manifest",
+    "<REDACTED-LOCAL-PATH>",
+    "--executable",
+    "<REDACTED-LOCAL-PATH>",
+    "--fixture",
+    "<REDACTED-LOCAL-PATH>",
+    "--output-dir",
+    "<REDACTED-LOCAL-PATH>",
+    "--helper",
+    "<REDACTED-LOCAL-PATH>",
+    "--profile",
+    "<REDACTED-LOCAL-PATH>",
+    "--timeout-ms",
+    "60000"
+  ],
+  "wrapper_exit_code": 0,
+  "wrapper_stdout": "{\"ok\":true,\"scope\":\"SOURCE_BOUND_REPLAY\",\"execution_id\":\"34d0e01eee96466d83a9e6987bfc7ccb\",\"disposition\":\"OBSERVED\",\"disposition_reason\":\"RETAINED_SOURCE_OBSERVATION\",\"retained\":256,\"retention_dropped\":172,\"endpoints\":{\"input-dispatch\":{\"status\":\"OBSERVED\",\"reason\":\"RETAINED_SOURCE_RECORD\"},\"gpui-dirty\":{\"status\":\"OBSERVED\",\"reason\":\"RETAINED_SOURCE_RECORD\"},\"gpui-cpu-draw\":{\"status\":\"OBSERVED\",\"reason\":\"RETAINED_SOURCE_RECORD\"},\"gpui-platform-submission\":{\"status\":\"OBSERVED\",\"reason\":\"RETAINED_SOURCE_RECORD\"},\"local-surface-mutation\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NO_RETAINED_VALID_RECORD\"},\"local-notify\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NO_RETAINED_VALID_RECORD\"},\"app-main-entry\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"frame-request\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"first-frame\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"useful-shell\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"gpu-submission\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"present-call\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"present-return\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"present\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"displayed\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"scanout\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"input-to-photon\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"}},\"full_coverage\":false}",
+  "wrapper_stderr": "",
+  "window": {
+    "pid": 45924,
+    "hwnd": 33489544,
+    "title": "COS Desktop"
+  },
+  "close": {
+    "at_s": 40.15,
+    "pid": 45924,
+    "hwnd": 33489544,
+    "title": "COS Desktop",
+    "posted": true,
+    "synthetic_input_messages": 90
+  },
+  "input": "synthetic PostMessage input (mouse move/click, Tab keydown/keyup), not a real user session",
+  "elapsed_s": 40.801,
+  "output_files": [
+    "build-record.json",
+    "committed-fc0bbb9149ff7b364a7690dfaeb41d7dcf5449afe806c9c1632f0b4b61591dc5",
+    "completion.json",
+    "endpoint-availability.json",
+    "ledger.json",
+    "r0-s2b-committed-2d8e3a6be3adf4eca5a6ba8d4b05e555b3cff2ea04a0bf18e6875a595542e472",
+    "result.json",
+    "run-id",
+    "s2b-capture.json",
+    "s2b-committed-6051c6679b5f6563568bdbb042e335030b85420ff76de82f683d0861ce800737",
+    "s2b-observation.json",
+    "source-identity.json"
+  ]
+}

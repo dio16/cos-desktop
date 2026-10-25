@@ -1,0 +1,245 @@
+{
+  "identity": {
+    "build": {
+      "features": [
+        "r0-s2b-instrumentation"
+      ],
+      "flags": [],
+      "profile": "dev"
+    },
+    "definition_hash": "sha256:e0d3ffa81f78e1d3468675c3daae4d797ab34f3a016405e2d6f23a01c5ac7390",
+    "driver_hash": "sha256:ad9b2db3923c304beba8e2a077e2c586b4be5f0ec14156c96d8432667eb83402",
+    "executable_sha256": "sha256:850b73a029b80fa8ad49d3cc5ac38a5683df8ae962d0a66f3f4fb282c0141ccb",
+    "gpui_revision": "395def7a067b32ed598fcb3f048969ada9b54942",
+    "repository": {
+      "content_hash": {
+        "reason": "S1 emits no source content hash; the approved product_commit is the identity",
+        "status": "NOT_MEASURED"
+      },
+      "dirty": false,
+      "sha": "bcce8167591f6f142232b3c5ca7c5c14c7da5cdf"
+    },
+    "schema_hash": "sha256:4369cd068880745f2c384f0fd5395f4038b1a4d55a3d89c224f3af0a3832444b",
+    "toolchain": {
+      "cargo": "1.98.1",
+      "rustc": "1.98.1",
+      "target": "x86_64-pc-windows-msvc"
+    }
+  },
+  "machine": {
+    "background_contention": {
+      "reason": "no isolated desktop",
+      "status": "NOT_MEASURED"
+    },
+    "cpu": {
+      "logical_count": 16,
+      "model": "AMD Ryzen 7 3700X 8-Core Processor"
+    },
+    "displays": [
+      {
+        "dpi": 96,
+        "height": 1440,
+        "refresh_hz": 99,
+        "width": 3440
+      }
+    ],
+    "gpu": {
+      "adapter": "NVIDIA GeForce RTX 2080 SUPER",
+      "driver": "32.0.16.1742"
+    },
+    "os": {
+      "build": "26300",
+      "edition": "Microsoft Windows 11 Pro"
+    },
+    "power_profile": {
+      "reason": "power scheme not changed or verified",
+      "status": "NOT_MEASURED"
+    },
+    "ram_bytes": 34267746304,
+    "thermal_state": {
+      "reason": "thermal controls are not applied",
+      "status": "NOT_MEASURED"
+    },
+    "window": {
+      "geometry": "1280x832",
+      "occlusion": {
+        "reason": "no independent occlusion probe",
+        "status": "NOT_MEASURED"
+      },
+      "visibility": "VISIBLE"
+    }
+  },
+  "manifest_version": 1,
+  "scenario": {
+    "benchmark_revision": "r0b-g4",
+    "id": "shell-baseline",
+    "version": "v4"
+  },
+  "surface": {
+    "id": "shell",
+    "reason": "",
+    "status": "IMPLEMENTED"
+  },
+  "workload": {
+    "actions": [
+      {
+        "burst": 1,
+        "requested_cadence_hz": {
+          "reason": "no cadence driver",
+          "status": "NOT_MEASURED"
+        },
+        "step": "open-shell"
+      },
+      {
+        "burst": 90,
+        "requested_cadence_hz": {
+          "reason": "synthetic PostMessage input, not a real session",
+          "status": "NOT_MEASURED"
+        },
+        "step": "drive-navigation"
+      },
+      {
+        "burst": 1,
+        "requested_cadence_hz": {
+          "reason": "one operator WM_CLOSE at 40.1 s",
+          "status": "NOT_MEASURED"
+        },
+        "step": "close-window"
+      }
+    ],
+    "cache_actions": [],
+    "cache_state": {
+      "reason": "no authorised OS/GPU cache reset exists; true cold stays NOT_MEASURED",
+      "status": "NOT_MEASURED"
+    },
+    "distribution": "fixed-list",
+    "duration_ms": 30000,
+    "endpoints": [
+      {
+        "correlation": "run identity + approved executable digest",
+        "definition": "Approved dedicated instrumented process created and owned",
+        "end": "owned child created",
+        "id": "process-launch",
+        "start": "launcher request"
+      },
+      {
+        "correlation": "window + lifetime",
+        "definition": "Native input dispatched with a window lifetime",
+        "end": "dispatch record closed",
+        "id": "input-dispatch",
+        "start": "input offered"
+      },
+      {
+        "correlation": "window + lifetime",
+        "definition": "GPUI invalidation interval for a window",
+        "end": "dirty end",
+        "id": "gpui-dirty",
+        "start": "dirty start"
+      },
+      {
+        "correlation": "window + lifetime",
+        "definition": "GPUI CPU draw interval for a window",
+        "end": "draw end",
+        "id": "gpui-cpu-draw",
+        "start": "draw start"
+      },
+      {
+        "correlation": "window + lifetime",
+        "definition": "GPUI platform submission interval",
+        "end": "submission end",
+        "id": "gpui-platform-submission",
+        "start": "submission start"
+      },
+      {
+        "correlation": "session/window/serial",
+        "definition": "Real local surface before/after change",
+        "end": "after assignment",
+        "id": "local-surface-mutation",
+        "start": "before assignment"
+      },
+      {
+        "correlation": "session/window/serial",
+        "definition": "Real local notify call",
+        "end": "after notify",
+        "id": "local-notify",
+        "start": "before notify"
+      },
+      {
+        "correlation": "window generation",
+        "definition": "Backend frame-clock demand",
+        "end": "frame requested",
+        "id": "frame-requested",
+        "start": "demand raised"
+      },
+      {
+        "correlation": "frame serial",
+        "definition": "Event loop starts servicing a frame",
+        "end": "processing start",
+        "id": "frame-processing-started",
+        "start": "frame requested"
+      },
+      {
+        "correlation": "device generation",
+        "definition": "CPU enqueue of GPU work",
+        "end": "submission return",
+        "id": "gpu-submission",
+        "start": "scene prepared"
+      },
+      {
+        "correlation": "swap-chain generation",
+        "definition": "Swap-chain API attempt/result",
+        "end": "present returned",
+        "id": "present-call",
+        "start": "scene prepared"
+      },
+      {
+        "correlation": "frame serial",
+        "definition": "Independent present/displayed event",
+        "end": "displayed event",
+        "id": "presented-frame",
+        "start": "present call"
+      },
+      {
+        "correlation": "frame serial",
+        "definition": "Input timestamp to presented frame",
+        "end": "displayed frame",
+        "id": "input-to-photon",
+        "start": "input received"
+      },
+      {
+        "correlation": "display driver",
+        "definition": "Display-driver scanout observation",
+        "end": "scanout observed",
+        "id": "scanout",
+        "start": "displayed frame"
+      }
+    ],
+    "expected_state": "fixture shell with journal records for synthetic navigation; no canonical mutation",
+    "generator": {
+      "revision": "r0b-g4",
+      "seed": 7,
+      "version": "v1"
+    },
+    "order": "first",
+    "pair_id": "pair-r0b-g4",
+    "parameters": {
+      "synthetic_input_messages": 90
+    },
+    "recovery": "operator closes the window; the launcher reaps any owned child",
+    "repetitions": 1,
+    "representation_policy": "encoded-only",
+    "run_id": "run-r0b-g4",
+    "source": {
+      "identity": "fixture-task-184",
+      "sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52"
+    },
+    "tool": {
+      "config": "approved-capture-wrapper",
+      "name": "r0b-g4",
+      "version": "1"
+    },
+    "variant": "journal",
+    "viewport": "1280x832",
+    "warmup": 0
+  }
+}
