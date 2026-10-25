@@ -1,0 +1,61 @@
+{
+  "exit_code": 0,
+  "total": 351,
+  "executed": 339,
+  "passed": 339,
+  "skipped": 12,
+  "expected_failures": 0,
+  "unexpected_successes": 0,
+  "failures": 0,
+  "errors": 0,
+  "skipped_cases": [
+    {
+      "test": "test_real_observation_of_a_window (test_n03_observe.N03Observation.test_real_observation_of_a_window)",
+      "reason": "NOT_RUN: no COS Desktop window is running in this session"
+    },
+    {
+      "test": "test_arbitrary_repo_root_is_refused_with_a_closed_error (test_n07_verify.N07Verifier.test_arbitrary_repo_root_is_refused_with_a_closed_error)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_historical_record_matches_its_recorded_archive_and_names_live_drift (test_n07_verify.N07Verifier.test_historical_record_matches_its_recorded_archive_and_names_live_drift)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_live_tree_matches_the_recorded_baseline (test_n07_verify.N07Verifier.test_live_tree_matches_the_recorded_baseline)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_mismatch_still_exits_nonzero_and_is_named (test_n07_verify.N07Verifier.test_mismatch_still_exits_nonzero_and_is_named)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_missing_expected_value_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_expected_value_is_not_measured_while_live_drift_stays_named)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_missing_helper_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_helper_is_not_measured_while_live_drift_stays_named)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_omitted_repo_root_uses_the_canonical_root (test_n07_verify.N07Verifier.test_omitted_repo_root_uses_the_canonical_root)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_same_inputs_produce_identical_record_bytes (test_n07_verify.N07Verifier.test_same_inputs_produce_identical_record_bytes)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_scratch_copy_only_is_not_verified_and_names_the_path_item (test_n07_verify.N07Verifier.test_scratch_copy_only_is_not_verified_and_names_the_path_item)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_tampered_manifest_names_the_manifest_mismatch (test_n07_verify.N07Verifier.test_tampered_manifest_names_the_manifest_mismatch)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_verdict_precedence_names_both_kinds (test_n07_verify.N07Verifier.test_verdict_precedence_names_both_kinds)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    }
+  ]
+}

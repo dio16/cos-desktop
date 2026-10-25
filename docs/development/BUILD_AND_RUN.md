@@ -552,6 +552,55 @@ displayed-frame, scanout, input-to-photon or GPU measurement follows from these
 tests. Qualification and review status belong to the
 [master plan](IMPLEMENTATION_MASTER_PLAN.md#1952-mp-r0c-s1-r15-source-qualification-2026-10-26).
 
+### 4.20 MP-R0A-S3-N1 published Native journal replay (2026-10-26)
+
+On Windows, replay the six tracked synthetic-input captures without launching the
+application or requiring the missing historical N07 executables:
+
+```text
+python -B apps/desktop/devtools/r0/s3_native_replay.py --input-dir docs/development/evidence-published/r0c-2026-10-25
+python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p "test_s3_native_replay.py"
+```
+
+The reader checks all 37 `SHA256SUMS` entries, strict S2B capture contracts,
+available observation/launcher/legacy S1 result identities, recorded evidence
+references and the README's per-scenario counts/maxima. Historical CRLF evidence
+references are accepted only by explicitly recomputing that documented byte form;
+published checksum mismatches are never normalized away. The final README is
+bound by `SHA256SUMS`, not its obsolete self-row in the historical correspondence
+table. Original evidence remains unchanged.
+
+Stdout is one canonical JSON envelope with a report digest. Its default and
+maximum size is 1 MiB; `--max-output-bytes` may reduce it to at least 1,024 bytes.
+Oversized output yields a closed error, not a partial report. The reader creates
+no output directory, temporary file or child process. Redirect stdout explicitly
+if a caller needs a file.
+
+Each metric lists the retained source record sequence IDs, integer nanoseconds,
+sample count, population and exclusions. Draw/submission durations, adjacent
+start-to-start intervals and signed end-to-start gaps are separate. Gaps are
+partitioned by window/lifetime; retained loss/power fences exclude cross-boundary
+pairs. No scope-initial interval is invented. Invalidation totals are separated
+by draw/submission kind and are not distinct-change totals or queue depth.
+
+The six-record [replay](evidence-published/r0a-s3-native-latest/replay.json) and
+[independent arithmetic oracle](evidence-published/r0a-s3-native-latest/independent-oracle.json)
+retain the README denominator discrepancy: 48 navigation draws give 47 adjacent
+gaps, whose maximum is 474,866,700 ns (474.867 ms rounded). The roughly 500 ms
+driver action cadence is context, not a mapped native clock or visible-stall
+measurement. Scroll has zero retained draws; its draw performance is
+`NOT_MEASURED`, not a measured zero duration.
+
+This is **published-record consistency and retained-journal aggregation**, not
+full `s2b_capture.verify_bundle` replay. Original feature manifest, build/source
+identity files, S2A result/completion/commit markers, executable/helper/fixture
+bytes and the original launcher timeout declaration are absent from this input
+set. Recorded source/executable identities agree where available, but independent
+source/binary verification remains unavailable. No draw count is imported into
+S3's frame counters. Present/displayed/GPU/input-to-photon, complete event
+populations, visible stalls, queue/cancellation/restoration and full R0A/R0C
+acceptance are not established.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "mp_dc_cards": 62,
+  "exact_single_owning_links": true,
+  "hard_prereqs_and_canonical_dag_unchanged": true,
+  "new_section_relative_links": 12,
+  "missing_links": 0
+}

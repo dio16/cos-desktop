@@ -1,0 +1,784 @@
+{
+  "method": "Direct JSON parse of each published capture; group records by kind; sort ascending start_ns within capture. duration=end_ns-start_ns. Adjacent start_to_start=next.start_ns-prev.start_ns; adjacent end_to_start=next.start_ns-prev.end_ns. Dirty-to-draw=start_ns-dirty_ns for kind 2 with dirty_ns present. All ns. Adjacent pair metrics count n-1, scope_start_to_first shown separately; no initial gap included in adjacent metrics. Sums retained, no rounded means. Invalidations summed separately by kind; coalesced record means invalidations>1. Null minima/maxima denote no observed records, not measured zero performance.",
+  "scenario_oracle": {
+    "keyboard": {
+      "execution_id": "a4fc67ef08f947f39e28ef2086fd0675",
+      "retained": 256,
+      "kind_counts": [
+        102,
+        52,
+        51,
+        51,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "summary": {
+        "journal_lost": 0,
+        "journal_seen": 3505,
+        "local_received": 0,
+        "local_enqueued": 0,
+        "local_dropped": 0,
+        "local_undrained": 0,
+        "eligible": 2420,
+        "retained": 256,
+        "retention_dropped": 2164,
+        "excluded": 1002,
+        "pre_scope": 83,
+        "post_scope": 0,
+        "invalid_clock": 0,
+        "barrier_spans": 0,
+        "correlation_invalid": 0,
+        "input_unassociated": 968,
+        "unmatched_submission": 0,
+        "undrained_journal": 0,
+        "cancelled": false,
+        "source_coverage": "OFFERED_FINALIZED_JOURNAL_ONLY",
+        "unoffered_loss": "UNKNOWN",
+        "unfinalized_tail": "UNKNOWN",
+        "kind_counts": [
+          102,
+          52,
+          51,
+          51,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "draw": {
+        "duration": {
+          "count": 51,
+          "sum": 1365948900,
+          "min": 25543300,
+          "max": 29908100
+        },
+        "start_to_start": {
+          "count": 50,
+          "sum": 2499997400,
+          "min": 46898900,
+          "max": 53200200
+        },
+        "end_to_start": {
+          "count": 50,
+          "sum": 1161128500,
+          "min": 18857800,
+          "max": 27021800
+        },
+        "scope_start_to_first": 3985400
+      },
+      "submission": {
+        "duration": {
+          "count": 51,
+          "sum": 13249000,
+          "min": 233400,
+          "max": 482600
+        },
+        "start_to_start": {
+          "count": 50,
+          "sum": 2499830700,
+          "min": 45920700,
+          "max": 54483900
+        },
+        "end_to_start": {
+          "count": 50,
+          "sum": 2486938400,
+          "min": 45686100,
+          "max": 54185600
+        },
+        "scope_start_to_first": 31507300
+      },
+      "dirty_to_draw": {
+        "count": 51,
+        "sum": 2813600,
+        "min": 48900,
+        "max": 81500
+      },
+      "coalescing": {
+        "draw": {
+          "records": 51,
+          "invalidations_sum": 51,
+          "gt1": 0,
+          "max_invalidations": 1
+        },
+        "submission": {
+          "records": 51,
+          "invalidations_sum": 51,
+          "gt1": 0,
+          "max_invalidations": 1
+        }
+      },
+      "input_categories": {
+        "1": {
+          "count": 51,
+          "caused_true": 51,
+          "caused_false": 0
+        },
+        "2": {
+          "count": 51,
+          "caused_true": 0,
+          "caused_false": 51
+        }
+      }
+    },
+    "held-key": {
+      "execution_id": "efa2d133b04a469a8a453feb8a673a97",
+      "retained": 256,
+      "kind_counts": [
+        64,
+        64,
+        64,
+        64,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "summary": {
+        "journal_lost": 0,
+        "journal_seen": 4495,
+        "local_received": 0,
+        "local_enqueued": 0,
+        "local_dropped": 0,
+        "local_undrained": 0,
+        "eligible": 2904,
+        "retained": 256,
+        "retention_dropped": 2648,
+        "excluded": 1502,
+        "pre_scope": 89,
+        "post_scope": 0,
+        "invalid_clock": 0,
+        "barrier_spans": 0,
+        "correlation_invalid": 0,
+        "input_unassociated": 728,
+        "unmatched_submission": 0,
+        "undrained_journal": 0,
+        "cancelled": false,
+        "source_coverage": "OFFERED_FINALIZED_JOURNAL_ONLY",
+        "unoffered_loss": "UNKNOWN",
+        "unfinalized_tail": "UNKNOWN",
+        "kind_counts": [
+          64,
+          64,
+          64,
+          64,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "draw": {
+        "duration": {
+          "count": 64,
+          "sum": 1916181600,
+          "min": 26165800,
+          "max": 37271100
+        },
+        "start_to_start": {
+          "count": 63,
+          "sum": 2116531600,
+          "min": 27972600,
+          "max": 43892300
+        },
+        "end_to_start": {
+          "count": 63,
+          "sum": 231132100,
+          "min": 650100,
+          "max": 14519300
+        },
+        "scope_start_to_first": 32342200
+      },
+      "submission": {
+        "duration": {
+          "count": 64,
+          "sum": 24999200,
+          "min": 273100,
+          "max": 588400
+        },
+        "start_to_start": {
+          "count": 63,
+          "sum": 2120524700,
+          "min": 27521400,
+          "max": 44396600
+        },
+        "end_to_start": {
+          "count": 63,
+          "sum": 2095920700,
+          "min": 27095700,
+          "max": 43885600
+        },
+        "scope_start_to_first": 59162000
+      },
+      "dirty_to_draw": {
+        "count": 64,
+        "sum": 107042700,
+        "min": 43300,
+        "max": 10463500
+      },
+      "coalescing": {
+        "draw": {
+          "records": 64,
+          "invalidations_sum": 64,
+          "gt1": 0,
+          "max_invalidations": 1
+        },
+        "submission": {
+          "records": 64,
+          "invalidations_sum": 64,
+          "gt1": 0,
+          "max_invalidations": 1
+        }
+      },
+      "input_categories": {
+        "1": {
+          "count": 64,
+          "caused_true": 64,
+          "caused_false": 0
+        }
+      }
+    },
+    "pointer": {
+      "execution_id": "17031106ba3d420598c0e1b574ab1239",
+      "retained": 256,
+      "kind_counts": [
+        71,
+        62,
+        62,
+        61,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "summary": {
+        "journal_lost": 0,
+        "journal_seen": 3125,
+        "local_received": 1,
+        "local_enqueued": 1,
+        "local_dropped": 0,
+        "local_undrained": 0,
+        "eligible": 3023,
+        "retained": 256,
+        "retention_dropped": 2767,
+        "excluded": 3,
+        "pre_scope": 100,
+        "post_scope": 0,
+        "invalid_clock": 0,
+        "barrier_spans": 0,
+        "correlation_invalid": 0,
+        "input_unassociated": 838,
+        "unmatched_submission": 0,
+        "undrained_journal": 0,
+        "cancelled": false,
+        "source_coverage": "OFFERED_FINALIZED_JOURNAL_ONLY",
+        "unoffered_loss": "UNKNOWN",
+        "unfinalized_tail": "UNKNOWN",
+        "kind_counts": [
+          71,
+          62,
+          62,
+          61,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "draw": {
+        "duration": {
+          "count": 62,
+          "sum": 1678188600,
+          "min": 25880400,
+          "max": 32932600
+        },
+        "start_to_start": {
+          "count": 61,
+          "sum": 2027023900,
+          "min": 26486700,
+          "max": 45209300
+        },
+        "end_to_start": {
+          "count": 61,
+          "sum": 381767900,
+          "min": 530000,
+          "max": 18823900
+        },
+        "scope_start_to_first": 27918600
+      },
+      "submission": {
+        "duration": {
+          "count": 61,
+          "sum": 19876300,
+          "min": 254000,
+          "max": 532200
+        },
+        "start_to_start": {
+          "count": 60,
+          "sum": 1996038200,
+          "min": 26699000,
+          "max": 44953300
+        },
+        "end_to_start": {
+          "count": 60,
+          "sum": 1976450300,
+          "min": 26300000,
+          "max": 44662200
+        },
+        "scope_start_to_first": 56360000
+      },
+      "dirty_to_draw": {
+        "count": 62,
+        "sum": 182528500,
+        "min": 59000,
+        "max": 11172400
+      },
+      "coalescing": {
+        "draw": {
+          "records": 62,
+          "invalidations_sum": 132,
+          "gt1": 62,
+          "max_invalidations": 6
+        },
+        "submission": {
+          "records": 61,
+          "invalidations_sum": 130,
+          "gt1": 61,
+          "max_invalidations": 6
+        }
+      },
+      "input_categories": {
+        "4": {
+          "count": 3,
+          "caused_true": 3,
+          "caused_false": 0
+        },
+        "5": {
+          "count": 3,
+          "caused_true": 3,
+          "caused_false": 0
+        },
+        "6": {
+          "count": 65,
+          "caused_true": 0,
+          "caused_false": 65
+        }
+      }
+    },
+    "scroll": {
+      "execution_id": "e0499a69a36c4a05bd46e9b008818ec3",
+      "retained": 256,
+      "kind_counts": [
+        128,
+        0,
+        0,
+        0,
+        0,
+        0,
+        128,
+        0,
+        0,
+        0
+      ],
+      "summary": {
+        "journal_lost": 0,
+        "journal_seen": 507,
+        "local_received": 0,
+        "local_enqueued": 0,
+        "local_dropped": 0,
+        "local_undrained": 0,
+        "eligible": 482,
+        "retained": 256,
+        "retention_dropped": 226,
+        "excluded": 3,
+        "pre_scope": 22,
+        "post_scope": 0,
+        "invalid_clock": 0,
+        "barrier_spans": 0,
+        "correlation_invalid": 0,
+        "input_unassociated": 241,
+        "unmatched_submission": 0,
+        "undrained_journal": 0,
+        "cancelled": false,
+        "source_coverage": "OFFERED_FINALIZED_JOURNAL_ONLY",
+        "unoffered_loss": "UNKNOWN",
+        "unfinalized_tail": "UNKNOWN",
+        "kind_counts": [
+          128,
+          0,
+          0,
+          0,
+          0,
+          0,
+          128,
+          0,
+          0,
+          0
+        ]
+      },
+      "draw": {
+        "duration": {
+          "count": 0,
+          "sum": 0,
+          "min": null,
+          "max": null
+        },
+        "start_to_start": {
+          "count": 0,
+          "sum": 0,
+          "min": null,
+          "max": null
+        },
+        "end_to_start": {
+          "count": 0,
+          "sum": 0,
+          "min": null,
+          "max": null
+        },
+        "scope_start_to_first": null
+      },
+      "submission": {
+        "duration": {
+          "count": 0,
+          "sum": 0,
+          "min": null,
+          "max": null
+        },
+        "start_to_start": {
+          "count": 0,
+          "sum": 0,
+          "min": null,
+          "max": null
+        },
+        "end_to_start": {
+          "count": 0,
+          "sum": 0,
+          "min": null,
+          "max": null
+        },
+        "scope_start_to_first": null
+      },
+      "dirty_to_draw": {
+        "count": 0,
+        "sum": 0,
+        "min": null,
+        "max": null
+      },
+      "coalescing": {
+        "draw": {
+          "records": 0,
+          "invalidations_sum": 0,
+          "gt1": 0,
+          "max_invalidations": null
+        },
+        "submission": {
+          "records": 0,
+          "invalidations_sum": 0,
+          "gt1": 0,
+          "max_invalidations": null
+        }
+      },
+      "input_categories": {
+        "8": {
+          "count": 128,
+          "caused_true": 0,
+          "caused_false": 128
+        }
+      }
+    },
+    "navigation": {
+      "execution_id": "c9aed2ff23ea4dbf869f87a6729117d2",
+      "retained": 240,
+      "kind_counts": [
+        96,
+        48,
+        48,
+        48,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "summary": {
+        "journal_lost": 0,
+        "journal_seen": 359,
+        "local_received": 0,
+        "local_enqueued": 0,
+        "local_dropped": 0,
+        "local_undrained": 0,
+        "eligible": 240,
+        "retained": 240,
+        "retention_dropped": 0,
+        "excluded": 102,
+        "pre_scope": 17,
+        "post_scope": 0,
+        "invalid_clock": 0,
+        "barrier_spans": 0,
+        "correlation_invalid": 0,
+        "input_unassociated": 96,
+        "unmatched_submission": 0,
+        "undrained_journal": 0,
+        "cancelled": false,
+        "source_coverage": "OFFERED_FINALIZED_JOURNAL_ONLY",
+        "unoffered_loss": "UNKNOWN",
+        "unfinalized_tail": "UNKNOWN",
+        "kind_counts": [
+          96,
+          48,
+          48,
+          48,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "draw": {
+        "duration": {
+          "count": 48,
+          "sum": 1421281400,
+          "min": 26572600,
+          "max": 36803500
+        },
+        "start_to_start": {
+          "count": 47,
+          "sum": 23497806800,
+          "min": 495556300,
+          "max": 503647700
+        },
+        "end_to_start": {
+          "count": 47,
+          "sum": 22109712500,
+          "min": 463415100,
+          "max": 474866700
+        },
+        "scope_start_to_first": 239983700
+      },
+      "submission": {
+        "duration": {
+          "count": 48,
+          "sum": 17285300,
+          "min": 251800,
+          "max": 627700
+        },
+        "start_to_start": {
+          "count": 47,
+          "sum": 23502322700,
+          "min": 491824800,
+          "max": 508310900
+        },
+        "end_to_start": {
+          "count": 47,
+          "sum": 23485413800,
+          "min": 491477800,
+          "max": 507831200
+        },
+        "scope_start_to_first": 268907600
+      },
+      "dirty_to_draw": {
+        "count": 48,
+        "sum": 2663400,
+        "min": 40700,
+        "max": 94200
+      },
+      "coalescing": {
+        "draw": {
+          "records": 48,
+          "invalidations_sum": 48,
+          "gt1": 0,
+          "max_invalidations": 1
+        },
+        "submission": {
+          "records": 48,
+          "invalidations_sum": 48,
+          "gt1": 0,
+          "max_invalidations": 1
+        }
+      },
+      "input_categories": {
+        "1": {
+          "count": 48,
+          "caused_true": 48,
+          "caused_false": 0
+        },
+        "2": {
+          "count": 48,
+          "caused_true": 0,
+          "caused_false": 48
+        }
+      }
+    },
+    "combined": {
+      "execution_id": "e3a26ee9b0c74a31af219c8584cf77a5",
+      "retained": 256,
+      "kind_counts": [
+        167,
+        3,
+        85,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "summary": {
+        "journal_lost": 0,
+        "journal_seen": 4050,
+        "local_received": 1,
+        "local_enqueued": 1,
+        "local_dropped": 0,
+        "local_undrained": 0,
+        "eligible": 2962,
+        "retained": 256,
+        "retention_dropped": 2706,
+        "excluded": 1004,
+        "pre_scope": 85,
+        "post_scope": 0,
+        "invalid_clock": 0,
+        "barrier_spans": 0,
+        "correlation_invalid": 0,
+        "input_unassociated": 1898,
+        "unmatched_submission": 22,
+        "undrained_journal": 0,
+        "cancelled": false,
+        "source_coverage": "OFFERED_FINALIZED_JOURNAL_ONLY",
+        "unoffered_loss": "UNKNOWN",
+        "unfinalized_tail": "UNKNOWN",
+        "kind_counts": [
+          167,
+          3,
+          85,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "draw": {
+        "duration": {
+          "count": 85,
+          "sum": 2577681100,
+          "min": 26220900,
+          "max": 39890600
+        },
+        "start_to_start": {
+          "count": 84,
+          "sum": 2582824900,
+          "min": 26449100,
+          "max": 40205200
+        },
+        "end_to_start": {
+          "count": 84,
+          "sum": 33559700,
+          "min": 197500,
+          "max": 2207500
+        },
+        "scope_start_to_first": 30779800
+      },
+      "submission": {
+        "duration": {
+          "count": 0,
+          "sum": 0,
+          "min": null,
+          "max": null
+        },
+        "start_to_start": {
+          "count": 0,
+          "sum": 0,
+          "min": null,
+          "max": null
+        },
+        "end_to_start": {
+          "count": 0,
+          "sum": 0,
+          "min": null,
+          "max": null
+        },
+        "scope_start_to_first": null
+      },
+      "dirty_to_draw": {
+        "count": 85,
+        "sum": 16389200,
+        "min": 46100,
+        "max": 1981800
+      },
+      "coalescing": {
+        "draw": {
+          "records": 85,
+          "invalidations_sum": 151,
+          "gt1": 42,
+          "max_invalidations": 5
+        },
+        "submission": {
+          "records": 0,
+          "invalidations_sum": 0,
+          "gt1": 0,
+          "max_invalidations": null
+        }
+      },
+      "input_categories": {
+        "1": {
+          "count": 42,
+          "caused_true": 42,
+          "caused_false": 0
+        },
+        "2": {
+          "count": 43,
+          "caused_true": 0,
+          "caused_false": 43
+        },
+        "4": {
+          "count": 4,
+          "caused_true": 4,
+          "caused_false": 0
+        },
+        "5": {
+          "count": 4,
+          "caused_true": 4,
+          "caused_false": 0
+        },
+        "6": {
+          "count": 64,
+          "caused_true": 43,
+          "caused_false": 21
+        },
+        "8": {
+          "count": 10,
+          "caused_true": 0,
+          "caused_false": 10
+        }
+      }
+    }
+  },
+  "edge_cases": {
+    "scroll": "zero retained draws/submissions; performance NOT_MEASURED, not zero measured duration",
+    "navigation": "README max 474.867 ms matches the adjacent end-to-start maximum 474866700 ns after rounding. There are 47 adjacent pairs among 48 retained draws. No scope-initial sample is inferred; scope-start-to-first draw 239983700 ns is separate.",
+    "retention": "retained records are not event population; UNKNOWN unoffered loss and unfinalized tail preserved",
+    "paired_intervals": "no inference from absent paired fields; retained draw/submission timestamps are not Present/displayed endpoints"
+  },
+  "readme_denominator_correction": "README maxima match adjacent end-to-start gaps after rounding. Its denominator names n draw records, not the n-1 adjacent pairs; no initial scope interval is inferred or added. Scope-initial values are separate observations only.",
+  "transcription_correction": "The first independent-oracle regression detected an extra trailing zero in the copied scroll summary.kind_counts (11 entries); the original capture and independently counted kind_counts both have 10 entries. Removed only that duplicate zero; no production value or arithmetic expectation changed."
+}

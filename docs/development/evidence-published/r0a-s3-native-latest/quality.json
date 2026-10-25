@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "default_route": {
+    "command": "pwsh scripts/quality.ps1",
+    "exit_code": 0,
+    "elapsed_ms": 47296,
+    "passed": 532,
+    "failed": 0,
+    "ignored": 1
+  },
+  "feature_route": [
+    {
+      "operation": "clippy",
+      "exit_code": 0,
+      "elapsed_ms": 2831
+    },
+    {
+      "operation": "test",
+      "exit_code": 0,
+      "elapsed_ms": 20307,
+      "passed": 536,
+      "failed": 0,
+      "ignored": 1
+    },
+    {
+      "operation": "build",
+      "exit_code": 0,
+      "elapsed_ms": 1409
+    }
+  ],
+  "ignored_reason": "representation::tests::extended_summary_records_the_100k_curve is an exploratory demand-only curve, not an acceptance gate",
+  "native_ui": "NOT_RUN; no UI changed, actual affected-path smoke is offline replay CLI"
+}
