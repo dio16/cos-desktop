@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "round": 1,
+  "candidate": "f1e12dd59d96f4c9de89a4c0886bb92ce8715751",
+  "evidence_head": "7bfcd07168889cc99b003e7b02de2af93870dbd8",
+  "conversation_sha256": "sha256:12904fcd5968bd4287e9e121faba8a1e2ead547f935d9546637c4ad1106a194a",
+  "request_sha256": "sha256:425a99b8d5b016f329897be9569be3cd677105df42ea8659818ae381b9a6d3f5",
+  "assistant_ids": [
+    "a258e569-ea07-460e-8f87-25d0fe566859"
+  ],
+  "response_sha256": "sha256:7a8adc9ef76441bcab7e19d80aca9ae89179630647056f9ea721e8c4986f292a",
+  "two_full_reads_identical": true,
+  "streaming": false,
+  "completion_verified": true,
+  "verdict_parser_exit": 1,
+  "verdict": {
+    "blocking": 0,
+    "actionable": 1,
+    "excessive": 0,
+    "passLine": null,
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": false,
+    "sawPassLine": false
+  },
+  "first_unparsed_response": "review-response.txt (same HOLD 0/1/0; combined counts only; not treated as a completed parsed verdict and not used to start repairs)",
+  "finding": {
+    "id": "A-NB-S3N1-01",
+    "classification": "ACTIONABLE_NON_BLOCKING",
+    "subject": "storage.json top-level candidate attribution"
+  },
+  "repair": "docs-only rename and canonical gate-level candidate; no Gate rerun"
+}

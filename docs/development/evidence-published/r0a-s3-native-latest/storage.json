@@ -1,8 +1,13 @@
 {
   "schema_version": 1,
   "source_retained_by": "dev",
-  "candidate": "aa8c4207ec86961bb3ef2f79f09c891152363b9d",
-  "evidence_commit": "8b6994f",
+  "canonical_candidate_authority": "gates[].candidate",
+  "verified_candidates": [
+    "f1e12dd59d96f4c9de89a4c0886bb92ce8715751"
+  ],
+  "initial_candidate": "aa8c4207ec86961bb3ef2f79f09c891152363b9d",
+  "initial_evidence_commit": "8b6994f",
+  "initial_disposition": "superseded success only; the top-level initial_* pair is historical and never the current verification target",
   "gates": [
     {
       "gate_id": "d92180a1-6334-4292-bc93-0bb68ef582f7",
@@ -472,7 +477,6 @@
     {
       "gate_id": "782459d0-6ea0-4acc-9d5f-184fd8937faa",
       "candidate": "f1e12dd59d96f4c9de89a4c0886bb92ce8715751",
-      "evidence_commit": "42b65a0",
       "removed": [
         {
           "path": "<S3_REPAIRED_GATE_ROOT>/state/gates/782459d0-6ea0-4acc-9d5f-184fd8937faa/work/repo",
@@ -692,12 +696,13 @@
         "Gate authority/artifacts/logs",
         "ordinary source/target",
         "all other Gate workspaces/targets"
-      ]
+      ],
+      "evidence_retained_in_commit": "42b65a0",
+      "disposition": "current candidate verification"
     },
     {
       "gate_id": "805e3f56-23aa-4819-b718-fa7e0ff9e97f",
       "candidate": "f1e12dd59d96f4c9de89a4c0886bb92ce8715751",
-      "evidence_commit": "24c827c",
       "removed": [
         {
           "path": "<S3_REPAIRED_GATE_ROOT>/state/gates/805e3f56-23aa-4819-b718-fa7e0ff9e97f/work/repo",
@@ -1158,10 +1163,13 @@
         "Gate authority/artifacts/logs",
         "ordinary source/target",
         "all other Gate workspaces/targets"
-      ]
+      ],
+      "evidence_retained_in_commit": "24c827c",
+      "disposition": "current candidate verification"
     }
   ],
   "measurement": "logical file lengths, not allocated physical bytes",
   "total_logical_bytes_removed": 8163789652,
-  "total_dirs_removed": 10
+  "total_dirs_removed": 10,
+  "attribution_note": "Per-gate candidate and evidence_retained_in_commit are the authoritative bindings; gates[].disposition distinguishes the superseded pre-repair success. No Gate, artifact or integrity value changed in this documentation-only rename."
 }
