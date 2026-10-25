@@ -7,16 +7,16 @@
   },
   "identity": {
     "repository": {
-      "sha": "edfebdaff1857f20fcf77e1bcf8440a557aaa758",
+      "sha": "bcce8167591f6f142232b3c5ca7c5c14c7da5cdf",
       "dirty": false,
       "content_hash": {
         "status": "NOT_MEASURED",
         "reason": "source blobs verified separately"
       }
     },
-    "schema_hash": "sha256:772eed7fd2bcc71b929052eded3f7ec67c881a7261d06089806c7d037d8ee84e",
+    "schema_hash": "sha256:4369cd068880745f2c384f0fd5395f4038b1a4d55a3d89c224f3af0a3832444b",
     "definition_hash": "sha256:4ce0e2353d3a6db22b212790a52dcdf9ebe0e622df4a9056ea440650d21de1cb",
-    "driver_hash": "sha256:aa1e6080589d7c6454f2d5a6580f6fd96c0379a6d9e4d27a466982131e591554",
+    "driver_hash": "sha256:ee17f2b1a450253ebd508562647232684432e378f2a23e40e876deffa7dbaec5",
     "gpui_revision": "395def7a067b32ed598fcb3f048969ada9b54942",
     "build": {
       "profile": "dev",
@@ -25,7 +25,7 @@
       ],
       "flags": []
     },
-    "executable_sha256": "sha256:a86f3758813b6237bd15b1350e245800469d5654234901928ff6c267b7b20043",
+    "executable_sha256": "sha256:850b73a029b80fa8ad49d3cc5ac38a5683df8ae962d0a66f3f4fb282c0141ccb",
     "toolchain": {
       "rustc": "1.98.1",
       "cargo": "1.98.1",

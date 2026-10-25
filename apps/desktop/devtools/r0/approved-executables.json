@@ -80,6 +80,14 @@
       "helper_source_sha256": "sha256:5b585f8ea1adcea540fab97adff9449c0e2ea88af97e29d3f97d4bac522c8058",
       "helper_protocol": 2,
       "helper_relative_path": "target/debug/examples/r0_owner.exe"
+    },
+    {
+      "product_commit": "bcce8167591f6f142232b3c5ca7c5c14c7da5cdf",
+      "executable_sha256": "sha256:850b73a029b80fa8ad49d3cc5ac38a5683df8ae962d0a66f3f4fb282c0141ccb",
+      "helper_sha256": "sha256:4d64f7c3ab8074af0d507c51b70e1a2757de47763c0bf088390df9e4d803b3ec",
+      "helper_source_sha256": "sha256:5b585f8ea1adcea540fab97adff9449c0e2ea88af97e29d3f97d4bac522c8058",
+      "helper_protocol": 2,
+      "helper_relative_path": "target/debug/examples/r0_owner.exe"
     }
   ]
 }
