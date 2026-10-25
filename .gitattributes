@@ -1,1 +1,2 @@
-docs/development/evidence-published/** binary
+# Published evidence is stored with LF endings (see the per-directory README).
+* text eol=lf
