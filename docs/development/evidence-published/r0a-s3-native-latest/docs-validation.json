@@ -2,7 +2,12 @@
   "schema_version": 1,
   "mp_dc_cards": 62,
   "exact_single_owning_links": true,
-  "hard_prereqs_and_canonical_dag_unchanged": true,
-  "new_section_relative_links": 17,
+  "hard_prereqs_unchanged": true,
+  "canonical_dag_edges_unchanged": true,
+  "changed_card_bodies": [
+    "MP-R0A"
+  ],
+  "changed_card_scope": "MP-R0A status wording only; documented in section 19.53",
+  "new_section_relative_links": 20,
   "missing_links": 0
 }
