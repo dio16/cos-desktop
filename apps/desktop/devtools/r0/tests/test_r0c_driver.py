@@ -461,7 +461,9 @@ class BindingLossTests(unittest.TestCase):
             calls.append(1)
             return True
 
-        self.assertEqual(r0c_input.close_if_valid(lambda: False, close, post), "BINDING_LOST")
+        self.assertEqual(
+            r0c_input.close_after_actions(lambda: False, close, post, False), "BINDING_LOST"
+        )
         self.assertEqual(close["attempts"], 0)
         self.assertEqual(calls, [])
 
@@ -1188,6 +1190,78 @@ class CloseOutcomeR11Tests(unittest.TestCase):
                                       {"window_gone": False}, 0, 1),
             "PROBE_BINDING_LOST",
         )
+
+
+class DeliveryInvariantR12Tests(unittest.TestCase):
+    def test_delivered_true_requires_attempt_actual_and_not_suppressed(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        for field, value in (("attempted", False), ("actual_ns", None), ("suppressed", True)):
+            probe = probe_for(trace)
+            probe["actions"][0][field] = value
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "probe.json"
+                path.write_text(json.dumps(probe), encoding="utf-8")
+                _, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+                self.assertEqual(state, "CORRUPT")
+
+    def test_confirmed_deliveries_excludes_an_inconsistent_record(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = probe["actions"][:2]
+        probe["actions"][0]["delivered"] = False
+        probe["actions"][0]["attempted"] = False
+        probe["actions"][0]["classification"] = "failed"
+        self.assertEqual(r0c_driver.confirmed_deliveries(probe, trace), 1)
+
+
+class PostFailureR12Tests(unittest.TestCase):
+    def test_first_post_succeeds_second_fails_is_a_post_failure(self) -> None:
+        actions = [{"sequence": 0, "kind": "keyboard", "planned_ns": 0,
+                    "requested_hz": 20.0, "payload": {"key": "TAB"}}]
+        outcomes = [True, False]
+        posted: list[int] = []
+
+        def post(message) -> bool:
+            posted.append(message)
+            return outcomes.pop(0)
+
+        records, _, binding_lost = r0c_input.execute_actions(
+            actions, lambda: 1_000_000_000, lambda: True, lambda: True,
+            post, r0c.MAX_LAG_MS * 1_000_000,
+        )
+        self.assertFalse(binding_lost)
+        self.assertEqual(len(posted), 2)
+        self.assertEqual(len(records), 1)
+        self.assertFalse(records[0]["delivered"])
+        self.assertEqual(records[0]["classification"], "failed")
+        self.assertEqual(records[0]["excluded_reason"], "POST_MESSAGE_REFUSED")
+
+    def test_ownership_loss_before_the_post_is_not_a_post_failure(self) -> None:
+        actions = [{"sequence": 0, "kind": "keyboard", "planned_ns": 0,
+                    "requested_hz": 20.0, "payload": {"key": "TAB"}}]
+        posted: list[int] = []
+        records, _, binding_lost = r0c_input.execute_actions(
+            actions, lambda: 1_000_000_000, lambda: True, lambda: False,
+            lambda message: posted.append(message) or True,
+            r0c.MAX_LAG_MS * 1_000_000,
+        )
+        self.assertTrue(binding_lost)
+        self.assertEqual(posted, [])
+        self.assertEqual(records, [])
+
+    def test_close_checks_ownership_once(self) -> None:
+        close = {"attempts": 0, "posted": False, "window_gone": False}
+        checks: list[int] = []
+
+        def verify() -> bool:
+            checks.append(1)
+            return True
+
+        code = r0c_input.close_after_actions(verify, close, lambda: False, False)
+        self.assertEqual(code, "CLOSE_POST_FAILED")
+        self.assertEqual(len(checks), 1)
 
 
 class JournalRangeTests(unittest.TestCase):

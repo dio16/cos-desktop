@@ -368,13 +368,9 @@ def release_held(held: list[int], verify, post) -> bool:
     return True
 
 
-def close_if_valid(verify, close: dict, post) -> str:
-    """Return "" on success, or the distinct refusal reason."""
-    if not verify():
-        return "BINDING_LOST"
-    if not close_once(close, post):
-        return "CLOSE_POST_FAILED"
-    return ""
+def post_close_once(close: dict, post) -> str:
+    """Post WM_CLOSE exactly once; ownership is checked by the caller."""
+    return "" if close_once(close, post) else "CLOSE_POST_FAILED"
 
 
 def close_after_actions(verify, close: dict, post, binding_lost: bool) -> str:
@@ -387,7 +383,11 @@ def close_after_actions(verify, close: dict, post, binding_lost: bool) -> str:
     if binding_lost:
         close["refused"] = "BINDING_LOST"
         return "BINDING_LOST"
-    code = close_if_valid(verify, close, post)
+    # One ownership check with one responsibility: loss before the post.
+    if not verify():
+        close["refused"] = "BINDING_LOST"
+        return "BINDING_LOST"
+    code = post_close_once(close, post)
     if code:
         close["refused"] = code
     return code
@@ -444,7 +444,7 @@ def run(plan_path: Path, out_path: Path, title: str, generation: int,
         binding_lost = True
     close_code = close_after_actions(
         verify, close,
-        lambda: verify() and _post(user32, hwnd, WM_CLOSE, 0, 0),
+        lambda: _post(user32, hwnd, WM_CLOSE, 0, 0),
         binding_lost,
     )
     if close_code == "BINDING_LOST":

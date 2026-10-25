@@ -534,6 +534,13 @@ def probe_action_error(action: object, expected: dict) -> str:
     )
     if action["classification"] != expected_class:
         return "CLASSIFICATION_MISMATCH"
+    if action["delivered"] is True:
+        if (
+            action["attempted"] is not True
+            or action["actual_ns"] is None
+            or action["suppressed"] is not False
+        ):
+            return "DELIVERY_INVARIANT"
     if "excluded_reason" in action:
         reason = action["excluded_reason"]
         if type(reason) is not str or len(reason) > 512:
