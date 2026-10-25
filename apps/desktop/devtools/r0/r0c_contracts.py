@@ -650,8 +650,9 @@ def validate_result(document: Any) -> dict[str, Any]:
             or cleanup["cancelled"] is not False
         ):
             _fail("CLEANUP_UNCONFIRMED", "$.cleanup")
-        if probe_identity["generation"] is None or probe_identity["window_pid"] is None:
-            _fail("CLEANUP_UNCONFIRMED", "$.probe_identity")
+        if any(probe_identity[key] is None for key in
+               ("generation", "window_pid", "launcher_pid", "helper_pid")):
+            _fail("PROBE_IDENTITY_INCOMPLETE", "$.probe_identity")
     if "reason" in result:
         _string(result["reason"], "$.reason")
     return result

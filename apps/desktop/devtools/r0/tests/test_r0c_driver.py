@@ -54,7 +54,9 @@ def probe_for(trace: dict, *, generation: int = GENERATION, pid: int = OBSERVATI
             }
             for action in trace["actions"]
         ],
-        "close": {"posted": True},
+        "close": {"posted": True, "window_gone": True},
+        "binding_lost": False,
+        "cancelled": False,
     }
 
 
@@ -242,7 +244,8 @@ class ResultTests(unittest.TestCase):
             path = Path(directory) / "result.json"
             path.write_text(json.dumps(document), encoding="utf-8")
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
-                                     "output_dir": directory})()
+                                     "output_dir": directory,
+                                     "s2b_manifest": str(MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertEqual(caught.exception.code, "NOT_COMPLETE")
@@ -358,7 +361,8 @@ class RecomputeTests(unittest.TestCase):
             path = Path(directory) / "result.json"
             path.write_text(json.dumps(document), encoding="utf-8")
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
-                                     "output_dir": directory})()
+                                     "output_dir": directory,
+                                     "s2b_manifest": str(MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertIn(caught.exception.code,
@@ -370,7 +374,8 @@ class RecomputeTests(unittest.TestCase):
             path = Path(directory) / "result.json"
             path.write_text(json.dumps(document), encoding="utf-8")
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
-                                     "output_dir": directory})()
+                                     "output_dir": directory,
+                                     "s2b_manifest": str(MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertEqual(caught.exception.code, "EVIDENCE_MISSING")
@@ -565,6 +570,101 @@ class CleanupVerificationTests(unittest.TestCase):
         self.assertIsNone(candidate["probe_identity"]["window_pid"])
 
 
+class ProbeStateTests(unittest.TestCase):
+    def test_failure_reason_priority_is_deterministic(self) -> None:
+        cleanup = {"window_gone": True}
+        self.assertEqual(
+            r0c_driver.failure_reason("MISSING", None, 0, "", "", "", "", cleanup, 0, 1),
+            "PROBE_MISSING",
+        )
+        self.assertEqual(
+            r0c_driver.failure_reason("CORRUPT", None, 0, "", "", "", "", cleanup, 0, 1),
+            "PROBE_CORRUPT",
+        )
+        self.assertEqual(
+            r0c_driver.failure_reason(
+                "OK", {"binding_lost": True, "cancelled": False}, 0, "", "", "", "",
+                cleanup, 0, 1,
+            ),
+            "PROBE_BINDING_LOST",
+        )
+        self.assertEqual(
+            r0c_driver.failure_reason(
+                "OK", {"binding_lost": False, "cancelled": False}, 0, "", "", "JOURNAL_INVALID",
+                "", cleanup, 0, 1,
+            ),
+            "JOURNAL_INVALID",
+        )
+        self.assertEqual(
+            r0c_driver.failure_reason(
+                "OK", {"binding_lost": False, "cancelled": False}, 0, "", "", "", "",
+                {"window_gone": False}, 0, 1,
+            ),
+            "CLEANUP_UNCONFIRMED",
+        )
+
+    def test_missing_and_corrupt_probe_are_distinguished(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            self.assertEqual(r0c_driver.load_probe(path), (None, "MISSING"))
+            path.write_text("{not json", encoding="utf-8")
+            self.assertEqual(r0c_driver.load_probe(path), (None, "CORRUPT"))
+            path.write_text(json.dumps({"generation": 1}), encoding="utf-8")
+            self.assertEqual(r0c_driver.load_probe(path)[1], "OK")
+
+    def test_corrupt_probe_still_yields_a_failed_record(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = r0c_driver.fallback_probe(trace, "COS Desktop")
+        candidate = r0c_driver.assemble_result(
+            document, trace, probe, None, 1,
+            {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
+             "window_gone": False, "timed_out": False, "cancelled": False},
+            "FAILED", "PROBE_CORRUPT", limits(), 0, correspondence(), EXECUTION,
+        )
+        r0c.validate_result(candidate)
+        self.assertIsNone(candidate["probe_identity"]["window_pid"])
+
+    def test_complete_result_whose_probe_shows_binding_lost_is_rejected(self) -> None:
+        document = result()
+        probe = {"generation": document["probe_identity"]["generation"],
+                 "binding": {"bound": True,
+                             "launcher_pid": document["probe_identity"]["launcher_pid"],
+                             "helper_pid": document["probe_identity"]["helper_pid"]},
+                 "window": {"pid": document["probe_identity"]["window_pid"]},
+                 "actions": copy.deepcopy(document["actions"]),
+                 "time_correspondence": {
+                     "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
+                     "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
+                 },
+                 "binding_lost": True,
+                 "cancelled": True}
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            (output / "r0c-probe.json").write_text(json.dumps(probe), encoding="utf-8")
+            path = output / "result.json"
+            path.write_text(json.dumps(document), encoding="utf-8")
+            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
+                                     "output_dir": directory,
+                                     "s2b_manifest": str(MANIFEST)})()
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.verify(args)
+            self.assertEqual(caught.exception.code, "PROBE_BINDING_LOST")
+
+    def test_complete_result_with_null_identity_is_rejected(self) -> None:
+        document = copy.deepcopy(result())
+        document["probe_identity"]["helper_pid"] = None
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c.validate_result(document)
+        self.assertEqual(caught.exception.code, "PROBE_IDENTITY_INCOMPLETE")
+
+    def test_missing_s2b_evidence_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.check_s2b_bundle(Path(directory), str(MANIFEST), 120_000)
+            self.assertEqual(caught.exception.code, "EVIDENCE_MISSING")
+
+
 class JournalRangeTests(unittest.TestCase):
     def test_input_before_the_journal_starts_is_refused(self) -> None:
         self.assertEqual(r0c_driver.journal_containment(0, 100, 1_000, 5_000), "MISMATCH")
@@ -584,19 +684,22 @@ class ProbeBindingVerifyTests(unittest.TestCase):
     def test_a_result_with_altered_timestamps_is_rejected(self) -> None:
         document = result()
         probe = {"generation": document["probe_identity"]["generation"],
-                 "binding": {"launcher_pid": document["probe_identity"]["launcher_pid"],
+                 "binding": {"bound": True, "launcher_pid": document["probe_identity"]["launcher_pid"],
                              "helper_pid": document["probe_identity"]["helper_pid"]},
                  "window": {"pid": document["probe_identity"]["window_pid"]},
                  "actions": copy.deepcopy(document["actions"]),
                  "time_correspondence": {
                      "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
                      "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
-                 }}
+                 },
+                 "binding_lost": False,
+                 "cancelled": False}
         document["actions"][0]["actual_ns"] += 1_000_000
         with tempfile.TemporaryDirectory() as directory:
             path = self._write_evidence(directory, document, probe)
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
-                                     "output_dir": directory})()
+                                     "output_dir": directory,
+                                     "s2b_manifest": str(MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertIn(caught.exception.code, ("PROBE_MISMATCH", "CADENCE_MISMATCH"))
@@ -604,19 +707,22 @@ class ProbeBindingVerifyTests(unittest.TestCase):
     def test_probe_record_disagreement_is_rejected(self) -> None:
         document = result()
         probe = {"generation": document["probe_identity"]["generation"],
-                 "binding": {"launcher_pid": document["probe_identity"]["launcher_pid"],
+                 "binding": {"bound": True, "launcher_pid": document["probe_identity"]["launcher_pid"],
                              "helper_pid": document["probe_identity"]["helper_pid"]},
                  "window": {"pid": document["probe_identity"]["window_pid"]},
                  "actions": copy.deepcopy(document["actions"]),
                  "time_correspondence": {
                      "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
                      "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
-                 }}
+                 },
+                 "binding_lost": False,
+                 "cancelled": False}
         probe["actions"][0]["actual_ns"] += 1
         with tempfile.TemporaryDirectory() as directory:
             path = self._write_evidence(directory, document, probe)
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
-                                     "output_dir": directory})()
+                                     "output_dir": directory,
+                                     "s2b_manifest": str(MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertEqual(caught.exception.code, "PROBE_MISMATCH")
@@ -624,18 +730,21 @@ class ProbeBindingVerifyTests(unittest.TestCase):
     def test_probe_identity_mismatch_is_rejected(self) -> None:
         document = result()
         probe = {"generation": document["probe_identity"]["generation"] + 1,
-                 "binding": {"launcher_pid": document["probe_identity"]["launcher_pid"],
+                 "binding": {"bound": True, "launcher_pid": document["probe_identity"]["launcher_pid"],
                              "helper_pid": document["probe_identity"]["helper_pid"]},
                  "window": {"pid": document["probe_identity"]["window_pid"]},
                  "actions": copy.deepcopy(document["actions"]),
                  "time_correspondence": {
                      "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
                      "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
-                 }}
+                 },
+                 "binding_lost": False,
+                 "cancelled": False}
         with tempfile.TemporaryDirectory() as directory:
             path = self._write_evidence(directory, document, probe)
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
-                                     "output_dir": directory})()
+                                     "output_dir": directory,
+                                     "s2b_manifest": str(MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertEqual(caught.exception.code, "PROBE_IDENTITY_MISMATCH")
