@@ -1,0 +1,662 @@
+{
+  "evidence": [
+    "r0c/combined-manifest.json sha256:86c96d5caf086f5efecfd6ff3d6136650432602754df63a10a46d7baacfd55f5",
+    "raw/combined-driver.json sha256:0dc311c754d4c10964da2d30444d1eb38f85bf0b05fbfdd086895e189a4750e4"
+  ],
+  "manifest": {
+    "benchmark_revision": "r0c-g1",
+    "definition_hash": "sha256:019f316715f5d93a8684902573c74152a9702d65c69b03af1677fe273504e03e",
+    "scenario_id": "native-stress",
+    "scenario_version": "v1"
+  },
+  "result_version": 1,
+  "runs": [
+    {
+      "endpoints": [
+        {
+          "clock": "launcher-monotonic",
+          "correlation": "run identity",
+          "id": "process-launch",
+          "provider": "r0-driver",
+          "reason": "",
+          "status": "OBSERVED",
+          "unit": "launch",
+          "version": "s2a-s1"
+        },
+        {
+          "clock": "native-process-instant-v1",
+          "correlation": "window + lifetime",
+          "id": "input-dispatch",
+          "provider": "s2b-journal",
+          "reason": "",
+          "status": "OBSERVED",
+          "unit": "record",
+          "version": "e3a26ee9b0c7"
+        },
+        {
+          "clock": "native-process-instant-v1",
+          "correlation": "window + lifetime",
+          "id": "gpui-dirty",
+          "provider": "s2b-journal",
+          "reason": "",
+          "status": "OBSERVED",
+          "unit": "record",
+          "version": "e3a26ee9b0c7"
+        },
+        {
+          "clock": "native-process-instant-v1",
+          "correlation": "window + lifetime",
+          "id": "gpui-cpu-draw",
+          "provider": "s2b-journal",
+          "reason": "",
+          "status": "OBSERVED",
+          "unit": "record",
+          "version": "e3a26ee9b0c7"
+        },
+        {
+          "clock": "native-process-instant-v1",
+          "correlation": {
+            "reason": "no valid source; correlation cannot be declared",
+            "status": "NOT_MEASURED"
+          },
+          "id": "gpui-platform-submission",
+          "provider": "s2b-journal",
+          "reason": "NO_RETAINED_VALID_RECORD: no retained record for this kind in this run",
+          "status": "NOT_MEASURED",
+          "unit": "record",
+          "version": "e3a26ee9b0c7"
+        },
+        {
+          "clock": "native-process-instant-v1",
+          "correlation": {
+            "reason": "no valid source; correlation cannot be declared",
+            "status": "NOT_MEASURED"
+          },
+          "id": "local-surface-mutation",
+          "provider": "s2b-journal",
+          "reason": "NO_RETAINED_VALID_RECORD: no retained record for this kind in this run",
+          "status": "NOT_MEASURED",
+          "unit": "record",
+          "version": "e3a26ee9b0c7"
+        },
+        {
+          "clock": "native-process-instant-v1",
+          "correlation": {
+            "reason": "no valid source; correlation cannot be declared",
+            "status": "NOT_MEASURED"
+          },
+          "id": "local-notify",
+          "provider": "s2b-journal",
+          "reason": "NO_RETAINED_VALID_RECORD: no retained record for this kind in this run",
+          "status": "NOT_MEASURED",
+          "unit": "record",
+          "version": "e3a26ee9b0c7"
+        },
+        {
+          "clock": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "correlation": {
+            "reason": "no valid source; correlation cannot be declared",
+            "status": "NOT_MEASURED"
+          },
+          "id": "frame-requested",
+          "provider": {
+            "reason": "no approved source for this endpoint in this build",
+            "status": "NOT_MEASURED"
+          },
+          "reason": "NO_ENDPOINT: app-side only at the pin (N06)",
+          "status": "NOT_MEASURED",
+          "unit": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "version": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          }
+        },
+        {
+          "clock": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "correlation": {
+            "reason": "no valid source; correlation cannot be declared",
+            "status": "NOT_MEASURED"
+          },
+          "id": "frame-processing-started",
+          "provider": {
+            "reason": "no approved source for this endpoint in this build",
+            "status": "NOT_MEASURED"
+          },
+          "reason": "NO_ENDPOINT: no frame-processing-start source at the pin",
+          "status": "NOT_MEASURED",
+          "unit": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "version": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          }
+        },
+        {
+          "clock": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "correlation": {
+            "reason": "no valid source; correlation cannot be declared",
+            "status": "NOT_MEASURED"
+          },
+          "id": "gpu-submission",
+          "provider": {
+            "reason": "no approved source for this endpoint in this build",
+            "status": "NOT_MEASURED"
+          },
+          "reason": "NO_GPU_TIMESTAMP_QUERY: no GPU/D3D probe on this host",
+          "status": "NOT_MEASURED",
+          "unit": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "version": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          }
+        },
+        {
+          "clock": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "correlation": {
+            "reason": "no valid source; correlation cannot be declared",
+            "status": "NOT_MEASURED"
+          },
+          "id": "present-call",
+          "provider": {
+            "reason": "no approved source for this endpoint in this build",
+            "status": "NOT_MEASURED"
+          },
+          "reason": "NO_ENDPOINT: present-call is app-side only at the pin",
+          "status": "NOT_MEASURED",
+          "unit": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "version": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          }
+        },
+        {
+          "clock": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "correlation": {
+            "reason": "no valid source; correlation cannot be declared",
+            "status": "NOT_MEASURED"
+          },
+          "id": "presented-frame",
+          "provider": {
+            "reason": "no approved source for this endpoint in this build",
+            "status": "NOT_MEASURED"
+          },
+          "reason": "NO_DWM_ENDPOINT: no independent present/displayed probe",
+          "status": "NOT_MEASURED",
+          "unit": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "version": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          }
+        },
+        {
+          "clock": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "correlation": {
+            "reason": "no valid source; correlation cannot be declared",
+            "status": "NOT_MEASURED"
+          },
+          "id": "input-to-photon",
+          "provider": {
+            "reason": "no approved source for this endpoint in this build",
+            "status": "NOT_MEASURED"
+          },
+          "reason": "NO_END_TO_END_ENDPOINT: no OS input-to-photon probe",
+          "status": "NOT_MEASURED",
+          "unit": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "version": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          }
+        },
+        {
+          "clock": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "correlation": {
+            "reason": "no valid source; correlation cannot be declared",
+            "status": "NOT_MEASURED"
+          },
+          "id": "scanout",
+          "provider": {
+            "reason": "no approved source for this endpoint in this build",
+            "status": "NOT_MEASURED"
+          },
+          "reason": "NO_DISPLAY_DRIVER_PROBE: scanout is not observable on this host",
+          "status": "NOT_MEASURED",
+          "unit": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          },
+          "version": {
+            "reason": "no valid source",
+            "status": "NOT_MEASURED"
+          }
+        }
+      ],
+      "evidence": [
+        "capture-run/combined/s2b-capture.json sha256:05ca2515a40d910bf76b1f6811dfda227bd58bc6684be7bf5896b981ba69bc7c",
+        "capture-run/combined/s2b-observation.json sha256:18a81eb14bfc30114281f6db775ecf01c294a6f93b1a18d75ce3db8b8fde7ee2",
+        "capture-run/combined/ledger.json sha256:c1c5e1dbb582c42fa73e5121836c8dd259f8679ee0192ad32470de7b68de5c72",
+        "raw/combined-driver.json sha256:0dc311c754d4c10964da2d30444d1eb38f85bf0b05fbfdd086895e189a4750e4",
+        "r0c/combined-manifest.json sha256:86c96d5caf086f5efecfd6ff3d6136650432602754df63a10a46d7baacfd55f5",
+        "stall-gate UNVERIFIED: see the stall-gate metric; no present endpoint exists"
+      ],
+      "failures": [],
+      "frames": {
+        "displayed": null,
+        "dropped": null,
+        "eligibility": null,
+        "idle": null,
+        "missed": null,
+        "present": null,
+        "processed": 85,
+        "reason": "present/displayed and miss/drop/stall counters have no endpoint on this host; NOT_MEASURED, never zero",
+        "requested": null,
+        "rule": "counts of retained journal records: processed = gpui-cpu-draw intervals, submitted = gpui-platform-submission intervals; 0 means no retained record, not evidence of no activity, and these are not presented frames",
+        "stalled": null,
+        "submitted": 0
+      },
+      "instrumentation": {
+        "config": "approved capture path (S2A + passive S2B journal); synthetic PostMessage input",
+        "floor": "capture clock native-process-instant-v1; resolution/uncertainty NOT_MEASURED",
+        "loss": "journal_lost 0; unoffered source loss UNKNOWN by contract",
+        "overhead": "NOT_MEASURED: no approved instrumentation on/off pair",
+        "probes": {
+          "missing": [
+            "frame-requested",
+            "frame-processing-started",
+            "gpu-submission",
+            "present-call",
+            "presented-frame",
+            "input-to-photon",
+            "scanout"
+          ],
+          "supported": [
+            "process-launch",
+            "input-dispatch",
+            "gpui-dirty",
+            "gpui-cpu-draw",
+            "gpui-platform-submission",
+            "local-surface-mutation",
+            "local-notify"
+          ]
+        },
+        "revision": "g1",
+        "tool": "r0c-stress"
+      },
+      "metrics": [
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 167,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 167
+          },
+          "estimator": "none",
+          "id": "input-dispatch",
+          "method": "s2b-journal",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "record",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "record",
+          "validity": "OBSERVED retained records; requested 55.0 Hz, achieved key 20.04 Hz, move 30.041 Hz, wheel 5.041 Hz; messages key 500, move 750, wheel 125"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 3,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 3
+          },
+          "estimator": "none",
+          "id": "gpui-dirty",
+          "method": "s2b-journal",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "record",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "record",
+          "validity": "OBSERVED retained records; requested 55.0 Hz, achieved key 20.04 Hz, move 30.041 Hz, wheel 5.041 Hz; messages key 500, move 750, wheel 125"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 85,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 85
+          },
+          "estimator": "none",
+          "id": "gpui-cpu-draw",
+          "method": "s2b-journal",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "record",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "record",
+          "validity": "OBSERVED retained records; requested 55.0 Hz, achieved key 20.04 Hz, move 30.041 Hz, wheel 5.041 Hz; messages key 500, move 750, wheel 125"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 1375,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 1375
+          },
+          "estimator": "none",
+          "id": "input-requested",
+          "method": "driver-monotonic",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "second",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "hz",
+          "validity": "declared 55.0 Hz over 25 s; achieved key 20.04 Hz, move 30.041 Hz, wheel 5.041 Hz; messages key 500, move 750, wheel 125"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 2962,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 256
+          },
+          "estimator": "none",
+          "id": "journal-retained",
+          "method": "s2b-journal",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "record",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "record",
+          "validity": "OBSERVED retained of eligible; capture also reports retention_dropped 2706 and excluded 1004 (rejected before eligibility, so not modelled as excluded samples)"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 2962,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 2706
+          },
+          "estimator": "none",
+          "id": "journal-retention-dropped",
+          "method": "s2b-journal",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "record",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "record",
+          "validity": "OBSERVED records dropped by the 256-record retention cap"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 4050,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 1898
+          },
+          "estimator": "none",
+          "id": "journal-input-unassociated",
+          "method": "s2b-journal",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "record",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "record",
+          "validity": "OBSERVED input events with no window association (the pin's InputTiming has no window ID)"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 4050,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 0
+          },
+          "estimator": "none",
+          "id": "journal-lost",
+          "method": "s2b-journal",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "record",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "record",
+          "validity": "OBSERVED offered-position losses; unoffered source loss is UNKNOWN by contract"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 85,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 85
+          },
+          "estimator": "none",
+          "id": "draw-gap",
+          "method": "s2b-journal",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "interval",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "ms",
+          "validity": "OBSERVED internal journal gaps over retained draw intervals only: max 2.208 ms over 85 intervals, 0 over 50 ms; retention cap may truncate intervals and navigation cadence dominates its gaps; no present/displayed endpoint, so this is not a visible-frame stall measurement"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 85,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 85
+          },
+          "estimator": "none",
+          "id": "coalescing",
+          "method": "s2b-journal",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "record",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "record",
+          "validity": "OBSERVED 42 of 85 draw/submission records carry more than one invalidation (max 5); this is evidence that superseded dirty notifications coalesce, not a queue-depth measurement"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 0,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 0
+          },
+          "estimator": "none",
+          "id": "settle",
+          "method": "s2b-journal",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "run",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "ms",
+          "validity": "NOT_MEASURED: input records are incomplete (retention drops or window-unassociated inputs), so last-input anchoring is unavailable; only journal quiescence is observable"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 0,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 0
+          },
+          "estimator": "none",
+          "id": "queue-depth",
+          "method": "none",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "run",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "count",
+          "validity": "NOT_MEASURED: no queue-depth instrumentation; coalescing and retention counters are the only backlog evidence"
+        },
+        {
+          "counts": {
+            "censored": 0,
+            "eligible": 0,
+            "excluded": 0,
+            "failed": 0,
+            "observed": 0
+          },
+          "estimator": "none",
+          "id": "stall-gate",
+          "method": "present-endpoint",
+          "percentiles": {
+            "max": null,
+            "min": null,
+            "p50": null,
+            "p95": null,
+            "p99": null
+          },
+          "sample_unit": "run",
+          "spread": "one 30-second run; no estimator in S1",
+          "unit": "count",
+          "validity": "UNVERIFIED: no present/displayed/scanout endpoint on this host, so the \u00a711.1 visible-frame stall gate cannot be evaluated; no cause is inferred"
+        }
+      ],
+      "outliers": [],
+      "pair_id": "pair-r0c-combined",
+      "reason": "",
+      "resources": {
+        "devices": {
+          "count": null,
+          "generations": null,
+          "reason": "device generations not tracked",
+          "status": "NOT_MEASURED"
+        },
+        "gpu": {
+          "committed_bytes": null,
+          "dedicated_bytes": null,
+          "reason": "no GPU tool; VRAM high-water has no source",
+          "shared_bytes": null,
+          "status": "NOT_MEASURED"
+        },
+        "media": {
+          "cache_bytes": null,
+          "decoded_bytes": null,
+          "reason": "no media path",
+          "scratch_bytes": null,
+          "staging_bytes": null,
+          "status": "NOT_MEASURED"
+        },
+        "process": {
+          "private_bytes": null,
+          "reason": "no process CPU/working-set sampler in this build",
+          "status": "NOT_MEASURED",
+          "working_set_bytes": null
+        },
+        "sampling": "no process counters were sampled; the capture is the only observation"
+      },
+      "run_id": "run-r0c-combined",
+      "scenario_id": "native-stress",
+      "status": "OBSERVED",
+      "variant": "combined"
+    }
+  ]
+}

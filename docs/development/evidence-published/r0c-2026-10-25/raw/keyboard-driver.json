@@ -1,0 +1,26 @@
+{
+  "scenario": "keyboard",
+  "label": "keyboard Tab down/up pairs",
+  "requested_hz": 20.0,
+  "window": {
+    "title": "COS Desktop"
+  },
+  "close": {
+    "at_s": 40.004,
+    "hwnd": 2297238,
+    "posted": true
+  },
+  "input": "synthetic PostMessage input, not a real user session",
+  "messages": {
+    "key": 500
+  },
+  "spans_s": {
+    "key": 24.952
+  },
+  "achieved_hz": {
+    "key": 20.039
+  },
+  "wrapper_exit_code": 0,
+  "wrapper_stdout": "{\"ok\":true,\"scope\":\"SOURCE_BOUND_REPLAY\",\"execution_id\":\"a4fc67ef08f947f39e28ef2086fd0675\",\"disposition\":\"OBSERVED\",\"disposition_reason\":\"RETAINED_SOURCE_OBSERVATION\",\"retained\":256,\"retention_dropped\":2164,\"endpoints\":{\"input-dispatch\":{\"status\":\"OBSERVED\",\"reason\":\"RETAINED_SOURCE_RECORD\"},\"gpui-dirty\":{\"status\":\"OBSERVED\",\"reason\":\"RETAINED_SOURCE_RECORD\"},\"gpui-cpu-draw\":{\"status\":\"OBSERVED\",\"reason\":\"RETAINED_SOURCE_RECORD\"},\"gpui-platform-submission\":{\"status\":\"OBSERVED\",\"reason\":\"RETAINED_SOURCE_RECORD\"},\"local-surface-mutation\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NO_RETAINED_VALID_RECORD\"},\"local-notify\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NO_RETAINED_VALID_RECORD\"},\"app-main-entry\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"frame-request\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"first-frame\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"useful-shell\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"gpu-submission\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"present-call\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"present-return\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"present\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"displayed\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"scanout\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"},\"input-to-photon\":{\"status\":\"NOT_MEASURED\",\"reason\":\"NOT_EXPOSED_BY_SELECTED_PROBE\"}},\"full_coverage\":false}",
+  "wrapper_stderr": ""
+}

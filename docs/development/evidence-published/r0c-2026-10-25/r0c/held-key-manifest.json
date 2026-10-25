@@ -1,0 +1,242 @@
+{
+  "identity": {
+    "build": {
+      "features": [
+        "r0-s2b-instrumentation"
+      ],
+      "flags": [],
+      "profile": "dev"
+    },
+    "definition_hash": "sha256:ddf783d6964b99e68fb3f20a6fadf4e40a4ebc3bc21d752dc8abc28d3e1e8c1e",
+    "driver_hash": "sha256:ad9b2db3923c304beba8e2a077e2c586b4be5f0ec14156c96d8432667eb83402",
+    "executable_sha256": "sha256:850b73a029b80fa8ad49d3cc5ac38a5683df8ae962d0a66f3f4fb282c0141ccb",
+    "gpui_revision": "395def7a067b32ed598fcb3f048969ada9b54942",
+    "repository": {
+      "content_hash": {
+        "reason": "S1 emits no source content hash; the approved product_commit is the identity",
+        "status": "NOT_MEASURED"
+      },
+      "dirty": false,
+      "sha": "bcce8167591f6f142232b3c5ca7c5c14c7da5cdf"
+    },
+    "schema_hash": "sha256:4369cd068880745f2c384f0fd5395f4038b1a4d55a3d89c224f3af0a3832444b",
+    "toolchain": {
+      "cargo": "1.98.1",
+      "rustc": "1.98.1",
+      "target": "x86_64-pc-windows-msvc"
+    }
+  },
+  "machine": {
+    "background_contention": {
+      "reason": "no isolated desktop",
+      "status": "NOT_MEASURED"
+    },
+    "cpu": {
+      "logical_count": 16,
+      "model": "AMD Ryzen 7 3700X 8-Core Processor"
+    },
+    "displays": [
+      {
+        "dpi": 96,
+        "height": 1440,
+        "refresh_hz": 99,
+        "width": 3440
+      }
+    ],
+    "gpu": {
+      "adapter": "NVIDIA GeForce RTX 2080 SUPER",
+      "driver": "32.0.16.1742"
+    },
+    "os": {
+      "build": "26300",
+      "edition": "Microsoft Windows 11 Pro"
+    },
+    "power_profile": {
+      "reason": "power scheme not changed or verified",
+      "status": "NOT_MEASURED"
+    },
+    "ram_bytes": 34267746304,
+    "thermal_state": {
+      "reason": "thermal controls are not applied",
+      "status": "NOT_MEASURED"
+    },
+    "window": {
+      "geometry": "1280x832",
+      "occlusion": {
+        "reason": "no independent occlusion probe",
+        "status": "NOT_MEASURED"
+      },
+      "visibility": "VISIBLE"
+    }
+  },
+  "manifest_version": 1,
+  "scenario": {
+    "benchmark_revision": "r0c-g1",
+    "id": "native-stress",
+    "version": "v1"
+  },
+  "surface": {
+    "id": "shell",
+    "reason": "",
+    "status": "IMPLEMENTED"
+  },
+  "workload": {
+    "actions": [
+      {
+        "burst": 1,
+        "requested_cadence_hz": {
+          "reason": "no cadence driver",
+          "status": "NOT_MEASURED"
+        },
+        "step": "open-shell"
+      },
+      {
+        "burst": 750,
+        "requested_cadence_hz": 30.0,
+        "step": "drive-input"
+      },
+      {
+        "burst": 1,
+        "requested_cadence_hz": {
+          "reason": "one operator WM_CLOSE",
+          "status": "NOT_MEASURED"
+        },
+        "step": "close-window"
+      }
+    ],
+    "cache_actions": [],
+    "cache_state": {
+      "reason": "no authorised OS/GPU cache reset exists; true cold stays NOT_MEASURED",
+      "status": "NOT_MEASURED"
+    },
+    "distribution": "fixed-list",
+    "duration_ms": 30000,
+    "endpoints": [
+      {
+        "correlation": "window + lifetime",
+        "definition": "journal input-dispatch record",
+        "end": "record closed",
+        "id": "input-dispatch",
+        "start": "offered"
+      },
+      {
+        "correlation": "window + lifetime",
+        "definition": "journal gpui-dirty record",
+        "end": "record closed",
+        "id": "gpui-dirty",
+        "start": "offered"
+      },
+      {
+        "correlation": "window + lifetime",
+        "definition": "journal gpui-cpu-draw record",
+        "end": "record closed",
+        "id": "gpui-cpu-draw",
+        "start": "offered"
+      },
+      {
+        "correlation": "window + lifetime",
+        "definition": "journal gpui-platform-submission record",
+        "end": "record closed",
+        "id": "gpui-platform-submission",
+        "start": "offered"
+      },
+      {
+        "correlation": "window + lifetime",
+        "definition": "journal local-surface-mutation record",
+        "end": "record closed",
+        "id": "local-surface-mutation",
+        "start": "offered"
+      },
+      {
+        "correlation": "window + lifetime",
+        "definition": "journal local-notify record",
+        "end": "record closed",
+        "id": "local-notify",
+        "start": "offered"
+      },
+      {
+        "correlation": "declared",
+        "definition": "\u00a711.1 endpoint declared by the workload",
+        "end": "declared",
+        "id": "process-launch",
+        "start": "declared"
+      },
+      {
+        "correlation": "declared",
+        "definition": "\u00a711.1 endpoint declared by the workload",
+        "end": "declared",
+        "id": "frame-requested",
+        "start": "declared"
+      },
+      {
+        "correlation": "declared",
+        "definition": "\u00a711.1 endpoint declared by the workload",
+        "end": "declared",
+        "id": "frame-processing-started",
+        "start": "declared"
+      },
+      {
+        "correlation": "declared",
+        "definition": "\u00a711.1 endpoint declared by the workload",
+        "end": "declared",
+        "id": "gpu-submission",
+        "start": "declared"
+      },
+      {
+        "correlation": "declared",
+        "definition": "\u00a711.1 endpoint declared by the workload",
+        "end": "declared",
+        "id": "present-call",
+        "start": "declared"
+      },
+      {
+        "correlation": "declared",
+        "definition": "\u00a711.1 endpoint declared by the workload",
+        "end": "declared",
+        "id": "presented-frame",
+        "start": "declared"
+      },
+      {
+        "correlation": "declared",
+        "definition": "\u00a711.1 endpoint declared by the workload",
+        "end": "declared",
+        "id": "input-to-photon",
+        "start": "declared"
+      },
+      {
+        "correlation": "declared",
+        "definition": "\u00a711.1 endpoint declared by the workload",
+        "end": "declared",
+        "id": "scanout",
+        "start": "declared"
+      }
+    ],
+    "expected_state": "fixture shell driven by synthetic input; no canonical mutation",
+    "generator": {
+      "revision": "r0c-g1",
+      "seed": 7,
+      "version": "v1"
+    },
+    "order": "first",
+    "pair_id": "pair-r0c-held-key",
+    "parameters": {
+      "scenario_variant": "held-key"
+    },
+    "recovery": "operator closes the window; the launcher reaps any owned child",
+    "repetitions": 1,
+    "representation_policy": "encoded-only",
+    "run_id": "run-r0c-held-key",
+    "source": {
+      "identity": "fixture-task-184",
+      "sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52"
+    },
+    "tool": {
+      "config": "approved-capture-wrapper",
+      "name": "r0c-stress",
+      "version": "1"
+    },
+    "variant": "held-key",
+    "viewport": "1280x832",
+    "warmup": 0
+  }
+}
