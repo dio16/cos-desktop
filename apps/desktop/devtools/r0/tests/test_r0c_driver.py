@@ -978,6 +978,7 @@ class ActionContractR9Tests(unittest.TestCase):
                 {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
                  "window_gone": False, "timed_out": False, "cancelled": True},
                 "FAILED", "PROBE_BINDING_LOST", limits(), 3, correspondence(), EXECUTION,
+                probe_failures={"binding": "WINDOW_NOT_BOUND"},
             )
             r0c.validate_result(candidate)
             self.assertEqual(candidate["reason"], "PROBE_BINDING_LOST")
@@ -1079,6 +1080,7 @@ class PartialSummaryTests(unittest.TestCase):
                 {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
                  "window_gone": False, "timed_out": False, "cancelled": True},
                 "FAILED", "PROBE_BINDING_LOST", limits(), 3, correspondence(), EXECUTION,
+                probe_failures={"binding": "WINDOW_NOT_BOUND"},
             )
             self.assertEqual(result["delivered_actions"], 3)
             self.assertTrue((Path(directory) / "r0c-result.json").is_file())
@@ -1121,6 +1123,7 @@ class PartialSummaryTests(unittest.TestCase):
                 {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
                  "window_gone": False, "timed_out": False, "cancelled": True},
                 "FAILED", "PROBE_BINDING_LOST", limits(), 5, correspondence(), EXECUTION,
+                probe_failures={"binding": "WINDOW_NOT_BOUND"},
             )
             self.assertEqual(result["reason"], "PROBE_BINDING_LOST")
             self.assertEqual(result["delivered_actions"], 5)
@@ -1353,6 +1356,100 @@ class OrderIndependentVerifyTests(unittest.TestCase):
         )
         self.assertEqual(set(first), {"launcher", "title"})
         self.assertEqual(first, second)
+
+
+class ReasonPriorityR15Tests(unittest.TestCase):
+    def _probe(self, document: dict) -> dict:
+        probe = probe_for(r0c.plan_trace(document))
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        probe["binding"]["bound"] = False
+        probe["window"]["pid"] = probe["window"]["pid"] + 1
+        probe["binding"]["window_pid"] = probe["window"]["pid"]
+        return probe
+
+    def test_identity_mismatch_outranks_a_binding_loss(self) -> None:
+        document = manifest()
+        probe = self._probe(document)
+        failures = {"binding": "WINDOW_NOT_BOUND", "pid": "WINDOW_PID_MISMATCH"}
+        reason = r0c_driver.failure_reason(
+            "OK", probe, 0, "WINDOW_PID_MISMATCH", "", "",
+            {"window_gone": False}, 0, len(r0c.plan_trace(document)["actions"]),
+            failures,
+        )
+        self.assertEqual(reason, "WINDOW_PID_MISMATCH")
+
+    def test_a_bare_binding_loss_is_the_binding_reason(self) -> None:
+        document = manifest()
+        probe = self._probe(document)
+        probe["window"]["pid"] = probe["binding"]["window_pid"]
+        failures = {"binding": "WINDOW_NOT_BOUND"}
+        reason = r0c_driver.failure_reason(
+            "OK", probe, 0, "WINDOW_NOT_BOUND", "", "",
+            {"window_gone": False}, 0, len(r0c.plan_trace(document)["actions"]),
+            failures,
+        )
+        self.assertEqual(reason, "PROBE_BINDING_LOST")
+
+    def test_generation_launcher_and_title_reasons_are_persisted(self) -> None:
+        document = manifest()
+        for failures, expected in (
+            ({"launcher": "WINDOW_LAUNCHER_MISMATCH"}, "WINDOW_LAUNCHER_MISMATCH"),
+            ({"generation": "WINDOW_GENERATION_MISMATCH"}, "WINDOW_GENERATION_MISMATCH"),
+            ({"title": "WINDOW_IDENTITY_MISMATCH"}, "WINDOW_IDENTITY_MISMATCH"),
+        ):
+            probe = probe_for(r0c.plan_trace(document))
+            reason = r0c_driver.failure_reason(
+                "OK", probe, 0, "", "", "", {"window_gone": True}, 0, 1, failures,
+            )
+            self.assertEqual(reason, expected)
+
+    def test_failed_record_retains_the_full_failure_set_and_attribution(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = self._probe(document)
+        failures = {"binding": "WINDOW_NOT_BOUND", "pid": "WINDOW_PID_MISMATCH"}
+        with tempfile.TemporaryDirectory() as directory:
+            result = r0c_driver.finalize_result(
+                Path(directory), document, trace, probe, None, 1,
+                {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
+                 "window_gone": False, "timed_out": False, "cancelled": True},
+                "FAILED", "WINDOW_PID_MISMATCH", limits(), 0, correspondence(), EXECUTION,
+                probe_failures=failures,
+            )
+            self.assertEqual(result["reason"], "WINDOW_PID_MISMATCH")
+            self.assertEqual(result["probe_failures"], failures)
+            self.assertEqual(result["delivery_attribution"], "UNATTRIBUTED")
+            self.assertEqual(result["delivered_actions"], 0)
+            self.assertEqual(result["probe_self_reported_delivered"],
+                             len(trace["actions"]))
+            self.assertTrue((Path(directory) / "r0c-result.json").is_file())
+
+
+class DeliveryAttributionR15Tests(unittest.TestCase):
+    def test_unattributed_record_keeps_confirmed_and_self_reported_distinct(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        candidate = r0c_driver.assemble_result(
+            document, trace, probe, None, 1,
+            {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
+             "window_gone": False, "timed_out": False, "cancelled": True},
+            "FAILED", "WINDOW_PID_MISMATCH", limits(), 0, correspondence(), EXECUTION,
+            probe_failures={"pid": "WINDOW_PID_MISMATCH"},
+        )
+        r0c.validate_result(candidate)
+        self.assertEqual(candidate["delivery_attribution"], "UNATTRIBUTED")
+        self.assertEqual(candidate["delivered_actions"], 0)
+        self.assertEqual(candidate["probe_self_reported_delivered"], len(trace["actions"]))
+        r0c_driver.recompute(candidate, document)
+
+    def test_confirmed_attribution_rejects_a_delivery_mismatch(self) -> None:
+        document = result(status="FAILED")
+        document["delivered_actions"] = 0
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.recompute(document, manifest())
+        self.assertEqual(caught.exception.code, "DELIVERED_MISMATCH")
 
 
 class JournalRangeTests(unittest.TestCase):

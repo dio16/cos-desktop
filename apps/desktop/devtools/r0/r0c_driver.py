@@ -409,7 +409,7 @@ def journal_containment(input_start_journal_ns: int, input_end_journal_ns: int,
 def assemble_result(manifest: dict, trace: dict, probe: dict, journal: dict | None,
                     wrapper_exit: int, cleanup: dict, status: str, reason: str,
                     limits: dict, delivered_actions: int, correspondence: dict,
-                    execution_id: str) -> dict:
+                    execution_id: str, probe_failures: dict[str, str] | None = None) -> dict:
     actions = probe["actions"]
     requested: dict[str, float] = {}
     for action in manifest["actions"]:
@@ -448,6 +448,9 @@ def assemble_result(manifest: dict, trace: dict, probe: dict, journal: dict | No
         "cleanup": cleanup,
         "limits": limits,
         "delivered_actions": delivered_actions,
+        "delivery_attribution": "CONFIRMED" if not probe_failures else "UNATTRIBUTED",
+        "probe_self_reported_delivered": posted_successes(actions),
+        "probe_failures": dict(probe_failures or {}),
         "probe_identity": {
             "generation": probe.get("generation"),
             "window_pid": (probe.get("window") or {}).get("pid"),
@@ -738,12 +741,25 @@ def probe_exit_code(probe_exit: int) -> str:
 def failure_reason(probe_state: str, probe: dict | None, probe_exit: int,
                    probe_error: str, journal_error: str,
                    correspondence_error: str, cleanup: dict, delivered: int,
-                   planned: int) -> str:
-    """One deterministic priority order for the FAILED record's reason."""
+                   planned: int, failures: dict[str, str] | None = None) -> str:
+    """One deterministic priority order for the FAILED record's reason.
+
+    Verification failures outrank a bare binding loss: identity, trace and
+    classification problems must remain the primary persisted reason. A lost
+    binding is the reason only when it is the sole verification failure.
+    """
     if probe_state == "MISSING":
         return "PROBE_MISSING"
     if probe_state == "CORRUPT":
         return "PROBE_CORRUPT"
+    failures = failures or {}
+    if failures:
+        primary = priority_failure(failures)
+        if primary == "WINDOW_NOT_BOUND" and probe is not None and (
+            probe.get("binding_lost") is True or probe.get("cancelled") is True
+        ):
+            return "PROBE_BINDING_LOST"
+        return primary
     if probe is not None and (probe.get("binding_lost") is True or probe.get("cancelled") is True):
         return "PROBE_BINDING_LOST"
     if probe is not None and (probe.get("close") or {}).get("refused") == "CLOSE_POST_FAILED":
@@ -838,11 +854,12 @@ def finalize_result(output: Path, manifest: dict, trace: dict, probe: dict,
                     journal: dict | None, wrapper_exit: int, cleanup: dict,
                     status: str, reason: str, limits: dict, delivered_actions: int,
                     correspondence: dict, execution: str,
-                    probe_stderr: str = "") -> dict:
+                    probe_stderr: str = "",
+                    probe_failures: dict[str, str] | None = None) -> dict:
     """The single result-saving path used by launch and integration tests."""
     result = assemble_result(
         manifest, trace, probe, journal, wrapper_exit, cleanup, status, reason,
-        limits, delivered_actions, correspondence, execution,
+        limits, delivered_actions, correspondence, execution, probe_failures,
     )
     r0c.validate_result(result)
     if r0c.result_bytes(result) > MAX_RESULT_BYTES:
@@ -1009,6 +1026,7 @@ def launch(args: argparse.Namespace) -> int:
     reason = failure_reason(
         probe_state, probe, probe_exit, probe_error, journal_error,
         correspondence_error, cleanup, delivered_actions, len(trace["actions"]),
+        probe_failure_set,
     )
     if reason:
         status = "FAILED"
@@ -1017,6 +1035,7 @@ def launch(args: argparse.Namespace) -> int:
     result = finalize_result(
         output, manifest, trace, probe, journal, wrapper_exit, cleanup, status,
         reason, limits, delivered_actions, correspondence, execution, probe_stderr,
+        probe_failure_set,
     )
     print(json.dumps({
         "ok": status == "COMPLETE",
@@ -1076,7 +1095,13 @@ def recompute(result: dict, manifest: dict) -> dict:
             raise r0c.ContractError("CLASSIFICATION_MISMATCH", "$.actions")
         if action["delivered"]:
             delivered += 1
-    if delivered != result["delivered_actions"]:
+    self_reported = posted_successes(result["actions"])
+    if self_reported != result["probe_self_reported_delivered"]:
+        raise r0c.ContractError("DELIVERED_MISMATCH", "$.probe_self_reported_delivered")
+    if result["delivery_attribution"] == "CONFIRMED":
+        if delivered != result["delivered_actions"]:
+            raise r0c.ContractError("DELIVERED_MISMATCH", "$.delivered_actions")
+    elif result["delivered_actions"] > self_reported:
         raise r0c.ContractError("DELIVERED_MISMATCH", "$.delivered_actions")
     observed = _observed_cadence(
         result["actions"], None, list(result["requested_cadence"])

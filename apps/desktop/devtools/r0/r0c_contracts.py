@@ -507,11 +507,13 @@ def validate_result(document: Any) -> dict[str, Any]:
             "cleanup",
             "limits",
             "delivered_actions",
+            "delivery_attribution",
+            "probe_self_reported_delivered",
             "probe_identity",
             "time_correspondence",
             "status",
         ),
-        ("reason",),
+        ("reason", "probe_failures"),
     )
     if result["result_version"] != RESULT_VERSION:
         _fail("INVALID_VERSION", "$.result_version")
@@ -543,6 +545,23 @@ def validate_result(document: Any) -> dict[str, Any]:
         _number(application, "$.observed_cadence.application_processing_hz", 0.0, MAX_HZ)
     _string(result["cadence_note"], "$.cadence_note")
     delivered = _int(result["delivered_actions"], "$.delivered_actions", 0, MAX_ACTIONS)
+    attribution = _enum(
+        result["delivery_attribution"], "$.delivery_attribution",
+        ("CONFIRMED", "UNATTRIBUTED"),
+    )
+    self_reported = _int(
+        result["probe_self_reported_delivered"], "$.probe_self_reported_delivered",
+        0, MAX_ACTIONS,
+    )
+    if delivered > self_reported:
+        _fail("INVALID_VALUE", "$.delivered_actions")
+    if "probe_failures" in result:
+        failures = result["probe_failures"]
+        if not isinstance(failures, dict):
+            _fail("INVALID_TYPE", "$.probe_failures")
+        for key, value in failures.items():
+            _string(key, "$.probe_failures")
+            _string(value, f"$.probe_failures.{key}")
     actions = _array(result["actions"], "$.actions", nonempty=True, maximum=MAX_ACTIONS)
     for index, item in enumerate(actions):
         entry = _object(
@@ -650,6 +669,8 @@ def validate_result(document: Any) -> dict[str, Any]:
     if status == "COMPLETE":
         if delivered != len(actions):
             _fail("INVALID_VALUE", "$.delivered_actions")
+        if attribution != "CONFIRMED":
+            _fail("DELIVERY_ATTRIBUTION", "$.delivery_attribution")
         if (
             cleanup["wrapper_exit"] != 0
             or cleanup["child_reaped"] is not True
