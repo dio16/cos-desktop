@@ -461,7 +461,7 @@ class BindingLossTests(unittest.TestCase):
             calls.append(1)
             return True
 
-        self.assertFalse(r0c_input.close_if_valid(lambda: False, close, post))
+        self.assertEqual(r0c_input.close_if_valid(lambda: False, close, post), "BINDING_LOST")
         self.assertEqual(close["attempts"], 0)
         self.assertEqual(calls, [])
 
@@ -989,7 +989,7 @@ class ActionContractR9Tests(unittest.TestCase):
         lost = r0c_input.close_after_actions(
             lambda: False, close, lambda: posted.append(1) or True, False
         )
-        self.assertTrue(lost)
+        self.assertEqual(lost, "BINDING_LOST")
         self.assertEqual(close["refused"], "BINDING_LOST")
         self.assertEqual(posted, [])
         document = manifest()
@@ -1124,6 +1124,70 @@ class PartialSummaryTests(unittest.TestCase):
             self.assertEqual(result["delivered_actions"], 5)
             for name in ("r0c-plan.json", "r0c-probe.json", "r0c-result.json"):
                 self.assertTrue((Path(directory) / name).is_file())
+
+
+class PartialVerificationR11Tests(unittest.TestCase):
+    def test_partial_with_inconsistent_classification_is_corrupt(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = probe["actions"][:3]
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        probe["close"] = {"posted": False, "window_gone": False}
+        probe["actions"][0]["classification"] = "failed"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps(probe), encoding="utf-8")
+            _, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+            self.assertEqual(state, "CORRUPT")
+
+    def test_an_unverified_delivery_is_not_counted(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = probe["actions"][:3]
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        probe["binding"]["bound"] = False
+        probe["close"] = {"posted": False, "window_gone": False}
+        probe["actions"][1]["classification"] = "failed"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps(probe), encoding="utf-8")
+            resolved, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+            # The inconsistent record makes the probe corrupt rather than partial.
+            self.assertEqual(state, "CORRUPT")
+            # confirmed_deliveries never counts a record that fails its checks.
+            bad = copy.deepcopy(probe)
+            bad["actions"][1]["classification"] = "failed"
+            self.assertEqual(r0c_driver.confirmed_deliveries(bad, trace), 2)
+
+
+class CloseOutcomeR11Tests(unittest.TestCase):
+    def test_close_post_failure_is_distinct_from_binding_loss(self) -> None:
+        close = {"attempts": 0, "posted": False, "window_gone": False}
+        code = r0c_input.close_after_actions(
+            lambda: True, close, lambda: False, False
+        )
+        self.assertEqual(code, "CLOSE_POST_FAILED")
+        self.assertEqual(close["refused"], "CLOSE_POST_FAILED")
+        probe = {
+            "binding_lost": False,
+            "cancelled": False,
+            "close": {"posted": False, "window_gone": False, "refused": "CLOSE_POST_FAILED"},
+        }
+        reason = r0c_driver.failure_reason(
+            "OK", probe, 0, "", "", "", {"window_gone": False}, 0, 1
+        )
+        self.assertEqual(reason, "PROBE_CLOSE_FAILED")
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        self.assertEqual(
+            r0c_driver.failure_reason("OK", probe, 0, "", "", "",
+                                      {"window_gone": False}, 0, 1),
+            "PROBE_BINDING_LOST",
+        )
 
 
 class JournalRangeTests(unittest.TestCase):

@@ -527,6 +527,13 @@ def probe_action_error(action: object, expected: dict) -> str:
         return "ACTUAL_RANGE"
     if action["classification"] not in PROBE_CLASSIFICATIONS:
         return "CLASSIFICATION"
+    interval_ns = max(1, int(round(1_000_000_000 / expected["requested_hz"])))
+    expected_class = r0c.classify(
+        action["planned_ns"], action["actual_ns"], action["delivered"],
+        interval_ns=interval_ns, suppressed=action["suppressed"],
+    )
+    if action["classification"] != expected_class:
+        return "CLASSIFICATION_MISMATCH"
     if "excluded_reason" in action:
         reason = action["excluded_reason"]
         if type(reason) is not str or len(reason) > 512:
@@ -558,13 +565,26 @@ def verified_delivered(probe: dict, manifest: dict, trace: dict,
         ), ""
     except DriverError as error:
         # A partial run can fail the binding gate while still carrying verified
-        # posted successes; the summary must agree with the action detail.
-        return posted_successes(probe["actions"]), error.code
+        # posted successes; count only actions whose checks all passed.
+        return confirmed_deliveries(probe, trace), error.code
 
 
 def posted_successes(actions: list[dict]) -> int:
     """Count delivered actions from the detail itself, never from a summary."""
     return sum(1 for action in actions if action.get("delivered") is True)
+
+
+def confirmed_deliveries(probe: dict, trace: dict) -> int:
+    """Count only actions whose planned/classification/delivery checks all pass."""
+    planned = {action["sequence"]: action for action in trace["actions"]}
+    confirmed = 0
+    for action in probe.get("actions", []):
+        expected = planned.get(action.get("sequence"))
+        if expected is None or probe_action_error(action, expected):
+            continue
+        if action["delivered"] is True:
+            confirmed += 1
+    return confirmed
 
 
 def complete_partial(probe: dict, trace: dict) -> dict:
@@ -670,6 +690,8 @@ def failure_reason(probe_state: str, probe: dict | None, probe_exit: int,
         return "PROBE_CORRUPT"
     if probe is not None and (probe.get("binding_lost") is True or probe.get("cancelled") is True):
         return "PROBE_BINDING_LOST"
+    if probe is not None and (probe.get("close") or {}).get("refused") == "CLOSE_POST_FAILED":
+        return "PROBE_CLOSE_FAILED"
     if probe_error:
         return probe_error
     if probe_exit != 0:

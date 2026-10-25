@@ -368,27 +368,29 @@ def release_held(held: list[int], verify, post) -> bool:
     return True
 
 
-def close_if_valid(verify, close: dict, post) -> bool:
-    """Post WM_CLOSE only while the binding still holds; a second call is a no-op."""
+def close_if_valid(verify, close: dict, post) -> str:
+    """Return "" on success, or the distinct refusal reason."""
     if not verify():
-        return False
-    return close_once(close, post)
+        return "BINDING_LOST"
+    if not close_once(close, post):
+        return "CLOSE_POST_FAILED"
+    return ""
 
 
-def close_after_actions(verify, close: dict, post, binding_lost: bool) -> bool:
-    """Close, or attribute a failed pre-close re-verification to the binding loss.
+def close_after_actions(verify, close: dict, post, binding_lost: bool) -> str:
+    """Close, or return the distinct refusal code.
 
-    Returns True when the close was refused because the binding was lost (already
-    or immediately before the close). The caller then skips the confirmation wait
-    and records binding_lost.
+    ``BINDING_LOST`` means ownership was lost and no close was attempted;
+    ``CLOSE_POST_FAILED`` means ownership held but the post itself failed. They
+    must not be reported as the same outcome.
     """
     if binding_lost:
         close["refused"] = "BINDING_LOST"
-        return True
-    if not close_if_valid(verify, close, post):
-        close["refused"] = "BINDING_LOST"
-        return True
-    return False
+        return "BINDING_LOST"
+    code = close_if_valid(verify, close, post)
+    if code:
+        close["refused"] = code
+    return code
 
 
 def run(plan_path: Path, out_path: Path, title: str, generation: int,
@@ -440,13 +442,14 @@ def run(plan_path: Path, out_path: Path, title: str, generation: int,
     close = {"attempts": 0, "posted": False, "window_gone": False, "refused": ""}
     if not release_held(held, verify, post):
         binding_lost = True
-    if close_after_actions(
+    close_code = close_after_actions(
         verify, close,
         lambda: verify() and _post(user32, hwnd, WM_CLOSE, 0, 0),
         binding_lost,
-    ):
+    )
+    if close_code == "BINDING_LOST":
         binding_lost = True
-    if close_confirmation_required(binding_lost):
+    if close_confirmation_required(binding_lost) and close["posted"]:
         deadline = time.monotonic() + close_timeout_ms / 1000.0
         while time.monotonic() < deadline:
             if not user32.IsWindow(hwnd):
