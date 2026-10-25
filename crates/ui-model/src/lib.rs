@@ -856,6 +856,9 @@ impl DerivationCache {
                     Some(identity) => snapshot.tasks.get(identity),
                     None => snapshot.tasks.values().next(),
                 };
+                // The strip does not trust this map's provenance: `Index::derive` re-proves each
+                // Stop command's family and target task from its own receipt, so one task's Stop
+                // state can never be attributed to another task's rows.
                 intervention::Index::derive(publication, snapshot, task, &text.command_views)
             }
             None => intervention::Index::blocked(),

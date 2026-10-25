@@ -5,14 +5,18 @@
 //! authorized observation (connection freshness, Stop/settlement presentation, and
 //! unavailable/missing references). Nothing here invents Runtime severity or code,
 //! starts an action, or changes a canonical projection.
+//!
+//! A Stop row is attributed only through the command's own receipt (`operation` +
+//! `task_id`), so one task's Stop state can never be shown on another task's row set; a
+//! command whose ownership cannot be proven produces no Stop row at all.
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use app_core::{ObservationPublication, PublicationConnection, PublicationSource, SnapshotHandle};
 use desktop_protocol::{
-    ArtifactId, CandidateRef, CapabilitiesId, CommandId, EvaluationId, IterationId, OutcomeId,
-    TaskId, TaskSnapshot, TaskStatus,
+    ArtifactId, CandidateRef, CapabilitiesId, CommandId, CommandOperation, EvaluationId,
+    IterationId, OutcomeId, TaskId, TaskSnapshot, TaskStatus,
 };
 
 use crate::{StopDisplay, StopState};
@@ -223,9 +227,11 @@ pub struct Index {
 impl Index {
     /// Derive v1 rows from the authorized observation.
     ///
-    /// `task` is the selected task; `commands` is the same read-only Stop presentation
-    /// the shell already renders. No canonical issue collection exists, so tier 1 of
-    /// the ratified ordering is empty by construction.
+    /// `task` is the selected task; `commands` is the same read-only Stop presentation the shell
+    /// already renders. A Stop row is derived only for commands whose own receipt proves both that
+    /// they are Stop commands and that they target `task` (see [`stop_command_targets`]); anything
+    /// less produces no Stop row at all. No canonical issue collection exists, so tier 1 of the
+    /// ratified ordering is empty by construction.
     pub fn derive(
         publication: &ObservationPublication,
         snapshot: &SnapshotHandle,
@@ -240,12 +246,13 @@ impl Index {
         if let Some(row) = connection_row(publication, task_status.clone()) {
             rows.push(row);
         }
-        rows.extend(
-            commands
-                .iter()
-                .filter_map(|(identity, display)| stop_row(identity, display, task_status.clone())),
-        );
         if let Some(task) = task {
+            rows.extend(commands.iter().filter_map(|(identity, display)| {
+                if !stop_command_targets(publication, identity, &task.task_ref) {
+                    return None;
+                }
+                stop_row(identity, display, task_status.clone())
+            }));
             rows.extend(missing_reference_rows(snapshot, task, task_status));
         }
         Self {
@@ -381,6 +388,31 @@ fn stop_row(
     })
 }
 
+/// Whether the command's own receipt proves it is a Stop command that targets `task`.
+///
+/// Both facts exist only on [`desktop_protocol::CommandReceipt`]: `operation` names the command
+/// family and `task_id` the task the command targeted or created (when the server reported it).
+/// [`app_core::CommandReadView`] itself carries neither, and a receipt is present only for
+/// receipt-bearing states, so a command with no readable receipt, another family, an unknown
+/// target, or a receipt filed under a different identity is **unattributable**: it yields no Stop
+/// row at all. Ownership is never inferred from position, from the selected task, or from the
+/// publication containing only one task.
+fn stop_command_targets(
+    publication: &ObservationPublication,
+    identity: &CommandId,
+    task: &TaskId,
+) -> bool {
+    let Some(view) = publication.command_statuses.get(identity) else {
+        return false;
+    };
+    let Some(receipt) = view.receipt.as_ref() else {
+        return false;
+    };
+    receipt.command_id == *identity
+        && receipt.operation == CommandOperation::StopTask
+        && receipt.task_id.as_ref() == Some(task)
+}
+
 fn missing_reference_rows(
     snapshot: &SnapshotHandle,
     task: &TaskSnapshot,
@@ -480,12 +512,13 @@ mod tests {
     use std::sync::Arc;
 
     use app_core::{
-        ObservationPublication, PublicationConnection, PublicationSource, SnapshotHandle,
+        CommandPresentation, CommandReadView, ObservationPublication, PublicationConnection,
+        PublicationSource, SnapshotHandle,
     };
     use desktop_protocol::{
-        ArtifactId, CandidateId, CandidateRef, CapabilitiesId, CommandId, Counter, EvaluationId,
-        IterationId, IterationSnapshot, OutcomeId, PhaseLabel, RunId, TaskId, TaskSnapshot,
-        TaskStatus,
+        ArtifactId, CandidateId, CandidateRef, CapabilitiesId, CommandId, CommandOperation,
+        CommandReceipt, Counter, EvaluationId, IterationId, IterationSnapshot, OutcomeId,
+        PhaseLabel, ReceiptState, RunId, TaskId, TaskSnapshot, TaskStatus,
     };
 
     use super::{Action, Index, Kind, Provenance, Reference, Row, RowIdentity};
@@ -561,22 +594,128 @@ mod tests {
         }
     }
 
+    /// A receipt that proves both the command family and the task it targeted or created.
+    fn receipt(
+        command: &CommandId,
+        operation: CommandOperation,
+        target: Option<&TaskId>,
+    ) -> CommandReceipt {
+        CommandReceipt {
+            command_id: command.clone(),
+            operation,
+            state: ReceiptState::Accepted,
+            task_id: target.cloned(),
+            accepted_at: None,
+            reject_reason: None,
+            effect_refs: Vec::new(),
+            dedupe_expires_at: None,
+            message: None,
+        }
+    }
+
+    fn command_view(
+        command: &CommandId,
+        operation: CommandOperation,
+        target: Option<&TaskId>,
+    ) -> CommandReadView {
+        CommandReadView {
+            presentation: CommandPresentation::ReceiptAvailable,
+            receipt: Some(receipt(command, operation, target)),
+            issue: None,
+        }
+    }
+
+    fn publication_with(
+        connection: PublicationConnection,
+        stale: bool,
+        views: Vec<(CommandId, CommandReadView)>,
+    ) -> ObservationPublication {
+        let mut publication = publication(connection, stale);
+        for (identity, view) in views {
+            publication.command_statuses.insert(identity, view);
+        }
+        publication
+    }
+
+    /// A command attributed to `task` by its own receipt, plus that publication view.
+    fn attributed_stop(
+        task: &TaskSnapshot,
+        command: &CommandId,
+        state: super::StopState,
+    ) -> (
+        BTreeMap<CommandId, super::StopDisplay>,
+        Vec<(CommandId, CommandReadView)>,
+    ) {
+        let commands = BTreeMap::from([(command.clone(), stop(state))]);
+        let views = vec![(
+            command.clone(),
+            command_view(command, CommandOperation::StopTask, Some(&task.task_ref)),
+        )];
+        (commands, views)
+    }
+
+    /// Stop-row identities in priority order; other kinds never affect the assertion.
+    fn stop_identities(index: &Index) -> Vec<RowIdentity> {
+        index
+            .rows()
+            .iter()
+            .filter(|row| row.kind == Kind::Stop)
+            .map(|row| row.identity.clone())
+            .collect()
+    }
+
+    fn other_task(status: TaskStatus) -> TaskSnapshot {
+        TaskSnapshot {
+            task_ref: TaskId::fixture("task/Task-200"),
+            display_id: "Task-200".to_owned(),
+            title: "Other task".to_owned(),
+            iteration_ref: None,
+            iteration_index: None,
+            capabilities_ref: CapabilitiesId::fixture("capabilities/other"),
+            ..task(status)
+        }
+    }
+
+    fn add_task(snapshot: &mut SnapshotHandle, task: &TaskSnapshot) {
+        let state = Arc::get_mut(snapshot).expect("snapshot has one owner");
+        state.tasks.insert(task.task_ref.clone(), task.clone());
+        state.capabilities.insert(
+            task.capabilities_ref.clone(),
+            desktop_protocol::CreativeCapabilities {
+                capabilities_ref: task.capabilities_ref.clone(),
+                scope: desktop_protocol::CapabilityScope::Task {
+                    task_id: task.task_ref.clone(),
+                },
+                commands: Vec::new(),
+                media: Vec::new(),
+                features: Vec::new(),
+                constraints: Vec::new(),
+                availability: desktop_protocol::SupportState::Supported,
+                reason: None,
+                projection_revision: Counter::from_u128(1),
+            },
+        );
+    }
+
     /// Three Stop conditions plus one connection row: four conditions across two kinds.
     fn grouped_strip() -> super::Strip {
         let task = task(TaskStatus::Active);
         let mut commands = BTreeMap::new();
+        let mut views = Vec::new();
         for (index, state) in [
             (1, super::StopState::Unknown),
             (2, super::StopState::AwaitingResponse),
             (3, super::StopState::Accepted),
         ] {
-            commands.insert(
-                CommandId::fixture(format!("command/stop-{index}")),
-                stop(state),
-            );
+            let identity = CommandId::fixture(format!("command/stop-{index}"));
+            commands.insert(identity.clone(), stop(state));
+            views.push((
+                identity.clone(),
+                command_view(&identity, CommandOperation::StopTask, Some(&task.task_ref)),
+            ));
         }
         let index = Index::derive(
-            &publication(PublicationConnection::Disconnected, false),
+            &publication_with(PublicationConnection::Disconnected, false, views),
             &snapshot(&task),
             Some(&task),
             &commands,
@@ -942,16 +1081,26 @@ mod tests {
     #[test]
     fn the_same_projection_renders_the_same_order_every_time() {
         let task = task(TaskStatus::Active);
-        let mut commands = BTreeMap::new();
-        commands.insert(
-            CommandId::fixture("command/stop"),
-            stop(super::StopState::Unknown),
-        );
-        commands.insert(
-            CommandId::fixture("command/stop-2"),
-            stop(super::StopState::AwaitingResponse),
-        );
-        let publication = publication(PublicationConnection::Disconnected, false);
+        let commands = BTreeMap::from([
+            (
+                CommandId::fixture("command/stop"),
+                stop(super::StopState::Unknown),
+            ),
+            (
+                CommandId::fixture("command/stop-2"),
+                stop(super::StopState::AwaitingResponse),
+            ),
+        ]);
+        let views = commands
+            .keys()
+            .map(|identity| {
+                (
+                    identity.clone(),
+                    command_view(identity, CommandOperation::StopTask, Some(&task.task_ref)),
+                )
+            })
+            .collect();
+        let publication = publication_with(PublicationConnection::Disconnected, false, views);
         let snapshot = snapshot(&task);
         let first = Index::derive(&publication, &snapshot, Some(&task), &commands);
         let second = Index::derive(&publication, &snapshot, Some(&task), &commands);
@@ -1055,31 +1204,43 @@ mod tests {
     #[test]
     fn stop_states_report_without_claiming_completion() {
         let task = task(TaskStatus::Active);
-        let mut commands = BTreeMap::new();
-        commands.insert(
-            CommandId::fixture("command/accepted"),
-            super::StopDisplay {
-                state: super::StopState::Accepted,
-                label: "Stop accepted".into(),
-                detail: "Acceptance is not task completion".into(),
-                manual_intervention: false,
-            },
+        let accepted = CommandId::fixture("command/accepted");
+        let reflected = CommandId::fixture("command/reflected");
+        let commands = BTreeMap::from([
+            (
+                accepted.clone(),
+                super::StopDisplay {
+                    state: super::StopState::Accepted,
+                    label: "Stop accepted".into(),
+                    detail: "Acceptance is not task completion".into(),
+                    manual_intervention: false,
+                },
+            ),
+            (
+                reflected.clone(),
+                super::StopDisplay {
+                    state: super::StopState::CanonicalReflected,
+                    label: "Stop effect reflected".into(),
+                    detail: "Task completion remains independently observed".into(),
+                    manual_intervention: false,
+                },
+            ),
+        ]);
+        let publication = publication_with(
+            PublicationConnection::Observing,
+            false,
+            vec![
+                (
+                    accepted.clone(),
+                    command_view(&accepted, CommandOperation::StopTask, Some(&task.task_ref)),
+                ),
+                (
+                    reflected.clone(),
+                    command_view(&reflected, CommandOperation::StopTask, Some(&task.task_ref)),
+                ),
+            ],
         );
-        commands.insert(
-            CommandId::fixture("command/reflected"),
-            super::StopDisplay {
-                state: super::StopState::CanonicalReflected,
-                label: "Stop effect reflected".into(),
-                detail: "Task completion remains independently observed".into(),
-                manual_intervention: false,
-            },
-        );
-        let index = Index::derive(
-            &publication(PublicationConnection::Observing, false),
-            &snapshot(&task),
-            Some(&task),
-            &commands,
-        );
+        let index = Index::derive(&publication, &snapshot(&task), Some(&task), &commands);
         assert_eq!(index.rows().len(), 1);
         let row = &index.rows()[0];
         assert_eq!(row.kind, Kind::Stop);
@@ -1092,13 +1253,10 @@ mod tests {
     #[test]
     fn v1_rows_offer_only_read_only_actions() {
         let task = task(TaskStatus::Active);
-        let mut commands = BTreeMap::new();
-        commands.insert(
-            CommandId::fixture("command/stop"),
-            stop(super::StopState::Unknown),
-        );
+        let command = CommandId::fixture("command/stop");
+        let (commands, views) = attributed_stop(&task, &command, super::StopState::Unknown);
         let index = Index::derive(
-            &publication(PublicationConnection::Disconnected, false),
+            &publication_with(PublicationConnection::Disconnected, false, views),
             &snapshot(&task),
             Some(&task),
             &commands,
@@ -1111,5 +1269,157 @@ mod tests {
             assert_eq!(row.provenance, Provenance::DesktopLocal);
             assert!(row.display_label().starts_with("Desktop-local · "));
         }
+    }
+
+    #[test]
+    fn a_stop_row_is_attributed_only_to_its_own_task() {
+        let task_a = task(TaskStatus::Active);
+        let task_b = other_task(TaskStatus::Active);
+        let mut snapshot = snapshot(&task_a);
+        add_task(&mut snapshot, &task_b);
+
+        let command = CommandId::fixture("command/stop-a");
+        let (commands, views) = attributed_stop(&task_a, &command, super::StopState::Accepted);
+        let publication = publication_with(PublicationConnection::Observing, false, views);
+
+        let under_a = Index::derive(&publication, &snapshot, Some(&task_a), &commands);
+        assert_eq!(
+            stop_identities(&under_a),
+            vec![RowIdentity::Stop(command.clone())],
+            "A's Stop is attributed to A through its own receipt"
+        );
+
+        // The same publication and command map derived for B carries no Stop row: the
+        // attribution is proven, never inferred from the selected task.
+        let under_b = Index::derive(&publication, &snapshot, Some(&task_b), &commands);
+        assert!(
+            stop_identities(&under_b).is_empty(),
+            "one task's Stop state must never appear on another task's rows"
+        );
+    }
+
+    #[test]
+    fn a_non_stop_command_yields_no_stop_row() {
+        let task = task(TaskStatus::Active);
+        let command = CommandId::fixture("command/create");
+        let commands = BTreeMap::from([(command.clone(), stop(super::StopState::Accepted))]);
+        let publication = publication_with(
+            PublicationConnection::Observing,
+            false,
+            vec![(
+                command.clone(),
+                command_view(&command, CommandOperation::CreateTask, Some(&task.task_ref)),
+            )],
+        );
+        let index = Index::derive(&publication, &snapshot(&task), Some(&task), &commands);
+        assert!(
+            stop_identities(&index).is_empty(),
+            "only a proven Stop command may produce a Stop row"
+        );
+    }
+
+    #[test]
+    fn a_stop_row_cannot_cross_task_scopes() {
+        let task_a = task(TaskStatus::Active);
+        let task_b = other_task(TaskStatus::Active);
+        let mut snapshot = snapshot(&task_a);
+        add_task(&mut snapshot, &task_b);
+        let command = CommandId::fixture("command/stop-a");
+        let (commands, views) = attributed_stop(&task_a, &command, super::StopState::Unknown);
+        let publication = publication_with(PublicationConnection::Disconnected, false, views);
+
+        // A -> B -> A: the row is derived for A each time and is never carried across to B.
+        let first_a = Index::derive(&publication, &snapshot, Some(&task_a), &commands);
+        let under_b = Index::derive(&publication, &snapshot, Some(&task_b), &commands);
+        let second_a = Index::derive(&publication, &snapshot, Some(&task_a), &commands);
+        assert_eq!(
+            stop_identities(&first_a),
+            vec![RowIdentity::Stop(command.clone())]
+        );
+        assert!(stop_identities(&under_b).is_empty());
+        assert_eq!(
+            stop_identities(&second_a),
+            vec![RowIdentity::Stop(command)],
+            "A's row returns as a fresh derivation of the same authorized state"
+        );
+    }
+
+    #[test]
+    fn a_stop_row_without_proven_ownership_fails_closed() {
+        let task = task(TaskStatus::Active);
+        let command = CommandId::fixture("command/stop");
+        let commands = BTreeMap::from([(command.clone(), stop(super::StopState::Unknown))]);
+        let snapshot = snapshot(&task);
+
+        // (a) The receipt proves the command family but not the target task.
+        let unknown_target = publication_with(
+            PublicationConnection::Observing,
+            false,
+            vec![(
+                command.clone(),
+                command_view(&command, CommandOperation::StopTask, None),
+            )],
+        );
+        assert!(
+            stop_identities(&Index::derive(
+                &unknown_target,
+                &snapshot,
+                Some(&task),
+                &commands
+            ))
+            .is_empty()
+        );
+
+        // (b) No readable receipt: CommandReadView carries neither family nor target.
+        let awaiting = publication_with(
+            PublicationConnection::Observing,
+            false,
+            vec![(
+                command.clone(),
+                CommandReadView {
+                    presentation: CommandPresentation::AwaitingResponse,
+                    receipt: None,
+                    issue: None,
+                },
+            )],
+        );
+        assert!(
+            stop_identities(&Index::derive(&awaiting, &snapshot, Some(&task), &commands))
+                .is_empty()
+        );
+
+        // (c) The publication holds no view for this identity at all.
+        let absent = publication(PublicationConnection::Observing, false);
+        assert!(
+            stop_identities(&Index::derive(&absent, &snapshot, Some(&task), &commands)).is_empty()
+        );
+
+        // (d) The receipt is filed under a different command identity, so attribution is
+        // inconsistent and cannot be trusted.
+        let inconsistent = publication_with(
+            PublicationConnection::Observing,
+            false,
+            vec![(
+                command.clone(),
+                CommandReadView {
+                    presentation: CommandPresentation::ReceiptAvailable,
+                    receipt: Some(receipt(
+                        &CommandId::fixture("command/other"),
+                        CommandOperation::StopTask,
+                        Some(&task.task_ref),
+                    )),
+                    issue: None,
+                },
+            )],
+        );
+        assert!(
+            stop_identities(&Index::derive(
+                &inconsistent,
+                &snapshot,
+                Some(&task),
+                &commands
+            ))
+            .is_empty()
+        );
     }
 }

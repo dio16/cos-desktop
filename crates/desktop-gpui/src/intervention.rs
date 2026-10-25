@@ -930,6 +930,24 @@ mod tests {
     }
 
     #[test]
+    fn a_stop_row_cannot_be_carried_across_task_scopes() {
+        let task_a = TaskId::fixture("task/a");
+        let task_b = TaskId::fixture("task/b");
+        let strip_a = strip(vec![group(Kind::Stop, vec![stop_row("command/stop-a")])]);
+        assert_eq!(
+            scoped_strip(strip_a.clone(), Some(&task_a), Some(&task_a))
+                .rows
+                .len(),
+            1,
+            "the owning task renders its Stop row"
+        );
+        assert!(
+            scoped_strip(strip_a, Some(&task_a), Some(&task_b)).is_empty(),
+            "one task's Stop row must never render under another task"
+        );
+    }
+
+    #[test]
     fn the_shell_applies_the_scope_gate_at_the_switch_and_at_render() {
         let shell = include_str!("lib.rs");
         assert!(
