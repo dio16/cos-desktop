@@ -67,7 +67,7 @@ The fourteen design-gated tasks are authorised to proceed, and the documented `P
 | DD-07 (history/reopen) | Approved for the documented behaviour. |
 | DD-22 (retention/export/split) | Approved for the documented bounded retention; any export path still requires its own secret-scanning evidence. |
 | DD-23 (release matrix) | Approved as a declared matrix; unmeasured rows stay `NOT_MEASURED`. |
-| DD-26 (inspector) and the remaining design-gated tasks | Approved against their existing DC text; nothing is added to a task's behaviour by this approval. |
+| DD-26 (inspector) and the remaining design-gated tasks | Approved against their existing DC text; nothing is added to a task's behaviour by this approval. **Record correction:** this row refers to the inspector's own gated behaviour, not to the DD-26 registry entry, which is the intervention-priority policy and was closed separately by [ADR-0011](ADR-0011-DD26-INTERVENTION-PRIORITY.md). |
 
 ## 6. Video
 
