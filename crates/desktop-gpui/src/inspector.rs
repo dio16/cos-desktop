@@ -38,6 +38,9 @@ impl Shell {
             .flex_col()
             .gap_2();
         if !authorized {
+            // A blocked observation invalidates disclosure state instead of merely
+            // skipping the sync, so re-observation starts collapsed (A1).
+            self.inspector_disclosure.invalidate();
             return panel
                 .child(
                     div()
@@ -213,6 +216,25 @@ impl Shell {
 
 #[cfg(test)]
 mod tests {
+    /// A blocked observation must invalidate disclosure before the early return, so a
+    /// later re-observation starts collapsed (A1).
+    #[test]
+    fn a_blocked_observation_invalidates_disclosure_before_the_early_return() {
+        let panel = include_str!("inspector.rs");
+        let unauthorized = panel
+            .find("if !authorized")
+            .expect("unauthorized branch exists");
+        let rest = &panel[unauthorized..];
+        let invalidate = rest
+            .find("invalidate()")
+            .expect("disclosure invalidation is called");
+        let early_return = rest.find("return panel").expect("early return exists");
+        assert!(
+            invalidate < early_return,
+            "invalidation must run before the unauthorized early return"
+        );
+    }
+
     /// The inspector must use the existing GPUI focus/action/accessibility boundary:
     /// no new mechanism is introduced for keyboard reachability (DC-MP-INS1).
     #[test]

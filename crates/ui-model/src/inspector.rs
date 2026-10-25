@@ -261,6 +261,16 @@ impl Disclosure {
         self.open.contains(&(section, Arc::<str>::from(revision)))
     }
 
+    /// Drop every disclosure record.
+    ///
+    /// Used when observation is blocked: a later re-observation must start collapsed
+    /// even when the identity and revision are unchanged (A1).
+    pub fn invalidate(&mut self) {
+        self.bound = None;
+        self.present = false;
+        self.open.clear();
+    }
+
     /// Drop disclosure keys whose revision is no longer current.
     pub fn prune(&mut self, current: &[(Section, Arc<str>)]) {
         self.open.retain(|(section, revision)| {
@@ -351,7 +361,13 @@ fn candidate_sections(
             mismatched_evaluations += 1;
             continue;
         }
-        revisions.push(revision_key(evaluation.projection_revision.clone()));
+        // The key must change when the referenced evaluation identity changes, even
+        // if its revision number is unchanged (A2).
+        revisions.push(format!(
+            "{}@{}",
+            evaluation.evaluation_ref.as_str(),
+            evaluation.projection_revision.as_str()
+        ));
         decisions.push(evaluation.decision.as_str().to_owned());
         evaluation_entries.push(evaluation_entry(evaluation, evaluation_entries.len()));
         for evidence in &evaluation.evidence_refs {
@@ -555,6 +571,43 @@ mod tests {
         // Same identity and revision returning is not stale current state.
         state.sync(Some(&viewed), true);
         assert!(!state.is_open(Section::Evidence, "1"));
+        assert_eq!(state.open_count(), 0);
+    }
+
+    #[test]
+    fn a_blocked_observation_invalidates_disclosure_even_with_the_same_revision() {
+        let mut state = Disclosure::default();
+        let viewed = candidate("a");
+        state.sync(Some(&viewed), true);
+        assert!(state.toggle(Section::Evaluation, "1"));
+        assert!(state.is_open(Section::Evaluation, "1"));
+        // Authorization withdrawn: the panel invalidates instead of skipping sync.
+        state.invalidate();
+        // Re-authorized with the same identity and the same revision.
+        state.sync(Some(&viewed), true);
+        assert!(
+            !state.is_open(Section::Evaluation, "1"),
+            "re-observation after a blocked gap starts collapsed"
+        );
+        assert_eq!(state.open_count(), 0);
+    }
+
+    #[test]
+    fn a_blocked_observation_still_starts_collapsed_after_identity_or_revision_changes() {
+        let mut state = Disclosure::default();
+        let a = candidate("a");
+        let b = candidate("b");
+        state.sync(Some(&a), true);
+        assert!(state.toggle(Section::Evidence, "1"));
+        state.invalidate();
+        state.sync(Some(&b), true);
+        assert!(!state.is_open(Section::Evidence, "1"));
+
+        state.sync(Some(&b), true);
+        assert!(state.toggle(Section::Evidence, "2"));
+        state.invalidate();
+        state.sync(Some(&b), true);
+        assert!(!state.is_open(Section::Evidence, "2"));
         assert_eq!(state.open_count(), 0);
     }
 

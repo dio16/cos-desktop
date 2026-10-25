@@ -2679,6 +2679,106 @@ mod tests {
     }
 
     #[test]
+    fn a_referenced_evaluation_identity_change_invalidates_the_disclosure_key() {
+        use super::inspector::{Disclosure, Section};
+
+        let candidate = inspector_candidate("a", "A", 1, &[EvaluationId::fixture("evaluation/a")]);
+        let mut cache = DerivationCache::default();
+        let first = derive(
+            &mut cache,
+            &publication(
+                inspector_snapshot(
+                    vec![candidate.clone()],
+                    vec![dock_iteration(1, vec![candidate.candidate_ref.clone()])],
+                    vec![inspector_evaluation(
+                        "evaluation/a",
+                        &candidate.candidate_ref,
+                        EvaluationDecision::Pass,
+                        Some(50.0),
+                        Some(0.5),
+                        vec![evidence(
+                            "evidence/a",
+                            EvidenceStatus::Available,
+                            Some("summary a"),
+                        )],
+                        1,
+                    )],
+                    vec![],
+                    None,
+                ),
+                1,
+                1,
+                1,
+            ),
+        );
+        // Same candidate identity, same revision number, different evaluation identity.
+        let swapped = inspector_candidate("a", "A", 1, &[EvaluationId::fixture("evaluation/b")]);
+        let second = derive(
+            &mut cache,
+            &publication(
+                inspector_snapshot(
+                    vec![swapped.clone()],
+                    vec![dock_iteration(1, vec![swapped.candidate_ref.clone()])],
+                    vec![inspector_evaluation(
+                        "evaluation/b",
+                        &swapped.candidate_ref,
+                        EvaluationDecision::Pass,
+                        Some(50.0),
+                        Some(0.5),
+                        vec![evidence(
+                            "evidence/b",
+                            EvidenceStatus::Available,
+                            Some("summary b"),
+                        )],
+                        1,
+                    )],
+                    vec![],
+                    None,
+                ),
+                1,
+                2,
+                2,
+            ),
+        );
+        let before = first
+            .inspector
+            .view(Some(&candidate.candidate_ref))
+            .sections[1]
+            .revision
+            .clone();
+        let after = second
+            .inspector
+            .view(Some(&candidate.candidate_ref))
+            .sections[1]
+            .revision
+            .clone();
+        assert_ne!(
+            before, after,
+            "the evaluation identity participates in the disclosure key"
+        );
+        assert_ne!(
+            first
+                .inspector
+                .view(Some(&candidate.candidate_ref))
+                .sections[2]
+                .revision,
+            second
+                .inspector
+                .view(Some(&candidate.candidate_ref))
+                .sections[2]
+                .revision,
+            "the evidence key follows the same composition"
+        );
+        let mut disclosure = Disclosure::default();
+        disclosure.sync(Some(&candidate.candidate_ref), true);
+        assert!(disclosure.toggle(Section::Evaluation, &before));
+        // Re-observation keeps the same candidate and revision number; the changed
+        // evaluation identity must not inherit the old open state.
+        disclosure.sync(Some(&candidate.candidate_ref), true);
+        assert!(!disclosure.is_open(Section::Evaluation, &after));
+    }
+
+    #[test]
     fn the_timeline_shows_only_iterations_with_rows_and_never_synthesises_a_node() {
         let snapshot = dock_snapshot(
             vec![dock_candidate("a", "A", 1), dock_candidate("c", "C", 3)],
