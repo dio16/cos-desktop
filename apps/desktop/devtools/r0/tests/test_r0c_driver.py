@@ -871,6 +871,67 @@ class StderrLogTests(unittest.TestCase):
             self.assertFalse(r0c_driver.write_stderr_log(Path(directory), "text"))
 
 
+class ProbeContractR8Tests(unittest.TestCase):
+    def test_an_uncontractable_probe_is_corrupt_before_write(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"][0]["classification"] = "fast"
+        with tempfile.TemporaryDirectory() as directory:
+            probe_path = Path(directory) / "probe.json"
+            probe_path.write_text(json.dumps(probe), encoding="utf-8")
+            resolved, state = r0c_driver.resolve_probe(probe_path, trace, "COS Desktop")
+            self.assertEqual(state, "CORRUPT")
+            self.assertEqual(len(resolved["actions"]), len(trace["actions"]))
+            candidate = r0c_driver.assemble_result(
+                document, trace, resolved, None, 1,
+                {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
+                 "window_gone": False, "timed_out": False, "cancelled": False},
+                "FAILED", "PROBE_CORRUPT", limits(), 0, correspondence(), EXECUTION,
+            )
+            r0c.validate_result(candidate)
+            out = Path(directory) / "r0c-result.json"
+            out.write_text(json.dumps(candidate), encoding="utf-8")
+            self.assertTrue(out.is_file())
+
+    def test_non_boolean_close_fields_are_corrupt(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        for value in (1, "true", None):
+            probe = probe_for(trace)
+            probe["close"]["posted"] = value
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "probe.json"
+                path.write_text(json.dumps(probe), encoding="utf-8")
+                self.assertEqual(r0c_driver.load_probe(path), (None, "CORRUPT"))
+
+
+class CloseConfirmationTests(unittest.TestCase):
+    def test_a_lost_binding_skips_the_confirmation_wait(self) -> None:
+        self.assertFalse(r0c_input.close_confirmation_required(True))
+        self.assertTrue(r0c_input.close_confirmation_required(False))
+        self.assertIsNone(r0c_input.close_target_ns(True, 1_000, 34_000))
+
+
+class CrossVolumeViewTests(unittest.TestCase):
+    def test_a_link_failure_falls_back_to_a_validated_copy(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "output"
+            output.mkdir()
+            for name in ("completion.json", "ledger.json", "run-id"):
+                (output / name).write_text("{}", encoding="utf-8")
+            view = Path(directory) / "view"
+            view.mkdir()
+
+            def fail_link(source, target):
+                raise OSError("cross-volume")
+
+            method = r0c_driver.build_bundle_view(output, view, link=fail_link)
+            self.assertEqual(method, "copy")
+            for name in ("completion.json", "ledger.json", "run-id"):
+                self.assertEqual((view / name).read_text(encoding="utf-8"), "{}")
+
+
 class JournalRangeTests(unittest.TestCase):
     def test_input_before_the_journal_starts_is_refused(self) -> None:
         self.assertEqual(r0c_driver.journal_containment(0, 100, 1_000, 5_000), "MISMATCH")

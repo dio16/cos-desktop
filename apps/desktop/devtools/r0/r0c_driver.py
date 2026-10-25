@@ -461,6 +461,9 @@ def probe_shape_error(probe: object) -> str:
         return "ACTIONS"
     if type(probe.get("binding_lost")) is not bool or type(probe.get("cancelled")) is not bool:
         return "STATE"
+    close = probe["close"]
+    if type(close.get("posted")) is not bool or type(close.get("window_gone")) is not bool:
+        return "CLOSE"
     if probe.get("generation") is not None and type(probe.get("generation")) is not int:
         return "GENERATION"
     for action in probe["actions"]:
@@ -497,14 +500,35 @@ def load_probe(path: Path) -> tuple[dict | None, str]:
     return document, "OK"
 
 
+PROBE_CLASSIFICATIONS = ("on-time", "early", "late", "suppressed", "failed")
+
+
+def probe_satisfies_contract(probe: dict, trace: dict) -> bool:
+    """Every probe field the result contract needs must already be valid."""
+    if probe_shape_error(probe):
+        return False
+    planned = {action["sequence"]: action for action in trace["actions"]}
+    if [action["sequence"] for action in probe["actions"]] != [
+        action["sequence"] for action in trace["actions"]
+    ]:
+        return False
+    for action in probe["actions"]:
+        expected = planned.get(action["sequence"])
+        if expected is None:
+            return False
+        if action["kind"] != expected["kind"] or action["planned_ns"] != expected["planned_ns"]:
+            return False
+        if action["classification"] not in PROBE_CLASSIFICATIONS:
+            return False
+    return True
+
+
 def resolve_probe(path: Path, trace: dict, title: str) -> tuple[dict, str]:
     """Return a contract-satisfiable probe, or the bounded fallback with CORRUPT."""
     probe, state = load_probe(path)
     if state != "OK":
         return fallback_probe(trace, title), state
-    planned = [action["sequence"] for action in trace["actions"]]
-    actual = [action.get("sequence") for action in probe.get("actions", [])]
-    if actual != planned:
+    if not probe_satisfies_contract(probe, trace):
         return fallback_probe(trace, title), "CORRUPT"
     return probe, "OK"
 
@@ -588,6 +612,35 @@ def require_observed_disposition(bundle: dict) -> None:
                             "$.journal.disposition")
 
 
+def build_bundle_view(output: Path, view: Path, link=os.link) -> str:
+    """Materialise the S2B view: hardlinks when possible, validated copy otherwise."""
+    method = "hardlink"
+    for entry in output.iterdir():
+        name = entry.name
+        if name in {"r0c-plan.json", "r0c-probe.json", "r0c-result.json", "r0c-probe.stderr.txt"}:
+            continue
+        if s2b_capture.MARKER.fullmatch(name):
+            if entry.is_symlink() or not entry.is_dir():
+                raise r0c.ContractError("EVIDENCE_TYPE", "$.journal")
+            s2b_capture.require_marker(output, name)
+            (view / name).mkdir()
+            continue
+        if name not in s2b_capture.ARTIFACT_FILES:
+            raise r0c.ContractError("EVIDENCE_UNEXPECTED_ENTRY", "$.journal")
+        if entry.is_symlink() or not entry.is_file():
+            raise r0c.ContractError("EVIDENCE_TYPE", "$.journal")
+        data = s2b_capture.read_pinned(entry, s2b_capture.ARTIFACT_FILES[name])
+        try:
+            link(entry, view / name)
+        except OSError:
+            # Cross-volume or link-hostile filesystem: same Pin-validated bytes,
+            # written into the view instead of linked.
+            method = "copy"
+            with (view / name).open("xb") as handle:
+                handle.write(data)
+    return method
+
+
 def check_s2b_bundle(output: Path, manifest_path: str, timeout_ms: int) -> dict:
     """Validate the existing S2B publication without modifying it.
 
@@ -607,23 +660,7 @@ def check_s2b_bundle(output: Path, manifest_path: str, timeout_ms: int) -> dict:
         with tempfile.TemporaryDirectory() as directory:
             view = Path(directory) / "output"
             view.mkdir()
-            for entry in output.iterdir():
-                name = entry.name
-                if name in known_r0c:
-                    continue
-                if s2b_capture.MARKER.fullmatch(name):
-                    if entry.is_symlink() or not entry.is_dir():
-                        raise r0c.ContractError("EVIDENCE_TYPE", "$.journal")
-                    s2b_capture.require_marker(output, name)
-                    (view / name).mkdir()
-                    continue
-                if name not in s2b_capture.ARTIFACT_FILES:
-                    raise r0c.ContractError("EVIDENCE_UNEXPECTED_ENTRY", "$.journal")
-                if entry.is_symlink() or not entry.is_file():
-                    raise r0c.ContractError("EVIDENCE_TYPE", "$.journal")
-                # Validate the original bytes/type/reparse attribute before linking.
-                s2b_capture.read_pinned(entry, s2b_capture.ARTIFACT_FILES[name])
-                os.link(entry, view / name)
+            build_bundle_view(output, view)
             return s2b_capture.verify_bundle(
                 Path(manifest_path).resolve(), view, timeout_ms
             )

@@ -279,6 +279,11 @@ def _sleep_until(target_ns: int) -> None:
             time.sleep(0)
 
 
+def close_confirmation_required(binding_lost: bool) -> bool:
+    """A lost binding cannot confirm a close on this window; do not wait."""
+    return not binding_lost
+
+
 def close_target_ns(binding_lost: bool, run_start_ns: int, close_after_ms: int) -> int | None:
     """A lost binding cancels immediately; the delayed close is not honoured."""
     if binding_lost or close_after_ms <= 0:
@@ -421,12 +426,13 @@ def run(plan_path: Path, out_path: Path, title: str, generation: int,
         binding_lost = True
     if not close_if_valid(verify, close, lambda: verify() and _post(user32, hwnd, WM_CLOSE, 0, 0)):
         close["refused"] = "BINDING_LOST"
-    deadline = time.monotonic() + close_timeout_ms / 1000.0
-    while time.monotonic() < deadline:
-        if not user32.IsWindow(hwnd):
-            close["window_gone"] = True
-            break
-        time.sleep(0.02)
+    if close_confirmation_required(binding_lost):
+        deadline = time.monotonic() + close_timeout_ms / 1000.0
+        while time.monotonic() < deadline:
+            if not user32.IsWindow(hwnd):
+                close["window_gone"] = True
+                break
+            time.sleep(0.02)
     document = {
         "probe_version": PROBE_VERSION,
         "generation": generation,
