@@ -1,36 +1,138 @@
 {
   "schema_version": 1,
-  "round": 1,
   "candidate": "f1e12dd59d96f4c9de89a4c0886bb92ce8715751",
-  "evidence_head": "7bfcd07168889cc99b003e7b02de2af93870dbd8",
-  "conversation_sha256": "sha256:12904fcd5968bd4287e9e121faba8a1e2ead547f935d9546637c4ad1106a194a",
-  "request_sha256": "sha256:425a99b8d5b016f329897be9569be3cd677105df42ea8659818ae381b9a6d3f5",
-  "assistant_ids": [
-    "a258e569-ea07-460e-8f87-25d0fe566859"
+  "final_evidence_head": "bd493a3cdffeb5d60994d1c8825b974ffedbdba1",
+  "rounds": [
+    {
+      "schema_version": 1,
+      "round": 1,
+      "candidate": "f1e12dd59d96f4c9de89a4c0886bb92ce8715751",
+      "evidence_head": "7bfcd07168889cc99b003e7b02de2af93870dbd8",
+      "conversation_sha256": "sha256:12904fcd5968bd4287e9e121faba8a1e2ead547f935d9546637c4ad1106a194a",
+      "request_sha256": "sha256:425a99b8d5b016f329897be9569be3cd677105df42ea8659818ae381b9a6d3f5",
+      "assistant_ids": [
+        "a258e569-ea07-460e-8f87-25d0fe566859"
+      ],
+      "response_sha256": "sha256:7a8adc9ef76441bcab7e19d80aca9ae89179630647056f9ea721e8c4986f292a",
+      "two_full_reads_identical": true,
+      "streaming": false,
+      "completion_verified": true,
+      "verdict_parser_exit": 1,
+      "verdict": {
+        "blocking": 0,
+        "actionable": 1,
+        "excessive": 0,
+        "passLine": null,
+        "parsed": true,
+        "conflict": false,
+        "partialFinal": false,
+        "incomplete": false,
+        "unreadable": false,
+        "clean": false,
+        "sawPassLine": false
+      },
+      "first_unparsed_response": "review-response.txt (same HOLD 0/1/0; combined counts only; not treated as a completed parsed verdict and not used to start repairs)",
+      "finding": {
+        "id": "A-NB-S3N1-01",
+        "classification": "ACTIONABLE_NON_BLOCKING",
+        "subject": "storage.json top-level candidate attribution"
+      },
+      "repair": "docs-only rename and canonical gate-level candidate; no Gate rerun"
+    },
+    {
+      "schema_version": 1,
+      "round": 2,
+      "candidate": "f1e12dd59d96f4c9de89a4c0886bb92ce8715751",
+      "evidence_head": "bd493a3cdffeb5d60994d1c8825b974ffedbdba1",
+      "reviewed_change_scope": "docs-only storage attribution plus prior review records; product source unchanged",
+      "conversation_sha256": "sha256:12904fcd5968bd4287e9e121faba8a1e2ead547f935d9546637c4ad1106a194a",
+      "request_sha256": "sha256:f936e0d7c61a403fc63ba1d9ccd659d60e7e8d5c15f841d9c7be67aa2254b271",
+      "request_ids": [
+        "c24a69bc-531c-4891-aa61-46f05b8ee56b"
+      ],
+      "assistant_ids": [
+        "1d65619e-5725-4055-97c0-3d9e209b691e"
+      ],
+      "response_sha256": "sha256:552b387bf2461f1971bde0ed7c58fb0f1e6c5fedc579706852274e0033829e00",
+      "streaming": false,
+      "two_full_reads_identical": true,
+      "read_separation_ms": 30156,
+      "completion_verification_exit": 0,
+      "verdict_parser_exit": 0,
+      "verdict": {
+        "blocking": 0,
+        "actionable": 0,
+        "excessive": 0,
+        "passLine": [
+          0,
+          0,
+          0
+        ],
+        "parsed": true,
+        "conflict": false,
+        "partialFinal": false,
+        "incomplete": false,
+        "unreadable": false,
+        "clean": true,
+        "sawPassLine": true
+      },
+      "closed_findings": [
+        {
+          "id": "A-NB-S3N1-01",
+          "status": "CLOSED",
+          "repair": "initial_candidate/initial_evidence_commit rename; gates[].candidate authoritative; verified_candidates only current product; no Gate rerun"
+        }
+      ],
+      "limited_closure": {
+        "slice": "MP-R0A-S3-N1",
+        "scope": "SOURCE / retained Native journal arithmetic / published record consistency",
+        "status": "LIMITED TECHNICALLY COMPLETE",
+        "excluded": [
+          "full SOURCE_BOUND_REPLAY",
+          "independent binary/source verification",
+          "Present/displayed/scanout/GPU/input-to-photon",
+          "visible stall attribution",
+          "queue/cancel/restoration",
+          "performance distributions",
+          "full MP-R0A",
+          "MP-R0C",
+          "R0D",
+          "FLOW2",
+          "Runtime",
+          "main/release"
+        ]
+      }
+    }
   ],
-  "response_sha256": "sha256:7a8adc9ef76441bcab7e19d80aca9ae89179630647056f9ea721e8c4986f292a",
-  "two_full_reads_identical": true,
-  "streaming": false,
-  "completion_verified": true,
-  "verdict_parser_exit": 1,
-  "verdict": {
-    "blocking": 0,
-    "actionable": 1,
-    "excessive": 0,
-    "passLine": null,
-    "parsed": true,
-    "conflict": false,
-    "partialFinal": false,
-    "incomplete": false,
-    "unreadable": false,
-    "clean": false,
-    "sawPassLine": false
-  },
-  "first_unparsed_response": "review-response.txt (same HOLD 0/1/0; combined counts only; not treated as a completed parsed verdict and not used to start repairs)",
-  "finding": {
-    "id": "A-NB-S3N1-01",
-    "classification": "ACTIONABLE_NON_BLOCKING",
-    "subject": "storage.json top-level candidate attribution"
-  },
-  "repair": "docs-only rename and canonical gate-level candidate; no Gate rerun"
+  "final": {
+    "verdict": {
+      "blocking": 0,
+      "actionable": 0,
+      "excessive": 0,
+      "passLine": [
+        0,
+        0,
+        0
+      ],
+      "parsed": true,
+      "conflict": false,
+      "partialFinal": false,
+      "incomplete": false,
+      "unreadable": false,
+      "clean": true,
+      "sawPassLine": true
+    },
+    "clean": true,
+    "assistant_ids": [
+      "1d65619e-5725-4055-97c0-3d9e209b691e"
+    ],
+    "request_ids": [
+      "c24a69bc-531c-4891-aa61-46f05b8ee56b"
+    ],
+    "response_sha256": "sha256:552b387bf2461f1971bde0ed7c58fb0f1e6c5fedc579706852274e0033829e00",
+    "two_full_reads_identical": true,
+    "read_separation_ms": 30156,
+    "verdict_parser_exit": 0,
+    "completion_verification_exit": 0
+  }
 }

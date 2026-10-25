@@ -2,52 +2,183 @@
 
 BLOCKING 0
 
-ACTIONABLE NON-BLOCKING 1
+ACTIONABLE NON-BLOCKING 0
 
 EXCESSIVE 0
 
-判定：HOLD — 前回判定から変更なし
+判定：PASS — A-NB-S3N1-01 CLOSED
 
-固定レビュー対象
+GitHubコネクタで固定SHAの実ファイルと変更差分を独立に確認しました。
 
-Repository：dio16/cos-desktop
+1. 固定レビュー対象
 
-Branch：dev
+項目
 
-製品候補：f1e12dd59d96f4c9de89a4c0886bb92ce8715751
+	
 
-証拠HEAD：7bfcd07168889cc99b003e7b02de2af93870dbd8
+確認結果
 
-対象：MP-R0A-S3-N1、DC-MP-R0A
 
-A-NB-S3N1-01 — storage.jsonの候補識別が曖昧
 
-種別：ACTIONABLE NON-BLOCKING
 
-対象ファイル：
+Repository
 
-docs/development/evidence-published/r0a-s3-native-latest/storage.json
+	
 
-問題：最上位のcandidateが修復前の旧候補aa8c4207ec86961bb3ef2f79f09c891152363b9dを示す一方、成功したQuality/Build Gateは製品候補f1e12dd59d96f4c9de89a4c0886bb92ce8715751を対象としています。
+dio16/cos-desktop
 
-必要修正：旧候補を示す最上位フィールドをinitial_candidate、initial_evidence_commitなど履歴上の意味が明確な名称へ変更し、各Gate固有のcandidateを正典とすること。
 
-修正条件：
 
-docs-only修正でよい。
 
-製品SOURCEの変更は不要。
+Branch
 
-Refine Quality/Build Gateの再実行は不要。
+	
 
-既存Gateの結果・成果物・digest・cleanup記録を変更しない。
+dev
 
-修正後の証拠HEADについて、当該指摘の解消のみ確認する。
 
-限定技術完了の扱い
 
-S3-N1の実装・算術・独立oracle・負例・Gateは技術的に妥当です。ただし、A-NB-S3N1-01の修正確認が完了するまで、0/0/0の最終closureは保留します。
 
-MP-R0A全体、MP-R0C、R0D、FLOW2、Runtime、main/releaseの承認には拡張しません。
+製品候補
 
-HOLD 0 / 1 / 0
+	
+
+f1e12dd59d96f4c9de89a4c0886bb92ce8715751
+
+
+
+
+証拠HEAD
+
+	
+
+bd493a3cdffeb5d60994d1c8825b974ffedbdba1
+
+
+
+
+前回証拠HEAD
+
+	
+
+7bfcd07168889cc99b003e7b02de2af93870dbd8
+
+
+
+
+変更範囲
+
+	
+
+docs-only、製品SOURCE変更なし
+
+差分はstorage.jsonの修正と、前回レビュー記録2ファイルの追加のみです。
+
+2. A-NB-S3N1-01の修正確認
+
+対象：docs/development/evidence-published/r0a-s3-native-latest/storage.json
+
+確認項目
+
+	
+
+判定
+
+
+
+
+旧候補をinitial_candidateへ変更
+
+	
+
+PASS
+
+
+
+
+旧証拠をinitial_evidence_commitへ変更
+
+	
+
+PASS
+
+
+
+
+旧候補をhistorical/supersededと明示
+
+	
+
+PASS
+
+
+
+
+canonical_candidate_authorityをgates[].candidateへ設定
+
+	
+
+PASS
+
+
+
+
+verified_candidatesが現製品候補のみ
+
+	
+
+PASS
+
+
+
+
+成功Quality/Build Gateのcandidate一致
+
+	
+
+PASS
+
+
+
+
+各現行Gateの証拠保持コミット明示
+
+	
+
+PASS
+
+
+
+
+既存Gateの検証値・artifact・digest・cleanup不変更
+
+	
+
+PASS
+
+
+
+
+削除記録10ディレクトリ、8,163,789,652 logical bytes不変更
+
+	
+
+PASS
+
+旧Gate d92180a1…はsupersededとして区別され、現行候補の検証には使用されていません。現行Quality 805e3f56…とBuild 782459d0…は、双方とも製品候補f1e12dd…へ正しく結び付いています。
+
+前回の候補識別の曖昧さは解消しています。追加修正は不要です。
+
+docs-only修正であり、Refine Gateの再実行も不要です。
+
+3. 限定closure
+
+MP-R0A-S3-N1のSOURCE・retained Native journal算術・公開記録整合性に限定した技術完了を承認します。
+
+既存の実装、独立oracle、負例、Quality/Build Gateの評価は維持します。
+
+未達境界も変更しません。full SOURCE_BOUND_REPLAY、独立binary/source検証、Present/displayed/GPU/input-to-photon、可視stall、queue/cancel/restoration、性能分布、MP-R0A/R0C全体、R0D、FLOW2、Runtime、main/releaseは今回のPASSに含まれません。
+
+本レビューではファイル変更、Gate再実行、Native UI操作を行っていません。
+
+PASS 0 / 0 / 0
