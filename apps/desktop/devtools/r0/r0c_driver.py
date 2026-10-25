@@ -501,36 +501,102 @@ def load_probe(path: Path) -> tuple[dict | None, str]:
 
 
 PROBE_CLASSIFICATIONS = ("on-time", "early", "late", "suppressed", "failed")
+ACTION_REQUIRED = {
+    "sequence", "kind", "planned_ns", "actual_ns", "attempted", "delivered",
+    "suppressed", "classification",
+}
+ACTION_OPTIONAL = {"excluded_reason"}
+ACTION_MAX_ACTUAL_NS = 2 * r0c.MAX_DURATION_MS * 1_000_000
+
+
+def probe_action_error(action: object, expected: dict) -> str:
+    """One action must be exactly the shape the result contract accepts."""
+    if not isinstance(action, dict):
+        return "ACTION"
+    keys = set(action)
+    if not ACTION_REQUIRED <= keys or keys - ACTION_REQUIRED - ACTION_OPTIONAL:
+        return "ACTION_FIELDS"
+    if action["sequence"] != expected["sequence"]:
+        return "SEQUENCE"
+    if action["kind"] != expected["kind"]:
+        return "KIND"
+    if action["planned_ns"] != expected["planned_ns"]:
+        return "PLANNED"
+    actual = action["actual_ns"]
+    if actual is not None and (type(actual) is not int or not (0 <= actual <= ACTION_MAX_ACTUAL_NS)):
+        return "ACTUAL_RANGE"
+    if action["classification"] not in PROBE_CLASSIFICATIONS:
+        return "CLASSIFICATION"
+    return ""
 
 
 def probe_satisfies_contract(probe: dict, trace: dict) -> bool:
-    """Every probe field the result contract needs must already be valid."""
+    """Every generated action must already satisfy the result contract."""
     if probe_shape_error(probe):
         return False
-    planned = {action["sequence"]: action for action in trace["actions"]}
     if [action["sequence"] for action in probe["actions"]] != [
         action["sequence"] for action in trace["actions"]
     ]:
         return False
-    for action in probe["actions"]:
-        expected = planned.get(action["sequence"])
-        if expected is None:
-            return False
-        if action["kind"] != expected["kind"] or action["planned_ns"] != expected["planned_ns"]:
-            return False
-        if action["classification"] not in PROBE_CLASSIFICATIONS:
+    for action, expected in zip(probe["actions"], trace["actions"]):
+        if probe_action_error(action, expected):
             return False
     return True
 
 
+def complete_partial(probe: dict, trace: dict) -> dict:
+    """Complete unexecuted actions after a legitimate binding-loss abort."""
+    executed = len(probe["actions"])
+    actions = list(probe["actions"])
+    for expected in trace["actions"][executed:]:
+        actions.append(
+            {
+                "sequence": expected["sequence"],
+                "kind": expected["kind"],
+                "planned_ns": expected["planned_ns"],
+                "actual_ns": None,
+                "attempted": False,
+                "delivered": False,
+                "suppressed": False,
+                "classification": "failed",
+                "excluded_reason": "NOT_EXECUTED_BINDING_LOST",
+            }
+        )
+    document = dict(probe)
+    document["actions"] = actions
+    return document
+
+
 def resolve_probe(path: Path, trace: dict, title: str) -> tuple[dict, str]:
-    """Return a contract-satisfiable probe, or the bounded fallback with CORRUPT."""
+    """Return a contract-satisfiable probe, or the bounded fallback with CORRUPT.
+
+    A structurally valid prefix of the planned actions is legitimate partial
+    evidence when the probe records a lost binding: the unexecuted actions are
+    completed as not-executed and the run is FAILED, never CORRUPT. Any other
+    mismatch is corruption and takes the bounded fallback path.
+    """
     probe, state = load_probe(path)
     if state != "OK":
         return fallback_probe(trace, title), state
-    if not probe_satisfies_contract(probe, trace):
-        return fallback_probe(trace, title), "CORRUPT"
-    return probe, "OK"
+    planned = trace["actions"]
+    sequences = [action["sequence"] for action in planned]
+    actual = [action.get("sequence") for action in probe["actions"]]
+    if actual == sequences:
+        if not probe_satisfies_contract(probe, trace):
+            return fallback_probe(trace, title), "CORRUPT"
+        return probe, "OK"
+    binding_lost = probe.get("binding_lost") is True or probe.get("cancelled") is True
+    if (
+        binding_lost
+        and actual == sequences[: len(actual)]
+        and len(set(actual)) == len(actual)
+        and actual
+    ):
+        for action, expected in zip(probe["actions"], planned[: len(actual)]):
+            if probe_action_error(action, expected):
+                return fallback_probe(trace, title), "CORRUPT"
+        return complete_partial(probe, trace), "PARTIAL"
+    return fallback_probe(trace, title), "CORRUPT"
 
 
 def fallback_probe(trace: dict, title: str) -> dict:

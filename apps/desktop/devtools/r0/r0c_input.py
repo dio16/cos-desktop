@@ -375,6 +375,22 @@ def close_if_valid(verify, close: dict, post) -> bool:
     return close_once(close, post)
 
 
+def close_after_actions(verify, close: dict, post, binding_lost: bool) -> bool:
+    """Close, or attribute a failed pre-close re-verification to the binding loss.
+
+    Returns True when the close was refused because the binding was lost (already
+    or immediately before the close). The caller then skips the confirmation wait
+    and records binding_lost.
+    """
+    if binding_lost:
+        close["refused"] = "BINDING_LOST"
+        return True
+    if not close_if_valid(verify, close, post):
+        close["refused"] = "BINDING_LOST"
+        return True
+    return False
+
+
 def run(plan_path: Path, out_path: Path, title: str, generation: int,
         excluded: set[int], max_lag_ms: int, close_timeout_ms: int, window_wait_ms: int,
         launcher_pid: int, close_after_ms: int = 0) -> int:
@@ -424,8 +440,12 @@ def run(plan_path: Path, out_path: Path, title: str, generation: int,
     close = {"attempts": 0, "posted": False, "window_gone": False, "refused": ""}
     if not release_held(held, verify, post):
         binding_lost = True
-    if not close_if_valid(verify, close, lambda: verify() and _post(user32, hwnd, WM_CLOSE, 0, 0)):
-        close["refused"] = "BINDING_LOST"
+    if close_after_actions(
+        verify, close,
+        lambda: verify() and _post(user32, hwnd, WM_CLOSE, 0, 0),
+        binding_lost,
+    ):
+        binding_lost = True
     if close_confirmation_required(binding_lost):
         deadline = time.monotonic() + close_timeout_ms / 1000.0
         while time.monotonic() < deadline:

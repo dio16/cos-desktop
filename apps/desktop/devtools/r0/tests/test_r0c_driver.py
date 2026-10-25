@@ -932,6 +932,84 @@ class CrossVolumeViewTests(unittest.TestCase):
                 self.assertEqual((view / name).read_text(encoding="utf-8"), "{}")
 
 
+class ActionContractR9Tests(unittest.TestCase):
+    def test_actual_ns_out_of_range_is_corrupt(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"][0]["actual_ns"] = 10**18
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps(probe), encoding="utf-8")
+            _, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+            self.assertEqual(state, "CORRUPT")
+
+    def test_an_extra_action_field_is_corrupt(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"][0]["payload"] = {"unexpected": True}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps(probe), encoding="utf-8")
+            _, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+            self.assertEqual(state, "CORRUPT")
+
+    def test_a_mid_run_binding_loss_is_partial_not_corrupt(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = probe["actions"][:3]
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        probe["close"] = {"posted": False, "window_gone": False}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps(probe), encoding="utf-8")
+            resolved, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+            self.assertEqual(state, "PARTIAL")
+            self.assertEqual(len(resolved["actions"]), len(trace["actions"]))
+            self.assertEqual(resolved["actions"][3]["excluded_reason"],
+                             "NOT_EXECUTED_BINDING_LOST")
+            candidate = r0c_driver.assemble_result(
+                document, trace, resolved, None, 1,
+                {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
+                 "window_gone": False, "timed_out": False, "cancelled": True},
+                "FAILED", "PROBE_BINDING_LOST", limits(), 3, correspondence(), EXECUTION,
+            )
+            r0c.validate_result(candidate)
+            self.assertEqual(candidate["reason"], "PROBE_BINDING_LOST")
+            out = Path(directory) / "r0c-result.json"
+            out.write_text(json.dumps(candidate), encoding="utf-8")
+            self.assertTrue(out.is_file())
+
+    def test_a_binding_loss_before_close_is_attributed_to_the_loss(self) -> None:
+        close = {"attempts": 0, "posted": False, "window_gone": False}
+        posted: list[int] = []
+        lost = r0c_input.close_after_actions(
+            lambda: False, close, lambda: posted.append(1) or True, False
+        )
+        self.assertTrue(lost)
+        self.assertEqual(close["refused"], "BINDING_LOST")
+        self.assertEqual(posted, [])
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        probe["close"] = {"posted": False, "window_gone": False}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps(probe), encoding="utf-8")
+            resolved, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+            self.assertEqual(state, "OK")
+            reason = r0c_driver.failure_reason(
+                "OK", resolved, 0, "", "", "",
+                {"window_gone": False}, len(resolved["actions"]), len(trace["actions"]),
+            )
+            self.assertEqual(reason, "PROBE_BINDING_LOST")
+
+
 class JournalRangeTests(unittest.TestCase):
     def test_input_before_the_journal_starts_is_refused(self) -> None:
         self.assertEqual(r0c_driver.journal_containment(0, 100, 1_000, 5_000), "MISMATCH")
