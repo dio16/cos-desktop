@@ -370,7 +370,8 @@ def journal_containment(input_start_journal_ns: int, input_end_journal_ns: int,
 
 def assemble_result(manifest: dict, trace: dict, probe: dict, journal: dict | None,
                     wrapper_exit: int, cleanup: dict, status: str, reason: str,
-                    limits: dict, delivered_actions: int, correspondence: dict) -> dict:
+                    limits: dict, delivered_actions: int, correspondence: dict,
+                    execution_id: str) -> dict:
     actions = probe["actions"]
     requested: dict[str, float] = {}
     for action in manifest["actions"]:
@@ -399,6 +400,7 @@ def assemble_result(manifest: dict, trace: dict, probe: dict, journal: dict | No
             "seed": manifest["scenario"]["seed"],
         },
         "trace_sha256": trace["trace_sha256"],
+        "execution_id": execution_id,
         "requested_cadence": {kind: requested[kind] for kind in requested},
         "observed_cadence": observed_cadence,
         "cadence_note": CADENCE_NOTE,
@@ -409,10 +411,10 @@ def assemble_result(manifest: dict, trace: dict, probe: dict, journal: dict | No
         "limits": limits,
         "delivered_actions": delivered_actions,
         "probe_identity": {
-            "generation": int(probe["generation"]),
-            "window_pid": int(probe["window"]["pid"]),
-            "launcher_pid": int(probe["binding"]["launcher_pid"]),
-            "helper_pid": int(probe["binding"]["helper_pid"]),
+            "generation": probe.get("generation"),
+            "window_pid": (probe.get("window") or {}).get("pid"),
+            "launcher_pid": (probe.get("binding") or {}).get("launcher_pid"),
+            "helper_pid": (probe.get("binding") or {}).get("helper_pid"),
         },
         "time_correspondence": correspondence,
         "status": status,
@@ -518,22 +520,23 @@ def launch(args: argparse.Namespace) -> int:
         probe = None
     if probe is None:
         probe = {
-            "generation": generation,
+            "generation": None,
             "binding": {"bound": False},
-            "window": {"pid": 0, "title": manifest["window"]["title"]},
+            "window": {"pid": None, "title": manifest["window"]["title"]},
             "actions": [
                 {
                     "sequence": action["sequence"],
                     "kind": action["kind"],
                     "planned_ns": action["planned_ns"],
                     "actual_ns": None,
+                    "attempted": False,
                     "delivered": False,
                     "suppressed": False,
                     "classification": "failed",
                 }
                 for action in trace["actions"]
             ],
-            "close": {"posted": False},
+            "close": {"posted": False, "window_gone": False},
         }
     close_posted = bool(probe.get("close", {}).get("posted"))
     journal = None
@@ -590,6 +593,7 @@ def launch(args: argparse.Namespace) -> int:
         "wrapper_exit": wrapper_exit,
         "child_reaped": capture_process.poll() is not None,
         "close_posted": close_posted,
+        "window_gone": bool(probe.get("close", {}).get("window_gone")),
         "timed_out": timed_out,
         "cancelled": cancelled,
     }
@@ -606,19 +610,23 @@ def launch(args: argparse.Namespace) -> int:
     reason = _result_reason(status, wrapper_exit, timed_out, close_posted)
     if probe_exit != 0:
         reason = "PROBE_" + (probe_stderr.strip().splitlines()[-1] if probe_stderr.strip() else "FAILED")
+    if not probe_path.exists():
+        status, reason = "FAILED", "PROBE_MISSING"
     if journal_error:
         status, reason = "FAILED", journal_error
     if probe_error:
         status, reason = "FAILED", probe_error
     if correspondence_error:
         status, reason = "FAILED", correspondence_error
+    if not cleanup["window_gone"]:
+        status, reason = "FAILED", "CLEANUP_UNCONFIRMED"
     if delivered_actions == 0:
         status, reason = "FAILED", "WORKLOAD_NOT_DELIVERED"
     elif delivered_actions != len(trace["actions"]):
         status, reason = "FAILED", "WORKLOAD_INCOMPLETE"
     result = assemble_result(
         manifest, trace, probe, journal, wrapper_exit, cleanup, status, reason,
-        limits, delivered_actions, correspondence,
+        limits, delivered_actions, correspondence, execution,
     )
     r0c.validate_result(result)
     if r0c.result_bytes(result) > MAX_RESULT_BYTES:
@@ -653,6 +661,21 @@ def recompute(result: dict, manifest: dict) -> dict:
     trace = r0c.plan_trace(manifest)
     if result["trace_sha256"] != trace["trace_sha256"]:
         raise r0c.ContractError("TRACE_MISMATCH", "$.trace_sha256")
+    expected_sequences = [action["sequence"] for action in trace["actions"]]
+    actual_sequences = [action["sequence"] for action in result["actions"]]
+    if actual_sequences != expected_sequences:
+        # Missing, duplicated or reordered entries are not a reproduction.
+        raise r0c.ContractError("TRACE_SEQUENCE_MISMATCH", "$.actions")
+    if len(set(actual_sequences)) != len(actual_sequences):
+        raise r0c.ContractError("TRACE_SEQUENCE_MISMATCH", "$.actions")
+    requested_expected: dict[str, float] = {}
+    for action in manifest["actions"]:
+        kind = action["kind"]
+        requested_expected[kind] = max(
+            requested_expected.get(kind, 0.0), float(action["requested_hz"])
+        )
+    if result["requested_cadence"] != requested_expected:
+        raise r0c.ContractError("REQUESTED_CADENCE_MISMATCH", "$.requested_cadence")
     planned = {action["sequence"]: action for action in trace["actions"]}
     delivered = 0
     for action in result["actions"]:
@@ -698,6 +721,39 @@ def recompute(result: dict, manifest: dict) -> dict:
     return {"delivered_actions": delivered, "actions": len(result["actions"])}
 
 
+def check_probe_identity(identity: dict, observation: dict) -> None:
+    """Bind the result's probe identity to the capture's stored identity."""
+    execution = str(observation["identity"]["execution_id"])
+    if len(execution) != 32:
+        raise r0c.ContractError("EXECUTION_ID_MISMATCH", "$.execution_id")
+    if identity.get("generation") != int(execution[:8], 16) & 0x7FFFFFFF:
+        raise r0c.ContractError("PROBE_GENERATION_MISMATCH", "$.probe_identity.generation")
+    if identity.get("window_pid") != observation["identity"]["pid"]:
+        raise r0c.ContractError("PROBE_PID_MISMATCH", "$.probe_identity.window_pid")
+
+
+def check_close(probe: dict, cleanup: dict) -> None:
+    """The probe's close record and the cleanup record must agree."""
+    close = probe.get("close") or {}
+    if close.get("posted") != cleanup.get("close_posted"):
+        raise r0c.ContractError("CLOSE_MISMATCH", "$.cleanup.close_posted")
+    if close.get("window_gone") != cleanup.get("window_gone"):
+        raise r0c.ContractError("CLOSE_MISMATCH", "$.cleanup.window_gone")
+
+
+def check_termination(ledger: dict, cleanup: dict) -> None:
+    """Cross-check the launcher's termination evidence; abnormal is never success."""
+    if (
+        ledger.get("timed_out") is not False
+        or ledger.get("exit_code") != 0
+        or ledger.get("child_reaped") is not True
+        or ledger.get("cleanup") != "complete"
+    ):
+        raise r0c.ContractError("TERMINATION_ABNORMAL", "$.cleanup")
+    if cleanup.get("timed_out") is not False or cleanup.get("wrapper_exit") != 0:
+        raise r0c.ContractError("TERMINATION_ABNORMAL", "$.cleanup")
+
+
 def verify(args: argparse.Namespace) -> int:
     manifest = r0c.load_manifest(args.manifest)
     result = r0c.validate_result(contracts.load_document(args.result, r0c.MAX_RESULT_BYTES))
@@ -738,6 +794,17 @@ def verify(args: argparse.Namespace) -> int:
         raise r0c.ContractError("EVIDENCE_MISSING", "$.journal")
     if result["journal"].get("source") != "s2b-journal":
         raise r0c.ContractError("EVIDENCE_MISSING", "$.journal.source")
+    observation = contracts.loads_document(observation_path.read_bytes().decode("utf-8"))
+    execution = str(observation["identity"]["execution_id"])
+    if result["execution_id"] != execution:
+        raise r0c.ContractError("EXECUTION_ID_MISMATCH", "$.execution_id")
+    check_probe_identity(result["probe_identity"], observation)
+    ledger_path = output / "ledger.json"
+    if not ledger_path.is_file():
+        raise r0c.ContractError("EVIDENCE_MISSING", "$.cleanup")
+    ledger = contracts.load_document(str(ledger_path), contracts.MAX_MANIFEST_BYTES)
+    check_termination(ledger, result["cleanup"])
+    check_close(probe, result["cleanup"])
     capture_bytes = capture_path.read_bytes()
     observation_bytes = observation_path.read_bytes()
     capture_sha = "sha256:" + hashlib.sha256(capture_bytes).hexdigest()

@@ -25,6 +25,7 @@ import r0c_input  # noqa: E402
 
 MANIFEST = ROOT / "manifests/r0c-s1-keyboard.json"
 GENERATION = 1234
+EXECUTION = "000004d2" + "0" * 24
 LAUNCHER_PID = 9001
 OBSERVATION_PID = 9002
 
@@ -105,8 +106,8 @@ def result(probe: dict | None = None, journal_document=_MISSING,
     return r0c_driver.assemble_result(
         document, trace, probe, journal_document, 0,
         {"wrapper_exit": 0, "child_reaped": True, "close_posted": True,
-         "timed_out": False, "cancelled": False},
-        status, reason, limits(), delivered, correspondence(),
+         "window_gone": True, "timed_out": False, "cancelled": False},
+        status, reason, limits(), delivered, correspondence(), EXECUTION,
     )
 
 
@@ -152,8 +153,8 @@ class ResultTests(unittest.TestCase):
         document_result = r0c_driver.assemble_result(
             document, trace, probe, journal(), 0,
             {"wrapper_exit": 0, "child_reaped": True, "close_posted": True,
-             "timed_out": False, "cancelled": False},
-            "COMPLETE", "", limits(), 1, correspondence(),
+             "window_gone": True, "timed_out": False, "cancelled": False},
+            "COMPLETE", "", limits(), 1, correspondence(), EXECUTION,
         )
         self.assertIsNone(document_result["observed_cadence"]["posting_attempt_hz"]["keyboard"])
         self.assertIsNone(document_result["observed_cadence"]["postmessage_success_hz"]["keyboard"])
@@ -228,8 +229,8 @@ class ResultTests(unittest.TestCase):
         candidate = r0c_driver.assemble_result(
             document, trace, probe, journal(), 0,
             {"wrapper_exit": 0, "child_reaped": True, "close_posted": True,
-             "timed_out": False, "cancelled": False},
-            "COMPLETE", "", limits(), 0, correspondence(),
+             "window_gone": True, "timed_out": False, "cancelled": False},
+            "COMPLETE", "", limits(), 0, correspondence(), EXECUTION,
         )
         with self.assertRaises(r0c.ContractError) as caught:
             r0c.validate_result(candidate)
@@ -462,6 +463,106 @@ class BindingLossTests(unittest.TestCase):
         self.assertFalse(r0c_input.binding_valid(False, 10, 10, 10))
         self.assertFalse(r0c_input.binding_valid(True, 11, 10, 10))
         self.assertFalse(r0c_input.binding_valid(True, 10, 10, 11))
+
+
+class TraceReproductionTests(unittest.TestCase):
+    def test_a_missing_action_is_rejected(self) -> None:
+        document = copy.deepcopy(result())
+        document["actions"].pop()
+        document["delivered_actions"] = len(document["actions"])
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.recompute(document, manifest())
+        self.assertEqual(caught.exception.code, "TRACE_SEQUENCE_MISMATCH")
+
+    def test_a_reordered_action_is_rejected(self) -> None:
+        document = copy.deepcopy(result())
+        document["actions"][0], document["actions"][1] = document["actions"][1], document["actions"][0]
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.recompute(document, manifest())
+        self.assertEqual(caught.exception.code, "TRACE_SEQUENCE_MISMATCH")
+
+    def test_a_duplicated_action_is_rejected(self) -> None:
+        document = copy.deepcopy(result())
+        document["actions"][1] = copy.deepcopy(document["actions"][0])
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.recompute(document, manifest())
+        self.assertEqual(caught.exception.code, "TRACE_SEQUENCE_MISMATCH")
+
+    def test_tampered_requested_cadence_is_rejected(self) -> None:
+        document = copy.deepcopy(result())
+        document["requested_cadence"]["keyboard"] = 21.0
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.recompute(document, manifest())
+        self.assertEqual(caught.exception.code, "REQUESTED_CADENCE_MISMATCH")
+
+
+class CleanupVerificationTests(unittest.TestCase):
+    def test_complete_requires_confirmed_cleanup(self) -> None:
+        document = copy.deepcopy(result())
+        document["cleanup"]["timed_out"] = True
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c.validate_result(document)
+        self.assertEqual(caught.exception.code, "CLEANUP_UNCONFIRMED")
+
+    def test_an_abnormal_termination_is_rejected(self) -> None:
+        ledger = {"timed_out": False, "exit_code": 1, "child_reaped": True, "cleanup": "complete"}
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.check_termination(ledger, {"timed_out": False, "wrapper_exit": 0})
+        self.assertEqual(caught.exception.code, "TERMINATION_ABNORMAL")
+        ledger["exit_code"] = 0
+        ledger["cleanup"] = "incomplete"
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.check_termination(ledger, {"timed_out": False, "wrapper_exit": 0})
+        self.assertEqual(caught.exception.code, "TERMINATION_ABNORMAL")
+
+    def test_a_close_record_mismatch_is_rejected(self) -> None:
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.check_close(
+                {"close": {"posted": False, "window_gone": True}},
+                {"close_posted": True, "window_gone": True},
+            )
+        self.assertEqual(caught.exception.code, "CLOSE_MISMATCH")
+
+    def test_probe_identity_is_rederived_from_the_observation(self) -> None:
+        observation = {"identity": {"execution_id": EXECUTION, "pid": 4321}}
+        r0c_driver.check_probe_identity(
+            {"generation": GENERATION, "window_pid": 4321}, observation
+        )
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.check_probe_identity(
+                {"generation": GENERATION + 1, "window_pid": 4321}, observation
+            )
+        self.assertEqual(caught.exception.code, "PROBE_GENERATION_MISMATCH")
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.check_probe_identity(
+                {"generation": GENERATION, "window_pid": 1}, observation
+            )
+        self.assertEqual(caught.exception.code, "PROBE_PID_MISMATCH")
+
+    def test_a_failed_record_with_an_absent_probe_is_valid(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = {
+            "generation": None,
+            "binding": {"bound": False},
+            "window": {"pid": None, "title": "COS Desktop"},
+            "actions": [
+                {"sequence": action["sequence"], "kind": action["kind"],
+                 "planned_ns": action["planned_ns"], "actual_ns": None,
+                 "attempted": False, "delivered": False, "suppressed": False,
+                 "classification": "failed"}
+                for action in trace["actions"]
+            ],
+            "close": {"posted": False, "window_gone": False},
+        }
+        candidate = r0c_driver.assemble_result(
+            document, trace, probe, None, 1,
+            {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
+             "window_gone": False, "timed_out": False, "cancelled": False},
+            "FAILED", "PROBE_MISSING", limits(), 0, correspondence(), EXECUTION,
+        )
+        r0c.validate_result(candidate)
+        self.assertIsNone(candidate["probe_identity"]["window_pid"])
 
 
 class JournalRangeTests(unittest.TestCase):

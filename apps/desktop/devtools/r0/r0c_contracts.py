@@ -488,6 +488,7 @@ def validate_result(document: Any) -> dict[str, Any]:
             "result_version",
             "scenario",
             "trace_sha256",
+            "execution_id",
             "requested_cadence",
             "observed_cadence",
             "cadence_note",
@@ -511,6 +512,7 @@ def validate_result(document: Any) -> dict[str, Any]:
     _enum(scenario["family"], "$.scenario.family", FAMILIES)
     _int(scenario["seed"], "$.scenario.seed", 0, (1 << 32) - 1)
     _digest(result["trace_sha256"], "$.trace_sha256")
+    _string(result["execution_id"], "$.execution_id", pattern=re.compile(r"[0-9a-f]{32}\Z"))
     requested = result["requested_cadence"]
     observed = result["observed_cadence"]
     if not isinstance(requested, dict) or not isinstance(observed, dict):
@@ -592,9 +594,12 @@ def validate_result(document: Any) -> dict[str, Any]:
             _fail("MISSING_FIELD", f"$.endpoints[{index}].reason")
         if status == "OBSERVED" and name in ENDPOINTS_NOT_MEASURED:
             _fail("PROMOTED_ENDPOINT", f"$.endpoints[{index}].status")
-    cleanup = _object(result["cleanup"], "$.cleanup", ("wrapper_exit", "child_reaped", "close_posted", "timed_out", "cancelled"))
+    cleanup = _object(
+        result["cleanup"], "$.cleanup",
+        ("wrapper_exit", "child_reaped", "close_posted", "window_gone", "timed_out", "cancelled"),
+    )
     _int(cleanup["wrapper_exit"], "$.cleanup.wrapper_exit", -1, 255)
-    for key in ("child_reaped", "close_posted", "timed_out", "cancelled"):
+    for key in ("child_reaped", "close_posted", "window_gone", "timed_out", "cancelled"):
         _boolean(cleanup[key], f"$.cleanup.{key}")
     limits = _object(result["limits"], "$.limits", ("max_actions", "max_lag_ms", "probe_timeout_ms", "capture_timeout_ms", "output_bytes"))
     for key in ("max_actions", "max_lag_ms", "probe_timeout_ms", "capture_timeout_ms", "output_bytes"):
@@ -604,7 +609,9 @@ def validate_result(document: Any) -> dict[str, Any]:
         ("generation", "window_pid", "launcher_pid", "helper_pid"),
     )
     for key in ("generation", "window_pid", "launcher_pid", "helper_pid"):
-        _int(probe_identity[key], f"$.probe_identity.{key}", 1, 1 << 31)
+        value = probe_identity[key]
+        if value is not None:
+            _int(value, f"$.probe_identity.{key}", 1, 1 << 31)
     correspondence = _object(
         result["time_correspondence"],
         "$.time_correspondence",
@@ -631,8 +638,20 @@ def validate_result(document: Any) -> dict[str, Any]:
         _enum(correspondence["journal_clock_mapping"], "$.time_correspondence.journal_clock_mapping",
               ("NONE",))
     status = _enum(result["status"], "$.status", ("COMPLETE", "FAILED", "CANCELLED", "NOT_RUN"))
-    if status == "COMPLETE" and delivered != len(actions):
-        _fail("INVALID_VALUE", "$.delivered_actions")
+    if status == "COMPLETE":
+        if delivered != len(actions):
+            _fail("INVALID_VALUE", "$.delivered_actions")
+        if (
+            cleanup["wrapper_exit"] != 0
+            or cleanup["child_reaped"] is not True
+            or cleanup["close_posted"] is not True
+            or cleanup["window_gone"] is not True
+            or cleanup["timed_out"] is not False
+            or cleanup["cancelled"] is not False
+        ):
+            _fail("CLEANUP_UNCONFIRMED", "$.cleanup")
+        if probe_identity["generation"] is None or probe_identity["window_pid"] is None:
+            _fail("CLEANUP_UNCONFIRMED", "$.probe_identity")
     if "reason" in result:
         _string(result["reason"], "$.reason")
     return result
