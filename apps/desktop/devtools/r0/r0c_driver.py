@@ -562,18 +562,32 @@ def probe_satisfies_contract(probe: dict, trace: dict) -> bool:
     return True
 
 
+# Only a recorded binding loss/partial run may fall back to the action detail.
+# An identity, ownership or integrity failure leaves the count unattributed (0).
+FALLBACK_VERIFY_CODES = frozenset({"WINDOW_NOT_BOUND"})
+
+
 def verified_delivered(probe: dict, manifest: dict, trace: dict,
                        pre_run_pids: set[int], launcher_pid: int,
                        observation_pid: int, generation: int) -> tuple[int, str]:
-    """Verify the probe; on failure, the summary still follows the action detail."""
+    """Verify the probe; the summary follows the detail only for a legitimate partial.
+
+    Fallback is permitted only when the probe itself records a binding loss or
+    cancellation AND the verification failure is the ownership gate that such a
+    run necessarily trips. Every other failure (identity, ownership without a
+    recorded loss, integrity) contributes zero confirmed deliveries.
+    """
     try:
         return verify_probe(
             probe, manifest, trace, pre_run_pids, launcher_pid, observation_pid, generation
         ), ""
     except DriverError as error:
-        # A partial run can fail the binding gate while still carrying verified
-        # posted successes; count only actions whose checks all passed.
-        return confirmed_deliveries(probe, trace), error.code
+        recorded_loss = (
+            probe.get("binding_lost") is True or probe.get("cancelled") is True
+        )
+        if recorded_loss and error.code in FALLBACK_VERIFY_CODES:
+            return confirmed_deliveries(probe, trace), error.code
+        return 0, error.code
 
 
 def posted_successes(actions: list[dict]) -> int:

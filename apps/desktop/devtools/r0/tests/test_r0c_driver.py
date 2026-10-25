@@ -1264,6 +1264,52 @@ class PostFailureR12Tests(unittest.TestCase):
         self.assertEqual(len(checks), 1)
 
 
+class VerifiedDeliveredFallbackTests(unittest.TestCase):
+    def test_an_identity_failure_contributes_zero(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = probe["actions"][:3]
+        probe["binding"]["bound"] = False
+        probe["binding_lost"] = False
+        probe["cancelled"] = False
+        self.assertEqual(r0c_driver.confirmed_deliveries(probe, trace), 3)
+        delivered, error = r0c_driver.verified_delivered(
+            probe, document, trace, set(), LAUNCHER_PID, OBSERVATION_PID, GENERATION
+        )
+        self.assertEqual(error, "WINDOW_NOT_BOUND")
+        self.assertEqual(delivered, 0)
+
+    def test_a_recorded_loss_with_an_integrity_failure_contributes_zero(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = probe["actions"][:3]
+        probe["binding"]["bound"] = True
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        probe["actions"][0]["classification"] = "late"
+        delivered, error = r0c_driver.verified_delivered(
+            probe, document, trace, set(), LAUNCHER_PID, OBSERVATION_PID, GENERATION
+        )
+        self.assertEqual(error, "PROBE_CLASSIFICATION_MISMATCH")
+        self.assertEqual(delivered, 0)
+
+    def test_a_recorded_loss_with_the_ownership_gate_falls_back(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = probe["actions"][:3]
+        probe["binding"]["bound"] = False
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        delivered, error = r0c_driver.verified_delivered(
+            probe, document, trace, set(), LAUNCHER_PID, OBSERVATION_PID, GENERATION
+        )
+        self.assertEqual(error, "WINDOW_NOT_BOUND")
+        self.assertEqual(delivered, 3)
+
+
 class JournalRangeTests(unittest.TestCase):
     def test_input_before_the_journal_starts_is_refused(self) -> None:
         self.assertEqual(r0c_driver.journal_containment(0, 100, 1_000, 5_000), "MISMATCH")
