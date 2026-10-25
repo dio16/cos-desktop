@@ -11,6 +11,7 @@ use gpui::{
     ListAlignment, ListOffset, ListState, Pixels, Render, Role, ScrollHandle, SharedString, Style,
     Task, UTF16Selection, Window, actions, div, list, prelude::*, px, relative, rgb,
 };
+use std::collections::BTreeMap;
 use std::ops::Range;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -23,6 +24,7 @@ pub mod budget;
 mod dock;
 mod flow;
 mod inspector;
+mod intervention;
 #[cfg(feature = "r0-s2b-instrumentation")]
 pub mod r0_probe;
 mod shell_style;
@@ -45,6 +47,8 @@ actions!(
         Activate,
         Diagnostics,
         InspectorToggle,
+        InterventionActivate,
+        InterventionDismiss,
         RailUp,
         RailDown,
         RailEnter,
@@ -86,6 +90,9 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("ctrl-d", Diagnostics, None),
         KeyBinding::new("enter", InspectorToggle, Some("InspectorSection")),
         KeyBinding::new("space", InspectorToggle, Some("InspectorSection")),
+        KeyBinding::new("enter", InterventionActivate, Some("InterventionStrip")),
+        KeyBinding::new("space", InterventionActivate, Some("InterventionStrip")),
+        KeyBinding::new("escape", InterventionDismiss, Some("InterventionStrip")),
         KeyBinding::new("up", RailUp, Some("TaskRailList")),
         KeyBinding::new("down", RailDown, Some("TaskRailList")),
         KeyBinding::new("enter", RailEnter, Some("TaskRailList")),
@@ -225,6 +232,18 @@ pub struct Shell {
     inspector_disclosure: ui_model::inspector::Disclosure,
     /// One focus handle per inspector section, in `Section::ALL` order.
     inspector_focus: Vec<FocusHandle>,
+    /// Expanded state of the intervention strip's remaining-condition list.
+    strip_expanded: bool,
+    /// The intervention row whose read-only details are open.
+    strip_detail: Option<ui_model::intervention::RowIdentity>,
+    /// The row that opened the details; focus returns here on dismissal.
+    strip_detail_origin: Option<ui_model::intervention::RowIdentity>,
+    /// Per-row focus handles keyed by typed row identity.
+    strip_focus: BTreeMap<ui_model::intervention::RowIdentity, FocusHandle>,
+    /// Focus handle for the remaining-count/list toggle.
+    strip_list_focus: FocusHandle,
+    /// Focus handle for the details panel's close control.
+    strip_detail_focus: FocusHandle,
     /// The last rendered immutable candidate family; reused without cloning identities.
     rendered_candidates: Arc<[Arc<ui_model::CandidateDisplay>]>,
     rail_state: TaskRailState,
@@ -362,6 +381,12 @@ impl Shell {
             surface_notice: None,
             inspector_disclosure: ui_model::inspector::Disclosure::default(),
             inspector_focus,
+            strip_expanded: false,
+            strip_detail: None,
+            strip_detail_origin: None,
+            strip_focus: BTreeMap::new(),
+            strip_list_focus: cx.focus_handle().tab_stop(true),
+            strip_detail_focus: cx.focus_handle().tab_stop(true),
             rail_state: TaskRailState::default(),
             rail_list,
             rail_focus,
@@ -2056,6 +2081,7 @@ impl Render for Shell {
             .and_then(|w| w.presentation.viewed())
             .map(|v| v.0.clone());
         let inspector_view = text.inspector.view(viewed.as_ref());
+        let intervention_strip = text.interventions.strip();
         let compare_pair = self
             .workbench
             .as_ref()
@@ -3073,6 +3099,7 @@ impl Render for Shell {
         let rail_count = rail_search
             .as_ref()
             .map_or(0, |search| search.indices.len());
+        let intervention_strip = self.intervention_strip(intervention_strip, window, cx);
         let inspector_panel = self.inspector_panel(
             inspector_view,
             viewed_label.clone(),
@@ -3458,6 +3485,7 @@ impl Render for Shell {
                             .flex_col()
                             .gap_5()
                             .child("WORK SURFACE")
+                            .child(intervention_strip)
                             .when_some(surface_notice.clone(), |element, notice| {
                                 element.child(
                                     div()

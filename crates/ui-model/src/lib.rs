@@ -2,6 +2,7 @@
 //! arrive as complete publications from app-core; this crate never calls the client.
 
 pub mod inspector;
+pub mod intervention;
 mod simple_casefold;
 pub mod task_rail;
 pub mod presentation {
@@ -849,6 +850,16 @@ impl DerivationCache {
             text.command_views
                 .insert(id.clone(), StopDisplay::from_command(view));
         }
+        text.interventions = match publication.snapshot.as_ref() {
+            Some(snapshot) => {
+                let task = match selected_task {
+                    Some(identity) => snapshot.tasks.get(identity),
+                    None => snapshot.tasks.values().next(),
+                };
+                intervention::Index::derive(publication, snapshot, task, &text.command_views)
+            }
+            None => intervention::Index::blocked(),
+        };
         if cancelled() {
             self.reset();
             return None;
@@ -1341,6 +1352,8 @@ pub struct WorkbenchText {
     pub graph: Arc<[Arc<GraphDisplay>]>,
     /// Identity-bound inspector projection for the viewed candidate (DC-MP-INS1).
     pub inspector: inspector::Index,
+    /// Typed Desktop-local intervention conditions (DC-MP-INS3 / ADR-0011).
+    pub interventions: intervention::Index,
     pub diagnostics: String,
     pub task: Option<TaskId>,
     /// Authoritative projection epoch, when a snapshot is admitted.
@@ -1378,6 +1391,11 @@ impl WorkbenchText {
             } else {
                 "Stop unavailable — no current task observation".into()
             },
+            interventions: if unavailable {
+                intervention::Index::blocked()
+            } else {
+                intervention::Index::default()
+            },
             ..Default::default()
         }
     }
@@ -1397,6 +1415,7 @@ impl WorkbenchText {
                 formal_outcome: "Unavailable — authorization unavailable".into(),
             },
             stop_reason: "Stop unavailable — no current authorization".into(),
+            interventions: intervention::Index::blocked(),
             ..Self::default()
         }
     }
