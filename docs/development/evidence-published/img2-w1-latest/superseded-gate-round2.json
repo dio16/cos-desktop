@@ -1,0 +1,841 @@
+{
+  "schema_version": 1,
+  "candidate": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
+  "disposition": "SUCCEEDED on its own pinned candidate, then superseded after review round 2; never reused as proof for the later candidate",
+  "review": {
+    "blocking": 0,
+    "actionable": 1,
+    "excessive": 0,
+    "id": "A-W1-R2-01"
+  },
+  "quality": {
+    "id": "d437c99c-2c06-4b52-9add-0353ea92b2c8",
+    "status": {
+      "cli_interface_version": 2,
+      "operation": "gate.status",
+      "outcome": {
+        "schema_version": 1,
+        "result": {
+          "schema_version": 1,
+          "gate_id": "d437c99c-2c06-4b52-9add-0353ea92b2c8",
+          "gate_label": "cos-desktop-img2-w1-quality-repair1-e78f32ab",
+          "state": "SUCCEEDED",
+          "updated_at": "2026-10-25T19:38:38.753490000Z",
+          "owner_alive": false,
+          "recovery_required": false
+        }
+      }
+    },
+    "receipt": {
+      "cli_interface_version": 2,
+      "operation": "gate.inspect",
+      "outcome": {
+        "schema_version": 1,
+        "result": {
+          "schema_version": 1,
+          "gate_id": "d437c99c-2c06-4b52-9add-0353ea92b2c8",
+          "gate_label": "cos-desktop-img2-w1-quality-repair1-e78f32ab",
+          "request_sha256": "sha256:e40924ab4201a3da58cf4bdfd0f4a8ac1c03df4b07f42d2884f854ee34524809",
+          "terminal_state_sha256": "sha256:c215d995f9676a0989bc1a4387cdcd60dc0e7d59e3837b35aa2d95c8d65005af",
+          "runtime": {
+            "refine_version": "0.3.1",
+            "os": "windows",
+            "architecture": "x86_64",
+            "git_version": "git version 2.51.0.windows.1"
+          },
+          "repository": {
+            "location": "<REPOSITORY>",
+            "requested_revision": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
+            "resolved_base_commit": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
+            "object_format": "sha1",
+            "final_head": "e78f32abc2e7101be38ce5cec03526570c9ec1ef"
+          },
+          "limits": {
+            "timeout_ms": 600000,
+            "termination_grace_ms": 5000,
+            "max_output_bytes": 16777216,
+            "max_artifact_bytes": 16777216
+          },
+          "accepted_at": "2026-10-25T19:33:09.460319400Z",
+          "ended_at": "2026-10-25T19:38:38.753490000Z",
+          "candidate_sha256": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c",
+          "verification": [
+            {
+              "id": "fmt",
+              "kind": "command",
+              "outcome": "pass",
+              "duration_ms": 21185,
+              "observed_exit": 0,
+              "candidate_binding": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c"
+            },
+            {
+              "id": "metadata",
+              "kind": "command",
+              "outcome": "pass",
+              "duration_ms": 11327,
+              "observed_exit": 0,
+              "candidate_binding": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c"
+            },
+            {
+              "id": "dependency-self-test",
+              "kind": "command",
+              "outcome": "pass",
+              "duration_ms": 571,
+              "observed_exit": 0,
+              "candidate_binding": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c"
+            },
+            {
+              "id": "dependency-rules",
+              "kind": "command",
+              "outcome": "pass",
+              "duration_ms": 236,
+              "observed_exit": 0,
+              "candidate_binding": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c"
+            },
+            {
+              "id": "clippy",
+              "kind": "command",
+              "outcome": "pass",
+              "duration_ms": 118716,
+              "observed_exit": 0,
+              "candidate_binding": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c"
+            },
+            {
+              "id": "tests",
+              "kind": "command",
+              "outcome": "pass",
+              "duration_ms": 148680,
+              "observed_exit": 0,
+              "candidate_binding": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c"
+            },
+            {
+              "id": "r0-python",
+              "kind": "command",
+              "outcome": "pass",
+              "duration_ms": 13480,
+              "observed_exit": 0,
+              "candidate_binding": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c"
+            }
+          ],
+          "check_logs": [
+            {
+              "check_id": "fmt",
+              "stdout": {
+                "relative_path": "logs/fmt/stdout",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/fmt/stderr",
+                "size_bytes": 171,
+                "sha256": "sha256:207c83d037b995c75e03166d9a9486fbbbb29b0b76a736fe93d1b71bcbdb5105",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "metadata",
+              "stdout": {
+                "relative_path": "logs/metadata/stdout",
+                "size_bytes": 23900,
+                "sha256": "sha256:b91c1d387c3976d754f9d9364ff59a33e53f04c6ef450a56670e474987f22bcc",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/metadata/stderr",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "dependency-self-test",
+              "stdout": {
+                "relative_path": "logs/dependency-self-test/stdout",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/dependency-self-test/stderr",
+                "size_bytes": 2680,
+                "sha256": "sha256:9dfea748d288e7fb3060a9bd9c2897940f90738e753b626b823bf9f1b94d86ec",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "dependency-rules",
+              "stdout": {
+                "relative_path": "logs/dependency-rules/stdout",
+                "size_bytes": 79,
+                "sha256": "sha256:7324a248581aca3179ab86e244966f886d14b87d2e04372d548eb5f96c3b1cfe",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/dependency-rules/stderr",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "clippy",
+              "stdout": {
+                "relative_path": "logs/clippy/stdout",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/clippy/stderr",
+                "size_bytes": 13002,
+                "sha256": "sha256:f851bfcc95638f0510852dfffc7c57d225b3ed9ee1ddaa5286a3375548499b1f",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "tests",
+              "stdout": {
+                "relative_path": "logs/tests/stdout",
+                "size_bytes": 43420,
+                "sha256": "sha256:14f649b686d3236f601ea8db78cfaed39116c21181f35b07a8d134a1446bd5ec",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/tests/stderr",
+                "size_bytes": 17130,
+                "sha256": "sha256:9b9e83d322b3d985739ac85681d0d3a98c4e6be036b5d2806eba284d55e0a0b1",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "r0-python",
+              "stdout": {
+                "relative_path": "logs/r0-python/stdout",
+                "size_bytes": 8041,
+                "sha256": "sha256:e4757c6d7438cf15d7d77c3e113c219d3c769e5a5be3149e63760a4e4f2c295a",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/r0-python/stderr",
+                "size_bytes": 683,
+                "sha256": "sha256:28442c03760ddb6bc8535f5dff3bb269035eaac9afe46ebe360e9647a590024b",
+                "truncated": false,
+                "secret": true
+              }
+            }
+          ],
+          "artifacts": [
+            {
+              "id": "behavior",
+              "relative_path": "artifacts/behavior",
+              "size_bytes": 17864,
+              "sha256": "sha256:af912244c29da166bf4faf94f1c315df989442d009168c1d8454dc7f623a0a51"
+            },
+            {
+              "id": "cli-doc",
+              "relative_path": "artifacts/cli-doc",
+              "size_bytes": 83842,
+              "sha256": "sha256:e5d0c28bd0cd19d0306826c277a01a859cdac28bf2bfc24576c765203a3a29d9"
+            },
+            {
+              "id": "fixture-probe",
+              "relative_path": "artifacts/fixture-probe",
+              "size_bytes": 1971,
+              "sha256": "sha256:11b753983b69e215fbf0ccd7328b67f33b30e91af8ff880c76bb0f81957bc7f2"
+            },
+            {
+              "id": "gdiplus-probe",
+              "relative_path": "artifacts/gdiplus-probe",
+              "size_bytes": 15826,
+              "sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef"
+            },
+            {
+              "id": "harness",
+              "relative_path": "artifacts/harness",
+              "size_bytes": 159533,
+              "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+            },
+            {
+              "id": "harness-tests",
+              "relative_path": "artifacts/harness-tests",
+              "size_bytes": 204071,
+              "sha256": "sha256:23b6e9092ab40872ddb5f8acb325d84e90cd49e020ff04dd489c1ad0f5f22db9"
+            },
+            {
+              "id": "matrix",
+              "relative_path": "artifacts/matrix",
+              "size_bytes": 74864,
+              "sha256": "sha256:01eb3f727e3036925fda4d5fcdbf38506f1f39a3f7c2d7454e4074e9b8d162ff"
+            },
+            {
+              "id": "runner",
+              "relative_path": "artifacts/runner",
+              "size_bytes": 19237,
+              "sha256": "sha256:9e2456eda590da68580a9439b6a369450222132c859636a2d0f8cc90f727dbea"
+            },
+            {
+              "id": "silent-probe",
+              "relative_path": "artifacts/silent-probe",
+              "size_bytes": 1943,
+              "sha256": "sha256:72780b672d85c5591bb05b3ac85e6d34c82ddc97223d3562cfbf816c0108bb33"
+            },
+            {
+              "id": "source-order",
+              "relative_path": "artifacts/source-order",
+              "size_bytes": 959,
+              "sha256": "sha256:8936f96e78a8f0375994d2bfe06766a4db9eaccebc7261d1824fca88f3c7a808"
+            },
+            {
+              "id": "wic-admission",
+              "relative_path": "artifacts/wic-admission",
+              "size_bytes": 3780,
+              "sha256": "sha256:32dda8546425cab2cb22c2e5f2600b0654c762220c614c46f8be3b7f33085967"
+            },
+            {
+              "id": "wic-probe",
+              "relative_path": "artifacts/wic-probe",
+              "size_bytes": 20422,
+              "sha256": "sha256:3a49cddd26372dad99c3accfd63ffae54fec8eef6b4b92086eb3a98aa5b0e3d6"
+            },
+            {
+              "id": "wic-selftest",
+              "relative_path": "artifacts/wic-selftest",
+              "size_bytes": 2639,
+              "sha256": "sha256:79e63d73ad541d68e6e6194edabdffb4e82ce2aad8c50c30273f1aff497c6be1"
+            }
+          ],
+          "absent_outputs": [],
+          "cleanup": "complete",
+          "timings": {
+            "preparation_ms": 7154,
+            "execution_ms": 0,
+            "verification_ms": 321329,
+            "collection_ms": 679,
+            "finalization_ms": 2
+          },
+          "duration_ms": 329285
+        }
+      }
+    },
+    "integrity": {
+      "cli_interface_version": 2,
+      "operation": "gate.verify",
+      "outcome": {
+        "schema_version": 1,
+        "result": {
+          "schema_version": 1,
+          "gate_id": "d437c99c-2c06-4b52-9add-0353ea92b2c8",
+          "state": "SUCCEEDED",
+          "request_sha256": "sha256:e40924ab4201a3da58cf4bdfd0f4a8ac1c03df4b07f42d2884f854ee34524809",
+          "terminal_state_sha256": "sha256:c215d995f9676a0989bc1a4387cdcd60dc0e7d59e3837b35aa2d95c8d65005af",
+          "observations_sha256": "sha256:631a6b180b4c802bef666e477ddf9f877f7b3547bf55958bd54401361634f182",
+          "candidate_sha256": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c",
+          "artifacts": [
+            {
+              "id": "behavior",
+              "relative_path": "artifacts/behavior",
+              "size_bytes": 17864,
+              "sha256": "sha256:af912244c29da166bf4faf94f1c315df989442d009168c1d8454dc7f623a0a51"
+            },
+            {
+              "id": "cli-doc",
+              "relative_path": "artifacts/cli-doc",
+              "size_bytes": 83842,
+              "sha256": "sha256:e5d0c28bd0cd19d0306826c277a01a859cdac28bf2bfc24576c765203a3a29d9"
+            },
+            {
+              "id": "fixture-probe",
+              "relative_path": "artifacts/fixture-probe",
+              "size_bytes": 1971,
+              "sha256": "sha256:11b753983b69e215fbf0ccd7328b67f33b30e91af8ff880c76bb0f81957bc7f2"
+            },
+            {
+              "id": "gdiplus-probe",
+              "relative_path": "artifacts/gdiplus-probe",
+              "size_bytes": 15826,
+              "sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef"
+            },
+            {
+              "id": "harness",
+              "relative_path": "artifacts/harness",
+              "size_bytes": 159533,
+              "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+            },
+            {
+              "id": "harness-tests",
+              "relative_path": "artifacts/harness-tests",
+              "size_bytes": 204071,
+              "sha256": "sha256:23b6e9092ab40872ddb5f8acb325d84e90cd49e020ff04dd489c1ad0f5f22db9"
+            },
+            {
+              "id": "matrix",
+              "relative_path": "artifacts/matrix",
+              "size_bytes": 74864,
+              "sha256": "sha256:01eb3f727e3036925fda4d5fcdbf38506f1f39a3f7c2d7454e4074e9b8d162ff"
+            },
+            {
+              "id": "runner",
+              "relative_path": "artifacts/runner",
+              "size_bytes": 19237,
+              "sha256": "sha256:9e2456eda590da68580a9439b6a369450222132c859636a2d0f8cc90f727dbea"
+            },
+            {
+              "id": "silent-probe",
+              "relative_path": "artifacts/silent-probe",
+              "size_bytes": 1943,
+              "sha256": "sha256:72780b672d85c5591bb05b3ac85e6d34c82ddc97223d3562cfbf816c0108bb33"
+            },
+            {
+              "id": "source-order",
+              "relative_path": "artifacts/source-order",
+              "size_bytes": 959,
+              "sha256": "sha256:8936f96e78a8f0375994d2bfe06766a4db9eaccebc7261d1824fca88f3c7a808"
+            },
+            {
+              "id": "wic-admission",
+              "relative_path": "artifacts/wic-admission",
+              "size_bytes": 3780,
+              "sha256": "sha256:32dda8546425cab2cb22c2e5f2600b0654c762220c614c46f8be3b7f33085967"
+            },
+            {
+              "id": "wic-probe",
+              "relative_path": "artifacts/wic-probe",
+              "size_bytes": 20422,
+              "sha256": "sha256:3a49cddd26372dad99c3accfd63ffae54fec8eef6b4b92086eb3a98aa5b0e3d6"
+            },
+            {
+              "id": "wic-selftest",
+              "relative_path": "artifacts/wic-selftest",
+              "size_bytes": 2639,
+              "sha256": "sha256:79e63d73ad541d68e6e6194edabdffb4e82ce2aad8c50c30273f1aff497c6be1"
+            }
+          ],
+          "check_logs": [
+            {
+              "check_id": "fmt",
+              "stdout": {
+                "relative_path": "logs/fmt/stdout",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/fmt/stderr",
+                "size_bytes": 171,
+                "sha256": "sha256:207c83d037b995c75e03166d9a9486fbbbb29b0b76a736fe93d1b71bcbdb5105",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "metadata",
+              "stdout": {
+                "relative_path": "logs/metadata/stdout",
+                "size_bytes": 23900,
+                "sha256": "sha256:b91c1d387c3976d754f9d9364ff59a33e53f04c6ef450a56670e474987f22bcc",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/metadata/stderr",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "dependency-self-test",
+              "stdout": {
+                "relative_path": "logs/dependency-self-test/stdout",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/dependency-self-test/stderr",
+                "size_bytes": 2680,
+                "sha256": "sha256:9dfea748d288e7fb3060a9bd9c2897940f90738e753b626b823bf9f1b94d86ec",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "dependency-rules",
+              "stdout": {
+                "relative_path": "logs/dependency-rules/stdout",
+                "size_bytes": 79,
+                "sha256": "sha256:7324a248581aca3179ab86e244966f886d14b87d2e04372d548eb5f96c3b1cfe",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/dependency-rules/stderr",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "clippy",
+              "stdout": {
+                "relative_path": "logs/clippy/stdout",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/clippy/stderr",
+                "size_bytes": 13002,
+                "sha256": "sha256:f851bfcc95638f0510852dfffc7c57d225b3ed9ee1ddaa5286a3375548499b1f",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "tests",
+              "stdout": {
+                "relative_path": "logs/tests/stdout",
+                "size_bytes": 43420,
+                "sha256": "sha256:14f649b686d3236f601ea8db78cfaed39116c21181f35b07a8d134a1446bd5ec",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/tests/stderr",
+                "size_bytes": 17130,
+                "sha256": "sha256:9b9e83d322b3d985739ac85681d0d3a98c4e6be036b5d2806eba284d55e0a0b1",
+                "truncated": false,
+                "secret": true
+              }
+            },
+            {
+              "check_id": "r0-python",
+              "stdout": {
+                "relative_path": "logs/r0-python/stdout",
+                "size_bytes": 8041,
+                "sha256": "sha256:e4757c6d7438cf15d7d77c3e113c219d3c769e5a5be3149e63760a4e4f2c295a",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/r0-python/stderr",
+                "size_bytes": 683,
+                "sha256": "sha256:28442c03760ddb6bc8535f5dff3bb269035eaac9afe46ebe360e9647a590024b",
+                "truncated": false,
+                "secret": true
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "build": {
+    "id": "f62ab587-5759-4589-84da-ab2199cee91c",
+    "status": {
+      "cli_interface_version": 2,
+      "operation": "gate.status",
+      "outcome": {
+        "schema_version": 1,
+        "result": {
+          "schema_version": 1,
+          "gate_id": "f62ab587-5759-4589-84da-ab2199cee91c",
+          "gate_label": "cos-desktop-img2-w1-build-repair1-e78f32ab",
+          "state": "SUCCEEDED",
+          "updated_at": "2026-10-25T19:33:02.589867200Z",
+          "owner_alive": false,
+          "recovery_required": false
+        }
+      }
+    },
+    "receipt": {
+      "cli_interface_version": 2,
+      "operation": "gate.inspect",
+      "outcome": {
+        "schema_version": 1,
+        "result": {
+          "schema_version": 1,
+          "gate_id": "f62ab587-5759-4589-84da-ab2199cee91c",
+          "gate_label": "cos-desktop-img2-w1-build-repair1-e78f32ab",
+          "request_sha256": "sha256:91d48a3ac5b1d76db0b1a683e1f900490d6a7427b32f8d730ff4bb4b92a9ca6b",
+          "terminal_state_sha256": "sha256:ae9db457da1deaf45200d96665e603a3e7b7a12a8afea35a18197c08447d721e",
+          "runtime": {
+            "refine_version": "0.3.1",
+            "os": "windows",
+            "architecture": "x86_64",
+            "git_version": "git version 2.51.0.windows.1"
+          },
+          "repository": {
+            "location": "<REPOSITORY>",
+            "requested_revision": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
+            "resolved_base_commit": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
+            "object_format": "sha1",
+            "final_head": "e78f32abc2e7101be38ce5cec03526570c9ec1ef"
+          },
+          "limits": {
+            "timeout_ms": 600000,
+            "termination_grace_ms": 5000,
+            "max_output_bytes": 16777216,
+            "max_artifact_bytes": 16777216
+          },
+          "accepted_at": "2026-10-25T19:30:49.699936400Z",
+          "ended_at": "2026-10-25T19:33:02.589867200Z",
+          "candidate_sha256": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c",
+          "verification": [
+            {
+              "id": "build",
+              "kind": "command",
+              "outcome": "pass",
+              "duration_ms": 122207,
+              "observed_exit": 0,
+              "candidate_binding": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c"
+            }
+          ],
+          "check_logs": [
+            {
+              "check_id": "build",
+              "stdout": {
+                "relative_path": "logs/build/stdout",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/build/stderr",
+                "size_bytes": 12761,
+                "sha256": "sha256:cede13e79be19d829932044954b186f415df49cdd8b3376bd0d170c123c52da4",
+                "truncated": false,
+                "secret": true
+              }
+            }
+          ],
+          "artifacts": [
+            {
+              "id": "behavior",
+              "relative_path": "artifacts/behavior",
+              "size_bytes": 17864,
+              "sha256": "sha256:af912244c29da166bf4faf94f1c315df989442d009168c1d8454dc7f623a0a51"
+            },
+            {
+              "id": "cli-doc",
+              "relative_path": "artifacts/cli-doc",
+              "size_bytes": 83842,
+              "sha256": "sha256:e5d0c28bd0cd19d0306826c277a01a859cdac28bf2bfc24576c765203a3a29d9"
+            },
+            {
+              "id": "fixture-probe",
+              "relative_path": "artifacts/fixture-probe",
+              "size_bytes": 1971,
+              "sha256": "sha256:11b753983b69e215fbf0ccd7328b67f33b30e91af8ff880c76bb0f81957bc7f2"
+            },
+            {
+              "id": "gdiplus-probe",
+              "relative_path": "artifacts/gdiplus-probe",
+              "size_bytes": 15826,
+              "sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef"
+            },
+            {
+              "id": "harness",
+              "relative_path": "artifacts/harness",
+              "size_bytes": 159533,
+              "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+            },
+            {
+              "id": "harness-tests",
+              "relative_path": "artifacts/harness-tests",
+              "size_bytes": 204071,
+              "sha256": "sha256:23b6e9092ab40872ddb5f8acb325d84e90cd49e020ff04dd489c1ad0f5f22db9"
+            },
+            {
+              "id": "matrix",
+              "relative_path": "artifacts/matrix",
+              "size_bytes": 74864,
+              "sha256": "sha256:01eb3f727e3036925fda4d5fcdbf38506f1f39a3f7c2d7454e4074e9b8d162ff"
+            },
+            {
+              "id": "runner",
+              "relative_path": "artifacts/runner",
+              "size_bytes": 19237,
+              "sha256": "sha256:9e2456eda590da68580a9439b6a369450222132c859636a2d0f8cc90f727dbea"
+            },
+            {
+              "id": "silent-probe",
+              "relative_path": "artifacts/silent-probe",
+              "size_bytes": 1943,
+              "sha256": "sha256:72780b672d85c5591bb05b3ac85e6d34c82ddc97223d3562cfbf816c0108bb33"
+            },
+            {
+              "id": "source-order",
+              "relative_path": "artifacts/source-order",
+              "size_bytes": 959,
+              "sha256": "sha256:8936f96e78a8f0375994d2bfe06766a4db9eaccebc7261d1824fca88f3c7a808"
+            },
+            {
+              "id": "wic-admission",
+              "relative_path": "artifacts/wic-admission",
+              "size_bytes": 3780,
+              "sha256": "sha256:32dda8546425cab2cb22c2e5f2600b0654c762220c614c46f8be3b7f33085967"
+            },
+            {
+              "id": "wic-probe",
+              "relative_path": "artifacts/wic-probe",
+              "size_bytes": 20422,
+              "sha256": "sha256:3a49cddd26372dad99c3accfd63ffae54fec8eef6b4b92086eb3a98aa5b0e3d6"
+            },
+            {
+              "id": "wic-selftest",
+              "relative_path": "artifacts/wic-selftest",
+              "size_bytes": 2639,
+              "sha256": "sha256:79e63d73ad541d68e6e6194edabdffb4e82ce2aad8c50c30273f1aff497c6be1"
+            }
+          ],
+          "absent_outputs": [],
+          "cleanup": "complete",
+          "timings": {
+            "preparation_ms": 8269,
+            "execution_ms": 0,
+            "verification_ms": 123887,
+            "collection_ms": 690,
+            "finalization_ms": 2
+          },
+          "duration_ms": 132884
+        }
+      }
+    },
+    "integrity": {
+      "cli_interface_version": 2,
+      "operation": "gate.verify",
+      "outcome": {
+        "schema_version": 1,
+        "result": {
+          "schema_version": 1,
+          "gate_id": "f62ab587-5759-4589-84da-ab2199cee91c",
+          "state": "SUCCEEDED",
+          "request_sha256": "sha256:91d48a3ac5b1d76db0b1a683e1f900490d6a7427b32f8d730ff4bb4b92a9ca6b",
+          "terminal_state_sha256": "sha256:ae9db457da1deaf45200d96665e603a3e7b7a12a8afea35a18197c08447d721e",
+          "observations_sha256": "sha256:778cc34f94a44c61b8f9916b3b4d20dc2c075d5374a64174e857e4a0af0aba9d",
+          "candidate_sha256": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c",
+          "artifacts": [
+            {
+              "id": "behavior",
+              "relative_path": "artifacts/behavior",
+              "size_bytes": 17864,
+              "sha256": "sha256:af912244c29da166bf4faf94f1c315df989442d009168c1d8454dc7f623a0a51"
+            },
+            {
+              "id": "cli-doc",
+              "relative_path": "artifacts/cli-doc",
+              "size_bytes": 83842,
+              "sha256": "sha256:e5d0c28bd0cd19d0306826c277a01a859cdac28bf2bfc24576c765203a3a29d9"
+            },
+            {
+              "id": "fixture-probe",
+              "relative_path": "artifacts/fixture-probe",
+              "size_bytes": 1971,
+              "sha256": "sha256:11b753983b69e215fbf0ccd7328b67f33b30e91af8ff880c76bb0f81957bc7f2"
+            },
+            {
+              "id": "gdiplus-probe",
+              "relative_path": "artifacts/gdiplus-probe",
+              "size_bytes": 15826,
+              "sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef"
+            },
+            {
+              "id": "harness",
+              "relative_path": "artifacts/harness",
+              "size_bytes": 159533,
+              "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+            },
+            {
+              "id": "harness-tests",
+              "relative_path": "artifacts/harness-tests",
+              "size_bytes": 204071,
+              "sha256": "sha256:23b6e9092ab40872ddb5f8acb325d84e90cd49e020ff04dd489c1ad0f5f22db9"
+            },
+            {
+              "id": "matrix",
+              "relative_path": "artifacts/matrix",
+              "size_bytes": 74864,
+              "sha256": "sha256:01eb3f727e3036925fda4d5fcdbf38506f1f39a3f7c2d7454e4074e9b8d162ff"
+            },
+            {
+              "id": "runner",
+              "relative_path": "artifacts/runner",
+              "size_bytes": 19237,
+              "sha256": "sha256:9e2456eda590da68580a9439b6a369450222132c859636a2d0f8cc90f727dbea"
+            },
+            {
+              "id": "silent-probe",
+              "relative_path": "artifacts/silent-probe",
+              "size_bytes": 1943,
+              "sha256": "sha256:72780b672d85c5591bb05b3ac85e6d34c82ddc97223d3562cfbf816c0108bb33"
+            },
+            {
+              "id": "source-order",
+              "relative_path": "artifacts/source-order",
+              "size_bytes": 959,
+              "sha256": "sha256:8936f96e78a8f0375994d2bfe06766a4db9eaccebc7261d1824fca88f3c7a808"
+            },
+            {
+              "id": "wic-admission",
+              "relative_path": "artifacts/wic-admission",
+              "size_bytes": 3780,
+              "sha256": "sha256:32dda8546425cab2cb22c2e5f2600b0654c762220c614c46f8be3b7f33085967"
+            },
+            {
+              "id": "wic-probe",
+              "relative_path": "artifacts/wic-probe",
+              "size_bytes": 20422,
+              "sha256": "sha256:3a49cddd26372dad99c3accfd63ffae54fec8eef6b4b92086eb3a98aa5b0e3d6"
+            },
+            {
+              "id": "wic-selftest",
+              "relative_path": "artifacts/wic-selftest",
+              "size_bytes": 2639,
+              "sha256": "sha256:79e63d73ad541d68e6e6194edabdffb4e82ce2aad8c50c30273f1aff497c6be1"
+            }
+          ],
+          "check_logs": [
+            {
+              "check_id": "build",
+              "stdout": {
+                "relative_path": "logs/build/stdout",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "truncated": false,
+                "secret": true
+              },
+              "stderr": {
+                "relative_path": "logs/build/stderr",
+                "size_bytes": 12761,
+                "sha256": "sha256:cede13e79be19d829932044954b186f415df49cdd8b3376bd0d170c123c52da4",
+                "truncated": false,
+                "secret": true
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "id": "f62ab587-5759-4589-84da-ab2199cee91c",
-  "candidate": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
+  "id": "87d18235-e8aa-4e49-9f65-7c263e9f4b59",
+  "candidate": "faa3a7e91c3987c14cc053dad03456980827c810",
   "status": {
     "cli_interface_version": 2,
     "operation": "gate.status",
@@ -9,10 +9,10 @@
       "schema_version": 1,
       "result": {
         "schema_version": 1,
-        "gate_id": "f62ab587-5759-4589-84da-ab2199cee91c",
-        "gate_label": "cos-desktop-img2-w1-build-repair1-e78f32ab",
+        "gate_id": "87d18235-e8aa-4e49-9f65-7c263e9f4b59",
+        "gate_label": "cos-desktop-img2-w1-build-repair2-faa3a7e9",
         "state": "SUCCEEDED",
-        "updated_at": "2026-10-25T19:33:02.589867200Z",
+        "updated_at": "2026-10-25T19:50:26.800648000Z",
         "owner_alive": false,
         "recovery_required": false
       }
@@ -25,10 +25,10 @@
       "schema_version": 1,
       "result": {
         "schema_version": 1,
-        "gate_id": "f62ab587-5759-4589-84da-ab2199cee91c",
-        "gate_label": "cos-desktop-img2-w1-build-repair1-e78f32ab",
-        "request_sha256": "sha256:91d48a3ac5b1d76db0b1a683e1f900490d6a7427b32f8d730ff4bb4b92a9ca6b",
-        "terminal_state_sha256": "sha256:ae9db457da1deaf45200d96665e603a3e7b7a12a8afea35a18197c08447d721e",
+        "gate_id": "87d18235-e8aa-4e49-9f65-7c263e9f4b59",
+        "gate_label": "cos-desktop-img2-w1-build-repair2-faa3a7e9",
+        "request_sha256": "sha256:8357e20313ae4edbba7ee041db481a60a08aaa4e1c0a44cacfa2952b8af90e54",
+        "terminal_state_sha256": "sha256:44e6847dcc7fdf991389f784c57257e46e73250b1c1f9a4515c52dd08eb0b7d3",
         "runtime": {
           "refine_version": "0.3.1",
           "os": "windows",
@@ -37,10 +37,10 @@
         },
         "repository": {
           "location": "<REPOSITORY>",
-          "requested_revision": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
-          "resolved_base_commit": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
+          "requested_revision": "faa3a7e91c3987c14cc053dad03456980827c810",
+          "resolved_base_commit": "faa3a7e91c3987c14cc053dad03456980827c810",
           "object_format": "sha1",
-          "final_head": "e78f32abc2e7101be38ce5cec03526570c9ec1ef"
+          "final_head": "faa3a7e91c3987c14cc053dad03456980827c810"
         },
         "limits": {
           "timeout_ms": 600000,
@@ -48,17 +48,17 @@
           "max_output_bytes": 16777216,
           "max_artifact_bytes": 16777216
         },
-        "accepted_at": "2026-10-25T19:30:49.699936400Z",
-        "ended_at": "2026-10-25T19:33:02.589867200Z",
-        "candidate_sha256": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c",
+        "accepted_at": "2026-10-25T19:48:14.850123700Z",
+        "ended_at": "2026-10-25T19:50:26.800648000Z",
+        "candidate_sha256": "sha256:7c734d423bcc310f7938a55ae29a11a36960f4f12a516d46ecc00499c10e93a7",
         "verification": [
           {
             "id": "build",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 122207,
+            "duration_ms": 121917,
             "observed_exit": 0,
-            "candidate_binding": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c"
+            "candidate_binding": "sha256:7c734d423bcc310f7938a55ae29a11a36960f4f12a516d46ecc00499c10e93a7"
           }
         ],
         "check_logs": [
@@ -74,7 +74,7 @@
             "stderr": {
               "relative_path": "logs/build/stderr",
               "size_bytes": 12761,
-              "sha256": "sha256:cede13e79be19d829932044954b186f415df49cdd8b3376bd0d170c123c52da4",
+              "sha256": "sha256:2b6e5de9c6078a4279866ba7752c2614dd6888e1109ea8ce7c6df4fecc3f95b7",
               "truncated": false,
               "secret": true
             }
@@ -84,14 +84,14 @@
           {
             "id": "behavior",
             "relative_path": "artifacts/behavior",
-            "size_bytes": 17864,
-            "sha256": "sha256:af912244c29da166bf4faf94f1c315df989442d009168c1d8454dc7f623a0a51"
+            "size_bytes": 18200,
+            "sha256": "sha256:1ef8c490e747666a094775e01c7197b16ae10db038cf8a8dcceb174d136b21d6"
           },
           {
             "id": "cli-doc",
             "relative_path": "artifacts/cli-doc",
-            "size_bytes": 83842,
-            "sha256": "sha256:e5d0c28bd0cd19d0306826c277a01a859cdac28bf2bfc24576c765203a3a29d9"
+            "size_bytes": 84059,
+            "sha256": "sha256:9d2fba172d360644d3c9f15096e5d1dc1efcf71cc067a0e22ea4b24c5cebc96f"
           },
           {
             "id": "fixture-probe",
@@ -121,13 +121,13 @@
             "id": "matrix",
             "relative_path": "artifacts/matrix",
             "size_bytes": 74864,
-            "sha256": "sha256:01eb3f727e3036925fda4d5fcdbf38506f1f39a3f7c2d7454e4074e9b8d162ff"
+            "sha256": "sha256:88849ad8a55ce53bc30d869007bb984df4f4fb4d86be2ebb876bf7856da1f493"
           },
           {
             "id": "runner",
             "relative_path": "artifacts/runner",
-            "size_bytes": 19237,
-            "sha256": "sha256:9e2456eda590da68580a9439b6a369450222132c859636a2d0f8cc90f727dbea"
+            "size_bytes": 21886,
+            "sha256": "sha256:7c3fcf86e96a655b5aa516b4f474f83c477381fa4d1e4ab27bad5ee081eabd92"
           },
           {
             "id": "silent-probe",
@@ -163,13 +163,13 @@
         "absent_outputs": [],
         "cleanup": "complete",
         "timings": {
-          "preparation_ms": 8269,
+          "preparation_ms": 7537,
           "execution_ms": 0,
-          "verification_ms": 123887,
-          "collection_ms": 690,
+          "verification_ms": 123613,
+          "collection_ms": 756,
           "finalization_ms": 2
         },
-        "duration_ms": 132884
+        "duration_ms": 131945
       }
     }
   },
@@ -180,24 +180,24 @@
       "schema_version": 1,
       "result": {
         "schema_version": 1,
-        "gate_id": "f62ab587-5759-4589-84da-ab2199cee91c",
+        "gate_id": "87d18235-e8aa-4e49-9f65-7c263e9f4b59",
         "state": "SUCCEEDED",
-        "request_sha256": "sha256:91d48a3ac5b1d76db0b1a683e1f900490d6a7427b32f8d730ff4bb4b92a9ca6b",
-        "terminal_state_sha256": "sha256:ae9db457da1deaf45200d96665e603a3e7b7a12a8afea35a18197c08447d721e",
-        "observations_sha256": "sha256:778cc34f94a44c61b8f9916b3b4d20dc2c075d5374a64174e857e4a0af0aba9d",
-        "candidate_sha256": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c",
+        "request_sha256": "sha256:8357e20313ae4edbba7ee041db481a60a08aaa4e1c0a44cacfa2952b8af90e54",
+        "terminal_state_sha256": "sha256:44e6847dcc7fdf991389f784c57257e46e73250b1c1f9a4515c52dd08eb0b7d3",
+        "observations_sha256": "sha256:14192028b4559a3ef528a28d34fe602d1ca74995e1e8ae0b2ab31d906d29713c",
+        "candidate_sha256": "sha256:7c734d423bcc310f7938a55ae29a11a36960f4f12a516d46ecc00499c10e93a7",
         "artifacts": [
           {
             "id": "behavior",
             "relative_path": "artifacts/behavior",
-            "size_bytes": 17864,
-            "sha256": "sha256:af912244c29da166bf4faf94f1c315df989442d009168c1d8454dc7f623a0a51"
+            "size_bytes": 18200,
+            "sha256": "sha256:1ef8c490e747666a094775e01c7197b16ae10db038cf8a8dcceb174d136b21d6"
           },
           {
             "id": "cli-doc",
             "relative_path": "artifacts/cli-doc",
-            "size_bytes": 83842,
-            "sha256": "sha256:e5d0c28bd0cd19d0306826c277a01a859cdac28bf2bfc24576c765203a3a29d9"
+            "size_bytes": 84059,
+            "sha256": "sha256:9d2fba172d360644d3c9f15096e5d1dc1efcf71cc067a0e22ea4b24c5cebc96f"
           },
           {
             "id": "fixture-probe",
@@ -227,13 +227,13 @@
             "id": "matrix",
             "relative_path": "artifacts/matrix",
             "size_bytes": 74864,
-            "sha256": "sha256:01eb3f727e3036925fda4d5fcdbf38506f1f39a3f7c2d7454e4074e9b8d162ff"
+            "sha256": "sha256:88849ad8a55ce53bc30d869007bb984df4f4fb4d86be2ebb876bf7856da1f493"
           },
           {
             "id": "runner",
             "relative_path": "artifacts/runner",
-            "size_bytes": 19237,
-            "sha256": "sha256:9e2456eda590da68580a9439b6a369450222132c859636a2d0f8cc90f727dbea"
+            "size_bytes": 21886,
+            "sha256": "sha256:7c3fcf86e96a655b5aa516b4f474f83c477381fa4d1e4ab27bad5ee081eabd92"
           },
           {
             "id": "silent-probe",
@@ -279,7 +279,7 @@
             "stderr": {
               "relative_path": "logs/build/stderr",
               "size_bytes": 12761,
-              "sha256": "sha256:cede13e79be19d829932044954b186f415df49cdd8b3376bd0d170c123c52da4",
+              "sha256": "sha256:2b6e5de9c6078a4279866ba7752c2614dd6888e1109ea8ce7c6df4fecc3f95b7",
               "truncated": false,
               "secret": true
             }
@@ -368,12 +368,12 @@
   },
   "request": {
     "schema_version": 1,
-    "gate_label": "cos-desktop-img2-w1-build-repair1-e78f32ab",
+    "gate_label": "cos-desktop-img2-w1-build-repair2-faa3a7e9",
     "repository": {
       "kind": "local_git",
       "location": "<REPOSITORY>",
-      "revision": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
-      "expected_commit": "e78f32abc2e7101be38ce5cec03526570c9ec1ef"
+      "revision": "faa3a7e91c3987c14cc053dad03456980827c810",
+      "expected_commit": "faa3a7e91c3987c14cc053dad03456980827c810"
     },
     "policy": {
       "trust": "trusted_local",
@@ -416,7 +416,7 @@
           "CARGO_INCREMENTAL": "0",
           "CARGO_BUILD_JOBS": "4",
           "CARGO_PROFILE_DEV_DEBUG": "0",
-          "CARGO_TARGET_DIR": "<W1_REPAIR1_GATE_ROOT>/targets/build-build"
+          "CARGO_TARGET_DIR": "<W1_REPAIR2_GATE_ROOT>/targets/build-build"
         }
       }
     ],
@@ -520,13 +520,13 @@
       "max_evaluation_timeout_ms": 30000,
       "max_total_evaluation_ms": 30000
     },
-    "state_dir": "<W1_REPAIR1_GATE_ROOT>/state"
+    "state_dir": "<W1_REPAIR2_GATE_ROOT>/state"
   },
   "correlation": {
-    "candidate": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
-    "candidate_sha256": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c",
-    "quality_gate": "d437c99c-2c06-4b52-9add-0353ea92b2c8",
-    "build_gate": "f62ab587-5759-4589-84da-ab2199cee91c",
+    "candidate": "faa3a7e91c3987c14cc053dad03456980827c810",
+    "candidate_sha256": "sha256:7c734d423bcc310f7938a55ae29a11a36960f4f12a516d46ecc00499c10e93a7",
+    "quality_gate": "814469df-ee8d-4f87-842f-806bd136bf47",
+    "build_gate": "87d18235-e8aa-4e49-9f65-7c263e9f4b59",
     "artifact_tuples_identical": true,
     "artifact_count": 13
   }
