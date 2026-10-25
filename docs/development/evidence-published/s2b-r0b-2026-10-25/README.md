@@ -40,26 +40,6 @@ differently (`sha256:1bf53bc5b2e95c59bf7b3c23ca7e3a7b67f582b8185e44da684bdb63c6e
 That single embedded pointer cannot be verified from this directory, by design. Every other
 embedded evidence digest resolves to a byte-identical published file and verifies.
 
-| retained path | published path | bytes | original sha256 | published sha256 |
-|---|---|---:|---|---|
-| `capture/s2b-capture.json` | `capture-run/s2b-capture.json` | 63678 | `sha256:2d8e3a6be3adf4eca5a6ba8d4b05e555b3cff2ea04a0bf18e6875a595542e472` | `sha256:2d8e3a6be3adf4eca5a6ba8d4b05e555b3cff2ea04a0bf18e6875a595542e472` |
-| `capture/s2b-observation.json` | `capture-run/s2b-observation.json` | 3514 | `sha256:6051c6679b5f6563568bdbb042e335030b85420ff76de82f683d0861ce800737` | `sha256:6051c6679b5f6563568bdbb042e335030b85420ff76de82f683d0861ce800737` |
-| `capture/source-identity.json` | `capture-run/source-identity.json` | 1274 | `sha256:eeeb7ccdf4f9c9458274e8fd9a3a363ba0326538a4879521ee2963fdb43cb202` | `sha256:eeeb7ccdf4f9c9458274e8fd9a3a363ba0326538a4879521ee2963fdb43cb202` |
-| `capture/build-record.json` | `capture-run/build-record.json` | 658 | `sha256:bd23fd303a8c0a613d58be9d8693f71e5c4ed827f67aea4248e24f18eb717248` | `sha256:bd23fd303a8c0a613d58be9d8693f71e5c4ed827f67aea4248e24f18eb717248` |
-| `capture/ledger.json` | `capture-run/ledger.json` | 553 | `sha256:8f4ed492e5da5f5b75eb4ae8decbdb3598c6199c13a4c2d7ac27db93085a0af0` | `sha256:8f4ed492e5da5f5b75eb4ae8decbdb3598c6199c13a4c2d7ac27db93085a0af0` |
-| `capture/s2a-result.json` | `capture-run/result.json` | 15118 | `sha256:11e518bceeff8ef63ed40a71abc8ab43aa2489a78ba7aa5d54d55a59da855446` | `sha256:11e518bceeff8ef63ed40a71abc8ab43aa2489a78ba7aa5d54d55a59da855446` |
-| `capture/completion.json` | `capture-run/completion.json` | 398 | `sha256:fc0bbb9149ff7b364a7690dfaeb41d7dcf5449afe806c9c1632f0b4b61591dc5` | `sha256:fc0bbb9149ff7b364a7690dfaeb41d7dcf5449afe806c9c1632f0b4b61591dc5` |
-| `capture/endpoint-availability.json` | `capture-run/endpoint-availability.json` | 2104 | `sha256:619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303` | `sha256:619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303` |
-| `r0b/r0b-g4-manifest.json` | `r0b/r0b-g4-manifest.json` | 7325 | `sha256:eb51b2efe19ca78467eab5b59388092a5641700cda591f7ed9fe7803e10d14cc` | `sha256:eb51b2efe19ca78467eab5b59388092a5641700cda591f7ed9fe7803e10d14cc` |
-| `r0b/r0b-g4-result.json` | `r0b/r0b-g4-result.json` | 22069 | `sha256:544655cf1be2369d1928dc269e4475c51b13a77ac0ab3af22ff0654d86bb9795` | `sha256:544655cf1be2369d1928dc269e4475c51b13a77ac0ab3af22ff0654d86bb9795` |
-| `consumer/s2b_contracts.py` | `consumer/s2b_contracts.py` | 15787 | `sha256:f19cfbaf71e186efcae058329c20c16636fe9545110acd0d8f3939139863c407` | `sha256:f19cfbaf71e186efcae058329c20c16636fe9545110acd0d8f3939139863c407` |
-| `consumer/s2b_capture.py` | `consumer/s2b_capture.py` | 18641 | `sha256:c30fb5930a1af082cb5fd4842402237b08a8a4ebe8e5059aee6e66fee85188a8` | `sha256:c30fb5930a1af082cb5fd4842402237b08a8a4ebe8e5059aee6e66fee85188a8` |
-| `consumer/s2b_validate.py` | `consumer/s2b_validate.py` | 8117 | `sha256:3fbe351330cd89266efaea62945a1d88755682585c106e41b832d51d0abf2520` | `sha256:3fbe351330cd89266efaea62945a1d88755682585c106e41b832d51d0abf2520` |
-| `consumer/s2b-default-a0.json` | `consumer/s2b-default-a0.json` | 4406 | `sha256:13c80b3022bc4d7e29841927a8d477684fdfeba30400b48bd062f039e8e493d9` | `sha256:13c80b3022bc4d7e29841927a8d477684fdfeba30400b48bd062f039e8e493d9` |
-| `consumer/s2b-feature-a1.json` | `consumer/s2b-feature-a1.json` | 4451 | `sha256:ee65f13b22614919c6f9275b73aa893ce5c4e4499512b03289c35ccf9bc7db36` | `sha256:ee65f13b22614919c6f9275b73aa893ce5c4e4499512b03289c35ccf9bc7db36` |
-| `consumer/s2b-build.json` | `consumer/s2b-build.json` | 645 | `sha256:c1f1c4926255b8cb58520ff2cf508385de220a61b0430945f9fda619c5c512ca` | `sha256:c1f1c4926255b8cb58520ff2cf508385de220a61b0430945f9fda619c5c512ca` |
-| `r0b/capture-run-transcript.json` | `raw/capture-run.json` | 3207 | `sha256:76b1ee27c8a3c3c6e922e029e60b9e11df3b7ca2171e73e64985e7b321612d27` | `sha256:1bf53bc5b2e95c59bf7b3c23ca7e3a7b67f582b8185e44da684bdb63c6e13781` |
-
 ## Redactions
 
 - `raw/capture-run.json` is the runner transcript. Redacted fields: `$.wrapper_command[0]`, `$.wrapper_command[2]`, `$.wrapper_command[4]`, `$.wrapper_command[6]`, `$.wrapper_command[8]`, `$.wrapper_command[10]`, `$.wrapper_command[12]`, `$.wrapper_command[14]`.
