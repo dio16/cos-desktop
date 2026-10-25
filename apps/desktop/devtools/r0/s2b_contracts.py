@@ -320,19 +320,22 @@ def disposition_detail(capture: dict, ledger: dict, *, duration_ms: int | None =
     """Classify one validated capture with a closed reason.
 
     Called only after both contracts validate. A process failure never becomes success; a
-    capture that ended before the run's declared completion condition (its scope closed
-    early and the launcher observed the child for less than the declared workload
-    duration) is CANCELLED, not OBSERVED. Owned cleanup must be confirmed before either an
-    observed or a cancelled classification is allowed.
+    capture is CANCELLED whenever its own recorded scope is short of the declared workload
+    duration or the capture marks itself cancelled. The launcher's elapsed time is never
+    used for this decision: it includes process bootstrap, so it can exceed the declared
+    duration while the recorded scope stopped early (a real observed case: 27.489 s of a
+    30 s scope with ``cancelled=true`` and 30,325 ms of ledger elapsed). Owned cleanup must
+    be confirmed before either an observed or a cancelled classification is allowed.
     """
     if ledger.get("timed_out") or ledger.get("exit_code") != 0:
         return {"status": "FAILED", "reason": "LAUNCHER_FAILED"}
     cleanup = ledger.get("cleanup")
     if cleanup is not None and cleanup != "complete":
         return {"status": "FAILED", "reason": "CLEANUP_UNCONFIRMED"}
-    if (duration_ms is not None
-            and capture["summary"]["cancelled"]
-            and ledger.get("elapsed_ms", duration_ms) < duration_ms):
+    scope_ns = capture["scope_end_ns"] - capture["scope_start_ns"]
+    declared_ns = None if duration_ms is None else duration_ms * 1_000_000
+    short_scope = declared_ns is not None and scope_ns < declared_ns
+    if capture["summary"]["cancelled"] or short_scope:
         return {"status": "CANCELLED", "reason": "CLOSED_BEFORE_DECLARED_DURATION"}
     if any(capture["summary"]["kind_counts"][kind] for kind in SUPPORTED.values()):
         return {"status": "OBSERVED", "reason": "RETAINED_SOURCE_OBSERVATION"}

@@ -170,8 +170,14 @@ class S2BWireContract(unittest.TestCase):
         self.reject(value, "INTEGER")
 
     def test_no_supported_observation_and_failed_run_cannot_be_success(self):
-        value = s2b.validate_capture(example())
-        self.assertEqual(s2b.disposition(value, {"timed_out": False, "exit_code": 0}), "OBSERVED")
+        # Use a complete, uncancelled scope: the wire example itself is a short capture,
+        # which the corrected classifier always reports as CANCELLED.
+        raw = example()
+        raw["scope_end_ns"] = raw["scope_start_ns"] + 30_000_000_000
+        raw["summary"]["cancelled"] = False
+        value = s2b.validate_capture(raw)
+        self.assertEqual(s2b.disposition(value, {"timed_out": False, "exit_code": 0},
+                                         duration_ms=30_000), "OBSERVED")
         for ledger in ({"timed_out": True, "exit_code": 1}, {"timed_out": False, "exit_code": 2}):
             self.assertEqual(s2b.disposition(value, ledger), "FAILED")
         value["records"] = []
@@ -190,11 +196,13 @@ class S2BWireContract(unittest.TestCase):
                 value, {"timed_out": False, "exit_code": 0, "elapsed_ms": 5,
                         "cleanup": "complete"}, duration_ms=1000),
             {"status": "CANCELLED", "reason": "CLOSED_BEFORE_DECLARED_DURATION"})
+        # A long ledger elapsed time can never turn a short/cancelled scope into success:
+        # the launcher's elapsed time includes process bootstrap.
         self.assertEqual(
             s2b.disposition_detail(
                 value, {"timed_out": False, "exit_code": 0, "elapsed_ms": 5000,
                         "cleanup": "complete"}, duration_ms=1000),
-            {"status": "OBSERVED", "reason": "RETAINED_SOURCE_OBSERVATION"})
+            {"status": "CANCELLED", "reason": "CLOSED_BEFORE_DECLARED_DURATION"})
         self.assertEqual(
             s2b.disposition_detail(value, {"timed_out": True, "exit_code": 1},
                                    duration_ms=1000),
@@ -204,6 +212,34 @@ class S2BWireContract(unittest.TestCase):
                 value, {"timed_out": False, "exit_code": 0, "elapsed_ms": 5000,
                         "cleanup": "incomplete"}, duration_ms=1000),
             {"status": "FAILED", "reason": "CLEANUP_UNCONFIRMED"})
+
+    def test_short_cancelled_scope_is_never_observed_even_when_elapsed_exceeds_declared(self) -> None:
+        # Reproduces the reported case exactly: a 27.489 s scope of a declared 30 s run
+        # with cancelled=true, while the launcher's ledger elapsed 30,325 ms.
+        value = example()
+        value["scope_end_ns"] = value["scope_start_ns"] + 27_489_225_100
+        value["summary"]["cancelled"] = True
+        value = s2b.validate_capture(value)
+        ledger = {"timed_out": False, "exit_code": 0, "elapsed_ms": 30_325,
+                  "cleanup": "complete"}
+        self.assertEqual(s2b.disposition_detail(value, ledger, duration_ms=30_000),
+                         {"status": "CANCELLED", "reason": "CLOSED_BEFORE_DECLARED_DURATION"})
+        self.assertEqual(s2b.disposition(value, ledger, duration_ms=30_000), "CANCELLED")
+        # Without any declared duration the capture's own cancelled flag still wins.
+        self.assertEqual(s2b.disposition_detail(value, ledger),
+                         {"status": "CANCELLED", "reason": "CLOSED_BEFORE_DECLARED_DURATION"})
+
+    def test_complete_uncancelled_scope_stays_observed(self) -> None:
+        # Inverse: a full declared scope that is not cancelled stays OBSERVED even though
+        # the ledger elapsed longer than the declared duration (bootstrap included).
+        value = example()
+        value["scope_end_ns"] = value["scope_start_ns"] + 30_000_000_000
+        value["summary"]["cancelled"] = False
+        value = s2b.validate_capture(value)
+        ledger = {"timed_out": False, "exit_code": 0, "elapsed_ms": 37_472,
+                  "cleanup": "complete"}
+        self.assertEqual(s2b.disposition_detail(value, ledger, duration_ms=30_000),
+                         {"status": "OBSERVED", "reason": "RETAINED_SOURCE_OBSERVATION"})
 
     def test_refused_publication_removes_only_its_own_partial_artifacts(self) -> None:
         import s2b_capture
@@ -248,8 +284,12 @@ class S2BWireContract(unittest.TestCase):
         bundle = REPO / "docs/development/evidence/r0a-s2b/native-bundles.zip"
         if not bundle.is_file():
             self.skipTest("NOT_RUN: the retained S2B bundle is not present in this checkout")
+        # Discrepancy recorded, evidence not edited: the retained n02d capture has a
+        # 28.996 s scope with cancelled=true (ledger 32,721 ms). The previous
+        # elapsed-based classifier reported it as OBSERVED; the corrected scope-based
+        # classifier reports CANCELLED. The archived bundle bytes are untouched.
         for tag, status, reason, retained in (
-                ("n02d", "OBSERVED", "RETAINED_SOURCE_OBSERVATION", 256),
+                ("n02d", "CANCELLED", "CLOSED_BEFORE_DECLARED_DURATION", 256),
                 ("n04b", "CANCELLED", "CLOSED_BEFORE_DECLARED_DURATION", 34)):
             completed = subprocess.run(
                 [sys.executable, "-B", str(ROOT / "s2b_validate.py"), "bundle",
