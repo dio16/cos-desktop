@@ -1,38 +1,37 @@
 {
   "schema_version": 1,
   "source_retained_by": "local dev commit; not pushed under this directive",
-  "candidate": "90a756ddf57caa64430c1ff64c89b4d7a227a99c",
   "canonical_candidate_authority": "gates[].candidate",
   "verified_candidates": [
-    "90a756ddf57caa64430c1ff64c89b4d7a227a99c"
+    "e78f32abc2e7101be38ce5cec03526570c9ec1ef"
   ],
   "gates": [
     {
-      "gate_id": "9de12fe9-fb0c-4453-bda1-cfcf45a0e415",
-      "candidate": "90a756ddf57caa64430c1ff64c89b4d7a227a99c",
+      "gate_id": "d437c99c-2c06-4b52-9add-0353ea92b2c8",
+      "candidate": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
       "removed": [
         {
-          "path": "<W1_GATE_ROOT>/state/gates/9de12fe9-fb0c-4453-bda1-cfcf45a0e415/work/repo",
-          "bytes": 10400282,
-          "files": 353
+          "path": "<W1_REPAIR1_GATE_ROOT>/state/gates/d437c99c-2c06-4b52-9add-0353ea92b2c8/work/repo",
+          "bytes": 10519036,
+          "files": 358
         },
         {
-          "path": "<W1_GATE_ROOT>/targets/quality-clippy",
-          "bytes": 663889542,
+          "path": "<W1_REPAIR1_GATE_ROOT>/targets/quality-clippy",
+          "bytes": 663933128,
           "files": 3015
         },
         {
-          "path": "<W1_GATE_ROOT>/targets/quality-tests",
-          "bytes": 1841573648,
+          "path": "<W1_REPAIR1_GATE_ROOT>/targets/quality-tests",
+          "bytes": 1841629003,
           "files": 3144
         },
         {
-          "path": "<W1_GATE_ROOT>/state/gates/9de12fe9-fb0c-4453-bda1-cfcf45a0e415/private/home/.rustup",
+          "path": "<W1_REPAIR1_GATE_ROOT>/state/gates/d437c99c-2c06-4b52-9add-0353ea92b2c8/private/home/.rustup",
           "bytes": 764960518,
           "files": 3793
         }
       ],
-      "logical_bytes_removed": 3280823990,
+      "logical_bytes_removed": 3281041685,
       "integrity_identical": true,
       "verify_before": {
         "cli_interface_version": 2,
@@ -41,24 +40,24 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "9de12fe9-fb0c-4453-bda1-cfcf45a0e415",
+            "gate_id": "d437c99c-2c06-4b52-9add-0353ea92b2c8",
             "state": "SUCCEEDED",
-            "request_sha256": "sha256:a8ec07f6ca7e61ad80c20e9e223b13699e04ed9aa14c83daf13e22e92774bad2",
-            "terminal_state_sha256": "sha256:0edbb511eeb35b65a8554910246d4cc57f72cf4f34af74e8aa429f04b7f67fb7",
-            "observations_sha256": "sha256:6c75f221791f619df1e22334448e73ef5a14fb72ca34cf36c1ec3f4ec97d4b18",
-            "candidate_sha256": "sha256:a31ae1909e96a571e1ad27bc922b786c36da795fcdb6394e1302f4bbd578f93e",
+            "request_sha256": "sha256:e40924ab4201a3da58cf4bdfd0f4a8ac1c03df4b07f42d2884f854ee34524809",
+            "terminal_state_sha256": "sha256:c215d995f9676a0989bc1a4387cdcd60dc0e7d59e3837b35aa2d95c8d65005af",
+            "observations_sha256": "sha256:631a6b180b4c802bef666e477ddf9f877f7b3547bf55958bd54401361634f182",
+            "candidate_sha256": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c",
             "artifacts": [
               {
                 "id": "behavior",
                 "relative_path": "artifacts/behavior",
-                "size_bytes": 17858,
-                "sha256": "sha256:1a58a57469a4c1442a1e5f1bfb13c18d8513e700bfc1d3e26e95655256d33a96"
+                "size_bytes": 17864,
+                "sha256": "sha256:af912244c29da166bf4faf94f1c315df989442d009168c1d8454dc7f623a0a51"
               },
               {
                 "id": "cli-doc",
                 "relative_path": "artifacts/cli-doc",
-                "size_bytes": 82934,
-                "sha256": "sha256:780a1467da6faabbe17bd93f881b8b2811eee70446130f30156f16ad1608c745"
+                "size_bytes": 83842,
+                "sha256": "sha256:e5d0c28bd0cd19d0306826c277a01a859cdac28bf2bfc24576c765203a3a29d9"
               },
               {
                 "id": "fixture-probe",
@@ -81,20 +80,20 @@
               {
                 "id": "harness-tests",
                 "relative_path": "artifacts/harness-tests",
-                "size_bytes": 203223,
-                "sha256": "sha256:2e106eca693cad5458b015fafa15deebefabc434131e878e22136ecbe752a3d3"
+                "size_bytes": 204071,
+                "sha256": "sha256:23b6e9092ab40872ddb5f8acb325d84e90cd49e020ff04dd489c1ad0f5f22db9"
               },
               {
                 "id": "matrix",
                 "relative_path": "artifacts/matrix",
-                "size_bytes": 72024,
-                "sha256": "sha256:36037a74c1935b586cf70187539a09c193a503e4dacdef8195106b1ff652b52a"
+                "size_bytes": 74864,
+                "sha256": "sha256:01eb3f727e3036925fda4d5fcdbf38506f1f39a3f7c2d7454e4074e9b8d162ff"
               },
               {
                 "id": "runner",
                 "relative_path": "artifacts/runner",
-                "size_bytes": 15178,
-                "sha256": "sha256:7e94b3b22974632c04e1fad4d2029fe367069b5a01ca335ed7f479d5857b8849"
+                "size_bytes": 19237,
+                "sha256": "sha256:9e2456eda590da68580a9439b6a369450222132c859636a2d0f8cc90f727dbea"
               },
               {
                 "id": "silent-probe",
@@ -105,14 +104,26 @@
               {
                 "id": "source-order",
                 "relative_path": "artifacts/source-order",
-                "size_bytes": 802,
-                "sha256": "sha256:e2b6444fa2f07832439b94e365016ee3c45c84e54b07040d9885c81f60c69741"
+                "size_bytes": 959,
+                "sha256": "sha256:8936f96e78a8f0375994d2bfe06766a4db9eaccebc7261d1824fca88f3c7a808"
+              },
+              {
+                "id": "wic-admission",
+                "relative_path": "artifacts/wic-admission",
+                "size_bytes": 3780,
+                "sha256": "sha256:32dda8546425cab2cb22c2e5f2600b0654c762220c614c46f8be3b7f33085967"
               },
               {
                 "id": "wic-probe",
                 "relative_path": "artifacts/wic-probe",
-                "size_bytes": 22527,
-                "sha256": "sha256:961f9a7ec588697be9609b635352e5d821133388fb5a1c5b02be7d34b698a378"
+                "size_bytes": 20422,
+                "sha256": "sha256:3a49cddd26372dad99c3accfd63ffae54fec8eef6b4b92086eb3a98aa5b0e3d6"
+              },
+              {
+                "id": "wic-selftest",
+                "relative_path": "artifacts/wic-selftest",
+                "size_bytes": 2639,
+                "sha256": "sha256:79e63d73ad541d68e6e6194edabdffb4e82ce2aad8c50c30273f1aff497c6be1"
               }
             ],
             "check_logs": [
@@ -137,8 +148,8 @@
                 "check_id": "metadata",
                 "stdout": {
                   "relative_path": "logs/metadata/stdout",
-                  "size_bytes": 23316,
-                  "sha256": "sha256:f69f600f99be878edca0677d146f653805e5d629c667adf614357a23c0f4c51a",
+                  "size_bytes": 23900,
+                  "sha256": "sha256:b91c1d387c3976d754f9d9364ff59a33e53f04c6ef450a56670e474987f22bcc",
                   "truncated": false,
                   "secret": true
                 },
@@ -162,7 +173,7 @@
                 "stderr": {
                   "relative_path": "logs/dependency-self-test/stderr",
                   "size_bytes": 2680,
-                  "sha256": "sha256:356c424ab291c54f239d4e401f4127ce6c2051d4b0834c7a332f77802422023c",
+                  "sha256": "sha256:9dfea748d288e7fb3060a9bd9c2897940f90738e753b626b823bf9f1b94d86ec",
                   "truncated": false,
                   "secret": true
                 }
@@ -195,8 +206,8 @@
                 },
                 "stderr": {
                   "relative_path": "logs/clippy/stderr",
-                  "size_bytes": 12946,
-                  "sha256": "sha256:4282df53376dcdb474a9b5f873d4ec401feaecd684fc2c9095048ff0692eb509",
+                  "size_bytes": 13002,
+                  "sha256": "sha256:f851bfcc95638f0510852dfffc7c57d225b3ed9ee1ddaa5286a3375548499b1f",
                   "truncated": false,
                   "secret": true
                 }
@@ -205,15 +216,15 @@
                 "check_id": "tests",
                 "stdout": {
                   "relative_path": "logs/tests/stdout",
-                  "size_bytes": 43362,
-                  "sha256": "sha256:2d7c73f516d4b9f6e82c58f0bc052ed47570bcb0cdf46106c86b8ce1542a9649",
+                  "size_bytes": 43420,
+                  "sha256": "sha256:14f649b686d3236f601ea8db78cfaed39116c21181f35b07a8d134a1446bd5ec",
                   "truncated": false,
                   "secret": true
                 },
                 "stderr": {
                   "relative_path": "logs/tests/stderr",
-                  "size_bytes": 16882,
-                  "sha256": "sha256:c342ec5d3b77284f7030738014f2e84a63667bf958aa9ece3d22ef647da08bcf",
+                  "size_bytes": 17130,
+                  "sha256": "sha256:9b9e83d322b3d985739ac85681d0d3a98c4e6be036b5d2806eba284d55e0a0b1",
                   "truncated": false,
                   "secret": true
                 }
@@ -230,7 +241,7 @@
                 "stderr": {
                   "relative_path": "logs/r0-python/stderr",
                   "size_bytes": 683,
-                  "sha256": "sha256:82db091964277ba5176aa96408dfc4fcef3cec3330fdb193a569f635b228bea1",
+                  "sha256": "sha256:28442c03760ddb6bc8535f5dff3bb269035eaac9afe46ebe360e9647a590024b",
                   "truncated": false,
                   "secret": true
                 }
@@ -246,24 +257,24 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "9de12fe9-fb0c-4453-bda1-cfcf45a0e415",
+            "gate_id": "d437c99c-2c06-4b52-9add-0353ea92b2c8",
             "state": "SUCCEEDED",
-            "request_sha256": "sha256:a8ec07f6ca7e61ad80c20e9e223b13699e04ed9aa14c83daf13e22e92774bad2",
-            "terminal_state_sha256": "sha256:0edbb511eeb35b65a8554910246d4cc57f72cf4f34af74e8aa429f04b7f67fb7",
-            "observations_sha256": "sha256:6c75f221791f619df1e22334448e73ef5a14fb72ca34cf36c1ec3f4ec97d4b18",
-            "candidate_sha256": "sha256:a31ae1909e96a571e1ad27bc922b786c36da795fcdb6394e1302f4bbd578f93e",
+            "request_sha256": "sha256:e40924ab4201a3da58cf4bdfd0f4a8ac1c03df4b07f42d2884f854ee34524809",
+            "terminal_state_sha256": "sha256:c215d995f9676a0989bc1a4387cdcd60dc0e7d59e3837b35aa2d95c8d65005af",
+            "observations_sha256": "sha256:631a6b180b4c802bef666e477ddf9f877f7b3547bf55958bd54401361634f182",
+            "candidate_sha256": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c",
             "artifacts": [
               {
                 "id": "behavior",
                 "relative_path": "artifacts/behavior",
-                "size_bytes": 17858,
-                "sha256": "sha256:1a58a57469a4c1442a1e5f1bfb13c18d8513e700bfc1d3e26e95655256d33a96"
+                "size_bytes": 17864,
+                "sha256": "sha256:af912244c29da166bf4faf94f1c315df989442d009168c1d8454dc7f623a0a51"
               },
               {
                 "id": "cli-doc",
                 "relative_path": "artifacts/cli-doc",
-                "size_bytes": 82934,
-                "sha256": "sha256:780a1467da6faabbe17bd93f881b8b2811eee70446130f30156f16ad1608c745"
+                "size_bytes": 83842,
+                "sha256": "sha256:e5d0c28bd0cd19d0306826c277a01a859cdac28bf2bfc24576c765203a3a29d9"
               },
               {
                 "id": "fixture-probe",
@@ -286,20 +297,20 @@
               {
                 "id": "harness-tests",
                 "relative_path": "artifacts/harness-tests",
-                "size_bytes": 203223,
-                "sha256": "sha256:2e106eca693cad5458b015fafa15deebefabc434131e878e22136ecbe752a3d3"
+                "size_bytes": 204071,
+                "sha256": "sha256:23b6e9092ab40872ddb5f8acb325d84e90cd49e020ff04dd489c1ad0f5f22db9"
               },
               {
                 "id": "matrix",
                 "relative_path": "artifacts/matrix",
-                "size_bytes": 72024,
-                "sha256": "sha256:36037a74c1935b586cf70187539a09c193a503e4dacdef8195106b1ff652b52a"
+                "size_bytes": 74864,
+                "sha256": "sha256:01eb3f727e3036925fda4d5fcdbf38506f1f39a3f7c2d7454e4074e9b8d162ff"
               },
               {
                 "id": "runner",
                 "relative_path": "artifacts/runner",
-                "size_bytes": 15178,
-                "sha256": "sha256:7e94b3b22974632c04e1fad4d2029fe367069b5a01ca335ed7f479d5857b8849"
+                "size_bytes": 19237,
+                "sha256": "sha256:9e2456eda590da68580a9439b6a369450222132c859636a2d0f8cc90f727dbea"
               },
               {
                 "id": "silent-probe",
@@ -310,14 +321,26 @@
               {
                 "id": "source-order",
                 "relative_path": "artifacts/source-order",
-                "size_bytes": 802,
-                "sha256": "sha256:e2b6444fa2f07832439b94e365016ee3c45c84e54b07040d9885c81f60c69741"
+                "size_bytes": 959,
+                "sha256": "sha256:8936f96e78a8f0375994d2bfe06766a4db9eaccebc7261d1824fca88f3c7a808"
+              },
+              {
+                "id": "wic-admission",
+                "relative_path": "artifacts/wic-admission",
+                "size_bytes": 3780,
+                "sha256": "sha256:32dda8546425cab2cb22c2e5f2600b0654c762220c614c46f8be3b7f33085967"
               },
               {
                 "id": "wic-probe",
                 "relative_path": "artifacts/wic-probe",
-                "size_bytes": 22527,
-                "sha256": "sha256:961f9a7ec588697be9609b635352e5d821133388fb5a1c5b02be7d34b698a378"
+                "size_bytes": 20422,
+                "sha256": "sha256:3a49cddd26372dad99c3accfd63ffae54fec8eef6b4b92086eb3a98aa5b0e3d6"
+              },
+              {
+                "id": "wic-selftest",
+                "relative_path": "artifacts/wic-selftest",
+                "size_bytes": 2639,
+                "sha256": "sha256:79e63d73ad541d68e6e6194edabdffb4e82ce2aad8c50c30273f1aff497c6be1"
               }
             ],
             "check_logs": [
@@ -342,8 +365,8 @@
                 "check_id": "metadata",
                 "stdout": {
                   "relative_path": "logs/metadata/stdout",
-                  "size_bytes": 23316,
-                  "sha256": "sha256:f69f600f99be878edca0677d146f653805e5d629c667adf614357a23c0f4c51a",
+                  "size_bytes": 23900,
+                  "sha256": "sha256:b91c1d387c3976d754f9d9364ff59a33e53f04c6ef450a56670e474987f22bcc",
                   "truncated": false,
                   "secret": true
                 },
@@ -367,7 +390,7 @@
                 "stderr": {
                   "relative_path": "logs/dependency-self-test/stderr",
                   "size_bytes": 2680,
-                  "sha256": "sha256:356c424ab291c54f239d4e401f4127ce6c2051d4b0834c7a332f77802422023c",
+                  "sha256": "sha256:9dfea748d288e7fb3060a9bd9c2897940f90738e753b626b823bf9f1b94d86ec",
                   "truncated": false,
                   "secret": true
                 }
@@ -400,8 +423,8 @@
                 },
                 "stderr": {
                   "relative_path": "logs/clippy/stderr",
-                  "size_bytes": 12946,
-                  "sha256": "sha256:4282df53376dcdb474a9b5f873d4ec401feaecd684fc2c9095048ff0692eb509",
+                  "size_bytes": 13002,
+                  "sha256": "sha256:f851bfcc95638f0510852dfffc7c57d225b3ed9ee1ddaa5286a3375548499b1f",
                   "truncated": false,
                   "secret": true
                 }
@@ -410,15 +433,15 @@
                 "check_id": "tests",
                 "stdout": {
                   "relative_path": "logs/tests/stdout",
-                  "size_bytes": 43362,
-                  "sha256": "sha256:2d7c73f516d4b9f6e82c58f0bc052ed47570bcb0cdf46106c86b8ce1542a9649",
+                  "size_bytes": 43420,
+                  "sha256": "sha256:14f649b686d3236f601ea8db78cfaed39116c21181f35b07a8d134a1446bd5ec",
                   "truncated": false,
                   "secret": true
                 },
                 "stderr": {
                   "relative_path": "logs/tests/stderr",
-                  "size_bytes": 16882,
-                  "sha256": "sha256:c342ec5d3b77284f7030738014f2e84a63667bf958aa9ece3d22ef647da08bcf",
+                  "size_bytes": 17130,
+                  "sha256": "sha256:9b9e83d322b3d985739ac85681d0d3a98c4e6be036b5d2806eba284d55e0a0b1",
                   "truncated": false,
                   "secret": true
                 }
@@ -435,7 +458,7 @@
                 "stderr": {
                   "relative_path": "logs/r0-python/stderr",
                   "size_bytes": 683,
-                  "sha256": "sha256:82db091964277ba5176aa96408dfc4fcef3cec3330fdb193a569f635b228bea1",
+                  "sha256": "sha256:28442c03760ddb6bc8535f5dff3bb269035eaac9afe46ebe360e9647a590024b",
                   "truncated": false,
                   "secret": true
                 }
@@ -446,21 +469,21 @@
       }
     },
     {
-      "gate_id": "e2c38061-b951-491d-bfc9-e26d7346486f",
-      "candidate": "90a756ddf57caa64430c1ff64c89b4d7a227a99c",
+      "gate_id": "f62ab587-5759-4589-84da-ab2199cee91c",
+      "candidate": "e78f32abc2e7101be38ce5cec03526570c9ec1ef",
       "removed": [
         {
-          "path": "<W1_GATE_ROOT>/state/gates/e2c38061-b951-491d-bfc9-e26d7346486f/work/repo",
-          "bytes": 10399078,
-          "files": 353
+          "path": "<W1_REPAIR1_GATE_ROOT>/state/gates/f62ab587-5759-4589-84da-ab2199cee91c/work/repo",
+          "bytes": 10517743,
+          "files": 358
         },
         {
-          "path": "<W1_GATE_ROOT>/targets/build-build",
-          "bytes": 1593000553,
+          "path": "<W1_REPAIR1_GATE_ROOT>/targets/build-build",
+          "bytes": 1593063113,
           "files": 2911
         }
       ],
-      "logical_bytes_removed": 1603399631,
+      "logical_bytes_removed": 1603580856,
       "integrity_identical": true,
       "verify_before": {
         "cli_interface_version": 2,
@@ -469,24 +492,24 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "e2c38061-b951-491d-bfc9-e26d7346486f",
+            "gate_id": "f62ab587-5759-4589-84da-ab2199cee91c",
             "state": "SUCCEEDED",
-            "request_sha256": "sha256:766f1a84969dc7ca7abe67e0f2d20430e704a4a2bf614a48ef2bba879bb2f6df",
-            "terminal_state_sha256": "sha256:fcb5560783aabd554562cb092702120351a0548bfcfb8f26f4918665b70b43fe",
-            "observations_sha256": "sha256:bdc3de8945538d010312dd89fb0ac5d42822d972307146411b6793fc131b2f30",
-            "candidate_sha256": "sha256:a31ae1909e96a571e1ad27bc922b786c36da795fcdb6394e1302f4bbd578f93e",
+            "request_sha256": "sha256:91d48a3ac5b1d76db0b1a683e1f900490d6a7427b32f8d730ff4bb4b92a9ca6b",
+            "terminal_state_sha256": "sha256:ae9db457da1deaf45200d96665e603a3e7b7a12a8afea35a18197c08447d721e",
+            "observations_sha256": "sha256:778cc34f94a44c61b8f9916b3b4d20dc2c075d5374a64174e857e4a0af0aba9d",
+            "candidate_sha256": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c",
             "artifacts": [
               {
                 "id": "behavior",
                 "relative_path": "artifacts/behavior",
-                "size_bytes": 17858,
-                "sha256": "sha256:1a58a57469a4c1442a1e5f1bfb13c18d8513e700bfc1d3e26e95655256d33a96"
+                "size_bytes": 17864,
+                "sha256": "sha256:af912244c29da166bf4faf94f1c315df989442d009168c1d8454dc7f623a0a51"
               },
               {
                 "id": "cli-doc",
                 "relative_path": "artifacts/cli-doc",
-                "size_bytes": 82934,
-                "sha256": "sha256:780a1467da6faabbe17bd93f881b8b2811eee70446130f30156f16ad1608c745"
+                "size_bytes": 83842,
+                "sha256": "sha256:e5d0c28bd0cd19d0306826c277a01a859cdac28bf2bfc24576c765203a3a29d9"
               },
               {
                 "id": "fixture-probe",
@@ -509,20 +532,20 @@
               {
                 "id": "harness-tests",
                 "relative_path": "artifacts/harness-tests",
-                "size_bytes": 203223,
-                "sha256": "sha256:2e106eca693cad5458b015fafa15deebefabc434131e878e22136ecbe752a3d3"
+                "size_bytes": 204071,
+                "sha256": "sha256:23b6e9092ab40872ddb5f8acb325d84e90cd49e020ff04dd489c1ad0f5f22db9"
               },
               {
                 "id": "matrix",
                 "relative_path": "artifacts/matrix",
-                "size_bytes": 72024,
-                "sha256": "sha256:36037a74c1935b586cf70187539a09c193a503e4dacdef8195106b1ff652b52a"
+                "size_bytes": 74864,
+                "sha256": "sha256:01eb3f727e3036925fda4d5fcdbf38506f1f39a3f7c2d7454e4074e9b8d162ff"
               },
               {
                 "id": "runner",
                 "relative_path": "artifacts/runner",
-                "size_bytes": 15178,
-                "sha256": "sha256:7e94b3b22974632c04e1fad4d2029fe367069b5a01ca335ed7f479d5857b8849"
+                "size_bytes": 19237,
+                "sha256": "sha256:9e2456eda590da68580a9439b6a369450222132c859636a2d0f8cc90f727dbea"
               },
               {
                 "id": "silent-probe",
@@ -533,14 +556,26 @@
               {
                 "id": "source-order",
                 "relative_path": "artifacts/source-order",
-                "size_bytes": 802,
-                "sha256": "sha256:e2b6444fa2f07832439b94e365016ee3c45c84e54b07040d9885c81f60c69741"
+                "size_bytes": 959,
+                "sha256": "sha256:8936f96e78a8f0375994d2bfe06766a4db9eaccebc7261d1824fca88f3c7a808"
+              },
+              {
+                "id": "wic-admission",
+                "relative_path": "artifacts/wic-admission",
+                "size_bytes": 3780,
+                "sha256": "sha256:32dda8546425cab2cb22c2e5f2600b0654c762220c614c46f8be3b7f33085967"
               },
               {
                 "id": "wic-probe",
                 "relative_path": "artifacts/wic-probe",
-                "size_bytes": 22527,
-                "sha256": "sha256:961f9a7ec588697be9609b635352e5d821133388fb5a1c5b02be7d34b698a378"
+                "size_bytes": 20422,
+                "sha256": "sha256:3a49cddd26372dad99c3accfd63ffae54fec8eef6b4b92086eb3a98aa5b0e3d6"
+              },
+              {
+                "id": "wic-selftest",
+                "relative_path": "artifacts/wic-selftest",
+                "size_bytes": 2639,
+                "sha256": "sha256:79e63d73ad541d68e6e6194edabdffb4e82ce2aad8c50c30273f1aff497c6be1"
               }
             ],
             "check_logs": [
@@ -555,8 +590,8 @@
                 },
                 "stderr": {
                   "relative_path": "logs/build/stderr",
-                  "size_bytes": 12705,
-                  "sha256": "sha256:ead539eb866db4885093db419381e80045724c6890fbe37d34ca224f9fb2f5f4",
+                  "size_bytes": 12761,
+                  "sha256": "sha256:cede13e79be19d829932044954b186f415df49cdd8b3376bd0d170c123c52da4",
                   "truncated": false,
                   "secret": true
                 }
@@ -572,24 +607,24 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "e2c38061-b951-491d-bfc9-e26d7346486f",
+            "gate_id": "f62ab587-5759-4589-84da-ab2199cee91c",
             "state": "SUCCEEDED",
-            "request_sha256": "sha256:766f1a84969dc7ca7abe67e0f2d20430e704a4a2bf614a48ef2bba879bb2f6df",
-            "terminal_state_sha256": "sha256:fcb5560783aabd554562cb092702120351a0548bfcfb8f26f4918665b70b43fe",
-            "observations_sha256": "sha256:bdc3de8945538d010312dd89fb0ac5d42822d972307146411b6793fc131b2f30",
-            "candidate_sha256": "sha256:a31ae1909e96a571e1ad27bc922b786c36da795fcdb6394e1302f4bbd578f93e",
+            "request_sha256": "sha256:91d48a3ac5b1d76db0b1a683e1f900490d6a7427b32f8d730ff4bb4b92a9ca6b",
+            "terminal_state_sha256": "sha256:ae9db457da1deaf45200d96665e603a3e7b7a12a8afea35a18197c08447d721e",
+            "observations_sha256": "sha256:778cc34f94a44c61b8f9916b3b4d20dc2c075d5374a64174e857e4a0af0aba9d",
+            "candidate_sha256": "sha256:85fa050a7f4fa58e3e12d1f836a9326d17e1755d6bc1d7842eaba239b0b3413c",
             "artifacts": [
               {
                 "id": "behavior",
                 "relative_path": "artifacts/behavior",
-                "size_bytes": 17858,
-                "sha256": "sha256:1a58a57469a4c1442a1e5f1bfb13c18d8513e700bfc1d3e26e95655256d33a96"
+                "size_bytes": 17864,
+                "sha256": "sha256:af912244c29da166bf4faf94f1c315df989442d009168c1d8454dc7f623a0a51"
               },
               {
                 "id": "cli-doc",
                 "relative_path": "artifacts/cli-doc",
-                "size_bytes": 82934,
-                "sha256": "sha256:780a1467da6faabbe17bd93f881b8b2811eee70446130f30156f16ad1608c745"
+                "size_bytes": 83842,
+                "sha256": "sha256:e5d0c28bd0cd19d0306826c277a01a859cdac28bf2bfc24576c765203a3a29d9"
               },
               {
                 "id": "fixture-probe",
@@ -612,20 +647,20 @@
               {
                 "id": "harness-tests",
                 "relative_path": "artifacts/harness-tests",
-                "size_bytes": 203223,
-                "sha256": "sha256:2e106eca693cad5458b015fafa15deebefabc434131e878e22136ecbe752a3d3"
+                "size_bytes": 204071,
+                "sha256": "sha256:23b6e9092ab40872ddb5f8acb325d84e90cd49e020ff04dd489c1ad0f5f22db9"
               },
               {
                 "id": "matrix",
                 "relative_path": "artifacts/matrix",
-                "size_bytes": 72024,
-                "sha256": "sha256:36037a74c1935b586cf70187539a09c193a503e4dacdef8195106b1ff652b52a"
+                "size_bytes": 74864,
+                "sha256": "sha256:01eb3f727e3036925fda4d5fcdbf38506f1f39a3f7c2d7454e4074e9b8d162ff"
               },
               {
                 "id": "runner",
                 "relative_path": "artifacts/runner",
-                "size_bytes": 15178,
-                "sha256": "sha256:7e94b3b22974632c04e1fad4d2029fe367069b5a01ca335ed7f479d5857b8849"
+                "size_bytes": 19237,
+                "sha256": "sha256:9e2456eda590da68580a9439b6a369450222132c859636a2d0f8cc90f727dbea"
               },
               {
                 "id": "silent-probe",
@@ -636,14 +671,26 @@
               {
                 "id": "source-order",
                 "relative_path": "artifacts/source-order",
-                "size_bytes": 802,
-                "sha256": "sha256:e2b6444fa2f07832439b94e365016ee3c45c84e54b07040d9885c81f60c69741"
+                "size_bytes": 959,
+                "sha256": "sha256:8936f96e78a8f0375994d2bfe06766a4db9eaccebc7261d1824fca88f3c7a808"
+              },
+              {
+                "id": "wic-admission",
+                "relative_path": "artifacts/wic-admission",
+                "size_bytes": 3780,
+                "sha256": "sha256:32dda8546425cab2cb22c2e5f2600b0654c762220c614c46f8be3b7f33085967"
               },
               {
                 "id": "wic-probe",
                 "relative_path": "artifacts/wic-probe",
-                "size_bytes": 22527,
-                "sha256": "sha256:961f9a7ec588697be9609b635352e5d821133388fb5a1c5b02be7d34b698a378"
+                "size_bytes": 20422,
+                "sha256": "sha256:3a49cddd26372dad99c3accfd63ffae54fec8eef6b4b92086eb3a98aa5b0e3d6"
+              },
+              {
+                "id": "wic-selftest",
+                "relative_path": "artifacts/wic-selftest",
+                "size_bytes": 2639,
+                "sha256": "sha256:79e63d73ad541d68e6e6194edabdffb4e82ce2aad8c50c30273f1aff497c6be1"
               }
             ],
             "check_logs": [
@@ -658,8 +705,8 @@
                 },
                 "stderr": {
                   "relative_path": "logs/build/stderr",
-                  "size_bytes": 12705,
-                  "sha256": "sha256:ead539eb866db4885093db419381e80045724c6890fbe37d34ca224f9fb2f5f4",
+                  "size_bytes": 12761,
+                  "sha256": "sha256:cede13e79be19d829932044954b186f415df49cdd8b3376bd0d170c123c52da4",
                   "truncated": false,
                   "secret": true
                 }
@@ -671,7 +718,7 @@
     }
   ],
   "total_dirs_removed": 6,
-  "total_logical_bytes_removed": 4884223621,
+  "total_logical_bytes_removed": 4884622541,
   "measurement": "logical file lengths, not allocated disk space",
   "kept": [
     "Gate authority/receipts/artifacts/logs",
