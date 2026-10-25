@@ -154,7 +154,7 @@ class TraceTests(unittest.TestCase):
 
     def test_a_trace_that_leaves_the_active_window_is_refused(self) -> None:
         document = copy.deepcopy(manifest())
-        document["actions"][0]["count"] = 400
+        document["actions"][0]["count"] = 700
         with self.assertRaises(r0c.ContractError) as caught:
             r0c.plan_trace(document)
         self.assertEqual(caught.exception.code, "OUT_OF_RANGE")

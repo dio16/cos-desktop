@@ -55,6 +55,7 @@ def probe_for(trace: dict, *, generation: int = GENERATION, pid: int = OBSERVATI
             for action in trace["actions"]
         ],
         "close": {"posted": True, "window_gone": True},
+        "time_correspondence": {"input_start_wall_ns": 2_000, "input_end_wall_ns": 9_000},
         "binding_lost": False,
         "cancelled": False,
     }
@@ -574,30 +575,30 @@ class ProbeStateTests(unittest.TestCase):
     def test_failure_reason_priority_is_deterministic(self) -> None:
         cleanup = {"window_gone": True}
         self.assertEqual(
-            r0c_driver.failure_reason("MISSING", None, 0, "", "", "", "", cleanup, 0, 1),
+            r0c_driver.failure_reason("MISSING", None, 0, "", "", "", cleanup, 0, 1),
             "PROBE_MISSING",
         )
         self.assertEqual(
-            r0c_driver.failure_reason("CORRUPT", None, 0, "", "", "", "", cleanup, 0, 1),
+            r0c_driver.failure_reason("CORRUPT", None, 0, "", "", "", cleanup, 0, 1),
             "PROBE_CORRUPT",
         )
         self.assertEqual(
             r0c_driver.failure_reason(
-                "OK", {"binding_lost": True, "cancelled": False}, 0, "", "", "", "",
+                "OK", {"binding_lost": True, "cancelled": False}, 0, "", "", "",
                 cleanup, 0, 1,
             ),
             "PROBE_BINDING_LOST",
         )
         self.assertEqual(
             r0c_driver.failure_reason(
-                "OK", {"binding_lost": False, "cancelled": False}, 0, "", "", "JOURNAL_INVALID",
+                "OK", {"binding_lost": False, "cancelled": False}, 0, "", "JOURNAL_INVALID",
                 "", cleanup, 0, 1,
             ),
             "JOURNAL_INVALID",
         )
         self.assertEqual(
             r0c_driver.failure_reason(
-                "OK", {"binding_lost": False, "cancelled": False}, 0, "", "", "", "",
+                "OK", {"binding_lost": False, "cancelled": False}, 0, "", "", "",
                 {"window_gone": False}, 0, 1,
             ),
             "CLEANUP_UNCONFIRMED",
@@ -609,7 +610,8 @@ class ProbeStateTests(unittest.TestCase):
             self.assertEqual(r0c_driver.load_probe(path), (None, "MISSING"))
             path.write_text("{not json", encoding="utf-8")
             self.assertEqual(r0c_driver.load_probe(path), (None, "CORRUPT"))
-            path.write_text(json.dumps({"generation": 1}), encoding="utf-8")
+            trace = r0c.plan_trace(manifest())
+            path.write_text(json.dumps(probe_for(trace)), encoding="utf-8")
             self.assertEqual(r0c_driver.load_probe(path)[1], "OK")
 
     def test_corrupt_probe_still_yields_a_failed_record(self) -> None:
@@ -637,6 +639,7 @@ class ProbeStateTests(unittest.TestCase):
                      "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
                      "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
                  },
+                 "close": {"posted": True, "window_gone": True},
                  "binding_lost": True,
                  "cancelled": True}
         with tempfile.TemporaryDirectory() as directory:
@@ -663,6 +666,64 @@ class ProbeStateTests(unittest.TestCase):
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.check_s2b_bundle(Path(directory), str(MANIFEST), 120_000)
             self.assertEqual(caught.exception.code, "EVIDENCE_MISSING")
+
+
+class DispositionTests(unittest.TestCase):
+    def test_only_observed_disposition_is_accepted(self) -> None:
+        r0c_driver.require_observed_disposition({"disposition": "OBSERVED"})
+        for disposition, code in (
+            ("CANCELLED", "S2B_DISPOSITION_CANCELLED"),
+            ("FAILED", "S2B_DISPOSITION_FAILED"),
+            ("NOT_MEASURED", "S2B_DISPOSITION_NOT_MEASURED"),
+            ("UNKNOWN", "S2B_DISPOSITION_INVALID"),
+        ):
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.require_observed_disposition({"disposition": disposition})
+            self.assertEqual(caught.exception.code, code)
+
+
+class ProbeShapeTests(unittest.TestCase):
+    def test_a_structurally_invalid_probe_is_corrupt(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps({"actions": "not-a-list"}), encoding="utf-8")
+            self.assertEqual(r0c_driver.load_probe(path), (None, "CORRUPT"))
+            self.assertTrue(r0c_driver.probe_shape_error({"actions": "not-a-list"}))
+            self.assertTrue(r0c_driver.probe_shape_error({"binding": {}}))
+
+    def test_a_structurally_invalid_probe_is_rejected_by_verify(self) -> None:
+        document = result()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            (output / "r0c-probe.json").write_text(json.dumps({"actions": []}), encoding="utf-8")
+            path = output / "result.json"
+            path.write_text(json.dumps(document), encoding="utf-8")
+            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
+                                     "output_dir": directory,
+                                     "s2b_manifest": str(MANIFEST)})()
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.verify(args)
+            self.assertEqual(caught.exception.code, "PROBE_CORRUPT")
+
+    def test_probe_stderr_is_not_taken_into_the_reason(self) -> None:
+        self.assertEqual(r0c_driver.probe_exit_code(1), "PROBE_EXITED")
+        self.assertEqual(r0c_driver.probe_exit_code(124), "PROBE_TIMEOUT")
+        reason = r0c_driver.failure_reason(
+            "OK", {"binding_lost": False, "cancelled": False}, 1,
+            "", "", "", {"window_gone": True}, 0, 1,
+        )
+        self.assertEqual(reason, "PROBE_EXITED")
+
+
+class BundleViewTests(unittest.TestCase):
+    def test_an_extra_entry_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            for name in r0c_driver.REQUIRED_S2B_EVIDENCE:
+                (output / name).write_text("{}", encoding="utf-8")
+            (output / "unexpected.txt").write_text("x", encoding="utf-8")
+            with self.assertRaises(r0c.ContractError):
+                r0c_driver.check_s2b_bundle(output, str(MANIFEST), 120_000)
 
 
 class JournalRangeTests(unittest.TestCase):
@@ -692,6 +753,7 @@ class ProbeBindingVerifyTests(unittest.TestCase):
                      "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
                      "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
                  },
+                 "close": {"posted": True, "window_gone": True},
                  "binding_lost": False,
                  "cancelled": False}
         document["actions"][0]["actual_ns"] += 1_000_000
@@ -715,6 +777,7 @@ class ProbeBindingVerifyTests(unittest.TestCase):
                      "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
                      "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
                  },
+                 "close": {"posted": True, "window_gone": True},
                  "binding_lost": False,
                  "cancelled": False}
         probe["actions"][0]["actual_ns"] += 1
@@ -738,6 +801,7 @@ class ProbeBindingVerifyTests(unittest.TestCase):
                      "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
                      "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
                  },
+                 "close": {"posted": True, "window_gone": True},
                  "binding_lost": False,
                  "cancelled": False}
         with tempfile.TemporaryDirectory() as directory:
@@ -751,10 +815,11 @@ class ProbeBindingVerifyTests(unittest.TestCase):
 
 
 class ApplicationCadenceTests(unittest.TestCase):
-    def test_140_evenly_spaced_posts_are_not_140_application_samples(self) -> None:
+    def test_posted_samples_are_not_application_samples(self) -> None:
         document = result()
         observed = document["observed_cadence"]
-        self.assertEqual(document["delivered_actions"], 140)
+        self.assertEqual(document["delivered_actions"], len(document["actions"]))
+        self.assertGreater(len(document["actions"]), 0)
         self.assertEqual(document["journal"]["counts"]["0"], 113)
         self.assertNotEqual(observed["postmessage_success_hz"]["keyboard"],
                             observed["application_processing_hz"])

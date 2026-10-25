@@ -275,10 +275,10 @@ def validate_manifest(document: Any) -> dict[str, Any]:
     lifecycle = _object(
         manifest["lifecycle"],
         "$.lifecycle",
-        ("close", "timeout_ms", "recovery", "cancel"),
+        ("close", "close_after_ms", "timeout_ms", "recovery", "cancel"),
     )
     _enum(lifecycle["close"], "$.lifecycle.close", ("wm_close",))
-    _int(lifecycle["timeout_ms"], "$.lifecycle.timeout_ms", 1_000, MAX_DURATION_MS)
+    _int(lifecycle["close_after_ms"], "$.lifecycle.close_after_ms", 0, MAX_DURATION_MS)
     _enum(lifecycle["recovery"], "$.lifecycle.recovery", ("none", "close"))
     _enum(lifecycle["cancel"], "$.lifecycle.cancel", ("immediate",))
 

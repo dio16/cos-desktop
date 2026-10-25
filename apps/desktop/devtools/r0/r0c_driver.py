@@ -186,6 +186,7 @@ def run_probe(plan_path: Path, out_path: Path, manifest: dict, excluded: set[int
         "--excluded-pids", ",".join(str(pid) for pid in sorted(excluded)),
         "--max-lag-ms", str(r0c.MAX_LAG_MS),
         "--close-timeout-ms", str(r0c.CLOSE_TIMEOUT_MS),
+        "--close-after-ms", str(manifest["lifecycle"]["close_after_ms"]),
     ]
     return _run_bounded(command, timeout_s=timeout_s)
 
@@ -449,6 +450,38 @@ REQUIRED_S2B_EVIDENCE = (
 )
 
 
+def probe_shape_error(probe: object) -> str:
+    """Structural validation before a probe is trusted; any failure is corrupt."""
+    if not isinstance(probe, dict):
+        return "NOT_OBJECT"
+    for key in ("binding", "window", "close", "time_correspondence"):
+        if not isinstance(probe.get(key), dict):
+            return key.upper()
+    if not isinstance(probe.get("actions"), list):
+        return "ACTIONS"
+    if type(probe.get("binding_lost")) is not bool or type(probe.get("cancelled")) is not bool:
+        return "STATE"
+    if probe.get("generation") is not None and type(probe.get("generation")) is not int:
+        return "GENERATION"
+    for action in probe["actions"]:
+        if not isinstance(action, dict):
+            return "ACTION"
+        if type(action.get("sequence")) is not int:
+            return "SEQUENCE"
+        if not isinstance(action.get("kind"), str):
+            return "KIND"
+        if type(action.get("planned_ns")) is not int:
+            return "PLANNED"
+        if action.get("actual_ns") is not None and type(action.get("actual_ns")) is not int:
+            return "ACTUAL"
+        for key in ("attempted", "delivered", "suppressed"):
+            if type(action.get(key)) is not bool:
+                return key.upper()
+        if not isinstance(action.get("classification"), str):
+            return "CLASSIFICATION"
+    return ""
+
+
 def load_probe(path: Path) -> tuple[dict | None, str]:
     """Return (probe, state); a missing and a corrupt probe are different states."""
     if not path.exists():
@@ -459,7 +492,7 @@ def load_probe(path: Path) -> tuple[dict | None, str]:
         document = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None, "CORRUPT"
-    if not isinstance(document, dict):
+    if probe_shape_error(document):
         return None, "CORRUPT"
     return document, "OK"
 
@@ -488,8 +521,12 @@ def fallback_probe(trace: dict, title: str) -> dict:
     }
 
 
+def probe_exit_code(probe_exit: int) -> str:
+    return "PROBE_TIMEOUT" if probe_exit == 124 else "PROBE_EXITED"
+
+
 def failure_reason(probe_state: str, probe: dict | None, probe_exit: int,
-                   probe_stderr: str, probe_error: str, journal_error: str,
+                   probe_error: str, journal_error: str,
                    correspondence_error: str, cleanup: dict, delivered: int,
                    planned: int) -> str:
     """One deterministic priority order for the FAILED record's reason."""
@@ -502,8 +539,7 @@ def failure_reason(probe_state: str, probe: dict | None, probe_exit: int,
     if probe_error:
         return probe_error
     if probe_exit != 0:
-        tail = probe_stderr.strip().splitlines()
-        return "PROBE_" + (tail[-1] if tail else "EXITED")
+        return probe_exit_code(probe_exit)
     if journal_error:
         return journal_error
     if correspondence_error:
@@ -517,28 +553,47 @@ def failure_reason(probe_state: str, probe: dict | None, probe_exit: int,
     return ""
 
 
-def check_s2b_bundle(output: Path, manifest_path: str, timeout_ms: int) -> None:
+def require_observed_disposition(bundle: dict) -> None:
+    disposition = bundle.get("disposition")
+    if disposition == "OBSERVED":
+        return
+    codes = {
+        "CANCELLED": "S2B_DISPOSITION_CANCELLED",
+        "FAILED": "S2B_DISPOSITION_FAILED",
+        "NOT_MEASURED": "S2B_DISPOSITION_NOT_MEASURED",
+    }
+    raise r0c.ContractError(codes.get(disposition, "S2B_DISPOSITION_INVALID"),
+                            "$.journal.disposition")
+
+
+def check_s2b_bundle(output: Path, manifest_path: str, timeout_ms: int) -> dict:
     """Validate the existing S2B publication without modifying it.
 
     The R0C driver adds r0c-* evidence after the S2B publication; the S2B replay
-    rejects unknown entries, so the validation runs on a byte copy of the original
-    evidence with those R0C-only files omitted. The original is never modified.
+    rejects unknown entries. A temporary hardlink view omits only those R0C files,
+    then the existing verify_bundle/materialized_copy/require_marker safety path
+    validates types, links, marker names, per-file limits and totals. The original
+    is never modified.
     """
     missing = [name for name in REQUIRED_S2B_EVIDENCE if not (output / name).is_file()]
     if missing:
         raise r0c.ContractError("EVIDENCE_MISSING", "$.journal")
     try:
         with tempfile.TemporaryDirectory() as directory:
-            copy = Path(directory)
+            view = Path(directory) / "output"
+            view.mkdir()
             for entry in output.iterdir():
                 if entry.name.startswith("r0c-"):
                     continue
+                if entry.is_symlink():
+                    raise r0c.ContractError("EVIDENCE_LINK", "$.journal")
                 if entry.is_dir():
-                    shutil.copytree(entry, copy / entry.name)
+                    s2b_capture.require_marker(output, entry.name)
+                    (view / entry.name).mkdir()
                 else:
-                    shutil.copy2(entry, copy / entry.name)
-            s2b_capture.verify_bundle(
-                Path(manifest_path).resolve(), copy, timeout_ms
+                    os.link(entry, view / entry.name)
+            return s2b_capture.verify_bundle(
+                Path(manifest_path).resolve(), view, timeout_ms
             )
     except (RuntimeError, contracts.ContractError, s2b.ObservationError, OSError):
         raise r0c.ContractError("S2B_VERIFICATION_FAILED", "$.journal")
@@ -583,7 +638,10 @@ def launch(args: argparse.Namespace) -> int:
 
     pre_run_pids = _pids() if sys.platform == "win32" else set()
     probe_command = args.probe or str(Path(__file__).resolve().with_name("r0c_input.py"))
-    probe_timeout = manifest["scenario"]["active_end_ms"] / 1000 + r0c.CLOSE_TIMEOUT_MS / 1000 + 30
+    probe_timeout = (
+        max(manifest["scenario"]["active_end_ms"], manifest["lifecycle"]["close_after_ms"])
+        / 1000 + r0c.CLOSE_TIMEOUT_MS / 1000 + 30
+    )
     capture_process: subprocess.Popen | None = None
     capture_start_wall_ns = time.time_ns()
     try:
@@ -695,7 +753,7 @@ def launch(args: argparse.Namespace) -> int:
     if probe_exit != 0 or timed_out or wrapper_exit != 0 or journal is None or not close_posted:
         status = "FAILED"
     reason = failure_reason(
-        probe_state, probe, probe_exit, probe_stderr, probe_error, journal_error,
+        probe_state, probe, probe_exit, probe_error, journal_error,
         correspondence_error, cleanup, delivered_actions, len(trace["actions"]),
     )
     if reason:
@@ -709,6 +767,10 @@ def launch(args: argparse.Namespace) -> int:
     r0c.validate_result(result)
     if r0c.result_bytes(result) > MAX_RESULT_BYTES:
         raise DriverError("RESULT_TOO_LARGE")
+    if probe_stderr:
+        stderr_path = output / "r0c-probe.stderr.txt"
+        with stderr_path.open("xb") as handle:
+            handle.write(probe_stderr.encode("utf-8")[:8_192])
     try:
         driver.exclusive_write(output / "r0c-plan.json", trace)
         driver.exclusive_write(output / "r0c-probe.json", probe)
@@ -849,6 +911,8 @@ def verify(args: argparse.Namespace) -> int:
     if not probe_path.is_file():
         raise r0c.ContractError("EVIDENCE_MISSING", "$.probe")
     probe = contracts.load_document(str(probe_path), MAX_PROBE_BYTES)
+    if probe_shape_error(probe):
+        raise r0c.ContractError("PROBE_CORRUPT", "$.probe")
     binding = probe.get("binding") or {}
     if binding.get("bound") is not True:
         raise r0c.ContractError("PROBE_BINDING_UNCONFIRMED", "$.probe.binding")
@@ -894,7 +958,10 @@ def verify(args: argparse.Namespace) -> int:
         raise r0c.ContractError("EVIDENCE_MISSING", "$.cleanup")
     ledger = contracts.load_document(str(ledger_path), contracts.MAX_MANIFEST_BYTES)
     check_termination(ledger, result["cleanup"])
-    check_s2b_bundle(output, args.s2b_manifest, int(result["limits"]["capture_timeout_ms"]))
+    bundle = check_s2b_bundle(
+        output, args.s2b_manifest, int(result["limits"]["capture_timeout_ms"])
+    )
+    require_observed_disposition(bundle)
     check_close(probe, result["cleanup"])
     capture_bytes = capture_path.read_bytes()
     observation_bytes = observation_path.read_bytes()

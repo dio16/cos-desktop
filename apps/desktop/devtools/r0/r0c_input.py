@@ -365,7 +365,7 @@ def close_if_valid(verify, close: dict, post) -> bool:
 
 def run(plan_path: Path, out_path: Path, title: str, generation: int,
         excluded: set[int], max_lag_ms: int, close_timeout_ms: int, window_wait_ms: int,
-        launcher_pid: int) -> int:
+        launcher_pid: int, close_after_ms: int = 0) -> int:
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     actions = plan["actions"]
     if len(actions) > r0c.MAX_ACTIONS:
@@ -401,11 +401,14 @@ def run(plan_path: Path, out_path: Path, title: str, generation: int,
         return _post(user32, hwnd, *message)
 
     max_lag_ns = max_lag_ms * 1_000_000
+    run_start_ns = time.perf_counter_ns()
     input_start_wall_ns = time.time_ns()
     records, held, binding_lost = execute_actions(
         actions, time.perf_counter_ns, verify, verify_window, post, max_lag_ns
     )
     input_end_wall_ns = time.time_ns()
+    if close_after_ms > 0:
+        _sleep_until(run_start_ns + close_after_ms * 1_000_000)
     close = {"attempts": 0, "posted": False, "window_gone": False, "refused": ""}
     if not release_held(held, verify, post):
         binding_lost = True
@@ -458,12 +461,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-lag-ms", type=int, default=r0c.MAX_LAG_MS)
     parser.add_argument("--close-timeout-ms", type=int, default=r0c.CLOSE_TIMEOUT_MS)
     parser.add_argument("--window-wait-ms", type=int, default=20000)
+    parser.add_argument("--close-after-ms", type=int, default=0)
     args = parser.parse_args(argv)
     excluded = {int(item) for item in args.excluded_pids.split(",") if item.strip()}
     try:
         return run(Path(args.plan), Path(args.out), args.title, args.generation,
                    excluded, args.max_lag_ms, args.close_timeout_ms, args.window_wait_ms,
-                   args.launcher_pid)
+                   args.launcher_pid, args.close_after_ms)
     except ProbeError as error:
         print(error.code, file=sys.stderr)
         return 1

@@ -6,12 +6,14 @@
     "family": "keyboard",
     "seed": 7,
     "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52",
-    "duration_ms": 12000,
+    "duration_ms": 35000,
     "warmup_ms": 2000,
     "active_start_ms": 2000,
-    "active_end_ms": 9000,
+    "active_end_ms": 25000,
     "repeats": 1,
-    "order": ["keyboard"]
+    "order": [
+      "keyboard"
+    ]
   },
   "identity": {
     "repository_sha": "bcce8167591f6f142232b3c5ca7c5c14c7da5cdf",
@@ -19,7 +21,9 @@
     "helper_sha256": "sha256:4d64f7c3ab8074af0d507c51b70e1a2757de47763c0bf088390df9e4d803b3ec",
     "gpui_revision": "395def7a067b32ed598fcb3f048969ada9b54942",
     "build_profile": "dev",
-    "features": ["r0-s2b-instrumentation"]
+    "features": [
+      "r0-s2b-instrumentation"
+    ]
   },
   "window": {
     "generation": 1,
@@ -30,15 +34,20 @@
       "kind": "keyboard",
       "requested_hz": 20.0,
       "burst": 1,
-      "count": 140,
-      "keys": ["TAB", "RIGHT", "LEFT"]
+      "count": 460,
+      "keys": [
+        "TAB",
+        "RIGHT",
+        "LEFT"
+      ]
     }
   ],
   "lifecycle": {
     "close": "wm_close",
     "timeout_ms": 120000,
     "recovery": "close",
-    "cancel": "immediate"
+    "cancel": "immediate",
+    "close_after_ms": 34000
   },
   "expected": {
     "functional_state": [
@@ -60,17 +69,50 @@
       "local-notify"
     ],
     "not_measured": [
-      {"name": "frame-request", "reason": "NO_ENDPOINT: app-side frame request has no probe at the pin"},
-      {"name": "frame-processing-started", "reason": "NO_ENDPOINT: no frame-processing-start source at the pin"},
-      {"name": "present-call", "reason": "NO_ENDPOINT: present-call is app-side only at the pin"},
-      {"name": "present-return", "reason": "NO_ENDPOINT: present-return is app-side only at the pin"},
-      {"name": "present", "reason": "NO_DWM_ENDPOINT: no independent present/displayed probe"},
-      {"name": "displayed", "reason": "NO_DWM_ENDPOINT: no independent displayed-frame probe"},
-      {"name": "scanout", "reason": "NO_DISPLAY_DRIVER_PROBE: scanout is not observable on this host"},
-      {"name": "input-to-photon", "reason": "NO_END_TO_END_ENDPOINT: no OS input-to-photon probe"},
-      {"name": "gpu-submission", "reason": "NO_GPU_TIMESTAMP_QUERY: no GPU/D3D probe on this host"},
-      {"name": "gpu-execution", "reason": "NO_GPU_TIMESTAMP_QUERY: no GPU timestamp query on this host"},
-      {"name": "dwm-composition", "reason": "NO_DWM_ENDPOINT: DWM composition timing is not queried"}
+      {
+        "name": "frame-request",
+        "reason": "NO_ENDPOINT: app-side frame request has no probe at the pin"
+      },
+      {
+        "name": "frame-processing-started",
+        "reason": "NO_ENDPOINT: no frame-processing-start source at the pin"
+      },
+      {
+        "name": "present-call",
+        "reason": "NO_ENDPOINT: present-call is app-side only at the pin"
+      },
+      {
+        "name": "present-return",
+        "reason": "NO_ENDPOINT: present-return is app-side only at the pin"
+      },
+      {
+        "name": "present",
+        "reason": "NO_DWM_ENDPOINT: no independent present/displayed probe"
+      },
+      {
+        "name": "displayed",
+        "reason": "NO_DWM_ENDPOINT: no independent displayed-frame probe"
+      },
+      {
+        "name": "scanout",
+        "reason": "NO_DISPLAY_DRIVER_PROBE: scanout is not observable on this host"
+      },
+      {
+        "name": "input-to-photon",
+        "reason": "NO_END_TO_END_ENDPOINT: no OS input-to-photon probe"
+      },
+      {
+        "name": "gpu-submission",
+        "reason": "NO_GPU_TIMESTAMP_QUERY: no GPU/D3D probe on this host"
+      },
+      {
+        "name": "gpu-execution",
+        "reason": "NO_GPU_TIMESTAMP_QUERY: no GPU timestamp query on this host"
+      },
+      {
+        "name": "dwm-composition",
+        "reason": "NO_DWM_ENDPOINT: DWM composition timing is not queried"
+      }
     ]
   }
 }
