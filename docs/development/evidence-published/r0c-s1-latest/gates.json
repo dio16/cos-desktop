@@ -1045,7 +1045,7 @@
         "state_dir": "<gate-root>/state"
       }
     },
-    "storage_disposal": "PENDING until tracked evidence is pinned; only this successful Gate owned scratch is eligible."
+    "storage_disposal": "COMPLETE"
   },
   "build": {
     "gate_id": "d6135dfa-590e-4c44-a749-9c87d482fc3b",
@@ -1464,7 +1464,7 @@
         "state_dir": "<gate-root>/state"
       }
     },
-    "storage_disposal": "PENDING until tracked evidence is pinned; only this successful Gate owned scratch is eligible."
+    "storage_disposal": "COMPLETE"
   },
   "prior_failures": "failed-gate.json; both remain FAILED and are not reused",
   "retention": {

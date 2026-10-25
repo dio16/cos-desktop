@@ -1,0 +1,373 @@
+{
+  "source_commit": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+  "retained_source": {
+    "repository": "<repository>",
+    "reference": "dev",
+    "evidence_commit": "a9c81db8ba12e499cca466808d5e83ee23b45f91",
+    "ancestry_check_exit": 0
+  },
+  "scope": "Only newly created successful Gate work/repo, declared independent targets and redundant private Rust toolchain scratch; no authority/artifacts/logs, failed workspace, ordinary target or unrelated path.",
+  "gates": [
+    "ac0372f6-0c5f-40f1-a6f7-e5906061284a",
+    "d6135dfa-590e-4c44-a749-9c87d482fc3b"
+  ],
+  "removed": [
+    {
+      "path": "<gate-root>/state/gates/ac0372f6-0c5f-40f1-a6f7-e5906061284a/work/repo",
+      "files": 321,
+      "bytes": 9550240
+    },
+    {
+      "path": "<gate-root>/state/gates/d6135dfa-590e-4c44-a749-9c87d482fc3b/work/repo",
+      "files": 321,
+      "bytes": 9557509
+    },
+    {
+      "path": "<gate-root>/targets/quality-clippy",
+      "files": 3015,
+      "bytes": 663936921
+    },
+    {
+      "path": "<gate-root>/targets/quality-tests",
+      "files": 3144,
+      "bytes": 1841397679
+    },
+    {
+      "path": "<gate-root>/targets/build-build",
+      "files": 2911,
+      "bytes": 1593051736
+    },
+    {
+      "path": "<gate-root>/state/gates/ac0372f6-0c5f-40f1-a6f7-e5906061284a/private/home/.rustup",
+      "files": 3793,
+      "bytes": 764960518
+    }
+  ],
+  "absent": [
+    "<gate-root>/targets/quality-fmt",
+    "<gate-root>/targets/quality-metadata",
+    "<gate-root>/targets/quality-dependency-self-test",
+    "<gate-root>/targets/quality-dependency-rules",
+    "<gate-root>/targets/quality-r0-python",
+    "<gate-root>/state/gates/d6135dfa-590e-4c44-a749-9c87d482fc3b/private/home/.rustup"
+  ],
+  "retained": [
+    "native state.json/request.json/observations.json",
+    "native artifacts and terminal-bound logs",
+    "both FAILED Gate workspaces and targets",
+    "ordinary repository target and all prior evidence"
+  ],
+  "errors": [],
+  "after_verify": {
+    "quality": {
+      "exit": 0,
+      "original_sha256": "sha256:72d5f794c07b3afc9823b0ee43d8112a41424d931cd02b217f55fe1e3295b60f",
+      "sanitized": {
+        "cli_interface_version": 2,
+        "operation": "gate.verify",
+        "outcome": {
+          "schema_version": 1,
+          "result": {
+            "schema_version": 1,
+            "gate_id": "ac0372f6-0c5f-40f1-a6f7-e5906061284a",
+            "state": "SUCCEEDED",
+            "request_sha256": "sha256:49f0ed2517aaacd58304a26a05b38ef627de3e7047b7516630d5c9edf459e994",
+            "terminal_state_sha256": "sha256:3448bfd11636adaea3368ab47cb2ce9904015c84f0554c91c9d3048e87205681",
+            "observations_sha256": "sha256:6d066db5a9993509c838d6f8d1d4463fb9ccc6635ddb3dfe42cac899ca8c622b",
+            "candidate_sha256": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe",
+            "artifacts": [
+              {
+                "id": "behavior-proof",
+                "relative_path": "artifacts/behavior-proof",
+                "size_bytes": 8449,
+                "sha256": "sha256:8f6f7b46ee39c164c3a0fad4d75f34aeb9ecae3191c2528f3b0e2ce0a68549a2"
+              },
+              {
+                "id": "decoder-harness",
+                "relative_path": "artifacts/decoder-harness",
+                "size_bytes": 154064,
+                "sha256": "sha256:0b28e6665738bf11326a7cabe228f77d12ad01aa1ebd5f63a1677fc9cd6057a8"
+              },
+              {
+                "id": "decoder-smoke",
+                "relative_path": "artifacts/decoder-smoke",
+                "size_bytes": 5291,
+                "sha256": "sha256:d74fff67b416098304212d2c80298f5bbb021c63477ea0f6dad8e66eb7d335b1"
+              },
+              {
+                "id": "decoder-tests",
+                "relative_path": "artifacts/decoder-tests",
+                "size_bytes": 198351,
+                "sha256": "sha256:b01535053c7de5c686c6089e870386d6ac91743387cf22c47af055facc9a4779"
+              },
+              {
+                "id": "n06-cli",
+                "relative_path": "artifacts/n06-cli",
+                "size_bytes": 74150,
+                "sha256": "sha256:ace82611b111234ed279042af211508e2060ffb94ce7a3f0040ea33c573bb4b4"
+              },
+              {
+                "id": "n06-tests",
+                "relative_path": "artifacts/n06-tests",
+                "size_bytes": 48134,
+                "sha256": "sha256:c97894b63200acb7a30bbeead11754c6cf826ec5f86030b3de6021092301bf74"
+              },
+              {
+                "id": "r0c-source-1",
+                "relative_path": "artifacts/r0c-source-1",
+                "size_bytes": 57360,
+                "sha256": "sha256:239ad5d1ddd4ee46436ecc5b7a82b0deebb70daf806dfa09d2c79d3735770cdf"
+              },
+              {
+                "id": "r0c-source-2",
+                "relative_path": "artifacts/r0c-source-2",
+                "size_bytes": 30665,
+                "sha256": "sha256:667e32aef959d31dc842ee5fe3917d7aa34e39a8be0f70afdb32a57a37bb64bf"
+              },
+              {
+                "id": "r0c-source-3",
+                "relative_path": "artifacts/r0c-source-3",
+                "size_bytes": 79267,
+                "sha256": "sha256:8d3b77974b2104607f32fac2106f9fe75c62f31819d7b76533128991e27dbc37"
+              },
+              {
+                "id": "r0c-source-4",
+                "relative_path": "artifacts/r0c-source-4",
+                "size_bytes": 3171,
+                "sha256": "sha256:510eeaf81ebeff6dc39b0d0057f1d1ece65c65cc6110f6671fc2659c5ee1ad2e"
+              }
+            ],
+            "check_logs": [
+              {
+                "check_id": "fmt",
+                "stdout": {
+                  "relative_path": "logs/fmt/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/fmt/stderr",
+                  "size_bytes": 171,
+                  "sha256": "sha256:207c83d037b995c75e03166d9a9486fbbbb29b0b76a736fe93d1b71bcbdb5105",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "metadata",
+                "stdout": {
+                  "relative_path": "logs/metadata/stdout",
+                  "size_bytes": 24119,
+                  "sha256": "sha256:3f49848822204268cbc2bd2584f48063ad05f5c9c23a09ae76684cbc1e929b9b",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/metadata/stderr",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "dependency-self-test",
+                "stdout": {
+                  "relative_path": "logs/dependency-self-test/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/dependency-self-test/stderr",
+                  "size_bytes": 2680,
+                  "sha256": "sha256:f3caa46caa5e2d430956c7c17cf768a349cb9fc0fb46d4827c4ea21511ce808f",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "dependency-rules",
+                "stdout": {
+                  "relative_path": "logs/dependency-rules/stdout",
+                  "size_bytes": 79,
+                  "sha256": "sha256:7324a248581aca3179ab86e244966f886d14b87d2e04372d548eb5f96c3b1cfe",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/dependency-rules/stderr",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "clippy",
+                "stdout": {
+                  "relative_path": "logs/clippy/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/clippy/stderr",
+                  "size_bytes": 13023,
+                  "sha256": "sha256:7d10651846994f39c16b6d8cfe31213b87018eadf37b03a2ab7ac4fab3c2923c",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "tests",
+                "stdout": {
+                  "relative_path": "logs/tests/stdout",
+                  "size_bytes": 43214,
+                  "sha256": "sha256:ab9115b94d5b703324978d0fd9049fe6b1eec36a5884d7bdac8e5b2f164de080",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/tests/stderr",
+                  "size_bytes": 17223,
+                  "sha256": "sha256:bac167362d672e54884d22bb862e24a5ea73f77be5a56ef4e348e6c23bc31a4d",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "r0-python",
+                "stdout": {
+                  "relative_path": "logs/r0-python/stdout",
+                  "size_bytes": 8041,
+                  "sha256": "sha256:2bdad252bdfd200623d5c0bda4a245e286dfff7ead71be2458fe78364ca3bea3",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/r0-python/stderr",
+                  "size_bytes": 671,
+                  "sha256": "sha256:990798da597f22c98e9ae3741ca662ac9b327f71aad8f5dd8559accb7184fcf0",
+                  "truncated": false,
+                  "secret": true
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "build": {
+      "exit": 0,
+      "original_sha256": "sha256:2eded81bdc4a1672bb19372069a83d8a319e08be9ae2287fd83842a3f3609756",
+      "sanitized": {
+        "cli_interface_version": 2,
+        "operation": "gate.verify",
+        "outcome": {
+          "schema_version": 1,
+          "result": {
+            "schema_version": 1,
+            "gate_id": "d6135dfa-590e-4c44-a749-9c87d482fc3b",
+            "state": "SUCCEEDED",
+            "request_sha256": "sha256:f3c007b0de504b51eff412d8b7e0f211ab11937e13c30dff31ec9c4eef69211e",
+            "terminal_state_sha256": "sha256:8bc84e7a754d1118740b2fe56b556924e58b0649a8bcf1fcc55d293406f6ea2d",
+            "observations_sha256": "sha256:08cbf3f3394ac54675e6f4543dc13e3916ff42d92285f3a965563ef43cc01dfb",
+            "candidate_sha256": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe",
+            "artifacts": [
+              {
+                "id": "behavior-proof",
+                "relative_path": "artifacts/behavior-proof",
+                "size_bytes": 8449,
+                "sha256": "sha256:8f6f7b46ee39c164c3a0fad4d75f34aeb9ecae3191c2528f3b0e2ce0a68549a2"
+              },
+              {
+                "id": "decoder-harness",
+                "relative_path": "artifacts/decoder-harness",
+                "size_bytes": 154064,
+                "sha256": "sha256:0b28e6665738bf11326a7cabe228f77d12ad01aa1ebd5f63a1677fc9cd6057a8"
+              },
+              {
+                "id": "decoder-smoke",
+                "relative_path": "artifacts/decoder-smoke",
+                "size_bytes": 5291,
+                "sha256": "sha256:d74fff67b416098304212d2c80298f5bbb021c63477ea0f6dad8e66eb7d335b1"
+              },
+              {
+                "id": "decoder-tests",
+                "relative_path": "artifacts/decoder-tests",
+                "size_bytes": 198351,
+                "sha256": "sha256:b01535053c7de5c686c6089e870386d6ac91743387cf22c47af055facc9a4779"
+              },
+              {
+                "id": "n06-cli",
+                "relative_path": "artifacts/n06-cli",
+                "size_bytes": 74150,
+                "sha256": "sha256:ace82611b111234ed279042af211508e2060ffb94ce7a3f0040ea33c573bb4b4"
+              },
+              {
+                "id": "n06-tests",
+                "relative_path": "artifacts/n06-tests",
+                "size_bytes": 48134,
+                "sha256": "sha256:c97894b63200acb7a30bbeead11754c6cf826ec5f86030b3de6021092301bf74"
+              },
+              {
+                "id": "r0c-source-1",
+                "relative_path": "artifacts/r0c-source-1",
+                "size_bytes": 57360,
+                "sha256": "sha256:239ad5d1ddd4ee46436ecc5b7a82b0deebb70daf806dfa09d2c79d3735770cdf"
+              },
+              {
+                "id": "r0c-source-2",
+                "relative_path": "artifacts/r0c-source-2",
+                "size_bytes": 30665,
+                "sha256": "sha256:667e32aef959d31dc842ee5fe3917d7aa34e39a8be0f70afdb32a57a37bb64bf"
+              },
+              {
+                "id": "r0c-source-3",
+                "relative_path": "artifacts/r0c-source-3",
+                "size_bytes": 79267,
+                "sha256": "sha256:8d3b77974b2104607f32fac2106f9fe75c62f31819d7b76533128991e27dbc37"
+              },
+              {
+                "id": "r0c-source-4",
+                "relative_path": "artifacts/r0c-source-4",
+                "size_bytes": 3171,
+                "sha256": "sha256:510eeaf81ebeff6dc39b0d0057f1d1ece65c65cc6110f6671fc2659c5ee1ad2e"
+              }
+            ],
+            "check_logs": [
+              {
+                "check_id": "build",
+                "stdout": {
+                  "relative_path": "logs/build/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/build/stderr",
+                  "size_bytes": 12782,
+                  "sha256": "sha256:b27a07ba6abac015a99c76efab1eeaa9b8e86ad70bc969b70cf4a1836e96e94f",
+                  "truncated": false,
+                  "secret": true
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "logical_bytes_removed": 4882454603,
+  "status": "COMPLETE",
+  "before_after_integrity_unchanged": {
+    "quality": true,
+    "build": true
+  }
+}

@@ -47,7 +47,7 @@
       "ignored_tests": []
     }
   ],
-  "native_startup": "NOT_RUN in this session: no Rust/product executable behavior changed; deterministic driver persistence and public CLI exercised. Offline native observation remains skipped, never PASS.",
+  "native_startup": "NOT_RUN: provider task-scoped control was active=false / unanswered. No UI input, app startup or bypass occurred. Changed CLI/harness paths have actual save/reload, public CLI and real FFmpeg proof, not Native UI acceptance.",
   "post_repair_default_quality": {
     "exit": 0,
     "rust_tests": {
@@ -96,5 +96,11 @@
         "ignored": 0
       }
     }
-  ]
+  ],
+  "final_source_commit": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+  "execution_bindings": {
+    "initial_default_and_feature": "source_commit (initial qualification)",
+    "post_repair_default": "N06 repair working tree described in its scope field",
+    "final_default_and_feature": "final_source_commit; includes summary-aware decoder repair"
+  }
 }
