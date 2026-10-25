@@ -1,0 +1,14 @@
+{
+  "source_commit": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+  "status": "NOT_RUN",
+  "operation": "additional actual fixture-window startup/visual confirmation",
+  "provider_control": {
+    "active": false,
+    "reason": "unanswered"
+  },
+  "input_performed": false,
+  "app_launched": false,
+  "bypass_used": false,
+  "control_release_requested": true,
+  "scope": "The changed paths are development CLI/harness serialization; they were exercised with actual CLI invocations and real FFmpeg. This record is not Native UI evidence or a waiver of any required native acceptance."
+}

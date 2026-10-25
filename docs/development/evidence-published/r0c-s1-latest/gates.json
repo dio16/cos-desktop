@@ -1,0 +1,1482 @@
+{
+  "source_commit": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+  "producer": {
+    "version": "0.3.1",
+    "executable_sha256": "sha256:1be257b43215daf98ac29ce578f2222009b59bf5c6f49c00da22e40e8dfa9e08"
+  },
+  "quality": {
+    "gate_id": "ac0372f6-0c5f-40f1-a6f7-e5906061284a",
+    "source_commit": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+    "preflight": "unknown",
+    "state": "SUCCEEDED",
+    "operations": {
+      "status": {
+        "original_sha256": "sha256:50809cea2b8a1f66d142eef7eeae8c28bfba032fb6109c1c4c1f7865ffb1a93f",
+        "exit": 0,
+        "sanitized": {
+          "cli_interface_version": 2,
+          "operation": "gate.status",
+          "outcome": {
+            "schema_version": 1,
+            "result": {
+              "schema_version": 1,
+              "gate_id": "ac0372f6-0c5f-40f1-a6f7-e5906061284a",
+              "gate_label": "cos-desktop-r0c-s1-r15-quality-repair2-40c21e5c",
+              "state": "SUCCEEDED",
+              "updated_at": "2026-10-25T16:55:29.855388700Z",
+              "owner_alive": false,
+              "recovery_required": false
+            }
+          }
+        }
+      },
+      "inspect": {
+        "original_sha256": "sha256:e703bf194c69a94a5011ebcf274060f4568f8ec63ba576d8f621e2a18f090034",
+        "exit": 0,
+        "sanitized": {
+          "cli_interface_version": 2,
+          "operation": "gate.inspect",
+          "outcome": {
+            "schema_version": 1,
+            "result": {
+              "schema_version": 1,
+              "gate_id": "ac0372f6-0c5f-40f1-a6f7-e5906061284a",
+              "gate_label": "cos-desktop-r0c-s1-r15-quality-repair2-40c21e5c",
+              "request_sha256": "sha256:49f0ed2517aaacd58304a26a05b38ef627de3e7047b7516630d5c9edf459e994",
+              "terminal_state_sha256": "sha256:3448bfd11636adaea3368ab47cb2ce9904015c84f0554c91c9d3048e87205681",
+              "runtime": {
+                "refine_version": "0.3.1",
+                "os": "windows",
+                "architecture": "x86_64",
+                "git_version": "git version 2.51.0.windows.1"
+              },
+              "repository": {
+                "location": "<repository>",
+                "requested_revision": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+                "resolved_base_commit": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+                "object_format": "sha1",
+                "final_head": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d"
+              },
+              "limits": {
+                "timeout_ms": 600000,
+                "termination_grace_ms": 5000,
+                "max_output_bytes": 16777216,
+                "max_artifact_bytes": 16777216
+              },
+              "accepted_at": "2026-10-25T16:49:35.731062700Z",
+              "ended_at": "2026-10-25T16:55:29.855388700Z",
+              "candidate_sha256": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe",
+              "verification": [
+                {
+                  "id": "fmt",
+                  "kind": "command",
+                  "outcome": "pass",
+                  "duration_ms": 38316,
+                  "observed_exit": 0,
+                  "candidate_binding": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe"
+                },
+                {
+                  "id": "metadata",
+                  "kind": "command",
+                  "outcome": "pass",
+                  "duration_ms": 221,
+                  "observed_exit": 0,
+                  "candidate_binding": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe"
+                },
+                {
+                  "id": "dependency-self-test",
+                  "kind": "command",
+                  "outcome": "pass",
+                  "duration_ms": 687,
+                  "observed_exit": 0,
+                  "candidate_binding": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe"
+                },
+                {
+                  "id": "dependency-rules",
+                  "kind": "command",
+                  "outcome": "pass",
+                  "duration_ms": 286,
+                  "observed_exit": 0,
+                  "candidate_binding": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe"
+                },
+                {
+                  "id": "clippy",
+                  "kind": "command",
+                  "outcome": "pass",
+                  "duration_ms": 112675,
+                  "observed_exit": 0,
+                  "candidate_binding": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe"
+                },
+                {
+                  "id": "tests",
+                  "kind": "command",
+                  "outcome": "pass",
+                  "duration_ms": 170772,
+                  "observed_exit": 0,
+                  "candidate_binding": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe"
+                },
+                {
+                  "id": "r0-python",
+                  "kind": "command",
+                  "outcome": "pass",
+                  "duration_ms": 13378,
+                  "observed_exit": 0,
+                  "candidate_binding": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe"
+                }
+              ],
+              "check_logs": [
+                {
+                  "check_id": "fmt",
+                  "stdout": {
+                    "relative_path": "logs/fmt/stdout",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/fmt/stderr",
+                    "size_bytes": 171,
+                    "sha256": "sha256:207c83d037b995c75e03166d9a9486fbbbb29b0b76a736fe93d1b71bcbdb5105",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "metadata",
+                  "stdout": {
+                    "relative_path": "logs/metadata/stdout",
+                    "size_bytes": 24119,
+                    "sha256": "sha256:3f49848822204268cbc2bd2584f48063ad05f5c9c23a09ae76684cbc1e929b9b",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/metadata/stderr",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "dependency-self-test",
+                  "stdout": {
+                    "relative_path": "logs/dependency-self-test/stdout",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/dependency-self-test/stderr",
+                    "size_bytes": 2680,
+                    "sha256": "sha256:f3caa46caa5e2d430956c7c17cf768a349cb9fc0fb46d4827c4ea21511ce808f",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "dependency-rules",
+                  "stdout": {
+                    "relative_path": "logs/dependency-rules/stdout",
+                    "size_bytes": 79,
+                    "sha256": "sha256:7324a248581aca3179ab86e244966f886d14b87d2e04372d548eb5f96c3b1cfe",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/dependency-rules/stderr",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "clippy",
+                  "stdout": {
+                    "relative_path": "logs/clippy/stdout",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/clippy/stderr",
+                    "size_bytes": 13023,
+                    "sha256": "sha256:7d10651846994f39c16b6d8cfe31213b87018eadf37b03a2ab7ac4fab3c2923c",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "tests",
+                  "stdout": {
+                    "relative_path": "logs/tests/stdout",
+                    "size_bytes": 43214,
+                    "sha256": "sha256:ab9115b94d5b703324978d0fd9049fe6b1eec36a5884d7bdac8e5b2f164de080",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/tests/stderr",
+                    "size_bytes": 17223,
+                    "sha256": "sha256:bac167362d672e54884d22bb862e24a5ea73f77be5a56ef4e348e6c23bc31a4d",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "r0-python",
+                  "stdout": {
+                    "relative_path": "logs/r0-python/stdout",
+                    "size_bytes": 8041,
+                    "sha256": "sha256:2bdad252bdfd200623d5c0bda4a245e286dfff7ead71be2458fe78364ca3bea3",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/r0-python/stderr",
+                    "size_bytes": 671,
+                    "sha256": "sha256:990798da597f22c98e9ae3741ca662ac9b327f71aad8f5dd8559accb7184fcf0",
+                    "truncated": false,
+                    "secret": true
+                  }
+                }
+              ],
+              "artifacts": [
+                {
+                  "id": "behavior-proof",
+                  "relative_path": "artifacts/behavior-proof",
+                  "size_bytes": 8449,
+                  "sha256": "sha256:8f6f7b46ee39c164c3a0fad4d75f34aeb9ecae3191c2528f3b0e2ce0a68549a2"
+                },
+                {
+                  "id": "decoder-harness",
+                  "relative_path": "artifacts/decoder-harness",
+                  "size_bytes": 154064,
+                  "sha256": "sha256:0b28e6665738bf11326a7cabe228f77d12ad01aa1ebd5f63a1677fc9cd6057a8"
+                },
+                {
+                  "id": "decoder-smoke",
+                  "relative_path": "artifacts/decoder-smoke",
+                  "size_bytes": 5291,
+                  "sha256": "sha256:d74fff67b416098304212d2c80298f5bbb021c63477ea0f6dad8e66eb7d335b1"
+                },
+                {
+                  "id": "decoder-tests",
+                  "relative_path": "artifacts/decoder-tests",
+                  "size_bytes": 198351,
+                  "sha256": "sha256:b01535053c7de5c686c6089e870386d6ac91743387cf22c47af055facc9a4779"
+                },
+                {
+                  "id": "n06-cli",
+                  "relative_path": "artifacts/n06-cli",
+                  "size_bytes": 74150,
+                  "sha256": "sha256:ace82611b111234ed279042af211508e2060ffb94ce7a3f0040ea33c573bb4b4"
+                },
+                {
+                  "id": "n06-tests",
+                  "relative_path": "artifacts/n06-tests",
+                  "size_bytes": 48134,
+                  "sha256": "sha256:c97894b63200acb7a30bbeead11754c6cf826ec5f86030b3de6021092301bf74"
+                },
+                {
+                  "id": "r0c-source-1",
+                  "relative_path": "artifacts/r0c-source-1",
+                  "size_bytes": 57360,
+                  "sha256": "sha256:239ad5d1ddd4ee46436ecc5b7a82b0deebb70daf806dfa09d2c79d3735770cdf"
+                },
+                {
+                  "id": "r0c-source-2",
+                  "relative_path": "artifacts/r0c-source-2",
+                  "size_bytes": 30665,
+                  "sha256": "sha256:667e32aef959d31dc842ee5fe3917d7aa34e39a8be0f70afdb32a57a37bb64bf"
+                },
+                {
+                  "id": "r0c-source-3",
+                  "relative_path": "artifacts/r0c-source-3",
+                  "size_bytes": 79267,
+                  "sha256": "sha256:8d3b77974b2104607f32fac2106f9fe75c62f31819d7b76533128991e27dbc37"
+                },
+                {
+                  "id": "r0c-source-4",
+                  "relative_path": "artifacts/r0c-source-4",
+                  "size_bytes": 3171,
+                  "sha256": "sha256:510eeaf81ebeff6dc39b0d0057f1d1ece65c65cc6110f6671fc2659c5ee1ad2e"
+                }
+              ],
+              "absent_outputs": [],
+              "cleanup": "complete",
+              "timings": {
+                "preparation_ms": 8203,
+                "execution_ms": 0,
+                "verification_ms": 345075,
+                "collection_ms": 702,
+                "finalization_ms": 3
+              },
+              "duration_ms": 354118
+            }
+          }
+        }
+      },
+      "verify": {
+        "original_sha256": "sha256:72d5f794c07b3afc9823b0ee43d8112a41424d931cd02b217f55fe1e3295b60f",
+        "exit": 0,
+        "sanitized": {
+          "cli_interface_version": 2,
+          "operation": "gate.verify",
+          "outcome": {
+            "schema_version": 1,
+            "result": {
+              "schema_version": 1,
+              "gate_id": "ac0372f6-0c5f-40f1-a6f7-e5906061284a",
+              "state": "SUCCEEDED",
+              "request_sha256": "sha256:49f0ed2517aaacd58304a26a05b38ef627de3e7047b7516630d5c9edf459e994",
+              "terminal_state_sha256": "sha256:3448bfd11636adaea3368ab47cb2ce9904015c84f0554c91c9d3048e87205681",
+              "observations_sha256": "sha256:6d066db5a9993509c838d6f8d1d4463fb9ccc6635ddb3dfe42cac899ca8c622b",
+              "candidate_sha256": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe",
+              "artifacts": [
+                {
+                  "id": "behavior-proof",
+                  "relative_path": "artifacts/behavior-proof",
+                  "size_bytes": 8449,
+                  "sha256": "sha256:8f6f7b46ee39c164c3a0fad4d75f34aeb9ecae3191c2528f3b0e2ce0a68549a2"
+                },
+                {
+                  "id": "decoder-harness",
+                  "relative_path": "artifacts/decoder-harness",
+                  "size_bytes": 154064,
+                  "sha256": "sha256:0b28e6665738bf11326a7cabe228f77d12ad01aa1ebd5f63a1677fc9cd6057a8"
+                },
+                {
+                  "id": "decoder-smoke",
+                  "relative_path": "artifacts/decoder-smoke",
+                  "size_bytes": 5291,
+                  "sha256": "sha256:d74fff67b416098304212d2c80298f5bbb021c63477ea0f6dad8e66eb7d335b1"
+                },
+                {
+                  "id": "decoder-tests",
+                  "relative_path": "artifacts/decoder-tests",
+                  "size_bytes": 198351,
+                  "sha256": "sha256:b01535053c7de5c686c6089e870386d6ac91743387cf22c47af055facc9a4779"
+                },
+                {
+                  "id": "n06-cli",
+                  "relative_path": "artifacts/n06-cli",
+                  "size_bytes": 74150,
+                  "sha256": "sha256:ace82611b111234ed279042af211508e2060ffb94ce7a3f0040ea33c573bb4b4"
+                },
+                {
+                  "id": "n06-tests",
+                  "relative_path": "artifacts/n06-tests",
+                  "size_bytes": 48134,
+                  "sha256": "sha256:c97894b63200acb7a30bbeead11754c6cf826ec5f86030b3de6021092301bf74"
+                },
+                {
+                  "id": "r0c-source-1",
+                  "relative_path": "artifacts/r0c-source-1",
+                  "size_bytes": 57360,
+                  "sha256": "sha256:239ad5d1ddd4ee46436ecc5b7a82b0deebb70daf806dfa09d2c79d3735770cdf"
+                },
+                {
+                  "id": "r0c-source-2",
+                  "relative_path": "artifacts/r0c-source-2",
+                  "size_bytes": 30665,
+                  "sha256": "sha256:667e32aef959d31dc842ee5fe3917d7aa34e39a8be0f70afdb32a57a37bb64bf"
+                },
+                {
+                  "id": "r0c-source-3",
+                  "relative_path": "artifacts/r0c-source-3",
+                  "size_bytes": 79267,
+                  "sha256": "sha256:8d3b77974b2104607f32fac2106f9fe75c62f31819d7b76533128991e27dbc37"
+                },
+                {
+                  "id": "r0c-source-4",
+                  "relative_path": "artifacts/r0c-source-4",
+                  "size_bytes": 3171,
+                  "sha256": "sha256:510eeaf81ebeff6dc39b0d0057f1d1ece65c65cc6110f6671fc2659c5ee1ad2e"
+                }
+              ],
+              "check_logs": [
+                {
+                  "check_id": "fmt",
+                  "stdout": {
+                    "relative_path": "logs/fmt/stdout",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/fmt/stderr",
+                    "size_bytes": 171,
+                    "sha256": "sha256:207c83d037b995c75e03166d9a9486fbbbb29b0b76a736fe93d1b71bcbdb5105",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "metadata",
+                  "stdout": {
+                    "relative_path": "logs/metadata/stdout",
+                    "size_bytes": 24119,
+                    "sha256": "sha256:3f49848822204268cbc2bd2584f48063ad05f5c9c23a09ae76684cbc1e929b9b",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/metadata/stderr",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "dependency-self-test",
+                  "stdout": {
+                    "relative_path": "logs/dependency-self-test/stdout",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/dependency-self-test/stderr",
+                    "size_bytes": 2680,
+                    "sha256": "sha256:f3caa46caa5e2d430956c7c17cf768a349cb9fc0fb46d4827c4ea21511ce808f",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "dependency-rules",
+                  "stdout": {
+                    "relative_path": "logs/dependency-rules/stdout",
+                    "size_bytes": 79,
+                    "sha256": "sha256:7324a248581aca3179ab86e244966f886d14b87d2e04372d548eb5f96c3b1cfe",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/dependency-rules/stderr",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "clippy",
+                  "stdout": {
+                    "relative_path": "logs/clippy/stdout",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/clippy/stderr",
+                    "size_bytes": 13023,
+                    "sha256": "sha256:7d10651846994f39c16b6d8cfe31213b87018eadf37b03a2ab7ac4fab3c2923c",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "tests",
+                  "stdout": {
+                    "relative_path": "logs/tests/stdout",
+                    "size_bytes": 43214,
+                    "sha256": "sha256:ab9115b94d5b703324978d0fd9049fe6b1eec36a5884d7bdac8e5b2f164de080",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/tests/stderr",
+                    "size_bytes": 17223,
+                    "sha256": "sha256:bac167362d672e54884d22bb862e24a5ea73f77be5a56ef4e348e6c23bc31a4d",
+                    "truncated": false,
+                    "secret": true
+                  }
+                },
+                {
+                  "check_id": "r0-python",
+                  "stdout": {
+                    "relative_path": "logs/r0-python/stdout",
+                    "size_bytes": 8041,
+                    "sha256": "sha256:2bdad252bdfd200623d5c0bda4a245e286dfff7ead71be2458fe78364ca3bea3",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/r0-python/stderr",
+                    "size_bytes": 671,
+                    "sha256": "sha256:990798da597f22c98e9ae3741ca662ac9b327f71aad8f5dd8559accb7184fcf0",
+                    "truncated": false,
+                    "secret": true
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "rust": {
+        "passed": 532,
+        "failed": 0,
+        "ignored": 1
+      },
+      "python": {
+        "total": 340,
+        "executed": 304,
+        "passed": 304,
+        "skipped": 36,
+        "expected_failures": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped_cases": [
+          {
+            "test": "test_cli_refuses_a_probe_that_reports_success_then_fails (test_n03_observe.N03Observation.test_cli_refuses_a_probe_that_reports_success_then_fails)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_cli_refuses_an_unregistered_probe_code (test_n03_observe.N03Observation.test_cli_refuses_an_unregistered_probe_code)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_real_observation_of_a_window (test_n03_observe.N03Observation.test_real_observation_of_a_window)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_cpu_labels_are_explicit (test_n06_attribution.N06Attribution.test_cpu_labels_are_explicit)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_retained_capture_reports_counters (test_n06_attribution.N06Attribution.test_retained_capture_reports_counters)",
+            "reason": "NOT_RUN: the retained S2B bundle is not present in this checkout"
+          },
+          {
+            "test": "test_extra_app_reported_field_is_refused (test_n06_probe.CliFailClosedTests.test_extra_app_reported_field_is_refused)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_nonzero_exit_after_valid_json_is_refused (test_n06_probe.CliFailClosedTests.test_nonzero_exit_after_valid_json_is_refused)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_oversized_output_is_refused (test_n06_probe.CliFailClosedTests.test_oversized_output_is_refused)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_probe_timeout_is_bounded (test_n06_probe.CliFailClosedTests.test_probe_timeout_is_bounded)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_real_cli_records_a_present_value_from_the_fake_probe (test_n06_probe.CliFailClosedTests.test_real_cli_records_a_present_value_from_the_fake_probe)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_registered_probe_error_passes_through (test_n06_probe.CliFailClosedTests.test_registered_probe_error_passes_through)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_truncated_output_is_refused (test_n06_probe.CliFailClosedTests.test_truncated_output_is_refused)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_unregistered_probe_error_code_is_closed (test_n06_probe.CliFailClosedTests.test_unregistered_probe_error_code_is_closed)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_unregistered_reason_code_from_the_probe_is_refused (test_n06_probe.CliFailClosedTests.test_unregistered_reason_code_from_the_probe_is_refused)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_shim_ahead_on_path_is_never_the_interpreter (test_n06_probe.LegacyCpuSpawnTests.test_shim_ahead_on_path_is_never_the_interpreter)",
+            "reason": "NOT_RUN: no powershell.exe for an absolute-path check"
+          },
+          {
+            "test": "test_real_probe_degrades_for_a_live_windowless_process (test_n06_probe.RealHostProbeTests.test_real_probe_degrades_for_a_live_windowless_process)",
+            "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+          },
+          {
+            "test": "test_arbitrary_repo_root_is_refused_with_a_closed_error (test_n07_verify.N07Verifier.test_arbitrary_repo_root_is_refused_with_a_closed_error)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_historical_record_matches_its_recorded_archive_and_names_live_drift (test_n07_verify.N07Verifier.test_historical_record_matches_its_recorded_archive_and_names_live_drift)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_live_tree_matches_the_recorded_baseline (test_n07_verify.N07Verifier.test_live_tree_matches_the_recorded_baseline)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_mismatch_still_exits_nonzero_and_is_named (test_n07_verify.N07Verifier.test_mismatch_still_exits_nonzero_and_is_named)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_missing_expected_value_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_expected_value_is_not_measured_while_live_drift_stays_named)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_missing_helper_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_helper_is_not_measured_while_live_drift_stays_named)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_omitted_repo_root_uses_the_canonical_root (test_n07_verify.N07Verifier.test_omitted_repo_root_uses_the_canonical_root)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_same_inputs_produce_identical_record_bytes (test_n07_verify.N07Verifier.test_same_inputs_produce_identical_record_bytes)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_scratch_copy_only_is_not_verified_and_names_the_path_item (test_n07_verify.N07Verifier.test_scratch_copy_only_is_not_verified_and_names_the_path_item)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_tampered_manifest_names_the_manifest_mismatch (test_n07_verify.N07Verifier.test_tampered_manifest_names_the_manifest_mismatch)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_verdict_precedence_names_both_kinds (test_n07_verify.N07Verifier.test_verdict_precedence_names_both_kinds)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_retained_bundles_are_classified_cancelled_and_observed (test_s2b_contracts.S2BWireContract.test_retained_bundles_are_classified_cancelled_and_observed)",
+            "reason": "NOT_RUN: the retained S2B bundle is not present in this checkout"
+          },
+          {
+            "test": "test_bundle_limit_rejects_an_oversized_bundle (test_s3_replay.S3Replay.test_bundle_limit_rejects_an_oversized_bundle)",
+            "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+          },
+          {
+            "test": "test_bundle_with_its_own_result_refuses_caller_acknowledgement (test_s3_replay.S3Replay.test_bundle_with_its_own_result_refuses_caller_acknowledgement)",
+            "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+          },
+          {
+            "test": "test_bundle_without_its_own_result_needs_caller_acknowledgement (test_s3_replay.S3Replay.test_bundle_without_its_own_result_needs_caller_acknowledgement)",
+            "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+          },
+          {
+            "test": "test_bundle_without_its_own_result_refuses_a_separate_file (test_s3_replay.S3Replay.test_bundle_without_its_own_result_refuses_a_separate_file)",
+            "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+          },
+          {
+            "test": "test_cli_bundle_binds_identity_from_the_retained_record (test_s3_replay.S3Replay.test_cli_bundle_binds_identity_from_the_retained_record)",
+            "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+          },
+          {
+            "test": "test_cli_bundle_refuses_a_different_result (test_s3_replay.S3Replay.test_cli_bundle_refuses_a_different_result)",
+            "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+          },
+          {
+            "test": "test_cli_refuses_bundle_and_free_form_identity_together (test_s3_replay.S3Replay.test_cli_refuses_bundle_and_free_form_identity_together)",
+            "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+          },
+          {
+            "test": "test_retained_s2_bundle_replays_deterministically (test_s3_replay.S3Replay.test_retained_s2_bundle_replays_deterministically)",
+            "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout; no simulated replay is substituted"
+          }
+        ]
+      }
+    },
+    "request": {
+      "original_sha256": "sha256:49f0ed2517aaacd58304a26a05b38ef627de3e7047b7516630d5c9edf459e994",
+      "matches_receipt": true,
+      "sanitized": {
+        "schema_version": 1,
+        "gate_label": "cos-desktop-r0c-s1-r15-quality-repair2-40c21e5c",
+        "repository": {
+          "kind": "local_git",
+          "location": "<repository>",
+          "revision": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+          "expected_commit": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d"
+        },
+        "policy": {
+          "trust": "trusted_local",
+          "timeout_ms": 600000,
+          "termination_grace_ms": 5000,
+          "max_output_bytes": 16777216,
+          "max_artifact_bytes": 16777216,
+          "expected_changes": "none",
+          "required_capabilities": []
+        },
+        "verification": [
+          {
+            "kind": "command",
+            "id": "fmt",
+            "executable": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+            "args": [
+              "fmt",
+              "--all",
+              "--",
+              "--check"
+            ],
+            "cwd": ".",
+            "timeout_ms": 300000,
+            "env": {
+              "AR": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe",
+              "CARGO": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+              "CARGO_BUILD_JOBS": "4",
+              "CARGO_BUILD_RUSTC_WRAPPER": "",
+              "CARGO_ENCODED_RUSTFLAGS": "",
+              "CARGO_HOME": "<user-home>/.cargo",
+              "CARGO_INCREMENTAL": "0",
+              "CARGO_NET_OFFLINE": "true",
+              "CARGO_PROFILE_DEV_DEBUG": "0",
+              "CARGO_TARGET_DIR": "<gate-root>/targets/quality-fmt",
+              "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/link.exe",
+              "CC": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "INCLUDE": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/include;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/cppwinrt",
+              "LIB": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/ucrt/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x64",
+              "LIBPATH": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x86/store/references;C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0;C:/Program Files (x86)/Windows Kits/10/References/10.0.19041.0;C:/Windows/Microsoft.NET/Framework64/v4.0.30319",
+              "RUSTC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustc.exe",
+              "RUSTC_WRAPPER": "",
+              "RUSTDOC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustdoc.exe",
+              "RUSTFMT": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustfmt.exe"
+            }
+          },
+          {
+            "kind": "command",
+            "id": "metadata",
+            "executable": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+            "args": [
+              "metadata",
+              "--locked",
+              "--no-deps",
+              "--format-version",
+              "1"
+            ],
+            "cwd": ".",
+            "timeout_ms": 300000,
+            "env": {
+              "AR": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe",
+              "CARGO": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+              "CARGO_BUILD_JOBS": "4",
+              "CARGO_BUILD_RUSTC_WRAPPER": "",
+              "CARGO_ENCODED_RUSTFLAGS": "",
+              "CARGO_HOME": "<user-home>/.cargo",
+              "CARGO_INCREMENTAL": "0",
+              "CARGO_NET_OFFLINE": "true",
+              "CARGO_PROFILE_DEV_DEBUG": "0",
+              "CARGO_TARGET_DIR": "<gate-root>/targets/quality-metadata",
+              "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/link.exe",
+              "CC": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "INCLUDE": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/include;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/cppwinrt",
+              "LIB": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/ucrt/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x64",
+              "LIBPATH": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x86/store/references;C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0;C:/Program Files (x86)/Windows Kits/10/References/10.0.19041.0;C:/Windows/Microsoft.NET/Framework64/v4.0.30319",
+              "RUSTC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustc.exe",
+              "RUSTC_WRAPPER": "",
+              "RUSTDOC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustdoc.exe",
+              "RUSTFMT": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustfmt.exe"
+            }
+          },
+          {
+            "kind": "command",
+            "id": "dependency-self-test",
+            "executable": "<user-home>/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+            "args": [
+              "-B",
+              "scripts/check_dependency_rules.py",
+              "--self-test"
+            ],
+            "cwd": ".",
+            "timeout_ms": 300000,
+            "env": {
+              "AR": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe",
+              "CARGO": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+              "CARGO_BUILD_JOBS": "4",
+              "CARGO_BUILD_RUSTC_WRAPPER": "",
+              "CARGO_ENCODED_RUSTFLAGS": "",
+              "CARGO_HOME": "<user-home>/.cargo",
+              "CARGO_INCREMENTAL": "0",
+              "CARGO_NET_OFFLINE": "true",
+              "CARGO_PROFILE_DEV_DEBUG": "0",
+              "CARGO_TARGET_DIR": "<gate-root>/targets/quality-dependency-self-test",
+              "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/link.exe",
+              "CC": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "INCLUDE": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/include;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/cppwinrt",
+              "LIB": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/ucrt/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x64",
+              "LIBPATH": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x86/store/references;C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0;C:/Program Files (x86)/Windows Kits/10/References/10.0.19041.0;C:/Windows/Microsoft.NET/Framework64/v4.0.30319",
+              "RUSTC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustc.exe",
+              "RUSTC_WRAPPER": "",
+              "RUSTDOC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustdoc.exe",
+              "RUSTFMT": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustfmt.exe"
+            }
+          },
+          {
+            "kind": "command",
+            "id": "dependency-rules",
+            "executable": "<user-home>/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+            "args": [
+              "-B",
+              "scripts/check_dependency_rules.py"
+            ],
+            "cwd": ".",
+            "timeout_ms": 300000,
+            "env": {
+              "AR": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe",
+              "CARGO": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+              "CARGO_BUILD_JOBS": "4",
+              "CARGO_BUILD_RUSTC_WRAPPER": "",
+              "CARGO_ENCODED_RUSTFLAGS": "",
+              "CARGO_HOME": "<user-home>/.cargo",
+              "CARGO_INCREMENTAL": "0",
+              "CARGO_NET_OFFLINE": "true",
+              "CARGO_PROFILE_DEV_DEBUG": "0",
+              "CARGO_TARGET_DIR": "<gate-root>/targets/quality-dependency-rules",
+              "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/link.exe",
+              "CC": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "INCLUDE": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/include;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/cppwinrt",
+              "LIB": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/ucrt/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x64",
+              "LIBPATH": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x86/store/references;C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0;C:/Program Files (x86)/Windows Kits/10/References/10.0.19041.0;C:/Windows/Microsoft.NET/Framework64/v4.0.30319",
+              "RUSTC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustc.exe",
+              "RUSTC_WRAPPER": "",
+              "RUSTDOC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustdoc.exe",
+              "RUSTFMT": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustfmt.exe"
+            }
+          },
+          {
+            "kind": "command",
+            "id": "clippy",
+            "executable": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+            "args": [
+              "clippy",
+              "--locked",
+              "--workspace",
+              "--all-targets",
+              "--",
+              "-D",
+              "warnings"
+            ],
+            "cwd": ".",
+            "timeout_ms": 300000,
+            "env": {
+              "AR": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe",
+              "CARGO": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+              "CARGO_BUILD_JOBS": "4",
+              "CARGO_BUILD_RUSTC_WRAPPER": "",
+              "CARGO_ENCODED_RUSTFLAGS": "",
+              "CARGO_HOME": "<user-home>/.cargo",
+              "CARGO_INCREMENTAL": "0",
+              "CARGO_NET_OFFLINE": "true",
+              "CARGO_PROFILE_DEV_DEBUG": "0",
+              "CARGO_TARGET_DIR": "<gate-root>/targets/quality-clippy",
+              "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/link.exe",
+              "CC": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "INCLUDE": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/include;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/cppwinrt",
+              "LIB": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/ucrt/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x64",
+              "LIBPATH": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x86/store/references;C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0;C:/Program Files (x86)/Windows Kits/10/References/10.0.19041.0;C:/Windows/Microsoft.NET/Framework64/v4.0.30319",
+              "RUSTC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustc.exe",
+              "RUSTC_WRAPPER": "",
+              "RUSTDOC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustdoc.exe",
+              "RUSTFMT": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustfmt.exe"
+            }
+          },
+          {
+            "kind": "command",
+            "id": "tests",
+            "executable": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+            "args": [
+              "test",
+              "--locked",
+              "--workspace"
+            ],
+            "cwd": ".",
+            "timeout_ms": 300000,
+            "env": {
+              "AR": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe",
+              "CARGO": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+              "CARGO_BUILD_JOBS": "4",
+              "CARGO_BUILD_RUSTC_WRAPPER": "",
+              "CARGO_ENCODED_RUSTFLAGS": "",
+              "CARGO_HOME": "<user-home>/.cargo",
+              "CARGO_INCREMENTAL": "0",
+              "CARGO_NET_OFFLINE": "true",
+              "CARGO_PROFILE_DEV_DEBUG": "0",
+              "CARGO_TARGET_DIR": "<gate-root>/targets/quality-tests",
+              "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/link.exe",
+              "CC": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "INCLUDE": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/include;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/cppwinrt",
+              "LIB": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/ucrt/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x64",
+              "LIBPATH": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x86/store/references;C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0;C:/Program Files (x86)/Windows Kits/10/References/10.0.19041.0;C:/Windows/Microsoft.NET/Framework64/v4.0.30319",
+              "RUSTC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustc.exe",
+              "RUSTC_WRAPPER": "",
+              "RUSTDOC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustdoc.exe",
+              "RUSTFMT": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustfmt.exe"
+            }
+          },
+          {
+            "kind": "command",
+            "id": "r0-python",
+            "executable": "<user-home>/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+            "args": [
+              "-B",
+              "-c",
+              "import unittest,json; suite=unittest.defaultTestLoader.discover('apps/desktop/devtools/r0/tests'); r=unittest.TextTestRunner(verbosity=1).run(suite); print(json.dumps({'total':r.testsRun,'executed':r.testsRun-len(r.skipped),'passed':r.testsRun-len(r.skipped)-len(r.expectedFailures)-len(r.failures)-len(r.errors)-len(r.unexpectedSuccesses),'skipped':len(r.skipped),'expected_failures':len(r.expectedFailures),'failures':len(r.failures),'errors':len(r.errors),'skipped_cases':[{'test':str(t),'reason':v} for t,v in r.skipped]})); raise SystemExit(not r.wasSuccessful())"
+            ],
+            "cwd": ".",
+            "timeout_ms": 300000,
+            "env": {
+              "AR": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe",
+              "CARGO": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+              "CARGO_BUILD_JOBS": "4",
+              "CARGO_BUILD_RUSTC_WRAPPER": "",
+              "CARGO_ENCODED_RUSTFLAGS": "",
+              "CARGO_HOME": "<user-home>/.cargo",
+              "CARGO_INCREMENTAL": "0",
+              "CARGO_NET_OFFLINE": "true",
+              "CARGO_PROFILE_DEV_DEBUG": "0",
+              "CARGO_TARGET_DIR": "<gate-root>/targets/quality-r0-python",
+              "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/link.exe",
+              "CC": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "INCLUDE": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/include;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/cppwinrt",
+              "LIB": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/ucrt/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x64",
+              "LIBPATH": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x86/store/references;C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0;C:/Program Files (x86)/Windows Kits/10/References/10.0.19041.0;C:/Windows/Microsoft.NET/Framework64/v4.0.30319",
+              "RUSTC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustc.exe",
+              "RUSTC_WRAPPER": "",
+              "RUSTDOC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustdoc.exe",
+              "RUSTFMT": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustfmt.exe"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "id": "r0c-source-1",
+            "path": "apps/desktop/devtools/r0/r0c_driver.py",
+            "required": true
+          },
+          {
+            "id": "r0c-source-2",
+            "path": "apps/desktop/devtools/r0/r0c_contracts.py",
+            "required": true
+          },
+          {
+            "id": "r0c-source-3",
+            "path": "apps/desktop/devtools/r0/tests/test_r0c_driver.py",
+            "required": true
+          },
+          {
+            "id": "r0c-source-4",
+            "path": "apps/desktop/devtools/r0/manifests/r0c-s1-keyboard.json",
+            "required": true
+          },
+          {
+            "id": "n06-cli",
+            "path": "apps/desktop/devtools/r0/n06_attribution.py",
+            "required": true
+          },
+          {
+            "id": "n06-tests",
+            "path": "apps/desktop/devtools/r0/tests/test_n06_probe.py",
+            "required": true
+          },
+          {
+            "id": "behavior-proof",
+            "path": "docs/development/evidence-published/r0c-s1-latest/behavior.json",
+            "required": true
+          },
+          {
+            "id": "decoder-harness",
+            "path": "apps/desktop/examples/decode_compare/harness.rs",
+            "required": true
+          },
+          {
+            "id": "decoder-tests",
+            "path": "apps/desktop/tests/decode_compare_harness.rs",
+            "required": true
+          },
+          {
+            "id": "decoder-smoke",
+            "path": "docs/development/evidence-published/r0c-s1-latest/decoder-budget-smoke.json",
+            "required": true
+          }
+        ]
+      }
+    },
+    "operator": {
+      "original_sha256": "sha256:61b02b7ac4c5af6d98e9c263aa5de1a7242e2dc41f72ad972fd7751bbd975c34",
+      "sanitized": {
+        "schema_version": 1,
+        "git_executable": "C:/Program Files/Git/cmd/git.exe",
+        "executables": [
+          {
+            "path": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+            "expected_sha256": "sha256:c37545ec61d48d31bdefce53280ecab61c4ea54eaace372fac6a0316c6e165d9"
+          },
+          {
+            "path": "<user-home>/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+            "expected_sha256": "sha256:623f669041a962346e6a377408193e628bfc409d12e5851042a727685980813e"
+          },
+          {
+            "path": "C:/Program Files/PowerShell/7/pwsh.exe",
+            "expected_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
+          }
+        ],
+        "local_repository_roots": [
+          "<repository>"
+        ],
+        "https_origins": [],
+        "ambient_env": [],
+        "secret_sources": [],
+        "limits": {
+          "timeout_ms": 600000,
+          "termination_grace_ms": 5000,
+          "max_output_bytes": 16777216,
+          "max_artifact_bytes": 16777216,
+          "max_refinement_steps": 1,
+          "max_evaluation_timeout_ms": 30000,
+          "max_total_evaluation_ms": 30000
+        },
+        "state_dir": "<gate-root>/state"
+      }
+    },
+    "storage_disposal": "PENDING until tracked evidence is pinned; only this successful Gate owned scratch is eligible."
+  },
+  "build": {
+    "gate_id": "d6135dfa-590e-4c44-a749-9c87d482fc3b",
+    "source_commit": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+    "preflight": "unknown",
+    "state": "SUCCEEDED",
+    "operations": {
+      "status": {
+        "original_sha256": "sha256:2d5062148cc773b95a3705040acba251605dacdd723301dd439f0175c277b013",
+        "exit": 0,
+        "sanitized": {
+          "cli_interface_version": 2,
+          "operation": "gate.status",
+          "outcome": {
+            "schema_version": 1,
+            "result": {
+              "schema_version": 1,
+              "gate_id": "d6135dfa-590e-4c44-a749-9c87d482fc3b",
+              "gate_label": "cos-desktop-r0c-s1-r15-build-repair2-40c21e5c",
+              "state": "SUCCEEDED",
+              "updated_at": "2026-10-25T16:58:37.613389900Z",
+              "owner_alive": false,
+              "recovery_required": false
+            }
+          }
+        }
+      },
+      "inspect": {
+        "original_sha256": "sha256:6a651857ea45b46dbfd12958b720507a3ab8359487d503da5571805102759b12",
+        "exit": 0,
+        "sanitized": {
+          "cli_interface_version": 2,
+          "operation": "gate.inspect",
+          "outcome": {
+            "schema_version": 1,
+            "result": {
+              "schema_version": 1,
+              "gate_id": "d6135dfa-590e-4c44-a749-9c87d482fc3b",
+              "gate_label": "cos-desktop-r0c-s1-r15-build-repair2-40c21e5c",
+              "request_sha256": "sha256:f3c007b0de504b51eff412d8b7e0f211ab11937e13c30dff31ec9c4eef69211e",
+              "terminal_state_sha256": "sha256:8bc84e7a754d1118740b2fe56b556924e58b0649a8bcf1fcc55d293406f6ea2d",
+              "runtime": {
+                "refine_version": "0.3.1",
+                "os": "windows",
+                "architecture": "x86_64",
+                "git_version": "git version 2.51.0.windows.1"
+              },
+              "repository": {
+                "location": "<repository>",
+                "requested_revision": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+                "resolved_base_commit": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+                "object_format": "sha1",
+                "final_head": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d"
+              },
+              "limits": {
+                "timeout_ms": 600000,
+                "termination_grace_ms": 5000,
+                "max_output_bytes": 16777216,
+                "max_artifact_bytes": 16777216
+              },
+              "accepted_at": "2026-10-25T16:56:06.600922500Z",
+              "ended_at": "2026-10-25T16:58:37.613389900Z",
+              "candidate_sha256": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe",
+              "verification": [
+                {
+                  "id": "build",
+                  "kind": "command",
+                  "outcome": "pass",
+                  "duration_ms": 139846,
+                  "observed_exit": 0,
+                  "candidate_binding": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe"
+                }
+              ],
+              "check_logs": [
+                {
+                  "check_id": "build",
+                  "stdout": {
+                    "relative_path": "logs/build/stdout",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/build/stderr",
+                    "size_bytes": 12782,
+                    "sha256": "sha256:b27a07ba6abac015a99c76efab1eeaa9b8e86ad70bc969b70cf4a1836e96e94f",
+                    "truncated": false,
+                    "secret": true
+                  }
+                }
+              ],
+              "artifacts": [
+                {
+                  "id": "behavior-proof",
+                  "relative_path": "artifacts/behavior-proof",
+                  "size_bytes": 8449,
+                  "sha256": "sha256:8f6f7b46ee39c164c3a0fad4d75f34aeb9ecae3191c2528f3b0e2ce0a68549a2"
+                },
+                {
+                  "id": "decoder-harness",
+                  "relative_path": "artifacts/decoder-harness",
+                  "size_bytes": 154064,
+                  "sha256": "sha256:0b28e6665738bf11326a7cabe228f77d12ad01aa1ebd5f63a1677fc9cd6057a8"
+                },
+                {
+                  "id": "decoder-smoke",
+                  "relative_path": "artifacts/decoder-smoke",
+                  "size_bytes": 5291,
+                  "sha256": "sha256:d74fff67b416098304212d2c80298f5bbb021c63477ea0f6dad8e66eb7d335b1"
+                },
+                {
+                  "id": "decoder-tests",
+                  "relative_path": "artifacts/decoder-tests",
+                  "size_bytes": 198351,
+                  "sha256": "sha256:b01535053c7de5c686c6089e870386d6ac91743387cf22c47af055facc9a4779"
+                },
+                {
+                  "id": "n06-cli",
+                  "relative_path": "artifacts/n06-cli",
+                  "size_bytes": 74150,
+                  "sha256": "sha256:ace82611b111234ed279042af211508e2060ffb94ce7a3f0040ea33c573bb4b4"
+                },
+                {
+                  "id": "n06-tests",
+                  "relative_path": "artifacts/n06-tests",
+                  "size_bytes": 48134,
+                  "sha256": "sha256:c97894b63200acb7a30bbeead11754c6cf826ec5f86030b3de6021092301bf74"
+                },
+                {
+                  "id": "r0c-source-1",
+                  "relative_path": "artifacts/r0c-source-1",
+                  "size_bytes": 57360,
+                  "sha256": "sha256:239ad5d1ddd4ee46436ecc5b7a82b0deebb70daf806dfa09d2c79d3735770cdf"
+                },
+                {
+                  "id": "r0c-source-2",
+                  "relative_path": "artifacts/r0c-source-2",
+                  "size_bytes": 30665,
+                  "sha256": "sha256:667e32aef959d31dc842ee5fe3917d7aa34e39a8be0f70afdb32a57a37bb64bf"
+                },
+                {
+                  "id": "r0c-source-3",
+                  "relative_path": "artifacts/r0c-source-3",
+                  "size_bytes": 79267,
+                  "sha256": "sha256:8d3b77974b2104607f32fac2106f9fe75c62f31819d7b76533128991e27dbc37"
+                },
+                {
+                  "id": "r0c-source-4",
+                  "relative_path": "artifacts/r0c-source-4",
+                  "size_bytes": 3171,
+                  "sha256": "sha256:510eeaf81ebeff6dc39b0d0057f1d1ece65c65cc6110f6671fc2659c5ee1ad2e"
+                }
+              ],
+              "absent_outputs": [],
+              "cleanup": "complete",
+              "timings": {
+                "preparation_ms": 8674,
+                "execution_ms": 0,
+                "verification_ms": 141669,
+                "collection_ms": 624,
+                "finalization_ms": 2
+              },
+              "duration_ms": 151008
+            }
+          }
+        }
+      },
+      "verify": {
+        "original_sha256": "sha256:2eded81bdc4a1672bb19372069a83d8a319e08be9ae2287fd83842a3f3609756",
+        "exit": 0,
+        "sanitized": {
+          "cli_interface_version": 2,
+          "operation": "gate.verify",
+          "outcome": {
+            "schema_version": 1,
+            "result": {
+              "schema_version": 1,
+              "gate_id": "d6135dfa-590e-4c44-a749-9c87d482fc3b",
+              "state": "SUCCEEDED",
+              "request_sha256": "sha256:f3c007b0de504b51eff412d8b7e0f211ab11937e13c30dff31ec9c4eef69211e",
+              "terminal_state_sha256": "sha256:8bc84e7a754d1118740b2fe56b556924e58b0649a8bcf1fcc55d293406f6ea2d",
+              "observations_sha256": "sha256:08cbf3f3394ac54675e6f4543dc13e3916ff42d92285f3a965563ef43cc01dfb",
+              "candidate_sha256": "sha256:506d135d9d887f2102a83505635c619ec02694580c1dca3df468039734497cfe",
+              "artifacts": [
+                {
+                  "id": "behavior-proof",
+                  "relative_path": "artifacts/behavior-proof",
+                  "size_bytes": 8449,
+                  "sha256": "sha256:8f6f7b46ee39c164c3a0fad4d75f34aeb9ecae3191c2528f3b0e2ce0a68549a2"
+                },
+                {
+                  "id": "decoder-harness",
+                  "relative_path": "artifacts/decoder-harness",
+                  "size_bytes": 154064,
+                  "sha256": "sha256:0b28e6665738bf11326a7cabe228f77d12ad01aa1ebd5f63a1677fc9cd6057a8"
+                },
+                {
+                  "id": "decoder-smoke",
+                  "relative_path": "artifacts/decoder-smoke",
+                  "size_bytes": 5291,
+                  "sha256": "sha256:d74fff67b416098304212d2c80298f5bbb021c63477ea0f6dad8e66eb7d335b1"
+                },
+                {
+                  "id": "decoder-tests",
+                  "relative_path": "artifacts/decoder-tests",
+                  "size_bytes": 198351,
+                  "sha256": "sha256:b01535053c7de5c686c6089e870386d6ac91743387cf22c47af055facc9a4779"
+                },
+                {
+                  "id": "n06-cli",
+                  "relative_path": "artifacts/n06-cli",
+                  "size_bytes": 74150,
+                  "sha256": "sha256:ace82611b111234ed279042af211508e2060ffb94ce7a3f0040ea33c573bb4b4"
+                },
+                {
+                  "id": "n06-tests",
+                  "relative_path": "artifacts/n06-tests",
+                  "size_bytes": 48134,
+                  "sha256": "sha256:c97894b63200acb7a30bbeead11754c6cf826ec5f86030b3de6021092301bf74"
+                },
+                {
+                  "id": "r0c-source-1",
+                  "relative_path": "artifacts/r0c-source-1",
+                  "size_bytes": 57360,
+                  "sha256": "sha256:239ad5d1ddd4ee46436ecc5b7a82b0deebb70daf806dfa09d2c79d3735770cdf"
+                },
+                {
+                  "id": "r0c-source-2",
+                  "relative_path": "artifacts/r0c-source-2",
+                  "size_bytes": 30665,
+                  "sha256": "sha256:667e32aef959d31dc842ee5fe3917d7aa34e39a8be0f70afdb32a57a37bb64bf"
+                },
+                {
+                  "id": "r0c-source-3",
+                  "relative_path": "artifacts/r0c-source-3",
+                  "size_bytes": 79267,
+                  "sha256": "sha256:8d3b77974b2104607f32fac2106f9fe75c62f31819d7b76533128991e27dbc37"
+                },
+                {
+                  "id": "r0c-source-4",
+                  "relative_path": "artifacts/r0c-source-4",
+                  "size_bytes": 3171,
+                  "sha256": "sha256:510eeaf81ebeff6dc39b0d0057f1d1ece65c65cc6110f6671fc2659c5ee1ad2e"
+                }
+              ],
+              "check_logs": [
+                {
+                  "check_id": "build",
+                  "stdout": {
+                    "relative_path": "logs/build/stdout",
+                    "size_bytes": 0,
+                    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "truncated": false,
+                    "secret": true
+                  },
+                  "stderr": {
+                    "relative_path": "logs/build/stderr",
+                    "size_bytes": 12782,
+                    "sha256": "sha256:b27a07ba6abac015a99c76efab1eeaa9b8e86ad70bc969b70cf4a1836e96e94f",
+                    "truncated": false,
+                    "secret": true
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "request": {
+      "original_sha256": "sha256:f3c007b0de504b51eff412d8b7e0f211ab11937e13c30dff31ec9c4eef69211e",
+      "matches_receipt": true,
+      "sanitized": {
+        "schema_version": 1,
+        "gate_label": "cos-desktop-r0c-s1-r15-build-repair2-40c21e5c",
+        "repository": {
+          "kind": "local_git",
+          "location": "<repository>",
+          "revision": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+          "expected_commit": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d"
+        },
+        "policy": {
+          "trust": "trusted_local",
+          "timeout_ms": 600000,
+          "termination_grace_ms": 5000,
+          "max_output_bytes": 16777216,
+          "max_artifact_bytes": 16777216,
+          "expected_changes": "none",
+          "required_capabilities": []
+        },
+        "verification": [
+          {
+            "kind": "command",
+            "id": "build",
+            "executable": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+            "args": [
+              "build",
+              "--locked",
+              "--workspace"
+            ],
+            "cwd": ".",
+            "timeout_ms": 300000,
+            "env": {
+              "AR": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe",
+              "CARGO": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+              "CARGO_BUILD_JOBS": "4",
+              "CARGO_BUILD_RUSTC_WRAPPER": "",
+              "CARGO_ENCODED_RUSTFLAGS": "",
+              "CARGO_HOME": "<user-home>/.cargo",
+              "CARGO_INCREMENTAL": "0",
+              "CARGO_NET_OFFLINE": "true",
+              "CARGO_PROFILE_DEV_DEBUG": "0",
+              "CARGO_TARGET_DIR": "<gate-root>/targets/build-build",
+              "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/link.exe",
+              "CC": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+              "INCLUDE": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/include;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/cppwinrt",
+              "LIB": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/ucrt/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x64",
+              "LIBPATH": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x86/store/references;C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0;C:/Program Files (x86)/Windows Kits/10/References/10.0.19041.0;C:/Windows/Microsoft.NET/Framework64/v4.0.30319",
+              "RUSTC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustc.exe",
+              "RUSTC_WRAPPER": "",
+              "RUSTDOC": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustdoc.exe",
+              "RUSTFMT": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustfmt.exe"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "id": "r0c-source-1",
+            "path": "apps/desktop/devtools/r0/r0c_driver.py",
+            "required": true
+          },
+          {
+            "id": "r0c-source-2",
+            "path": "apps/desktop/devtools/r0/r0c_contracts.py",
+            "required": true
+          },
+          {
+            "id": "r0c-source-3",
+            "path": "apps/desktop/devtools/r0/tests/test_r0c_driver.py",
+            "required": true
+          },
+          {
+            "id": "r0c-source-4",
+            "path": "apps/desktop/devtools/r0/manifests/r0c-s1-keyboard.json",
+            "required": true
+          },
+          {
+            "id": "n06-cli",
+            "path": "apps/desktop/devtools/r0/n06_attribution.py",
+            "required": true
+          },
+          {
+            "id": "n06-tests",
+            "path": "apps/desktop/devtools/r0/tests/test_n06_probe.py",
+            "required": true
+          },
+          {
+            "id": "behavior-proof",
+            "path": "docs/development/evidence-published/r0c-s1-latest/behavior.json",
+            "required": true
+          },
+          {
+            "id": "decoder-harness",
+            "path": "apps/desktop/examples/decode_compare/harness.rs",
+            "required": true
+          },
+          {
+            "id": "decoder-tests",
+            "path": "apps/desktop/tests/decode_compare_harness.rs",
+            "required": true
+          },
+          {
+            "id": "decoder-smoke",
+            "path": "docs/development/evidence-published/r0c-s1-latest/decoder-budget-smoke.json",
+            "required": true
+          }
+        ]
+      }
+    },
+    "operator": {
+      "original_sha256": "sha256:61b02b7ac4c5af6d98e9c263aa5de1a7242e2dc41f72ad972fd7751bbd975c34",
+      "sanitized": {
+        "schema_version": 1,
+        "git_executable": "C:/Program Files/Git/cmd/git.exe",
+        "executables": [
+          {
+            "path": "<user-home>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+            "expected_sha256": "sha256:c37545ec61d48d31bdefce53280ecab61c4ea54eaace372fac6a0316c6e165d9"
+          },
+          {
+            "path": "<user-home>/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+            "expected_sha256": "sha256:623f669041a962346e6a377408193e628bfc409d12e5851042a727685980813e"
+          },
+          {
+            "path": "C:/Program Files/PowerShell/7/pwsh.exe",
+            "expected_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
+          }
+        ],
+        "local_repository_roots": [
+          "<repository>"
+        ],
+        "https_origins": [],
+        "ambient_env": [],
+        "secret_sources": [],
+        "limits": {
+          "timeout_ms": 600000,
+          "termination_grace_ms": 5000,
+          "max_output_bytes": 16777216,
+          "max_artifact_bytes": 16777216,
+          "max_refinement_steps": 1,
+          "max_evaluation_timeout_ms": 30000,
+          "max_total_evaluation_ms": 30000
+        },
+        "state_dir": "<gate-root>/state"
+      }
+    },
+    "storage_disposal": "PENDING until tracked evidence is pinned; only this successful Gate owned scratch is eligible."
+  },
+  "prior_failures": "failed-gate.json; both remain FAILED and are not reused",
+  "retention": {
+    "canonical": "This latest sanitized tracked repository record; no claim relies on scratch surviving.",
+    "private_producer_state": "Native immutable authority/artifacts/logs retained separately; only successful owned scratch is disposed.",
+    "failed_workspaces": "Both FAILED workspaces and targets retained, not subject to successful-Gate disposal."
+  },
+  "correlation": {
+    "candidate_sha256_matches": true,
+    "artifact_tuples_match": true,
+    "artifact_count": 10,
+    "quality_checks": 7,
+    "build_checks": 1
+  }
+}
