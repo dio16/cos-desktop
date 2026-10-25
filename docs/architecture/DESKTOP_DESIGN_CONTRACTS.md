@@ -455,7 +455,7 @@ Frame/staging/rx limits remain Protocol-owned; grant IDs ≤448, pending reads/i
 - **Non-goals:** no inference of "current iteration" from local ordering; no canonical selection edits.
 - **Acceptance:** *detects: compare silently swapping in another candidate, viewed identity lost on removal, history order derived locally.*
 
-- **Proposed behaviour pending owner ratification (UX-01 closure, [ADR-0010](../decisions/ADR-0010-UX01-DOCK-CLOSURE.md); each line individually rejectable, not yet an approved value):**
+- **Approved behaviour (UX-01 closure, [ADR-0010](../decisions/ADR-0010-UX01-DOCK-CLOSURE.md), owner-ratified 2026-10-25):**
   - **D-1 Initial view:** with no persisted reference the viewed candidate is *explicitly empty*; nothing is auto-selected and no Runtime "current" candidate is auto-shown.
   - **D-2 Cardinality:** zero candidates gives an empty dock and surface; one candidate allows viewing while Compare is unavailable **with a stated reason**.
   - **D-3 Selection transitions:** every explicit selection sets *viewed* and the artifact surface to that candidate; while Compare is inactive the first selection fills side A, the second fills side B and switches the surface to Compare; while Compare is active a plain selection changes *viewed only*, and a change-side action updates that side without changing viewed. A side is never silently replaced.
