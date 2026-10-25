@@ -2931,8 +2931,8 @@
     }
   ],
   "negative_regressions": {
-    "tests": 11,
-    "passed": 11,
+    "tests": 12,
+    "passed": 12,
     "failed": 0,
     "coverage": [
       "identity",
@@ -2942,8 +2942,21 @@
       "unknown-endpoint",
       "loss/power/window fences",
       "signed overlap",
-      "output cap/no partial output/no new files"
+      "output cap/no partial output/no new files",
+      "oversized cadence integer closed refusal",
+      "single-draw absent adjacent-gap closed refusal"
     ]
   },
-  "scope": "retained record arithmetic and available metadata consistency only; not independent binary/source verification or full Native acceptance"
+  "scope": "retained record arithmetic and available metadata consistency only; not independent binary/source verification or full Native acceptance",
+  "repair": {
+    "before": [
+      "500-digit positive cadence integer raised OverflowError before closed refusal",
+      "one draw/no adjacent pair raised TypeError during README formatting"
+    ],
+    "after": [
+      "u64 integer contract yields INTEGER",
+      "no adjacent observation yields README_GAP"
+    ],
+    "real_six_scenario_output_unchanged": true
+  }
 }

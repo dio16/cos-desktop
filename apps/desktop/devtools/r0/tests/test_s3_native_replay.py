@@ -158,6 +158,8 @@ class NativePublishedReplay(unittest.TestCase):
                 self.reject_scenario(path, mutate, code)
         self.reject_scenario("raw/keyboard-driver.json", lambda d: d.update(scenario="navigation"), "DRIVER_BINDING")
         self.reject_scenario("raw/keyboard-driver.json", lambda d: d["achieved_hz"].update(key="private/path"), "DRIVER_CADENCE")
+        self.reject_scenario("raw/keyboard-driver.json", lambda d: d["achieved_hz"].update(key=10**500), "INTEGER")
+        self.reject_scenario("raw/keyboard-driver.json", lambda d: d.update(requested_hz=10**500), "INTEGER")
 
     def test_corrupt_duplicate_and_nonfinite_json_are_refused_before_aggregation(self):
         for data, code in [(b'{"a":1,"a":2}', "DUPLICATE_KEY"),
@@ -216,6 +218,16 @@ class NativeGapBoundaries(unittest.TestCase):
     def record(self, seq: int, start: int, end: int, window: int = 1, lifetime: int = 1) -> dict:
         return {"seq":seq,"kind":2,"start_ns":start,"end_ns":end,"window":window,
                 "lifetime":lifetime,"dirty_ns":None,"invalidations":1}
+
+    def test_single_draw_cannot_be_formatted_as_an_observed_adjacent_gap(self):
+        row = "| `keyboard` | r | a | m | 1/1 | 0/1 | input 0, dirty 0, draw 1, submit 0, surface-mutation 0, notify 0 | max 0.000 ms / 1 intervals | 0/1 (max 1) | n | `a` |"
+        capture = {"execution_id":"a", "records":[{}], "summary":{
+            "eligible":1, "retention_dropped":0, "input_unassociated":1}}
+        value = {"kind_counts":[0,0,1,0,0,0,0,0,0,0],
+                 "draw":{"end_to_start":{"count":0,"max_ns":None}}}
+        with self.assertRaises(s2b.ObservationError) as caught:
+            replay.readme_comparison(row, "keyboard", capture, value)
+        self.assertEqual(str(caught.exception), "README_GAP")
 
     def test_window_lifetime_partition_and_loss_power_fences_exclude_pairs(self):
         records = [self.record(1,0,2), self.record(2,3,4,window=2,lifetime=2),

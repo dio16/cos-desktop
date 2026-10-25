@@ -40,6 +40,14 @@ def require(condition: bool, code: str) -> None:
         s2b.fail(code)
 
 
+def positive_number(value: object) -> None:
+    # Do not convert an untrusted arbitrary-precision JSON integer to float.
+    if type(value) is int:
+        s2b.integer(value, low=1)
+    else:
+        require(type(value) is float and math.isfinite(value) and value > 0, "DRIVER_CADENCE")
+
+
 def input_names() -> set[str]:
     names = {"README.md"}
     for name in SCENARIOS:
@@ -179,10 +187,8 @@ def validate_scenario(data: dict[str, bytes], name: str) -> tuple[dict, dict, di
             if key == "messages":
                 s2b.integer(value)
             else:
-                require(type(value) in (int, float) and math.isfinite(value) and value > 0,
-                        "DRIVER_CADENCE")
-    require(type(raw["requested_hz"]) in (int, float)
-            and math.isfinite(raw["requested_hz"]) and raw["requested_hz"] > 0, "DRIVER_CADENCE")
+                positive_number(value)
+    positive_number(raw["requested_hz"])
     require(raw.get("scenario") == name and type(raw.get("wrapper_exit_code")) is int
             and raw["wrapper_exit_code"] == 0 and raw.get("wrapper_stderr") == "",
             "DRIVER_BINDING")
@@ -301,6 +307,7 @@ def readme_comparison(readme: str, name: str, capture: dict, aggregate: dict) ->
         ("surface-mutation", 8), ("notify", 9))), "README_COUNTS")
     gap = aggregate["draw"]["end_to_start"]
     if counts[2]:
+        require(gap["count"] > 0, "README_GAP")
         match = re.fullmatch(r"max ([0-9]+\.[0-9]{3}) ms / ([0-9]+) intervals", cells[7])
         if match is None:
             s2b.fail("README_GAP")

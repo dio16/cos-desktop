@@ -1,8 +1,8 @@
 {
   "exit_code": 0,
-  "total": 351,
-  "executed": 339,
-  "passed": 339,
+  "total": 352,
+  "executed": 340,
+  "passed": 340,
   "skipped": 12,
   "expected_failures": 0,
   "unexpected_successes": 0,
