@@ -1,12 +1,13 @@
 {
   "base_source_commit": "d74699a3d92a44bc4bee7f32754e9fd3b2a0a4c4",
   "reviewed_product_candidate": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+  "reviewed_evidence_head": "c247d979c11bb52bf17fe70f8dccb388cde87776",
   "cards": 62,
   "contracts": 62,
   "hard_prerequisites_unchanged": true,
   "canonical_dag_unchanged": true,
-  "new_relative_links_checked": 13,
-  "decision_gates": "Existing owning requirements unchanged; implementation/evidence corrections only.",
+  "new_relative_links_checked": 15,
+  "decision_gates": "Only the independently reviewed limited source closure is recorded; full DC-MP-R0C and owner decisions unchanged.",
   "privacy_scan": {
     "patterns": "known user-home identifier and credential header/key literals",
     "hits": []

@@ -1,0 +1,38 @@
+{
+  "source_commit": "40c21e5cf07fb83fbf97cd53949eefcf1e52535d",
+  "evidence_head": "c247d979c11bb52bf17fe70f8dccb388cde87776",
+  "conversation_sha256": "sha256:12904fcd5968bd4287e9e121faba8a1e2ead547f935d9546637c4ad1106a194a",
+  "request_user_ids": [
+    "6db53a09-ec93-4157-abdf-ac573e920213"
+  ],
+  "response_assistant_ids": [
+    "047c27b3-cb44-486a-babc-0981c8bd2ae4"
+  ],
+  "baseline_assistant_id": "86a64d0e-ddce-4be7-9e37-feb3350341d9",
+  "complete": true,
+  "streaming": false,
+  "identical_reads": 2,
+  "stability_interval_ms": 30000,
+  "terminal_verdict_line": "PASS 0 / 0 / 0",
+  "response_sha256": "sha256:312bb53f1dfa805b04b165c304d339c33e88ec5f00b5b5bb44e02487c3eafd30",
+  "response_characters": 3336,
+  "verdict": {
+    "blocking": 0,
+    "actionable": 0,
+    "excessive": 0,
+    "passLine": [
+      0,
+      0,
+      0
+    ],
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": true,
+    "sawPassLine": true
+  },
+  "parser_exit": 0,
+  "completion_verification_exit": 0
+}

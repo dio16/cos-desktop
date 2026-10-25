@@ -1,0 +1,250 @@
+MP-R0C-S1 R15 — 独立再レビュー結果
+PASS — R15限定
+
+BLOCKING 0 / ACTIONABLE NON-BLOCKING 0 / EXCESSIVE 0
+
+R15のSOURCE・開発CLI・証拠処理に限定した技術完了を承認します。 ただし、これはDC-MP-R0C全体のExit達成を意味しません。
+
+1. 固定状態とレビュー対象
+
+GitHubコネクタで実際に読み取った対象は以下です。
+
+項目
+
+	
+
+確認結果
+
+
+
+
+製品候補
+
+	
+
+40c21e5cf07fb83fbf97cd53949eefcf1e52535d
+
+
+
+
+証拠HEAD
+
+	
+
+c247d979c11bb52bf17fe70f8dccb388cde87776
+
+
+
+
+origin/dev
+
+	
+
+証拠HEADに対応する状態
+
+
+
+
+製品候補との差分
+
+	
+
+後続2コミット、証拠・文書のみ
+
+
+
+
+R14からの変更
+
+	
+
+R0C、N06、decoder harness、回帰テスト、証拠
+
+
+
+
+実行・変更操作
+
+	
+
+なし。GitHub読み取りによるレビューのみ
+
+2. R14の2指摘
+
+BLOCKING：FAILED理由の永続帰属 — CLOSED
+
+apps/desktop/devtools/r0/r0c_driver.py
+
+probe_failures()（285–340行付近）がbinding以外の失敗も独立に収集
+
+priority_failure()（277行付近）が失敗理由を決定
+
+failure_reason()（741–780行付近）がfailure-setを優先
+
+finalize_result()（853–876行付近）が主原因と全失敗集合を実際に保存
+
+behavior.jsonの保存・再読込7ケースでは、bindingのみはPROBE_BINDING_LOST、PID・generation・launcher・title・trace・classificationの複合失敗は各自の高優先度理由を維持しています。
+
+ACTIONABLE：未確認action明細と配達確認の区別 — CLOSED
+
+r0c_driver.py:409–455,602–647、r0c_contracts.py:547–563
+
+不正な識別情報では、probeの460件の自己申告があっても保存済みdelivered_actionsは0、delivery_attributionはUNATTRIBUTEDです。binding-onlyの部分実行もFAILED / UNATTRIBUTEDとして扱われます。正常完了の検証条件は緩められていません。
+
+3. N06修正とdecoder harness
+
+N06：PASS
+
+n06_attribution.py:1503–1510で実行ファイルdigestをPowerShell・probe探索前に検査しています。不正digestではARGS_IDENTITY、正しい形式で依存物が不在ならPROBE_MISSINGとなる順序が成立しています。
+
+テストのchild kill後waitも確認しました。39テストPASS、ResourceWarningなしという記録と整合します。
+
+decoder harness：PASS
+
+apps/desktop/examples/decode_compare/harness.rs:1487–1514では、summaryを含む実際のシリアライズ量を判定し、観測行が削られたらcapability/resource集計を再計算します。各反復で観測行数が減少するため有限収束し、write_report()も不整合なレコードを拒否します。
+
+回帰テストは固定byte数への依存を解消し、返却件数・シリアライズ件数・保存成功とcapability件数を確認しています。scratch cap負例では、1KiB出力後に停止しないchildの強制終了を確認する設計です。
+
+実FFmpeg smokeの記録では3枚のPNGから、3,939-byte上限下で3,022 bytes、観測1件・capability1件となり、保存成功と整合します。121 decoderテストPASSです。
+
+これらはシリアライズおよびCLI経路の検証であり、decoder採用判断やNative描画性能の証拠ではありません。
+
+4. Refine Gateと証拠照合
+
+項目
+
+	
+
+Quality
+
+	
+
+Build
+
+
+
+
+Gate ID
+
+	
+
+ac0372f6-0c5f-40f1-a6f7-e5906061284a
+
+	
+
+d6135dfa-590e-4c44-a749-9c87d482fc3b
+
+
+
+
+判定
+
+	
+
+SUCCEEDED 7/7
+
+	
+
+SUCCEEDED 1/1
+
+
+
+
+requested/final SHA
+
+	
+
+40c21e5…
+
+	
+
+40c21e5…
+
+
+
+
+candidate digest
+
+	
+
+一致
+
+	
+
+一致
+
+
+
+
+成果物
+
+	
+
+10件
+
+	
+
+同一10件
+
+
+
+
+verify
+
+	
+
+SUCCEEDED
+
+	
+
+SUCCEEDED
+
+
+
+
+cleanup
+
+	
+
+complete
+
+	
+
+complete
+
+
+
+
+owner / recovery
+
+	
+
+dead / 不要
+
+	
+
+dead / 不要
+
+gates.jsonのstatus・inspect・verifyを照合し、10件の成果物についてID・サイズ・SHA256のタプル一致を確認しました。
+
+過去のQuality Gate 2件はFAILEDとして保持され、成功扱いへ変更されていません。preflight UNKNOWNもそのままです。
+
+storage.jsonでは、削除対象・保持対象を区別し、削除前後のnative integrity一致とエラー0件を記録しています。約4.547GiBは論理ファイルサイズの削除量であり、物理ディスク容量の実測値ではありません。
+
+5. テスト未実行と所有Contractの残件
+
+通常R0 suiteは328 PASS / 12 skipped、独立Gate内は304 PASS / 36 skippedです。後者の36件は、interpreter依存15、S2B bundle不在2、S2 bundle不在8、N07旧バイナリ不在11で、PASSに算入されていません。
+
+native-control.jsonもNOT_RUNであり、provider control active=false / unanswered の状況でアプリ起動や入力操作を迂回していません。
+
+所有Contract DC-MP-R0Cには、依然として未達の要件があります。実Native負荷下でのpopup・entity-update、saturation、queue/cancel/restoration、demand-to-present対応、可視stallの原因帰属、Present/displayed/scanout、GPUおよびinput-to-photonについて、今回のSOURCE検証は代替証拠ではありません。したがってMP-R0C全体、性能ベースライン、R0D ratification、FLOW2は未完了です。
+
+最終判定
+
+R14の2指摘は解消し、N06とdecoder harnessに追加された修正も対象範囲内で妥当です。Gate・候補・証拠・cleanupの対応関係に新たな指摘はありません。
+
+MP-R0C-S1 R15の限定SOURCE技術完了：承認。
+
+ADR-0009/0012の継続承認は維持しますが、未測定値のPASS化、所有Contractの縮小、Runtime変更、main/releaseの許可は行いません。次タスク指示はこの判定に含めません。
+
+PASS 0 / 0 / 0
