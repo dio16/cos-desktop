@@ -468,6 +468,231 @@
         "ordinary source and target",
         "all other Gate workspaces/targets"
       ]
+    },
+    {
+      "gate_id": "782459d0-6ea0-4acc-9d5f-184fd8937faa",
+      "candidate": "f1e12dd59d96f4c9de89a4c0886bb92ce8715751",
+      "evidence_commit": "42b65a0",
+      "removed": [
+        {
+          "path": "<S3_REPAIRED_GATE_ROOT>/state/gates/782459d0-6ea0-4acc-9d5f-184fd8937faa/work/repo",
+          "bytes": 9997904,
+          "files": 339
+        },
+        {
+          "path": "<S3_REPAIRED_GATE_ROOT>/targets/build-build",
+          "bytes": 1593086364,
+          "files": 2911
+        }
+      ],
+      "logical_bytes_removed": 1603084268,
+      "native_integrity_before": {
+        "cli_interface_version": 2,
+        "operation": "gate.verify",
+        "outcome": {
+          "schema_version": 1,
+          "result": {
+            "schema_version": 1,
+            "gate_id": "782459d0-6ea0-4acc-9d5f-184fd8937faa",
+            "state": "SUCCEEDED",
+            "request_sha256": "sha256:3e4edb61aedef40acea3bc1c21bcfcbada228b01230406b8a72c34f3d3d2a88c",
+            "terminal_state_sha256": "sha256:0c7bb32f22cd6ac16b9b472c51302b5a919fdc57bc46282676f7011e85572ec2",
+            "observations_sha256": "sha256:a203ab5e799ca3f77a446e4ee82879408539132f9717d9c8cc939438102a68d3",
+            "candidate_sha256": "sha256:b3d8145832cded2030270dfbea1a3ce196a32240ee040207a2318bcc4dd9dfb9",
+            "artifacts": [
+              {
+                "id": "behavior",
+                "relative_path": "artifacts/behavior",
+                "size_bytes": 49822,
+                "sha256": "sha256:3f4923d465d015d18fceb6f0e1bfbd23d10945707fb88d6baab909558aa8bf39"
+              },
+              {
+                "id": "cli-doc",
+                "relative_path": "artifacts/cli-doc",
+                "size_bytes": 80570,
+                "sha256": "sha256:8c5adf62b64b6c2398a69bb5cbf54ac30391be212f0b4706ea80aef0e5dccdb8"
+              },
+              {
+                "id": "input-qualification",
+                "relative_path": "artifacts/input-qualification",
+                "size_bytes": 7330,
+                "sha256": "sha256:ff5fcff1e0b51d321de9a503bf3e8cfe7870b08860917b9636ecb87b52297187"
+              },
+              {
+                "id": "native-checksums",
+                "relative_path": "artifacts/native-checksums",
+                "size_bytes": 3586,
+                "sha256": "sha256:f3b2cbd0dda9090e4cb320be523e37df69c787f6eeec9b8d01be584a6515e1d0"
+              },
+              {
+                "id": "oracle",
+                "relative_path": "artifacts/oracle",
+                "size_bytes": 18899,
+                "sha256": "sha256:e3872966e311991931ad4a509fd1d118adfb30c61c6ba032a424e0e36b41fd23"
+              },
+              {
+                "id": "python-quality",
+                "relative_path": "artifacts/python-quality",
+                "size_bytes": 3256,
+                "sha256": "sha256:c52cee3d92fa4ee1533adaf478b37943a4b95744a0cf53da9d52134b74ddf5e1"
+              },
+              {
+                "id": "quality",
+                "relative_path": "artifacts/quality",
+                "size_bytes": 780,
+                "sha256": "sha256:11dab5da81a0d9b68710235532dbcc7ddd455e6bec20f15d8b7888018f941f81"
+              },
+              {
+                "id": "real-replay",
+                "relative_path": "artifacts/real-replay",
+                "size_bytes": 90000,
+                "sha256": "sha256:497140c77a2dbae83d24d29f802f4985f17670ca476910e19ed1ee8eb59b5e64"
+              },
+              {
+                "id": "replay-source",
+                "relative_path": "artifacts/replay-source",
+                "size_bytes": 22044,
+                "sha256": "sha256:828eda6a32e24481241ee08bb4c502aced4fb8495554f77dba57d1e36fab64e9"
+              },
+              {
+                "id": "replay-tests",
+                "relative_path": "artifacts/replay-tests",
+                "size_bytes": 14945,
+                "sha256": "sha256:46559de1742936cc99322d70262d225b0cb783fb9a0e91039498cd49cbfd76b4"
+              }
+            ],
+            "check_logs": [
+              {
+                "check_id": "build",
+                "stdout": {
+                  "relative_path": "logs/build/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/build/stderr",
+                  "size_bytes": 12824,
+                  "sha256": "sha256:ed1db1842b97eb0b0d950cb08b5b30894a5ecba0f1016dfdd526e16920bdcadf",
+                  "truncated": false,
+                  "secret": true
+                }
+              }
+            ]
+          }
+        }
+      },
+      "native_integrity_after": {
+        "cli_interface_version": 2,
+        "operation": "gate.verify",
+        "outcome": {
+          "schema_version": 1,
+          "result": {
+            "schema_version": 1,
+            "gate_id": "782459d0-6ea0-4acc-9d5f-184fd8937faa",
+            "state": "SUCCEEDED",
+            "request_sha256": "sha256:3e4edb61aedef40acea3bc1c21bcfcbada228b01230406b8a72c34f3d3d2a88c",
+            "terminal_state_sha256": "sha256:0c7bb32f22cd6ac16b9b472c51302b5a919fdc57bc46282676f7011e85572ec2",
+            "observations_sha256": "sha256:a203ab5e799ca3f77a446e4ee82879408539132f9717d9c8cc939438102a68d3",
+            "candidate_sha256": "sha256:b3d8145832cded2030270dfbea1a3ce196a32240ee040207a2318bcc4dd9dfb9",
+            "artifacts": [
+              {
+                "id": "behavior",
+                "relative_path": "artifacts/behavior",
+                "size_bytes": 49822,
+                "sha256": "sha256:3f4923d465d015d18fceb6f0e1bfbd23d10945707fb88d6baab909558aa8bf39"
+              },
+              {
+                "id": "cli-doc",
+                "relative_path": "artifacts/cli-doc",
+                "size_bytes": 80570,
+                "sha256": "sha256:8c5adf62b64b6c2398a69bb5cbf54ac30391be212f0b4706ea80aef0e5dccdb8"
+              },
+              {
+                "id": "input-qualification",
+                "relative_path": "artifacts/input-qualification",
+                "size_bytes": 7330,
+                "sha256": "sha256:ff5fcff1e0b51d321de9a503bf3e8cfe7870b08860917b9636ecb87b52297187"
+              },
+              {
+                "id": "native-checksums",
+                "relative_path": "artifacts/native-checksums",
+                "size_bytes": 3586,
+                "sha256": "sha256:f3b2cbd0dda9090e4cb320be523e37df69c787f6eeec9b8d01be584a6515e1d0"
+              },
+              {
+                "id": "oracle",
+                "relative_path": "artifacts/oracle",
+                "size_bytes": 18899,
+                "sha256": "sha256:e3872966e311991931ad4a509fd1d118adfb30c61c6ba032a424e0e36b41fd23"
+              },
+              {
+                "id": "python-quality",
+                "relative_path": "artifacts/python-quality",
+                "size_bytes": 3256,
+                "sha256": "sha256:c52cee3d92fa4ee1533adaf478b37943a4b95744a0cf53da9d52134b74ddf5e1"
+              },
+              {
+                "id": "quality",
+                "relative_path": "artifacts/quality",
+                "size_bytes": 780,
+                "sha256": "sha256:11dab5da81a0d9b68710235532dbcc7ddd455e6bec20f15d8b7888018f941f81"
+              },
+              {
+                "id": "real-replay",
+                "relative_path": "artifacts/real-replay",
+                "size_bytes": 90000,
+                "sha256": "sha256:497140c77a2dbae83d24d29f802f4985f17670ca476910e19ed1ee8eb59b5e64"
+              },
+              {
+                "id": "replay-source",
+                "relative_path": "artifacts/replay-source",
+                "size_bytes": 22044,
+                "sha256": "sha256:828eda6a32e24481241ee08bb4c502aced4fb8495554f77dba57d1e36fab64e9"
+              },
+              {
+                "id": "replay-tests",
+                "relative_path": "artifacts/replay-tests",
+                "size_bytes": 14945,
+                "sha256": "sha256:46559de1742936cc99322d70262d225b0cb783fb9a0e91039498cd49cbfd76b4"
+              }
+            ],
+            "check_logs": [
+              {
+                "check_id": "build",
+                "stdout": {
+                  "relative_path": "logs/build/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/build/stderr",
+                  "size_bytes": 12824,
+                  "sha256": "sha256:ed1db1842b97eb0b0d950cb08b5b30894a5ecba0f1016dfdd526e16920bdcadf",
+                  "truncated": false,
+                  "secret": true
+                }
+              }
+            ]
+          }
+        }
+      },
+      "integrity_identical": true,
+      "binary_hash_retained": {
+        "path": "<S3_REPAIRED_GATE_ROOT>/targets/build-build/debug/cos-desktop.exe",
+        "bytes": 32275456,
+        "sha256": "sha256:7400d5fdab5de4181fafafccbdd12a83d7628806950db29a6aeb7024e540752c",
+        "source_candidate": "f1e12dd59d96f4c9de89a4c0886bb92ce8715751",
+        "claim": "fresh cargo build output only; not executed as Native UI or substituted for any historical binary"
+      },
+      "kept": [
+        "Gate authority/artifacts/logs",
+        "ordinary source/target",
+        "all other Gate workspaces/targets"
+      ]
     }
   ],
   "measurement": "logical file lengths, not allocated physical bytes"
