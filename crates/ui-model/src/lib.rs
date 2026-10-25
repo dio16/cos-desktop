@@ -57,6 +57,12 @@ pub mod presentation {
         CompareSideB,
         /// An explicit change-side action updated that side; Viewed did not move.
         Changed(CompareSide),
+        /// The second plain selection repeated side A, so no pair was formed and
+        /// Viewed moved to that same candidate (D-2/B1).
+        DuplicateSelection,
+        /// An explicit change-side action was refused because the candidate already
+        /// occupies the other side; the pair is untouched (D-2/B1).
+        DuplicateSide,
     }
 
     /// Which persisted reference the current projection accepted (ADR-0010 D-8).
@@ -116,10 +122,17 @@ pub mod presentation {
         }
 
         /// Set a complete pair (restore and non-dock callers).
-        pub fn compare(&mut self, pair: [ViewedCandidate; 2]) {
+        ///
+        /// Returns false and applies nothing when both sides hold the same identity:
+        /// a pair always names two different candidates (D-2/B1).
+        pub fn compare(&mut self, pair: [ViewedCandidate; 2]) -> bool {
+            if pair[0] == pair[1] {
+                return false;
+            }
             self.compare = Some(pair);
             self.pending_side_a = None;
             self.changing_side = None;
+            true
         }
 
         /// One explicit dock selection (D-3).
@@ -129,6 +142,11 @@ pub mod presentation {
         /// only. An armed change-side action updates that side and leaves Viewed.
         pub fn select(&mut self, candidate: ViewedCandidate) -> SelectionEffect {
             if let Some(side) = self.changing_side.take() {
+                // A change-side action must not produce an identical-identity pair.
+                let other_identity = self.compare.as_ref().map(|pair| &pair[1 - side.index()].0);
+                if other_identity.is_some_and(|other| *other == candidate.0) {
+                    return SelectionEffect::DuplicateSide;
+                }
                 match side {
                     CompareSide::A => {
                         if let Some(pair) = self.compare.as_mut() {
@@ -152,16 +170,21 @@ pub mod presentation {
             if self.compare.is_some() {
                 return SelectionEffect::ViewedOnly;
             }
-            match self.pending_side_a.take() {
-                None => {
-                    self.pending_side_a = Some(candidate);
-                    SelectionEffect::CompareSideA
+            if let Some(side_a) = &self.pending_side_a {
+                if side_a.0 == candidate.0 {
+                    // The same candidate cannot fill both sides: keep side A and the
+                    // single-candidate state instead of forming `[A, A]` (D-2/B1).
+                    return SelectionEffect::DuplicateSelection;
                 }
-                Some(side_a) => {
-                    self.compare = Some([side_a, candidate]);
-                    SelectionEffect::CompareSideB
-                }
+                let side_a = self
+                    .pending_side_a
+                    .take()
+                    .expect("side A exists while completing the pair");
+                self.compare = Some([side_a, candidate]);
+                return SelectionEffect::CompareSideB;
             }
+            self.pending_side_a = Some(candidate);
+            SelectionEffect::CompareSideA
         }
 
         /// Arm an explicit change-side action for the next selection (D-3/D-5).
@@ -240,7 +263,11 @@ pub mod presentation {
                 }
             }
             if let Some(references) = pair {
-                if present(&references[0]) && present(&references[1]) {
+                // An identical-identity pair is refused as unavailable, never repaired
+                // into a different pair (D-2/B1).
+                if references[0] == references[1] {
+                    outcome.pair_missing = true;
+                } else if present(&references[0]) && present(&references[1]) {
                     self.compare = Some([
                         ViewedCandidate(references[0].clone()),
                         ViewedCandidate(references[1].clone()),
@@ -371,6 +398,56 @@ pub mod presentation {
                 state.compare_pair(),
                 Some(&[candidate("d"), candidate("e")])
             );
+        }
+
+        #[test]
+        fn selecting_the_same_candidate_twice_never_forms_a_pair() {
+            let mut state = Presentation::default();
+            assert_eq!(state.select(candidate("a")), SelectionEffect::CompareSideA);
+            assert_eq!(
+                state.select(candidate("a")),
+                SelectionEffect::DuplicateSelection,
+                "one candidate cannot fill both sides"
+            );
+            assert_eq!(state.viewed(), Some(&candidate("a")));
+            assert_eq!(state.compare_pair(), None);
+            assert_eq!(state.compare_side(CompareSide::A), Some(&candidate("a")));
+            // A different second candidate still completes the pair normally.
+            assert_eq!(state.select(candidate("b")), SelectionEffect::CompareSideB);
+            assert_eq!(
+                state.compare_pair(),
+                Some(&[candidate("a"), candidate("b")])
+            );
+        }
+
+        #[test]
+        fn changing_a_side_to_the_other_side_identity_is_refused() {
+            let mut state = Presentation::default();
+            state.select(candidate("a"));
+            state.select(candidate("b"));
+            assert!(state.arm_change(CompareSide::A));
+            assert_eq!(state.select(candidate("b")), SelectionEffect::DuplicateSide);
+            assert_eq!(
+                state.compare_pair(),
+                Some(&[candidate("a"), candidate("b")]),
+                "the refused change must leave the pair untouched"
+            );
+            assert_eq!(state.viewed(), Some(&candidate("b")));
+            assert_eq!(state.changing_side(), None);
+        }
+
+        #[test]
+        fn restore_refuses_an_identical_identity_pair() {
+            let mut state = Presentation::default();
+            let a = other_candidate("a");
+            let duplicate = [a.clone(), a.clone()];
+            let visible = [a];
+            let present = present_in(&visible);
+            let outcome = state.restore(None, Some(&duplicate), present);
+            assert!(outcome.pair_missing);
+            assert_eq!(state.compare_pair(), None);
+            assert!(!state.compare([candidate("a"), candidate("a")]));
+            assert_eq!(state.compare_pair(), None);
         }
 
         #[test]

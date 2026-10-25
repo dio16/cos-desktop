@@ -16,10 +16,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::task::{Poll, Waker};
 use ui_model::task_rail::{TaskRailCache, TaskRailState};
-use ui_model::{
-    DerivationCache, DisplayCache, Workbench,
-    presentation::{CompareSide, SelectionEffect, ViewedCandidate},
-};
+use ui_model::{DerivationCache, DisplayCache, Workbench, presentation::CompareSide};
 
 mod accessibility;
 pub mod budget;
@@ -1016,7 +1013,6 @@ impl Shell {
         }
         let viewed = self.pending_restore_viewed.take();
         let pair = self.pending_restore_compare.take();
-        let mut missing = Vec::new();
         if let Some(workbench) = &mut self.workbench {
             if let Some(task) = task {
                 workbench.presentation.adopt_task(task.clone());
@@ -1029,20 +1025,9 @@ impl Shell {
             let outcome = workbench
                 .presentation
                 .restore(viewed.as_ref(), pair.as_ref(), present);
-            if outcome.viewed_missing {
-                missing.push("Viewed candidate");
-            }
-            if outcome.pair_missing {
-                missing.push("Compare pair");
-            }
+            self.restore_notice = dock::restore_notice(&outcome);
         }
         self.restore_presentation_done = true;
-        if !missing.is_empty() {
-            self.restore_notice = Some(format!(
-                "Restored {} unavailable in the current authorized observation.",
-                missing.join(" and ")
-            ));
-        }
         cx.notify();
     }
 
@@ -1064,11 +1049,17 @@ impl Shell {
             return;
         };
         if self.rail_state.select(task, live) {
-            if let Some(workbench) = &mut self.workbench {
-                workbench.presentation.reset_for_task(task.clone());
+            let switched = self
+                .workbench
+                .as_mut()
+                .map(|workbench| dock::switch_task(&mut workbench.presentation, task.clone()));
+            if let Some(event) = switched {
+                self.surface_notice = event.notice;
+                if let Some(target) = event.surface {
+                    self.navigate(target, cx);
+                }
             }
             self.dock_active = None;
-            self.surface_notice = None;
             self.set_rail_active(task.clone(), index);
             self.rail_selection_pending = true;
             self.rail_focus.focus(window, cx);
@@ -1120,17 +1111,22 @@ impl Shell {
         {
             return;
         }
-        let mut effect = SelectionEffect::ViewedOnly;
-        if let Some(workbench) = &mut self.workbench {
-            effect = workbench
-                .presentation
-                .select(ViewedCandidate(identity.clone()));
-        }
+        let surface = self
+            .workbench
+            .as_ref()
+            .map(|workbench| workbench.core.navigation.surface())
+            .unwrap_or_default();
+        let event = match &mut self.workbench {
+            Some(workbench) => dock::select(&mut workbench.presentation, identity.clone(), surface),
+            None => return,
+        };
         self.dock_active = Some(identity);
         self.dock_focus.focus(window, cx);
-        self.surface_notice = None;
-        if matches!(effect, SelectionEffect::CompareSideB) {
-            self.navigate(Surface::Compare, cx);
+        self.surface_notice = event.notice;
+        if let Some(target) = event.surface
+            && target != surface
+        {
+            self.navigate(target, cx);
         }
         cx.notify();
     }
@@ -1138,26 +1134,25 @@ impl Shell {
     /// Arm an explicit change-side action; the next dock selection updates that side
     /// and never moves Viewed (ADR-0010 D-3/D-5). Nothing is replaced silently.
     fn change_compare_side(&mut self, side: CompareSide, cx: &mut Context<Self>) {
-        let armed = self
-            .workbench
-            .as_mut()
-            .is_some_and(|workbench| workbench.presentation.arm_change(side));
-        if armed {
-            self.surface_notice = Some(format!(
-                "Changing compare side {}: select a candidate in the dock.",
-                side.label()
-            ));
-        }
+        let event = match &mut self.workbench {
+            Some(workbench) => dock::change_side(&mut workbench.presentation, side),
+            None => return,
+        };
+        self.surface_notice = event.notice;
         cx.notify();
     }
 
     /// Close Compare: return to the artifact surface with the viewed candidate (D-7).
     fn close_compare(&mut self, cx: &mut Context<Self>) {
-        if let Some(workbench) = &mut self.workbench {
-            workbench.presentation.close_compare();
+        let event = match &mut self.workbench {
+            Some(workbench) => dock::close(&mut workbench.presentation),
+            None => return,
+        };
+        self.surface_notice = event.notice;
+        if let Some(target) = event.surface {
+            self.navigate(target, cx);
         }
-        self.surface_notice = None;
-        self.navigate(Surface::Artifact, cx);
+        cx.notify();
     }
 
     /// Move the dock cursor by one logical candidate and reveal it.

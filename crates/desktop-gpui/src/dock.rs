@@ -1,4 +1,11 @@
-//! Fixed-stride horizontal virtualization in GPUI's negative-offset coordinates.
+//! Fixed-stride horizontal virtualization in GPUI's negative-offset coordinates,
+//! plus the deterministic presentation result of one dock event (ADR-0010 D-3/D-9).
+
+use app_core::navigation::Surface;
+use desktop_protocol::{CandidateRef, TaskId};
+use ui_model::presentation::{
+    CompareSide, Presentation, RestoreOutcome, SelectionEffect, ViewedCandidate,
+};
 
 pub(super) const ROW_WIDTH: f32 = 220.0;
 pub(super) const GAP: f32 = 12.0;
@@ -81,9 +88,253 @@ pub(super) fn nearest_index(previous: Option<usize>, len: usize) -> Option<usize
     }
 }
 
+/// The deterministic result of one dock event: which surface must be shown and what
+/// reason (if any) must be stated. The shell applies this to focus and rendering; the
+/// decision itself is pure so it is testable without a GPU or a window (A2).
+pub(super) struct DockEvent {
+    pub surface: Option<Surface>,
+    pub notice: Option<String>,
+}
+
+/// A dock click (D-3/A1).
+///
+/// The newly viewed candidate is shown on the artifact surface unless Compare is the
+/// active surface or this click completes the compare pair (then Compare is shown).
+pub(super) fn select(
+    presentation: &mut Presentation,
+    identity: CandidateRef,
+    surface: Surface,
+) -> DockEvent {
+    let effect = presentation.select(ViewedCandidate(identity));
+    let target = match effect {
+        SelectionEffect::CompareSideB => Some(Surface::Compare),
+        SelectionEffect::CompareSideA | SelectionEffect::DuplicateSelection => {
+            Some(Surface::Artifact)
+        }
+        SelectionEffect::ViewedOnly => (surface != Surface::Compare).then_some(Surface::Artifact),
+        SelectionEffect::Changed(_) | SelectionEffect::DuplicateSide => None,
+    };
+    let notice = matches!(
+        effect,
+        SelectionEffect::DuplicateSelection | SelectionEffect::DuplicateSide
+    )
+    .then(|| "Compare requires two different candidates.".to_owned());
+    DockEvent {
+        surface: target,
+        notice,
+    }
+}
+
+/// Arm an explicit change-side action; the next dock click updates that side (D-3).
+pub(super) fn change_side(presentation: &mut Presentation, side: CompareSide) -> DockEvent {
+    let armed = presentation.arm_change(side);
+    DockEvent {
+        surface: None,
+        notice: Some(if armed {
+            format!(
+                "Changing compare side {}: select a candidate in the dock.",
+                side.label()
+            )
+        } else {
+            "That compare side is not available.".to_owned()
+        }),
+    }
+}
+
+/// Close Compare and return to the artifact surface with the viewed candidate (D-7).
+pub(super) fn close(presentation: &mut Presentation) -> DockEvent {
+    presentation.close_compare();
+    DockEvent {
+        surface: Some(Surface::Artifact),
+        notice: None,
+    }
+}
+
+/// The documented unavailable notice after a REC3 restore decision (D-8).
+pub(super) fn restore_notice(outcome: &RestoreOutcome) -> Option<String> {
+    let mut missing = Vec::new();
+    if outcome.viewed_missing {
+        missing.push("Viewed candidate");
+    }
+    if outcome.pair_missing {
+        missing.push("Compare pair");
+    }
+    (!missing.is_empty()).then(|| {
+        format!(
+            "Restored {} unavailable in the current authorized observation.",
+            missing.join(" and ")
+        )
+    })
+}
+
+/// A task switch discards the task-scoped references and starts empty (D-9).
+pub(super) fn switch_task(presentation: &mut Presentation, task: TaskId) -> DockEvent {
+    presentation.reset_for_task(task);
+    DockEvent {
+        surface: Some(Surface::Artifact),
+        notice: None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn candidate(label: &str) -> CandidateRef {
+        CandidateRef {
+            task_id: TaskId::fixture("task/Task-184"),
+            run_id: desktop_protocol::RunId::fixture("run/Task-184/1"),
+            iteration: 3,
+            candidate_id: desktop_protocol::CandidateId::fixture(format!("candidate/{label}")),
+            artifact_ref: desktop_protocol::ArtifactId::fixture(format!("artifact/{label}")),
+        }
+    }
+
+    fn viewed(label: &str) -> ViewedCandidate {
+        ViewedCandidate(candidate(label))
+    }
+
+    #[test]
+    fn a_dock_selection_from_flow_shows_the_artifact_surface() {
+        let mut presentation = Presentation::default();
+        let event = select(&mut presentation, candidate("a"), Surface::Flow);
+        assert_eq!(event.surface, Some(Surface::Artifact));
+        assert!(event.notice.is_none());
+        assert_eq!(presentation.viewed(), Some(&viewed("a")));
+        assert_eq!(presentation.compare_pair(), None);
+    }
+
+    #[test]
+    fn the_second_selection_completes_the_pair_and_shows_compare() {
+        let mut presentation = Presentation::default();
+        assert_eq!(
+            select(&mut presentation, candidate("a"), Surface::Artifact).surface,
+            Some(Surface::Artifact)
+        );
+        let event = select(&mut presentation, candidate("b"), Surface::Artifact);
+        assert_eq!(event.surface, Some(Surface::Compare));
+        assert_eq!(
+            presentation.compare_pair(),
+            Some(&[viewed("a"), viewed("b")])
+        );
+        assert_eq!(presentation.viewed(), Some(&viewed("b")));
+    }
+
+    #[test]
+    fn a_plain_selection_while_compare_is_shown_keeps_compare() {
+        let mut presentation = Presentation::default();
+        select(&mut presentation, candidate("a"), Surface::Artifact);
+        select(&mut presentation, candidate("b"), Surface::Artifact);
+        let event = select(&mut presentation, candidate("c"), Surface::Compare);
+        assert_eq!(event.surface, None, "the compare surface stays active");
+        assert_eq!(presentation.viewed(), Some(&viewed("c")));
+        assert_eq!(
+            presentation.compare_pair(),
+            Some(&[viewed("a"), viewed("b")])
+        );
+    }
+
+    #[test]
+    fn a_plain_selection_with_a_held_pair_from_flow_shows_the_artifact_surface() {
+        let mut presentation = Presentation::default();
+        select(&mut presentation, candidate("a"), Surface::Artifact);
+        select(&mut presentation, candidate("b"), Surface::Artifact);
+        let event = select(&mut presentation, candidate("c"), Surface::Flow);
+        assert_eq!(event.surface, Some(Surface::Artifact));
+        assert_eq!(presentation.viewed(), Some(&viewed("c")));
+        assert_eq!(
+            presentation.compare_pair(),
+            Some(&[viewed("a"), viewed("b")])
+        );
+    }
+
+    #[test]
+    fn one_candidate_selected_twice_never_forms_a_pair() {
+        let mut presentation = Presentation::default();
+        assert_eq!(
+            select(&mut presentation, candidate("a"), Surface::Artifact).surface,
+            Some(Surface::Artifact)
+        );
+        let event = select(&mut presentation, candidate("a"), Surface::Artifact);
+        assert_eq!(
+            presentation.compare_pair(),
+            None,
+            "one candidate cannot fill both sides"
+        );
+        assert_eq!(event.surface, Some(Surface::Artifact));
+        assert!(
+            event
+                .notice
+                .as_deref()
+                .unwrap_or("")
+                .contains("two different candidates"),
+            "the refusal states its reason"
+        );
+    }
+
+    #[test]
+    fn change_side_arms_and_rejects_the_other_side_identity() {
+        let mut presentation = Presentation::default();
+        select(&mut presentation, candidate("a"), Surface::Artifact);
+        select(&mut presentation, candidate("b"), Surface::Artifact);
+        let armed = change_side(&mut presentation, CompareSide::A);
+        assert!(
+            armed
+                .notice
+                .as_deref()
+                .unwrap_or("")
+                .contains("Changing compare side A")
+        );
+        let event = select(&mut presentation, candidate("b"), Surface::Compare);
+        assert_eq!(
+            presentation.compare_pair(),
+            Some(&[viewed("a"), viewed("b")]),
+            "a refused change leaves the pair untouched"
+        );
+        assert_eq!(event.surface, None);
+        assert!(
+            event
+                .notice
+                .as_deref()
+                .unwrap_or("")
+                .contains("two different candidates")
+        );
+    }
+
+    #[test]
+    fn close_returns_to_the_artifact_surface_and_keeps_viewed() {
+        let mut presentation = Presentation::default();
+        select(&mut presentation, candidate("a"), Surface::Artifact);
+        select(&mut presentation, candidate("b"), Surface::Artifact);
+        let event = close(&mut presentation);
+        assert_eq!(event.surface, Some(Surface::Artifact));
+        assert!(event.notice.is_none());
+        assert_eq!(presentation.compare_pair(), None);
+        assert_eq!(presentation.viewed(), Some(&viewed("b")));
+    }
+
+    #[test]
+    fn a_restored_identical_identity_pair_is_unavailable_with_a_notice() {
+        let mut presentation = Presentation::default();
+        let a = candidate("a");
+        let duplicate = [a.clone(), a.clone()];
+        let outcome = presentation.restore(None, Some(&duplicate), |reference| *reference == a);
+        assert!(outcome.pair_missing);
+        assert_eq!(presentation.compare_pair(), None);
+        let notice = restore_notice(&outcome).expect("refusal is stated");
+        assert!(notice.contains("Compare pair"), "{notice}");
+    }
+
+    #[test]
+    fn a_task_switch_starts_empty_and_shows_the_artifact_surface() {
+        let mut presentation = Presentation::default();
+        select(&mut presentation, candidate("a"), Surface::Artifact);
+        select(&mut presentation, candidate("b"), Surface::Artifact);
+        let event = switch_task(&mut presentation, TaskId::fixture("task/other"));
+        assert_eq!(event.surface, Some(Surface::Artifact));
+        assert_eq!(presentation.viewed(), None);
+        assert_eq!(presentation.compare_pair(), None);
+    }
 
     #[test]
     fn keyboard_reveal_uses_negative_offsets_and_keeps_the_row_visible() {
