@@ -239,12 +239,13 @@ def message_plan(kind: str, payload: dict, sequence: int) -> list[tuple[int, int
     return []
 
 
-def action_record(planned_ns: int, actual_ns: int, delivered: bool, suppressed: bool,
-                  interval_ns: int, max_lag_ns: int) -> dict:
+def action_record(planned_ns: int, actual_ns: int, attempted: bool, delivered: bool,
+                  suppressed: bool, interval_ns: int, max_lag_ns: int) -> dict:
     """One probe record, with its classification derived in one place."""
     return {
         "planned_ns": planned_ns,
         "actual_ns": actual_ns,
+        "attempted": attempted,
         "delivered": delivered,
         "suppressed": suppressed,
         "classification": r0c.classify(
@@ -284,25 +285,36 @@ def binding_valid(window_exists: bool, window_pid: int, expected_pid: int,
     return bool(window_exists) and window_pid == expected_pid and chain_pid == expected_pid
 
 
-def execute_actions(actions: list[dict], clock_ns, verify, send,
+def execute_actions(actions: list[dict], clock_ns, verify, verify_window, post,
                     max_lag_ns: int) -> tuple[list[dict], list[int], bool]:
-    """Replay actions, re-verifying the binding before every single one."""
+    """Replay actions: full ownership check after the wait, window check per message.
+
+    The full launcher->helper->application chain is re-read after every wait and
+    immediately before the first message; the cheap HWND/pid identity is checked
+    again before every message so a mid-sequence window swap cannot receive the
+    rest of the action.
+    """
     start = clock_ns()
     records: list[dict] = []
     held: list[int] = []
     binding_lost = False
     for action in actions:
-        if not verify():
+        if not verify_window():
             binding_lost = True
             break
         interval_ns = max(1, int(round(1_000_000_000 / action["requested_hz"])))
         _sleep_until(start + action["planned_ns"])
+        # The wait is a real interval; the full ownership chain is checked again
+        # after it and immediately before the first message is posted.
+        if not verify():
+            binding_lost = True
+            break
         actual = clock_ns() - start
         lag = actual - action["planned_ns"]
         record = {"sequence": action["sequence"], "kind": action["kind"]}
         if lag > max_lag_ns:
             record.update(action_record(
-                action["planned_ns"], actual, False, True, interval_ns, max_lag_ns
+                action["planned_ns"], actual, False, False, True, interval_ns, max_lag_ns
             ))
             record["excluded_reason"] = "SCHEDULE_LAG_EXCEEDED"
             records.append(record)
@@ -310,13 +322,38 @@ def execute_actions(actions: list[dict], clock_ns, verify, send,
         messages = message_plan(action["kind"], action["payload"], action["sequence"])
         if action["kind"] == "held-key":
             held.append(VK[action["payload"]["key"]])
-        delivered = send(messages)
+        delivered = True
+        attempted = False
+        for message in messages:
+            # A multi-message action is not atomic: loss mid-sequence stops the
+            # rest instead of posting a key-up/click to a different window.
+            if not verify_window():
+                binding_lost = True
+                break
+            attempted = True
+            delivered = post(message) and delivered
+        if binding_lost:
+            record.update(action_record(
+                action["planned_ns"], actual, attempted, False, False, interval_ns, max_lag_ns
+            ))
+            record["excluded_reason"] = "BINDING_LOST"
+            records.append(record)
+            break
         record.update(action_record(
-            action["planned_ns"], actual, delivered, False, interval_ns, max_lag_ns
+            action["planned_ns"], actual, True, delivered, False, interval_ns, max_lag_ns
         ))
         record["excluded_reason"] = "" if delivered else "POST_MESSAGE_REFUSED"
         records.append(record)
     return records, held, binding_lost
+
+
+def release_held(held: list[int], verify, post) -> bool:
+    """Release held keys only while the binding still holds; stop on loss."""
+    for key in dict.fromkeys(held):
+        if not verify():
+            return False
+        post((WM_KEYUP, key, 0xC0000001))
+    return True
 
 
 def close_if_valid(verify, close: dict, post) -> bool:
@@ -342,6 +379,13 @@ def run(plan_path: Path, out_path: Path, title: str, generation: int,
     if int(owner.value) != pid:
         raise ProbeError("WINDOW_PID_MISMATCH")
 
+    def verify_window() -> bool:
+        current = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(current))
+        return binding_valid(
+            bool(user32.IsWindow(hwnd)), int(current.value), pid, pid
+        )
+
     def verify() -> bool:
         try:
             _helper, app_pid = _bind_child(kernel32, launcher_pid)
@@ -353,20 +397,19 @@ def run(plan_path: Path, out_path: Path, title: str, generation: int,
             bool(user32.IsWindow(hwnd)), int(current.value), pid, app_pid
         )
 
-    def send(messages: list[tuple[int, int, int]]) -> bool:
-        return all(_post(user32, hwnd, message, wparam, lparam)
-                   for message, wparam, lparam in messages)
+    def post(message: tuple[int, int, int]) -> bool:
+        return _post(user32, hwnd, *message)
 
     max_lag_ns = max_lag_ms * 1_000_000
     input_start_wall_ns = time.time_ns()
     records, held, binding_lost = execute_actions(
-        actions, time.perf_counter_ns, verify, send, max_lag_ns
+        actions, time.perf_counter_ns, verify, verify_window, post, max_lag_ns
     )
     input_end_wall_ns = time.time_ns()
     close = {"attempts": 0, "posted": False, "window_gone": False, "refused": ""}
-    for key in dict.fromkeys(held):
-        _post(user32, hwnd, WM_KEYUP, key, 0xC0000001)
-    if not close_if_valid(verify, close, lambda: _post(user32, hwnd, WM_CLOSE, 0, 0)):
+    if not release_held(held, verify, post):
+        binding_lost = True
+    if not close_if_valid(verify, close, lambda: verify() and _post(user32, hwnd, WM_CLOSE, 0, 0)):
         close["refused"] = "BINDING_LOST"
     deadline = time.monotonic() + close_timeout_ms / 1000.0
     while time.monotonic() < deadline:

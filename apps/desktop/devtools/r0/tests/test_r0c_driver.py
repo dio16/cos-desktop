@@ -46,6 +46,7 @@ def probe_for(trace: dict, *, generation: int = GENERATION, pid: int = OBSERVATI
                 "kind": action["kind"],
                 "planned_ns": action["planned_ns"],
                 "actual_ns": action["planned_ns"] + 1_000_000,
+                "attempted": True,
                 "delivered": True,
                 "suppressed": False,
                 "classification": "on-time",
@@ -60,7 +61,8 @@ def journal() -> dict:
     return {
         "capture_sha256": "sha256:" + "1" * 64,
         "observation_sha256": "sha256:" + "3" * 64,
-        "counts": {"0": 140, "1": 140, "2": 51, "3": 51, "8": 2, "9": 1},
+        "counts": {"0": 113, "1": 140, "2": 51, "3": 51, "8": 2, "9": 1},
+        "input_dispatch_ns": [i * 50_000_000 for i in range(113)],
         "summary": {},
         "scope_ns": 30_000_000_000,
     }
@@ -69,7 +71,9 @@ def journal() -> dict:
 def correspondence() -> dict:
     return {
         "method": "wall-clock-capture-lifetime",
-        "inside": True,
+        "capture_lifetime_inside": True,
+        "journal_range": "UNKNOWN",
+        "journal_range_reason": "NO_COMMON_CLOCK: journal clock mapping is NONE",
         "input_start_wall_ns": 2_000,
         "input_end_wall_ns": 9_000,
         "capture_start_wall_ns": 1_000,
@@ -97,8 +101,7 @@ def result(probe: dict | None = None, journal_document=_MISSING,
     trace = r0c.plan_trace(document)
     probe = probe if probe is not None else probe_for(trace)
     journal_document = journal() if journal_document is _MISSING else journal_document
-    delivered = sum(1 for action in probe["actions"]
-                    if action["classification"] in ("on-time", "early", "late"))
+    delivered = sum(1 for action in probe["actions"] if action["delivered"])
     return r0c_driver.assemble_result(
         document, trace, probe, journal_document, 0,
         {"wrapper_exit": 0, "child_reaped": True, "close_posted": True,
@@ -128,12 +131,16 @@ class PlanTests(unittest.TestCase):
 
 
 class ResultTests(unittest.TestCase):
-    def test_requested_and_achieved_cadence_are_recorded_separately(self) -> None:
+    def test_cadences_are_split_and_recorded_separately(self) -> None:
         document = result()
         r0c.validate_result(document)
-        self.assertIn("keyboard", document["requested_cadence"])
-        self.assertIn("keyboard", document["achieved_cadence"])
-        self.assertNotEqual(document["requested_cadence"], document["achieved_cadence"])
+        observed = document["observed_cadence"]
+        self.assertIn("keyboard", observed["posting_attempt_hz"])
+        self.assertIn("keyboard", observed["postmessage_success_hz"])
+        self.assertIsNotNone(observed["application_processing_hz"])
+        self.assertNotEqual(observed["postmessage_success_hz"]["keyboard"],
+                            observed["application_processing_hz"])
+        self.assertIn("not application processing", document["cadence_note"])
 
     def test_a_single_sample_has_no_fabricated_cadence(self) -> None:
         document = copy.deepcopy(manifest())
@@ -148,12 +155,14 @@ class ResultTests(unittest.TestCase):
              "timed_out": False, "cancelled": False},
             "COMPLETE", "", limits(), 1, correspondence(),
         )
-        self.assertIsNone(document_result["achieved_cadence"]["keyboard"])
+        self.assertIsNone(document_result["observed_cadence"]["posting_attempt_hz"]["keyboard"])
+        self.assertIsNone(document_result["observed_cadence"]["postmessage_success_hz"]["keyboard"])
         r0c.validate_result(document_result)
 
     def test_missing_kinds_are_not_reported_observed(self) -> None:
         document = result(journal_document={"capture_sha256": "sha256:" + "2" * 64,
                                             "counts": {"0": 140, "1": 140, "2": 51, "3": 51},
+                                            "input_dispatch_ns": [i * 50_000_000 for i in range(140)],
                                             "summary": {}, "scope_ns": 1})
         by_name = {item["name"]: item for item in document["endpoints"]}
         self.assertEqual(by_name["local-surface-mutation"]["status"], "NOT_MEASURED")
@@ -329,7 +338,7 @@ class RecomputeTests(unittest.TestCase):
 
     def test_tampered_achieved_cadence_is_detected(self) -> None:
         document = copy.deepcopy(result())
-        document["achieved_cadence"]["keyboard"] = 99.0
+        document["observed_cadence"]["postmessage_success_hz"]["keyboard"] = 99.0
         with self.assertRaises(r0c.ContractError) as caught:
             r0c_driver.recompute(document, manifest())
         self.assertEqual(caught.exception.code, "CADENCE_MISMATCH")
@@ -373,23 +382,68 @@ class BindingLossTests(unittest.TestCase):
              "requested_hz": 20.0, "payload": {"key": "TAB"}}
             for index in range(5)
         ]
-        verifications = [True, True, False]
+        verifications = [True, True, True, True, False]
         sent: list[int] = []
 
         def verify() -> bool:
             return verifications.pop(0) if verifications else False
 
-        def send(messages) -> bool:
-            sent.append(len(messages))
+        def send(message) -> bool:
+            sent.append(message)
             return True
 
         records, held, binding_lost = r0c_input.execute_actions(
-            actions, lambda: 1_000_000_000, verify, send, r0c.MAX_LAG_MS * 1_000_000
+            actions, lambda: 1_000_000_000, verify, verify, send,
+            r0c.MAX_LAG_MS * 1_000_000,
         )
         self.assertTrue(binding_lost)
-        self.assertEqual(len(records), 2)
-        self.assertEqual(sent, [2, 2])
+        self.assertEqual(len(records), 1)
+        self.assertEqual(len(sent), 2)
         self.assertEqual(held, [])
+
+    def test_binding_loss_while_waiting_after_verify_stops_the_action(self) -> None:
+        actions = [{"sequence": 0, "kind": "keyboard", "planned_ns": 0,
+                    "requested_hz": 20.0, "payload": {"key": "TAB"}}]
+        verifications = [True, False]
+        sent: list[int] = []
+
+        def verify() -> bool:
+            return verifications.pop(0) if verifications else False
+
+        records, _, binding_lost = r0c_input.execute_actions(
+            actions, lambda: 1_000_000_000, verify, verify,
+            lambda message: sent.append(message) or True, r0c.MAX_LAG_MS * 1_000_000,
+        )
+        self.assertTrue(binding_lost)
+        self.assertEqual(records, [])
+        self.assertEqual(sent, [])
+
+    def test_binding_loss_mid_sequence_stops_remaining_messages(self) -> None:
+        actions = [{"sequence": 0, "kind": "keyboard", "planned_ns": 0,
+                    "requested_hz": 20.0, "payload": {"key": "TAB"}}]
+        verifications = [True, True, True, False]
+        sent: list[int] = []
+
+        def verify() -> bool:
+            return verifications.pop(0) if verifications else False
+
+        records, _, binding_lost = r0c_input.execute_actions(
+            actions, lambda: 1_000_000_000, verify, verify,
+            lambda message: sent.append(message) or True, r0c.MAX_LAG_MS * 1_000_000,
+        )
+        self.assertTrue(binding_lost)
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(len(records), 1)
+        self.assertFalse(records[0]["delivered"])
+        self.assertEqual(records[0]["excluded_reason"], "BINDING_LOST")
+
+    def test_keyup_is_not_posted_after_binding_loss(self) -> None:
+        sent: list[int] = []
+        released = r0c_input.release_held(
+            [r0c_input.VK["TAB"]], lambda: False, lambda message: sent.append(message) or True
+        )
+        self.assertFalse(released)
+        self.assertEqual(sent, [])
 
     def test_close_is_not_posted_when_the_binding_is_lost(self) -> None:
         close = {"attempts": 0, "posted": False}
@@ -408,6 +462,93 @@ class BindingLossTests(unittest.TestCase):
         self.assertFalse(r0c_input.binding_valid(False, 10, 10, 10))
         self.assertFalse(r0c_input.binding_valid(True, 11, 10, 10))
         self.assertFalse(r0c_input.binding_valid(True, 10, 10, 11))
+
+
+class JournalRangeTests(unittest.TestCase):
+    def test_input_before_the_journal_starts_is_refused(self) -> None:
+        self.assertEqual(r0c_driver.journal_containment(0, 100, 1_000, 5_000), "MISMATCH")
+
+    def test_input_inside_a_verified_journal_range_is_proven(self) -> None:
+        self.assertEqual(r0c_driver.journal_containment(1_200, 4_000, 1_000, 5_000), "PROVEN")
+
+
+class ProbeBindingVerifyTests(unittest.TestCase):
+    def _write_evidence(self, directory: str, document: dict, probe: dict) -> Path:
+        output = Path(directory)
+        (output / "r0c-probe.json").write_text(json.dumps(probe), encoding="utf-8")
+        path = output / "result.json"
+        path.write_text(json.dumps(document), encoding="utf-8")
+        return path
+
+    def test_a_result_with_altered_timestamps_is_rejected(self) -> None:
+        document = result()
+        probe = {"generation": document["probe_identity"]["generation"],
+                 "binding": {"launcher_pid": document["probe_identity"]["launcher_pid"],
+                             "helper_pid": document["probe_identity"]["helper_pid"]},
+                 "window": {"pid": document["probe_identity"]["window_pid"]},
+                 "actions": copy.deepcopy(document["actions"]),
+                 "time_correspondence": {
+                     "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
+                     "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
+                 }}
+        document["actions"][0]["actual_ns"] += 1_000_000
+        with tempfile.TemporaryDirectory() as directory:
+            path = self._write_evidence(directory, document, probe)
+            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
+                                     "output_dir": directory})()
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.verify(args)
+            self.assertIn(caught.exception.code, ("PROBE_MISMATCH", "CADENCE_MISMATCH"))
+
+    def test_probe_record_disagreement_is_rejected(self) -> None:
+        document = result()
+        probe = {"generation": document["probe_identity"]["generation"],
+                 "binding": {"launcher_pid": document["probe_identity"]["launcher_pid"],
+                             "helper_pid": document["probe_identity"]["helper_pid"]},
+                 "window": {"pid": document["probe_identity"]["window_pid"]},
+                 "actions": copy.deepcopy(document["actions"]),
+                 "time_correspondence": {
+                     "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
+                     "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
+                 }}
+        probe["actions"][0]["actual_ns"] += 1
+        with tempfile.TemporaryDirectory() as directory:
+            path = self._write_evidence(directory, document, probe)
+            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
+                                     "output_dir": directory})()
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.verify(args)
+            self.assertEqual(caught.exception.code, "PROBE_MISMATCH")
+
+    def test_probe_identity_mismatch_is_rejected(self) -> None:
+        document = result()
+        probe = {"generation": document["probe_identity"]["generation"] + 1,
+                 "binding": {"launcher_pid": document["probe_identity"]["launcher_pid"],
+                             "helper_pid": document["probe_identity"]["helper_pid"]},
+                 "window": {"pid": document["probe_identity"]["window_pid"]},
+                 "actions": copy.deepcopy(document["actions"]),
+                 "time_correspondence": {
+                     "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
+                     "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
+                 }}
+        with tempfile.TemporaryDirectory() as directory:
+            path = self._write_evidence(directory, document, probe)
+            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
+                                     "output_dir": directory})()
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.verify(args)
+            self.assertEqual(caught.exception.code, "PROBE_IDENTITY_MISMATCH")
+
+
+class ApplicationCadenceTests(unittest.TestCase):
+    def test_140_evenly_spaced_posts_are_not_140_application_samples(self) -> None:
+        document = result()
+        observed = document["observed_cadence"]
+        self.assertEqual(document["delivered_actions"], 140)
+        self.assertEqual(document["journal"]["counts"]["0"], 113)
+        self.assertNotEqual(observed["postmessage_success_hz"]["keyboard"],
+                            observed["application_processing_hz"])
+        self.assertIn("not application processing", document["cadence_note"])
 
 
 class BoundedRunnerTests(unittest.TestCase):
@@ -471,7 +612,7 @@ class InputBehaviourTests(unittest.TestCase):
 
     def test_schedule_lag_is_suppressed_not_failed(self) -> None:
         record = r0c_input.action_record(
-            0, r0c.MAX_LAG_MS * 1_000_000 + 1, False, True, 50_000_000,
+            0, r0c.MAX_LAG_MS * 1_000_000 + 1, False, False, True, 50_000_000,
             r0c.MAX_LAG_MS * 1_000_000,
         )
         self.assertEqual(record["classification"], "suppressed")

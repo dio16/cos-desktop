@@ -206,10 +206,14 @@ def _journal(capture_path: Path, observation_path: Path, observation: dict,
     kinds: dict[str, int] = {}
     for record in records:
         kinds[str(record["kind"])] = kinds.get(str(record["kind"]), 0) + 1
+    input_dispatch_ns = sorted(
+        int(record["start_ns"]) for record in records if record["kind"] == 0
+    )
     return {
         "capture_sha256": "sha256:" + hashlib.sha256(raw).hexdigest(),
         "observation_sha256": observation_sha256,
         "clock_mapping": str(capture.get("clock", {}).get("mapping", "NONE")),
+        "input_dispatch_ns": input_dispatch_ns,
         "counts": kinds,
         "summary": {key: summary[key] for key in (
             "journal_seen", "journal_lost", "eligible", "retained", "retention_dropped",
@@ -219,24 +223,38 @@ def _journal(capture_path: Path, observation_path: Path, observation: dict,
     }
 
 
-def _achieved(actions: list[dict]) -> tuple[dict[str, float | None], dict[str, int]]:
-    per_kind: dict[str, list[int]] = {}
-    delivered: dict[str, int] = {}
+def _cadence(times: list[int]) -> float | None:
+    """Rate from actual timestamps; a single sample has no interval and is null."""
+    if len(times) < 2:
+        return None
+    span = (max(times) - min(times)) / 1_000_000_000
+    return round((len(times) - 1) / span, 3) if span > 0 else None
+
+
+def _observed_cadence(actions: list[dict], journal: dict | None,
+                      kinds: list[str]) -> dict:
+    attempts: dict[str, list[int]] = {kind: [] for kind in kinds}
+    successes: dict[str, list[int]] = {kind: [] for kind in kinds}
     for action in actions:
-        if action["actual_ns"] is not None:
-            per_kind.setdefault(action["kind"], []).append(action["actual_ns"])
-        if action["classification"] in ("on-time", "early", "late"):
-            delivered[action["kind"]] = delivered.get(action["kind"], 0) + 1
-    achieved: dict[str, float | None] = {}
-    for kind, times in per_kind.items():
-        count = delivered.get(kind, 0)
-        if len(times) < 2:
-            # A single sample has no interval; a cadence would be fabricated.
-            achieved[kind] = None
-            continue
-        span = (max(times) - min(times)) / 1_000_000_000
-        achieved[kind] = round(count / span, 3) if span > 0 else None
-    return achieved, delivered
+        if action.get("attempted") and action["actual_ns"] is not None:
+            attempts.setdefault(action["kind"], []).append(action["actual_ns"])
+        if action.get("delivered") and action["actual_ns"] is not None:
+            successes.setdefault(action["kind"], []).append(action["actual_ns"])
+    application = None
+    if journal is not None:
+        application = _cadence(list(journal.get("input_dispatch_ns", [])))
+    return {
+        "posting_attempt_hz": {kind: _cadence(attempts.get(kind, [])) for kind in kinds},
+        "postmessage_success_hz": {kind: _cadence(successes.get(kind, [])) for kind in kinds},
+        "application_processing_hz": application,
+    }
+
+
+CADENCE_NOTE = (
+    "postmessage_success_hz is PostMessage success, not application processing; "
+    "application_processing_hz counts retained input-dispatch journal records only. "
+    "A larger posted count must never be read as a larger processed count."
+)
 
 
 def verify_probe(probe: dict, manifest: dict, trace: dict, pre_run_pids: set[int],
@@ -277,7 +295,8 @@ def verify_probe(probe: dict, manifest: dict, trace: dict, pre_run_pids: set[int
             raise DriverError("PROBE_TRACE_MISMATCH")
         delivered_flag = action.get("delivered")
         suppressed = action.get("suppressed")
-        if type(delivered_flag) is not bool or type(suppressed) is not bool:
+        attempted = action.get("attempted")
+        if type(delivered_flag) is not bool or type(suppressed) is not bool or type(attempted) is not bool:
             raise DriverError("PROBE_TRACE_MISMATCH")
         interval_ns = max(1, int(round(1_000_000_000 / expected["requested_hz"])))
         expected_class = r0c.classify(
@@ -318,9 +337,19 @@ def check_time_correspondence(probe: dict, capture_start_wall_ns: int,
         raise DriverError("CAPTURE_RANGE_MISMATCH")
     if input_end > capture_start_wall_ns + scope_ns:
         raise DriverError("CAPTURE_RANGE_MISMATCH")
+    reason = (
+        "NO_COMMON_CLOCK: journal clock mapping is NONE"
+        if journal_clock_mapping == "NONE"
+        else "NO_VERIFIABLE_SYNC_POINT: journal clock mapping has no input anchor"
+    )
     return {
         "method": "wall-clock-capture-lifetime",
-        "inside": True,
+        # This is proven from the same wall clock. It is not the journal's range.
+        "capture_lifetime_inside": True,
+        # Without a common clock or a verified sync point, containment in the
+        # journal's observed range is UNKNOWN and is never claimed.
+        "journal_range": "UNKNOWN",
+        "journal_range_reason": reason,
         "input_start_wall_ns": input_start,
         "input_end_wall_ns": input_end,
         "capture_start_wall_ns": capture_start_wall_ns,
@@ -331,6 +360,14 @@ def check_time_correspondence(probe: dict, capture_start_wall_ns: int,
     }
 
 
+def journal_containment(input_start_journal_ns: int, input_end_journal_ns: int,
+                        scope_start_ns: int, scope_end_ns: int) -> str:
+    """Containment decision for a run with a verified journal-clock mapping."""
+    if input_start_journal_ns < scope_start_ns or input_end_journal_ns > scope_end_ns:
+        return "MISMATCH"
+    return "PROVEN"
+
+
 def assemble_result(manifest: dict, trace: dict, probe: dict, journal: dict | None,
                     wrapper_exit: int, cleanup: dict, status: str, reason: str,
                     limits: dict, delivered_actions: int, correspondence: dict) -> dict:
@@ -339,9 +376,7 @@ def assemble_result(manifest: dict, trace: dict, probe: dict, journal: dict | No
     for action in manifest["actions"]:
         kind = action["kind"]
         requested[kind] = max(requested.get(kind, 0.0), float(action["requested_hz"]))
-    achieved, _ = _achieved(actions)
-    for kind in requested:
-        achieved.setdefault(kind, None)
+    observed_cadence = _observed_cadence(actions, journal, list(requested))
     counts = {}
     if journal is not None:
         counts = {int(key): value for key, value in journal.get("counts", {}).items()}
@@ -365,13 +400,20 @@ def assemble_result(manifest: dict, trace: dict, probe: dict, journal: dict | No
         },
         "trace_sha256": trace["trace_sha256"],
         "requested_cadence": {kind: requested[kind] for kind in requested},
-        "achieved_cadence": {kind: achieved[kind] for kind in requested},
+        "observed_cadence": observed_cadence,
+        "cadence_note": CADENCE_NOTE,
         "actions": actions,
         "journal": journal_document,
         "endpoints": endpoints,
         "cleanup": cleanup,
         "limits": limits,
         "delivered_actions": delivered_actions,
+        "probe_identity": {
+            "generation": int(probe["generation"]),
+            "window_pid": int(probe["window"]["pid"]),
+            "launcher_pid": int(probe["binding"]["launcher_pid"]),
+            "helper_pid": int(probe["binding"]["helper_pid"]),
+        },
         "time_correspondence": correspondence,
         "status": status,
         "reason": reason,
@@ -532,7 +574,9 @@ def launch(args: argparse.Namespace) -> int:
         correspondence_error = error.code
         correspondence = {
             "method": "wall-clock-capture-lifetime",
-            "inside": False,
+            "capture_lifetime_inside": False,
+            "journal_range": "UNKNOWN",
+            "journal_range_reason": correspondence_error,
             "input_start_wall_ns": 0,
             "input_end_wall_ns": 0,
             "capture_start_wall_ns": max(capture_start_wall_ns, 0),
@@ -588,7 +632,9 @@ def launch(args: argparse.Namespace) -> int:
         "status": status,
         "reason": reason,
         "requested_cadence": result["requested_cadence"],
-        "achieved_cadence": result["achieved_cadence"],
+        "observed_cadence": result["observed_cadence"],
+        "delivered_actions": result["delivered_actions"],
+        "journal_input_dispatch": result["journal"]["counts"].get("0", 0),
         "journal": result["journal"]["counts"],
         "endpoints_not_measured": [
             item["name"] for item in result["endpoints"] if item["status"] == "NOT_MEASURED"
@@ -624,11 +670,13 @@ def recompute(result: dict, manifest: dict) -> dict:
             delivered += 1
     if delivered != result["delivered_actions"]:
         raise r0c.ContractError("DELIVERED_MISMATCH", "$.delivered_actions")
-    achieved, _ = _achieved(result["actions"])
+    observed = _observed_cadence(
+        result["actions"], None, list(result["requested_cadence"])
+    )
+    for name in ("posting_attempt_hz", "postmessage_success_hz"):
+        if observed[name] != result["observed_cadence"][name]:
+            raise r0c.ContractError("CADENCE_MISMATCH", f"$.observed_cadence.{name}")
     for kind, requested in result["requested_cadence"].items():
-        expected_value = achieved.get(kind)
-        if expected_value != result["achieved_cadence"][kind]:
-            raise r0c.ContractError("CADENCE_MISMATCH", f"$.achieved_cadence.{kind}")
         if requested <= 0:
             raise r0c.ContractError("CADENCE_MISMATCH", f"$.requested_cadence.{kind}")
     counts = {int(key): value for key, value in result["journal"]["counts"].items()}
@@ -636,13 +684,15 @@ def recompute(result: dict, manifest: dict) -> dict:
         raise r0c.ContractError("ENDPOINT_MISMATCH", "$.endpoints")
     correspondence = result["time_correspondence"]
     inside = (
-        correspondence["inside"] is True
+        correspondence["capture_lifetime_inside"] is True
         and correspondence["input_start_wall_ns"] >= correspondence["capture_start_wall_ns"]
         and correspondence["input_end_wall_ns"] <= correspondence["capture_end_wall_ns"]
         and correspondence["input_end_wall_ns"] <= correspondence["capture_start_wall_ns"] + correspondence["scope_ns"]
     )
     if not inside:
         raise r0c.ContractError("CAPTURE_RANGE_MISMATCH", "$.time_correspondence")
+    if correspondence["journal_range"] == "MISMATCH":
+        raise r0c.ContractError("JOURNAL_RANGE_MISMATCH", "$.time_correspondence.journal_range")
     if result["status"] == "COMPLETE" and delivered != len(result["actions"]):
         raise r0c.ContractError("WORKLOAD_INCOMPLETE", "$.delivered_actions")
     return {"delivered_actions": delivered, "actions": len(result["actions"])}
@@ -656,8 +706,34 @@ def verify(args: argparse.Namespace) -> int:
     # Recompute from the per-action record before trusting any aggregate.
     recompute(result, manifest)
     output = Path(args.output_dir)
+    probe_path = output / "r0c-probe.json"
     capture_path = output / "s2b-capture.json"
     observation_path = output / "s2b-observation.json"
+    if not probe_path.is_file():
+        raise r0c.ContractError("EVIDENCE_MISSING", "$.probe")
+    probe = contracts.load_document(str(probe_path), MAX_PROBE_BYTES)
+    if probe.get("actions") != result["actions"]:
+        raise r0c.ContractError("PROBE_MISMATCH", "$.actions")
+    sequences = [action.get("sequence") for action in probe.get("actions", [])]
+    if len(set(sequences)) != len(sequences):
+        raise r0c.ContractError("PROBE_SEQUENCE_DUPLICATE", "$.actions")
+    identity = result["probe_identity"]
+    if probe.get("generation") != identity["generation"]:
+        raise r0c.ContractError("PROBE_IDENTITY_MISMATCH", "$.probe_identity.generation")
+    window = probe.get("window") or {}
+    if window.get("pid") != identity["window_pid"]:
+        raise r0c.ContractError("PROBE_IDENTITY_MISMATCH", "$.probe_identity.window_pid")
+    binding = probe.get("binding") or {}
+    if binding.get("launcher_pid") != identity["launcher_pid"]:
+        raise r0c.ContractError("PROBE_IDENTITY_MISMATCH", "$.probe_identity.launcher_pid")
+    if binding.get("helper_pid") != identity["helper_pid"]:
+        raise r0c.ContractError("PROBE_IDENTITY_MISMATCH", "$.probe_identity.helper_pid")
+    probe_time = probe.get("time_correspondence") or {}
+    correspondence = result["time_correspondence"]
+    if probe_time.get("input_start_wall_ns") != correspondence["input_start_wall_ns"]:
+        raise r0c.ContractError("PROBE_TIME_MISMATCH", "$.time_correspondence.input_start_wall_ns")
+    if probe_time.get("input_end_wall_ns") != correspondence["input_end_wall_ns"]:
+        raise r0c.ContractError("PROBE_TIME_MISMATCH", "$.time_correspondence.input_end_wall_ns")
     if not capture_path.is_file() or not observation_path.is_file():
         raise r0c.ContractError("EVIDENCE_MISSING", "$.journal")
     if result["journal"].get("source") != "s2b-journal":
@@ -682,6 +758,13 @@ def verify(args: argparse.Namespace) -> int:
         counts[str(record["kind"])] = counts.get(str(record["kind"]), 0) + 1
     if counts != result["journal"]["counts"]:
         raise r0c.ContractError("JOURNAL_MISMATCH", "$.journal.counts")
+    dispatch_ns = sorted(
+        int(record["start_ns"]) for record in capture["records"] if record["kind"] == 0
+    )
+    if _cadence(dispatch_ns) != result["observed_cadence"]["application_processing_hz"]:
+        raise r0c.ContractError(
+            "APPLICATION_CADENCE_MISMATCH", "$.observed_cadence.application_processing_hz"
+        )
     print(json.dumps({"ok": True, "status": result["status"]}, sort_keys=True))
     return 0
 

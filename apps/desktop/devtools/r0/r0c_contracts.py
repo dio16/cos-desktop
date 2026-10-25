@@ -489,13 +489,15 @@ def validate_result(document: Any) -> dict[str, Any]:
             "scenario",
             "trace_sha256",
             "requested_cadence",
-            "achieved_cadence",
+            "observed_cadence",
+            "cadence_note",
             "actions",
             "journal",
             "endpoints",
             "cleanup",
             "limits",
             "delivered_actions",
+            "probe_identity",
             "time_correspondence",
             "status",
         ),
@@ -510,24 +512,33 @@ def validate_result(document: Any) -> dict[str, Any]:
     _int(scenario["seed"], "$.scenario.seed", 0, (1 << 32) - 1)
     _digest(result["trace_sha256"], "$.trace_sha256")
     requested = result["requested_cadence"]
-    achieved = result["achieved_cadence"]
-    if not isinstance(requested, dict) or not isinstance(achieved, dict):
+    observed = result["observed_cadence"]
+    if not isinstance(requested, dict) or not isinstance(observed, dict):
         _fail("INVALID_TYPE", "$.requested_cadence")
-    if set(requested) != set(achieved) or not requested:
-        _fail("INVALID_VALUE", "$.requested_cadence")
+    if set(requested) != set(observed.get("posting_attempt_hz", {})):
+        _fail("INVALID_VALUE", "$.observed_cadence.posting_attempt_hz")
     for kind in requested:
         _enum(kind, "$.requested_cadence", ACTION_KINDS)
         _number(requested[kind], f"$.requested_cadence.{kind}", 0.0, MAX_HZ)
-        value = achieved[kind]
-        if value is not None:
-            _number(value, f"$.achieved_cadence.{kind}", 0.0, MAX_HZ)
+    for name in ("posting_attempt_hz", "postmessage_success_hz"):
+        values = observed.get(name)
+        if not isinstance(values, dict) or set(values) != set(requested):
+            _fail("INVALID_VALUE", f"$.observed_cadence.{name}")
+        for kind, value in values.items():
+            if value is not None:
+                _number(value, f"$.observed_cadence.{name}.{kind}", 0.0, MAX_HZ)
+    application = observed.get("application_processing_hz")
+    if application is not None:
+        _number(application, "$.observed_cadence.application_processing_hz", 0.0, MAX_HZ)
+    _string(result["cadence_note"], "$.cadence_note")
     delivered = _int(result["delivered_actions"], "$.delivered_actions", 0, MAX_ACTIONS)
     actions = _array(result["actions"], "$.actions", nonempty=True, maximum=MAX_ACTIONS)
     for index, item in enumerate(actions):
         entry = _object(
             item,
             f"$.actions[{index}]",
-            ("sequence", "kind", "planned_ns", "actual_ns", "delivered", "suppressed", "classification"),
+            ("sequence", "kind", "planned_ns", "actual_ns", "attempted", "delivered",
+             "suppressed", "classification"),
             optional=("excluded_reason",),
         )
         _int(entry["sequence"], f"$.actions[{index}].sequence", 0, MAX_ACTIONS)
@@ -535,6 +546,7 @@ def validate_result(document: Any) -> dict[str, Any]:
         _int(entry["planned_ns"], f"$.actions[{index}].planned_ns", 0, MAX_DURATION_MS * 1_000_000)
         if entry["actual_ns"] is not None:
             _int(entry["actual_ns"], f"$.actions[{index}].actual_ns", 0, 2 * MAX_DURATION_MS * 1_000_000)
+        _boolean(entry["attempted"], f"$.actions[{index}].attempted")
         _boolean(entry["delivered"], f"$.actions[{index}].delivered")
         _boolean(entry["suppressed"], f"$.actions[{index}].suppressed")
         _enum(
@@ -587,16 +599,28 @@ def validate_result(document: Any) -> dict[str, Any]:
     limits = _object(result["limits"], "$.limits", ("max_actions", "max_lag_ms", "probe_timeout_ms", "capture_timeout_ms", "output_bytes"))
     for key in ("max_actions", "max_lag_ms", "probe_timeout_ms", "capture_timeout_ms", "output_bytes"):
         _int(limits[key], f"$.limits.{key}", 0, MAX_ACTIONS * 1024)
+    probe_identity = _object(
+        result["probe_identity"], "$.probe_identity",
+        ("generation", "window_pid", "launcher_pid", "helper_pid"),
+    )
+    for key in ("generation", "window_pid", "launcher_pid", "helper_pid"):
+        _int(probe_identity[key], f"$.probe_identity.{key}", 1, 1 << 31)
     correspondence = _object(
         result["time_correspondence"],
         "$.time_correspondence",
-        ("method", "inside", "input_start_wall_ns", "input_end_wall_ns",
+        ("method", "capture_lifetime_inside", "journal_range",
+         "input_start_wall_ns", "input_end_wall_ns",
          "capture_start_wall_ns", "capture_end_wall_ns", "scope_ns"),
-        ("scope_source", "journal_clock_mapping"),
+        ("scope_source", "journal_clock_mapping", "journal_range_reason"),
     )
     _enum(correspondence["method"], "$.time_correspondence.method",
           ("wall-clock-capture-lifetime",))
-    _boolean(correspondence["inside"], "$.time_correspondence.inside")
+    _boolean(correspondence["capture_lifetime_inside"],
+             "$.time_correspondence.capture_lifetime_inside")
+    _enum(correspondence["journal_range"], "$.time_correspondence.journal_range",
+          ("UNKNOWN", "PROVEN", "MISMATCH"))
+    if correspondence["journal_range"] == "UNKNOWN" and "journal_range_reason" not in correspondence:
+        _fail("MISSING_FIELD", "$.time_correspondence.journal_range_reason")
     for key in ("input_start_wall_ns", "input_end_wall_ns",
                 "capture_start_wall_ns", "capture_end_wall_ns", "scope_ns"):
         _int(correspondence[key], f"$.time_correspondence.{key}", 0, 1 << 62)
