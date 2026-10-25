@@ -42,7 +42,7 @@ pub enum Action {
     Inspect,
     /// Show the existing read-only receipt/Stop presentation.
     Details,
-    /// Re-read the current authorized observation; no canonical mutation.
+    /// Re-establish the local observation subscription; no canonical mutation.
     Reconnect,
 }
 
@@ -174,15 +174,44 @@ impl Row {
     }
 }
 
-/// The ordered strip: one visible row plus the remaining count.
+/// One display group: same-kind conditions collapse to one visible row plus a count
+/// (ADR-0011 §2). The model keeps every member; grouping only shapes the presentation.
+#[derive(Clone, Debug, PartialEq)]
+pub struct StripGroup {
+    /// The closed condition kind shared by every member.
+    pub kind: Kind,
+    /// The group's highest-priority member: the row displayed for the group.
+    pub head: Row,
+    /// Every member in priority order, the head included.
+    pub members: Arc<[Row]>,
+}
+
+impl StripGroup {
+    /// The number of conditions grouped behind the visible row (always at least one).
+    pub fn count(&self) -> usize {
+        self.members.len()
+    }
+}
+
+/// The ordered strip: one visible group row per kind, with every condition still listed.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Strip {
-    /// All ordered, deduplicated rows.
+    /// Every ordered, deduplicated condition; grouping never flattens or hides it.
     pub rows: Arc<[Row]>,
-    /// The highest-priority row, when any condition is active.
-    pub top: Option<Row>,
-    /// Number of rows after the top row.
-    pub remaining: usize,
+    /// One group per kind, ordered by the priority position of its head.
+    pub groups: Arc<[StripGroup]>,
+}
+
+impl Strip {
+    /// Whether no condition is active.
+    pub fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+
+    /// Conditions hidden behind their group's visible row while the list is collapsed.
+    pub fn grouped_away(&self) -> usize {
+        self.rows.len().saturating_sub(self.groups.len())
+    }
 }
 
 /// Derived intervention state for one authorized observation.
@@ -245,15 +274,30 @@ impl Index {
         &self.rows
     }
 
-    /// The display strip: top row plus the remaining count.
+    /// The display strip: one visible row per kind group, plus every member in priority order.
+    ///
+    /// Grouping is presentation only (ADR-0011 §2): `rows` keeps each typed identity and its
+    /// priority position, and each group lists all of its members so the full list can be
+    /// revealed on demand. The group's head is its highest-priority member.
     pub fn strip(&self) -> Strip {
-        let mut rows = self.rows.iter().cloned();
-        let top = rows.next();
-        let remaining = self.rows.len().saturating_sub(1);
+        let mut grouped: Vec<(Kind, Row, Vec<Row>)> = Vec::new();
+        for row in self.rows.iter() {
+            match grouped.iter_mut().find(|(kind, _, _)| *kind == row.kind) {
+                Some((_, _, members)) => members.push(row.clone()),
+                None => grouped.push((row.kind, row.clone(), vec![row.clone()])),
+            }
+        }
+        let groups: Vec<StripGroup> = grouped
+            .into_iter()
+            .map(|(kind, head, members)| StripGroup {
+                kind,
+                head,
+                members: members.into(),
+            })
+            .collect();
         Strip {
             rows: Arc::clone(&self.rows),
-            top,
-            remaining,
+            groups: groups.into(),
         }
     }
 }
@@ -432,7 +476,7 @@ fn order_rows(rows: Vec<Row>) -> Vec<Row> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, BTreeSet};
     use std::sync::Arc;
 
     use app_core::{
@@ -515,6 +559,29 @@ mod tests {
             detail: "Local presentation only.".into(),
             manual_intervention: true,
         }
+    }
+
+    /// Three Stop conditions plus one connection row: four conditions across two kinds.
+    fn grouped_strip() -> super::Strip {
+        let task = task(TaskStatus::Active);
+        let mut commands = BTreeMap::new();
+        for (index, state) in [
+            (1, super::StopState::Unknown),
+            (2, super::StopState::AwaitingResponse),
+            (3, super::StopState::Accepted),
+        ] {
+            commands.insert(
+                CommandId::fixture(format!("command/stop-{index}")),
+                stop(state),
+            );
+        }
+        let index = Index::derive(
+            &publication(PublicationConnection::Disconnected, false),
+            &snapshot(&task),
+            Some(&task),
+            &commands,
+        );
+        index.strip()
     }
 
     #[test]
@@ -601,8 +668,8 @@ mod tests {
             &BTreeMap::new(),
         );
         let strip = index.strip();
-        assert_eq!(strip.top, None);
-        assert_eq!(strip.remaining, 0);
+        assert!(strip.is_empty());
+        assert!(strip.groups.is_empty());
         assert!(strip.rows.is_empty());
     }
 
@@ -623,15 +690,16 @@ mod tests {
         let index = Index::derive(&publication, &snapshot(&task), Some(&task), &commands);
         let strip = index.strip();
         assert_eq!(strip.rows.len(), 1);
+        assert_eq!(strip.groups.len(), 1);
+        let group = &strip.groups[0];
+        assert_eq!(group.kind, Kind::ObservationUnavailable);
+        assert_eq!(group.count(), 1);
+        assert_eq!(group.head.identity, RowIdentity::ObservationUnavailable);
         assert_eq!(
-            strip.top.as_ref().map(|row| row.identity.clone()),
-            Some(RowIdentity::ObservationUnavailable)
+            group.head.display_label(),
+            "Desktop-local · Observation unavailable".to_owned()
         );
-        assert_eq!(
-            strip.top.as_ref().map(|row| row.display_label()),
-            Some("Desktop-local · Observation unavailable".to_owned())
-        );
-        assert_eq!(strip.remaining, 0);
+        assert_eq!(strip.grouped_away(), 0);
     }
 
     #[test]
@@ -643,7 +711,12 @@ mod tests {
             Some(&task),
             &BTreeMap::new(),
         );
-        let row = index.strip().top.expect("connection row");
+        let row = index
+            .strip()
+            .groups
+            .first()
+            .map(|group| group.head.clone())
+            .expect("connection row");
         assert_eq!(row.kind, Kind::Connection);
         assert_eq!(row.provenance, Provenance::DesktopLocal);
         assert_eq!(row.display_label(), "Desktop-local · Recovering");
@@ -728,7 +801,7 @@ mod tests {
     }
 
     #[test]
-    fn identical_conditions_dedupe_to_one_row_plus_remaining_count() {
+    fn identical_conditions_dedupe_to_one_row() {
         let row = Row {
             identity: RowIdentity::Connection(super::ConnectionKind::Stale),
             kind: Kind::Connection,
@@ -744,7 +817,126 @@ mod tests {
             rows: ordered.into(),
         };
         let strip = index.strip();
-        assert_eq!(strip.remaining, 0);
+        assert_eq!(strip.rows.len(), 1);
+        assert_eq!(strip.groups.len(), 1);
+        assert_eq!(strip.groups[0].count(), 1);
+        assert_eq!(strip.grouped_away(), 0);
+    }
+
+    #[test]
+    fn same_kind_conditions_group_into_one_visible_row_with_a_count() {
+        let strip = grouped_strip();
+        assert_eq!(
+            strip.rows.len(),
+            4,
+            "the model keeps three Stop conditions plus the connection condition"
+        );
+        assert_eq!(
+            strip.groups.len(),
+            2,
+            "one visible row per kind, not one per condition"
+        );
+        assert_eq!(strip.grouped_away(), 2);
+        assert_eq!(
+            strip
+                .groups
+                .iter()
+                .map(|group| group.kind)
+                .collect::<Vec<_>>(),
+            vec![Kind::Connection, Kind::Stop],
+            "group order follows each head's priority position"
+        );
+        let stop_group = strip
+            .groups
+            .iter()
+            .find(|group| group.kind == Kind::Stop)
+            .expect("stop group");
+        assert_eq!(
+            stop_group.count(),
+            3,
+            "the count is the number of grouped conditions"
+        );
+        let first_stop = strip
+            .rows
+            .iter()
+            .find(|row| row.kind == Kind::Stop)
+            .expect("stop row");
+        assert_eq!(
+            stop_group.head.identity, first_stop.identity,
+            "the displayed row is the group's highest-priority member"
+        );
+        let connection_group = strip
+            .groups
+            .iter()
+            .find(|group| group.kind == Kind::Connection)
+            .expect("connection group");
+        assert_eq!(connection_group.count(), 1);
+    }
+
+    #[test]
+    fn grouping_keeps_every_typed_identity_in_priority_order() {
+        let strip = grouped_strip();
+        let stop_group = strip
+            .groups
+            .iter()
+            .find(|group| group.kind == Kind::Stop)
+            .expect("stop group");
+        let members: Vec<_> = stop_group
+            .members
+            .iter()
+            .map(|row| row.identity.clone())
+            .collect();
+        let ordered: Vec<_> = strip
+            .rows
+            .iter()
+            .filter(|row| row.kind == Kind::Stop)
+            .map(|row| row.identity.clone())
+            .collect();
+        assert_eq!(
+            members, ordered,
+            "every identity stays, in the model's priority order"
+        );
+        assert_eq!(
+            stop_group.head.identity, members[0],
+            "the head is the first member in priority order"
+        );
+        let distinct: BTreeSet<_> = members.iter().cloned().collect();
+        assert_eq!(distinct.len(), 3, "distinct identities are never flattened");
+        assert!(
+            members
+                .iter()
+                .all(|identity| matches!(identity, RowIdentity::Stop(_)))
+        );
+    }
+
+    #[test]
+    fn grouping_keeps_the_highest_priority_member_as_the_head() {
+        let row = |command: &str, status: TaskStatus| Row {
+            identity: RowIdentity::Stop(CommandId::fixture(command)),
+            kind: Kind::Stop,
+            task_status: Some(status),
+            provenance: Provenance::DesktopLocal,
+            label: format!("Stop {command}").into(),
+            detail: "d".into(),
+            action: Some(Action::Details),
+        };
+        // Insertion order disagrees with priority: the COMPLETED row is supplied first.
+        let index = Index {
+            rows: super::order_rows(vec![
+                row("command/completed", TaskStatus::Completed),
+                row("command/active", TaskStatus::Active),
+            ])
+            .into(),
+        };
+        let strip = index.strip();
+        assert_eq!(strip.groups.len(), 1);
+        assert_eq!(strip.groups[0].count(), 2);
+        assert_eq!(
+            strip.groups[0].head.identity,
+            RowIdentity::Stop(CommandId::fixture("command/active")),
+            "the displayed row is the highest-priority member, not the first inserted"
+        );
+        assert_eq!(strip.groups[0].head.task_status, Some(TaskStatus::Active));
     }
 
     #[test]

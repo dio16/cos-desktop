@@ -232,13 +232,10 @@ pub struct Shell {
     inspector_disclosure: ui_model::inspector::Disclosure,
     /// One focus handle per inspector section, in `Section::ALL` order.
     inspector_focus: Vec<FocusHandle>,
-    /// Expanded state of the intervention strip's remaining-condition list.
-    strip_expanded: bool,
-    /// The intervention row whose read-only details are open.
-    strip_detail: Option<ui_model::intervention::RowIdentity>,
-    /// The row that opened the details; focus returns here on dismissal.
-    strip_detail_origin: Option<ui_model::intervention::RowIdentity>,
-    /// Per-row focus handles keyed by typed row identity.
+    /// Expansion, open details and the dismissal origin of the intervention strip; reconciled
+    /// against the active rows so a resolved condition never leaves local state behind.
+    strip_selection: intervention::StripSelection,
+    /// Per-row focus handles keyed by typed row identity, pruned with the active row set.
     strip_focus: BTreeMap<ui_model::intervention::RowIdentity, FocusHandle>,
     /// Focus handle for the remaining-count/list toggle.
     strip_list_focus: FocusHandle,
@@ -381,9 +378,7 @@ impl Shell {
             surface_notice: None,
             inspector_disclosure: ui_model::inspector::Disclosure::default(),
             inspector_focus,
-            strip_expanded: false,
-            strip_detail: None,
-            strip_detail_origin: None,
+            strip_selection: intervention::StripSelection::default(),
             strip_focus: BTreeMap::new(),
             strip_list_focus: cx.focus_handle().tab_stop(true),
             strip_detail_focus: cx.focus_handle().tab_stop(true),
@@ -1817,6 +1812,10 @@ impl Render for Shell {
         if authorized_text {
             self.synchronize_stop_context();
         }
+        // Reconcile shell-local strip state with the rows that are about to be rendered: a
+        // resolved condition must never persist, and a reappearing identity starts clean
+        // (ADR-0011 §3).
+        self.reconcile_strip_state();
         let text = self.cache.text();
         // One resolved token set feeds every layout and text input below; a
         // surface reads these adapters instead of a constant, and nothing here
