@@ -693,7 +693,475 @@
         "ordinary source/target",
         "all other Gate workspaces/targets"
       ]
+    },
+    {
+      "gate_id": "805e3f56-23aa-4819-b718-fa7e0ff9e97f",
+      "candidate": "f1e12dd59d96f4c9de89a4c0886bb92ce8715751",
+      "evidence_commit": "24c827c",
+      "removed": [
+        {
+          "path": "<S3_REPAIRED_GATE_ROOT>/state/gates/805e3f56-23aa-4819-b718-fa7e0ff9e97f/work/repo",
+          "bytes": 9999392,
+          "files": 339
+        },
+        {
+          "path": "<S3_REPAIRED_GATE_ROOT>/targets/quality-clippy",
+          "bytes": 663969474,
+          "files": 3015
+        },
+        {
+          "path": "<S3_REPAIRED_GATE_ROOT>/targets/quality-tests",
+          "bytes": 1841488311,
+          "files": 3144
+        },
+        {
+          "path": "<S3_REPAIRED_GATE_ROOT>/state/gates/805e3f56-23aa-4819-b718-fa7e0ff9e97f/private/home/.rustup",
+          "bytes": 764960518,
+          "files": 3793
+        }
+      ],
+      "logical_bytes_removed": 3280417695,
+      "native_integrity_before": {
+        "cli_interface_version": 2,
+        "operation": "gate.verify",
+        "outcome": {
+          "schema_version": 1,
+          "result": {
+            "schema_version": 1,
+            "gate_id": "805e3f56-23aa-4819-b718-fa7e0ff9e97f",
+            "state": "SUCCEEDED",
+            "request_sha256": "sha256:9e37a300f23e42d33865bc382d9246d365dc8272b064ce2238ba49a2ae3e9912",
+            "terminal_state_sha256": "sha256:fba75ee68b2d770ae3e9296a1745631f8ee3fe6acd154e21e9148f5f656fd13c",
+            "observations_sha256": "sha256:f06d9556677981d2eb56f87e15ccb9b9090571895b629b78e96109783ffcc939",
+            "candidate_sha256": "sha256:b3d8145832cded2030270dfbea1a3ce196a32240ee040207a2318bcc4dd9dfb9",
+            "artifacts": [
+              {
+                "id": "behavior",
+                "relative_path": "artifacts/behavior",
+                "size_bytes": 49822,
+                "sha256": "sha256:3f4923d465d015d18fceb6f0e1bfbd23d10945707fb88d6baab909558aa8bf39"
+              },
+              {
+                "id": "cli-doc",
+                "relative_path": "artifacts/cli-doc",
+                "size_bytes": 80570,
+                "sha256": "sha256:8c5adf62b64b6c2398a69bb5cbf54ac30391be212f0b4706ea80aef0e5dccdb8"
+              },
+              {
+                "id": "input-qualification",
+                "relative_path": "artifacts/input-qualification",
+                "size_bytes": 7330,
+                "sha256": "sha256:ff5fcff1e0b51d321de9a503bf3e8cfe7870b08860917b9636ecb87b52297187"
+              },
+              {
+                "id": "native-checksums",
+                "relative_path": "artifacts/native-checksums",
+                "size_bytes": 3586,
+                "sha256": "sha256:f3b2cbd0dda9090e4cb320be523e37df69c787f6eeec9b8d01be584a6515e1d0"
+              },
+              {
+                "id": "oracle",
+                "relative_path": "artifacts/oracle",
+                "size_bytes": 18899,
+                "sha256": "sha256:e3872966e311991931ad4a509fd1d118adfb30c61c6ba032a424e0e36b41fd23"
+              },
+              {
+                "id": "python-quality",
+                "relative_path": "artifacts/python-quality",
+                "size_bytes": 3256,
+                "sha256": "sha256:c52cee3d92fa4ee1533adaf478b37943a4b95744a0cf53da9d52134b74ddf5e1"
+              },
+              {
+                "id": "quality",
+                "relative_path": "artifacts/quality",
+                "size_bytes": 780,
+                "sha256": "sha256:11dab5da81a0d9b68710235532dbcc7ddd455e6bec20f15d8b7888018f941f81"
+              },
+              {
+                "id": "real-replay",
+                "relative_path": "artifacts/real-replay",
+                "size_bytes": 90000,
+                "sha256": "sha256:497140c77a2dbae83d24d29f802f4985f17670ca476910e19ed1ee8eb59b5e64"
+              },
+              {
+                "id": "replay-source",
+                "relative_path": "artifacts/replay-source",
+                "size_bytes": 22044,
+                "sha256": "sha256:828eda6a32e24481241ee08bb4c502aced4fb8495554f77dba57d1e36fab64e9"
+              },
+              {
+                "id": "replay-tests",
+                "relative_path": "artifacts/replay-tests",
+                "size_bytes": 14945,
+                "sha256": "sha256:46559de1742936cc99322d70262d225b0cb783fb9a0e91039498cd49cbfd76b4"
+              }
+            ],
+            "check_logs": [
+              {
+                "check_id": "fmt",
+                "stdout": {
+                  "relative_path": "logs/fmt/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/fmt/stderr",
+                  "size_bytes": 171,
+                  "sha256": "sha256:207c83d037b995c75e03166d9a9486fbbbb29b0b76a736fe93d1b71bcbdb5105",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "metadata",
+                "stdout": {
+                  "relative_path": "logs/metadata/stdout",
+                  "size_bytes": 24557,
+                  "sha256": "sha256:62018b0666a3da31fdf108c8802359a3f7bf11466df153c0d467b61292e210d1",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/metadata/stderr",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "dependency-self-test",
+                "stdout": {
+                  "relative_path": "logs/dependency-self-test/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/dependency-self-test/stderr",
+                  "size_bytes": 2680,
+                  "sha256": "sha256:bbd5dd5503f935202ad9284e72151b00a5e4801f7735e16fb670b8e0cc0cc3ea",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "dependency-rules",
+                "stdout": {
+                  "relative_path": "logs/dependency-rules/stdout",
+                  "size_bytes": 79,
+                  "sha256": "sha256:7324a248581aca3179ab86e244966f886d14b87d2e04372d548eb5f96c3b1cfe",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/dependency-rules/stderr",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "clippy",
+                "stdout": {
+                  "relative_path": "logs/clippy/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/clippy/stderr",
+                  "size_bytes": 13065,
+                  "sha256": "sha256:f7f14d7a67f5078b0d662e9c96d2ff27c05d4fb3fda990b77fb744e88856270f",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "tests",
+                "stdout": {
+                  "relative_path": "logs/tests/stdout",
+                  "size_bytes": 43214,
+                  "sha256": "sha256:e0d780a3503936eeaa9d5aa5d8479d2f2d9ca4590e9cafba5593454d328deb6f",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/tests/stderr",
+                  "size_bytes": 17409,
+                  "sha256": "sha256:86f9c30ee1aa8f89894f7ddfd17ff8d084103ecfe93643e5f17580f00a378834",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "r0-python",
+                "stdout": {
+                  "relative_path": "logs/r0-python/stdout",
+                  "size_bytes": 8041,
+                  "sha256": "sha256:e4757c6d7438cf15d7d77c3e113c219d3c769e5a5be3149e63760a4e4f2c295a",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/r0-python/stderr",
+                  "size_bytes": 683,
+                  "sha256": "sha256:a7aee4b2e52d3f2726662ddc53a3fea18f85d1e1dc8119720764b55952102303",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "native-replay-cli",
+                "stdout": {
+                  "relative_path": "logs/native-replay-cli/stdout",
+                  "size_bytes": 90000,
+                  "sha256": "sha256:497140c77a2dbae83d24d29f802f4985f17670ca476910e19ed1ee8eb59b5e64",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/native-replay-cli/stderr",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                }
+              }
+            ]
+          }
+        }
+      },
+      "native_integrity_after": {
+        "cli_interface_version": 2,
+        "operation": "gate.verify",
+        "outcome": {
+          "schema_version": 1,
+          "result": {
+            "schema_version": 1,
+            "gate_id": "805e3f56-23aa-4819-b718-fa7e0ff9e97f",
+            "state": "SUCCEEDED",
+            "request_sha256": "sha256:9e37a300f23e42d33865bc382d9246d365dc8272b064ce2238ba49a2ae3e9912",
+            "terminal_state_sha256": "sha256:fba75ee68b2d770ae3e9296a1745631f8ee3fe6acd154e21e9148f5f656fd13c",
+            "observations_sha256": "sha256:f06d9556677981d2eb56f87e15ccb9b9090571895b629b78e96109783ffcc939",
+            "candidate_sha256": "sha256:b3d8145832cded2030270dfbea1a3ce196a32240ee040207a2318bcc4dd9dfb9",
+            "artifacts": [
+              {
+                "id": "behavior",
+                "relative_path": "artifacts/behavior",
+                "size_bytes": 49822,
+                "sha256": "sha256:3f4923d465d015d18fceb6f0e1bfbd23d10945707fb88d6baab909558aa8bf39"
+              },
+              {
+                "id": "cli-doc",
+                "relative_path": "artifacts/cli-doc",
+                "size_bytes": 80570,
+                "sha256": "sha256:8c5adf62b64b6c2398a69bb5cbf54ac30391be212f0b4706ea80aef0e5dccdb8"
+              },
+              {
+                "id": "input-qualification",
+                "relative_path": "artifacts/input-qualification",
+                "size_bytes": 7330,
+                "sha256": "sha256:ff5fcff1e0b51d321de9a503bf3e8cfe7870b08860917b9636ecb87b52297187"
+              },
+              {
+                "id": "native-checksums",
+                "relative_path": "artifacts/native-checksums",
+                "size_bytes": 3586,
+                "sha256": "sha256:f3b2cbd0dda9090e4cb320be523e37df69c787f6eeec9b8d01be584a6515e1d0"
+              },
+              {
+                "id": "oracle",
+                "relative_path": "artifacts/oracle",
+                "size_bytes": 18899,
+                "sha256": "sha256:e3872966e311991931ad4a509fd1d118adfb30c61c6ba032a424e0e36b41fd23"
+              },
+              {
+                "id": "python-quality",
+                "relative_path": "artifacts/python-quality",
+                "size_bytes": 3256,
+                "sha256": "sha256:c52cee3d92fa4ee1533adaf478b37943a4b95744a0cf53da9d52134b74ddf5e1"
+              },
+              {
+                "id": "quality",
+                "relative_path": "artifacts/quality",
+                "size_bytes": 780,
+                "sha256": "sha256:11dab5da81a0d9b68710235532dbcc7ddd455e6bec20f15d8b7888018f941f81"
+              },
+              {
+                "id": "real-replay",
+                "relative_path": "artifacts/real-replay",
+                "size_bytes": 90000,
+                "sha256": "sha256:497140c77a2dbae83d24d29f802f4985f17670ca476910e19ed1ee8eb59b5e64"
+              },
+              {
+                "id": "replay-source",
+                "relative_path": "artifacts/replay-source",
+                "size_bytes": 22044,
+                "sha256": "sha256:828eda6a32e24481241ee08bb4c502aced4fb8495554f77dba57d1e36fab64e9"
+              },
+              {
+                "id": "replay-tests",
+                "relative_path": "artifacts/replay-tests",
+                "size_bytes": 14945,
+                "sha256": "sha256:46559de1742936cc99322d70262d225b0cb783fb9a0e91039498cd49cbfd76b4"
+              }
+            ],
+            "check_logs": [
+              {
+                "check_id": "fmt",
+                "stdout": {
+                  "relative_path": "logs/fmt/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/fmt/stderr",
+                  "size_bytes": 171,
+                  "sha256": "sha256:207c83d037b995c75e03166d9a9486fbbbb29b0b76a736fe93d1b71bcbdb5105",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "metadata",
+                "stdout": {
+                  "relative_path": "logs/metadata/stdout",
+                  "size_bytes": 24557,
+                  "sha256": "sha256:62018b0666a3da31fdf108c8802359a3f7bf11466df153c0d467b61292e210d1",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/metadata/stderr",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "dependency-self-test",
+                "stdout": {
+                  "relative_path": "logs/dependency-self-test/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/dependency-self-test/stderr",
+                  "size_bytes": 2680,
+                  "sha256": "sha256:bbd5dd5503f935202ad9284e72151b00a5e4801f7735e16fb670b8e0cc0cc3ea",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "dependency-rules",
+                "stdout": {
+                  "relative_path": "logs/dependency-rules/stdout",
+                  "size_bytes": 79,
+                  "sha256": "sha256:7324a248581aca3179ab86e244966f886d14b87d2e04372d548eb5f96c3b1cfe",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/dependency-rules/stderr",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "clippy",
+                "stdout": {
+                  "relative_path": "logs/clippy/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/clippy/stderr",
+                  "size_bytes": 13065,
+                  "sha256": "sha256:f7f14d7a67f5078b0d662e9c96d2ff27c05d4fb3fda990b77fb744e88856270f",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "tests",
+                "stdout": {
+                  "relative_path": "logs/tests/stdout",
+                  "size_bytes": 43214,
+                  "sha256": "sha256:e0d780a3503936eeaa9d5aa5d8479d2f2d9ca4590e9cafba5593454d328deb6f",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/tests/stderr",
+                  "size_bytes": 17409,
+                  "sha256": "sha256:86f9c30ee1aa8f89894f7ddfd17ff8d084103ecfe93643e5f17580f00a378834",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "r0-python",
+                "stdout": {
+                  "relative_path": "logs/r0-python/stdout",
+                  "size_bytes": 8041,
+                  "sha256": "sha256:e4757c6d7438cf15d7d77c3e113c219d3c769e5a5be3149e63760a4e4f2c295a",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/r0-python/stderr",
+                  "size_bytes": 683,
+                  "sha256": "sha256:a7aee4b2e52d3f2726662ddc53a3fea18f85d1e1dc8119720764b55952102303",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "native-replay-cli",
+                "stdout": {
+                  "relative_path": "logs/native-replay-cli/stdout",
+                  "size_bytes": 90000,
+                  "sha256": "sha256:497140c77a2dbae83d24d29f802f4985f17670ca476910e19ed1ee8eb59b5e64",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/native-replay-cli/stderr",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                }
+              }
+            ]
+          }
+        }
+      },
+      "integrity_identical": true,
+      "kept": [
+        "Gate authority/artifacts/logs",
+        "ordinary source/target",
+        "all other Gate workspaces/targets"
+      ]
     }
   ],
-  "measurement": "logical file lengths, not allocated physical bytes"
+  "measurement": "logical file lengths, not allocated physical bytes",
+  "total_logical_bytes_removed": 8163789652,
+  "total_dirs_removed": 10
 }
