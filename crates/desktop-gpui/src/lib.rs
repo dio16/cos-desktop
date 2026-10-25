@@ -870,31 +870,53 @@ impl Shell {
     }
 
     fn navigate(&mut self, surface: Surface, cx: &mut Context<Self>) {
-        if surface == Surface::Compare
-            && let Some(reason) = dock::compare_unavailable_reason(self.rendered_candidates.len())
-        {
-            self.surface_notice = Some(format!("Compare is unavailable: {reason}."));
-            cx.notify();
+        let candidate_count = self.rendered_candidates.len();
+        let Some(workbench) = &mut self.workbench else {
             return;
-        }
-        if surface == Surface::Compare {
-            self.surface_notice = None;
-        }
-        if let Some(workbench) = &mut self.workbench {
-            #[cfg(feature = "r0-s2b-instrumentation")]
-            let changed = workbench.core.navigation.surface() != surface;
-            workbench.core.navigation.navigate(surface);
-            #[cfg(feature = "r0-s2b-instrumentation")]
-            if changed {
-                r0_probe::record(
-                    self.probe_window,
-                    r0_probe::EventKind::SurfaceChanged(surface),
-                );
+        };
+        #[cfg(feature = "r0-s2b-instrumentation")]
+        let changed = workbench.core.navigation.surface() != surface;
+        match dock::admit(surface, candidate_count, &mut workbench.core.navigation) {
+            Ok(()) => {
+                self.surface_notice = None;
+                #[cfg(feature = "r0-s2b-instrumentation")]
+                if changed {
+                    r0_probe::record(
+                        self.probe_window,
+                        r0_probe::EventKind::SurfaceChanged(surface),
+                    );
+                }
+                cx.notify();
+                #[cfg(feature = "r0-s2b-instrumentation")]
+                r0_probe::record(self.probe_window, r0_probe::EventKind::Notify);
             }
-            cx.notify();
-            #[cfg(feature = "r0-s2b-instrumentation")]
-            r0_probe::record(self.probe_window, r0_probe::EventKind::Notify);
+            Err(notice) => {
+                self.surface_notice = Some(notice);
+                cx.notify();
+            }
         }
+    }
+
+    /// The Ctrl+Tab (`NextSurface`) action's dispatch path.
+    ///
+    /// The target comes from the canonical cycle and goes through the same Compare
+    /// admission as `navigate()`: Compare is never entered while it is unavailable, and
+    /// the reason is identical to the dock/switcher (ADR-0010 D-2).
+    fn advance_surface(&mut self, cx: &mut Context<Self>) {
+        let candidate_count = self.rendered_candidates.len();
+        let Some(workbench) = &mut self.workbench else {
+            return;
+        };
+        let event = dock::advance(&mut workbench.core.navigation, candidate_count);
+        self.surface_notice = event.notice;
+        #[cfg(feature = "r0-s2b-instrumentation")]
+        if let Some(surface) = event.surface {
+            r0_probe::record(
+                self.probe_window,
+                r0_probe::EventKind::SurfaceChanged(surface),
+            );
+        }
+        cx.notify();
     }
 
     fn set_rail_query(&mut self, query: &str, cx: &mut Context<Self>) {
@@ -1122,12 +1144,12 @@ impl Shell {
         };
         self.dock_active = Some(identity);
         self.dock_focus.focus(window, cx);
-        self.surface_notice = event.notice;
         if let Some(target) = event.surface
             && target != surface
         {
             self.navigate(target, cx);
         }
+        self.surface_notice = event.notice;
         cx.notify();
     }
 
@@ -3214,10 +3236,7 @@ impl Render for Shell {
             .on_action(cx.listener(|this, _: &Compare, _, cx| this.navigate(Surface::Compare, cx)))
             .on_action(cx.listener(|this, _: &Flow, _, cx| this.navigate(Surface::Flow, cx)))
             .on_action(cx.listener(|this, _: &NextSurface, _, cx| {
-                if let Some(w) = &mut this.workbench {
-                    w.core.navigation.next();
-                    cx.notify();
-                }
+                this.advance_surface(cx);
             }))
             .on_action(cx.listener(|_, _: &FocusNext, window, cx| window.focus_next(cx)))
             .on_action(cx.listener(|_, _: &FocusPrevious, window, cx| window.focus_prev(cx)))

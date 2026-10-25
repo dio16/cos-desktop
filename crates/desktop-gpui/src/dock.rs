@@ -1,7 +1,7 @@
 //! Fixed-stride horizontal virtualization in GPUI's negative-offset coordinates,
 //! plus the deterministic presentation result of one dock event (ADR-0010 D-3/D-9).
 
-use app_core::navigation::Surface;
+use app_core::navigation::{Navigation, Surface};
 use desktop_protocol::{CandidateRef, TaskId};
 use ui_model::presentation::{
     CompareSide, Presentation, RestoreOutcome, SelectionEffect, ViewedCandidate,
@@ -85,6 +85,49 @@ pub(super) fn nearest_index(previous: Option<usize>, len: usize) -> Option<usize
         None
     } else {
         Some(previous.unwrap_or(0).min(len - 1))
+    }
+}
+
+/// The single Compare admission every surface entry path uses (ADR-0010 D-2).
+///
+/// `navigate()`, the dock/switcher and the `NextSurface` (Ctrl+Tab) action all call
+/// this, so Compare can never be entered while it is unavailable and the reason is
+/// identical everywhere.
+pub(super) fn admit(
+    target: Surface,
+    candidate_count: usize,
+    navigation: &mut Navigation,
+) -> Result<(), String> {
+    if target == Surface::Compare
+        && let Some(reason) = compare_unavailable_reason(candidate_count)
+    {
+        return Err(format!("Compare is unavailable: {reason}."));
+    }
+    navigation.navigate(target);
+    Ok(())
+}
+
+/// The canonical surface cycle, identical to `Navigation::next()`'s specification.
+pub(super) fn next_surface(surface: Surface) -> Surface {
+    match surface {
+        Surface::Artifact => Surface::Compare,
+        Surface::Compare => Surface::Flow,
+        Surface::Flow => Surface::Artifact,
+    }
+}
+
+/// The `NextSurface` action's decision path, driven by the same admission as `navigate()`.
+pub(super) fn advance(navigation: &mut Navigation, candidate_count: usize) -> DockEvent {
+    let target = next_surface(navigation.surface());
+    match admit(target, candidate_count, navigation) {
+        Ok(()) => DockEvent {
+            surface: Some(target),
+            notice: None,
+        },
+        Err(notice) => DockEvent {
+            surface: None,
+            notice: Some(notice),
+        },
     }
 }
 
@@ -192,6 +235,63 @@ mod tests {
 
     fn viewed(label: &str) -> ViewedCandidate {
         ViewedCandidate(candidate(label))
+    }
+
+    #[test]
+    fn next_surface_is_the_canonical_cycle() {
+        for surface in Surface::ALL {
+            let mut navigation = Navigation::default();
+            navigation.navigate(surface);
+            navigation.next();
+            assert_eq!(next_surface(surface), navigation.surface());
+        }
+    }
+
+    #[test]
+    fn ctrl_tab_never_enters_compare_without_two_candidates() {
+        for count in [0usize, 1] {
+            let mut navigation = Navigation::default();
+            assert_eq!(navigation.surface(), Surface::Artifact);
+            let event = advance(&mut navigation, count);
+            assert_eq!(
+                navigation.surface(),
+                Surface::Artifact,
+                "Ctrl+Tab must not reach Compare with {count} candidate(s)"
+            );
+            assert_eq!(event.surface, None);
+            let notice = event.notice.unwrap_or_default();
+            assert!(
+                notice.contains("Compare is unavailable")
+                    && notice.contains("two candidates are required"),
+                "the same reason is stated: {notice}"
+            );
+        }
+        for count in [2usize, 3] {
+            let mut navigation = Navigation::default();
+            let event = advance(&mut navigation, count);
+            assert_eq!(event.surface, Some(Surface::Compare));
+            assert_eq!(navigation.surface(), Surface::Compare);
+            assert!(event.notice.is_none());
+            let event = advance(&mut navigation, count);
+            assert_eq!(event.surface, Some(Surface::Flow));
+            assert_eq!(navigation.surface(), Surface::Flow);
+        }
+    }
+
+    #[test]
+    fn the_next_surface_action_forwards_to_the_shared_admission_path() {
+        let source = include_str!("lib.rs");
+        let handler = source
+            .find("&NextSurface")
+            .expect("NextSurface action handler");
+        let handler = &source[handler..(handler + 400).min(source.len())];
+        assert!(handler.contains("advance_surface"));
+        assert!(!handler.contains("navigation.next()"));
+        let advance = source
+            .find("fn advance_surface")
+            .expect("advance_surface method");
+        let advance = &source[advance..(advance + 600).min(source.len())];
+        assert!(advance.contains("dock::advance"));
     }
 
     #[test]
