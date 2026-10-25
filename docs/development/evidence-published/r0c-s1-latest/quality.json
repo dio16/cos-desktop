@@ -57,5 +57,44 @@
     },
     "scope": "After N06 production validation repair; final additional edit only adds child reaping in the Python test. No Rust source changed."
   },
-  "feature_binding": "Feature checks exercised the same unchanged Rust source tree as the repaired candidate; not a new Native or performance measurement."
+  "feature_binding": "Final feature checks include the summary-aware decoder-harness repair, not a reused pre-repair execution.",
+  "final_default_quality": {
+    "exit": 0,
+    "command": "pwsh scripts/quality.ps1",
+    "rust_tests": {
+      "passed": 532,
+      "failed": 0,
+      "ignored": 1
+    },
+    "warnings": []
+  },
+  "final_feature_quality": [
+    {
+      "command": "clippy --locked --workspace --all-targets --features cos-desktop/r0-s2b-instrumentation -- -D warnings",
+      "exit": 0,
+      "rust_tests": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    {
+      "command": "test --locked --workspace --features cos-desktop/r0-s2b-instrumentation",
+      "exit": 0,
+      "rust_tests": {
+        "passed": 536,
+        "failed": 0,
+        "ignored": 1
+      }
+    },
+    {
+      "command": "build --locked -p cos-desktop --features r0-s2b-instrumentation",
+      "exit": 0,
+      "rust_tests": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      }
+    }
+  ]
 }

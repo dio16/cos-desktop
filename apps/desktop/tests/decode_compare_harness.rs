@@ -30,9 +30,6 @@ const SLEEPER: &str = "fake_sleeper_helper";
 const SLEEP_ENV: &str = "DECODE_COMPARE_SLEEP";
 const IDENTITY: &str = "fake-decode-candidate 1.0";
 const FAKE_OUTPUT: &[u8] = b"fake-decoded-output";
-/// A flooding helper stops here if the harness never caps it (2 MiB is 4000x the
-/// 512-byte bound used by the scratch-cap test, so a working cap kills it first).
-const FLOOD_LIMIT_CHUNKS: usize = 2_000;
 static NEXT: AtomicUsize = AtomicUsize::new(0);
 
 /// One manifest row: case name, optional `expected:WxH`, declared outcome class.
@@ -683,8 +680,8 @@ fn captured_output_is_capped_and_marked_truncated() {
     assert_eq!(observation.refusal, None);
 }
 
-/// NB-2: a candidate that keeps writing is killed once the combined capture files
-/// exceed `max_output_bytes * 8`, and the observed class and size are recorded.
+/// NB-2: exceeding the observed scratch threshold cancels a still-running child,
+/// independently of how quickly it writes before the supervisor gets scheduled.
 #[test]
 fn scratch_cap_kills_a_flooding_candidate() {
     let fixture = Fixture::new();
@@ -706,10 +703,6 @@ fn scratch_cap_kills_a_flooding_candidate() {
     assert!(
         scratch > 64 * harness::SCRATCH_FACTOR,
         "the observed scratch size must exceed the bound ({scratch})"
-    );
-    assert!(
-        scratch < (FLOOD_LIMIT_CHUNKS as u64 * 1024),
-        "the child must be killed well before it finishes flooding ({scratch})"
     );
 }
 
@@ -1357,14 +1350,41 @@ fn capabilities_ignore_truncated_observations() {
     fixture.case("b.png", "png16");
     fixture.case("c.png", "png16");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.max_record_bytes = 2600;
     config.invocation = helper_invocation(HELPER);
+    let mut full = harness::run(&config).unwrap();
+    assert_eq!(full.observations.len(), 3);
+    // Calibrate inside the concrete summary-header overhead for two rows, rather
+    // than assuming any checkout path length or fixed serialized metadata size.
+    full.observations.truncate(2);
+    let with_summaries = harness::render(&full).0.len();
+    full.capabilities.clear();
+    full.resources.clear();
+    let without_summaries = harness::render(&full).0.len();
+    config.max_record_bytes = (with_summaries + without_summaries) / 2;
     let report = harness::run(&config).unwrap();
 
+    assert!(!report.observations.is_empty());
     assert!(
         report.observations.len() < 3,
         "the record must be truncated"
     );
+    assert_eq!(
+        harness::render(&report).1,
+        report.observations.len(),
+        "the saved evidence population must match the returned report"
+    );
+    harness::write_report(&report, &fixture.record("bounded")).unwrap();
+    for observation in &report.observations {
+        assert_eq!(observation.observed_outcome, OutcomeClass::Decoded);
+        assert!(observation.inspected_complete);
+        assert_eq!(observation.inspected_format, inspect::Format::Png);
+        assert_eq!(observation.inspected_width, Some(16));
+        assert_eq!(observation.inspected_height, Some(16));
+    }
+    assert_eq!(report.capabilities.len(), 1);
+    assert_eq!(report.capabilities[0].format, inspect::Format::Png);
+    assert_eq!(report.capabilities[0].max_width, Some(16));
+    assert_eq!(report.capabilities[0].max_height, Some(16));
     assert_eq!(
         report.capabilities[0].observations,
         report.observations.len(),
@@ -3757,7 +3777,7 @@ fn observation_and_record_caps_truncate_explicitly() {
     let full_len = harness::render(&full).0.len();
     assert_eq!(full.observations.len(), 3);
 
-    // NIT-1: the byte budget is enforced in one rendering pass and reported.
+    // NIT-1: the serialized byte budget and truncation are both explicit.
     let mut tight = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     tight.invocation = helper_invocation(HELPER);
     tight.max_record_bytes = full_len - 300;
@@ -4612,15 +4632,16 @@ fn fake_candidate(support: ProbeSupport) {
             }
             0
         }
-        // NB-2: keep writing until the harness kills the child.
+        // NB-2: bounded output crosses the threshold, then only the supervisor can
+        // end this live child. A finite flood cannot establish that kill boundary.
         "floodcap" => {
-            let chunk = [b'x'; 1024];
-            for _ in 0..FLOOD_LIMIT_CHUNKS {
-                if std::io::stdout().write_all(&chunk).is_err() {
-                    break;
-                }
+            let mut stdout = std::io::stdout().lock();
+            if stdout.write_all(&[b'x'; 1024]).is_err() || stdout.flush().is_err() {
+                std::process::exit(1);
             }
-            0
+            loop {
+                std::thread::park();
+            }
         }
         _ => 1,
     };

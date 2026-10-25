@@ -1487,21 +1487,24 @@ fn collect(config: &Config, work: &Path, captures: &Path) -> Result<Report, Usag
         capabilities: Vec::new(),
         resources: Vec::new(),
     };
-    // One rendering pass decides how many observations fit the byte budget.
-    let (_, kept) = render(&report);
-    if kept < report.observations.len() {
+    // Summary tables consume the same byte budget as observations. Recompute
+    // them after every shrinking prefix until the returned and saved populations
+    // agree; each nonterminal pass removes at least one observation.
+    loop {
+        report.capabilities = capability_rows(&report.observations);
+        report.resources = resource_rows(&report.observations, &report.candidates);
+        let (json, kept) = render(&report);
+        if kept == report.observations.len() {
+            if json.len() > config.max_record_bytes {
+                return Err(UsageError::new(format!(
+                    "the record header alone exceeds the {} byte cap",
+                    config.max_record_bytes
+                )));
+            }
+            break;
+        }
         report.observations.truncate(kept);
         report.observations_truncated = true;
-    }
-    // A3: the capability table is derived from the observations that survived the
-    // byte budget, so a dropped row can never contribute a capability claim.
-    report.capabilities = capability_rows(&report.observations);
-    report.resources = resource_rows(&report.observations, &report.candidates);
-    if render(&report).0.len() > config.max_record_bytes {
-        return Err(UsageError::new(format!(
-            "the record header alone exceeds the {} byte cap",
-            config.max_record_bytes
-        )));
     }
     Ok(report)
 }

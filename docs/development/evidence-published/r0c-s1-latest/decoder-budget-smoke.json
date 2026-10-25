@@ -1,0 +1,156 @@
+{
+  "scope": "Real installed FFmpeg decoding three generated 16x16 PNG inputs via actual harness API; exploratory correctness smoke, not a performance or decoder-selection claim.",
+  "source_state": "Summary-aware shrinking-prefix repair, pinned by the subsequent candidate commit and independent Gate.",
+  "scratch": {
+    "disposable": true,
+    "evidence_depends_on_scratch": false
+  },
+  "input_png_sha256": "sha256:c2c50825f75ab54b538393dd3af9036452489c3190c8c893f1ffaf7c73fc02b8",
+  "decoder": {
+    "path": "<installed-ffmpeg>/ffmpeg.exe",
+    "sha256": "sha256:81b5832f6c548d64feba0ec7d643397e2351d9f3460a65c6c296956045eebaea"
+  },
+  "program_stdout": "observations=1 capabilities=1 serialized_kept=1 bytes=3022 budget=3939",
+  "baseline": {
+    "observations": 3,
+    "capability_observations": 3,
+    "original_sha256": "sha256:631f430f2f65804f0dfdce601d261f9856ad9b8de01a2750337583ab241c8322",
+    "original_size": 5584
+  },
+  "bounded": {
+    "original_sha256": "sha256:d0f64ff994cc41a4da5e05192d07e86bf06cb24739ea559e715cfe15799d1c5c",
+    "original_size": 3022,
+    "sanitized": {
+      "schema_version": 11,
+      "exploratory": true,
+      "numeric_gate": "NOT_RATIFIED",
+      "cases_dir": "<disposable-smoke-root>\\cases",
+      "timeout_ms": 5000,
+      "max_output_bytes": 8192,
+      "max_output_file_bytes": 67108864,
+      "max_cases": 64,
+      "max_observations": 256,
+      "max_record_bytes": 3939,
+      "max_pixels": null,
+      "output_policy": "native",
+      "sample_interval_ms": 0,
+      "max_samples": 256,
+      "cancel_after_ms": null,
+      "sample_tool": null,
+      "sample_tool_sha256": null,
+      "sample_tool_reason": "sampling_disabled",
+      "cases_truncated": false,
+      "observations_truncated": true,
+      "candidates": [
+        {
+          "id": "ffmpeg",
+          "kind": "executable",
+          "program": "<installed-ffmpeg>/ffmpeg.exe",
+          "launcher": "<installed-ffmpeg>/ffmpeg.exe",
+          "identity": "ffmpeg version 8.0-full_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers",
+          "identity_probe": "-version",
+          "identity_exit_codes": [
+            -1414549496,
+            0
+          ],
+          "refusal": null
+        }
+      ],
+      "capabilities": [
+        {
+          "candidate_id": "ffmpeg",
+          "format": "png",
+          "observations": 1,
+          "max_width": 16,
+          "max_height": 16,
+          "bit_depths": [
+            8
+          ],
+          "channels": [
+            4
+          ],
+          "colour_types": [
+            "rgba"
+          ],
+          "colour_markers": [],
+          "pixels_verified": 0,
+          "working_set_max_bytes": null,
+          "not_measured": [],
+          "not_measured_reason": null,
+          "orientation": "not_measured",
+          "orientation_reason": "exif_orientation_not_parsed",
+          "region": "not_measured",
+          "region_reason": "partial_decode_not_observed",
+          "sequential": "not_measured",
+          "sequential_reason": "sequential_capability_not_observed"
+        }
+      ],
+      "resources": [
+        {
+          "candidate_id": "ffmpeg",
+          "observations": 1,
+          "working_set_max_bytes": null,
+          "working_set_sampling": "not_measured",
+          "working_set_reason": "sampling_disabled",
+          "scratch_max_bytes": 3583
+        }
+      ],
+      "observations": [
+        {
+          "candidate_id": "ffmpeg",
+          "case_id": "a.png",
+          "input_path": "<disposable-smoke-root>\\cases\\a.png",
+          "suffix": "png",
+          "input_bytes": 82,
+          "declared_outcome": "decoded",
+          "observed_outcome": "decoded",
+          "candidate_reason": "not_measured",
+          "exit_code": 0,
+          "timeout_fired": false,
+          "captured_stdout_bytes": 0,
+          "captured_stderr_bytes": 3583,
+          "stdout_truncated": false,
+          "stderr_truncated": false,
+          "wall_ms": 45,
+          "scratch_max_bytes": 3583,
+          "working_set_attempts": 0,
+          "working_set_samples": 0,
+          "working_set_max_bytes": null,
+          "working_set_sampling": "not_measured",
+          "working_set_reason": "sampling_disabled",
+          "cancellation_requested_at_ms": null,
+          "cancellation_observed_ms": null,
+          "cancelled_at_reason": null,
+          "output_present": true,
+          "output_bytes": 115,
+          "inspected_format": "png",
+          "inspected_complete": true,
+          "inspected_width": 16,
+          "inspected_height": 16,
+          "inspected_bit_depth": 8,
+          "inspected_channels": 4,
+          "inspected_colour_type": "rgba",
+          "inspected_colour_markers": [],
+          "expected_dimensions": "16x16",
+          "pixel_expectation": null,
+          "pixel_digest": "ea8617a5b5d01124ee5def0f0cca3f6d75f9fd668211f4e64914b47105d827ef",
+          "pixel_verified": false,
+          "pixel_reason": "no_pixel_expectation",
+          "validity": "structure_verified",
+          "validity_reason": null,
+          "refusal": null
+        }
+      ]
+    }
+  },
+  "failure_before": {
+    "exit": 101,
+    "returned_observations": 2,
+    "serialized_observations": 1
+  },
+  "regression_after": {
+    "exit": 0,
+    "tests": 121,
+    "failed": 0
+  }
+}

@@ -4,11 +4,10 @@
   "contracts": 62,
   "hard_prerequisites_unchanged": true,
   "canonical_dag_unchanged": true,
-  "new_relative_links_checked": 9,
-  "decision_gates": "Existing owning requirements unchanged; execution record only",
-  "line_endings_normalized_for_comparison": true,
+  "new_relative_links_checked": 10,
+  "decision_gates": "Existing owning requirements unchanged; source corrections restore existing evidence-consistency semantics.",
   "privacy_scan": {
-    "patterns": "known absolute user-home paths and credential header/key literals",
+    "patterns": "known user-home identifiers and credential header/key literals",
     "hits": []
   },
   "errors": []

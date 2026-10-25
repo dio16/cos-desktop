@@ -476,6 +476,11 @@ python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p "test_*.py"
 - `--output-policy canonical-png`: every executable leg is asked for `{stem}.{candidate}.png` (the script transport already writes `.<candidate>.wic.png`). `pixels_verified` then means "the SHA-256 of this leg's decoded 8-bit RGBA raster equals the operator's independently computed expectation, transported losslessly", which is what makes a declared raster verify every leg. It still does **not** describe the case container a candidate would have written natively, nor colour management, >8-bit or non-straight alpha.
 - A failed normalisation is a closed refusal in canonical mode: a complete non-PNG container is `error` + `output_container_not_canonical` regardless of whether the case declares `pixels:`, only `expected:WxH`, or nothing, and contributes no capability row.
 - The record carries `output_policy`, so the mode that produced a record is always identifiable. `pixel_digest` is recorded for every complete decode and `pixel_reason` explains every absent digest (`no_pixel_expectation`, `no_output`, `output_incomplete`/`output_unparsable`, `output_container_not_canonical`, or an oracle token such as `not_png`); no row carries a null digest with a null reason.
+- Record-size admission includes the capability and resource summaries as well as
+  observation rows. If those summaries make a prefix too large, collection shrinks
+  the prefix and recomputes its summaries until the returned report and serialized
+  evidence contain the same observations. The writer still refuses any inconsistent
+  or oversized report; this does not turn a missing decode into a capability.
 
 ### 4.17 Refine Gate operations on this workstation (2026-10-24)
 
