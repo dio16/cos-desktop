@@ -2,10 +2,10 @@
 
 This directory is the **publishable subset** of the locally retained records for the
 MP-R0A-S2B + MP-R0B (G4) slice. The retained originals live outside version control; the
-files here are byte-identical copies **except** for the sanitised transcript, whose only
-change is the redaction list below. Every measured record was path-free, so no measured
-field was withheld or altered and every record here is independently checkable against the
-digests it was published with.
+files here reproduce the retained originals as stated per file in the canonical
+correspondence table near the end of this document: some match the published bytes directly,
+some match only after restoring CRLF, one is the redacted transcript, and this README has
+been edited. No measured field was withheld or altered.
 
 ## Provenance
 
@@ -29,16 +29,19 @@ digests it was published with.
 
 ## Files and digests
 
-`original` is the retained (unpublished) copy; `published` is the file in this directory.
-Identical entries mean the published bytes are the recorded bytes. Only the transcript
-differs, and only in the redacted fields listed below.
+The canonical per-file correspondence table near the end of this document is the single
+authority on which published file equals which retained digest, and whether that equality
+holds directly or only after restoring CRLF. The transcript differs in the redacted fields
+listed below; this README itself was edited.
 
 The R0B result embeds evidence digests. Its `raw/capture-run.json` entry
 (`sha256:76b1ee27c8a3c3c6e922e029e60b9e11df3b7ca2171e73e64985e7b321612d27`) is the digest
-of the **withheld original** transcript; the published sanitised derivative therefore hashes
-differently (`sha256:1bf53bc5b2e95c59bf7b3c23ca7e3a7b67f582b8185e44da684bdb63c6e13781`).
-That single embedded pointer cannot be verified from this directory, by design. Every other
-embedded evidence digest resolves to a byte-identical published file and verifies.
+of the **retained original** transcript, whose bytes are not published; the published
+sanitised derivative therefore hashes differently
+(`sha256:1bf53bc5b2e95c59bf7b3c23ca7e3a7b67f582b8185e44da684bdb63c6e13781`). That single
+embedded pointer cannot be verified from this directory, by design. The other embedded
+evidence digests resolve to the published files and verify, directly or after CRLF
+restoration as the correspondence table states.
 
 ## Redactions
 
@@ -49,11 +52,13 @@ embedded evidence digest resolves to a byte-identical published file and verifie
   was replaced wholesale; no separate user-name field was published and no
   `<REDACTED-USER>` token is emitted.
 - No measured record (capture, ledger, observation, completion, R0B manifest/result,
-  consumer copies) contained a local path or user name; they are byte-identical to the
-  retained copies. No field was withheld because of redaction risk.
+  consumer copies) contained a local path or user name, and their relation to the retained
+  copies is exactly what the correspondence table records. No field was withheld because of
+  redaction risk.
 - Not present here by design: the retained-area README/SHA256SUMS (regenerated for this
   directory), anything outside the bounded record set, and the pre-sanitisation transcript.
-  The withheld original remains in the local ignored retained area; it is not published
+  The retained original remains in the local ignored retained area; its bytes are not
+  published (its digest is)
   because it contains local absolute paths and a user name.
 
 ## Replay
