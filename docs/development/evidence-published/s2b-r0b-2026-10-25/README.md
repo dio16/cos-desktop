@@ -101,3 +101,33 @@ sha256sum -c SHA256SUMS
    the corrected classification.
 
 This directory contains no credentials, no user content and no absolute local paths.
+
+
+## Canonical digest correspondence (published LF vs retained original)
+
+This replaces any earlier prose about "byte-identical" files. The table states, per
+file, the digest of the **published bytes**, the digest after **restoring CRLF**,
+and the digest of the **retained original**, with the relation spelled out.
+
+| file | published (LF) sha256 | CRLF-restored sha256 | retained original sha256 | relation |
+|---|---|---|---|---|
+| `capture-run/build-record.json` | `c1f1c4926255b8cb58520ff2cf508385de220a61b0430945f9fda619c5c512ca` | `bd23fd303a8c0a613d58be9d8693f71e5c4ed827f67aea4248e24f18eb717248` | `bd23fd303a8c0a613d58be9d8693f71e5c4ed827f67aea4248e24f18eb717248` | identical after CRLF restoration |
+| `capture-run/completion.json` | `fc0bbb9149ff7b364a7690dfaeb41d7dcf5449afe806c9c1632f0b4b61591dc5` | `81718744c19782e1e2fd91c756213a976d1af793052dd709f7b7faf698e23d82` | `fc0bbb9149ff7b364a7690dfaeb41d7dcf5449afe806c9c1632f0b4b61591dc5` | identical as published (LF) |
+| `capture-run/endpoint-availability.json` | `619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303` | `baa42bf4ec4662396849c62ba5614b4c232fc79c310f5a2aa31bfd74e5d9c344` | `619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303` | identical as published (LF) |
+| `capture-run/ledger.json` | `8f4ed492e5da5f5b75eb4ae8decbdb3598c6199c13a4c2d7ac27db93085a0af0` | `dfe3cb1af58a6a1a0d7127386d76a8a51168cca955b4521f7811cccd515388d5` | `8f4ed492e5da5f5b75eb4ae8decbdb3598c6199c13a4c2d7ac27db93085a0af0` | identical as published (LF) |
+| `capture-run/result.json` | `11e518bceeff8ef63ed40a71abc8ab43aa2489a78ba7aa5d54d55a59da855446` | `1b1cad73104e5ab409b04dfde8a0d2a3b2a69895a50692327e93cc94266919ee` | `11e518bceeff8ef63ed40a71abc8ab43aa2489a78ba7aa5d54d55a59da855446` | identical as published (LF) |
+| `capture-run/s2b-capture.json` | `2d8e3a6be3adf4eca5a6ba8d4b05e555b3cff2ea04a0bf18e6875a595542e472` | `2f35720182f5a545c45470441164d26e54a38efd0f58663ec42884805c77a851` | `2d8e3a6be3adf4eca5a6ba8d4b05e555b3cff2ea04a0bf18e6875a595542e472` | identical as published (LF) |
+| `capture-run/s2b-observation.json` | `6051c6679b5f6563568bdbb042e335030b85420ff76de82f683d0861ce800737` | `a4004f71f04c5ac9e4bd9190e58aa3f6cb79971e1099de55e7cb4153ae1fa1de` | `6051c6679b5f6563568bdbb042e335030b85420ff76de82f683d0861ce800737` | identical as published (LF) |
+| `capture-run/source-identity.json` | `eeeb7ccdf4f9c9458274e8fd9a3a363ba0326538a4879521ee2963fdb43cb202` | `9527741c824981d887d1977d296651bd345b5f761a2149b5dcc2faa5bccfdad4` | `eeeb7ccdf4f9c9458274e8fd9a3a363ba0326538a4879521ee2963fdb43cb202` | identical as published (LF) |
+| `r0b/r0b-g4-manifest.json` | `bf636d2676a28d50a374aeaeb310db092fdad509cf48a9eb1f38b681bf478e84` | `eb51b2efe19ca78467eab5b59388092a5641700cda591f7ed9fe7803e10d14cc` | `eb51b2efe19ca78467eab5b59388092a5641700cda591f7ed9fe7803e10d14cc` | identical after CRLF restoration |
+| `r0b/r0b-g4-result.json` | `2a2aa35e376a875e345c542ae27d6645b20ba989e900f7a57c2d637dd44c3b40` | `544655cf1be2369d1928dc269e4475c51b13a77ac0ab3af22ff0654d86bb9795` | `544655cf1be2369d1928dc269e4475c51b13a77ac0ab3af22ff0654d86bb9795` | identical after CRLF restoration |
+
+**Summary:** 7 files are identical **as published** (they were already LF), 3 files
+(`build-record.json`, the R0B manifest and the R0B result) are identical **after
+CRLF restoration** (they were stored with CRLF), `raw/capture-run.json` is the
+redacted transcript whose original digest is `76b1ee27…` (not published), and
+`README.md` itself changed because this documentation was appended to it. The six
+`consumer/` files are identical as published. `SHA256SUMS` is derived from the
+published bytes only, so `sha256sum -c SHA256SUMS` verifies the published set
+against itself; the three CRLF-restored matches above are checked separately and
+are the reason the capture, manifest and result can be tied to the recorded values.
