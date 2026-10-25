@@ -1,6 +1,7 @@
 //! Window-local interactions and display text. Read-only Runtime projections
 //! arrive as complete publications from app-core; this crate never calls the client.
 
+pub mod inspector;
 mod simple_casefold;
 pub mod task_rail;
 pub mod presentation {
@@ -792,6 +793,7 @@ impl DerivationCache {
                 Some(identity) => snapshot.tasks.get(identity),
                 None => snapshot.tasks.values().next(),
             };
+            text.inspector = inspector::Index::derive(snapshot, task);
             if let Some(task) = task {
                 let matches_cached = self.task.as_ref().is_some_and(|cached| {
                     cached.display.identity == task.task_ref
@@ -1337,6 +1339,8 @@ pub struct WorkbenchText {
     pub evaluation: Arc<[Arc<EvaluationDisplay>]>,
     pub outcomes: Arc<[Arc<OutcomeDisplay>]>,
     pub graph: Arc<[Arc<GraphDisplay>]>,
+    /// Identity-bound inspector projection for the viewed candidate (DC-MP-INS1).
+    pub inspector: inspector::Index,
     pub diagnostics: String,
     pub task: Option<TaskId>,
     /// Authoritative projection epoch, when a snapshot is admitted.
@@ -1861,9 +1865,10 @@ mod tests {
     };
     use desktop_protocol::{
         ArtifactDigest, ArtifactId, AuthorityLabel, CandidateId, CandidateRef, CandidateSnapshot,
-        CapabilitiesId, Counter, EvaluationDecision, EvaluationId, EvaluationSnapshot,
-        FormalStatus, GraphId, GraphNode, GraphRef, GraphSnapshot, IterationId, IterationSnapshot,
-        OutcomeId, OutcomeSnapshot, PhaseLabel, RunId, TaskId, TaskSnapshot, TaskStatus,
+        CapabilitiesId, Counter, EntityId, EntityKind, EntityRef, EvaluationDecision, EvaluationId,
+        EvaluationSnapshot, EvidenceRef, EvidenceStatus, FormalStatus, GraphId, GraphNode,
+        GraphRef, GraphSnapshot, IterationId, IterationSnapshot, NamedScore, OutcomeId,
+        OutcomeSnapshot, PhaseLabel, RunId, TaskId, TaskSnapshot, TaskStatus,
     };
 
     fn candidate_ref(local: &str) -> CandidateRef {
@@ -2249,6 +2254,428 @@ mod tests {
         );
         let _ = NodeId::fixture("unused");
         assert_eq!(formal_candidate_refs(&snapshot), vec![a]);
+    }
+
+    fn inspector_candidate(
+        local: &str,
+        label: &str,
+        iteration: u32,
+        evaluations: &[EvaluationId],
+    ) -> CandidateSnapshot {
+        let mut candidate = dock_candidate(local, label, iteration);
+        candidate.evaluation_refs = evaluations.to_vec();
+        candidate
+    }
+
+    fn inspector_evaluation(
+        local: &str,
+        candidate: &CandidateRef,
+        decision: EvaluationDecision,
+        value: Option<f64>,
+        confidence: Option<f64>,
+        evidence: Vec<EvidenceRef>,
+        revision: u128,
+    ) -> EvaluationSnapshot {
+        EvaluationSnapshot {
+            evaluation_ref: EvaluationId::fixture(local),
+            candidate_ref: candidate.clone(),
+            artifact_refs: vec![candidate.artifact_ref.clone()],
+            decision,
+            axes: vec![NamedScore {
+                name: "visual_quality".to_owned(),
+                unit: Some("score_0_100".to_owned()),
+                value,
+            }],
+            evidence_refs: evidence,
+            authority: AuthorityLabel::new("HARNESS").expect("valid authority"),
+            confidence,
+            projection_revision: Counter::from_u128(revision),
+        }
+    }
+
+    fn evidence(local: &str, status: EvidenceStatus, summary: Option<&str>) -> EvidenceRef {
+        EvidenceRef {
+            record_ref: EntityRef {
+                kind: EntityKind::Evidence,
+                id: EntityId::fixture(local),
+            },
+            status,
+            summary: summary.map(str::to_owned),
+            detail: None,
+        }
+    }
+
+    fn inspector_snapshot(
+        candidates: Vec<CandidateSnapshot>,
+        iterations: Vec<IterationSnapshot>,
+        evaluations: Vec<EvaluationSnapshot>,
+        outcomes: Vec<OutcomeSnapshot>,
+        formal_outcome_ref: Option<OutcomeId>,
+    ) -> SnapshotHandle {
+        let mut snapshot: SnapshotHandle = Arc::default();
+        let state = Arc::get_mut(&mut snapshot).expect("snapshot has one owner");
+        state.epoch = Some(desktop_protocol::EpochId::fixture("epoch/1"));
+        for candidate in candidates {
+            state
+                .candidates
+                .insert(candidate.candidate_ref.clone(), candidate);
+        }
+        for iteration in iterations {
+            state
+                .iterations
+                .insert(iteration.iteration_ref.clone(), iteration);
+        }
+        for evaluation in evaluations {
+            state
+                .evaluations
+                .insert(evaluation.evaluation_ref.clone(), evaluation);
+        }
+        for outcome in outcomes {
+            state.outcomes.insert(outcome.outcome_ref.clone(), outcome);
+        }
+        let task_ref = TaskId::fixture("task/Task-184");
+        state.tasks.insert(
+            task_ref.clone(),
+            TaskSnapshot {
+                task_ref: task_ref.clone(),
+                display_id: "Task-184".to_owned(),
+                title: "Inspector task".to_owned(),
+                task_status: TaskStatus::Active,
+                inner_phase: PhaseLabel::new("REFINE").expect("valid phase"),
+                iteration_ref: Some(IterationId::fixture("iteration/Task-184/1")),
+                iteration_index: Some(1),
+                best_candidate_ref: None,
+                formal_outcome_ref,
+                accepted_brief_ref: None,
+                capabilities_ref: CapabilitiesId::fixture("capabilities/task"),
+                projection_revision: Counter::from_u128(1),
+            },
+        );
+        snapshot
+    }
+
+    fn field_value(section: &super::inspector::SectionView, label: &str) -> Option<String> {
+        section
+            .entries
+            .iter()
+            .flat_map(|entry| entry.fields.iter())
+            .find(|field| field.label.as_ref() == label)
+            .map(|field| field.value.to_string())
+    }
+
+    #[test]
+    fn the_inspector_binds_the_viewed_candidate_by_complete_identity() {
+        let a = inspector_candidate("a", "A", 1, &[EvaluationId::fixture("evaluation/a")]);
+        let z = inspector_candidate("z", "Z", 1, &[EvaluationId::fixture("evaluation/z")]);
+        let evaluate_a = inspector_evaluation(
+            "evaluation/a",
+            &a.candidate_ref,
+            EvaluationDecision::Fail,
+            Some(12.0),
+            Some(0.2),
+            vec![],
+            1,
+        );
+        let evaluate_z = inspector_evaluation(
+            "evaluation/z",
+            &z.candidate_ref,
+            EvaluationDecision::Pass,
+            Some(88.0),
+            Some(0.81),
+            vec![],
+            1,
+        );
+        let mut cache = DerivationCache::default();
+        // Both candidates share one iteration group; the viewed candidate is second.
+        let first = derive(
+            &mut cache,
+            &publication(
+                inspector_snapshot(
+                    vec![a.clone(), z.clone()],
+                    vec![dock_iteration(
+                        1,
+                        vec![a.candidate_ref.clone(), z.candidate_ref.clone()],
+                    )],
+                    vec![evaluate_a.clone(), evaluate_z.clone()],
+                    vec![],
+                    None,
+                ),
+                1,
+                1,
+                1,
+            ),
+        );
+        assert_eq!(
+            first.candidate_groups[0].rows[0].identity, a.candidate_ref,
+            "the first projection places the viewed candidate second"
+        );
+        let view_z = first.inspector.view(Some(&z.candidate_ref));
+        assert_eq!(
+            field_value(&view_z.sections[1], "Decision"),
+            Some("PASS".into())
+        );
+        assert_eq!(
+            field_value(&view_z.sections[1], "visual_quality"),
+            Some("88 score_0_100".into())
+        );
+
+        // The projection reorders: the viewed candidate moves to the first group and
+        // the other candidate moves to a later iteration. The binding must not migrate.
+        let mut moved_a = dock_iteration(2, vec![a.candidate_ref.clone()]);
+        moved_a.iteration_ref = IterationId::fixture("iteration/Task-184/2");
+        let mut moved_a_candidate = a.clone();
+        moved_a_candidate.iteration_ref = moved_a.iteration_ref.clone();
+        let second = derive(
+            &mut cache,
+            &publication(
+                inspector_snapshot(
+                    vec![moved_a_candidate, z.clone()],
+                    vec![dock_iteration(1, vec![z.candidate_ref.clone()]), moved_a],
+                    vec![evaluate_a, evaluate_z],
+                    vec![],
+                    None,
+                ),
+                1,
+                2,
+                2,
+            ),
+        );
+        assert_eq!(
+            second.candidate_groups[0].rows[0].identity, z.candidate_ref,
+            "the dock order really changed"
+        );
+        let reordered = second.inspector.view(Some(&z.candidate_ref));
+        assert_eq!(
+            field_value(&reordered.sections[1], "Decision"),
+            Some("PASS".into()),
+            "the inspector must still show the viewed candidate's evaluation"
+        );
+        assert_eq!(
+            field_value(&reordered.sections[1], "visual_quality"),
+            Some("88 score_0_100".into())
+        );
+    }
+
+    #[test]
+    fn a_missing_score_and_confidence_are_never_rendered_as_zero_or_fail() {
+        let candidate = inspector_candidate("c", "C", 1, &[EvaluationId::fixture("evaluation/c")]);
+        let evaluate = inspector_evaluation(
+            "evaluation/c",
+            &candidate.candidate_ref,
+            EvaluationDecision::Abstain,
+            None,
+            None,
+            vec![],
+            1,
+        );
+        let mut cache = DerivationCache::default();
+        let text = derive(
+            &mut cache,
+            &publication(
+                inspector_snapshot(
+                    vec![candidate.clone()],
+                    vec![dock_iteration(1, vec![candidate.candidate_ref.clone()])],
+                    vec![evaluate],
+                    vec![],
+                    None,
+                ),
+                1,
+                1,
+                1,
+            ),
+        );
+        let view = text.inspector.view(Some(&candidate.candidate_ref));
+        let evaluation = &view.sections[1];
+        assert_eq!(field_value(evaluation, "Decision"), Some("ABSTAIN".into()));
+        assert_eq!(
+            field_value(evaluation, "visual_quality"),
+            Some("not reported (unit score_0_100)".into())
+        );
+        assert_eq!(
+            field_value(evaluation, "Confidence"),
+            Some("not reported".into())
+        );
+        assert!(
+            evaluation
+                .entries
+                .iter()
+                .flat_map(|entry| entry.fields.iter())
+                .all(|field| field.value.as_ref() != "0" && field.value.as_ref() != "FAIL"),
+            "an absent value is never zero or FAIL"
+        );
+    }
+
+    #[test]
+    fn an_absent_outcome_is_an_explicit_absent_state_not_a_failure() {
+        let candidate = inspector_candidate("a", "A", 1, &[]);
+        let mut cache = DerivationCache::default();
+        let text = derive(
+            &mut cache,
+            &publication(
+                inspector_snapshot(
+                    vec![candidate.clone()],
+                    vec![dock_iteration(1, vec![candidate.candidate_ref.clone()])],
+                    vec![],
+                    vec![],
+                    None,
+                ),
+                1,
+                1,
+                1,
+            ),
+        );
+        let view = text.inspector.view(Some(&candidate.candidate_ref));
+        let outcome = &view.sections[4];
+        assert!(!outcome.available);
+        assert_eq!(
+            outcome.absent_reason.as_deref(),
+            Some("No formal outcome is projected for this task.")
+        );
+        assert!(outcome.entries.is_empty());
+        assert!(
+            !outcome.summary.contains("FAILED"),
+            "an absent outcome is not failure"
+        );
+    }
+
+    #[test]
+    fn a_missing_evidence_summary_is_explicit_and_no_body_is_read() {
+        let candidate = inspector_candidate("c", "C", 1, &[EvaluationId::fixture("evaluation/c")]);
+        let evaluate = inspector_evaluation(
+            "evaluation/c",
+            &candidate.candidate_ref,
+            EvaluationDecision::Abstain,
+            None,
+            None,
+            vec![evidence("evidence/c", EvidenceStatus::Missing, None)],
+            1,
+        );
+        let mut cache = DerivationCache::default();
+        let text = derive(
+            &mut cache,
+            &publication(
+                inspector_snapshot(
+                    vec![candidate.clone()],
+                    vec![dock_iteration(1, vec![candidate.candidate_ref.clone()])],
+                    vec![evaluate],
+                    vec![],
+                    None,
+                ),
+                1,
+                1,
+                1,
+            ),
+        );
+        let view = text.inspector.view(Some(&candidate.candidate_ref));
+        let evidence = &view.sections[2];
+        assert!(evidence.available);
+        assert_eq!(
+            field_value(evidence, "Summary"),
+            Some("not projected".into())
+        );
+        assert_eq!(
+            field_value(evidence, "Availability"),
+            Some("MISSING".into())
+        );
+    }
+
+    #[test]
+    fn a_refinement_reason_is_explicitly_absent_when_only_references_are_projected() {
+        let candidate = inspector_candidate("a", "A", 1, &[]);
+        let mut iteration = dock_iteration(1, vec![candidate.candidate_ref.clone()]);
+        iteration.refinement_refs = vec![desktop_protocol::RefinementId::fixture("refinement/1")];
+        let mut cache = DerivationCache::default();
+        let text = derive(
+            &mut cache,
+            &publication(
+                inspector_snapshot(
+                    vec![candidate.clone()],
+                    vec![iteration],
+                    vec![],
+                    vec![],
+                    None,
+                ),
+                1,
+                1,
+                1,
+            ),
+        );
+        let view = text.inspector.view(Some(&candidate.candidate_ref));
+        let refinement = &view.sections[3];
+        assert!(refinement.available);
+        assert_eq!(
+            field_value(refinement, "Refinement records"),
+            Some("1 projected".into())
+        );
+        assert!(
+            field_value(refinement, "Reason")
+                .unwrap_or_default()
+                .contains("Not projected"),
+            "a reason absent from the projection is stated as absent"
+        );
+    }
+
+    #[test]
+    fn inspector_section_revisions_follow_the_projection_revision() {
+        let candidate = inspector_candidate("a", "A", 1, &[EvaluationId::fixture("evaluation/a")]);
+        let mut cache = DerivationCache::default();
+        let first = derive(
+            &mut cache,
+            &publication(
+                inspector_snapshot(
+                    vec![candidate.clone()],
+                    vec![dock_iteration(1, vec![candidate.candidate_ref.clone()])],
+                    vec![inspector_evaluation(
+                        "evaluation/a",
+                        &candidate.candidate_ref,
+                        EvaluationDecision::Pass,
+                        Some(50.0),
+                        Some(0.5),
+                        vec![],
+                        1,
+                    )],
+                    vec![],
+                    None,
+                ),
+                1,
+                1,
+                1,
+            ),
+        );
+        let before = first
+            .inspector
+            .view(Some(&candidate.candidate_ref))
+            .sections[1]
+            .revision
+            .clone();
+        let second = derive(
+            &mut cache,
+            &publication(
+                inspector_snapshot(
+                    vec![candidate.clone()],
+                    vec![dock_iteration(1, vec![candidate.candidate_ref.clone()])],
+                    vec![inspector_evaluation(
+                        "evaluation/a",
+                        &candidate.candidate_ref,
+                        EvaluationDecision::Pass,
+                        Some(50.0),
+                        Some(0.5),
+                        vec![],
+                        2,
+                    )],
+                    vec![],
+                    None,
+                ),
+                1,
+                2,
+                2,
+            ),
+        );
+        let after = &second
+            .inspector
+            .view(Some(&candidate.candidate_ref))
+            .sections[1];
+        assert_ne!(before, after.revision);
     }
 
     #[test]

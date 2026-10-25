@@ -22,6 +22,7 @@ mod accessibility;
 pub mod budget;
 mod dock;
 mod flow;
+mod inspector;
 #[cfg(feature = "r0-s2b-instrumentation")]
 pub mod r0_probe;
 mod shell_style;
@@ -43,6 +44,7 @@ actions!(
         FocusPrevious,
         Activate,
         Diagnostics,
+        InspectorToggle,
         RailUp,
         RailDown,
         RailEnter,
@@ -82,6 +84,8 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("enter", Activate, Some("!TaskRailInput && !TaskRailList && !FlowSearchInput && !FlowNodeList && !FlowEdgeList")),
         KeyBinding::new("space", Activate, Some("!TaskRailInput && !TaskRailList && !FlowSearchInput && !FlowNodeList && !FlowEdgeList")),
         KeyBinding::new("ctrl-d", Diagnostics, None),
+        KeyBinding::new("enter", InspectorToggle, Some("InspectorSection")),
+        KeyBinding::new("space", InspectorToggle, Some("InspectorSection")),
         KeyBinding::new("up", RailUp, Some("TaskRailList")),
         KeyBinding::new("down", RailDown, Some("TaskRailList")),
         KeyBinding::new("enter", RailEnter, Some("TaskRailList")),
@@ -217,6 +221,10 @@ pub struct Shell {
     restore_notice: Option<String>,
     /// A closed, user-facing reason for a refused surface action (ADR-0010 D-2).
     surface_notice: Option<String>,
+    /// Inspector disclosure scoped to the viewed identity and section revision.
+    inspector_disclosure: ui_model::inspector::Disclosure,
+    /// One focus handle per inspector section, in `Section::ALL` order.
+    inspector_focus: Vec<FocusHandle>,
     /// The last rendered immutable candidate family; reused without cloning identities.
     rendered_candidates: Arc<[Arc<ui_model::CandidateDisplay>]>,
     rail_state: TaskRailState,
@@ -267,6 +275,13 @@ impl Shell {
         focus.focus(window, cx);
         let surface_focus =
             std::array::from_fn(|i| cx.focus_handle().tab_index(i as isize).tab_stop(true));
+        let inspector_focus = (0..ui_model::inspector::Section::ALL.len())
+            .map(|index| {
+                cx.focus_handle()
+                    .tab_index(3 + index as isize)
+                    .tab_stop(true)
+            })
+            .collect::<Vec<_>>();
         let stop_focus = cx.focus_handle().tab_stop(true);
 
         let reconcile_focus = cx.focus_handle().tab_stop(true);
@@ -345,6 +360,8 @@ impl Shell {
             restore_presentation_done: false,
             restore_notice: None,
             surface_notice: None,
+            inspector_disclosure: ui_model::inspector::Disclosure::default(),
+            inspector_focus,
             rail_state: TaskRailState::default(),
             rail_list,
             rail_focus,
@@ -1959,8 +1976,6 @@ impl Render for Shell {
             "An explicit receipt check is already in progress.".into()
         };
         let title = SharedString::from(text.title.clone());
-        let evaluation = text.evaluation.clone();
-        let outcomes = text.outcomes.clone();
         let graph = text.graph.clone();
         let mut flow_rows = None;
         if surface == Surface::Flow {
@@ -2040,6 +2055,7 @@ impl Render for Shell {
             .as_ref()
             .and_then(|w| w.presentation.viewed())
             .map(|v| v.0.clone());
+        let inspector_view = text.inspector.view(viewed.as_ref());
         let compare_pair = self
             .workbench
             .as_ref()
@@ -3057,6 +3073,14 @@ impl Render for Shell {
         let rail_count = rail_search
             .as_ref()
             .map_or(0, |search| search.indices.len());
+        let inspector_panel = self.inspector_panel(
+            inspector_view,
+            viewed_label.clone(),
+            viewed_row.is_some(),
+            authorized_text,
+            window,
+            cx,
+        );
         let query_text = self.rail_state.query();
         let query_display =
             if self.rail_input_focus.is_focused(window) && self.rail_input_selection.is_empty() {
@@ -3498,27 +3522,7 @@ impl Render for Shell {
                                         .child(SharedString::from(notice)),
                                 )
                             })
-                            .child("Evaluation / Evidence / Refinement")
-                            .children(evaluation.iter().flat_map(|record| {
-                                record
-                                    .lines
-                                    .iter()
-                                    .cloned()
-                                    .map(|line| div().child(SharedString::from(line)))
-                            }))
-                            .children(
-                                outcomes.iter().map(|record| {
-                                    div().child(SharedString::from(record.text.clone()))
-                                }),
-                            )
-                            .children(outcomes.is_empty().then(|| {
-                                div()
-                                    .id("formal-outcome-status")
-                                    .role(Role::Label)
-                                    .aria_label("Formal Outcome: not provided by this observation")
-                                    .aria_value("Formal Outcome: not provided by this observation")
-                                    .child("Formal Outcome: not provided by this observation")
-                            }))
+                            .child(inspector_panel)
                             .child(if diagnostics_open {
                                 diagnostic_text
                             } else {
