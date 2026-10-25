@@ -8,9 +8,14 @@
 //! Same-kind conditions are grouped for display (ADR-0011 §2): one visible row per kind
 //! carries the group's count and its highest-priority member, and expanding it lists every
 //! individual condition. The model never flattens distinct typed identities.
+//!
+//! Every bit of shell-local strip state is task-scoped: a switch invalidates it at the switch
+//! boundary and again at render, and rows derived for another task are never shown, actioned or
+//! focused — including while the new task's derivation is still in flight (ADR-0011 §3).
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use desktop_protocol::TaskId;
 use gpui::{AnyElement, Context, IntoElement, Role, SharedString, Window, div, prelude::*, rgb};
 use ui_model::intervention::{Action, Reference, Row, RowIdentity, Strip};
 
@@ -21,18 +26,35 @@ use app_core::navigation::Surface;
 use crate::{InterventionActivate, InterventionDismiss, Shell};
 
 /// Shell-local strip state: expansion, the row whose read-only details are open, and the row
-/// that opened them.
+/// that opened them, all scoped to the task they belong to.
 ///
 /// Identity-only so it can be reconciled against the active row set without any view data
-/// (ADR-0011 §3: a resolved condition must never persist).
+/// (ADR-0011 §3: a resolved condition must never persist, and a task switch must never carry the
+/// previous task's state across).
 #[derive(Default)]
 pub(super) struct StripSelection {
+    scope: Option<TaskId>,
     expanded: bool,
     detail: Option<RowIdentity>,
     detail_origin: Option<RowIdentity>,
 }
 
 impl StripSelection {
+    /// Drop every selection state when the task scope changes, and remember the new scope.
+    ///
+    /// Returns whether the scope changed. Expansion, open details and the dismissal origin belong
+    /// to the task they were opened in, so switching back never resurrects them.
+    pub(super) fn switch_task_scope(&mut self, scope: Option<TaskId>) -> bool {
+        if self.scope == scope {
+            return false;
+        }
+        self.scope = scope;
+        self.expanded = false;
+        self.detail = None;
+        self.detail_origin = None;
+        true
+    }
+
     /// Whether the grouped conditions are listed in full.
     pub(super) fn expanded(&self) -> bool {
         self.expanded
@@ -98,6 +120,33 @@ pub(super) fn prune_strip_focus<T>(
     let before = focus.len();
     focus.retain(|identity, _| active.contains(identity));
     focus.len() != before
+}
+
+/// Whether a strip derived for `text_task` describes the task currently selected.
+///
+/// The window between a task switch and the new derivation still holds the previous task's derived
+/// text, so those rows are out of scope. A derivation with no task (blocked observation, or no task
+/// at all) is never task-scoped, and with no selection the fallback derivation is what the window
+/// actually shows, so it stays in scope.
+pub(super) fn strip_scope_matches(text_task: Option<&TaskId>, scope: Option<&TaskId>) -> bool {
+    match (text_task, scope) {
+        (Some(text_task), Some(scope)) => text_task == scope,
+        _ => true,
+    }
+}
+
+/// The strip the shell may render: the derived strip only while it belongs to the selected task,
+/// otherwise nothing (the in-flight window after a task switch).
+pub(super) fn scoped_strip(
+    strip: Strip,
+    text_task: Option<&TaskId>,
+    scope: Option<&TaskId>,
+) -> Strip {
+    if strip_scope_matches(text_task, scope) {
+        strip
+    } else {
+        Strip::default()
+    }
 }
 
 /// One row the strip renders, and how many conditions that row stands for: the group size for a
@@ -339,6 +388,12 @@ impl Shell {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        let scope = self.rail_state.selected().cloned();
+        if !strip_scope_matches(self.cache.text().task.as_ref(), scope.as_ref()) {
+            // Rows derived for another task are not operable, even if a stale identity reaches
+            // this path during the in-flight window after a switch.
+            return;
+        }
         let row = self
             .cache
             .text()
@@ -441,20 +496,37 @@ impl Shell {
         }
     }
 
-    /// Reconcile shell-local strip state with the currently active row set.
+    /// Invalidate identity-keyed strip state when the task scope changes, and record the new scope.
     ///
-    /// Authorization block, task switch and a resolved condition each change the set, so handles,
-    /// open details and the dismissal origin for identities it no longer holds are dropped; a
-    /// reappearing identity therefore starts clean (ADR-0011 §3).
+    /// Called at every switch boundary (`select_rail_task`, `restore_pending_task`) and again from
+    /// render, so the switch itself and any render in the in-flight window both drop the previous
+    /// task's rows, details, focus handles and dismissal origin.
+    pub(super) fn invalidate_strip_for_task_scope(&mut self, scope: Option<TaskId>) {
+        if self.strip_selection.switch_task_scope(scope) {
+            self.strip_focus.clear();
+        }
+    }
+
+    /// Reconcile shell-local strip state with the task scope and the rows about to be rendered.
+    ///
+    /// A task switch invalidates the identity-keyed selection immediately, and while the new task's
+    /// derivation is still in flight the cached text belongs to the previous task: its rows are out
+    /// of scope, so the active set is empty and nothing from them survives. A resolved condition or
+    /// a reappearing identity behave as before (ADR-0011 §3).
     pub(super) fn reconcile_strip_state(&mut self) {
-        let active: BTreeSet<RowIdentity> = self
-            .cache
-            .text()
-            .interventions
-            .rows()
-            .iter()
-            .map(|row| row.identity.clone())
-            .collect();
+        let scope = self.rail_state.selected().cloned();
+        self.invalidate_strip_for_task_scope(scope.clone());
+        let text = self.cache.text();
+        let active: BTreeSet<RowIdentity> =
+            if strip_scope_matches(text.task.as_ref(), scope.as_ref()) {
+                text.interventions
+                    .rows()
+                    .iter()
+                    .map(|row| row.identity.clone())
+                    .collect()
+            } else {
+                BTreeSet::new()
+            };
         self.strip_selection.reconcile(&active);
         prune_strip_focus(&mut self.strip_focus, &active);
     }
@@ -469,7 +541,9 @@ mod tests {
         Action, ConnectionKind, Kind, Provenance, Reference, Row, RowIdentity, Strip, StripGroup,
     };
 
-    use super::{StripSelection, prune_strip_focus, revealed_rows};
+    use super::{
+        StripSelection, prune_strip_focus, revealed_rows, scoped_strip, strip_scope_matches,
+    };
 
     fn stop_row(command: &str) -> Row {
         Row {
@@ -732,5 +806,143 @@ mod tests {
         // Expanded: the same row is displayed and is the focus target.
         let expanded = BTreeSet::from([head, grouped_away.clone()]);
         assert_eq!(Some(grouped_away), selection.close_details(&expanded));
+    }
+
+    fn scoped_a_strip() -> (TaskId, TaskId, Strip) {
+        let task_a = TaskId::fixture("task/a");
+        let task_b = TaskId::fixture("task/b");
+        let row = connection_row(ConnectionKind::Stale);
+        let strip = strip(vec![group(Kind::Connection, vec![row])]);
+        (task_a, task_b, strip)
+    }
+
+    #[test]
+    fn a_task_switch_immediately_invalidates_the_previous_tasks_strip() {
+        let (task_a, task_b, previous_strip) = scoped_a_strip();
+        let row = previous_strip.rows[0].identity.clone();
+        let mut selection = StripSelection::default();
+        assert!(selection.switch_task_scope(Some(task_a.clone())));
+        selection.toggle_expanded();
+        selection.open_details(row.clone());
+        let mut focus = BTreeMap::from([(row.clone(), 1usize)]);
+
+        // The switch boundary drops the previous task's state without waiting for a render.
+        assert!(selection.switch_task_scope(Some(task_b.clone())));
+        assert!(
+            prune_strip_focus(&mut focus, &BTreeSet::new()),
+            "no focus handle may survive the switch"
+        );
+        assert!(
+            !selection.expanded(),
+            "expansion belongs to the previous task"
+        );
+        assert_eq!(
+            None,
+            selection.detail(),
+            "details belong to the previous task"
+        );
+        assert!(focus.is_empty());
+        // And the previous task's derived rows are out of scope for the new selection.
+        assert!(scoped_strip(previous_strip, Some(&task_a), Some(&task_b)).is_empty());
+    }
+
+    #[test]
+    fn an_in_flight_derivation_shows_no_previous_task_rows_or_state() {
+        let (task_a, task_b, previous_strip) = scoped_a_strip();
+        let stale_row = previous_strip.rows[0].identity.clone();
+        let mut selection = StripSelection::default();
+        assert!(selection.switch_task_scope(Some(task_a.clone())));
+        selection.open_details(stale_row.clone());
+        let mut focus = BTreeMap::from([(stale_row.clone(), 1usize)]);
+
+        // Switch to B; B's derivation has not completed, so the cached text is still A's.
+        selection.switch_task_scope(Some(task_b.clone()));
+        assert!(
+            !strip_scope_matches(Some(&task_a), Some(&task_b)),
+            "the previous task's text is not in scope"
+        );
+        let rendered = scoped_strip(previous_strip, Some(&task_a), Some(&task_b));
+        assert!(
+            rendered.is_empty(),
+            "no previous-task row may be rendered while B derives"
+        );
+        assert_eq!(rendered.groups.len(), 0);
+        // Reconciliation against the empty active set leaves no handle, details or origin.
+        let active = BTreeSet::new();
+        selection.reconcile(&active);
+        prune_strip_focus(&mut focus, &active);
+        assert!(focus.is_empty(), "no stale focus handle");
+        assert_eq!(None, selection.detail(), "no stale details");
+        assert_eq!(None, selection.close_details(&active), "no stale origin");
+    }
+
+    #[test]
+    fn a_completed_derivation_shows_only_the_new_tasks_rows() {
+        let (task_a, task_b, _) = scoped_a_strip();
+        let rows_b = vec![stop_row("command/b1"), stop_row("command/b2")];
+        let strip_b = strip(vec![group(Kind::Stop, rows_b.clone())]);
+        assert!(strip_scope_matches(Some(&task_b), Some(&task_b)));
+
+        let rendered = scoped_strip(strip_b, Some(&task_b), Some(&task_b));
+        assert_eq!(
+            rendered
+                .rows
+                .iter()
+                .map(|row| row.identity.clone())
+                .collect::<Vec<_>>(),
+            rows_b
+                .iter()
+                .map(|row| row.identity.clone())
+                .collect::<Vec<_>>(),
+            "only the selected task's rows render"
+        );
+        assert!(
+            !strip_scope_matches(Some(&task_a), Some(&task_b)),
+            "the previous task's text stays out of scope"
+        );
+    }
+
+    #[test]
+    fn switching_back_does_not_resurrect_earlier_strip_state() {
+        let (task_a, task_b, strip_a) = scoped_a_strip();
+        let row = strip_a.rows[0].identity.clone();
+        let mut selection = StripSelection::default();
+        assert!(selection.switch_task_scope(Some(task_a.clone())));
+        selection.toggle_expanded();
+        selection.open_details(row.clone());
+        let mut focus = BTreeMap::from([(row.clone(), 1usize)]);
+
+        assert!(selection.switch_task_scope(Some(task_b.clone())));
+        prune_strip_focus(&mut focus, &BTreeSet::new());
+        // Back to A: its rows may render again, but only as freshly derived state.
+        assert!(selection.switch_task_scope(Some(task_a.clone())));
+        assert!(
+            !selection.expanded(),
+            "expanded state must not be resurrected"
+        );
+        assert_eq!(None, selection.detail(), "details must not reopen");
+        assert_eq!(
+            None,
+            selection.close_details(&BTreeSet::from([row.clone()])),
+            "no earlier dismissal origin is resurrected"
+        );
+        assert!(focus.is_empty(), "no earlier focus handle is resurrected");
+    }
+
+    #[test]
+    fn the_shell_applies_the_scope_gate_at_the_switch_and_at_render() {
+        let shell = include_str!("lib.rs");
+        assert!(
+            shell.contains("self.invalidate_strip_for_task_scope(Some(task.clone()));"),
+            "the switch boundary must invalidate the previous task's strip state"
+        );
+        assert!(
+            shell.contains("self.reconcile_strip_state();"),
+            "render must reconcile the strip state"
+        );
+        assert!(
+            shell.contains("intervention::scoped_strip("),
+            "render must gate the strip on the selected task scope"
+        );
     }
 }

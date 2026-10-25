@@ -1054,7 +1054,11 @@ impl Shell {
             return;
         }
         self.pending_restore_task = None;
-        if !self.rail_state.select(&task, live) {
+        if self.rail_state.select(&task, live) {
+            // The strip belongs to the task it was derived in, so a restored selection is a scope
+            // change like any other switch.
+            self.invalidate_strip_for_task_scope(Some(task.clone()));
+        } else {
             self.restore_notice = Some(
                 "Remembered Task is unavailable in the current authorized observation.".to_owned(),
             );
@@ -1108,6 +1112,10 @@ impl Shell {
             return;
         };
         if self.rail_state.select(task, live) {
+            // Invalidate the previous task's strip state at the switch boundary itself, before the
+            // new derivation completes: its rows, details, focus handles and dismissal origin must
+            // not remain shown, actionable or focusable (ADR-0011 §3).
+            self.invalidate_strip_for_task_scope(Some(task.clone()));
             let switched = self
                 .workbench
                 .as_mut()
@@ -1812,10 +1820,11 @@ impl Render for Shell {
         if authorized_text {
             self.synchronize_stop_context();
         }
-        // Reconcile shell-local strip state with the rows that are about to be rendered: a
-        // resolved condition must never persist, and a reappearing identity starts clean
-        // (ADR-0011 §3).
+        // Reconcile shell-local strip state with the task scope and the rows that are about to be
+        // rendered: a task switch invalidates the previous task's state at once, a resolved
+        // condition must never persist, and a reappearing identity starts clean (ADR-0011 §3).
         self.reconcile_strip_state();
+        let strip_scope = self.rail_state.selected().cloned();
         let text = self.cache.text();
         // One resolved token set feeds every layout and text input below; a
         // surface reads these adapters instead of a constant, and nothing here
@@ -2080,7 +2089,13 @@ impl Render for Shell {
             .and_then(|w| w.presentation.viewed())
             .map(|v| v.0.clone());
         let inspector_view = text.inspector.view(viewed.as_ref());
-        let intervention_strip = text.interventions.strip();
+        // Rows derived for another task are never shown, actionable or focusable: the in-flight
+        // window after a switch still holds the previous task's text.
+        let intervention_strip = intervention::scoped_strip(
+            text.interventions.strip(),
+            text.task.as_ref(),
+            strip_scope.as_ref(),
+        );
         let compare_pair = self
             .workbench
             .as_ref()
