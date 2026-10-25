@@ -24,6 +24,7 @@ import r0c_driver  # noqa: E402
 import r0c_input  # noqa: E402
 
 MANIFEST = ROOT / "manifests/r0c-s1-keyboard.json"
+S2B_MANIFEST = ROOT / "manifests/s2b-feature-a1.json"
 GENERATION = 1234
 EXECUTION = "000004d2" + "0" * 24
 LAUNCHER_PID = 9001
@@ -246,7 +247,7 @@ class ResultTests(unittest.TestCase):
             path.write_text(json.dumps(document), encoding="utf-8")
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
                                      "output_dir": directory,
-                                     "s2b_manifest": str(MANIFEST)})()
+                                     "s2b_manifest": str(S2B_MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertEqual(caught.exception.code, "NOT_COMPLETE")
@@ -363,7 +364,7 @@ class RecomputeTests(unittest.TestCase):
             path.write_text(json.dumps(document), encoding="utf-8")
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
                                      "output_dir": directory,
-                                     "s2b_manifest": str(MANIFEST)})()
+                                     "s2b_manifest": str(S2B_MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertIn(caught.exception.code,
@@ -376,7 +377,7 @@ class RecomputeTests(unittest.TestCase):
             path.write_text(json.dumps(document), encoding="utf-8")
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
                                      "output_dir": directory,
-                                     "s2b_manifest": str(MANIFEST)})()
+                                     "s2b_manifest": str(S2B_MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertEqual(caught.exception.code, "EVIDENCE_MISSING")
@@ -649,7 +650,7 @@ class ProbeStateTests(unittest.TestCase):
             path.write_text(json.dumps(document), encoding="utf-8")
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
                                      "output_dir": directory,
-                                     "s2b_manifest": str(MANIFEST)})()
+                                     "s2b_manifest": str(S2B_MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertEqual(caught.exception.code, "PROBE_BINDING_LOST")
@@ -700,7 +701,7 @@ class ProbeShapeTests(unittest.TestCase):
             path.write_text(json.dumps(document), encoding="utf-8")
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
                                      "output_dir": directory,
-                                     "s2b_manifest": str(MANIFEST)})()
+                                     "s2b_manifest": str(S2B_MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertEqual(caught.exception.code, "PROBE_CORRUPT")
@@ -724,6 +725,150 @@ class BundleViewTests(unittest.TestCase):
             (output / "unexpected.txt").write_text("x", encoding="utf-8")
             with self.assertRaises(r0c.ContractError):
                 r0c_driver.check_s2b_bundle(output, str(MANIFEST), 120_000)
+
+
+class WindowBindingVerifyTests(unittest.TestCase):
+    def _probe(self, document: dict) -> dict:
+        return {
+            "generation": document["probe_identity"]["generation"],
+            "binding": {"bound": True,
+                        "launcher_pid": document["probe_identity"]["launcher_pid"],
+                        "helper_pid": document["probe_identity"]["helper_pid"],
+                        "window_pid": document["probe_identity"]["window_pid"]},
+            "window": {"pid": document["probe_identity"]["window_pid"], "title": "COS Desktop"},
+            "actions": copy.deepcopy(document["actions"]),
+            "close": {"posted": True, "window_gone": True},
+            "time_correspondence": {
+                "input_start_wall_ns": document["time_correspondence"]["input_start_wall_ns"],
+                "input_end_wall_ns": document["time_correspondence"]["input_end_wall_ns"],
+            },
+            "binding_lost": False,
+            "cancelled": False,
+        }
+
+    def test_a_tampered_binding_window_is_refused(self) -> None:
+        document = result()
+        probe = self._probe(document)
+        probe["binding"]["window_pid"] = probe["window"]["pid"] + 1
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            (output / "r0c-probe.json").write_text(json.dumps(probe), encoding="utf-8")
+            path = output / "result.json"
+            path.write_text(json.dumps(document), encoding="utf-8")
+            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
+                                     "output_dir": directory,
+                                     "s2b_manifest": str(S2B_MANIFEST)})()
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.verify(args)
+            self.assertEqual(caught.exception.code, "PROBE_WINDOW_MISMATCH")
+
+    def test_a_tampered_window_title_is_refused(self) -> None:
+        document = result()
+        probe = self._probe(document)
+        probe["window"]["title"] = "Other"
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            (output / "r0c-probe.json").write_text(json.dumps(probe), encoding="utf-8")
+            path = output / "result.json"
+            path.write_text(json.dumps(document), encoding="utf-8")
+            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
+                                     "output_dir": directory,
+                                     "s2b_manifest": str(S2B_MANIFEST)})()
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.verify(args)
+            self.assertEqual(caught.exception.code, "PROBE_TITLE_MISMATCH")
+
+
+class CorruptProbeRecordTests(unittest.TestCase):
+    def test_empty_actions_are_corrupt_and_still_write_a_failed_record(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        with tempfile.TemporaryDirectory() as directory:
+            probe_path = Path(directory) / "probe.json"
+            probe_path.write_text(json.dumps({"actions": []}), encoding="utf-8")
+            probe, state = r0c_driver.resolve_probe(probe_path, trace, "COS Desktop")
+            self.assertEqual(state, "CORRUPT")
+            self.assertEqual(len(probe["actions"]), len(trace["actions"]))
+            candidate = r0c_driver.assemble_result(
+                document, trace, probe, None, 1,
+                {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
+                 "window_gone": False, "timed_out": False, "cancelled": False},
+                "FAILED", "PROBE_CORRUPT", limits(), 0, correspondence(), EXECUTION,
+            )
+            r0c.validate_result(candidate)
+            out = Path(directory) / "r0c-result.json"
+            out.write_text(json.dumps(candidate), encoding="utf-8")
+            self.assertTrue(out.is_file())
+
+    def test_a_short_action_list_is_corrupt(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        with tempfile.TemporaryDirectory() as directory:
+            probe_path = Path(directory) / "probe.json"
+            probe = probe_for(trace)
+            probe["actions"].pop()
+            probe_path.write_text(json.dumps(probe), encoding="utf-8")
+            _, state = r0c_driver.resolve_probe(probe_path, trace, "COS Desktop")
+            self.assertEqual(state, "CORRUPT")
+
+
+class BundleAllowlistTests(unittest.TestCase):
+    def test_an_unknown_r0c_file_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            for name in r0c_driver.REQUIRED_S2B_EVIDENCE:
+                (output / name).write_text("{}", encoding="utf-8")
+            (output / "r0c-unknown.json").write_text("{}", encoding="utf-8")
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.check_s2b_bundle(output, str(S2B_MANIFEST), 120_000)
+            self.assertEqual(caught.exception.code, "EVIDENCE_UNEXPECTED_ENTRY")
+
+
+class FailFastTests(unittest.TestCase):
+    def test_a_lost_binding_does_not_honour_the_delayed_close(self) -> None:
+        self.assertIsNone(r0c_input.close_target_ns(True, 1_000, 34_000))
+        self.assertEqual(r0c_input.close_target_ns(False, 1_000, 34_000), 34_000_001_000)
+        self.assertIsNone(r0c_input.close_target_ns(False, 1_000, 0))
+
+
+class ManifestValidationR7Tests(unittest.TestCase):
+    def test_timeout_and_close_after_are_validated(self) -> None:
+        for path, value in (
+            (("lifecycle", "timeout_ms"), "120000"),
+            (("lifecycle", "timeout_ms"), -1),
+            (("lifecycle", "close_after_ms"), -1),
+            (("lifecycle", "close_after_ms"), 1_000),
+            (("lifecycle", "close_after_ms"), 40_000),
+        ):
+            document = copy.deepcopy(manifest())
+            document[path[0]][path[1]] = value
+            with self.assertRaises(r0c.ContractError):
+                r0c.validate_manifest(document)
+
+
+class VerifyIdentityAgreementTests(unittest.TestCase):
+    def test_a_mismatched_s2b_manifest_is_refused(self) -> None:
+        document = result()
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            s2b = json.loads(S2B_MANIFEST.read_text(encoding="utf-8"))
+            s2b["identity"]["executable_sha256"] = "sha256:" + "9" * 64
+            manifest_path = output / "s2b.json"
+            manifest_path.write_text(json.dumps(s2b), encoding="utf-8")
+            result_path = output / "result.json"
+            result_path.write_text(json.dumps(document), encoding="utf-8")
+            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(result_path),
+                                     "output_dir": directory,
+                                     "s2b_manifest": str(manifest_path)})()
+            with self.assertRaises(r0c_driver.DriverError) as caught:
+                r0c_driver.verify(args)
+            self.assertEqual(caught.exception.code, "IDENTITY_MISMATCH")
+
+
+class StderrLogTests(unittest.TestCase):
+    def test_a_log_write_failure_does_not_raise(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertFalse(r0c_driver.write_stderr_log(Path(directory), "text"))
 
 
 class JournalRangeTests(unittest.TestCase):
@@ -761,7 +906,7 @@ class ProbeBindingVerifyTests(unittest.TestCase):
             path = self._write_evidence(directory, document, probe)
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
                                      "output_dir": directory,
-                                     "s2b_manifest": str(MANIFEST)})()
+                                     "s2b_manifest": str(S2B_MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertIn(caught.exception.code, ("PROBE_MISMATCH", "CADENCE_MISMATCH"))
@@ -785,7 +930,7 @@ class ProbeBindingVerifyTests(unittest.TestCase):
             path = self._write_evidence(directory, document, probe)
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
                                      "output_dir": directory,
-                                     "s2b_manifest": str(MANIFEST)})()
+                                     "s2b_manifest": str(S2B_MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertEqual(caught.exception.code, "PROBE_MISMATCH")
@@ -808,7 +953,7 @@ class ProbeBindingVerifyTests(unittest.TestCase):
             path = self._write_evidence(directory, document, probe)
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
                                      "output_dir": directory,
-                                     "s2b_manifest": str(MANIFEST)})()
+                                     "s2b_manifest": str(S2B_MANIFEST)})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertEqual(caught.exception.code, "PROBE_IDENTITY_MISMATCH")

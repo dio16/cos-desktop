@@ -278,7 +278,16 @@ def validate_manifest(document: Any) -> dict[str, Any]:
         ("close", "close_after_ms", "timeout_ms", "recovery", "cancel"),
     )
     _enum(lifecycle["close"], "$.lifecycle.close", ("wm_close",))
-    _int(lifecycle["close_after_ms"], "$.lifecycle.close_after_ms", 0, MAX_DURATION_MS)
+    timeout_ms = _int(lifecycle["timeout_ms"], "$.lifecycle.timeout_ms", 1_000, MAX_DURATION_MS)
+    close_after_ms = _int(
+        lifecycle["close_after_ms"], "$.lifecycle.close_after_ms", 0, MAX_DURATION_MS
+    )
+    if close_after_ms > 0 and close_after_ms < end:
+        _fail("OUT_OF_RANGE", "$.lifecycle.close_after_ms")
+    if close_after_ms > duration:
+        _fail("OUT_OF_RANGE", "$.lifecycle.close_after_ms")
+    if timeout_ms < close_after_ms:
+        _fail("OUT_OF_RANGE", "$.lifecycle.timeout_ms")
     _enum(lifecycle["recovery"], "$.lifecycle.recovery", ("none", "close"))
     _enum(lifecycle["cancel"], "$.lifecycle.cancel", ("immediate",))
 

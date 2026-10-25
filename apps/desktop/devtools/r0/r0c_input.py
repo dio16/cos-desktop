@@ -279,6 +279,13 @@ def _sleep_until(target_ns: int) -> None:
             time.sleep(0)
 
 
+def close_target_ns(binding_lost: bool, run_start_ns: int, close_after_ms: int) -> int | None:
+    """A lost binding cancels immediately; the delayed close is not honoured."""
+    if binding_lost or close_after_ms <= 0:
+        return None
+    return run_start_ns + close_after_ms * 1_000_000
+
+
 def binding_valid(window_exists: bool, window_pid: int, expected_pid: int,
                   chain_pid: int) -> bool:
     """The window and its owning process must still be the bound child."""
@@ -407,8 +414,8 @@ def run(plan_path: Path, out_path: Path, title: str, generation: int,
         actions, time.perf_counter_ns, verify, verify_window, post, max_lag_ns
     )
     input_end_wall_ns = time.time_ns()
-    if close_after_ms > 0:
-        _sleep_until(run_start_ns + close_after_ms * 1_000_000)
+    if close_target_ns(binding_lost, run_start_ns, close_after_ms) is not None:
+        _sleep_until(close_target_ns(binding_lost, run_start_ns, close_after_ms))
     close = {"attempts": 0, "posted": False, "window_gone": False, "refused": ""}
     if not release_held(held, verify, post):
         binding_lost = True

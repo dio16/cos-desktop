@@ -457,7 +457,7 @@ def probe_shape_error(probe: object) -> str:
     for key in ("binding", "window", "close", "time_correspondence"):
         if not isinstance(probe.get(key), dict):
             return key.upper()
-    if not isinstance(probe.get("actions"), list):
+    if not isinstance(probe.get("actions"), list) or not probe["actions"]:
         return "ACTIONS"
     if type(probe.get("binding_lost")) is not bool or type(probe.get("cancelled")) is not bool:
         return "STATE"
@@ -497,6 +497,18 @@ def load_probe(path: Path) -> tuple[dict | None, str]:
     return document, "OK"
 
 
+def resolve_probe(path: Path, trace: dict, title: str) -> tuple[dict, str]:
+    """Return a contract-satisfiable probe, or the bounded fallback with CORRUPT."""
+    probe, state = load_probe(path)
+    if state != "OK":
+        return fallback_probe(trace, title), state
+    planned = [action["sequence"] for action in trace["actions"]]
+    actual = [action.get("sequence") for action in probe.get("actions", [])]
+    if actual != planned:
+        return fallback_probe(trace, title), "CORRUPT"
+    return probe, "OK"
+
+
 def fallback_probe(trace: dict, title: str) -> dict:
     return {
         "generation": None,
@@ -519,6 +531,16 @@ def fallback_probe(trace: dict, title: str) -> dict:
         "binding_lost": False,
         "cancelled": False,
     }
+
+
+def write_stderr_log(path: Path, data: str) -> bool:
+    """Best-effort bounded sidecar; a log failure never blocks the result."""
+    try:
+        with path.open("xb") as handle:
+            handle.write(data.encode("utf-8")[:8_192])
+        return True
+    except OSError:
+        return False
 
 
 def probe_exit_code(probe_exit: int) -> str:
@@ -575,6 +597,9 @@ def check_s2b_bundle(output: Path, manifest_path: str, timeout_ms: int) -> dict:
     validates types, links, marker names, per-file limits and totals. The original
     is never modified.
     """
+    known_r0c = {
+        "r0c-plan.json", "r0c-probe.json", "r0c-result.json", "r0c-probe.stderr.txt",
+    }
     missing = [name for name in REQUIRED_S2B_EVIDENCE if not (output / name).is_file()]
     if missing:
         raise r0c.ContractError("EVIDENCE_MISSING", "$.journal")
@@ -583,15 +608,22 @@ def check_s2b_bundle(output: Path, manifest_path: str, timeout_ms: int) -> dict:
             view = Path(directory) / "output"
             view.mkdir()
             for entry in output.iterdir():
-                if entry.name.startswith("r0c-"):
+                name = entry.name
+                if name in known_r0c:
                     continue
-                if entry.is_symlink():
-                    raise r0c.ContractError("EVIDENCE_LINK", "$.journal")
-                if entry.is_dir():
-                    s2b_capture.require_marker(output, entry.name)
-                    (view / entry.name).mkdir()
-                else:
-                    os.link(entry, view / entry.name)
+                if s2b_capture.MARKER.fullmatch(name):
+                    if entry.is_symlink() or not entry.is_dir():
+                        raise r0c.ContractError("EVIDENCE_TYPE", "$.journal")
+                    s2b_capture.require_marker(output, name)
+                    (view / name).mkdir()
+                    continue
+                if name not in s2b_capture.ARTIFACT_FILES:
+                    raise r0c.ContractError("EVIDENCE_UNEXPECTED_ENTRY", "$.journal")
+                if entry.is_symlink() or not entry.is_file():
+                    raise r0c.ContractError("EVIDENCE_TYPE", "$.journal")
+                # Validate the original bytes/type/reparse attribute before linking.
+                s2b_capture.read_pinned(entry, s2b_capture.ARTIFACT_FILES[name])
+                os.link(entry, view / name)
             return s2b_capture.verify_bundle(
                 Path(manifest_path).resolve(), view, timeout_ms
             )
@@ -680,9 +712,9 @@ def launch(args: argparse.Namespace) -> int:
         _terminate(capture_process)
         raise
 
-    probe, probe_state = load_probe(probe_path)
-    if probe is None:
-        probe = fallback_probe(trace, manifest["window"]["title"])
+    probe, probe_state = resolve_probe(
+        probe_path, trace, manifest["window"]["title"]
+    )
     close_posted = bool(probe.get("close", {}).get("posted"))
     journal = None
     journal_error = ""
@@ -768,9 +800,7 @@ def launch(args: argparse.Namespace) -> int:
     if r0c.result_bytes(result) > MAX_RESULT_BYTES:
         raise DriverError("RESULT_TOO_LARGE")
     if probe_stderr:
-        stderr_path = output / "r0c-probe.stderr.txt"
-        with stderr_path.open("xb") as handle:
-            handle.write(probe_stderr.encode("utf-8")[:8_192])
+        write_stderr_log(output / "r0c-probe.stderr.txt", probe_stderr)
     try:
         driver.exclusive_write(output / "r0c-plan.json", trace)
         driver.exclusive_write(output / "r0c-probe.json", probe)
@@ -899,6 +929,10 @@ def check_termination(ledger: dict, cleanup: dict) -> None:
 
 def verify(args: argparse.Namespace) -> int:
     manifest = r0c.load_manifest(args.manifest)
+    s2b_manifest = s2b.validate_manifest(
+        contracts.load_document(args.s2b_manifest, contracts.MAX_MANIFEST_BYTES)
+    )
+    _require_identity_agreement(manifest, s2b_manifest, _approved_binding(manifest))
     result = r0c.validate_result(contracts.load_document(args.result, r0c.MAX_RESULT_BYTES))
     if result["status"] != "COMPLETE":
         raise r0c.ContractError("NOT_COMPLETE", "$.status")
@@ -934,6 +968,10 @@ def verify(args: argparse.Namespace) -> int:
     if window.get("pid") != identity["window_pid"]:
         raise r0c.ContractError("PROBE_IDENTITY_MISMATCH", "$.probe_identity.window_pid")
     binding = probe.get("binding") or {}
+    if binding.get("window_pid") != (probe.get("window") or {}).get("pid"):
+        raise r0c.ContractError("PROBE_WINDOW_MISMATCH", "$.probe.binding.window_pid")
+    if (probe.get("window") or {}).get("title") != manifest["window"]["title"]:
+        raise r0c.ContractError("PROBE_TITLE_MISMATCH", "$.probe.window.title")
     if binding.get("launcher_pid") != identity["launcher_pid"]:
         raise r0c.ContractError("PROBE_IDENTITY_MISMATCH", "$.probe_identity.launcher_pid")
     if binding.get("helper_pid") != identity["helper_pid"]:
