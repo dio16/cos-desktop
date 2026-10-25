@@ -1010,6 +1010,122 @@ class ActionContractR9Tests(unittest.TestCase):
             self.assertEqual(reason, "PROBE_BINDING_LOST")
 
 
+class ExcludedReasonTests(unittest.TestCase):
+    def test_excluded_reason_type_and_length_are_validated(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        for value in (1, "x" * 513, None):
+            probe = probe_for(trace)
+            probe["actions"][0]["excluded_reason"] = value
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "probe.json"
+                path.write_text(json.dumps(probe), encoding="utf-8")
+                _, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+                self.assertEqual(state, "CORRUPT")
+
+
+class ZeroPrefixTests(unittest.TestCase):
+    def test_a_zero_length_prefix_with_loss_is_partial(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = []
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        probe["close"] = {"posted": False, "window_gone": False}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps(probe), encoding="utf-8")
+            resolved, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+            self.assertEqual(state, "PARTIAL")
+            self.assertEqual(len(resolved["actions"]), len(trace["actions"]))
+            self.assertTrue(all(
+                action["excluded_reason"] == "NOT_EXECUTED_BINDING_LOST"
+                for action in resolved["actions"]
+            ))
+
+    def test_a_zero_length_prefix_without_loss_is_corrupt(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = []
+        probe["binding_lost"] = False
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps(probe), encoding="utf-8")
+            _, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+            self.assertEqual(state, "CORRUPT")
+
+
+class PartialSummaryTests(unittest.TestCase):
+    def test_partial_summary_matches_the_verified_action_detail(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = probe["actions"][:3]
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        probe["close"] = {"posted": False, "window_gone": False}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps(probe), encoding="utf-8")
+            resolved, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+            self.assertEqual(state, "PARTIAL")
+            self.assertEqual(r0c_driver.posted_successes(resolved["actions"]), 3)
+            result = r0c_driver.finalize_result(
+                Path(directory), document, trace, resolved, None, 1,
+                {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
+                 "window_gone": False, "timed_out": False, "cancelled": True},
+                "FAILED", "PROBE_BINDING_LOST", limits(), 3, correspondence(), EXECUTION,
+            )
+            self.assertEqual(result["delivered_actions"], 3)
+            self.assertTrue((Path(directory) / "r0c-result.json").is_file())
+
+    def test_a_partial_run_recomputes_delivered_from_the_detail(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = probe["actions"][:3]
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        probe["binding"]["bound"] = False
+        probe["close"] = {"posted": False, "window_gone": False}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps(probe), encoding="utf-8")
+            resolved, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+            self.assertEqual(state, "PARTIAL")
+            delivered, error = r0c_driver.verified_delivered(
+                resolved, document, trace, set(), LAUNCHER_PID, OBSERVATION_PID, GENERATION
+            )
+            self.assertEqual(error, "WINDOW_NOT_BOUND")
+            self.assertEqual(delivered, 3)
+
+    def test_the_shared_saving_path_writes_a_partial_failed_record(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["actions"] = probe["actions"][:5]
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        probe["close"] = {"posted": False, "window_gone": False}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "probe.json"
+            path.write_text(json.dumps(probe), encoding="utf-8")
+            resolved, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
+            self.assertEqual(state, "PARTIAL")
+            result = r0c_driver.finalize_result(
+                Path(directory), document, trace, resolved, None, 1,
+                {"wrapper_exit": 1, "child_reaped": True, "close_posted": False,
+                 "window_gone": False, "timed_out": False, "cancelled": True},
+                "FAILED", "PROBE_BINDING_LOST", limits(), 5, correspondence(), EXECUTION,
+            )
+            self.assertEqual(result["reason"], "PROBE_BINDING_LOST")
+            self.assertEqual(result["delivered_actions"], 5)
+            for name in ("r0c-plan.json", "r0c-probe.json", "r0c-result.json"):
+                self.assertTrue((Path(directory) / name).is_file())
+
+
 class JournalRangeTests(unittest.TestCase):
     def test_input_before_the_journal_starts_is_refused(self) -> None:
         self.assertEqual(r0c_driver.journal_containment(0, 100, 1_000, 5_000), "MISMATCH")

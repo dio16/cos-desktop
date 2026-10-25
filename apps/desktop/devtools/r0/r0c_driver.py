@@ -457,7 +457,7 @@ def probe_shape_error(probe: object) -> str:
     for key in ("binding", "window", "close", "time_correspondence"):
         if not isinstance(probe.get(key), dict):
             return key.upper()
-    if not isinstance(probe.get("actions"), list) or not probe["actions"]:
+    if not isinstance(probe.get("actions"), list):
         return "ACTIONS"
     if type(probe.get("binding_lost")) is not bool or type(probe.get("cancelled")) is not bool:
         return "STATE"
@@ -527,6 +527,10 @@ def probe_action_error(action: object, expected: dict) -> str:
         return "ACTUAL_RANGE"
     if action["classification"] not in PROBE_CLASSIFICATIONS:
         return "CLASSIFICATION"
+    if "excluded_reason" in action:
+        reason = action["excluded_reason"]
+        if type(reason) is not str or len(reason) > 512:
+            return "EXCLUDED_REASON"
     return ""
 
 
@@ -542,6 +546,25 @@ def probe_satisfies_contract(probe: dict, trace: dict) -> bool:
         if probe_action_error(action, expected):
             return False
     return True
+
+
+def verified_delivered(probe: dict, manifest: dict, trace: dict,
+                       pre_run_pids: set[int], launcher_pid: int,
+                       observation_pid: int, generation: int) -> tuple[int, str]:
+    """Verify the probe; on failure, the summary still follows the action detail."""
+    try:
+        return verify_probe(
+            probe, manifest, trace, pre_run_pids, launcher_pid, observation_pid, generation
+        ), ""
+    except DriverError as error:
+        # A partial run can fail the binding gate while still carrying verified
+        # posted successes; the summary must agree with the action detail.
+        return posted_successes(probe["actions"]), error.code
+
+
+def posted_successes(actions: list[dict]) -> int:
+    """Count delivered actions from the detail itself, never from a summary."""
+    return sum(1 for action in actions if action.get("delivered") is True)
 
 
 def complete_partial(probe: dict, trace: dict) -> dict:
@@ -590,7 +613,6 @@ def resolve_probe(path: Path, trace: dict, title: str) -> tuple[dict, str]:
         binding_lost
         and actual == sequences[: len(actual)]
         and len(set(actual)) == len(actual)
-        and actual
     ):
         for action, expected in zip(probe["actions"], planned[: len(actual)]):
             if probe_action_error(action, expected):
@@ -734,6 +756,30 @@ def check_s2b_bundle(output: Path, manifest_path: str, timeout_ms: int) -> dict:
         raise r0c.ContractError("S2B_VERIFICATION_FAILED", "$.journal")
 
 
+def finalize_result(output: Path, manifest: dict, trace: dict, probe: dict,
+                    journal: dict | None, wrapper_exit: int, cleanup: dict,
+                    status: str, reason: str, limits: dict, delivered_actions: int,
+                    correspondence: dict, execution: str,
+                    probe_stderr: str = "") -> dict:
+    """The single result-saving path used by launch and integration tests."""
+    result = assemble_result(
+        manifest, trace, probe, journal, wrapper_exit, cleanup, status, reason,
+        limits, delivered_actions, correspondence, execution,
+    )
+    r0c.validate_result(result)
+    if r0c.result_bytes(result) > MAX_RESULT_BYTES:
+        raise DriverError("RESULT_TOO_LARGE")
+    if probe_stderr:
+        write_stderr_log(output / "r0c-probe.stderr.txt", probe_stderr)
+    try:
+        driver.exclusive_write(output / "r0c-plan.json", trace)
+        driver.exclusive_write(output / "r0c-probe.json", probe)
+        driver.exclusive_write(output / "r0c-result.json", result)
+    except OSError:
+        raise DriverError("RESULT_WRITE_FAILED")
+    return result
+
+
 def launch(args: argparse.Namespace) -> int:
     if not (1_000 <= args.timeout_ms <= MAX_TIMEOUT_MS):
         raise DriverError("TIMEOUT_OUT_OF_RANGE")
@@ -834,14 +880,9 @@ def launch(args: argparse.Namespace) -> int:
                                binding["executable_sha256"])
         except (s2b.ObservationError, contracts.ContractError, OSError):
             journal_error = "JOURNAL_INVALID"
-    probe_error = ""
-    delivered_actions = 0
-    try:
-        delivered_actions = verify_probe(
-            probe, manifest, trace, pre_run_pids, capture_process.pid, observation_pid, generation
-        )
-    except DriverError as error:
-        probe_error = error.code
+    delivered_actions, probe_error = verified_delivered(
+        probe, manifest, trace, pre_run_pids, capture_process.pid, observation_pid, generation
+    )
 
     # The journal clock has no wall mapping, so the conservative capture bound is
     # the S2B manifest's declared duration from the capture process start.
@@ -895,21 +936,10 @@ def launch(args: argparse.Namespace) -> int:
         status = "FAILED"
     else:
         reason = _result_reason(status, wrapper_exit, timed_out, close_posted)
-    result = assemble_result(
-        manifest, trace, probe, journal, wrapper_exit, cleanup, status, reason,
-        limits, delivered_actions, correspondence, execution,
+    result = finalize_result(
+        output, manifest, trace, probe, journal, wrapper_exit, cleanup, status,
+        reason, limits, delivered_actions, correspondence, execution, probe_stderr,
     )
-    r0c.validate_result(result)
-    if r0c.result_bytes(result) > MAX_RESULT_BYTES:
-        raise DriverError("RESULT_TOO_LARGE")
-    if probe_stderr:
-        write_stderr_log(output / "r0c-probe.stderr.txt", probe_stderr)
-    try:
-        driver.exclusive_write(output / "r0c-plan.json", trace)
-        driver.exclusive_write(output / "r0c-probe.json", probe)
-        driver.exclusive_write(output / "r0c-result.json", result)
-    except OSError:
-        raise DriverError("RESULT_WRITE_FAILED")
     print(json.dumps({
         "ok": status == "COMPLETE",
         "execution_id": execution,
