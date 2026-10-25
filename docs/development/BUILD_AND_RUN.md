@@ -644,7 +644,9 @@ pwsh -NoProfile -File apps/desktop/tests/wic_admission_selftest.ps1
 
 `run_matrix.py` now refuses an existing work root instead of deleting anything it
 did not create, and exits non-zero when any recorded outcome contradicts its
-expectation.
+expectation. Its cancellation check rejects a missing record, an empty or partial
+observation list, duplicated case ids and a non-zero process exit instead of
+treating `all([])` as success; `--selftest` exercises those negatives.
 
 The BGRA32 conversion charge to `max_scratch_bytes` is a W1 interpretation, not
 measured decoder behaviour. WIC-internal temporaries remain `not_measured`; the

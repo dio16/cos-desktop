@@ -1,12 +1,13 @@
 {
   "schema_version": 1,
   "slice": "MP-IMG2-W1",
-  "revision": 2,
+  "revision": 3,
   "repairs": [
     "explicit zero budget presence via PSBoundParameters",
     "Bgr565 widest channel depth corrected to 6",
     "decoded byte requirement summed per row",
-    "runner refuses an existing work root and verifies expected outcomes"
+    "runner refuses an existing work root and verifies expected outcomes",
+    "cancellation verifier rejects a missing/empty/nonzero/partial record"
   ],
   "scope": "WIC pre-materialization decode admission; exploratory real-Windows matrix",
   "probe_identity": "wic_probe 1.1 (managed WIC/WPF, pre-materialization decode budget, PowerShell 7.6.7, .NET 10.0.13)",
@@ -214,7 +215,7 @@
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 718
+      "elapsed_ms": 719
     },
     {
       "case": "max_pixels_over",
@@ -234,7 +235,7 @@
       "bgra32_bytes_required": null,
       "scratch_bytes_required": null,
       "output_exists": false,
-      "elapsed_ms": 693
+      "elapsed_ms": 679
     },
     {
       "case": "max_dimension_at",
@@ -254,7 +255,7 @@
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 731
+      "elapsed_ms": 745
     },
     {
       "case": "max_dimension_over",
@@ -274,7 +275,7 @@
       "bgra32_bytes_required": null,
       "scratch_bytes_required": null,
       "output_exists": false,
-      "elapsed_ms": 676
+      "elapsed_ms": 701
     },
     {
       "case": "max_decoded_at",
@@ -294,7 +295,7 @@
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 720
+      "elapsed_ms": 739
     },
     {
       "case": "max_decoded_over",
@@ -314,7 +315,7 @@
       "bgra32_bytes_required": null,
       "scratch_bytes_required": null,
       "output_exists": false,
-      "elapsed_ms": 696
+      "elapsed_ms": 720
     },
     {
       "case": "max_scratch_at",
@@ -334,7 +335,7 @@
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 727
+      "elapsed_ms": 720
     },
     {
       "case": "max_scratch_over",
@@ -354,7 +355,7 @@
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": false,
-      "elapsed_ms": 714
+      "elapsed_ms": 685
     },
     {
       "case": "max_bit_depth_at",
@@ -374,7 +375,7 @@
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 733
+      "elapsed_ms": 722
     },
     {
       "case": "max_bit_depth_over",
@@ -394,7 +395,7 @@
       "bgra32_bytes_required": null,
       "scratch_bytes_required": null,
       "output_exists": false,
-      "elapsed_ms": 693
+      "elapsed_ms": 679
     },
     {
       "case": "legacy_max_pixels_over",
@@ -410,7 +411,7 @@
       "bgra32_bytes_required": null,
       "scratch_bytes_required": null,
       "output_exists": false,
-      "elapsed_ms": 673
+      "elapsed_ms": 713
     },
     {
       "case": "legacy_max_pixels_at",
@@ -426,7 +427,7 @@
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 719
+      "elapsed_ms": 728
     }
   ],
   "probe_edge_cases": [
@@ -544,12 +545,25 @@
   "probe_repeat_identical": true,
   "cancellation": {
     "exit_code": 0,
+    "case_count": 9,
     "all_cancelled": true
   },
   "verification": {
     "mismatches": [],
     "ok": true,
     "record_generation": "succeeded"
+  },
+  "verifier_selftest": {
+    "checks": 7,
+    "failures": 0,
+    "negatives": [
+      "missing_record",
+      "empty_rows",
+      "nonzero_exit",
+      "missing_case",
+      "duplicate_case",
+      "not_cancelled"
+    ]
   },
   "observed_interpretation": {
     "corrupt_png": "no PNG fixture produced the corrupt class through IDAT or CRC damage; the corrupt class is represented by the zero-dimension header",
@@ -580,7 +594,7 @@
         "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
       ]
     },
-    "selftest": {
+    "wic_admission_selftest": {
       "checks": 19,
       "failures": 0
     }

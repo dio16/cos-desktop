@@ -120,6 +120,58 @@ def run_probe(name: str, image: Path, output: Path | None, limits: dict[str, int
             "stderr": completed.stderr[:500]}
 
 
+def cancellation_problems(cancelled: dict, expected_ids: list[str]) -> list[str]:
+    """Closed checks for the cancellation run: a missing record or an empty list is a
+    failure, never a vacuous success. The expected case set must match exactly."""
+    problems = []
+    if cancelled.get("exit_code") != 0:
+        problems.append("cancellation-run exit is not zero")
+    record = cancelled.get("record")
+    if not isinstance(record, dict):
+        problems.append("cancellation record is missing")
+        return problems
+    rows = record.get("observations")
+    if not isinstance(rows, list) or not rows:
+        problems.append("cancellation observations are empty")
+        return problems
+    ids = [row.get("case_id") for row in rows]
+    if len(ids) != len(set(ids)):
+        problems.append("cancellation case ids are duplicated")
+    if set(ids) != set(expected_ids):
+        problems.append("cancellation case set differs from the generated set")
+    for row in rows:
+        if row.get("observed_outcome") != "cancelled":
+            problems.append(f"cancellation case {row.get('case_id')} is not cancelled")
+            break
+    return problems
+
+
+def verifier_selftest() -> int:
+    """Negative cases for the cancellation verifier: every broken input must fail."""
+    good_rows = [{"case_id": name, "observed_outcome": "cancelled"}
+                 for name in ("a.png", "b.png")]
+    good = {"exit_code": 0, "record": {"observations": good_rows}}
+    checks = [("good", good, ["a.png", "b.png"])]
+    checks.append(("missing_record", {"exit_code": 0, "record": None}, ["a.png", "b.png"]))
+    checks.append(("empty_rows", {"exit_code": 0, "record": {"observations": []}},
+                   ["a.png", "b.png"]))
+    checks.append(("nonzero_exit", {**good, "exit_code": 1}, ["a.png", "b.png"]))
+    checks.append(("missing_case", good, ["a.png", "b.png", "c.png"]))
+    checks.append(("duplicate_case", {"exit_code": 0, "record": {"observations": [
+        good_rows[0], good_rows[0]]}}, ["a.png", "b.png"]))
+    checks.append(("not_cancelled", {"exit_code": 0, "record": {"observations": [
+        good_rows[0], {"case_id": "b.png", "observed_outcome": "decoded"}]}},
+        ["a.png", "b.png"]))
+    failures = []
+    for name, payload, expected in checks:
+        problems = cancellation_problems(payload, expected)
+        should_fail = name != "good"
+        if bool(problems) != should_fail:
+            failures.append({"case": name, "problems": problems})
+    print(json.dumps({"checks": len(checks), "failures": failures}))
+    return 0 if not failures else 1
+
+
 def harness(cases: Path, out: Path, arguments: list[str]) -> dict:
     argv = [str(HARNESS), "--cases", str(cases), "--out", str(out),
             "--candidate", f"wic=pwsh:{PROBE.as_posix()}", "--output-policy", "canonical-png",
@@ -133,6 +185,8 @@ def harness(cases: Path, out: Path, arguments: list[str]) -> dict:
 def main() -> int:
     # Refuse to reuse a directory: this runner only ever deletes or overwrites files it
     # created itself inside a fresh, exclusively created work root.
+    if "--selftest" in sys.argv:
+        return verifier_selftest()
     if WORK.exists():
         print(json.dumps({"refused": "work_dir_exists",
                           "work": "<W1_WORK>"}))
@@ -359,9 +413,9 @@ def main() -> int:
         mismatches.append({"problem": "harness_rerun_differs"})
     if not probe_repeatable:
         mismatches.append({"problem": "probe_rerun_differs"})
-    if not all(row["observed_outcome"] == "cancelled"
-               for row in cancelled.get("record", {}).get("observations", [])):
-        mismatches.append({"problem": "cancellation_not_observed"})
+    expected_cancel_ids = sorted(entry["name"] for entry in inventory)
+    for problem in cancellation_problems(cancelled, expected_cancel_ids):
+        mismatches.append({"problem": problem})
     verification = {"ok": not mismatches, "mismatches": mismatches,
                     "record_generation": "succeeded"}
     report["verification"] = verification
