@@ -191,8 +191,10 @@ def _load_json(path: Path, limit: int) -> object:
     return contracts.load_document(str(path), limit)
 
 
-def _journal(capture_path: Path, observation: dict, executable: str) -> dict:
+def _journal(capture_path: Path, observation_path: Path, observation: dict,
+             executable: str) -> dict:
     raw = capture_path.read_bytes()
+    observation_sha256 = "sha256:" + hashlib.sha256(observation_path.read_bytes()).hexdigest()
     capture = s2b.validate_capture(
         s2b.parse_bytes(raw, s2b.MAX_BYTES),
         execution=observation["identity"]["execution_id"],
@@ -206,6 +208,8 @@ def _journal(capture_path: Path, observation: dict, executable: str) -> dict:
         kinds[str(record["kind"])] = kinds.get(str(record["kind"]), 0) + 1
     return {
         "capture_sha256": "sha256:" + hashlib.sha256(raw).hexdigest(),
+        "observation_sha256": observation_sha256,
+        "clock_mapping": str(capture.get("clock", {}).get("mapping", "NONE")),
         "counts": kinds,
         "summary": {key: summary[key] for key in (
             "journal_seen", "journal_lost", "eligible", "retained", "retention_dropped",
@@ -290,9 +294,46 @@ def verify_probe(probe: dict, manifest: dict, trace: dict, pre_run_pids: set[int
     return delivered
 
 
+def check_time_correspondence(probe: dict, capture_start_wall_ns: int,
+                              capture_end_wall_ns: int, scope_ns: int,
+                              journal_clock_mapping: str = "NONE") -> dict:
+    """Prove the input range is inside the capture's wall-clock lifetime and scope.
+
+    The journal clock has no wall anchor in this build, so the conservative
+    boundary is the capture process lifetime plus the declared scope duration:
+    input ending before capture_start + scope_ns cannot be after the journal scope
+    end, because the journal scope starts after the capture process starts.
+    """
+    values = probe.get("time_correspondence") or {}
+    try:
+        input_start = int(values["input_start_wall_ns"])
+        input_end = int(values["input_end_wall_ns"])
+    except (KeyError, TypeError, ValueError):
+        raise DriverError("CAPTURE_RANGE_UNKNOWN")
+    if input_start <= 0 or input_end < input_start:
+        raise DriverError("CAPTURE_RANGE_UNKNOWN")
+    if capture_start_wall_ns <= 0 or capture_end_wall_ns <= capture_start_wall_ns or scope_ns <= 0:
+        raise DriverError("CAPTURE_RANGE_UNKNOWN")
+    if input_start < capture_start_wall_ns or input_end > capture_end_wall_ns:
+        raise DriverError("CAPTURE_RANGE_MISMATCH")
+    if input_end > capture_start_wall_ns + scope_ns:
+        raise DriverError("CAPTURE_RANGE_MISMATCH")
+    return {
+        "method": "wall-clock-capture-lifetime",
+        "inside": True,
+        "input_start_wall_ns": input_start,
+        "input_end_wall_ns": input_end,
+        "capture_start_wall_ns": capture_start_wall_ns,
+        "capture_end_wall_ns": capture_end_wall_ns,
+        "scope_ns": scope_ns,
+        "scope_source": "s2b-manifest-duration",
+        "journal_clock_mapping": journal_clock_mapping,
+    }
+
+
 def assemble_result(manifest: dict, trace: dict, probe: dict, journal: dict | None,
                     wrapper_exit: int, cleanup: dict, status: str, reason: str,
-                    limits: dict, delivered_actions: int) -> dict:
+                    limits: dict, delivered_actions: int, correspondence: dict) -> dict:
     actions = probe["actions"]
     requested: dict[str, float] = {}
     for action in manifest["actions"]:
@@ -312,6 +353,8 @@ def assemble_result(manifest: dict, trace: dict, probe: dict, journal: dict | No
     }
     if journal is not None and "capture_sha256" in journal:
         journal_document["capture_sha256"] = journal["capture_sha256"]
+    if journal is not None and "observation_sha256" in journal:
+        journal_document["observation_sha256"] = journal["observation_sha256"]
     return {
         "result_version": r0c.RESULT_VERSION,
         "scenario": {
@@ -329,6 +372,7 @@ def assemble_result(manifest: dict, trace: dict, probe: dict, journal: dict | No
         "cleanup": cleanup,
         "limits": limits,
         "delivered_actions": delivered_actions,
+        "time_correspondence": correspondence,
         "status": status,
         "reason": reason,
     }
@@ -387,6 +431,7 @@ def launch(args: argparse.Namespace) -> int:
     probe_command = args.probe or str(Path(__file__).resolve().with_name("r0c_input.py"))
     probe_timeout = manifest["scenario"]["active_end_ms"] / 1000 + r0c.CLOSE_TIMEOUT_MS / 1000 + 30
     capture_process: subprocess.Popen | None = None
+    capture_start_wall_ns = time.time_ns()
     try:
         capture_process = subprocess.Popen(
             [
@@ -418,6 +463,7 @@ def launch(args: argparse.Namespace) -> int:
             capture_stdout, capture_stderr = capture_process.communicate(timeout=DRAIN_S)
             timed_out = True
         wrapper_exit = capture_process.returncode
+        capture_end_wall_ns = time.time_ns()
     except BaseException:
         _terminate(capture_process)
         raise
@@ -459,7 +505,8 @@ def launch(args: argparse.Namespace) -> int:
             raise DriverError("EXECUTION_IDENTITY_MISMATCH")
         observation_pid = int(observation["identity"]["pid"])
         try:
-            journal = _journal(capture_path, observation, binding["executable_sha256"])
+            journal = _journal(capture_path, observation_path, observation,
+                               binding["executable_sha256"])
         except (s2b.ObservationError, contracts.ContractError, OSError):
             journal_error = "JOURNAL_INVALID"
     probe_error = ""
@@ -470,6 +517,30 @@ def launch(args: argparse.Namespace) -> int:
         )
     except DriverError as error:
         probe_error = error.code
+
+    # The journal clock has no wall mapping, so the conservative capture bound is
+    # the S2B manifest's declared duration from the capture process start.
+    scope_ns = int(s2b_manifest["workload"]["duration_ms"]) * 1_000_000
+    journal_clock_mapping = str(journal.get("clock_mapping", "NONE")) if journal is not None else "NONE"
+    correspondence_error = ""
+    try:
+        correspondence = check_time_correspondence(
+            probe, capture_start_wall_ns, capture_end_wall_ns, scope_ns,
+            journal_clock_mapping,
+        )
+    except DriverError as error:
+        correspondence_error = error.code
+        correspondence = {
+            "method": "wall-clock-capture-lifetime",
+            "inside": False,
+            "input_start_wall_ns": 0,
+            "input_end_wall_ns": 0,
+            "capture_start_wall_ns": max(capture_start_wall_ns, 0),
+            "capture_end_wall_ns": max(capture_end_wall_ns, 0),
+            "scope_ns": max(scope_ns, 0),
+            "scope_source": "s2b-manifest-duration",
+            "journal_clock_mapping": journal_clock_mapping,
+        }
 
     cleanup = {
         "wrapper_exit": wrapper_exit,
@@ -495,13 +566,15 @@ def launch(args: argparse.Namespace) -> int:
         status, reason = "FAILED", journal_error
     if probe_error:
         status, reason = "FAILED", probe_error
+    if correspondence_error:
+        status, reason = "FAILED", correspondence_error
     if delivered_actions == 0:
         status, reason = "FAILED", "WORKLOAD_NOT_DELIVERED"
     elif delivered_actions != len(trace["actions"]):
         status, reason = "FAILED", "WORKLOAD_INCOMPLETE"
     result = assemble_result(
         manifest, trace, probe, journal, wrapper_exit, cleanup, status, reason,
-        limits, delivered_actions,
+        limits, delivered_actions, correspondence,
     )
     r0c.validate_result(result)
     if r0c.result_bytes(result) > MAX_RESULT_BYTES:
@@ -524,22 +597,91 @@ def launch(args: argparse.Namespace) -> int:
     return 0 if status == "COMPLETE" else 1
 
 
-def verify(args: argparse.Namespace) -> int:
-    manifest = r0c.load_manifest(args.manifest)
-    result = r0c.validate_result(contracts.load_document(args.result, r0c.MAX_RESULT_BYTES))
+def recompute(result: dict, manifest: dict) -> dict:
+    """Recompute every derived number from the per-action record.
+
+    Anything that cannot be recomputed is not reported as verified.
+    """
+    r0c.validate_result(result)
     r0c.check_identity(manifest, result)
-    if result["status"] != "COMPLETE":
-        raise r0c.ContractError("NOT_COMPLETE", "$.status")
     trace = r0c.plan_trace(manifest)
     if result["trace_sha256"] != trace["trace_sha256"]:
         raise r0c.ContractError("TRACE_MISMATCH", "$.trace_sha256")
-    if result["delivered_actions"] != len(result["actions"]):
+    planned = {action["sequence"]: action for action in trace["actions"]}
+    delivered = 0
+    for action in result["actions"]:
+        expected = planned.get(action["sequence"])
+        if expected is None or expected["kind"] != action["kind"] or expected["planned_ns"] != action["planned_ns"]:
+            raise r0c.ContractError("TRACE_MISMATCH", "$.actions")
+        interval_ns = max(1, int(round(1_000_000_000 / expected["requested_hz"])))
+        expected_class = r0c.classify(
+            action["planned_ns"], action["actual_ns"], action["delivered"],
+            interval_ns=interval_ns, suppressed=action["suppressed"],
+        )
+        if action["classification"] != expected_class:
+            raise r0c.ContractError("CLASSIFICATION_MISMATCH", "$.actions")
+        if action["delivered"]:
+            delivered += 1
+    if delivered != result["delivered_actions"]:
+        raise r0c.ContractError("DELIVERED_MISMATCH", "$.delivered_actions")
+    achieved, _ = _achieved(result["actions"])
+    for kind, requested in result["requested_cadence"].items():
+        expected_value = achieved.get(kind)
+        if expected_value != result["achieved_cadence"][kind]:
+            raise r0c.ContractError("CADENCE_MISMATCH", f"$.achieved_cadence.{kind}")
+        if requested <= 0:
+            raise r0c.ContractError("CADENCE_MISMATCH", f"$.requested_cadence.{kind}")
+    counts = {int(key): value for key, value in result["journal"]["counts"].items()}
+    if result["endpoints"] != r0c.endpoint_matrix(counts):
+        raise r0c.ContractError("ENDPOINT_MISMATCH", "$.endpoints")
+    correspondence = result["time_correspondence"]
+    inside = (
+        correspondence["inside"] is True
+        and correspondence["input_start_wall_ns"] >= correspondence["capture_start_wall_ns"]
+        and correspondence["input_end_wall_ns"] <= correspondence["capture_end_wall_ns"]
+        and correspondence["input_end_wall_ns"] <= correspondence["capture_start_wall_ns"] + correspondence["scope_ns"]
+    )
+    if not inside:
+        raise r0c.ContractError("CAPTURE_RANGE_MISMATCH", "$.time_correspondence")
+    if result["status"] == "COMPLETE" and delivered != len(result["actions"]):
         raise r0c.ContractError("WORKLOAD_INCOMPLETE", "$.delivered_actions")
-    requested: dict[str, float] = {}
-    for action in manifest["actions"]:
-        requested[action["kind"]] = max(requested.get(action["kind"], 0.0), float(action["requested_hz"]))
-    if result["requested_cadence"] != requested:
-        raise r0c.ContractError("CADENCE_MISMATCH", "$.requested_cadence")
+    return {"delivered_actions": delivered, "actions": len(result["actions"])}
+
+
+def verify(args: argparse.Namespace) -> int:
+    manifest = r0c.load_manifest(args.manifest)
+    result = r0c.validate_result(contracts.load_document(args.result, r0c.MAX_RESULT_BYTES))
+    if result["status"] != "COMPLETE":
+        raise r0c.ContractError("NOT_COMPLETE", "$.status")
+    # Recompute from the per-action record before trusting any aggregate.
+    recompute(result, manifest)
+    output = Path(args.output_dir)
+    capture_path = output / "s2b-capture.json"
+    observation_path = output / "s2b-observation.json"
+    if not capture_path.is_file() or not observation_path.is_file():
+        raise r0c.ContractError("EVIDENCE_MISSING", "$.journal")
+    if result["journal"].get("source") != "s2b-journal":
+        raise r0c.ContractError("EVIDENCE_MISSING", "$.journal.source")
+    capture_bytes = capture_path.read_bytes()
+    observation_bytes = observation_path.read_bytes()
+    capture_sha = "sha256:" + hashlib.sha256(capture_bytes).hexdigest()
+    observation_sha = "sha256:" + hashlib.sha256(observation_bytes).hexdigest()
+    if result["journal"].get("capture_sha256") != capture_sha:
+        raise r0c.ContractError("CAPTURE_DIGEST_MISMATCH", "$.journal.capture_sha256")
+    if result["journal"].get("observation_sha256") != observation_sha:
+        raise r0c.ContractError("OBSERVATION_DIGEST_MISMATCH", "$.journal.observation_sha256")
+    observation = contracts.loads_document(observation_bytes.decode("utf-8"))
+    capture = s2b.validate_capture(
+        s2b.parse_bytes(capture_bytes, s2b.MAX_BYTES),
+        execution=observation["identity"]["execution_id"],
+        pid=observation["identity"]["pid"],
+        executable=manifest["identity"]["executable_sha256"],
+    )
+    counts: dict[str, int] = {}
+    for record in capture["records"]:
+        counts[str(record["kind"])] = counts.get(str(record["kind"]), 0) + 1
+    if counts != result["journal"]["counts"]:
+        raise r0c.ContractError("JOURNAL_MISMATCH", "$.journal.counts")
     print(json.dumps({"ok": True, "status": result["status"]}, sort_keys=True))
     return 0
 
@@ -560,6 +702,7 @@ def main(argv: list[str] | None = None) -> int:
     verify_parser = sub.add_parser("verify")
     verify_parser.add_argument("--manifest", required=True)
     verify_parser.add_argument("--result", required=True)
+    verify_parser.add_argument("--output-dir", required=True)
     args = parser.parse_args(argv)
     if args.command == "plan":
         manifest = r0c.load_manifest(args.manifest)

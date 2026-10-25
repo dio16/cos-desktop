@@ -314,7 +314,11 @@ def _validate_action(action: Any, path: str) -> None:
     if kind in NOT_IMPLEMENTED_FAMILIES:
         _fail("NOT_IMPLEMENTED", f"{path}.kind")
     _number(entry["requested_hz"], f"{path}.requested_hz", MIN_HZ, MAX_HZ)
-    _int(entry["burst"], f"{path}.burst", 1, MAX_BURST)
+    burst = _int(entry["burst"], f"{path}.burst", 1, MAX_BURST)
+    if burst != 1:
+        # S1 has no burst execution effect; accepting another value would be a
+        # manifest that claims traffic it does not generate.
+        _fail("NOT_IMPLEMENTED", f"{path}.burst")
     _int(entry["count"], f"{path}.count", 1, MAX_ACTIONS)
     if kind in ("keyboard", "held-key"):
         keys = _array(entry.get("keys"), f"{path}.keys", nonempty=True, maximum=len(KEYS))
@@ -492,6 +496,7 @@ def validate_result(document: Any) -> dict[str, Any]:
             "cleanup",
             "limits",
             "delivered_actions",
+            "time_correspondence",
             "status",
         ),
         ("reason",),
@@ -541,9 +546,14 @@ def validate_result(document: Any) -> dict[str, Any]:
         )
         if "excluded_reason" in entry:
             _string(entry["excluded_reason"], f"$.actions[{index}].excluded_reason")
-    journal = _object(result["journal"], "$.journal", ("source", "counts", "note"), optional=("capture_sha256",))
+    journal = _object(
+        result["journal"], "$.journal", ("source", "counts", "note"),
+        optional=("capture_sha256", "observation_sha256"),
+    )
     if "capture_sha256" in journal:
         _digest(journal["capture_sha256"], "$.journal.capture_sha256")
+    if "observation_sha256" in journal:
+        _digest(journal["observation_sha256"], "$.journal.observation_sha256")
     _enum(journal["source"], "$.journal.source", ("s2b-journal", "none"))
     counts = journal["counts"]
     if not isinstance(counts, dict):
@@ -577,6 +587,25 @@ def validate_result(document: Any) -> dict[str, Any]:
     limits = _object(result["limits"], "$.limits", ("max_actions", "max_lag_ms", "probe_timeout_ms", "capture_timeout_ms", "output_bytes"))
     for key in ("max_actions", "max_lag_ms", "probe_timeout_ms", "capture_timeout_ms", "output_bytes"):
         _int(limits[key], f"$.limits.{key}", 0, MAX_ACTIONS * 1024)
+    correspondence = _object(
+        result["time_correspondence"],
+        "$.time_correspondence",
+        ("method", "inside", "input_start_wall_ns", "input_end_wall_ns",
+         "capture_start_wall_ns", "capture_end_wall_ns", "scope_ns"),
+        ("scope_source", "journal_clock_mapping"),
+    )
+    _enum(correspondence["method"], "$.time_correspondence.method",
+          ("wall-clock-capture-lifetime",))
+    _boolean(correspondence["inside"], "$.time_correspondence.inside")
+    for key in ("input_start_wall_ns", "input_end_wall_ns",
+                "capture_start_wall_ns", "capture_end_wall_ns", "scope_ns"):
+        _int(correspondence[key], f"$.time_correspondence.{key}", 0, 1 << 62)
+    if "scope_source" in correspondence:
+        _enum(correspondence["scope_source"], "$.time_correspondence.scope_source",
+              ("s2b-manifest-duration",))
+    if "journal_clock_mapping" in correspondence:
+        _enum(correspondence["journal_clock_mapping"], "$.time_correspondence.journal_clock_mapping",
+              ("NONE",))
     status = _enum(result["status"], "$.status", ("COMPLETE", "FAILED", "CANCELLED", "NOT_RUN"))
     if status == "COMPLETE" and delivered != len(actions):
         _fail("INVALID_VALUE", "$.delivered_actions")

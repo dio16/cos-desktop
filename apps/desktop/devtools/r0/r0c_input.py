@@ -278,6 +278,54 @@ def _sleep_until(target_ns: int) -> None:
             time.sleep(0)
 
 
+def binding_valid(window_exists: bool, window_pid: int, expected_pid: int,
+                  chain_pid: int) -> bool:
+    """The window and its owning process must still be the bound child."""
+    return bool(window_exists) and window_pid == expected_pid and chain_pid == expected_pid
+
+
+def execute_actions(actions: list[dict], clock_ns, verify, send,
+                    max_lag_ns: int) -> tuple[list[dict], list[int], bool]:
+    """Replay actions, re-verifying the binding before every single one."""
+    start = clock_ns()
+    records: list[dict] = []
+    held: list[int] = []
+    binding_lost = False
+    for action in actions:
+        if not verify():
+            binding_lost = True
+            break
+        interval_ns = max(1, int(round(1_000_000_000 / action["requested_hz"])))
+        _sleep_until(start + action["planned_ns"])
+        actual = clock_ns() - start
+        lag = actual - action["planned_ns"]
+        record = {"sequence": action["sequence"], "kind": action["kind"]}
+        if lag > max_lag_ns:
+            record.update(action_record(
+                action["planned_ns"], actual, False, True, interval_ns, max_lag_ns
+            ))
+            record["excluded_reason"] = "SCHEDULE_LAG_EXCEEDED"
+            records.append(record)
+            continue
+        messages = message_plan(action["kind"], action["payload"], action["sequence"])
+        if action["kind"] == "held-key":
+            held.append(VK[action["payload"]["key"]])
+        delivered = send(messages)
+        record.update(action_record(
+            action["planned_ns"], actual, delivered, False, interval_ns, max_lag_ns
+        ))
+        record["excluded_reason"] = "" if delivered else "POST_MESSAGE_REFUSED"
+        records.append(record)
+    return records, held, binding_lost
+
+
+def close_if_valid(verify, close: dict, post) -> bool:
+    """Post WM_CLOSE only while the binding still holds; a second call is a no-op."""
+    if not verify():
+        return False
+    return close_once(close, post)
+
+
 def run(plan_path: Path, out_path: Path, title: str, generation: int,
         excluded: set[int], max_lag_ms: int, close_timeout_ms: int, window_wait_ms: int,
         launcher_pid: int) -> int:
@@ -293,38 +341,33 @@ def run(plan_path: Path, out_path: Path, title: str, generation: int,
     user32.GetWindowThreadProcessId(hwnd, ctypes.byref(owner))
     if int(owner.value) != pid:
         raise ProbeError("WINDOW_PID_MISMATCH")
+
+    def verify() -> bool:
+        try:
+            _helper, app_pid = _bind_child(kernel32, launcher_pid)
+        except ProbeError:
+            return False
+        current = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(current))
+        return binding_valid(
+            bool(user32.IsWindow(hwnd)), int(current.value), pid, app_pid
+        )
+
+    def send(messages: list[tuple[int, int, int]]) -> bool:
+        return all(_post(user32, hwnd, message, wparam, lparam)
+                   for message, wparam, lparam in messages)
+
     max_lag_ns = max_lag_ms * 1_000_000
-    start = time.perf_counter_ns()
-    records: list[dict] = []
-    held: list[int] = []
-    cancelled = False
-    for action in actions:
-        interval_ns = max(1, int(round(1_000_000_000 / action["requested_hz"])))
-        _sleep_until(start + action["planned_ns"])
-        actual = time.perf_counter_ns() - start
-        lag = actual - action["planned_ns"]
-        record = {"sequence": action["sequence"], "kind": action["kind"]}
-        if lag > max_lag_ns:
-            record.update(action_record(
-                action["planned_ns"], actual, False, True, interval_ns, max_lag_ns
-            ))
-            record["excluded_reason"] = "SCHEDULE_LAG_EXCEEDED"
-            records.append(record)
-            continue
-        messages = message_plan(action["kind"], action["payload"], action["sequence"])
-        if action["kind"] == "held-key":
-            held.append(VK[action["payload"]["key"]])
-        delivered = all(_post(user32, hwnd, message, wparam, lparam)
-                        for message, wparam, lparam in messages)
-        record.update(action_record(
-            action["planned_ns"], actual, delivered, False, interval_ns, max_lag_ns
-        ))
-        record["excluded_reason"] = "" if delivered else "POST_MESSAGE_REFUSED"
-        records.append(record)
-    close = {"attempts": 0, "posted": False, "window_gone": False}
+    input_start_wall_ns = time.time_ns()
+    records, held, binding_lost = execute_actions(
+        actions, time.perf_counter_ns, verify, send, max_lag_ns
+    )
+    input_end_wall_ns = time.time_ns()
+    close = {"attempts": 0, "posted": False, "window_gone": False, "refused": ""}
     for key in dict.fromkeys(held):
         _post(user32, hwnd, WM_KEYUP, key, 0xC0000001)
-    close_once(close, lambda: _post(user32, hwnd, WM_CLOSE, 0, 0))
+    if not close_if_valid(verify, close, lambda: _post(user32, hwnd, WM_CLOSE, 0, 0)):
+        close["refused"] = "BINDING_LOST"
     deadline = time.monotonic() + close_timeout_ms / 1000.0
     while time.monotonic() < deadline:
         if not user32.IsWindow(hwnd):
@@ -335,7 +378,7 @@ def run(plan_path: Path, out_path: Path, title: str, generation: int,
         "probe_version": PROBE_VERSION,
         "generation": generation,
         "binding": {
-            "bound": True,
+            "bound": not binding_lost,
             "launcher_pid": bound_launcher,
             "helper_pid": helper_pid,
             "window_pid": pid,
@@ -343,14 +386,21 @@ def run(plan_path: Path, out_path: Path, title: str, generation: int,
         "window": {"pid": pid, "title": window_title},
         "synthetic": True,
         "actions": records,
+        "binding_lost": binding_lost,
         "close": close,
-        "cancelled": cancelled,
+        "cancelled": binding_lost,
+        "time_correspondence": {
+            "input_start_wall_ns": input_start_wall_ns,
+            "input_end_wall_ns": input_end_wall_ns,
+        },
     }
     text = json.dumps(document, sort_keys=True, indent=2) + "\n"
     if len(text.encode("utf-8")) > r0c.MAX_TRACE_BYTES:
         raise ProbeError("OUTPUT_TOO_LARGE")
     with out_path.open("x", encoding="utf-8", newline="\n") as handle:
         handle.write(text)
+    if binding_lost:
+        raise ProbeError("BINDING_LOST")
     return 0
 
 

@@ -59,9 +59,22 @@ def probe_for(trace: dict, *, generation: int = GENERATION, pid: int = OBSERVATI
 def journal() -> dict:
     return {
         "capture_sha256": "sha256:" + "1" * 64,
+        "observation_sha256": "sha256:" + "3" * 64,
         "counts": {"0": 140, "1": 140, "2": 51, "3": 51, "8": 2, "9": 1},
         "summary": {},
         "scope_ns": 30_000_000_000,
+    }
+
+
+def correspondence() -> dict:
+    return {
+        "method": "wall-clock-capture-lifetime",
+        "inside": True,
+        "input_start_wall_ns": 2_000,
+        "input_end_wall_ns": 9_000,
+        "capture_start_wall_ns": 1_000,
+        "capture_end_wall_ns": 30_000,
+        "scope_ns": 30_000,
     }
 
 
@@ -90,7 +103,7 @@ def result(probe: dict | None = None, journal_document=_MISSING,
         document, trace, probe, journal_document, 0,
         {"wrapper_exit": 0, "child_reaped": True, "close_posted": True,
          "timed_out": False, "cancelled": False},
-        status, reason, limits(), delivered,
+        status, reason, limits(), delivered, correspondence(),
     )
 
 
@@ -133,7 +146,7 @@ class ResultTests(unittest.TestCase):
             document, trace, probe, journal(), 0,
             {"wrapper_exit": 0, "child_reaped": True, "close_posted": True,
              "timed_out": False, "cancelled": False},
-            "COMPLETE", "", limits(), 1,
+            "COMPLETE", "", limits(), 1, correspondence(),
         )
         self.assertIsNone(document_result["achieved_cadence"]["keyboard"])
         r0c.validate_result(document_result)
@@ -207,7 +220,7 @@ class ResultTests(unittest.TestCase):
             document, trace, probe, journal(), 0,
             {"wrapper_exit": 0, "child_reaped": True, "close_posted": True,
              "timed_out": False, "cancelled": False},
-            "COMPLETE", "", limits(), 0,
+            "COMPLETE", "", limits(), 0, correspondence(),
         )
         with self.assertRaises(r0c.ContractError) as caught:
             r0c.validate_result(candidate)
@@ -218,7 +231,8 @@ class ResultTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "result.json"
             path.write_text(json.dumps(document), encoding="utf-8")
-            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path)})()
+            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
+                                     "output_dir": directory})()
             with self.assertRaises(r0c.ContractError) as caught:
                 r0c_driver.verify(args)
             self.assertEqual(caught.exception.code, "NOT_COMPLETE")
@@ -266,6 +280,134 @@ class ProbeVerificationTests(unittest.TestCase):
             r0c_driver.verify_probe(probe, document, trace, set(),
                                     LAUNCHER_PID, OBSERVATION_PID, GENERATION)
         self.assertEqual(caught.exception.code, "PROBE_CLASSIFICATION_MISMATCH")
+
+
+class TimeCorrespondenceTests(unittest.TestCase):
+    def test_an_input_range_outside_the_capture_is_refused(self) -> None:
+        with self.assertRaises(r0c_driver.DriverError) as caught:
+            r0c_driver.check_time_correspondence(
+                {"time_correspondence": {"input_start_wall_ns": 500,
+                                          "input_end_wall_ns": 2_000}},
+                1_000, 30_000, 30_000,
+            )
+        self.assertEqual(caught.exception.code, "CAPTURE_RANGE_MISMATCH")
+
+    def test_an_input_range_beyond_the_declared_scope_is_refused(self) -> None:
+        with self.assertRaises(r0c_driver.DriverError) as caught:
+            r0c_driver.check_time_correspondence(
+                {"time_correspondence": {"input_start_wall_ns": 1_500,
+                                          "input_end_wall_ns": 40_000}},
+                1_000, 60_000, 30_000,
+            )
+        self.assertEqual(caught.exception.code, "CAPTURE_RANGE_MISMATCH")
+
+    def test_an_unknown_range_is_refused(self) -> None:
+        with self.assertRaises(r0c_driver.DriverError) as caught:
+            r0c_driver.check_time_correspondence({}, 1_000, 30_000, 30_000)
+        self.assertEqual(caught.exception.code, "CAPTURE_RANGE_UNKNOWN")
+        with self.assertRaises(r0c_driver.DriverError) as caught:
+            r0c_driver.check_time_correspondence(
+                {"time_correspondence": {"input_start_wall_ns": 1_500,
+                                          "input_end_wall_ns": 2_000}},
+                0, 30_000, 30_000,
+            )
+        self.assertEqual(caught.exception.code, "CAPTURE_RANGE_UNKNOWN")
+
+
+class RecomputeTests(unittest.TestCase):
+    def test_a_consistent_result_recomputes(self) -> None:
+        document = result()
+        recomputed = r0c_driver.recompute(document, manifest())
+        self.assertEqual(recomputed["delivered_actions"], len(document["actions"]))
+
+    def test_tampered_delivered_flag_is_detected(self) -> None:
+        document = copy.deepcopy(result())
+        document["actions"][0]["delivered"] = False
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.recompute(document, manifest())
+        self.assertIn(caught.exception.code, ("CLASSIFICATION_MISMATCH", "DELIVERED_MISMATCH"))
+
+    def test_tampered_achieved_cadence_is_detected(self) -> None:
+        document = copy.deepcopy(result())
+        document["achieved_cadence"]["keyboard"] = 99.0
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.recompute(document, manifest())
+        self.assertEqual(caught.exception.code, "CADENCE_MISMATCH")
+
+    def test_tampered_journal_counts_are_detected(self) -> None:
+        document = copy.deepcopy(result())
+        document["journal"]["counts"]["8"] = 999
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c_driver.recompute(document, manifest())
+        self.assertEqual(caught.exception.code, "ENDPOINT_MISMATCH")
+
+    def test_verify_rejects_a_tampered_result_before_trusting_aggregates(self) -> None:
+        document = copy.deepcopy(result())
+        document["actions"][0]["delivered"] = False
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "result.json"
+            path.write_text(json.dumps(document), encoding="utf-8")
+            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
+                                     "output_dir": directory})()
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.verify(args)
+            self.assertIn(caught.exception.code,
+                          ("CLASSIFICATION_MISMATCH", "DELIVERED_MISMATCH"))
+
+    def test_verify_requires_the_original_evidence(self) -> None:
+        document = result()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "result.json"
+            path.write_text(json.dumps(document), encoding="utf-8")
+            args = type("Args", (), {"manifest": str(MANIFEST), "result": str(path),
+                                     "output_dir": directory})()
+            with self.assertRaises(r0c.ContractError) as caught:
+                r0c_driver.verify(args)
+            self.assertEqual(caught.exception.code, "EVIDENCE_MISSING")
+
+
+class BindingLossTests(unittest.TestCase):
+    def test_binding_loss_stops_actions_before_the_next_post(self) -> None:
+        actions = [
+            {"sequence": index, "kind": "keyboard", "planned_ns": index * 1_000_000,
+             "requested_hz": 20.0, "payload": {"key": "TAB"}}
+            for index in range(5)
+        ]
+        verifications = [True, True, False]
+        sent: list[int] = []
+
+        def verify() -> bool:
+            return verifications.pop(0) if verifications else False
+
+        def send(messages) -> bool:
+            sent.append(len(messages))
+            return True
+
+        records, held, binding_lost = r0c_input.execute_actions(
+            actions, lambda: 1_000_000_000, verify, send, r0c.MAX_LAG_MS * 1_000_000
+        )
+        self.assertTrue(binding_lost)
+        self.assertEqual(len(records), 2)
+        self.assertEqual(sent, [2, 2])
+        self.assertEqual(held, [])
+
+    def test_close_is_not_posted_when_the_binding_is_lost(self) -> None:
+        close = {"attempts": 0, "posted": False}
+        calls: list[int] = []
+
+        def post() -> bool:
+            calls.append(1)
+            return True
+
+        self.assertFalse(r0c_input.close_if_valid(lambda: False, close, post))
+        self.assertEqual(close["attempts"], 0)
+        self.assertEqual(calls, [])
+
+    def test_binding_valid_rejects_a_changed_window_or_chain(self) -> None:
+        self.assertTrue(r0c_input.binding_valid(True, 10, 10, 10))
+        self.assertFalse(r0c_input.binding_valid(False, 10, 10, 10))
+        self.assertFalse(r0c_input.binding_valid(True, 11, 10, 10))
+        self.assertFalse(r0c_input.binding_valid(True, 10, 10, 11))
 
 
 class BoundedRunnerTests(unittest.TestCase):

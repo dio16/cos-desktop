@@ -75,6 +75,13 @@ class ManifestTests(unittest.TestCase):
             r0c.validate_manifest(document)
         self.assertEqual(caught.exception.code, "NOT_IMPLEMENTED")
 
+    def test_burst_above_one_is_refused(self) -> None:
+        document = copy.deepcopy(manifest())
+        document["actions"][0]["burst"] = 4
+        with self.assertRaises(r0c.ContractError) as caught:
+            r0c.validate_manifest(document)
+        self.assertEqual(caught.exception.code, "NOT_IMPLEMENTED")
+
     def test_order_must_match_the_actions(self) -> None:
         document = copy.deepcopy(manifest())
         document["scenario"]["order"] = ["pointer"]
