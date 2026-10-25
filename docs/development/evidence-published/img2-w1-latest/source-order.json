@@ -1,18 +1,25 @@
 {
   "schema_version": 1,
-  "scope": "source order and probe-local literal check; behaviour evidence is matrix.json",
-  "probe": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+  "scope": "source order and probe/helper literal check; behaviour evidence is matrix.json",
+  "files": [
+    "apps/desktop/examples/decode_compare/wic_probe.ps1",
+    "apps/desktop/examples/decode_compare/wic_admission.ps1"
+  ],
   "anchors": {
-    "declared_metadata_read": 354,
-    "admission_block_start": 359,
-    "decoded_byte_refusal": 410,
-    "onload_materialization": 436,
-    "format_conversion": 437,
-    "encoder_save": 460
+    "declared_metadata_read": 298,
+    "admission_block_start": 303,
+    "budget_presence": 252,
+    "decoded_byte_refusal": 355,
+    "onload_materialization": 382,
+    "format_conversion": 383,
+    "encoder_save": 406
   },
   "ordering_proven": true,
-  "forbidden_budget_literals": [],
+  "forbidden_budget_literals": {
+    "probe": [],
+    "helper": []
+  },
   "budget_literals_absent": true,
-  "limits_source": "harness-resolved media DecodeBudget ratified_default plus operator overrides, forwarded as argv; the probe holds only ordering and checked arithmetic",
-  "note": "This is a structural guard for the pre-materialization placement, not a memory measurement or a WIC-internal allocation claim."
+  "limits_source": "harness-resolved media DecodeBudget ratified_default plus operator overrides, forwarded as argv; probe/helper hold only explicit-binding presence, ordering and checked row arithmetic",
+  "note": "A structural guard for pre-materialization placement, not a memory measurement or WIC-internal allocation claim."
 }

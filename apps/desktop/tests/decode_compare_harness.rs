@@ -678,6 +678,35 @@ fn candidate_reason_is_whitelisted_and_never_copied() {
 }
 
 #[test]
+fn wic_admission_selftest_passes_with_powershell() {
+    let script =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/wic_admission_selftest.ps1");
+    let output = match std::process::Command::new("pwsh")
+        .args(["-NoProfile", "-File"])
+        .arg(&script)
+        .output()
+    {
+        Ok(output) => output,
+        Err(error) => {
+            eprintln!(
+                "NOT_RUN: pwsh is unavailable ({error}); pure admission selftest not executed"
+            );
+            return;
+        }
+    };
+    assert!(
+        output.status.success(),
+        "selftest failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("\"failures\":[]"),
+        "unexpected selftest report: {stdout}"
+    );
+}
+
+#[test]
 fn admission_refusal_token_is_whitelisted_and_classified_oversize() {
     let fixture = Fixture::new();
     fixture.case("a-refused.png", "reason-budget");

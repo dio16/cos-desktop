@@ -618,14 +618,33 @@ cargo run --locked -p cos-desktop --example decode_compare -- \
 ```
 
 The probe checks the declared width/height, the closed pixel-format/depth
-mapping, `max_dimension`, `max_pixels`, source decoded bytes
-(`ceil(area * bits-per-pixel / 8)`), the BGRA32 conversion destination plus the
-declared scratch allowance against the scratch ceiling, and the bundle's own
-validity — with exact integer arithmetic — **before**
-`BitmapDecoder.Create(..., CacheOption::OnLoad)`. A refusal exits 4 (`oversize`)
+mapping, `max_dimension`, `max_pixels`, the per-row source decoded bytes
+(`height * ceil(width * bits-per-pixel / 8)`), the BGRA32 conversion destination
+plus the declared scratch allowance against the scratch ceiling, and the bundle's
+own validity — with exact integer arithmetic — **before**
+`BitmapDecoder.Create(..., CacheOption::OnLoad)`. Row-by-row sizing matters for
+packed formats: a 1-bit 1×16 image requires 16 bytes, not the two a whole-image
+bit total implies. WIC's own stride alignment and internal buffers remain
+`NOT_MEASURED`. `Bgr565` reports its widest channel depth (6), not 5.
+
+Presence is the operator's explicit binding: `-MaxDimension 0` (or any explicit
+zero limit) is `invalid_limits`, never "flag absent"; a declared scratch
+allowance without the four limits is also refused. A refusal exits 4 (`oversize`)
 with a distinct reason code, or 1/2/3 for invalid limits, unsupported format and
 invalid metadata; it writes no output. `admission_status`/`materialization` in
-the probe's own JSON show the stage, and `matrix.json` records real cases.
+the probe's own JSON show the stage, and `matrix.json` records real cases, their
+expected outcomes and a verification status.
+
+The pure arithmetic and format table live in `wic_admission.ps1` and are
+regression-tested without WIC or a file write:
+
+```text
+pwsh -NoProfile -File apps/desktop/tests/wic_admission_selftest.ps1
+```
+
+`run_matrix.py` now refuses an existing work root instead of deleting anything it
+did not create, and exits non-zero when any recorded outcome contradicts its
+expectation.
 
 The BGRA32 conversion charge to `max_scratch_bytes` is a W1 interpretation, not
 measured decoder behaviour. WIC-internal temporaries remain `not_measured`; the

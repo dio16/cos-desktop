@@ -1,8 +1,14 @@
 {
   "schema_version": 1,
   "slice": "MP-IMG2-W1",
+  "revision": 2,
+  "repairs": [
+    "explicit zero budget presence via PSBoundParameters",
+    "Bgr565 widest channel depth corrected to 6",
+    "decoded byte requirement summed per row",
+    "runner refuses an existing work root and verifies expected outcomes"
+  ],
   "scope": "WIC pre-materialization decode admission; exploratory real-Windows matrix",
-  "directive_sha256": "sha256:450ce31e92d97b991993ff68167b0e3bf43455ecfe0392acf6a79f47e5bcc61b",
   "probe_identity": "wic_probe 1.1 (managed WIC/WPF, pre-materialization decode budget, PowerShell 7.6.7, .NET 10.0.13)",
   "fixtures": [
     {
@@ -164,19 +170,28 @@
         "case_id": "at17.png",
         "observed_outcome": "oversize",
         "candidate_reason": "max_dimension_exceeded",
-        "validity": "not_measured"
+        "validity": "not_measured",
+        "pixel_digest": null,
+        "output_bytes": null,
+        "exit_code": 4
       },
       {
         "case_id": "ok.bmp",
         "observed_outcome": "decoded",
         "candidate_reason": "not_measured",
-        "validity": "pixels_verified"
+        "validity": "pixels_verified",
+        "pixel_digest": "614fd59f81a4457909acaa056573427fd8dc8a4095f60a70a72a8b170b321c8a",
+        "output_bytes": 140,
+        "exit_code": 0
       },
       {
         "case_id": "ok.png",
         "observed_outcome": "decoded",
         "candidate_reason": "not_measured",
-        "validity": "pixels_verified"
+        "validity": "pixels_verified",
+        "pixel_digest": "614fd59f81a4457909acaa056573427fd8dc8a4095f60a70a72a8b170b321c8a",
+        "output_bytes": 140,
+        "exit_code": 0
       }
     ]
   },
@@ -194,11 +209,12 @@
       "reason_code": null,
       "admission_status": "admitted",
       "materialization": "completed",
+      "row_bytes": 48,
       "decoded_bytes_required": 768,
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 721
+      "elapsed_ms": 718
     },
     {
       "case": "max_pixels_over",
@@ -213,11 +229,12 @@
       "reason_code": "max_pixels_exceeded",
       "admission_status": "refused",
       "materialization": "not_requested",
+      "row_bytes": null,
       "decoded_bytes_required": null,
       "bgra32_bytes_required": null,
       "scratch_bytes_required": null,
       "output_exists": false,
-      "elapsed_ms": 671
+      "elapsed_ms": 693
     },
     {
       "case": "max_dimension_at",
@@ -232,11 +249,12 @@
       "reason_code": null,
       "admission_status": "admitted",
       "materialization": "completed",
+      "row_bytes": 48,
       "decoded_bytes_required": 768,
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 704
+      "elapsed_ms": 731
     },
     {
       "case": "max_dimension_over",
@@ -251,11 +269,12 @@
       "reason_code": "max_dimension_exceeded",
       "admission_status": "refused",
       "materialization": "not_requested",
+      "row_bytes": null,
       "decoded_bytes_required": null,
       "bgra32_bytes_required": null,
       "scratch_bytes_required": null,
       "output_exists": false,
-      "elapsed_ms": 661
+      "elapsed_ms": 676
     },
     {
       "case": "max_decoded_at",
@@ -270,11 +289,12 @@
       "reason_code": null,
       "admission_status": "admitted",
       "materialization": "completed",
+      "row_bytes": 48,
       "decoded_bytes_required": 768,
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 738
+      "elapsed_ms": 720
     },
     {
       "case": "max_decoded_over",
@@ -289,11 +309,12 @@
       "reason_code": "max_decoded_bytes_exceeded",
       "admission_status": "refused",
       "materialization": "not_requested",
+      "row_bytes": 48,
       "decoded_bytes_required": 768,
       "bgra32_bytes_required": null,
       "scratch_bytes_required": null,
       "output_exists": false,
-      "elapsed_ms": 680
+      "elapsed_ms": 696
     },
     {
       "case": "max_scratch_at",
@@ -308,11 +329,12 @@
       "reason_code": null,
       "admission_status": "admitted",
       "materialization": "completed",
+      "row_bytes": 48,
       "decoded_bytes_required": 768,
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 748
+      "elapsed_ms": 727
     },
     {
       "case": "max_scratch_over",
@@ -327,11 +349,12 @@
       "reason_code": "max_scratch_bytes_exceeded",
       "admission_status": "refused",
       "materialization": "not_requested",
+      "row_bytes": null,
       "decoded_bytes_required": 768,
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": false,
-      "elapsed_ms": 680
+      "elapsed_ms": 714
     },
     {
       "case": "max_bit_depth_at",
@@ -346,11 +369,12 @@
       "reason_code": null,
       "admission_status": "admitted",
       "materialization": "completed",
+      "row_bytes": 48,
       "decoded_bytes_required": 768,
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 725
+      "elapsed_ms": 733
     },
     {
       "case": "max_bit_depth_over",
@@ -365,11 +389,12 @@
       "reason_code": "max_bit_depth_exceeded",
       "admission_status": "refused",
       "materialization": "not_requested",
+      "row_bytes": null,
       "decoded_bytes_required": null,
       "bgra32_bytes_required": null,
       "scratch_bytes_required": null,
       "output_exists": false,
-      "elapsed_ms": 668
+      "elapsed_ms": 693
     },
     {
       "case": "legacy_max_pixels_over",
@@ -380,11 +405,12 @@
       "reason_code": "max_pixels_exceeded",
       "admission_status": "refused",
       "materialization": "not_requested",
+      "row_bytes": null,
       "decoded_bytes_required": null,
       "bgra32_bytes_required": null,
       "scratch_bytes_required": null,
       "output_exists": false,
-      "elapsed_ms": 661
+      "elapsed_ms": 673
     },
     {
       "case": "legacy_max_pixels_at",
@@ -395,11 +421,12 @@
       "reason_code": null,
       "admission_status": "not_enforced",
       "materialization": "completed",
+      "row_bytes": 48,
       "decoded_bytes_required": 768,
       "bgra32_bytes_required": 1024,
       "scratch_bytes_required": 1024,
       "output_exists": true,
-      "elapsed_ms": 714
+      "elapsed_ms": 719
     }
   ],
   "probe_edge_cases": [
@@ -407,6 +434,27 @@
       "case": "partial_budget",
       "exit_code": 1,
       "reason_code": "invalid_limits",
+      "reason": "budget admission requires every limit to be positive",
+      "admission_status": "not_enforced",
+      "materialization": "not_requested",
+      "output_exists": false,
+      "hresult": null
+    },
+    {
+      "case": "explicit_zero_dimension",
+      "exit_code": 1,
+      "reason_code": "invalid_limits",
+      "reason": "budget admission requires every limit to be positive",
+      "admission_status": "not_enforced",
+      "materialization": "not_requested",
+      "output_exists": false,
+      "hresult": null
+    },
+    {
+      "case": "scratch_only",
+      "exit_code": 1,
+      "reason_code": "invalid_limits",
+      "reason": "a declared scratch allowance requires the four budget limits",
       "admission_status": "not_enforced",
       "materialization": "not_requested",
       "output_exists": false,
@@ -416,6 +464,7 @@
       "case": "negative_budget",
       "exit_code": 1,
       "reason_code": "invalid_limits",
+      "reason": "decode budget values must not be negative",
       "admission_status": "not_enforced",
       "materialization": "not_requested",
       "output_exists": false,
@@ -425,6 +474,7 @@
       "case": "declared_scratch_over",
       "exit_code": 4,
       "reason_code": "max_scratch_bytes_exceeded",
+      "reason": "required conversion plus declared scratch exceeds the decode budget",
       "admission_status": "refused",
       "materialization": "not_requested",
       "output_exists": false,
@@ -434,6 +484,7 @@
       "case": "missing_input",
       "exit_code": 1,
       "reason_code": "input_missing",
+      "reason": "input file does not exist",
       "admission_status": "not_enforced",
       "materialization": "not_requested",
       "output_exists": false,
@@ -443,6 +494,7 @@
       "case": "huge_declared",
       "exit_code": 4,
       "reason_code": "max_dimension_exceeded",
+      "reason": "declared edge exceeds the decode-budget maximum dimension",
       "admission_status": "refused",
       "materialization": "not_requested",
       "output_exists": false,
@@ -452,6 +504,7 @@
       "case": "unknown_format",
       "exit_code": 2,
       "reason_code": "win_component_not_found",
+      "reason": "WINCODEC_ERR_COMPONENTNOTFOUND",
       "admission_status": "not_enforced",
       "materialization": "not_requested",
       "output_exists": false,
@@ -461,6 +514,7 @@
       "case": "truncated_idat",
       "exit_code": 0,
       "reason_code": null,
+      "reason": null,
       "admission_status": "admitted",
       "materialization": "completed",
       "output_exists": true,
@@ -470,6 +524,7 @@
       "case": "truncated_container",
       "exit_code": 2,
       "reason_code": "win_unknown_image_format",
+      "reason": "WINCODEC_ERR_UNKNOWNIMAGEFORMAT",
       "admission_status": "not_enforced",
       "materialization": "not_requested",
       "output_exists": false,
@@ -479,6 +534,7 @@
       "case": "zero_dimension",
       "exit_code": 3,
       "reason_code": "win_bad_header",
+      "reason": "WINCODEC_ERR_BADHEADER",
       "admission_status": "not_enforced",
       "materialization": "not_requested",
       "output_exists": false,
@@ -488,72 +544,12 @@
   "probe_repeat_identical": true,
   "cancellation": {
     "exit_code": 0,
-    "all_cancelled": true,
-    "observations": [
-      {
-        "case_id": "at17.png",
-        "observed_outcome": "cancelled",
-        "cancellation_requested_at_ms": 1,
-        "cancellation_observed_ms": 1,
-        "cancelled_at_reason": null
-      },
-      {
-        "case_id": "huge.png",
-        "observed_outcome": "cancelled",
-        "cancellation_requested_at_ms": 1,
-        "cancellation_observed_ms": 1,
-        "cancelled_at_reason": null
-      },
-      {
-        "case_id": "junk.bin",
-        "observed_outcome": "cancelled",
-        "cancellation_requested_at_ms": 1,
-        "cancellation_observed_ms": 1,
-        "cancelled_at_reason": null
-      },
-      {
-        "case_id": "ok.bmp",
-        "observed_outcome": "cancelled",
-        "cancellation_requested_at_ms": 1,
-        "cancellation_observed_ms": 1,
-        "cancelled_at_reason": null
-      },
-      {
-        "case_id": "ok.jpg",
-        "observed_outcome": "cancelled",
-        "cancellation_requested_at_ms": 1,
-        "cancellation_observed_ms": 1,
-        "cancelled_at_reason": null
-      },
-      {
-        "case_id": "ok.png",
-        "observed_outcome": "cancelled",
-        "cancellation_requested_at_ms": 1,
-        "cancellation_observed_ms": 1,
-        "cancelled_at_reason": null
-      },
-      {
-        "case_id": "truncated-file.png",
-        "observed_outcome": "cancelled",
-        "cancellation_requested_at_ms": 1,
-        "cancellation_observed_ms": 1,
-        "cancelled_at_reason": null
-      },
-      {
-        "case_id": "truncated.png",
-        "observed_outcome": "cancelled",
-        "cancellation_requested_at_ms": 1,
-        "cancellation_observed_ms": 1,
-        "cancelled_at_reason": null
-      },
-      {
-        "case_id": "zero.png",
-        "observed_outcome": "cancelled",
-        "cancellation_requested_at_ms": 1,
-        "cancellation_observed_ms": 1,
-        "cancelled_at_reason": null
-      }
-    ]
+    "all_cancelled": true
+  },
+  "verification": {
+    "mismatches": [],
+    "ok": true,
+    "record_generation": "succeeded"
   },
   "observed_interpretation": {
     "corrupt_png": "no PNG fixture produced the corrupt class through IDAT or CRC damage; the corrupt class is represented by the zero-dimension header",
@@ -563,27 +559,15 @@
   },
   "tests": {
     "rust_default": {
-      "passed": 534,
+      "passed": 535,
       "failed": 0,
       "ignored": 1
     },
-    "rust_feature": [
-      {
-        "name": "feature-clippy",
-        "elapsed_ms": 4174
-      },
-      {
-        "name": "feature-tests",
-        "elapsed_ms": 19812,
-        "passed": 538,
-        "failed": 0,
-        "ignored": 1
-      },
-      {
-        "name": "feature-build",
-        "elapsed_ms": 1281
-      }
-    ],
+    "rust_feature": {
+      "passed": 539,
+      "failed": 0,
+      "ignored": 1
+    },
     "python_r0": {
       "total": 352,
       "passed": 340,
@@ -595,6 +579,10 @@
         "NOT_RUN: no COS Desktop window is running in this session",
         "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
       ]
+    },
+    "selftest": {
+      "checks": 19,
+      "failures": 0
     }
   },
   "not_measured": [

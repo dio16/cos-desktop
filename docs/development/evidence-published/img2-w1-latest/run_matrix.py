@@ -131,12 +131,15 @@ def harness(cases: Path, out: Path, arguments: list[str]) -> dict:
 
 
 def main() -> int:
+    # Refuse to reuse a directory: this runner only ever deletes or overwrites files it
+    # created itself inside a fresh, exclusively created work root.
+    if WORK.exists():
+        print(json.dumps({"refused": "work_dir_exists",
+                          "work": "<W1_WORK>"}))
+        return 2
+    WORK.mkdir(parents=True, exist_ok=False)
     for directory in (CASES, RESULTS):
         directory.mkdir(parents=True, exist_ok=True)
-    for stale in CASES.glob("*"):
-        stale.unlink()
-    for stale in (WORK / "out").glob("*") if (WORK / "out").is_dir() else []:
-        stale.unlink()
 
     fixtures = {
         "ok.png": png(16, 16, SOLID),
@@ -222,6 +225,8 @@ def main() -> int:
 
     edge_cases = [
         run_probe("partial_budget", ok, None, {"MaxPixels": 256, "MaxDimension": 16}),
+        run_probe("explicit_zero_dimension", ok, None, {"MaxDimension": 0}),
+        run_probe("scratch_only", ok, None, {"DeclaredScratchBytes": 1}),
         run_probe("negative_budget", ok, None, {"MaxPixels": 256, "MaxDimension": -1,
                                                 "MaxBitDepth": 8, "MaxDecodedBytes": 768,
                                                 "MaxScratchBytes": 1024}),
@@ -297,14 +302,79 @@ def main() -> int:
                        "JPEG absolute raster equality",
                        "percentiles or performance distribution"],
     }
+    expectations = {
+        "ok.png": ("decoded", "pixels_verified", "not_measured"),
+        "ok.bmp": ("decoded", "pixels_verified", "not_measured"),
+        "ok.jpg": ("decoded", "structure_verified", "not_measured"),
+        "at17.png": ("decoded", "presence_only", "not_measured"),
+        "huge.png": ("oversize", "not_measured", "max_dimension_exceeded"),
+        "junk.bin": ("unsupported", "not_measured", "win_component_not_found"),
+        "truncated.png": ("decoded", "presence_only", "not_measured"),
+        "truncated-file.png": ("unsupported", "not_measured", "win_unknown_image_format"),
+        "zero.png": ("corrupt", "not_measured", "win_bad_header"),
+    }
+    mismatches = []
+    measured_rows = observations(baseline)
+    for case, (outcome, validity, reason) in expectations.items():
+        row = measured_rows.get(case)
+        if row is None:
+            mismatches.append({"case": case, "problem": "missing"})
+            continue
+        if (row["observed_outcome"], row["validity"], row["candidate_reason"]) != \
+                (outcome, validity, reason):
+            mismatches.append({"case": case, "observed": row})
+    boundary_expectations = {
+        "max_pixels_at": (0, None), "max_pixels_over": (4, "max_pixels_exceeded"),
+        "max_dimension_at": (0, None), "max_dimension_over": (4, "max_dimension_exceeded"),
+        "max_decoded_at": (0, None), "max_decoded_over": (4, "max_decoded_bytes_exceeded"),
+        "max_scratch_at": (0, None), "max_scratch_over": (4, "max_scratch_bytes_exceeded"),
+        "max_bit_depth_at": (0, None), "max_bit_depth_over": (4, "max_bit_depth_exceeded"),
+        "legacy_max_pixels_over": (4, "max_pixels_exceeded"),
+        "legacy_max_pixels_at": (0, None),
+    }
+    for row in boundaries:
+        expected = boundary_expectations[row["case"]]
+        if (row["exit_code"], row["stdout"].get("reason_code")) != expected:
+            mismatches.append({"case": row["case"], "observed": [row["exit_code"],
+                                                                 row["stdout"].get("reason_code")]})
+    edge_expectations = {
+        "partial_budget": (1, "invalid_limits"),
+        "explicit_zero_dimension": (1, "invalid_limits"),
+        "scratch_only": (1, "invalid_limits"),
+        "negative_budget": (1, "invalid_limits"),
+        "declared_scratch_over": (4, "max_scratch_bytes_exceeded"),
+        "missing_input": (1, "input_missing"),
+        "huge_declared": (4, "max_dimension_exceeded"),
+        "unknown_format": (2, "win_component_not_found"),
+        "truncated_idat": (0, None),
+        "truncated_container": (2, "win_unknown_image_format"),
+        "zero_dimension": (3, "win_bad_header"),
+    }
+    for row in edge_cases:
+        expected = edge_expectations[row["case"]]
+        if (row["exit_code"], row["stdout"].get("reason_code")) != expected:
+            mismatches.append({"case": row["case"], "observed": [row["exit_code"],
+                                                                 row["stdout"].get("reason_code")]})
+    if not repeatable:
+        mismatches.append({"problem": "harness_rerun_differs"})
+    if not probe_repeatable:
+        mismatches.append({"problem": "probe_rerun_differs"})
+    if not all(row["observed_outcome"] == "cancelled"
+               for row in cancelled.get("record", {}).get("observations", [])):
+        mismatches.append({"problem": "cancellation_not_observed"})
+    verification = {"ok": not mismatches, "mismatches": mismatches,
+                    "record_generation": "succeeded"}
+    report["verification"] = verification
     (RESULTS / "matrix.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n",
                                          encoding="utf-8")
     print(json.dumps({"cases": len(inventory), "baseline_exit": baseline["exit_code"],
                       "repeatable": repeatable, "probe_repeatable": probe_repeatable,
+                      "verification_ok": verification["ok"],
+                      "mismatches": mismatches,
                       "boundaries": [(row["case"], row["exit_code"],
                                       row["stdout"].get("reason_code"))
                                      for row in boundaries]}, indent=2))
-    return 0
+    return 0 if verification["ok"] else 1
 
 
 if __name__ == "__main__":

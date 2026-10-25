@@ -179,71 +179,9 @@ function Test-LocalDiskPath {
     return $true
 }
 
-# Declared format support is a closed mapping, not a guess. An unmodelled WIC format is
-# refused before materialization rather than assumed to be 8-bit RGBA. Depth is the
-# bits-per-channel used for the bit-depth ceiling; BitsPerPixel is WIC's own declared
-# storage width and drives the decoded-byte requirement.
-function Get-DeclaredFormatSpec {
-    param([string] $Name)
-
-    switch ($Name) {
-        'Bgra32' { return @{ Depth = 8; BitsPerPixel = 32 } }
-        'Pbgra32' { return @{ Depth = 8; BitsPerPixel = 32 } }
-        'Prgba64' { return @{ Depth = 16; BitsPerPixel = 64 } }
-        'Rgba64' { return @{ Depth = 16; BitsPerPixel = 64 } }
-        'Bgr32' { return @{ Depth = 8; BitsPerPixel = 32 } }
-        'Bgr24' { return @{ Depth = 8; BitsPerPixel = 24 } }
-        'Rgb24' { return @{ Depth = 8; BitsPerPixel = 24 } }
-        'Rgb48' { return @{ Depth = 16; BitsPerPixel = 48 } }
-        'Gray8' { return @{ Depth = 8; BitsPerPixel = 8 } }
-        'Gray16' { return @{ Depth = 16; BitsPerPixel = 16 } }
-        'Bgr565' { return @{ Depth = 5; BitsPerPixel = 16 } }
-        'Bgr555' { return @{ Depth = 5; BitsPerPixel = 16 } }
-        'Bgr101010' { return @{ Depth = 10; BitsPerPixel = 32 } }
-        'BlackWhite' { return @{ Depth = 1; BitsPerPixel = 1 } }
-        'Indexed1' { return @{ Depth = 1; BitsPerPixel = 1 } }
-        'Indexed2' { return @{ Depth = 2; BitsPerPixel = 2 } }
-        'Indexed4' { return @{ Depth = 4; BitsPerPixel = 4 } }
-        'Indexed8' { return @{ Depth = 8; BitsPerPixel = 8 } }
-        default { return $null }
-    }
-}
-
-# Exact required-byte arithmetic. BigInteger is used only as an exact integer, so a
-# hostile declared dimension cannot wrap a 64-bit value into an admitting one.
-function Get-AdmissionArithmetic {
-    param(
-        [long] $Width,
-        [long] $Height,
-        [int] $BitsPerPixel,
-        [long] $DeclaredScratch
-    )
-
-    $area = [System.Numerics.BigInteger]::Multiply(
-        [System.Numerics.BigInteger] $Width,
-        [System.Numerics.BigInteger] $Height)
-    $bits = [System.Numerics.BigInteger]::Multiply(
-        $area,
-        [System.Numerics.BigInteger] $BitsPerPixel)
-    $decoded = ([System.Numerics.BigInteger]::Add($bits, 7)) / 8
-    $bgra32 = [System.Numerics.BigInteger]::Multiply($area, 4)
-    $scratch = [System.Numerics.BigInteger]::Add($bgra32, [System.Numerics.BigInteger] $DeclaredScratch)
-    return @{
-        Area = $area
-        Decoded = $decoded
-        Bgra32 = $bgra32
-        Scratch = $scratch
-    }
-}
-
-function ConvertTo-ReportedLong {
-    param([System.Numerics.BigInteger] $Value)
-
-    if ($Value -gt [System.Numerics.BigInteger]::Parse([long]::MaxValue.ToString())) {
-        return $null
-    }
-    return [long] $Value
-}
+# Admission arithmetic and the closed format table live in a dot-sourced helper so
+# they are unit-testable without WIC and stay free of budget literals.
+. (Join-Path $PSScriptRoot 'wic_admission.ps1')
 
 if ($Version) {
     $identity = 'wic_probe 1.1 (managed WIC/WPF, pre-materialization decode budget, PowerShell {0}, {1})' -f `
@@ -272,6 +210,7 @@ $result = [ordered]@{
     limits_source             = 'none'
     bits_per_channel          = $null
     bits_per_pixel            = $null
+    row_bytes                 = $null
     decoded_bytes_required    = $null
     bgra32_bytes_required     = $null
     declared_scratch_bytes    = $DeclaredScratchBytes
@@ -310,8 +249,13 @@ $result.suffix = $file.Extension.TrimStart('.')
 # present the whole bundle must be usable: a partial, negative or zero budget is a
 # closed refusal, never an implicit default or a clamp. The numbers themselves come
 # from the harness's ratified DecodeBudget; no budget constant lives in this script.
-$budgetDeclared = ($MaxDimension -ne 0 -or $MaxBitDepth -ne 0 -or
-    $MaxDecodedBytes -ne 0 -or $MaxScratchBytes -ne 0)
+$budgetDeclared = Get-BudgetPresence -BoundNames $PSBoundParameters.Keys
+if ($PSBoundParameters.ContainsKey('DeclaredScratchBytes') -and -not $budgetDeclared) {
+    $result.outcome = 'error'
+    $result.reason_code = 'invalid_limits'
+    $result.reason = 'a declared scratch allowance requires the four budget limits'
+    Write-ProbeResult -Result $result -ExitCode $exitError
+}
 if ($DeclaredScratchBytes -lt 0 -or $MaxPixels -lt 0 -or $MaxDimension -lt 0 -or
     $MaxBitDepth -lt 0 -or $MaxDecodedBytes -lt 0 -or $MaxScratchBytes -lt 0) {
     $result.outcome = 'error'
@@ -405,6 +349,7 @@ try {
         Write-ProbeResult -Result $result -ExitCode $exitOversize
     }
     if ($budgetDeclared -and $math.Decoded -gt [System.Numerics.BigInteger] $MaxDecodedBytes) {
+        $result.row_bytes = ConvertTo-ReportedLong $math.RowBytes
         $result.decoded_bytes_required = ConvertTo-ReportedLong $math.Decoded
         $result.outcome = 'oversize'
         $result.reason_code = 'max_decoded_bytes_exceeded'
@@ -422,6 +367,7 @@ try {
         $result.admission_status = 'refused'
         Write-ProbeResult -Result $result -ExitCode $exitOversize
     }
+    $result.row_bytes = ConvertTo-ReportedLong $math.RowBytes
     $result.decoded_bytes_required = ConvertTo-ReportedLong $math.Decoded
     $result.bgra32_bytes_required = ConvertTo-ReportedLong $math.Bgra32
     $result.scratch_bytes_required = ConvertTo-ReportedLong $math.Scratch
