@@ -37,9 +37,10 @@ MAX_TIMEOUT_MS = r0c.MAX_DURATION_MS
 
 
 class DriverError(Exception):
-    def __init__(self, code: str):
+    def __init__(self, code: str, failures: dict[str, str] | None = None):
         super().__init__(code)
         self.code = code
+        self.failures = failures or {}
 
 
 def _sha256_file(path: Path) -> str:
@@ -261,60 +262,93 @@ CADENCE_NOTE = (
 )
 
 
-def verify_probe(probe: dict, manifest: dict, trace: dict, pre_run_pids: set[int],
-                 launcher_pid: int, observation_pid: int, generation: int) -> int:
-    """Bind the probe to the approved child and re-derive every classification.
+FAILURE_PRIORITY = (
+    "WINDOW_LAUNCHER_MISMATCH",
+    "WINDOW_GENERATION_MISMATCH",
+    "WINDOW_IDENTITY_MISMATCH",
+    "WINDOW_PID_MISMATCH",
+    "PROBE_TRACE_MISMATCH",
+    "PROBE_CLASSIFICATION_MISMATCH",
+    "PROBE_TRACE_INCOMPLETE",
+    "WINDOW_NOT_BOUND",
+)
 
-    Returns the number of delivered actions. A probe that echoes a different
-    generation, window, trace or classification is rejected rather than trusted.
+
+def priority_failure(failures: dict[str, str]) -> str:
+    codes = set(failures.values())
+    for code in FAILURE_PRIORITY:
+        if code in codes:
+            return code
+    return "WINDOW_NOT_BOUND"
+
+
+def probe_failures(probe: dict, manifest: dict, trace: dict, pre_run_pids: set[int],
+                   launcher_pid: int, observation_pid: int, generation: int) -> dict[str, str]:
+    """Evaluate every check independently and return the full failure set.
+
+    The ownership gate must not short-circuit identity evaluation: a probe can
+    have lost its binding and also carry a mismatched identity. Keys identify the
+    failed check; values are the stable reason codes.
     """
+    failures: dict[str, str] = {}
     binding = probe.get("binding") or {}
-    if binding.get("bound") is not True:
-        raise DriverError("WINDOW_NOT_BOUND")
-    if binding.get("launcher_pid") != launcher_pid:
-        raise DriverError("WINDOW_LAUNCHER_MISMATCH")
-    if probe.get("generation") != generation:
-        raise DriverError("WINDOW_GENERATION_MISMATCH")
     window = probe.get("window") or {}
+    if binding.get("bound") is not True:
+        failures["binding"] = "WINDOW_NOT_BOUND"
+    if binding.get("launcher_pid") != launcher_pid:
+        failures["launcher"] = "WINDOW_LAUNCHER_MISMATCH"
+    if probe.get("generation") != generation:
+        failures["generation"] = "WINDOW_GENERATION_MISMATCH"
     if window.get("title") != manifest["window"]["title"]:
-        raise DriverError("WINDOW_IDENTITY_MISMATCH")
+        failures["title"] = "WINDOW_IDENTITY_MISMATCH"
     pid = window.get("pid")
     if type(pid) is not int or pid <= 0 or pid in pre_run_pids:
-        raise DriverError("WINDOW_GENERATION_MISMATCH")
-    if pid != observation_pid:
-        raise DriverError("WINDOW_PID_MISMATCH")
+        failures["pid"] = "WINDOW_GENERATION_MISMATCH"
+    elif pid != observation_pid:
+        failures["pid"] = "WINDOW_PID_MISMATCH"
     if binding.get("window_pid") != pid:
-        raise DriverError("WINDOW_PID_MISMATCH")
+        failures["binding_pid"] = "WINDOW_PID_MISMATCH"
     planned = {action["sequence"]: action for action in trace["actions"]}
     seen: set[int] = set()
-    delivered = 0
     for action in probe.get("actions", []):
         sequence = action.get("sequence")
         if sequence not in planned or sequence in seen:
-            raise DriverError("PROBE_TRACE_MISMATCH")
+            failures.setdefault("trace", "PROBE_TRACE_MISMATCH")
+            continue
         expected = planned[sequence]
-        if action.get("kind") != expected["kind"]:
-            raise DriverError("PROBE_TRACE_MISMATCH")
-        if action.get("planned_ns") != expected["planned_ns"]:
-            raise DriverError("PROBE_TRACE_MISMATCH")
+        if action.get("kind") != expected["kind"] or action.get("planned_ns") != expected["planned_ns"]:
+            failures.setdefault("trace", "PROBE_TRACE_MISMATCH")
+            seen.add(sequence)
+            continue
         delivered_flag = action.get("delivered")
         suppressed = action.get("suppressed")
         attempted = action.get("attempted")
         if type(delivered_flag) is not bool or type(suppressed) is not bool or type(attempted) is not bool:
-            raise DriverError("PROBE_TRACE_MISMATCH")
+            failures.setdefault("trace", "PROBE_TRACE_MISMATCH")
+            seen.add(sequence)
+            continue
         interval_ns = max(1, int(round(1_000_000_000 / expected["requested_hz"])))
         expected_class = r0c.classify(
             expected["planned_ns"], action.get("actual_ns"), delivered_flag,
             interval_ns=interval_ns, suppressed=suppressed,
         )
         if action.get("classification") != expected_class:
-            raise DriverError("PROBE_CLASSIFICATION_MISMATCH")
-        if delivered_flag:
-            delivered += 1
+            failures.setdefault("classification", "PROBE_CLASSIFICATION_MISMATCH")
         seen.add(sequence)
     if seen != set(planned):
-        raise DriverError("PROBE_TRACE_INCOMPLETE")
-    return delivered
+        failures.setdefault("trace_incomplete", "PROBE_TRACE_INCOMPLETE")
+    return failures
+
+
+def verify_probe(probe: dict, manifest: dict, trace: dict, pre_run_pids: set[int],
+                 launcher_pid: int, observation_pid: int, generation: int) -> int:
+    """Verify the probe; raise with the full failure set rather than the first."""
+    failures = probe_failures(
+        probe, manifest, trace, pre_run_pids, launcher_pid, observation_pid, generation
+    )
+    if failures:
+        raise DriverError(priority_failure(failures), failures)
+    return sum(1 for action in probe.get("actions", []) if action.get("delivered") is True)
 
 
 def check_time_correspondence(probe: dict, capture_start_wall_ns: int,
@@ -569,7 +603,7 @@ FALLBACK_VERIFY_CODES = frozenset({"WINDOW_NOT_BOUND"})
 
 def verified_delivered(probe: dict, manifest: dict, trace: dict,
                        pre_run_pids: set[int], launcher_pid: int,
-                       observation_pid: int, generation: int) -> tuple[int, str]:
+                       observation_pid: int, generation: int) -> tuple[int, str, dict[str, str]]:
     """Verify the probe; the summary follows the detail only for a legitimate partial.
 
     Fallback is permitted only when the probe itself records a binding loss or
@@ -580,14 +614,15 @@ def verified_delivered(probe: dict, manifest: dict, trace: dict,
     try:
         return verify_probe(
             probe, manifest, trace, pre_run_pids, launcher_pid, observation_pid, generation
-        ), ""
+        ), "", {}
     except DriverError as error:
         recorded_loss = (
             probe.get("binding_lost") is True or probe.get("cancelled") is True
         )
-        if recorded_loss and error.code in FALLBACK_VERIFY_CODES:
-            return confirmed_deliveries(probe, trace), error.code
-        return 0, error.code
+        ownership_only = set(error.failures) == {"binding"}
+        if recorded_loss and ownership_only and error.code in FALLBACK_VERIFY_CODES:
+            return confirmed_deliveries(probe, trace), error.code, error.failures
+        return 0, error.code, error.failures
 
 
 def posted_successes(actions: list[dict]) -> int:
@@ -923,7 +958,7 @@ def launch(args: argparse.Namespace) -> int:
                                binding["executable_sha256"])
         except (s2b.ObservationError, contracts.ContractError, OSError):
             journal_error = "JOURNAL_INVALID"
-    delivered_actions, probe_error = verified_delivered(
+    delivered_actions, probe_error, probe_failure_set = verified_delivered(
         probe, manifest, trace, pre_run_pids, capture_process.pid, observation_pid, generation
     )
 
@@ -992,6 +1027,7 @@ def launch(args: argparse.Namespace) -> int:
         "observed_cadence": result["observed_cadence"],
         "delivered_actions": result["delivered_actions"],
         "journal_input_dispatch": result["journal"]["counts"].get("0", 0),
+        "probe_failures": probe_failure_set,
         "journal": result["journal"]["counts"],
         "endpoints_not_measured": [
             item["name"] for item in result["endpoints"] if item["status"] == "NOT_MEASURED"

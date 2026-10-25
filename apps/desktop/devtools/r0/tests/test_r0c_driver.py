@@ -1097,7 +1097,7 @@ class PartialSummaryTests(unittest.TestCase):
             path.write_text(json.dumps(probe), encoding="utf-8")
             resolved, state = r0c_driver.resolve_probe(path, trace, "COS Desktop")
             self.assertEqual(state, "PARTIAL")
-            delivered, error = r0c_driver.verified_delivered(
+            delivered, error, failures = r0c_driver.verified_delivered(
                 resolved, document, trace, set(), LAUNCHER_PID, OBSERVATION_PID, GENERATION
             )
             self.assertEqual(error, "WINDOW_NOT_BOUND")
@@ -1269,12 +1269,11 @@ class VerifiedDeliveredFallbackTests(unittest.TestCase):
         document = manifest()
         trace = r0c.plan_trace(document)
         probe = probe_for(trace)
-        probe["actions"] = probe["actions"][:3]
         probe["binding"]["bound"] = False
         probe["binding_lost"] = False
         probe["cancelled"] = False
-        self.assertEqual(r0c_driver.confirmed_deliveries(probe, trace), 3)
-        delivered, error = r0c_driver.verified_delivered(
+        self.assertEqual(r0c_driver.confirmed_deliveries(probe, trace), 460)
+        delivered, error, failures = r0c_driver.verified_delivered(
             probe, document, trace, set(), LAUNCHER_PID, OBSERVATION_PID, GENERATION
         )
         self.assertEqual(error, "WINDOW_NOT_BOUND")
@@ -1284,12 +1283,11 @@ class VerifiedDeliveredFallbackTests(unittest.TestCase):
         document = manifest()
         trace = r0c.plan_trace(document)
         probe = probe_for(trace)
-        probe["actions"] = probe["actions"][:3]
         probe["binding"]["bound"] = True
         probe["binding_lost"] = True
         probe["cancelled"] = True
         probe["actions"][0]["classification"] = "late"
-        delivered, error = r0c_driver.verified_delivered(
+        delivered, error, failures = r0c_driver.verified_delivered(
             probe, document, trace, set(), LAUNCHER_PID, OBSERVATION_PID, GENERATION
         )
         self.assertEqual(error, "PROBE_CLASSIFICATION_MISMATCH")
@@ -1299,15 +1297,62 @@ class VerifiedDeliveredFallbackTests(unittest.TestCase):
         document = manifest()
         trace = r0c.plan_trace(document)
         probe = probe_for(trace)
-        probe["actions"] = probe["actions"][:3]
         probe["binding"]["bound"] = False
         probe["binding_lost"] = True
         probe["cancelled"] = True
-        delivered, error = r0c_driver.verified_delivered(
+        delivered, error, failures = r0c_driver.verified_delivered(
             probe, document, trace, set(), LAUNCHER_PID, OBSERVATION_PID, GENERATION
         )
         self.assertEqual(error, "WINDOW_NOT_BOUND")
-        self.assertEqual(delivered, 3)
+        self.assertEqual(delivered, 460)
+
+
+class OrderIndependentVerifyTests(unittest.TestCase):
+    def test_a_lost_binding_plus_identity_mismatch_contributes_zero(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["binding"]["bound"] = False
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        probe["window"]["pid"] = probe["window"]["pid"] + 1
+        probe["binding"]["window_pid"] = probe["window"]["pid"]
+        delivered, error, failures = r0c_driver.verified_delivered(
+            probe, document, trace, set(), LAUNCHER_PID, OBSERVATION_PID, GENERATION
+        )
+        self.assertEqual(delivered, 0)
+        self.assertEqual(error, "WINDOW_PID_MISMATCH")
+        self.assertEqual(set(failures), {"binding", "pid"})
+
+    def test_a_lost_binding_with_matched_identity_still_falls_back(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["binding"]["bound"] = False
+        probe["binding_lost"] = True
+        probe["cancelled"] = True
+        delivered, error, failures = r0c_driver.verified_delivered(
+            probe, document, trace, set(), LAUNCHER_PID, OBSERVATION_PID, GENERATION
+        )
+        self.assertEqual(delivered, 460)
+        self.assertEqual(error, "WINDOW_NOT_BOUND")
+        self.assertEqual(set(failures), {"binding"})
+
+    def test_the_failure_set_is_order_independent(self) -> None:
+        document = manifest()
+        trace = r0c.plan_trace(document)
+        probe = probe_for(trace)
+        probe["binding"]["launcher_pid"] = LAUNCHER_PID + 1
+        probe["window"]["title"] = "Other"
+        first = r0c_driver.probe_failures(
+            probe, document, trace, set(), LAUNCHER_PID, OBSERVATION_PID, GENERATION
+        )
+        second = r0c_driver.probe_failures(
+            dict(reversed(list(probe.items()))), document, trace, set(),
+            LAUNCHER_PID, OBSERVATION_PID, GENERATION,
+        )
+        self.assertEqual(set(first), {"launcher", "title"})
+        self.assertEqual(first, second)
 
 
 class JournalRangeTests(unittest.TestCase):
