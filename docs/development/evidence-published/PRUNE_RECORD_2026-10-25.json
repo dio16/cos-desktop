@@ -1,0 +1,51 @@
+{
+ "format": "cos-desktop-evidence-prune-v1",
+ "policy": "ADR-0013-EVIDENCE-RETENTION",
+ "date": "2026-10-25",
+ "rule": "untracked bulky evidence that no document cites is pruned; digests retained here",
+ "pruned": [
+  {
+   "path": "docs/development/evidence/dock1/native/stimuli/r2-large-explicit.json",
+   "bytes": 7527785,
+   "sha256": "sha256:2466005614a36b2fdf2a9a00b9bd20e6d1d435378a0d9a900b59b20ea243767d"
+  },
+  {
+   "path": "docs/development/evidence/dock1/native/stimuli/r3-large-explicit.json",
+   "bytes": 7527783,
+   "sha256": "sha256:b5b8a57dde932d4ae9ee1f7a27a221c3edb2c8c3c17912f6a08e7e4624d18429"
+  },
+  {
+   "path": "docs/development/evidence/dock1/native/stimuli/r1-large-explicit.json",
+   "bytes": 7522621,
+   "sha256": "sha256:26ff4e5d9151bacef5fb78bb95b434068e12c4ceb7577117507fccf2ed483f60"
+  }
+ ],
+ "kept_though_large": [
+  {
+   "path": "docs/development/evidence/dock1/native/stimuli/r13-revoke-large.json",
+   "bytes": 7600805,
+   "sha256": "sha256:5c63d691c61109690473149a60a130c5db53643251c22ba106057a5266081a68"
+  },
+  {
+   "path": "docs/development/evidence/dock1/native/stimuli/r4-large-explicit.json",
+   "bytes": 7599740,
+   "sha256": "sha256:60c7470d497814c494474006c051ef8b27d729687a4d664ddaed02f0204512cf"
+  },
+  {
+   "path": "docs/development/evidence/dock1/native/stimuli/candidates-large.json",
+   "bytes": 5152613,
+   "sha256": "sha256:de6d7fbf9db373de41a513fc6a1098be219bfee0b81fc4eb3943762567d49eb7"
+  },
+  {
+   "path": "docs/development/evidence/nav1/native/stimuli/ten-thousand.json",
+   "bytes": 4084404,
+   "sha256": "sha256:32b9ef36e01e9e5516724c20e0aba5f3797909b1697d19515ad03e639a009204"
+  },
+  {
+   "path": "docs/development/evidence/pub1/step3/candidate-6731b7ad-HEAD.patch",
+   "bytes": 1644975,
+   "sha256": "sha256:46fcad3a0c0a41146747e4c7e1adf4b374881ee0b271697fa8c4f2528a86bf99"
+  }
+ ],
+ "note": "The kept files are cited by documentation; retiring them requires the citing documents to stop referencing them, which is a separate deliberate change."
+}
