@@ -61,6 +61,26 @@ pub(super) fn reveal(count: usize, index: usize, viewport: f32, offset: f32) -> 
     clamp_offset(count, viewport, -target)
 }
 
+/// Why Compare is unavailable for this candidate count, if it is (ADR-0010 D-2).
+///
+/// Compare stays visible and states this reason; it is never silently hidden.
+pub(super) fn compare_unavailable_reason(candidate_count: usize) -> Option<&'static str> {
+    (candidate_count < 2)
+        .then_some("two candidates are required in the current authorized observation")
+}
+
+/// Nearest valid row after a focused row disappears (ADR-0010 D-12).
+///
+/// The cursor keeps its position (clamped to the new length) without moving the
+/// selection; an empty dock yields no active row.
+pub(super) fn nearest_index(previous: Option<usize>, len: usize) -> Option<usize> {
+    if len == 0 {
+        None
+    } else {
+        Some(previous.unwrap_or(0).min(len - 1))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -90,6 +110,23 @@ mod tests {
                 assert!(window.scroll >= 0.0 && window.scroll <= (extent(count) - 800.0).max(0.0));
             }
         }
+    }
+
+    #[test]
+    fn compare_states_why_it_is_unavailable_instead_of_hiding() {
+        assert!(compare_unavailable_reason(0).is_some());
+        assert!(compare_unavailable_reason(1).is_some());
+        assert_eq!(compare_unavailable_reason(2), None);
+        assert_eq!(compare_unavailable_reason(7), None);
+    }
+
+    #[test]
+    fn a_disappearing_focus_target_moves_to_the_nearest_valid_row() {
+        assert_eq!(nearest_index(Some(4), 6), Some(4));
+        assert_eq!(nearest_index(Some(9), 6), Some(5));
+        assert_eq!(nearest_index(None, 3), Some(0));
+        assert_eq!(nearest_index(Some(2), 0), None);
+        assert_eq!(nearest_index(None, 0), None);
     }
 
     #[test]

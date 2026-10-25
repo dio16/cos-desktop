@@ -16,7 +16,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::task::{Poll, Waker};
 use ui_model::task_rail::{TaskRailCache, TaskRailState};
-use ui_model::{DerivationCache, DisplayCache, Workbench, presentation::ViewedCandidate};
+use ui_model::{
+    DerivationCache, DisplayCache, Workbench,
+    presentation::{CompareSide, SelectionEffect, ViewedCandidate},
+};
 
 mod accessibility;
 pub mod budget;
@@ -215,6 +218,8 @@ pub struct Shell {
     pending_restore_compare: Option<[desktop_protocol::CandidateRef; 2]>,
     restore_presentation_done: bool,
     restore_notice: Option<String>,
+    /// A closed, user-facing reason for a refused surface action (ADR-0010 D-2).
+    surface_notice: Option<String>,
     /// The last rendered immutable candidate family; reused without cloning identities.
     rendered_candidates: Arc<[Arc<ui_model::CandidateDisplay>]>,
     rail_state: TaskRailState,
@@ -342,6 +347,7 @@ impl Shell {
             pending_restore_compare: restored.compare,
             restore_presentation_done: false,
             restore_notice: None,
+            surface_notice: None,
             rail_state: TaskRailState::default(),
             rail_list,
             rail_focus,
@@ -545,7 +551,8 @@ impl Shell {
                         this.error = None;
                         this.rail_selection_pending = false;
                         let candidates = Arc::clone(&this.cache.text().artifacts);
-                        this.apply_restored_presentation(&candidates, cx);
+                        let task = this.cache.text().task.clone();
+                        this.apply_restored_presentation(&candidates, task.as_ref(), cx);
                         this.synchronize_stop_context();
                         let count = this
                             .rail_state
@@ -866,6 +873,16 @@ impl Shell {
     }
 
     fn navigate(&mut self, surface: Surface, cx: &mut Context<Self>) {
+        if surface == Surface::Compare
+            && let Some(reason) = dock::compare_unavailable_reason(self.rendered_candidates.len())
+        {
+            self.surface_notice = Some(format!("Compare is unavailable: {reason}."));
+            cx.notify();
+            return;
+        }
+        if surface == Surface::Compare {
+            self.surface_notice = None;
+        }
         if let Some(workbench) = &mut self.workbench {
             #[cfg(feature = "r0-s2b-instrumentation")]
             let changed = workbench.core.navigation.surface() != surface;
@@ -991,37 +1008,31 @@ impl Shell {
     fn apply_restored_presentation(
         &mut self,
         candidates: &[Arc<ui_model::CandidateDisplay>],
+        task: Option<&TaskId>,
         cx: &mut Context<Self>,
     ) {
         if self.restore_presentation_done {
             return;
         }
+        let viewed = self.pending_restore_viewed.take();
+        let pair = self.pending_restore_compare.take();
         let mut missing = Vec::new();
-        if let Some(viewed) = self.pending_restore_viewed.take() {
-            if candidates
-                .iter()
-                .any(|candidate| candidate.identity == viewed)
-            {
-                if let Some(workbench) = &mut self.workbench {
-                    workbench.presentation.view(ViewedCandidate(viewed));
-                }
-            } else {
-                missing.push("Viewed candidate");
+        if let Some(workbench) = &mut self.workbench {
+            if let Some(task) = task {
+                workbench.presentation.adopt_task(task.clone());
             }
-        }
-        if let Some(pair) = self.pending_restore_compare.take() {
-            if pair.iter().all(|remembered| {
+            let present = |reference: &desktop_protocol::CandidateRef| {
                 candidates
                     .iter()
-                    .any(|candidate| candidate.identity == *remembered)
-            }) {
-                if let Some(workbench) = &mut self.workbench {
-                    workbench.presentation.compare([
-                        ViewedCandidate(pair[0].clone()),
-                        ViewedCandidate(pair[1].clone()),
-                    ]);
-                }
-            } else {
+                    .any(|candidate| candidate.identity == *reference)
+            };
+            let outcome = workbench
+                .presentation
+                .restore(viewed.as_ref(), pair.as_ref(), present);
+            if outcome.viewed_missing {
+                missing.push("Viewed candidate");
+            }
+            if outcome.pair_missing {
                 missing.push("Compare pair");
             }
         }
@@ -1053,6 +1064,11 @@ impl Shell {
             return;
         };
         if self.rail_state.select(task, live) {
+            if let Some(workbench) = &mut self.workbench {
+                workbench.presentation.reset_for_task(task.clone());
+            }
+            self.dock_active = None;
+            self.surface_notice = None;
             self.set_rail_active(task.clone(), index);
             self.rail_selection_pending = true;
             self.rail_focus.focus(window, cx);
@@ -1104,14 +1120,44 @@ impl Shell {
         {
             return;
         }
+        let mut effect = SelectionEffect::ViewedOnly;
         if let Some(workbench) = &mut self.workbench {
-            workbench
+            effect = workbench
                 .presentation
-                .view(ViewedCandidate(identity.clone()));
+                .select(ViewedCandidate(identity.clone()));
         }
         self.dock_active = Some(identity);
         self.dock_focus.focus(window, cx);
+        self.surface_notice = None;
+        if matches!(effect, SelectionEffect::CompareSideB) {
+            self.navigate(Surface::Compare, cx);
+        }
         cx.notify();
+    }
+
+    /// Arm an explicit change-side action; the next dock selection updates that side
+    /// and never moves Viewed (ADR-0010 D-3/D-5). Nothing is replaced silently.
+    fn change_compare_side(&mut self, side: CompareSide, cx: &mut Context<Self>) {
+        let armed = self
+            .workbench
+            .as_mut()
+            .is_some_and(|workbench| workbench.presentation.arm_change(side));
+        if armed {
+            self.surface_notice = Some(format!(
+                "Changing compare side {}: select a candidate in the dock.",
+                side.label()
+            ));
+        }
+        cx.notify();
+    }
+
+    /// Close Compare: return to the artifact surface with the viewed candidate (D-7).
+    fn close_compare(&mut self, cx: &mut Context<Self>) {
+        if let Some(workbench) = &mut self.workbench {
+            workbench.presentation.close_compare();
+        }
+        self.surface_notice = None;
+        self.navigate(Surface::Artifact, cx);
     }
 
     /// Move the dock cursor by one logical candidate and reveal it.
@@ -1971,6 +2017,7 @@ impl Render for Shell {
         }
         let artifacts = text.artifacts.clone();
         let candidate_groups = text.candidate_groups.clone();
+        let formal_candidates = text.formal_candidates.clone();
         let viewed = self
             .workbench
             .as_ref()
@@ -1980,11 +2027,161 @@ impl Render for Shell {
             .workbench
             .as_ref()
             .and_then(|workbench| workbench.presentation.compare_pair());
-        let viewed_label = artifacts
-            .iter()
-            .find(|candidate| viewed.as_ref() == Some(&candidate.identity))
-            .map(|candidate| SharedString::from(candidate.label.clone()))
-            .unwrap_or_else(|| "Choose a candidate below".into());
+        let pending_side_a: Option<desktop_protocol::CandidateRef> = self
+            .workbench
+            .as_ref()
+            .and_then(|workbench| workbench.presentation.compare_side(CompareSide::A))
+            .map(|candidate| candidate.0.clone());
+        let changing_side = self
+            .workbench
+            .as_ref()
+            .and_then(|workbench| workbench.presentation.changing_side());
+        let surface_notice = self.surface_notice.clone();
+        let viewed_row = viewed.as_ref().and_then(|identity| {
+            artifacts
+                .iter()
+                .find(|candidate| candidate.identity == *identity)
+        });
+        // D-4: a held reference whose identity disappeared is explicitly unavailable,
+        // never silently replaced by another candidate.
+        let viewed_missing = viewed.is_some() && viewed_row.is_none();
+        let viewed_label: SharedString = if viewed_missing {
+            "Viewed candidate unavailable — it is no longer in the authorized observation. Choose another candidate."
+                .into()
+        } else {
+            viewed_row
+                .map(|candidate| SharedString::from(candidate.label.clone()))
+                .unwrap_or_else(|| "Choose a candidate below".into())
+        };
+        let side_a_exists = compare_pair.is_some() || pending_side_a.is_some();
+        let side_b_exists = compare_pair.is_some();
+        let compare_summary: SharedString = if let Some(side) = changing_side {
+            format!(
+                "Changing compare side {}: select a candidate in the dock.",
+                side.label()
+            )
+            .into()
+        } else if compare_pair.is_some() {
+            "Compare selection is local; Formal Selected stays Runtime-owned.".into()
+        } else if pending_side_a.is_some() {
+            "Side A is selected. Select a second candidate in the dock to start Compare.".into()
+        } else {
+            "No compare selection. Select two candidates in the dock.".into()
+        };
+        let compare_panel = div()
+            .id("compare-selection")
+            .role(Role::Group)
+            .aria_label("Compare selection — local, not Formal Selected")
+            .w_full()
+            .flex()
+            .flex_col()
+            .gap_4()
+            .child(div().flex().gap_4().children((0..2_usize).map(|index| {
+                let side = if index == 0 {
+                    CompareSide::A
+                } else {
+                    CompareSide::B
+                };
+                let reference = compare_pair
+                    .map(|pair| &pair[side.index()].0)
+                    .or(if index == 0 {
+                        pending_side_a.as_ref()
+                    } else {
+                        None
+                    });
+                let row = reference.and_then(|identity| {
+                    artifacts
+                        .iter()
+                        .find(|candidate| candidate.identity == *identity)
+                });
+                let available = reference.is_none() || row.is_some();
+                let label: SharedString = match (reference, row) {
+                    (None, _) => "Not selected".into(),
+                    (Some(_), Some(row)) => SharedString::from(row.label.clone()),
+                    (Some(_), None) => {
+                        "Unavailable — this candidate is no longer in the authorized projection."
+                            .into()
+                    }
+                };
+                let identity_label = reference
+                    .map(|identity| SharedString::from(identity.candidate_id.as_str()))
+                    .unwrap_or_else(|| SharedString::from("none"));
+                div()
+                    .id(("compare-side", index))
+                    .role(Role::Group)
+                    .aria_label(SharedString::from(format!(
+                        "Compare side {}: {}",
+                        side.label(),
+                        label
+                    )))
+                    .aria_value(identity_label)
+                    .flex_1()
+                    .min_w_0()
+                    .p_4()
+                    .border_1()
+                    .border_color(rgb(if available { 0x626870 } else { 0xd08a6a }))
+                    .bg(rgb(0x202328))
+                    .flex()
+                    .flex_col()
+                    .gap_2()
+                    .child(SharedString::from(format!("SIDE {}", side.label())))
+                    .child(label)
+            })))
+            .child(
+                div()
+                    .flex()
+                    .gap_3()
+                    .child(
+                        div()
+                            .id("compare-change-a")
+                            .role(Role::Button)
+                            .aria_label("Change compare side A")
+                            .px_4()
+                            .py_2()
+                            .border_1()
+                            .border_color(rgb(if side_a_exists { 0x626870 } else { 0x343940 }))
+                            .when(side_a_exists, |element| element.cursor_pointer())
+                            .child("Change A")
+                            .when(side_a_exists, |element| {
+                                element.on_click(cx.listener(|this, _, _, cx| {
+                                    this.change_compare_side(CompareSide::A, cx);
+                                }))
+                            }),
+                    )
+                    .child(
+                        div()
+                            .id("compare-change-b")
+                            .role(Role::Button)
+                            .aria_label("Change compare side B")
+                            .px_4()
+                            .py_2()
+                            .border_1()
+                            .border_color(rgb(if side_b_exists { 0x626870 } else { 0x343940 }))
+                            .when(side_b_exists, |element| element.cursor_pointer())
+                            .child("Change B")
+                            .when(side_b_exists, |element| {
+                                element.on_click(cx.listener(|this, _, _, cx| {
+                                    this.change_compare_side(CompareSide::B, cx);
+                                }))
+                            }),
+                    )
+                    .child(
+                        div()
+                            .id("compare-close")
+                            .role(Role::Button)
+                            .aria_label("Close Compare and return to the viewed candidate")
+                            .px_4()
+                            .py_2()
+                            .border_1()
+                            .border_color(rgb(0x626870))
+                            .cursor_pointer()
+                            .child("Close Compare")
+                            .on_click(cx.listener(|this, _, _, cx| {
+                                this.close_compare(cx);
+                            })),
+                    ),
+            )
+            .child(compare_summary);
         let diagnostics_open = self
             .workbench
             .as_ref()
@@ -2057,9 +2254,7 @@ impl Render for Shell {
             Surface::Artifact => {
                 "Artifact — media viewer not implemented. Synthetic metadata only; no artifact verification claimed."
             }
-            Surface::Compare => {
-                "Compare — comparison renderer not implemented. Local comparison is not Formal Selected."
-            }
+            Surface::Compare => "",
             Surface::Flow => {
                 "Flow — fixture graph inspection. No canvas and no Runtime graph claim."
             }
@@ -2581,6 +2776,11 @@ impl Render for Shell {
         let dock_viewport = f32::from(self.candidate_scroll.bounds().size.width);
         let dock_admitted = authorized_text && !self.rail_selection_pending;
         if dock_admitted && !Arc::ptr_eq(&artifacts, &self.rendered_candidates) {
+            let previous_active_index = self.dock_active.as_ref().and_then(|active| {
+                self.rendered_candidates
+                    .iter()
+                    .position(|row| row.identity == *active)
+            });
             if let Some((identity, relative)) = &self.dock_anchor
                 && let Some(index) = artifacts.iter().position(|row| row.identity == *identity)
             {
@@ -2592,11 +2792,21 @@ impl Render for Shell {
                 self.candidate_scroll
                     .set_offset(gpui::point(px(offset), px(0.0)));
             }
+            let active_still_present = self
+                .dock_active
+                .as_ref()
+                .is_some_and(|active| artifacts.iter().any(|row| row.identity == *active));
             if self.dock_active.is_none() {
                 self.dock_active = viewed
                     .as_ref()
                     .and_then(|identity| artifacts.iter().find(|row| row.identity == *identity))
                     .or_else(|| artifacts.first())
+                    .map(|row| row.identity.clone());
+            } else if !active_still_present {
+                // D-12: focus/cursor moves to the nearest valid row; selection is
+                // untouched by this reconciliation.
+                self.dock_active = dock::nearest_index(previous_active_index, dock_count)
+                    .and_then(|index| artifacts.get(index))
                     .map(|row| row.identity.clone());
             }
         }
@@ -2649,6 +2859,9 @@ impl Render for Shell {
                 let active = dock_active.as_ref() == Some(&identity);
                 let compared =
                     compare_pair.is_some_and(|pair| pair.iter().any(|side| side.0 == identity));
+                let formal = formal_candidates
+                    .iter()
+                    .any(|reference| reference == &identity);
                 let state_label = match (selected, compared, active) {
                     (true, true, true) => "Viewed · Compare · Active",
                     (true, true, false) => "Viewed · Compare",
@@ -2701,11 +2914,16 @@ impl Render for Shell {
                     .role(Role::Button)
                     .accessibility_id(SharedString::from(candidate.element_key.clone()))
                     .aria_label(SharedString::from(format!(
-                        "{} — {} — {} {}",
+                        "{} — {} — {} {}{}",
                         identity.task_id.as_str(),
                         group_label,
                         label,
-                        state_label
+                        state_label,
+                        if formal {
+                            " Formal Selected (Runtime projection)"
+                        } else {
+                            ""
+                        }
                     )))
                     .when(active && dock_focused, |element| {
                         element.aria_active_descendant()
@@ -2748,7 +2966,19 @@ impl Render for Shell {
                             .flex()
                             .flex_col()
                             .child(div().truncate().child(SharedString::from(label.clone())))
-                            .child(xs_text.clone().apply(div()).truncate().child(state_label)),
+                            .child(xs_text.clone().apply(div()).truncate().child(state_label))
+                            .when(formal, |element| {
+                                element.child(
+                                    xs_text
+                                        .clone()
+                                        .apply(div())
+                                        .text_color(rgb(0xe6c278))
+                                        .truncate()
+                                        .child(SharedString::from(
+                                            "Formal Selected (Runtime projection)",
+                                        )),
+                                )
+                            }),
                     )
                     .on_click(cx.listener(move |this, _, window, cx| {
                         this.view_candidate(activate_identity.clone(), window, cx);
@@ -3190,6 +3420,17 @@ impl Render for Shell {
                             .flex_col()
                             .gap_5()
                             .child("WORK SURFACE")
+                            .when_some(surface_notice.clone(), |element, notice| {
+                                element.child(
+                                    div()
+                                        .id("surface-notice")
+                                        .role(Role::Label)
+                                        .aria_label(SharedString::from(notice.clone()))
+                                        .aria_value(SharedString::from(notice.clone()))
+                                        .text_color(rgb(0xe6c278))
+                                        .child(SharedString::from(notice)),
+                                )
+                            })
                             .child(
                                 div()
                                     .flex_1()
@@ -3199,16 +3440,22 @@ impl Render for Shell {
                                     .when(surface == Surface::Flow, |element| {
                                         element.child(flow_panel)
                                     })
-                                    .when(surface != Surface::Flow, |element| {
-                                        element.child(
-                                            div()
-                                                .flex_1()
-                                                .flex()
-                                                .items_center()
-                                                .justify_center()
-                                                .child(surface_content),
-                                        )
-                                    }),
+                                    .when(surface == Surface::Compare, |element| {
+                                        element.child(compare_panel)
+                                    })
+                                    .when(
+                                        surface != Surface::Flow && surface != Surface::Compare,
+                                        |element| {
+                                            element.child(
+                                                div()
+                                                    .flex_1()
+                                                    .flex()
+                                                    .items_center()
+                                                    .justify_center()
+                                                    .child(surface_content),
+                                            )
+                                        },
+                                    ),
                             )
                             .children(
                                 (surface == Surface::Artifact).then(|| div().child(viewed_label)),
@@ -3334,22 +3581,34 @@ impl Render for Shell {
                     .gap_3()
                     .children(Surface::ALL.into_iter().enumerate().map(|(index, item)| {
                         let focused = self.surface_focus[index].is_focused(window);
+                        let compare_unavailable = item == Surface::Compare
+                            && dock::compare_unavailable_reason(artifacts.len()).is_some();
+                        let label = if compare_unavailable {
+                            format!("{} — two candidates are required", item.label())
+                        } else {
+                            format!("{}  Ctrl+{}", item.label(), index + 1)
+                        };
                         div()
                             .id(("surface", index))
                             .role(Role::Button)
-                            .aria_label(item.label())
+                            .aria_label(SharedString::from(label.clone()))
                             .track_focus(&self.surface_focus[index])
                             .px_5()
                             .py_2()
                             .border(focus_outline)
                             .border_color(rgb(if focused { 0xe6c278 } else { 0x343940 }))
                             .bg(rgb(if surface == item { 0x3c5268 } else { 0x24272c }))
-                            .cursor_pointer()
-                            .child(format!("{}  Ctrl+{}", item.label(), index + 1))
-                            .on_click(cx.listener(move |this, _, window, cx| {
-                                this.surface_focus[index].focus(window, cx);
-                                this.navigate(item, cx);
-                            }))
+                            .when(compare_unavailable, |element| {
+                                element.text_color(rgb(0x8b949e))
+                            })
+                            .when(!compare_unavailable, |element| element.cursor_pointer())
+                            .child(SharedString::from(label))
+                            .when(!compare_unavailable, |element| {
+                                element.on_click(cx.listener(move |this, _, window, cx| {
+                                    this.surface_focus[index].focus(window, cx);
+                                    this.navigate(item, cx);
+                                }))
+                            })
                     })),
             )
     }

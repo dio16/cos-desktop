@@ -4,39 +4,276 @@
 mod simple_casefold;
 pub mod task_rail;
 pub mod presentation {
+    //! Window-local viewed/compare state (ADR-0010 D-1…D-9).
+    //!
+    //! This module owns only local presentation references. It never reads a
+    //! canonical projection, never mutates one, and cannot issue a Runtime
+    //! command: nothing here names app-core, a publication or a command payload.
+    //! Task switching clears the references (D-9); an identity disappearing from
+    //! the same task's projection keeps them and is rendered as unavailable
+    //! (D-4/D-5).
+
+    use desktop_protocol::{CandidateRef, TaskId};
+
     /// A local reference to a candidate, not an artifact identity or formal selection.
     #[derive(Clone, Debug, PartialEq, Eq)]
-    pub struct ViewedCandidate(pub desktop_protocol::CandidateRef);
+    pub struct ViewedCandidate(pub CandidateRef);
+
+    /// Which side of the local compare selection a change targets.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum CompareSide {
+        /// First compare side.
+        A,
+        /// Second compare side.
+        B,
+    }
+
+    impl CompareSide {
+        /// Index of this side inside the pair.
+        pub fn index(self) -> usize {
+            match self {
+                Self::A => 0,
+                Self::B => 1,
+            }
+        }
+
+        /// Short label used by the UI and its accessible names.
+        pub fn label(self) -> &'static str {
+            match self {
+                Self::A => "A",
+                Self::B => "B",
+            }
+        }
+    }
+
+    /// What one explicit candidate selection did (ADR-0010 D-3).
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum SelectionEffect {
+        /// Compare was active: only Viewed moved; the surface stayed on Compare.
+        ViewedOnly,
+        /// The first compare side (A) was filled; Compare is not active yet.
+        CompareSideA,
+        /// The pair completed; the surface must switch to Compare.
+        CompareSideB,
+        /// An explicit change-side action updated that side; Viewed did not move.
+        Changed(CompareSide),
+    }
+
+    /// Which persisted reference the current projection accepted (ADR-0010 D-8).
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+    pub struct RestoreOutcome {
+        /// The persisted viewed reference was present and applied.
+        pub viewed_restored: bool,
+        /// The persisted viewed reference was absent and was not applied.
+        pub viewed_missing: bool,
+        /// The persisted pair was complete and present, and was applied.
+        pub pair_restored: bool,
+        /// The persisted pair was absent or incomplete, so it was not applied.
+        pub pair_missing: bool,
+    }
 
     /// Window-local presentation state; publications never mutate it.
     #[derive(Debug, Default)]
     pub struct Presentation {
         viewed: Option<ViewedCandidate>,
         compare: Option<[ViewedCandidate; 2]>,
+        /// Side A is filled but the pair is not complete yet (D-3).
+        pending_side_a: Option<ViewedCandidate>,
+        /// An explicit change-side action is armed for the next selection (D-3).
+        changing_side: Option<CompareSide>,
+        /// The task these references belong to; a task switch clears them (D-9).
+        task_scope: Option<TaskId>,
         pub diagnostics_open: bool,
     }
 
     impl Presentation {
+        /// Set Viewed directly (restore and non-dock callers). Dock selection must
+        /// use [`Presentation::select`] so the pair transitions stay coherent.
         pub fn view(&mut self, candidate: ViewedCandidate) {
             self.viewed = Some(candidate);
         }
 
+        /// The local viewed reference, present or not.
         pub fn viewed(&self) -> Option<&ViewedCandidate> {
             self.viewed.as_ref()
         }
 
-        pub fn compare(&mut self, pair: [ViewedCandidate; 2]) {
-            self.compare = Some(pair);
-        }
-
+        /// A complete compare pair, present or not.
         pub fn compare_pair(&self) -> Option<&[ViewedCandidate; 2]> {
             self.compare.as_ref()
+        }
+
+        /// One compare side, including a pending side A before the pair completes.
+        pub fn compare_side(&self, side: CompareSide) -> Option<&ViewedCandidate> {
+            match side {
+                CompareSide::A => self
+                    .compare
+                    .as_ref()
+                    .map(|pair| &pair[0])
+                    .or(self.pending_side_a.as_ref()),
+                CompareSide::B => self.compare.as_ref().map(|pair| &pair[1]),
+            }
+        }
+
+        /// Set a complete pair (restore and non-dock callers).
+        pub fn compare(&mut self, pair: [ViewedCandidate; 2]) {
+            self.compare = Some(pair);
+            self.pending_side_a = None;
+            self.changing_side = None;
+        }
+
+        /// One explicit dock selection (D-3).
+        ///
+        /// While Compare is inactive the first selection fills side A and the second
+        /// completes side B; while Compare is active a plain selection moves Viewed
+        /// only. An armed change-side action updates that side and leaves Viewed.
+        pub fn select(&mut self, candidate: ViewedCandidate) -> SelectionEffect {
+            if let Some(side) = self.changing_side.take() {
+                match side {
+                    CompareSide::A => {
+                        if let Some(pair) = self.compare.as_mut() {
+                            pair[0] = candidate;
+                            return SelectionEffect::Changed(CompareSide::A);
+                        }
+                        if self.pending_side_a.is_some() {
+                            self.pending_side_a = Some(candidate);
+                            return SelectionEffect::Changed(CompareSide::A);
+                        }
+                    }
+                    CompareSide::B => {
+                        if let Some(pair) = self.compare.as_mut() {
+                            pair[1] = candidate;
+                            return SelectionEffect::Changed(CompareSide::B);
+                        }
+                    }
+                }
+            }
+            self.viewed = Some(candidate.clone());
+            if self.compare.is_some() {
+                return SelectionEffect::ViewedOnly;
+            }
+            match self.pending_side_a.take() {
+                None => {
+                    self.pending_side_a = Some(candidate);
+                    SelectionEffect::CompareSideA
+                }
+                Some(side_a) => {
+                    self.compare = Some([side_a, candidate]);
+                    SelectionEffect::CompareSideB
+                }
+            }
+        }
+
+        /// Arm an explicit change-side action for the next selection (D-3/D-5).
+        ///
+        /// Returns false when that side does not exist, so a side is never created or
+        /// replaced by a plain selection.
+        pub fn arm_change(&mut self, side: CompareSide) -> bool {
+            let available = match side {
+                CompareSide::A => self.compare.is_some() || self.pending_side_a.is_some(),
+                CompareSide::B => self.compare.is_some(),
+            };
+            if available {
+                self.changing_side = Some(side);
+            }
+            available
+        }
+
+        /// The side an explicit change action is currently armed for.
+        pub fn changing_side(&self) -> Option<CompareSide> {
+            self.changing_side
+        }
+
+        /// Close Compare: keep Viewed, drop the pair and any pending side (D-7).
+        pub fn close_compare(&mut self) -> bool {
+            let had_pair = self.compare.take().is_some();
+            let had_pending = self.pending_side_a.take().is_some();
+            self.changing_side = None;
+            had_pair || had_pending
+        }
+
+        /// Bind the references to a task without clearing them (startup restore).
+        pub fn adopt_task(&mut self, task: TaskId) {
+            if self.task_scope.is_none() {
+                self.task_scope = Some(task);
+            }
+        }
+
+        /// A task switch discards this task's references and starts at empty (D-9).
+        ///
+        /// Returns true when the task actually changed; a projection update inside the
+        /// same task returns false and leaves the references untouched.
+        pub fn reset_for_task(&mut self, task: TaskId) -> bool {
+            if self.task_scope.as_ref() == Some(&task) {
+                return false;
+            }
+            self.viewed = None;
+            self.compare = None;
+            self.pending_side_a = None;
+            self.changing_side = None;
+            self.task_scope = Some(task);
+            true
+        }
+
+        /// The task these references belong to, when bound.
+        pub fn task_scope(&self) -> Option<&TaskId> {
+            self.task_scope.as_ref()
+        }
+
+        /// Apply persisted references with the REC3 identity rule (D-8).
+        ///
+        /// Viewed is applied only when present. The pair is all-or-nothing: both sides
+        /// must be present, otherwise the pair is not applied and nothing is substituted.
+        pub fn restore(
+            &mut self,
+            viewed: Option<&CandidateRef>,
+            pair: Option<&[CandidateRef; 2]>,
+            present: impl Fn(&CandidateRef) -> bool,
+        ) -> RestoreOutcome {
+            let mut outcome = RestoreOutcome::default();
+            if let Some(reference) = viewed {
+                if present(reference) {
+                    self.viewed = Some(ViewedCandidate(reference.clone()));
+                    outcome.viewed_restored = true;
+                } else {
+                    outcome.viewed_missing = true;
+                }
+            }
+            if let Some(references) = pair {
+                if present(&references[0]) && present(&references[1]) {
+                    self.compare = Some([
+                        ViewedCandidate(references[0].clone()),
+                        ViewedCandidate(references[1].clone()),
+                    ]);
+                    self.pending_side_a = None;
+                    self.changing_side = None;
+                    outcome.pair_restored = true;
+                } else {
+                    outcome.pair_missing = true;
+                }
+            }
+            outcome
+        }
+
+        /// Whether the held Viewed reference is present (D-4); `None` when empty.
+        pub fn viewed_available(&self, present: impl Fn(&CandidateRef) -> bool) -> Option<bool> {
+            self.viewed.as_ref().map(|viewed| present(&viewed.0))
+        }
+
+        /// Whether the held side is present (D-5); `None` when the side is empty.
+        pub fn compare_side_available(
+            &self,
+            side: CompareSide,
+            present: impl Fn(&CandidateRef) -> bool,
+        ) -> Option<bool> {
+            self.compare_side(side)
+                .map(|candidate| present(&candidate.0))
         }
     }
 
     #[cfg(test)]
     mod tests {
-        use super::{Presentation, ViewedCandidate};
+        use super::{CompareSide, Presentation, SelectionEffect, ViewedCandidate};
         use desktop_protocol::{ArtifactId, CandidateId, CandidateRef, RunId, TaskId};
 
         fn candidate(label: &str) -> ViewedCandidate {
@@ -51,6 +288,14 @@ pub mod presentation {
             })
         }
 
+        fn other_candidate(label: &str) -> CandidateRef {
+            candidate(label).0
+        }
+
+        fn present_in(existing: &[CandidateRef]) -> impl Fn(&CandidateRef) -> bool + '_ {
+            move |reference| existing.contains(reference)
+        }
+
         #[test]
         fn viewing_and_comparing_stay_independent() {
             let mut state = Presentation::default();
@@ -59,6 +304,179 @@ pub mod presentation {
             state.view(candidate("c"));
             assert_eq!(state.compare_pair(), Some(&pair));
             assert_eq!(state.viewed(), Some(&candidate("c")));
+        }
+
+        #[test]
+        fn with_no_persisted_reference_the_view_is_explicitly_empty() {
+            let state = Presentation::default();
+            assert_eq!(state.viewed(), None);
+            assert_eq!(state.compare_pair(), None);
+            assert_eq!(state.compare_side(CompareSide::A), None);
+            assert_eq!(state.compare_side(CompareSide::B), None);
+        }
+
+        #[test]
+        fn the_first_selection_fills_side_a_and_the_second_completes_compare() {
+            let mut state = Presentation::default();
+            assert_eq!(state.select(candidate("a")), SelectionEffect::CompareSideA);
+            assert_eq!(state.viewed(), Some(&candidate("a")));
+            assert_eq!(state.compare_pair(), None);
+            assert_eq!(state.compare_side(CompareSide::A), Some(&candidate("a")));
+            assert_eq!(state.select(candidate("b")), SelectionEffect::CompareSideB);
+            assert_eq!(state.viewed(), Some(&candidate("b")));
+            assert_eq!(
+                state.compare_pair(),
+                Some(&[candidate("a"), candidate("b")])
+            );
+        }
+
+        #[test]
+        fn while_compare_is_active_a_plain_selection_moves_viewed_only() {
+            let mut state = Presentation::default();
+            state.select(candidate("a"));
+            state.select(candidate("b"));
+            assert_eq!(state.select(candidate("c")), SelectionEffect::ViewedOnly);
+            assert_eq!(state.viewed(), Some(&candidate("c")));
+            assert_eq!(
+                state.compare_pair(),
+                Some(&[candidate("a"), candidate("b")]),
+                "a plain selection must never replace a compare side"
+            );
+        }
+
+        #[test]
+        fn change_side_updates_that_side_without_moving_viewed() {
+            let mut state = Presentation::default();
+            state.select(candidate("a"));
+            state.select(candidate("b"));
+            state.select(candidate("c"));
+            assert!(state.arm_change(CompareSide::A));
+            assert_eq!(state.changing_side(), Some(CompareSide::A));
+            assert_eq!(
+                state.select(candidate("d")),
+                SelectionEffect::Changed(CompareSide::A)
+            );
+            assert_eq!(state.viewed(), Some(&candidate("c")));
+            assert_eq!(
+                state.compare_pair(),
+                Some(&[candidate("d"), candidate("b")])
+            );
+            assert!(state.arm_change(CompareSide::B));
+            assert_eq!(
+                state.select(candidate("e")),
+                SelectionEffect::Changed(CompareSide::B)
+            );
+            assert_eq!(state.viewed(), Some(&candidate("c")));
+            assert_eq!(
+                state.compare_pair(),
+                Some(&[candidate("d"), candidate("e")])
+            );
+        }
+
+        #[test]
+        fn a_side_that_does_not_exist_cannot_be_armed() {
+            let mut state = Presentation::default();
+            assert!(!state.arm_change(CompareSide::B));
+            state.select(candidate("a"));
+            assert!(!state.arm_change(CompareSide::B));
+            assert!(state.arm_change(CompareSide::A));
+        }
+
+        #[test]
+        fn a_disappearing_viewed_identity_keeps_its_reference() {
+            let mut state = Presentation::default();
+            state.select(candidate("a"));
+            assert_eq!(state.viewed_available(present_in(&[])), Some(false));
+            assert_eq!(state.viewed(), Some(&candidate("a")));
+            let later = [other_candidate("a")];
+            assert_eq!(state.viewed_available(present_in(&later)), Some(true));
+        }
+
+        #[test]
+        fn a_disappearing_compare_side_keeps_compare_and_its_reference() {
+            let mut state = Presentation::default();
+            state.select(candidate("a"));
+            state.select(candidate("b"));
+            assert_eq!(
+                state.compare_side_available(CompareSide::B, present_in(&[other_candidate("a")])),
+                Some(false)
+            );
+            assert_eq!(
+                state.compare_pair(),
+                Some(&[candidate("a"), candidate("b")])
+            );
+            let both = [other_candidate("a"), other_candidate("b")];
+            assert_eq!(
+                state.compare_side_available(CompareSide::B, present_in(&both)),
+                Some(true)
+            );
+        }
+
+        #[test]
+        fn closing_compare_keeps_viewed_and_restarts_pair_creation() {
+            let mut state = Presentation::default();
+            state.select(candidate("a"));
+            state.select(candidate("b"));
+            assert!(state.close_compare());
+            assert_eq!(state.compare_pair(), None);
+            assert_eq!(state.viewed(), Some(&candidate("b")));
+            assert_eq!(state.select(candidate("c")), SelectionEffect::CompareSideA);
+            assert_eq!(state.compare_side(CompareSide::A), Some(&candidate("c")));
+        }
+
+        #[test]
+        fn restore_applies_only_references_present_in_the_projection() {
+            let mut state = Presentation::default();
+            let viewed = other_candidate("v");
+            let pair = [other_candidate("a"), other_candidate("b")];
+            let visible = [other_candidate("v")];
+            let present = present_in(&visible);
+            let outcome = state.restore(Some(&viewed), Some(&pair), present);
+            assert!(outcome.viewed_restored);
+            assert!(outcome.pair_missing, "the pair is all-or-nothing");
+            assert_eq!(state.viewed(), Some(&candidate("v")));
+            assert_eq!(state.compare_pair(), None);
+        }
+
+        #[test]
+        fn restore_applies_a_complete_pair_only_when_both_sides_are_present() {
+            let mut state = Presentation::default();
+            let viewed = other_candidate("v");
+            let pair = [other_candidate("a"), other_candidate("b")];
+            let all = [
+                other_candidate("v"),
+                other_candidate("a"),
+                other_candidate("b"),
+            ];
+            let outcome = state.restore(Some(&viewed), Some(&pair), present_in(&all));
+            assert!(outcome.viewed_restored);
+            assert!(outcome.pair_restored);
+            assert_eq!(state.viewed(), Some(&candidate("v")));
+            assert_eq!(
+                state.compare_pair(),
+                Some(&[candidate("a"), candidate("b")])
+            );
+        }
+
+        #[test]
+        fn a_task_switch_clears_references_but_a_projection_update_does_not() {
+            let mut state = Presentation::default();
+            let task_a = TaskId::new("fixture:task/A").expect("valid task");
+            let task_b = TaskId::new("fixture:task/B").expect("valid task");
+            state.adopt_task(task_a.clone());
+            state.select(candidate("a"));
+            state.select(candidate("b"));
+            assert!(!state.reset_for_task(task_a.clone()));
+            assert_eq!(state.viewed(), Some(&candidate("b")));
+            assert!(state.compare_pair().is_some());
+            assert!(state.reset_for_task(task_b));
+            assert_eq!(state.viewed(), None);
+            assert_eq!(state.compare_pair(), None);
+            assert_eq!(state.compare_side(CompareSide::A), None);
+            assert_eq!(
+                state.task_scope(),
+                Some(&TaskId::new("fixture:task/B").expect("valid task"))
+            );
         }
     }
 }
@@ -186,6 +604,9 @@ pub struct ProjectionDisplay {
     /// Iteration groups covering every candidate row exactly once, in
     /// authoritative iteration order.
     pub candidate_groups: Arc<[CandidateGroupDisplay]>,
+    /// Candidate identities the authoritative outcome projection formally selects.
+    /// Display-only: never a local selection and never a command (ADR-0010 D-13).
+    pub formal_candidates: Arc<[CandidateRef]>,
     pub evaluations: Arc<[Arc<EvaluationDisplay>]>,
     pub outcomes: Arc<[Arc<OutcomeDisplay>]>,
     pub graphs: Arc<[Arc<GraphDisplay>]>,
@@ -281,6 +702,7 @@ impl DerivationCache {
             text.projection_revision = Some(revision.as_str().to_owned());
             text.artifacts = Arc::clone(&projection.candidates);
             text.candidate_groups = Arc::clone(&projection.candidate_groups);
+            text.formal_candidates = Arc::clone(&projection.formal_candidates);
             text.evaluation = Arc::clone(&projection.evaluations);
             text.outcomes = Arc::clone(&projection.outcomes);
             text.graph = Arc::clone(&projection.graphs);
@@ -385,6 +807,7 @@ impl DerivationCache {
                 evaluations: Arc::clone(&self.evaluation_displays),
                 outcomes: Arc::clone(&self.outcome_displays),
                 graphs: Arc::clone(&self.graph_displays),
+                formal_candidates: formal_candidate_refs(snapshot).into(),
             });
         }
 
@@ -671,6 +1094,7 @@ impl DerivationCache {
             evaluations: Arc::clone(&self.evaluation_displays),
             outcomes: Arc::clone(&self.outcome_displays),
             graphs: Arc::clone(&self.graph_displays),
+            formal_candidates: formal_candidate_refs(snapshot).into(),
         })
     }
 }
@@ -831,6 +1255,8 @@ pub struct WorkbenchText {
     pub artifacts: Arc<[Arc<CandidateDisplay>]>,
     /// Authoritative iteration groups covering the dock rows.
     pub candidate_groups: Arc<[CandidateGroupDisplay]>,
+    /// Candidate identities the runtime formally selects; display-only (ADR-0010 D-13).
+    pub formal_candidates: Arc<[CandidateRef]>,
     pub evaluation: Arc<[Arc<EvaluationDisplay>]>,
     pub outcomes: Arc<[Arc<OutcomeDisplay>]>,
     pub graph: Arc<[Arc<GraphDisplay>]>,
@@ -1107,6 +1533,29 @@ fn candidate_element_key(candidate: &CandidateRef) -> String {
 ///
 /// Temporary indices bound explicit membership and omissions to O(N log N + M
 /// log N), rather than scanning every candidate for every reference/iteration.
+/// Candidate identities named by the runtime's own formal selection references.
+///
+/// A formal selection carries `(run_id, iteration, evaluation_id)`; the evaluation names
+/// the candidate it evaluated. The join is exact — a missing evaluation or a mismatched
+/// run/iteration contributes nothing, so the dock never guesses and never derives a
+/// "winner" from ordering or scores. The result is display-only (ADR-0010 D-13).
+fn formal_candidate_refs(snapshot: &SnapshotHandle) -> Vec<CandidateRef> {
+    let mut selected = std::collections::BTreeSet::new();
+    for outcome in snapshot.outcomes.values() {
+        for selection in &outcome.selected_refs {
+            let Some(evaluation) = snapshot.evaluations.get(&selection.evaluation_id) else {
+                continue;
+            };
+            let candidate = &evaluation.candidate_ref;
+            if candidate.run_id != selection.run_id || candidate.iteration != selection.iteration {
+                continue;
+            }
+            selected.insert(candidate.clone());
+        }
+    }
+    selected.into_iter().collect()
+}
+
 fn candidate_groups(
     candidates: &[Arc<CandidateDisplay>],
     snapshot: &SnapshotHandle,
@@ -1644,7 +2093,165 @@ mod tests {
     }
 
     #[test]
-    fn dock_membership_uses_task_and_iteration_reference_not_numeric_index() {
+    fn formal_markers_come_only_from_the_runtime_selection_refs() {
+        use desktop_protocol::{ArtifactDigest, FormalSelectionRef, NodeId};
+
+        use super::formal_candidate_refs;
+
+        let mut snapshot: SnapshotHandle = Arc::default();
+        let state = Arc::get_mut(&mut snapshot).expect("snapshot has one owner");
+        let a = candidate_ref("a");
+        let b = candidate_ref("b");
+        let eval_a = EvaluationId::fixture("evaluation/a");
+        let eval_b = EvaluationId::fixture("evaluation/b");
+        for (identity, evaluation, revision) in [
+            (a.clone(), eval_a.clone(), 1_u128),
+            (b.clone(), eval_b.clone(), 1_u128),
+        ] {
+            state.candidates.insert(
+                identity.clone(),
+                candidate(
+                    identity
+                        .candidate_id
+                        .as_str()
+                        .rsplit('/')
+                        .next()
+                        .unwrap_or("x"),
+                    identity.candidate_id.as_str(),
+                    revision,
+                ),
+            );
+            state.evaluations.insert(
+                evaluation.clone(),
+                EvaluationSnapshot {
+                    evaluation_ref: evaluation,
+                    candidate_ref: identity,
+                    artifact_refs: Vec::new(),
+                    decision: EvaluationDecision::Pass,
+                    axes: Vec::new(),
+                    evidence_refs: Vec::new(),
+                    authority: AuthorityLabel::new("RUNTIME").expect("valid authority"),
+                    confidence: None,
+                    projection_revision: Counter::from_u128(1),
+                },
+            );
+        }
+        state.outcomes.insert(
+            OutcomeId::fixture("outcome/main"),
+            OutcomeSnapshot {
+                outcome_ref: OutcomeId::fixture("outcome/main"),
+                task_ref: TaskId::fixture("task/Task-184"),
+                formal_status: FormalStatus::Completed,
+                selected_refs: vec![
+                    FormalSelectionRef {
+                        artifact_digest: ArtifactDigest::fixture("digest/a"),
+                        run_id: RunId::fixture("run/Task-184/1"),
+                        evaluation_id: eval_a.clone(),
+                        iteration: 3,
+                    },
+                    // Same evaluation but a different run: never matched.
+                    FormalSelectionRef {
+                        artifact_digest: ArtifactDigest::fixture("digest/b"),
+                        run_id: RunId::fixture("run/Task-184/2"),
+                        evaluation_id: eval_b.clone(),
+                        iteration: 3,
+                    },
+                    // No such evaluation: never matched.
+                    FormalSelectionRef {
+                        artifact_digest: ArtifactDigest::fixture("digest/unknown"),
+                        run_id: RunId::fixture("run/Task-184/1"),
+                        evaluation_id: EvaluationId::fixture("evaluation/unknown"),
+                        iteration: 3,
+                    },
+                ],
+                stop_reason: None,
+                provenance_refs: Vec::new(),
+                evidence_refs: Vec::new(),
+                projection_revision: Counter::from_u128(1),
+            },
+        );
+        let _ = NodeId::fixture("unused");
+        assert_eq!(formal_candidate_refs(&snapshot), vec![a]);
+    }
+
+    #[test]
+    fn the_timeline_shows_only_iterations_with_rows_and_never_synthesises_a_node() {
+        let snapshot = dock_snapshot(
+            vec![dock_candidate("a", "A", 1), dock_candidate("c", "C", 3)],
+            vec![
+                dock_iteration(1, vec![dock_candidate("a", "A", 1).candidate_ref]),
+                // Iteration 2 is authoritative but carries no candidate rows: D-10
+                // says it must not appear, and nothing may be synthesised for it.
+                dock_iteration(2, Vec::new()),
+                dock_iteration(3, vec![dock_candidate("c", "C", 3).candidate_ref]),
+            ],
+        );
+        let mut cache = DerivationCache::default();
+        let text = derive(&mut cache, &publication(snapshot, 1, 1, 7));
+        let labels = text
+            .candidate_groups
+            .iter()
+            .map(|group| group.label.as_ref())
+            .collect::<Vec<_>>();
+        assert_eq!(labels, vec!["Iteration 1", "Iteration 3"]);
+        assert!(
+            text.candidate_groups
+                .iter()
+                .all(|group| !group.label.to_lowercase().contains("outcome")),
+            "the formal outcome belongs to the inspector, never to the timeline"
+        );
+        assert_eq!(text.formal_candidates.len(), 0);
+    }
+
+    #[test]
+    fn the_dock_local_state_has_no_command_or_projection_surface() {
+        let source = include_str!("lib.rs");
+        let start = source
+            .find("pub mod presentation {")
+            .expect("presentation module");
+        let end = source
+            .find("use std::collections::BTreeMap;")
+            .expect("module end");
+        let module = &source[start..end];
+        for forbidden in [
+            "app_core",
+            "AppCore",
+            "ObservationHandle",
+            "CommandPayload",
+            "dispatch",
+            "submit",
+        ] {
+            assert!(
+                !module.contains(forbidden),
+                "presentation state must not reach a command/projection surface: {forbidden}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_protocol_offers_no_formal_selection_command() {
+        use desktop_protocol::{CommandPayload, StopTaskCommand};
+
+        fn command_name(payload: &CommandPayload) -> &'static str {
+            match payload {
+                CommandPayload::CreateTask(_) => "CreateTask",
+                CommandPayload::StopTask(_) => "StopTask",
+                CommandPayload::ReuseTask(_) => "ReuseTask",
+            }
+        }
+
+        // The exhaustive match is the proof at this commit: a formal-selection
+        // command cannot exist without a new protocol variant, and no dock path can
+        // issue one. The dock only ever mutates local presentation state.
+        let stop = CommandPayload::StopTask(StopTaskCommand {
+            task_id: TaskId::fixture("task/Task-184"),
+            reason: None,
+        });
+        assert_eq!(command_name(&stop), "StopTask");
+    }
+
+    #[test]
+    fn dock_candidates_follow_authoritative_iteration_order() {
         let a = dock_candidate("a", "A", 1);
         let mut b = dock_candidate("b", "B", 1);
         b.task_ref = TaskId::fixture("task/Other");
