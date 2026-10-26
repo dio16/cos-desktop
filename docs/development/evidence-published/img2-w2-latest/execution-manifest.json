@@ -7,7 +7,7 @@
   "taskern_packet_sha256": "sha256:2be98d3011956be7d3cf6ce2ea05ebe13476b88efc15c74c861cb89520b054fc",
   "initial_taskern_packet_sha256": "sha256:a02e711946328ba5f18656d09a21a6bf3b8f6a4f4c3f825f351b26b5d638646d",
   "authority": {
-    "caller_statement": "\u30eb\u30fc\u30d7\u3092\u7d99\u7d9a\u3057\u5b9f\u88c5\u8a08\u753b\u3092\u5b8c\u9042\u3057\u3066\u304f\u3060\u3055\u3044\u3002\u8a2d\u8a08\u30c7\u30a3\u30b7\u30b8\u30e7\u30f3\u306f\u3059\u3079\u3066\u627f\u8a8d\u3057\u3066\u3044\u307e\u3059\u3002",
+    "caller_statement": "ループを継続し実装計画を完遂してください。設計ディシジョンはすべて承認しています。",
     "design_choices": "Existing WIC/WPF, unchanged media DecodeBudget authority; opt-in bounded stage sidecars; Windows process counters separate from reservations/internal scratch; external direct-worker termination is not cooperative cancellation.",
     "native_cli": "AUTHORIZED",
     "native_gui": "NOT_REQUESTED",
@@ -56,7 +56,7 @@
         "describe operation gate.run",
         "describe family execution"
       ],
-      "execution": "Round 1 SUCCEEDED on 7f236426 (Quality 5865a2d5-0270-4006-8529-2cb8b07277c1, Build 2a91db39-a97b-4264-9337-5a7f065881f9). New Gates required for the A-W2-01 repair candidate; those IDs are recorded in quality-gate.json/build-gate.json.",
+      "execution": "SUCCEEDED twice per round: round 1 on 7f236426 (Quality 5865a2d5, Build 2a91db39); repaired candidate 99bb8e62 on Quality 83884abf (10/10) and Build c907686e (1/1) with identical candidate digest and 21 artifact tuples. Two owner interruptions and one preparation error are recorded in gate-dispatch.json and were not treated as product results.",
       "lifecycle": "VERIFY_EXISTING_CANDIDATE"
     },
     "tern": {
@@ -87,9 +87,9 @@
   },
   "storage_plan": {
     "ordinary_target": "<repository>/target",
-    "new_gate_root": "<verification-root>/img2-w2-2026-10-26",
+    "new_gate_root": "<verification-root>/img2-w2-repair1-2026-10-26",
     "fresh_check_targets": true,
-    "observed_available_bytes": 67220721664,
+    "observed_available_bytes": null,
     "prior_equivalent_two_gate_scratch_logical_bytes": 4884733988,
     "succeeded_workspace_disposal": "Only exact newly accepted successful Gate work/repo plus owned external check targets; after candidate Git retention, tracked native exports, complete cleanup/dead owner and verify. Retain native authority/artifacts/logs; repeat verify unchanged afterward. Failed/nonterminal/unrelated workspaces excluded.",
     "prevent_redundant_toolchain": "Absolute existing toolchain executables plus qualified existing RUSTUP_HOME; no install/global config change.",
@@ -130,7 +130,14 @@
     "current_revision": 3
   },
   "review": {
-    "round_1": "HOLD 0 ACTIONABLE 1 / 0 EXCESSIVE on 7f236426 (A-W2-01)",
-    "round_2": "PENDING"
+    "round_1": {
+      "candidate": "7f236426f53bda9d4f88913690c7743208601711",
+      "verdict": "HOLD 0 / 1 / 0",
+      "record": "review-round1.json"
+    },
+    "round_2": {
+      "candidate": "99bb8e629a22b2dfc605d76f64f2a3cb2c38742e",
+      "verdict": "PENDING"
+    }
   }
 }

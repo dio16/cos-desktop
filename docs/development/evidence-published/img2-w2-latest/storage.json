@@ -1,90 +1,99 @@
 {
   "schema_version": 1,
-  "candidate": "7f236426f53bda9d4f88913690c7743208601711",
-  "source_retained_by": "refs/heads/dev; ancestor check exit 0 before disposal",
-  "evidence_commit": "d5117ab",
-  "gate_outcomes": "SUCCEEDED; native status/inspect/verify exit0, owner dead, cleanup complete",
-  "boundary": "Caller-side exact successful scratch disposal, not a Refine cleanup operation; no failed/nonterminal/historical paths",
+  "candidate": "99bb8e629a22b2dfc605d76f64f2a3cb2c38742e",
+  "source_retained_by": "refs/heads/dev; git merge-base --is-ancestor exit 0 before disposal",
+  "evidence_commit": "729c40cec016c06582ca55571971afd2cb022af3",
+  "gate_outcomes": "Quality 83884abf and Build c907686e SUCCEEDED with identical candidate/21 artifact tuples; Build 866a1833 SUCCEEDED on the 20-output manifest and is retained as superseded",
+  "boundary": "Caller-side exact successful scratch disposal, not a Refine cleanup operation",
   "preconditions": {
     "active_processes": [],
     "reparse_points": [],
-    "owned_paths": 5
+    "owned_paths": 7
   },
   "removed": [
     {
-      "label": "quality",
-      "gate_id": "5865a2d5-0270-4006-8529-2cb8b07277c1",
-      "path": "<W2_GATE_ROOT>/state/gates/5865a2d5-0270-4006-8529-2cb8b07277c1/work/repo",
-      "bytes": 11282130,
-      "files": 382,
+      "gate_id": "83884abf-f597-446b-b8f6-cf731af2bfb9",
+      "path": "<W2_REPAIR1_GATE_ROOT>/state/gates/83884abf-f597-446b-b8f6-cf731af2bfb9/work/repo",
+      "bytes": 11543884,
+      "files": 397,
       "observed_absent": true
     },
     {
-      "label": "quality",
-      "gate_id": "5865a2d5-0270-4006-8529-2cb8b07277c1",
-      "path": "<W2_GATE_ROOT>/targets/quality-clippy",
-      "bytes": 663906235,
+      "gate_id": "83884abf-f597-446b-b8f6-cf731af2bfb9",
+      "path": "<W2_REPAIR1_GATE_ROOT>/targets/r3-clippy",
+      "bytes": 663911516,
       "files": 3015,
       "observed_absent": true
     },
     {
-      "label": "quality",
-      "gate_id": "5865a2d5-0270-4006-8529-2cb8b07277c1",
-      "path": "<W2_GATE_ROOT>/targets/quality-tests",
-      "bytes": 1841576525,
+      "gate_id": "83884abf-f597-446b-b8f6-cf731af2bfb9",
+      "path": "<W2_REPAIR1_GATE_ROOT>/targets/r3-tests",
+      "bytes": 1841614556,
       "files": 3144,
       "observed_absent": true
     },
     {
-      "label": "build",
-      "gate_id": "2a91db39-a97b-4264-9337-5a7f065881f9",
-      "path": "<W2_GATE_ROOT>/state/gates/2a91db39-a97b-4264-9337-5a7f065881f9/work/repo",
-      "bytes": 11276742,
-      "files": 382,
+      "gate_id": "866a1833-3823-4983-9fe8-0821f6a0dfd1",
+      "path": "<W2_REPAIR1_GATE_ROOT>/state/gates/866a1833-3823-4983-9fe8-0821f6a0dfd1/work/repo",
+      "bytes": 11548370,
+      "files": 397,
       "observed_absent": true
     },
     {
-      "label": "build",
-      "gate_id": "2a91db39-a97b-4264-9337-5a7f065881f9",
-      "path": "<W2_GATE_ROOT>/targets/build-build",
-      "bytes": 1593000707,
+      "gate_id": "866a1833-3823-4983-9fe8-0821f6a0dfd1",
+      "path": "<W2_REPAIR1_GATE_ROOT>/targets/r3-build",
+      "bytes": 1593026804,
+      "files": 2911,
+      "observed_absent": true
+    },
+    {
+      "gate_id": "c907686e-4eba-4337-b57d-e95001b42d2e",
+      "path": "<W2_REPAIR1_GATE_ROOT>/state/gates/c907686e-4eba-4337-b57d-e95001b42d2e/work/repo",
+      "bytes": 11536885,
+      "files": 397,
+      "observed_absent": true
+    },
+    {
+      "gate_id": "c907686e-4eba-4337-b57d-e95001b42d2e",
+      "path": "<W2_REPAIR1_GATE_ROOT>/targets/r4-build",
+      "bytes": 1593026804,
       "files": 2911,
       "observed_absent": true
     }
   ],
-  "kept": [
+  "retained": [
+    "interrupted Gates 0bfdb0f7 and a6fe562d are FAILED (owner killed by a local kernel restart) and their workspaces are retained",
     "native state/authority/observations",
     "captured artifacts",
     "private check logs",
     "requests/operator config/toolchain pins",
     "raw status/inspect/verify reports",
     "ordinary local target",
-    "Native raw run1/run2 and W1 regression roots"
+    "raster/work outputs under the W2 repair roots outside Gate state",
+    "decode_compare harness and W1 work roots"
   ],
   "unit": "logical bytes, not allocated storage",
   "gates": [
     {
       "label": "quality",
-      "gate_id": "5865a2d5-0270-4006-8529-2cb8b07277c1",
+      "gate_id": "83884abf-f597-446b-b8f6-cf731af2bfb9",
       "verify_before_exit": 0,
       "verify_after_exit": 0,
       "integrity_identical": true,
-      "before_sha256": "sha256:9781073a25e62d119a662b723a5fdc5d18b85f6558addcc533daa30670a95cac",
-      "after_sha256": "sha256:9781073a25e62d119a662b723a5fdc5d18b85f6558addcc533daa30670a95cac",
-      "private_rustup_copy_created": false
+      "before_sha256": "sha256:c177f9c4a8f15a0a72e1a3cf51f2f9c3415c40d56d44b725b487c68d7b3f5b84",
+      "after_sha256": "sha256:c177f9c4a8f15a0a72e1a3cf51f2f9c3415c40d56d44b725b487c68d7b3f5b84"
     },
     {
       "label": "build",
-      "gate_id": "2a91db39-a97b-4264-9337-5a7f065881f9",
+      "gate_id": "c907686e-4eba-4337-b57d-e95001b42d2e",
       "verify_before_exit": 0,
       "verify_after_exit": 0,
       "integrity_identical": true,
-      "before_sha256": "sha256:cb33d1b787045f62e1bf40dccc20776c392ba8c54bd811ffc849d8b411634ebe",
-      "after_sha256": "sha256:cb33d1b787045f62e1bf40dccc20776c392ba8c54bd811ffc849d8b411634ebe",
-      "private_rustup_copy_created": false
+      "before_sha256": "sha256:b5cc1e0e2610bbab807ab21c3799212eba3344fa593613e647facf35915db732",
+      "after_sha256": "sha256:b5cc1e0e2610bbab807ab21c3799212eba3344fa593613e647facf35915db732"
     }
   ],
-  "logical_bytes_removed": 4121042339,
-  "files_removed": 9834,
-  "completed_at": "2026-10-26T17:12:30.157Z"
+  "logical_bytes_removed": 5726208819,
+  "files_removed": 13172,
+  "completed_at": "2026-10-26T18:16:09.302Z"
 }
