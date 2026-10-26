@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "gate_id": "5865a2d5-0270-4006-8529-2cb8b07277c1",
-  "candidate": "7f236426f53bda9d4f88913690c7743208601711",
+  "gate_id": "83884abf-f597-446b-b8f6-cf731af2bfb9",
+  "candidate": "99bb8e629a22b2dfc605d76f64f2a3cb2c38742e",
   "rust": {
     "passed": 535,
     "failed": 0,
@@ -163,14 +163,17 @@
     ]
   },
   "w2_python": {
-    "total": 25,
-    "passed": 25,
-    "skipped": 0,
+    "tests": 40,
+    "exit": 0,
+    "note": "discovered under the isolated checkout"
+  },
+  "oracle": {
+    "stdout": "{\"ok\": true, \"runs\": 2, \"decoded_worker_rasters\": [9, 9], \"structural_repeats_identical\": true, \"sha256\": \"sha256:36742dc07dfb808d62b4838b1ad438a46a2c6c9adb4a7e53b67f05ab5bec61de\"}",
     "exit": 0
   },
   "probe_selftest": {
     "stdout": "w2_probe_selftest: PASS",
     "exit": 0
   },
-  "meaning": "Isolated R0 availability is separate from local 340 passed / 12 skipped. All 36 isolated skips remain NOT_RUN, never PASS. Logs are immutable private authority; hashes are in quality-gate.json."
+  "meaning": "Isolated availability is separate from the local 340 passed / 12 skipped. All 36 isolated skips remain NOT_RUN, never PASS. Logs are immutable private authority; hashes are in quality-gate.json."
 }
