@@ -7,7 +7,7 @@
   "hard_dag_unchanged": true,
   "dag_acyclic": true,
   "changed_task_cards": ["MP-IMG2 status/progress only"],
-  "targeted_relative_links": 12,
+  "targeted_relative_links": 27,
   "errors": [],
   "ok": true
 }

@@ -1,0 +1,55 @@
+MP-IMG2-W2 固定候補の独立レビューを依頼します。前回のW2 directiveに対する実装です。現時点では未完了のreviewをPASSと扱っていません。
+
+Repository: dio16/cos-desktop / branch dev
+開始SHA: 4349ff2063a7bdbe9bd275d250fde5bfeb586ffd
+製品候補 full SHA: 7f236426f53bda9d4f88913690c7743208601711
+証拠HEAD: 93c8015019737c175685e95e3999fce382085e70
+現在のTaskern packet: sha256:dc15e0d330e0605cc73975c6f1e6cce206dec8adb1035ccc1596020ee90b50ec（revision2 / img2-w2-quality-repair）。initial prepare packet a02e7119...から、実際に発見したR0 prerequisite failureの最小修正を追加したcomplete reviseです。2回の入力拒否と成功応答も保存しました。
+単一owner: DC-MP-IMG2。フルIMG2 Exitとhard DAGは変更していません。
+Caller最新直接指示: 「ループを継続し実装計画を完遂してください。設計ディシジョンはすべて承認しています。」 ADR-0009で技術完了済みsliceを受入れ、継続します。Runtime別repo・新dependency/unsafe/FFI・security設定・main/releaseの権限には読み替えません。dev pushは未実施、実操作前に直接Callerの更新権限を照合します。
+
+今回はremote未更新のため、GitHubでfull objectが見えるとは主張しません。添付を明示的な固定SOURCE/証拠として独立検査してください。添付が読めない場合は明示し、旧W1のPASSをW2へ流用しないでください。
+1. w2-review-source.zip: 307408 bytes / sha256:c49132f16cd0eaf4b5504a531cc3d7f54435f118e4659837d4e417cb37592286
+   上記製品候補のgit archive、対象source・tests・W1 generator・media budget・Cargo.lock/toolchain・正典・CLI docs・directives/Taskern revision。全repo/Git履歴ではない最小packageです。
+2. w2-review-evidence.zip: 216155 bytes / sha256:16caa09027ac221dad2821ab9702ea35cee354e36d0c8fb328b061cba8f76ddd
+   上記証拠HEADのimg2-w2-latestとMP。Native records、oracle、behavior、quality、Taskern、Gate、storageを含みます。
+3. w2-native-rasters.zip: 12531 bytes / sha256:30356781cc5d8d425a5bb0f2c84c09fca80adce30361122e8b16e772a5f4aa4d
+   2回分の生成fixtureと実decoded worker output計36個、元バイトをmanifestとNative記録のSHA/sizeで照合済み。ユーザー画像や実行ファイル・raw private consumer/log/envは含みません。worker output_pathはWindows相対pathなのでPOSIXでは区切りを変換してください。
+Git archiveのsourceはLF、実行sourceのraw CRLF hashとは別です。Native recordにはrawと明示LF-normalized双方のidentityがあります。JSONのUTC tickは2^53を超えるためPython整数で扱ってください。
+
+SOURCE差分:
+- wic_probe.ps1: legacy非opt-in動作を維持し、有限上限のexclusive stage traceと4境界の明示holdをopt-in追加。完全な予算bundle必須。OnLoad内部には人工holdなし。outputはowned pendingからno-overwrite publish、trace/output失敗はfail-closed。
+- w2_resource_matrix.py / w2_resource_verify.py / test_w2_resource_verify.py / w2_probe_selftest.ps1: 実consumerと独立workerの20 scenario、3 concurrent worker+最大1 sampler、pid/start/exe/liveness照合、単調clock区別、cancel/timeout/reap、実sidecarを保持。最大300s、worker45s、3workers、work64MiB、output16MiB、trace128rows/128KiB、sample32、capture64KiB、report8MiB、observed-private-window cap768MiB。媒体のbudget authority/defaultはcrates/mediaのまま、256preview/1024detailは小さい実験用overrideです。
+- 必須full R0でtasklistのCP932出力をUTF8 decodeする既存testの実失敗を観測。test_n03_observe.pyのtasklist stdoutをbytesのまま同じASCII predicateで照合する2行の最小修正。skipやnative availability条件は変更なし。
+- owning DCに先にW2 observation方針を記録、CLI docs §4.22とderived MP cardを更新。
+
+実測/検証（Windows実行は当方の観測、reviewerの再実行とは別）:
+- 実WIC matrixを2回実行。各20workers: decoded10/cancelled7/oversize1/timeout1/unsupported1。consumer PNG/BMPはpixels_verified、JPEGはstructure_verified。全direct child reap、cancelled final outputなし。
+- 独立stdlib PNG CRC/inflate/filter再構成oracleが各runのnon-JPEG decoded worker9個（計18個）を既知RGBAと一致確認。実画像も添付しています。
+- 4 controlled cancellation境界+2 repeatsは到達確認。OnLoad内を狙った3 attemptsはraceを明示し、全てin-decoder request reachability NOT_MEASURED。process kill/reapとcooperative WIC cancellationは別。
+- 3worker同時holdの同じbounded収集windowのsum: WS348876800 B / private130424832 B（run1）。逐次取得によるderived non-atomic window sumであり、瞬間peak/真の下限ではありません。既知requirement8263233 Bも実reservationではありません。individual counter sampleはsampled lower-bound。internal scratch/true concurrent allocation/actual reservationはnull NOT_MEASURED。
+- stage durationsは同一child QPC bracket（trace flush/dispatch overheadを含む）。人工境界holdはpaired bracket外。純WIC costやSLOの主張なし。
+- W2 Python25pass/0skip、real WIC probe selftest PASS。W1 real regression9fixtures/12boundaries/11edges/9cancel legs全expected、admission19/runner7。W2明示pwsh7.6.7/.NET10.0.13、W1 bare-PATH regression7.6.9/.NET10.0.14を混同せず記録。
+- unchanged full scripts/quality.ps1 exit0（fmt/metadata/dependency18+rules/clippy-Dwarnings/tests535pass1ignored/build）。feature r0-s2bのclippy/test539pass1ignored/buildもexit0。
+- full R0 Python352total =340passed/12skipped/0fail/0error。1no-window+11historical N07 missing-binaryはNOT_RUNのまま。fresh binaryで過去baselineを代替していません。Native GUI/startup/Present/Runtimeを新規測定したとは主張しません。
+- 添付source+evidenceを一時展開して25testsと両Native reportのsource-root structural replayを全exit0で確認。一時展開は廃棄。raw Native filesの再hashは実Windows work rootで実施済みで、portable replayとは区別。
+
+独立Refine0.3.1（同一full candidate）:
+Quality ID 5865a2d5-0270-4006-8529-2cb8b07277c1: 9checks全pass
+Build ID 2a91db39-a97b-4264-9337-5a7f065881f9: workspace build pass
+双方SUCCEEDED、cleanup complete、owner_alive=false/recovery_required=false、native status/inspect/verify全exit0、candidate digest sha256:738d9ab0dc6364d9f989ee2265762b0de2612650ae69a2a9493066c7966eb8e3 と20artifact tuplesが一致。詳細quality-gate.json/build-gate.json。
+Preflight aggregateは両UNKNOWN（check_runtime/outputs/authorization）、FAILなし。実行結果で検証しましたがpreflightをPASSへ改称していません。
+Caller Promise wrapperがspawn直後にReferenceErrorを出しましたが両accepted Gate IDでreconcile、redispatch0。実Native Gateは上記terminal success。delivery故障もgate-dispatch.jsonに保存。
+storage.json: sourceはdurable dev Git reference、Gate証拠commit後、no active process/reparseを確認。承認された新規successful work/repo2個とtarget3個だけを削除、4121042339 logical bytes/9834files。authority/artifacts/logs/raw Nativeは維持、before/after native verify両exit0・全identity一致。古い/failed/nonterminal Gate削除なし、private rustup複製なし。
+
+重点: design/safety、opt-in legacy互換、実行上限と全経路child cleanup、counter lifecycle・clock attribution、cancel/refusal/timeoutの区別、verifierの16負例クラスと不完全記録のfail-closed、SOURCE/native/Gate相関、raw/LF hash差、限定closureの正確性を検査してください。添付のsourceを読んで可能なportable検査と独立pixel検査を実施し、当方の集計の転載だけで終えないでください。
+
+求める判定はW2 LIMITED TECHNICAL COMPLETIONのみ。16K full decode、Bgr565、region/sequential/tiled、ICC/orientation、JPEG absolute raster、internal scratch/true concurrent peak/cooperative cancel、full MP-IMG2 Decode Exit、Upload、R0 full/R0D measured、FLOW2、Runtime RC-*、main/releaseは未達のままです。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEを各分類し、具体的根拠・修正を示してください。最後はコードブロック外の独立sectionで、次の形式の実件数と末尾判定を出してください。例の値を引用せず実判定に置き換えてください。
+最終判定
+BLOCKING <件数>
+ACTIONABLE NON-BLOCKING <件数>
+EXCESSIVE <件数>
+末尾は独立行: PASS 0 / 0 / 0 または HOLD <B> / <A> / <E>。
+今回はreviewだけを回答してください。次directiveはclean判定・記録後に別途依頼します。

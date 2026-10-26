@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "round": "W2-R1",
+  "repository": "dio16/cos-desktop",
+  "branch": "dev",
+  "product_candidate": "7f236426f53bda9d4f88913690c7743208601711",
+  "evidence_head": "93c8015019737c175685e95e3999fce382085e70",
+  "taskern_packet_sha256": "sha256:dc15e0d330e0605cc73975c6f1e6cce206dec8adb1035ccc1596020ee90b50ec",
+  "mode": "Attachment-bound minimum source/evidence, not full Git object or claimed remote visibility",
+  "archives": [
+    {
+      "filename": "w2-review-source.zip",
+      "bytes": 307408,
+      "sha256": "sha256:c49132f16cd0eaf4b5504a531cc3d7f54435f118e4659837d4e417cb37592286"
+    },
+    {
+      "filename": "w2-review-evidence.zip",
+      "bytes": 216155,
+      "sha256": "sha256:16caa09027ac221dad2821ab9702ea35cee354e36d0c8fb328b061cba8f76ddd"
+    },
+    {
+      "filename": "w2-native-rasters.zip",
+      "bytes": 12531,
+      "sha256": "sha256:30356781cc5d8d425a5bb0f2c84c09fca80adce30361122e8b16e772a5f4aa4d"
+    }
+  ],
+  "privacy": {
+    "new_private_path_or_credential_flags": [],
+    "existing_public_documentation_toolchain_examples": [
+      "BUILD_AND_RUN.md:366,487",
+      "IMPLEMENTATION_MASTER_PLAN.md:1370"
+    ],
+    "raw_private_logs_requests_environment_excluded": true,
+    "generated_images_only": true
+  },
+  "portable_replay": {
+    "unique_source_evidence_files": 46,
+    "logical_bytes": 1884023,
+    "python_tests": {
+      "passed": 25,
+      "skipped": 0,
+      "exit": 0
+    },
+    "reports": [
+      {
+        "name": "native-matrix.json",
+        "exit": 0
+      },
+      {
+        "name": "native-repeat.json",
+        "exit": 0
+      }
+    ],
+    "meaning": "Retained structural source-root replay in temporary combined extraction; not WIC execution. Temporary extraction removed."
+  },
+  "source_byte_forms": "Git archive contains LF blobs. Native/source records retain executed raw hashes plus explicitly LF-normalized hashes. These are distinct identities, never raw-byte-equated."
+}
