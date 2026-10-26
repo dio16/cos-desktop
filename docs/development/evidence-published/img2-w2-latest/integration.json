@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W2",
+  "product_candidate": "e4ef83a1b0085945d6e78743c8e2c9fa3aa19fa2",
+  "reviewed_evidence_head": "13cf2d678986813d83f30fa7787c0e238c96834b",
+  "disposition_commit": "1eb1186bd4997aa732609eb325485abb392b4a79",
+  "remote": "https://github.com/dio16/cos-desktop.git",
+  "branch": "dev",
+  "pre_push_remote_dev": "4349ff2063a7bdbe9bd275d250fde5bfeb586ffd",
+  "push_result": "4349ff2..1eb1186 dev -> dev (fast-forward, no force)",
+  "post_push_remote_dev": "1eb1186bd4997aa732609eb325485abb392b4a79",
+  "fast_forward_proof": "git merge-base --is-ancestor origin/dev HEAD exited 0 before the push",
+  "authority": "MP-IMG2-W2 directive section 17 plus ADR-0009 continuous-execution route; remote/branch state checked immediately before the operation",
+  "boundaries": [
+    "This record follows the pushed disposition commit and is itself docs-only.",
+    "main, release, repository visibility and any Runtime change remain untouched."
+  ]
+}
