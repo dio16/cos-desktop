@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "candidate": "7f236426f53bda9d4f88913690c7743208601711",
+  "automatic_retries": 0,
+  "quality_gate_id": "5865a2d5-0270-4006-8529-2cb8b07277c1",
+  "build_gate_id": "2a91db39-a97b-4264-9337-5a7f065881f9",
+  "preflight": {"quality":"unknown","build":"unknown","unknown_categories":["check_runtime","outputs","authorization"],"failed_diagnostics":0},
+  "caller_delivery_fault": "The caller's Promise wrapper raised a ReferenceError after spawning both native Gate processes. It is not a native Gate failure or success.",
+  "reconciliation": "Both REFINE_GATE_ACCEPTED events were preserved, then native gate.status on those exact IDs reported RUNNING/verifying, owner_alive=true and recovery_required=false. No request was redispatched.",
+  "terminal_outcomes": {"quality":"SUCCEEDED","build":"SUCCEEDED","native_status_inspect_verify_exit":0,"cleanup":"complete","owner_alive":false,"recovery_required":false,"candidate_and_20_artifact_tuples_identical":true}
+}

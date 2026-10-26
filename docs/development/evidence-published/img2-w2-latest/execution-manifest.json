@@ -56,7 +56,7 @@
         "describe operation gate.run",
         "describe family execution"
       ],
-      "execution": "PENDING",
+      "execution": "SUCCEEDED; Quality 5865a2d5-0270-4006-8529-2cb8b07277c1 (9 checks), Build 2a91db39-a97b-4264-9337-5a7f065881f9 (1 check); same full candidate and 20 artifact tuples; native status/inspect/verify exit 0, cleanup complete, owners dead",
       "lifecycle": "VERIFY_EXISTING_CANDIDATE"
     },
     "tern": {
