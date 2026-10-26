@@ -1,0 +1,204 @@
+ChatGPT の発言:
+MP-IMG2-W2 独立固定候補レビュー
+
+判定：HOLD — SOURCE・Native実測・Gateの整合性は確認できましたが、cancellation判定に新規ACTIONABLE 1件があります。
+
+レビュー対象は製品候補 7f236426f53bda9d4f88913690c7743208601711、証拠HEAD 93c8015019737c175685e95e3999fce382085e70です。
+
+添付3 ZIPの実内容を展開して検査しました。GitHubの未push commitや、添付外のリポジトリ全体を取得・確認したとは扱っていません。
+
+1. 独立検証結果
+
+対象
+
+	
+
+独立確認結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+307,408 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+216,155 bytes、SHA256一致
+
+
+
+
+Native rasters ZIP
+
+	
+
+12,531 bytes、SHA256一致
+
+
+
+
+W2 Python回帰
+
+	
+
+25/25 PASS（実行）
+
+
+
+
+Native report構造検証
+
+	
+
+2/2 PASS（実行）
+
+
+
+
+Native raster manifest
+
+	
+
+36/36 サイズ・SHA256一致
+
+
+
+
+JPEG以外の実デコード出力
+
+	
+
+18/18 RGBA画素一致
+
+
+
+
+JPEG出力
+
+	
+
+2件、PNG構造・寸法のみ確認
+
+
+
+
+SOURCEとGate artifacts
+
+	
+
+20/20 LF正規化後にdigest・サイズ一致
+
+
+
+
+Quality Gate
+
+	
+
+SUCCEEDED、9/9
+
+
+
+
+Build Gate
+
+	
+
+SUCCEEDED、1/1
+
+
+
+
+両Gateのartifact tuples
+
+	
+
+20件一致
+
+
+
+
+Storage
+
+	
+
+5対象、4,121,042,339 logical bytes、9,834 filesで集計一致
+
+Pixel検証では、提出された独立oracleの結果を単に転記せず、PNGのCRC、zlib展開、行フィルター復元を別実装で行いました。PNG/BMP由来の18出力すべてが、fixtureから計算した期待RGBAバイト列と一致しました。
+
+実WindowsでWIC自体を再実行したわけではありません。Native stage traceについては、保持された記録の構造・算術・相関を検査した結果です。
+
+2. SOURCE・測定・Gateの評価
+
+wic_probe.ps1の観測機能は明示opt-inであり、4つの境界holdを持ち、OnLoad内部へ人工holdを挿入していません。pending出力からのpublish処理、trace上限、拒否時の出力抑制も確認できました。
+
+各Native実行の20 workerは、記録上、decoded 10 / cancelled 7 / oversize 1 / timeout 1 / unsupported 1です。
+
+メモリ測定も概念を混同していません。実測プロセスカウンターと宣言予算、算術的必要量、実予約量、WIC内部scratch peakが区別されています。
+
+特に、3 workerのworking set合計348,876,800 bytesとprivate bytes合計130,424,832 bytesは、同じ収集window内の逐次取得値から求めた非原子的な合計として扱われています。真の同時peakやdecoder内部scratchの上限とは主張されていません。
+
+Gateについては、両方とも同一candidate SHA256 738d9ab0…7966eb8e3を記録し、20 artifact tuplesも一致しました。提出ファイルの改行差はLF正規化で説明でき、20件すべてのdigestとサイズを再照合できました。
+
+Quality 9/9、Build 1/1、両方のstatus/inspect/verify成功、cleanup complete、owner deadを記録上確認しています。PreflightのUNKNOWNはUNKNOWNのままであり、PASSへの読み替えはありません。
+
+Taskernについても、initial prepareとrevision 2のrevise、2件の拒否診断、成功したreplacement_compiledおよびpacket digestの相関を確認しました。
+
+3. 新規指摘
+A-W2-01 — 終了済みworkerをcancelledとして記録できる競合条件
+
+種別：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w2_resource_matrix.py:204–215、229–259
+
+Worker.stop()は、キャンセル要求時刻とmethod="direct_child_terminate_wait"を設定した後、次の条件でkillを省略します。
+
+Python
+実行
+if self.proc.poll() is None:
+    self.proc.kill()
+self.proc.wait(timeout=5)
+
+つまり、stop()呼出し直前にworkerが正常終了していた場合でも、killを実行せずにrequested_ns、observed_ns、waited=Trueを記録します。
+
+その後のWorker.finish()は、requested_nsが存在するだけでcancelledへ分類し、既存出力があれば削除します。
+
+独立再現： すでにexit 0で終了した模擬processをWorker.stop()へ渡したところ、kill呼出し0回にもかかわらず、method="direct_child_terminate_wait"のcancellation記録が生成されました。
+
+さらに、提出されたnative-matrix.jsonのonload_3についてexit codeだけを0に変更しても、現在のw2_resource_verify.verify()はok=trueを返しました。したがって、検証器もこの競合を検出できません。
+
+これは、実Nativeのonload_3が誤分類だったと断定する指摘ではありません。実記録はexit 1であり、killされた可能性があります。しかし、そのことを証明するフィールドが記録されていないため、終了とキャンセルの競合を区別できません。
+
+修正条件： 子プロセスの実際の終了状態を確認し、停止要求、kill実施、回収、実際の終了結果を別々に記録してください。停止要求前に終了済みなら、実際の結果を保持し、cancelled成功に分類しないこと。killと自然終了が競合した場合も、停止が確認できなければNOT_VERIFIED等の閉じた状態で扱ってください。
+
+回帰テストには、少なくとも「停止要求前にexit 0」「停止要求前にexit 1」「killが実行された正常なcancel」「killと自然終了の競合」を含めてください。検証器は、実際の停止操作・結果が欠落したcancellation成功を拒否する必要があります。
+
+この問題は実測runnerの終了分類に限定されます。WIC admission、DecodeBudget、DC-MP-IMG2、既存の4つの人工hold境界を再設計する必要はありません。
+
+4. 限定closureと未達境界
+
+今回のSOURCEおよび添付証拠は、実WIC stage観測、bounded memory sampling、実PNG/BMPのpixel oracle、3 workerのprocess lifecycle、Taskernおよび独立Refine GateというW2の主要技術要件を裏付けています。
+
+ただしA-W2-01が残るため、MP-IMG2-W2 LIMITED TECHNICAL COMPLETIONの0/0/0 closureは保留します。
+
+16K full decode、Bgr565実WIC、region/sequential/tiled、ICC/orientation、JPEG絶対raster、WIC内部scratch peak、真の同時memory peak、協調的in-decoder cancellation、DC-MP-IMG2全体のDecode Exit、MP-IMG3 Upload、R0全体、R0D measured、FLOW2、Runtime RC-*、main/releaseは引き続き未達です。
+
+修正はA-W2-01に限定し、新しい固定SOURCE SHA・必要な独立Gate・Tern再レビューで解消確認するのが適切です。現候補のGate成功履歴はそのまま保持してください。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 1
+
+EXCESSIVE 0
+
+HOLD 0 / 1 / 0

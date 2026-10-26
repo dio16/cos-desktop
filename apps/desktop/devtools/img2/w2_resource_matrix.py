@@ -136,6 +136,30 @@ foreach($item in $spec.items) {
 """
 
 
+STOP_STATES = ("not_requested", "already_exited", "stop_confirmed", "unverified_race")
+
+
+def cancel_record(kind):
+    """Initial stop evidence; every field is filled by an observed action or stays unknown."""
+    return {"requested_ns": None, "observed_ns": None, "waited": False,
+            "last_observed_stage": None, "method": None,
+            "reachability": "NOT_MEASURED" if kind == "onload_attempt" else "not_requested",
+            "state": "not_requested", "alive_at_request": None,
+            "exit_before_request": None, "returncode_before_request": None,
+            "kill_issued": False, "kill_error": None, "reap_confirmed": False,
+            "exit_after_request": None}
+
+
+def stop_outcome(cancel, result):
+    """Closed outcome from the observed stop lifecycle, never from a request time alone."""
+    state = cancel["state"]
+    if state in ("not_requested", "already_exited"):
+        return result.get("outcome", "error") if isinstance(result, dict) else "error"
+    if state == "stop_confirmed":
+        return "timeout" if cancel.get("reason") == "timeout" else "cancelled"
+    return "not_verified"
+
+
 class Worker:
     def __init__(self, spec, work, pwsh, fixtures, limits):
         self.cid, self.fid, self.kind, self.hold = spec
@@ -166,9 +190,7 @@ class Worker:
             self.stderr.close()
             raise
         self.identity_verified = False
-        self.cancel = {"requested_ns": None, "observed_ns": None, "waited": False,
-                       "last_observed_stage": None, "method": None,
-                       "reachability": "NOT_MEASURED" if self.kind == "onload_attempt" else "not_requested"}
+        self.cancel = cancel_record(self.kind)
         self.released = False
         self.rows = []
 
@@ -202,16 +224,38 @@ class Worker:
             self.released = True
 
     def stop(self, reason):
-        if self.cancel["requested_ns"] is None:
-            self.read_trace()
-            self.cancel.update(requested_ns=time.monotonic_ns(),
-                               last_observed_stage=self.rows[-1]["stage"] if self.rows else None,
-                               method="direct_child_terminate_wait",
-                               reachability="NOT_MEASURED" if self.kind == "onload_attempt" else "reached")
-            if self.proc.poll() is None:
-                self.proc.kill()
-            self.proc.wait(timeout=5)
-            self.cancel.update(observed_ns=time.monotonic_ns(), waited=True, reason=reason)
+        """Request termination and record what was actually observed.
+
+        A child that has already exited keeps its own result: the request is not
+        a cancellation. A kill whose effect cannot be separated from natural
+        completion stays ``unverified_race``, never cancellation success.
+        """
+        if self.cancel["requested_ns"] is not None or self.cancel["state"] == "already_exited":
+            return
+        self.read_trace()
+        before = self.proc.poll()
+        self.cancel.update(last_observed_stage=self.rows[-1]["stage"] if self.rows else None,
+                           reason=reason)
+        if before is not None:
+            self.cancel.update(state="already_exited", alive_at_request=False,
+                               exit_before_request=True, returncode_before_request=before,
+                               reap_confirmed=True, waited=True)
+            return
+        self.cancel.update(state="unverified_race", alive_at_request=True, exit_before_request=False,
+                           requested_ns=time.monotonic_ns(), method="direct_child_terminate_wait")
+        try:
+            self.proc.kill()
+        except OSError as exc:
+            self.cancel.update(kill_error=type(exc).__name__)
+        else:
+            self.cancel.update(kill_issued=True)
+        self.proc.wait(timeout=5)
+        self.cancel.update(observed_ns=time.monotonic_ns(), waited=True,
+                           exit_after_request=self.proc.returncode,
+                           reap_confirmed=self.proc.returncode is not None,
+                           state="stop_confirmed" if self.cancel["kill_issued"] else "unverified_race",
+                           reachability="NOT_MEASURED" if self.kind == "onload_attempt"
+                           else ("reached" if self.cancel["kill_issued"] else "not_requested"))
 
     def finish(self, exe_sha):
         self.proc.wait(timeout=5)
@@ -226,16 +270,15 @@ class Worker:
             result = json.loads(stdout.decode("utf-8")) if stdout else None
         except (UnicodeError, ValueError):
             result = None
-        cancelled = self.cancel["requested_ns"] is not None
+        stopped = self.cancel["state"] == "stop_confirmed"
         removed = []
-        if cancelled:
+        if stopped:
             for path in (self.output, self.observe / "pending.png", self.observe / "pending.bmp"):
                 if path.exists():
                     path.unlink()
                     removed.append(str(path.relative_to(self.work)))
         output_present = self.output.is_file()
-        outcome = ("timeout" if self.cancel.get("reason") == "timeout" else "cancelled") if cancelled else (
-            result.get("outcome", "error") if isinstance(result, dict) else "error")
+        outcome = stop_outcome(self.cancel, result)
         identity = self.identity()
         return {"case_id": self.cid, "fixture_id": self.fid, "kind": self.kind, "hold_stage": self.hold,
                 "pid": self.proc.pid, "start_utc_ticks": identity["start_utc_ticks"],
@@ -253,7 +296,7 @@ class Worker:
                 "output_present": output_present, "output_bytes": self.output.stat().st_size if output_present else 0,
                 "output_sha256": file_sha(self.output) if output_present else None,
                 "output_path": str(self.output.relative_to(self.work)),
-                "published_success": outcome == "decoded" and not cancelled and output_present,
+                "published_success": outcome == "decoded" and not stopped and output_present,
                 "removed_owned_output_paths": removed, "stdout_bytes": len(stdout),
                 "stderr_bytes": self.stderr_path.stat().st_size,
                 "boundary_hold_is_instrumentation": bool(self.hold)}
@@ -436,7 +479,7 @@ def run_matrix(work_root, out, pwsh, harness):
               "workers": workers, "cohorts": cohorts, "memory": _memory(workers, cohorts),
               "cleanup": {"complete": all(w["reaped"] and not w["alive_after_wait"] for w in workers),
                           "live_direct_children": [], "cancelled_output_paths_remaining": [w["output_path"] for w in workers
-                              if w["cancellation"]["requested_ns"] is not None and w["output_present"]]},
+                              if w["cancellation"]["state"] == "stop_confirmed" and w["output_present"]]},
               "work_bytes": _work_bytes(work), "duration_ns": time.monotonic_ns() - started,
               "reproducibility": {"structural_oracle": "fixed fixtures/cases/admission arithmetic/consumer pixels",
                   "nondeterministic": ["OS counters", "process identity", "timestamps", "inside-OnLoad attempt reachability"],

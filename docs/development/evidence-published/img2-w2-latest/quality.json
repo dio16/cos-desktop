@@ -41,12 +41,13 @@
   ],
   "focused": {
     "w2_negative_tests": {
-      "total": 25,
-      "passed": 25,
+      "total": 40,
+      "passed": 40,
       "skipped": 0,
       "failed": 0,
       "errors": 0,
-      "exit": 0
+      "exit": 0,
+      "note": "includes eight Worker.stop/finish lifecycle and seven new stop-evidence verifier regressions"
     },
     "wic_probe_selftest": {
       "script_exit": 0,
@@ -60,6 +61,19 @@
     "w1_runner_selftest": {
       "checks": 7,
       "failures": []
+    },
+    "independent_oracle": {
+      "command": "python -B apps/desktop/devtools/img2/w2_independent_oracle.py",
+      "exit": 0,
+      "verified_outputs": [
+        9,
+        9
+      ],
+      "structural_repeats_identical": true,
+      "archive": "native-rasters.zip",
+      "archive_sha256": "sha256:4582b43fa8863297fb0fbe2c23d87bd033961140ed0235d3ff82dd96812aa0da",
+      "record_sha256": "sha256:0f5d2f6e2b884cf1300b43773fc489b1d25c3122e65b2b5622547db3f2836a7a",
+      "meaning": "stdlib PNG reconstruction from the tracked archive; not a WIC rerun"
     }
   },
   "r0_python": {
@@ -122,7 +136,8 @@
       }
     ],
     "resource_warning_after_repair": false,
-    "unicode_error_after_repair": false
+    "unicode_error_after_repair": false,
+    "duplicate_zip_userwarning": "the intentional duplicate-member ZIP negative fixture still emits one UserWarning; it is not a failure"
   },
   "observed_failures": [
     {
@@ -168,5 +183,10 @@
     ],
     "structural_repeats_identical": true,
     "jpeg": "structure_only"
-  }
+  },
+  "native_records": {
+    "native-matrix.json": "sha256:1916e20e45b546a52106fc83eb29e2e24c61b69860de534fdba9888b7d58c2c3",
+    "native-repeat.json": "sha256:66f1eb470387a3d17bd6bd975f10023f1d718cfbbe7d6640a30831b382c29023"
+  },
+  "repair": "Re-ran after the A-W2-01 stop-lifecycle repair. Rust sources are unchanged by that repair; the Python runner/verifier/tests and the retained records are new."
 }

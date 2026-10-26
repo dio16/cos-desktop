@@ -4,18 +4,18 @@
   "native_records": [
     {
       "path": "native-matrix.json",
-      "sha256": "sha256:5df387383110902f1f7c1a8458aacdedbd4098b2ff00d9de89c14d8340dec312",
+      "sha256": "sha256:1916e20e45b546a52106fc83eb29e2e24c61b69860de534fdba9888b7d58c2c3",
       "workers": 20,
       "cohort_windows": 16,
       "outcomes": {
-        "cancelled": 7,
         "decoded": 10,
         "oversize": 1,
-        "timeout": 1,
-        "unsupported": 1
+        "unsupported": 1,
+        "cancelled": 7,
+        "timeout": 1
       },
-      "duration_ns": 39737018800,
-      "work_bytes": 120051,
+      "duration_ns": 37711297200,
+      "work_bytes": 120573,
       "cleanup": {
         "cancelled_output_paths_remaining": [],
         "complete": true,
@@ -68,7 +68,7 @@
           "source": "System.Diagnostics.Process counters",
           "status": "derived",
           "unit": "bytes",
-          "value": 130424832
+          "value": 126382080
         },
         "concurrent_working_set_bytes": {
           "complete": true,
@@ -80,7 +80,7 @@
           "source": "System.Diagnostics.Process counters",
           "status": "derived",
           "unit": "bytes",
-          "value": 348876800
+          "value": 345309184
         },
         "declared_scratch_bytes": {
           "complete": true,
@@ -152,7 +152,7 @@
           "source": "System.Diagnostics.Process counters",
           "status": "sampled_lower_bound",
           "unit": "bytes",
-          "value": 48934912
+          "value": 49659904
         },
         "working_set_bytes": {
           "complete": true,
@@ -164,24 +164,143 @@
           "source": "System.Diagnostics.Process counters",
           "status": "sampled_lower_bound",
           "unit": "bytes",
-          "value": 122716160
+          "value": 123998208
         }
+      },
+      "stop_lifecycle": {
+        "states": {
+          "not_requested": 12,
+          "already_exited": 0,
+          "stop_confirmed": 8,
+          "unverified_race": 0
+        },
+        "confirmed_stops": [
+          {
+            "case_id": "cancel_before_admission",
+            "kind": "cancel",
+            "boundary": "before_admission",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "cancel_before_onload",
+            "kind": "cancel",
+            "boundary": "before_onload",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "cancel_after_onload",
+            "kind": "cancel",
+            "boundary": "after_onload",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "cancel_before_publish",
+            "kind": "cancel",
+            "boundary": "before_publish",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "repeat_1",
+            "kind": "cancel",
+            "boundary": "before_onload",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "repeat_2",
+            "kind": "cancel",
+            "boundary": "before_onload",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "onload_2",
+            "kind": "onload_attempt",
+            "boundary": "onload_entered",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "timeout",
+            "kind": "timeout",
+            "boundary": "before_onload",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          }
+        ],
+        "natural_completions_not_cancelled": [
+          {
+            "case_id": "single_small_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0,
+            "returncode_before_request": null
+          },
+          {
+            "case_id": "single_small_bmp",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0,
+            "returncode_before_request": null
+          },
+          {
+            "case_id": "single_small_jpeg",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0,
+            "returncode_before_request": null
+          },
+          {
+            "case_id": "single_preview_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0,
+            "returncode_before_request": null
+          },
+          {
+            "case_id": "single_detail_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0,
+            "returncode_before_request": null
+          },
+          {
+            "case_id": "refuse_oversized_png",
+            "kind": "refusal",
+            "outcome": "oversize",
+            "exit_code": 4,
+            "returncode_before_request": null
+          }
+        ],
+        "meaning": "Stop evidence is a closed state machine: a request time alone never proves cancellation; a child alive at request plus an issued kill and a non-zero reaped exit is required."
       }
     },
     {
       "path": "native-repeat.json",
-      "sha256": "sha256:721bc2cadf8f77f678bf38a2ed4ae576bba0b4c0cdcde569289b5ee50e5e7393",
+      "sha256": "sha256:66f1eb470387a3d17bd6bd975f10023f1d718cfbbe7d6640a30831b382c29023",
       "workers": 20,
       "cohort_windows": 16,
       "outcomes": {
-        "cancelled": 7,
         "decoded": 10,
         "oversize": 1,
-        "timeout": 1,
-        "unsupported": 1
+        "unsupported": 1,
+        "cancelled": 7,
+        "timeout": 1
       },
-      "duration_ns": 37616186000,
-      "work_bytes": 120063,
+      "duration_ns": 37472825200,
+      "work_bytes": 120517,
       "cleanup": {
         "cancelled_output_paths_remaining": [],
         "complete": true,
@@ -234,7 +353,7 @@
           "source": "System.Diagnostics.Process counters",
           "status": "derived",
           "unit": "bytes",
-          "value": 127565824
+          "value": 126115840
         },
         "concurrent_working_set_bytes": {
           "complete": true,
@@ -246,7 +365,7 @@
           "source": "System.Diagnostics.Process counters",
           "status": "derived",
           "unit": "bytes",
-          "value": 344858624
+          "value": 344977408
         },
         "declared_scratch_bytes": {
           "complete": true,
@@ -318,7 +437,7 @@
           "source": "System.Diagnostics.Process counters",
           "status": "sampled_lower_bound",
           "unit": "bytes",
-          "value": 49090560
+          "value": 48943104
         },
         "working_set_bytes": {
           "complete": true,
@@ -330,8 +449,127 @@
           "source": "System.Diagnostics.Process counters",
           "status": "sampled_lower_bound",
           "unit": "bytes",
-          "value": 122961920
+          "value": 123695104
         }
+      },
+      "stop_lifecycle": {
+        "states": {
+          "not_requested": 12,
+          "already_exited": 0,
+          "stop_confirmed": 8,
+          "unverified_race": 0
+        },
+        "confirmed_stops": [
+          {
+            "case_id": "cancel_before_admission",
+            "kind": "cancel",
+            "boundary": "before_admission",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "cancel_before_onload",
+            "kind": "cancel",
+            "boundary": "before_onload",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "cancel_after_onload",
+            "kind": "cancel",
+            "boundary": "after_onload",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "cancel_before_publish",
+            "kind": "cancel",
+            "boundary": "before_publish",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "repeat_1",
+            "kind": "cancel",
+            "boundary": "before_onload",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "repeat_2",
+            "kind": "cancel",
+            "boundary": "before_onload",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "onload_1",
+            "kind": "onload_attempt",
+            "boundary": "onload_entered",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "timeout",
+            "kind": "timeout",
+            "boundary": "before_onload",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          }
+        ],
+        "natural_completions_not_cancelled": [
+          {
+            "case_id": "single_small_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0,
+            "returncode_before_request": null
+          },
+          {
+            "case_id": "single_small_bmp",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0,
+            "returncode_before_request": null
+          },
+          {
+            "case_id": "single_small_jpeg",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0,
+            "returncode_before_request": null
+          },
+          {
+            "case_id": "single_preview_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0,
+            "returncode_before_request": null
+          },
+          {
+            "case_id": "single_detail_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0,
+            "returncode_before_request": null
+          },
+          {
+            "case_id": "refuse_oversized_png",
+            "kind": "refusal",
+            "outcome": "oversize",
+            "exit_code": 4,
+            "returncode_before_request": null
+          }
+        ],
+        "meaning": "Stop evidence is a closed state machine: a request time alone never proves cancellation; a child alive at request plus an issued kill and a non-zero reaped exit is required."
       }
     }
   ],
@@ -353,7 +591,8 @@
   "native_files_verification": {
     "run1_exit": 0,
     "run2_exit": 0,
-    "errors": []
+    "errors": [],
+    "over_strict_first_attempt": "The first repaired run was rejected by the stricter verifier for missing stop observations on workers that were never stopped; it was not adopted as evidence, and only the two accepted runs bind this record."
   },
   "independent_raster_oracle": {
     "runs": 2,
@@ -362,12 +601,16 @@
       9
     ],
     "record": "independent-oracle.json",
+    "archive": "native-rasters.zip",
+    "archive_sha256": "sha256:4582b43fa8863297fb0fbe2c23d87bd033961140ed0235d3ff82dd96812aa0da",
+    "method": "tracked-archive stdlib PNG reconstruction; no work-root dependency",
     "jpeg": "structure_only"
   },
   "w2_focused_tests": {
-    "passed": 25,
+    "passed": 40,
     "failed": 0,
-    "skipped": 0
+    "skipped": 0,
+    "note": "Includes eight Worker.stop/finish lifecycle regressions and seven new stop-evidence verifier negatives."
   },
   "w1_compatibility": {
     "record": "w1-regression.json",

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source_record": "native-matrix.json",
-  "source_record_sha256": "sha256:5df387383110902f1f7c1a8458aacdedbd4098b2ff00d9de89c14d8340dec312",
+  "source_record_sha256": "sha256:1916e20e45b546a52106fc83eb29e2e24c61b69860de534fdba9888b7d58c2c3",
   "scope": "generated-local exploratory WIC classes only",
   "codec_observations": [
     {
@@ -26,16 +26,12 @@
       ],
       "validity": "pixels_verified against independent solid RGBA expectation",
       "working_set_samples_bytes": [
-        116916224,
-        117510144,
-        122605568
+        117530624
       ],
       "private_samples_bytes": [
-        43425792,
-        43634688,
-        48934912
+        43671552
       ],
-      "sample_meaning": "whole managed process at explicit after-OnLoad retention hold; not pure decoder cost or peak",
+      "sample_meaning": "whole managed process at the explicit after-OnLoad retention hold; single bounded sample, not pure decoder cost, peak or distribution",
       "internal_scratch_peak": null,
       "cooperative_cancel": "NOT_MEASURED",
       "region_sequential_tiled_profile_orientation": "NOT_MEASURED",
@@ -56,12 +52,12 @@
       ],
       "validity": "pixels_verified against independent solid RGBA expectation",
       "working_set_samples_bytes": [
-        117276672
+        117841920
       ],
       "private_samples_bytes": [
-        43380736
+        43593728
       ],
-      "sample_meaning": "whole managed process at explicit after-OnLoad retention hold; not pure decoder cost or peak",
+      "sample_meaning": "whole managed process at the explicit after-OnLoad retention hold; single bounded sample, not pure decoder cost, peak or distribution",
       "internal_scratch_peak": null,
       "cooperative_cancel": "NOT_MEASURED",
       "region_sequential_tiled_profile_orientation": "NOT_MEASURED",
@@ -82,17 +78,51 @@
       ],
       "validity": "structure_verified only",
       "working_set_samples_bytes": [
-        114511872
+        117604352
       ],
       "private_samples_bytes": [
-        41447424
+        43536384
       ],
-      "sample_meaning": "whole managed process at explicit after-OnLoad retention hold; not pure decoder cost or peak",
+      "sample_meaning": "whole managed process at the explicit after-OnLoad retention hold; single bounded sample, not pure decoder cost, peak or distribution",
       "internal_scratch_peak": null,
       "cooperative_cancel": "NOT_MEASURED",
       "region_sequential_tiled_profile_orientation": "NOT_MEASURED",
       "fallback": "unavailable outside a verified bounded class; no automatic whole-source decode fallback",
       "adoption": "existing ADR-0008 WIC route; no new production codec/dimension-class acceptance"
     }
-  ]
+  ],
+  "stop_lifecycle": {
+    "confirmed_stops": [
+      "cancel_before_admission",
+      "cancel_before_onload",
+      "cancel_after_onload",
+      "cancel_before_publish",
+      "repeat_1",
+      "repeat_2",
+      "onload_2",
+      "timeout"
+    ],
+    "natural_completions": [
+      "single_small_png",
+      "single_small_bmp",
+      "single_small_jpeg",
+      "single_preview_png",
+      "single_detail_png",
+      "refuse_oversized_png",
+      "refuse_unsupported",
+      "onload_1",
+      "onload_3",
+      "cohort_a",
+      "cohort_b",
+      "cohort_detail"
+    ],
+    "boundaries": [
+      "after_onload",
+      "before_admission",
+      "before_onload",
+      "before_publish",
+      "onload_entered"
+    ],
+    "meaning": "Boundary holds are instrumentation. A confirmed stop required the child to be alive at request, an issued kill and a reaped non-zero exit; natural completion is never recorded as cancelled."
+  }
 }

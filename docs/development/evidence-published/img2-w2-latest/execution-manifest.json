@@ -4,10 +4,10 @@
   "source_commit": "4349ff2063a7bdbe9bd275d250fde5bfeb586ffd",
   "owner_contract": "DC-MP-IMG2",
   "directive_sha256": "sha256:3f95e82f10f83291ac662f1f3423d725dcfdf3d034519a3a69ff79fbd48e60b7",
-  "taskern_packet_sha256": "sha256:dc15e0d330e0605cc73975c6f1e6cce206dec8adb1035ccc1596020ee90b50ec",
+  "taskern_packet_sha256": "sha256:2be98d3011956be7d3cf6ce2ea05ebe13476b88efc15c74c861cb89520b054fc",
   "initial_taskern_packet_sha256": "sha256:a02e711946328ba5f18656d09a21a6bf3b8f6a4f4c3f825f351b26b5d638646d",
   "authority": {
-    "caller_statement": "ループを継続し実装計画を完遂してください。設計ディシジョンはすべて承認しています。",
+    "caller_statement": "\u30eb\u30fc\u30d7\u3092\u7d99\u7d9a\u3057\u5b9f\u88c5\u8a08\u753b\u3092\u5b8c\u9042\u3057\u3066\u304f\u3060\u3055\u3044\u3002\u8a2d\u8a08\u30c7\u30a3\u30b7\u30b8\u30e7\u30f3\u306f\u3059\u3079\u3066\u627f\u8a8d\u3057\u3066\u3044\u307e\u3059\u3002",
     "design_choices": "Existing WIC/WPF, unchanged media DecodeBudget authority; opt-in bounded stage sidecars; Windows process counters separate from reservations/internal scratch; external direct-worker termination is not cooperative cancellation.",
     "native_cli": "AUTHORIZED",
     "native_gui": "NOT_REQUESTED",
@@ -56,7 +56,7 @@
         "describe operation gate.run",
         "describe family execution"
       ],
-      "execution": "SUCCEEDED; Quality 5865a2d5-0270-4006-8529-2cb8b07277c1 (9 checks), Build 2a91db39-a97b-4264-9337-5a7f065881f9 (1 check); same full candidate and 20 artifact tuples; native status/inspect/verify exit 0, cleanup complete, owners dead",
+      "execution": "Round 1 SUCCEEDED on 7f236426 (Quality 5865a2d5-0270-4006-8529-2cb8b07277c1, Build 2a91db39-a97b-4264-9337-5a7f065881f9). New Gates required for the A-W2-01 repair candidate; those IDs are recorded in quality-gate.json/build-gate.json.",
       "lifecycle": "VERIFY_EXISTING_CANDIDATE"
     },
     "tern": {
@@ -119,5 +119,18 @@
     "Upload",
     "Runtime",
     "main/release"
-  ]
+  ],
+  "taskern": {
+    "packet_history": [
+      "sha256:a02e711946328ba5f18656d09a21a6bf3b8f6a4f4c3f825f351b26b5d638646d (initial prepare)",
+      "sha256:dc15e0d330e0605cc73975c6f1e6cce206dec8adb1035ccc1596020ee90b50ec (revision 2, quality prerequisite repair)",
+      "sha256:2be98d3011956be7d3cf6ce2ea05ebe13476b88efc15c74c861cb89520b054fc (revision 3, A-W2-01 stop lifecycle)"
+    ],
+    "current_task_id": "img2-w2-cancellation-repair",
+    "current_revision": 3
+  },
+  "review": {
+    "round_1": "HOLD 0 ACTIONABLE 1 / 0 EXCESSIVE on 7f236426 (A-W2-01)",
+    "round_2": "PENDING"
+  }
 }

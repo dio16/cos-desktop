@@ -967,5 +967,11 @@
       "cancellation_requested_at_ms": 1,
       "cancellation_observed_ms": 1
     }
-  ]
+  ],
+  "rerun_after_w2_stop_repair": {
+    "observed_at": "2026-10-26",
+    "work_root": "<owned-fresh-w1-work>",
+    "result": "same nine fixtures, twelve boundaries, eleven edges and nine cancellation legs; probe source unchanged",
+    "probe_identity": "wic_probe 1.1 (managed WIC/WPF, pre-materialization decode budget, PowerShell 7.6.9, .NET 10.0.14)"
+  }
 }

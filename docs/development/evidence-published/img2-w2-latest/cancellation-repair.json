@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W2",
+  "finding": {
+    "id": "A-W2-01",
+    "round": "W2-R1",
+    "classification": "ACTIONABLE NON-BLOCKING",
+    "candidate": "7f236426f53bda9d4f88913690c7743208601711",
+    "review_verdict": "HOLD 0 / 1 / 0",
+    "response_sha256": "sha256:8d5c77b2de0765e144f376ae35f31292784587df7dd3a3ee5775cda9e7de4525",
+    "anchor": "apps/desktop/devtools/img2/w2_resource_matrix.py Worker.stop/finish"
+  },
+  "observed_defect": {
+    "runner": "stop() set requested_ns and method=direct_child_terminate_wait before checking poll(); a child that had already completed still produced a cancellation record, and finish() classified any requested_ns as cancelled.",
+    "verifier": "cancellation acceptance did not require an issued kill, an alive-at-request observation or a non-zero termination exit; mutating the retained onload_3 exit code to 0 still verified.",
+    "not_claimed": "The retained record actually held exit_code 1, so the real run is not asserted to have been misclassified; only the missing evidence fields and the verifier gap are."
+  },
+  "repair": {
+    "owner_contract": "DC-MP-IMG2 opt-in WIC observation boundary updated first",
+    "runner": [
+      "state: not_requested | already_exited | stop_confirmed | unverified_race",
+      "alive_at_request / exit_before_request / returncode_before_request",
+      "kill_issued / kill_error / reap_confirmed / exit_after_request",
+      "stop_outcome(): only stop_confirmed yields cancelled or timeout; already_exited keeps the real probe outcome; unverified_race yields not_verified",
+      "output removal only after a confirmed stop"
+    ],
+    "verifier": [
+      "requires the closed state and boolean action fields",
+      "stop_confirmed needs alive_at_request, issued kill, no kill error, reaped non-zero exit equal to exit_after_request, identity_verified and observed_ns == exited_ns",
+      "already_exited needs no request, no kill and returncode_before_request == exit_code",
+      "cancellation cannot be claimed from not_requested/already_exited/unverified_race",
+      "cancel/timeout scenarios require stop_confirmed"
+    ],
+    "tests": {
+      "file": "apps/desktop/devtools/img2/tests/test_w2_worker_stop.py",
+      "cases": [
+        "exit 0 before request keeps decoded",
+        "exit 1 before request is not a cancellation",
+        "confirmed kill requires issued terminate and non-zero exit",
+        "timeout reason distinct from cancel",
+        "kill/natural-exit race is not_verified",
+        "idempotent stop",
+        "finish preserves natural-exit output",
+        "finish removes output only after a confirmed stop"
+      ],
+      "verifier_negatives": [
+        "kill_issued false",
+        "exited-before-request claimed cancelled",
+        "zero exit as a confirmed stop",
+        "missing alive_at_request",
+        "unverified race claimed cancelled",
+        "natural completion relabelled not_verified",
+        "missing kill_issued field"
+      ]
+    }
+  },
+  "actual_evidence": {
+    "records": [
+      "native-matrix.json",
+      "native-repeat.json"
+    ],
+    "states_per_run": {
+      "not_requested": 12,
+      "already_exited": 0,
+      "stop_confirmed": 8,
+      "unverified_race": 0
+    },
+    "confirmed_stops": "six cancel scenarios, two pre-OnLoad repeats, one in-OnLoad attempt and the operator timeout",
+    "natural_completions": "five single decodes, two refusals, two OnLoad attempts that completed first and the three cohort workers",
+    "natural_onload_attempts": [
+      {
+        "case_id": "onload_1",
+        "exit_code": 0,
+        "outcome": "decoded"
+      },
+      {
+        "case_id": "onload_3",
+        "exit_code": 0,
+        "outcome": "decoded"
+      }
+    ],
+    "stopped_onload_attempt": {
+      "case_id": "onload_2",
+      "exit_code": 1,
+      "outcome": "cancelled",
+      "reachability": "NOT_MEASURED"
+    },
+    "oracle": "independent-oracle.json rebuilt from the tracked raster archive",
+    "meaning": "The repaired runner separates natural completion from a confirmed stop in actual Windows runs; a never-stopped worker is no longer representable as cancelled."
+  },
+  "superseded": {
+    "records": "the pre-repair native-matrix.json/native-repeat.json and their behavior/codec summaries are replaced, not rewritten into success",
+    "gbate": "the pre-repair independent Gate IDs 5865a2d5/2a91db39 remain valid only for product 7f236426 and are not reused"
+  }
+}

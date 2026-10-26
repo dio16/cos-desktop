@@ -111,8 +111,59 @@ class W2EvidenceTests(unittest.TestCase):
 
     def test_required_cancel_cannot_be_unreached(self):
         def unset(r):
-            next(x for x in r["workers"] if x["kind"] == "cancel")["cancellation"]["requested_ns"] = None
+            w = next(x for x in r["workers"] if x["kind"] == "cancel")
+            w["outcome"] = "decoded"
+            w["published_success"] = True
+            w["cancellation"].update(state="not_requested", requested_ns=None,
+                                     alive_at_request=None, exit_before_request=None,
+                                     kill_issued=False, reap_confirmed=False)
         self.reject(unset, "required_cancellation_not_reached")
+
+    def test_cancellation_without_confirmed_kill_rejected(self):
+        def natural(r):
+            w = next(x for x in r["workers"] if x["kind"] == "cancel")
+            w["cancellation"]["kill_issued"] = False
+        self.reject(natural, "cancellation_lifecycle_invalid")
+
+    def test_exited_before_request_cannot_be_cancelled(self):
+        def misclassify(r):
+            w = next(x for x in r["workers"] if x["kind"] == "cancel")
+            w["cancellation"].update(state="already_exited", requested_ns=None,
+                                     alive_at_request=False, exit_before_request=True,
+                                     kill_issued=False, reap_confirmed=True,
+                                     returncode_before_request=w["exit_code"])
+        self.reject(misclassify, "required_cancellation_not_reached")
+
+    def test_zero_exit_cannot_be_a_confirmed_stop(self):
+        def zero(r):
+            w = next(x for x in r["workers"] if x["cancellation"]["state"] == "stop_confirmed")
+            w["exit_code"] = 0
+            w["cancellation"]["exit_after_request"] = 0
+        self.reject(zero, "cancellation_lifecycle_invalid")
+
+    def test_missing_stop_observation_rejected(self):
+        def drop(r):
+            w = next(x for x in r["workers"] if x["cancellation"]["state"] == "stop_confirmed")
+            w["cancellation"]["alive_at_request"] = None
+        self.reject(drop, "cancellation_observation_missing")
+
+    def test_unverified_race_cannot_claim_cancelled(self):
+        def claim(r):
+            w = next(x for x in r["workers"] if x["cancellation"]["state"] == "stop_confirmed")
+            w["cancellation"].update(state="unverified_race", kill_issued=False, kill_error="OSError")
+        self.reject(claim, "cancellation_unverified")
+
+    def test_natural_exit_cannot_be_reported_as_not_verified_success(self):
+        def relabel(r):
+            w = next(x for x in r["workers"] if x["cancellation"]["state"] == "not_requested")
+            w["outcome"] = "not_verified"
+        self.reject(relabel, "cancellation_unverified")
+
+    def test_stop_action_field_must_be_boolean(self):
+        def drop(r):
+            w = next(x for x in r["workers"] if x["cancellation"]["state"] == "stop_confirmed")
+            del w["cancellation"]["kill_issued"]
+        self.reject(drop, "cancellation_action_missing")
 
     def test_timeout_distinct_from_normal_cancellation(self):
         def change(r):

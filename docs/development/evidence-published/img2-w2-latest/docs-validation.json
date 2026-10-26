@@ -6,8 +6,10 @@
   "hard_prerequisites_unchanged": true,
   "hard_dag_unchanged": true,
   "dag_acyclic": true,
-  "changed_task_cards": ["MP-IMG2 status/progress only"],
-  "targeted_relative_links": 27,
+  "changed_task_cards": [
+    "MP-IMG2 status/progress only"
+  ],
+  "targeted_relative_links": 31,
   "errors": [],
   "ok": true
 }

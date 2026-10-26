@@ -30,6 +30,8 @@ FIXTURES = {
     "unsupported": ("unsupported.bin", "unknown", None, None, None),
 }
 EXPECTED_CASES = set(FIXTURES)
+# Stop evidence is a closed state machine; a request time alone never proves cancellation.
+STOP_STATES = ("not_requested", "already_exited", "stop_confirmed", "unverified_race")
 # One fixed bounded matrix; a report cannot make its own missing cases optional.
 SCENARIOS = [("single_" + x, x, "success", "after_onload") for x in
              ("small_png", "small_bmp", "small_jpeg", "preview_png", "detail_png")]
@@ -271,15 +273,48 @@ def _verify(r, work, source, errors):
                  and admission["scratch_bytes_required"] == width * height * 4 + admission["declared_scratch_bytes"],
                  "admission_arithmetic_mismatch")
         cancellation = w["cancellation"]
-        if cancellation["requested_ns"] is not None:
-            need(w["identity_verified"] is True and cancellation["waited"] is True
+        need(isinstance(cancellation, dict) and cancellation.get("state") in STOP_STATES,
+             "cancellation_state_invalid")
+        state = cancellation["state"]
+        requested = cancellation.get("requested_ns")
+        need(isinstance(cancellation.get("kill_issued"), bool)
+             and isinstance(cancellation.get("reap_confirmed"), bool), "cancellation_action_missing")
+        if state == "not_requested":
+            need(requested is None and cancellation["kill_issued"] is False
+                 and cancellation["reap_confirmed"] is False
+                 and w["outcome"] not in ("cancelled", "timeout", "not_verified"),
+                 "cancellation_unverified")
+        else:
+            need(isinstance(cancellation.get("alive_at_request"), bool)
+                 and isinstance(cancellation.get("exit_before_request"), bool)
+                 and cancellation["alive_at_request"] != cancellation["exit_before_request"],
+                 "cancellation_observation_missing")
+        if state == "stop_confirmed":
+            need(w["identity_verified"] is True, "cancellation_lifecycle_invalid")
+            need(requested is not None and cancellation["alive_at_request"] is True
+                 and cancellation["kill_issued"] is True and cancellation.get("kill_error") is None
+                 and cancellation["reap_confirmed"] is True and cancellation["waited"] is True
                  and cancellation["method"] == "direct_child_terminate_wait"
-                 and w["started_ns"] <= cancellation["requested_ns"] <= w["exited_ns"]
-                 and cancellation["observed_ns"] == w["exited_ns"], "cancellation_lifecycle_invalid")
+                 and w["started_ns"] <= requested <= w["exited_ns"]
+                 and cancellation["observed_ns"] == w["exited_ns"]
+                 and cancellation.get("exit_after_request") == w["exit_code"]
+                 and w["exit_code"] != 0, "cancellation_lifecycle_invalid")
             need(not w["output_present"] and not w["published_success"]
                  and w["outcome"] in ("cancelled", "timeout"), "cancelled_success_published")
-        elif kind in ("cancel", "timeout"):
-            need(False, "required_cancellation_not_reached")
+        elif state == "already_exited":
+            need(requested is None and cancellation["kill_issued"] is False
+                 and cancellation.get("returncode_before_request") == w["exit_code"],
+                 "cancellation_lifecycle_invalid")
+            need(w["outcome"] not in ("cancelled", "timeout", "not_verified"), "cancellation_unverified")
+        elif state == "unverified_race":
+            need(requested is not None and cancellation["alive_at_request"] is True
+                 and w["outcome"] == "not_verified", "cancellation_unverified")
+        else:
+            need(requested is None and cancellation["kill_issued"] is False
+                 and w["outcome"] not in ("cancelled", "timeout", "not_verified"),
+                 "cancellation_unverified")
+        if kind in ("cancel", "timeout"):
+            need(state == "stop_confirmed", "required_cancellation_not_reached")
         expected_outcomes = {
             "success": {"decoded"}, "cohort": {"decoded"}, "cancel": {"cancelled"},
             "timeout": {"timeout"}, "onload_attempt": {"decoded", "cancelled"},

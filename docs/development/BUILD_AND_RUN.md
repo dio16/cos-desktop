@@ -721,12 +721,42 @@ and true concurrent allocation peaks, which remain unmeasured.
 
 Controlled cancellation observes a held boundary, verifies the process lifetime,
 terminates and waits for the direct child, then removes only owned output.
+Stop evidence is a closed state machine. `Worker.stop()` records the child's state
+at the request (`alive_at_request`/`exit_before_request`), whether a terminate was
+actually issued (`kill_issued`), any kill error, the reap result and the code that
+was observed. A child that had already exited keeps its real outcome and is never
+classified cancelled; a request followed by an unprovable kill/natural-exit race
+is `unverified_race` with outcome `not_verified`. Only `stop_confirmed` (alive at
+request, kill issued, non-zero reaped exit) yields `cancelled`/`timeout`, and only
+it discards that worker's pending output. `w2_resource_verify.py` rejects a
+cancellation record without those fields, a zero exit, or an exited-before-request
+row claimed as cancellation. `apps/desktop/devtools/img2/tests/test_w2_worker_stop.py`
+covers exited-before-request with exit 0 and exit 1, a confirmed kill, the
+kill/natural-exit race, idempotent requests and both output-cleanup paths against a
+fake process; the verifier negatives add the corresponding fabricated shapes.
 Timeout is a distinct outcome. Genuine bounded attempts after `onload_entered`
 record the last observed stage but do **not** prove the request occurred inside
 WIC; cooperative in-decoder cancellation stays `NOT_MEASURED`. Three held,
 overlapping workers establish process lifetime/retained-footprint observations,
 not simultaneous decoder-execution peaks. Full Decode, 16K, region/sequential/
 tiled/colour/orientation, JPEG absolute rasters and Upload remain separate exits.
+
+The retained records were produced by the repaired runner in two fresh owned work
+roots; the earlier records are superseded, not rewritten into success. The
+independent oracle now reads the tracked [`native-rasters.zip`](evidence-published/img2-w2-latest/native-rasters.zip)
+archive instead of a scratch work root, so pixel verification no longer depends on
+a temporary path:
+
+```powershell
+python -B apps/desktop/devtools/img2/w2_independent_oracle.py `
+  --matrix <native-matrix.json> --repeat <native-repeat.json> `
+  --rasters <repository>/docs/development/evidence-published/img2-w2-latest/native-rasters.zip `
+  --out <absolute-absent-oracle.json>
+```
+
+Its first repaired run was rejected by the stricter verifier for missing stop
+observations on workers that were never stopped; that rejected record is kept as a
+fail-closed detection, and only the two accepted runs bind the current evidence.
 
 ## 6. Troubleshooting (evidence-anchored)
 
