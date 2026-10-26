@@ -55,9 +55,9 @@
     A truncated container therefore surfaces as `unsupported`, because that is what
     WIC reports (UNKNOWNIMAGEFORMAT); the probe does not reinterpret it as
     `corrupt`. `oversize` is emitted only when the operator declares -MaxPixels, and
-    `cancelled`/`not_measured` are never emitted: this probe exposes no
-    cancellation granularity and no declared scratch budget, so those classes stay
-    NOT_MEASURED rather than being guessed.
+    `cancelled`/`not_measured` are never emitted as outcomes. Opt-in trace mode records
+    exact WIC boundaries and may hold only at explicit operator boundaries; such a
+    hold is artificial instrumentation, not cooperative in-decoder cancellation.
 
     `reason_code` is a closed machine vocabulary the harness whitelists; `reason`
     is human text the harness never reads.
@@ -103,6 +103,24 @@
     Explicit scratch allowance the adapter declares in addition to the BGRA32
     conversion destination. It is a declared request, never a measurement.
 
+.PARAMETER ObservationRoot
+    Opt-in trace directory. The caller must create a fresh empty absolute local
+    directory; trace.jsonl is created exclusively inside it.
+
+.PARAMETER TraceMaxRecords
+    Required positive Int32 cap on emitted JSONL records when tracing.
+
+.PARAMETER TraceMaxBytes
+    Required positive Int32 cap on UTF-8 trace bytes when tracing.
+
+.PARAMETER PauseAtStage
+    Optional boundary hold: before_admission, before_onload, after_onload or
+    before_publish. Resume by creating a `continue` file in ObservationRoot.
+
+.PARAMETER PauseTimeoutMs
+    Positive finite timeout required with PauseAtStage; the hold is artificial
+    instrumentation, not a decoder or cooperative-cancellation duration.
+
 .NOTES
     With budget admission enabled, the script refuses before
     `BitmapDecoder.Create(..., CacheOption::OnLoad)` when the declared width,
@@ -112,6 +130,15 @@
     `wic_internal_scratch = not_measured` and never substitutes zero or a guess.
     A container parse performed by `DelayCreation`/`CacheOption::None` may still
     allocate; no claim of zero allocation is made.
+
+    Trace mode requires explicit positive admission limits and TraceMaxRecords /
+    TraceMaxBytes. It writes bounded UTF-8 JSONL to a fresh exclusive trace.jsonl;
+    each row is flushed and carries process lifetime UTC ticks plus monotonic QPC
+    ticks/frequency (`windows_qpc`, observer `wic_probe`). A killed worker leaves an
+    incomplete readable prefix. Optional named holds wait for an operator-created
+    `continue` file only at the listed boundaries and are not decoder latency.
+    Instrumented output is encoded to fresh pending.png/pending.bmp and moved to an
+    absent OutputPath only after before_publish completes.
 
     Budget refusal codes are `max_dimension_exceeded`, `max_pixels_exceeded`,
     `max_bit_depth_exceeded`, `max_decoded_bytes_exceeded` and
@@ -140,7 +167,17 @@ param(
 
     [long] $MaxScratchBytes = 0,
 
-    [long] $DeclaredScratchBytes = 0
+    [long] $DeclaredScratchBytes = 0,
+
+    [string] $ObservationRoot = '',
+
+    [int] $TraceMaxRecords = 0,
+
+    [int] $TraceMaxBytes = 0,
+
+    [string] $PauseAtStage = '',
+
+    [int] $PauseTimeoutMs = 0
 )
 
 Set-StrictMode -Version 3.0
@@ -152,6 +189,33 @@ $exitUnsupported = 2
 $exitCorrupt = 3
 $exitOversize = 4
 
+$script:traceRequested = $false
+$script:traceActive = $false
+$script:traceFailed = $false
+$script:traceStream = $null
+$script:tracePath = $null
+$script:traceRecordCount = 0
+$script:traceByteCount = [long] 0
+$script:traceStages = $null
+$script:traceProcessStartTicks = [long] 0
+$script:pendingPath = $null
+$script:publishedOutputPath = $null
+$script:publishedOutputByProbe = $false
+$script:traceEncoding = $null
+
+function Remove-InstrumentedFiles {
+    $removed = $true
+    if ($null -ne $script:pendingPath -and [System.IO.File]::Exists($script:pendingPath)) {
+        try { [System.IO.File]::Delete($script:pendingPath) } catch { $removed = $false }
+    }
+    if ($script:publishedOutputByProbe -and
+        $null -ne $script:publishedOutputPath -and
+        [System.IO.File]::Exists($script:publishedOutputPath)) {
+        try { [System.IO.File]::Delete($script:publishedOutputPath) } catch { $removed = $false }
+    }
+    return $removed
+}
+
 function Write-ProbeResult {
     param(
         [Parameter(Mandatory = $true)]
@@ -160,9 +224,269 @@ function Write-ProbeResult {
         [Parameter(Mandatory = $true)]
         [int] $ExitCode
     )
+    if ($script:traceActive -and $Result.outcome -ne 'decoded') {
+        $Result.output_bytes = $null
+    }
+    if ($script:traceActive -and -not $script:traceFailed) {
+        try {
+            $preAdmissionTerminal = -not $script:traceStages.ContainsKey('admitted') -and
+                $Result.reason_code -ne 'operator_pause_timeout'
+            if ($Result.outcome -ne 'decoded' -and
+                -not $script:traceStages.ContainsKey('refused') -and
+                $preAdmissionTerminal) {
+                Write-ProbeTraceStage -Stage 'refused'
+            }
+            Write-ProbeTraceStage -Stage 'probe_exit' -Fields ([ordered]@{
+                outcome = [string] $Result.outcome
+                reason_code = $Result.reason_code
+                admission_status = [string] $Result.admission_status
+                materialization = [string] $Result.materialization
+                complete = $true
+            })
+            $script:traceStream.Flush($true)
+            $script:traceStream.Dispose()
+            $script:traceStream = $null
+        }
+        catch {
+            $script:traceFailed = $true
+        }
+    }
+    $cleanupSucceeded = $true
+    if ($script:traceFailed) {
+        $Result.outcome = 'error'
+        $Result.reason_code = 'trace_failure'
+        $Result.reason = 'bounded stage trace could not be completed'
+        $Result.output_bytes = $null
+        $ExitCode = $exitError
+        $cleanupSucceeded = Remove-InstrumentedFiles
+    }
+    elseif ($Result.outcome -ne 'decoded') {
+        $cleanupSucceeded = Remove-InstrumentedFiles
+    }
+    if (-not $cleanupSucceeded) {
+        $Result.outcome = 'error'
+        $Result.reason_code = 'output_cleanup_failed'
+        $Result.reason = 'instrumented output cleanup could not be confirmed'
+        $Result.output_bytes = $null
+        $ExitCode = $exitError
+    }
+    if ($null -ne $script:traceStream) {
+        try { $script:traceStream.Dispose() } catch { }
+        $script:traceStream = $null
+    }
     [Console]::Out.WriteLine(($Result | ConvertTo-Json -Compress -Depth 2))
     [Console]::Out.Flush()
     exit $ExitCode
+}
+
+function Test-NoReparseComponents {
+    param([Parameter(Mandatory = $true)][string] $Path)
+
+    $full = [System.IO.Path]::GetFullPath($Path)
+    $root = [System.IO.Path]::GetPathRoot($full)
+    $current = $root
+    $relative = $full.Substring($root.Length)
+    foreach ($part in ($relative -split '[\\/]' | Where-Object { $_.Length -gt 0 })) {
+        $current = [System.IO.Path]::Combine($current, $part)
+        $item = Get-Item -LiteralPath $current -Force -ErrorAction SilentlyContinue
+        if ($null -ne $item) {
+            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw [System.IO.IOException]::new('reparse points are not permitted in instrumented paths')
+            }
+        }
+    }
+}
+
+function Initialize-ProbeTrace {
+    if (-not $script:traceOptionsDeclared) {
+        return
+    }
+    if (-not $script:traceRequested -or -not (Test-LocalDiskPath $ObservationRoot)) {
+        throw [System.ArgumentException]::new('observation root must be an absolute local path')
+    }
+    if (-not $script:traceCapsDeclared -or $TraceMaxRecords -le 0 -or $TraceMaxBytes -le 0) {
+        throw [System.ArgumentException]::new('trace maximum records and bytes must be supplied as positive values')
+    }
+    if ($script:pauseOptionsDeclared -and
+        (-not $script:pauseOptionsComplete -or [string]::IsNullOrWhiteSpace($PauseAtStage) -or $PauseTimeoutMs -le 0)) {
+        throw [System.ArgumentException]::new('pause stage and positive pause timeout must be supplied together')
+    }
+    $allowedPauses = @('before_admission', 'before_onload', 'after_onload', 'before_publish')
+    if ($PauseAtStage.Length -gt 0 -and $PauseAtStage -cnotin $allowedPauses) {
+        throw [System.ArgumentException]::new('pause stage is not an explicit instrumented boundary')
+    }
+    if (-not $budgetDeclared -or $MaxPixels -le 0 -or $MaxDimension -le 0 -or
+        $MaxBitDepth -le 0 -or $MaxDecodedBytes -le 0 -or $MaxScratchBytes -le 0) {
+        throw [System.ArgumentException]::new('instrumented WIC requires all positive decode admission limits')
+    }
+    if (-not [System.IO.Directory]::Exists($ObservationRoot)) {
+        throw [System.IO.DirectoryNotFoundException]::new('observation root must be a pre-created owned directory')
+    }
+    Test-NoReparseComponents -Path $ObservationRoot
+    $rootPath = [System.IO.Path]::GetFullPath($ObservationRoot)
+    if ([System.IO.Directory]::GetFileSystemEntries($rootPath).Length -ne 0) {
+        throw [System.IO.IOException]::new('observation root must be empty')
+    }
+    if (-not [string]::IsNullOrWhiteSpace($OutputPath)) {
+        if (-not (Test-LocalDiskPath $OutputPath)) {
+            throw [System.ArgumentException]::new('instrumented output must be an absolute local path')
+        }
+        $output = [System.IO.Path]::GetFullPath($OutputPath)
+        $inputFullPath = if ([string]::IsNullOrWhiteSpace($InputPath)) { '' } else { [System.IO.Path]::GetFullPath($InputPath) }
+        if ($inputFullPath.Length -gt 0 -and [System.StringComparer]::OrdinalIgnoreCase.Equals($inputFullPath, $output)) {
+            throw [System.ArgumentException]::new('instrumented output must not replace the input')
+        }
+        $outputParent = [System.IO.Path]::GetDirectoryName($output)
+        if (-not [System.IO.Directory]::Exists($outputParent)) {
+            throw [System.IO.DirectoryNotFoundException]::new('instrumented output directory must already exist')
+        }
+        $rootCanonical = [System.IO.Path]::TrimEndingDirectorySeparator($rootPath)
+        $outputParentCanonical = [System.IO.Path]::TrimEndingDirectorySeparator($outputParent)
+        $reservedOutputNames = @('trace.jsonl', 'continue', 'pending.png', 'pending.bmp')
+        if ([System.StringComparer]::OrdinalIgnoreCase.Equals($rootCanonical, $outputParentCanonical) -and
+            [System.IO.Path]::GetFileName($output) -in $reservedOutputNames) {
+            throw [System.ArgumentException]::new('instrumented output collides with a trace or control artifact')
+        }
+        Test-NoReparseComponents -Path $outputParent
+        Test-NoReparseComponents -Path $output
+        if ([System.IO.File]::Exists($output) -or [System.IO.Directory]::Exists($output)) {
+            throw [System.IO.IOException]::new('instrumented output path must be absent')
+        }
+    }
+    $script:traceStages = @{}
+    $script:traceEncoding = [System.Text.UTF8Encoding]::new($false)
+    $script:tracePath = [System.IO.Path]::Combine($rootPath, 'trace.jsonl')
+    $traceFile = [System.IO.FileStream]::new(
+        $script:tracePath,
+        [System.IO.FileMode]::CreateNew,
+        [System.IO.FileAccess]::Write,
+        [System.IO.FileShare]::Read,
+        4096,
+        [System.IO.FileOptions]::SequentialScan)
+    $script:traceStream = $traceFile
+    $process = [System.Diagnostics.Process]::GetCurrentProcess()
+    try {
+        $script:traceProcessStartTicks = $process.StartTime.ToUniversalTime().Ticks
+    }
+    finally {
+        $process.Dispose()
+    }
+    $script:traceActive = $true
+}
+
+function Write-ProbeTraceStage {
+    param(
+        [Parameter(Mandatory = $true)][string] $Stage,
+        [System.Collections.IDictionary] $Fields = $null
+    )
+    if (-not $script:traceActive) {
+        return
+    }
+    if ($script:traceFailed) {
+        throw [System.IO.IOException]::new('stage trace is already incomplete')
+    }
+    if ($script:traceRecordCount -ge $TraceMaxRecords) {
+        $script:traceFailed = $true
+        throw [System.IO.IOException]::new('trace record cap reached')
+    }
+    $row = [ordered]@{
+        schema_version = 1
+        seq = $script:traceRecordCount + 1
+        stage = $Stage
+        pid = $PID
+        process_start_utc_ticks = $script:traceProcessStartTicks
+        qpc_ticks = [System.Diagnostics.Stopwatch]::GetTimestamp()
+        qpc_frequency = [System.Diagnostics.Stopwatch]::Frequency
+        clock_domain = 'windows_qpc'
+        observer = 'wic_probe'
+    }
+    if ($null -ne $Fields) {
+        foreach ($key in $Fields.Keys) {
+            $row[$key] = $Fields[$key]
+        }
+    }
+    if ($PauseAtStage -ceq $Stage) {
+        $row.artificial_instrumentation_hold = $true
+        $row.pause_timeout_ms = $PauseTimeoutMs
+    }
+    try {
+        $line = ($row | ConvertTo-Json -Compress -Depth 4) + "`n"
+        $bytes = $script:traceEncoding.GetBytes($line)
+        if ($script:traceByteCount + [long] $bytes.Length -gt [long] $TraceMaxBytes) {
+            throw [System.IO.IOException]::new('trace byte cap reached')
+        }
+        $script:traceStream.Write($bytes, 0, $bytes.Length)
+        $script:traceStream.Flush($true)
+        $script:traceRecordCount += 1
+        $script:traceByteCount += [long] $bytes.Length
+        $script:traceStages[$Stage] = $true
+    }
+    catch {
+        $script:traceFailed = $true
+        throw
+    }
+    if ($PauseAtStage -ceq $Stage) {
+        $pauseWatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $continuePath = [System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($script:tracePath), 'continue')
+        while ($pauseWatch.ElapsedMilliseconds -lt $PauseTimeoutMs) {
+            if ([System.IO.Directory]::Exists($continuePath)) {
+                throw [System.IO.IOException]::new('continue control must be an operator-created file')
+            }
+            if ([System.IO.File]::Exists($continuePath)) {
+                Test-NoReparseComponents -Path $continuePath
+                return
+            }
+            $remaining = $PauseTimeoutMs - [int] $pauseWatch.ElapsedMilliseconds
+            Start-Sleep -Milliseconds ([Math]::Min(25, $remaining))
+        }
+        throw [System.TimeoutException]::new('operator boundary hold timed out')
+    }
+}
+
+function Assert-ProbeTracePublishCapacity {
+    if (-not $script:traceActive) {
+        return
+    }
+    try {
+        if ([long] $script:traceRecordCount + 2 -gt [long] $TraceMaxRecords) {
+            throw [System.IO.IOException]::new('trace cap cannot hold publication and terminal records')
+        }
+        $base = [ordered]@{
+            schema_version = 1
+            seq = [int]::MaxValue
+            stage = ''
+            pid = [int]::MaxValue
+            process_start_utc_ticks = [long]::MaxValue
+            qpc_ticks = [long]::MaxValue
+            qpc_frequency = [long]::MaxValue
+            clock_domain = 'windows_qpc'
+            observer = 'wic_probe'
+        }
+        $outputRow = [ordered]@{}
+        foreach ($key in $base.Keys) { $outputRow[$key] = $base[$key] }
+        $outputRow.seq = $script:traceRecordCount + 1
+        $outputRow.stage = 'output_published'
+        $exitRow = [ordered]@{}
+        foreach ($key in $base.Keys) { $exitRow[$key] = $base[$key] }
+        $exitRow.seq = $script:traceRecordCount + 2
+        $exitRow.stage = 'probe_exit'
+        $exitRow.outcome = 'decoded'
+        $exitRow.reason_code = $null
+        $exitRow.admission_status = 'admitted'
+        $exitRow.materialization = 'completed'
+        $exitRow.complete = $true
+        $needed = [long] $script:traceEncoding.GetByteCount(
+            (($outputRow | ConvertTo-Json -Compress -Depth 4) + "`n"))
+        $needed += [long] $script:traceEncoding.GetByteCount(
+            (($exitRow | ConvertTo-Json -Compress -Depth 4) + "`n"))
+        if ($script:traceByteCount + $needed -gt [long] $TraceMaxBytes) {
+            throw [System.IO.IOException]::new('trace byte cap cannot hold publication and terminal records')
+        }
+    }
+    catch {
+        $script:traceFailed = $true
+        throw
+    }
 }
 
 # Only drive-rooted local paths: no UNC, no device namespace, no drive-relative and
@@ -216,6 +540,36 @@ $result = [ordered]@{
     declared_scratch_bytes    = $DeclaredScratchBytes
     scratch_bytes_required    = $null
     wic_internal_scratch      = 'not_measured'
+}
+
+$script:traceRequested = $PSBoundParameters.ContainsKey('ObservationRoot')
+$script:traceCapsDeclared = $PSBoundParameters.ContainsKey('TraceMaxRecords') -and
+    $PSBoundParameters.ContainsKey('TraceMaxBytes')
+$script:pauseOptionsDeclared = $PSBoundParameters.ContainsKey('PauseAtStage') -or
+    $PSBoundParameters.ContainsKey('PauseTimeoutMs')
+$script:pauseOptionsComplete = $PSBoundParameters.ContainsKey('PauseAtStage') -and
+    $PSBoundParameters.ContainsKey('PauseTimeoutMs')
+$script:traceOptionsDeclared = $script:traceRequested -or
+    $PSBoundParameters.ContainsKey('TraceMaxRecords') -or
+    $PSBoundParameters.ContainsKey('TraceMaxBytes') -or
+    $script:pauseOptionsDeclared
+$budgetDeclared = Get-BudgetPresence -BoundNames $PSBoundParameters.Keys
+if ($script:traceOptionsDeclared) {
+    try {
+        Initialize-ProbeTrace
+        Write-ProbeTraceStage -Stage 'process_observed'
+    }
+    catch {
+        $result.outcome = 'error'
+        $result.reason_code = if ($script:traceFailed) { 'trace_failure' } else { 'trace_setup_failed' }
+        $result.reason = if ($script:traceFailed) {
+            'bounded stage trace could not be started'
+        }
+        else {
+            'instrumented probe arguments or owned paths are invalid'
+        }
+        Write-ProbeResult -Result $result -ExitCode $exitError
+    }
 }
 
 if ([string]::IsNullOrWhiteSpace($InputPath)) {
@@ -282,12 +636,15 @@ catch {
 
 $stream = $null
 try {
+    if ($script:traceActive) {
+        Test-NoReparseComponents -Path $fullPath
+    }
     $stream = [System.IO.File]::Open(
         $fullPath,
         [System.IO.FileMode]::Open,
         [System.IO.FileAccess]::Read,
         [System.IO.FileShare]::Read)
-
+    Write-ProbeTraceStage -Stage 'input_opened'
     # Read declared dimensions before any pixel allocation.
     $declared = [System.Windows.Media.Imaging.BitmapDecoder]::Create(
         $stream,
@@ -299,6 +656,9 @@ try {
     $result.height = [long] $declaredFrame.PixelHeight
     $formatName = $declaredFrame.Format.ToString()
     $result.pixel_format = $formatName
+    Write-ProbeTraceStage -Stage 'metadata_available'
+    Write-ProbeTraceStage -Stage 'before_admission'
+    Write-ProbeTraceStage -Stage 'admission_started'
 
     # Admission happens here, strictly before the OnLoad materialization below. The
     # declared metadata must be usable and the closed format mapping must know the
@@ -372,21 +732,43 @@ try {
     $result.bgra32_bytes_required = ConvertTo-ReportedLong $math.Bgra32
     $result.scratch_bytes_required = ConvertTo-ReportedLong $math.Scratch
     $result.admission_status = if ($budgetDeclared) { 'admitted' } else { 'not_enforced' }
+    if ($script:traceActive) {
+        Write-ProbeTraceStage -Stage 'admitted' -Fields ([ordered]@{
+            width = [long] $result.width
+            height = [long] $result.height
+            bits_per_channel = [int] $result.bits_per_channel
+            bits_per_pixel = [int] $result.bits_per_pixel
+            row_bytes = [long] $result.row_bytes
+            decoded_bytes_required = [long] $result.decoded_bytes_required
+            bgra32_bytes_required = [long] $result.bgra32_bytes_required
+            declared_scratch_bytes = [long] $result.declared_scratch_bytes
+            scratch_bytes_required = [long] $result.scratch_bytes_required
+            input_bytes = [long] $result.input_bytes
+        })
+    }
 
     # Admit and materialize the whole frame, then require real pixel access.
     $result.materialization = 'requested'
     $stream.Position = 0
+    Write-ProbeTraceStage -Stage 'before_onload'
+    Write-ProbeTraceStage -Stage 'onload_entered'
     $decoded = [System.Windows.Media.Imaging.BitmapDecoder]::Create(
         $stream,
         [System.Windows.Media.Imaging.BitmapCreateOptions]::None,
         [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad)
+    Write-ProbeTraceStage -Stage 'onload_returned'
+    Write-ProbeTraceStage -Stage 'after_onload'
+    Write-ProbeTraceStage -Stage 'conversion_entered'
     $converted = [System.Windows.Media.Imaging.FormatConvertedBitmap]::new(
         $decoded.Frames[0],
         [System.Windows.Media.PixelFormats]::Bgra32,
         $null,
         0.0)
+    Write-ProbeTraceStage -Stage 'conversion_returned'
     $sample = [byte[]]::new(4)
+    Write-ProbeTraceStage -Stage 'copy_pixels_entered'
     $converted.CopyPixels([System.Windows.Int32Rect]::new(0, 0, 1, 1), $sample, 4, 0)
+    Write-ProbeTraceStage -Stage 'copy_pixels_returned'
 
     if (-not [string]::IsNullOrWhiteSpace($OutputPath)) {
         $encoder = switch ([System.IO.Path]::GetExtension($OutputPath).ToLowerInvariant()) {
@@ -401,14 +783,43 @@ try {
             Write-ProbeResult -Result $result -ExitCode $exitUnsupported
         }
         $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($converted))
-        $encoded = [System.IO.File]::Create($OutputPath)
+        if ($script:traceActive) {
+            $pendingExtension = [System.IO.Path]::GetExtension($OutputPath).ToLowerInvariant()
+            $script:pendingPath = [System.IO.Path]::Combine(
+                [System.IO.Path]::GetDirectoryName($script:tracePath),
+                "pending$pendingExtension")
+            $encoded = [System.IO.FileStream]::new(
+                $script:pendingPath,
+                [System.IO.FileMode]::CreateNew,
+                [System.IO.FileAccess]::Write,
+                [System.IO.FileShare]::None)
+        }
+        else {
+            $encoded = [System.IO.File]::Create($OutputPath)
+        }
         try {
+            Write-ProbeTraceStage -Stage 'encode_entered'
             $encoder.Save($encoded)
+            if ($script:traceActive) {
+                $encoded.Flush($true)
+            }
         }
         finally {
             $encoded.Dispose()
         }
-        $result.output_bytes = ([System.IO.FileInfo]::new($OutputPath)).Length
+        $encodedPath = if ($script:traceActive) { $script:pendingPath } else { $OutputPath }
+        $result.output_bytes = ([System.IO.FileInfo]::new($encodedPath)).Length
+        Write-ProbeTraceStage -Stage 'encode_returned'
+        if ($script:traceActive) {
+            Write-ProbeTraceStage -Stage 'before_publish'
+            Assert-ProbeTracePublishCapacity
+            $finalPath = [System.IO.Path]::GetFullPath($OutputPath)
+            [System.IO.File]::Move($script:pendingPath, $finalPath)
+            $script:publishedOutputPath = $finalPath
+            $script:publishedOutputByProbe = $true
+            $script:pendingPath = $null
+            Write-ProbeTraceStage -Stage 'output_published'
+        }
     }
 
     $result.outcome = 'decoded'
@@ -420,6 +831,18 @@ catch {
     $failure = $_.Exception
     while ($null -ne $failure.InnerException) {
         $failure = $failure.InnerException
+    }
+    if ($script:traceFailed) {
+        $result.outcome = 'error'
+        $result.reason_code = 'trace_failure'
+        $result.reason = 'bounded stage trace could not be written'
+        Write-ProbeResult -Result $result -ExitCode $exitError
+    }
+    if ($script:traceActive -and $failure -is [System.TimeoutException]) {
+        $result.outcome = 'error'
+        $result.reason_code = 'operator_pause_timeout'
+        $result.reason = 'operator boundary hold timed out'
+        Write-ProbeResult -Result $result -ExitCode $exitError
     }
     $result.outcome = 'error'
     $result.reason_code = 'probe_error'

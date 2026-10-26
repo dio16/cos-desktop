@@ -663,6 +663,71 @@ sequential/tiled capability, colour management, orientation, concurrent resident
 memory, decoder scratch peak and in-decoder cancellation remain unmeasured. This
 is not the full DC-MP-IMG2 Decode gate and not a memory-safety proof.
 
+### 4.22 MP-IMG2-W2 bounded WIC resource and cancellation observations (2026-10-26)
+
+This is a Windows **CLI WIC consumer**, not a GPUI preview, texture upload or
+Native-window acceptance. [DC-MP-IMG2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img2)
+owns its observation boundary; the complete inputs and observations are in
+[`img2-w2-latest`](evidence-published/img2-w2-latest/tern-directive.txt).
+
+```powershell
+cargo build --locked -p cos-desktop --example decode_compare
+python -B apps/desktop/devtools/img2/w2_resource_matrix.py run `
+  --work-root <absolute-fresh-owned-work-root> --out <absolute-absent-report.json> `
+  --pwsh <absolute-pwsh.exe> --harness <absolute-decode_compare.exe>
+python -B apps/desktop/devtools/img2/w2_resource_matrix.py verify `
+  --report <report.json> --work-root <owned-work-root> --source-root <repository>
+pwsh -NoProfile -File apps/desktop/devtools/img2/w2_probe_selftest.ps1
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_*.py"
+```
+
+The last command structurally replays the retained real Native record and its
+negative mutations; it does not start a decoder. Supplying a work root to
+`verify` additionally rehashes actual fixture, consumer, trace and output bytes.
+Without it, report-only replay cannot re-verify discarded files. Raw Native
+source hashes and explicitly LF-normalized Git-replay hashes remain separate.
+Owned absolute path prefixes in the embedded consumer record are redacted;
+its original/raw and redacted canonical identities are recorded separately.
+
+The runner uses the existing W1 fixture generator and the real comparison
+consumer's pixel oracle. PNG/BMP solid rasters have independent RGBA expectations;
+JPEG remains structure-only. Its narrow experiment overrides are resolved through
+the existing harness/`media::DecodeBudget`, not copied ratified defaults. The
+manifest bounds case count, three **decode workers** (plus at most one managed
+OS-counter sampler), per-worker/global time, work/output/trace/capture bytes and
+sample count. An existing work root or report is refused without overwriting it.
+
+Opt-in probe parameters are `-ObservationRoot`, `-TraceMaxRecords`,
+`-TraceMaxBytes`, and optionally the paired `-PauseAtStage`/`-PauseTimeoutMs`.
+The observation root must be fresh, empty and non-reparse. Boundary holds are
+limited to `before_admission`, `before_onload`, `after_onload` and
+`before_publish`; they are explicitly labelled artificial instrumentation.
+They never occur inside `OnLoad`. Ordinary probe stdout, version identity and
+exit meanings remain unchanged. Instrumented output is encoded to an exclusive
+pending file, then moved without replacement only after successful completion.
+Trace-cap failure, refusal and cancelled work cannot publish a successful result.
+
+Stage rows identify the worker PID/start lifetime, observer and QPC frequency.
+Parent lifecycle/cancellation uses its own monotonic-nanosecond domain; no
+cross-process clock subtraction is performed. Entered/returned brackets include
+trace-entry flush and call overhead, not pure decoder cost or an R0 latency claim.
+OS `WorkingSet64`/`PrivateMemorySize64` reads refresh and recheck lifetime.
+Individual observed maxima are `sampled_lower_bound`; a three-process total is
+only a **derived sum within one bounded, non-atomic collection window**, not an
+instantaneous concurrent value or peak bound. Runtime/shared pages and explicit
+retention holds are included. Separate fields keep logical encoded/raster/BGRA/
+declared-scratch requirements distinct from actual reservations, internal scratch
+and true concurrent allocation peaks, which remain unmeasured.
+
+Controlled cancellation observes a held boundary, verifies the process lifetime,
+terminates and waits for the direct child, then removes only owned output.
+Timeout is a distinct outcome. Genuine bounded attempts after `onload_entered`
+record the last observed stage but do **not** prove the request occurred inside
+WIC; cooperative in-decoder cancellation stays `NOT_MEASURED`. Three held,
+overlapping workers establish process lifetime/retained-footprint observations,
+not simultaneous decoder-execution peaks. Full Decode, 16K, region/sequential/
+tiled/colour/orientation, JPEG absolute rasters and Upload remain separate exits.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |

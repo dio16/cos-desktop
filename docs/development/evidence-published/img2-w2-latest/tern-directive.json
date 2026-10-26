@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W2",
+  "owner_contract": "DC-MP-IMG2",
+  "source_commit": "4349ff2063a7bdbe9bd275d250fde5bfeb586ffd",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "assistant_ids": [
+    "367392ab-e331-4f06-b06d-9b5a968a27bd"
+  ],
+  "request_ids": [
+    "ad7168bc-b01c-4f80-9008-09e9d251b461"
+  ],
+  "response_sha256": "sha256:3f95e82f10f83291ac662f1f3423d725dcfdf3d034519a3a69ff79fbd48e60b7",
+  "streaming": false,
+  "two_full_reads_identical": true,
+  "first_read_at": "2026-10-26T15:44:54.641Z",
+  "second_read_at": "2026-10-26T15:46:07.286Z",
+  "read_separation_ms": 72645,
+  "terminal_marker": "DIRECTIVE COMPLETE",
+  "completion_verification_exit": 0
+}

@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W2",
+  "source_commit": "4349ff2063a7bdbe9bd275d250fde5bfeb586ffd",
+  "owner_contract": "DC-MP-IMG2",
+  "directive_sha256": "sha256:3f95e82f10f83291ac662f1f3423d725dcfdf3d034519a3a69ff79fbd48e60b7",
+  "taskern_packet_sha256": "sha256:dc15e0d330e0605cc73975c6f1e6cce206dec8adb1035ccc1596020ee90b50ec",
+  "initial_taskern_packet_sha256": "sha256:a02e711946328ba5f18656d09a21a6bf3b8f6a4f4c3f825f351b26b5d638646d",
+  "authority": {
+    "caller_statement": "ループを継続し実装計画を完遂してください。設計ディシジョンはすべて承認しています。",
+    "design_choices": "Existing WIC/WPF, unchanged media DecodeBudget authority; opt-in bounded stage sidecars; Windows process counters separate from reservations/internal scratch; external direct-worker termination is not cooperative cancellation.",
+    "native_cli": "AUTHORIZED",
+    "native_gui": "NOT_REQUESTED",
+    "runtime_mutation": "NOT_AUTHORIZED",
+    "dependency_unsafe_ffi": "NOT_AUTHORIZED",
+    "main_release": "NOT_AUTHORIZED",
+    "dev_push": "Check direct Caller scope immediately before external update; Tern directive does not independently grant authority."
+  },
+  "skills": {
+    "discovered_and_loaded": [
+      "taskern",
+      "refine",
+      "tern-chatgpt-review",
+      "gpt-review-loop",
+      "context-mode",
+      "rtk-ctx-integration"
+    ],
+    "taskern": {
+      "version": "0.2.0 (cli2 protocol1 semantic1)",
+      "discovery": [
+        "--version",
+        "describe capabilities --json",
+        "describe operation prepare --human"
+      ],
+      "invocation": "call --request <tracked taskern-request.json> --json",
+      "executed": true,
+      "claim": "packet_compiled",
+      "successor": {
+        "operation": "revise",
+        "claim": "replacement_compiled",
+        "revision": 2,
+        "task_id": "img2-w2-quality-repair",
+        "packet_sha256": "sha256:dc15e0d330e0605cc73975c6f1e6cce206dec8adb1035ccc1596020ee90b50ec",
+        "reason": "Observed full-R0 tasklist decoding failure; same native predicate now compares ASCII bytes without disabling or narrowing the suite.",
+        "rejected_inputs": "taskern-revision-diagnostic.json; neither rejection compiled"
+      }
+    },
+    "refine": {
+      "version": "0.3.1",
+      "cli_interface": 2,
+      "native_semantic": 1,
+      "discovery": [
+        "--version",
+        "--help",
+        "describe capabilities",
+        "describe operation gate.run",
+        "describe family execution"
+      ],
+      "execution": "PENDING",
+      "lifecycle": "VERIFY_EXISTING_CANDIDATE"
+    },
+    "tern": {
+      "transport": "bundled existing-window CDP9333",
+      "existing_conversation_preserved": true,
+      "directive_completion": {
+        "schema_version": 1,
+        "slice": "MP-IMG2-W2",
+        "owner_contract": "DC-MP-IMG2",
+        "source_commit": "4349ff2063a7bdbe9bd275d250fde5bfeb586ffd",
+        "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+        "assistant_ids": [
+          "367392ab-e331-4f06-b06d-9b5a968a27bd"
+        ],
+        "request_ids": [
+          "ad7168bc-b01c-4f80-9008-09e9d251b461"
+        ],
+        "response_sha256": "sha256:3f95e82f10f83291ac662f1f3423d725dcfdf3d034519a3a69ff79fbd48e60b7",
+        "streaming": false,
+        "two_full_reads_identical": true,
+        "first_read_at": "2026-10-26T15:44:54.641Z",
+        "second_read_at": "2026-10-26T15:46:07.286Z",
+        "read_separation_ms": 72645,
+        "terminal_marker": "DIRECTIVE COMPLETE",
+        "completion_verification_exit": 0
+      }
+    }
+  },
+  "storage_plan": {
+    "ordinary_target": "<repository>/target",
+    "new_gate_root": "<verification-root>/img2-w2-2026-10-26",
+    "fresh_check_targets": true,
+    "observed_available_bytes": 67220721664,
+    "prior_equivalent_two_gate_scratch_logical_bytes": 4884733988,
+    "succeeded_workspace_disposal": "Only exact newly accepted successful Gate work/repo plus owned external check targets; after candidate Git retention, tracked native exports, complete cleanup/dead owner and verify. Retain native authority/artifacts/logs; repeat verify unchanged afterward. Failed/nonterminal/unrelated workspaces excluded.",
+    "prevent_redundant_toolchain": "Absolute existing toolchain executables plus qualified existing RUSTUP_HOME; no install/global config change.",
+    "qualification": {
+      "operation": "cargo fmt --version in empty PATH",
+      "exit": 0,
+      "stdout": "rustfmt 1.9.0-stable (48a229ceae 2026-09-01)",
+      "stderr": ""
+    }
+  },
+  "gate_bounds": {
+    "automatic_retries": 0,
+    "per_gate_timeout_ms": 600000,
+    "per_check_timeout_ms": 300000,
+    "max_output_bytes": 16777216,
+    "max_artifact_bytes": 16777216,
+    "same_candidate_docs_only_rerun": false
+  },
+  "limits_not_closed": [
+    "true internal decoder scratch peak",
+    "true peak concurrent allocations",
+    "cooperative WIC cancellation",
+    "16K full decode",
+    "colour/orientation/region/tiled capability",
+    "JPEG absolute raster",
+    "full MP-IMG2",
+    "Upload",
+    "Runtime",
+    "main/release"
+  ]
+}

@@ -1,0 +1,388 @@
+{
+  "schema_version": 1,
+  "scope": "MP-IMG2-W2 actual generated-local Windows WIC CLI; no Native GUI/GPUI/Runtime acceptance",
+  "native_records": [
+    {
+      "path": "native-matrix.json",
+      "sha256": "sha256:5df387383110902f1f7c1a8458aacdedbd4098b2ff00d9de89c14d8340dec312",
+      "workers": 20,
+      "cohort_windows": 16,
+      "outcomes": {
+        "cancelled": 7,
+        "decoded": 10,
+        "oversize": 1,
+        "timeout": 1,
+        "unsupported": 1
+      },
+      "duration_ns": 39737018800,
+      "work_bytes": 120051,
+      "cleanup": {
+        "cancelled_output_paths_remaining": [],
+        "complete": true,
+        "live_direct_children": []
+      },
+      "memory": {
+        "actually_proven_peak_concurrent_allocation": {
+          "complete": false,
+          "limitations": [
+            "no internal allocation attribution or true concurrent allocation peak endpoint"
+          ],
+          "method": "not observable through whole-process counters",
+          "sample_count": 0,
+          "source": "WIC internals",
+          "status": "not_measured",
+          "unit": "bytes",
+          "value": null
+        },
+        "admitted_decoded_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 3538944
+        },
+        "bgra32_destination_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 4718592
+        },
+        "concurrent_private_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 1,
+          "source": "System.Diagnostics.Process counters",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 130424832
+        },
+        "concurrent_working_set_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 1,
+          "source": "System.Diagnostics.Process counters",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 348876800
+        },
+        "declared_scratch_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 0
+        },
+        "decoder_internal_scratch_peak": {
+          "complete": false,
+          "limitations": [
+            "no internal allocation attribution or true concurrent allocation peak endpoint"
+          ],
+          "method": "not observable through whole-process counters",
+          "sample_count": 0,
+          "source": "WIC internals",
+          "status": "not_measured",
+          "unit": "bytes",
+          "value": null
+        },
+        "encoded_input_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 5697
+        },
+        "explicit_known_requirements_bytes": {
+          "complete": true,
+          "limitations": [
+            "not an upper bound on WIC-internal allocations or managed runtime memory"
+          ],
+          "method": "checked integer sum",
+          "sample_count": 3,
+          "source": "encoded + source raster + BGRA destination + explicit scratch",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 8263233
+        },
+        "explicit_known_reservations_bytes": {
+          "complete": false,
+          "limitations": [
+            "do not infer actual reservations from raster arithmetic or process counters"
+          ],
+          "method": "logical admission requirements are not allocator reservations",
+          "sample_count": 0,
+          "source": "no separately owned allocator reservation ledger",
+          "status": "not_measured",
+          "unit": "bytes",
+          "value": null
+        },
+        "private_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 15,
+          "source": "System.Diagnostics.Process counters",
+          "status": "sampled_lower_bound",
+          "unit": "bytes",
+          "value": 48934912
+        },
+        "working_set_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 15,
+          "source": "System.Diagnostics.Process counters",
+          "status": "sampled_lower_bound",
+          "unit": "bytes",
+          "value": 122716160
+        }
+      }
+    },
+    {
+      "path": "native-repeat.json",
+      "sha256": "sha256:721bc2cadf8f77f678bf38a2ed4ae576bba0b4c0cdcde569289b5ee50e5e7393",
+      "workers": 20,
+      "cohort_windows": 16,
+      "outcomes": {
+        "cancelled": 7,
+        "decoded": 10,
+        "oversize": 1,
+        "timeout": 1,
+        "unsupported": 1
+      },
+      "duration_ns": 37616186000,
+      "work_bytes": 120063,
+      "cleanup": {
+        "cancelled_output_paths_remaining": [],
+        "complete": true,
+        "live_direct_children": []
+      },
+      "memory": {
+        "actually_proven_peak_concurrent_allocation": {
+          "complete": false,
+          "limitations": [
+            "no internal allocation attribution or true concurrent allocation peak endpoint"
+          ],
+          "method": "not observable through whole-process counters",
+          "sample_count": 0,
+          "source": "WIC internals",
+          "status": "not_measured",
+          "unit": "bytes",
+          "value": null
+        },
+        "admitted_decoded_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 3538944
+        },
+        "bgra32_destination_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 4718592
+        },
+        "concurrent_private_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 1,
+          "source": "System.Diagnostics.Process counters",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 127565824
+        },
+        "concurrent_working_set_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 1,
+          "source": "System.Diagnostics.Process counters",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 344858624
+        },
+        "declared_scratch_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 0
+        },
+        "decoder_internal_scratch_peak": {
+          "complete": false,
+          "limitations": [
+            "no internal allocation attribution or true concurrent allocation peak endpoint"
+          ],
+          "method": "not observable through whole-process counters",
+          "sample_count": 0,
+          "source": "WIC internals",
+          "status": "not_measured",
+          "unit": "bytes",
+          "value": null
+        },
+        "encoded_input_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 5697
+        },
+        "explicit_known_requirements_bytes": {
+          "complete": true,
+          "limitations": [
+            "not an upper bound on WIC-internal allocations or managed runtime memory"
+          ],
+          "method": "checked integer sum",
+          "sample_count": 3,
+          "source": "encoded + source raster + BGRA destination + explicit scratch",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 8263233
+        },
+        "explicit_known_reservations_bytes": {
+          "complete": false,
+          "limitations": [
+            "do not infer actual reservations from raster arithmetic or process counters"
+          ],
+          "method": "logical admission requirements are not allocator reservations",
+          "sample_count": 0,
+          "source": "no separately owned allocator reservation ledger",
+          "status": "not_measured",
+          "unit": "bytes",
+          "value": null
+        },
+        "private_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 15,
+          "source": "System.Diagnostics.Process counters",
+          "status": "sampled_lower_bound",
+          "unit": "bytes",
+          "value": 49090560
+        },
+        "working_set_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 15,
+          "source": "System.Diagnostics.Process counters",
+          "status": "sampled_lower_bound",
+          "unit": "bytes",
+          "value": 122961920
+        }
+      }
+    }
+  ],
+  "actual_consumer_identity": [
+    {
+      "id": "wic",
+      "identity": "wic_probe 1.1 (managed WIC/WPF, pre-materialization decode budget, PowerShell 7.6.7, .NET 10.0.13)",
+      "identity_exit_codes": [
+        0,
+        null
+      ],
+      "identity_probe": "-Version",
+      "kind": "pwsh-script",
+      "launcher": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "program": "<repository>/apps/desktop/examples/decode_compare/wic_probe.ps1",
+      "refusal": null
+    }
+  ],
+  "native_files_verification": {
+    "run1_exit": 0,
+    "run2_exit": 0,
+    "errors": []
+  },
+  "independent_raster_oracle": {
+    "runs": 2,
+    "verified_outputs": [
+      9,
+      9
+    ],
+    "record": "independent-oracle.json",
+    "jpeg": "structure_only"
+  },
+  "w2_focused_tests": {
+    "passed": 25,
+    "failed": 0,
+    "skipped": 0
+  },
+  "w1_compatibility": {
+    "record": "w1-regression.json",
+    "ok": true,
+    "note": "PATH-selected PowerShell7.6.9/.NET10.0.14 is separately observed; W2 consumer/workers use explicit PowerShell7.6.7/.NET10.0.13"
+  },
+  "not_measured": [
+    "instantaneous concurrent aggregate/true allocation peak",
+    "WIC internal scratch/actual reservation ledger",
+    "cooperative in-decoder cancellation and exact request-inside-OnLoad reachability",
+    "16K full decode",
+    "Bgr565 Native",
+    "region/sequential/tiled/profile/orientation",
+    "JPEG absolute raster",
+    "GUI startup/preview/upload",
+    "full Decode/MP-IMG2/Runtime/performance attainment"
+  ]
+}

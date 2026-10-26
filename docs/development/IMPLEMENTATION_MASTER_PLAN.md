@@ -487,6 +487,7 @@ All R0 tasks are **NOT_AUTHORIZED** until an explicit R0 implementation authoriz
 #### MP-IMG2 — Decode admission gate (R4 "Decode")
 - **Hard prereqs:** MP-IMG1, MP-SEC3.
 - **Priority:** P1 · **Status:** EXPERIMENT_AUTHORIZED by [Caller approval](evidence/README.md#historical-records); decoder-agnostic preflight slice A/B TECHNICALLY COMPLETE (independent review 0/0/0 on `cd9e5d3`); **MP-IMG2-W1 real-WIC pre-materialization admission LIMITED TECHNICAL COMPLETION** ([§19.54](#1954-mp-img2-w1-wic-decode-admission-before-materialization-2026-10-26), attachment-bound PASS 0/0/0 on product `faa3a7e9`); full MP-IMG2 decoder comparison/adoption and R0 ratification remain incomplete · **Owner:** `crates/media` (decode side; no GPU handles)
+- **Current slice:** MP-IMG2-W2 IN_PROGRESS under the [complete Tern directive](evidence-published/img2-w2-latest/tern-directive.txt) and the Caller's renewed continuous-execution/design approval (2026-10-26). The owning contract records the opt-in WIC observation boundary first. Stage/resource/concurrency/cancellation evidence is pending; no W2 or full Decode completion is inferred.
 - **Evidence:** per-case peak concurrent bytes, cancellation latencies, format admission table.
 - **Consumers:** MP-IMG3.
 - **Design source / acceptance:** [DC-MP-IMG2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.

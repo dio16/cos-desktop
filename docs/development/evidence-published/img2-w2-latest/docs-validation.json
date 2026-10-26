@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "source_base": "4349ff2063a7bdbe9bd275d250fde5bfeb586ffd",
+  "cards": 62,
+  "single_owning_contract_links": 62,
+  "hard_prerequisites_unchanged": true,
+  "hard_dag_unchanged": true,
+  "dag_acyclic": true,
+  "changed_task_cards": ["MP-IMG2 status/progress only"],
+  "targeted_relative_links": 12,
+  "errors": [],
+  "ok": true
+}

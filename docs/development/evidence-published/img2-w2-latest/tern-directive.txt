@@ -1,0 +1,756 @@
+# COS Desktop — CONTINUOUS IMPLEMENTATION DIRECTIVE
+# MP-IMG2-W2: Real-WIC Decode Resource and Cancellation Characterization
+# Authority: ADR-0008 / ADR-0009 / ADR-0012 / ADR-0013
+# Execution: Taskern → Implementation → Native Smoke → Quality
+#            → Fixed-SHA Refine Gate → Tern Review → Evidence → dev
+
+Repository: dio16/cos-desktop
+Branch: dev
+Start SHA: 4349ff2063a7bdbe9bd275d250fde5bfeb586ffd
+
+Previous completed slice:
+MP-IMG2-W1 — LIMITED TECHNICAL COMPLETION
+Product: faa3a7e91c3987c14cc053dad03456980827c810
+Evidence: cc7651549bcd435a39dbbf38d1ab2e43b848aea9
+Independent review: PASS 0 / 0 / 0
+
+## 0. 実行権限と基本命令
+
+既存の継続実装権限に基づき、この指示の実行を開始すること。
+
+Callerの最新直接指示:
+「ループを継続し実装計画を完遂してください。
+設計ディシジョンはすべて承認しています。」
+
+この指示の意味:
+- 未決の設計選択は既存正典と保守的な既定案で確定する。
+- 必要な設計判断は正典へ先に記録してから実装する。
+- 設計承認待ちだけを理由に停止しない。
+- 既存MP/DC ContractのExit条件を縮小しない。
+- 未測定の能力を承認済み・実装済み・達成済みに変換しない。
+- 新しい設計判断を記録する際も、権限と測定の区別を維持する。
+
+本directiveは単一MP、単一DC、単一bounded sliceである。
+
+MP: MP-IMG2
+Owner Contract: DC-MP-IMG2
+Slice: MP-IMG2-W2
+
+次のMPへ移るのは、本sliceの実装・検証・記録・
+dev統合が完了した後とする。
+
+## 1. 本タスクを選択した理由
+
+MP-IMG2のhard prerequisitesは以下である。
+
+- MP-IMG1: A/B TECHNICALLY COMPLETE
+- MP-SEC3: Desktop-local admission TECHNICALLY COMPLETE
+
+MP-IMG2-W1では実WICによるpre-materialization
+admissionと予算境界を確認した。
+
+しかしDC-MP-IMG2のDecode Exitは未達である。
+
+特に以下が残っている。
+
+- 実デコード時の資源観測
+- 複数デコード実行時の同時常駐量
+- decoder内部scratchとconversionの帰属
+- cancellationの実際の到達境界
+- codec別の資源・能力・fallback判断
+- decoder採用表の実測裏付け
+
+したがってW2では、W1で成立した実WIC経路を
+継続使用し、実デコードの資源とキャンセルを
+観測可能な範囲で実証する。
+
+目的は「資源とキャンセルに関する実測の追加」であり、
+未取得の全能力を一括してPASSにすることではない。
+
+MP-IMG3 Uploadには着手しない。
+
+## 2. 正典と設計判断
+
+実装前に固定SHAの以下を読む。
+
+- docs/development/IMPLEMENTATION_MASTER_PLAN.md
+  MP-IMG2
+  §19.25–19.28
+  §19.54
+  §19.50
+- docs/architecture/DESKTOP_DESIGN_CONTRACTS.md
+  DC-MP-IMG2
+  Media input admission and integrity
+- docs/architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md
+  §6
+  §6.1 Decode
+  §10
+- docs/development/BUILD_AND_RUN.md
+  §4.16
+  §4.21
+- docs/decisions/ADR-0008-OWNER-RATIFICATION.md
+- docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md
+- docs/decisions/ADR-0012-HOLD-RELEASE.md
+- docs/decisions/ADR-0013-EVIDENCE-RETENTION.md
+
+既存W1実装:
+- crates/media/src/decode.rs
+- apps/desktop/examples/decode_compare.rs
+- apps/desktop/examples/decode_compare/harness.rs
+- apps/desktop/examples/decode_compare/wic_probe.ps1
+- apps/desktop/examples/decode_compare/wic_admission.ps1
+- apps/desktop/tests/decode_compare_harness.rs
+- apps/desktop/tests/wic_admission_selftest.ps1
+- docs/development/evidence-published/img2-w1-latest/
+
+設計方針:
+
+1. WICを既存の採用済みdecoder経路とする。
+2. GDI+は非採用Product候補として保持する。
+3. FFmpeg 8.0は外部比較専用とする。
+4. DecodeBudgetの唯一の正典はcrates/mediaとする。
+5. 暫定予算値はADR-0008の宣言値を使用する。
+6. 数値を実測達成値へ読み替えない。
+7. WIC内部scratchは実測できなければNOT_MEASURED。
+8. Windows process countersはdecoder内部専用メモリではない。
+9. cancellationはprocess terminationとin-decoder cooperative
+   cancellationを区別する。
+10. 観測不能な能力を成功させるためにmockを追加しない。
+
+これらの判断をW2の実行記録に明示する。
+
+## 3. Taskernを必ず実使用する
+
+Taskernは説明・テンプレート生成だけで終了させない。
+
+開始時に実際のインストール済みTaskernを起動する。
+
+最低限:
+
+taskern --version
+taskern describe capabilities --json
+taskern describe operation prepare --human
+
+既存の実使用例:
+docs/development/evidence-published/r0a-s3-native-latest/
+  taskern-request.json
+  taskern-response.json
+
+Taskern CLI v2の正規呼出しは以下とする。
+
+taskern call --request <request.json> --json
+
+このslice専用のprotocol 1 / op prepare要求を生成する。
+
+requestには以下を含める。
+
+- plan_id: cos-desktop-img2-w2
+- revision: 1
+- task_id: img2-w2
+- goal: bounded real-WIC resource/cancellation characterization
+- inputs: W1 SOURCE・Native evidence・ADR-0008予算
+- constraints: 単一DC、実測、有限上限、fail-closed、no Runtime
+- outputs: source、Native observations、independent oracle、
+           quality/Gate/Tern evidence
+- acceptance: 実decode、資源観測、cancel/refusal、
+              evidence integrity、限定closure
+- evaluation: Native smoke、negative tests、quality、review
+
+handoffは既存の成功済みTaskern requestの形式を再利用する。
+
+実際にprepareを実行し、次を確認する。
+
+- ok=true
+- packet_compiled
+- plan_id一致
+- task_id一致
+- packet_sha256が存在
+- packet内容がDC-MP-IMG2を縮小していない
+
+生成されたpacketを実装時の作業入力として使用する。
+
+Taskernは計画生成器であり、実行器ではない。
+packet生成だけを実装完了とは扱わない。
+
+Taskernの実request/responseとdigestはtracked evidenceへ保存する。
+
+## 4. 実装目的
+
+既存WIC decoderを実際に動作させた際の、
+
+A. デコード段階の到達時刻
+B. 明示的に計算・予約できるバイト数
+C. OSから観測できるprocess memory
+D. 同時実行数と同時常駐量の観測
+E. cancellation要求から停止・回収までの状態
+F. 失敗時の出力非公開とcleanup
+
+を、同一入力・同一候補・同一予算に結び付けて記録する。
+
+重要:
+
+「process全体のmemoryが観測できた」
+ことは
+「decoder内部scratch peakが分かった」
+ことを意味しない。
+
+両者を別フィールド・別判定とする。
+
+## 5. 変更可能なSOURCE範囲
+
+優先する既存実装:
+- apps/desktop/examples/decode_compare/wic_probe.ps1
+- apps/desktop/examples/decode_compare/wic_admission.ps1
+- apps/desktop/examples/decode_compare/harness.rs
+- apps/desktop/tests/decode_compare_harness.rs
+
+追加してよい狭い補助実装:
+- apps/desktop/devtools/img2/w2_resource_matrix.py
+- apps/desktop/devtools/img2/ に必要な最小テスト
+
+必要な場合にのみ:
+- crates/media/src/decode.rs
+- crates/media/tests/decode_admission.rs
+- crates/media/tests/decode_budget.rs
+
+crates/mediaへの変更は、既存の予算・ownership・
+admission正典で表現できない実装上の必要が
+具体的に証明された場合に限定する。
+
+新しい汎用scheduler、独立media framework、
+GPU renderer、Runtime adapterを作成しない。
+
+## 6. Decode stageの観測
+
+既存の正常WIC実行を保持したまま、
+明示opt-inの計測経路を追加する。
+
+測定可能なstage:
+
+- process start
+- input opened / metadata available
+- admission started / admitted / refused
+- OnLoad entered
+- OnLoad returned
+- conversion entered / returned
+- CopyPixels entered / returned
+- output encode entered / returned
+- process exit
+- cancellation requested / observed
+- direct-child termination / reap
+
+使用できないstageはNOT_MEASUREDとする。
+
+時計:
+- 1プロセス内の期間計測はmonotonic clock
+- cross-process相関は明示したclock domainで記録
+- 非共通clockの時刻を単純減算しない
+- timestampの単位と観測者を必ず記録
+
+実測したstageと、sourceから推定したstageを
+同じobservedフィールドに混在させない。
+
+Opt-in計測を使わない通常のWIC probeの
+stdout JSON、argv、exit semantics、legacy behaviorは
+変更しない。
+
+計測用sidecarを追加する場合:
+- operatorが指定した新規owned work root内だけ
+- メディアmetadataからパスを生成しない
+- 追記量・サイズ・行数に有限上限を設ける
+- 不完全traceはcompleteと扱わない
+- 出力を公開する前にadmissionを必ず通す
+
+## 7. Memory accounting
+
+少なくとも次の値を区別する。
+
+1. encoded_input_bytes
+2. admitted_decoded_bytes
+3. BGRA32 conversion destination bytes
+4. explicitly declared scratch allowance
+5. explicit known reservations
+6. observed process working set
+7. observed process private bytes
+8. decoder_internal_scratch_peak
+9. observed concurrent process aggregate
+10. actually proven peak concurrent allocation
+
+各フィールドに次の情報を付与する。
+
+- valueまたはnull
+- unit
+- source
+- measurement_method
+- observed / declared / derived / not_measured
+- sample_count
+- completeness
+- measurement limitations
+
+WIC内部の領域を直接観測できない場合、
+decoder_internal_scratch_peak=nullとする。
+
+sampled process private bytesを
+decoder scratchへ代入しない。
+
+working setの最大サンプル値は
+sampled_lower_boundであり、
+真のpeakとは区別する。
+
+旧scratch_max_bytesはcapture-file accountingのまま。
+decoder scratchへ意味変更しない。
+
+追加のOS memory samplingには、
+Windowsの既存標準API/ツールと
+標準ライブラリのみ使用する。
+
+sampling_disabled、sampler_unavailable、
+process_identity_unverified、sampling_incomplete、
+sampled_lower_boundを明示的に区別する。
+
+process IDの再利用、異なるprocess lifetime、
+サンプル欠落を無視した総和を作らない。
+
+同時実行の集計では、同一時点に観測された
+識別済みprocessだけを対象とする。
+
+個別processの別時刻の最大値を足して、
+同時実測peakと称してはならない。
+
+## 8. 有界な実Windows入力と同時実行
+
+Windows上の実WICで実行する。
+
+既存のW1 fixture generatorとpixel oracleを再利用する。
+
+実入力はローカルで生成したPNG/BMP/JPEGとし、
+各入力のbyte length、SHA256、寸法、format、
+生成方法を記録する。
+
+基礎入力:
+- small PNG
+- small BMP
+- small JPEG
+- bounded 256×256 preview-class
+- bounded 1024×1024 detail-test-class
+- declared oversized PNG
+- malformed/unsupported input
+
+最大3同時実行。
+
+構成:
+- preview-class 2件
+- detail-test-class 1件
+
+これはADR-0008の
+「2 thumbnail/preview + 1 full/tile」
+という宣言された同時実行上限に対応した
+限定stress configurationである。
+
+ただし1024×1024のdetail-testを
+16K full-detail capabilityとは呼ばない。
+
+各実行は必ず:
+- pre-materialization admission
+- 有限の単体deadline
+- 有限の総実行deadline
+- 最大case数
+- 最大output bytes
+- 最大work-root bytes
+- 最大trace records
+- 最大sampling count
+を持つ。
+
+上限値はmanifestへ保存する。
+
+ratified defaultを変更せず、
+安全な狭いoverrideを使う。
+
+全体予算の超過、admission failure、cancel、
+timeoutではfail-closedとする。
+
+16K画像のフルデコード、大量のOS memory確保、
+無制限process起動は実行しない。
+
+## 9. Cancellationの実測
+
+以下を分離する。
+
+A. admission前のcancel
+B. OnLoad開始前のcancel
+C. OnLoad実行中に外部から要求されたcancel
+D. OnLoad終了後のcancel
+E. timeout/kill/reap
+F. output publication前のcancel
+
+Cが実際に到達できたかをtraceで判定する。
+
+WIC OnLoadが同期的で協調中断できない場合、
+process terminationによる停止と明記する。
+
+in-decoder cooperative cancellationを
+実装したとは記録しない。
+
+少なくとも次を検証する。
+
+- cancel要求時刻が記録される
+- process identityが検証される
+- direct childの停止・回収を確認する
+- cancel後のdecoded successを公開しない
+- partial outputはvalid outputにならない
+- timeoutと正常cancelを別理由として記録
+- cancelの反復で残存processが増えない
+- cancellation未到達時はNOT_MEASUREDとする
+
+危険な入力をデコードし続けて
+キャンセル能力を証明しようとしない。
+
+## 10. 実consumer smoke
+
+単なる関数テストではなく、
+既存のdecode_compare実行経路を使用する。
+
+必要に応じ、既存BUILD_AND_RUN §4.21の
+コマンドを実際の候補・fixture・recordへ適用する。
+
+Consumer-visible acceptance:
+
+1. 実PNG/BMPをWICがデコードする。
+2. 既存独立RGBA oracleが一致する。
+3. JPEGはabsolute rasterではなくstructureのみ。
+4. unsupported/oversizeが明確な拒否を返す。
+5. 拒否またはcancel時に成功画像を公開しない。
+6. 同じ実入力から独立の観測記録が得られる。
+7. resource fieldsの単位と観測限界が読める。
+8. 3同時ケースの実process lifecycleが記録される。
+9. source outputと観測recordのidentityが一致する。
+10. W1の既存正常経路を退行させない。
+
+Native GUI表示、GPUI texture upload、
+実画面上のpreview表示はこのsmokeの対象ではない。
+
+実行経路がCLIのWIC consumerであることを明記する。
+
+## 11. 独立検証と負例
+
+新しいW2 verifierには、
+sourceとrecordから独立した期待値検査を設ける。
+
+最低限の負例:
+- record欠落
+- 空観測
+- case ID重複/欠落
+- source digest不一致
+- process identity不一致
+- 異なるclock domainの不正な比較
+- trace stage逆転
+- admission拒否後のmaterialization
+- 出力欠落なのにdecoded成功
+- cancellation後の成功公開
+- memory observation欠落なのにpeakを報告
+- 異時刻process maximaの不正な合算
+- sampler異常なのにmeasured成功
+- reportまたはwork-root上限超過
+- outputの途中書込み/不完全record
+- cancel/timeout後のcleanup不一致
+
+必須observationsの欠落は
+all([])型のfalse-greenを許さない。
+
+同じ入力に対する構造的・算術的な結果は
+独立に再現できること。
+
+OS sampling値やwall timeが変動する場合は、
+bit-identicalを強制せず、
+非決定部分を宣言して比較対象から分離する。
+
+観測された計測値を書き換えて
+digest一致を作ってはならない。
+
+## 12. 品質ゲート
+
+実装SOURCEと実Native smoke evidenceが揃ったら、
+候補をcommitして固定SHAを確定する。
+
+その前に以下を実行する。
+
+- W2 focused unit tests
+- W2 negative verifier tests
+- 実Windows WIC Native smoke
+- W1 admission selftest
+- W1 real-WIC regression matrix
+- decode_compare harness regressions
+- crates/media decode admission/budget regressions
+- cargo fmt --all -- --check
+- cargo clippy --locked --workspace --all-targets -- -D warnings
+- cargo test --locked --workspace
+- cargo build --locked --workspace
+- 必要な既存feature tests
+- pwsh -NoProfile -File scripts/quality.ps1
+- Python R0 suite
+
+実際のpass/fail/skip数を保存する。
+
+失われたN07旧binaryに依存する11件など、
+実行できないテストはNOT_RUNとして理由を残す。
+
+テスト数を増やすために既存testを削除・緩和しない。
+
+## 13. 独立Refine Gate
+
+Taskernは実行計画まで。
+Refineは現Coding Agentが確定した
+製品SOURCE commitの独立Gateだけに使用する。
+
+手順:
+
+1. SOURCE・Native evidenceを固定
+2. candidate SHAを記録
+3. git tree cleanを確認
+4. Refine 0.3.1の既存正典設定を確認
+5. QualityとBuildを独立実行
+6. status / inspect / verifyを取得
+7. candidate_sha256を相関
+8. required checksとartifact tuplesを相関
+9. cleanupとowner stateを確認
+
+Gateは固定candidate SHAに対して実行する。
+
+SUCCEEDED、全必須check pass、
+gate.verify成功を必要条件とする。
+
+preflight UNKNOWNはUNKNOWNのまま残す。
+
+Gate FAILED時は失敗原因を修正し、
+新SOURCE候補を固定して新Gateを実行する。
+
+同じSOURCE候補に対して、
+成功済みの同一仕様Gateを
+文書修正だけの理由で再実行しない。
+
+Taskernのplanや他リポジトリに
+Refine Gateを流用しない。
+
+## 14. Tern-OMP固定SHA独立レビュー
+
+Tern-OMPのみを使用する。
+omp -pは禁止。
+
+既存のChatGPT review conversationと
+MP §19.50の完成応答手順を使用する。
+
+固定候補のSOURCEと、
+実際に保存したNative evidenceを評価対象とする。
+
+レビュー依頼には:
+- 製品候補のfull SHA
+- evidence HEAD
+- Taskern packet SHA256
+- 変更ファイルと範囲
+- W1との差分
+- 実際のconsumer smoke
+- 単体/同時資源観測
+- stage別trace
+- cancel/timeoutの実測
+- Gate IDsとartifact digest
+- 未測定項目
+- 限定closure境界
+を含める。
+
+最終応答確認:
+- fresh assistant message ID
+- 対応するrequest ID
+- streaming=false
+- parsed=true
+- incomplete=false
+- verdict本文が完全
+- 30秒以上離した2回の全文取得が一致
+- completion verification exit 0
+- 末尾が独立したPASS/HOLD判定行
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE
+を必ず分類し、0/0/0まで修正・再レビューする。
+
+不完全な応答から指摘を推測して修正しない。
+
+レビューが新しいSOURCE不備を指摘した場合、
+新候補SHA・新Gate・新レビューを使用する。
+
+## 15. Evidence管理
+
+ADR-0013を適用する。
+
+保存先:
+docs/development/evidence-published/img2-w2-latest/
+
+保存内容:
+- taskern-request.json
+- taskern-response.json
+- fixture inventoryと生成方法
+- SOURCE/fixture/decoder identity
+- 実行manifest
+- 実Windows WIC observations
+- stage traceと時刻定義
+- memory samplingと観測限界
+- concurrent resource observations
+- cancellation observations
+- negative verifier results
+- independent oracle
+- test counts
+- quality-gate.json
+- build-gate.json
+- storage.json
+- review-response.txt
+- review.json
+- reproducibility/NOT_MEASURED record
+
+大きなraw capture、実行バイナリ、
+temporary output、重複toolchainは大量commitしない。
+
+証拠の参照先は必ずtracked repositoryとする。
+
+scratchは独立したowned rootへ作成する。
+既存ディレクトリを削除対象としない。
+
+成功Gateのscratch廃棄は以下を必須とする。
+
+1. GateがSUCCEEDED
+2. verifyが成功
+3. 必要な証拠がtracked領域へ保存済み
+4. 削除対象が当該実行固有のowned directory
+5. path・size・file countを記録
+6. 削除前後の保存証拠integrity一致
+7. 対象外のwork/root/repositoryを変更しない
+
+削除は有限個の明示されたパスに限定する。
+
+古いGateや失敗Gateを成功履歴に書き換えない。
+W1の監査証拠はW2のために破壊しない。
+
+## 16. 終了条件と未達境界
+
+W2の限定技術完了には以下が必要。
+
+- 実WICの有界デコードが成功
+- PNG/BMPの独立pixel oracle成功
+- decoder stageの実到達性が記録される
+- declared/derived/observed memoryが区別される
+- 有効な同時実行のprocess lifecycleが記録される
+- cancelと出力非公開の実証
+- 負例のfail-closed
+- SOURCE・Native evidence・Gateの固定SHA相関
+- 全必須品質チェック成功
+- Refine Quality/Build verify成功
+- Tern固定SHA review PASS 0/0/0
+- tracked evidenceと保存後integrity検証成功
+
+一方、以下は証明されるまで未達とする。
+
+- decoder内部scratchの真のpeak
+- 全codec/dimension classのconcurrent memory peak
+- in-decoder cooperative cancellation granularity
+- 16K実フルデコード
+- Bgr565実WIC Native capability
+- full region/sequential/tiled decode capability
+- ICC/profile/orientationの完全実証
+- JPEG absolute raster equality
+- full DC-MP-IMG2 Decode Exit
+- MP-IMG2 overall completion
+- MP-IMG3 Upload
+- R0A/R0C full closure
+- R0D measured attainment
+- FLOW2
+- Runtime RC-* acceptance
+- main/release
+
+W2の実測が成立した範囲だけを
+LIMITED TECHNICAL COMPLETIONとして記録する。
+
+必要な観測が取得できない場合は、
+その能力をNOT_MEASURED/NOT_RUNとして残し、
+実測できた他の能力から切り分ける。
+
+必要な実consumer smokeそのものが失敗する場合、
+W2 closureはHOLDとする。
+
+## 17. 権限境界
+
+このdirectiveで実行してよいこと:
+- 単一MP-IMG2-W2内の設計正典化
+- 同一リポジトリ内のbounded実装
+- Taskernの実使用
+- 安全なWindows Native CLI smoke
+- 対象SOURCEのテスト・修正
+- 固定SHA独立Refine Gate
+- Tern-OMP独立レビュー
+- tracked evidence保存
+- 0/0/0後のdev統合
+
+dev統合・pushはADR-0009の既存継続実装経路で行う。
+実操作時にremote更新・権限・branch protectionを確認し、
+非fast-forwardや権限拒否を強制操作で回避しない。
+
+別途権限が必要なこと:
+- 別リポジトリの変更
+- Runtimeの実装・契約変更
+- credential・OS security設定変更
+- 新規dependency/unsafe/FFIの採用
+- provider authorization外のNative GUI操作
+- main merge
+- repository visibility変更
+- 公開・release
+
+これらは設計承認から推定しない。
+
+必要になった場合は、
+実装可能な範囲を完了・保存したうえで
+該当操作だけAUTHORITY_BLOCKEDとする。
+
+禁止:
+- mock-successでNative smokeを置き換える
+- サンプルmemoryを実peakと偽る
+- source未確認の能力を実装済みと書く
+- 未測定要件をMPから削除する
+- 新しいGate結果で古い失敗履歴を上書きする
+- reviewを省いてdevへ統合する
+- main/releaseを自動実行する
+
+## 18. 完了後の継続
+
+本sliceが0/0/0となったら:
+
+1. SOURCE/Gate/Nativeの限定技術完了を記録
+2. ADR-0009のCaller acceptanceを適用
+3. MP §19にW2の正確なdispositionを追記
+4. DC-MP-IMG2のExitを縮小せず残件を明記
+5. 証拠・review・storageをtrackedで正典化
+6. devへ安全に統合しremote SHAを確認
+7. tree cleanを確認
+8. hard DAGと残件を再評価
+9. 次の単一MP/DC/slice指示を取得
+
+次タスクを理由にW2の終了判定を曖昧にしない。
+
+最終報告には:
+- 開始SHA
+- Taskern packet SHA256
+- 製品固定SHA
+- 変更SOURCE
+- 実smokeとNative観測
+- memory/cancelの確定値と未測定値
+- test pass/skip数
+- Refine Quality/Build ID
+- Tern PASS/HOLD
+- storage integrity
+- W2限定closure
+- MP-IMG2全体の残件
+- dev統合後SHA
+- authority blockerの有無
+
+を含める。
+
+実装計画の完遂に向け、
+設計承認待ちの反復ではなく、
+実測できる要件の実装と検証を進めること。
+
+DIRECTIVE COMPLETE

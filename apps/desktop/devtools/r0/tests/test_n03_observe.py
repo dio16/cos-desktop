@@ -296,8 +296,8 @@ class N03Observation(unittest.TestCase):
         probe = subprocess.run(["where", "powershell"], capture_output=True, check=False)
         if probe.returncode != 0:
             self.skipTest("NOT_RUN: Windows PowerShell is not on PATH")
-        listing = subprocess.run(["tasklist"], capture_output=True, text=True, check=False)
-        if "cos-desktop" not in listing.stdout.lower():
+        listing = subprocess.run(["tasklist"], capture_output=True, check=False)
+        if b"cos-desktop" not in listing.stdout.lower():
             self.skipTest("NOT_RUN: no COS Desktop window is running in this session")
         result = self.invoke("--title", "COS Desktop", "--out", str(self.record),
                              "--screenshot", str(self.screenshot))

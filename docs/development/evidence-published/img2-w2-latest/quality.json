@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "scope": "MP-IMG2-W2 local source/CLI quality; no GUI startup claim",
+  "standard_route": {
+    "command": "pwsh -NoProfile -File scripts/quality.ps1",
+    "exit": 0,
+    "rust": {
+      "passed": 535,
+      "failed": 0,
+      "ignored": 1
+    },
+    "dependency_selftests": 18,
+    "steps": [
+      "fmt",
+      "metadata",
+      "dependency-selftest",
+      "dependency-rules",
+      "clippy -D warnings",
+      "workspace-tests",
+      "workspace-build"
+    ]
+  },
+  "feature_route": [
+    {
+      "command": "feature-clippy",
+      "exit": 0
+    },
+    {
+      "command": "feature-tests",
+      "exit": 0,
+      "rust": {
+        "passed": 539,
+        "failed": 0,
+        "ignored": 1
+      }
+    },
+    {
+      "command": "feature-build",
+      "exit": 0
+    }
+  ],
+  "focused": {
+    "w2_negative_tests": {
+      "total": 25,
+      "passed": 25,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0,
+      "exit": 0
+    },
+    "wic_probe_selftest": {
+      "script_exit": 0,
+      "result": "PASS",
+      "scope": "actual managed WIC normal/hold/refusal/cap/timeout/output collision and pre-publication kill cases"
+    },
+    "wic_admission_selftest": {
+      "checks": 19,
+      "failures": []
+    },
+    "w1_runner_selftest": {
+      "checks": 7,
+      "failures": []
+    }
+  },
+  "r0_python": {
+    "exit": 0,
+    "total": 352,
+    "passed": 340,
+    "skipped": 12,
+    "failures": 0,
+    "errors": 0,
+    "expected_failures": 0,
+    "unexpected_successes": 0,
+    "skipped_cases": [
+      {
+        "test": "test_real_observation_of_a_window (test_n03_observe.N03Observation.test_real_observation_of_a_window)",
+        "reason": "NOT_RUN: no COS Desktop window is running in this session"
+      },
+      {
+        "test": "test_arbitrary_repo_root_is_refused_with_a_closed_error (test_n07_verify.N07Verifier.test_arbitrary_repo_root_is_refused_with_a_closed_error)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_historical_record_matches_its_recorded_archive_and_names_live_drift (test_n07_verify.N07Verifier.test_historical_record_matches_its_recorded_archive_and_names_live_drift)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_live_tree_matches_the_recorded_baseline (test_n07_verify.N07Verifier.test_live_tree_matches_the_recorded_baseline)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_mismatch_still_exits_nonzero_and_is_named (test_n07_verify.N07Verifier.test_mismatch_still_exits_nonzero_and_is_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_missing_expected_value_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_expected_value_is_not_measured_while_live_drift_stays_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_missing_helper_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_helper_is_not_measured_while_live_drift_stays_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_omitted_repo_root_uses_the_canonical_root (test_n07_verify.N07Verifier.test_omitted_repo_root_uses_the_canonical_root)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_same_inputs_produce_identical_record_bytes (test_n07_verify.N07Verifier.test_same_inputs_produce_identical_record_bytes)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_scratch_copy_only_is_not_verified_and_names_the_path_item (test_n07_verify.N07Verifier.test_scratch_copy_only_is_not_verified_and_names_the_path_item)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_tampered_manifest_names_the_manifest_mismatch (test_n07_verify.N07Verifier.test_tampered_manifest_names_the_manifest_mismatch)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_verdict_precedence_names_both_kinds (test_n07_verify.N07Verifier.test_verdict_precedence_names_both_kinds)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      }
+    ],
+    "resource_warning_after_repair": false,
+    "unicode_error_after_repair": false
+  },
+  "observed_failures": [
+    {
+      "phase": "initial probe selftest/-Version",
+      "outcome": "FAILED",
+      "cause": "missing closing brace in Test-NoReparseComponents",
+      "repair": "closed foreach/function boundary; actual -Version and complete real WIC selftest now pass"
+    },
+    {
+      "phase": "live trace selftest",
+      "outcome": "FAILED",
+      "cause": "ReadAllLines FileShare.Read denied the active writer",
+      "repair": "bounded FileStream reader shares ReadWrite and parses only complete newline-terminated rows; selftest now passes"
+    },
+    {
+      "phase": "full R0 Python",
+      "outcome": "FAILED",
+      "total": 352,
+      "errors": 1,
+      "skipped": 11,
+      "cause": "CP932 tasklist bytes were decoded as UTF8; reader thread failed and stdout became None",
+      "repair": "same availability predicate compares ASCII bytes; full352 rerun340pass12skip0errors; no tests disabled or native success invented"
+    }
+  ],
+  "native_runs": [
+    {
+      "record": "native-matrix.json",
+      "execution_delivery": "context-mode RPC timed out after30s; retained complete native verifier stdout and later actual CLI native-files verification exit0 reconcile it; initial wrapper exit not observed",
+      "subsequent_native_files_verify_exit": 0
+    },
+    {
+      "record": "native-repeat.json",
+      "run_exit": 0,
+      "wall_seconds": 37.94,
+      "native_files_verify_ok": true
+    }
+  ],
+  "independent_oracle": {
+    "runs": 2,
+    "actual_worker_rasters_verified": [
+      9,
+      9
+    ],
+    "structural_repeats_identical": true,
+    "jpeg": "structure_only"
+  }
+}

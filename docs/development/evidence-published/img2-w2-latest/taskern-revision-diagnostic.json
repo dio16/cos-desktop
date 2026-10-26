@@ -1,0 +1,53 @@
+{
+  "attempts": [
+    {
+      "response": {
+        "protocol": 1,
+        "ok": false,
+        "error": {
+          "domain": "contract",
+          "code": "LIMIT_EXCEEDED",
+          "diagnostics": [
+            {
+              "input": "draft",
+              "code": "LIMIT_EXCEEDED",
+              "path": "/tasks/0/inputs/0/description",
+              "source_path": "/args/replacement/document/tasks/0/inputs/0/description",
+              "location_redacted": false,
+              "rule": "shape.range",
+              "expected": "Keep the value inside its declared bounds.",
+              "observed": "out_of_range"
+            }
+          ],
+          "truncated": false
+        }
+      },
+      "disposition": "Per-field input cap; split quality observation into a separate context input."
+    },
+    {
+      "response": {
+        "protocol": 1,
+        "ok": false,
+        "error": {
+          "domain": "contract",
+          "code": "INVALID_CONTRACT",
+          "diagnostics": [
+            {
+              "input": "draft",
+              "code": "INVALID_CONTRACT",
+              "path": "/tasks/0/task_id",
+              "source_path": "/args/replacement/document/tasks/0/task_id",
+              "location_redacted": false,
+              "rule": "revision.retention",
+              "expected": "Retain a task identifier only for unchanged packet content.",
+              "observed": "conflict"
+            }
+          ],
+          "truncated": false
+        }
+      },
+      "disposition": "revision.retention forbids retaining a task ID for changed packet content; assign successor task ID, preserving MP/DC scope and all acceptance."
+    }
+  ],
+  "neither_attempt_compiled": true
+}

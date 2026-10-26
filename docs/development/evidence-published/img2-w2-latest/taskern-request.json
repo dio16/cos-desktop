@@ -1,0 +1,147 @@
+{
+  "protocol": 1,
+  "op": "prepare",
+  "args": {
+    "draft": {
+      "draft_version": 1,
+      "plan_id": "cos-desktop-img2-w2",
+      "revision": 1,
+      "goal": "Bounded real-WIC resource/cancellation characterization under DC-MP-IMG2, without closing its unmeasured Decode exit.",
+      "invariants": [],
+      "milestones": [],
+      "tasks": [
+        {
+          "task_id": "img2-w2",
+          "goal": "Add explicit opt-in bounded WIC stage observations and an actual Windows CLI resource/concurrency/cancellation matrix with independent fail-closed evidence validation.",
+          "inputs": [
+            {
+              "id": "scope",
+              "description": "Source dev and origin/dev 4349ff2063a7bdbe9bd275d250fde5bfeb586ffd, initially clean. Current Tern MP-IMG2-W2 directive sha256:3f95e82f10f83291ac662f1f3423d725dcfdf3d034519a3a69ff79fbd48e60b7, owner DC-MP-IMG2 and common media-input admission. Prereqs MP-IMG1 and MP-SEC3 limited technical completion. W1 product faa3a7e91c3987c14cc053dad03456980827c810 reviewed PASS0/0/0 and pushed, retained img2-w1-latest evidence. ADR8 adopts existing managed WIC/WPF, not GDI+, FFmpeg external only. DecodeBudget ratified defaults are configurable declared basis NOT measured; resolve via existing harness, do not duplicate default literals. Real bounded inputs: small PNG/BMP/JPEG, 256x256 previews and 1024x1024 detail-test, oversized-header and unsupported. Max three child decodes (2preview+1detail), never 16K full decode. Source byte identities: [{\"path\":\"crates/media/src/decode.rs\",\"bytes\":11964,\"sha256\":\"sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf\"},{\"path\":\"apps/desktop/examples/decode_compare/harness.rs\",\"bytes\":163269,\"sha256\":\"sha256:ed6b0b45437a036aa8b6ae274829d0001e6b53c0e8301c4a39c4548cd1b2cacf\"},{\"path\":\"apps/desktop/examples/decode_compare/wic_probe.ps1\",\"bytes\":20896,\"sha256\":\"sha256:7fc357f97a6cb2346b85980b7f87b9abf41a78ba320aa9b73c13916fca9080ec\"},{\"path\":\"apps/desktop/examples/decode_compare/wic_admission.ps1\",\"bytes\":3780,\"sha256\":\"sha256:32dda8546425cab2cb22c2e5f2600b0654c762220c614c46f8be3b7f33085967\"},{\"path\":\"docs/decisions/ADR-0008-OWNER-RATIFICATION.md\",\"bytes\":9911,\"sha256\":\"sha256:431ce981531507c933bbf2bd630d8338269a621ef651bf55ebcf0691a7715aaf\"}]",
+              "context_ids": []
+            }
+          ],
+          "constraints": [
+            {
+              "id": "ownership",
+              "level": "MUST",
+              "text": "Preserve all existing DC-MP-IMG2 exit requirements and hard DAG. No Runtime, GPU/upload, new dependency, unsafe/FFI, security setting, main/release or fabricated capability. Record design choices in owning canon before source edits, update derived plan in same change."
+            },
+            {
+              "id": "opt-in",
+              "level": "MUST",
+              "text": "Existing non-instrumented WIC stdout/argv/exit behavior remains unchanged. Optional sidecar has finite byte/row caps, exclusive owned fresh root, monotonic clock domains with units, actual stage timestamps, no metadata-derived paths and explicit incomplete traces."
+            },
+            {
+              "id": "accounting",
+              "level": "MUST",
+              "text": "Separate encoded bytes, admitted decoded bytes, BGRA conversion, declared scratch/known reservations from process working set/private bytes and sampled concurrent cohorts. Never call sampled maxima a true peak or sum asynchronous per-process maxima. Validate PID/start lifetime/executable identity. Internal scratch/true allocation peak and unavailable probes stay null NOT_MEASURED with reasons."
+            },
+            {
+              "id": "cancellation",
+              "level": "MUST",
+              "text": "Exercise pre-admission, pre-OnLoad, requested-during-OnLoad when actually reachable, post-OnLoad, timeout and pre-publication cases. Distinguish process termination/reap from cooperative in-decoder cancellation. Never publish success/partial output after refusal/cancel. Record unreached boundary NOT_MEASURED; repeat cancellation and confirm no residual direct child."
+            },
+            {
+              "id": "bounded",
+              "level": "MUST",
+              "text": "Manifest carries single/global deadlines, maximum cases/concurrency/output/work-root/trace/sampling/report limits. Fail closed for budget or lifecycle mismatch; never reuse/delete pre-existing work roots. No unbounded wait or process creation."
+            },
+            {
+              "id": "verification",
+              "level": "MUST",
+              "text": "Actual decode_compare consumer smoke with real WIC PNG/BMP independent known RGBA oracle, JPEG structure only, oversize/unsupported refusals. Independent validation and all sixteen specified negative classes; structural arithmetic reproducible and OS/time nondeterminism explicitly separated."
+            },
+            {
+              "id": "workflow",
+              "level": "MUST",
+              "text": "W2 focused/negative tests, W1 selftest+real matrix, harness/media regressions, unchanged full quality script plus feature quality and Python R0. Pin complete source+Native evidence commit, independent Refine Quality/Build within600sGate300scheck16MiB bounds, status/inspect/verify/candidate+artifact correlation. Finite exact successful workspace/target disposal only after tracked evidence and unchanged before/after integrity. New repaired source needs new commit/Gate; docs-only repair no duplicate succeeded Gate. Tern complete fresh fixed-SHA review to0/0/0 then limited acceptance under ADR9, safe dev integration, next directive."
+            }
+          ],
+          "outputs": [
+            {
+              "id": "w2",
+              "description": "Opt-in probe instrumentation, bounded Windows matrix CLI, strict independent verifier/negative regressions, latest tracked sanitized fixture/identity/manifest/stage/resource/cancel/oracle/quality/Gate/storage/Tern evidence and honest remaining capabilities.",
+              "media_type": "application/json"
+            }
+          ],
+          "acceptance": [
+            {
+              "id": "smoke",
+              "statement": "Real WIC PNG/BMP decode via existing consumer and independent RGBA oracle; JPEG structure only; refusals/cancel publish no successful output and W1 legacy regression remains intact.",
+              "output_ids": [
+                "w2"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "resources",
+              "statement": "Actual bounded single and three-child lifecycles produce identity-bound stage/memory observations with units, observer, clock, completeness and sampling limitations; unavailable internal scratch/true peak/cooperative cancellation remain unmeasured.",
+              "output_ids": [
+                "w2"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "negative",
+              "statement": "Reject missing/empty/duplicate cases, source/PID/lifetime mismatch, wrong clock comparison, reversed stages, materialization after refusal, decoded without output, success after cancellation, invented peaks, asynchronous maxima sums, sampler failure, report/work caps, partial records/output and cleanup mismatches.",
+              "output_ids": [
+                "w2"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "closure",
+              "statement": "Required quality plus new fixed-source independent Quality/Build integrity and complete-read Tern PASS0/0/0 justify only W2 limited technical closure, never full MP-IMG2/Upload/Runtime/Native GUI or performance attainment.",
+              "output_ids": [
+                "w2"
+              ],
+              "evaluation_ids": [
+                "quality"
+              ]
+            }
+          ],
+          "evaluation": [
+            {
+              "id": "behavior",
+              "kind": "automated",
+              "requirement": "Run real Windows WIC matrix and consumer twice, independent inventory/pixel/stage/accounting/lifecycle oracle, meaningful fail-closed negatives and actual cancel/refusal cases.",
+              "metric": []
+            },
+            {
+              "id": "quality",
+              "kind": "automated",
+              "requirement": "Full default/feature Rust and R0 Python quality with actual skips, W1 regression, pinned independent Refine Gates/cleanup/integrity/disposal and linked complete Tern0/0/0 review.",
+              "metric": []
+            }
+          ],
+          "dependencies": [],
+          "context": [],
+          "annotations": []
+        }
+      ]
+    },
+    "handoff": [
+      {
+        "task_id": "img2-w2",
+        "context": {
+          "schema_version": 1,
+          "items": []
+        },
+        "budget": {
+          "schema_version": 1,
+          "window_tokens": 32000,
+          "reserved_output_tokens": 4000,
+          "tool_reserve_tokens": 4000,
+          "max_input_bytes": 24000
+        }
+      }
+    ],
+    "emit": "both"
+  }
+}

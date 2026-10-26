@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "source_record": "native-matrix.json",
+  "source_record_sha256": "sha256:5df387383110902f1f7c1a8458aacdedbd4098b2ff00d9de89c14d8340dec312",
+  "scope": "generated-local exploratory WIC classes only",
+  "codec_observations": [
+    {
+      "input_codec": "png",
+      "output_transport": "PNG, not the input-codec capability key",
+      "decoder_names": [
+        "PngBitmapDecoder"
+      ],
+      "tested_dimensions": [
+        [
+          16,
+          16
+        ],
+        [
+          256,
+          256
+        ],
+        [
+          1024,
+          1024
+        ]
+      ],
+      "validity": "pixels_verified against independent solid RGBA expectation",
+      "working_set_samples_bytes": [
+        116916224,
+        117510144,
+        122605568
+      ],
+      "private_samples_bytes": [
+        43425792,
+        43634688,
+        48934912
+      ],
+      "sample_meaning": "whole managed process at explicit after-OnLoad retention hold; not pure decoder cost or peak",
+      "internal_scratch_peak": null,
+      "cooperative_cancel": "NOT_MEASURED",
+      "region_sequential_tiled_profile_orientation": "NOT_MEASURED",
+      "fallback": "unavailable outside a verified bounded class; no automatic whole-source decode fallback",
+      "adoption": "existing ADR-0008 WIC route; no new production codec/dimension-class acceptance"
+    },
+    {
+      "input_codec": "bmp",
+      "output_transport": "PNG, not the input-codec capability key",
+      "decoder_names": [
+        "BmpBitmapDecoder"
+      ],
+      "tested_dimensions": [
+        [
+          16,
+          16
+        ]
+      ],
+      "validity": "pixels_verified against independent solid RGBA expectation",
+      "working_set_samples_bytes": [
+        117276672
+      ],
+      "private_samples_bytes": [
+        43380736
+      ],
+      "sample_meaning": "whole managed process at explicit after-OnLoad retention hold; not pure decoder cost or peak",
+      "internal_scratch_peak": null,
+      "cooperative_cancel": "NOT_MEASURED",
+      "region_sequential_tiled_profile_orientation": "NOT_MEASURED",
+      "fallback": "unavailable outside a verified bounded class; no automatic whole-source decode fallback",
+      "adoption": "existing ADR-0008 WIC route; no new production codec/dimension-class acceptance"
+    },
+    {
+      "input_codec": "jpeg",
+      "output_transport": "PNG, not the input-codec capability key",
+      "decoder_names": [
+        "JpegBitmapDecoder"
+      ],
+      "tested_dimensions": [
+        [
+          32,
+          24
+        ]
+      ],
+      "validity": "structure_verified only",
+      "working_set_samples_bytes": [
+        114511872
+      ],
+      "private_samples_bytes": [
+        41447424
+      ],
+      "sample_meaning": "whole managed process at explicit after-OnLoad retention hold; not pure decoder cost or peak",
+      "internal_scratch_peak": null,
+      "cooperative_cancel": "NOT_MEASURED",
+      "region_sequential_tiled_profile_orientation": "NOT_MEASURED",
+      "fallback": "unavailable outside a verified bounded class; no automatic whole-source decode fallback",
+      "adoption": "existing ADR-0008 WIC route; no new production codec/dimension-class acceptance"
+    }
+  ]
+}
