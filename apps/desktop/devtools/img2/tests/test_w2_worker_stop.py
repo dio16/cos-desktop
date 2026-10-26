@@ -43,12 +43,16 @@ class FakeProc:
         return self.returncode
 
 
+HOLD_ROW = {"stage": "before_onload", "pid": 4242, "process_start_utc_ticks": 7,
+            "artificial_instrumentation_hold": True, "pause_timeout_ms": 10000}
+
+
 def make_worker(proc, kind="cancel", rows=None):
     w = object.__new__(Worker)
     w.cid, w.fid, w.kind, w.hold = "cancel_before_onload", "detail_png", kind, "before_onload"
     w.proc = proc
     w.cancel = cancel_record(kind)
-    w.rows = [{"stage": "before_onload"}] if rows is None else rows
+    w.rows = [HOLD_ROW] if rows is None else rows
     w.fixture = {"sha256": "sha256:" + "1" * 64}
     w.started = 1
     w.read_trace = lambda: w.rows
@@ -78,7 +82,7 @@ class StopLifecycleTests(unittest.TestCase):
 
     def test_confirmed_kill_requires_issued_terminate_and_nonzero_exit(self):
         proc = FakeProc(exit_code=1)
-        w = make_worker(proc)
+        w = make_worker(proc, rows=[HOLD_ROW])
         w.stop("cancel")
         self.assertEqual(w.cancel["state"], "stop_confirmed")
         self.assertTrue(w.cancel["kill_issued"])
@@ -90,7 +94,8 @@ class StopLifecycleTests(unittest.TestCase):
         self.assertEqual(stop_outcome(w.cancel, None), "cancelled")
 
     def test_timeout_reason_is_distinct_from_cancel(self):
-        w = make_worker(FakeProc(exit_code=1), kind="timeout")
+        w = make_worker(FakeProc(exit_code=1), kind="timeout", rows=[HOLD_ROW])
+        w.hold = "before_onload"
         w.stop("timeout")
         self.assertEqual(stop_outcome(w.cancel, None), "timeout")
 
@@ -107,7 +112,7 @@ class StopLifecycleTests(unittest.TestCase):
 
     def test_stop_is_idempotent(self):
         proc = FakeProc(exit_code=1)
-        w = make_worker(proc)
+        w = make_worker(proc, rows=[HOLD_ROW])
         w.stop("cancel")
         w.stop("timeout")
         self.assertEqual(proc.kills, 1)
@@ -137,6 +142,26 @@ class StopLifecycleTests(unittest.TestCase):
             self.assertEqual(record["removed_owned_output_paths"], [])
             self.assertTrue(w.output.is_file())
 
+    def test_kill_without_hold_evidence_is_not_confirmed(self):
+        proc = FakeProc(exit_code=1)
+        w = make_worker(proc, kind="onload_attempt", rows=[{"stage": "onload_entered"}])
+        w.hold = "before_onload"
+        w.stop("cancel")
+        self.assertEqual(w.cancel["state"], "unverified_race")
+        self.assertTrue(w.cancel["kill_issued"])
+        self.assertFalse(w.cancel["hold_established"])
+        self.assertEqual(w.cancel["cause"], "unattributable")
+        self.assertEqual(proc.kills, 1)
+        self.assertEqual(stop_outcome(w.cancel, None), "not_verified")
+
+    def test_hold_row_without_marker_is_not_a_hold(self):
+        proc = FakeProc(exit_code=1)
+        w = make_worker(proc, rows=[{"stage": "before_onload"}])
+        w.stop("cancel")
+        self.assertEqual(w.cancel["state"], "unverified_race")
+        self.assertFalse(w.cancel["hold_established"])
+        self.assertEqual(stop_outcome(w.cancel, None), "not_verified")
+
     def test_finish_removes_output_only_after_confirmed_stop(self):
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp)
@@ -151,7 +176,7 @@ class StopLifecycleTests(unittest.TestCase):
             w.stderr_path.write_text("", encoding="utf-8")
             w.stdout, w.stderr = w.stdout_path.open("ab"), w.stderr_path.open("ab")
             w.identity_verified = False
-            w.rows = [{"stage": "before_onload", "pid": 4242, "process_start_utc_ticks": 7}]
+            w.rows = [HOLD_ROW]
             w.stop("cancel")
             record = w.finish("sha256:" + "0" * 64)
             self.assertEqual(record["outcome"], "cancelled")

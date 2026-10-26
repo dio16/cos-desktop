@@ -41,13 +41,13 @@
   ],
   "focused": {
     "w2_negative_tests": {
-      "total": 40,
-      "passed": 40,
+      "total": 45,
+      "passed": 45,
       "skipped": 0,
       "failed": 0,
       "errors": 0,
       "exit": 0,
-      "note": "includes eight Worker.stop/finish lifecycle and seven new stop-evidence verifier regressions"
+      "note": "Ten Worker.stop/finish lifecycle regressions plus hold-evidence, cause and race verifier negatives."
     },
     "wic_probe_selftest": {
       "script_exit": 0,
@@ -66,13 +66,13 @@
       "command": "python -B apps/desktop/devtools/img2/w2_independent_oracle.py",
       "exit": 0,
       "verified_outputs": [
-        9,
+        10,
         9
       ],
       "structural_repeats_identical": true,
       "archive": "native-rasters.zip",
-      "archive_sha256": "sha256:4582b43fa8863297fb0fbe2c23d87bd033961140ed0235d3ff82dd96812aa0da",
-      "record_sha256": "sha256:0f5d2f6e2b884cf1300b43773fc489b1d25c3122e65b2b5622547db3f2836a7a",
+      "archive_sha256": "sha256:c9168a0cdc646ba1ae3382a85f0ad40276b90f47d49b4087631607772815046a",
+      "record_sha256": "sha256:26b19bcb1703e8cceca4164d07f8bba7ebf29b2dbf76bfc8df0a88c8a2f8dd49",
       "meaning": "stdlib PNG reconstruction from the tracked archive; not a WIC rerun"
     }
   },
@@ -185,8 +185,8 @@
     "jpeg": "structure_only"
   },
   "native_records": {
-    "native-matrix.json": "sha256:1916e20e45b546a52106fc83eb29e2e24c61b69860de534fdba9888b7d58c2c3",
-    "native-repeat.json": "sha256:66f1eb470387a3d17bd6bd975f10023f1d718cfbbe7d6640a30831b382c29023"
+    "native-matrix.json": "sha256:2bf013b7f64a706aa372089d14ed1a45337f4a5f7d4e5c0e7279466be5298176",
+    "native-repeat.json": "sha256:aadda0443cffe38940d866313893c27e6214fb03445a4724742c8917f99f1d71"
   },
-  "repair": "Re-ran after the A-W2-01 stop-lifecycle repair. Rust sources are unchanged by that repair; the Python runner/verifier/tests and the retained records are new."
+  "repair": "Re-ran after the W2-R2 hold-attribution repair (A-W2-01 residual). Rust sources are unchanged by that repair; the Python runner/verifier/tests and the retained records are new."
 }

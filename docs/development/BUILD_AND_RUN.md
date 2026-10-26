@@ -723,13 +723,18 @@ Controlled cancellation observes a held boundary, verifies the process lifetime,
 terminates and waits for the direct child, then removes only owned output.
 Stop evidence is a closed state machine. `Worker.stop()` records the child's state
 at the request (`alive_at_request`/`exit_before_request`), whether a terminate was
-actually issued (`kill_issued`), any kill error, the reap result and the code that
-was observed. A child that had already exited keeps its real outcome and is never
-classified cancelled; a request followed by an unprovable kill/natural-exit race
-is `unverified_race` with outcome `not_verified`. Only `stop_confirmed` (alive at
-request, kill issued, non-zero reaped exit) yields `cancelled`/`timeout`, and only
-it discards that worker's pending output. `w2_resource_verify.py` rejects a
-cancellation record without those fields, a zero exit, or an exited-before-request
+actually issued (`kill_issued`), any kill error, the reap result, the code that was
+observed and whether an operator boundary hold was established (`hold_established`,
+`cause`). A child that had already exited keeps its real outcome and is never
+classified cancelled. A returning `kill()` proves only that termination was
+requested, so `stop_confirmed` additionally requires the last trace row to be the
+declared hold stage carrying `artificial_instrumentation_hold`: a parked probe
+cannot publish or finish on its own. Every other stop -- including a successful
+kill during OnLoad work where no hold exists, and any kill/natural-exit race -- is
+`unverified_race` with outcome `not_verified`. Only `stop_confirmed` yields
+`cancelled`/`timeout` and discards that worker's pending output.
+`w2_resource_verify.py` rejects a cancellation record without those fields, a zero
+exit, a missing hold marker, a cause/flag disagreement, or an exited-before-request
 row claimed as cancellation. `apps/desktop/devtools/img2/tests/test_w2_worker_stop.py`
 covers exited-before-request with exit 0 and exit 1, a confirmed kill, the
 kill/natural-exit race, idempotent requests and both output-cleanup paths against a

@@ -165,6 +165,24 @@ class W2EvidenceTests(unittest.TestCase):
             del w["cancellation"]["kill_issued"]
         self.reject(drop, "cancellation_action_missing")
 
+    def test_confirmed_stop_requires_trace_hold_marker(self):
+        def strip(r):
+            w = next(x for x in r["workers"] if x["cancellation"]["state"] == "stop_confirmed")
+            w["stages"][-1].pop("artificial_instrumentation_hold", None)
+        self.reject(strip, "cancellation_without_hold_evidence")
+
+    def test_unattributable_kill_cannot_be_cancelled(self):
+        def downgrade(r):
+            w = next(x for x in r["workers"] if x["cancellation"]["state"] == "stop_confirmed")
+            w["cancellation"].update(hold_established=False, cause="unattributable")
+        self.reject(downgrade, "cancellation_without_hold_evidence")
+
+    def test_cause_and_hold_flag_must_agree(self):
+        def contradict(r):
+            w = next(x for x in r["workers"] if x["cancellation"]["state"] == "stop_confirmed")
+            w["cancellation"]["cause"] = "unattributable"
+        self.reject(contradict, "cancellation_cause_mismatch")
+
     def test_timeout_distinct_from_normal_cancellation(self):
         def change(r):
             next(x for x in r["workers"] if x["kind"] == "timeout")["outcome"] = "cancelled"

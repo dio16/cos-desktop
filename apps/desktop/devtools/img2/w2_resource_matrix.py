@@ -147,7 +147,7 @@ def cancel_record(kind):
             "state": "not_requested", "alive_at_request": None,
             "exit_before_request": None, "returncode_before_request": None,
             "kill_issued": False, "kill_error": None, "reap_confirmed": False,
-            "exit_after_request": None}
+            "exit_after_request": None, "hold_established": False, "cause": "not_requested"}
 
 
 def stop_outcome(cancel, result):
@@ -227,15 +227,22 @@ class Worker:
         """Request termination and record what was actually observed.
 
         A child that has already exited keeps its own result: the request is not
-        a cancellation. A kill whose effect cannot be separated from natural
-        completion stays ``unverified_race``, never cancellation success.
+        a cancellation. A successful ``kill()`` says only that a termination was
+        requested, so a stop is confirmed as cancellation evidence only when the
+        child was parked in an operator boundary hold at the request: there it
+        cannot publish or finish on its own. Anything else, including an
+        unattributable kill/natural-exit race, stays ``unverified_race``.
         """
         if self.cancel["requested_ns"] is not None or self.cancel["state"] == "already_exited":
             return
         self.read_trace()
         before = self.proc.poll()
-        self.cancel.update(last_observed_stage=self.rows[-1]["stage"] if self.rows else None,
-                           reason=reason)
+        last = self.rows[-1] if self.rows else None
+        hold_established = bool(self.hold and last and last.get("stage") == self.hold
+                                and last.get("artificial_instrumentation_hold") is True)
+        self.cancel.update(last_observed_stage=last["stage"] if last else None, reason=reason,
+                           hold_established=hold_established,
+                           cause="boundary_hold" if hold_established else "unattributable")
         if before is not None:
             self.cancel.update(state="already_exited", alive_at_request=False,
                                exit_before_request=True, returncode_before_request=before,
@@ -250,12 +257,14 @@ class Worker:
         else:
             self.cancel.update(kill_issued=True)
         self.proc.wait(timeout=5)
+        confirmed = (self.cancel["kill_issued"] and hold_established
+                     and self.proc.returncode not in (None, 0))
         self.cancel.update(observed_ns=time.monotonic_ns(), waited=True,
                            exit_after_request=self.proc.returncode,
                            reap_confirmed=self.proc.returncode is not None,
-                           state="stop_confirmed" if self.cancel["kill_issued"] else "unverified_race",
+                           state="stop_confirmed" if confirmed else "unverified_race",
                            reachability="NOT_MEASURED" if self.kind == "onload_attempt"
-                           else ("reached" if self.cancel["kill_issued"] else "not_requested"))
+                           else ("reached" if confirmed else "not_requested"))
 
     def finish(self, exe_sha):
         self.proc.wait(timeout=5)

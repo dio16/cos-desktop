@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "round": "W2-R2",
+  "candidate": "99bb8e629a22b2dfc605d76f64f2a3cb2c38742e",
+  "evidence_head": "70e89a23ff4dfe8ea714f8a56706633b786b0792",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "725204f1-342c-4e0f-ad9d-b7bc080419a2"
+  ],
+  "assistant_ids": [
+    "09e333c1-fce2-40ed-a792-6376cedd09a3"
+  ],
+  "streaming": false,
+  "two_full_reads_identical": true,
+  "first_read_at": "2026-10-26T18:30:39.538Z",
+  "response_sha256": "sha256:3b4b62aa167a4f748f78046a298694800cf88439f73c106128e858296afd740e",
+  "parser_exit": 1,
+  "verdict": {
+    "blocking": 0,
+    "actionable": 2,
+    "excessive": 0,
+    "passLine": null,
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": false,
+    "sawPassLine": false
+  },
+  "completion_verification_exit": 0,
+  "attachment_bound": true,
+  "request_sha256": "sha256:5689bb9bf1e2bfec85c43cf47579bbf5b3bfb370722d1310c522dbca8fb6d982"
+}

@@ -56,7 +56,7 @@
         "describe operation gate.run",
         "describe family execution"
       ],
-      "execution": "SUCCEEDED twice per round: round 1 on 7f236426 (Quality 5865a2d5, Build 2a91db39); repaired candidate 99bb8e62 on Quality 83884abf (10/10) and Build c907686e (1/1) with identical candidate digest and 21 artifact tuples. Two owner interruptions and one preparation error are recorded in gate-dispatch.json and were not treated as product results.",
+      "execution": "Round 1 and round 2 Gate pairs SUCCEEDED on their own candidates; the current candidate pair is recorded in quality-gate.json and build-gate.json with artifact correspondence in gate-artifact-correspondence.json.",
       "lifecycle": "VERIFY_EXISTING_CANDIDATE"
     },
     "tern": {
@@ -87,7 +87,7 @@
   },
   "storage_plan": {
     "ordinary_target": "<repository>/target",
-    "new_gate_root": "<verification-root>/img2-w2-repair1-2026-10-26",
+    "new_gate_root": "<verification-root>/img2-w2-repair2-2026-10-26",
     "fresh_check_targets": true,
     "observed_available_bytes": null,
     "prior_equivalent_two_gate_scratch_logical_bytes": 4884733988,
@@ -137,7 +137,9 @@
     },
     "round_2": {
       "candidate": "99bb8e629a22b2dfc605d76f64f2a3cb2c38742e",
-      "verdict": "PENDING"
-    }
+      "verdict": "HOLD 0 / 2 / 0",
+      "record": "review-round2.json"
+    },
+    "round_3": "PENDING"
   }
 }

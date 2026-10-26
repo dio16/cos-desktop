@@ -1,0 +1,353 @@
+MP-IMG2-W2 第2ラウンド独立レビュー
+
+判定：HOLD — A-W2-01の主要修正は確認できましたが、終了競合の未解消経路1件と、固定候補の証拠対応に関する問題1件が残ります。
+
+対象は製品候補 99bb8e629a22b2dfc605d76f64f2a3cb2c38742eです。添付3 ZIPのみを用いたattachment-boundレビューであり、未pushのGit object全体やWindows上の実WICを今回直接実行したものではありません。
+
+1. 独立検証結果
+
+検証対象
+
+	
+
+結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+369,085 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+251,927 bytes、SHA256一致
+
+
+
+
+Native rasters ZIP
+
+	
+
+12,482 bytes、SHA256一致
+
+
+
+
+W2 Python回帰
+
+	
+
+40/40 PASS（独立実行）
+
+
+
+
+Native report構造検証
+
+	
+
+2/2 PASS（独立実行）
+
+
+
+
+Raster manifest
+
+	
+
+36/36 サイズ・SHA256一致
+
+
+
+
+PNG/BMP由来decoded output
+
+	
+
+18/18 RGBA画素一致
+
+
+
+
+生成PNG fixture
+
+	
+
+8/8 RGBA画素一致
+
+
+
+
+Independent oracle
+
+	
+
+再実行結果が保存内容と一致
+
+
+
+
+Quality Gate
+
+	
+
+SUCCEEDED 10/10
+
+
+
+
+Build Gate
+
+	
+
+SUCCEEDED 1/1
+
+
+
+
+Gate間のartifact tuples
+
+	
+
+21/21一致
+
+
+
+
+添付からのartifact実バイト照合
+
+	
+
+20/21一致、1件不一致
+
+画素照合は提出oracleの結果を転載せず、PNGのCRC確認、zlib展開、フィルター復元を独立実装して行いました。
+
+両Native記録については、各20 workerで次の結果を確認しました。
+
+Outcome
+
+	
+
+run 1
+
+	
+
+run 2
+
+
+
+
+decoded
+
+	
+
+10
+
+	
+
+10
+
+
+
+
+cancelled
+
+	
+
+7
+
+	
+
+7
+
+
+
+
+oversize
+
+	
+
+1
+
+	
+
+1
+
+
+
+
+timeout
+
+	
+
+1
+
+	
+
+1
+
+
+
+
+unsupported
+
+	
+
+1
+
+	
+
+1
+
+
+
+
+stop_confirmed
+
+	
+
+8
+
+	
+
+8
+
+
+
+
+not_requested
+
+	
+
+12
+
+	
+
+12
+
+onload_1、onload_2、onload_3の結果には実行間の差があり、自然終了した試行はdecoded、停止操作を記録した試行はcancelledに分類されています。協調的in-decoder cancellationは引き続きNOT_MEASUREDです。
+
+2. A-W2-01修正確認
+
+前回指摘のうち、停止要求前にすでに終了しているprocessをcancelledへ誤分類する経路はCLOSEDです。
+
+Worker.stop()は先にpoll()を実行し、終了済みならalready_exited、requested_ns=None、kill_issued=Falseを記録します。stop_outcome()とWorker.finish()もこの状態を使用し、実際のdecode結果を保持します。
+
+test_w2_worker_stop.pyの8件を含む40件すべてを独立実行しました。さらに、前回と同じくNative記録の終了コードだけを0へ変更して検証器を実行すると、cancellation_lifecycle_invalidで拒否されることを再確認しました。
+
+ただし、次の競合経路が残っています。
+
+3. 残存指摘
+A-W2-01 — kill要求後の自然終了競合を完全には区別できない
+
+種別：ACTIONABLE NON-BLOCKING
+
+対象：w2_resource_matrix.py:226–258
+
+現在の実装では、poll()が生存を返した後、proc.kill()が例外なく戻ればkill_issued=Trueとなり、実際の終了原因にかかわらずstop_confirmedへ遷移します。
+
+独立再現では、poll()時点では生存し、kill()呼出し中に自然終了コード1で終了する模擬processを用いました。kill()は例外を返さない設定です。
+
+結果は以下でした。
+
+プレーンテキスト
+kill_invoked = 1
+natural_exit_code = 1
+kill_issued = true
+state = stop_confirmed
+outcome = cancelled
+
+この記録は「終了要求が発行されたこと」と「processが終了したこと」を示しますが、終了の原因が要求したkillであったことまでは示しません。
+
+現行の負例は、kill()が例外を返す競合を検査しています。例外なく戻った場合に自然終了と競合する経路は検査していません。
+
+修正条件： kill発行・reap・終了原因の確証を区別してください。特にOnLoad実行中のように、自然終了との競合を独立に排除できない経路はunverified_raceへ閉じ、confirmed cancellationとして数えないでください。人工holdが成立し、自然終了を排除できる境界については、その根拠をtraceと対応付けて保持できます。
+
+新規dependencyやWIC内部への人工holdは不要です。検証器にも同条件の負例を追加してください。
+
+この問題は、今回の実Native記録が実際に自然終了を誤分類したと断定するものではありません。
+
+A-W2-R2-02 — Gateのplan artifactと添付MP本文が一致しない
+
+種別：ACTIONABLE NON-BLOCKING
+
+対象：quality-gate.json、build-gate.jsonのartifact plan、添付IMPLEMENTATION_MASTER_PLAN.md
+
+両Gateの台帳には同一のplan artifactが記録されています。
+
+比較
+
+	
+
+サイズ
+
+	
+
+SHA256
+
+
+
+
+Gate artifact plan
+
+	
+
+411,593 bytes
+
+	
+
+e1501262…4227f755
+
+
+
+
+添付MP本文（LF正規化後）
+
+	
+
+393,813 bytes
+
+	
+
+c19761e1…256581e
+
+CRLF/LFの正規化では一致しません。
+
+21 artifactのGate間台帳一致は成立しています。しかし、添付の実バイトまで確認できたのは20件であり、planだけは同じ版であることを証明できません。
+
+また、Gateのtaskern-requestとtaskern-responseはrevision 2のファイルに一致します。revision 3のpacket 2be98d30…自体は添付から確認できていますが、Gateの同名artifactがrevision 3を指すわけではありません。
+
+修正条件： Gateのplan artifactに対応する実バイト、あるいはその取得版と添付MPの変更関係を明示してください。TaskernのGate収録版がrevision 2であることも明記し、revision 3のpacketとの相関を別途示してください。
+
+同一SOURCEに対する不要なGate再実行は不要です。証拠対応表の修正で解消可能と考えます。
+
+4. Gate・storage・限定closure
+
+Quality 83884abf-f597-446b-b8f6-cf731af2bfb9は10/10、Build c907686e-4eba-4337-b57d-e95001b42d2eは1/1で、両方SUCCEEDEDです。candidate digest bd7f9359…8278f5ae5、status/inspect/verify、cleanup complete、owner deadに整合性があります。
+
+PreflightのUNKNOWNはそのまま保持されています。中断された旧Gateや、準備失敗となった試行を成功扱いした形跡はありません。
+
+Storage記録は、7対象・5,726,208,819 logical bytes・13,172 filesで算術上一致します。実際の削除操作とWindows環境の状態を今回再実行・確認したものではありません。
+
+今回の実測は、WICの有界デコード、独立pixel oracle、process counters、cancellation要求と回収、tracked evidenceを十分に裏付けています。ただし、指摘2件が残るため、MP-IMG2-W2 LIMITED TECHNICAL COMPLETIONの0/0/0 closureは保留します。
+
+16K full decode、Bgr565実WIC、region/sequential/tiled、ICC/orientation、JPEG絶対raster、内部scratch peak、真の同時memory peak、実予約、協調的in-decoder cancellation、DC-MP-IMG2全体のDecode Exit、Upload、R0 full/R0D measured、FLOW2、Runtime RC-*、main/releaseは引き続き未達です。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 2
+
+EXCESSIVE 0
+
+HOLD 0 / 2 / 0

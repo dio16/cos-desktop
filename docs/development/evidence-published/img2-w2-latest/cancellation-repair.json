@@ -1,95 +1,65 @@
 {
   "schema_version": 1,
   "slice": "MP-IMG2-W2",
-  "finding": {
-    "id": "A-W2-01",
-    "round": "W2-R1",
-    "classification": "ACTIONABLE NON-BLOCKING",
-    "candidate": "7f236426f53bda9d4f88913690c7743208601711",
-    "review_verdict": "HOLD 0 / 1 / 0",
-    "response_sha256": "sha256:8d5c77b2de0765e144f376ae35f31292784587df7dd3a3ee5775cda9e7de4525",
-    "anchor": "apps/desktop/devtools/img2/w2_resource_matrix.py Worker.stop/finish"
-  },
-  "observed_defect": {
-    "runner": "stop() set requested_ns and method=direct_child_terminate_wait before checking poll(); a child that had already completed still produced a cancellation record, and finish() classified any requested_ns as cancelled.",
-    "verifier": "cancellation acceptance did not require an issued kill, an alive-at-request observation or a non-zero termination exit; mutating the retained onload_3 exit code to 0 still verified.",
-    "not_claimed": "The retained record actually held exit_code 1, so the real run is not asserted to have been misclassified; only the missing evidence fields and the verifier gap are."
-  },
-  "repair": {
-    "owner_contract": "DC-MP-IMG2 opt-in WIC observation boundary updated first",
-    "runner": [
-      "state: not_requested | already_exited | stop_confirmed | unverified_race",
-      "alive_at_request / exit_before_request / returncode_before_request",
-      "kill_issued / kill_error / reap_confirmed / exit_after_request",
-      "stop_outcome(): only stop_confirmed yields cancelled or timeout; already_exited keeps the real probe outcome; unverified_race yields not_verified",
-      "output removal only after a confirmed stop"
-    ],
-    "verifier": [
-      "requires the closed state and boolean action fields",
-      "stop_confirmed needs alive_at_request, issued kill, no kill error, reaped non-zero exit equal to exit_after_request, identity_verified and observed_ns == exited_ns",
-      "already_exited needs no request, no kill and returncode_before_request == exit_code",
-      "cancellation cannot be claimed from not_requested/already_exited/unverified_race",
-      "cancel/timeout scenarios require stop_confirmed"
-    ],
-    "tests": {
-      "file": "apps/desktop/devtools/img2/tests/test_w2_worker_stop.py",
-      "cases": [
-        "exit 0 before request keeps decoded",
-        "exit 1 before request is not a cancellation",
-        "confirmed kill requires issued terminate and non-zero exit",
-        "timeout reason distinct from cancel",
-        "kill/natural-exit race is not_verified",
-        "idempotent stop",
-        "finish preserves natural-exit output",
-        "finish removes output only after a confirmed stop"
+  "rounds": [
+    {
+      "id": "W2-R1",
+      "candidate": "7f236426f53bda9d4f88913690c7743208601711",
+      "verdict": "HOLD 0 / 1 / 0",
+      "finding": "A-W2-01: a child that had already exited could still be recorded and classified as cancelled, and the verifier accepted a zero exit.",
+      "repair": "Closed stop state machine (state/alive_at_request/exit_before_request/kill_issued/kill_error/reap_confirmed/exit_after_request) plus verifier rejection and eight worker-level regressions.",
+      "evidence": "review-round1-response.txt, review-round1.json"
+    },
+    {
+      "id": "W2-R2",
+      "candidate": "99bb8e629a22b2dfc605d76f64f2a3cb2c38742e",
+      "verdict": "HOLD 0 / 2 / 0",
+      "findings": [
+        "A-W2-01 (residual): a returning kill() while the child finished naturally still produced stop_confirmed; a successful kill proves only that termination was requested.",
+        "A-W2-R2-02: the Gate plan artifact bytes were not tied to the attached plan, and the Gate Taskern artifacts captured the revision-2 files."
       ],
-      "verifier_negatives": [
-        "kill_issued false",
-        "exited-before-request claimed cancelled",
-        "zero exit as a confirmed stop",
-        "missing alive_at_request",
-        "unverified race claimed cancelled",
-        "natural completion relabelled not_verified",
-        "missing kill_issued field"
-      ]
+      "repair": [
+        "Cause attribution: stop_confirmed now also requires the child to be parked in a trace-marked operator boundary hold (hold_established / cause=boundary_hold, last row carries artificial_instrumentation_hold and equals the declared stage). A successful kill without that hold is unverified_race with outcome not_verified; onload_attempt outcomes are limited to decoded or not_verified.",
+        "Verifier requires the hold marker, cause/flag agreement and the closed state, and rejects a confirmed stop whose trace row lost the marker or whose cause is unattributable.",
+        "Gate artifact correspondence is now a tracked record, and the Gate requests capture the current Taskern revision-3 files; the plan text no longer restates Gate IDs, so the plan captured by a Gate matches the plan that is reviewed."
+      ],
+      "evidence": "review-round2-response.txt, review-round2.json"
     }
-  },
+  ],
   "actual_evidence": {
     "records": [
       "native-matrix.json",
       "native-repeat.json"
     ],
     "states_per_run": {
-      "not_requested": 12,
-      "already_exited": 0,
-      "stop_confirmed": 8,
-      "unverified_race": 0
-    },
-    "confirmed_stops": "six cancel scenarios, two pre-OnLoad repeats, one in-OnLoad attempt and the operator timeout",
-    "natural_completions": "five single decodes, two refusals, two OnLoad attempts that completed first and the three cohort workers",
-    "natural_onload_attempts": [
-      {
-        "case_id": "onload_1",
-        "exit_code": 0,
-        "outcome": "decoded"
+      "run1": {
+        "not_requested": 13,
+        "stop_confirmed": 7
       },
-      {
-        "case_id": "onload_3",
-        "exit_code": 0,
-        "outcome": "decoded"
+      "run2": {
+        "not_requested": 12,
+        "stop_confirmed": 7,
+        "unverified_race": 1
       }
-    ],
-    "stopped_onload_attempt": {
-      "case_id": "onload_2",
+    },
+    "confirmed_stops": "six cancel scenarios plus the operator timeout in each run, each parked in its declared hold with kill_issued true and exit code 1",
+    "natural_completions": "the remaining workers, including OnLoad attempts that decoded first (onload_2/onload_3 in run 2)",
+    "unattributable_stop": {
+      "run": "native-repeat.json",
+      "case_id": "onload_1",
+      "state": "unverified_race",
+      "cause": "unattributable",
+      "kill_issued": true,
       "exit_code": 1,
-      "outcome": "cancelled",
-      "reachability": "NOT_MEASURED"
+      "outcome": "not_verified",
+      "output_present": false,
+      "removed_owned_output_paths": []
     },
     "oracle": "independent-oracle.json rebuilt from the tracked raster archive",
-    "meaning": "The repaired runner separates natural completion from a confirmed stop in actual Windows runs; a never-stopped worker is no longer representable as cancelled."
+    "meaning": "Both the attributable and the unattributable stop paths are exercised by actual Windows runs; only a hold-attributed stop counts as cancellation."
   },
   "superseded": {
-    "records": "the pre-repair native-matrix.json/native-repeat.json and their behavior/codec summaries are replaced, not rewritten into success",
-    "gbate": "the pre-repair independent Gate IDs 5865a2d5/2a91db39 remain valid only for product 7f236426 and are not reused"
+    "records": "Earlier native records and their summaries are replaced, not rewritten into success.",
+    "gates": "Earlier Gate IDs remain bound to their own candidates and are never reused."
   }
 }

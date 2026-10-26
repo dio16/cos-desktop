@@ -46,6 +46,12 @@
           "rgba_sha256": "876616145f52911aa4cadac6f3e179a3b365d156a35102f9f8f3028763e6a794"
         },
         {
+          "case_id": "onload_2",
+          "width": 1024,
+          "height": 1024,
+          "rgba_sha256": "876616145f52911aa4cadac6f3e179a3b365d156a35102f9f8f3028763e6a794"
+        },
+        {
           "case_id": "onload_3",
           "width": 1024,
           "height": 1024,
@@ -74,227 +80,247 @@
         {
           "case_id": "single_small_png",
           "stage": "onload",
-          "bracketed_ns": 3873400
+          "bracketed_ns": 4370800
         },
         {
           "case_id": "single_small_png",
           "stage": "conversion",
-          "bracketed_ns": 7201800
+          "bracketed_ns": 7701400
         },
         {
           "case_id": "single_small_png",
           "stage": "copy_pixels",
-          "bracketed_ns": 6609500
+          "bracketed_ns": 6575900
         },
         {
           "case_id": "single_small_png",
           "stage": "encode",
-          "bracketed_ns": 13437300
+          "bracketed_ns": 15293100
         },
         {
           "case_id": "single_small_bmp",
           "stage": "onload",
-          "bracketed_ns": 3276000
+          "bracketed_ns": 3247700
         },
         {
           "case_id": "single_small_bmp",
           "stage": "conversion",
-          "bracketed_ns": 6651200
+          "bracketed_ns": 5262400
         },
         {
           "case_id": "single_small_bmp",
           "stage": "copy_pixels",
-          "bracketed_ns": 4974800
+          "bracketed_ns": 4891600
         },
         {
           "case_id": "single_small_bmp",
           "stage": "encode",
-          "bracketed_ns": 14369000
+          "bracketed_ns": 14415300
         },
         {
           "case_id": "single_small_jpeg",
           "stage": "onload",
-          "bracketed_ns": 5232300
+          "bracketed_ns": 5058100
         },
         {
           "case_id": "single_small_jpeg",
           "stage": "conversion",
-          "bracketed_ns": 5852600
+          "bracketed_ns": 6766100
         },
         {
           "case_id": "single_small_jpeg",
           "stage": "copy_pixels",
-          "bracketed_ns": 7686000
+          "bracketed_ns": 5844300
         },
         {
           "case_id": "single_small_jpeg",
           "stage": "encode",
-          "bracketed_ns": 14379700
+          "bracketed_ns": 14188400
         },
         {
           "case_id": "single_preview_png",
           "stage": "onload",
-          "bracketed_ns": 3775500
+          "bracketed_ns": 2984400
         },
         {
           "case_id": "single_preview_png",
           "stage": "conversion",
-          "bracketed_ns": 6091900
+          "bracketed_ns": 5436900
         },
         {
           "case_id": "single_preview_png",
           "stage": "copy_pixels",
-          "bracketed_ns": 5718500
+          "bracketed_ns": 5253700
         },
         {
           "case_id": "single_preview_png",
           "stage": "encode",
-          "bracketed_ns": 14700200
+          "bracketed_ns": 17095800
         },
         {
           "case_id": "single_detail_png",
           "stage": "onload",
-          "bracketed_ns": 17246700
+          "bracketed_ns": 17156400
         },
         {
           "case_id": "single_detail_png",
           "stage": "conversion",
-          "bracketed_ns": 5887000
+          "bracketed_ns": 5285700
         },
         {
           "case_id": "single_detail_png",
           "stage": "copy_pixels",
-          "bracketed_ns": 6117500
+          "bracketed_ns": 5578500
         },
         {
           "case_id": "single_detail_png",
           "stage": "encode",
-          "bracketed_ns": 30089700
+          "bracketed_ns": 31003800
         },
         {
           "case_id": "cancel_after_onload",
           "stage": "onload",
-          "bracketed_ns": 19804300
+          "bracketed_ns": 17265500
         },
         {
           "case_id": "cancel_before_publish",
           "stage": "onload",
-          "bracketed_ns": 20810300
+          "bracketed_ns": 17515800
         },
         {
           "case_id": "cancel_before_publish",
           "stage": "conversion",
-          "bracketed_ns": 7555700
+          "bracketed_ns": 6289700
         },
         {
           "case_id": "cancel_before_publish",
           "stage": "copy_pixels",
-          "bracketed_ns": 6724300
+          "bracketed_ns": 6537400
         },
         {
           "case_id": "cancel_before_publish",
           "stage": "encode",
-          "bracketed_ns": 33188200
+          "bracketed_ns": 33448300
         },
         {
           "case_id": "onload_1",
           "stage": "onload",
-          "bracketed_ns": 20746200
+          "bracketed_ns": 20300500
         },
         {
           "case_id": "onload_1",
           "stage": "conversion",
-          "bracketed_ns": 7441000
+          "bracketed_ns": 6894600
         },
         {
           "case_id": "onload_1",
           "stage": "copy_pixels",
-          "bracketed_ns": 7257400
+          "bracketed_ns": 7475700
         },
         {
           "case_id": "onload_1",
           "stage": "encode",
-          "bracketed_ns": 31729700
+          "bracketed_ns": 32223000
+        },
+        {
+          "case_id": "onload_2",
+          "stage": "onload",
+          "bracketed_ns": 18623200
+        },
+        {
+          "case_id": "onload_2",
+          "stage": "conversion",
+          "bracketed_ns": 5432100
+        },
+        {
+          "case_id": "onload_2",
+          "stage": "copy_pixels",
+          "bracketed_ns": 4928100
+        },
+        {
+          "case_id": "onload_2",
+          "stage": "encode",
+          "bracketed_ns": 30132200
         },
         {
           "case_id": "onload_3",
           "stage": "onload",
-          "bracketed_ns": 19789400
+          "bracketed_ns": 17948300
         },
         {
           "case_id": "onload_3",
           "stage": "conversion",
-          "bracketed_ns": 7433600
+          "bracketed_ns": 5478400
         },
         {
           "case_id": "onload_3",
           "stage": "copy_pixels",
-          "bracketed_ns": 6865200
+          "bracketed_ns": 5834100
         },
         {
           "case_id": "onload_3",
           "stage": "encode",
-          "bracketed_ns": 32104800
+          "bracketed_ns": 30964800
         },
         {
           "case_id": "cohort_a",
           "stage": "onload",
-          "bracketed_ns": 3753000
+          "bracketed_ns": 4535600
         },
         {
           "case_id": "cohort_a",
           "stage": "conversion",
-          "bracketed_ns": 13504900
+          "bracketed_ns": 7166200
         },
         {
           "case_id": "cohort_a",
           "stage": "copy_pixels",
-          "bracketed_ns": 7725800
+          "bracketed_ns": 7283200
         },
         {
           "case_id": "cohort_a",
           "stage": "encode",
-          "bracketed_ns": 15254200
+          "bracketed_ns": 16675500
         },
         {
           "case_id": "cohort_b",
           "stage": "onload",
-          "bracketed_ns": 3644100
+          "bracketed_ns": 3602400
         },
         {
           "case_id": "cohort_b",
           "stage": "conversion",
-          "bracketed_ns": 12707200
+          "bracketed_ns": 7285500
         },
         {
           "case_id": "cohort_b",
           "stage": "copy_pixels",
-          "bracketed_ns": 8384100
+          "bracketed_ns": 7606600
         },
         {
           "case_id": "cohort_b",
           "stage": "encode",
-          "bracketed_ns": 15930000
+          "bracketed_ns": 18628900
         },
         {
           "case_id": "cohort_detail",
           "stage": "onload",
-          "bracketed_ns": 17428300
+          "bracketed_ns": 17550800
         },
         {
           "case_id": "cohort_detail",
           "stage": "conversion",
-          "bracketed_ns": 13053000
+          "bracketed_ns": 7399800
         },
         {
           "case_id": "cohort_detail",
           "stage": "copy_pixels",
-          "bracketed_ns": 8492400
+          "bracketed_ns": 6701900
         },
         {
           "case_id": "cohort_detail",
           "stage": "encode",
-          "bracketed_ns": 32324100
+          "bracketed_ns": 35351200
         }
       ],
       "cohort": {
@@ -304,8 +330,8 @@
           "cohort_detail"
         ],
         "totals": {
-          "private_bytes": 126382080,
-          "working_set_bytes": 345309184
+          "private_bytes": 129871872,
+          "working_set_bytes": 349061120
         },
         "atomic_snapshot": false,
         "status": "derived_window_sum",
@@ -374,227 +400,227 @@
         {
           "case_id": "single_small_png",
           "stage": "onload",
-          "bracketed_ns": 3671800
+          "bracketed_ns": 3535500
         },
         {
           "case_id": "single_small_png",
           "stage": "conversion",
-          "bracketed_ns": 7361700
+          "bracketed_ns": 7703500
         },
         {
           "case_id": "single_small_png",
           "stage": "copy_pixels",
-          "bracketed_ns": 6762800
+          "bracketed_ns": 8071700
         },
         {
           "case_id": "single_small_png",
           "stage": "encode",
-          "bracketed_ns": 14349000
+          "bracketed_ns": 19451700
         },
         {
           "case_id": "single_small_bmp",
           "stage": "onload",
-          "bracketed_ns": 3437800
+          "bracketed_ns": 4159000
         },
         {
           "case_id": "single_small_bmp",
           "stage": "conversion",
-          "bracketed_ns": 6690400
+          "bracketed_ns": 8001400
         },
         {
           "case_id": "single_small_bmp",
           "stage": "copy_pixels",
-          "bracketed_ns": 5507600
+          "bracketed_ns": 5768600
         },
         {
           "case_id": "single_small_bmp",
           "stage": "encode",
-          "bracketed_ns": 14056700
+          "bracketed_ns": 13784400
         },
         {
           "case_id": "single_small_jpeg",
           "stage": "onload",
-          "bracketed_ns": 6065200
+          "bracketed_ns": 4834200
         },
         {
           "case_id": "single_small_jpeg",
           "stage": "conversion",
-          "bracketed_ns": 6510500
+          "bracketed_ns": 6204300
         },
         {
           "case_id": "single_small_jpeg",
           "stage": "copy_pixels",
-          "bracketed_ns": 6321000
+          "bracketed_ns": 5056500
         },
         {
           "case_id": "single_small_jpeg",
           "stage": "encode",
-          "bracketed_ns": 13824200
+          "bracketed_ns": 16043300
         },
         {
           "case_id": "single_preview_png",
           "stage": "onload",
-          "bracketed_ns": 3200200
+          "bracketed_ns": 3610600
         },
         {
           "case_id": "single_preview_png",
           "stage": "conversion",
-          "bracketed_ns": 5156300
+          "bracketed_ns": 6708600
         },
         {
           "case_id": "single_preview_png",
           "stage": "copy_pixels",
-          "bracketed_ns": 5047200
+          "bracketed_ns": 5258400
         },
         {
           "case_id": "single_preview_png",
           "stage": "encode",
-          "bracketed_ns": 14176300
+          "bracketed_ns": 14870400
         },
         {
           "case_id": "single_detail_png",
           "stage": "onload",
-          "bracketed_ns": 17633000
+          "bracketed_ns": 16645300
         },
         {
           "case_id": "single_detail_png",
           "stage": "conversion",
-          "bracketed_ns": 6534300
+          "bracketed_ns": 5190800
         },
         {
           "case_id": "single_detail_png",
           "stage": "copy_pixels",
-          "bracketed_ns": 6499700
+          "bracketed_ns": 4774400
         },
         {
           "case_id": "single_detail_png",
           "stage": "encode",
-          "bracketed_ns": 32593300
+          "bracketed_ns": 31062100
         },
         {
           "case_id": "cancel_after_onload",
           "stage": "onload",
-          "bracketed_ns": 16890000
+          "bracketed_ns": 18148600
         },
         {
           "case_id": "cancel_before_publish",
           "stage": "onload",
-          "bracketed_ns": 17248300
+          "bracketed_ns": 18741900
         },
         {
           "case_id": "cancel_before_publish",
           "stage": "conversion",
-          "bracketed_ns": 7459300
+          "bracketed_ns": 7167300
         },
         {
           "case_id": "cancel_before_publish",
           "stage": "copy_pixels",
-          "bracketed_ns": 7493300
+          "bracketed_ns": 8458900
         },
         {
           "case_id": "cancel_before_publish",
           "stage": "encode",
-          "bracketed_ns": 32496300
+          "bracketed_ns": 30165200
         },
         {
           "case_id": "onload_2",
           "stage": "onload",
-          "bracketed_ns": 22550700
+          "bracketed_ns": 18179100
         },
         {
           "case_id": "onload_2",
           "stage": "conversion",
-          "bracketed_ns": 6486900
+          "bracketed_ns": 7567000
         },
         {
           "case_id": "onload_2",
           "stage": "copy_pixels",
-          "bracketed_ns": 6835100
+          "bracketed_ns": 7192400
         },
         {
           "case_id": "onload_2",
           "stage": "encode",
-          "bracketed_ns": 32912300
+          "bracketed_ns": 30724500
         },
         {
           "case_id": "onload_3",
           "stage": "onload",
-          "bracketed_ns": 18382100
+          "bracketed_ns": 16699300
         },
         {
           "case_id": "onload_3",
           "stage": "conversion",
-          "bracketed_ns": 5612100
+          "bracketed_ns": 5237900
         },
         {
           "case_id": "onload_3",
           "stage": "copy_pixels",
-          "bracketed_ns": 5504800
+          "bracketed_ns": 4830300
         },
         {
           "case_id": "onload_3",
           "stage": "encode",
-          "bracketed_ns": 31496800
+          "bracketed_ns": 30061600
         },
         {
           "case_id": "cohort_a",
           "stage": "onload",
-          "bracketed_ns": 3667400
+          "bracketed_ns": 4484100
         },
         {
           "case_id": "cohort_a",
           "stage": "conversion",
-          "bracketed_ns": 8738700
+          "bracketed_ns": 7062200
         },
         {
           "case_id": "cohort_a",
           "stage": "copy_pixels",
-          "bracketed_ns": 8168700
+          "bracketed_ns": 7147000
         },
         {
           "case_id": "cohort_a",
           "stage": "encode",
-          "bracketed_ns": 16038700
+          "bracketed_ns": 15044900
         },
         {
           "case_id": "cohort_b",
           "stage": "onload",
-          "bracketed_ns": 4419200
+          "bracketed_ns": 5937400
         },
         {
           "case_id": "cohort_b",
           "stage": "conversion",
-          "bracketed_ns": 6793400
+          "bracketed_ns": 8640900
         },
         {
           "case_id": "cohort_b",
           "stage": "copy_pixels",
-          "bracketed_ns": 6617100
+          "bracketed_ns": 7681300
         },
         {
           "case_id": "cohort_b",
           "stage": "encode",
-          "bracketed_ns": 16625200
+          "bracketed_ns": 16988600
         },
         {
           "case_id": "cohort_detail",
           "stage": "onload",
-          "bracketed_ns": 17797100
+          "bracketed_ns": 20350600
         },
         {
           "case_id": "cohort_detail",
           "stage": "conversion",
-          "bracketed_ns": 7198000
+          "bracketed_ns": 6989700
         },
         {
           "case_id": "cohort_detail",
           "stage": "copy_pixels",
-          "bracketed_ns": 7026200
+          "bracketed_ns": 6996100
         },
         {
           "case_id": "cohort_detail",
           "stage": "encode",
-          "bracketed_ns": 36791800
+          "bracketed_ns": 34684100
         }
       ],
       "cohort": {
@@ -604,8 +630,8 @@
           "cohort_detail"
         ],
         "totals": {
-          "private_bytes": 126115840,
-          "working_set_bytes": 344977408
+          "private_bytes": 127348736,
+          "working_set_bytes": 345395200
         },
         "atomic_snapshot": false,
         "status": "derived_window_sum",

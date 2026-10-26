@@ -32,6 +32,8 @@ FIXTURES = {
 EXPECTED_CASES = set(FIXTURES)
 # Stop evidence is a closed state machine; a request time alone never proves cancellation.
 STOP_STATES = ("not_requested", "already_exited", "stop_confirmed", "unverified_race")
+# Only these operator boundaries park the probe, so only there can a kill be attributed.
+HOLD_STAGES = ("before_admission", "before_onload", "after_onload", "before_publish")
 # One fixed bounded matrix; a report cannot make its own missing cases optional.
 SCENARIOS = [("single_" + x, x, "success", "after_onload") for x in
              ("small_png", "small_bmp", "small_jpeg", "preview_png", "detail_png")]
@@ -278,10 +280,12 @@ def _verify(r, work, source, errors):
         state = cancellation["state"]
         requested = cancellation.get("requested_ns")
         need(isinstance(cancellation.get("kill_issued"), bool)
-             and isinstance(cancellation.get("reap_confirmed"), bool), "cancellation_action_missing")
+             and isinstance(cancellation.get("reap_confirmed"), bool)
+             and isinstance(cancellation.get("hold_established"), bool), "cancellation_action_missing")
         if state == "not_requested":
             need(requested is None and cancellation["kill_issued"] is False
                  and cancellation["reap_confirmed"] is False
+                 and cancellation.get("cause") == "not_requested"
                  and w["outcome"] not in ("cancelled", "timeout", "not_verified"),
                  "cancellation_unverified")
         else:
@@ -289,8 +293,16 @@ def _verify(r, work, source, errors):
                  and isinstance(cancellation.get("exit_before_request"), bool)
                  and cancellation["alive_at_request"] != cancellation["exit_before_request"],
                  "cancellation_observation_missing")
+            need(cancellation.get("cause") in ("boundary_hold", "unattributable"),
+                 "cancellation_cause_missing")
+            need(cancellation["hold_established"] == (cancellation["cause"] == "boundary_hold"),
+                 "cancellation_cause_mismatch")
         if state == "stop_confirmed":
             need(w["identity_verified"] is True, "cancellation_lifecycle_invalid")
+            need(cancellation["hold_established"] is True
+                 and stages[-1].get("artificial_instrumentation_hold") is True
+                 and stages[-1].get("stage") == hold and hold in HOLD_STAGES,
+                 "cancellation_without_hold_evidence")
             need(requested is not None and cancellation["alive_at_request"] is True
                  and cancellation["kill_issued"] is True and cancellation.get("kill_error") is None
                  and cancellation["reap_confirmed"] is True and cancellation["waited"] is True
@@ -317,10 +329,14 @@ def _verify(r, work, source, errors):
             need(state == "stop_confirmed", "required_cancellation_not_reached")
         expected_outcomes = {
             "success": {"decoded"}, "cohort": {"decoded"}, "cancel": {"cancelled"},
-            "timeout": {"timeout"}, "onload_attempt": {"decoded", "cancelled"},
+            "timeout": {"timeout"}, "onload_attempt": {"decoded", "not_verified"},
             "refusal": {"oversize" if fixture_id == "oversized_png" else "unsupported"},
         }
         need(w["outcome"] in expected_outcomes[kind], "worker_expected_outcome_mismatch")
+        if kind == "onload_attempt":
+            need(w["outcome"] == ("decoded" if state == "not_requested" else "not_verified")
+                 and state in ("not_requested", "unverified_race"),
+                 "in_decoder_cancel_falsely_claimed")
         if kind in ("cancel", "timeout"):
             need(cancellation["last_observed_stage"] == hold, "cancellation_boundary_mismatch")
         if kind == "onload_attempt":
@@ -337,7 +353,7 @@ def _verify(r, work, source, errors):
                  and w["probe_result"]["outcome"] == w["outcome"]
                  and stages[-1]["outcome"] == w["outcome"], "refusal_outcome_mismatch")
         else:
-            need(w["outcome"] in ("cancelled", "timeout"), "unexpected_worker_failure")
+            need(w["outcome"] in ("cancelled", "timeout", "not_verified"), "unexpected_worker_failure")
         need(0 <= w["output_bytes"] <= b["max_output_bytes"], "output_cap_exceeded")
         if work:
             trace = _relative(work, w["trace_path"]).read_bytes()

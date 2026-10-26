@@ -4,17 +4,345 @@
   "native_records": [
     {
       "path": "native-matrix.json",
-      "sha256": "sha256:1916e20e45b546a52106fc83eb29e2e24c61b69860de534fdba9888b7d58c2c3",
+      "sha256": "sha256:2bf013b7f64a706aa372089d14ed1a45337f4a5f7d4e5c0e7279466be5298176",
+      "workers": 20,
+      "cohort_windows": 16,
+      "outcomes": {
+        "decoded": 11,
+        "oversize": 1,
+        "unsupported": 1,
+        "cancelled": 6,
+        "timeout": 1
+      },
+      "duration_ns": 37877911000,
+      "work_bytes": 130116,
+      "cleanup": {
+        "cancelled_output_paths_remaining": [],
+        "complete": true,
+        "live_direct_children": []
+      },
+      "memory": {
+        "actually_proven_peak_concurrent_allocation": {
+          "complete": false,
+          "limitations": [
+            "no internal allocation attribution or true concurrent allocation peak endpoint"
+          ],
+          "method": "not observable through whole-process counters",
+          "sample_count": 0,
+          "source": "WIC internals",
+          "status": "not_measured",
+          "unit": "bytes",
+          "value": null
+        },
+        "admitted_decoded_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 3538944
+        },
+        "bgra32_destination_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 4718592
+        },
+        "concurrent_private_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 1,
+          "source": "System.Diagnostics.Process counters",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 129871872
+        },
+        "concurrent_working_set_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 1,
+          "source": "System.Diagnostics.Process counters",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 349061120
+        },
+        "declared_scratch_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 0
+        },
+        "decoder_internal_scratch_peak": {
+          "complete": false,
+          "limitations": [
+            "no internal allocation attribution or true concurrent allocation peak endpoint"
+          ],
+          "method": "not observable through whole-process counters",
+          "sample_count": 0,
+          "source": "WIC internals",
+          "status": "not_measured",
+          "unit": "bytes",
+          "value": null
+        },
+        "encoded_input_bytes": {
+          "complete": true,
+          "limitations": [
+            "logical required bytes, not a measured reservation or allocator peak"
+          ],
+          "method": "sum of explicit known requirements for this declared cohort",
+          "sample_count": 3,
+          "source": "three concurrent fixture/admission records",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 5697
+        },
+        "explicit_known_requirements_bytes": {
+          "complete": true,
+          "limitations": [
+            "not an upper bound on WIC-internal allocations or managed runtime memory"
+          ],
+          "method": "checked integer sum",
+          "sample_count": 3,
+          "source": "encoded + source raster + BGRA destination + explicit scratch",
+          "status": "derived",
+          "unit": "bytes",
+          "value": 8263233
+        },
+        "explicit_known_reservations_bytes": {
+          "complete": false,
+          "limitations": [
+            "do not infer actual reservations from raster arithmetic or process counters"
+          ],
+          "method": "logical admission requirements are not allocator reservations",
+          "sample_count": 0,
+          "source": "no separately owned allocator reservation ledger",
+          "status": "not_measured",
+          "unit": "bytes",
+          "value": null
+        },
+        "private_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 15,
+          "source": "System.Diagnostics.Process counters",
+          "status": "sampled_lower_bound",
+          "unit": "bytes",
+          "value": 48934912
+        },
+        "working_set_bytes": {
+          "complete": true,
+          "limitations": [
+            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
+          ],
+          "method": "maximum complete same-collection-window total, never sum of independent maxima",
+          "sample_count": 15,
+          "source": "System.Diagnostics.Process counters",
+          "status": "sampled_lower_bound",
+          "unit": "bytes",
+          "value": 122634240
+        }
+      },
+      "stop_lifecycle": {
+        "states": {
+          "not_requested": 13,
+          "already_exited": 0,
+          "stop_confirmed": 7,
+          "unverified_race": 0
+        },
+        "confirmed_stops": [
+          {
+            "case_id": "cancel_before_admission",
+            "kind": "cancel",
+            "boundary": "before_admission",
+            "hold_established": true,
+            "cause": "boundary_hold",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "cancel_before_onload",
+            "kind": "cancel",
+            "boundary": "before_onload",
+            "hold_established": true,
+            "cause": "boundary_hold",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "cancel_after_onload",
+            "kind": "cancel",
+            "boundary": "after_onload",
+            "hold_established": true,
+            "cause": "boundary_hold",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "cancel_before_publish",
+            "kind": "cancel",
+            "boundary": "before_publish",
+            "hold_established": true,
+            "cause": "boundary_hold",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "repeat_1",
+            "kind": "cancel",
+            "boundary": "before_onload",
+            "hold_established": true,
+            "cause": "boundary_hold",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "repeat_2",
+            "kind": "cancel",
+            "boundary": "before_onload",
+            "hold_established": true,
+            "cause": "boundary_hold",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          },
+          {
+            "case_id": "timeout",
+            "kind": "timeout",
+            "boundary": "before_onload",
+            "hold_established": true,
+            "cause": "boundary_hold",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          }
+        ],
+        "natural_completions": [
+          {
+            "case_id": "single_small_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "single_small_bmp",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "single_small_jpeg",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "single_preview_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "single_detail_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "refuse_oversized_png",
+            "kind": "refusal",
+            "outcome": "oversize",
+            "exit_code": 4
+          },
+          {
+            "case_id": "refuse_unsupported",
+            "kind": "refusal",
+            "outcome": "unsupported",
+            "exit_code": 2
+          },
+          {
+            "case_id": "onload_1",
+            "kind": "onload_attempt",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "onload_2",
+            "kind": "onload_attempt",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "onload_3",
+            "kind": "onload_attempt",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "cohort_a",
+            "kind": "cohort",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "cohort_b",
+            "kind": "cohort",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "cohort_detail",
+            "kind": "cohort",
+            "outcome": "decoded",
+            "exit_code": 0
+          }
+        ],
+        "meaning": "A stop is confirmed only when the child was alive at the request, was parked in a trace-marked operator hold, was terminated and reaped with a non-zero exit. Natural completion and any unattributable kill are never counted as cancellation."
+      }
+    },
+    {
+      "path": "native-repeat.json",
+      "sha256": "sha256:aadda0443cffe38940d866313893c27e6214fb03445a4724742c8917f99f1d71",
       "workers": 20,
       "cohort_windows": 16,
       "outcomes": {
         "decoded": 10,
         "oversize": 1,
         "unsupported": 1,
-        "cancelled": 7,
+        "cancelled": 6,
+        "not_verified": 1,
         "timeout": 1
       },
-      "duration_ns": 37711297200,
+      "duration_ns": 37470528600,
       "work_bytes": 120573,
       "cleanup": {
         "cancelled_output_paths_remaining": [],
@@ -68,7 +396,7 @@
           "source": "System.Diagnostics.Process counters",
           "status": "derived",
           "unit": "bytes",
-          "value": 126382080
+          "value": 127348736
         },
         "concurrent_working_set_bytes": {
           "complete": true,
@@ -80,7 +408,7 @@
           "source": "System.Diagnostics.Process counters",
           "status": "derived",
           "unit": "bytes",
-          "value": 345309184
+          "value": 345395200
         },
         "declared_scratch_bytes": {
           "complete": true,
@@ -152,7 +480,7 @@
           "source": "System.Diagnostics.Process counters",
           "status": "sampled_lower_bound",
           "unit": "bytes",
-          "value": 49659904
+          "value": 48451584
         },
         "working_set_bytes": {
           "complete": true,
@@ -164,21 +492,23 @@
           "source": "System.Diagnostics.Process counters",
           "status": "sampled_lower_bound",
           "unit": "bytes",
-          "value": 123998208
+          "value": 123232256
         }
       },
       "stop_lifecycle": {
         "states": {
           "not_requested": 12,
           "already_exited": 0,
-          "stop_confirmed": 8,
-          "unverified_race": 0
+          "stop_confirmed": 7,
+          "unverified_race": 1
         },
         "confirmed_stops": [
           {
             "case_id": "cancel_before_admission",
             "kind": "cancel",
             "boundary": "before_admission",
+            "hold_established": true,
+            "cause": "boundary_hold",
             "kill_issued": true,
             "exit_code": 1,
             "output_present": false
@@ -187,6 +517,8 @@
             "case_id": "cancel_before_onload",
             "kind": "cancel",
             "boundary": "before_onload",
+            "hold_established": true,
+            "cause": "boundary_hold",
             "kill_issued": true,
             "exit_code": 1,
             "output_present": false
@@ -195,6 +527,8 @@
             "case_id": "cancel_after_onload",
             "kind": "cancel",
             "boundary": "after_onload",
+            "hold_established": true,
+            "cause": "boundary_hold",
             "kill_issued": true,
             "exit_code": 1,
             "output_present": false
@@ -203,6 +537,8 @@
             "case_id": "cancel_before_publish",
             "kind": "cancel",
             "boundary": "before_publish",
+            "hold_established": true,
+            "cause": "boundary_hold",
             "kill_issued": true,
             "exit_code": 1,
             "output_present": false
@@ -211,6 +547,8 @@
             "case_id": "repeat_1",
             "kind": "cancel",
             "boundary": "before_onload",
+            "hold_established": true,
+            "cause": "boundary_hold",
             "kill_issued": true,
             "exit_code": 1,
             "output_present": false
@@ -219,357 +557,98 @@
             "case_id": "repeat_2",
             "kind": "cancel",
             "boundary": "before_onload",
+            "hold_established": true,
+            "cause": "boundary_hold",
             "kill_issued": true,
             "exit_code": 1,
             "output_present": false
+          },
+          {
+            "case_id": "timeout",
+            "kind": "timeout",
+            "boundary": "before_onload",
+            "hold_established": true,
+            "cause": "boundary_hold",
+            "kill_issued": true,
+            "exit_code": 1,
+            "output_present": false
+          }
+        ],
+        "natural_completions": [
+          {
+            "case_id": "single_small_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "single_small_bmp",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "single_small_jpeg",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "single_preview_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "single_detail_png",
+            "kind": "success",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "refuse_oversized_png",
+            "kind": "refusal",
+            "outcome": "oversize",
+            "exit_code": 4
+          },
+          {
+            "case_id": "refuse_unsupported",
+            "kind": "refusal",
+            "outcome": "unsupported",
+            "exit_code": 2
           },
           {
             "case_id": "onload_2",
             "kind": "onload_attempt",
-            "boundary": "onload_entered",
-            "kill_issued": true,
-            "exit_code": 1,
-            "output_present": false
-          },
-          {
-            "case_id": "timeout",
-            "kind": "timeout",
-            "boundary": "before_onload",
-            "kill_issued": true,
-            "exit_code": 1,
-            "output_present": false
-          }
-        ],
-        "natural_completions_not_cancelled": [
-          {
-            "case_id": "single_small_png",
-            "kind": "success",
             "outcome": "decoded",
-            "exit_code": 0,
-            "returncode_before_request": null
+            "exit_code": 0
           },
           {
-            "case_id": "single_small_bmp",
-            "kind": "success",
-            "outcome": "decoded",
-            "exit_code": 0,
-            "returncode_before_request": null
-          },
-          {
-            "case_id": "single_small_jpeg",
-            "kind": "success",
-            "outcome": "decoded",
-            "exit_code": 0,
-            "returncode_before_request": null
-          },
-          {
-            "case_id": "single_preview_png",
-            "kind": "success",
-            "outcome": "decoded",
-            "exit_code": 0,
-            "returncode_before_request": null
-          },
-          {
-            "case_id": "single_detail_png",
-            "kind": "success",
-            "outcome": "decoded",
-            "exit_code": 0,
-            "returncode_before_request": null
-          },
-          {
-            "case_id": "refuse_oversized_png",
-            "kind": "refusal",
-            "outcome": "oversize",
-            "exit_code": 4,
-            "returncode_before_request": null
-          }
-        ],
-        "meaning": "Stop evidence is a closed state machine: a request time alone never proves cancellation; a child alive at request plus an issued kill and a non-zero reaped exit is required."
-      }
-    },
-    {
-      "path": "native-repeat.json",
-      "sha256": "sha256:66f1eb470387a3d17bd6bd975f10023f1d718cfbbe7d6640a30831b382c29023",
-      "workers": 20,
-      "cohort_windows": 16,
-      "outcomes": {
-        "decoded": 10,
-        "oversize": 1,
-        "unsupported": 1,
-        "cancelled": 7,
-        "timeout": 1
-      },
-      "duration_ns": 37472825200,
-      "work_bytes": 120517,
-      "cleanup": {
-        "cancelled_output_paths_remaining": [],
-        "complete": true,
-        "live_direct_children": []
-      },
-      "memory": {
-        "actually_proven_peak_concurrent_allocation": {
-          "complete": false,
-          "limitations": [
-            "no internal allocation attribution or true concurrent allocation peak endpoint"
-          ],
-          "method": "not observable through whole-process counters",
-          "sample_count": 0,
-          "source": "WIC internals",
-          "status": "not_measured",
-          "unit": "bytes",
-          "value": null
-        },
-        "admitted_decoded_bytes": {
-          "complete": true,
-          "limitations": [
-            "logical required bytes, not a measured reservation or allocator peak"
-          ],
-          "method": "sum of explicit known requirements for this declared cohort",
-          "sample_count": 3,
-          "source": "three concurrent fixture/admission records",
-          "status": "derived",
-          "unit": "bytes",
-          "value": 3538944
-        },
-        "bgra32_destination_bytes": {
-          "complete": true,
-          "limitations": [
-            "logical required bytes, not a measured reservation or allocator peak"
-          ],
-          "method": "sum of explicit known requirements for this declared cohort",
-          "sample_count": 3,
-          "source": "three concurrent fixture/admission records",
-          "status": "derived",
-          "unit": "bytes",
-          "value": 4718592
-        },
-        "concurrent_private_bytes": {
-          "complete": true,
-          "limitations": [
-            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
-          ],
-          "method": "maximum complete same-collection-window total, never sum of independent maxima",
-          "sample_count": 1,
-          "source": "System.Diagnostics.Process counters",
-          "status": "derived",
-          "unit": "bytes",
-          "value": 126115840
-        },
-        "concurrent_working_set_bytes": {
-          "complete": true,
-          "limitations": [
-            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
-          ],
-          "method": "maximum complete same-collection-window total, never sum of independent maxima",
-          "sample_count": 1,
-          "source": "System.Diagnostics.Process counters",
-          "status": "derived",
-          "unit": "bytes",
-          "value": 344977408
-        },
-        "declared_scratch_bytes": {
-          "complete": true,
-          "limitations": [
-            "logical required bytes, not a measured reservation or allocator peak"
-          ],
-          "method": "sum of explicit known requirements for this declared cohort",
-          "sample_count": 3,
-          "source": "three concurrent fixture/admission records",
-          "status": "derived",
-          "unit": "bytes",
-          "value": 0
-        },
-        "decoder_internal_scratch_peak": {
-          "complete": false,
-          "limitations": [
-            "no internal allocation attribution or true concurrent allocation peak endpoint"
-          ],
-          "method": "not observable through whole-process counters",
-          "sample_count": 0,
-          "source": "WIC internals",
-          "status": "not_measured",
-          "unit": "bytes",
-          "value": null
-        },
-        "encoded_input_bytes": {
-          "complete": true,
-          "limitations": [
-            "logical required bytes, not a measured reservation or allocator peak"
-          ],
-          "method": "sum of explicit known requirements for this declared cohort",
-          "sample_count": 3,
-          "source": "three concurrent fixture/admission records",
-          "status": "derived",
-          "unit": "bytes",
-          "value": 5697
-        },
-        "explicit_known_requirements_bytes": {
-          "complete": true,
-          "limitations": [
-            "not an upper bound on WIC-internal allocations or managed runtime memory"
-          ],
-          "method": "checked integer sum",
-          "sample_count": 3,
-          "source": "encoded + source raster + BGRA destination + explicit scratch",
-          "status": "derived",
-          "unit": "bytes",
-          "value": 8263233
-        },
-        "explicit_known_reservations_bytes": {
-          "complete": false,
-          "limitations": [
-            "do not infer actual reservations from raster arithmetic or process counters"
-          ],
-          "method": "logical admission requirements are not allocator reservations",
-          "sample_count": 0,
-          "source": "no separately owned allocator reservation ledger",
-          "status": "not_measured",
-          "unit": "bytes",
-          "value": null
-        },
-        "private_bytes": {
-          "complete": true,
-          "limitations": [
-            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
-          ],
-          "method": "maximum complete same-collection-window total, never sum of independent maxima",
-          "sample_count": 15,
-          "source": "System.Diagnostics.Process counters",
-          "status": "sampled_lower_bound",
-          "unit": "bytes",
-          "value": 48943104
-        },
-        "working_set_bytes": {
-          "complete": true,
-          "limitations": [
-            "not true peak or an instantaneous aggregate bound; sequential window; explicit holds; includes runtime/shared pages"
-          ],
-          "method": "maximum complete same-collection-window total, never sum of independent maxima",
-          "sample_count": 15,
-          "source": "System.Diagnostics.Process counters",
-          "status": "sampled_lower_bound",
-          "unit": "bytes",
-          "value": 123695104
-        }
-      },
-      "stop_lifecycle": {
-        "states": {
-          "not_requested": 12,
-          "already_exited": 0,
-          "stop_confirmed": 8,
-          "unverified_race": 0
-        },
-        "confirmed_stops": [
-          {
-            "case_id": "cancel_before_admission",
-            "kind": "cancel",
-            "boundary": "before_admission",
-            "kill_issued": true,
-            "exit_code": 1,
-            "output_present": false
-          },
-          {
-            "case_id": "cancel_before_onload",
-            "kind": "cancel",
-            "boundary": "before_onload",
-            "kill_issued": true,
-            "exit_code": 1,
-            "output_present": false
-          },
-          {
-            "case_id": "cancel_after_onload",
-            "kind": "cancel",
-            "boundary": "after_onload",
-            "kill_issued": true,
-            "exit_code": 1,
-            "output_present": false
-          },
-          {
-            "case_id": "cancel_before_publish",
-            "kind": "cancel",
-            "boundary": "before_publish",
-            "kill_issued": true,
-            "exit_code": 1,
-            "output_present": false
-          },
-          {
-            "case_id": "repeat_1",
-            "kind": "cancel",
-            "boundary": "before_onload",
-            "kill_issued": true,
-            "exit_code": 1,
-            "output_present": false
-          },
-          {
-            "case_id": "repeat_2",
-            "kind": "cancel",
-            "boundary": "before_onload",
-            "kill_issued": true,
-            "exit_code": 1,
-            "output_present": false
-          },
-          {
-            "case_id": "onload_1",
+            "case_id": "onload_3",
             "kind": "onload_attempt",
-            "boundary": "onload_entered",
-            "kill_issued": true,
-            "exit_code": 1,
-            "output_present": false
+            "outcome": "decoded",
+            "exit_code": 0
           },
           {
-            "case_id": "timeout",
-            "kind": "timeout",
-            "boundary": "before_onload",
-            "kill_issued": true,
-            "exit_code": 1,
-            "output_present": false
+            "case_id": "cohort_a",
+            "kind": "cohort",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "cohort_b",
+            "kind": "cohort",
+            "outcome": "decoded",
+            "exit_code": 0
+          },
+          {
+            "case_id": "cohort_detail",
+            "kind": "cohort",
+            "outcome": "decoded",
+            "exit_code": 0
           }
         ],
-        "natural_completions_not_cancelled": [
-          {
-            "case_id": "single_small_png",
-            "kind": "success",
-            "outcome": "decoded",
-            "exit_code": 0,
-            "returncode_before_request": null
-          },
-          {
-            "case_id": "single_small_bmp",
-            "kind": "success",
-            "outcome": "decoded",
-            "exit_code": 0,
-            "returncode_before_request": null
-          },
-          {
-            "case_id": "single_small_jpeg",
-            "kind": "success",
-            "outcome": "decoded",
-            "exit_code": 0,
-            "returncode_before_request": null
-          },
-          {
-            "case_id": "single_preview_png",
-            "kind": "success",
-            "outcome": "decoded",
-            "exit_code": 0,
-            "returncode_before_request": null
-          },
-          {
-            "case_id": "single_detail_png",
-            "kind": "success",
-            "outcome": "decoded",
-            "exit_code": 0,
-            "returncode_before_request": null
-          },
-          {
-            "case_id": "refuse_oversized_png",
-            "kind": "refusal",
-            "outcome": "oversize",
-            "exit_code": 4,
-            "returncode_before_request": null
-          }
-        ],
-        "meaning": "Stop evidence is a closed state machine: a request time alone never proves cancellation; a child alive at request plus an issued kill and a non-zero reaped exit is required."
+        "meaning": "A stop is confirmed only when the child was alive at the request, was parked in a trace-marked operator hold, was terminated and reaped with a non-zero exit. Natural completion and any unattributable kill are never counted as cancellation."
       }
     }
   ],
@@ -592,25 +671,25 @@
     "run1_exit": 0,
     "run2_exit": 0,
     "errors": [],
-    "over_strict_first_attempt": "The first repaired run was rejected by the stricter verifier for missing stop observations on workers that were never stopped; it was not adopted as evidence, and only the two accepted runs bind this record."
+    "over_strict_first_attempt": "An earlier repaired run was rejected by the stricter verifier for missing stop observations on workers that were never stopped; it was not adopted as evidence, and only the accepted runs bind this record."
   },
   "independent_raster_oracle": {
     "runs": 2,
     "verified_outputs": [
-      9,
+      10,
       9
     ],
     "record": "independent-oracle.json",
     "archive": "native-rasters.zip",
-    "archive_sha256": "sha256:4582b43fa8863297fb0fbe2c23d87bd033961140ed0235d3ff82dd96812aa0da",
+    "archive_sha256": "sha256:c9168a0cdc646ba1ae3382a85f0ad40276b90f47d49b4087631607772815046a",
     "method": "tracked-archive stdlib PNG reconstruction; no work-root dependency",
     "jpeg": "structure_only"
   },
   "w2_focused_tests": {
-    "passed": 40,
+    "passed": 45,
     "failed": 0,
     "skipped": 0,
-    "note": "Includes eight Worker.stop/finish lifecycle regressions and seven new stop-evidence verifier negatives."
+    "note": "Ten Worker.stop/finish lifecycle regressions plus hold-evidence, cause and race verifier negatives."
   },
   "w1_compatibility": {
     "record": "w1-regression.json",
