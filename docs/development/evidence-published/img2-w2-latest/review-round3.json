@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "round": "W2-R3",
+  "candidate": "e4ef83a1b0085945d6e78743c8e2c9fa3aa19fa2",
+  "evidence_head": "13cf2d678986813d83f30fa7787c0e238c96834b",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "270ee6fd-5212-49e0-9d25-e581b6d5e139"
+  ],
+  "assistant_ids": [
+    "5480a7be-f5e3-428a-b557-acc22573b232"
+  ],
+  "streaming": false,
+  "two_full_reads_identical": true,
+  "first_read_at": "2026-10-26T19:25:27.524Z",
+  "second_read_at": "2026-10-26T19:26:19.084Z",
+  "read_separation_ms": 51560,
+  "response_sha256": "sha256:adea790b7a67573fe045169d25d13517ae01a1081f70b6c28f9c3aef6595c460",
+  "parser_exit": 0,
+  "completion_verification_exit": 0,
+  "attachment_bound": true,
+  "verdict": {
+    "blocking": 0,
+    "actionable": 0,
+    "excessive": 0,
+    "parsed": true,
+    "incomplete": false,
+    "clean": true,
+    "pass_line": "PASS 0 / 0 / 0"
+  },
+  "closed_findings": [
+    "A-W2-01 (kill/natural-exit race now closed as unverified_race without hold evidence)",
+    "A-W2-R2-02 (all 21 Gate artifacts including plan and Taskern revision 3 match the attached bytes after LF normalization)"
+  ],
+  "request_sha256": "sha256:4b032f5860847d1883cc26b248f1b505fbef01f8dfa3ab169fe9f7df7e1110be"
+}

@@ -1,0 +1,378 @@
+MP-IMG2-W2 第3ラウンド独立レビュー
+
+判定：PASS — 前回の2件はCLOSED。MP-IMG2-W2 LIMITED TECHNICAL COMPLETIONを承認します。
+
+レビュー対象は製品候補 e4ef83a1b0085945d6e78743c8e2c9fa3aa19fa2、証拠HEAD 13cf2d678986813d83f30fa7787c0e238c96834bです。
+
+今回添付された3 ZIPを実際に展開し、SOURCE、実測記録、ラスター、Taskern、Refine Gateを独立照合しました。前回候補の判定を流用していません。
+
+1. 前回指摘の解消判定
+
+指摘
+
+	
+
+判定
+
+	
+
+独立確認結果
+
+
+
+
+A-W2-01：killと自然終了の競合
+
+	
+
+CLOSED
+
+	
+
+hold証拠がない停止をunverified_raceへ分類。自然終了・実停止を区別
+
+
+
+
+A-W2-R2-02：Gate artifactとplanの不一致
+
+	
+
+CLOSED
+
+	
+
+planを含む21件すべての実バイト・digest一致。Taskern revision 3との対応も確認
+
+A-W2-01 — CLOSED
+
+Worker.stop()、stop_outcome()、Worker.finish()およびw2_resource_verify.pyを確認しました。
+
+stop_confirmedの成立には、要求時の生存、実際のkill発行、非ゼロ終了の回収に加えて、宣言されたstageと一致するartificial_instrumentation_hold=trueが必要になっています。
+
+実Native記録は次のとおりです。
+
+停止状態
+
+	
+
+Run 1
+
+	
+
+Run 2
+
+
+
+
+not_requested
+
+	
+
+13
+
+	
+
+12
+
+
+
+
+stop_confirmed
+
+	
+
+7
+
+	
+
+7
+
+
+
+
+unverified_race
+
+	
+
+0
+
+	
+
+1
+
+
+
+
+already_exited
+
+	
+
+0
+
+	
+
+0
+
+Run 2のonload_1では、kill_issued=true、exit_code=1にもかかわらず、hold証拠がないためnot_verifiedへ閉じています。成功したcancellationへ誤分類されていません。
+
+独立した改変テストでも、hold marker削除、cause不一致、hold flag不一致、exit code 0、kill未発行の5条件すべてを検証器が拒否しました。さらに、14件のstop_confirmedの停止要求時刻はプロセス起動後約1.3～5.0秒で、宣言された10秒の人工hold timeoutより前です。
+
+今回の限定された人工境界での停止原因帰属は成立しています。ただし、WIC内部の協調的キャンセルを証明したものではありません。
+
+A-W2-R2-02 — CLOSED
+
+両Gateのplan artifactは393,219 bytes、SHA256 ba2fe39e…a4a2fbです。
+
+添付MP本文394,897 bytesをLF正規化すると393,219 bytesとなり、SHA256も完全一致しました。
+
+さらに、両Gateの21 artifactすべてについて、添付実バイトのLF正規化後のサイズ・SHA256が一致しました。
+
+Taskernについても、現行request/responseはrevision 3で、packet digest 2be98d30…20b054fcに一致しています。revision 2を現行packetとして扱う混同は解消されています。
+
+2. 独立検証結果
+
+検証対象
+
+	
+
+結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+502,100 bytes・SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+339,093 bytes・SHA256一致
+
+
+
+
+Native rasters ZIP
+
+	
+
+12,848 bytes・SHA256一致
+
+
+
+
+W2 portable Python tests
+
+	
+
+45/45 PASS
+
+
+
+
+Native report構造検証
+
+	
+
+2/2 PASS
+
+
+
+
+Raster manifest
+
+	
+
+37/37 サイズ・SHA256一致
+
+
+
+
+PNG/BMP由来decoded raster
+
+	
+
+19/19 RGBA画素一致
+
+
+
+
+生成PNG fixture
+
+	
+
+8/8 RGBA画素一致
+
+
+
+
+JPEG output
+
+	
+
+2件、構造・寸法確認のみ
+
+
+
+
+Independent oracle再実行
+
+	
+
+保存JSONと一致
+
+
+
+
+SOURCE/Gate artifacts
+
+	
+
+21/21 digest・サイズ一致
+
+画素については、提出oracleとは別にPNGのCRC検証、zlib展開、各行のフィルター復元を行い、既知RGBAバイト列と比較しました。
+
+Run 1の10件、Run 2の9件の非JPEG decoded rasterはすべて一致しました。JPEGを絶対画素一致として扱っていません。
+
+3. Refine GateとStorage
+
+項目
+
+	
+
+結果
+
+
+
+
+Quality Gate 5295fdca-b0a5-498c-81cb-0c921d58442e
+
+	
+
+SUCCEEDED 10/10
+
+
+
+
+Build Gate bd613e2e-9e64-437a-b303-0a2edee9c5e5
+
+	
+
+SUCCEEDED 1/1
+
+
+
+
+candidate digest
+
+	
+
+両Gate一致
+
+
+
+
+status / inspect / verify
+
+	
+
+記録上成功
+
+
+
+
+artifact tuples
+
+	
+
+21件一致
+
+
+
+
+cleanup
+
+	
+
+complete
+
+
+
+
+owner_alive / recovery_required
+
+	
+
+false / false
+
+
+
+
+Preflight
+
+	
+
+UNKNOWN維持
+
+
+
+
+Storage削除記録
+
+	
+
+5対象、4,121,648,092 logical bytes、9,868 files
+
+
+
+
+verify前後
+
+	
+
+記録上digest一致
+
+保存されたStorage記録の合計値は独立に再計算して一致しました。実際のWindows filesystem削除やRefine実行を今回再実行したわけではありません。
+
+ローカル品質結果として、Rust default 535 passed / 1 ignored、feature 539 passed / 1 ignored、R0 Python 340 passed / 12 skippedが記録されています。独立Gate側のR0 Pythonは316 passed / 36 skippedであり、実行環境差による未実行分をPASSへ加算していません。
+
+4. W2限定技術完了と残余境界
+
+今回の証拠で成立したのは、実Windows WIC CLI経路における有界なデコード、stage trace、process memory sampling、3 worker収集window、人工hold境界でのキャンセル・回収、独立pixel oracle、拒否とcleanupの検証です。
+
+以下は引き続き未達です。
+
+WIC内部scratchの真のpeak、実予約量、真の同時allocation peak
+
+協調的in-decoder cancellation
+
+16K full decode、Bgr565実WIC、region/sequential/tiled
+
+ICC/orientation、JPEG絶対raster
+
+DC-MP-IMG2全体のDecode Exit、MP-IMG3 Upload
+
+R0全体、R0D measured、FLOW2、Runtime RC-*
+
+main統合・release
+
+MP-IMG2-W2の限定技術完了は承認できますが、MP-IMG2全体の完了宣言ではありません。
+
+今回のレビューにおける新規指摘はありません。未pushのGit commit全体の検証、実Windows Native再実行、外部Runtime受入れも主張しません。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 0
+
+EXCESSIVE 0
+
+PASS 0 / 0 / 0

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W2",
+  "owner_contract": "DC-MP-IMG2",
+  "product_candidate": "e4ef83a1b0085945d6e78743c8e2c9fa3aa19fa2",
+  "evidence_head": "13cf2d678986813d83f30fa7787c0e238c96834b",
+  "directive_sha256": "sha256:3f95e82f10f83291ac662f1f3423d725dcdf3d034519a3a69ff79fbd48e60b7",
+  "taskern_packet_sha256": "sha256:2be98d3011956be7d3cf6ce2ea05ebe13476b88efc15c74c861cb89520b054fc",
+  "verdict": "W2 LIMITED TECHNICAL COMPLETION",
+  "acceptance_basis": {
+    "adr": "docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md",
+    "review": "review-round3.json \u2014 PASS 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
+    "rounds": [
+      "W2-R1 HOLD 0/1/0 (A-W2-01 closed-stop lifecycle)",
+      "W2-R2 HOLD 0/2/0 (A-W2-01 residual kill attribution; A-W2-R2-02 Gate artifact correspondence)",
+      "W2-R3 PASS 0/0/0"
+    ]
+  },
+  "completed_scope": [
+    "bounded real Windows WIC decode through the existing comparison consumer",
+    "opt-in stage trace with explicitly labelled artificial boundary holds",
+    "process memory observations bound to PID/start/executable identity and clock domain",
+    "three-worker bounded collection window totals as derived window sums, never instantaneous peaks",
+    "hold-attributed direct-child termination and reap with no published cancelled output",
+    "independent stdlib pixel oracle over the tracked raster archive",
+    "refusal, timeout, unsupported and cleanup behaviour",
+    "Taskern revision-3 plan, two independent Refine Gates with identical candidate digest and 21 artifact tuples, and a clean attachment-bound review"
+  ],
+  "unmeasured_or_open": [
+    "WIC internal scratch true peak",
+    "actual allocator reservations",
+    "true concurrent allocation peak",
+    "cooperative in-decoder cancellation",
+    "16K full decode",
+    "real Bgr565 WIC capability",
+    "region/sequential/tiled decode",
+    "ICC/profile and orientation handling",
+    "JPEG absolute raster equality",
+    "full DC-MP-IMG2 Decode exit",
+    "MP-IMG3 Upload",
+    "full MP-R0A/MP-R0C",
+    "R0D measured attainment",
+    "MP-FLOW2 stages",
+    "Runtime RC-* acceptance",
+    "main integration and release"
+  ],
+  "boundaries": [
+    "The review was attachment-bound because the candidate is unpushed; no GitHub visibility of the commit is claimed.",
+    "Native observations are Windows CLI runs by this agent; the reviewer verified retained bytes and did not re-execute WIC.",
+    "The plan captured by the Gates precedes this disposition document; gate-artifact-correspondence.json states that the captured plan artifact remains the reviewed text and that later documentation commits are docs-only.",
+    "A docs edit anchored on a bullet that also exists in an earlier section truncated plan sections 19.54-19.55 before the Gates captured the plan. The review could see only the captured (truncated) plan. The tail was restored from the intact committed blob and the intended \u00a719.55 bullets re-applied in a later docs-only commit; no product code, Gate receipt, artifact or evidence byte changed."
+  ]
+}
