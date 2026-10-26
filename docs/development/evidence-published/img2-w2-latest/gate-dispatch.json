@@ -1,36 +1,35 @@
 {
   "schema_version": 1,
-  "candidate": "99bb8e629a22b2dfc605d76f64f2a3cb2c38742e",
+  "candidate": "e4ef83a1b0085945d6e78743c8e2c9fa3aa19fa2",
   "automatic_product_retries": 0,
-  "single_owner": "DC-MP-IMG2",
   "authoritative": {
     "quality": {
-      "gate_id": "83884abf-f597-446b-b8f6-cf731af2bfb9",
-      "label": "cos-desktop-img2-w2r3-quality-99bb8e62",
+      "gate_id": "5295fdca-b0a5-498c-81cb-0c921d58442e",
+      "label": "cos-desktop-img2-w2r5-quality-e4ef83a1",
       "checks": "10/10",
       "artifacts": 21
     },
     "build": {
-      "gate_id": "c907686e-4eba-4337-b57d-e95001b42d2e",
-      "label": "cos-desktop-img2-w2r4-build-99bb8e62",
+      "gate_id": "bd613e2e-9e64-437a-b303-0a2edee9c5e5",
+      "label": "cos-desktop-img2-w2r5-build-e4ef83a1",
       "checks": "1/1",
       "artifacts": 21
     }
   },
   "correlation": {
-    "candidate_sha256": "sha256:bd7f935976acbebee918d2e398c9d2309e9910755f90360b000a9018278f5ae5",
-    "final_head": "99bb8e629a22b2dfc605d76f64f2a3cb2c38742e",
+    "candidate_sha256": "sha256:b91ccb4fd89dabccaf84ae49bbb018b81d4162afa4481b5c70974e2b7c12cc40",
+    "final_head": "e4ef83a1b0085945d6e78743c8e2c9fa3aa19fa2",
     "identical_candidate_digest": true,
     "identical_artifact_tuples": 21,
-    "manifest_note": "candidate_sha256 covers the pinned revision plus the declared candidate outputs; the build Gate first ran with 20 outputs and is therefore retained as superseded rather than compared."
+    "ordering": "Both Gates ran sequentially: quality reached terminal SUCCEEDED before build was dispatched, so no two preparations shared the source repository."
   },
-  "superseded": {
-    "866a1833-3823-4983-9fe8-0821f6a0dfd1": "Build SUCCEEDED with the 20-output manifest before cancellation-repair was added; retained unmodified, not used for tuple equality."
-  },
-  "interrupted": {
-    "0bfdb0f7-67de-4fb7-b651-23290c13ae45": "quality owner killed by a local Eval-kernel restart; native recover finalised FAILED (interrupted), workspace retained.",
-    "a6fe562d-896a-42bb-abce-987a30303648": "build owner killed by the same restart; native recover finalised FAILED (interrupted), workspace retained.",
-    "quality-r3-first": "gate.run returned REPOSITORY_ERROR / git_command_failed while both Gates prepared concurrently; no gate ID, so nothing to reconcile."
+  "prior_rounds": {
+    "round1": "Quality 5865a2d5 and Build 2a91db39 SUCCEEDED on 7f236426 (20 outputs).",
+    "round2": "Quality 83884abf and Build c907686e SUCCEEDED on 99bb8e62 (21 outputs); Build 866a1833 succeeded earlier on the 20-output manifest and is retained as superseded.",
+    "interruptions": [
+      "Quality 0bfdb0f7 and Build a6fe562d owners were killed by a local Eval-kernel restart; native recover finalised FAILED (interrupted) and both workspaces are retained.",
+      "An attempt-3 quality preparation returned REPOSITORY_ERROR / git_command_failed while two Gates prepared concurrently; no gate ID was issued."
+    ]
   },
   "preflight": {
     "aggregate": "UNKNOWN",
@@ -41,5 +40,5 @@
       "authorization"
     ]
   },
-  "process_supervision": "Later Gate owners were spawned detached so a kernel restart cannot terminate them; the recovery facts above are preserved rather than retried silently."
+  "process_supervision": "Gate owners were spawned detached; later dispatches are sequential to avoid preparation contention."
 }

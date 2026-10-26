@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "candidate": "e4ef83a1b0085945d6e78743c8e2c9fa3aa19fa2",
+  "gates": {
+    "quality": {
+      "gate_id": "5295fdca-b0a5-498c-81cb-0c921d58442e",
+      "label": "cos-desktop-img2-w2r5-quality-e4ef83a1",
+      "candidate_sha256": "sha256:b91ccb4fd89dabccaf84ae49bbb018b81d4162afa4481b5c70974e2b7c12cc40",
+      "artifact_count": 21,
+      "artifacts": [
+        {
+          "id": "behavior",
+          "path": "docs/development/evidence-published/img2-w2-latest/behavior.json",
+          "bytes": 24338,
+          "sha256": "sha256:734e3da73b2fdb70fbee84fa347e3a25eec5641ae9369444b10833d0e2886426"
+        },
+        {
+          "id": "cancellation-repair",
+          "path": "docs/development/evidence-published/img2-w2-latest/cancellation-repair.json",
+          "bytes": 3425,
+          "sha256": "sha256:23c41f4d18cae8a87fc46ad485a854f2eba65b81eb3b657e48855db0aeb813a7"
+        },
+        {
+          "id": "cli-doc",
+          "path": "docs/development/BUILD_AND_RUN.md",
+          "bytes": 90689,
+          "sha256": "sha256:03fd792895ee1198198e9303c1219f20758547667b6869673fc7d372b6ccfd45"
+        },
+        {
+          "id": "codec-observations",
+          "path": "docs/development/evidence-published/img2-w2-latest/codec-observations.json",
+          "bytes": 4261,
+          "sha256": "sha256:7859d89eb01b6b77f4b7386caf7443b587e763ef3963e4fc87c846fb1680c8bf"
+        },
+        {
+          "id": "design-contract",
+          "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+          "bytes": 128926,
+          "sha256": "sha256:4e177fe4977973c2679e93047c2d8bc5d076580f0b1a212fe83b20e2a0419861"
+        },
+        {
+          "id": "harness",
+          "path": "apps/desktop/examples/decode_compare/harness.rs",
+          "bytes": 159533,
+          "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+        },
+        {
+          "id": "independent-oracle",
+          "path": "docs/development/evidence-published/img2-w2-latest/independent-oracle.json",
+          "bytes": 17160,
+          "sha256": "sha256:0a06c1f49d9e828724954d828388c907a62b405c1c6400006414ddbb80bfd456"
+        },
+        {
+          "id": "local-quality",
+          "path": "docs/development/evidence-published/img2-w2-latest/quality.json",
+          "bytes": 7619,
+          "sha256": "sha256:bb76fa160fd07baf931994effe0b7cac797ec74a83f462fac63f0a3e27a57094"
+        },
+        {
+          "id": "n03-tests",
+          "path": "apps/desktop/devtools/r0/tests/test_n03_observe.py",
+          "bytes": 15846,
+          "sha256": "sha256:5de2d6ca77840e1ce62243d9893eb99b886ebecc6b5313410e52b5f0584a62ea"
+        },
+        {
+          "id": "native-matrix",
+          "path": "docs/development/evidence-published/img2-w2-latest/native-matrix.json",
+          "bytes": 142351,
+          "sha256": "sha256:2bf013b7f64a706aa372089d14ed1a45337f4a5f7d4e5c0e7279466be5298176"
+        },
+        {
+          "id": "native-repeat",
+          "path": "docs/development/evidence-published/img2-w2-latest/native-repeat.json",
+          "bytes": 139363,
+          "sha256": "sha256:aadda0443cffe38940d866313893c27e6214fb03445a4724742c8917f99f1d71"
+        },
+        {
+          "id": "plan",
+          "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+          "bytes": 393219,
+          "sha256": "sha256:ba2fe39e752907bd8472c32edbdc3e790a393f321532241b23f435e672a4a2fb"
+        },
+        {
+          "id": "taskern-request",
+          "path": "docs/development/evidence-published/img2-w2-latest/taskern-cancellation-revision-request.json",
+          "bytes": 23517,
+          "sha256": "sha256:031a8190905114713896cfc75e4c3772e15ce8e8a0f90ae6aba8d85361534a4a"
+        },
+        {
+          "id": "taskern-response",
+          "path": "docs/development/evidence-published/img2-w2-latest/taskern-cancellation-revision-response.json",
+          "bytes": 21423,
+          "sha256": "sha256:25d773fca35b6160b15972692d5acffea0a048c5985cda273453128563826368"
+        },
+        {
+          "id": "w1-regression",
+          "path": "docs/development/evidence-published/img2-w2-latest/w1-regression.json",
+          "bytes": 28559,
+          "sha256": "sha256:d586af55a0dec1ffc4adb07f58f8db5b89029650757d6ee375484c088d4e8188"
+        },
+        {
+          "id": "w2-probe-selftest",
+          "path": "apps/desktop/devtools/img2/w2_probe_selftest.ps1",
+          "bytes": 23925,
+          "sha256": "sha256:22f86178b22642995ed2a74742e8990f4a88481da7af228770c2a88ea9f86caf"
+        },
+        {
+          "id": "w2-runner",
+          "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+          "bytes": 28595,
+          "sha256": "sha256:b4b47695161457aa48590411235e9aae59a9b7bfd4d34be7271e111a7b517018"
+        },
+        {
+          "id": "w2-tests",
+          "path": "apps/desktop/devtools/img2/tests/test_w2_resource_verify.py",
+          "bytes": 10016,
+          "sha256": "sha256:9c331a84f18ca1ef96a05e0d1b42aab94c7771ee1e5fa1ba21bc030727971099"
+        },
+        {
+          "id": "w2-verifier",
+          "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+          "bytes": 26365,
+          "sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7"
+        },
+        {
+          "id": "wic-admission",
+          "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+          "bytes": 3780,
+          "sha256": "sha256:32dda8546425cab2cb22c2e5f2600b0654c762220c614c46f8be3b7f33085967"
+        },
+        {
+          "id": "wic-probe",
+          "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+          "bytes": 39149,
+          "sha256": "sha256:a7be2edda70f5da533935e37a6042b31183eb0f5c100401c97ab44080e63248b"
+        }
+      ]
+    },
+    "build": {
+      "gate_id": "bd613e2e-9e64-437a-b303-0a2edee9c5e5",
+      "label": "cos-desktop-img2-w2r5-build-e4ef83a1",
+      "candidate_sha256": "sha256:b91ccb4fd89dabccaf84ae49bbb018b81d4162afa4481b5c70974e2b7c12cc40",
+      "artifact_count": 21,
+      "artifacts": [
+        {
+          "id": "behavior",
+          "path": "docs/development/evidence-published/img2-w2-latest/behavior.json",
+          "bytes": 24338,
+          "sha256": "sha256:734e3da73b2fdb70fbee84fa347e3a25eec5641ae9369444b10833d0e2886426"
+        },
+        {
+          "id": "cancellation-repair",
+          "path": "docs/development/evidence-published/img2-w2-latest/cancellation-repair.json",
+          "bytes": 3425,
+          "sha256": "sha256:23c41f4d18cae8a87fc46ad485a854f2eba65b81eb3b657e48855db0aeb813a7"
+        },
+        {
+          "id": "cli-doc",
+          "path": "docs/development/BUILD_AND_RUN.md",
+          "bytes": 90689,
+          "sha256": "sha256:03fd792895ee1198198e9303c1219f20758547667b6869673fc7d372b6ccfd45"
+        },
+        {
+          "id": "codec-observations",
+          "path": "docs/development/evidence-published/img2-w2-latest/codec-observations.json",
+          "bytes": 4261,
+          "sha256": "sha256:7859d89eb01b6b77f4b7386caf7443b587e763ef3963e4fc87c846fb1680c8bf"
+        },
+        {
+          "id": "design-contract",
+          "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+          "bytes": 128926,
+          "sha256": "sha256:4e177fe4977973c2679e93047c2d8bc5d076580f0b1a212fe83b20e2a0419861"
+        },
+        {
+          "id": "harness",
+          "path": "apps/desktop/examples/decode_compare/harness.rs",
+          "bytes": 159533,
+          "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+        },
+        {
+          "id": "independent-oracle",
+          "path": "docs/development/evidence-published/img2-w2-latest/independent-oracle.json",
+          "bytes": 17160,
+          "sha256": "sha256:0a06c1f49d9e828724954d828388c907a62b405c1c6400006414ddbb80bfd456"
+        },
+        {
+          "id": "local-quality",
+          "path": "docs/development/evidence-published/img2-w2-latest/quality.json",
+          "bytes": 7619,
+          "sha256": "sha256:bb76fa160fd07baf931994effe0b7cac797ec74a83f462fac63f0a3e27a57094"
+        },
+        {
+          "id": "n03-tests",
+          "path": "apps/desktop/devtools/r0/tests/test_n03_observe.py",
+          "bytes": 15846,
+          "sha256": "sha256:5de2d6ca77840e1ce62243d9893eb99b886ebecc6b5313410e52b5f0584a62ea"
+        },
+        {
+          "id": "native-matrix",
+          "path": "docs/development/evidence-published/img2-w2-latest/native-matrix.json",
+          "bytes": 142351,
+          "sha256": "sha256:2bf013b7f64a706aa372089d14ed1a45337f4a5f7d4e5c0e7279466be5298176"
+        },
+        {
+          "id": "native-repeat",
+          "path": "docs/development/evidence-published/img2-w2-latest/native-repeat.json",
+          "bytes": 139363,
+          "sha256": "sha256:aadda0443cffe38940d866313893c27e6214fb03445a4724742c8917f99f1d71"
+        },
+        {
+          "id": "plan",
+          "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+          "bytes": 393219,
+          "sha256": "sha256:ba2fe39e752907bd8472c32edbdc3e790a393f321532241b23f435e672a4a2fb"
+        },
+        {
+          "id": "taskern-request",
+          "path": "docs/development/evidence-published/img2-w2-latest/taskern-cancellation-revision-request.json",
+          "bytes": 23517,
+          "sha256": "sha256:031a8190905114713896cfc75e4c3772e15ce8e8a0f90ae6aba8d85361534a4a"
+        },
+        {
+          "id": "taskern-response",
+          "path": "docs/development/evidence-published/img2-w2-latest/taskern-cancellation-revision-response.json",
+          "bytes": 21423,
+          "sha256": "sha256:25d773fca35b6160b15972692d5acffea0a048c5985cda273453128563826368"
+        },
+        {
+          "id": "w1-regression",
+          "path": "docs/development/evidence-published/img2-w2-latest/w1-regression.json",
+          "bytes": 28559,
+          "sha256": "sha256:d586af55a0dec1ffc4adb07f58f8db5b89029650757d6ee375484c088d4e8188"
+        },
+        {
+          "id": "w2-probe-selftest",
+          "path": "apps/desktop/devtools/img2/w2_probe_selftest.ps1",
+          "bytes": 23925,
+          "sha256": "sha256:22f86178b22642995ed2a74742e8990f4a88481da7af228770c2a88ea9f86caf"
+        },
+        {
+          "id": "w2-runner",
+          "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+          "bytes": 28595,
+          "sha256": "sha256:b4b47695161457aa48590411235e9aae59a9b7bfd4d34be7271e111a7b517018"
+        },
+        {
+          "id": "w2-tests",
+          "path": "apps/desktop/devtools/img2/tests/test_w2_resource_verify.py",
+          "bytes": 10016,
+          "sha256": "sha256:9c331a84f18ca1ef96a05e0d1b42aab94c7771ee1e5fa1ba21bc030727971099"
+        },
+        {
+          "id": "w2-verifier",
+          "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+          "bytes": 26365,
+          "sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7"
+        },
+        {
+          "id": "wic-admission",
+          "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+          "bytes": 3780,
+          "sha256": "sha256:32dda8546425cab2cb22c2e5f2600b0654c762220c614c46f8be3b7f33085967"
+        },
+        {
+          "id": "wic-probe",
+          "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+          "bytes": 39149,
+          "sha256": "sha256:a7be2edda70f5da533935e37a6042b31183eb0f5c100401c97ab44080e63248b"
+        }
+      ]
+    }
+  },
+  "meaning": "Every captured artifact is identified by its declared repository path, byte length and SHA-256 at the pinned candidate. plan is the pinned plan blob captured before any later evidence commit, so its bytes equal the reviewed plan text; Taskern artifacts are the current revision-3 files, not the superseded revision-2 pair.",
+  "plan_identity": {
+    "git_blob": "dc0b903954211225d3d6db654d5f0f922774c90d",
+    "blob_bytes": 393219,
+    "blob_sha256": "sha256:ba2fe39e752907bd8472c32edbdc3e790a393f321532241b23f435e672a4a2fb",
+    "artifact_sha256": "sha256:ba2fe39e752907bd8472c32edbdc3e790a393f321532241b23f435e672a4a2fb",
+    "artifact_bytes": 393219,
+    "artifact_equals_git_blob": true,
+    "working_tree_bytes": 394897,
+    "working_tree_crlf_count": 1678,
+    "working_tree_lf_sha256": "sha256:ba2fe39e752907bd8472c32edbdc3e790a393f321532241b23f435e672a4a2fb",
+    "artifact_equals_working_tree_lf_form": true,
+    "note": "The Git blob (LF) is what the Gate captured and what a repository read returns; this checkout materializes CRLF, so the working-tree file differs only by line endings. Byte equality is stated against the blob, never against the raw working-tree form."
+  },
+  "taskern_identity": {
+    "current_revision": 3,
+    "packet_sha256": "sha256:2be98d3011956be7d3cf6ce2ea05ebe13476b88efc15c74c861cb89520b054fc",
+    "captured": [
+      {
+        "file": "taskern-cancellation-revision-request.json",
+        "bytes": 23517,
+        "sha256": "sha256:031a8190905114713896cfc75e4c3772e15ce8e8a0f90ae6aba8d85361534a4a"
+      },
+      {
+        "file": "taskern-cancellation-revision-response.json",
+        "bytes": 21423,
+        "sha256": "sha256:25d773fca35b6160b15972692d5acffea0a048c5985cda273453128563826368"
+      }
+    ],
+    "superseded_revision_2_files": [
+      "taskern-revision-request.json",
+      "taskern-revision-response.json"
+    ],
+    "note": "Each Gate captured the revision-3 request/response files; the revision-2 pair remains tracked as history and is not claimed as the current packet."
+  }
+}

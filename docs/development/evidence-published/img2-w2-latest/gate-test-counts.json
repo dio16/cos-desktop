@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "gate_id": "83884abf-f597-446b-b8f6-cf731af2bfb9",
-  "candidate": "99bb8e629a22b2dfc605d76f64f2a3cb2c38742e",
+  "gate_id": "5295fdca-b0a5-498c-81cb-0c921d58442e",
+  "candidate": "e4ef83a1b0085945d6e78743c8e2c9fa3aa19fa2",
   "rust": {
     "passed": 535,
     "failed": 0,
@@ -163,12 +163,11 @@
     ]
   },
   "w2_python": {
-    "tests": 40,
-    "exit": 0,
-    "note": "discovered under the isolated checkout"
+    "tests": 45,
+    "exit": 0
   },
   "oracle": {
-    "stdout": "{\"ok\": true, \"runs\": 2, \"decoded_worker_rasters\": [9, 9], \"structural_repeats_identical\": true, \"sha256\": \"sha256:36742dc07dfb808d62b4838b1ad438a46a2c6c9adb4a7e53b67f05ab5bec61de\"}",
+    "stdout": "{\"ok\": true, \"runs\": 2, \"decoded_worker_rasters\": [10, 9], \"structural_repeats_identical\": true, \"sha256\": \"sha256:0a06c1f49d9e828724954d828388c907a62b405c1c6400006414ddbb80bfd456\"}",
     "exit": 0
   },
   "probe_selftest": {
