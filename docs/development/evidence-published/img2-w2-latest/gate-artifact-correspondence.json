@@ -305,5 +305,44 @@
       "taskern-revision-response.json"
     ],
     "note": "Each Gate captured the revision-3 request/response files; the revision-2 pair remains tracked as history and is not claimed as the current packet."
+  },
+  "review_archive": {
+    "filename": "w2r3-review-source.zip",
+    "bytes": 502100,
+    "sha256": "sha256:ee2936b8a373fb8559f9be3b4b129e645e291115c2e548c620e9b95b20e4fa12",
+    "normalized_entries": {
+      "plan": {
+        "archive_entry": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+        "archive_bytes": 394897,
+        "archive_sha256": "sha256:1fa928200c0e3fc068d4ad07899843f33ab3ea707834a95996c87009f99fb52d",
+        "archive_lf_bytes": 393219,
+        "archive_lf_sha256": "sha256:ba2fe39e752907bd8472c32edbdc3e790a393f321532241b23f435e672a4a2fb",
+        "gate_artifact_sha256": "sha256:ba2fe39e752907bd8472c32edbdc3e790a393f321532241b23f435e672a4a2fb",
+        "lf_normalized_equals_gate_artifact": true
+      },
+      "taskern-request": {
+        "archive_entry": "docs/development/evidence-published/img2-w2-latest/taskern-cancellation-revision-request.json",
+        "archive_bytes": 23832,
+        "archive_sha256": "sha256:4929f1c76a2db98c7d790a5f3878a1ccad0b3dd8ac3d5cd513165c2de4815491",
+        "archive_lf_bytes": 23517,
+        "archive_lf_sha256": "sha256:031a8190905114713896cfc75e4c3772e15ce8e8a0f90ae6aba8d85361534a4a",
+        "gate_artifact_sha256": "sha256:031a8190905114713896cfc75e4c3772e15ce8e8a0f90ae6aba8d85361534a4a",
+        "lf_normalized_equals_gate_artifact": true
+      },
+      "taskern-response": {
+        "archive_entry": "docs/development/evidence-published/img2-w2-latest/taskern-cancellation-revision-response.json",
+        "archive_bytes": 21424,
+        "archive_sha256": "sha256:3729691014a883f09b2ee63fb6219ebd7a1fff1092d5e603736e554d9759bf62",
+        "archive_lf_bytes": 21423,
+        "archive_lf_sha256": "sha256:25d773fca35b6160b15972692d5acffea0a048c5985cda273453128563826368",
+        "gate_artifact_sha256": "sha256:25d773fca35b6160b15972692d5acffea0a048c5985cda273453128563826368",
+        "lf_normalized_equals_gate_artifact": true
+      }
+    },
+    "conclusion": {
+      "all_lf_normalized_entries_equal_gate_artifacts": true,
+      "line_endings": "The source archive carries CRLF for these text entries; the Gate captured the LF form. CRLF to LF normalization is the only difference, and each normalized entry equals its Gate artifact byte-for-byte.",
+      "taskern": "Both captured Taskern artifacts are the current revision-3 files, so the Gate ledger and the attached package reference the same packet 2be98d30."
+    }
   }
 }
