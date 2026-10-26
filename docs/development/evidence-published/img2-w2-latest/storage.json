@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "candidate": "7f236426f53bda9d4f88913690c7743208601711",
+  "source_retained_by": "refs/heads/dev; ancestor check exit 0 before disposal",
+  "evidence_commit": "d5117ab",
+  "gate_outcomes": "SUCCEEDED; native status/inspect/verify exit0, owner dead, cleanup complete",
+  "boundary": "Caller-side exact successful scratch disposal, not a Refine cleanup operation; no failed/nonterminal/historical paths",
+  "preconditions": {
+    "active_processes": [],
+    "reparse_points": [],
+    "owned_paths": 5
+  },
+  "removed": [
+    {
+      "label": "quality",
+      "gate_id": "5865a2d5-0270-4006-8529-2cb8b07277c1",
+      "path": "<W2_GATE_ROOT>/state/gates/5865a2d5-0270-4006-8529-2cb8b07277c1/work/repo",
+      "bytes": 11282130,
+      "files": 382,
+      "observed_absent": true
+    },
+    {
+      "label": "quality",
+      "gate_id": "5865a2d5-0270-4006-8529-2cb8b07277c1",
+      "path": "<W2_GATE_ROOT>/targets/quality-clippy",
+      "bytes": 663906235,
+      "files": 3015,
+      "observed_absent": true
+    },
+    {
+      "label": "quality",
+      "gate_id": "5865a2d5-0270-4006-8529-2cb8b07277c1",
+      "path": "<W2_GATE_ROOT>/targets/quality-tests",
+      "bytes": 1841576525,
+      "files": 3144,
+      "observed_absent": true
+    },
+    {
+      "label": "build",
+      "gate_id": "2a91db39-a97b-4264-9337-5a7f065881f9",
+      "path": "<W2_GATE_ROOT>/state/gates/2a91db39-a97b-4264-9337-5a7f065881f9/work/repo",
+      "bytes": 11276742,
+      "files": 382,
+      "observed_absent": true
+    },
+    {
+      "label": "build",
+      "gate_id": "2a91db39-a97b-4264-9337-5a7f065881f9",
+      "path": "<W2_GATE_ROOT>/targets/build-build",
+      "bytes": 1593000707,
+      "files": 2911,
+      "observed_absent": true
+    }
+  ],
+  "kept": [
+    "native state/authority/observations",
+    "captured artifacts",
+    "private check logs",
+    "requests/operator config/toolchain pins",
+    "raw status/inspect/verify reports",
+    "ordinary local target",
+    "Native raw run1/run2 and W1 regression roots"
+  ],
+  "unit": "logical bytes, not allocated storage",
+  "gates": [
+    {
+      "label": "quality",
+      "gate_id": "5865a2d5-0270-4006-8529-2cb8b07277c1",
+      "verify_before_exit": 0,
+      "verify_after_exit": 0,
+      "integrity_identical": true,
+      "before_sha256": "sha256:9781073a25e62d119a662b723a5fdc5d18b85f6558addcc533daa30670a95cac",
+      "after_sha256": "sha256:9781073a25e62d119a662b723a5fdc5d18b85f6558addcc533daa30670a95cac",
+      "private_rustup_copy_created": false
+    },
+    {
+      "label": "build",
+      "gate_id": "2a91db39-a97b-4264-9337-5a7f065881f9",
+      "verify_before_exit": 0,
+      "verify_after_exit": 0,
+      "integrity_identical": true,
+      "before_sha256": "sha256:cb33d1b787045f62e1bf40dccc20776c392ba8c54bd811ffc849d8b411634ebe",
+      "after_sha256": "sha256:cb33d1b787045f62e1bf40dccc20776c392ba8c54bd811ffc849d8b411634ebe",
+      "private_rustup_copy_created": false
+    }
+  ],
+  "logical_bytes_removed": 4121042339,
+  "files_removed": 9834,
+  "completed_at": "2026-10-26T17:12:30.157Z"
+}
