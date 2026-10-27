@@ -1,0 +1,5256 @@
+{
+  "archive": "w6r2-review-source.zip",
+  "commit": "8bb1b6dd3071d7e355e685dba4977361f24b8f2f",
+  "bytes": 4326877,
+  "sha256": "sha256:572101b2bdd94c7fc9961321e24b8aa48ac5ebe2764325e6e2185f1a50897853",
+  "entries": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "bytes": 2291,
+      "raw_sha256": "9522c7b29e70fe2178087af03d67afb598aafbfebb2cdec4adbe827727d8e311",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 767,
+      "raw_sha256": "13ad2443017e0910bd6ca0490ff9e6c6f7a091a56453eac1494454d7eb55a438",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 11420,
+      "raw_sha256": "80876a56a8e63272cad2f1549f7a42b0fdc38f91e30c16fc3514f031e5a5ec80",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "Cargo.lock",
+      "bytes": 165475,
+      "raw_sha256": "60d328dd9be8c160bbf96c341c21f71762f729b9631ba350e0922f29082d7a49",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "Cargo.toml",
+      "bytes": 740,
+      "raw_sha256": "beb7696ca89b8f1472dd9ffe58fedef99ef984a1dfbd5353fb65bec72d87608d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 11560,
+      "raw_sha256": "3ddf9be5c28fe27dad143a5dc76eea25222ad1dd68934a047064e56ed2fa40c5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "NOTICE",
+      "bytes": 400,
+      "raw_sha256": "efd5a4700799e249e1c5947fdacc5dcbdf1b54572c43c2519fea5140f60a6874",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "README.md",
+      "bytes": 7863,
+      "raw_sha256": "3c05cf6e04312762e752de5bc790d0d47b1a45d74ced27d1fb6b858ce8260755",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/Cargo.toml",
+      "bytes": 742,
+      "raw_sha256": "524722a78349c4bae06a942f5551c5d427b030163459ffe13544e3f1187aeffb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w2_resource_verify.py",
+      "bytes": 10353,
+      "raw_sha256": "ebf8cb249e88e91742f90a95b463dd707bbd64b626065ee222b97b03c6fba994",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w2_worker_stop.py",
+      "bytes": 8085,
+      "raw_sha256": "d7a1cee435fa480dc4d57d708402046fa3a82dabd7bb508777a6ea47c91f7297",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w3_fixtures.py",
+      "bytes": 3283,
+      "raw_sha256": "03ddaf23862b96b9791e27698d9227fdbe15f9e2323e214213e7106995a54c85",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w3_oracle.py",
+      "bytes": 4440,
+      "raw_sha256": "6886c64af0123faacf02bb33ee7535c8a895f3ad77d98911a84256dcf2c22519",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w3_verify.py",
+      "bytes": 11166,
+      "raw_sha256": "20d786077dba6eb45b61b15b2a4e099d4d5976699e8824f6f281b14664cc618e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w4_fixtures.py",
+      "bytes": 2818,
+      "raw_sha256": "be5ceab968cb6a1d1302df3df9db6387054a356fd6642fd334c052a93ab5cd45",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w4_verify.py",
+      "bytes": 10173,
+      "raw_sha256": "f4ad9259f4754906b62afbb2cf6169db5041cddd3cf5ac0c23f938b1166956d8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w5_verify.py",
+      "bytes": 15029,
+      "raw_sha256": "8ec5d1f058f0c54e7b356aebedb3376f9e1e398560310d4b9ca4d0d3d8742218",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w6_fixtures.py",
+      "bytes": 5260,
+      "raw_sha256": "14e89971d0e5128601f22f47a68ecf15fbbea39083b5315d713c852542c2e151",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w6_memory.py",
+      "bytes": 3553,
+      "raw_sha256": "a316345353a6c414b40df81b0f07dd1a8c354aaee1ae6fa5e2bcd8b880d57262",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w6_negative.py",
+      "bytes": 9850,
+      "raw_sha256": "1fc7fe0cba05cc4c4fe5508a89ba70b2466747102f915a36fcaca75f47eedbbf",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_independent_oracle.py",
+      "bytes": 9954,
+      "raw_sha256": "e4ecd438476917ab4e956a7e317a58885d789443beb0da4f97a8ba2da9315ea6",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_probe_selftest.ps1",
+      "bytes": 24324,
+      "raw_sha256": "2704bbefaf02583eeaf868915d5c2214a96f322c4bf220f6efd196b7eb58520d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+      "bytes": 29498,
+      "raw_sha256": "18224967ecd367d9eb584e45c35b63cebef5ba800760e192891096ba02e90816",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+      "bytes": 26800,
+      "raw_sha256": "b335714a9c35dc81305d11fd6b7761a7afff64cdcab53deeff002b78e31eb5b1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w3_fixtures.py",
+      "bytes": 5519,
+      "raw_sha256": "afa8a8aaa60ee556d9f59a5241c27f6f0424d90a8ea3138a77e2afb45797a246",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w3_native_matrix.py",
+      "bytes": 10738,
+      "raw_sha256": "91848d6ae6318d420df5a24c67de70f43dbac3465eddd502a1a70b086ff1ec0c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w3_oracle.py",
+      "bytes": 6003,
+      "raw_sha256": "bed9012a1b6d9d38f6c4eea5a88669d67998a24c6f85e6da4f9126e1f7dc8935",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w3_verify.py",
+      "bytes": 16693,
+      "raw_sha256": "e7594a6fcdc8a000a9d55c34c77799de423dbbfade0f110accb47ebad339d786",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w4_fixtures.py",
+      "bytes": 4706,
+      "raw_sha256": "127dc3c6ee13eb69024199ba078b8beb09e4c600db7e653cabf945131d15cdd8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w4_region_matrix.py",
+      "bytes": 8376,
+      "raw_sha256": "c62c22b620ad2f2a21059b834044b64215f3c22777621ec4fdaac086ae2b2066",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w4_region_oracle.py",
+      "bytes": 5868,
+      "raw_sha256": "95d31fbe15e2d7bef6a14a1d7dd2f1e5cbbb6530f4788ad83bc84f3f579285f2",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w4_region_verify.py",
+      "bytes": 18239,
+      "raw_sha256": "71db784140bd908e6cb89debe1433852c513bc46bb7fa0b95942e0f501164fef",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w5_metadata_fixtures.py",
+      "bytes": 9412,
+      "raw_sha256": "51ee05e787fa3f6a0ea7b890b690d2db08547333fb59453c5ba736b1206ced96",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w5_metadata_matrix.py",
+      "bytes": 6970,
+      "raw_sha256": "4afa7af79832bee214f3ad8686322a741057842c2657416a379a6d4b9c3ff50c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w5_metadata_oracle.py",
+      "bytes": 6904,
+      "raw_sha256": "0cc238526ca88b5fb3e108e113dba53cf79a55d169de7f81339ffbb68174572d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w5_metadata_verify.py",
+      "bytes": 19820,
+      "raw_sha256": "ab92953ae5291ced371c3984c9e0aea3251849cc1c9bf6c40a77d6d2bad72efd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_fixtures.py",
+      "bytes": 9658,
+      "raw_sha256": "bd8b82921ff9de3cb96f56a886c727fce4aeb6445c49f67ced34faafcf21e77c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_matrix.py",
+      "bytes": 12629,
+      "raw_sha256": "eea88bc717c51f06f5f256dfc61f32427e15b7cafec6ca1a8617c6fb024770ca",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_sample.py",
+      "bytes": 19500,
+      "raw_sha256": "9d07d0f3b45d1c7ba6c83895c6aa6231adb7f5ccd6b68bac3866c2585856eee8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_verify.py",
+      "bytes": 23685,
+      "raw_sha256": "c2d461fda5505189519d89a40f495a4e65f3ddb1702b93118c49b8036db193b3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/approved-executables.json",
+      "bytes": 5430,
+      "raw_sha256": "5cd76be739a1b3bda5b0095b693e3fcaa3a795a5e6044dac8acfc30402a24bf5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/contracts.py",
+      "bytes": 29402,
+      "raw_sha256": "4369cd068880745f2c384f0fd5395f4038b1a4d55a3d89c224f3af0a3832444b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/driver.py",
+      "bytes": 28088,
+      "raw_sha256": "ad9b2db3923c304beba8e2a077e2c586b4be5f0ec14156c96d8432667eb83402",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/fixtures/result-not-measured-v1.json",
+      "bytes": 3727,
+      "raw_sha256": "cbe32459810092ae37fd8bf810564d51d8e0d8eda32401fc76ce21f003ab8941",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/fixtures/s2b-wire-v1.json",
+      "bytes": 3162,
+      "raw_sha256": "9870e76726f2c4aedc539b2761edb319f56e38abeac0f134891d959dd0efd532",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/manifests/media-not-implemented-v1.json",
+      "bytes": 3613,
+      "raw_sha256": "c9c0fee6ba994b2254d47454fdcb87100ce8f3206728869bf62f2fe5a40eadf4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/manifests/r0c-s1-keyboard.json",
+      "bytes": 3289,
+      "raw_sha256": "1937752ca835441ef18c157606dcfc003d3e3fdaee832b3c74d24d95dcee9163",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/manifests/s2a-lifecycle-v1.json",
+      "bytes": 3519,
+      "raw_sha256": "12d90613f5aeedb38edb079bc26405781eed7fe02638cbb48e561c49c14c8f6c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/manifests/s2b-default-a0.json",
+      "bytes": 4570,
+      "raw_sha256": "c101d61ba6dcdf4c2f43c58fac22448b40c49a67038ea1f31b73d3af4c15a413",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/manifests/s2b-feature-a1.json",
+      "bytes": 4617,
+      "raw_sha256": "64340fba11e463625f5e7d7fd2452a9d80ae30390ae13015dc4f1e492d94a000",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/manifests/shell-contract-v1.json",
+      "bytes": 3635,
+      "raw_sha256": "0c76f9bb7de86f06d9cedd4316b974f468f8d6641082d4b791fbf7c45c82b393",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/n03_probe.ps1",
+      "bytes": 15589,
+      "raw_sha256": "56cae62a4f896a5335f25578bfadf549bc8f728af8ef911babbfc5cec9e130c0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/n06_attribution.py",
+      "bytes": 75763,
+      "raw_sha256": "ef549a4f606da2fe2075e7cf3f005091159415fe63221f1b0e498ff9de87f91b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/n06_probe.ps1",
+      "bytes": 25882,
+      "raw_sha256": "c44a1bcd1bfba6615360cd30db94fda3497a6cd1bb29e50ca3cb5b9c185833af",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/n07_verify.py",
+      "bytes": 17554,
+      "raw_sha256": "9bb0d0c3c1261cee0832ff72cbbfed85c7154eb1a951ad76781b1901b6862dcd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/native_observe.py",
+      "bytes": 15824,
+      "raw_sha256": "d242804098bd26b2013ddc943d7373e6a72bf74ac8109effb1f6becea2ebdfdd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/r0c_contracts.py",
+      "bytes": 31373,
+      "raw_sha256": "4a757db2d11221ec560f6443f53598beaf8b32937696287da33e78611f3bdadb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/r0c_driver.py",
+      "bytes": 58669,
+      "raw_sha256": "e20d7624bed8acc41dc833ddd4e77bae8b5735058d861f326d09b214c2ca60fd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/r0c_input.py",
+      "bytes": 20096,
+      "raw_sha256": "2a6142689c25dfe7888cf85c4c44239fb59c65a494348eaa7c52c5640a58eb39",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/s2b-build.json",
+      "bytes": 658,
+      "raw_sha256": "b8084f9b379ddc495f03b263f0ab53ff989fe08280be89b2aba63e57326c689d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/s2b_capture.py",
+      "bytes": 19041,
+      "raw_sha256": "cb7ebb2159575e7994882565ec2ab30633bf20c93d5e999a42641d09feb627f2",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/s2b_contracts.py",
+      "bytes": 16469,
+      "raw_sha256": "1e4e7ea770141261763d89315fc7e2052f64f52214f997a1fde88465ced6437f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/s2b_validate.py",
+      "bytes": 8292,
+      "raw_sha256": "97abd8acc6a91c277b8bcdc34bee996ed3ce60ba0e6a10d2459fba6433147e8b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/s3_import.py",
+      "bytes": 26092,
+      "raw_sha256": "bc097d198c5e448aec75e23743cd8cc83c4176c2307650f83df5383df8ca6573",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/s3_ledger.py",
+      "bytes": 23996,
+      "raw_sha256": "d0c116f9b2896374913dfa9fe7b86312400cbd1abda90328732af06dbaa5b14e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/s3_native_replay.py",
+      "bytes": 22445,
+      "raw_sha256": "a3ed8f8decb132c5a74180b365e39e577299e442954944456f2e6d30dcc8ccdb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_contracts.py",
+      "bytes": 20100,
+      "raw_sha256": "6afe73e4c0a56543efd5b40dc3fe630ca22a228058eb933fa5aac306c4c020ec",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_driver.py",
+      "bytes": 10783,
+      "raw_sha256": "8f752d1b410bff6aa4f70a163832a7ee636baf4f88a7b29066de952569358797",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_n03_observe.py",
+      "bytes": 16158,
+      "raw_sha256": "473a8920da5e54416efbbef2cb8fcee1f53436c402d3427c1cc337972662029e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_n06_attribution.py",
+      "bytes": 13274,
+      "raw_sha256": "a1661791d18416cc5beaf7d292b15fd1219795498f6afbcad2621f391bc73c63",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_n06_probe.py",
+      "bytes": 49016,
+      "raw_sha256": "c03b7d052370fcf4cbd01f03f505e0bcb0d0d89593057000915f2fcd4b22351c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_n07_verify.py",
+      "bytes": 15242,
+      "raw_sha256": "65fa1df5f3cc6b73d5fcf6b77659e9df31c4a7e61f27ffc150c654a81f65d432",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_publication.py",
+      "bytes": 12455,
+      "raw_sha256": "9f0f0b6159f77cd2d83070498794b1e5337e1c4371640478e7ad2f477fbe3436",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_r0c_contracts.py",
+      "bytes": 10184,
+      "raw_sha256": "5547a50156fcea09455c1cf2801114e44e36cd8fdf680dce73b7c2af7d7f3317",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_r0c_driver.py",
+      "bytes": 80914,
+      "raw_sha256": "e049bf11e82b5aee58e4e58d4f0a3b4b71a873941e6c65bc5c582c5837e72bb4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_s2b_contracts.py",
+      "bytes": 31800,
+      "raw_sha256": "64f4a019d29f7f80d65662c60f1737ce9511f1b205e0aafdf862b43e5acb63ed",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_s3_ledger.py",
+      "bytes": 15524,
+      "raw_sha256": "587e1111e4b86bd100f34c733038d4972d331addef817d2c1bc0fc470bbae4f3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_s3_native_replay.py",
+      "bytes": 15196,
+      "raw_sha256": "87287fb26c463192ed279c6a47f9ae0497e217abf0e2fa0e67263ead0730ea6f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/tests/test_s3_replay.py",
+      "bytes": 41700,
+      "raw_sha256": "268d57f439e212f5266aff65dbaba1cc696ed4cbe4eefee536d5a83734c36bf3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/validate.py",
+      "bytes": 2627,
+      "raw_sha256": "310bc8866ca75e6c63b8862cb4a25a17a9cb81e395222fa0ea568138062a1410",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/r0/windows_owner.py",
+      "bytes": 9650,
+      "raw_sha256": "f1d0507ea0e067954b044640fc877c2a5f416b7240a489a4b18eed2893b13e61",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/dpi_matrix.py",
+      "bytes": 15698,
+      "raw_sha256": "66bd6fb92e60614ac51cdf0fa929ed4dade3c333fdaf06b41783fc6c314aa7dd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/host_observe.py",
+      "bytes": 54406,
+      "raw_sha256": "91db4f599a57b22fc8b5396c22136518e4284dafc743dbc76e77eb72b437b47a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T160705Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "8f0911476ccc1e7cce804fe8cc50e3449bc55bae899494f21dbb96b33c2a0aa9",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T160705Z/host/CORRECTION.json",
+      "bytes": 3434,
+      "raw_sha256": "d9101cefe5161f4c82bbe2d61318e93e8114363882d16960a560e178d92f6576",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T160705Z/host/observation.json",
+      "bytes": 4664,
+      "raw_sha256": "e04afbfb1fa06056cad764279f61422d76593558c270ecab8c3b258aad7dee80",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T160705Z/host/probe.json",
+      "bytes": 7315,
+      "raw_sha256": "6e6887fd5b5b66254c7c5203c4494620cce3b953500a4b174f50cbc47d8d45e0",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T160705Z/host/screenshot.png",
+      "bytes": 588195,
+      "raw_sha256": "67119a37a4595b5be4b0bcabe2de9a9e08c9f65dc0d2535c1229b5785251591c",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162152Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "1c4f70fe888f540652f828deabaf0411deff5eddcc5b9f4d8a63e9fe00270c6a",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162152Z/host/observation.json",
+      "bytes": 4426,
+      "raw_sha256": "27c27cb73b2df1ce40a4d9c503c32546f6387ae88d77865dacf0627595b02d01",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162152Z/host/probe.json",
+      "bytes": 7135,
+      "raw_sha256": "d24c4dbaa1f77bfc348477016bd7bd28ae320da0ca8b0e82ed3527da42d11e0f",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162529Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "a3e3d4c45d504900ea38853ab15c06286b0b3cfc8633b973940636f4faa11bfe",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162529Z/host/observation.json",
+      "bytes": 4433,
+      "raw_sha256": "6135d7de5b5b54edaa2263ca46583cafd4cf108025a7863629fad8cf77908b62",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162529Z/host/probe.json",
+      "bytes": 7182,
+      "raw_sha256": "fff71a502c9f9b7fbd81d100f52e373873b15e794ec81232a57c91cb1363c043",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162554Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "57b3adfd7ca5efb035c63d98df57456e21cb217c4c542759d0eeef40478a8cbb",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162554Z/host/observation.json",
+      "bytes": 4432,
+      "raw_sha256": "95c066dc85ece67a2cafdab104421df83ccdf5c2121a07cff2cb7f7861437e94",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162554Z/host/probe.json",
+      "bytes": 7181,
+      "raw_sha256": "b8a8b34c650597c5bd5d6ee4fe771ce96c2d2907703579be6fea9dd3b0d74773",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162654Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "c9ebd56f750537e72f8e4cbf88f134599abca8bf6f2b23cdf7c50f145db6ea34",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162654Z/host/probe.json",
+      "bytes": 7357,
+      "raw_sha256": "d7b790d1943560510d94324ecd6e61830281e61c20588235dd2f79dea20bee26",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162654Z/host/screenshot.png",
+      "bytes": 57243,
+      "raw_sha256": "f4dd5e17111ef57ced55cb3340b151ae440e98bedc30fd7e676cb6aa394c128f",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162816Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "eaf3946009b2c2eab8f2695c649e5f41fdb31a61288df48d420131a8d96be5bd",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162816Z/host/observation.json",
+      "bytes": 5411,
+      "raw_sha256": "a8d95ddac981a14cfcd0c08f825a63b38a11b52f9cdd32376fc62d35bc47c3b1",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162816Z/host/probe.json",
+      "bytes": 7542,
+      "raw_sha256": "36bec69046d2cf5d1fdbb8c4ae6d5c123d6a93b4fdac4a67fbbaba596e574567",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T162816Z/host/screenshot.png",
+      "bytes": 57243,
+      "raw_sha256": "f4dd5e17111ef57ced55cb3340b151ae440e98bedc30fd7e676cb6aa394c128f",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T164055Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "aa88994cd762cb85249ba636996e8608c9bc1351176b47689ec5d059f8b37b4b",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T164055Z/host/observation.json",
+      "bytes": 4413,
+      "raw_sha256": "f9a9df0e96f1bcfb871556b4a3b41b27d3d9a6de3b9ebe4c01ece11fbd707a97",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T164055Z/host/probe.json",
+      "bytes": 7178,
+      "raw_sha256": "40c62be90b2b0ca43d7f6e52be638f530b515e92772cf6b606805b01b8b3b0ee",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T164925Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "d0d4431ede0c90646f71be26d3f68650cf518cc037f6addd31228437589462e6",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T164925Z/host/observation.json",
+      "bytes": 4412,
+      "raw_sha256": "5f17ab5bff39c6f576bbe852aeea604caef5cb555e85455d7182b709185949c3",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T164925Z/host/probe.json",
+      "bytes": 7176,
+      "raw_sha256": "a77d671538c26b109200c1e40a033bfe769f84ad69c2eb4e54c97a11c2afa752",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T165754Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "665c581af6e3cab1f397afca30e4add8b33e84eadf72264fda7e2a74f55c03ac",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T165754Z/host/observation.json",
+      "bytes": 4772,
+      "raw_sha256": "a64e8d06f109257174de7a6b20d499c75ce2272ddb71abd2eeebf7919a22b2eb",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T165754Z/host/probe.json",
+      "bytes": 7178,
+      "raw_sha256": "4281845ff637268fbda4522607cc1ca37ab3d0f5ceaa6b73a3caabc1233849fb",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T170516Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "7c85176d224229762d5649a15c5a7974d297fa6acc17b29412da2a28b125ab67",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T170516Z/host/observation.json",
+      "bytes": 6401,
+      "raw_sha256": "2002e71fad8f55bbabee03d38f366e747c5c2de4eba52d6b458ab8bea2caa7a0",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T170516Z/host/probe.json",
+      "bytes": 7218,
+      "raw_sha256": "a96ffc416a9d6ee3a4e33e982d275113311deed2c3821fdfed1d8baa9ee09157",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T171329Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "507b0fbbeca49791848dedfadd6ceb5cdbfd7f93ed0d3d512c8b0d7d7f44ea06",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T171329Z/host/CORRECTION.json",
+      "bytes": 1837,
+      "raw_sha256": "b6524ae826e276062ec50ef07b4de5edff684266396b9a4f25418cb4d960494a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T171329Z/host/observation.json",
+      "bytes": 6840,
+      "raw_sha256": "62251373baf93dcde105fd704484dd51b3c3f43229e0da0d5832cd773a5e2abc",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T171329Z/host/probe.json",
+      "bytes": 7219,
+      "raw_sha256": "a3debc5514bc937f31c9a9dbedb3437aa71549a62bb4bcddd3cd5b98c8673754",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T172324Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "22beabcce29c82050a6c6d1680d50f438c654b194f6a0f64f4c80d35d45271ec",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T172324Z/host/observation.json",
+      "bytes": 6775,
+      "raw_sha256": "244c058d130ec302575caf90ecaa98819e3e9b182366bae3ad7b38eeaf9e874e",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T172324Z/host/probe.json",
+      "bytes": 7456,
+      "raw_sha256": "6c957c181951cce785aeee4ff9ebf2feed889bddd2805f9c72e2ab18d83c225a",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T173304Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "229a323bf490416d85fa2d47f01f3469cf637bc381e42cf39d64197aa8b24f06",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T173304Z/host/observation.json",
+      "bytes": 6797,
+      "raw_sha256": "91214eea12c64fa1066a9bfca189baef1d66aa8f0065510f077fa064eef8b8c6",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T173304Z/host/probe.json",
+      "bytes": 7100,
+      "raw_sha256": "4498e05e35533dd405d8636499322db2130021de4940b7a04e35ebe8d9e47e9f",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T174121Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "a54e8d43d62b82967ce96b5b62fc73f30c6ce791d474c6937cff92b2796cbbab",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T174121Z/host/observation.json",
+      "bytes": 6798,
+      "raw_sha256": "6d9af2584af63b09cd3350167fb70704d2cd1663c53ee432a90e0c1309da5675",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T174121Z/host/probe.json",
+      "bytes": 7101,
+      "raw_sha256": "09efe94320aab0f25b016d79ef4d4e94ba428d44433f64f59a28f08fd5830588",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T174818Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "385728a020572ad45d0617548870c4ee51ffcd44e90c5a51347d4ab390cd08ac",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T174818Z/host/observation.json",
+      "bytes": 6798,
+      "raw_sha256": "f8d0d7c53c7e58fa05eeb8ac2d4d89672a608364ab61c715fcfc2cc12ef2dd53",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T174818Z/host/probe.json",
+      "bytes": 7101,
+      "raw_sha256": "61540b7f61e7a665a664584fdc4d1504433b77626c1349431040786049bc2fba",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T175555Z/dpi_matrix.json",
+      "bytes": 13128,
+      "raw_sha256": "26f2e0bc6d358c842af8fa468db8bf4fecf52cd2ab002fcf281d2d824d27b44c",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T175555Z/host/observation.json",
+      "bytes": 6798,
+      "raw_sha256": "e0c04211b82d6c7ad067837d247b0dca1a4b217c11cd776a24295f44a07444fc",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/records/20261024T175555Z/host/probe.json",
+      "bytes": 7101,
+      "raw_sha256": "e98662049c437e1ad8647f0e48245af015571fd310f8522391bb90b1215fb798",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/tests/test_dpi_matrix.py",
+      "bytes": 8955,
+      "raw_sha256": "5c09cbe79f92ad4112ca52b2b8e8b57ff5b3e1530bf58769bae52dcb0a21d7d1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/typography/tests/test_host_observe.py",
+      "bytes": 51438,
+      "raw_sha256": "e27a8f81a380e0f249e68b35930e65ce16354bacaef7d4bbcec49081aa3e2a2c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/video/tests/test_vid1_capability.py",
+      "bytes": 44594,
+      "raw_sha256": "545743d45af2886ff7328c5866bb915807455aa7847ea6dc409e4e49f9676228",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/video/vid1_capability.py",
+      "bytes": 56222,
+      "raw_sha256": "2d89e38e35a594c91df7041b866b5d4c2319abd48d2c7d2597a03534c0683cfd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/video/vid1_probe.ps1",
+      "bytes": 44526,
+      "raw_sha256": "a311e23a57d8fd007c3a14f54b21d162e063a940f7e790a199591602607349c2",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare.rs",
+      "bytes": 1063,
+      "raw_sha256": "1cbc230a7ce870c5a68e7837ea0750876498944a9e3e4c5a8cb9854e94f8feea",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/fixture_probe.ps1",
+      "bytes": 2035,
+      "raw_sha256": "5892464c03ce1a9ae2c0b7b30908cff1ae2fc350d0e286bf2fa1171efe914c4c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/gdiplus_probe.ps1",
+      "bytes": 16191,
+      "raw_sha256": "4c9e8e2afaf051536afffe8f7778b51965438e03b7a458d5dbd07bb1318e8f7a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/harness.rs",
+      "bytes": 163269,
+      "raw_sha256": "ed6b0b45437a036aa8b6ae274829d0001e6b53c0e8301c4a39c4548cd1b2cacf",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/inspect.rs",
+      "bytes": 25173,
+      "raw_sha256": "8edd645b943e3821d546494871a915df64aa17c14d4fbd43a8de02ea5f1ca1bc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/pixels.rs",
+      "bytes": 28621,
+      "raw_sha256": "55fb88e8f81dfc63836c89f3a82c5ad27b3a05441fdfae890765c578173abe73",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/silent_probe.ps1",
+      "bytes": 2008,
+      "raw_sha256": "5f422dd7b16fc1cd9f66004aeca340c47e92e534b51944990e4d53d8b733ad55",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+      "bytes": 6542,
+      "raw_sha256": "4a0c8c703932e8a5e5841a8f4805f907c81939ef0fcc687e8086731b7693a353",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+      "bytes": 52168,
+      "raw_sha256": "32666558c588ae93be5fc929f54307398aeddadf4458c5bdb80780e8e7bf9741",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/media_picker.rs",
+      "bytes": 10469,
+      "raw_sha256": "8be146d34a3bebea5183102892524928c86a3416adc8bcc44095fa35d0fdc6bf",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/media_picker/boundary.rs",
+      "bytes": 5242,
+      "raw_sha256": "2e6ba39daabef6f4ca4b84a48c6f2d83837bf70733b803d6c22283c32c13d410",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/r0_owner.rs",
+      "bytes": 8876,
+      "raw_sha256": "3d49dd3f0b1f68cd90c370ff227269d5e31d64a867a712116f878655dd8a43e3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/r0_owner/ownership.rs",
+      "bytes": 4522,
+      "raw_sha256": "8b2cbfa7d50481d16c226dae524bb1821f50529b24ae73aa1579633da7857f0b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/r0_owner/sha256.rs",
+      "bytes": 6370,
+      "raw_sha256": "6d9b9c02afb40f17f847473bcb9efb8e232daeaaa9a0f89ebdb21c466977d594",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/src/app.rs",
+      "bytes": 4589,
+      "raw_sha256": "e952e98901b34ce5bdc3820a46cb25543d9879065f1a2906a9a23777ed7a2c8c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/src/instance.rs",
+      "bytes": 7580,
+      "raw_sha256": "e5b9e02178a3f37586ba62e5a592f7669040455e941a93c231cdec6f4a8a3293",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/src/main.rs",
+      "bytes": 6187,
+      "raw_sha256": "be759a14894ce68bd08a6b4ca1e5f8aaf3922bb2cf777e624aeb0f7ed04123db",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/src/r0_s2b.rs",
+      "bytes": 27930,
+      "raw_sha256": "02f3cd49a179b382d2ca13304a3872e7a1d87e6e2c4a1c3cdb252685cbb97317",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/src/window.rs",
+      "bytes": 15490,
+      "raw_sha256": "3ee32441a5618346c76c35b0516fe869733e4030082c1a0357226aa862441123",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/tests/decode_compare_harness.rs",
+      "bytes": 209180,
+      "raw_sha256": "8a09829e400950e332299a4a2b25ca942c33009d8cb9874e30a049b7fd36c377",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/tests/media_picker_boundary.rs",
+      "bytes": 4004,
+      "raw_sha256": "34dd9303bd7feece76d6462b357a55e7cedceabf95268bc078314f2d50de671e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "apps/desktop/tests/wic_admission_selftest.ps1",
+      "bytes": 3407,
+      "raw_sha256": "fa76c858b058c57173a60aba28ff329fe626656f7b40149599dbbf61b553a429",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "clippy.toml",
+      "bytes": 143,
+      "raw_sha256": "c92d760ad7426cdae0e8e273686946388a38e9ac4831a8983300722eb078a81d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/app-core/Cargo.toml",
+      "bytes": 325,
+      "raw_sha256": "d351fc6b78bc88d61c8f0868b45be49e432633aeb0ac0582bdd054f144cc36be",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/app-core/src/diagnostics.rs",
+      "bytes": 5315,
+      "raw_sha256": "72ae708961b284431a39c3715edb94c3329e7feb75bf6cf089861313e22eede7",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/app-core/src/fence.rs",
+      "bytes": 23732,
+      "raw_sha256": "bea071aa9b1a164dbdf90ead17b13a4ebe6608e7bb4aa713c5e9e19998bdabbe",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/app-core/src/lib.rs",
+      "bytes": 3337,
+      "raw_sha256": "0bdfc308c413c5dfc4d960ea4fbecf654a59bdd870a294130c5c7cad2cde556e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/app-core/src/navigation.rs",
+      "bytes": 2707,
+      "raw_sha256": "500f73708dbaf811aacb791129a15a25cdc4638df647eb3ff22789fbe36a211e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/app-core/src/observation.rs",
+      "bytes": 84402,
+      "raw_sha256": "94d5e942811401405622cfefbfcb44408604487bc364d6fbf856d37c1134bbf5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/app-core/src/preferences.rs",
+      "bytes": 26331,
+      "raw_sha256": "5337351c47aeec951d3cf4bd7e4a9ef0d63225428c4cdd1af71ff8814aa3af78",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/app-core/src/redaction.rs",
+      "bytes": 31086,
+      "raw_sha256": "07954f5ac009064627aef23cafbe3a488a12adf1c4a2eba1b46d7a7a0ebef18a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/app-core/tests/observation_publication.rs",
+      "bytes": 146706,
+      "raw_sha256": "6d3a73ac0fb03e52bbdf8f6210d912865182971567eb857401fa1f9f101fec0c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/Cargo.toml",
+      "bytes": 432,
+      "raw_sha256": "507175a1601d08925b55cec0bf6fac2830dbf20de58875cf4fa904de8804dfd8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/examples/representation_summary.rs",
+      "bytes": 854,
+      "raw_sha256": "38d829568ab87714d9348c4bd7390088557e75e7b071f51f3aa73c5f4acac229",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/fixtures/task-184.json",
+      "bytes": 28696,
+      "raw_sha256": "2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/client.rs",
+      "bytes": 104785,
+      "raw_sha256": "41f018f6292a3b1e1e978bbdcd6d80ab815e0ea73e0cee563e9097ddde7bc2ae",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/error.rs",
+      "bytes": 2208,
+      "raw_sha256": "7b2573fa9e6a4014c28824b721acc4b471dcf224d6a9b80767b4ad5a175cdf78",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/fixture.rs",
+      "bytes": 38915,
+      "raw_sha256": "eb85463b4baa268821c15b33efb74cb54ffb8ddc8ec9d1ca68888e0b61d34089",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/lib.rs",
+      "bytes": 1803,
+      "raw_sha256": "a70f16d6aff190096a2589226ac0e5bba15d3ed456b20ba68660f05819ebdd40",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/mock.rs",
+      "bytes": 79988,
+      "raw_sha256": "3b31cc8bd65a1e29cc6f5162013ca65864f9020b8213191d0b425c8960ad4423",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/mock/deadline_tests.rs",
+      "bytes": 17286,
+      "raw_sha256": "ebccfcd83cd36247b1afbe485c0f03e304df463d3a54fe6056c1f03b2bfe9ec9",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/mock/deadline_trace.rs",
+      "bytes": 6392,
+      "raw_sha256": "dfba60fbee98b42990f025fc01e02d62571e6af83e1babadf2f46912bc71f8d4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/projection.rs",
+      "bytes": 33560,
+      "raw_sha256": "afdbebad6fd728dbfaeba40d80c0eadaab9f68cf31ac2230200bf2f364501641",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/read.rs",
+      "bytes": 16262,
+      "raw_sha256": "8815da02b63286b46c58fba8c9062f4dba39323672e172bc04e7348382ac91f2",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/representation/mod.rs",
+      "bytes": 17078,
+      "raw_sha256": "c80787c005b26f52caf877127845cd2f6c43012af977af493a10899e4f2ec272",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/representation/store.rs",
+      "bytes": 41207,
+      "raw_sha256": "d1efecd79653cb3873337da1415b962f97e44fee943f675af7bf66eba5e02ec3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/representation/summary.rs",
+      "bytes": 8644,
+      "raw_sha256": "4aa7bb7ccbfa81e46953071958fda016aef211d84d42f4cc76c58ac999826c4d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/representation/tests.rs",
+      "bytes": 16172,
+      "raw_sha256": "e008abcc00c097c6a2cff8617a38c6fe316effc3c6bfd504fe30c518a26ef48f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/representation/workload.rs",
+      "bytes": 24522,
+      "raw_sha256": "ab869308a7a781b695b3794eb8e863d742c8728310831db0c11c8a9fd55a008e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/src/transport.rs",
+      "bytes": 1970,
+      "raw_sha256": "95039e824a53c0a518163700fc5eee460ffa6f55dd33fb0885d3795aad6856ab",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/tests/automatic_reads.rs",
+      "bytes": 15339,
+      "raw_sha256": "ef907371c11fe1a2d764f7eab8f9d2227392543d934c484cc21c05737a911eab",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/tests/commands.rs",
+      "bytes": 10051,
+      "raw_sha256": "7849a7b79cbc897a97656ae720192f771ccdb3eacaa14c8d6644ffea9d1af131",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/tests/common/mod.rs",
+      "bytes": 2315,
+      "raw_sha256": "f75d09c3bb29c948b7121c9991abe8bd5e2cc40cf07da9ee2d144a6a53945c86",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/tests/delayed_step.rs",
+      "bytes": 2413,
+      "raw_sha256": "466198e7d2f913d968cf558daf09e05d6240a4796d9ae86973d412f3c1870076",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/tests/effective_state.rs",
+      "bytes": 17454,
+      "raw_sha256": "b608ecfd6dd71c5e6fdfbc58fb9ea451f2b1fc2f29a3574e69ebf99b6668e875",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/tests/fixture_observation.rs",
+      "bytes": 15255,
+      "raw_sha256": "24660b552fa97036f587b8caaaa7794da3a82a59a61b9a15ea6432026d63c49c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/tests/graph_integrity.rs",
+      "bytes": 12083,
+      "raw_sha256": "d344615b8507f67bcb80520a61bb455766a5963bb16a403b85056f1433fd88e2",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/tests/recovery.rs",
+      "bytes": 21944,
+      "raw_sha256": "f4a5758da5cb1a4c6da2f92449d5da5c43a2f203fceee854910b5eef9ad65040",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/cos-client/tests/retention.rs",
+      "bytes": 38579,
+      "raw_sha256": "7db41c9ce18a9b4e92dba235636ad23ce614a71c8650e5fa03c7733264c65b84",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/Cargo.toml",
+      "bytes": 374,
+      "raw_sha256": "a8ec4679bd1a0d3974cc4e4c79ca1a5bb1790a8e9f749e407a56b2cd45a56999",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/accessibility.rs",
+      "bytes": 2593,
+      "raw_sha256": "702fe127e56595041dbb5e87c36264fff6efb23ecb98db0cbd4e053d0c6d3a04",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/budget.rs",
+      "bytes": 36734,
+      "raw_sha256": "c92303bd8250012e654d20862be5e3a087bf6697317d39ed23c1f7ed58ceda11",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/dock.rs",
+      "bytes": 19039,
+      "raw_sha256": "e703ebf032fd3769d530db2d5e43a39a7a79c5b6bfa83d16a8e9d0e16ee5ff1a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/flow.rs",
+      "bytes": 18898,
+      "raw_sha256": "3d8bcc4ce10bd298cf021f34f1e4470f2e8fe0358f5239f0bc2fb56a25119654",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/inspector.rs",
+      "bytes": 10842,
+      "raw_sha256": "0ae9b52b940a1b4fdc7d2977472240c495b435fdfa2c42352c776007b154b4c8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/intervention.rs",
+      "bytes": 38340,
+      "raw_sha256": "df02c7ebe0a8ac0f966749bbbb35da702147921884e197f1f2fc848f80d61274",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/lib.rs",
+      "bytes": 165109,
+      "raw_sha256": "137dc5619eac1b3e6231ee7f19dff914a441c58fc5204dd52a8edc16cc0b8dd7",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/r0_probe.rs",
+      "bytes": 6010,
+      "raw_sha256": "4396ef3ee4e3af8127216080ac407b08b36b2f7f00269ee45817358e2a1c7a98",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/shell_style.rs",
+      "bytes": 10972,
+      "raw_sha256": "04640c51a0c6900f75fa486d423946d6e5790d1fa7cdffe23eb1f23e0b984c46",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/stop.rs",
+      "bytes": 14748,
+      "raw_sha256": "d5c11c89702ad7535c244960cfefc40ce16bed447f1ec50736933040f06c5979",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/tokens.rs",
+      "bytes": 93753,
+      "raw_sha256": "912ffdf82e99c90dec24287340afb97fc8ba1a2f38617149d23d092503620122",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-gpui/src/trace.rs",
+      "bytes": 3563,
+      "raw_sha256": "34e334c39fc56d80ed2ae4e0c559dad3ecbb80adb0f62d1384439f46035ca8c4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/Cargo.toml",
+      "bytes": 381,
+      "raw_sha256": "d72df7b7a8fb657380b2ef4fc9484cf167391326113790124988ce2c4900b096",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/src/bounds.rs",
+      "bytes": 2736,
+      "raw_sha256": "2b5fe960589fe2675cb2121259627f90e81a8d748666db1a0e4384c7e2611fed",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/src/canonical.rs",
+      "bytes": 2057,
+      "raw_sha256": "1acccf5d1e17206166494f4b1fe85bdace2b6c83aca883ab7cf58d4277c4a242",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/src/errors.rs",
+      "bytes": 3687,
+      "raw_sha256": "6d6e22b9ccd76d23fe1d0b0949f6991594544f185b1632a93cd74bfa6ce72b06",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/src/ids.rs",
+      "bytes": 16000,
+      "raw_sha256": "4c0154df721bd961048295b30c2f3536975d5fa1af0131f7f5ae65622f511b95",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/src/lib.rs",
+      "bytes": 3842,
+      "raw_sha256": "06054e1a7bf908d06246c7eae11dd95b3f835febeb229d1e24095be91016658c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/src/macros.rs",
+      "bytes": 4627,
+      "raw_sha256": "a31a16799e23c4b4d5faafdbc8523e56054d92da5a8aebff24993bb313eea7d2",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/src/messages.rs",
+      "bytes": 35197,
+      "raw_sha256": "34d45152f0f44a8409ca1958fab541a44bda81f6f78190a408387c3b4a59b883",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/src/projections.rs",
+      "bytes": 18405,
+      "raw_sha256": "8bfec0d41efc57cf9b050acfec0b3b1e325d1a29b7dd96cf9e5df154f2a0ee1a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/src/versions.rs",
+      "bytes": 7944,
+      "raw_sha256": "151cc29be3f8bbc188568dd01dd0c326ec52095725d56b2e97101420dbc0cfcd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/tests/negotiation.rs",
+      "bytes": 4383,
+      "raw_sha256": "939c861496ef4b7431b9f09b20cadc4ae27bd58a38771dfbf1dfc27ef3d190ab",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/desktop-protocol/tests/serde_policy.rs",
+      "bytes": 11075,
+      "raw_sha256": "e2f59ee3b5bd4691fd6d852bbe95423bf735919a9d00aebcc58ea80d9bb90243",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/media/Cargo.toml",
+      "bytes": 356,
+      "raw_sha256": "231721c529076e4b0b5c4ab78a58b63ffb8062b96c36d1da57d8a260a10d8eec",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/media/src/cache.rs",
+      "bytes": 13202,
+      "raw_sha256": "60d02e129d626b5e61d6d5e0b4ed3acf288e03d127cb5f8a7073f25f131a7900",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/media/src/decode.rs",
+      "bytes": 12264,
+      "raw_sha256": "a1e7a89bd455641a34edd75a23679b3faf018376eb39c7f7b884f130cac43184",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/media/src/key.rs",
+      "bytes": 4101,
+      "raw_sha256": "d721adc4fbd6c7d97b10b33ebb65d3f4a383a31e4f24ed3009633a169888e5b6",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/media/src/lib.rs",
+      "bytes": 1663,
+      "raw_sha256": "2aafd6deb2fe4aecca56529fe4ad71c136f4f0bc7a45c7e825a5837159e2c5b6",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/media/tests/decode_admission.rs",
+      "bytes": 4691,
+      "raw_sha256": "3af94ef49837de55065fc686f5824296258801ba636a9e76a59c04d2ecd1a125",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/media/tests/decode_budget.rs",
+      "bytes": 10661,
+      "raw_sha256": "9388144621f0a01f17bf8bb716671708aa9d747d12573279e55e2f491159b138",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/media/tests/local_contract.rs",
+      "bytes": 13182,
+      "raw_sha256": "324b4697c898dbf8669b8fe45bd402d394510390cde191bf9374bc880f37ebe1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/media/tests/security_contract.rs",
+      "bytes": 12060,
+      "raw_sha256": "07da0bba40d622165c029b29d5f95896ac1e879434565fe3b4b69b6a9dc23edb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/ui-model/Cargo.toml",
+      "bytes": 253,
+      "raw_sha256": "123964293d470736832ce7e6599164ff8a0938541366c9dc314707b3297d7884",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/ui-model/src/inspector.rs",
+      "bytes": 22627,
+      "raw_sha256": "ba443583d8253cb5b07294f0b3766e449199cb2b401c7498839c34dd8132cd53",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/ui-model/src/intervention.rs",
+      "bytes": 54633,
+      "raw_sha256": "0a6e2c4cae2d3430d8784e3ea6e8a2d587b525e993e2bcee4de544767d32f4a0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/ui-model/src/lib.rs",
+      "bytes": 148992,
+      "raw_sha256": "ab461c939657120792befbf401814a8f45a4a01b130c4939db2ced64135568dd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/ui-model/src/simple_casefold.rs",
+      "bytes": 47674,
+      "raw_sha256": "f553bf6bd93d494ca785ae169f27a2d81ee79ee23eec71ed772dc8dd13254886",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "crates/ui-model/src/task_rail.rs",
+      "bytes": 47015,
+      "raw_sha256": "bef25777bf9d58bfeef20f878bd61f31547d68fa201332dff43cf447b23d2320",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/architecture/COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md",
+      "bytes": 44007,
+      "raw_sha256": "a8c4a2152b255c979e95b5fc026139ecb2e8091120a528e82093686eb4dc1897",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/architecture/DEPENDENCY_RULES.md",
+      "bytes": 4114,
+      "raw_sha256": "1a102692c145a8213faa8fef4b5de8af4881a61332f28584a3d77a37a80497c5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/architecture/DESKTOP_DESIGN_CANON.md",
+      "bytes": 26328,
+      "raw_sha256": "14490f44fb3cab7c8723a1513b6f34a9bffc32b1dc3773cb77924f8587e19f97",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+      "bytes": 132684,
+      "raw_sha256": "3acfa213c0f10de081fc4ad9ca6328e3c93c9d22981f2e0585c1dd885d4e6d5c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/architecture/DESKTOP_PROTOCOL.md",
+      "bytes": 29479,
+      "raw_sha256": "f704aee5945f8c671ed6fecdd9d820beb510d48b2a95b5d970501aa354525a27",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/architecture/PROCESS_MODEL.md",
+      "bytes": 6546,
+      "raw_sha256": "00833cfb791f719aa1d65f56fa19885e154034f5e44c25dc02e9b7c5632f2c87",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md",
+      "bytes": 119334,
+      "raw_sha256": "101914b25f791c6e6df63ebf5bb7c9d9e0a4be59251b657fcda6681161570f86",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/architecture/REPOSITORY_ARCHITECTURE.md",
+      "bytes": 7779,
+      "raw_sha256": "e8ef9285bfd35ba148a25c33cefeed02db2acfbcc59ac3b93fc14c234a3e5528",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0001-GPUI.md",
+      "bytes": 5595,
+      "raw_sha256": "64c36339dd138b8f8056578f454660a8922f3480a5f3b234766af9d9654b7cd6",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0002-REPOSITORY-SEPARATION.md",
+      "bytes": 1468,
+      "raw_sha256": "132843d0d2a2422492e6b9062f27e76fa5f9aac2dd0e8f6a40ff26ae42b2473b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0003-PROCESS-SEPARATION.md",
+      "bytes": 866,
+      "raw_sha256": "dfa453ce3a3da139bd64cb07b3e95ea9bebac9cbf1a71f455d707c30340bc548",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0004-PROTOCOL-BOUNDARY.md",
+      "bytes": 2517,
+      "raw_sha256": "36f05f35d9ab66eb443d7213da21b0d22f1469d5503928716fb2e2eaefc9b990",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0005-LOCAL-TRANSPORT.md",
+      "bytes": 5298,
+      "raw_sha256": "1d176d66f45a7ae11e548741a34224dbccb38aba509dadf9636c2a1833caa029",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0006-MEDIA-BOUNDARY.md",
+      "bytes": 1604,
+      "raw_sha256": "248fdef0dbcad74c80eb1036c7cdde94f692893b51817e4b51d20c559e0f6e9c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0007-RENDERING-PERFORMANCE-VISUAL-ARCHITECTURE.md",
+      "bytes": 6415,
+      "raw_sha256": "e7891164b2872c80e7f6efa5aa6317d27858e44e6b8d13ca74eda4153e939125",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0008-OWNER-RATIFICATION.md",
+      "bytes": 9998,
+      "raw_sha256": "e79bf72c3d44454c5c17dde6d3da4e24f322716a85264aaac7c242506cb32bf6",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md",
+      "bytes": 3032,
+      "raw_sha256": "d0b9cbdffea2b074567f7cdfd4826df8043b307952d839c2ebaf5ae32fe03072",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0010-UX01-DOCK-CLOSURE.md",
+      "bytes": 9241,
+      "raw_sha256": "34080f1fd5df2ddd8853c8bd0fb484621c41ea69af6c32d0308df4e207971c64",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0011-DD26-INTERVENTION-PRIORITY.md",
+      "bytes": 6554,
+      "raw_sha256": "8e4b9f7f509dc71ed6f187116952dcca4da5f52d94fd94d8b4417c2a54661405",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0012-HOLD-RELEASE.md",
+      "bytes": 3637,
+      "raw_sha256": "dcfae351089a13502a7d29977a7d5203cd1d022e97fa5e5dca8366f68da1ccbe",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/decisions/ADR-0013-EVIDENCE-RETENTION.md",
+      "bytes": 2934,
+      "raw_sha256": "235e38914df5485526dfdf2f6b0fe1298b67b89fc62346099781563d2b6a919f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/ARCHITECTURE_PLAN_FINALIZATION_REPORT.md",
+      "bytes": 28453,
+      "raw_sha256": "b9069d5c94d4e30bcd32e5a7061b80abbedf0f9015b598136de1477f053a9296",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/BOOTSTRAP_PLAN.md",
+      "bytes": 2076,
+      "raw_sha256": "4f3a6734744d4330e8673f906b4495ab9f4576b2fb435285f01648f003218b94",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/BOOTSTRAP_REPORT.md",
+      "bytes": 9494,
+      "raw_sha256": "2d5b8697d414413550a440bdb790b26b338c2aec9f589e4ca0d445f98857bca9",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/BUILD_AND_RUN.md",
+      "bytes": 102089,
+      "raw_sha256": "c0b13a92d0cb1e4cd2a447e3e9f8f6d00b9160e7cb4f35b81bcb387d4bc70eea",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/DESIGN_CANON_NORMALIZATION_REVIEW.md",
+      "bytes": 6197,
+      "raw_sha256": "0505a887d4f55d773ea2ca72fea8d583d6efb6d1c5190709a3d5157d48a0be6d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/DOCUMENTATION_PREPARATION_REPORT.md",
+      "bytes": 9288,
+      "raw_sha256": "5f4d20f1c785680a2ebe9521e4fe0484813b08f3bb2e12f7a6abd57b9ca399d4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/GETTING_STARTED.md",
+      "bytes": 11301,
+      "raw_sha256": "e239f402af61b7623bb6bd9ee99305a29a8b69b9a99eab179df0104aafd46bce",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+      "bytes": 438168,
+      "raw_sha256": "5b5d4a799179ae4e7ec0f410b38a1125651d0f13c4935072cac6e4f7d0278512",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/PROJECTION_MEASUREMENT_2026-10-08.md",
+      "bytes": 20811,
+      "raw_sha256": "dd6f7597c64e5340bd3a26c93ef5a4f7e55ba7defe95ab050d033d608a93cd33",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/TERN_BINARY_RENDERING_ANALYSIS.md",
+      "bytes": 56382,
+      "raw_sha256": "00f98cb62315371a15891bcb524cd55806093dd8f4832866229b2cc578fc306e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/TESTING.md",
+      "bytes": 48696,
+      "raw_sha256": "535c39fc23f7e6835dfde9ffb52bfa9ffe4890e9b9b868dd644b21bc5a72870e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/PRUNE_RECORD_2026-10-25.json",
+      "bytes": 2058,
+      "raw_sha256": "291cf6926f39fbe90a7cd40fd4afe44e9eae4fa5298b8d69bbd8f06a8be0fa73",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/behavior.json",
+      "bytes": 18811,
+      "raw_sha256": "a1019e3240765330fae1bb1da1a8e6d726cfc72ec41ea3c881c08c3074943838",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/build-gate.json",
+      "bytes": 21062,
+      "raw_sha256": "ef37006da98fc396a0ad602980e66090c0684961105bc1a7b79cae0486f8e435",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/matrix.json",
+      "bytes": 77121,
+      "raw_sha256": "1cdec8b6b186fa9e3c1906a28386e1a0d36d9f577588a1c35fa685d7694ff52e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/quality-gate.json",
+      "bytes": 55987,
+      "raw_sha256": "58a439ca1b551f9195c1f262abd9751d8cf63c5d30ce2d491408548f15f7de0f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/review-response.txt",
+      "bytes": 3214,
+      "raw_sha256": "c266831bac6c6d9490ae2334bf02214840b5ad455bf74a57506cd5ea77999f7d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/review.json",
+      "bytes": 2926,
+      "raw_sha256": "2848225ec49292123ad2d7f77630023144a6994810137eb3939f73bc5e7e6694",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/run_matrix.py",
+      "bytes": 22321,
+      "raw_sha256": "dfcc533a50d79caa6bb688a16533a987a5dfe3906ae86a63ef3d0bb08aab94ae",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/source-order.json",
+      "bytes": 984,
+      "raw_sha256": "6ac90411776950d55ae7f38ce93b4a1b04480c3e029d0d2823f46e095cc12234",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/storage.json",
+      "bytes": 31514,
+      "raw_sha256": "fb189342f3ff447d1e7593960c543567465788368e2b8ff68af7a4c81d238d63",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/superseded-gate-round2.json",
+      "bytes": 34080,
+      "raw_sha256": "9d8e037f2bc995ec32becde3ecad60ac7ec619688f80ed99ceaf71bcc1e64fa9",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/superseded-gate.json",
+      "bytes": 32064,
+      "raw_sha256": "ee4f07a7f0bd5c6e0666063bf68503f5b5c00eb9efa5c9d557050adeac0fd0ea",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/tern-directive.json",
+      "bytes": 657,
+      "raw_sha256": "62c79a4c24629c3b74d548845d268c049ed7133d6d1ae01875031853df4026df",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w1-latest/tern-directive.txt",
+      "bytes": 14236,
+      "raw_sha256": "d53083e71b437e024b197fa2aaa3d23a627a5d7cc3bf5c647063788fe90b9d3b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/behavior.json",
+      "bytes": 25048,
+      "raw_sha256": "f451177b5034a2514088886f08ada3df87245066b8d6fc489215e5c05e9e232f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/build-gate.json",
+      "bytes": 16798,
+      "raw_sha256": "cfb64ab2f3298ae304ac093556fbb731d248b8030bc9a0f0a6ca4f4abf77e520",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/cancellation-repair.json",
+      "bytes": 3490,
+      "raw_sha256": "4a93d4f11bd74f45a3763fffa2432c4e7e86b05dfc3d46b5ba3fa4bb3662170c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/codec-observations.json",
+      "bytes": 4389,
+      "raw_sha256": "63322c9db29a5dc174cc8dc6a53de57b91c278be7bc9458d99f2e6eb20030c43",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/disposition.json",
+      "bytes": 3139,
+      "raw_sha256": "31c5e0894b6618536fafe23527eee0ee8a22ebebf87bb3da1dbf13b15b950b6c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/docs-validation.json",
+      "bytes": 377,
+      "raw_sha256": "7deffa6f8e40fabec9c56ae8af98f8892ba7a93a052e3d3ae670cff9f898b1b3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/execution-manifest.json",
+      "bytes": 6368,
+      "raw_sha256": "e403e07a07fcc731ef5525e52e397be4fd90005c5f1fa1d86352fefad7792256",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/gate-artifact-correspondence.json",
+      "bytes": 16233,
+      "raw_sha256": "0d3f00d82f02a12b0f3fbf2fcab5fe11eba9f601003d45c94be60c505420d1fd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/gate-dispatch.json",
+      "bytes": 1927,
+      "raw_sha256": "ef714d563457c51f47e300876346ed7789301ab2713d7161f089f476a18f2901",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/gate-test-counts.json",
+      "bytes": 10033,
+      "raw_sha256": "487297b95fdd08d2684c84c43657978b7cda7a433bedd09bfbe13b70630c8df1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/independent-oracle.json",
+      "bytes": 17802,
+      "raw_sha256": "26b19bcb1703e8cceca4164d07f8bba7ebf29b2dbf76bfc8df0a88c8a2f8dd49",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/integration.json",
+      "bytes": 1002,
+      "raw_sha256": "6be116d954fc1f58aeea2d3ff7193339302586f37a3af66aee003d1da1eeec07",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/native-matrix.json",
+      "bytes": 142352,
+      "raw_sha256": "67da0aad3b41f8184304ee497310c667ecc05d3a116671c1a363428d4189b4a0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/native-rasters.zip",
+      "bytes": 12848,
+      "raw_sha256": "c9168a0cdc646ba1ae3382a85f0ad40276b90f47d49b4087631607772815046a",
+      "in_commit": true,
+      "raw_identical": true,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/native-repeat.json",
+      "bytes": 139364,
+      "raw_sha256": "f17dd8a88aafee12f9f0eee34a09e15a0b53fd39c3bdff7580c64c5c484acd5c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/quality-gate.json",
+      "bytes": 31031,
+      "raw_sha256": "450b398000f236076913600472cd11c743b8467f72c7ed1205dff3d262c77603",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/quality.json",
+      "bytes": 7811,
+      "raw_sha256": "09a23f6fb7355876d42feedcf875092a1acf1cc50661b55dadbf870a7fa20b0e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/review-package.json",
+      "bytes": 2015,
+      "raw_sha256": "0c70907a3e800bf7a11e9777a7e3dabceae956002d491ae19e37a47a44a8acb0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/review-request.txt",
+      "bytes": 8883,
+      "raw_sha256": "513f47a71e80188630c5f29ceff9e6e02dc23ac4eeac01e96cb38489a895ca8d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/review-round1-response.txt",
+      "bytes": 7003,
+      "raw_sha256": "cba2ba3ee1e8f7859ab48b0d804e3b2363afaf072df5c3e86121dcb3fb4b31c4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/review-round1.json",
+      "bytes": 1078,
+      "raw_sha256": "0c290584fb180d5ba2036482c4090da4757ee29e4f712afa0b17d711a3d1a645",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/review-round2-response.txt",
+      "bytes": 7497,
+      "raw_sha256": "9262d62e5b13fc2e6c831eeea8dfb3e8697750140d304506b0fb166bd9d6559d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/review-round2.json",
+      "bytes": 1122,
+      "raw_sha256": "2eb41173445dd57e71996585f17d118ebab8a1eba92a85b00ee0ee57a715a946",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/review-round3-response.txt",
+      "bytes": 6100,
+      "raw_sha256": "d5bc340b17775b8206fceb09f426f52a17cb92fb3607567d5e17305daad24e1e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/review-round3.json",
+      "bytes": 1361,
+      "raw_sha256": "b11978a84f70c4e79dfe60734f660060bf0482921f56e8d88ce17df3b2a6475a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/storage.json",
+      "bytes": 2977,
+      "raw_sha256": "84e302d585919fef4f65c0a7260ec236969d91b21f1bd097cbef0042bccb6faf",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/taskern-cancellation-revision-request.json",
+      "bytes": 23832,
+      "raw_sha256": "4929f1c76a2db98c7d790a5f3878a1ccad0b3dd8ac3d5cd513165c2de4815491",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/taskern-cancellation-revision-response.json",
+      "bytes": 21424,
+      "raw_sha256": "3729691014a883f09b2ee63fb6219ebd7a1fff1092d5e603736e554d9759bf62",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/taskern-request.json",
+      "bytes": 9454,
+      "raw_sha256": "bd2cbba3abbddeb1b1d5e87055f76c119ca3ba6828205994fce7b0d8262463f4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/taskern-response.json",
+      "bytes": 14763,
+      "raw_sha256": "fcc9d89f72025b3fd62f44eb6e07b7945109446f7a729c08b6946d2e925a2d02",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/taskern-revision-diagnostic.json",
+      "bytes": 1752,
+      "raw_sha256": "8740944ce884002340e240bafc53a661cd925b662c79bdd90809612ccfc99319",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/taskern-revision-request.json",
+      "bytes": 20173,
+      "raw_sha256": "549da34bed4b79fb903d88508e25abf91782484ca42294ca0c9f1a24050dd509",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/taskern-revision-response.json",
+      "bytes": 16622,
+      "raw_sha256": "72778255dc4ac773957c06d32e8c5cdebd128b4884cd623adfee2ae6f721e616",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/tern-directive.json",
+      "bytes": 801,
+      "raw_sha256": "0832b3691055dbe8a0d41f8e7d450affb950abd5d48c704151f6714e059ec96c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/tern-directive.txt",
+      "bytes": 23855,
+      "raw_sha256": "32491ab6a00e90a126c1bcbaba26af8c201ac92deeadd3be28a5a554f7f6785b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w2-latest/w1-regression.json",
+      "bytes": 29536,
+      "raw_sha256": "bdbaf37338bc72e6f8cff48a08d0dfed0447aa570214e84be4d8c585bc95e42a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/awn-repair.json",
+      "bytes": 2232,
+      "raw_sha256": "744764db9d39cbeaa5e4723077bcd9aa663e2050d7f24a33d60b5e872a751078",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/awn-repair2.json",
+      "bytes": 2644,
+      "raw_sha256": "7241bf5b5cffd823060431831766283d4bce22ec8e6d5e29a59f13056133a808",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/before-repair.json",
+      "bytes": 10229,
+      "raw_sha256": "7253ea77f03479400bfc4f672150f9bc7a22d531624101b500c9dff5efb41be6",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/build-gate.json",
+      "bytes": 33693,
+      "raw_sha256": "a01fec535b89e4fa25d42f12d30536de3873097cb835836111a754049be72464",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/build-product.json",
+      "bytes": 524,
+      "raw_sha256": "ac3bdb5f0c7d27673558b02bc8535ebda7327937dc34fee07f518c3144cc7673",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/capability-table.json",
+      "bytes": 1387,
+      "raw_sha256": "29f3d19d2ce68126ddf1514b3116d05ed9dd964c26aa0f9bc4eb6a7cef40273f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/compatibility.json",
+      "bytes": 724,
+      "raw_sha256": "410a3c8e3ec3e92999147165248728e68481aa28598a8b40e260dde3da781be0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/directive-receipt.json",
+      "bytes": 773,
+      "raw_sha256": "f5f8456f0f31b1f6112d73ec83a567ee114de0157a40f3a64eb0cdac8a964157",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/disposition.json",
+      "bytes": 3792,
+      "raw_sha256": "9e9ba295d3895d9847e74596363d41f3d73aa4c115a293403a1e297a7dafee8d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/document-validation.json",
+      "bytes": 265,
+      "raw_sha256": "33b51aaea080ee2a81e4d3b0b6a88126bf1e21fcd6c839a708fa16ae8963b59e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/environment.json",
+      "bytes": 3760,
+      "raw_sha256": "cfd7c82029aff493b04700cb339577cb4010b1f99e20218a3892a559b128ca8f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/fixture-manifest.json",
+      "bytes": 10348,
+      "raw_sha256": "2eb8faef2086afe2842fea950d0c6dd02187b05e78e1934772abe0f231108060",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/gate-artifact-correspondence.json",
+      "bytes": 36209,
+      "raw_sha256": "bc4f72f704ddc53f2d22d4de87fddb07a95628f0527ee21a72a4c6526145948a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/gate-authorization.json",
+      "bytes": 10575,
+      "raw_sha256": "ba1f47c20e70825a04ebf08e5b08754131332363f10b0f31dd9f4ff73c327853",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/gate-preflight.json",
+      "bytes": 22379,
+      "raw_sha256": "d201b5e1096527ba94b0c4ef7d2bb241e6602072e3b9176ec6d1ac38460da10d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/gate-test-counts.json",
+      "bytes": 1360,
+      "raw_sha256": "f670e30afd6f298ad9c66c779dc46a776304d964e0f49507c4c77132b3b2d433",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/independent-oracle.json",
+      "bytes": 7867,
+      "raw_sha256": "72a90da4dc8016fb3b56491b6261c8f883f65efb8b2bb7aef60957913bc6bff9",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/initial-gate-authorization.json",
+      "bytes": 8017,
+      "raw_sha256": "50ef8bf173afd972d5ff79732af8533c0167f821876debeec3323fba13c98be1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/initial-gate-preflight.json",
+      "bytes": 1952,
+      "raw_sha256": "17e2f2e7961ca97c99cf21add9e390eae5f1e2e8183d6d965a0ce11d73137a78",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/initial-storage.json",
+      "bytes": 1412,
+      "raw_sha256": "81373f9fea12626bb3655113b4d9f5e7c94d5f187fd4d1a149a811e023ce497f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/quality-gate.json",
+      "bytes": 53425,
+      "raw_sha256": "a436baaf59abdeeab7c6feba944f674b51dcc999718d9d41ff2ec5c15c32a04e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/quality.json",
+      "bytes": 24194,
+      "raw_sha256": "db4a53c07e38fc1999a4670d0ebf1f77b2891ec13344afdb7668fe8fa54d764f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/real-native-matrix.json",
+      "bytes": 258738,
+      "raw_sha256": "890de586eaf8ddbbf259873ed9b2511908bf255ff07d1880a5154e1e58c7c8cc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/repair1-gate-authorization.json",
+      "bytes": 8675,
+      "raw_sha256": "f6b10da26a399d519e8fe2ac5db033ed15234883acfaebeb3513b3deff514b6b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/repair1-gate-preflight.json",
+      "bytes": 1832,
+      "raw_sha256": "c71ff281da2389641e725175ed257aadcbed87d1a2bf481531e10ccd2003ce7f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/repair1-storage.json",
+      "bytes": 1328,
+      "raw_sha256": "54bae1ecf1f509043a1ee664187f5f7c983df733f286374df5758a8f8a5cc17e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-history.json",
+      "bytes": 5740,
+      "raw_sha256": "c0daae67d782c8ba623bcbcb3a70c6b3c56f3bb4a9c25081531de5389eb1a1a9",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-package-source.json",
+      "bytes": 19519,
+      "raw_sha256": "385dc70926ba3c757f947c2f8fc1bb0fb358084829ae43db9635216c2e726fbb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-package.json",
+      "bytes": 7921,
+      "raw_sha256": "8a0c1296884c4774d5ebba185026812e3a2df1cfd7847316bbc3a79e7f9299a5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-request.txt",
+      "bytes": 4545,
+      "raw_sha256": "ea3a1a4ac10a181e9af480d3fb1be185adaca3af2bafa17a148b5120d0fb62f1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-build-gate.json",
+      "bytes": 43647,
+      "raw_sha256": "7405171ba57cddbe66f65a9715b8d208b232b25d6dfdd37786b17ffb30fd84a6",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-build-product.json",
+      "bytes": 607,
+      "raw_sha256": "4e58f1b548b769101e519d07d023dde871de9987444483b6ed62457ec454c9ba",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-gate-artifact-correspondence.json",
+      "bytes": 36044,
+      "raw_sha256": "b06c5e3f5535fbc2aa6cdf1765c8fda9a4e80eff79be48b09e83688afcf236ce",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-gate-authorization.json",
+      "bytes": 9683,
+      "raw_sha256": "44b1952c1833e21036d4d28375ea99651a30657415d251c126d8808680524fff",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-gate-preflight.json",
+      "bytes": 1906,
+      "raw_sha256": "2d96935f99393fd7077319abd860db02acd8f7530f6146bf1ee08e39dec9a90a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-gate-test-counts.json",
+      "bytes": 12769,
+      "raw_sha256": "60dbdf8e93e5220cc5fd698347e64dfdeee8d1646558f001f505209ab072de11",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-package-source.json",
+      "bytes": 20461,
+      "raw_sha256": "287b252e48c4aaa8715e1f29536fe7602e57c62e0b329adac114e88d5e31e3b0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-package.json",
+      "bytes": 18098,
+      "raw_sha256": "c2709ef831d16caa238584455836e2b5401b576dd64b2bcbcf38cd509ceabcf3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-quality-gate.json",
+      "bytes": 71425,
+      "raw_sha256": "740c20ce90a92cf98247b7a977b28c38e39cbeeea3e086e83503c29823a1711f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-request.txt",
+      "bytes": 8484,
+      "raw_sha256": "7f117d4de7ac08c830ca4bfa2f3ba6d792ee8d0bd179c9ed274d8e0efe762e2a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-response.txt",
+      "bytes": 7045,
+      "raw_sha256": "b0c4df77778030c173d8f6b281af817630363d46687c964b92e2a01e2d19e9ab",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-storage.json",
+      "bytes": 2369,
+      "raw_sha256": "3532a87100b54ed8e1e240b013153c0741861ad82251ae045fe59175805ee871",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1.json",
+      "bytes": 1862,
+      "raw_sha256": "95434881d515caf338dee5d40eafa411dbbc0e9daa6532f8e140bbb91c6a6125",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-build-gate.json",
+      "bytes": 32058,
+      "raw_sha256": "a6ffa423b2f1701bf38fd40def629b1e1ada6cce24e8a21f44acd4f162dba55d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-build-product.json",
+      "bytes": 553,
+      "raw_sha256": "3562fe076e71a6ae9286a6a08dd91b4b150bffe28c317ad34770ba25e94e8dfc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-gate-artifact-correspondence.json",
+      "bytes": 34294,
+      "raw_sha256": "42686be136f4436b77a8b641940da010d0e96558021db06a8fa50c7a6b282ae5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-gate-authorization.json",
+      "bytes": 10636,
+      "raw_sha256": "f688d0e0a4bf9e857cbf1b3decf2607ef6c5c63582b6e5dab19ea4540024bf29",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-gate-preflight.json",
+      "bytes": 23511,
+      "raw_sha256": "58b580e2d94a1bf5c87d692e3da9884f8847a5a559aa93e7756d58c0d01ac3a7",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-gate-test-counts.json",
+      "bytes": 9835,
+      "raw_sha256": "86fda7dd931f4d389b1507b69924a01b3c1f165501eb754bc11b8bbdedd6344e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-package-source.json",
+      "bytes": 19558,
+      "raw_sha256": "e170d55e883c3382de0fe50a80932b4340e49e51c0181c186731e0ab2fa1b6fe",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-package.json",
+      "bytes": 25123,
+      "raw_sha256": "a542103d411d960f249bd13df75f9f14d85106cd82978388408bbdcfe5a413a6",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-quality-gate.json",
+      "bytes": 51790,
+      "raw_sha256": "a595581d87f17492169a40160b112155f9f287f40e420dc46de496a9f5302ede",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-request.txt",
+      "bytes": 6203,
+      "raw_sha256": "70af26a4bd0b0a71b6c37b73fffd0663dd416ffd5896e18c3506eec3ca7598e7",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-response.txt",
+      "bytes": 7511,
+      "raw_sha256": "7f6ac0e92b1691c35298ac316b7453e57dd4c2adffacc3b62012f734579cceb5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2-storage.json",
+      "bytes": 2471,
+      "raw_sha256": "89152e4f2605940bfc6b66707dfffb68ebbc02cdd2d4c8c83c7d14eef723e182",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round2.json",
+      "bytes": 1700,
+      "raw_sha256": "21a27cf0cf727b8ba7e0e2bee7661999e27cfde948cfc65771b49eab37d636e4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round3-package-reconciliation.json",
+      "bytes": 5919,
+      "raw_sha256": "5d120d6a5c949292657d60595d51ba0c4edc5ba837c719635130097d69b6d099",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round3-response.txt",
+      "bytes": 6980,
+      "raw_sha256": "20ae0dc8518024d52dd7bfb37efbb8cf944c4f00a2631b7c71605f95e8459113",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round3.json",
+      "bytes": 1697,
+      "raw_sha256": "7fd3f1e3f20281ef1f8886d462fc7027f2b431ca7461bee1153d282a38692707",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round4-response.txt",
+      "bytes": 6729,
+      "raw_sha256": "bf678e4bb39d689f5dadd8bc603405cf74f2ebcac4c09fd8fab7a9dd613c1d07",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round4.json",
+      "bytes": 1879,
+      "raw_sha256": "23ace40460ecbf54084e4ae85812e4fd2a6d149650145da345767541a2893e8a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round4/IMPLEMENTATION_MASTER_PLAN.md",
+      "bytes": 422918,
+      "raw_sha256": "34bae90efad47ca221fe9813ed364dcbe42e4b7ccd4882e4b8a45a01efb81efb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round4/changed-documents.json",
+      "bytes": 2363,
+      "raw_sha256": "a4c9a58b29dae2765992bf8be29dfae4804b51260c100568cd449824782d0db3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round4/plan-capture-to-head.diff",
+      "bytes": 6708,
+      "raw_sha256": "fd8673f21325dc79c063b6d60045f2d7a03b12e15a15618dde572936a0f89478",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round5-response.txt",
+      "bytes": 6723,
+      "raw_sha256": "887e09b13274acf15172fa14530fda62446b3292b435cfa556fc40c90e95868d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round5.json",
+      "bytes": 2229,
+      "raw_sha256": "bcb4c4b0e94ee1e9ddbde673fb000791ce747eeb342fbe5789e5776165d15539",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/storage.json",
+      "bytes": 2397,
+      "raw_sha256": "cdc8ecc9183530bc51e2ea87752d20f3124a400dc845bd33c6e7d05db95f487a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/superseded-initial-quality.json",
+      "bytes": 46586,
+      "raw_sha256": "9ce57ed9c236a7d0c4fdcf002f03032e445198c7a7dd4e1407f4a0d0eef16095",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/superseded-repair1-quality.json",
+      "bytes": 48146,
+      "raw_sha256": "1c475f64a8790eb05170ea6023d42754096b0c9b30dcb590dbee7ddca0040b6a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/taskern-request.json",
+      "bytes": 6665,
+      "raw_sha256": "07501b65ae412fe2cc6834e9e97d74f34af2b1ccdf49ee19c500b6682ff7d2dd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/taskern-response.json",
+      "bytes": 9811,
+      "raw_sha256": "c8e9fef26b51894efb11c70ed44c3a7676c82675f19ad49e05af71f4009975db",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/tern-directive.txt",
+      "bytes": 17786,
+      "raw_sha256": "ba882a995d9111878c673cc316f8217cb872ebc7af06a29ad77af2d2f5bb1b72",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/tern-next-directive.json",
+      "bytes": 999,
+      "raw_sha256": "b679a9ed06bdd159c0eb6eeeecbcadd3103d13ed2692f1937aefbb64325badc8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/tern-next-directive.txt",
+      "bytes": 29390,
+      "raw_sha256": "c1ffd198c1f03d0ac43c9e951e1b7ac14db552452787ecbcbbaae106941243fb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/test-policy-cleanup.json",
+      "bytes": 901,
+      "raw_sha256": "ca226884a6f3d5353347bc9e34d9a526b035f37540c4259e3ba58eedda8980cd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/tool-discovery.json",
+      "bytes": 7100,
+      "raw_sha256": "493e1037fa3060a0e6d3a8197cc5e9a771fe2f013c7b4fe8a36a407fb8f0c1e0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/unmeasured.json",
+      "bytes": 683,
+      "raw_sha256": "f919da857d5bee434be04086ea45270a81f16f4c2ad8e23f31f6a4610ff4de13",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/verifier-repair.json",
+      "bytes": 1087,
+      "raw_sha256": "1d2b4854c4985939aa974c187827d9626ec6e9687099ed8575ba7ea903dd79cd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/verifier-results.json",
+      "bytes": 2412,
+      "raw_sha256": "f7e6615a20534d2a24517a71fa93cad0d69571af1620aa2a6efc6add321925b7",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/w1-regression.json",
+      "bytes": 78734,
+      "raw_sha256": "b572995005a6fe40b09a6648bc925a74fd53cb13396713c336c3650a030d5e95",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w3-latest/w2-regression.json",
+      "bytes": 136346,
+      "raw_sha256": "3845aa2736e1c3d3ed4bc8387b18def44b692d006d3ae709d763b6876f3f5ebd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/budget-boundary.json",
+      "bytes": 722,
+      "raw_sha256": "76c6dcedbc99d38956381706262ee66e36c9ef4d23debf64c869b8700eb48c52",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/build-gate.json",
+      "bytes": 32287,
+      "raw_sha256": "cf2c1af392272177694ca68c6025ab41088751a9e36fa675a7931db17bec2198",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/build-product.json",
+      "bytes": 405,
+      "raw_sha256": "23fd193e448684fc75b70011f7996adf63132c79e7531019fbda7a9513abe8a3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/cancellation-record.json",
+      "bytes": 1856,
+      "raw_sha256": "3c03213d7e076cd468554c7f8a8734d6d8f34114d42dcac2adf721b48a3e19e1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/candidate-binding.json",
+      "bytes": 615,
+      "raw_sha256": "b1a42953afe824def38d1605a01445a483ccd507447995e731c69c77d5b88cb0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/capability-table.json",
+      "bytes": 6579,
+      "raw_sha256": "50cc6f615ba2b5784e8dd8a59dce8dc4f20a15f4cbe814efc430ac7fcae5823d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/disposition.json",
+      "bytes": 3851,
+      "raw_sha256": "967419be83db9f6aba5ca24f9d5209685019f73c4a8bb86375f4ffa3fb4ee349",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/document-validation.json",
+      "bytes": 232,
+      "raw_sha256": "f5e68c347481b5a949ce760aab9c4ebf2a9453d02e4c9e04702484a88edf0ff1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/execution-manifest.json",
+      "bytes": 10965,
+      "raw_sha256": "fefec1f4e3bb4fc24131cfd5f42451b5ee287bb7e7b79eb80fc8f1fc691bdf1a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/fixture-manifest.json",
+      "bytes": 63331,
+      "raw_sha256": "f9b95d4f7b85255f86757b5bbc11c250b294c3edbc2c2e23905ac4fa33cc60a3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/gate-artifact-correspondence.json",
+      "bytes": 26633,
+      "raw_sha256": "52587b9ed801625fd0aae988a21a30df1be56ad232ec726be73ab108a31f844a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/gate-authorization.json",
+      "bytes": 9118,
+      "raw_sha256": "d504aeaa0a4836c56183b42362da4b9840a4321509894a36dd038fea2fea294b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/gate-captured-quality.json",
+      "bytes": 7314,
+      "raw_sha256": "9f37ed3630f2b527496262dfa98faee8b54b4a5cfabec18e563d4776f966b4e8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/gate-captured-quality.json.reconciliation.json",
+      "bytes": 728,
+      "raw_sha256": "9be1f0dfd03d4a5d2379ffbe10c4832a8d226312e58aae7b698118ae902f2efb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/gate-preflight.json",
+      "bytes": 23716,
+      "raw_sha256": "662763b92cd63a4f2cfe7bd6a1f830c3c6ed338e766933288a88567474f6fecc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/gate-test-counts.json",
+      "bytes": 1427,
+      "raw_sha256": "185f744d9aa1f5c808464658f0b10290263980eada626784e65a592cc39abf96",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/quality-gate.json",
+      "bytes": 53680,
+      "raw_sha256": "3062ba12cd51d1a28891ea3570746ee301d5c9890ffafcbc43f4248b69990c1c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/quality.json",
+      "bytes": 9556,
+      "raw_sha256": "654c9bebe2c114b8f200b6f61de950372fe940791e6b02ff4963c954d642559e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/real-native-matrix.json",
+      "bytes": 308966,
+      "raw_sha256": "fc6a45dc8a65ce900d1d63fe9a26db16c665e752e6394d63fa147a00dd928b79",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/repair-round1.json",
+      "bytes": 1884,
+      "raw_sha256": "9b283ed678eeba4b15f88e35bb5041ed4049b6717afb18f9581bc825b134bb27",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/repair-round2.json",
+      "bytes": 1907,
+      "raw_sha256": "295586552998ee7c0762f97fa1cba2e6aa10ca92c162eb4588fadde686fbff93",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-history.json",
+      "bytes": 1885,
+      "raw_sha256": "e5976f7307da5dee3cdee3aa746c260bbbe6d76b636b5e039e7cd1c148d32fdc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-package.json",
+      "bytes": 32043,
+      "raw_sha256": "f2ed6fbad1696abfc05f99c34b9233cd81debb3c27fcdb6377cfcd415d3684ad",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-request.txt",
+      "bytes": 3596,
+      "raw_sha256": "adb6dd63233dfeaf2515aa0911b2c0d23801a1ad477e369f524e483e2d58f135",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-build-gate.json",
+      "bytes": 27182,
+      "raw_sha256": "683383b14d63881a9e6746380ddc51c3e0c874b15319a5383f147364e6180c12",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-build-product.json",
+      "bytes": 457,
+      "raw_sha256": "00031da20482c13ae8bf8c0fd6659c864c3fb1ccb6575edf85e544d08fdfb832",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-candidate-binding.json",
+      "bytes": 482,
+      "raw_sha256": "61e35194b2657639d0b72e7508280d1ab50af7078b3e5b32daa840ee8b81c1a3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-gate-artifact-correspondence.json",
+      "bytes": 21733,
+      "raw_sha256": "dbf525c449c78f7573514459b54cb4e68d135bbee8ac0770f59d1dd0105c74c5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-gate-authorization.json",
+      "bytes": 7547,
+      "raw_sha256": "52b1c1a662b1b2ce6596380b7566fd40e72865f9ea12c34f74e8198e9026bae8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-gate-preflight.json",
+      "bytes": 23716,
+      "raw_sha256": "662763b92cd63a4f2cfe7bd6a1f830c3c6ed338e766933288a88567474f6fecc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-gate-test-counts.json",
+      "bytes": 1482,
+      "raw_sha256": "312ef45a8420d6f84efcabcde9786a296ffb7adca78f417f586fbb28a5334117",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-quality-gate.json",
+      "bytes": 48574,
+      "raw_sha256": "f4127b640411d18dffbbff832298c18c842dd757ae7a3c2314ac9861ac02c511",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-request.txt",
+      "bytes": 4610,
+      "raw_sha256": "0f7a7e068c3357082f3b508cb42ec593c2604f1427c976282f512d5dc5a16ca9",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-response.txt",
+      "bytes": 9816,
+      "raw_sha256": "9c1b0ad27d8e76596897c4c16066c4b78d143fead34c53b223963c68e5872b99",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-review-package.json",
+      "bytes": 24147,
+      "raw_sha256": "1b99b35b6edf5b0a23b36d38e96b35e280d4499b1da3cb7ebe151e9ce69db87a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-storage.json",
+      "bytes": 2353,
+      "raw_sha256": "e4616b36b34c98e10c882f7fa058764941b129acff429df6baef75d49935433b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1.json",
+      "bytes": 1763,
+      "raw_sha256": "34a673dc2d94a77149f4466ea34cd937affd0c8e2ded5763ade079e76d608f76",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round2-response.txt",
+      "bytes": 8886,
+      "raw_sha256": "6ec3fcf47c6c32dc457a42602373c044188a595535b0ba28ba855084621f3f66",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round2.json",
+      "bytes": 1755,
+      "raw_sha256": "34e07c507175a17b4e3aed39a48680cef96196044ad78d333e9e89d4b830159a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round3-response.txt",
+      "bytes": 8640,
+      "raw_sha256": "a2e0ddda2292b7630c0ec0cbf0d6d659b0d159c2212864f74d474c8dc8649715",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round3.json",
+      "bytes": 2140,
+      "raw_sha256": "46a3b9731e6bb3246bad9bad9cfc1f7bf4667cdc7872a9535da7ae8c5216071e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/roi-oracle.json",
+      "bytes": 9244,
+      "raw_sha256": "50a7fc77cd56e1be3afd0fcaf0c96861d1c32881238783464d09740c5d41c018",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/source-identity.json",
+      "bytes": 4770,
+      "raw_sha256": "e79bee6b22c889a6c27266722d8e95bbe2716149a0c34a69360b868e06903877",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/storage.json",
+      "bytes": 2254,
+      "raw_sha256": "9877a32792f52bf38532b49f54327f2f74f7cf3754d1f61c0d249a0251690838",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/taskern-request.json",
+      "bytes": 6952,
+      "raw_sha256": "82043404b59c0b8502809f136b692b7c286c259509a561c72b8446e1e9717d52",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/taskern-response.json",
+      "bytes": 10190,
+      "raw_sha256": "0475b4af1bf803e9beff4cdaecf9ae761c6828fcb567eaaec6de93131801a111",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/unmeasured.json",
+      "bytes": 754,
+      "raw_sha256": "5f8c970387258bf796a01db8af82ee3169c67fa051485b9a5bf263b7f79a6716",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w4-latest/verifier-results.json",
+      "bytes": 7728,
+      "raw_sha256": "22b29d9cc34df6ceca07e41adc4b2863cb5137b75e23f9d6f287f3f5827197eb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/admission-boundary.json",
+      "bytes": 335,
+      "raw_sha256": "d5ea86d7c9b4b71d05df30e78e96c4361ebef75f62511f640f4e0ab207a4f7d9",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/build-gate.json",
+      "bytes": 33716,
+      "raw_sha256": "90232a3d48251ccee8f169f61b591c203fe1f15bcef77f1c0f945d2dbd8e8713",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/build-product.json",
+      "bytes": 437,
+      "raw_sha256": "0e74f852f94c55e4e0a695370e15d7f26824c04ed00525b31645182b6e1b06cc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/candidate-binding.json",
+      "bytes": 316,
+      "raw_sha256": "01aa304669cc3d5fb45c6ea29ec82c71405b58abe67d2e1ba8ed1aeb740f0ca1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/capability-table.json",
+      "bytes": 9816,
+      "raw_sha256": "8e2cab2bf5d18a84f0d5a4f3dffad211880558640b39862a9e2bf9a841ca0291",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/colour-profile-observations.json",
+      "bytes": 1150,
+      "raw_sha256": "fec9775f52cb6a029042147078417931281534b8729614986521119ca74f099e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/directive-receipt.json",
+      "bytes": 910,
+      "raw_sha256": "81226f1fd77d977919e7fbcd2141788c2cc53280b594044f278a6238487d42b2",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/disposition.json",
+      "bytes": 2327,
+      "raw_sha256": "c5325c31b7ce9e0bf4c04a1e9ed57d4266e1d1bce5f1c3b9993aa4580585050f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/document-validation.json",
+      "bytes": 338,
+      "raw_sha256": "2ae8fee5249c44e6771075efc6348e1e3c2680ca06c37c04a46960eae5813ffe",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/execution-manifest.json",
+      "bytes": 3119,
+      "raw_sha256": "4cf6dbe34879d014b8073d1e5a2811cd6a3030e5320b72dbeb2b889ac572e0cb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/fixture-manifest.json",
+      "bytes": 154578,
+      "raw_sha256": "d957c07c0ed3013e732313aaff703c363e2507c165ac5b14610b88b70749bda1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/gate-artifact-correspondence.json",
+      "bytes": 22818,
+      "raw_sha256": "d354bd32a78cd7b5b2ed3c2518a254400b9b4d9a35f2c022c216f01ed6d681ac",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/gate-authorization.json",
+      "bytes": 8673,
+      "raw_sha256": "106766594ab41ab7a1ca137e4129225dcb58443586e2b0a53b4d1d5dfbc9bc80",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/gate-preflight.json",
+      "bytes": 25069,
+      "raw_sha256": "784ead269decc5c347a47fb5e195bf8f754e121f5ea49b1d78ebe7155f026fbf",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/gate-test-counts.json",
+      "bytes": 255,
+      "raw_sha256": "e31aa4947cc4f239297c8e205212bca1c0f9c190798354df73187c322cf6ab0a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/historical-gate-artifacts/manifest.json",
+      "bytes": 2367,
+      "raw_sha256": "be68ebf8ee9154971f0466610be461b14aac692913f61c0cc30507e77c09d6d5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/historical-gate-artifacts/w5-disposition.json-25.json",
+      "bytes": 3792,
+      "raw_sha256": "9e9ba295d3895d9847e74596363d41f3d73aa4c115a293403a1e297a7dafee8d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/historical-gate-artifacts/w5-disposition.json-27.json",
+      "bytes": 3851,
+      "raw_sha256": "967419be83db9f6aba5ca24f9d5209685019f73c4a8bb86375f4ffa3fb4ee349",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/historical-gate-artifacts/w5-real-native-matrix.json-23.json",
+      "bytes": 258738,
+      "raw_sha256": "890de586eaf8ddbbf259873ed9b2511908bf255ff07d1880a5154e1e58c7c8cc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/historical-gate-artifacts/w5-real-native-matrix.json-26.json",
+      "bytes": 308966,
+      "raw_sha256": "fc6a45dc8a65ce900d1d63fe9a26db16c665e752e6394d63fa147a00dd928b79",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/historical-gate-artifacts/w5-review-package.json-28.json",
+      "bytes": 32043,
+      "raw_sha256": "f2ed6fbad1696abfc05f99c34b9233cd81debb3c27fcdb6377cfcd415d3684ad",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/historical-gate-artifacts/w5-tern-next-directive.txt-24.txt",
+      "bytes": 29390,
+      "raw_sha256": "c1ffd198c1f03d0ac43c9e951e1b7ac14db552452787ecbcbbaae106941243fb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/metadata-native-matrix.json",
+      "bytes": 356168,
+      "raw_sha256": "058fa9bec2d8f01d6246118de8a07fa7530130f30cc2743f0ef9a1c5144b717b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/orientation-oracle.json",
+      "bytes": 11420,
+      "raw_sha256": "678f4f3bacf5804220e9e744c42b2e8073ef9fded9b22df6e7a82839f0689729",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/quality-gate.json",
+      "bytes": 56768,
+      "raw_sha256": "c888973d9b79c86a3852164b386b8156e5d9bd0561e0beb1deaa04283b726cb4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/quality.json",
+      "bytes": 5371,
+      "raw_sha256": "b093fcf6987e5621248b5c236b94caf7f5674ef9ad9b5ad92cfb2079776cad17",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/repair-round1.json",
+      "bytes": 717,
+      "raw_sha256": "d7b61dabb9272211f1aa3ca2c15d274b4be6acd99df6bd8600945558a86d99b1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/repair-round2.json",
+      "bytes": 462,
+      "raw_sha256": "e8f7b08512c3efbe5dcd1c6a7d9befb885364da3b842161a6d950d06b1e3700b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/repair-round3.json",
+      "bytes": 376,
+      "raw_sha256": "bc4233037112db83086d067e95afd36b14bbf14daab12c0d73ab97acbf1ba366",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/repair-round4.json",
+      "bytes": 351,
+      "raw_sha256": "3ef56fefa098df572b5e8111bf8d574acb4d99b2609a345a84f8029556672033",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-package.json",
+      "bytes": 734,
+      "raw_sha256": "1ccd5794bfa97d33b40a14f79703b5c89e5031c676c3955d5bbb91281de902dd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-request.txt",
+      "bytes": 1323,
+      "raw_sha256": "cee053111e6c33d83fcfbfb0614894ffaae609d61756b7e8492136516860b72a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-build-gate.json",
+      "bytes": 29506,
+      "raw_sha256": "ee3a9a9392e4dea652a6a0e73606410032a006ad4d5193342d7a016bcf2b00f8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-build-product.json",
+      "bytes": 309,
+      "raw_sha256": "74aa3b81e8f17adcb3f7f52fb905479070b91fac1dded977d17bab0b65a7265d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-candidate-binding.json",
+      "bytes": 482,
+      "raw_sha256": "8843414ca19f7b8072471c82b6d8ffa4e22e79c3b1804399767ddd353861ae56",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-gate-artifact-correspondence.json",
+      "bytes": 23972,
+      "raw_sha256": "e3241be3978c4c1840d9c806d5485d9286abe45560643c0988d3c2ddbf07e935",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-gate-authorization.json",
+      "bytes": 7872,
+      "raw_sha256": "dc1b2334b03e12dd1295c53b6a27831d5d028eac45440a3c9360ce9f36e81a95",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-gate-preflight.json",
+      "bytes": 25053,
+      "raw_sha256": "77248524fb9a6bf332eb145adbc27a1c24f811ccb40fe7612da489575bca96cc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-gate-test-counts.json",
+      "bytes": 1451,
+      "raw_sha256": "21d8ac7a4558bb54be7195900692e401ebf6b81710458ef568d82f39484cc499",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-quality-gate.json",
+      "bytes": 52560,
+      "raw_sha256": "9c91d32b9682936c2155f8418eb8002d6322650122c9b7917b30a12782d7f938",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-request.txt",
+      "bytes": 4092,
+      "raw_sha256": "6d2f332134ed50506c903087a8fe26a4dcc0b95c8d5dc70f60021f9e87cceee0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-response.txt",
+      "bytes": 10113,
+      "raw_sha256": "f79a4eb58dc2ade45fae471356aa3a092760d09b6cd44ff149fad6965139ca52",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-review-package.json",
+      "bytes": 24473,
+      "raw_sha256": "937bd4c6ea28474eb517851ea4977bb3819d4f7c770849500652839f0e178d18",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1-storage.json",
+      "bytes": 2189,
+      "raw_sha256": "09911cb645f914a4133b95e1701e606fbba8665932b999b5b997658a57e4b2bb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round1.json",
+      "bytes": 1027,
+      "raw_sha256": "0add476b0993a42ba3cbc7b9f706b530ac157c090bc9a1c37e48753dd78068b5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round2-response.txt",
+      "bytes": 10525,
+      "raw_sha256": "6c3a7be519bad8225cc83c8a3ccddf9273c3bcc4c1f918a4d873aa868c5af2ca",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round3-response.txt",
+      "bytes": 10768,
+      "raw_sha256": "035437d8ff0d5c1a9c2d026acd492991e28ba0eaf2b6645c23bbeb15c58f135f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round4-build-product.json",
+      "bytes": 256,
+      "raw_sha256": "2234f1c083e4154b4ce708473fe682c04d26e883c101b2519aadefc865c4c247",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round4-response.txt",
+      "bytes": 9600,
+      "raw_sha256": "b04befc9d0d1d221969207c72823d1b3d8d11a52543ddedd16ead93b48dcd732",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round5-response.txt",
+      "bytes": 7344,
+      "raw_sha256": "5635600d22b26b8bef97d3e420b1277586fe40fcd87d068a7956c2c8fa693379",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round6-response.txt",
+      "bytes": 5548,
+      "raw_sha256": "3c76c569d4e36ac1d78c3ea75eec496598a3715d2b25b11b98f645f6b6b94f77",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/review-round6.json",
+      "bytes": 2191,
+      "raw_sha256": "152e73e4ee01052f97036837507db7aadd4106c056bc8bf100f42e5d11945423",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/source-identity.json",
+      "bytes": 4396,
+      "raw_sha256": "410e28c11a5bfade30a67cef8c5a121ecf4392651dd459bd6b6d307179fb6d10",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/storage.json",
+      "bytes": 1710,
+      "raw_sha256": "fd6759e810f39ecf2a50d083b310e7b70588925f2564e8c3d8a8ad24f0af2fad",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/taskern-request.json",
+      "bytes": 6453,
+      "raw_sha256": "61a87b469c4efb2999d78fdab220a95d35648e3a2d5c53312f79098e377a50be",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/taskern-response.json",
+      "bytes": 9157,
+      "raw_sha256": "ffcc5dad7e34388ced056608e756f0804487c3bb2f6eec4ccf5d2da14116fe6a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/tern-directive.txt",
+      "bytes": 33862,
+      "raw_sha256": "62ac92fc2ad000ce7366603516f22733f72bd26023778f020139f0d9ffac5139",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/tern-next-directive.json",
+      "bytes": 1225,
+      "raw_sha256": "9aeaa6b84c9eb95649985c48cf3889d9ca8220ae0b2d8041e49b919fcc92326e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/tern-next-directive.txt",
+      "bytes": 35829,
+      "raw_sha256": "512923a2cd9212b72db327a0848663dc4031fe60133d1bdc1f81d6606f1a81a0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/unmeasured.json",
+      "bytes": 930,
+      "raw_sha256": "b88d0d9c744a4a919e75b37b52f778ae1f119f2a02ba87cfb08bd1aeb4a74449",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/verifier-results.json",
+      "bytes": 10357,
+      "raw_sha256": "d7d11f88c1f4f5ea78da83a39ee9b3aa29a6e5026c4b15c2f7d717a9a628ebe3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w5-latest/w4-historical-replay.json",
+      "bytes": 7936,
+      "raw_sha256": "af41e485f80a0a2eff101d64bf690efe7df68e7285cd7281b9d1713fa35dd4fd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/admission-boundary.json",
+      "bytes": 62023,
+      "raw_sha256": "9acd4d15e522671c61a2053629df24f62ae3f639ef8ffb29154dd2d3c4d9b165",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/allocation-scope.json",
+      "bytes": 466,
+      "raw_sha256": "b8bf57a252aa210e31d8f4109cf4eeca49b5210599d59833bee555fc13eec87b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/capability-table.json",
+      "bytes": 2605,
+      "raw_sha256": "bcf4588b1aedd1ce32e073d0080cbe9b53299c9b3de2b1c12715c0294e2383b4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/cohort-comparison.json",
+      "bytes": 17917,
+      "raw_sha256": "0a610607903868aa83a9ddf35e0f1280f99196195b5dd06fe749110d9e877641",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/document-validation.json",
+      "bytes": 555,
+      "raw_sha256": "e2216ab4fcd6f06111197468552af263d68db21088f122fa1b8f32566117d8c3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/execution-manifest.json",
+      "bytes": 4867,
+      "raw_sha256": "c7ba0bab78c5c9654addb72e33c906993af1bff1442950345033ec7ac973087e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/fixture-manifest.json",
+      "bytes": 4617,
+      "raw_sha256": "42beb3cb8629c34966dfa4ebbd0cde160e99d456af4eb6c077d55c4803670574",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/historical-regressions.json",
+      "bytes": 20854,
+      "raw_sha256": "db17002889179a90634359e9bab24c88dff626a0df3416578b1fb5a89a911331",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/memory-sample-series.json",
+      "bytes": 19568,
+      "raw_sha256": "283fd16d3a1aced826b7aba7163297f0fd2b0ebe28e96b2bcbf5db09ab0f7dfa",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/native-attempts.json",
+      "bytes": 7506,
+      "raw_sha256": "fa543b7df09e50a14792a3cd010373b3b0a999036c2cb4406620fe1d5febc285",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/native-memory-matrix.json",
+      "bytes": 1721751,
+      "raw_sha256": "9ad74bd351ceb319397230f81c2c26e8813d5732468a922a1b96bd78da870987",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/negative-tests.json",
+      "bytes": 13247,
+      "raw_sha256": "1bd912fe447f6c9b562f1b9e0aee72a3e01611dc847298dbef0ed0f3f657a0d4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/pixel-oracle.json",
+      "bytes": 13116,
+      "raw_sha256": "dc4eac451a5bc5e54794234f4e108d6e0ce8d7ae27fcfdd525556c6b162fcfef",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/quality.json",
+      "bytes": 8118,
+      "raw_sha256": "3207e4284fafbda836ba5800c69dcb73aee15550528a1a037d2d672de802e33a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/repair-round1.json",
+      "bytes": 1678,
+      "raw_sha256": "411675d3b3ecd4b94dbdbc3da02b42b1bb8536cfe244a7c6f15f8d516a232b4c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-build-gate.json",
+      "bytes": 29880,
+      "raw_sha256": "ff6280ae62eedaee2dfd1899cdee0e31f1091901111be2ac57a6555f90bb65ac",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-build-product.json",
+      "bytes": 557,
+      "raw_sha256": "3967c1d5a43168a801158b283da03aa094e462f125bc18b2e65fe933df101779",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-document-validation.json",
+      "bytes": 168,
+      "raw_sha256": "7cc5b80ffb43f3798b7bbb5eafc946274425dff234fdd950b97759e565eef858",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-gate-artifact-correspondence.json",
+      "bytes": 43653,
+      "raw_sha256": "a1846fe3d11895c683cb1fe71718eae395e80c0d659221c6380a914022b3f3d8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-gate-authorization.json",
+      "bytes": 10686,
+      "raw_sha256": "4476c6787242d869b6b8c17dbdea7bc1dff78421657fe1d1be7f8e331d3a50ec",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-gate-preflight.json",
+      "bytes": 26584,
+      "raw_sha256": "d2dfa26845bccc31a003fa7ca98d585c137cbfcf5270978afbd312f580f82644",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-gate-test-counts.json",
+      "bytes": 10106,
+      "raw_sha256": "4f9abe5d1f7a3a4d0963bec5aeb7b3ef0464178eb8800712dab5de891443e179",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-quality-gate.json",
+      "bytes": 52075,
+      "raw_sha256": "518de2edc35498befcda5f09eccfbe4e3031a82086a9f0751e57a840cecfdd08",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-quality.json",
+      "bytes": 7422,
+      "raw_sha256": "9698b3a8c5d2e6488e52934857cccf39d02c6f3498ae956bee1ece2333205f07",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-response.txt",
+      "bytes": 11375,
+      "raw_sha256": "9fdce8d6ff67f4d1102ed82cfa515436a349e2b08673e516f9362a24a14af84a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-review-package-source.json",
+      "bytes": 110763,
+      "raw_sha256": "22a6b43ef39d54008f1a4696faad3c7f7deb2c76761d3a90922ba2789f004210",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-review-package.json",
+      "bytes": 177815,
+      "raw_sha256": "20384dbc2a7906f15a4bf5271b45489e3edcba36a7b6fac90f816ce3190f6e3b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-review-request.txt",
+      "bytes": 7712,
+      "raw_sha256": "927f2ade1a7e6e390d98428bdb8b19ff4a9214063a79e77e544d2319adaae59d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-source-evidence-reconciliation.json",
+      "bytes": 16245,
+      "raw_sha256": "50d6c8a94d2f04848592b552b58cecc96efe3083de6cdf148a0f0921599447be",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-storage.json",
+      "bytes": 93950,
+      "raw_sha256": "7f6394d780c00306efac1cbdefdab3a617c1aeae7b486ac556c9dc788d1dd740",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1-tool-discovery.json",
+      "bytes": 2036,
+      "raw_sha256": "18bb472f640cfa7e3b0a410b50bfb80de6b9b31e5eb738d39b9cc3a0d12ec06f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/review-round1.json",
+      "bytes": 1578,
+      "raw_sha256": "e0afd0a202a8136578fc3647f5790d6039153adb9c1a53fd1bf0735c4f04dbdd",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/source-identity.json",
+      "bytes": 8415,
+      "raw_sha256": "6df26d985a63842e655ed1c15f4679848a9bf5b0e89590ff4e3c13c1787c42ed",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/superseded-quality-gate.json",
+      "bytes": 26610,
+      "raw_sha256": "d8cf106f90716d3703f0999a8aa2c9539a0292964c7c9e01171930d7a2e6bba3",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/superseded-r2-gates.json",
+      "bytes": 15840,
+      "raw_sha256": "8a149ec5b51569a16411c7e5eba203422370a0665be87df53ea9ef6275b954db",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/superseded-r2-storage.json",
+      "bytes": 28360,
+      "raw_sha256": "cde85a2b88929866eb63991653e5f904bf3d37aec5b20141e7502683d191c5d0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/superseded-storage.json",
+      "bytes": 44974,
+      "raw_sha256": "3efd7a3d59ff102d7adeeb0628bbbd791aba33f0567b8a5beb46b3f52c80599e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/taskern-rejected-1-request.json",
+      "bytes": 15116,
+      "raw_sha256": "1eb9a8bf0bcf8d8daad2b42563f4dc656c87f5d80eb5000ad77398efc27e94d1",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/taskern-rejected-1-response.json",
+      "bytes": 362,
+      "raw_sha256": "f3bac5f03efa2c95081541fe104d606f35bfe42733419dd2baed7f65675265ac",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/taskern-request.json",
+      "bytes": 14870,
+      "raw_sha256": "a5ee0883129877360d6631c381fca7d097ecd9f3159d80939c931ad1494d5d96",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/taskern-response.json",
+      "bytes": 20203,
+      "raw_sha256": "2a4b9195c383da211d41489e7f5a6f5f47bfc19ce8503c5974ae576a2578f1ef",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/unmeasured.json",
+      "bytes": 1068,
+      "raw_sha256": "162b58fb49ec8ba6b5ba7bf38b3dc9d2853dd5cce443ffd8312bcec0fa5ae89c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/verification-repair.json",
+      "bytes": 774,
+      "raw_sha256": "1d6bfa468aa319d67addb6b38ea9a3b1ef85089b7da6fe44ce3ea7097fa67433",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w6-latest/verifier-results.json",
+      "bytes": 9166,
+      "raw_sha256": "ef6eceb7e74a3c18841ee15141894437c6c5489a107b2c31c807bca774ce624f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/behavior.json",
+      "bytes": 52784,
+      "raw_sha256": "2edd287aee7291eb3acdefe917a838f6aae1b6b1f3938fbd5cfb9ceb9ba7e0a8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/build-gate.json",
+      "bytes": 19858,
+      "raw_sha256": "18567026a05efba1c8918bffac7dac75d42bcb29070ceb86c23619514d813abc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/docs-validation.json",
+      "bytes": 440,
+      "raw_sha256": "ae0399f6f88833f18e1198e5037b4c566b6dffabc23362272faa18bd66a31953",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/gate-test-counts.json",
+      "bytes": 9544,
+      "raw_sha256": "1fe6f9e9b98d96409d6de7eb8db43efde541fe6296730e035cec4387f4aa12ed",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/independent-oracle.json",
+      "bytes": 19683,
+      "raw_sha256": "0ae4b059638bdf1d80266891518bcea0e9f6137729dfa848d00fd83b547bc2a4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/input-qualification.json",
+      "bytes": 7536,
+      "raw_sha256": "eff9bcde58b1ce45b2bd83839848509fe95bc5b76dc21877394d82ac3c9000af",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/python-quality.json",
+      "bytes": 3317,
+      "raw_sha256": "62ce1ba201d8d6833857cb6d968a44db334c2d86d5d5edec0e4f88882d466a4f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/quality-gate.json",
+      "bytes": 61344,
+      "raw_sha256": "f8967cf412b3975e19cb5df9bd48b15cc2f266e58879c2f2029781ce0f492a67",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/quality.json",
+      "bytes": 813,
+      "raw_sha256": "fa8442c8170f0df6af5c73d5956151e6ecb071ad86a3bbe36869121e56b9f5bb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/replay.json",
+      "bytes": 90001,
+      "raw_sha256": "df3f4e5ce33cfce8f144a32992e64ffb6d47860387207f79825b494732f8a908",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/review-response-round1.txt",
+      "bytes": 1639,
+      "raw_sha256": "91d00bbdb2e0973f73277bd77c2c1891941d518ae3c4bb12e67361f979463a82",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/review-response.txt",
+      "bytes": 2589,
+      "raw_sha256": "2f4bb575892e47b3d93daed9a6c39c70714ece63fc01bb84e994887afcc25d07",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/review.json",
+      "bytes": 4734,
+      "raw_sha256": "437689cb1e2cc5445efdd8acc7b1dc931f673882ff7048d93084d63cb2aa3536",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/storage.json",
+      "bytes": 50741,
+      "raw_sha256": "60cb30b1eace22ae13d0c0959dd9062410d169c56e1e87e7dee365b9b9c0f387",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/superseded-gate.json",
+      "bytes": 33801,
+      "raw_sha256": "8dbd5fc92c44dd1f4ecbab9fa724b5e81aacca17fed033843834baeb3c17434d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/taskern-request.json",
+      "bytes": 5439,
+      "raw_sha256": "d9422b9aad564cd326ee335399ed7509a1af74de504957a4609aa5454de79e7b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0a-s3-native-latest/taskern-response.json",
+      "bytes": 13693,
+      "raw_sha256": "4d3fce660ce9b14b5dfb099edd4983cc58342344ad538a1f65ddb1061b274c8e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/README.md",
+      "bytes": 14109,
+      "raw_sha256": "7a495fe7b688c543077fc4e48d6289d858953d699cdca4f65790e394e53731ff",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/SHA256SUMS",
+      "bytes": 3623,
+      "raw_sha256": "92cec1158a9c2309cd9b34d57350e7c06705c09dc4740084bd7b94dca00a11bb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/combined/ledger.json",
+      "bytes": 570,
+      "raw_sha256": "9d47aa4b53ec5184d64676007b4b40c5e7fd7a572e5109516e03d070c4527562",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/combined/s2b-capture.json",
+      "bytes": 62770,
+      "raw_sha256": "0b5747a81b0e833b4a587bdd643ca1908525236071be76e4cd7e852c875eaa4f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/combined/s2b-observation.json",
+      "bytes": 3622,
+      "raw_sha256": "dcd6df37a143c96237fed9f8d0b9079405c1146ffc0e2bd79b352678a083d410",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/held-key/ledger.json",
+      "bytes": 570,
+      "raw_sha256": "060eb161bcbbf9ba872c40cb6589bb210022467bc62e73ceed59beb478de0a56",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/held-key/s2b-capture.json",
+      "bytes": 64213,
+      "raw_sha256": "5bc89f3925bbd8fed5d9340de0181365dc575897e2d7d30c7271acef32c96a1f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/held-key/s2b-observation.json",
+      "bytes": 3616,
+      "raw_sha256": "2db3a02bf13b8eea990b2b00b24ecee85e86b85311bc302b8f796ff88df6bf7d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/keyboard/ledger.json",
+      "bytes": 570,
+      "raw_sha256": "24a7e234bc369f672974541d663084f168db78b699cccf1caee7055c19eb2a2e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/keyboard/s2b-capture.json",
+      "bytes": 63803,
+      "raw_sha256": "d79dace8f69cc4bcd89d88433476921301bccfa544a9dbf7c7111e2502f065c7",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/keyboard/s2b-observation.json",
+      "bytes": 3616,
+      "raw_sha256": "eb29989b4cbb118c06a7d0a349d43c656cc3200c9969b9afd0c14b1c4f20a1d4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/navigation/ledger.json",
+      "bytes": 570,
+      "raw_sha256": "1d73fac25d03ea7f1ba6630b200c267381e693e7396524b7d047229543e25e05",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/navigation/s2b-capture.json",
+      "bytes": 60304,
+      "raw_sha256": "e7fd499af3cd1a201b98963f4b27470d205e2aac4279db97930d2eb7df7e71ef",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/navigation/s2b-observation.json",
+      "bytes": 3616,
+      "raw_sha256": "1c715aa6aed0b4580bca1c0c527df65d505eee255983314844277b78472d7b4c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/pointer/ledger.json",
+      "bytes": 570,
+      "raw_sha256": "57d6924fc98483d7aad0185ef4c04b9228f8de1d8ef12a9b1456fa059d7a12ae",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/pointer/s2b-capture.json",
+      "bytes": 64183,
+      "raw_sha256": "f5859c8d3ccd071b0a8c2b1dd6b55d871c80c34823344fbe091d3c84cc8a1e08",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/pointer/s2b-observation.json",
+      "bytes": 3616,
+      "raw_sha256": "ea6f0d6c548525054ad655cf513cfdcf814454ac18486e89b5681f515bcd0972",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/scroll/ledger.json",
+      "bytes": 570,
+      "raw_sha256": "0bd93509428f9b7088c98bef0851fc298ffe42155e389374d45e482b89a3c2e8",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/scroll/s2b-capture.json",
+      "bytes": 62591,
+      "raw_sha256": "dea8342b461df12edbdc7fbf6717a73c3acee3125d6ad37ac04a23dcf07340e0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/capture-run/scroll/s2b-observation.json",
+      "bytes": 3634,
+      "raw_sha256": "e0cf2227d167c6e718bb450eaf3ab91c8d175e684a41c35cf20456965e5c805c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/combined-manifest.json",
+      "bytes": 6998,
+      "raw_sha256": "86c96d5caf086f5efecfd6ff3d6136650432602754df63a10a46d7baacfd55f5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/combined-result.json",
+      "bytes": 22652,
+      "raw_sha256": "4ca2847c9d71d2f12055df5706f0fd8c3f496a7a98c8832e592f89bd08dc6202",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/held-key-manifest.json",
+      "bytes": 6997,
+      "raw_sha256": "e4aaba4385d2fae0d8654461af68a89dcf1e5a54e5e2f3295575947f43728735",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/held-key-result.json",
+      "bytes": 23076,
+      "raw_sha256": "74345d4320837ef8801999ef3e7d5ab82e4633b49b9841c06ad37172d925ba40",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/keyboard-manifest.json",
+      "bytes": 6997,
+      "raw_sha256": "982ff665d53fd40ff64547f8f2af5a629a83c73e44d896844e3bdcee4289a7b9",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/keyboard-result.json",
+      "bytes": 22988,
+      "raw_sha256": "fc99834cbe280af3d497d198bc7f3e8dba6577580c5d4b8ec6f7d5d2b6b99551",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/navigation-manifest.json",
+      "bytes": 7003,
+      "raw_sha256": "15ad4f3fe3f19ffb0286d28a4fad4ecc1437d212b3bc53712fb87fbbd2fba9ca",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/navigation-result.json",
+      "bytes": 23026,
+      "raw_sha256": "5c1a51f6025cbfc9432a6b76dac607ad7f6e75e5f1b835556fe8d5a36881fab0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/pointer-manifest.json",
+      "bytes": 6993,
+      "raw_sha256": "4592bd552801a979a9806d657699558f49751aae729b286caab501362baf8e33",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/pointer-result.json",
+      "bytes": 23115,
+      "raw_sha256": "0e39e012d4d555e2f7c371010a8c223f1c61426142fb4b21b6f83b70265058ef",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/scroll-manifest.json",
+      "bytes": 6989,
+      "raw_sha256": "ba065373dda28b8ac7c8257fba4dd06fb2197910d2c75c22800d53e559dafa11",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/r0c/scroll-result.json",
+      "bytes": 21359,
+      "raw_sha256": "a9fc97c6a2191d6455580efa2b0f977f7774c6b245af86d82499f7ad80f5219b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/raw/combined-driver.json",
+      "bytes": 2444,
+      "raw_sha256": "0dc311c754d4c10964da2d30444d1eb38f85bf0b05fbfdd086895e189a4750e4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/raw/held-key-driver.json",
+      "bytes": 2335,
+      "raw_sha256": "0361385b25dfc9115bb9070fda0e64f807994423601fef74e2e471b5e979a72a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/raw/keyboard-driver.json",
+      "bytes": 2299,
+      "raw_sha256": "9cf6c279f7f108bf6a83292c1003694a140d2430843758e759c88541a2ec451a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/raw/navigation-driver.json",
+      "bytes": 2310,
+      "raw_sha256": "0f4c6308a7e08aff8668a174ab76315a2f2122e948f636d5c8463fc659df207c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/raw/pointer-driver.json",
+      "bytes": 2379,
+      "raw_sha256": "dba6b9998b35f67c41a39aee74c9866fc80a489b4ee93856962d465c511c8f5c",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-2026-10-25/raw/scroll-driver.json",
+      "bytes": 2305,
+      "raw_sha256": "b354aac7c57b56a5ca7bbfa0209fe0650899e98791dd0e15b500cf3f2ac8f180",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/behavior.json",
+      "bytes": 8655,
+      "raw_sha256": "11024661e21cf371274a65794002661f86f3f3dc7f4a7e22f1f03d6b341c4278",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/decoder-budget-smoke.json",
+      "bytes": 5446,
+      "raw_sha256": "85babf803fdb056b0430ac91ec63c7d33fd591ecc286600d41002108aac310ce",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/docs-validation.json",
+      "bytes": 652,
+      "raw_sha256": "54b97e8d8efc684cf2df7b883953d238c08d0f984e22aa33259b6e0521ad8869",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/failed-gate.json",
+      "bytes": 37986,
+      "raw_sha256": "e1a17fb2efeb2dcdb2337dadd95943713a105cb7b937e7a7d12224bac8999a85",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/gates.json",
+      "bytes": 78581,
+      "raw_sha256": "df59539e2e41030fe4fd99790aa57e9ccd71b7fe7fe1685ea69f40c1e069f1de",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/native-control.json",
+      "bytes": 596,
+      "raw_sha256": "5f47c0316940c51ec42e9fcf49c21e94ce01e7c95b8b8b23548fd2661de12936",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/next-directive.json",
+      "bytes": 879,
+      "raw_sha256": "69a671a6f87a8359e9f5af0cb84433ffdf3abf658245d94f5178f858601d6699",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/next-directive.txt",
+      "bytes": 10161,
+      "raw_sha256": "d70e1baa78a4d1103cf101f34e544237f27d7d98c2fb20eacebf1367aec17c55",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/quality.json",
+      "bytes": 3363,
+      "raw_sha256": "e75a9228d0cdebad5ecbaaa477ab0867312c9728a405bb86785557a757179cc4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/review-response.txt",
+      "bytes": 5969,
+      "raw_sha256": "73b2a23b2cda41b9697ac567992a186f89c5e2dc5436fd9ce0560efcebf527f5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/review.json",
+      "bytes": 1105,
+      "raw_sha256": "e4dc51da49cda2bc19a3aaf590e15b26e47893cfded9a9d609d1674b5557e227",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/storage.json",
+      "bytes": 15466,
+      "raw_sha256": "e4bd8341ccdcc6b76be65f143f3b2affaea758ae0c459225e99afacfa078edb6",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/taskern-request.json",
+      "bytes": 4663,
+      "raw_sha256": "babec6d666b12cc5eff5faa77fa276a4deb8c157b6f1355b9a96626f57f728b9",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/taskern-response.json",
+      "bytes": 11389,
+      "raw_sha256": "ea24dfabb48166d4bafb4867439cefcffb8da470a23705212834660edfe62161",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/r0c-s1-latest/tern-directive.txt",
+      "bytes": 7608,
+      "raw_sha256": "9b8f052bbbfd29783ac1ee79b1f0cce8f506e31c24d18cf13b580e1d083b4718",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/README.md",
+      "bytes": 9546,
+      "raw_sha256": "e3f237bff77c3b46a13bfc7ce389ae3f52b3c15a86122000aed086a1475a1fce",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/SHA256SUMS",
+      "bytes": 1682,
+      "raw_sha256": "0a07e0d08f261c0c022c9983cf01127b319d95a7cf246283b553e5695162af70",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/capture-run/build-record.json",
+      "bytes": 658,
+      "raw_sha256": "bd23fd303a8c0a613d58be9d8693f71e5c4ed827f67aea4248e24f18eb717248",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/capture-run/completion.json",
+      "bytes": 407,
+      "raw_sha256": "81718744c19782e1e2fd91c756213a976d1af793052dd709f7b7faf698e23d82",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/capture-run/endpoint-availability.json",
+      "bytes": 2186,
+      "raw_sha256": "baa42bf4ec4662396849c62ba5614b4c232fc79c310f5a2aa31bfd74e5d9c344",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/capture-run/ledger.json",
+      "bytes": 570,
+      "raw_sha256": "dfe3cb1af58a6a1a0d7127386d76a8a51168cca955b4521f7811cccd515388d5",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/capture-run/result.json",
+      "bytes": 15637,
+      "raw_sha256": "1b1cad73104e5ab409b04dfde8a0d2a3b2a69895a50692327e93cc94266919ee",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/capture-run/s2b-capture.json",
+      "bytes": 63936,
+      "raw_sha256": "2f35720182f5a545c45470441164d26e54a38efd0f58663ec42884805c77a851",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/capture-run/s2b-observation.json",
+      "bytes": 3616,
+      "raw_sha256": "a4004f71f04c5ac9e4bd9190e58aa3f6cb79971e1099de55e7cb4153ae1fa1de",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/capture-run/source-identity.json",
+      "bytes": 1290,
+      "raw_sha256": "9527741c824981d887d1977d296651bd345b5f761a2149b5dcc2faa5bccfdad4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/consumer/s2b-build.json",
+      "bytes": 658,
+      "raw_sha256": "bd23fd303a8c0a613d58be9d8693f71e5c4ed827f67aea4248e24f18eb717248",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/consumer/s2b-default-a0.json",
+      "bytes": 4570,
+      "raw_sha256": "b96e00ae9629550429a67a9260715b074e19e8c7f6dc86859a7a837891d4d939",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/consumer/s2b-feature-a1.json",
+      "bytes": 4617,
+      "raw_sha256": "b851c11af9cc3bef7c17028073fb9f4836f0e923ab43b37add33e3305c9a88cb",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/consumer/s2b_capture.py",
+      "bytes": 19041,
+      "raw_sha256": "cb7ebb2159575e7994882565ec2ab30633bf20c93d5e999a42641d09feb627f2",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/consumer/s2b_contracts.py",
+      "bytes": 16131,
+      "raw_sha256": "4826c417a92661a57c71cf0f3615eda154a7da5c671099b124c9977ca09a6165",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/consumer/s2b_validate.py",
+      "bytes": 8292,
+      "raw_sha256": "97abd8acc6a91c277b8bcdc34bee996ed3ce60ba0e6a10d2459fba6433147e8b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/r0b/r0b-g4-manifest.json",
+      "bytes": 7325,
+      "raw_sha256": "eb51b2efe19ca78467eab5b59388092a5641700cda591f7ed9fe7803e10d14cc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/r0b/r0b-g4-result.json",
+      "bytes": 22069,
+      "raw_sha256": "544655cf1be2369d1928dc269e4475c51b13a77ac0ab3af22ff0654d86bb9795",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/s2b-r0b-2026-10-25/raw/capture-run.json",
+      "bytes": 3261,
+      "raw_sha256": "bab1abfb4a88ce554062ebd1c79e3da24ef34017037be20d6d101906a60f3adc",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence/README.md",
+      "bytes": 2983,
+      "raw_sha256": "d12cbbce99c0c0a60edf10e7995cb6a41d663cc73fa06704d1de0d946e9eb6de",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/integration/COS_RUNTIME_REQUIRED_CHANGES.md",
+      "bytes": 36842,
+      "raw_sha256": "b116f607efeb5ba6ec90207c04df03e5117b14c5db7a73980aa63b94d1f7a312",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/integration/CURRENT_COS_RUNTIME_SURVEY.md",
+      "bytes": 47406,
+      "raw_sha256": "1fbdc89a16debf0e50b6863cee37fb57f9f1a103bad5d28b8c0d3927a7f48aa4",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/integration/LOCAL_DEVELOPMENT_TOPOLOGY.md",
+      "bytes": 4423,
+      "raw_sha256": "02a954710268667e61fc931272de44fa141b1020e2b3b086412206fa55c7490b",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/integration/PROTOCOL_OWNERSHIP.md",
+      "bytes": 4361,
+      "raw_sha256": "819e554c1e18d5337dbd820b0fa927418a26709a392ebd00c96ef2b0b66a8abf",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md",
+      "bytes": 24773,
+      "raw_sha256": "60ccc594a2ef26b1e06e475b97257a5f180228292deebea06bf6b06197e0b66e",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "rust-toolchain.toml",
+      "bytes": 157,
+      "raw_sha256": "595a915478678268d6253b7455d689c62bba76a865fee2a855b85d64d2ea3c9a",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "rustfmt.toml",
+      "bytes": 69,
+      "raw_sha256": "bf8078cbb35efbb452b33efefd4f32fad0948b77bb77322e5185f982eba483d0",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "scripts/check_dependency_rules.py",
+      "bytes": 18683,
+      "raw_sha256": "b4dd341052e61d76db507b86c7a27980147fb8a6541216586bba6b241262ca8f",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "scripts/quality.ps1",
+      "bytes": 18684,
+      "raw_sha256": "280e812d830d1c8d754cc24db74aa7b7549910fd1c9b57fb66d4408da79045be",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "scripts/tests/test_check_dependency_rules.py",
+      "bytes": 17471,
+      "raw_sha256": "ffbe82ed6efbba6cedba0abfae4de3c4ae13333bb70e06c14c2a0d163a58106d",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    }
+  ]
+}
