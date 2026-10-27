@@ -1,0 +1,659 @@
+ChatGPT の発言:
+MP-IMG2-W4 Round 3 — 固定SOURCE独立レビュー
+
+判定：PASS 0 / 0 / 0
+
+A-W4-R2-01、A-W4-R2-02ともにCLOSED。MP-IMG2-W4 LIMITED TECHNICAL COMPLETIONを承認します。
+
+今回添付されたSOURCE ZIP、Evidence ZIP、review-package.jsonを実際に読み込み、修正コード、停止状態の負例、Native画素、Gate成果物、Storage記録を独立検証しました。
+
+過去ラウンドのGate成功やPASSを今回の候補へ流用していません。
+
+1. 固定候補と独立検証結果
+
+項目
+
+	
+
+結果
+
+
+
+
+製品固定候補
+
+	
+
+e357888e1d622a3b672cb20f18143ac8468cc745
+
+
+
+
+Evidence HEAD
+
+	
+
+5cda6f69134442987b41deb60de9677726c10094
+
+
+
+
+SOURCE ZIP
+
+	
+
+462,721 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+181,747 bytes、SHA256一致
+
+
+
+
+SOURCE manifest
+
+	
+
+29/29一致
+
+
+
+
+Evidence manifest
+
+	
+
+46/46一致
+
+
+
+
+raw/LF正規化
+
+	
+
+全件一致
+
+
+
+
+W4 portable tests
+
+	
+
+33/33 PASS
+
+
+
+
+Native report構造検証
+
+	
+
+PASS、24 workers
+
+
+
+
+独立ROI画素照合
+
+	
+
+11/11全画素一致
+
+
+
+
+Native SOURCE identity
+
+	
+
+15/15一致
+
+
+
+
+Gate artifact tuples
+
+	
+
+48/48一致
+
+W4のテスト実行では、提出SOURCE ZIPに含まれていない共通依存w2_independent_oracle.pyのみを以前の固定SOURCEから一時補完しました。今回のSOURCE収録物と混同せず、Native recordのSOURCE identityも今回の15ファイルに対して照合しています。
+
+2. A-W4-R2-01 — CLOSED
+
+対象： apps/desktop/devtools/img2/w4_region_verify.py:175–195
+
+前回不足していた5条件が追加されています。
+
+Python
+実行
+cancel["exit_before_request"] is False
+cancel["returncode_before_request"] is None
+cancel["last_observed_stage"] == "before_publish"
+cancel["reason"] == entry
+cancel["reachability"] == "reached"
+
+既存のcause=boundary_hold、method=direct_child_terminate_wait、kill発行、reap完了、単調時刻、非ゼロ終了、worker終了コード一致も維持されています。
+
+独立負例テスト
+
+提出済みの単体テストに加え、cancel・timeoutの両ケースで各5条件を個別改変し、計10回のverify()呼び出しを実施しました。
+
+改変条件
+
+	
+
+cancel
+
+	
+
+timeout
+
+
+
+
+exit_before_request=true
+
+	
+
+拒否
+
+	
+
+拒否
+
+
+
+
+returncode_before_request=0
+
+	
+
+拒否
+
+	
+
+拒否
+
+
+
+
+last_observed_stage=onload_entered
+
+	
+
+拒否
+
+	
+
+拒否
+
+
+
+
+reasonを交換
+
+	
+
+拒否
+
+	
+
+拒否
+
+
+
+
+reachability=not_reached
+
+	
+
+拒否
+
+	
+
+拒否
+
+すべてok=false / stop_not_confirmedです。
+
+正常Native記録はok=trueでした。実際のcancel・timeoutでは、hold marker、kill、reap、終了コード1が整合し、出力も公開されていません。
+
+さらに、cancellation-record.jsonの2件が、Native workerのcancellation情報と完全一致しました。
+
+W2の停止契約に関する前回の残件は解消されています。
+
+3. A-W4-R2-02 — CLOSED
+
+対象： gate-captured-quality.jsonおよび対応するreconciliation記録
+
+前回不足していたGate捕捉版quality.jsonが、今回のEvidence ZIPに実バイトとして含まれています。
+
+検証項目
+
+	
+
+独立結果
+
+
+
+
+捕捉版LFサイズ
+
+	
+
+7,133 bytes
+
+
+
+
+捕捉版SHA256
+
+	
+
+aa5fc406…324b99c5
+
+
+
+
+宣言Git blob digest
+
+	
+
+一致
+
+
+
+
+Reconciliation
+
+	
+
+捕捉版と後続docs-only版を区別
+
+
+
+
+今回Gate成果物
+
+	
+
+48/48実バイト一致
+
+特に今回の新Gateでは、gate-captured-quality.json自体が固定製品候補の成果物として登録され、その内容とSHA256が一致しています。
+
+Quality/Build両Gateに保存された48 artifact tuplesを直接比較し、さらに各artifactのサイズ・SHA256をSOURCE ZIPまたはEvidence ZIPの実バイトから再計算しました。
+
+48件すべてが一致しています。
+
+前回の42/43件という未解消状態は残っていません。
+
+4. SOURCE変更範囲
+
+前回Round 2のSOURCE ZIPと今回のSOURCE ZIPを、各エントリーのLF正規化SHA256で比較しました。
+
+変更は次の3ファイルのみでした。
+
+ファイル
+
+	
+
+変更
+
+
+
+
+w4_region_verify.py
+
+	
+
+停止状態検証の追加
+
+
+
+
+test_w4_verify.py
+
+	
+
+5負例追加
+
+
+
+
+IMPLEMENTATION_MASTER_PLAN.md
+
+	
+
+W4修正内容の記録
+
+新規・削除ファイルはありません。
+
+WIC probe/decoder、BMP fixture generator、pixel oracle、Rust consumer、crates/media、DecodeBudget/default/APIは不変です。
+
+5. ROI画素・full-frame予算・Capability
+
+今回のNative記録24件は、次の内訳でした。
+
+Outcome
+
+	
+
+件数
+
+
+
+
+decoded
+
+	
+
+11
+
+
+
+
+corrupt
+
+	
+
+8
+
+
+
+
+oversize
+
+	
+
+2
+
+
+
+
+unsupported
+
+	
+
+1
+
+
+
+
+cancelled
+
+	
+
+1
+
+
+
+
+timeout
+
+	
+
+1
+
+独立のBMP/PNG復元処理により、PNG RGB/RGBA、BMP24、Bgr565、Bgr555のROI出力11件すべてが期待RGBAと全画素一致しました。
+
+Bgr555とBgr565は原BMPのbitfield masksから区別しています。
+
+また、1×1 ROIの予算境界も維持されています。
+
+項目
+
+	
+
+記録値
+
+
+
+
+Source
+
+	
+
+64×64
+
+
+
+
+ROI
+
+	
+
+1×1
+
+
+
+
+ROI output requirement
+
+	
+
+4 bytes
+
+
+
+
+Full-frame decoded requirement
+
+	
+
+12,288 bytes
+
+
+
+
+Decoded budget
+
+	
+
+1,024 bytes
+
+
+
+
+Outcome
+
+	
+
+oversize
+
+
+
+
+Reason
+
+	
+
+max_decoded_bytes_exceeded
+
+
+
+
+OnLoad到達
+
+	
+
+なし
+
+
+
+
+Output
+
+	
+
+なし
+
+小さなROIによるfull-frame decode予算の迂回は認められません。
+
+能力表ではROI outputのみverifiedです。True partial、sequential、tiled decodeはnot_verified、WIC内部scratchはnot_measuredのままです。
+
+6. Refine GateとStorage
+
+Gate
+
+	
+
+独立照合結果
+
+
+
+
+Quality bf315d47-65b0-4f32-921b-1df7f495f612
+
+	
+
+SUCCEEDED 14/14
+
+
+
+
+Build dce7ca2f-c207-4de2-ad29-e5d532cbb059
+
+	
+
+SUCCEEDED 1/1
+
+
+
+
+Candidate SHA
+
+	
+
+両Gate一致
+
+
+
+
+Candidate digest
+
+	
+
+両Gate一致
+
+
+
+
+Artifact tuples
+
+	
+
+48/48一致
+
+
+
+
+status / inspect / verify
+
+	
+
+すべてexit 0
+
+
+
+
+Cleanup
+
+	
+
+complete
+
+
+
+
+Owner alive
+
+	
+
+false
+
+
+
+
+Recovery required
+
+	
+
+false
+
+Candidate digest：
+
+sha256:20d3fa135300ec126904c5c4d871464a2b0e3d8c14c0d552490e041129d42edc
+
+Quality終了後にBuildが開始されていることも、保存されたUTC時刻から確認しました。
+
+隔離Gateの品質結果はRust 535 pass / 1 ignored、画像112件、R0 316 pass / 36 skippedです。通常環境のR0 340 pass / 12 skipped、feature Rust 539 pass / 1 ignoredとも区別されています。
+
+Storage記録の独立集計結果は次のとおりです。
+
+対象：成功した2 Gateのwork/repoとr8 clippy/tests/buildの計5パス
+
+ファイル：10,154件
+
+Logical bytes：4,127,867,677 bytes
+
+各パス：no_reparse=true、removed=true
+
+Active process依存：なし
+
+削除前後のNative verify：保存記録上exit 0・一致
+
+これは保存証拠の整合性確認であり、Windows filesystemでの物理削除をレビュー環境から再実行したものではありません。
+
+7. W4限定技術完了の承認範囲
+
+今回、次の限定技術事実が成立しました。
+
+実WICのopt-in ROI矩形出力
+
+11件の独立RGBA全画素一致
+
+Bgr565/Bgr555の正しいformat帰属
+
+ROIとfull-frame予算の分離
+
+full-frame admissionの迂回防止
+
+不正ROIと予算超過のfail-closed拒否
+
+W2停止契約に従うcancel/timeoutの分類
+
+ROI outputとtrue partial decodeの厳密な区別
+
+SOURCE・Native・Gate・証拠成果物のidentity整合
+
+今回の固定SOURCEに対する独立Quality/Build Gate成功
+
+WIC内部stride/scratch、実予約、真の同時peak、協調的decoder cancellation、16K、真のregion/sequential/tiled、ICC/orientation、JPEG絶対raster、full Decode Exit、MP-IMG3、Runtime、measured R0、UX/videoは引き続き未達です。
+
+したがって承認対象はMP-IMG2-W4 LIMITED TECHNICAL COMPLETIONのみであり、DC-MP-IMG2全体のDecode Exitを意味しません。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 0
+
+EXCESSIVE 0
+
+A-W4-R2-01：CLOSED
+
+A-W4-R2-02：CLOSED
+
+MP-IMG2-W4 LIMITED TECHNICAL COMPLETION：承認
+
+REVIEW COMPLETE
+
+PASS 0 / 0 / 0

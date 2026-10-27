@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W4",
+  "owner_contract": "DC-MP-IMG2",
+  "product_candidate": "e357888e1d622a3b672cb20f18143ac8468cc745",
+  "gate_candidate_digest": "sha256:20d3fa135300ec126904c5c4d871464a2b0e3d8c14c0d552490e041129d42edc",
+  "evidence_head": "5cda6f69134442987b41deb60de9677726c10094",
+  "package_manifest_commit": "f5edd48032b8d345c747d3bea867e00ae9b0336f",
+  "taskern_packet_sha256": "sha256:90344f49f89097826fae9c703f5eff80d5a8181060d0eab55d9c391ff5ae17be",
+  "gates": {
+    "quality": {
+      "id": "bf315d47-65b0-4f32-921b-1df7f495f612",
+      "state": "SUCCEEDED",
+      "checks": "14/14"
+    },
+    "build": {
+      "id": "dce7ca2f-c207-4de2-ad29-e5d532cbb059",
+      "state": "SUCCEEDED",
+      "checks": "1/1"
+    }
+  },
+  "acceptance_basis": {
+    "adr": "docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md",
+    "review": "review-round3.json — PASS 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
+    "rounds": [
+      "W4-R1 HOLD 0/2/0 (format attribution; incomplete stop contract)",
+      "W4-R2 HOLD 0/2/0 (stop preconditions; Gate-captured quality bytes)",
+      "W4-R3 PASS 0/0/0"
+    ]
+  },
+  "completed_scope": [
+    "opt-in strict rectangle output through the existing OnLoad/Bgra32 path",
+    "eleven actual rectangle outputs with independent all-RGBA equality across PNG RGB/RGBA, BMP24, Bgr565 and Bgr555 control",
+    "Bgr555 and Bgr565 attributed from original BMP masks, never promoted to the wrong format",
+    "full-frame decoded/conversion/scratch admission preserved for every rectangle request",
+    "1x1 ROI against a 12,288-byte full-frame requirement refused max_decoded_bytes_exceeded before OnLoad",
+    "invalid/negative/zero/outside/overflowing rectangle and ROI-output-cap refusals before materialization",
+    "W2 stop contract including cause, method, pre-request exit state, hold position, reason, reachability, monotonic times and worker-exit agreement",
+    "written capabilities separated: roi_output verified; true partial, sequential and tiled not_verified; internal scratch not_measured",
+    "two independent Refine Gates on one pinned candidate digest with forty-eight identical artifact tuples and byte correspondence",
+    "attachment-bound review closure after two documented repairs"
+  ],
+  "unmeasured_or_open": [
+    "WIC internal stride and scratch",
+    "allocator reservations",
+    "true concurrent allocation peak",
+    "cooperative in-decoder cancellation",
+    "16K full decode",
+    "true region decode",
+    "sequential decode",
+    "tiled decode",
+    "ICC/profile and orientation handling",
+    "JPEG absolute raster equality",
+    "full DC-MP-IMG2 Decode exit",
+    "MP-IMG3 Upload",
+    "Runtime RC-* acceptance",
+    "measured R0D attainment",
+    "MP-FLOW2 stages",
+    "product UX and video acceptance",
+    "main integration, push and release"
+  ],
+  "boundaries": [
+    "The review was attachment-bound because the candidate is unpushed; no GitHub visibility, complete Git-object proof or reviewer-side WIC/GUI/Gate rerun is claimed.",
+    "The rectangle is copied from the existing full-frame OnLoad conversion; ROI output success is not evidence of a partial-region decoder.",
+    "The successful Gate pair binds e357888e; later commits are documentation/evidence only. Prior round pairs remain under review-round1-* and review-round2-* and are not transferred.",
+    "Storage disposal covers exactly the two successful W4-r3 work/repo directories and r8 clippy/tests/build: 10,154 files and 4,127,867,677 logical bytes. Native verify before and after is identical; ordinary target, Native outputs and private authority remain.",
+    "W4 limited completion is not full MP-IMG2, MP-IMG3 prerequisite satisfaction, Runtime, measured R0 or product UX approval."
+  ]
+}

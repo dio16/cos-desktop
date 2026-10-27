@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "candidate": "e357888e1d622a3b672cb20f18143ac8468cc745",
+  "evidence_head": "5cda6f69134442987b41deb60de9677726c10094",
+  "package_manifest_commit": "f5edd48",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "4919b563-6693-48c9-bde1-72a2efab439c"
+  ],
+  "assistant_ids": [
+    "d8226f06-2a10-484b-a6a2-a17e9be5754f"
+  ],
+  "first_read": "2026-10-27T18:54:10.409Z",
+  "second_read": "2026-10-27T18:54:40.453Z",
+  "elapsed_ms": 30044,
+  "identical_complete_reads": true,
+  "streaming": false,
+  "request_sha256": "sha256:a75562cbe9aad5958e19e41817545a97ca78e165aadfefb00662d7f142121cfd",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 2577,
+      "expected": 2577,
+      "preview": "MP-IMG2-W4 再評価 Round 3 — A-W4-R2-01 / A-W4-R2-02 の限定修正です。Rou"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 5,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "terminal": "PASS 0 / 0 / 0",
+  "parser_exit": 0,
+  "parser": {
+    "blocking": 0,
+    "actionable": 0,
+    "excessive": 0,
+    "passLine": [
+      0,
+      0,
+      0
+    ],
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": true,
+    "sawPassLine": true
+  },
+  "closed": [
+    "A-W4-R2-01",
+    "A-W4-R2-02"
+  ],
+  "completion": "MP-IMG2-W4 LIMITED TECHNICAL COMPLETION",
+  "residual": [
+    "WIC internal stride/scratch",
+    "allocator reservations",
+    "true concurrent allocation peak",
+    "cooperative in-decoder cancellation",
+    "16K full decode",
+    "true region/sequential/tiled decode",
+    "ICC/orientation",
+    "JPEG absolute raster",
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3 Upload",
+    "Runtime RC-*",
+    "measured R0",
+    "product UX/video"
+  ]
+}

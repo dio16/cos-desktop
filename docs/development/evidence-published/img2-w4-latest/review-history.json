@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "rounds": [
+    {
+      "round": 1,
+      "source_candidate": "f1495133562b644a41bb2d4bdb8108cd04dede41",
+      "evidence_head": "f2f3c7ffcbcf3bab30d59d37e90fd0010426de6b",
+      "request": "review-round1-request.txt",
+      "response": "review-round1-response.txt",
+      "receipt": "review-round1.json",
+      "quality_gate_export": "review-round1-quality-gate.json",
+      "build_gate_export": "review-round1-build-gate.json",
+      "verdict": "HOLD 0 / 2 / 0",
+      "findings": [
+        "A-W4-01",
+        "A-W4-02"
+      ]
+    },
+    {
+      "round": 2,
+      "source_candidate": "6bf7b63cdbe43c621d3c911f367083ce317128c8",
+      "evidence_head": "803fccba26d57d7d7387f44294a95677fdf69aca",
+      "request": "review-request.txt at the round-two commit",
+      "response": "review-round2-response.txt",
+      "receipt": "review-round2.json",
+      "quality_gate_export": "review-round2-quality-gate.json",
+      "build_gate_export": "review-round2-build-gate.json",
+      "verdict": "HOLD 0 / 2 / 0",
+      "closed": [
+        "A-W4-01"
+      ],
+      "findings": [
+        "A-W4-R2-01",
+        "A-W4-R2-02"
+      ]
+    },
+    {
+      "round": 3,
+      "source_candidate": "e357888e1d622a3b672cb20f18143ac8468cc745",
+      "evidence_head": "5cda6f69134442987b41deb60de9677726c10094",
+      "request": "review-request.txt",
+      "response": "review-round3-response.txt",
+      "receipt": "review-round3.json",
+      "quality_gate_export": "quality-gate.json",
+      "build_gate_export": "build-gate.json",
+      "verdict": "PASS 0 / 0 / 0",
+      "closed": [
+        "A-W4-R2-01",
+        "A-W4-R2-02"
+      ]
+    }
+  ],
+  "current": "MP-IMG2-W4 LIMITED TECHNICAL COMPLETION accepted under ADR-0009. Residual media/Runtime boundaries remain; awaiting and executing the next eligible directive."
+}
