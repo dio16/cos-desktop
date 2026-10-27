@@ -35,9 +35,9 @@
         "raw_sha256": "sha256:0cc238526ca88b5fb3e108e113dba53cf79a55d169de7f81339ffbb68174572d"
       },
       "apps/desktop/devtools/img2/w5_metadata_verify.py": {
-        "bytes": 16912,
-        "lf_sha256": "sha256:702470ff9797d743bfa55da68a956976837f006cb01b4df7fe483fb1cda834f1",
-        "raw_sha256": "sha256:7bf3197b05e8561822ce591967bd5367d21e3d2f6b4436b9dfc6f1a89b569409"
+        "bytes": 18417,
+        "lf_sha256": "sha256:342e37ac032199f98169bccc3703bc1a7231db5ef65141a87563b4a099d46481",
+        "raw_sha256": "sha256:930e66ca8ad432545fe7b6a4e8667c8a815910284e8639011aa986104e87659d"
       },
       "apps/desktop/examples/decode_compare/harness.rs": {
         "bytes": 163269,

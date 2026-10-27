@@ -61,7 +61,7 @@ class W5RecordTests(unittest.TestCase):
     def test_source_dimensions(self):
         def change(record):
             next(f for f in record["fixtures"] if f["id"] == "tiff_ori6")["width"] += 1
-        self.reject(change, "full_frame_requirement_invalid")
+        self.reject(change, "source_dimensions_mismatch")
 
     def test_output_dimensions(self):
         self.reject(lambda r: self.set_result(self.worker(r, "tiff_ori6_apply"), output_width=3),
@@ -87,7 +87,7 @@ class W5RecordTests(unittest.TestCase):
     def test_metadata_unreadable_cannot_be_verified(self):
         self.reject(lambda r: self.set_result(self.worker(r, "png_plain"),
                                               orientation_present=True, metadata_available=True),
-                    "orientation_presence_mismatch")
+                    "orientation_query_mismatch")
 
     def test_metadata_cap_cannot_be_admitted(self):
         def change(record):
@@ -176,6 +176,32 @@ class W5RecordTests(unittest.TestCase):
         def change(record):
             self.set_result(self.worker(record, "tiff_ori_conflict"), orientation_raw=8)
         self.reject(change, "orientation_value_mismatch")
+
+    def test_metadata_source_attribution(self):
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_ori6"), orientation_query="/fake/path"),
+                    "orientation_query_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_ori6"), width=200),
+                    "source_dimensions_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_ori6"), height=200),
+                    "source_dimensions_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_ori6"), decoder="PngBitmapDecoder"),
+                    "decoder_identity_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_ori6"), pixel_format="Bgr32",
+                                              bits_per_pixel=32), "source_format_mismatch")
+
+    def test_cap_branch_requires_correct_admission(self):
+        def zero(record):
+            worker = self.worker(record, "tiff_icc_oversized")
+            self.set_result(worker, decoded_bytes_required=0)
+            admitted = next(st for st in worker["stages"] if st["stage"] == "admitted")
+            admitted["decoded_bytes_required"] = 0
+            raw = "".join(json.dumps(st, separators=(",", ":")) + "\n" for st in worker["stages"])
+            worker.update(trace_utf8=raw, trace_sha256=sha(raw.encode()),
+                          trace_bytes=len(raw.encode()), trace_records=len(worker["stages"]))
+        self.reject(zero, "full_frame_requirement_invalid")
+        def published(record):
+            self.worker(record, "tiff_icc_oversized")["published_success"] = True
+        self.reject(published, "metadata_cap_not_closed")
 
     def test_cancellation_cannot_be_decoded(self):
         def change(record):

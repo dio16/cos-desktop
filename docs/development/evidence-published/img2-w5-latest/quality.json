@@ -94,8 +94,9 @@
       "end": "2026-10-27T19:40:43.651Z",
       "exit": 0,
       "signal": null,
-      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_sha256": "sha256:827ff632532da220d937c15d4fe2e99d1eef34fc8f55ef26b3bfe933e73b98ad"
+      "stdout_sha256": null,
+      "stderr_sha256": null,
+      "note": "22 W5 negatives after round-two repair"
     },
     "w5-w4-replay-hist": {
       "name": "w5-w4-replay-hist",
@@ -118,7 +119,7 @@
     "ignored": 1
   },
   "python_img2": 128,
-  "w5_portable": 20,
+  "w5_portable": 22,
   "r0": {
     "total": 352,
     "passed": 340,

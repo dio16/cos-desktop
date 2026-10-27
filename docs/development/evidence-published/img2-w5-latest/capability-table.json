@@ -305,13 +305,13 @@
     }
   ],
   "vocabulary": {
-    "VERIFIED": "observed and independently verified for this case",
-    "OBSERVED": "observed but not verified",
+    "VERIFIED": "verified for this case",
+    "OBSERVED": "observed",
     "NOT_VERIFIED": "not proven",
     "NOT_MEASURED": "no endpoint",
     "NOT_RUN": "not executed",
-    "UNSUPPORTED": "actual unsupported response",
-    "UNAVAILABLE": "no capability"
+    "UNSUPPORTED": "unsupported",
+    "UNAVAILABLE": "unavailable"
   },
-  "scope": "Per measured codec/case only; product ICC/orientation policy DESIGN_BLOCKED."
+  "scope": "Per measured codec/case; product policy DESIGN_BLOCKED."
 }

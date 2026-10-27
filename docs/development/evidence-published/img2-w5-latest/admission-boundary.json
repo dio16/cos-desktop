@@ -5,5 +5,5 @@
   "reason_code": "metadata_cap_exceeded",
   "materialization": "not_requested",
   "output_present": false,
-  "full_frame_admission": "independently recomputed and matched before metadata read"
+  "full_frame_admission": "independently recomputed and matched"
 }

@@ -1,7 +1,6 @@
 {
   "schema_version": 1,
-  "native_record_sha256": "sha256:804acebce6d6eae71e6e7fef704008ee9b984a368a22244ce7c5f74c536b2b95",
-  "method": "Independent TIFF IFD/strip, PNG and BMP24 reconstruction; rotations from stored raster.",
+  "native_record_sha256": "sha256:577847caf034d93f0601f5beb27a357da8c526ec8ae6e3d7bc76b5d5fd1e8087",
   "cases": [
     {
       "case_id": "png_plain",

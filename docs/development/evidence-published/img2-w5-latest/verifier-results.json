@@ -320,20 +320,17 @@
   ],
   "meaning": "Actual WIC metadata observation; orientation/ICC presence is not transform fidelity.",
   "portable_tests": {
-    "files": [
-      "test_w5_verify.py"
-    ],
-    "count": 20,
+    "count": 22,
     "failures": 0
   },
   "negative_classes": [
     "orientation relabel",
-    "transform claim without effect",
+    "transform no effect",
     "double rotation",
-    "source/output dimensions",
+    "source/output dims",
     "ICC digest/presence",
-    "readability as colour conversion",
-    "metadata unreadable as verified",
+    "readability as colour",
+    "metadata unreadable",
     "cap admitted",
     "OnLoad after refusal",
     "missing terminal",
@@ -342,7 +339,11 @@
     "cancellation promotion",
     "stop time/outcome/alive/published",
     "metadata availability",
-    "admission requirement zeroed",
-    "conflicting orientation"
+    "admission zeroed",
+    "conflicting orientation",
+    "fake query",
+    "decoder identity",
+    "source format",
+    "cap-branch admission"
   ]
 }

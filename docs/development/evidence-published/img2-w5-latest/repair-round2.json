@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "review": "review-round2.json",
+  "findings": [
+    "A-W5-R2-01",
+    "A-W5-R2-02"
+  ],
+  "fixes": [
+    "cap branch now recomputes admission and requires oversize/no publish/no output",
+    "source dimensions/format/depth/decoder/orientation query attribution from known fixtures",
+    "negative tests for fake query, dimensions, decoder, format and cap admission"
+  ],
+  "portable_tests": 22,
+  "native_refresh": 16
+}

@@ -154,6 +154,13 @@ def _verify(record, source_root):
         if cid == "tiff_icc_oversized":
             _need(result.get("metadata_available") is True and result.get("icc_present") is True,
                   "metadata_presence_mismatch")
+            math = admission_math(fixture, result)
+            _need(all(result[k] == v for k, v in math.items()), "full_frame_requirement_invalid")
+            admitted = next(st for st in stages if st["stage"] == "admitted")
+            _need(all(admitted[k] == v for k, v in math.items()), "trace_admission_mismatch")
+            _need(w["outcome"] == "oversize" and not w["published_success"] and
+                  w["output_present"] is False and w["output_hex"] is None and
+                  result["materialization"] == "not_requested", "metadata_cap_not_closed")
             _need(w["exit_code"] == 4 and result["outcome"] == "oversize" and
                   result["reason_code"] == "metadata_cap_exceeded" and
                   result["admission_status"] == "refused" and result["materialization"] == "not_requested",
@@ -171,6 +178,19 @@ def _verify(record, source_root):
               result["admission_status"] == "admitted" and result["materialization"] == "completed",
               "decode_missing")
         _need(names == list(STAGES), "native_stage_set_incomplete")
+        expected_format = {"png_plain": "Bgr24", "bmp24_plain": "Bgr24"}.get(
+            fid, "Bgr24" if fid.startswith("tiff") else None)
+        _need((result["width"], result["height"]) == (fixture["width"], fixture["height"]),
+              "source_dimensions_mismatch")
+        _need(result["pixel_format"] == expected_format and result["bits_per_channel"] == 8 and
+              result["bits_per_pixel"] == 24, "source_format_mismatch")
+        expected_decoder = {"png": "PngBitmapDecoder", "bmp": "BmpBitmapDecoder",
+                            "tif": "TiffBitmapDecoder"}[fixture["container"]]
+        _need(result["decoder"] == expected_decoder, "decoder_identity_mismatch")
+        if result.get("orientation_present"):
+            _need(result.get("orientation_query") in
+                  ("/ifd/{ushort=274}", "/ifd/274", "System.Photo.Orientation"),
+                  "orientation_query_mismatch")
         expected_metadata = {"png_plain": True, "bmp24_plain": False}.get(fid, True)
         _need(result.get("metadata_available") is expected_metadata, "metadata_availability_mismatch")
         math = admission_math(fixture, result)
