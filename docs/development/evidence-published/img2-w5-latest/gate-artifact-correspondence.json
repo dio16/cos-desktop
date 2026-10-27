@@ -1,10 +1,9 @@
 {
   "schema_version": 1,
-  "candidate": "1daa70ecd819002636e08bdb95842fdc381cbe1c",
-  "candidate_sha256": "sha256:cb5bee12e61b800568b09f62409c9a316cc5daf6bf3aa7f13a9514378c2a0c35",
-  "quality_gate": "88b59a3c-3364-4a85-8088-e22c48639cfc",
-  "build_gate": "5847493a-ddaa-4074-82d7-a58195e9ffd6",
-  "identical_artifact_tuples": true,
+  "candidate": "d75df9d0fef8d9eca39c41c563ada11252ed21cb",
+  "candidate_sha256": "sha256:021768ff0dc22fd84feecdfc9b4d5f1fe22dcb6f208cb45f66ada2824444132f",
+  "quality_gate": "3148ac79-4791-4109-9566-d82236d0f65a",
+  "build_gate": "6b472805-20d5-455f-812d-d88156e0cba3",
   "artifacts": [
     {
       "id": "w5r2-BUILD_AND_RUN.md-21",
@@ -100,8 +99,8 @@
       "artifact": {
         "id": "w5r2-evidence-admission-boundary.json",
         "relative_path": "artifacts/w5r2-evidence-admission-boundary.json",
-        "size_bytes": 255,
-        "sha256": "sha256:8511c46e4cf088631af12c78cc5f51e352d8c124e43bd8a40b1dcc4c9ec7d6a0"
+        "size_bytes": 325,
+        "sha256": "sha256:909a7003691b373938072412fe5d21963c384733251c6aef923cb3e7afff2382"
       },
       "raw_equal_to_git": true
     },
@@ -144,8 +143,8 @@
       "artifact": {
         "id": "w5r2-evidence-execution-manifest.json",
         "relative_path": "artifacts/w5r2-evidence-execution-manifest.json",
-        "size_bytes": 3059,
-        "sha256": "sha256:663751a07d4d4f999e104cd79386d2a15a56e454bc8dbb3de69667c4d4ab408f"
+        "size_bytes": 2986,
+        "sha256": "sha256:e4770f7c6c173c71c0bb753666cc791a50d64740870a0cf677a1d0f41e9a66f1"
       },
       "raw_equal_to_git": true
     },
@@ -177,8 +176,8 @@
       "artifact": {
         "id": "w5r2-evidence-metadata-native-matrix.json",
         "relative_path": "artifacts/w5r2-evidence-metadata-native-matrix.json",
-        "size_bytes": 356284,
-        "sha256": "sha256:79b5306572ede7a08ad6115cb41f6402febb2e6c6fa2989566b8660f356c273c"
+        "size_bytes": 356167,
+        "sha256": "sha256:54296244c8caac9e2181a3b39e34d7d56c75381102eed07c2d034bfb4fa2aff3"
       },
       "raw_equal_to_git": true
     },
@@ -189,7 +188,7 @@
         "id": "w5r2-evidence-orientation-oracle.json",
         "relative_path": "artifacts/w5r2-evidence-orientation-oracle.json",
         "size_bytes": 11126,
-        "sha256": "sha256:53e1c56b59c628246538e42d8308502f6434b9e1ac3eadb66d2ffe3f1ad32540"
+        "sha256": "sha256:af674d8ff05ac480997e5ede302743442991514613c72abd7813f1d22498efca"
       },
       "raw_equal_to_git": true
     },
@@ -199,8 +198,8 @@
       "artifact": {
         "id": "w5r2-evidence-quality.json",
         "relative_path": "artifacts/w5r2-evidence-quality.json",
-        "size_bytes": 5122,
-        "sha256": "sha256:730ac1b9bd4a71ff229d8fb5550142f030d1fe1aa31772b230e8b5330a588d91"
+        "size_bytes": 5228,
+        "sha256": "sha256:69df3fd57a055222674e66a4ad784b635252a89b080703d6ffcc1c3a85f73330"
       },
       "raw_equal_to_git": true
     },
@@ -244,7 +243,7 @@
         "id": "w5r2-evidence-source-identity.json",
         "relative_path": "artifacts/w5r2-evidence-source-identity.json",
         "size_bytes": 4316,
-        "sha256": "sha256:f63b127678baf2e05a0603a22407868b6f9326430d53e490a800f7df9a2fa36f"
+        "sha256": "sha256:3df98ef875b05bab377eb03557f6873bb7097e7383bb06b5696e3a2b87a3e75a"
       },
       "raw_equal_to_git": true
     },
@@ -288,7 +287,7 @@
         "id": "w5r2-evidence-verifier-results.json",
         "relative_path": "artifacts/w5r2-evidence-verifier-results.json",
         "size_bytes": 10031,
-        "sha256": "sha256:f126b2dc201c2bfcdec3355742b1c5360b02032fd4fbe2507018247f3f1933fb"
+        "sha256": "sha256:187e013e4be1855a3615e864e957915bfc4b83b07e26cdecfc607c65adf3bb49"
       },
       "raw_equal_to_git": true
     },
@@ -408,8 +407,8 @@
       "artifact": {
         "id": "w5r2-test_w5_verify.py-10",
         "relative_path": "artifacts/w5r2-test_w5_verify.py-10",
-        "size_bytes": 12834,
-        "sha256": "sha256:f7f01fa3f093d76f6a3937a7497ae634157009b6b05a0b8791a0b6046ec76e76"
+        "size_bytes": 14750,
+        "sha256": "sha256:ae8ad7b839759ae3663e0639ea6ff5434b71ba8c31c3473186870d8aed5f7766"
       },
       "raw_equal_to_git": true
     },
@@ -496,8 +495,8 @@
       "artifact": {
         "id": "w5r2-w5_metadata_verify.py-9",
         "relative_path": "artifacts/w5r2-w5_metadata_verify.py-9",
-        "size_bytes": 18973,
-        "sha256": "sha256:62ebd2c6db855896fcb2719b940f9c75a4b22d6af362cd6a0b04ee8b3eaa5b13"
+        "size_bytes": 19522,
+        "sha256": "sha256:df6d45834b98e1c5fd9a67fa39ae6da5639d41fe9cd5be715339a36fab349643"
       },
       "raw_equal_to_git": true
     },
@@ -553,6 +552,17 @@
         "relative_path": "artifacts/w5r4-repair-round3",
         "size_bytes": 362,
         "sha256": "sha256:571eed4700cdcd1bc050b1956d45981c6991276c31e2e205bbd8305fe2745334"
+      },
+      "raw_equal_to_git": true
+    },
+    {
+      "id": "w5r5-repair-round4",
+      "path": "docs/development/evidence-published/img2-w5-latest/repair-round4.json",
+      "artifact": {
+        "id": "w5r5-repair-round4",
+        "relative_path": "artifacts/w5r5-repair-round4",
+        "size_bytes": 337,
+        "sha256": "sha256:a7be6625a37882e9afefc24b276f97cb5e31e0cc530fde9c54b02b5afdb118fe"
       },
       "raw_equal_to_git": true
     }
