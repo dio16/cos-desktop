@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "candidate": "e357888e1d622a3b672cb20f18143ac8468cc745",
-  "status": "PREPARED_AFTER_SUCCESSFUL_TERMINAL_VERIFY",
+  "status": "DISPOSED_INTEGRITY_UNCHANGED",
   "quality_gate": "bf315d47-65b0-4f32-921b-1df7f495f612",
   "build_gate": "dce7ca2f-c207-4de2-ad29-e5d532cbb059",
   "paths": [
@@ -10,40 +10,53 @@
       "files": 542,
       "logical_bytes": 14708308,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\dce7ca2f-c207-4de2-ad29-e5d532cbb059\\work\\repo",
       "files": 542,
       "logical_bytes": 14706721,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r8\\clippy",
       "files": 3015,
       "logical_bytes": 663884472,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r8\\tests",
       "files": 3144,
       "logical_bytes": 1841554768,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r8\\build",
       "files": 2911,
       "logical_bytes": 1593013408,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     }
   ],
   "live_process_dependencies": [],
   "retained_source": "Pinned candidate and Git objects under dev; prior round exports retained.",
   "retained_authority": "Gate authority/artifacts/logs, ordinary target, real Native outputs, prior workspaces untouched.",
   "native_verify_before": "quality-gate.json/build-gate.json verify exit0, terminal successful, dead owner, no recovery, cleanup complete.",
-  "measurement": "Logical bytes/files, not allocated storage."
+  "measurement": "Logical bytes/files, not allocated storage.",
+  "evidence_retention_commit": "09acdaefd21becc83f59e84a656bb7dcdfc001ec",
+  "native_verify_after": {
+    "quality": {
+      "gate_id": "bf315d47-65b0-4f32-921b-1df7f495f612",
+      "exit": 0,
+      "identical": true
+    },
+    "build": {
+      "gate_id": "dce7ca2f-c207-4de2-ad29-e5d532cbb059",
+      "exit": 0,
+      "identical": true
+    }
+  }
 }
