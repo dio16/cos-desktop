@@ -1,0 +1,127 @@
+{
+  "protocol": 1,
+  "op": "prepare",
+  "args": {
+    "draft": {
+      "draft_version": 1,
+      "plan_id": "cos-desktop-img2-w3",
+      "revision": 1,
+      "goal": "Prove real-WIC Bgr565 decode admission and independently verified raster output under bounded format and byte limits.",
+      "invariants": [],
+      "milestones": [],
+      "tasks": [
+        {
+          "task_id": "img2-w3",
+          "goal": "Prove real-WIC Bgr565 decode admission and independently verified raster output under bounded format and byte limits.",
+          "inputs": [
+            {
+              "id": "scope",
+              "description": "dev starts at 16ce231c452e97b3ca15695c5f326c45f8851067, clean and origin/dev equal. Complete Tern W3 directive belongs only to DC-MP-IMG2. Reuse W1 admission and W2 opt-in stages/stop states, existing real decode_compare consumer and crates/media DecodeBudget authority. Generate small BI_BITFIELDS BMP RGB masks F800/07E0/001F, primaries and intermediate channels, width1/oddwidth/multirow/topdown/bottomup, exact and one-unit budget limits, truncated/malformed/overlapping/inconsistent/unsupported declarations. No codec/dependency/unsafe/FFI/GPU/Runtime/default changes.",
+              "context_ids": []
+            }
+          ],
+          "constraints": [
+            {
+              "id": "format",
+              "level": "MUST",
+              "text": "Certify Bgr565 only from WIC actual declaredFrame.Format; maximum channel depth6, storage16bpp and row-wise required bytes; distinguish encoded BMP four-byte stride from logical source rows and unknown WIC internals. Admission before OnLoad."
+            },
+            {
+              "id": "oracle",
+              "level": "MUST",
+              "text": "Independent original BMP masks/payload to predetermined 5/6-bit expansion RGBA; reconstruct actual PNG CRC/inflate/filter and compare all pixels. Never fit expectations from output; quantify any mismatch honestly. No missing/empty/partial output accepted."
+            },
+            {
+              "id": "bounds",
+              "level": "MUST",
+              "text": "Finite max24 cases, encoded1MiB, output16MiB/work64MiB, capture64KiB, trace128rows/128KiB, report8MiB, worker45s/global300s, one decoder at a time. Fresh exact owned roots, child PID/lifetime/executable and reap, W2 unverified kill race not cancellation."
+            },
+            {
+              "id": "negative",
+              "level": "MUST",
+              "text": "Reject false format/depth certification, wrong masks/overlap/header/truncation/padding/order/arithmetic overflow, pixel mismatch, missing output, identity mismatch, duplicate/missing/partial cases and success after cancel/timeout. Separate native malformed tolerance from portable proof."
+            },
+            {
+              "id": "workflow",
+              "level": "MUST",
+              "text": "Actual built decode_compare and WIC native matrix; W3 negatives/oracle; W1 selftest/real regression; W2 lifecycle/verifier; harness/media; unchanged full quality plus feature and R0 Python actual skips. Pin complete candidate and Taskern packet, independent Refine Quality/Build same SHA/digest/artifacts, status/inspect/verify terminal complete/deadowner. Track latest source/native/Gate/Tern evidence; exact authorized successful scratch disposal with unchanged native integrity. Full fresh Tern response two equal reads30s apart and PASS0/0/0; then next eligible directive per direct Caller continuous instruction. No remote push/main/release."
+            }
+          ],
+          "outputs": [
+            {
+              "id": "w3",
+              "description": "Bounded deterministic Bgr565 fixture generator, independent raster oracle, real-WIC matrix and fail-closed verifier with negative regressions; latest tracked actual fixture/native/capability/quality/Gate/storage/Tern evidence and unmeasured list.",
+              "media_type": "application/json"
+            }
+          ],
+          "acceptance": [
+            {
+              "id": "native",
+              "statement": "Real actual WIC source Bgr565 and depth6/storage16; independently correct full RGBA output via bounded canonical PNG and actual consumer; exact budget admits and one-unit exceeds refuse before OnLoad; corrupt inputs no false valid output.",
+              "output_ids": [
+                "w3"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "regression",
+              "statement": "All specified negative classes fail closed and W1/W2 legacy consumer arithmetic/lifecycle remain intact. Unobserved internal stride/scratch/peak/cooperative cancellation remain NOT_MEASURED.",
+              "output_ids": [
+                "w3"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "closure",
+              "statement": "Required full quality and independent pinned Refine Quality/Build SUCCEEDED with identical artifacts/candidate; complete Tern PASS0/0/0 and durable tracked evidence justify only W3 technical closure, never full Decode exit.",
+              "output_ids": [
+                "w3"
+              ],
+              "evaluation_ids": [
+                "quality"
+              ]
+            }
+          ],
+          "evaluation": [
+            {
+              "id": "behavior",
+              "kind": "automated",
+              "requirement": "Run focused portable negatives, independent BMP/PNG raster oracle and real Windows WIC source/admission/output/trace/consumer matrix under explicit bounds.",
+              "metric": []
+            },
+            {
+              "id": "quality",
+              "kind": "automated",
+              "requirement": "Run unchanged standard and feature Rust quality, R0 Python and W1/W2 regressions; pinned independent Refine gates/integrity/storage and complete Tern review.",
+              "metric": []
+            }
+          ],
+          "dependencies": [],
+          "context": [],
+          "annotations": []
+        }
+      ]
+    },
+    "handoff": [
+      {
+        "task_id": "img2-w3",
+        "context": {
+          "schema_version": 1,
+          "items": []
+        },
+        "budget": {
+          "schema_version": 1,
+          "window_tokens": 32000,
+          "reserved_output_tokens": 4000,
+          "tool_reserve_tokens": 4000,
+          "max_input_bytes": 24000
+        }
+      }
+    ],
+    "emit": "both"
+  }
+}

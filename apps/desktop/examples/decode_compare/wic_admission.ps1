@@ -82,3 +82,43 @@ function Get-BudgetPresence {
     $keys = 'MaxDimension', 'MaxBitDepth', 'MaxDecodedBytes', 'MaxScratchBytes'
     return @($keys | Where-Object { $BoundNames -contains $_ }).Count -gt 0
 }
+
+# Container admission, not a pixel-format claim. WIC tolerates planes=0 and
+# normalizes invalid masks, so budget mode cannot delegate these checks to it.
+# The caller reads at most 66 header bytes, never attacker-sized metadata.
+function Get-BmpBitfieldsHeaderError {
+    param([byte[]] $Header, [long] $FileBytes)
+
+    if ($Header.Length -lt 54 -or $Header[0] -ne 66 -or $Header[1] -ne 77) {
+        return $null
+    }
+    $bits = [BitConverter]::ToUInt16($Header, 28)
+    $compression = [BitConverter]::ToUInt32($Header, 30)
+    if ($bits -ne 16 -or $compression -ne 3) { return $null }
+    $dib = [BitConverter]::ToUInt32($Header, 14)
+    $offset = [BitConverter]::ToUInt32($Header, 10)
+    $width = [BitConverter]::ToInt32($Header, 18)
+    $height = [BitConverter]::ToInt32($Header, 22)
+    if ($dib -lt 40 -or $Header.Length -lt 66 -or
+        [BitConverter]::ToUInt16($Header, 26) -ne 1 -or $width -le 0 -or $height -eq 0) {
+        return 'invalid_metadata'
+    }
+    $minimumOffset = [long] 14 + $dib
+    if ($dib -eq 40) { $minimumOffset += 12 }
+    if ($offset -lt $minimumOffset) { return 'invalid_metadata' }
+    $used = [uint32] 0
+    foreach ($position in 54, 58, 62) {
+        $mask = [BitConverter]::ToUInt32($Header, $position)
+        if ($mask -eq 0 -or $mask -gt 65535 -or ($used -band $mask) -ne 0) {
+            return 'invalid_metadata'
+        }
+        $used = $used -bor $mask
+        while (($mask -band 1) -eq 0) { $mask = $mask -shr 1 }
+        if (($mask -band ($mask + 1)) -ne 0) { return 'invalid_metadata' }
+    }
+    $row = ([System.Numerics.BigInteger] $width * 16 + 31) / 32 * 4
+    $required = [System.Numerics.BigInteger] $offset +
+        $row * [System.Numerics.BigInteger]::Abs([System.Numerics.BigInteger] $height)
+    if ($required -gt $FileBytes) { return 'invalid_metadata' }
+    return $null
+}

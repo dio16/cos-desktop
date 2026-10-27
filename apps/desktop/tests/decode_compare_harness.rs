@@ -2984,15 +2984,16 @@ fn cancelled_at_reason_requires_a_cancelled_class() {
 /// token instead of ending `sampled_lower_bound`.
 #[test]
 fn failure_after_a_success_discards_the_value_on_nonzero_exit() {
+    let _guard = sampling_guard();
     let fixture = Fixture::new();
-    fixture.case("a.png", "sleep-long");
-    let counter = fixture.base.join("spawns-success-then-fail.txt");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    inject_sampler(&mut config, "fake_sampler_success_then_failure_helper");
-    config.sample_argv_prefix.push(counter.into_os_string());
-    config.sample_interval_ms = 10;
+    await_sampler(
+        &fixture,
+        &mut config,
+        "fake_sampler_success_then_failure_helper",
+        2,
+    );
     config.max_samples = 3;
-    config.cancel_after_ms = Some(2_500);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -3017,15 +3018,16 @@ fn failure_after_a_success_discards_the_value_on_nonzero_exit() {
 /// A1: the same for a truncated capture after an earlier success.
 #[test]
 fn failure_after_a_success_discards_the_value_on_truncation() {
+    let _guard = sampling_guard();
     let fixture = Fixture::new();
-    fixture.case("a.png", "sleep-long");
-    let counter = fixture.base.join("spawns-success-then-truncate.txt");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    inject_sampler(&mut config, "fake_sampler_success_then_truncating_helper");
-    config.sample_argv_prefix.push(counter.into_os_string());
-    config.sample_interval_ms = 10;
+    await_sampler(
+        &fixture,
+        &mut config,
+        "fake_sampler_success_then_truncating_helper",
+        2,
+    );
     config.max_samples = 3;
-    config.cancel_after_ms = Some(2_500);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -4216,7 +4218,9 @@ fn sampler_pid() -> u32 {
 /// Count this spawn and report whether it is the first one (the counter file starts
 /// empty), so a helper can behave differently on its first and later invocations.
 fn count_spawn_first() -> bool {
-    let Some(path) = sampler_counter_path() else {
+    let Some(path) = sampler_counter_path()
+        .or_else(|| sampler_done_path().map(|path| path.with_extension("spawns.txt")))
+    else {
         return true;
     };
     let first = std::fs::read(&path)
@@ -4243,6 +4247,8 @@ fn fake_sampler_success_then_failure_helper() {
     }
     let first = count_spawn_first();
     println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    std::io::stdout().flush().unwrap();
+    mark_sampler_done();
     if !first {
         std::process::exit(1);
     }
@@ -4263,6 +4269,8 @@ fn fake_sampler_success_then_truncating_helper() {
             println!("{padding}");
         }
     }
+    std::io::stdout().flush().unwrap();
+    mark_sampler_done();
 }
 
 /// A sampler that prints a perfectly valid row and then exits non-zero: the row is not

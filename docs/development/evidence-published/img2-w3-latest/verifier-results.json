@@ -1,0 +1,110 @@
+{
+  "ok": true,
+  "fixture_count": 12,
+  "worker_count": 24,
+  "consumer_pixels_verified": 5,
+  "capability_rows": [
+    {
+      "case_id": "format_primaries",
+      "format": "Bgr565",
+      "width": 5,
+      "height": 1,
+      "depth": 6,
+      "bpp": 16,
+      "pixel_verified": true
+    },
+    {
+      "case_id": "format_midtones",
+      "format": "Bgr565",
+      "width": 7,
+      "height": 2,
+      "depth": 6,
+      "bpp": 16,
+      "pixel_verified": true
+    },
+    {
+      "case_id": "format_narrow_bottom",
+      "format": "Bgr565",
+      "width": 1,
+      "height": 3,
+      "depth": 6,
+      "bpp": 16,
+      "pixel_verified": true
+    },
+    {
+      "case_id": "format_odd_bottom",
+      "format": "Bgr565",
+      "width": 3,
+      "height": 3,
+      "depth": 6,
+      "bpp": 16,
+      "pixel_verified": true
+    },
+    {
+      "case_id": "format_odd_top",
+      "format": "Bgr565",
+      "width": 3,
+      "height": 3,
+      "depth": 6,
+      "bpp": 16,
+      "pixel_verified": true
+    },
+    {
+      "case_id": "max_dimension_at",
+      "format": "Bgr565",
+      "width": 3,
+      "height": 3,
+      "depth": 6,
+      "bpp": 16,
+      "pixel_verified": true
+    },
+    {
+      "case_id": "max_pixels_at",
+      "format": "Bgr565",
+      "width": 3,
+      "height": 3,
+      "depth": 6,
+      "bpp": 16,
+      "pixel_verified": true
+    },
+    {
+      "case_id": "max_bit_depth_at",
+      "format": "Bgr565",
+      "width": 3,
+      "height": 3,
+      "depth": 6,
+      "bpp": 16,
+      "pixel_verified": true
+    },
+    {
+      "case_id": "max_decoded_bytes_at",
+      "format": "Bgr565",
+      "width": 3,
+      "height": 3,
+      "depth": 6,
+      "bpp": 16,
+      "pixel_verified": true
+    },
+    {
+      "case_id": "max_scratch_bytes_at",
+      "format": "Bgr565",
+      "width": 3,
+      "height": 3,
+      "depth": 6,
+      "bpp": 16,
+      "pixel_verified": true
+    }
+  ],
+  "unmeasured": [
+    "WIC internal stride/scratch",
+    "true concurrent allocation peak",
+    "actual reservations",
+    "cooperative in-decoder cancellation",
+    "region/sequential/tiled decode",
+    "ICC/orientation complete behavior",
+    "16K decode",
+    "JPEG absolute raster",
+    "full Decode exit"
+  ],
+  "meaning": "replay of retained raw Native bytes and observations; not a new WIC run"
+}

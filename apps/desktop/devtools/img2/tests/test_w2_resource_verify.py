@@ -32,8 +32,10 @@ class W2EvidenceTests(unittest.TestCase):
         self.assertFalse(result["ok"], result)
         self.assertTrue(any(token in e for e in result["errors"]), result)
 
-    def test_retained_real_record_and_current_source_replay(self):
-        result = verify(self.observed, source_root=ROOT)
+    def test_retained_real_record_replay(self):
+        # W2 is historical evidence; a newer probe must not be required to have
+        # identical source bytes. Current-source W2 compatibility is a real rerun.
+        result = verify(self.observed)
         self.assertEqual(result["errors"], [])
         self.assertTrue(result["ok"])
         self.assertEqual(result["mode"], "report_only")

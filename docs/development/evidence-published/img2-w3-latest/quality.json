@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "scope": "W3 real Windows CLI; no desktop GUI startup claim",
+  "checks": {
+    "standard-quality-final": {
+      "name": "standard-quality-final",
+      "start": "2026-10-27T14:40:18.037Z",
+      "end": "2026-10-27T14:40:38.835Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 535,
+        "failed": 0,
+        "ignored": 1
+      },
+      "python_total": 18,
+      "python_skipped": 0,
+      "warnings": [],
+      "summary": [
+        "==> build",
+        "    Finished `dev` profile [unoptimized] target(s) in 1.30s",
+        "all quality gates passed (native smoke is separate)"
+      ],
+      "stdout_sha256": "sha256:0b712da6b2608bb0343570ba1851bf2eaec0d995de3b9089d2fdffcef235c4b0",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "feature-clippy-final": {
+      "name": "feature-clippy-final",
+      "start": "2026-10-27T14:40:38.836Z",
+      "end": "2026-10-27T14:40:41.735Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 0,
+      "python_skipped": 0,
+      "warnings": [],
+      "summary": [
+        "    Checking cos-desktop v0.1.0 (C:\\dev\\cos-desktop\\apps\\desktop)",
+        "    Finished `dev` profile [unoptimized] target(s) in 2.73s"
+      ],
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:fd4483448388e9ab9625f0ddfe44e6b80a640710d207c90142b98afb1bc8d396"
+    },
+    "feature-tests-final": {
+      "name": "feature-tests-final",
+      "start": "2026-10-27T14:40:50.322Z",
+      "end": "2026-10-27T14:41:08.649Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 539,
+        "failed": 0,
+        "ignored": 1
+      },
+      "python_total": 0,
+      "python_skipped": 0,
+      "warnings": [],
+      "summary": [
+        "   Doc-tests desktop_protocol",
+        "   Doc-tests media",
+        "   Doc-tests ui_model"
+      ],
+      "stdout_sha256": "sha256:1a386059dd8f373e00d7f61e6035410b2c3f9b7926bcc891fabed53c416c28cc",
+      "stderr_sha256": "sha256:804a8d27204165146e7690faeee0b3ab14612e6bb0643057f72a816c4169f73a"
+    },
+    "feature-build-final": {
+      "name": "feature-build-final",
+      "start": "2026-10-27T14:41:39.866Z",
+      "end": "2026-10-27T14:41:41.303Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 0,
+      "python_skipped": 0,
+      "warnings": [],
+      "summary": [
+        "    Finished `dev` profile [unoptimized] target(s) in 1.37s"
+      ],
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:c3b9a96f375f0581650c16fd7ed2ca7cb3c3a2ac4151da8d2b7ae35a70b7f0df"
+    },
+    "focused-python-final": {
+      "name": "focused-python-final",
+      "start": "2026-10-27T14:39:04.817Z",
+      "end": "2026-10-27T14:39:05.721Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 68,
+      "python_skipped": 0,
+      "warnings": [],
+      "summary": [
+        "----------------------------------------------------------------------",
+        "Ran 68 tests in 0.647s",
+        "OK"
+      ],
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:a8258bb4770f156d910354997c451a749fd19778595d79380d6ad0a08e2b2eaa"
+    },
+    "r0-python": {
+      "name": "r0-python",
+      "start": "2026-10-27T14:30:41.992Z",
+      "end": "2026-10-27T14:31:12.511Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 352,
+      "python_skipped": 12,
+      "warnings": [],
+      "summary": [
+        "----------------------------------------------------------------------",
+        "Ran 352 tests in 29.912s",
+        "OK (skipped=12)"
+      ],
+      "stdout_sha256": "sha256:b0455e549152e051ad9644c6cadeebc2bb90433731081de66076ca758346369f",
+      "stderr_sha256": "sha256:bb6ba6720f1dfdd171cbca9ed2e9d2c18e6cd3258b9cf7c35c41db35f88c5f9b"
+    },
+    "wic-probe-selftest": {
+      "name": "wic-probe-selftest",
+      "start": "2026-10-27T14:33:02.925Z",
+      "end": "2026-10-27T14:33:24.985Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 0,
+      "python_skipped": 0,
+      "warnings": [],
+      "summary": [
+        "w2_probe_selftest: PASS"
+      ],
+      "stdout_sha256": "sha256:c8e3c070f834d8ef8d7a1fdfdbe2262f8d0a78df0505a4a61cc6e2184c91e311",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "wic-admission-selftest": {
+      "name": "wic-admission-selftest",
+      "start": "2026-10-27T14:33:02.938Z",
+      "end": "2026-10-27T14:33:03.681Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 0,
+      "python_skipped": 0,
+      "warnings": [],
+      "summary": [
+        "{\"checks\":19,\"failures\":[]}"
+      ],
+      "stdout_sha256": "sha256:6032a7dfae2d2dd850a2c707de510fd838f9d8f9cb36d6df8bfe9b25f129b09a",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w1-selftest": {
+      "name": "w1-selftest",
+      "start": "2026-10-27T14:33:02.952Z",
+      "end": "2026-10-27T14:33:03.121Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 0,
+      "python_skipped": 0,
+      "warnings": [],
+      "summary": [
+        "{\"checks\": 7, \"failures\": []}"
+      ],
+      "stdout_sha256": "sha256:a2ff3a5d6e44f07eba7f56d6cbdf278bf96b8f2923d8ee1b85ff6bf08ea593c0",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "sampler-regression-fixed": {
+      "name": "sampler-regression-fixed",
+      "start": "2026-10-27T14:39:04.810Z",
+      "end": "2026-10-27T14:39:10.335Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 2,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 0,
+      "python_skipped": 0,
+      "warnings": [],
+      "summary": [
+        "   Compiling cos-desktop v0.1.0 (C:\\dev\\cos-desktop\\apps\\desktop)",
+        "    Finished `test` profile [unoptimized] target(s) in 3.48s",
+        "     Running tests\\decode_compare_harness.rs (target\\debug\\deps\\decode_compare_harness-f7ff13233d8908d6.exe)"
+      ],
+      "stdout_sha256": "sha256:082432ab2cc47f059377471966f9bd5d620135421d6e0cce8464388ee8618b66",
+      "stderr_sha256": "sha256:a209056b30f4c5b989aa8c88beb6b7e434f44fee86ebc70e0efaaea77fdcaf43"
+    }
+  },
+  "r0_unavailable": "one live-window observation and eleven missing historical N07 binary cases; actual skips are not PASS",
+  "native_built_consumer": "built/ran separately, see real-native-matrix.json",
+  "quality_failures_retained": "environment.json records preceding warning/compiler/link failures; the scheduler-dependent sampler test failure was repaired using existing completion handshake with unchanged assertions; the earlier one-bit oracle transcription was corrected from independent 5-bit expansion 1->8, not from WIC output",
+  "r0_skipped_cases": [
+    {
+      "test": "Needs a desktop session, PowerShell and a window that is not ours.",
+      "reason": "NOT_RUN: no COS Desktop window is running in this session"
+    },
+    {
+      "test": "test_arbitrary_repo_root_is_refused_with_a_closed_error (test_n07_verify.N07Verifier.test_arbitrary_repo_root_is_refused_with_a_closed_error)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_historical_record_matches_its_recorded_archive_and_names_live_drift (test_n07_verify.N07Verifier.test_historical_record_matches_its_recorded_archive_and_names_live_drift)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "Explicit \"is the live tree the recorded baseline?\" check.",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_mismatch_still_exits_nonzero_and_is_named (test_n07_verify.N07Verifier.test_mismatch_still_exits_nonzero_and_is_named)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_missing_expected_value_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_expected_value_is_not_measured_while_live_drift_stays_named)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_missing_helper_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_helper_is_not_measured_while_live_drift_stays_named)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_omitted_repo_root_uses_the_canonical_root (test_n07_verify.N07Verifier.test_omitted_repo_root_uses_the_canonical_root)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_same_inputs_produce_identical_record_bytes (test_n07_verify.N07Verifier.test_same_inputs_produce_identical_record_bytes)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_scratch_copy_only_is_not_verified_and_names_the_path_item (test_n07_verify.N07Verifier.test_scratch_copy_only_is_not_verified_and_names_the_path_item)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_tampered_manifest_names_the_manifest_mismatch (test_n07_verify.N07Verifier.test_tampered_manifest_names_the_manifest_mismatch)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    },
+    {
+      "test": "test_verdict_precedence_names_both_kinds (test_n07_verify.N07Verifier.test_verdict_precedence_names_both_kinds)",
+      "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+    }
+  ],
+  "focused_breakdown": {
+    "w2": 45,
+    "w3": 23,
+    "total": 68
+  },
+  "admission_selftest": {
+    "checks": 19,
+    "failures": []
+  },
+  "w1_runner_selftest": {
+    "checks": 7,
+    "failures": []
+  },
+  "observed_sampler_test_failure": {
+    "attempt": "standard-quality-qualified",
+    "test": "failure_after_a_success_discards_the_value_on_truncation",
+    "before": "123 passed/1 failed; earlier sample count1 retained because second sample was still in flight when 2500ms deadline fired",
+    "repair": "both success-then-failure tests now reuse sampling_guard and await_sampler completion handshake; separate spawn log, flush then completion marker; unchanged outcome/value-discard assertions",
+    "after": "two focused cases pass; final complete default535/feature539 routes pass without warnings"
+  }
+}

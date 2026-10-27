@@ -1,0 +1,633 @@
+# COS Desktop — NEXT IMPLEMENTATION DIRECTIVE
+# MP-IMG2-W3: Real-WIC Bgr565 Capability and Format-Admission Verification
+
+Repository: dio16/cos-desktop
+Branch: dev
+開始固定SHA: 16ce231c452e97b3ca15695c5f326c45f8851067
+
+前回完了:
+MP-IMG2-W2 — LIMITED TECHNICAL COMPLETION
+Product: e4ef83a1b0085945d6e78743c8e2c9fa3aa19fa2
+Reviewed evidence: 13cf2d678986813d83f30fa7787c0e238c96834b
+Independent review: PASS 0 / 0 / 0
+Taskern packet:
+sha256:2be98d3011956be7d3cf6ce2ea05ebe13476b88efc15c74c861cb89520b054fc
+
+W2統合後:
+remote dev = 16ce231c452e97b3ca15695c5f326c45f8851067
+tree clean（Caller報告）
+
+## 1. 今回実行する単一タスク
+
+MP: MP-IMG2
+単一owner contract: DC-MP-IMG2
+対象slice: MP-IMG2-W3
+
+目的:
+既存Windows Imaging Component（WIC）実デコード経路で、
+Bgr565形式の実Native能力と、bit-packed入力の
+format admission・byte accounting・pixel correctnessを検証する。
+
+W1ではBgr565の最大channel depth=6と
+row-wise byte arithmeticをSOURCEレベルで確認した。
+
+しかし実Bgr565 Native fixtureはNOT_RUNだった。
+
+W3ではこれを実入力で検証し、codec/format別の
+admission capability tableへ根拠を追加する。
+
+単なる設計文書、mock、算術selftest、静的な
+pixel-format mappingだけでは完了としない。
+
+W3はDC-MP-IMG2の一部分であり、
+full Decode Exitを縮小・再定義しない。
+
+## 2. Hard prerequisitesと既存成立条件
+
+MP-IMG2 hard prerequisites:
+- MP-IMG1: A/B TECHNICALLY COMPLETE
+- MP-SEC3: Desktop-local admission TECHNICALLY COMPLETE
+
+成立済み:
+- MP-IMG2 decoder-agnostic arithmetic preflight
+- MP-IMG2-W1 real-WIC pre-materialization admission
+- MP-IMG2-W2 bounded real-WIC observation
+- W1/W2独立レビューPASS 0/0/0
+- ADR-0008の既存DecodeBudget定義
+- ADR-0009の既存完了slice受入れ記録
+- ADR-0013のtracked evidence保存方針
+
+W3はこれらを前提に、既存実装を再利用する。
+
+本directiveは新規の設計承認、decoder adoption、
+依存追加、外部権限付与を行わない。
+
+## 3. 正典と実装開始前の検査
+
+開始時に以下を確認する。
+
+- HEADと作業対象branch
+- origin/devとの差分
+- git status
+- Cargo.lockとrust-toolchain.toml
+- GPUI pin
+- 既存SOURCEおよびtracked evidence
+
+正典:
+- docs/development/IMPLEMENTATION_MASTER_PLAN.md
+  MP-IMG2、§19.54、§19.55
+- docs/architecture/DESKTOP_DESIGN_CONTRACTS.md
+  DC-MP-IMG2
+  Media input admission and integrity
+- docs/architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md
+  §6、§6.1 Decode、§10
+- docs/development/BUILD_AND_RUN.md
+  §4.21、§4.22
+- docs/decisions/ADR-0008-OWNER-RATIFICATION.md
+- docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md
+- docs/decisions/ADR-0012-HOLD-RELEASE.md
+- docs/decisions/ADR-0013-EVIDENCE-RETENTION.md
+
+特に前回発生したMP §19.54–19.55の
+見出し欠落を再発させないこと。
+
+文書修正では:
+- section見出しを一意に指定する
+- 対象範囲の前後を確認する
+- 既存§19.54/19.55の保持をassertする
+- 文書全体の見出し数と参照anchorを確認する
+- 広範囲の文字列置換を行わない
+- Gate捕捉版とreview版の対応を保存する
+
+## 4. Taskern実使用
+
+Taskern CLIを実際に使用する。
+
+taskern --version
+taskern describe capabilities --json
+taskern describe operation prepare --human
+
+protocol 1 / op prepareで
+単一taskの新しいDraftPlanを作成する。
+
+plan_id: cos-desktop-img2-w3
+task_id: img2-w3
+revision: 1
+
+goal:
+Prove real-WIC Bgr565 decode admission and independently
+verified raster output under bounded format and byte limits.
+
+packetに以下を含める。
+
+- real-WIC consumer経路
+- Bgr565 fixture generation
+- source pixel-format validation
+- per-row byte accounting
+- decoded output oracle
+- negative input matrix
+- bounded native execution
+- regression preservation
+- independent quality/Gate/review
+
+実際に次を呼び出す。
+
+taskern call --request <request.json> --json
+
+ok=true、packet_compiled、packet_sha256、
+plan/task identityを確認する。
+
+Taskern packetを実装の入力とし、
+request/responseをtracked evidenceへ保存する。
+
+Taskernを呼ばずに既存packet digestだけを
+新taskへ流用してはならない。
+
+## 5. 変更可能範囲
+
+第一候補:
+- apps/desktop/examples/decode_compare/wic_probe.ps1
+- apps/desktop/examples/decode_compare/wic_admission.ps1
+- apps/desktop/examples/decode_compare/harness.rs
+- apps/desktop/examples/decode_compare/inspect.rs
+- apps/desktop/examples/decode_compare/pixels.rs
+- apps/desktop/tests/decode_compare_harness.rs
+- apps/desktop/tests/wic_admission_selftest.ps1
+
+必要な最小限の新規devtools:
+- apps/desktop/devtools/img2/w3_*.py
+- apps/desktop/devtools/img2/tests/test_w3_*.py
+
+既存のW1/W2 generator、consumer、独立pixel oracle、
+resource verifierを優先して再利用する。
+
+crates/mediaのDecodeBudget/default/APIは変更しない。
+
+新しいcodec library、Rust dependency、unsafe、
+FFI、GPU pathを追加しない。
+
+W3専用fixture generatorのために、
+汎用画像処理frameworkを新設しない。
+
+## 6. 実Bgr565 fixtureの生成
+
+Python標準ライブラリなど既存承認済み環境だけを使い、
+再現可能な16-bit BMP fixtureを生成する。
+
+BMPにはBI_BITFIELDSを使用し、
+RGB channel masksを明示する。
+
+R: 0xF800
+G: 0x07E0
+B: 0x001F
+
+検証する入力:
+1. black / white / red / green / blue
+2. 各channelの中間値
+3. 1-pixel幅
+4. odd-width / row padding
+5. 複数行
+6. top-down / bottom-up
+7. at-budget boundary
+8. one-unit-over-budget boundary
+9. truncated payload
+10. malformed channel masks
+11. inconsistent metadata
+12. unsupported format declaration
+
+各fixtureに次を記録する。
+
+- generation algorithm
+- dimensions
+- row order
+- bit depth
+- channel masks
+- row stride
+- declared source bytes
+- encoded bytes
+- SHA256
+- expected decoded pixel values
+
+入力は実ファイルとして生成する。
+
+同一色の別表現を比較するだけではなく、
+独立に計算したBgr565→RGBA期待値を保持する。
+
+## 7. 実WIC admissionとdecode
+
+既存のwic_probe.ps1を使用する。
+
+必須条件:
+
+- WICが報告した実source pixel formatを記録する
+- Bgr565との一致を確認する
+- ファイル名やBMP宣言だけでBgr565認定しない
+- maximum channel bit depth=6
+- source bits-per-pixel=16
+- width、height、max_pixelsを検証
+- row-wise byte arithmeticを維持
+- decoded/conversion/scratch予算を事前検証
+- OnLoad materialization前のadmissionを維持
+
+実source pixel formatがBgr565でない場合:
+- 実際のWIC formatを記録
+- Bgr565 capabilityをPASSにしない
+- unsupported/mapped/convertedの実態を区別する
+- 代替formatへ黙って再分類しない
+
+byte accountingでは、
+単純なwidth×height×2だけに依存せず、
+既存W1のrow-wise算術を使用する。
+
+BMPのencoded row strideと
+WIC内部stride/scratchは別の概念として記録する。
+
+内部strideを実測できなければNOT_MEASUREDとする。
+
+## 8. Pixel oracle
+
+実WICでBgr565をデコードし、
+既存のbounded canonical-PNG出力経路を使用する。
+
+独立oracleは元BMPのbitfield payloadから
+channel値を読み取り、期待RGBAを算出する。
+
+検証内容:
+- R/G/B channel mask
+- 5-bit/6-bitの抽出
+- 8-bitへの展開規則
+- row order
+- row padding
+- alpha
+- width/height
+- output PNG CRC/inflate/filter
+- RGBA全画素
+
+WICの色変換や量子化に差がある場合、
+その差を測定して記録する。
+
+期待値を実出力から逆算して
+一致結果を作ってはならない。
+
+完全一致を主張する場合は、
+独立期待値とのbyte単位比較を必須とする。
+
+完全一致しない場合も、
+差の位置・値・変換条件を記録し、
+unverifiedをPASSへ変更しない。
+
+## 9. 実Consumer Smoke
+
+単体関数ではなく、既存のdecode_compareを
+実際にビルド・実行する。
+
+例:
+
+cargo build --locked -p cos-desktop --example decode_compare
+
+既存harnessの正規CLIを確認したうえで、
+明示したBgr565 fixtureを入力し、
+real-WIC probeでデコードする。
+
+観測可能な受入条件:
+
+1. BMP bitfieldsが独立に正しく生成される
+2. WIC実source formatを記録できる
+3. Bgr565が実際に確認できた場合だけcapabilityを認定
+4. decoded outputが正常なPNGとして読める
+5. 独立pixel oracleが実際の結果を判定する
+6. oversizeはmaterialization前に拒否される
+7. malformed inputは閉じたreasonで分類される
+8. admission拒否後にvalid outputが公開されない
+9. 出力とtraceは同じsource/run identityへ結び付く
+10. 既存W1/W2 consumer動作を変更しない
+
+Bgr565の実観測が成立しなかった場合は、
+試したformat・HRESULT/例外・reasonを残す。
+
+無理に別decoderを導入してPASSにしない。
+
+## 10. 実行上限と安全性
+
+全実行は有限とする。
+
+- fixture count
+- encoded input bytes
+- decoded output bytes
+- per-worker timeout
+- global deadline
+- concurrent workers
+- temporary work-root bytes
+- trace/capture/report bytes
+
+これらの値はmanifestに明示する。
+
+既存W1/W2のより厳しい上限を再利用し、
+必要な範囲だけ狭いoverrideを設定する。
+
+巨大allocationは禁止。
+
+16K full decodeは実行しない。
+
+各processはidentityを確認し、
+cancel/timeout時にdirect childを回収する。
+
+W2のclosed stop state machineを保持する。
+
+人工holdのないkillを
+stop_confirmedへ昇格させない。
+
+既存work rootの再使用と無条件削除は禁止。
+
+## 11. 回帰・負例テスト
+
+追加する最低限の負例:
+
+- Bgr565以外をBgr565と認定
+- channel masks不正
+- overlapping masks
+- malformed BMP header
+- truncated pixel rows
+- row-padding誤計算
+- odd-width誤計算
+- top-down/bottom-up逆転
+- depth=5と誤認
+- size計算overflow
+- pixel mismatchをdecoded successと認定
+- empty/missing outputを成功扱い
+- source identity mismatch
+- duplicate/missing case
+- incomplete report
+- cancellation/timeout後の成功公開
+
+意図的に破損させたfixtureは
+fail-closedで拒否する。
+
+既存正常入力とlegacy非opt-in経路は
+byte/meaning互換を保つ。
+
+実Bgr565 fixtureを用いたNativeテストと、
+portableな構造検証を区別する。
+
+## 12. 品質検証
+
+少なくとも以下を実行する。
+
+- W3 focused tests
+- W3 independent pixel oracle
+- W3 negative verifier tests
+- real-WIC Bgr565 Native matrix
+- W1 admission selftest
+- W1 regression
+- W2 worker-stop regressions
+- W2 resource verifier regressions
+- decode_compare harness tests
+- crates/media admission/budget tests
+- cargo fmt --all -- --check
+- cargo clippy --locked --workspace --all-targets -- -D warnings
+- cargo test --locked --workspace
+- cargo build --locked --workspace
+- pwsh -NoProfile -File scripts/quality.ps1
+- 既存feature route
+- Python R0 suite
+
+全実行のpass/fail/skip/NOT_RUNを記録する。
+
+旧N07 binary欠落などで実行不能な項目を
+PASSへ数えない。
+
+既存W1/W2の観測結果を今回実行した結果として
+転記しない。
+
+## 13. 独立Refine Gate
+
+実装SOURCEとNative検証が整ったら、
+製品候補をローカルcommitしてfull SHAを固定する。
+
+Refineは現Coding Agentの固定SOURCE候補に対する
+独立Quality/Build Gateにのみ使用する。
+
+必要条件:
+- 同一full candidate SHA
+- Quality全必須check PASS
+- Build全必須check PASS
+- status/inspect/verify exit 0
+- SUCCEEDED
+- identical artifact tuples
+- candidate digest一致
+- cleanup complete
+- owner_alive=false
+- recovery_required=false
+
+preflight UNKNOWNはUNKNOWNのまま保持する。
+
+SOURCE修正時は新候補を作成し、
+新候補に必要なGateだけを実行する。
+
+同じSOURCEに対する不要な同一Gate再実行は避ける。
+
+## 14. Tern-OMP独立レビュー
+
+Tern-OMPのみ使用する。
+omp -pは禁止。
+
+固定候補を独立レビューへ提出する。
+
+提出内容:
+- 開始SHA
+- 固定SOURCE SHA
+- evidence HEAD
+- Taskern packet digest
+- W3 SOURCE差分
+- 実Bgr565 fixtureと原byte
+- WIC実source format
+- admissionとmaterialization trace
+- 独立pixel oracle
+- Native case results
+- negative test results
+- quality test counts
+- Refine Gate IDs
+- Gate artifact correspondence
+- 未測定能力一覧
+
+前回W1/W2のPASSを新候補へ流用しない。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE
+を分類し、0/0/0まで修正・再評価する。
+
+レビュー応答の完全性を確認する。
+
+- fresh assistant message ID
+- request correlation
+- streaming=false
+- parsed=true
+- incomplete=false
+- terminal verdict
+- 30秒以上離した2回の全文一致
+- completion verification exit 0
+
+不完全な回答を修正指示として使用しない。
+
+## 15. Evidence保存
+
+ADR-0013に従う。
+
+保存先:
+docs/development/evidence-published/img2-w3-latest/
+
+最低限:
+- taskern-request.json
+- taskern-response.json
+- fixture manifest
+- fixture generator
+- source/probe/toolchain identity
+- real-native-matrix.json
+- capability-table.json
+- independent-oracle.json
+- verifier-results.json
+- quality.json
+- quality-gate.json
+- build-gate.json
+- gate-artifact-correspondence.json
+- storage.json
+- review-response.txt
+- review.json
+- NOT_RUN/NOT_MEASURED record
+
+元画像は小さな検証fixtureだけを保持する。
+大量のexecutables、raw private logs、巨大scratchは保存しない。
+
+SOURCE、Native record、Gate、reviewで
+相互にfull SHAとdigestを照合する。
+
+Gate後にMPの文面を変更する場合は、
+Gateが捕捉したplanの版と変更後の版を区別する。
+
+文書だけの変更で既存成功Gateを
+別candidateの成功証拠へ読み替えない。
+
+成功scratch廃棄は:
+- 保存済み証拠のintegrity確認
+- 新規owned directoryの証明
+- no active child
+- no reparse
+- finite path allowlist
+- before/after verify一致
+を満たす対象だけで実行する。
+
+未所有領域、failed/nonterminal Gateのworkspace、
+private authority/logsは削除しない。
+
+## 16. 非目標と未達境界
+
+今回実装しないもの:
+
+- GPU upload / MP-IMG3
+- GPUI renderer変更
+- 16K full decode
+- WIC内部scratchの完全証明
+- 真のconcurrent allocation peak
+- allocator actual reservation
+- cooperative in-decoder cancellation
+- region/sequential/tiled decode実装
+- ICC/profile/orientationの完全実装
+- JPEG absolute raster検証
+- Runtime media acquisition
+- Runtime RC-*変更
+- R0A/R0C full closure
+- R0D measured attainment
+- FLOW2
+- main integration
+- release
+
+W3で実証できるのは実Bgr565のformat admission、
+bounded decodeとpixel correctnessの限定範囲のみ。
+
+実WICがBgr565として認識しない場合、
+その能力はNOT_SUPPORTEDまたはNOT_VERIFIEDとして記録する。
+
+証明していない形式・寸法を
+supported codec tableへ追加しない。
+
+## 17. 権限境界
+
+許可される作業:
+- 同一repository/branch内のW3限定実装
+- Taskern prepare/compile
+- ローカルfixture生成
+- 安全なreal-WIC CLI検証
+- focused/full quality
+- ローカル製品候補commit
+- 固定SHA独立Refine Gate
+- Tern-OMP再評価
+- tracked evidenceのローカル保存
+
+今回のdirectiveには次の権限を含めない。
+
+- 新規設計決定の承認
+- Contract変更の承認
+- 別repository変更
+- 新規dependency/unsafe/FFI
+- credential/security設定変更
+- Runtime実装変更
+- Git remote push
+- main merge
+- release/公開
+
+ADR-0008/0009/0012の既存内容は
+技術前提として参照するだけで、
+上記の新しい操作権限へ拡張しない。
+
+権限を要する変更が必要になった場合、
+当該操作を行わず、成立した限定成果と
+AUTHORITY_BLOCKED項目を分離して報告する。
+
+## 18. 終了条件
+
+W3限定技術完了候補の必要条件:
+
+1. 実WIC Bgr565 source formatを観測
+2. 実WICのbounded decodeを確認
+3. 独立pixel oracleで結果を確認
+4. bit depthとrow-wise arithmeticを確認
+5. malformed/oversizeのfail-closedを確認
+6. 既存W1/W2の互換性を維持
+7. SOURCE/Native/fixture/Gateのidentity一致
+8. 全必須quality PASS
+9. 独立Refine Quality/Build SUCCEEDED
+10. Tern独立レビューPASS 0/0/0
+11. tracked evidenceとintegrity成立
+
+上記未達ならW3を完了扱いしない。
+
+W3完了でもfull DC-MP-IMG2 Decode Exit、
+MP-IMG3 Upload、R0D measured attainment、
+Runtime、main/releaseは完了しない。
+
+最終報告には:
+- 開始SHA
+- Taskern packet digest
+- 製品候補full SHA
+- 変更SOURCE
+- WIC Native result
+- Bgr565 pixel oracle
+- capability table
+- negative tests
+- quality counts
+- Refine Gate IDs
+- Tern verdict
+- evidence HEAD
+- storage integrity
+- W3限定closure可否
+- 残存Decode Exit
+- AUTHORITY_BLOCKED項目
+
+を含める。
+
+独立0/0/0に到達した場合でも、
+今回はremote pushを行わない。
+
+ローカルSOURCEと証拠を保持し、
+別途Callerの次指示を受ける状態で終了する。
+
+DIRECTIVE COMPLETE

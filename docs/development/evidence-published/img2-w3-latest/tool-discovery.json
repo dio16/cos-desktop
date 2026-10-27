@@ -1,0 +1,183 @@
+{
+  "taskern": {
+    "version": "taskern 0.2.0 (cli 2; protocol 1; semantic 1)",
+    "capabilities": {
+      "protocol": 1,
+      "ok": true,
+      "summary": {
+        "operation": "describe",
+        "claim": "described"
+      },
+      "artifacts": {
+        "description": {
+          "description_version": 1,
+          "kind": "capabilities",
+          "key": "",
+          "pointer": "",
+          "content_sha256": "sha256:013525597a6aa18006d411f8ef9acf67a8d32ef880185416f9dffc526de617e7",
+          "body": {
+            "product": "taskern",
+            "product_version": "0.2.0",
+            "cli_major": 2,
+            "protocols": [
+              1
+            ],
+            "semantic_majors": [
+              1
+            ],
+            "authoring_majors": [
+              1
+            ],
+            "capability": "Taskern turns caller-authored task contracts into validated, bounded handoffs. It never executes work or decides acceptance. For a new plan use prepare; for existing documents use check, compile or revise. Ask describe for only the needed operation. Supply context and budgets explicitly; repair complete inputs from diagnostics.",
+            "catalog_sha256": "sha256:3c0104711bcc2f152633c03817190831aa9dd94a8fb01aa3d3d9dd95549f483e",
+            "operations": [
+              "prepare",
+              "check",
+              "compile",
+              "revise",
+              "next",
+              "feedback",
+              "adapt",
+              "describe"
+            ],
+            "transports": [
+              "cli",
+              "stdio-mcp",
+              "rust"
+            ],
+            "executes": false,
+            "accepts_work": false
+          }
+        }
+      }
+    },
+    "prepare": {
+      "protocol": 1,
+      "ok": true,
+      "summary": {
+        "operation": "describe",
+        "claim": "described"
+      },
+      "artifacts": {
+        "description": {
+          "description_version": 1,
+          "kind": "operation",
+          "key": "prepare",
+          "pointer": "",
+          "content_sha256": "sha256:e1c898d940c995ce88218b4ea4db20787512fa9b050c0611efc0ffef6e0cc096",
+          "body": {
+            "name": "prepare",
+            "description": "Assemble the caller's complete draft, then validate the resulting Plan or compile the explicitly selected task.",
+            "input_schema": "urn:taskern:interaction:1:args:prepare",
+            "result_artifacts": [
+              {
+                "name": "plan",
+                "type": "Plan"
+              },
+              {
+                "name": "packet",
+                "type": "CompiledPacket"
+              }
+            ],
+            "claims": [
+              "plan_valid",
+              "packet_compiled"
+            ],
+            "not_claimed": [
+              "execution",
+              "acceptance",
+              "authorization",
+              "evidence_truth"
+            ],
+            "rules": [
+              "version.authoring",
+              "shape.required",
+              "shape.unknown",
+              "shape.type",
+              "shape.range",
+              "shape.unique",
+              "draft.local_invariant",
+              "reference.input_context",
+              "reference.output",
+              "reference.evaluation",
+              "reference.dependency",
+              "graph.cycle",
+              "coverage.output",
+              "coverage.evaluation",
+              "completion.set",
+              "invariant.missing",
+              "invariant.conflict",
+              "context.ids",
+              "context.required",
+              "context.bytes",
+              "context.always",
+              "budget.capacity",
+              "budget.accounting",
+              "request.handoff"
+            ],
+            "example_key": "prepare"
+          }
+        }
+      }
+    }
+  },
+  "refine": [
+    {
+      "args": [
+        "--version"
+      ],
+      "exit": 0,
+      "out": "refine 0.3.1\n",
+      "err": ""
+    },
+    {
+      "args": [
+        "describe",
+        "capabilities"
+      ],
+      "exit": 0,
+      "out": "{\"cli_interface_version\":2,\"operation\":\"describe\",\"description\":{\"product_version\":\"0.3.1\",\"cli_interface_version\":2,\"native_semantic_version\":1,\"native_binding_version\":1,\"document\":{\"kind\":\"capability_list\",\"operations\":[\"execution.run\",\"execution.status\",\"execution.inspect\",\"execution.verify\",\"execution.recover\",\"refinement.create\",\"refinement.show\",\"refinement.step\",\"refinement.compare\",\"refinement.decide\",\"refinement.recover\",\"describe\",\"gate.run\",\"gate.preflight\",\"gate.status\",\"gate.inspect\",\"gate.verify\",\"gate.recover\"]}}}\n",
+      "err": ""
+    },
+    {
+      "args": [
+        "describe",
+        "operation",
+        "gate.run"
+      ],
+      "exit": 0,
+      "out": "{\"cli_interface_version\":2,\"operation\":\"describe\",\"description\":{\"product_version\":\"0.3.1\",\"cli_interface_version\":2,\"native_semantic_version\":1,\"native_binding_version\":1,\"document\":{\"kind\":\"operation_slots\",\"operation\":\"gate.run\",\"inputs\":[{\"name\":\"context\",\"required\":true,\"description\":\"RunContext: operator configuration and optional explicit state root\"},{\"name\":\"request\",\"required\":true,\"description\":\"admitted GateRequest document\"},{\"name\":\"observer\",\"required\":false,\"description\":\"optional one-shot durable Gate-acceptance observer\"},{\"name\":\"cancel\",\"required\":true,\"description\":\"CancellationToken shared with the native Gate controls\"}],\"outputs\":[{\"name\":\"GateResult\",\"required\":true,\"description\":\"terminal Gate result with its receipt projection\"}]}}}\n",
+      "err": ""
+    },
+    {
+      "args": [
+        "describe",
+        "family",
+        "execution"
+      ],
+      "exit": 0,
+      "out": "{\"cli_interface_version\":2,\"operation\":\"describe\",\"description\":{\"product_version\":\"0.3.1\",\"cli_interface_version\":2,\"native_semantic_version\":1,\"native_binding_version\":1,\"document\":{\"kind\":\"native_family_reference\",\"family\":\"execution\",\"summary\":\"isolated one-run lifecycle: ordered admission, repository preparation, child execution, ordered verification, terminal receipt and no-replay recovery; the Gate submodule reuses this owner for executor-free candidate gates without an implementation executor (contracts §14)\",\"operations\":[\"execution.run\",\"execution.status\",\"execution.inspect\",\"execution.verify\",\"execution.recover\"]}}}\n",
+      "err": ""
+    }
+  ],
+  "skills": {
+    "taskern": {
+      "discovered": true,
+      "loaded": true,
+      "invoked": true,
+      "executed": true
+    },
+    "refine": {
+      "discovered": true,
+      "loaded": true,
+      "invoked": true,
+      "gate_executed": false
+    },
+    "tern": {
+      "discovered": true,
+      "loaded": true,
+      "read_executed": true,
+      "review_submitted": false
+    }
+  }
+}

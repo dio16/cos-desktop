@@ -91,7 +91,7 @@
 
 .PARAMETER MaxDecodedBytes
     Decode-budget ceiling for the declared source raster
-    (`ceil(width * height * bits-per-pixel / 8)`).
+    (`height * ceil(width * bits-per-pixel / 8)`).
 
 .PARAMETER MaxScratchBytes
     Decode-budget ceiling for the required scratch/conversion bytes. This probe
@@ -645,6 +645,19 @@ try {
         [System.IO.FileAccess]::Read,
         [System.IO.FileShare]::Read)
     Write-ProbeTraceStage -Stage 'input_opened'
+    if ($budgetDeclared) {
+        $header = [byte[]]::new(66)
+        $null = $stream.Read($header, 0, $header.Length)
+        $stream.Position = 0
+        $containerError = Get-BmpBitfieldsHeaderError -Header $header -FileBytes $stream.Length
+        if ($null -ne $containerError) {
+            $result.outcome = 'corrupt'
+            $result.reason_code = $containerError
+            $result.reason = 'invalid bounded BMP bitfield declaration or encoded row extent'
+            $result.admission_status = 'refused'
+            Write-ProbeResult -Result $result -ExitCode $exitCorrupt
+        }
+    }
     # Read declared dimensions before any pixel allocation.
     $declared = [System.Windows.Media.Imaging.BitmapDecoder]::Create(
         $stream,

@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "probe_identity": "wic_probe 1.1 (managed WIC/WPF, pre-materialization decode budget, PowerShell 7.6.7, .NET 10.0.13)",
+  "windows_build": 26300,
+  "wic_windowscodecs_file_version": "10.0.26100.9711 (WinBuild.160101.0800)",
+  "qualified_native_pwsh": "C:/Program Files/PowerShell/7/pwsh.exe",
+  "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "toolchain_env": {
+    "CARGO_HOME": "<USER_HOME>/.cargo",
+    "CARGO_NET_OFFLINE": "true",
+    "CARGO": "<USER_HOME>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/cargo.exe",
+    "RUSTC": "<USER_HOME>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustc.exe",
+    "RUSTDOC": "<USER_HOME>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustdoc.exe",
+    "RUSTFMT": "<USER_HOME>/.rustup/toolchains/1.98.1-x86_64-pc-windows-msvc/bin/rustfmt.exe",
+    "RUSTC_WRAPPER": "",
+    "CARGO_BUILD_RUSTC_WRAPPER": "",
+    "CARGO_ENCODED_RUSTFLAGS": "",
+    "CC": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+    "CXX": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+    "AR": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/lib.exe",
+    "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/link.exe",
+    "INCLUDE": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/include;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/winrt;C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/cppwinrt",
+    "LIB": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/ucrt/x64;C:/Program Files (x86)/Windows Kits/10/Lib/10.0.19041.0/um/x64",
+    "LIBPATH": "C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x64;C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/lib/x86/store/references;C:/Program Files (x86)/Windows Kits/10/UnionMetadata/10.0.19041.0;C:/Program Files (x86)/Windows Kits/10/References/10.0.19041.0;C:/Windows/Microsoft.NET/Framework64/v4.0.30319",
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_BUILD_JOBS": "4",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_TARGET_DIR": "C:/dev/cos-desktop/target",
+    "RUSTUP_HOME": "<USER_HOME>/.rustup",
+    "RUSTFLAGS": ""
+  },
+  "quality_attempts": [
+    {
+      "name": "standard-quality",
+      "exit": 0,
+      "not_clean": "LNK4044 /fuse-ld=lld warning; not final accepted quality"
+    },
+    {
+      "name": "feature-tests",
+      "exit": 101,
+      "cause": "decode_compare.exe file locked by concurrently launched Native consumer; no source change; serialize future build/consumer execution"
+    },
+    {
+      "name": "feature-build",
+      "exit": 101,
+      "cause": "cargo absolute path did not pin rustc; PATH selected1.97.1 against1.98.1 dependency; final uses explicit RUSTC/RUSTDOC/RUSTFMT and clears inherited flags"
+    }
+  ],
+  "private_env_record": "exact qualified environment retained in private Gate requests; public user-home prefix redacted, no secret variable export",
+  "refine_producer": {
+    "tag": "v0.3.1",
+    "commit": "e2abb23ea9fbb1d66cdaf6bb6c1c813d636f0a2f",
+    "contract_matches_inspected_worktree": true
+  }
+}

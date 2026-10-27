@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "ok": true,
+  "native_record_sha256": "sha256:108c63bbe079f6f3cca59789306fa2f428c92414b8649cdf217cf691aab440fd",
+  "method": "original BMP masks/payload, fixed5/6/5 bit replication; existing independent PNG CRC/inflate/filter reconstruction; compares all RGBA bytes",
+  "worker_rasters": [
+    {
+      "case_id": "format_primaries",
+      "input_sha256": "sha256:833247e8025c0cc993b028c0295efb21ec20dd708a5ef8f17a53d0236eb6d648",
+      "output_sha256": "sha256:b95db450e5230fe58d56c12b8d5a301fa3abcff18e085100dc3536447e716b3a",
+      "oracle": {
+        "actual_rgba_sha256": "6c3df9fbcf92bb4bf680ed1709802638e042b83ceca55858d9eafe73b39f320a",
+        "expected_rgba_sha256": "6c3df9fbcf92bb4bf680ed1709802638e042b83ceca55858d9eafe73b39f320a",
+        "height": 1,
+        "method": "independent BMP RGB565 masks/payload and fixed bit replication; W2 stdlib PNG CRC/inflate/filter reconstruction",
+        "mismatch_count": 0,
+        "mismatches": [],
+        "ok": true,
+        "width": 5
+      }
+    },
+    {
+      "case_id": "format_midtones",
+      "input_sha256": "sha256:fcb96ca9a750189be4904423e4019c480c22ce28bce280d9200477bb9cb8dd8d",
+      "output_sha256": "sha256:6212210fb23f15c1feebad1c40295a572cb94a60b1c042f9935c10184a0ff75e",
+      "oracle": {
+        "actual_rgba_sha256": "9bb708d3dd4a26ff6db7f39ba552b15e086d409ee4dd774ec9b5659c94f6fb74",
+        "expected_rgba_sha256": "9bb708d3dd4a26ff6db7f39ba552b15e086d409ee4dd774ec9b5659c94f6fb74",
+        "height": 2,
+        "method": "independent BMP RGB565 masks/payload and fixed bit replication; W2 stdlib PNG CRC/inflate/filter reconstruction",
+        "mismatch_count": 0,
+        "mismatches": [],
+        "ok": true,
+        "width": 7
+      }
+    },
+    {
+      "case_id": "format_narrow_bottom",
+      "input_sha256": "sha256:c08c141661838bbba4efd5cb3ff514400f6b5b105dfc166e91926f55208760af",
+      "output_sha256": "sha256:3a882389bba14cea859a0363f0ae718e21d441b7c5745e3075ef95ccbc3b9698",
+      "oracle": {
+        "actual_rgba_sha256": "66843ae5761077ba7eed93ef8377e8c050533757c00dcb37bf6e1d3e0f74868d",
+        "expected_rgba_sha256": "66843ae5761077ba7eed93ef8377e8c050533757c00dcb37bf6e1d3e0f74868d",
+        "height": 3,
+        "method": "independent BMP RGB565 masks/payload and fixed bit replication; W2 stdlib PNG CRC/inflate/filter reconstruction",
+        "mismatch_count": 0,
+        "mismatches": [],
+        "ok": true,
+        "width": 1
+      }
+    },
+    {
+      "case_id": "format_odd_bottom",
+      "input_sha256": "sha256:696bde2dce8c261857bc15b948c35d7d0215ba2953dfc41abb0b96335653b650",
+      "output_sha256": "sha256:306d2c150914f6d8b4475139a101bc136ebb3bc41b4f2790d4d9953d5fcdd8d3",
+      "oracle": {
+        "actual_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "expected_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "height": 3,
+        "method": "independent BMP RGB565 masks/payload and fixed bit replication; W2 stdlib PNG CRC/inflate/filter reconstruction",
+        "mismatch_count": 0,
+        "mismatches": [],
+        "ok": true,
+        "width": 3
+      }
+    },
+    {
+      "case_id": "format_odd_top",
+      "input_sha256": "sha256:e56f6c7a6590e4ec79e3fb5f840d51b9d8a57d085c2168d166a402ed1b85c47b",
+      "output_sha256": "sha256:306d2c150914f6d8b4475139a101bc136ebb3bc41b4f2790d4d9953d5fcdd8d3",
+      "oracle": {
+        "actual_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "expected_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "height": 3,
+        "method": "independent BMP RGB565 masks/payload and fixed bit replication; W2 stdlib PNG CRC/inflate/filter reconstruction",
+        "mismatch_count": 0,
+        "mismatches": [],
+        "ok": true,
+        "width": 3
+      }
+    },
+    {
+      "case_id": "max_dimension_at",
+      "input_sha256": "sha256:696bde2dce8c261857bc15b948c35d7d0215ba2953dfc41abb0b96335653b650",
+      "output_sha256": "sha256:306d2c150914f6d8b4475139a101bc136ebb3bc41b4f2790d4d9953d5fcdd8d3",
+      "oracle": {
+        "actual_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "expected_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "height": 3,
+        "method": "independent BMP RGB565 masks/payload and fixed bit replication; W2 stdlib PNG CRC/inflate/filter reconstruction",
+        "mismatch_count": 0,
+        "mismatches": [],
+        "ok": true,
+        "width": 3
+      }
+    },
+    {
+      "case_id": "max_pixels_at",
+      "input_sha256": "sha256:696bde2dce8c261857bc15b948c35d7d0215ba2953dfc41abb0b96335653b650",
+      "output_sha256": "sha256:306d2c150914f6d8b4475139a101bc136ebb3bc41b4f2790d4d9953d5fcdd8d3",
+      "oracle": {
+        "actual_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "expected_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "height": 3,
+        "method": "independent BMP RGB565 masks/payload and fixed bit replication; W2 stdlib PNG CRC/inflate/filter reconstruction",
+        "mismatch_count": 0,
+        "mismatches": [],
+        "ok": true,
+        "width": 3
+      }
+    },
+    {
+      "case_id": "max_bit_depth_at",
+      "input_sha256": "sha256:696bde2dce8c261857bc15b948c35d7d0215ba2953dfc41abb0b96335653b650",
+      "output_sha256": "sha256:306d2c150914f6d8b4475139a101bc136ebb3bc41b4f2790d4d9953d5fcdd8d3",
+      "oracle": {
+        "actual_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "expected_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "height": 3,
+        "method": "independent BMP RGB565 masks/payload and fixed bit replication; W2 stdlib PNG CRC/inflate/filter reconstruction",
+        "mismatch_count": 0,
+        "mismatches": [],
+        "ok": true,
+        "width": 3
+      }
+    },
+    {
+      "case_id": "max_decoded_bytes_at",
+      "input_sha256": "sha256:696bde2dce8c261857bc15b948c35d7d0215ba2953dfc41abb0b96335653b650",
+      "output_sha256": "sha256:306d2c150914f6d8b4475139a101bc136ebb3bc41b4f2790d4d9953d5fcdd8d3",
+      "oracle": {
+        "actual_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "expected_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "height": 3,
+        "method": "independent BMP RGB565 masks/payload and fixed bit replication; W2 stdlib PNG CRC/inflate/filter reconstruction",
+        "mismatch_count": 0,
+        "mismatches": [],
+        "ok": true,
+        "width": 3
+      }
+    },
+    {
+      "case_id": "max_scratch_bytes_at",
+      "input_sha256": "sha256:696bde2dce8c261857bc15b948c35d7d0215ba2953dfc41abb0b96335653b650",
+      "output_sha256": "sha256:306d2c150914f6d8b4475139a101bc136ebb3bc41b4f2790d4d9953d5fcdd8d3",
+      "oracle": {
+        "actual_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "expected_rgba_sha256": "598f6eb499154bda1636fda7d2d6dbcc0112a53250251aaeb56ceacd07cf5fb3",
+        "height": 3,
+        "method": "independent BMP RGB565 masks/payload and fixed bit replication; W2 stdlib PNG CRC/inflate/filter reconstruction",
+        "mismatch_count": 0,
+        "mismatches": [],
+        "ok": true,
+        "width": 3
+      }
+    }
+  ],
+  "consumer": "five built actual consumer rows have independent expected all-RGBA digests; consumer deletes its outputs; raw separately instrumented PNG outputs above are not consumer copies"
+}

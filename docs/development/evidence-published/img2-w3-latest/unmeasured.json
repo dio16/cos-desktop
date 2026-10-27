@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "full_decode_exit": "OPEN",
+  "unmeasured": [
+    "WIC internal stride/scratch",
+    "true concurrent allocation peak",
+    "actual reservations",
+    "cooperative in-decoder cancellation",
+    "region/sequential/tiled decode",
+    "ICC/orientation complete behavior",
+    "16K decode",
+    "JPEG absolute raster",
+    "full Decode exit"
+  ],
+  "r0_not_run": [
+    "one absent native-window observation",
+    "eleven missing historical N07 original-binary assertions"
+  ],
+  "authority_not_implied": [
+    "Runtime repo changes",
+    "remote push",
+    "main/release",
+    "credentials/permissions/new dependency/unsafe/FFI"
+  ]
+}

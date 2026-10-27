@@ -763,6 +763,56 @@ Its first repaired run was rejected by the stricter verifier for missing stop
 observations on workers that were never stopped; that rejected record is kept as a
 fail-closed detection, and only the two accepted runs bind the current evidence.
 
+### 4.23 MP-IMG2-W3 real Bgr565 admission and raster proof (2026-10-27)
+
+W3 reuses the existing managed WIC probe, comparison consumer and `crates/media`
+budget resolution. Its fixed small BMP fixtures declare `BI_BITFIELDS` with
+`F800/07E0/001F` masks; actual WIC source format, not that declaration, determines
+whether a row can be certified as `Bgr565`. The `Bgr555` control is not a W3 success.
+
+```powershell
+cargo build --locked -p cos-desktop --example decode_compare
+python -B apps/desktop/devtools/img2/w3_native_matrix.py run `
+  --work-root <absolute-absent-owned-directory> --out <absolute-absent-report.json> `
+  --pwsh <absolute-qualified-pwsh.exe> `
+  --harness <repository>/target/debug/examples/decode_compare.exe
+python -B apps/desktop/devtools/img2/w3_native_matrix.py verify `
+  --report docs/development/evidence-published/img2-w3-latest/real-native-matrix.json `
+  --source-root <repository>
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -v
+```
+
+The unittest command needs the devtools directory on `PYTHONPATH`; alternatively
+run it from `apps/desktop/devtools/img2` with `-s tests`. No decoder dependency is
+installed. Qualify `RUSTC`, `RUSTDOC` and `RUSTFMT` as well as Cargo: an absolute
+Cargo executable alone does not pin the compiler chosen from PATH. Preserve the
+unchanged full quality route; record any compiler/linker environment override.
+Finish build/link commands before launching their consumer executable on Windows.
+
+The manifest bounds twenty-four instrumented worker cases, one decoder at a time,
+45 seconds per worker, 300 seconds overall, 1 MiB encoded input, 16 MiB per output,
+64 MiB work, 128 trace rows / 128 KiB, 64 KiB per capture and 8 MiB report.
+The separate ordinary consumer replays five of the same positive input cases.
+Operator timeout waits at least five seconds from worker start before terminating
+and reaping its held child; this is not a WIC cooperative timeout. Fresh work and
+report paths are required. Work is disposable; retained JSON includes original
+small BMP bytes, actual separately instrumented PNG bytes, traces and identities.
+
+Budget-enabled 16-bit bitfield BMP admission validates a fixed-size header before
+WIC materialization. This closes the observed `planes=0` tolerance without changing
+legacy non-budget transport. Valid mask declarations alone never certify a format.
+BMP encoded stride is four-byte aligned, while logical source bytes are summed
+per row; WIC internal stride/scratch are not inferred from either.
+
+The independent oracle extracts each 5/6/5 channel from the original payload,
+expands by bit replication and verifies all RGBA samples after independent PNG
+CRC/inflate/filter reconstruction. A mismatch remains a failure with bounded
+coordinate/value diagnostics, never a new expectation fitted to the output.
+Internal allocation peaks/reservations, cooperative cancellation, untested
+dimensions/codecs, 16K, ICC/orientation, region/tiled behavior and full Decode exit
+remain explicitly unmeasured. W3 is a limited format proof, not product-wide media
+completion or GPU upload evidence.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |
