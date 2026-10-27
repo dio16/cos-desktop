@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "native_record_sha256": "sha256:0242a89e5420cab979721d4d033b4adce16399005ba33d264f6a20d6e9e45f5b",
-  "method": "Independent PNG CRC/inflate/filter, 24-bit BMP rows and BMP565/555 bitfield reconstruction; every ROI RGBA sample compared.",
+  "native_record_sha256": "sha256:bd3a413a3017b677f6ff4773ebdbd5717417d1d4a3ea1abbc3d288ee840b4250",
+  "method": "Independent PNG CRC/inflate/filter, BMP24 rows and BMP565/555 bitfields; every ROI RGBA sample compared.",
   "workers": [
     {
       "case_id": "roi_full_png",

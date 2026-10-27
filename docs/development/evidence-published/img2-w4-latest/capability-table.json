@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "decoder": "managed WIC/WPF; existing OnLoad full-frame path with Bgra32 conversion",
+  "decoder": "managed WIC/WPF OnLoad full-frame path with Bgra32 conversion",
   "rows": [
     {
       "case_id": "roi_full_png",
@@ -201,7 +201,7 @@
     "internal_decoder_scratch",
     "preview_fallback"
   ],
-  "scope": "Only the listed small exact cases; rectangle output never certifies region, sequential or tiled decode. Bgr555 control is excluded from Bgr565 proof.",
+  "scope": "Only listed small cases; rectangle output never certifies region/sequential/tiled decode. Bgr555 control is excluded from Bgr565 proof.",
   "unmeasured": {
     "internal_decoder_scratch": "NOT_MEASURED",
     "true_concurrent_allocation_peak": "NOT_MEASURED",

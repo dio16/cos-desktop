@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "finding": "A-W4-R2-02",
+  "captured_path": "gate-captured-quality.json",
+  "captured_bytes": 7133,
+  "captured_sha256": "sha256:aa5fc4061c6d260d43487f8329a0c553c63b8c9c7461eb6775838f75324b99c5",
+  "captured_candidate": "6bf7b63cdbe43c621d3c911f367083ce317128c8",
+  "candidate_blob_equal": true,
+  "later_evidence_bytes": 8252,
+  "later_evidence_sha256": "sha256:277c5bd2719b43017aa7fab069049edc61a4ec3c29fa7182efa7afbf3a79c4cf",
+  "delta": "Only the post-Gate feature-route additions and round label; no product, Native, Gate or prior check result changed.",
+  "meaning": "The Gate-captured quality.json is supplied as exact bytes so all 43 captures can be verified from the package."
+}

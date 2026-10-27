@@ -40,9 +40,9 @@
         "raw_sha256": "sha256:95d31fbe15e2d7bef6a14a1d7dd2f1e5cbbb6530f4788ad83bc84f3f579285f2"
       },
       "apps/desktop/devtools/img2/w4_region_verify.py": {
-        "bytes": 17948,
-        "lf_sha256": "sha256:d5eb7beb304ad075d49fd6286104550443d796d272652648149b07dca30ae7f8",
-        "raw_sha256": "sha256:79a1c1680643b10eca46ba5460f340ca1863bd1a6dfc859f9bb0d6b007236165"
+        "bytes": 18239,
+        "lf_sha256": "sha256:7450b7e4c77ac32ecdc431e51773bece8d151943424875814c65c7a32b2972f9",
+        "raw_sha256": "sha256:71db784140bd908e6cb89debe1433852c513bc46bb7fa0b95942e0f501164fef"
       },
       "apps/desktop/examples/decode_compare/harness.rs": {
         "bytes": 163269,
@@ -82,5 +82,5 @@
     },
     "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
   },
-  "meaning": "Source identity of the run that produced the retained WIC record. Product candidate and Gate binding are added after commit."
+  "meaning": "Source identity of the retained WIC record; product candidate/Gate binding recorded after commit."
 }

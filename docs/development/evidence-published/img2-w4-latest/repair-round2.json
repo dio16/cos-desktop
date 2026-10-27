@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "review": "review-round2.json",
+  "reviewed_source": "6bf7b63cdbe43c621d3c911f367083ce317128c8",
+  "closed_previous": ["A-W4-01", "A-W4-02"],
+  "findings": [
+    {
+      "id": "A-W4-R2-01",
+      "problem": "Stop validation still accepted contradictions with the W2 state machine: exit_before_request=true, returncode_before_request=0, last_observed_stage other than the hold, reason swapped between cancel/timeout, and reachability other than reached.",
+      "fix": "Require exit_before_request=false, returncode_before_request=null, last_observed_stage=before_publish, reason equal to the case kind, and reachability=reached in addition to the existing cause/method/kill/reap/time/exit checks.",
+      "negatives": "Five new mutations (exit-before, returncode-before, wrong last stage, swapped reason, not reached) all fail with stop_not_confirmed; the two existing cancel/timeout cases are checked."
+    },
+    {
+      "id": "A-W4-R2-02",
+      "problem": "The Gate-captured quality.json was not supplied as bytes, so only 42 of 43 captures could be independently verified from the package.",
+      "fix": "Copy the exact Gate capture to gate-captured-quality.json, prove it equals the candidate-commit blob, and record its size/SHA256 and the later docs-only delta.",
+      "reconciliation": "gate-captured-quality.json.reconciliation.json"
+    }
+  ],
+  "native_refresh": {
+    "reason": "The verifier is part of the recorded Native source identity, so the real-WIC record was regenerated rather than edited.",
+    "workers": 24,
+    "roi_pixels_verified": 11,
+    "cancel_cases": 2,
+    "exit": 0
+  },
+  "portable_tests": {"before": 28, "after": 33, "failures": 0},
+  "gate_and_review": "Changed verifier source requires its own pinned Gate pair and fresh review; previous pairs remain under review-round1-* and this round's pair separately."
+}

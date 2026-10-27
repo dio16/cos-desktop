@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "candidate": "6bf7b63cdbe43c621d3c911f367083ce317128c8",
+  "evidence_head": "803fccba26d57d7d7387f44294a95677fdf69aca",
+  "package_manifest_commit": "7c2a9c00ed753daeab276f23e82e6e73fb72d71d",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "18361dbc-ce9f-416a-ac74-c3aaad2a1271"
+  ],
+  "assistant_ids": [
+    "20be4c39-14e4-4199-9301-fd57dc27c734"
+  ],
+  "first_read": "2026-10-27T18:36:21.113Z",
+  "second_read": "2026-10-27T18:36:51.155Z",
+  "elapsed_ms": 30042,
+  "identical_complete_reads": true,
+  "streaming": false,
+  "request_sha256": "sha256:7d9e7dfe059ca2530d38313bbef723f51d8f2d21de68e3cc3130a358e2cfec07",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 2670,
+      "expected": 2670,
+      "preview": "MP-IMG2-W4 再評価 Round 2 — A-W4-01 / A-W4-02 の限定修正です。Round 1の完"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 5,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "terminal": "HOLD 0 / 2 / 0",
+  "parser_exit": 1,
+  "parser": {
+    "blocking": 0,
+    "actionable": 2,
+    "excessive": 0,
+    "passLine": null,
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": false,
+    "sawPassLine": false
+  },
+  "closed": [
+    "A-W4-01"
+  ],
+  "findings": [
+    "A-W4-R2-01 stop preconditions",
+    "A-W4-R2-02 Gate-captured quality bytes"
+  ]
+}

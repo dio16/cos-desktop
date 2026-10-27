@@ -223,7 +223,7 @@
       "test_w4_verify.py",
       "test_w4_fixtures.py"
     ],
-    "count": 28,
+    "count": 33,
     "failures": 0
   },
   "negative_classes": [
@@ -248,6 +248,11 @@
     "cancel cause",
     "cancel method",
     "missing request time",
-    "stop exit code mismatch"
+    "stop exit code mismatch",
+    "exit before request",
+    "returncode before request",
+    "wrong last stage",
+    "swapped reason",
+    "not reached"
   ]
 }

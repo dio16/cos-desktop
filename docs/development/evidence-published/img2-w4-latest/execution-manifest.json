@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "run_id": "w4-r3-work",
+  "run_id": "w4-r4-work",
   "bounds": {
     "max_capture_bytes": 65536,
     "max_cases": 24,
@@ -13,8 +13,8 @@
     "max_work_bytes": 67108864,
     "max_worker_seconds": 45
   },
-  "duration_ns": 24500449600,
-  "work_bytes": 105674,
+  "duration_ns": 24987182200,
+  "work_bytes": 105964,
   "cases": [
     {
       "case_id": "roi_full_png",

@@ -1,0 +1,628 @@
+ChatGPT の発言:
+MP-IMG2-W4 Round 2 — 固定SOURCE独立レビュー
+
+判定：HOLD 0 / 2 / 0
+
+前回A-W4-01は CLOSED です。A-W4-02についても、前回指摘した4種類の改変はすべて拒否されます。
+
+ただし、W2停止状態機械との整合に残件1件、Gate捕捉版の実バイト対応に証拠不足1件を確認しました。
+
+今回のレビューは添付3点に限定しています。Windows WIC、Refine Gate、未pushのGit commit全体を直接実行・取得したものではありません。
+
+1. 固定候補と独立検証結果
+
+項目
+
+	
+
+結果
+
+
+
+
+製品候補
+
+	
+
+6bf7b63cdbe43c621d3c911f367083ce317128c8
+
+
+
+
+Evidence HEAD
+
+	
+
+803fccba26d57d7d7387f44294a95677fdf69aca
+
+
+
+
+SOURCE ZIP
+
+	
+
+462,589 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+163,161 bytes、SHA256一致
+
+
+
+
+SOURCE manifest
+
+	
+
+29/29一致
+
+
+
+
+Evidence manifest
+
+	
+
+40/40一致
+
+
+
+
+W4 Pythonテスト
+
+	
+
+28/28 PASS
+
+
+
+
+Native report構造検証
+
+	
+
+PASS、24 workers
+
+
+
+
+独立ROI画素検証
+
+	
+
+11/11全画素一致
+
+
+
+
+Gate間artifact tuples
+
+	
+
+43/43一致
+
+
+
+
+添付からのartifact実バイト照合
+
+	
+
+42/43一致、1件は捕捉版未収録
+
+
+
+
+Native SOURCE identity
+
+	
+
+15/15一致
+
+SOURCEを前回候補と比較すると、変更は次の3ファイルだけです。
+
+w4_region_verify.py
+
+test_w4_verify.py
+
+IMPLEMENTATION_MASTER_PLAN.md
+
+WIC probe、decoder、fixture generator、pixel oracle、crates/mediaの予算authorityは不変です。
+
+2. A-W4-01 — CLOSED
+
+Bgr555/Bgr565の能力帰属は修正されています。
+
+検証器は、既知fixtureのformat・channel depth・storage bppを固定値で確認し、probe_resultとadmitted stageの両方を照合します。
+
+独立改変結果：
+
+改変
+
+	
+
+結果
+
+
+
+
+Bgr555 → Bgr565、depth 5 → 6
+
+	
+
+source_format_mismatch
+
+
+
+
+Bgr565 → Bgr555、depth 6 → 5
+
+	
+
+source_format_mismatch
+
+いずれもok=falseです。
+
+さらに、BMP原バイトからmaskを独立に読み取りました。
+
+対象
+
+	
+
+RGB masks
+
+	
+
+全画素
+
+
+
+
+Bgr565
+
+	
+
+F800 / 07E0 / 001F
+
+	
+
+一致
+
+
+
+
+Bgr555
+
+	
+
+7C00 / 03E0 / 001F
+
+	
+
+一致
+
+Bgr555対照がBgr565 proofへ混入する経路は解消されています。
+
+3. A-W4-02の修正確認
+
+前回指摘した4項目は、実際のverify()呼び出しで拒否されました。
+
+改変
+
+	
+
+結果
+
+
+
+
+cause=unattributable
+
+	
+
+stop_not_confirmed
+
+
+
+
+method=never_issued
+
+	
+
+stop_not_confirmed
+
+
+
+
+requested_ns=null
+
+	
+
+stop_not_confirmed
+
+
+
+
+worker exit_code=0
+
+	
+
+stop_not_confirmed
+
+cancel・timeoutの両ケースで確認しています。
+
+実Native記録は、hold成立・kill発行・非ゼロ終了・回収完了という条件を満たしています。cancellation-record.jsonにも2ケースが保持されています。
+
+ただし、追加検証で次の残件を発見しました。
+
+4. 残存指摘
+A-W4-R2-01 — 停止要求前の終了状態とhold位置の矛盾を許容する
+
+種別：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w4_region_verify.py、cancel/timeout分岐（概ね167–189行）
+
+現在はalive_at_request=trueを確認しますが、W2状態機械で対応するexit_before_request=falseや、実際に観測したhold位置との一致を確認していません。
+
+提出Native記録を独立に改変すると、次の結果になります。
+
+改変
+
+	
+
+cancel
+
+	
+
+timeout
+
+
+
+
+exit_before_request=true
+
+	
+
+ok=true
+
+	
+
+ok=true
+
+
+
+
+returncode_before_request=0
+
+	
+
+ok=true
+
+	
+
+ok=true
+
+
+
+
+last_observed_stage=onload_entered
+
+	
+
+ok=true
+
+	
+
+ok=true
+
+
+
+
+reasonをcancel/timeout間で交換
+
+	
+
+ok=true
+
+	
+
+ok=true
+
+いずれも本来のW2停止記録と矛盾します。
+
+例えばalive_at_request=trueとexit_before_request=trueが同時に成立する記録は、停止要求時のprocess状態を正しく示していません。
+
+実Native記録はこれらの条件について正常です。したがって、実測の取消処理が誤っていたとの指摘ではなく、独立検証器のfalse-greenです。
+
+最小修正条件
+
+cancel/timeoutについて、次を追加してください。
+
+Python
+実行
+cancel["exit_before_request"] is False
+cancel["returncode_before_request"] is None
+cancel["last_observed_stage"] == "before_publish"
+cancel["reason"] == entry
+cancel["reachability"] == "reached"
+
+既存のcause・method・kill・reap・時刻・終了コード条件は維持します。
+
+上記の矛盾を個別負例で拒否してください。SOURCE変更はW4検証器とテストに限定できます。
+
+A-W4-R2-02 — Gate捕捉版quality.jsonの実バイトが提出されていない
+
+種別：ACTIONABLE NON-BLOCKING
+
+対象：
+
+docs/development/evidence-published/img2-w4-latest/quality.json
+
+両Gateの43 artifact tuplesは完全一致します。しかし、Gate捕捉値と今回のEvidence ZIPのquality.jsonは異なります。
+
+対象
+
+	
+
+LF bytes
+
+	
+
+SHA256
+
+
+
+
+Gate捕捉版
+
+	
+
+7,133
+
+	
+
+aa5fc406…324b99c5
+
+
+
+
+Evidence HEAD版
+
+	
+
+8,050
+
+	
+
+7f3e46ea…b7b86
+
+今回のSOURCE ZIPにGate捕捉版quality.jsonはなく、Evidence ZIPには更新後の版だけが入っています。
+
+quality.jsonはGate後のdocs-only変更として記録されているため、この不一致自体をGate失敗や製品変更とは判定しません。
+
+ただし、提出物の実バイトで証明できたのは42件です。43件目は保存されたGate台帳とmanifestの申告による照合にとどまります。
+
+最小修正条件
+
+Gate捕捉版のquality.jsonを原バイトで提出するか、固定製品候補のGit blobから再取得した内容を追加してください。
+
+その実SHA256・サイズと、後続docs-only版への変更関係を示せば十分です。
+
+製品SOURCEやGateの再実行は不要です。
+
+5. ROI・予算・能力分類
+
+今回の実Native記録について、提出oracleとは別の実装でPNG CRC・inflate・filter復元、BMP24行復元、Bgr565/Bgr555 bitfield展開を実施しました。
+
+正常ROI出力11件すべてがRGBA全画素一致しました。
+
+1×1 ROIによるfull-frame予算迂回も認められません。
+
+項目
+
+	
+
+実測記録
+
+
+
+
+Source
+
+	
+
+64×64
+
+
+
+
+ROI
+
+	
+
+1×1
+
+
+
+
+ROI requirement
+
+	
+
+4 bytes
+
+
+
+
+Full-frame decoded requirement
+
+	
+
+12,288 bytes
+
+
+
+
+Max decoded bytes
+
+	
+
+1,024 bytes
+
+
+
+
+Outcome
+
+	
+
+oversize
+
+
+
+
+Reason
+
+	
+
+max_decoded_bytes_exceeded
+
+
+
+
+OnLoad
+
+	
+
+未到達
+
+
+
+
+Output
+
+	
+
+なし
+
+能力表も適切です。
+
+ROI outputのみverifiedであり、true partial・sequential・tiled decodeはnot_verifiedです。WIC内部scratchもnot_measuredを維持しています。
+
+6. 独立Gate・Storage
+
+検証
+
+	
+
+結果
+
+
+
+
+Quality a674563c-e6c0-4c70-a9d7-f987b0df6796
+
+	
+
+SUCCEEDED 14/14
+
+
+
+
+Build 6c3c8dbc-9c68-4069-9242-a418ab6f8224
+
+	
+
+SUCCEEDED 1/1
+
+
+
+
+Candidate digest
+
+	
+
+両Gate一致
+
+
+
+
+status / inspect / verify
+
+	
+
+exit 0
+
+
+
+
+Cleanup
+
+	
+
+complete
+
+
+
+
+Owner alive
+
+	
+
+false
+
+
+
+
+Recovery required
+
+	
+
+false
+
+
+
+
+Preflight
+
+	
+
+UNKNOWN維持
+
+Candidate digest：
+
+sha256:b0ef94f29ae1082d42f5d0658074baf6fc9c96b38b4131bea0ad604afbd81335
+
+旧Gateとは明確に区別されています。
+
+Storageの記録では、新成功5対象について合計10,122 files、4,127,355,656 logical bytesが削除済みです。提出された各行の合計値は一致しました。
+
+実際のWindows filesystem削除、Refine Gate、WIC実行は今回再実行していません。
+
+7. W4限定技術完了の判断
+
+今回の証拠は、ROI outputの正確性とfull-frame予算迂回防止というW4の中心的な技術目標を裏付けています。
+
+しかし、停止状態の矛盾を許容する検証器の残件と、Gate捕捉版1ファイルの直接照合不足があるため、独立レビューの0/0/0 closureは保留します。
+
+WIC decoder、予算authority、画素oracle、Native正常結果を変更する必要はありません。
+
+16K、内部scratch・実予約、真の同時peak、cooperative cancellation、真のregion/sequential/tiled、ICC/orientation、JPEG絶対raster、full Decode/Upload、Runtime、measured R0は引き続き未達であり、今回の指摘件数には含めません。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 2
+
+EXCESSIVE 0
+
+REVIEW COMPLETE
+
+HOLD 0 / 2 / 0

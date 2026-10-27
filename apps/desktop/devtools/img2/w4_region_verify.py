@@ -176,6 +176,10 @@ def _verify(record, source_root):
             _need(cancel["state"] == "stop_confirmed" and cancel["cause"] == "boundary_hold" and
                   cancel["method"] == "direct_child_terminate_wait" and
                   cancel["kill_error"] is None and cancel["waited"] is True and
+                  cancel["exit_before_request"] is False and
+                  cancel["returncode_before_request"] is None and
+                  cancel["last_observed_stage"] == "before_publish" and
+                  cancel["reason"] == entry and cancel["reachability"] == "reached" and
                   cancel["hold_established"] is True and cancel["kill_issued"] is True and
                   cancel["reap_confirmed"] is True and cancel["alive_at_request"] is True and
                   cancel["requested_ns"] is not None and cancel["observed_ns"] is not None and

@@ -172,6 +172,33 @@
       "signal": null,
       "stdout_sha256": "sha256:9d6245002cefda2ab22c9e5bede756e621962e09d63f1f3bf81578400c49650f",
       "stderr_sha256": "sha256:d513f01e5f4c5be6ef018b102492c4d6487fcec59c73679e016332eb056a6143"
+    },
+    "w4-r3-tests": {
+      "name": "w4-r3-tests",
+      "start": "2026-10-27T18:35:22.198Z",
+      "end": "2026-10-27T18:35:22.713Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:e7f929eddda9e73c675073a3a8d10f03f6a84f6a55f3155d4f074339db1f819c"
+    },
+    "w4-r3-img2": {
+      "name": "w4-r3-img2",
+      "start": "2026-10-27T18:35:22.203Z",
+      "end": "2026-10-27T18:35:23.484Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:69cdbe4fbbde559f64cb1453e6ffc52da66e57a832c518742940a1b75d080716"
+    },
+    "w4-r3-quality-ps": {
+      "name": "w4-r3-quality-ps",
+      "start": "2026-10-27T18:35:22.207Z",
+      "end": "2026-10-27T18:36:02.330Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:298b816ddbef5a1b297b00b86fda0b871553bee007ee0941f18313b5f3e22f89",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   },
   "rust": {
@@ -184,7 +211,7 @@
     "failed": 0,
     "ignored": 1
   },
-  "python_img2": 107,
+  "python_img2": 112,
   "python_r0": {
     "total": 352,
     "passed": 340,
@@ -192,11 +219,12 @@
   },
   "feature_threads": 1,
   "ambient": "Ordinary local target inherits the user-global Cargo rustflags -C link-arg=-fuse-ld=lld; MSVC link.exe LNK4044 ignores it. Not a Rust lint or gate failure; pinned Gate uses CARGO_ENCODED_RUSTFLAGS empty.",
-  "negative_tests": 28,
+  "negative_tests": 33,
   "native_cases": 24,
   "w3_historical_replay": "f8dfc30 historical source identity",
   "w2_probe_selftest": "exit 0",
   "w2_oracle": "exit 0",
   "w1_selftest": "exit 0",
-  "round1": "f1495133 Gate pair retained under review-round1-*; this record covers the repaired verifier candidate 6bf7b63."
+  "round1": "f1495133 Gate pair retained under review-round1-*; this record covers the repaired verifier candidate 6bf7b63.",
+  "round2": "Second candidate 6bf7b63 Gate pair retained under review-round2-*; this record covers the A-W4-R2-01 verifier repair candidate."
 }

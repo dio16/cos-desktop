@@ -19,5 +19,5 @@
     "outcome": "oversize",
     "reason_code": "roi_output_exceeded"
   },
-  "meaning": "A 1x1 ROI cannot bypass the full-frame decoded bound; ROI output also has its own bound."
+  "meaning": "A 1x1 ROI cannot bypass the full-frame decoded bound; ROI output has its own bound."
 }

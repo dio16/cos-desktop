@@ -100,5 +100,5 @@
       "width": 3
     }
   ],
-  "meaning": "Original small fixture bytes are retained; expectations come from independent source decoding, not WIC output."
+  "meaning": "Original fixture bytes; expectations from independent source decoding."
 }

@@ -191,6 +191,31 @@ class W4RecordTests(unittest.TestCase):
             worker["exit_code"] = 0
         self.reject(change, "stop_not_confirmed")
 
+    def test_exit_before_request_must_be_false(self):
+        def change(record):
+            self.worker(record, "cancel_roi")["cancellation"]["exit_before_request"] = True
+        self.reject(change, "stop_not_confirmed")
+
+    def test_returncode_before_request_must_be_absent(self):
+        def change(record):
+            self.worker(record, "timeout_roi")["cancellation"]["returncode_before_request"] = 0
+        self.reject(change, "stop_not_confirmed")
+
+    def test_last_observed_stage_must_be_the_hold(self):
+        def change(record):
+            self.worker(record, "cancel_roi")["cancellation"]["last_observed_stage"] = "onload_entered"
+        self.reject(change, "stop_not_confirmed")
+
+    def test_stop_reason_must_match_case(self):
+        def change(record):
+            self.worker(record, "cancel_roi")["cancellation"]["reason"] = "timeout"
+        self.reject(change, "stop_not_confirmed")
+
+    def test_stop_reachability_must_be_reached(self):
+        def change(record):
+            self.worker(record, "timeout_roi")["cancellation"]["reachability"] = "not_reached"
+        self.reject(change, "stop_not_confirmed")
+
     def test_duplicate_and_missing_case(self):
         self.reject(lambda r: r["workers"].pop(), "worker_count_invalid")
         self.reject(lambda r: r["workers"].append(copy.deepcopy(r["workers"][0])), "worker_count_invalid")
