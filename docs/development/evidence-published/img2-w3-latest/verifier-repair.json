@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "initial_candidate": "a6488236a009d82da8e4abbce5818909326c3d17",
+  "found_by": "pre-Tern explicit negative review, after initial Quality Gate was dispatched",
+  "before": {
+    "total": 19,
+    "failed": 4,
+    "failures": [
+      "replaced mandatory top-down fixture with self-consistent bottom-up fixture",
+      "replaced max-pixels refusal reason with max-dimension refusal",
+      "removed OnLoad return stage and recomputed sequence/raw trace digest",
+      "changed WIC reported source width while preserving actual PNG/input"
+    ]
+  },
+  "repair": "Require fixed coverage dimensions and row order, complete successful/held/oversize stage populations, dimensions consistent with original BMP and admitted trace/result, and budget-specific refusal reason. Existing pixel/lifecycle assertions remain unchanged.",
+  "after": {
+    "portable_focused_total": 72,
+    "passed": 72,
+    "failed": 0
+  },
+  "superseded_gate": "0590ae30-dbd3-4966-bb93-bfc895bf6ff8; successful initial candidate only, not transferred to repaired source"
+}

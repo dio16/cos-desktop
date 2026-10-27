@@ -114,6 +114,37 @@ class W3RecordTests(unittest.TestCase):
         self.reject(lambda r: r["workers"][0].update(reaped=False), "worker_not_reaped")
         self.reject(lambda r: r["cleanup"].update(complete=False), "cleanup_incomplete")
 
+    def test_missing_materialization_stage_is_incomplete(self):
+        def omit(record):
+            worker = record["workers"][0]
+            worker["stages"] = [s for s in worker["stages"] if s["stage"] != "onload_returned"]
+            for seq, stage in enumerate(worker["stages"], 1):
+                stage["seq"] = seq
+            raw = "".join(json.dumps(s, separators=(",", ":")) + "\n" for s in worker["stages"])
+            worker.update(trace_utf8=raw, trace_sha256=sha(raw.encode()),
+                          trace_bytes=len(raw.encode()), trace_records=len(worker["stages"]))
+        self.reject(omit, "native_stage_set_incomplete")
+
+    def test_source_dimensions_must_match_input(self):
+        self.reject(self.change_result(width=99), "source_dimensions_invalid")
+
+    def test_budget_refusal_keeps_its_own_reason(self):
+        def substitute(record):
+            worker = next(w for w in record["workers"] if w["case_id"] == "max_pixels_over")
+            worker["probe_result"]["reason_code"] = "max_dimension_exceeded"
+            worker["stdout_utf8"] = json.dumps(worker["probe_result"]) + "\n"
+        self.reject(substitute, "budget_refusal_reason_invalid")
+
+    def test_bottom_up_cannot_replace_required_top_down_case(self):
+        def replace(record):
+            bottom = next(f for f in record["fixtures"] if f["id"] == "odd_bottom")
+            top = next(f for f in record["fixtures"] if f["id"] == "odd_top")
+            top.update({k: v for k, v in bottom.items() if k not in ("id", "path")})
+            for worker in record["workers"]:
+                if worker["fixture_id"] == "odd_top":
+                    worker["input_sha256"] = "sha256:" + top["sha256"]
+        self.reject(replace, "required_fixture_coverage_missing")
+
 
 if __name__ == "__main__":
     unittest.main()

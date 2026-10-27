@@ -782,9 +782,9 @@ python -B apps/desktop/devtools/img2/w3_native_matrix.py verify `
 python -B -m unittest discover -s apps/desktop/devtools/img2/tests -v
 ```
 
-The unittest command needs the devtools directory on `PYTHONPATH`; alternatively
-run it from `apps/desktop/devtools/img2` with `-s tests`. No decoder dependency is
-installed. Qualify `RUSTC`, `RUSTDOC` and `RUSTFMT` as well as Cargo: an absolute
+The portable unittest command also runs from `apps/desktop/devtools/img2` with
+`-s tests`; no decoder dependency is installed. Qualify `RUSTC`, `RUSTDOC` and
+`RUSTFMT` as well as Cargo: an absolute
 Cargo executable alone does not pin the compiler chosen from PATH. Preserve the
 unchanged full quality route; record any compiler/linker environment override.
 Finish build/link commands before launching their consumer executable on Windows.

@@ -89,6 +89,11 @@ def _verify(r, source_root):
             _need(original["row_order"].replace("_", "-") == f["row_order"], "fixture_row_order_mismatch")
             _need(original["rgba"].hex() == f["expected_rgba_hex"] and
                   hashlib.sha256(original["rgba"]).hexdigest() == f["expected_rgba_sha256"], "fixture_pixel_expectation_mismatch")
+            required_size = {"primaries": (5, 1), "midtones": (7, 2),
+                             "narrow_bottom": (1, 3), "odd_bottom": (3, 3), "odd_top": (3, 3)}
+            _need((original["width"], original["height"]) == required_size[f["id"]] and
+                  original["row_order"] == ("top_down" if f["id"] == "odd_top" else "bottom_up"),
+                  "required_fixture_coverage_missing")
     limits = r["decode_limits"]
     _need(set(limits) == {"max_dimension", "max_pixels", "max_bit_depth", "max_decoded_bytes", "max_scratch_bytes"}
           and all(_int(v, 1) for v in limits.values()), "budget_invalid")
@@ -154,6 +159,8 @@ def _verify(r, source_root):
                   (frequency is None or frequency == stage["qpc_frequency"]), "trace_clock_invalid")
             previous, ticks, frequency = rank, stage["qpc_ticks"], stage["qpc_frequency"]
         names = [x["stage"] for x in stages]
+        _need(len(names) == len(set(names)) and names[:2] == ["process_observed", "input_opened"],
+              "native_stage_set_incomplete")
         _need(w["stdout_bytes"] <= b["max_capture_bytes"] and w["stderr_bytes"] <= b["max_capture_bytes"], "capture_cap")
         cancel = w["cancellation"]
         if s["kind"] in ("cancel", "timeout"):
@@ -165,6 +172,8 @@ def _verify(r, source_root):
             _need(stages[-1]["stage"] == w["hold_stage"] and
                   w["started_ns"] <= cancel["requested_ns"] <= cancel["observed_ns"] == w["exited_ns"] and
                   cancel["exit_after_request"] == w["exit_code"], "stop_lifecycle_invalid")
+            _need(names == list(STAGES[:STAGES.index(w["hold_stage"]) + 1]),
+                  "native_stage_set_incomplete")
             if s["kind"] == "timeout":
                 _need(cancel["reason"] == "timeout" and
                       cancel["requested_ns"] - w["started_ns"] >= 5_000_000_000, "timeout_not_elapsed")
@@ -184,11 +193,19 @@ def _verify(r, source_root):
                   result["reason_code"] in ("invalid_metadata", "win_unknown_image_format", "win_bad_image",
                     "win_bad_header", "win_bad_stream_data", "max_dimension_exceeded", "max_pixels_exceeded",
                     "max_bit_depth_exceeded", "max_decoded_bytes_exceeded", "max_scratch_bytes_exceeded"), "refusal_class_invalid")
+            if over:
+                _need(result["reason_code"] == s["id"][:-5] + "_exceeded" and
+                      result["admission_status"] == "refused", "budget_refusal_reason_invalid")
+                _need(names == list(STAGES[:5]) + ["refused", "probe_exit"],
+                      "native_stage_set_incomplete")
             _need("onload_entered" not in names and not w["output_present"] and not w["published_success"] and
                   w["output_hex"] is None and result["materialization"] == "not_requested", "output_after_refusal")
             continue
         _need(w["outcome"] == "decoded" and result["outcome"] == "decoded" and w["exit_code"] == 0 and
               result["admission_status"] == "admitted" and result["materialization"] == "completed", "decode_missing")
+        _need(names == list(STAGES), "native_stage_set_incomplete")
+        _need((result["width"], result["height"]) == (f["width"], f["height"]),
+              "source_dimensions_invalid")
         _need(names.index("admitted") < names.index("onload_entered") < names.index("output_published"), "admission_order_invalid")
         actual = "Bgr555" if s["fixture"] == "not_bgr565" else "Bgr565"
         depth = 5 if actual == "Bgr555" else 6
@@ -196,6 +213,11 @@ def _verify(r, source_root):
         _need(result["row_bytes"] == f["logical_row_bytes"] and result["decoded_bytes_required"] == f["logical_source_bytes"] and
               result["bgra32_bytes_required"] == f["width"] * f["height"] * 4 and
               result["scratch_bytes_required"] == result["bgra32_bytes_required"] + result["declared_scratch_bytes"], "admission_accounting_invalid")
+        admission = next(stage for stage in stages if stage["stage"] == "admitted")
+        _need(all(admission[key] == result[key] for key in
+                  ("width", "height", "bits_per_channel", "bits_per_pixel", "row_bytes",
+                   "decoded_bytes_required", "bgra32_bytes_required", "scratch_bytes_required",
+                   "declared_scratch_bytes", "input_bytes")), "trace_admission_mismatch")
         output = bytes.fromhex(w["output_hex"] or "")
         _need(w["output_present"] and w["published_success"] and 0 < len(output) == w["output_bytes"] <= b["max_output_bytes"]
               and sha(output) == w["output_sha256"], "decoded_output_missing")

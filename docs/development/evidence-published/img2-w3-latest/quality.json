@@ -212,6 +212,70 @@
       ],
       "stdout_sha256": "sha256:082432ab2cc47f059377471966f9bd5d620135421d6e0cce8464388ee8618b66",
       "stderr_sha256": "sha256:a209056b30f4c5b989aa8c88beb6b7e434f44fee86ebc70e0efaaea77fdcaf43"
+    },
+    "standard-quality-repair1": {
+      "name": "standard-quality-repair1",
+      "start": "2026-10-27T14:55:14.022Z",
+      "end": "2026-10-27T14:55:57.554Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 535,
+        "failed": 0,
+        "ignored": 1
+      },
+      "python_total": 18,
+      "warnings": []
+    },
+    "focused-python-repair1": {
+      "name": "focused-python-repair1",
+      "start": "2026-10-27T14:59:03.987Z",
+      "end": "2026-10-27T14:59:04.886Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 72,
+      "warnings": []
+    },
+    "feature-clippy-repair1": {
+      "name": "feature-clippy-repair1",
+      "start": "2026-10-27T14:59:03.998Z",
+      "end": "2026-10-27T14:59:05.878Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 0,
+      "warnings": []
+    },
+    "feature-tests-repair1": {
+      "name": "feature-tests-repair1",
+      "start": "2026-10-27T14:59:57.772Z",
+      "end": "2026-10-27T15:00:15.588Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 539,
+        "failed": 0,
+        "ignored": 1
+      },
+      "python_total": 0,
+      "warnings": []
+    },
+    "feature-build-repair1": {
+      "name": "feature-build-repair1",
+      "start": "2026-10-27T15:00:44.668Z",
+      "end": "2026-10-27T15:00:46.117Z",
+      "exit": 0,
+      "signal": null,
+      "warnings": []
     }
   },
   "r0_unavailable": "one live-window observation and eleven missing historical N07 binary cases; actual skips are not PASS",
@@ -269,8 +333,8 @@
   ],
   "focused_breakdown": {
     "w2": 45,
-    "w3": 23,
-    "total": 68
+    "w3": 27,
+    "total": 72
   },
   "admission_selftest": {
     "checks": 19,
@@ -286,5 +350,12 @@
     "before": "123 passed/1 failed; earlier sample count1 retained because second sample was still in flight when 2500ms deadline fired",
     "repair": "both success-then-failure tests now reuse sampling_guard and await_sampler completion handshake; separate spawn log, flush then completion marker; unchanged outcome/value-discard assertions",
     "after": "two focused cases pass; final complete default535/feature539 routes pass without warnings"
-  }
+  },
+  "final_check_names": [
+    "standard-quality-repair1",
+    "focused-python-repair1",
+    "feature-clippy-repair1",
+    "feature-tests-repair1",
+    "feature-build-repair1"
+  ]
 }

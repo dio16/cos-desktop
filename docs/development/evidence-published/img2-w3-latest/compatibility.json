@@ -18,7 +18,7 @@
     "probe_selftest": "PASS"
   },
   "w3": {
-    "portable_regressions": 23,
+    "portable_regressions": 27,
     "native_workers": 24,
     "consumer_pixels": 5,
     "independent_worker_rasters": 10

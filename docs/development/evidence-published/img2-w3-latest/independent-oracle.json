@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "ok": true,
-  "native_record_sha256": "sha256:108c63bbe079f6f3cca59789306fa2f428c92414b8649cdf217cf691aab440fd",
-  "method": "original BMP masks/payload, fixed5/6/5 bit replication; existing independent PNG CRC/inflate/filter reconstruction; compares all RGBA bytes",
+  "native_record_sha256": "sha256:abb297224f670bafe12626c2953f03f34819e8d5f995fd1fe4db8d5151068c1a",
+  "method": "original BMP masks/payload and fixed5/6/5 bit replication; existing independent PNG CRC/inflate/filter reconstruction; all RGBA bytes; complete trace and source dimensions enforced",
   "worker_rasters": [
     {
       "case_id": "format_primaries",
@@ -155,5 +155,5 @@
       }
     }
   ],
-  "consumer": "five built actual consumer rows have independent expected all-RGBA digests; consumer deletes its outputs; raw separately instrumented PNG outputs above are not consumer copies"
+  "consumer": "five actual built consumer rows compare independent all-RGBA digests; consumer deletes outputs; raw PNG bytes are separate instrumented worker outputs"
 }
