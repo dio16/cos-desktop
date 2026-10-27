@@ -1,8 +1,7 @@
 {
   "schema_version": 1,
-  "evidence_head": "8ae0841c86a00e0cd19c8b9548566f4a31624527",
+  "evidence_head": "a663307773caf9f539cb2f3094682635535808e0",
   "fixed_source_candidate": "d75df9d0fef8d9eca39c41c563ada11252ed21cb",
-  "start_commit": "37d4643c128598352c7052b859b2b4a74b25c4fa",
   "quality_gate": "3148ac79-4791-4109-9566-d82236d0f65a",
   "build_gate": "6b472805-20d5-455f-812d-d88156e0cba3",
   "source_zip": {
@@ -10,12 +9,10 @@
     "sha256": "sha256:fffdedc0c8cb6a67fd88d21e7452375794d936f422f68280e1e8236f2fadd73c"
   },
   "evidence_zip": {
-    "bytes": 195237,
-    "sha256": "sha256:4e0725ef245a286b52baefbdac023b28a7e94c01847e070356ee90d01a1d1aa3"
+    "bytes": 203104,
+    "sha256": "sha256:80b88601ad259d56ec283e75312fb9aef8e9995a4726c93b00a2939c6d894f6e"
   },
-  "gate_artifact_comparison": {
-    "captured": 51,
-    "byte_identical_to_candidate": 51
-  },
+  "gate_evidence": "quality-gate.json, build-gate.json, gate-preflight.json",
+  "build_product": "NOT_CAPTURED",
   "manifest_self_boundary": "No self hash; docs-only child."
 }
