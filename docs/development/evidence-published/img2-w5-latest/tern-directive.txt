@@ -1,0 +1,1198 @@
+# COS Desktop — NEXT CONTINUOUS IMPLEMENTATION DIRECTIVE
+# MP-IMG2-W5: Real-WIC ICC / Orientation Metadata and Decode-Transform Classification
+#
+# 対象: MP-IMG2 / DC-MP-IMG2
+# 実行経路: Taskern → 実装 → Windows Native検証 → 独立Refine Gate
+#          → Tern独立レビュー → 限定技術完了判定
+#
+# 本指示は既承認のMP-IMG2契約を実装するものであり、
+# 新規設計判断、decoder採用、Runtime変更、push、main/releaseの
+# 権限を追加しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Repository / Branch / 開始固定点
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Repository:
+dio16/cos-desktop
+
+Branch:
+dev（ローカル、未push）
+
+開始commit:
+37d4643c128598352c7052b859b2b4a74b25c4fa
+
+対象MP-ID:
+MP-IMG2 — Decode admission gate
+
+今回の単一slice:
+MP-IMG2-W5
+
+単一owner contract:
+DC-MP-IMG2
+
+前回の固定製品候補:
+e357888e1d622a3b672cb20f18143ac8468cc745
+
+W4 evidence HEAD:
+5cda6f69134442987b41deb60de9677726c10094
+
+W4 disposition:
+37d4643c128598352c7052b859b2b4a74b25c4fa
+
+W4 independent review:
+PASS 0 BLOCKING /
+     0 ACTIONABLE NON-BLOCKING /
+     0 EXCESSIVE
+
+W4 Gates:
+Quality bf315d47-65b0-4f32-921b-1df7f495f612
+Build   dce7ca2f-c207-4de2-ad29-e5d532cbb059
+
+上記GateはW4専用である。
+W5の独立Gateとして流用しない。
+
+開始前に以下を確認する。
+
+- HEAD
+- branch
+- git status
+- origin/devとの差分
+- Cargo.lock
+- rust-toolchain.toml
+- GPUI pin
+- W4 dispositionの内容
+- MP-IMG2 hard prerequisites
+- 既存DecodeBudget/default/API
+
+開始SHAと作業HEADが異なる場合、
+差分を確認し、他タスクの変更を巻き込まない。
+既存の未push履歴をresetしない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. タスク選択理由
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実装計画上、MP-IMG2のhard prerequisitesは:
+
+- MP-IMG1
+- MP-SEC3
+
+既存の限定成果:
+
+W1:
+実WICのmaterialization前admission。
+
+W2:
+実WIC bounded decode、process memory観測、
+operator boundary holdに限定した停止帰属。
+
+W3:
+実Bgr565 format admissionと独立RGBA raster照合。
+
+W4:
+実WIC ROI出力とfull-frame予算維持、
+true partial/sequential/tiledとの能力分離。
+
+残存するDC-MP-IMG2の主な要件:
+
+- codec別のorientation handling
+- ICC/profile/colour handling
+- decoder internal scratch
+- actual allocation/reservation
+- true peak concurrent bytes
+- cancellation granularity
+- 16K capability
+- true region/sequential/tiled decode
+- codec比較とadoption decision
+
+今回は、このうちorientationとICC/profileの
+実WIC capability分類を単一sliceとして選択する。
+
+理由:
+
+- DC-MP-IMG2に既に明記された要件である
+- IMG1/SEC3以外のhard prerequisiteを追加しない
+- 既存のWIC probeとbounded fixtureを再利用できる
+- 新decoder dependencyやunsafe/FFIを必要としない
+- RuntimeとGPUを変更せず実験できる
+- 既存のDecode Exitを縮小しない
+
+なお、MP-IMG2全体のdecoder採用や
+full Decode Exitを今回承認するものではない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. W5の目的
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実Windows WICについて、以下を独立に確認する。
+
+A. SOURCE METADATA
+
+入力に格納されたorientation情報とICC/profile情報を、
+decoder結果と混同せず取得・分類できるか。
+
+B. DECODED RASTER
+
+実WICのdecoded outputが、
+orientation/profile metadataによって
+どのような変化を受けるか。
+
+C. TRANSFORM APPLICATION
+
+orientation補正やICC colour conversionが
+実際に適用されたことを証明できるか。
+
+D. ADMISSION BOUNDARY
+
+不正なorientation、profile metadata、
+過大なmetadata、矛盾した宣言が、
+無制限allocationや成功扱いにつながらないか。
+
+E. CAPABILITY CLASSIFICATION
+
+codec/containerごとに、
+metadataの存在・取得・解釈・適用・未測定を
+別フィールドとして表現できるか。
+
+重要な区別:
+
+「EXIF orientationを読めた」
+≠
+「画素を正しく回転した」
+
+「ICC profileを取得できた」
+≠
+「正しい色変換を実施した」
+
+「WICがdecodeに成功した」
+≠
+「表示色・表示方向が正しい」
+
+「source profileが存在しない」
+≠
+「sRGB profileが実際に埋め込まれていた」
+
+W5では、以上の誤認定を防止する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. 正典と権限
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実装前に次を読む。
+
+docs/development/IMPLEMENTATION_MASTER_PLAN.md
+- §7.10 MP-IMG2
+- §19.54 W1
+- §19.55 W2
+- §19.56 W3
+- §19.57 W4
+
+docs/architecture/DESKTOP_DESIGN_CONTRACTS.md
+- Media input admission and integrity
+- DC-MP-IMG2
+
+docs/architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md
+- §6
+- §6.1 Decode
+- §10
+
+docs/development/BUILD_AND_RUN.md
+- §4.21〜§4.24
+
+docs/decisions/
+- ADR-0008
+- ADR-0009
+- ADR-0012
+- ADR-0013
+
+既存契約のacceptance criteria、codec採用条件、
+DecodeBudget/default/APIを再定義してはならない。
+
+設計判断が必要な場合は、
+観測できる能力だけを実装・検証し、
+未決定のtransform policyやdecoder adoptionを
+DESIGN_BLOCKEDとして分離する。
+
+本指示は、
+製品のICC変換規則、
+表示orientation policy、
+canonical identityへのmetadata組込み方式、
+製品codec対応範囲を新たに批准しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. Taskern実使用
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Taskern 0.2.0の実インストールを確認する。
+
+taskern --version
+taskern describe capabilities --json
+taskern describe operation prepare --human
+
+新しい単一taskを作成する。
+
+protocol:
+1
+
+op:
+prepare
+
+plan_id:
+cos-desktop-img2-w5
+
+task_id:
+img2-w5
+
+revision:
+1
+
+goal:
+Classify real-WIC orientation and ICC/profile metadata
+acquisition, decoded-raster effects and transform evidence
+without changing product rendering policy or bypassing
+full-frame decode admission.
+
+requestには次を含める。
+
+- metadata fixture generation
+- real-WIC metadata observations
+- orientation raster comparison
+- ICC/profile observation
+- bounded admission
+- independent oracle
+- capability table
+- negative verifier
+- W1–W4 regression
+- independent Refine Gates
+- Tern review
+- evidence closure
+
+実際にTaskernを呼び出す。
+
+taskern call --request <w5-request.json> --json
+
+成功したcompiled packetのidentityとSHA256を保存する。
+
+W4 packetをW5の新packetとして転用しない。
+
+Taskernが利用できない場合は、
+TASKERN_BLOCKEDとして記録する。
+偽のpacketを生成しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. 変更可能範囲
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+主対象:
+
+apps/desktop/examples/decode_compare/
+- wic_probe.ps1
+- wic_admission.ps1
+
+apps/desktop/devtools/img2/
+- w5_metadata_fixtures.py
+- w5_metadata_matrix.py
+- w5_metadata_oracle.py
+- w5_metadata_verify.py
+
+apps/desktop/devtools/img2/tests/
+- test_w5_*.py
+
+必要な範囲で既存の以下を再利用する。
+
+- w2_resource_matrix.py
+- w2_resource_verify.py
+- w3_fixtures.py
+- w3_oracle.py
+- w4_fixtures.py
+- w4_region_oracle.py
+- w4_region_verify.py
+
+既存decode_compare harnessも使用する。
+
+ただし、新しい製品機能を追加するために
+Rust consumer APIやproduction pathを
+変更してはならない。
+
+検証用途の最小限の追加配線のみ許可する。
+
+文書変更:
+
+- DC-MP-IMG2の既存要件に対する
+  W5観測境界の明確化
+- IMPLEMENTATION_MASTER_PLAN.md
+- BUILD_AND_RUN.md
+- docs/development/evidence-published/img2-w5-latest/
+
+既存owner contractの要求内容自体は変更しない。
+
+禁止:
+
+- crates/media DecodeBudget/default/API変更
+- 新規Rust dependency
+- 新規外部decoder dependency
+- unsafe / FFI
+- GPU/Upload実装
+- Runtime変更
+- credential/permission/security設定変更
+- GPUI pin変更
+- 不要なCargo.lock変更
+
+YAGNIを優先し、汎用EXIF/ICC parser frameworkは作らない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. WIC metadata probe
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+既存wic_probe.ps1へ、
+明示的opt-inのmetadata observationを追加する。
+
+CLI名称は既存規約に整合させること。
+
+通常実行の意味は変更しない。
+
+opt-in無しの場合:
+- 既存引数
+- exit code
+- result schemaの既存フィールド
+- output bytes
+- legacy behavior
+を維持する。
+
+W5 metadata observationでは、
+実WICの宣言値と取得経路を記録する。
+
+最低限:
+
+- container codec
+- decoder identity
+- decoder/cache mode
+- source dimensions
+- source pixel format
+- frame dimensions
+- metadata availability
+- orientation tag presence
+- orientation raw value
+- orientation interpreted meaning
+- ICC/profile presence
+- profile byte length
+- profile fingerprint
+- colour context availability
+- decoded output dimensions
+- decoded output pixel digest
+- explicit transform request
+- observed transform outcome
+- materialization stage
+- failure reason
+
+source metadataとdecoder outputは独立の欄にする。
+
+EXIF orientationの値1/3/6/8を
+代表fixtureとして使用する。
+
+ただし、値の取得・解釈・画素への適用は
+それぞれ別の検証項目にする。
+
+WIC APIがmetadataを公開しない場合、
+勝手にorientation=1と補完しない。
+
+ICC/profileについても、
+存在しないこと、取得できないこと、
+取得したが適用未証明であることを区別する。
+
+unknownの値を成功扱いしない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. Fixture generation
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Python標準ライブラリを優先する。
+
+小さくdeterministicなfixtureだけを生成する。
+
+推奨する実験セット:
+
+A. OrientationなしのPNG
+
+B. MetadataなしのBMP24
+
+C. Orientation=1の小型画像
+
+D. Orientation=3の小型画像
+
+E. Orientation=6の小型画像
+
+F. Orientation=8の小型画像
+
+G. Invalid orientation value
+
+H. Conflicting metadata declarations
+
+I. ICCなし
+
+J. 有効なICC profileを含む入力
+
+K. 不正またはtruncated ICC payload
+
+L. 許可上限を超えるmetadata payload
+
+実装上は、
+小型の非圧縮TIFF等を使用して
+orientation tagを直接制御してよい。
+
+JPEG/EXIFを使用する場合は、
+元encoded byte sequence、EXIF tag、
+metadata変更範囲を記録する。
+
+ただし、
+JPEGのdecoded RGBAが絶対的に正しいという
+主張は今回行わない。
+
+ICC profileを含むfixtureには、
+出典・再配布可能性・実バイトdigestを記録する。
+
+実際の有効profileを確保できなければ、
+そのpositive caseをNOT_RUNとして保持する。
+
+不正ICCだけのテストで
+正しいICC colour conversionを証明してはならない。
+
+ユーザー画像や非公開画像は使用しない。
+
+各fixtureには:
+
+- fixture ID
+- generator identity
+- container
+- encoded bytes
+- SHA256
+- dimensions
+- source raster
+- metadata field offsets
+- orientation value
+- ICC payload identity
+- expected behavior
+- bounded case limit
+
+を記録する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. Orientation verification
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実WICによるmetadata読み出しを確認する。
+
+次の観測を分離する。
+
+1. tagが存在するか
+2. tagの値を読み出せるか
+3. 値を仕様上どう解釈するか
+4. decoderが自動適用したか
+5. decoded dimensionsが変化したか
+6. decoded pixelsが変化したか
+7. display transformが必要か
+
+製品UIの表示方向は変更しない。
+
+可能な限り、
+同じencoded rasterに対して
+orientation metadataだけを変えたfixtureを用いる。
+
+比較には:
+- source pixel order
+- output dimensions
+- pixel coordinates
+- deterministic marker pattern
+を使用する。
+
+lossless fixtureについては
+独立RGBA oracleと全画素比較する。
+
+90度/180度回転に対応する座標写像は
+WIC実出力から逆算せず、
+独立oracleで定義する。
+
+WICがmetadataを無視する実装なら、
+「metadata read verified」
+「orientation application not observed」
+と分けて記録する。
+
+WICによる自動適用を観測した場合も、
+他codec全体への適用を推定しない。
+
+意図しない二重回転を検出する負例を含める。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. ICC / Colour handling verification
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+以下の状態を区別する。
+
+profile_present
+profile_readable
+profile_bytes_verified
+profile_applied
+colour_transform_verified
+
+ICC profileの取得だけでは
+profile_applied=trueにしない。
+
+profileの有効性判定だけでは
+colour_transform_verified=trueにしない。
+
+色変換を証明する場合は、
+独立に定義した期待色値、
+変換条件、
+出力色空間、
+許容誤差、
+適用前後の値を必要とする。
+
+色変換参照結果を作成できない場合、
+colour_transform_verified=NOT_VERIFIEDとする。
+
+「BGRA32へのformat conversion」
+と
+「ICC colour conversion」
+を同一視しない。
+
+WIC内部のcolour pipelineやscratchが
+直接観測できない場合はNOT_MEASUREDとする。
+
+今回の必須成果は、
+ICC/profileのmetadata取得能力と
+colour conversionの証明状態を分離することである。
+
+ICC変換の正確性を
+未証明のまま製品能力へ登録してはならない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. Admissionとsecurity boundary
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+metadata読み出しが、
+無制限allocationやfull decodeを
+暗黙に誘発しないことを検証する。
+
+少なくとも次の上限を適用する。
+
+- encoded input size
+- source dimensions
+- max pixels
+- full-frame decoded requirement
+- conversion bytes
+- declared scratch
+- metadata capture bytes
+- output bytes
+- worker deadline
+- trace bytes
+- report bytes
+
+既存W1/W2/W3/W4の上限を緩和しない。
+
+metadata inspectionが既存WIC API内部で
+どの程度allocationするか不明な場合は、
+それを証明済みと扱わない。
+
+取得API自体が安全なpre-materialization経路で
+呼べると確認できない場合、
+既存のfull-frame admissionを先に適用する。
+
+解析不能なmetadataで、
+無制限fallback decodeを行わない。
+
+不正なmetadataの分類:
+
+- malformed
+- unsupported
+- not_readable
+- absent
+- not_verified
+
+を区別する。
+
+仕様上有効だが未対応のprofileを
+corruptと偽ってはならない。
+
+また、不正metadataが存在するというだけで
+すべてのcodecをunsupportedと判断しない。
+
+実際のsource/decoderの応答に基づき分類する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. Capability table
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+codec/container別に記録する。
+
+minimum fields:
+
+- codec
+- source_format
+- orientation_metadata
+- orientation_value
+- orientation_application
+- ICC_presence
+- ICC_readability
+- ICC_application
+- colour_transform_fidelity
+- full_frame_admission
+- decoded_output
+- preview_fallback
+- measured_source_dimensions
+- measured_output_dimensions
+- measurement_scope
+- limitation
+
+ステータスには閉じた語彙を使用する。
+
+例:
+VERIFIED
+OBSERVED
+NOT_VERIFIED
+NOT_MEASURED
+NOT_RUN
+UNSUPPORTED
+UNAVAILABLE
+
+各ステータスの意味を文書化する。
+
+OBSERVEDとVERIFIEDを混同しない。
+
+metadataを読み取れたcodecだけで
+すべてのcodecのmetadata対応を代表させない。
+
+display transformやidentity semanticsの決定が必要なら、
+必要な設計判断を明記し、
+DESIGN_BLOCKEDとして分離する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. Native実測と実行上限
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実Windowsで既存のconsumerを使用する。
+
+cargo build --locked -p cos-desktop --example decode_compare
+
+WIC実測は有限とする。
+
+既存W4の有界実験を上限の基準とし、
+緩和しない。
+
+例:
+
+- decoder concurrency: 1
+- worker timeout: 最大45秒
+- global deadline: 最大300秒
+- encoded input: 最大1MiB
+- output: 最大16MiB
+- owned work root: 最大64MiB
+- trace: 最大128行 / 128KiB
+- capture: 最大64KiB
+- report: 最大8MiB
+
+metadata captureには別の有限上限を設定する。
+過大metadataを全文保存しない。
+
+case数、総入力byte数、総出力byte数を
+manifestで明示する。
+
+巨大fixtureは作らない。
+16K full decodeは実行しない。
+
+W2のstop state machineを維持する。
+
+operator holdなしのkillを
+confirmed cancellationにしない。
+
+cooperative in-decoder cancellationを
+今回の実証結果として主張しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. 独立oracleとfail-closed verifier
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Python標準ライブラリを中心に、
+独立metadata/pixel oracleとverifierを作成する。
+
+必要な検証:
+
+- source file identity
+- fixture digest
+- metadata offsets
+- raw orientation value
+- expected orientation transform
+- actual decoded pixel comparison
+- ICC payload fingerprint
+- profile validity claim
+- decoded dimensions
+- full-frame admission
+- output publication
+- process lifecycle
+- terminal stage consistency
+- capability evidence mapping
+
+必須negative mutations:
+
+1. Orientation=6をOrientation=1と申告
+2. Orientation=3をOrientation=8と申告
+3. 画素回転なしをapplied=trueへ変更
+4. 二重回転を正しい出力と申告
+5. source dimensionsを改変
+6. output dimensionsを改変
+7. ICC digestを改変
+8. ICC不在をpresentへ変更
+9. profile取得だけでcolour conversion verified
+10. BGRA32 format conversionをICC変換と申告
+11. metadata不読をverifiedへ変更
+12. metadata超過拒否をadmittedへ変更
+13. materialization到達を拒否成功と申告
+14. missing terminal stage
+15. source/probe identity mismatch
+16. unsupported codecをverifiedへ昇格
+17. cancel/timeoutをdecodedへ変更
+18. old SOURCE/Gate identityを混入
+
+各負例は実際にverify()を呼び出す。
+
+正常recordはPASS、
+不正recordはFAILでなければならない。
+
+W4と同様、
+metadata能力の誤帰属を許さない。
+
+期待値をNative結果から生成して
+同じNative結果を検証する自己循環は禁止する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. 回帰と品質検証
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実行対象:
+
+- W5 focused tests
+- W5 fixture regeneration
+- W5 independent metadata oracle
+- W5 independent pixel oracle
+- W5 negative verifier tests
+- W5 real-WIC Native matrix
+- W4 portable regression
+- W4 ROI/budget regression
+- W4 stop-state regression
+- W3 Bgr565 regression
+- W3 historical source replay
+- W2 resource/stop regression
+- W1 admission regression
+- WIC admission selftest
+- decode_compare harness tests
+- crates/media admission tests
+- Rust workspace tests
+- feature tests
+- quality.ps1
+- R0 Python suite
+
+Rust実行:
+
+cargo fmt --all -- --check
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo test --locked --workspace
+cargo build --locked --workspace
+
+通常workspaceとRefine隔離環境の
+test countsを区別する。
+
+skip、ignored、NOT_RUNをPASSに数えない。
+
+既存W3 historical Nativeを再検証する場合は、
+W3当時のSOURCE identityを保持する。
+
+変更後W5 probeのSOURCE identityを
+過去W3/W4 Native証拠に偽装しない。
+
+品質警告、compiler warning、
+環境由来のtoolchain errorを分離して保存する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. 独立Refine Gates
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SOURCEとNative実証が確定したら、
+製品SOURCEをローカルcommitする。
+
+full SHAを固定する。
+
+その候補に対して新しい独立Gateを実行する。
+
+- Quality Gate
+- Build Gate
+
+受入条件:
+
+- 同じfull candidate SHA
+- 同じcandidate digest
+- Qualityの全必須check PASS
+- Buildの全必須check PASS
+- SUCCEEDED
+- identical artifact tuples
+- 全artifact digest照合
+- status exit0
+- inspect exit0
+- verify exit0
+- cleanup complete
+- owner_alive=false
+- recovery_required=false
+
+preflight UNKNOWNはUNKNOWNのまま保存する。
+
+SOURCE修正時は新candidateとし、
+その候補に対するGateを実施する。
+
+既存W4成功GateをW5へ転用しない。
+
+Gate捕捉版と後続docs-only版を混同しない。
+
+Gate後に文書が変更された場合は、
+capture版の実バイト、
+現行版の実バイト、
+差分の範囲を保存する。
+
+同一SOURCEの成功済みGateは、
+docs-only evidence修正だけのために再実行しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. Tern独立レビュー
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+既存のTern-OMP review loopを使用する。
+
+omp -pは禁止。
+
+レビュー用添付:
+
+- 固定SOURCE ZIP
+- 固定evidence ZIP
+- review-package.json
+
+review-packageには:
+
+- SOURCE full SHA
+- evidence HEAD
+- Git archive identity
+- ZIP bytes/SHA256
+- entry bytes/SHA256
+- raw/LF対応
+- Native SOURCE bindings
+- Gate candidate digest
+- artifact tuples
+- Gate捕捉版対応
+- docs-only後続差分
+
+を含める。
+
+Ternへの重点レビュー観点:
+
+A. Orientation metadataの取得と、
+   orientation transform適用を混同していないか。
+
+B. ICC取得とcolour transformを混同していないか。
+
+C. metadata不読をdefault値で成功扱いしていないか。
+
+D. codecごとのsource formatと
+   capabilityの帰属が正しいか。
+
+E. metadata解析により
+   admission前の無制限allocationが起きないか。
+
+F. EXIF値の変更だけで
+   pixel oracleが自己循環していないか。
+
+G. 色変換の未測定範囲をVERIFIEDへ昇格していないか。
+
+H. legacy WIC CLIとROI経路の互換性。
+
+I. cancel/timeoutがW2停止契約に従うか。
+
+J. W1/W2/W3/W4の正常・拒否経路が維持されるか。
+
+K. SOURCE/Native/Gate/evidenceのdigest対応が閉じているか。
+
+L. full MP-IMG2 Decode Exitや
+   Product UXを誤って完了扱いしていないか。
+
+レビュー分類:
+
+- BLOCKING
+- ACTIONABLE NON-BLOCKING
+- EXCESSIVE
+
+独立レビューが実件数0/0/0になるまで、
+必要な範囲の修正・Gate・再レビューを行う。
+
+review回答の完全性、
+request correlation、
+fresh assistant message、
+parsed/complete状態、
+terminal verdict、
+安定した全文取得を確認する。
+
+不完全回答をPASSとして処理しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. Evidence保存
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+保存先:
+
+docs/development/evidence-published/img2-w5-latest/
+
+最低限:
+
+- taskern-request.json
+- taskern-response.json
+- source-identity.json
+- execution-manifest.json
+- fixture-manifest.json
+- metadata-native-matrix.json
+- orientation-oracle.json
+- colour-profile-observations.json
+- capability-table.json
+- admission-boundary.json
+- verifier-results.json
+- quality.json
+- quality-gate.json
+- build-gate.json
+- gate-artifact-correspondence.json
+- review-request.txt
+- review-response.txt
+- review.json
+- storage.json
+- unmeasured.json
+- disposition.json
+
+実験入力と必要な出力は
+サイズを制限したtracked archiveに保持する。
+
+不要なexecutables、raw private logs、
+credentials、巨大scratchは保存しない。
+
+全ての保存ファイルに
+SOURCE/Native/Gateのidentityを対応付ける。
+
+MPへのW5記録は新しい一意なsectionを使用する。
+
+既存の§19.54〜§19.57を保持する。
+広範囲の文字列置換は禁止する。
+
+docs-only差分と製品SOURCE差分は明示的に分離する。
+
+成功scratch廃棄条件:
+
+- evidence保存済み
+- exact allowlist
+- 新規owned directory
+- active processなし
+- reparseなし
+- 削除前後のNative verify一致
+
+failed/nonterminal Gate、
+private authority/artifacts/logs、
+過去workspaceは削除しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. 明示的な非対象
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+今回実装・承認しない:
+
+- 製品の最終ICC colour policy
+- 製品の最終orientation表示policy
+- canonical media identityの仕様変更
+- GPU colour management
+- GPUI表示変換の変更
+- 新decoder依存追加
+- FFmpegの製品採用
+- unsafe / FFI
+- WIC内部scratchの真のpeak証明
+- actual allocator reservations
+- true concurrent allocation peak
+- cooperative in-decoder cancellation
+- 16K full decode
+- true partial/sequential/tiled decode
+- JPEG absolute raster correctness
+- 全codecのICC/orientation完全対応
+- MP-IMG3 Upload
+- MP-IMG4/IMG5
+- Runtime RC-*
+- MP-R0A/R0C full closure
+- R0D measured attainment
+- FLOW2
+- UX/video completion
+- main merge
+- release
+
+W5の実測で部分的な能力が観測されても、
+その能力を全codecの製品サポートへ拡張しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. 停止条件と権限境界
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+許可:
+
+- ローカルdev上のW5限定SOURCE変更
+- Taskern prepare/compile
+- 小型fixture生成
+- 実Windows WIC実験
+- Python/Rust/PowerShell品質検証
+- ローカルSOURCE commit
+- Refine独立Gate
+- Tern独立レビュー
+- tracked evidence保存
+- 証明された成功scratchの限定削除
+
+禁止:
+
+- remote push
+- main merge
+- release
+- 別repositoryの変更
+- Runtime変更
+- security/credential/permission変更
+- 新dependencyの無断導入
+- unsafe/FFIの無断導入
+- 新しい製品設計判断の無断承認
+
+停止境界:
+
+1. 未承認設計判断が必要
+2. 新規依存や外部権限が必要
+3. metadata解析のallocation上限が保証不能
+4. 既存budgetを迂回する経路が必要
+5. owned work rootを安全に作成できない
+6. SOURCE identityを固定できない
+7. 必須Native証拠を取得できない
+8. Refine独立Gateを正しく実施できない
+
+停止は必要な操作に限定する。
+
+例えば、
+ICC colour transformの採用設計が未確定でも、
+既存WICのICC metadata取得と
+orientation分類実験は続行してよい。
+
+未承認項目はDESIGN_BLOCKED、
+権限不足はAUTHORITY_BLOCKED、
+未実行はNOT_RUN、
+測定不能はNOT_MEASURED、
+証明不足はNOT_VERIFIEDとして記録する。
+
+未証明の能力をPASSへ変換しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+21. W5 LIMITED TECHNICAL COMPLETION条件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+次をすべて満たすこと。
+
+1. Taskern W5 packetが実際に生成されている。
+
+2. 実Windows WICのmetadata observationが
+   固定SOURCEで実行されている。
+
+3. Orientation metadataとdecoded rasterの
+   関係をcodec別に記録できる。
+
+4. lossless fixtureのorientation検証では
+   独立RGBA oracleと整合する。
+
+5. ICC/profileについて
+   presence、readability、application、
+   fidelityを混同せず分類できる。
+
+6. 未証明のICC colour transformを
+   VERIFIEDにしていない。
+
+7. malformed/unsupported metadataが
+   fail-closedで処理される。
+
+8. full-frame decode admissionを
+   metadata観測のために迂回しない。
+
+9. legacy WIC CLIとW4 ROI経路を壊していない。
+
+10. W1/W2/W3/W4の回帰が維持される。
+
+11. Native recordとSOURCE identityが一致する。
+
+12. 必須QualityがPASSする。
+
+13. 新固定SOURCEに対する独立Refine
+    Quality/Build GateがSUCCEEDEDする。
+
+14. Gate artifact correspondenceが成立する。
+
+15. Tern独立レビューが
+    BLOCKING 0 /
+    ACTIONABLE NON-BLOCKING 0 /
+    EXCESSIVE 0
+    となる。
+
+16. 未測定・未承認の境界を正確に保持する。
+
+W5はmetadata/transform能力の限定分類を目的とする。
+
+製品ICC変換の完全実装、
+全EXIF orientationの表示保証、
+真のregion decode、
+full MP-IMG2 Decode Exitは
+W5の限定closure条件には含めない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+22. 最終報告と次タスク
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+最終報告に含める。
+
+- 開始SHA
+- Taskern packet SHA256
+- W5製品SOURCE full SHA
+- evidence HEAD
+- 変更SOURCE
+- 実WIC metadata matrix
+- orientation oracle結果
+- ICC/profile観測結果
+- admission拒否結果
+- capability table
+- negative verifier結果
+- W1–W4回帰結果
+- local quality test counts
+- Refine Quality/Build Gate IDs
+- Gate candidate digest
+- artifact correspondence
+- Tern independent verdict
+- storage integrity
+- W5 LIMITED TECHNICAL COMPLETION可否
+- 残存Decode Exit
+- DESIGN_BLOCKED / AUTHORITY_BLOCKED
+- NOT_RUN / NOT_MEASURED / NOT_VERIFIED
+
+Ternレビューで実件数0/0/0を取得した場合のみ、
+W5 LIMITED TECHNICAL COMPLETIONとして記録する。
+
+ただし、
+MP-IMG2全体のDecode Exit、
+MP-IMG3 hard prerequisite、
+Runtime/Product UX/main/releaseの受入れへ
+自動的に昇格してはならない。
+
+今回の作業はMP-IMG2-W5に限定する。
+
+W5 closure後、
+既存MP hard DAGとDC-MP-IMG2残存要件を再照合し、
+次のeligible sliceを選択する。
+
+その場合もremote push、main、releaseの
+権限を暗黙に追加しない。
+
+DIRECTIVE COMPLETE

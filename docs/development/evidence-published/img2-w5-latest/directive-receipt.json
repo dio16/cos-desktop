@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "directive": "MP-IMG2-W5",
+  "start_commit": "37d4643c128598352c7052b859b2b4a74b25c4fa",
+  "request_sha256": "sha256:7615ada7b6b2e793d6e00cba722ef219b5b14af578777d879156b35a8690334a",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 990,
+      "expected": 990,
+      "preview": "MP-IMG2-W4はRound 3で PASS 0 BLOCKING / 0 ACTIONABLE NON-BLOCK"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 5,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "duration_note": "done in 292s (5 assistant messages; event=generation-ended)",
+  "meaning": "Next eligible directive requested after W4 PASS. No push/main/release/Runtime authority is granted by the reviewer."
+}
