@@ -3,15 +3,58 @@
   "round": 6,
   "candidate": "d75df9d0fef8d9eca39c41c563ada11252ed21cb",
   "evidence_head": "a663307773caf9f539cb2f3094682635535808e0",
-  "package_manifest_commit": "9b67eb4",
-  "assistant_id": "round6",
+  "package_manifest_commit": "9b67eb4d2486009fa12a8d3df6997c38477e8e05",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "98cc3472-4131-4d2b-a803-368811b165e5"
+  ],
+  "assistant_ids": [
+    "1e5ead23-3658-4cdf-9780-de6535bfcb91"
+  ],
+  "first_read": "2026-10-27T21:21:03.847Z",
+  "second_read": "2026-10-27T21:21:33.893Z",
+  "elapsed_ms": 30046,
+  "identical_complete_reads": true,
+  "streaming": false,
+  "request_sha256": "sha256:9930c5fb9e5a3967dbe6246e7f730aa54d6d256c0276d158ab2dd9573418bb20",
+  "request_rendering_contains_plaintext": true,
+  "request_rendering_note": "Inline backticks rendered as code; the expanded user message contains the complete request with only backtick markup removed.",
+  "response_sha256": "sha256:c8e12da7ffea3ced1c16f69d44df624336ae7fd1484e3aa34f267eb167ea5dc3",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 944,
+      "expected": 944,
+      "preview": "MP-IMG2-W5 再評価 Round 6 — Round 5のB-W5-R5-01/A-W5-R5-01（Gate証"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 5,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
   "terminal": "PASS 0 / 0 / 0",
+  "parser_exit": 0,
   "parser": {
     "blocking": 0,
     "actionable": 0,
     "excessive": 0,
-    "clean": true
+    "passLine": null,
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": true,
+    "sawPassLine": false
   },
-  "request_sha256": "sha256:9930c5fb9e5a3967dbe6246e7f730aa54d6d256c0276d158ab2dd9573418bb20",
-  "complete": true
+  "closed": [
+    "B-W5-R5-01",
+    "A-W5-R5-01"
+  ],
+  "completion": "MP-IMG2-W5 LIMITED TECHNICAL COMPLETION",
+  "correlation_note": "Live correlation reconciled after the resumed session; timestamps are actual reconciliation reads, not the original generation time."
 }

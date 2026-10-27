@@ -1,0 +1,581 @@
+MP-IMG2-W5 Round 4 — 固定SOURCE独立レビュー
+
+最終判定：HOLD 0 / 2 / 0
+
+前回A-W5-R3-01とA-W5-R3-02で指摘した直接的な改変は、今回の検証器で拒否されることを確認しました。
+
+ただし、追加の独立改変で、ICC上限拒否の根拠となる元encoded metadataの検証不足と、unsupported拒否時のoutput payload整合性の不足を確認しました。
+
+実Nativeのorientation・ICC観測、独立画素比較、新Gateの成功自体に不整合は認められません。
+
+1. 固定候補と検証結果
+
+項目
+
+	
+
+独立結果
+
+
+
+
+Repository
+
+	
+
+dio16/cos-desktop
+
+
+
+
+Branch
+
+	
+
+dev、未push
+
+
+
+
+SOURCE candidate
+
+	
+
+1daa70ecd819002636e08bdb95842fdc381cbe1c
+
+
+
+
+Evidence HEAD
+
+	
+
+753e31395cd03d5db2e001dc67987f4c94d6279e
+
+
+
+
+SOURCE ZIP
+
+	
+
+548,561 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+206,131 bytes、SHA256一致
+
+
+
+
+SOURCE entries
+
+	
+
+38/38一致
+
+
+
+
+Evidence entries
+
+	
+
+51/51一致
+
+
+
+
+raw/LF対応
+
+	
+
+89/89一致
+
+
+
+
+W5 portable tests
+
+	
+
+24/24 PASS
+
+
+
+
+Fixture再生成
+
+	
+
+14/14原バイト一致
+
+
+
+
+Native report
+
+	
+
+16 workers、検証PASS
+
+
+
+
+独立RGBA画素照合
+
+	
+
+12/12全画素一致
+
+
+
+
+Gate artifact tuples
+
+	
+
+50/50一致
+
+
+
+
+Gate artifact実バイト
+
+	
+
+50/50一致
+
+両ZIPのGit archiveコメントは指定されたSOURCE・Evidence OIDと一致しています。
+
+Round 3から変更されたSOURCEは次の2ファイルのみでした。
+
+apps/desktop/devtools/img2/w5_metadata_verify.py
+
+apps/desktop/devtools/img2/tests/test_w5_verify.py
+
+WIC probe、decoder、fixture generator、pixel oracle、crates/media、Runtimeは不変です。
+
+2. 前回2指摘の修正確認
+
+前回指摘
+
+	
+
+判定
+
+	
+
+確認結果
+
+
+
+
+A-W5-R3-01：over-cap分岐のsource帰属
+
+	
+
+直接指摘はCLOSED
+
+	
+
+width、format、decoder、query、orientation値の改変を拒否
+
+
+
+
+A-W5-R3-02：worker/terminal/公開状態
+
+	
+
+直接指摘はCLOSED
+
+	
+
+outcome、published flag、output bytesの改変を拒否
+
+w5_metadata_verify.py:156–187では、ICC上限拒否分岐にも寸法、Bgr24/8/24、TiffBitmapDecoder、orientation query/rawの検査が追加されています。
+
+また、decoded・unsupported・oversizeに対するworker outcomeと公開状態の検査も追加されています。
+
+前回の再現条件をそのまま適用した場合、いずれもok=falseでした。
+
+3. 残存指摘
+A-W5-R4-01 — over-cap分岐で元encoded TIFFの寸法・ICC宣言量を検証していない
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w5_metadata_verify.py:156–187
+
+今回の検証器は、fixture["width"]とprobe_result["width"]を照合するようになりました。
+
+しかし、fixtureに記載された寸法そのものが元TIFF IFDと一致するかを、この拒否分岐では検証していません。
+
+通常decoded経路にあるsource(fixture, data)による独立解析が、over-cap分岐では実行されていないためです。
+
+独立再現結果：
+
+改変
+
+	
+
+元encoded TIFF
+
+	
+
+verify()
+
+
+
+
+fixture幅とprobe幅を3→4、admission値も再計算
+
+	
+
+3×2のまま
+
+	
+
+ok=true
+
+
+
+
+fixture高さとprobe高さを2→3、admission値も再計算
+
+	
+
+3×2のまま
+
+	
+
+ok=true
+
+
+
+
+TIFF ICC tagの宣言長70,540→64 bytes、fixture/input SHA256を再計算
+
+	
+
+ICC上限以下の宣言へ変更
+
+	
+
+ok=true
+
+いずれも正常Native証拠を改変した独立負例です。
+
+特に3件目では、元TIFFのICC tagが64 bytesしか宣言しなくなっても、検証器はmetadata_cap_exceededを正当な拒否として認定します。
+
+これでは拒否理由の根拠が元encoded metadataと結び付いていません。
+
+実際のNative記録は3×2・ICC 70,540 bytesで正しく、問題は証拠検証側です。
+
+最小修正条件
+
+over-cap分岐でも、既存w5_metadata_oracle.source()を使用して元encoded TIFFを解析し、次を必須化してください。
+
+IFDから得たwidth/heightとfixture/probeの一致
+
+orientation raw値の一致
+
+ICC tagの存在
+
+ICC宣言長がMaxMetadataBytesを超過
+
+その後のadmission_math()とtraceの一致
+
+今回成功した3改変を個別負例に追加してください。
+
+新しいdecoderやparserは不要です。
+
+A-W5-R4-02 — unsupported拒否でoutput payloadを保持しても成功する
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w5_metadata_verify.py:141–155
+
+前回修正で、unsupportedについて次を確認しています。
+
+worker outcomeがunsupported
+
+published_success=false
+
+output_present=false
+
+output_bytes=0
+
+しかし、output_hexそのものは検証していません。
+
+独立再現では、実Native記録のunsupported_sourceについて次の1項目だけ変更しました。
+
+Python
+実行
+worker["output_hex"] = "00"
+
+結果：
+
+プレーンテキスト
+worker outcome       = unsupported
+published_success    = false
+output_present       = false
+output_bytes         = 0
+output_hex           = "00"
+
+verify.ok            = true
+
+これは、実際に出力ファイルが作成されたという証拠ではありません。しかし、出力なしと宣言された拒否記録にoutput payloadが存在しても、検証器が正常と認定できる問題です。
+
+実Native記録ではoutput_hex=nullであり、正常です。
+
+最小修正条件
+
+unsupported拒否分岐で以下を必須化してください。
+
+Python
+実行
+worker["output_hex"] is None
+worker["output_sha256"] is None
+worker["output_bytes"] == 0
+worker["output_present"] is False
+worker["published_success"] is False
+
+output_pathは出力予定先であり、存在するだけで公開成功と扱わないでください。
+
+output_hex="00"および偽のoutput_sha256を負例として追加してください。
+
+WICやworker state machineの変更は不要です。
+
+4. Orientation・ICC・Admissionの実測
+
+独立にTIFF IFD/strip、BMP24を解析し、PNGを復元して画素を比較しました。
+
+検証
+
+	
+
+結果
+
+
+
+
+正常decoded
+
+	
+
+12/12全画素一致
+
+
+
+
+TIFF orientation 1/3/6/8
+
+	
+
+元tag一致
+
+
+
+
+Invalid orientation 99
+
+	
+
+元tag一致
+
+
+
+
+Conflicting orientation 6/8
+
+	
+
+元tag一致
+
+
+
+
+明示90°回転
+
+	
+
+2×3画素完全一致
+
+
+
+
+ICC valid
+
+	
+
+540 bytes、digest一致
+
+
+
+
+ICC truncated
+
+	
+
+宣言540 bytes、実格納不足を確認
+
+
+
+
+ICC oversized
+
+	
+
+宣言70,540 bytesを確認
+
+
+
+
+実Native over-cap
+
+	
+
+metadata_cap_exceeded、OnLoad未到達、出力なし
+
+実測されたWIC自動orientation適用はなく、明示回転はprobeによるものです。
+
+ICC取得とICC色変換も適切に区別されています。ICC application、colour transform fidelityは引き続きNOT_VERIFIEDです。
+
+5. 新Refine Gate・証拠対応
+
+検証
+
+	
+
+結果
+
+
+
+
+Quality 88b59a3c-3364-4a85-8088-e22c48639cfc
+
+	
+
+SUCCEEDED 15/15
+
+
+
+
+Build 5847493a-ddaa-4074-82d7-a58195e9ffd6
+
+	
+
+SUCCEEDED 1/1
+
+
+
+
+Candidate digest
+
+	
+
+両Gate一致
+
+
+
+
+inspect artifact tuples
+
+	
+
+50/50一致
+
+
+
+
+verify artifact tuples
+
+	
+
+50/50一致
+
+
+
+
+Artifact実バイト
+
+	
+
+50/50一致
+
+
+
+
+status/inspect/verify
+
+	
+
+すべてexit 0
+
+
+
+
+Cleanup
+
+	
+
+complete
+
+
+
+
+Owner alive / recovery
+
+	
+
+false / false
+
+Candidate digest：
+
+sha256:cb5bee12e61b800568b09f62409c9a316cc5daf6bf3aa7f13a9514378c2a0c35
+
+Gate成果物44件はSOURCE/Evidenceに直接存在し、残るhistorical 6件も補足ファイルの実バイトから一致を確認しました。
+
+Qualityの15必須チェック、Buildの1必須チェックはすべてpassです。旧Gateの成功を今回候補へ転用した形跡はありません。
+
+Storageは5対象、10,274 files / 4,131,529,768 logical bytesで、保存集計と一致しています。process依存なし、reparseなし、削除前後のNative verify一致と記録されています。
+
+実WindowsのWIC・Refine Gate・物理削除は、今回のレビュー環境では再実行していません。
+
+6. W5限定closure判断
+
+今回の修正は前回指摘に対して有効です。しかし追加検証で、元encoded metadataに基づく拒否根拠と、出力非公開の証拠整合に限定した2件が残っています。
+
+次の修正対象はw5_metadata_verify.pyと、その限定負例テストだけで十分です。
+
+SOURCE変更後は新しい固定候補を作成し、独立Quality/Build Gateと再レビューを実施してください。
+
+W5のorientation・ICC限定実測は維持できますが、W5 LIMITED TECHNICAL COMPLETIONの0/0/0 closureは保留します。
+
+ICC colour fidelity、16K、真のregion/sequential/tiled、WIC内部scratch・実予約・同時peak、cooperative cancellation、full Decode Exit、MP-IMG3、Runtime、measured R0、UX/videoは今回の指摘件数には含めません。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 2
+
+EXCESSIVE 0
+
+A-W5-R3-01：直接指摘CLOSED
+
+A-W5-R3-02：直接指摘CLOSED
+
+A-W5-R4-01 / R4-02：修正必要
+
+MP-IMG2-W5 LIMITED TECHNICAL COMPLETION：保留
+
+REVIEW COMPLETE
+
+HOLD 0 / 2 / 0

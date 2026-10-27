@@ -13,7 +13,7 @@
   "completed_scope": [
     "orientation presence/raw/interpretation separate from WIC application and explicit probe rotation",
     "12 decoded outputs with independent all-RGBA equality",
-    "11-bit-facing? no: Bgr24/8/24 source attribution verified",
+    "Bgr24/8/24 source format and full-frame admission attribution independently verified",
     "ICC presence/readability/length/digest separate from application and colour fidelity",
     "over-cap ICC refused metadata_cap_exceeded before OnLoad with no output",
     "unsupported and stop states tied to worker/probe/terminal/publication",

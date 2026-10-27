@@ -1,9 +1,13 @@
 {
+  "scope": "W5 completion status and exact live review correlation; no product change",
+  "baseline": "d75df9d0fef8d9eca39c41c563ada11252ed21cb",
   "ok": true,
-  "old_heading_count": 163,
-  "current_heading_count": 166,
-  "evidence_links": 111,
-  "preserved_sections": true,
-  "errors": [],
-  "scope": "W5 docs; 19.54-19.58 preserved against16ce231c"
+  "task_cards": 62,
+  "contracts": 62,
+  "nodes": 62,
+  "edges": 41,
+  "gates_unchanged": true,
+  "DAG_unchanged": true,
+  "relative_links": 566,
+  "errors": []
 }
