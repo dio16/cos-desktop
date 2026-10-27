@@ -1,26 +1,25 @@
-MP-IMG2-W4 再評価 Round 2 — A-W4-01 / A-W4-02 の限定修正です。Round 1の完全な HOLD 0/2/0、assistant a5b53416-8e0d-470d-80ea-cb377cd39228 / そのrequestは review-round1-response.txt と review-round1.json に保持しています。旧Gate f7ea3916…/2d68baa4… は review-round1-* に保存し、新候補へ流用していません。
+MP-IMG2-W4 再評価 Round 3 — A-W4-R2-01 / A-W4-R2-02 の限定修正です。Round 2の完全な HOLD 0/2/0、assistant 20be4c39-14e4-4199-9301-fd57dc27c734 は review-round2-response.txt / review-round2.json に保持しています。旧Gate a674563c…/6c3c8dbc… は review-round2-*、さらに前回 f7ea3916…/2d68baa4… は review-round1-* に保存し、新候補へ流用していません。
 
-Repository dio16/cos-desktop、branch dev（未push）。開始commit 0ce5651f862ea6ce48c666a7088bc9a250c17784。製品固定候補 6bf7b63cdbe43c621d3c911f367083ce317128c8。証拠HEADは添付review-package.jsonに記載（request commitから生成したZIP、manifestはその直系の子）。CallerはADR-0009/0012の継続実装を指示しています。
+Repository dio16/cos-desktop、branch dev（未push）。開始commit 0ce5651f862ea6ce48c666a7088bc9a250c17784。製品固定候補 e357888e1d622a3b672cb20f18143ac8468cc745。証拠HEADはreview-package.jsonに記載。CallerはADR-0009/0012の継続実装を指示しています。
 
 修正:
-- A-W4-01: 既知fixtureから期待format/depth/storageを独立に固定（png_rgb/png_large/bmp24=Bgr24/8/24、png_rgba=Bgra32/8/32、bmp565/bmp565_odd=Bgr565/6/16、bmp555_control=Bgr555/5/16）。probe_resultとadmitted stageのbits_per_channel/bits_per_pixelを照合。Bgr555→Bgr565とBgr565→Bgr555の両方向負例を追加し、source_format_mismatchで拒否。
-- A-W4-02: W2停止契約を反映。cause=boundary_hold、method=direct_child_terminate_wait、kill_error=null、waited=true、requested_ns/observed_ns存在、started<=requested<=observed==exited、exit_after_request==worker exit_codeかつ非ゼロを必須化。cause/method/requested_ns/exit codeの4負例を追加し、stop_not_confirmedで拒否。
-- cancellation-record.jsonはcancel_roi/timeout_roiの2件をcause/method/時刻/exit_code付きで保持。
-- verifier source identityが変わるため実WIC記録を新規実行で再生成（編集ではなく24 worker、ROI 11/11、cancel/timeout 2件）。
-- 22→28 portable tests。通常quality、img2 107 tests、W3 historical replay（f8dfc30）、WIC admission 28 checks、W2 probe、R0を再実行。Rust feature clippy/build/testsも成功（539 pass/1 ignored）。
-- WIC probe/decoder、BMP generator、pixel oracle、crates/media、consumer、Runtime、Taskern packetは変更していません。
+- A-W4-R2-01: cancel/timeoutに exit_before_request=false、returncode_before_request=null、last_observed_stage=before_publish、reason=case種別、reachability=reached を追加。既存のcause/method/kill_error/waited/時刻単調性/exit_after_request==worker exit_code/非ゼロを維持。
+- 負例: exit_before_request=true、returncode_before_request=0、last_observed_stage=onload_entered、reason交換、reachability=not_reached の5件を追加。既存4件と合わせ、すべてstop_not_confirmed。
+- A-W4-R2-02: Gate捕捉版 quality.json を gate-captured-quality.json として原バイトで同梱（7,133 bytes、sha256:aa5fc406…）。候補commitのGit blobと一致することを確認し、後続docs-only版とのサイズ/SHA/差分を gate-captured-quality.json.reconciliation.json に記録。
+- verifier source identity変更のため実WIC記録を再生成（24 workers、ROI 11/11、cancel/timeout 2件）。
+- portable tests 33件。通常quality、img2 112 tests、W3 historical f8dfc30 replay、WIC admission 28 checks、W2 probe、R0成功。feature clippy/build/testsは539 pass/1 ignored。WIC probe/decoder、fixture、oracle、crates/media、consumer、Runtime、Taskern packetは不変。
 
 新Gate:
-Quality a674563c-e6c0-4c70-a9d7-f987b0df6796 SUCCEEDED 14/14
-Build 6c3c8dbc-9c68-4069-9242-a418ab6f8224 SUCCEEDED 1/1
-candidate digest sha256:b0ef94f2…、43 artifact tuples一致、43/43 capture=candidate Git blob、status/inspect/verify exit0、cleanup complete、owner dead、recovery不要。preflight UNKNOWNはUNKNOWNのまま。
+Quality bf315d47-65b0-4f32-921b-1df7f495f612 SUCCEEDED 14/14
+Build dce7ca2f-c207-4de2-ad29-e5d532cbb059 SUCCEEDED 1/1
+candidate digest sha256:20d3fa13…、48 tuples一致、48/48 capture=candidate Git blob、status/inspect/verify exit0、cleanup complete、owner dead、recovery不要。preflight UNKNOWN維持。
 
 確認してほしい点:
-1. A-W4-01の両方向format帰属負例が実fixture maskと独立に拒否されるか。Bgr555 controlがBgr565 proofにならないか。
-2. A-W4-02のcause/method/時刻/exit整合がW2停止契約どおりで、cancel/timeoutがdecoded/outputへ昇格しないか。
-3. 新Gate/SOURCE/Native/43 tuples/ZIP byte formsの対応が閉じているか。旧Gate成功を転用していないか。
-4. ROI出力11/11画素一致、1×1 ROIのfull-frame予算拒否、true partial/sequential/tiled NOT_VERIFIEDが維持されているか。
-5. storageは新成功2 work/repo + r7 clippy/tests/buildのみを、証拠保存後・process不在・reparseなし・verify前後一致で削除したか。
+1. A-W4-R2-01の5負例が個別に拒否され、W2 stop state machineと矛盾しないか。cancel/timeoutがdecoded/outputへ昇格しないか。
+2. gate-captured-quality.jsonが候補commit blobと一致し、43→48 tuplesの全captureが提出バイトで検証できるか。
+3. 新Gate/SOURCE/Native/48 tuples/ZIP byte formsの対応が閉じているか。旧Gate成功を転用していないか。
+4. ROI 11/11画素一致、1×1 ROI full-frame予算拒否、true partial/sequential/tiled NOT_VERIFIEDが維持されているか。
+5. storageは新成功2 work/repo + r8 clippy/tests/buildのみを、証拠保存後・process不在・reparseなし・verify前後一致で削除したか。
 
 未測定: WIC内部stride/scratch、実予約、真の同時peak、cooperative cancellation、16K、真のregion/sequential/tiled、ICC/orientation、JPEG絶対raster、full Decode/Upload、MP-IMG3、Runtime RC-*、measured R0、UX/video。W4をfull MP-IMG2 Decode Exitとして扱いません。
 
