@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import shutil
+import subprocess
 
 from w2_resource_verify import BOUNDS as W2_BOUNDS, STAGES, canonical, sha
 from w6_memory_fixtures import compare, fixture_bytes, manifest, source_rgba
@@ -263,10 +266,21 @@ def _window(window, workers, index, previous_end, script_sha, executable_sha, ho
     return end
 
 
+def _fixed_source_blob(source, commit, path):
+    git = os.environ.get("GIT_EXECUTABLE") or shutil.which("git")
+    need(git is not None, "git_executable_unavailable")
+    try:
+        return subprocess.run([git, "show", f"{commit}:{path}"], cwd=source,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              check=True, timeout=15).stdout
+    except subprocess.CalledProcessError as exc:
+        raise ValueError("fixed_source_commit_mismatch") from exc
+
+
 def verify(record, source_root=None):
     try:
         return _verify(record, Path(source_root) if source_root is not None else None)
-    except (ValueError, KeyError, TypeError, IndexError, OSError, OverflowError) as exc:
+    except (ValueError, KeyError, TypeError, IndexError, OSError, OverflowError, subprocess.SubprocessError) as exc:
         return {"ok": False, "error": str(exc)[:200], "closure_eligible": False}
 
 
@@ -283,7 +297,8 @@ def _verify(record, source):
          and integer(record["duration_ns"], 1) and record["duration_ns"] <= BOUNDS["max_total_seconds"] * 1_000_000_000,
          "run_resource_or_cleanup_invalid")
     identity = record["source_identity"]
-    need(set(identity["files"]) == set(SOURCE_FILES) and len(identity["source_commit"]) == 40,
+    need(set(identity["files"]) == set(SOURCE_FILES) and len(identity["source_commit"]) == 40
+         and all(c in "0123456789abcdef" for c in identity["source_commit"]),
          "source_set_invalid")
     for path in SOURCE_FILES:
         item = identity["files"][path]
@@ -291,6 +306,10 @@ def _verify(record, source):
         if source:
             data = (source / path).read_bytes()
             need(sha(data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")) == item["lf_sha256"], "source_digest_mismatch")
+            blob = _fixed_source_blob(source, identity["source_commit"], path)
+            need(sha(blob) == item["git_blob_sha256"]
+                 and sha(blob.replace(b"\r\n", b"\n").replace(b"\r", b"\n")) == item["lf_sha256"],
+                 "fixed_source_commit_mismatch")
     expected = manifest()
     need(record["fixtures"] == expected, "fixture_set_or_digest_invalid")
     inventory = {f["id"]: f for f in expected}
@@ -314,6 +333,7 @@ def _verify(record, source):
     eligible = True
     for group, spec in zip(experiments, specs):
         workers = group["workers"]
+        need(group["failure"] is None, "group_failure_not_closed")
         need(group["boundary"] == spec["boundary"] and group["action"] == spec["action"]
              and len(workers) == len(spec["fixtures"]) <= BOUNDS["max_workers"]
              and len(group["windows"]) == spec["windows"], "group_scope_or_window_missing")
@@ -335,7 +355,9 @@ def _verify(record, source):
     need(record["comparison"] == comparison_rows(experiments, expected)
          and record["matched_run_differences"] == matched_differences(experiments), "comparison_scope_or_value_invalid")
     need(record["measurement_complete"] == eligible, "missing_sample_promoted")
-    return {"ok": True, "closure_eligible": eligible, "workers": 24, "experiments": len(experiments),
+    return {"ok": True, "closure_eligible": eligible and source is not None,
+            "source_identity_verified": source is not None,
+            "workers": 24, "experiments": len(experiments),
             "windows": sum(len(g["windows"]) for g in experiments),
             "decoded": sum(w["outcome"] == "decoded" for g in experiments for w in g["workers"]),
             "pixel_verified": sum(w["oracle"] is not None for g in experiments for w in g["workers"]),

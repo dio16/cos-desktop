@@ -84,7 +84,7 @@ def mutation(record, number):
         worker["stdout_utf8"] = json.dumps(worker["probe_result"])
         worker["stdout_bytes"] = len(worker["stdout_utf8"].encode("utf-8"))
     elif number == 22:
-        record["source_identity"]["files"] = {"old_w5_probe": next(iter(record["source_identity"]["files"].values()))}
+        record["source_identity"]["source_commit"] = "d75df9d0fef8d9eca39c41c563ada11252ed21cb"
     elif number == 23:
         group["workers"].append(copy.deepcopy(worker))
     elif number == 24:
@@ -133,6 +133,17 @@ class NativeMutationTests(unittest.TestCase):
         record = copy.deepcopy(self.native)
         record["consumer"] = {"record": {"observations": [{"case_id": "extra"}]}}
         self.assertEqual(verify(record, ROOT).get("error"), "undeclared_decode_phase")
+
+    def test_failed_group_cannot_be_claimed_complete(self):
+        record = copy.deepcopy(self.native)
+        record["experiments"][0]["failure"] = "observer failed"
+        self.assertEqual(verify(record, ROOT).get("error"), "group_failure_not_closed")
+
+    def test_structural_replay_does_not_claim_fixed_source_identity(self):
+        result = verify(self.native)
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["source_identity_verified"])
+        self.assertFalse(result["closure_eligible"])
 
     def test_sample_and_report_limits_are_also_enforced(self):
         for field in ("samples", "report"):
