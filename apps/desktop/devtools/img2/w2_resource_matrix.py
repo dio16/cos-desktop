@@ -161,7 +161,7 @@ def stop_outcome(cancel, result):
 
 
 class Worker:
-    def __init__(self, spec, work, pwsh, fixtures, limits, roi=None, max_roi_output=None):
+    def __init__(self, spec, work, pwsh, fixtures, limits, roi=None, max_roi_output=None, metadata=False, apply_orientation=False, max_metadata=None):
         self.cid, self.fid, self.kind, self.hold = spec
         self.fixture = fixtures[self.fid]
         self.work, self.pwsh = work, pwsh
@@ -182,6 +182,10 @@ class Worker:
                  "-TraceMaxBytes", str(BOUNDS["max_trace_bytes"])]
         if roi is not None:
             argv += ["-Roi", roi, "-MaxRoiOutputBytes", str(max_roi_output)]
+        if metadata:
+            argv += ["-Metadata", "-MaxMetadataBytes", str(max_metadata)]
+        if apply_orientation:
+            argv += ["-ApplyOrientation"]
         if self.hold:
             argv += ["-PauseAtStage", self.hold, "-PauseTimeoutMs", "10000"]
         self.started = time.monotonic_ns()

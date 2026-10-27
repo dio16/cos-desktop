@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "tiff_icc_absent",
+      "icc_present": false,
+      "icc_readable": false,
+      "icc_length": null,
+      "icc_sha256": null,
+      "profile_applied": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED"
+    },
+    {
+      "case_id": "tiff_icc_valid",
+      "icc_present": true,
+      "icc_readable": true,
+      "icc_length": 540,
+      "icc_sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
+      "profile_applied": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED"
+    },
+    {
+      "case_id": "tiff_icc_truncated",
+      "icc_present": false,
+      "icc_readable": false,
+      "icc_length": null,
+      "icc_sha256": null,
+      "profile_applied": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED"
+    },
+    {
+      "case_id": "tiff_icc_oversized",
+      "icc_present": true,
+      "icc_readable": false,
+      "icc_length": null,
+      "icc_sha256": null,
+      "profile_applied": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED"
+    }
+  ],
+  "meaning": "Presence/readability only; no ICC colour conversion fidelity claim."
+}

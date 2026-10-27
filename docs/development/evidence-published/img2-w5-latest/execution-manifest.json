@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "run_id": "w5-final-work",
+  "bounds": {
+    "max_capture_bytes": 65536,
+    "max_cases": 16,
+    "max_input_bytes": 1048576,
+    "max_metadata_bytes": 65536,
+    "max_output_bytes": 16777216,
+    "max_report_bytes": 8388608,
+    "max_total_seconds": 300,
+    "max_trace_bytes": 131072,
+    "max_trace_records": 128,
+    "max_work_bytes": 67108864,
+    "max_worker_seconds": 45
+  },
+  "duration_ns": 18480665600,
+  "work_bytes": 151784,
+  "cases": [
+    {
+      "case_id": "png_plain",
+      "fixture": "png_plain",
+      "kind": "absent",
+      "value": null,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "bmp24_plain",
+      "fixture": "bmp24_plain",
+      "kind": "absent",
+      "value": null,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "tiff_ori1",
+      "fixture": "tiff_ori1",
+      "kind": "valid",
+      "value": 1,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "tiff_ori3",
+      "fixture": "tiff_ori3",
+      "kind": "valid",
+      "value": 3,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "tiff_ori6",
+      "fixture": "tiff_ori6",
+      "kind": "valid",
+      "value": 6,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "tiff_ori8",
+      "fixture": "tiff_ori8",
+      "kind": "valid",
+      "value": 8,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "tiff_ori_invalid",
+      "fixture": "tiff_ori_invalid",
+      "kind": "invalid",
+      "value": 99,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "tiff_ori_conflict",
+      "fixture": "tiff_ori_conflict",
+      "kind": "conflicting",
+      "value": 6,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "tiff_icc_absent",
+      "fixture": "tiff_icc_absent",
+      "kind": "valid",
+      "value": 1,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "tiff_icc_valid",
+      "fixture": "tiff_icc_valid",
+      "kind": "valid",
+      "value": 1,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "tiff_icc_truncated",
+      "fixture": "tiff_icc_truncated",
+      "kind": "valid",
+      "value": 1,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "tiff_ori6_apply",
+      "fixture": "tiff_ori6_apply",
+      "kind": "valid",
+      "value": 6,
+      "apply_orientation": true
+    },
+    {
+      "case_id": "tiff_icc_oversized",
+      "fixture": "tiff_icc_oversized",
+      "kind": "valid",
+      "value": 1,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "unsupported_source",
+      "fixture": "unsupported_source",
+      "kind": "absent",
+      "value": null,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "cancel_metadata",
+      "fixture": "tiff_ori6",
+      "kind": "valid",
+      "value": 6,
+      "apply_orientation": false
+    },
+    {
+      "case_id": "timeout_metadata",
+      "fixture": "tiff_ori6",
+      "kind": "valid",
+      "value": 6,
+      "apply_orientation": false
+    }
+  ],
+  "cleanup": {
+    "complete": true,
+    "live_direct_children": []
+  },
+  "work_root_disposable": true
+}

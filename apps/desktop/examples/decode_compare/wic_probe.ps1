@@ -181,7 +181,13 @@ param(
 
     [string] $Roi = '',
 
-    [long] $MaxRoiOutputBytes = 0
+    [long] $MaxRoiOutputBytes = 0,
+
+    [switch] $Metadata,
+
+    [switch] $ApplyOrientation,
+
+    [long] $MaxMetadataBytes = 0
 )
 
 Set-StrictMode -Version 3.0
@@ -209,6 +215,10 @@ $script:traceEncoding = $null
 $script:roiRequested = $false
 $script:roiSpec = $null
 $script:roiSource = $null
+$script:metadataRequested = $false
+$script:orientationValue = $null
+$script:metadataSource = $null
+$script:transformSource = $null
 
 function Remove-InstrumentedFiles {
     $removed = $true
@@ -702,6 +712,7 @@ try {
     $result.bits_per_channel = $formatSpec.Depth
     $result.bits_per_pixel = $formatSpec.BitsPerPixel
 
+    $script:metadataRequested = [bool] $Metadata
     # Opt-in rectangle output. A successful rectangle is not a partial decode: the
     # cache mode and full-frame requirement stay explicit and the full-frame budget
     # below is never reduced by a small ROI.
@@ -830,6 +841,110 @@ try {
         })
     }
 
+    if ($script:metadataRequested) {
+        if ($MaxMetadataBytes -le 0) {
+            $result.outcome = 'error'
+            $result.reason_code = 'invalid_limits'
+            $result.reason = 'metadata observation requires a positive metadata byte bound'
+            Write-ProbeResult -Result $result -ExitCode $exitError
+        }
+        $result.metadata_requested = $true
+        try {
+        $result.metadata_available = $false
+        $result.metadata_format = $null
+        $result.orientation_present = $false
+        $result.orientation_readable = $false
+        $result.orientation_raw = $null
+        $result.orientation_interpreted = 'absent'
+        $result.icc_present = $false
+        $result.icc_readable = $false
+        $result.icc_length = $null
+        $result.icc_sha256 = $null
+        $result.colour_contexts = 0
+        $result.transform_requested = 'none'
+        $result.transform_applied = 'not_requested'
+        $result.output_width = $null
+        $result.output_height = $null
+        $metadataReader = $declaredFrame.Metadata
+        $result.metadata_available = $null -ne $metadataReader
+        if ($null -ne $metadataReader) {
+            $result.metadata_format = $metadataReader.GetType().Name
+            foreach ($query in @('/ifd/{ushort=274}', '/ifd/274', 'System.Photo.Orientation')) {
+                try {
+                    $value = $metadataReader.GetQuery($query)
+                }
+                catch { $value = $null }
+                if ($null -ne $value) {
+                    $result.orientation_present = $true
+                    $result.orientation_readable = $true
+                    $result.orientation_query = $query
+                    $result.orientation_raw = [int] $value
+                    $script:orientationValue = [int] $value
+                    break
+                }
+            }
+        }
+        if (-not $result.orientation_present) {
+            $result.orientation_interpreted = 'absent'
+        }
+        elseif ($result.orientation_raw -in 1, 3, 6, 8) {
+            $result.orientation_interpreted = @{ 1 = 'identity'; 3 = 'rotate_180'; 6 = 'rotate_90_cw'; 8 = 'rotate_90_ccw' }[$result.orientation_raw]
+            $script:orientationValue = $result.orientation_raw
+        }
+        else {
+            $result.orientation_interpreted = 'invalid_or_unsupported'
+        }
+        $contexts = $declaredFrame.ColorContexts
+        if ($null -ne $contexts) {
+            $result.colour_contexts = $contexts.Count
+            if ($contexts.Count -gt 0) {
+                $result.icc_present = $true
+                $context = $contexts[0]
+                $result.colour_context_uri = if ($null -ne $context.ProfileUri) { $context.ProfileUri.ToString() } else { $null }
+                try {
+                    $profileStream = $context.OpenProfileStream()
+                    if ($null -ne $profileStream) {
+                        $buffer = [byte[]]::new([int] $MaxMetadataBytes + 1)
+                        $read = 0
+                        while ($read -lt $buffer.Length) {
+                            $n = $profileStream.Read($buffer, $read, $buffer.Length - $read)
+                            if ($n -le 0) { break }
+                            $read += $n
+                        }
+                        $profileStream.Dispose()
+                        if ($read -gt $MaxMetadataBytes) {
+                            $result.outcome = 'oversize'
+                            $result.reason_code = 'metadata_cap_exceeded'
+                            $result.reason = 'ICC profile exceeds the metadata byte bound'
+                            $result.admission_status = 'refused'
+                            Write-ProbeTraceStage -Stage 'refused'
+                            Write-ProbeResult -Result $result -ExitCode $exitOversize
+                        }
+                        $result.icc_readable = $true
+                        $result.icc_length = [long] $read
+                        $sha = [System.Security.Cryptography.SHA256]::Create()
+                        try {
+                            $result.icc_sha256 = 'sha256:' + [System.BitConverter]::ToString(
+                                $sha.ComputeHash($buffer, 0, $read)).Replace('-', '').ToLowerInvariant()
+                        }
+                        finally { $sha.Dispose() }
+                    }
+                }
+                catch {
+                    $result.icc_readable = $false
+                    $result.icc_error = $_.Exception.GetType().Name
+                }
+            }
+        }
+        }
+        catch {
+            $result.outcome = 'error'
+            $result.reason_code = 'metadata_probe_error'
+            $result.reason = $_.Exception.GetType().Name + ': ' + $_.Exception.Message
+            Write-ProbeResult -Result $result -ExitCode $exitError
+        }
+    }
+
     # Admit and materialize the whole frame, then require real pixel access.
     $result.materialization = 'requested'
     $stream.Position = 0
@@ -855,6 +970,37 @@ try {
     Write-ProbeTraceStage -Stage 'copy_pixels_entered'
     $converted.CopyPixels([System.Windows.Int32Rect]::new(0, 0, 1, 1), $sample, 4, 0)
     Write-ProbeTraceStage -Stage 'copy_pixels_returned'
+
+    if ($script:metadataRequested -and $ApplyOrientation) {
+        if ($script:roiRequested) {
+            $result.outcome = 'error'
+            $result.reason_code = 'invalid_options'
+            $result.reason = 'explicit orientation transform and ROI are separate opt-in modes'
+            Write-ProbeResult -Result $result -ExitCode $exitError
+        }
+        if ($script:orientationValue -notin 1, 3, 6, 8) {
+            $result.outcome = 'unsupported'
+            $result.reason_code = 'orientation_transform_unavailable'
+            $result.reason = 'explicit transform requires a readable orientation value 1, 3, 6 or 8'
+            Write-ProbeResult -Result $result -ExitCode $exitUnsupported
+        }
+        if ($script:orientationValue -in 3, 6, 8) {
+            $angle = @{ 3 = 180.0; 6 = 90.0; 8 = 270.0 }[$script:orientationValue]
+            $rotate = [System.Windows.Media.RotateTransform]::new($angle)
+            $script:transformSource = [System.Windows.Media.Imaging.TransformedBitmap]::new($converted, $rotate)
+            $result.transform_requested = 'explicit_rotate_' + $angle.ToString('0')
+            $result.transform_applied = 'by_probe'
+        }
+        else {
+            $result.transform_requested = 'explicit_identity'
+            $result.transform_applied = 'by_probe_no_rotation'
+        }
+    }
+    if ($script:metadataRequested) {
+        $outputFrame = if ($null -ne $script:transformSource) { $script:transformSource } else { $converted }
+        $result.output_width = [long] $outputFrame.PixelWidth
+        $result.output_height = [long] $outputFrame.PixelHeight
+    }
 
     if ($script:roiRequested) {
         $roiStride = [int] $result.roi_width * 4
@@ -892,8 +1038,9 @@ try {
             $result.reason = 'unsupported output extension (.png and .bmp only)'
             Write-ProbeResult -Result $result -ExitCode $exitUnsupported
         }
+        $sharedSource = if ($null -ne $script:transformSource) { $script:transformSource } else { $converted }
         $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create(
-            $(if ($null -ne $script:roiSource) { $script:roiSource } else { $converted })))
+            $(if ($null -ne $script:roiSource) { $script:roiSource } else { $sharedSource })))
         if ($script:traceActive) {
             $pendingExtension = [System.IO.Path]::GetExtension($OutputPath).ToLowerInvariant()
             $script:pendingPath = [System.IO.Path]::Combine(

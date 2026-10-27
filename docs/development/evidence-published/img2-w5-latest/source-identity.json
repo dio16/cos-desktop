@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "start_commit": "37d4643c128598352c7052b859b2b4a74b25c4fa",
+  "taskern_packet_sha256": "sha256:42c979d2f487906762e51a09d07c776b296a40a38ea6c432830172f21e5d1360",
+  "source_identity": {
+    "files": {
+      "apps/desktop/devtools/img2/w2_resource_matrix.py": {
+        "bytes": 29498,
+        "lf_sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941",
+        "raw_sha256": "sha256:18224967ecd367d9eb584e45c35b63cebef5ba800760e192891096ba02e90816"
+      },
+      "apps/desktop/devtools/img2/w2_resource_verify.py": {
+        "bytes": 26365,
+        "lf_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
+        "raw_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7"
+      },
+      "apps/desktop/devtools/img2/w4_region_verify.py": {
+        "bytes": 18239,
+        "lf_sha256": "sha256:7450b7e4c77ac32ecdc431e51773bece8d151943424875814c65c7a32b2972f9",
+        "raw_sha256": "sha256:71db784140bd908e6cb89debe1433852c513bc46bb7fa0b95942e0f501164fef"
+      },
+      "apps/desktop/devtools/img2/w5_metadata_fixtures.py": {
+        "bytes": 9412,
+        "lf_sha256": "sha256:dc195973d36e30a74f362ca4abe6e1024b4f8a1ef381ed64aead98d62c22d0a5",
+        "raw_sha256": "sha256:51ee05e787fa3f6a0ea7b890b690d2db08547333fb59453c5ba736b1206ced96"
+      },
+      "apps/desktop/devtools/img2/w5_metadata_matrix.py": {
+        "bytes": 6818,
+        "lf_sha256": "sha256:1f20504b64848c1c6b030fbfaa2bdf44a9db244338c912235b6c56c8b1dfbc0e",
+        "raw_sha256": "sha256:1f20504b64848c1c6b030fbfaa2bdf44a9db244338c912235b6c56c8b1dfbc0e"
+      },
+      "apps/desktop/devtools/img2/w5_metadata_oracle.py": {
+        "bytes": 6904,
+        "lf_sha256": "sha256:bb2910bac17c47677058bb79ca24b21f3a87356d1a0b432c9427a37193bbab60",
+        "raw_sha256": "sha256:0cc238526ca88b5fb3e108e113dba53cf79a55d169de7f81339ffbb68174572d"
+      },
+      "apps/desktop/devtools/img2/w5_metadata_verify.py": {
+        "bytes": 15206,
+        "lf_sha256": "sha256:50753a4fd5d6b887ed6708dcef49804b4c04a4644950fe8fb90f85f57641910d",
+        "raw_sha256": "sha256:14070fbb7f0ca6d841a11e152ae5a1d132c1ae63bc77f10011ab0b73f5fd6fb4"
+      },
+      "apps/desktop/examples/decode_compare/harness.rs": {
+        "bytes": 163269,
+        "lf_sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896",
+        "raw_sha256": "sha256:ed6b0b45437a036aa8b6ae274829d0001e6b53c0e8301c4a39c4548cd1b2cacf"
+      },
+      "apps/desktop/examples/decode_compare/inspect.rs": {
+        "bytes": 25173,
+        "lf_sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558",
+        "raw_sha256": "sha256:8edd645b943e3821d546494871a915df64aa17c14d4fbd43a8de02ea5f1ca1bc"
+      },
+      "apps/desktop/examples/decode_compare/pixels.rs": {
+        "bytes": 28621,
+        "lf_sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136",
+        "raw_sha256": "sha256:55fb88e8f81dfc63836c89f3a82c5ad27b3a05441fdfae890765c578173abe73"
+      },
+      "apps/desktop/examples/decode_compare/wic_admission.ps1": {
+        "bytes": 6399,
+        "lf_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
+        "raw_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5"
+      },
+      "apps/desktop/examples/decode_compare/wic_probe.ps1": {
+        "bytes": 52168,
+        "lf_sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c",
+        "raw_sha256": "sha256:32666558c588ae93be5fc929f54307398aeddadf4458c5bdb80780e8e7bf9741"
+      },
+      "apps/desktop/tests/decode_compare_harness.rs": {
+        "bytes": 203960,
+        "lf_sha256": "sha256:4cd3d0c9409a8ff02f5233f08ca5bbe4a3504826b8eda1b41635845abe54ee8d",
+        "raw_sha256": "sha256:4cd3d0c9409a8ff02f5233f08ca5bbe4a3504826b8eda1b41635845abe54ee8d"
+      },
+      "apps/desktop/tests/wic_admission_selftest.ps1": {
+        "bytes": 3407,
+        "lf_sha256": "sha256:6908a1f75ae05097c649d59d9bfe1bd75dd8f16cedd13531159ffc0f03cf4a70",
+        "raw_sha256": "sha256:fa76c858b058c57173a60aba28ff329fe626656f7b40149599dbbf61b553a429"
+      }
+    },
+    "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
+  },
+  "meaning": "Source identity of the retained WIC run; product/Gate binding added after commit."
+}

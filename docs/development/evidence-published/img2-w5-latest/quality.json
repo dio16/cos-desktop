@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "scope": "W5 real Windows CLI; no GUI/product policy claim",
+  "checks": {
+    "w5-quality-ps": {
+      "name": "w5-quality-ps",
+      "start": "2026-10-27T19:11:50.761Z",
+      "end": "2026-10-27T19:12:21.581Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:0a5c8af20e85e93f7a5e1e750b51fbc16cb9922086fdec0139aebe5cc802c6b6",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w5-img2": {
+      "name": "w5-img2",
+      "start": "2026-10-27T19:10:43.799Z",
+      "end": "2026-10-27T19:10:45.090Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:1ab90e75371b9eef5ba1a44adecd49f2cd2b0b78e51af2acbe92ca1dfc701fa3"
+    },
+    "w5-tests2": {
+      "name": "w5-tests2",
+      "start": "2026-10-27T19:10:43.795Z",
+      "end": "2026-10-27T19:10:44.099Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:2db1ae0645265092dc82b06846b7a7f1999dce1a4f0273e604e1e245e755792a"
+    },
+    "w5-w3-replay": {
+      "name": "w5-w3-replay",
+      "start": "2026-10-27T19:11:50.771Z",
+      "end": "2026-10-27T19:11:52.044Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:b5ed1d72736ab0e375221a676854ccffc5bb59174f770f87c6dc4d020893fc35",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w5-w4-replay": {
+      "name": "w5-w4-replay",
+      "start": "2026-10-27T19:11:50.780Z",
+      "end": "2026-10-27T19:11:50.997Z",
+      "exit": 1,
+      "signal": null,
+      "stdout_sha256": "sha256:174345af538b6e940f2bd2cced55ec5c8de8b5df637446631158f43799fa18c5",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w5-wic-selftest": {
+      "name": "w5-wic-selftest",
+      "start": "2026-10-27T19:11:50.789Z",
+      "end": "2026-10-27T19:11:51.769Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:a83888ce721623ea98cc2060a8462e6a14066f632a3a81105762ba56fe3b6f93",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w5-r0": {
+      "name": "w5-r0",
+      "start": "2026-10-27T19:11:50.801Z",
+      "end": "2026-10-27T19:12:16.009Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:f5abb98468b10c82e5ea77c46a371be397f06f8435a426d1915ebe892c35aae1",
+      "stderr_sha256": "sha256:696bfb41a9285c10529622d243ce0c5634ac1cf5a17d2f45caf9af73d3980269"
+    },
+    "w5-feature-clippy": {
+      "name": "w5-feature-clippy",
+      "start": "2026-10-27T19:12:46.218Z",
+      "end": "2026-10-27T19:12:56.693Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:95b15e4f8811a63e54f4c069b2e133193e1cb7b515c246f004c1cccb979c4abf"
+    },
+    "w5-feature-build": {
+      "name": "w5-feature-build",
+      "start": "2026-10-27T19:12:46.224Z",
+      "end": "2026-10-27T19:12:53.693Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:cc18f4feae802d0390a40163819652630eeb3545314d891c4da0ed8ff2c892dd"
+    },
+    "w5-feature-tests": {
+      "name": "w5-feature-tests",
+      "start": "2026-10-27T19:12:46.231Z",
+      "end": "2026-10-27T19:13:39.249Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:ba3ea461a918c20cd0981115420516850106b2393871ecc49cb4f47012228f04",
+      "stderr_sha256": "sha256:9179e8d47f1eb73ea3c2be77d716d9435a01388a07eb787195e1dae262d2c12c"
+    }
+  },
+  "rust": {
+    "passed": 535,
+    "failed": 0,
+    "ignored": 1
+  },
+  "feature_rust": {
+    "passed": 539,
+    "failed": 0,
+    "ignored": 1
+  },
+  "python_img2": 128,
+  "w5_portable": 16,
+  "r0": {
+    "total": 352,
+    "passed": 340,
+    "skipped": 12
+  },
+  "w1_w4_regressions": "W3 historical f8dfc30 replay, W4 historical e357888e replay, WIC admission selftest",
+  "negative_tests": 16,
+  "ambient": "User-global Cargo rustflags add -fuse-ld=lld; MSVC link.exe LNK4044 ignores it; not a Rust lint or Gate failure."
+}

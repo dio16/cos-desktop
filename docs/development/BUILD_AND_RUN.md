@@ -851,6 +851,33 @@ malformed/unsupported source, cancellation and timeout. The PNG/BMP oracle
 reconstructs the source raster independently and slices the exact expected ROI;
 WIC output never supplies an expectation.
 
+### 4.25 MP-IMG2-W5 orientation and ICC metadata classification (2026-10-27)
+
+W5 adds opt-in `-Metadata -MaxMetadataBytes` and `-ApplyOrientation` to the managed
+WIC probe. Metadata is read after full-frame admission and before `OnLoad`; the
+profile stream is capped. A missing tag is not defaulted. Orientation presence,
+raw value, interpretation, WIC automatic application and an explicit probe
+rotation are separate fields. ICC presence/readability/length/digest are separate
+from application and colour fidelity; neither is claimed from format conversion.
+
+```powershell
+cargo build --locked -p cos-desktop --example decode_compare
+python -B apps/desktop/devtools/img2/w5_metadata_matrix.py run `
+  --work-root <absolute-absent-owned-directory> --out <absolute-absent-report.json> `
+  --pwsh <absolute-qualified-pwsh.exe>
+python -B apps/desktop/devtools/img2/w5_metadata_matrix.py verify `
+  --report docs/development/evidence-published/img2-w5-latest/metadata-native-matrix.json `
+  --source-root <repository>
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_w5*.py"
+```
+
+The bounded set covers PNG/BMP metadata absence, TIFF orientation 1/3/6/8,
+invalid and conflicting orientation, explicit rotation, ICC absent/valid/
+truncated/over-cap, unsupported container, cancellation and timeout. The
+independent oracle parses TIFF IFD/strips, PNG and BMP24 itself and defines all
+rotations from stored pixels. The cap case admits the full frame, refuses
+`metadata_cap_exceeded` before OnLoad and publishes nothing.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |

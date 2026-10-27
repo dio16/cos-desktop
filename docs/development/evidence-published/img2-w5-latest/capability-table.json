@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "rows": [
+    {
+      "case_id": "png_plain",
+      "codec": "png",
+      "source_format": "Bgr24",
+      "orientation_metadata": "ABSENT",
+      "orientation_value": null,
+      "orientation_application": "NOT_OBSERVED",
+      "ICC_presence": "ABSENT",
+      "ICC_readability": "NOT_APPLICABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        3,
+        2
+      ],
+      "limitation": "rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate"
+    },
+    {
+      "case_id": "bmp24_plain",
+      "codec": "bmp",
+      "source_format": "Bgr24",
+      "orientation_metadata": "ABSENT",
+      "orientation_value": null,
+      "orientation_application": "NOT_OBSERVED",
+      "ICC_presence": "ABSENT",
+      "ICC_readability": "NOT_APPLICABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        3,
+        2
+      ],
+      "limitation": "rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate"
+    },
+    {
+      "case_id": "tiff_ori1",
+      "codec": "tif",
+      "source_format": "Bgr24",
+      "orientation_metadata": "OBSERVED",
+      "orientation_value": 1,
+      "orientation_application": "NOT_OBSERVED",
+      "ICC_presence": "ABSENT",
+      "ICC_readability": "NOT_APPLICABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        3,
+        2
+      ],
+      "limitation": "rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate"
+    },
+    {
+      "case_id": "tiff_ori3",
+      "codec": "tif",
+      "source_format": "Bgr24",
+      "orientation_metadata": "OBSERVED",
+      "orientation_value": 3,
+      "orientation_application": "NOT_OBSERVED",
+      "ICC_presence": "ABSENT",
+      "ICC_readability": "NOT_APPLICABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        3,
+        2
+      ],
+      "limitation": "rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate"
+    },
+    {
+      "case_id": "tiff_ori6",
+      "codec": "tif",
+      "source_format": "Bgr24",
+      "orientation_metadata": "OBSERVED",
+      "orientation_value": 6,
+      "orientation_application": "NOT_OBSERVED",
+      "ICC_presence": "ABSENT",
+      "ICC_readability": "NOT_APPLICABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        3,
+        2
+      ],
+      "limitation": "rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate"
+    },
+    {
+      "case_id": "tiff_ori8",
+      "codec": "tif",
+      "source_format": "Bgr24",
+      "orientation_metadata": "OBSERVED",
+      "orientation_value": 8,
+      "orientation_application": "NOT_OBSERVED",
+      "ICC_presence": "ABSENT",
+      "ICC_readability": "NOT_APPLICABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        3,
+        2
+      ],
+      "limitation": "rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate"
+    },
+    {
+      "case_id": "tiff_ori_invalid",
+      "codec": "tif",
+      "source_format": "Bgr24",
+      "orientation_metadata": "OBSERVED",
+      "orientation_value": 99,
+      "orientation_application": "NOT_OBSERVED",
+      "ICC_presence": "ABSENT",
+      "ICC_readability": "NOT_APPLICABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        3,
+        2
+      ],
+      "limitation": "rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate"
+    },
+    {
+      "case_id": "tiff_ori_conflict",
+      "codec": "tif",
+      "source_format": "Bgr24",
+      "orientation_metadata": "OBSERVED",
+      "orientation_value": 6,
+      "orientation_application": "NOT_OBSERVED",
+      "ICC_presence": "ABSENT",
+      "ICC_readability": "NOT_APPLICABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        3,
+        2
+      ],
+      "limitation": "rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate"
+    },
+    {
+      "case_id": "tiff_icc_absent",
+      "codec": "tif",
+      "source_format": "Bgr24",
+      "orientation_metadata": "OBSERVED",
+      "orientation_value": 1,
+      "orientation_application": "NOT_OBSERVED",
+      "ICC_presence": "ABSENT",
+      "ICC_readability": "NOT_APPLICABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        3,
+        2
+      ],
+      "limitation": "rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate"
+    },
+    {
+      "case_id": "tiff_icc_valid",
+      "codec": "tif",
+      "source_format": "Bgr24",
+      "orientation_metadata": "OBSERVED",
+      "orientation_value": 1,
+      "orientation_application": "NOT_OBSERVED",
+      "ICC_presence": "VERIFIED",
+      "ICC_readability": "VERIFIED",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        3,
+        2
+      ],
+      "limitation": "rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate"
+    },
+    {
+      "case_id": "tiff_icc_truncated",
+      "codec": "tif",
+      "source_format": "Bgr24",
+      "orientation_metadata": "OBSERVED",
+      "orientation_value": 1,
+      "orientation_application": "NOT_OBSERVED",
+      "ICC_presence": "INVALID_TAG_IGNORED",
+      "ICC_readability": "NOT_READABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        3,
+        2
+      ],
+      "limitation": "rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate"
+    },
+    {
+      "case_id": "tiff_ori6_apply",
+      "codec": "tif",
+      "source_format": "Bgr24",
+      "orientation_metadata": "OBSERVED",
+      "orientation_value": 6,
+      "orientation_application": "VERIFIED",
+      "ICC_presence": "ABSENT",
+      "ICC_readability": "NOT_APPLICABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "ENFORCED",
+      "decoded_output": "VERIFIED",
+      "measured_source_dimensions": [
+        3,
+        2
+      ],
+      "measured_output_dimensions": [
+        2,
+        3
+      ],
+      "limitation": "explicit probe rotation, not a product policy"
+    },
+    {
+      "case_id": "tiff_icc_oversized",
+      "codec": "tiff",
+      "orientation_metadata": "OBSERVED",
+      "orientation_value": 1,
+      "orientation_application": "NOT_RUN",
+      "ICC_presence": "OBSERVED",
+      "ICC_readability": "REFUSED_CAP",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "admitted_then_metadata_refused",
+      "decoded_output": "REFUSED",
+      "limitation": "metadata byte bound"
+    },
+    {
+      "case_id": "unsupported_source",
+      "codec": "bmp",
+      "orientation_metadata": "UNAVAILABLE",
+      "ICC_presence": "UNAVAILABLE",
+      "ICC_readability": "UNAVAILABLE",
+      "ICC_application": "NOT_VERIFIED",
+      "colour_transform_fidelity": "NOT_VERIFIED",
+      "full_frame_admission": "not_enforced",
+      "decoded_output": "UNSUPPORTED",
+      "limitation": "unsupported container is not a metadata capability"
+    }
+  ],
+  "vocabulary": {
+    "VERIFIED": "observed and independently verified for this measured case",
+    "OBSERVED": "observed but not sufficient for verified",
+    "NOT_VERIFIED": "not proven",
+    "NOT_MEASURED": "no endpoint",
+    "NOT_RUN": "not executed",
+    "UNSUPPORTED": "actual unsupported response",
+    "UNAVAILABLE": "no capability offered"
+  },
+  "scope": "Only listed codecs/cases; no all-codec generalisation; product ICC/orientation policy is DESIGN_BLOCKED."
+}

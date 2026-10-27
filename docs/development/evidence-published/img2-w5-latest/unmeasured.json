@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "unmeasured": [
+    "WIC internal colour pipeline and scratch",
+    "allocator reservations",
+    "true concurrent allocation peak",
+    "cooperative in-decoder cancellation",
+    "16K full decode",
+    "true region/sequential/tiled decode",
+    "ICC colour transform fidelity",
+    "JPEG absolute raster",
+    "product orientation/colour policy"
+  ],
+  "not_verified": [
+    "ICC profile application",
+    "ICC colour-transform fidelity",
+    "all-codec orientation support",
+    "JPEG absolute raster",
+    "true region/sequential/tiled decode",
+    "cooperative cancellation"
+  ],
+  "design_blocked": [
+    "product ICC colour policy",
+    "product orientation/display policy",
+    "canonical identity metadata inclusion"
+  ],
+  "not_closed": [
+    "full Decode Exit",
+    "MP-IMG3",
+    "Runtime RC-*",
+    "measured R0D",
+    "UX/video",
+    "main/release"
+  ]
+}

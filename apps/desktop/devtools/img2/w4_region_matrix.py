@@ -145,13 +145,32 @@ def main(argv=None):
     check = sub.add_parser("verify")
     check.add_argument("--report", required=True, type=Path)
     check.add_argument("--source-root", type=Path)
+    check.add_argument("--source-commit")
     args = parser.parse_args(argv)
     try:
         if args.op == "run":
             record = run(args.work_root, args.out, args.pwsh)
             result = verify(record, ROOT)
         else:
-            result = verify(json.loads(args.report.read_bytes()), args.source_root)
+            source_root = args.source_root
+            temporary = None
+            if args.source_commit:
+                import tempfile, shutil
+                temporary = Path(tempfile.mkdtemp())
+                git = os.environ.get("GIT_EXECUTABLE") or shutil.which("git") or "C:/Program Files/Git/cmd/git.exe"
+                for name in SOURCE_FILES:
+                    target = temporary / name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(subprocess.run(
+                        [git, "show", f"{args.source_commit}:{name}"],
+                        cwd=ROOT, check=True, stdout=subprocess.PIPE).stdout)
+                source_root = temporary
+            try:
+                result = verify(json.loads(args.report.read_bytes()), source_root)
+            finally:
+                if temporary is not None:
+                    import shutil
+                    shutil.rmtree(temporary, ignore_errors=True)
         print(json.dumps(result, sort_keys=True))
         return 0 if result["ok"] else 1
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as exc:

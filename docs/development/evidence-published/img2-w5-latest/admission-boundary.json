@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "metadata_cap_case": "tiff_icc_oversized",
+  "outcome": "oversize",
+  "reason_code": "metadata_cap_exceeded",
+  "materialization": "not_requested",
+  "output_present": false,
+  "full_frame_admission": "still enforced before metadata read",
+  "meaning": "Metadata observation cannot bypass full-frame admission or publish output."
+}
