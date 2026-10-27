@@ -1,42 +1,29 @@
-MP-IMG2-W3 再評価 Round 4 — A-W3-R3-01（証拠パッケージ対応）のみの修正です。Round 3の完全な HOLD 0 BLOCKING / 1 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE、assistant 781b9b27-5840-4252-aedf-6b8aa3a50005 / request d1ff53e4-4378-4057-9134-b8dfe9aa03ef はそのまま保持し、A-W3-R2-01はCLOSEDとして変更していません。
+MP-IMG2-W3 再評価 Round 5 — A-W3-R4-01（更新後MP本文の欠落）のみの修正です。Round 4の完全な HOLD 0 BLOCKING / 1 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE、assistant 50d1f4c8-6995-41fd-a2a7-87dd4ff23650 / request ea184650-1d1a-4271-b262-b31e437b3f7a はそのまま保持しています。A-W3-R2-01はCLOSEDのまま、製品コードは変更していません。
 
-Repository dio16/cos-desktop、branch dev。製品の固定ソース候補は f8dfc3009fd7526e1b055968e2fc19892c007190 のまま。今回のdocs-only修正後の一意な証拠HEADは 481a29e4b2e5186fff44993cfb0f2da290cab9fb、package manifestのcommitは b923e7de9e8105a1aa8f110827c22de424a3421b（証拠HEADの直系の子）。remote pushはしていません。製品コード、Native実測、Taskern、Refine Gateは変更も再実行もしていません。
+Repository dio16/cos-desktop、branch dev。固定ソース候補は f8dfc3009fd7526e1b055968e2fc19892c007190 のまま。今回の一意な証拠HEADは fe516b2c4ef318ab720956afd796190141be2e81、package manifestのcommitは 05f97b281adb2d5a955cc578734f00a6f438f803（証拠HEADの直系の子）。remote pushはしていません。製品SOURCE、Native実測、Taskern、Refine Gateは変更も再実行もしていません。
 
 添付を実際に開いて確認してください。
 1. w3-awn2-review-source.zip: 44 entries、572,901 bytes、sha256:749157c24fd1cd5eb08222d5ee61ee54a3586c9196e2dcf0de66311319a046ad。固定ソース候補のgit archive。
-2. w3-awn2-review-evidence.zip: 71 entries、238,971 bytes、sha256:6e2ca1fe851139ffc499e5c678abad09703c99599f187a8bd7d9ddf286f55355。証拠HEAD 481a29e… のgit archive。
-3. review-package.json: 両ZIPのbytes/sha256、evidence_head、commit chain、50/53一致と3件のdocs-only差分、SOURCE manifestの同梱を明記。自身のarchive/commitを含められない理由と、manifestが証拠HEADの直系の子であることも明記。
+2. w3-awn2-review-evidence.zip: 76 entries、381,898 bytes、sha256:1716f878274f18e73cc046a23199965b37117a7797b80c2b8cc0e9021495f658。証拠HEAD fe516b2… のgit archive。
+3. review-package.json: 両ZIPのbytes/sha256、evidence_head、commit chain、53 artifact比較、SOURCE manifest、変更33パス（すべてdocs）、Round 5 bundleのファイル別bytes/sha256を記録。
 
-A-W3-R3-01への対応:
-① 証拠HEADの一意化
-- 固定ソース: f8dfc30（製品候補、両Gateのcandidate）
-- 証拠保持: 18ad601
-- storage closure: f5ec02f
-- Round 3 request metadata: 83a847f
-- Round 3 package identity: f34370a
-- Round 4 evidence HEAD: 481a29e
-- package manifest commit: b923e7d（481a29eの直系の子）
-Round 3のrequestがf5ec02f、packageが83a847fと別名だった理由（requestをcommitした後にZIPを生成したため）と、両方が同一製品候補のdocs-only子孫であることを reconciliation に記録。Round 4からはreview-package.jsonのevidence_headとZIP実バイトが同じOIDを指します。
+A-W3-R4-01への対応（更新後MP本文の同梱）:
+- 証拠HEADのMP実バイトを review-round4/IMPLEMENTATION_MASTER_PLAN.md に同梱。421,190 bytes、sha256:e80718cd25a4871dd11be54ab022feb2a5fa907c3cb3bbdc5a6339d6cf12e95e。これは証拠HEADの docs/development/IMPLEMENTATION_MASTER_PLAN.md と同一blob（LF）で、package manifestにも同じSHA256を記録。
+- Gate捕捉版（419,316 bytes、sha256:65ca2532bdccb705e0283c02efb05174071cc7c98edc19d63a384f077487a1cb）との差分を review-round4/plan-capture-to-head.diff に同梱。6,696 bytes、sha256:a5306aa4d8b439fe73fa54244b6131bff3946649c459d3028590863544893cb6。MPの追加3行・削除1行だけで、内訳は (a) Round 2文の時刻依存表現の修正、(b) Round 3 bullet、(c) Round 4 bullet。既存のGate ID、判定、測定値、hard prerequisitesは書き換えていません。
+- review-history.json も証拠HEAD版（4,647 bytes、sha256:4634e0e9873a0cd576f09addc7e5004e2570512fb90a30d8c647bcafc2574f70）を同梱し、Round 3/4のreceiptリンクとcurrentのみ追加。過去のverdictは不変。
+- document-validation.json は証拠HEADのトップレベル（img2-w3-latest配下）に279 bytesで収録され、ZIP内で独立に取得可能。19.54/19.55/19.56の存在、見出し163→164、旧見出し欠落0、相対evidence link 82件の解決を記録。
+- review-round4/changed-documents.json が上記のbytes/sha256、差分の範囲、保持section、製品非変更を一覧化。
 
-② Gate捕捉後docs-only差分の明示
-review-round3-package-reconciliation.json に、53 artifactのcaptureと証拠HEADの実バイト比較を記録。
-- 50/53 byte-identical
-- 差分3件はすべてdocs-only:
-  a. review-history.json（Round 2 snapshot名のrenameとcurrent文）
-  b. IMPLEMENTATION_MASTER_PLAN.md（Gate完了後にstaleにならない1文の修正＋Round 3 bullet）
-  c. document-validation.json（Round 4のリンク検証更新、242→237 bytes）
-- 非docs変更0件。Native 16 source bindings、WIC probe/decoder、BMP fixture、oracle、crates/media、consumer、Gate authority/artifactsはcaptureのまま。Gate失敗・受入転用・改ざんではありません。
-
-③ 今回SOURCE 44件のmanifest同梱
-- 証拠ZIPに review-package-source.json（今回44 entries、raw/LF区別）を同梱。
-- review-package.json がそのentry数とZIP digestを記録。
-- 過去roundのmanifestはreview-round1-*/review-round2-*として保持。
+53 Gate artifactのcapture対比:
+- 50/53 byte-identical。
+- 差分3件はdocs-only: review-history.json、IMPLEMENTATION_MASTER_PLAN.md、document-validation.json。
+- 非docs変更0件。候補f8dfc30から証拠HEAD fe516b2までの変更33パスはすべて docs/ 配下で、WIC probe/decoder、fixture、oracle、crates/media、consumer、Runtime、Taskernは含みません。Native 16 source bindingsと53 tuplesはcaptureどおり。
 
 確認してほしい点:
-1. A-W3-R3-01の3点（一意な証拠HEAD、Gate捕捉後のdocs-only差分の説明、今回SOURCE manifest）が実バイトとOIDで閉じているか。
-2. 差分3件が本当にdocs-onlyで、製品SOURCE/Native/53 Gate artifact tuples/16 source bindingsを変更していないか。
-3. Round 3でCLOSEDとしたA-W3-R2-01と、Bgr565限定技術事実を損なっていないか。
+1. 同梱MPの実バイトが宣言SHA256 e80718… と一致し、Gate捕捉版から差分ファイルどおり（docs-only）であること。
+2. §19.54/19.55/19.56と既存hard prerequisitesが保持され、製品SOURCE/Native/Gate artifactが不変であること。
+3. A-W3-R3-01の①③とA-W3-R2-01が維持され、A-W3-R4-01が閉じること。
 
-既存の成功Gateを再実行しない判断が適切かも確認してください。WIC内部stride/scratch、実予約、真の同時peak、16K、region/sequential/tiled、cooperative cancellation、ICC/orientation、JPEG absolute raster、full Decode/Upload、Runtime、measured R0は引き続き未測定です。W3をfull MP-IMG2完了とは呼びません。実Windows/GUI再実行をレビュー環境で行ったとは主張しないでください。
+既存の成功Gateを再実行しない判断の妥当性も確認してください。WIC内部stride/scratch、実予約、真の同時peak、16K、region/sequential/tiled、cooperative cancellation、ICC/orientation、JPEG absolute raster、full Decode/Upload、Runtime、measured R0は引き続き未測定です。W3をfull MP-IMG2完了とは呼びません。実Windows/GUI再実行をレビュー環境で行ったとは主張しないでください。
 
 BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記してください。添付読取不能や未完了なら明示してください。今回も添付から独立に検証し、最後に REVIEW COMPLETE と最終 verdict / counts を記してください。
