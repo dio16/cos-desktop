@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "candidate": "81383f062d13ca89763d8bf19de06e4f3a6e33d7",
+  "quality_gate": "1b1d4373-c063-4ff7-bfce-d68a4f099a48",
+  "build_gate": "629abe26-46b8-427e-b903-8376a9a06daa",
+  "rust": {
+    "passed": 535,
+    "failed": 0,
+    "ignored": 1
+  },
+  "img2": {
+    "total": 132,
+    "ok": true
+  },
+  "r0": {
+    "total": 352,
+    "passed": 316,
+    "skipped": 36,
+    "failures": 0,
+    "errors": 0
+  },
+  "ordinary_workspace": {
+    "rust": {
+      "passed": 535,
+      "ignored": 1
+    },
+    "feature_rust": {
+      "passed": 539,
+      "ignored": 1
+    },
+    "img2": 128,
+    "w5_portable": 20,
+    "r0": {
+      "total": 352,
+      "passed": 340,
+      "skipped": 12
+    }
+  }
+}
