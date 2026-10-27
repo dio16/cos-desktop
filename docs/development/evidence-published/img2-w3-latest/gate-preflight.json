@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "candidate": "a6488236a009d82da8e4abbce5818909326c3d17",
+  "reports": {
+    "quality": {
+      "exit": 0,
+      "outcome": "unknown",
+      "nonpassing": [
+        {
+          "id": "check_runtime",
+          "outcome": "unknown",
+          "message": "toolchain/SDK runtime compatibility, command results and timeout sufficiency require a real check; none was launched"
+        },
+        {
+          "id": "outputs",
+          "outcome": "unknown",
+          "message": "declared output paths are structurally admitted; existence, scope and delivery remain candidate/runtime and caller checks"
+        },
+        {
+          "id": "authorization",
+          "outcome": "unknown",
+          "message": "caller permission and domain acceptance are external and cannot be established by preflight"
+        }
+      ]
+    },
+    "build": {
+      "exit": 0,
+      "outcome": "unknown",
+      "nonpassing": [
+        {
+          "id": "check_runtime",
+          "outcome": "unknown",
+          "message": "toolchain/SDK runtime compatibility, command results and timeout sufficiency require a real check; none was launched"
+        },
+        {
+          "id": "outputs",
+          "outcome": "unknown",
+          "message": "declared output paths are structurally admitted; existence, scope and delivery remain candidate/runtime and caller checks"
+        },
+        {
+          "id": "authorization",
+          "outcome": "unknown",
+          "message": "caller permission and domain acceptance are external and cannot be established by preflight"
+        }
+      ]
+    }
+  },
+  "caller_resolution": "External runtime/toolchain/output/authorization UNKNOWN remains UNKNOWN. Caller continuous implementation grant authorizes these exact bounded pinned checks; qualified toolchain and SDK were actually exercised locally. Proceed at bounded trusted_local risk, not static PASS."
+}

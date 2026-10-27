@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "candidate": "a6488236a009d82da8e4abbce5818909326c3d17",
+  "gate_id": "0590ae30-dbd3-4966-bb93-bfc895bf6ff8",
+  "status": "PREPARED_NOT_YET_DISPOSED",
+  "ownership": "new exact W3 Caller-authorized Gate and its per-check targets; accepted-ID bound",
+  "paths": [
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\0590ae30-dbd3-4966-bb93-bfc895bf6ff8\\work\\repo",
+      "files": 429,
+      "logical_bytes": 12392371,
+      "no_reparse": true
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\clippy",
+      "files": 3015,
+      "logical_bytes": 663881315,
+      "no_reparse": true
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\tests",
+      "files": 3144,
+      "logical_bytes": 1841526443,
+      "no_reparse": true
+    }
+  ],
+  "live_process_dependencies": [],
+  "native_before_verify": "superseded-initial-quality.json verify",
+  "retained": "pinned candidate and objects under dev; native state/authority/artifacts/logs outside work/repo remain",
+  "storage_measurement": "logical bytes/files, not filesystem allocated space"
+}
