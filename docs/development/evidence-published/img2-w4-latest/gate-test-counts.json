@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "candidate": "f1495133562b644a41bb2d4bdb8108cd04dede41",
+  "quality_gate": "f7ea3916-f489-4152-b8f9-06a142d9e2c7",
+  "build_gate": "2d68baa4-4348-49fd-a2bd-ae52f9b11a98",
+  "rust": {
+    "passed": 535,
+    "failed": 0,
+    "ignored": 1
+  },
+  "img2": {
+    "total": 101,
+    "ok": true
+  },
+  "r0": {
+    "total": 352,
+    "passed": 316,
+    "skipped": 36,
+    "failures": 0,
+    "errors": 0,
+    "skip_reasons": {
+      "NOT_RUN: Windows PowerShell is not on PATH": 14,
+      "NOT_RUN: no powershell.exe for an absolute-path check": 1,
+      "NOT_RUN: the new-baseline N07 inputs are not present in this checkout": 11,
+      "NOT_RUN: the retained S2 bundle is not present in this checkout": 7,
+      "NOT_RUN: the retained S2 bundle is not present in this checkout; no simulated replay is substituted": 1,
+      "NOT_RUN: the retained S2B bundle is not present in this checkout": 2
+    },
+    "skipped_cases_sha256": "sha256:5db3fa45fd1a7a9469a10041099ee6a9fc9fc2c265a893825c1ab163b1d9a90c"
+  },
+  "warnings": [],
+  "ordinary_workspace": {
+    "rust": {
+      "passed": 535,
+      "ignored": 1
+    },
+    "feature_rust": {
+      "passed": 539,
+      "ignored": 1
+    },
+    "img2": 101,
+    "r0": {
+      "total": 352,
+      "passed": 340,
+      "skipped": 12
+    }
+  },
+  "r0_scope": "Isolated sanitized availability differs from the ordinary workspace; skips are retained and never counted as PASS."
+}

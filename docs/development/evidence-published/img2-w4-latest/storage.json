@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "candidate": "f1495133562b644a41bb2d4bdb8108cd04dede41",
+  "status": "PREPARED_AFTER_SUCCESSFUL_TERMINAL_VERIFY",
+  "quality_gate": "f7ea3916-f489-4152-b8f9-06a142d9e2c7",
+  "build_gate": "2d68baa4-4348-49fd-a2bd-ae52f9b11a98",
+  "paths": [
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\f7ea3916-f489-4152-b8f9-06a142d9e2c7\\work\\repo",
+      "files": 512,
+      "logical_bytes": 14221166,
+      "no_reparse": true,
+      "removed": false
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\2d68baa4-4348-49fd-a2bd-ae52f9b11a98\\work\\repo",
+      "files": 512,
+      "logical_bytes": 14220791,
+      "no_reparse": true,
+      "removed": false
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r6\\clippy",
+      "files": 3015,
+      "logical_bytes": 663884472,
+      "no_reparse": true,
+      "removed": false
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r6\\tests",
+      "files": 3144,
+      "logical_bytes": 1841546576,
+      "no_reparse": true,
+      "removed": false
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r6\\build",
+      "files": 2911,
+      "logical_bytes": 1593013408,
+      "no_reparse": true,
+      "removed": false
+    }
+  ],
+  "live_process_dependencies": [],
+  "retained_source": "Complete pinned candidate and required Git objects under dev; all Gate correspondence retained.",
+  "retained_authority": "Gate authority/artifacts/logs, ordinary target, real Native outputs and failed/older workspaces remain outside these exact paths.",
+  "native_verify_before": "quality-gate.json and build-gate.json verify with exit 0; both successful terminal, dead owner, no recovery, cleanup complete.",
+  "measurement": "Logical byte/file counts, not allocated or physically reclaimed storage."
+}

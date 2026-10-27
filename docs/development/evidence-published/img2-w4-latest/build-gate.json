@@ -1,0 +1,623 @@
+{
+  "schema_version": 1,
+  "id": "2d68baa4-4348-49fd-a2bd-ae52f9b11a98",
+  "candidate": "f1495133562b644a41bb2d4bdb8108cd04dede41",
+  "status": {
+    "cli_interface_version": 2,
+    "operation": "gate.status",
+    "outcome": {
+      "schema_version": 1,
+      "result": {
+        "schema_version": 1,
+        "gate_id": "2d68baa4-4348-49fd-a2bd-ae52f9b11a98",
+        "gate_label": "mp-img2-w4-build",
+        "state": "SUCCEEDED",
+        "updated_at": "2026-10-27T18:01:00.290006800Z",
+        "owner_alive": false,
+        "recovery_required": false
+      }
+    }
+  },
+  "inspect": {
+    "cli_interface_version": 2,
+    "operation": "gate.inspect",
+    "outcome": {
+      "schema_version": 1,
+      "result": {
+        "schema_version": 1,
+        "gate_id": "2d68baa4-4348-49fd-a2bd-ae52f9b11a98",
+        "gate_label": "mp-img2-w4-build",
+        "request_sha256": "sha256:42ddf4f619cf021c64f7d69fe473191a785fb70408f1d14d751e640b25ba84a5",
+        "terminal_state_sha256": "sha256:553cd38a3f1f0638ed03370c33a2531d5e3a0ce94819e7a538c23350e3062d33",
+        "runtime": {
+          "refine_version": "0.3.1",
+          "os": "windows",
+          "architecture": "x86_64",
+          "git_version": "git version 2.51.0.windows.1"
+        },
+        "repository": {
+          "location": "C:/dev/cos-desktop",
+          "requested_revision": "f1495133562b644a41bb2d4bdb8108cd04dede41",
+          "resolved_base_commit": "f1495133562b644a41bb2d4bdb8108cd04dede41",
+          "object_format": "sha1",
+          "final_head": "f1495133562b644a41bb2d4bdb8108cd04dede41"
+        },
+        "limits": {
+          "timeout_ms": 600000,
+          "termination_grace_ms": 5000,
+          "max_output_bytes": 16777216,
+          "max_artifact_bytes": 16777216
+        },
+        "accepted_at": "2026-10-27T17:58:29.445432900Z",
+        "ended_at": "2026-10-27T18:01:00.290006800Z",
+        "candidate_sha256": "sha256:335ebb5f40d820cd50bbc4453b77a0163b09abed76c943514fb121b5085ba1e8",
+        "verification": [
+          {
+            "id": "build",
+            "kind": "command",
+            "outcome": "pass",
+            "duration_ms": 122123,
+            "observed_exit": 0,
+            "candidate_binding": "sha256:335ebb5f40d820cd50bbc4453b77a0163b09abed76c943514fb121b5085ba1e8"
+          }
+        ],
+        "check_logs": [
+          {
+            "check_id": "build",
+            "stdout": {
+              "relative_path": "logs/build/stdout",
+              "size_bytes": 0,
+              "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truncated": false,
+              "secret": true
+            },
+            "stderr": {
+              "relative_path": "logs/build/stderr",
+              "size_bytes": 12705,
+              "sha256": "sha256:17409e965bf7b37f3f10eb441f1004e4d120d847a21f1c312bb50e2aca0aa5ed",
+              "truncated": false,
+              "secret": true
+            }
+          }
+        ],
+        "artifacts": [
+          {
+            "id": "w4-BUILD_AND_RUN.md-20",
+            "relative_path": "artifacts/w4-BUILD_AND_RUN.md-20",
+            "size_bytes": 96053,
+            "sha256": "sha256:4195850c33cd50f6967915279e70ec526972f17e275cdd94f9e4beb663da3951"
+          },
+          {
+            "id": "w4-Cargo.lock-16",
+            "relative_path": "artifacts/w4-Cargo.lock-16",
+            "size_bytes": 158990,
+            "sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b"
+          },
+          {
+            "id": "w4-DESKTOP_DESIGN_CONTRACTS.md-19",
+            "relative_path": "artifacts/w4-DESKTOP_DESIGN_CONTRACTS.md-19",
+            "size_bytes": 130926,
+            "sha256": "sha256:c16cb3ca4867eec89e5f0c98752e97f52cc1880f2e4861f01b5a337d11f7ff58"
+          },
+          {
+            "id": "w4-IMPLEMENTATION_MASTER_PLAN.md-21",
+            "relative_path": "artifacts/w4-IMPLEMENTATION_MASTER_PLAN.md-21",
+            "size_bytes": 425352,
+            "sha256": "sha256:c100f574e57efc9f708007546748910e8c6ea9f3d03ba08aeab7fe88489f1936"
+          },
+          {
+            "id": "w4-decode.rs-15",
+            "relative_path": "artifacts/w4-decode.rs-15",
+            "size_bytes": 11964,
+            "sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf"
+          },
+          {
+            "id": "w4-decode_compare_harness.rs-14",
+            "relative_path": "artifacts/w4-decode_compare_harness.rs-14",
+            "size_bytes": 203960,
+            "sha256": "sha256:4cd3d0c9409a8ff02f5233f08ca5bbe4a3504826b8eda1b41635845abe54ee8d"
+          },
+          {
+            "id": "w4-disposition.json-24",
+            "relative_path": "artifacts/w4-disposition.json-24",
+            "size_bytes": 3732,
+            "sha256": "sha256:84aef4b4fe898fd928b02bd9f0b8b76ed588ebda73d053a18b180977b6fa75ba"
+          },
+          {
+            "id": "w4-evidence-budget-boundary.json",
+            "relative_path": "artifacts/w4-evidence-budget-boundary.json",
+            "size_bytes": 704,
+            "sha256": "sha256:c3a6af7b0916ff424000b642a7127fdf8470fc8e9431d74e5dcb3627fc3b9732"
+          },
+          {
+            "id": "w4-evidence-cancellation-record.json",
+            "relative_path": "artifacts/w4-evidence-cancellation-record.json",
+            "size_bytes": 154,
+            "sha256": "sha256:41b18f818d5af4b21c2754230d299608c4207a35ec49f59715aec88054fe2e92"
+          },
+          {
+            "id": "w4-evidence-capability-table.json",
+            "relative_path": "artifacts/w4-evidence-capability-table.json",
+            "size_bytes": 6392,
+            "sha256": "sha256:9fd34c5284eeb6a265abb65b9f252d494146a4e114cee7437f6d97e540aaef55"
+          },
+          {
+            "id": "w4-evidence-document-validation.json",
+            "relative_path": "artifacts/w4-evidence-document-validation.json",
+            "size_bytes": 223,
+            "sha256": "sha256:006531a88bb1a6d54986b0f2e6e044380193653892f6c8eda324ba479c5ab869"
+          },
+          {
+            "id": "w4-evidence-execution-manifest.json",
+            "relative_path": "artifacts/w4-evidence-execution-manifest.json",
+            "size_bytes": 10559,
+            "sha256": "sha256:4c827903b1dc0b4aecfa49de874512eef2b75f7cc2512395a517405d2dae6278"
+          },
+          {
+            "id": "w4-evidence-fixture-manifest.json",
+            "relative_path": "artifacts/w4-evidence-fixture-manifest.json",
+            "size_bytes": 63267,
+            "sha256": "sha256:ba7da06ffa2c417500cd0618b1a1dbab76ee7760320e01a3f78621f2e67462c0"
+          },
+          {
+            "id": "w4-evidence-quality.json",
+            "relative_path": "artifacts/w4-evidence-quality.json",
+            "size_bytes": 4739,
+            "sha256": "sha256:5720b5565724ef3b0cfd46289a5e5cc6af50a497e7faee7c5d5b6b7ec6aeb6f5"
+          },
+          {
+            "id": "w4-evidence-real-native-matrix.json",
+            "relative_path": "artifacts/w4-evidence-real-native-matrix.json",
+            "size_bytes": 308363,
+            "sha256": "sha256:b35c6bd89c1c1b78f1756c4b5b67b8c9a6a27e822697728d2214391aa3ad91f3"
+          },
+          {
+            "id": "w4-evidence-roi-oracle.json",
+            "relative_path": "artifacts/w4-evidence-roi-oracle.json",
+            "size_bytes": 9047,
+            "sha256": "sha256:4df36709b5d1b856825259e8f70c519c612cb65cfa19033d9de982ff9a4b2cc0"
+          },
+          {
+            "id": "w4-evidence-source-identity.json",
+            "relative_path": "artifacts/w4-evidence-source-identity.json",
+            "size_bytes": 4711,
+            "sha256": "sha256:88f5e37b1db60a3782ba4b71dfeff869b1fae7a7f7ede67c28f206531c9e222b"
+          },
+          {
+            "id": "w4-evidence-taskern-request.json",
+            "relative_path": "artifacts/w4-evidence-taskern-request.json",
+            "size_bytes": 6820,
+            "sha256": "sha256:250ae53361412378ad56e41e443fcd4f18b378a741ca40f89df7c36ebe65f61a"
+          },
+          {
+            "id": "w4-evidence-taskern-response.json",
+            "relative_path": "artifacts/w4-evidence-taskern-response.json",
+            "size_bytes": 10189,
+            "sha256": "sha256:7997f435a81e46a36262b9fb11e7aa3bf9fc69bac463d524816bd82e1e615a69"
+          },
+          {
+            "id": "w4-evidence-unmeasured.json",
+            "relative_path": "artifacts/w4-evidence-unmeasured.json",
+            "size_bytes": 724,
+            "sha256": "sha256:7e3e7c2013d9c8d3a8e70cb33fe60a315e97a1e385f558e4f03ee30e7e3ab6d1"
+          },
+          {
+            "id": "w4-evidence-verifier-results.json",
+            "relative_path": "artifacts/w4-evidence-verifier-results.json",
+            "size_bytes": 7199,
+            "sha256": "sha256:faedc9621cca1d74557046477946d434284916be1d7af7cea812eaba51e33e1c"
+          },
+          {
+            "id": "w4-harness.rs-11",
+            "relative_path": "artifacts/w4-harness.rs-11",
+            "size_bytes": 159533,
+            "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+          },
+          {
+            "id": "w4-inspect.rs-12",
+            "relative_path": "artifacts/w4-inspect.rs-12",
+            "size_bytes": 24568,
+            "sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558"
+          },
+          {
+            "id": "w4-pixels.rs-13",
+            "relative_path": "artifacts/w4-pixels.rs-13",
+            "size_bytes": 27817,
+            "sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136"
+          },
+          {
+            "id": "w4-quality.ps1-18",
+            "relative_path": "artifacts/w4-quality.ps1-18",
+            "size_bytes": 18303,
+            "sha256": "sha256:d3c8ae9f88dd761f98e42d10c7ad8a5c8bb0392ca9b7114ae2d2f9b4b5f64b50"
+          },
+          {
+            "id": "w4-real-native-matrix.json-25",
+            "relative_path": "artifacts/w4-real-native-matrix.json-25",
+            "size_bytes": 258737,
+            "sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3"
+          },
+          {
+            "id": "w4-rust-toolchain.toml-17",
+            "relative_path": "artifacts/w4-rust-toolchain.toml-17",
+            "size_bytes": 152,
+            "sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8"
+          },
+          {
+            "id": "w4-tern-next-directive.json-23",
+            "relative_path": "artifacts/w4-tern-next-directive.json-23",
+            "size_bytes": 974,
+            "sha256": "sha256:1faeb4b3e3a2abe09d473d4ec03adee0ecad58166fb5454d7a923a3c40664e4b"
+          },
+          {
+            "id": "w4-tern-next-directive.txt-22",
+            "relative_path": "artifacts/w4-tern-next-directive.txt-22",
+            "size_bytes": 28395,
+            "sha256": "sha256:fb6a1c259de641553b2c4610803ff9ee92094356ad5dde54a6bc022e23fc89ac"
+          },
+          {
+            "id": "w4-test_w4_fixtures.py-8",
+            "relative_path": "artifacts/w4-test_w4_fixtures.py-8",
+            "size_bytes": 2760,
+            "sha256": "sha256:faca6bb057bbbe119f9d0d92832fa6304c8780c9512efbda58158c0802fc8877"
+          },
+          {
+            "id": "w4-test_w4_verify.py-9",
+            "relative_path": "artifacts/w4-test_w4_verify.py-9",
+            "size_bytes": 7362,
+            "sha256": "sha256:f7e56f5f61ec76773de3157659e1ba7f668ee09c2da18280fe6e8077ca1a97f1"
+          },
+          {
+            "id": "w4-w2_resource_matrix.py-2",
+            "relative_path": "artifacts/w4-w2_resource_matrix.py-2",
+            "size_bytes": 28731,
+            "sha256": "sha256:f52cadb0baac0f5690560dec8a8df04d8e9898214c4715dc35c3c26e8f78439d"
+          },
+          {
+            "id": "w4-w3_native_matrix.py-3",
+            "relative_path": "artifacts/w4-w3_native_matrix.py-3",
+            "size_bytes": 10534,
+            "sha256": "sha256:fca17e82aa3ae396726af3d0dddf476946f94e03ab8300aaeed8c81a64c64f15"
+          },
+          {
+            "id": "w4-w4_fixtures.py-4",
+            "relative_path": "artifacts/w4-w4_fixtures.py-4",
+            "size_bytes": 4581,
+            "sha256": "sha256:e9a8ec23620799a1cef246b1c48078b045fca4d3fc0cb530f25192a6d9b72c89"
+          },
+          {
+            "id": "w4-w4_region_matrix.py-6",
+            "relative_path": "artifacts/w4-w4_region_matrix.py-6",
+            "size_bytes": 7257,
+            "sha256": "sha256:f5197dc0c8bd0a89de288690f10f252cc820dd885bebfbca11cc54e6675da644"
+          },
+          {
+            "id": "w4-w4_region_oracle.py-5",
+            "relative_path": "artifacts/w4-w4_region_oracle.py-5",
+            "size_bytes": 5745,
+            "sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298"
+          },
+          {
+            "id": "w4-w4_region_verify.py-7",
+            "relative_path": "artifacts/w4-w4_region_verify.py-7",
+            "size_bytes": 16502,
+            "sha256": "sha256:c0c1e75f7327a16421ae43d29f9b5457ddfbfbf61a9165a682552d902b40ea9a"
+          },
+          {
+            "id": "w4-wic_admission.ps1-1",
+            "relative_path": "artifacts/w4-wic_admission.ps1-1",
+            "size_bytes": 6399,
+            "sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5"
+          },
+          {
+            "id": "w4-wic_admission_selftest.ps1-10",
+            "relative_path": "artifacts/w4-wic_admission_selftest.ps1-10",
+            "size_bytes": 3346,
+            "sha256": "sha256:6908a1f75ae05097c649d59d9bfe1bd75dd8f16cedd13531159ffc0f03cf4a70"
+          },
+          {
+            "id": "w4-wic_probe.ps1-0",
+            "relative_path": "artifacts/w4-wic_probe.ps1-0",
+            "size_bytes": 44150,
+            "sha256": "sha256:bffc5a6ef2805ae298701c091c1e33caa43b6bda646a5523ff5a6005700f6d75"
+          }
+        ],
+        "absent_outputs": [],
+        "cleanup": "complete",
+        "timings": {
+          "preparation_ms": 19123,
+          "execution_ms": 0,
+          "verification_ms": 129093,
+          "collection_ms": 2557,
+          "finalization_ms": 19
+        },
+        "duration_ms": 150839
+      }
+    }
+  },
+  "verify": {
+    "cli_interface_version": 2,
+    "operation": "gate.verify",
+    "outcome": {
+      "schema_version": 1,
+      "result": {
+        "schema_version": 1,
+        "gate_id": "2d68baa4-4348-49fd-a2bd-ae52f9b11a98",
+        "state": "SUCCEEDED",
+        "request_sha256": "sha256:42ddf4f619cf021c64f7d69fe473191a785fb70408f1d14d751e640b25ba84a5",
+        "terminal_state_sha256": "sha256:553cd38a3f1f0638ed03370c33a2531d5e3a0ce94819e7a538c23350e3062d33",
+        "observations_sha256": "sha256:c3d7a016fb361eaeecdb584df653f63af20c446a952e39e07031598ce883976f",
+        "candidate_sha256": "sha256:335ebb5f40d820cd50bbc4453b77a0163b09abed76c943514fb121b5085ba1e8",
+        "artifacts": [
+          {
+            "id": "w4-BUILD_AND_RUN.md-20",
+            "relative_path": "artifacts/w4-BUILD_AND_RUN.md-20",
+            "size_bytes": 96053,
+            "sha256": "sha256:4195850c33cd50f6967915279e70ec526972f17e275cdd94f9e4beb663da3951"
+          },
+          {
+            "id": "w4-Cargo.lock-16",
+            "relative_path": "artifacts/w4-Cargo.lock-16",
+            "size_bytes": 158990,
+            "sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b"
+          },
+          {
+            "id": "w4-DESKTOP_DESIGN_CONTRACTS.md-19",
+            "relative_path": "artifacts/w4-DESKTOP_DESIGN_CONTRACTS.md-19",
+            "size_bytes": 130926,
+            "sha256": "sha256:c16cb3ca4867eec89e5f0c98752e97f52cc1880f2e4861f01b5a337d11f7ff58"
+          },
+          {
+            "id": "w4-IMPLEMENTATION_MASTER_PLAN.md-21",
+            "relative_path": "artifacts/w4-IMPLEMENTATION_MASTER_PLAN.md-21",
+            "size_bytes": 425352,
+            "sha256": "sha256:c100f574e57efc9f708007546748910e8c6ea9f3d03ba08aeab7fe88489f1936"
+          },
+          {
+            "id": "w4-decode.rs-15",
+            "relative_path": "artifacts/w4-decode.rs-15",
+            "size_bytes": 11964,
+            "sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf"
+          },
+          {
+            "id": "w4-decode_compare_harness.rs-14",
+            "relative_path": "artifacts/w4-decode_compare_harness.rs-14",
+            "size_bytes": 203960,
+            "sha256": "sha256:4cd3d0c9409a8ff02f5233f08ca5bbe4a3504826b8eda1b41635845abe54ee8d"
+          },
+          {
+            "id": "w4-disposition.json-24",
+            "relative_path": "artifacts/w4-disposition.json-24",
+            "size_bytes": 3732,
+            "sha256": "sha256:84aef4b4fe898fd928b02bd9f0b8b76ed588ebda73d053a18b180977b6fa75ba"
+          },
+          {
+            "id": "w4-evidence-budget-boundary.json",
+            "relative_path": "artifacts/w4-evidence-budget-boundary.json",
+            "size_bytes": 704,
+            "sha256": "sha256:c3a6af7b0916ff424000b642a7127fdf8470fc8e9431d74e5dcb3627fc3b9732"
+          },
+          {
+            "id": "w4-evidence-cancellation-record.json",
+            "relative_path": "artifacts/w4-evidence-cancellation-record.json",
+            "size_bytes": 154,
+            "sha256": "sha256:41b18f818d5af4b21c2754230d299608c4207a35ec49f59715aec88054fe2e92"
+          },
+          {
+            "id": "w4-evidence-capability-table.json",
+            "relative_path": "artifacts/w4-evidence-capability-table.json",
+            "size_bytes": 6392,
+            "sha256": "sha256:9fd34c5284eeb6a265abb65b9f252d494146a4e114cee7437f6d97e540aaef55"
+          },
+          {
+            "id": "w4-evidence-document-validation.json",
+            "relative_path": "artifacts/w4-evidence-document-validation.json",
+            "size_bytes": 223,
+            "sha256": "sha256:006531a88bb1a6d54986b0f2e6e044380193653892f6c8eda324ba479c5ab869"
+          },
+          {
+            "id": "w4-evidence-execution-manifest.json",
+            "relative_path": "artifacts/w4-evidence-execution-manifest.json",
+            "size_bytes": 10559,
+            "sha256": "sha256:4c827903b1dc0b4aecfa49de874512eef2b75f7cc2512395a517405d2dae6278"
+          },
+          {
+            "id": "w4-evidence-fixture-manifest.json",
+            "relative_path": "artifacts/w4-evidence-fixture-manifest.json",
+            "size_bytes": 63267,
+            "sha256": "sha256:ba7da06ffa2c417500cd0618b1a1dbab76ee7760320e01a3f78621f2e67462c0"
+          },
+          {
+            "id": "w4-evidence-quality.json",
+            "relative_path": "artifacts/w4-evidence-quality.json",
+            "size_bytes": 4739,
+            "sha256": "sha256:5720b5565724ef3b0cfd46289a5e5cc6af50a497e7faee7c5d5b6b7ec6aeb6f5"
+          },
+          {
+            "id": "w4-evidence-real-native-matrix.json",
+            "relative_path": "artifacts/w4-evidence-real-native-matrix.json",
+            "size_bytes": 308363,
+            "sha256": "sha256:b35c6bd89c1c1b78f1756c4b5b67b8c9a6a27e822697728d2214391aa3ad91f3"
+          },
+          {
+            "id": "w4-evidence-roi-oracle.json",
+            "relative_path": "artifacts/w4-evidence-roi-oracle.json",
+            "size_bytes": 9047,
+            "sha256": "sha256:4df36709b5d1b856825259e8f70c519c612cb65cfa19033d9de982ff9a4b2cc0"
+          },
+          {
+            "id": "w4-evidence-source-identity.json",
+            "relative_path": "artifacts/w4-evidence-source-identity.json",
+            "size_bytes": 4711,
+            "sha256": "sha256:88f5e37b1db60a3782ba4b71dfeff869b1fae7a7f7ede67c28f206531c9e222b"
+          },
+          {
+            "id": "w4-evidence-taskern-request.json",
+            "relative_path": "artifacts/w4-evidence-taskern-request.json",
+            "size_bytes": 6820,
+            "sha256": "sha256:250ae53361412378ad56e41e443fcd4f18b378a741ca40f89df7c36ebe65f61a"
+          },
+          {
+            "id": "w4-evidence-taskern-response.json",
+            "relative_path": "artifacts/w4-evidence-taskern-response.json",
+            "size_bytes": 10189,
+            "sha256": "sha256:7997f435a81e46a36262b9fb11e7aa3bf9fc69bac463d524816bd82e1e615a69"
+          },
+          {
+            "id": "w4-evidence-unmeasured.json",
+            "relative_path": "artifacts/w4-evidence-unmeasured.json",
+            "size_bytes": 724,
+            "sha256": "sha256:7e3e7c2013d9c8d3a8e70cb33fe60a315e97a1e385f558e4f03ee30e7e3ab6d1"
+          },
+          {
+            "id": "w4-evidence-verifier-results.json",
+            "relative_path": "artifacts/w4-evidence-verifier-results.json",
+            "size_bytes": 7199,
+            "sha256": "sha256:faedc9621cca1d74557046477946d434284916be1d7af7cea812eaba51e33e1c"
+          },
+          {
+            "id": "w4-harness.rs-11",
+            "relative_path": "artifacts/w4-harness.rs-11",
+            "size_bytes": 159533,
+            "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+          },
+          {
+            "id": "w4-inspect.rs-12",
+            "relative_path": "artifacts/w4-inspect.rs-12",
+            "size_bytes": 24568,
+            "sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558"
+          },
+          {
+            "id": "w4-pixels.rs-13",
+            "relative_path": "artifacts/w4-pixels.rs-13",
+            "size_bytes": 27817,
+            "sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136"
+          },
+          {
+            "id": "w4-quality.ps1-18",
+            "relative_path": "artifacts/w4-quality.ps1-18",
+            "size_bytes": 18303,
+            "sha256": "sha256:d3c8ae9f88dd761f98e42d10c7ad8a5c8bb0392ca9b7114ae2d2f9b4b5f64b50"
+          },
+          {
+            "id": "w4-real-native-matrix.json-25",
+            "relative_path": "artifacts/w4-real-native-matrix.json-25",
+            "size_bytes": 258737,
+            "sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3"
+          },
+          {
+            "id": "w4-rust-toolchain.toml-17",
+            "relative_path": "artifacts/w4-rust-toolchain.toml-17",
+            "size_bytes": 152,
+            "sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8"
+          },
+          {
+            "id": "w4-tern-next-directive.json-23",
+            "relative_path": "artifacts/w4-tern-next-directive.json-23",
+            "size_bytes": 974,
+            "sha256": "sha256:1faeb4b3e3a2abe09d473d4ec03adee0ecad58166fb5454d7a923a3c40664e4b"
+          },
+          {
+            "id": "w4-tern-next-directive.txt-22",
+            "relative_path": "artifacts/w4-tern-next-directive.txt-22",
+            "size_bytes": 28395,
+            "sha256": "sha256:fb6a1c259de641553b2c4610803ff9ee92094356ad5dde54a6bc022e23fc89ac"
+          },
+          {
+            "id": "w4-test_w4_fixtures.py-8",
+            "relative_path": "artifacts/w4-test_w4_fixtures.py-8",
+            "size_bytes": 2760,
+            "sha256": "sha256:faca6bb057bbbe119f9d0d92832fa6304c8780c9512efbda58158c0802fc8877"
+          },
+          {
+            "id": "w4-test_w4_verify.py-9",
+            "relative_path": "artifacts/w4-test_w4_verify.py-9",
+            "size_bytes": 7362,
+            "sha256": "sha256:f7e56f5f61ec76773de3157659e1ba7f668ee09c2da18280fe6e8077ca1a97f1"
+          },
+          {
+            "id": "w4-w2_resource_matrix.py-2",
+            "relative_path": "artifacts/w4-w2_resource_matrix.py-2",
+            "size_bytes": 28731,
+            "sha256": "sha256:f52cadb0baac0f5690560dec8a8df04d8e9898214c4715dc35c3c26e8f78439d"
+          },
+          {
+            "id": "w4-w3_native_matrix.py-3",
+            "relative_path": "artifacts/w4-w3_native_matrix.py-3",
+            "size_bytes": 10534,
+            "sha256": "sha256:fca17e82aa3ae396726af3d0dddf476946f94e03ab8300aaeed8c81a64c64f15"
+          },
+          {
+            "id": "w4-w4_fixtures.py-4",
+            "relative_path": "artifacts/w4-w4_fixtures.py-4",
+            "size_bytes": 4581,
+            "sha256": "sha256:e9a8ec23620799a1cef246b1c48078b045fca4d3fc0cb530f25192a6d9b72c89"
+          },
+          {
+            "id": "w4-w4_region_matrix.py-6",
+            "relative_path": "artifacts/w4-w4_region_matrix.py-6",
+            "size_bytes": 7257,
+            "sha256": "sha256:f5197dc0c8bd0a89de288690f10f252cc820dd885bebfbca11cc54e6675da644"
+          },
+          {
+            "id": "w4-w4_region_oracle.py-5",
+            "relative_path": "artifacts/w4-w4_region_oracle.py-5",
+            "size_bytes": 5745,
+            "sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298"
+          },
+          {
+            "id": "w4-w4_region_verify.py-7",
+            "relative_path": "artifacts/w4-w4_region_verify.py-7",
+            "size_bytes": 16502,
+            "sha256": "sha256:c0c1e75f7327a16421ae43d29f9b5457ddfbfbf61a9165a682552d902b40ea9a"
+          },
+          {
+            "id": "w4-wic_admission.ps1-1",
+            "relative_path": "artifacts/w4-wic_admission.ps1-1",
+            "size_bytes": 6399,
+            "sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5"
+          },
+          {
+            "id": "w4-wic_admission_selftest.ps1-10",
+            "relative_path": "artifacts/w4-wic_admission_selftest.ps1-10",
+            "size_bytes": 3346,
+            "sha256": "sha256:6908a1f75ae05097c649d59d9bfe1bd75dd8f16cedd13531159ffc0f03cf4a70"
+          },
+          {
+            "id": "w4-wic_probe.ps1-0",
+            "relative_path": "artifacts/w4-wic_probe.ps1-0",
+            "size_bytes": 44150,
+            "sha256": "sha256:bffc5a6ef2805ae298701c091c1e33caa43b6bda646a5523ff5a6005700f6d75"
+          }
+        ],
+        "check_logs": [
+          {
+            "check_id": "build",
+            "stdout": {
+              "relative_path": "logs/build/stdout",
+              "size_bytes": 0,
+              "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truncated": false,
+              "secret": true
+            },
+            "stderr": {
+              "relative_path": "logs/build/stderr",
+              "size_bytes": 12705,
+              "sha256": "sha256:17409e965bf7b37f3f10eb441f1004e4d120d847a21f1c312bb50e2aca0aa5ed",
+              "truncated": false,
+              "secret": true
+            }
+          }
+        ]
+      }
+    }
+  },
+  "exit_codes": {
+    "status": 0,
+    "inspect": 0,
+    "verify": 0
+  },
+  "transport": {
+    "accepted": "REFINE_GATE_ACCEPTED mp-img2-w4-build"
+  }
+}

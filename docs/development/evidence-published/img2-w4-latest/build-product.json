@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "candidate": "f1495133562b644a41bb2d4bdb8108cd04dede41",
+  "build_gate": "2d68baa4-4348-49fd-a2bd-ae52f9b11a98",
+  "path": "targets/r6/build/debug/cos-desktop.exe",
+  "bytes": 32275456,
+  "sha256": "sha256:be4413ba12a9e0836efb1e326260d325725969d612d11ce7be753c59d3b7cc46",
+  "observation": "Caller observed the successful Build Gate product before exact scratch disposal; not a declared artifact or GUI startup claim."
+}
