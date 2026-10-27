@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "review": "review-round4.json",
+  "findings": [
+    "A-W5-R4-01",
+    "A-W5-R4-02"
+  ],
+  "fixes": [
+    "cap branch validates source TIFF dimensions/orientation/ICC declared length > cap",
+    "unsupported branch requires output_hex/output_sha256 absent"
+  ],
+  "portable_tests": 25,
+  "native_refresh": 16
+}

@@ -217,6 +217,34 @@ class W5RecordTests(unittest.TestCase):
         self.reject(lambda r: self.set_result(self.worker(r, "tiff_icc_oversized"),
                                               orientation_raw=8), "orientation_query_mismatch")
 
+    def test_cap_reason_must_match_source_metadata(self):
+        def width(record):
+            fixture = next(f for f in record["fixtures"] if f["id"] == "tiff_icc_oversized")
+            fixture["width"] += 1
+            worker = self.worker(record, "tiff_icc_oversized")
+            self.set_result(worker, width=fixture["width"])
+        self.reject(width, "source_dimensions_mismatch")
+        def height(record):
+            fixture = next(f for f in record["fixtures"] if f["id"] == "tiff_icc_oversized")
+            fixture["height"] += 1
+            worker = self.worker(record, "tiff_icc_oversized")
+            self.set_result(worker, height=fixture["height"])
+        self.reject(height, "source_dimensions_mismatch")
+        def declared(record):
+            fixture = next(f for f in record["fixtures"] if f["id"] == "tiff_icc_oversized")
+            data = bytearray(bytes.fromhex(fixture["input_hex"]))
+            ifd = 8 + 2 + 12 * 0
+            count = int.from_bytes(data[8:10], "little")
+            for i in range(count):
+                pos = 8 + 2 + 12 * i
+                if int.from_bytes(data[pos:pos + 2], "little") == 34675:
+                    data[pos + 4:pos + 8] = (64).to_bytes(4, "little")
+            fixture["input_hex"] = bytes(data).hex()
+            fixture["sha256"] = sha(bytes(data)).removeprefix("sha256:")
+            fixture["bytes"] = len(data)
+            self.worker(record, "tiff_icc_oversized")["input_sha256"] = sha(bytes(data))
+        self.reject(declared, "metadata_cap_not_evidenced")
+
     def test_worker_publication_must_match_outcome(self):
         def unsupported_decoded(record):
             self.worker(record, "unsupported_source")["outcome"] = "decoded"
@@ -227,6 +255,12 @@ class W5RecordTests(unittest.TestCase):
         def unsupported_bytes(record):
             self.worker(record, "unsupported_source")["output_bytes"] = 100
         self.reject(unsupported_bytes, "output_after_refusal")
+        def unsupported_payload(record):
+            self.worker(record, "unsupported_source")["output_hex"] = "00"
+        self.reject(unsupported_payload, "output_after_refusal")
+        def unsupported_sha(record):
+            self.worker(record, "unsupported_source")["output_sha256"] = "sha256:" + "0" * 64
+        self.reject(unsupported_sha, "output_after_refusal")
         def cap_bytes(record):
             self.worker(record, "tiff_icc_oversized")["output_bytes"] = 100
         self.reject(cap_bytes, "metadata_cap_not_closed")

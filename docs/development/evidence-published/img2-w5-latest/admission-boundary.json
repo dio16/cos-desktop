@@ -5,5 +5,6 @@
   "reason_code": "metadata_cap_exceeded",
   "materialization": "not_requested",
   "output_present": false,
-  "full_frame_admission": "recomputed and matched"
+  "full_frame_admission": "recomputed and matched",
+  "source_metadata": "TIFF IFD dims 3x2, ICC declared 70540 > 65536"
 }

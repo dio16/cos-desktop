@@ -111,6 +111,11 @@
       "name": "w5-r6-tests",
       "exit": 0,
       "note": "24 W5 negatives"
+    },
+    "w5-r9-tests": {
+      "name": "w5-r9-tests",
+      "exit": 0,
+      "note": "25 W5 negatives"
     }
   },
   "rust": {
@@ -124,7 +129,7 @@
     "ignored": 1
   },
   "python_img2": 128,
-  "w5_portable": 24,
+  "w5_portable": 25,
   "r0": {
     "total": 352,
     "passed": 340,

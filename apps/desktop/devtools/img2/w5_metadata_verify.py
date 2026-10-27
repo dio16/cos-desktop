@@ -145,7 +145,8 @@ def _verify(record, source_root):
                   names == ["process_observed", "input_opened", "refused", "probe_exit"],
                   "unsupported_classification_invalid")
             _need(w["published_success"] is False and w["output_present"] is False and
-                  w["output_bytes"] == 0 and result["materialization"] != "completed",
+                  w["output_bytes"] == 0 and w["output_hex"] is None and
+                  w["output_sha256"] is None and result["materialization"] != "completed",
                   "output_after_refusal")
             capabilities.append({"case_id": cid, "codec": "bmp", "orientation_metadata": "UNAVAILABLE",
                                  "ICC_presence": "UNAVAILABLE", "ICC_readability": "UNAVAILABLE",
@@ -156,6 +157,13 @@ def _verify(record, source_root):
         if cid == "tiff_icc_oversized":
             _need(result.get("metadata_available") is True and result.get("icc_present") is True,
                   "metadata_presence_mismatch")
+            cap_source = source(fixture, data)
+            _need((fixture["width"], fixture["height"]) ==
+                  (cap_source["width"], cap_source["height"]), "source_dimensions_mismatch")
+            _need(cap_source["orientation_values"] == [1], "orientation_value_mismatch")
+            _need(cap_source.get("icc") is not None and
+                  cap_source["icc"]["declared"] > BOUNDS["max_metadata_bytes"],
+                  "metadata_cap_not_evidenced")
             math = admission_math(fixture, result)
             _need(all(result[k] == v for k, v in math.items()), "full_frame_requirement_invalid")
             admitted = next(st for st in stages if st["stage"] == "admitted")

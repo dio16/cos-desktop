@@ -320,7 +320,7 @@
   ],
   "meaning": "Actual WIC metadata observation; orientation/ICC presence is not transform fidelity.",
   "portable_tests": {
-    "count": 24,
+    "count": 25,
     "failures": 0
   }
 }
