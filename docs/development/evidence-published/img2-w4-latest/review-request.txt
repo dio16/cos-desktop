@@ -1,0 +1,35 @@
+MP-IMG2-W4 の固定ソース独立レビューをお願いします。目的は、実Windows WICの矩形画素出力（ROI output）と真のpartial/sequential/tiled decode能力を混同せず、小さなROIでfull-frame予算を迂回できないことを、実バイトと独立画素oracleで確認することです。
+
+Repository dio16/cos-desktop、branch dev（未push）。開始commit 0ce5651f862ea6ce48c666a7088bc9a250c17784。製品固定候補 f1495133562b644a41bb2d4bdb8108cd04dede41。証拠HEADは添付review-package.jsonに記載（request commitから生成したZIPとmanifestの関係も明記）。remote push、Runtime変更、main/releaseは行っていません。CallerはADR-0009/0012の継続実装を指示しています。
+
+実装:
+- 既存wic_probe.ps1にopt-in `-Roi x,y,width,height` と `-MaxRoiOutputBytes` を追加。strict decimal、BigIntegerでchecked、clampなし。負/0/範囲外/overflow/出力上限はOnLoad前に拒否。
+- ROIは既存OnLoad → FormatConvertedBitmap(Bgra32) → CopyPixels(Int32Rect)で取得。したがって矩形出力は証明してもtrue partial decodeではない。結果は roi_output / true_partial_decode / sequential_decode / tiled_decode / full_frame_materialization / internal_decoder_scratch / preview_fallback を別フィールドで保持し、true/sequential/tiledはNOT_VERIFIED、scratchはNOT_MEASURED。
+- full-frame decoded/conversion/scratch admissionはROI要求でも減額しない。64×64 source（full-frame 12,288 bytes）に1×1 ROIと1,024 bytes full-frame decoded上限を与え、`max_decoded_bytes_exceeded`でOnLoad前に拒否。
+- 既存legacy CLI（ROIなし）の意味・出力・exitは維持。
+
+添付:
+1. w4-review-source.zip: 固定候補 f149513… のgit archive。
+2. w4-review-evidence.zip: 証拠HEADのgit archive。W4 evidence、W3 directive/disposition、review-package.jsonを含む。
+3. review-package.json: SOURCE/Evidence ZIPのbytes/sha256、commit、entry correspondence、Gate capture対応。
+
+独立検証してほしい点:
+A. ROI全画素が元PNG/BMP24/BMP565/Bgr555から独立再構成したRGBAスライスと一致するか。Bgr555 controlをBgr565認定していないか。
+B. 1×1 ROIでもfull-frame decoded予算を迂回できないか。full-frame requirementとROI requirementが別々に記録されているか。
+C. 範囲外・負・0・overflow ROI、ROI出力上限、malformed/unsupported sourceがfail-closedか。OnLoad/出力が漏れていないか。
+D. 既存OnLoad経路・legacy CLI・W1/W2/W3回帰が維持されているか。W3はhistorical f8dfc30 sourceでreplayしているか。
+E. cancellation/timeoutがW2 stop state machineどおりで、decoded/outputに昇格していないか。
+F. capability分類が「矩形出力成功」からtrue partial/sequential/tiledへ誤昇格していないか。NOT_VERIFIED/NOT_MEASUREDの意味が保たれているか。
+G. 40 Gate artifact tuples、candidate digest、SOURCE/Native/Gate/evidenceの対応が閉じているか。
+H. storageは成功した2 work/repo + r6 clippy/tests/buildのみを、証拠保存後・process不在・reparseなし・verify前後一致で削除したか。
+
+品質実測:
+- 通常quality.ps1成功、Rust535 pass/1 ignored、画像Python101、R0 340 pass/12 skip。
+- feature clippy/build成功、feature tests 539 pass/1 ignored（直列）。
+- W4 portable 22 tests、WIC admission selftest 28 checks、W2 probe/oracle、W1 selftest成功。
+- W3 retained replayはhistorical f8dfc30 sourceで成功（現probe変更をW3証拠へ混入させない）。
+- 独立Quality Gate f7ea3916-f489-4152-b8f9-06a142d9e2c7 SUCCEEDED 14/14、Build Gate 2d68baa4-4348-49fd-a2bd-ae52f9b11a98 SUCCEEDED 1/1。同一candidate digest sha256:335ebb5f…、40 tuples一致、status/inspect/verify exit0、cleanup complete、owner dead、recovery不要。preflight UNKNOWNはUNKNOWNのまま。
+
+未測定/非対象: WIC内部stride/scratch、実予約、真の同時peak、cooperative in-decoder cancellation、16K、真のregion/sequential/tiled decode、ICC/orientation全体、JPEG絶対raster、full Decode/Upload、MP-IMG3、Runtime RC-*、measured R0、UX/video。W4完了をfull MP-IMG2 Decode ExitやMP-IMG3 prerequisite充足として扱いません。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘にはファイル・条件・再現・最小修正を示してください。添付から独立に検証し、最後に REVIEW COMPLETE と最終verdict/countsを記してください。
