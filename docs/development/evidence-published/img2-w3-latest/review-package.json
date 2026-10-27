@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "evidence_head": "481a29e4b2e5186fff44993cfb0f2da290cab9fb",
+  "evidence_head": "fe516b2c4ef318ab720956afd796190141be2e81",
   "fixed_source_candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
   "gate_candidate_digest": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4",
   "quality_gate": "aed94841-c578-452f-8f62-8d4ad366a234",
@@ -12,7 +12,9 @@
     "round3_request_metadata": "83a847f766fec36b473bde82901cd65326086b7f",
     "round3_package_identity": "f34370a7c30d93df10b9c734b1620ab2702d8c88",
     "round4_evidence_head": "481a29e4b2e5186fff44993cfb0f2da290cab9fb",
-    "package_manifest_commit": "the commit containing this file, a docs-only descendant of the evidence head"
+    "round4_package_manifest": "b923e7de9e8105a1aa8f110827c22de424a3421b",
+    "round5_evidence_head": "fe516b2c4ef318ab720956afd796190141be2e81",
+    "package_manifest_commit": "the commit containing this file, a docs-only child of the evidence head"
   },
   "source": {
     "name": "w3-awn2-review-source.zip",
@@ -24,10 +26,10 @@
   },
   "evidence": {
     "name": "w3-awn2-review-evidence.zip",
-    "bytes": 238971,
-    "sha256": "sha256:6e2ca1fe851139ffc499e5c678abad09703c99599f187a8bd7d9ddf286f55355",
-    "commit": "481a29e4b2e5186fff44993cfb0f2da290cab9fb",
-    "entries": 71
+    "bytes": 381898,
+    "sha256": "sha256:1716f878274f18e73cc046a23199965b37117a7797b80c2b8cc0e9021495f658",
+    "commit": "fe516b2c4ef318ab720956afd796190141be2e81",
+    "entries": 76
   },
   "gate_artifact_comparison": {
     "captured": 53,
@@ -38,29 +40,87 @@
         "path": "docs/development/evidence-published/img2-w3-latest/review-history.json",
         "captured_bytes": 2269,
         "captured_sha256": "sha256:6cb83571e2a5c1dce2aabb6465781d55425b1d773ed8e526a8c277ac71fe55cc",
-        "evidence_head_bytes": 3494,
-        "evidence_head_sha256": "sha256:68af061e80873175a87d48fc1cfe6e9cc02301387c7fed3c180895a04e56f2e9"
+        "evidence_head_bytes": 4647,
+        "evidence_head_sha256": "sha256:4634e0e9873a0cd576f09addc7e5004e2570512fb90a30d8c647bcafc2574f70"
       },
       {
         "id": "w3-14-IMPLEMENTATION_MASTER_PLAN.md",
         "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
         "captured_bytes": 419316,
         "captured_sha256": "sha256:65ca2532bdccb705e0283c02efb05174071cc7c98edc19d63a384f077487a1cb",
-        "evidence_head_bytes": 420331,
-        "evidence_head_sha256": "sha256:46e81d438441a4fcce2467392ff407335bffe34239a17cb0bd0816f359acafc1"
+        "evidence_head_bytes": 421190,
+        "evidence_head_sha256": "sha256:e80718cd25a4871dd11be54ab022feb2a5fa907c3cb3bbdc5a6339d6cf12e95e"
       },
       {
         "id": "w3-19-document-validation.json",
         "path": "docs/development/evidence-published/img2-w3-latest/document-validation.json",
         "captured_bytes": 242,
         "captured_sha256": "sha256:30e1568ff506e90d47338dc365845b4777905e9218010c641fa9d0820bb65d83",
-        "evidence_head_bytes": 237,
-        "evidence_head_sha256": "sha256:7ed61de8467de1422a892af99caae00a4fd296de7dc506a7e135bc2aa7fc362e"
+        "evidence_head_bytes": 279,
+        "evidence_head_sha256": "sha256:e8cbdc775d19a0631a6c2e8d3e9f6772be1c751bbe21ebd5b50620f8acc0f770"
       }
     ],
     "non_documentation_changes": 0
   },
-  "archive_semantics": "Each ZIP is exactly `git archive` of the named commit and the listed paths; it is not a working-tree or post-commit copy. CRLF export vs LF blobs is reported per entry by the manifests.",
-  "manifest_self_boundary": "This manifest cannot contain its own archive or commit hash. It is committed immediately after the evidence head and names the evidence head whose archive was hashed; the manifest commit is its docs-only child.",
+  "round4_bundle": {
+    "changed_documents": "docs/development/evidence-published/img2-w3-latest/review-round4/changed-documents.json",
+    "files": {
+      "docs/development/evidence-published/img2-w3-latest/review-round4/changed-documents.json": {
+        "bytes": 2363,
+        "sha256": "sha256:a4c9a58b29dae2765992bf8be29dfae4804b51260c100568cd449824782d0db3"
+      },
+      "docs/development/evidence-published/img2-w3-latest/review-round4/IMPLEMENTATION_MASTER_PLAN.md": {
+        "bytes": 421190,
+        "sha256": "sha256:e80718cd25a4871dd11be54ab022feb2a5fa907c3cb3bbdc5a6339d6cf12e95e"
+      },
+      "docs/development/evidence-published/img2-w3-latest/review-round4/plan-capture-to-head.diff": {
+        "bytes": 6696,
+        "sha256": "sha256:a5306aa4d8b439fe73fa54244b6131bff3946649c459d3028590863544893cb6"
+      }
+    },
+    "purpose": "Carry post-Gate plan and history bytes outside the img2-w3-latest evidence scope, plus the capture-to-head diff."
+  },
+  "changed_paths_since_candidate": {
+    "count": 33,
+    "all_documentation": true,
+    "paths": [
+      "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+      "docs/development/evidence-published/img2-w3-latest/build-gate.json",
+      "docs/development/evidence-published/img2-w3-latest/build-product.json",
+      "docs/development/evidence-published/img2-w3-latest/document-validation.json",
+      "docs/development/evidence-published/img2-w3-latest/gate-artifact-correspondence.json",
+      "docs/development/evidence-published/img2-w3-latest/gate-authorization.json",
+      "docs/development/evidence-published/img2-w3-latest/gate-preflight.json",
+      "docs/development/evidence-published/img2-w3-latest/gate-test-counts.json",
+      "docs/development/evidence-published/img2-w3-latest/quality-gate.json",
+      "docs/development/evidence-published/img2-w3-latest/review-history.json",
+      "docs/development/evidence-published/img2-w3-latest/review-package-source.json",
+      "docs/development/evidence-published/img2-w3-latest/review-package.json",
+      "docs/development/evidence-published/img2-w3-latest/review-request.txt",
+      "docs/development/evidence-published/img2-w3-latest/review-round2-build-gate.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round2-build-product.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round2-gate-artifact-correspondence.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round2-gate-authorization.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round2-gate-preflight.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round2-gate-test-counts.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round2-package-source.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round2-package.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round2-quality-gate.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round2-request.txt",
+      "docs/development/evidence-published/img2-w3-latest/review-round2-storage.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round3-package-reconciliation.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round3-response.txt",
+      "docs/development/evidence-published/img2-w3-latest/review-round3.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round4-response.txt",
+      "docs/development/evidence-published/img2-w3-latest/review-round4.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round4/IMPLEMENTATION_MASTER_PLAN.md",
+      "docs/development/evidence-published/img2-w3-latest/review-round4/changed-documents.json",
+      "docs/development/evidence-published/img2-w3-latest/review-round4/plan-capture-to-head.diff",
+      "docs/development/evidence-published/img2-w3-latest/storage.json"
+    ],
+    "note": "Complete `git diff --name-only` list from fixed candidate to evidence head; no non-docs path appears."
+  },
+  "archive_semantics": "Each ZIP is exactly `git archive` of the named commit and listed paths; not a working-tree copy. Git archive text export uses CRLF while blobs use LF; per-entry correspondence is in the manifests.",
+  "manifest_self_boundary": "This manifest cannot contain its own commit or archive hash. It is committed immediately after the evidence head, names that head and the archive hashed from it; the manifest commit is a docs-only child.",
   "privacy": "Explicit repository source/contract and sanitized derived public evidence only. No private Refine state/config/raw logs, process environment, credentials or Native work directories."
 }
