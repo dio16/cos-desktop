@@ -52,10 +52,10 @@
         "unchanged_after_run": true
       },
       "apps/desktop/devtools/img2/w6_memory_matrix.py": {
-        "bytes": 14800,
-        "git_blob_sha256": "sha256:8a3b265d73dfa183697e4e20f307155020ba80a15cca750a22d192075c33ac22",
-        "lf_sha256": "sha256:8a3b265d73dfa183697e4e20f307155020ba80a15cca750a22d192075c33ac22",
-        "raw_sha256": "sha256:8a3b265d73dfa183697e4e20f307155020ba80a15cca750a22d192075c33ac22",
+        "bytes": 12387,
+        "git_blob_sha256": "sha256:ebaf3b3f94f52114ff52db85186b2af90a088a0aec466fdd183a03ad6d1b7184",
+        "lf_sha256": "sha256:ebaf3b3f94f52114ff52db85186b2af90a088a0aec466fdd183a03ad6d1b7184",
+        "raw_sha256": "sha256:ebaf3b3f94f52114ff52db85186b2af90a088a0aec466fdd183a03ad6d1b7184",
         "unchanged_after_run": true
       },
       "apps/desktop/devtools/img2/w6_memory_sample.py": {
@@ -66,10 +66,10 @@
         "unchanged_after_run": true
       },
       "apps/desktop/devtools/img2/w6_memory_verify.py": {
-        "bytes": 23086,
-        "git_blob_sha256": "sha256:b721a4e5cdb2ccbb80ece5a9c70163f03311a884eeecb4d8787c3c9e219e7981",
-        "lf_sha256": "sha256:b721a4e5cdb2ccbb80ece5a9c70163f03311a884eeecb4d8787c3c9e219e7981",
-        "raw_sha256": "sha256:b721a4e5cdb2ccbb80ece5a9c70163f03311a884eeecb4d8787c3c9e219e7981",
+        "bytes": 21924,
+        "git_blob_sha256": "sha256:ea9c556f59c7adc5615c10e3db343f590df7a82c48ce6e513674f1ad1a2b22ef",
+        "lf_sha256": "sha256:ea9c556f59c7adc5615c10e3db343f590df7a82c48ce6e513674f1ad1a2b22ef",
+        "raw_sha256": "sha256:ea9c556f59c7adc5615c10e3db343f590df7a82c48ce6e513674f1ad1a2b22ef",
         "unchanged_after_run": true
       },
       "apps/desktop/examples/decode_compare.rs": {
@@ -132,10 +132,10 @@
     "harness_sha256": "sha256:9f15861363888a6191ba331dea08b2afe74e48ac56d42022cc8cd2a761344794",
     "normalization": "Raw Native hashes plus explicitly declared LF-normalized Git correspondence",
     "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
-    "source_commit": "15e67da5638299e291520718aaf7af87333afc5a"
+    "source_commit": "50a4b9a5ac6f95d5a9d10f09c8360041a2c366e7"
   },
   "taskern_packet_sha256": "sha256:fe95b3688fc570e19d657dbfa0cb3393eca29aecefb51777e62877e77a53b389",
   "start_commit": "57c330ab28c8777ba5aa004e14540279b28c6dfd",
-  "experimental_source": "15e67da5638299e291520718aaf7af87333afc5a",
+  "experimental_source": "50a4b9a5ac6f95d5a9d10f09c8360041a2c366e7",
   "sampler_script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b"
 }

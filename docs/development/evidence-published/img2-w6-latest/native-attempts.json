@@ -169,18 +169,29 @@
         }
       ],
       "disposition": "SUPERSEDED; not final closure evidence"
+    },
+    {
+      "attempt": "r5",
+      "source": "15e67da5638299e291520718aaf7af87333afc5a",
+      "exit": 0,
+      "instrumented_workers": 24,
+      "extra_consumer_cases": 6,
+      "disposition": "REJECTED for exceeding the total24-case instruction; independent Quality success on d7d5a06 is superseded, not closure."
     }
   ],
   "final": {
-    "attempt": "r5",
-    "source": "15e67da5638299e291520718aaf7af87333afc5a",
+    "attempt": "r6",
+    "source": "50a4b9a5ac6f95d5a9d10f09c8360041a2c366e7",
     "record": "native-memory-matrix.json",
+    "total_decode_cases": 24,
+    "additional_decode_cases": 0,
     "verified": true
   },
   "repairs": [
     "Align terminal fields with the unchanged probe contract; output bytes checked from real stdout and PNG.",
     "Publication rename during work scan charges the published file; unrelated disappearance remains fatal.",
     "Exact immutable source/output-byte cache bounds repeated raster work, without trusting claimed digest/case ID.",
-    "Consumer manifest annotates but does not filter; non-image manifest moved out and all six image/pixel outcomes required."
+    "Consumer manifest annotates but does not filter; non-image manifest moved out and all six image/pixel outcomes required.",
+    "Remove the unrequired extra six-case consumer phase; preserve actual separate build identity and harness tests. The entire memory run now executes only the fixed24 cases."
   ]
 }

@@ -885,6 +885,9 @@ PNG RGB8, BMP24 and real Bgr565 at 256²/1024², before or after `OnLoad`, with
 one or three workers. Pin the experimental source before running: the runner
 checks every executed source file against that commit, records raw and LF
 identities and verifies that source and executable bytes did not change.
+`--harness` binds the separately built existing example's bytes; the memory
+matrix does not execute it or add cases beyond the total 24. Existing harness
+and media admission tests remain part of workspace quality.
 
 ```powershell
 cargo build --locked -p cos-desktop --example decode_compare
