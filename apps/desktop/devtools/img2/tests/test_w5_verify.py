@@ -203,6 +203,37 @@ class W5RecordTests(unittest.TestCase):
             self.worker(record, "tiff_icc_oversized")["published_success"] = True
         self.reject(published, "metadata_cap_not_closed")
 
+    def test_cap_source_attribution(self):
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_icc_oversized"), width=777),
+                    "source_dimensions_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_icc_oversized"), pixel_format="Bgr565",
+                                              bits_per_channel=6, bits_per_pixel=16,
+                                              row_bytes=6, decoded_bytes_required=12),
+                    "trace_admission_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_icc_oversized"),
+                                              decoder="PngBitmapDecoder"), "decoder_identity_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_icc_oversized"),
+                                              orientation_query="/fake/path"), "orientation_query_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_icc_oversized"),
+                                              orientation_raw=8), "orientation_query_mismatch")
+
+    def test_worker_publication_must_match_outcome(self):
+        def unsupported_decoded(record):
+            self.worker(record, "unsupported_source")["outcome"] = "decoded"
+        self.reject(unsupported_decoded, "unsupported_classification_invalid")
+        def unsupported_pub(record):
+            self.worker(record, "unsupported_source")["published_success"] = True
+        self.reject(unsupported_pub, "output_after_refusal")
+        def unsupported_bytes(record):
+            self.worker(record, "unsupported_source")["output_bytes"] = 100
+        self.reject(unsupported_bytes, "output_after_refusal")
+        def cap_bytes(record):
+            self.worker(record, "tiff_icc_oversized")["output_bytes"] = 100
+        self.reject(cap_bytes, "metadata_cap_not_closed")
+        def decoded_unpublished(record):
+            self.worker(record, "tiff_ori6")["published_success"] = False
+        self.reject(decoded_unpublished, "decode_missing")
+
     def test_cancellation_cannot_be_decoded(self):
         def change(record):
             worker = self.worker(record, "cancel_metadata")

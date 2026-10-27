@@ -106,6 +106,11 @@
       "signal": null,
       "stdout_sha256": "sha256:0fbf58a26b13833569ca9f48566fb7629bb5b0e10c501e14f1ee183b824cbcbb",
       "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w5-r6-tests": {
+      "name": "w5-r6-tests",
+      "exit": 0,
+      "note": "24 W5 negatives"
     }
   },
   "rust": {
@@ -119,7 +124,7 @@
     "ignored": 1
   },
   "python_img2": 128,
-  "w5_portable": 22,
+  "w5_portable": 24,
   "r0": {
     "total": 352,
     "passed": 340,
@@ -128,5 +133,6 @@
   "w1_w4_regressions": "W3 historical f8dfc30 replay, W4 historical e357888e replay, WIC admission selftest",
   "negative_tests": 16,
   "ambient": "User-global Cargo rustflags add -fuse-ld=lld; MSVC link.exe LNK4044 ignores it; not a Rust lint or Gate failure.",
-  "w4_historical": "w5-w4-replay-hist exit0 against e357888e"
+  "w4_historical": "w5-w4-replay-hist exit0 against e357888e",
+  "round3_repair": "A-W5-R3-01 cap source attribution; A-W5-R3-02 worker publication"
 }

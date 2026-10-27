@@ -320,30 +320,7 @@
   ],
   "meaning": "Actual WIC metadata observation; orientation/ICC presence is not transform fidelity.",
   "portable_tests": {
-    "count": 22,
+    "count": 24,
     "failures": 0
-  },
-  "negative_classes": [
-    "orientation relabel",
-    "transform no effect",
-    "double rotation",
-    "source/output dims",
-    "ICC digest/presence",
-    "readability as colour",
-    "metadata unreadable",
-    "cap admitted",
-    "OnLoad after refusal",
-    "missing terminal",
-    "identity mismatch",
-    "unsupported promotion",
-    "cancellation promotion",
-    "stop time/outcome/alive/published",
-    "metadata availability",
-    "admission zeroed",
-    "conflicting orientation",
-    "fake query",
-    "decoder identity",
-    "source format",
-    "cap-branch admission"
-  ]
+  }
 }

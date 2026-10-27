@@ -139,11 +139,13 @@ def _verify(record, source_root):
                   ("outcome", "reason_code", "admission_status", "materialization")),
               "probe_exit_result_mismatch")
         if cid == "unsupported_source":
-            _need(w["exit_code"] == 2 and result["outcome"] == "unsupported" and
+            _need(w["outcome"] == "unsupported" and w["exit_code"] == 2 and
+                  result["outcome"] == "unsupported" and
                   result["admission_status"] == "not_enforced" and
                   names == ["process_observed", "input_opened", "refused", "probe_exit"],
                   "unsupported_classification_invalid")
-            _need(w["output_present"] is False and result["materialization"] != "completed",
+            _need(w["published_success"] is False and w["output_present"] is False and
+                  w["output_bytes"] == 0 and result["materialization"] != "completed",
                   "output_after_refusal")
             capabilities.append({"case_id": cid, "codec": "bmp", "orientation_metadata": "UNAVAILABLE",
                                  "ICC_presence": "UNAVAILABLE", "ICC_readability": "UNAVAILABLE",
@@ -160,7 +162,16 @@ def _verify(record, source_root):
             _need(all(admitted[k] == v for k, v in math.items()), "trace_admission_mismatch")
             _need(w["outcome"] == "oversize" and not w["published_success"] and
                   w["output_present"] is False and w["output_hex"] is None and
-                  result["materialization"] == "not_requested", "metadata_cap_not_closed")
+                  w["output_bytes"] == 0 and result["materialization"] == "not_requested",
+                  "metadata_cap_not_closed")
+            _need((result["width"], result["height"]) == (fixture["width"], fixture["height"]),
+                  "source_dimensions_mismatch")
+            _need(result["pixel_format"] == "Bgr24" and result["bits_per_channel"] == 8 and
+                  result["bits_per_pixel"] == 24, "source_format_mismatch")
+            _need(result["decoder"] == "TiffBitmapDecoder", "decoder_identity_mismatch")
+            _need(result.get("orientation_query") in
+                  ("/ifd/{ushort=274}", "/ifd/274", "System.Photo.Orientation") and
+                  result.get("orientation_raw") == 1, "orientation_query_mismatch")
             _need(w["exit_code"] == 4 and result["outcome"] == "oversize" and
                   result["reason_code"] == "metadata_cap_exceeded" and
                   result["admission_status"] == "refused" and result["materialization"] == "not_requested",
@@ -175,8 +186,8 @@ def _verify(record, source_root):
                                  "decoded_output": "REFUSED", "limitation": "metadata byte bound"})
             continue
         _need(w["exit_code"] == 0 and w["outcome"] == "decoded" and result["outcome"] == "decoded" and
-              result["admission_status"] == "admitted" and result["materialization"] == "completed",
-              "decode_missing")
+              result["admission_status"] == "admitted" and result["materialization"] == "completed" and
+              w["published_success"] is True, "decode_missing")
         _need(names == list(STAGES), "native_stage_set_incomplete")
         expected_format = {"png_plain": "Bgr24", "bmp24_plain": "Bgr24"}.get(
             fid, "Bgr24" if fid.startswith("tiff") else None)

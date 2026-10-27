@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "native_record_sha256": "sha256:577847caf034d93f0601f5beb27a357da8c526ec8ae6e3d7bc76b5d5fd1e8087",
+  "native_record_sha256": "sha256:79b5306572ede7a08ad6115cb41f6402febb2e6c6fa2989566b8660f356c273c",
   "cases": [
     {
       "case_id": "png_plain",

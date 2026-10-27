@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "review": "review-round3.json",
+  "findings": [
+    "A-W5-R3-01",
+    "A-W5-R3-02"
+  ],
+  "fixes": [
+    "cap branch now checks source dimensions/format/depth/decoder/query/raw orientation",
+    "worker outcome/publication/output bytes tied to decoded/unsupported/oversize states"
+  ],
+  "portable_tests": 24,
+  "native_refresh": 16
+}
