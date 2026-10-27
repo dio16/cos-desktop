@@ -1,0 +1,22 @@
+MP-IMG2-W6 は PASS 0 / 0 / 0 で LIMITED TECHNICAL COMPLETION 承認まで到達しました。次のMPタスク指示を、そのまま実行できるverbatim形式でください。
+
+現在の状態:
+- Repository: dio16/cos-desktop / branch dev / 未push。
+- 直近HEAD: daddc4ac82f2432e18e7545e1d37045240650e64(docs-onlyのclosure記録)。
+- 製品・Gate候補: 8bb1b6dd3071d7e355e685dba4977361f24b8f2f。
+- Native実行SOURCE: f99bf25b5d61152e3bb22a88e2e8efccc823b9ad。
+- 独立Gate: Quality fdfdb7a2-3c90-409e-b645-61ab450f58e6 (16/16)、Build 98d2bb81-80d2-43b6-a3cb-ce0c090f7a71 (1/1)。成功workspaceは保持手順に従い削除済みで、Gate receipts/logs/sourceは保持。
+- Round 1: HOLD 0/2/0(A-W6-01/A-W6-02)、修正済み。Round 2: HOLD 0/1/0(manifest参照のみ)、docs-only訂正。Round 3: PASS 0/0/0。
+
+未測定・未承認のまま(次の指示でも権限がない限り維持):
+product numeric memory SLO、decoder採用、全codec、16K、true partial/region/sequential/tiled decode、WIC内部scratch・実予約・真の同時allocation peak、cooperative in-decoder cancellation、ICC colour fidelity、full MP-IMG2 Decode Exit、MP-IMG3 prerequisite、GPUI Upload、Runtime変更、measured R0、UX/video、main/release。
+
+次の指示に含めてほしい項目:
+1. 対象MPタスクIDとOwner contract(例: MP-IMGx / DC-MP-IMGx)。DC-MP-IMG2の範囲を超える場合は、必要な新規authorityを明記。
+2. 開始点と前提(hard prerequisites、既存の受け入れ済み証拠、触れてはいけない範囲)。
+3. 実装スコープ、不変条件、明示的な非対象。
+4. 受け入れ条件(観測可能な挙動、測定区分、NOT_MEASUREDの扱い)。
+5. 独立Gateで実行すべきcheckと出力、Native実行が必要かどうか。
+6. 今回の指示で許可されない操作(設計変更、Runtime、他repo、push、release等)。
+
+回答は、先頭に `# COS Desktop — 次タスク指示` を置き、repository/branch/開始SHA/対象ID/スコープ/受入条件/停止条件を含む、そのまま実装に渡せるコードブロック1つで返してください。コードブロック外の前置きは不要です。可能なら最後に `NEXT DIRECTIVE` の独立行を置いてください。
