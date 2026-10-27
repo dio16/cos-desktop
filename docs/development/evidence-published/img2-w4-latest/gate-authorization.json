@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "candidate": "6bf7b63cdbe43c621d3c911f367083ce317128c8",
+  "caller_instruction": "実装計画に基づき実装・Tern評価・次タスク指示を受取実装。このループを継続し実装計画を完遂すること。実装計画はすべて承認済み。",
+  "basis": [
+    "ADR-0009 continuous execution",
+    "ADR-0012 remaining implementation authorization",
+    "A-W4-01/A-W4-02 repair"
+  ],
+  "quality_checks": [
+    "fmt",
+    "metadata",
+    "dependency-self-test",
+    "dependency-rules",
+    "clippy",
+    "tests",
+    "r0-python",
+    "img2-python",
+    "w2-probe-selftest",
+    "w2-oracle",
+    "w3-retained-native-replay",
+    "wic-admission-selftest",
+    "w1-runner-selftest",
+    "w4-native-replay"
+  ],
+  "build_checks": [
+    "build"
+  ],
+  "outputs": [
+    {
+      "id": "w4r2-wic_probe.ps1-0",
+      "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+      "required": true
+    },
+    {
+      "id": "w4r2-wic_admission.ps1-1",
+      "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+      "required": true
+    },
+    {
+      "id": "w4r2-w2_resource_matrix.py-2",
+      "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+      "required": true
+    },
+    {
+      "id": "w4r2-w3_native_matrix.py-3",
+      "path": "apps/desktop/devtools/img2/w3_native_matrix.py",
+      "required": true
+    },
+    {
+      "id": "w4r2-w4_fixtures.py-4",
+      "path": "apps/desktop/devtools/img2/w4_fixtures.py",
+      "required": true
+    },
+    {
+      "id": "w4r2-w4_region_oracle.py-5",
+      "path": "apps/desktop/devtools/img2/w4_region_oracle.py",
+      "required": true
+    },
+    {
+      "id": "w4r2-w4_region_matrix.py-6",
+      "path": "apps/desktop/devtools/img2/w4_region_matrix.py",
+      "required": true
+    },
+    {
+      "id": "w4r2-w4_region_verify.py-7",
+      "path": "apps/desktop/devtools/img2/w4_region_verify.py",
+      "required": true
+    },
+    {
+      "id": "w4r2-test_w4_fixtures.py-8",
+      "path": "apps/desktop/devtools/img2/tests/test_w4_fixtures.py",
+      "required": true
+    },
+    {
+      "id": "w4r2-test_w4_verify.py-9",
+      "path": "apps/desktop/devtools/img2/tests/test_w4_verify.py",
+      "required": true
+    },
+    {
+      "id": "w4r2-wic_admission_selftest.ps1-10",
+      "path": "apps/desktop/tests/wic_admission_selftest.ps1",
+      "required": true
+    },
+    {
+      "id": "w4r2-harness.rs-11",
+      "path": "apps/desktop/examples/decode_compare/harness.rs",
+      "required": true
+    },
+    {
+      "id": "w4r2-inspect.rs-12",
+      "path": "apps/desktop/examples/decode_compare/inspect.rs",
+      "required": true
+    },
+    {
+      "id": "w4r2-pixels.rs-13",
+      "path": "apps/desktop/examples/decode_compare/pixels.rs",
+      "required": true
+    },
+    {
+      "id": "w4r2-decode_compare_harness.rs-14",
+      "path": "apps/desktop/tests/decode_compare_harness.rs",
+      "required": true
+    },
+    {
+      "id": "w4r2-decode.rs-15",
+      "path": "crates/media/src/decode.rs",
+      "required": true
+    },
+    {
+      "id": "w4r2-Cargo.lock-16",
+      "path": "Cargo.lock",
+      "required": true
+    },
+    {
+      "id": "w4r2-rust-toolchain.toml-17",
+      "path": "rust-toolchain.toml",
+      "required": true
+    },
+    {
+      "id": "w4r2-quality.ps1-18",
+      "path": "scripts/quality.ps1",
+      "required": true
+    },
+    {
+      "id": "w4r2-DESKTOP_DESIGN_CONTRACTS.md-19",
+      "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+      "required": true
+    },
+    {
+      "id": "w4r2-BUILD_AND_RUN.md-20",
+      "path": "docs/development/BUILD_AND_RUN.md",
+      "required": true
+    },
+    {
+      "id": "w4r2-IMPLEMENTATION_MASTER_PLAN.md-21",
+      "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+      "required": true
+    },
+    {
+      "id": "w4r2-tern-next-directive.txt-22",
+      "path": "docs/development/evidence-published/img2-w3-latest/tern-next-directive.txt",
+      "required": true
+    },
+    {
+      "id": "w4r2-tern-next-directive.json-23",
+      "path": "docs/development/evidence-published/img2-w3-latest/tern-next-directive.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-disposition.json-24",
+      "path": "docs/development/evidence-published/img2-w3-latest/disposition.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-real-native-matrix.json-25",
+      "path": "docs/development/evidence-published/img2-w3-latest/real-native-matrix.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-taskern-request.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/taskern-request.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-taskern-response.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/taskern-response.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-source-identity.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/source-identity.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-execution-manifest.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/execution-manifest.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-fixture-manifest.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/fixture-manifest.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-real-native-matrix.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/real-native-matrix.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-roi-oracle.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/roi-oracle.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-capability-table.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/capability-table.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-budget-boundary.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/budget-boundary.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-cancellation-record.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/cancellation-record.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-verifier-results.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/verifier-results.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-quality.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/quality.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-document-validation.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/document-validation.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-unmeasured.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/unmeasured.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-repair-round1.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/repair-round1.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-review-round1.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1.json",
+      "required": true
+    },
+    {
+      "id": "w4r2-evidence-review-round1-response.txt",
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round1-response.txt",
+      "required": true
+    }
+  ],
+  "limits": {
+    "trust": "trusted_local",
+    "timeout_ms": 600000,
+    "termination_grace_ms": 5000,
+    "max_output_bytes": 16777216,
+    "max_artifact_bytes": 16777216,
+    "expected_changes": "none",
+    "required_capabilities": []
+  },
+  "no_remote_push": true,
+  "storage_scope": "Only exact newly successful W4-r2 work/repo and r7 clippy/tests/build targets after evidence retention and terminal verify."
+}

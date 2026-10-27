@@ -151,6 +151,27 @@
       "signal": null,
       "stdout_sha256": "sha256:f5abb98468b10c82e5ea77c46a371be397f06f8435a426d1915ebe892c35aae1",
       "stderr_sha256": "sha256:d94b699510bce1088ed2165ec1daa90da4a99660c99546b5b47ce98f938c5c15"
+    },
+    "w4r2-feature-clippy": {
+      "name": "w4r2-feature-clippy",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:6aa6107d1d819a7be2f618a0419b18701abd13d0fa1c5dba8b37d21bfccf89ac"
+    },
+    "w4r2-feature-build": {
+      "name": "w4r2-feature-build",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:49c19f253fc789d66992d083912072fa2104af1f1a0a0758dc55b00ac3d9356e"
+    },
+    "w4r2-feature-tests": {
+      "name": "w4r2-feature-tests",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:9d6245002cefda2ab22c9e5bede756e621962e09d63f1f3bf81578400c49650f",
+      "stderr_sha256": "sha256:d513f01e5f4c5be6ef018b102492c4d6487fcec59c73679e016332eb056a6143"
     }
   },
   "rust": {
@@ -177,5 +198,5 @@
   "w2_probe_selftest": "exit 0",
   "w2_oracle": "exit 0",
   "w1_selftest": "exit 0",
-  "round1": "First candidate f1495133 Gate pair moved to review-round1-*; this record covers the verifier repair candidate."
+  "round1": "f1495133 Gate pair retained under review-round1-*; this record covers the repaired verifier candidate 6bf7b63."
 }
