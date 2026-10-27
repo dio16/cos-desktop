@@ -1,0 +1,43 @@
+MP-IMG2-W6 の固定SOURCE独立レビューを依頼します。対象は Windows WIC のcodec・寸法・同時worker別のbounded process-memory scalingだけです。W5のPASSや過去のGateを今回の成功として流用しないでください。
+
+Repository: dio16/cos-desktop / branch dev / 未push。
+Native実行前の固定SOURCE: edfcdf104f66e89bf9deae6b03bde22427c84e9c。
+最終の製品候補・両Gate候補: 76d8998bea494a0c7fc97c7cc27071594330ba17。
+両Gateのcandidate digest: sha256:0b8f805832f7d9541fdc69a28008ed4c0fc252f3df3403a60583786f043a20b9。
+Owner: DC-MP-IMG2。Taskern 0.2.0 prepareの新packetを使用。完全なW6指示とtwo-read相関は img2-w5-latest/tern-next-directive.txt/.json、Taskern要求・拒否診断・修正応答は img2-w6-latest/ に保存しています。
+
+添付は w6-review-source.zip / w6-review-evidence.zip / review-package.json の3点です。
+- SOURCE ZIPは候補76d8998…のGit archiveです。266 entry、2,200,025 bytes、SHA256 sha256:d040bf0840d729b875e90ea3404997852c8769e190bc22aacab6de539561cf36。source manifestの全entryは候補Git blobとrawまたは明示LF正規化で一致します。
+- Evidence HEADはreview-package.jsonのevidence_headに記載した単一full SHAです。Evidence ZIPはそのcommitのGit archiveであり、W6全証拠だけでなく更新済みMP本文・BUILD_AND_RUN本文・TESTING本文と必要な歴史的Native記録を含みます。本文の変更をSOURCE ZIPだけで補わないでください。
+- package manifest自体はEvidence HEADの子commitに置く別添資料です。自己を含むZIPのhashを自己参照しているという主張はありません。ZIPの実bytes/SHA256、entry一覧、Git blob/LF/CRLF対応、候補以降のdocs-only変更一覧、Gate捕捉物との対応はmanifestに明記します。
+
+実装と実測:
+1. 非一様なPNG RGB8、BMP24、実Bgr565 BI_BITFIELDSを256²/1024²の6組で再生成。独立PNG CRC/inflate/filterおよびBMP payload解析でRGBA oracleを構成。
+2. 6 singles + 6 three-worker cohorts = 全decode実行24件、最大同時3。単独2窓、cohort3窓、計30窓。32窓上限を保ち、単独の3窓目の不足理由を明示しています。追加consumer decode段階は削除済み。既存decode_compareは別途buildして実行ファイルの前後identityを束縛し、既存harness/media試験を実行しています。
+3. before_onload / after_onloadを区別。PID、StartTime、exe/source identity、alive前後、QPC/parent-monotonic区間、順序、capture完全性、各counter、合計、観測最大を保持。30/30完全窓、18/18 decoded出力の独立全RGBA一致、before_onloadのcancel3件/timeout3件はW2の実stop状態機械で確認。人工holdはWIC latencyやcooperative cancellationではありません。
+4. DERIVED_WINDOW_SUM / MAX_OBSERVED_WINDOW_SUM / MATCHED_RUN_DIFFERENCEを分離し、異時刻worker maximaを加算しません。process working set/private/lifetime counterはWIC内部scratch、実予約、true concurrent allocation peakではありません。これらはNOT_MEASUREDのままです。
+5. 24種類すべてのnegative mutationを実際のverify()で拒否。加えて、old-source commit差し替えとgroup failureを隠すfalse-greenを再現後に修正しました。固定Git object・宣言hash・LF対応を照合し、構造だけのreplayはsource verifiedやclosure eligibleを名乗りません。
+
+品質と独立Gate:
+- 最終ローカル: IMG2 152 PASS、全24 negative拒否、quality.ps1 Rust535 PASS/1 ignored、feature Rust539 PASS/1 ignored、feature clippy/build成功、feature testsはserialized、R0 340 PASS/12 skipped。W1～W5 replay・WIC admission selftest・decode_compare/media admission testsを保持。
+- Quality Gate e3ca75cd-cdfe-4cef-aa3d-1cae176707eb: SUCCEEDED、16/16。
+- Build Gate d1df7552-70c0-47fe-be6e-4339004c17a5: SUCCEEDED、1/1。
+- 両Gateの候補・digest一致、60/60 artifact tuplesと実bytes一致、60/60捕捉物が候補Git blobとraw一致。Native source 18/18を実Git object/LF/hashで束縛。
+- status/inspect/verifyは両方すべてexit0、cleanup complete、owner_alive=false、recovery_required=false。preflight UNKNOWNはUNKNOWNのままで、PASSとは記録していません。
+- 隔離GateのR0は316 PASS/36 skippedです。PowerShellのPATHや保持していない歴史的baselineによるNOT_RUNをローカル340/12と混ぜません。
+- 実Build出力32,275,456 bytesを削除前にhash計算: sha256:9839984c7d6508350f778212767a8e402607bc647d0d1166a3b82e853787e966。推定値でも、旧候補のbinary hashでもありません。binary自体をimmutable artifactとして保存したという主張はありません。
+- 正確な成功Gate2件のwork/repoとr3 clippy/tests/buildだけを、source/evidence保持・process/reparse不在・native verify確認後に削除。10,362 files、4,137,743,281 logical bytes。削除後のnative verifyは両方exit0で前後同一。authority/artifacts/private logs/Native実行資産/ordinary targetは保持しています。
+- supersededな初回Quality成功、r2 Qualityの受付前REPOSITORY_ERROR（Gate IDなし）、r2 Build成功とその保持/削除記録も正直に区別しています。最終pairへ成功を転送していません。
+
+重点確認:
+- 指示の全24 case/32 window上限、固定集合・反復、欠落と失敗の扱い、counterの順序/clock/lifetime、合計/maxの独立再計算、実source formatとadmission full-frame要求、pixel oracle、stop/timeoutの整合。
+- 24 negativeと追加のfalse-green修正が実際にconsumer-visible矛盾を拒否するか。mock、source文字列試験や実装のコピーを成功根拠にしないこと。
+- SOURCE/Native/Gate/evidenceの実バイト対応、現在MP本文の実同梱、Gate捕捉版からのdocs-only差分、manifestの単一Evidence HEADと子commit境界、全60 artifactの対応、storage前後integrity。
+- MP-IMG1/SEC3 hard prerequisites、既存62 DC-MP link、41 DAG edges、decision gatesとW1～W5本文/歴史記録の保持。
+
+実行可能範囲の正直な扱い:
+添付ZIPにprivate Git履歴/objects、Windows WIC、Refine state/private logs/executablesは含めません。--source-root付きの固定Git検証や全152件のsource-bound試験には元の保持Git objectが必要です。添付だけで可能なfixture/oracle/arithmetic試験、構造replay、raw sample/PNG/byte/hashの再計算を行い、実行できない固定Git/Windows/Refine/GUIはNOT_RUNと明記してください。Gitを偽装したり、テストを書き換えてPASSさせたりしないでください。保存済み実行証拠の照合と再実行は区別してください。
+
+今回はproduct numeric memory SLO、decoder採用、GPUI Upload、Runtime変更、16K、true partial/region/sequential/tiled decode、内部scratch/実予約/true concurrent allocation peak、cooperative in-decoder cancellation、ICC fidelity、full MP-IMG2 Decode Exit、MP-IMG3 prerequisite、measured R0、UX/video、main/releaseを完了しません。これらを未測定のまま保持できた場合にだけW6 LIMITED TECHNICAL COMPLETIONの可否を判断してください。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘はファイル・条件・再現・最小修正まで示してください。添付読取が未完なら未完と明示してください。最後に独立行で REVIEW COMPLETE、その次の最終行に verdict/counts（例: PASS 0 / 0 / 0、またはHOLDと実件数）を記してください。

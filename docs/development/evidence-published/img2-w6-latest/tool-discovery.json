@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "taskern": {
+    "discovered_skill": "skill://taskern",
+    "loaded": true,
+    "executable": "C:/dev/taskern/target/release/taskern.exe",
+    "version_stdout": "taskern 0.2.0 (cli 2; protocol 1; semantic 1)\n",
+    "version_exit": 0,
+    "invocation": {
+      "operation": "prepare",
+      "request": "taskern-request.json",
+      "response": "taskern-response.json"
+    },
+    "execution": {
+      "claim": "packet_compiled",
+      "packet_sha256": "sha256:fe95b3688fc570e19d657dbfa0cb3393eca29aecefb51777e62877e77a53b389",
+      "executes_work": false,
+      "decides_acceptance": false
+    }
+  },
+  "refine": {
+    "discovered_skill": "skill://refine",
+    "loaded": true,
+    "loaded_reference": "references/GATE_WORKFLOW.md",
+    "executable": "C:/Users/diobrando/.dsh/tools/refine/bin/refine.exe",
+    "version_stdout": "refine 0.3.1\n",
+    "version_exit": 0,
+    "invocations": [
+      "gate preflight",
+      "gate",
+      "gate status",
+      "gate inspect",
+      "gate verify"
+    ],
+    "execution": {
+      "quality_gate": "e3ca75cd-cdfe-4cef-aa3d-1cae176707eb",
+      "build_gate": "d1df7552-70c0-47fe-be6e-4339004c17a5",
+      "quality_state": "SUCCEEDED",
+      "build_state": "SUCCEEDED",
+      "candidate": "76d8998bea494a0c7fc97c7cc27071594330ba17",
+      "gate_does_not_implement_or_accept": true
+    }
+  },
+  "tern": {
+    "discovered_skill": "skill://tern-chatgpt-review",
+    "loaded": true,
+    "driver": "C:/Users/diobrando/.omp/agent/managed-skills/tern-chatgpt-review/scripts/tern-review.mjs",
+    "mode": "window",
+    "invocations_observed": [
+      "status",
+      "existing-conversation next directive read"
+    ],
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "execution_boundary": "Review submission/complete two-read verdict are recorded separately after the actual invocation; status is not review completion."
+  }
+}
