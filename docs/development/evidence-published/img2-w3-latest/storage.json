@@ -1,62 +1,49 @@
 {
   "schema_version": 1,
-  "candidate": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6",
-  "status": "DISPOSED_INTEGRITY_UNCHANGED",
-  "quality_gate": "1fd79f6d-8a8e-4c74-ac9e-329c76c3adbb",
-  "build_gate": "41eda8c3-6236-473b-bc20-4dda70a0e991",
+  "candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+  "status": "PREPARED_AFTER_SUCCESSFUL_TERMINAL_VERIFY",
+  "quality_gate": "aed94841-c578-452f-8f62-8d4ad366a234",
+  "build_gate": "8a9a0517-2b1e-498d-9856-bcded1e204a6",
   "paths": [
     {
-      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\1fd79f6d-8a8e-4c74-ac9e-329c76c3adbb\\work\\repo",
-      "files": 454,
-      "logical_bytes": 12584604,
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\aed94841-c578-452f-8f62-8d4ad366a234\\work\\repo",
+      "files": 468,
+      "logical_bytes": 12804229,
       "no_reparse": true,
-      "removed": true
+      "removed": false
     },
     {
-      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\41eda8c3-6236-473b-bc20-4dda70a0e991\\work\\repo",
-      "files": 454,
-      "logical_bytes": 12584534,
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\8a9a0517-2b1e-498d-9856-bcded1e204a6\\work\\repo",
+      "files": 468,
+      "logical_bytes": 12870737,
       "no_reparse": true,
-      "removed": true
+      "removed": false
     },
     {
-      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r4\\clippy",
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r5\\clippy",
       "files": 3015,
       "logical_bytes": 663884472,
       "no_reparse": true,
-      "removed": true
+      "removed": false
     },
     {
-      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r4\\tests",
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r5\\tests",
       "files": 3144,
       "logical_bytes": 1841538384,
       "no_reparse": true,
-      "removed": true
+      "removed": false
     },
     {
-      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r4\\build",
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r5\\build",
       "files": 2911,
       "logical_bytes": 1593013408,
       "no_reparse": true,
-      "removed": true
+      "removed": false
     }
   ],
   "live_process_dependencies": [],
-  "retained_source": "Complete pinned source and required Git objects under dev; all Gate/source correspondences retained. Durable evidence commit required before exact scratch removal.",
-  "retained_authority": "Private Gate authority/artifacts/logs, ordinary target, real Native outputs and consumer remain outside disposable paths. No failed/nonterminal/old workspaces selected.",
-  "native_verify_before": "quality-gate.json and build-gate.json verify; both complete successful terminal, dead owner/no recovery, exit-zero status/inspect/verify.",
-  "measurement": "Logical byte/file counts, not allocated or physically reclaimed storage.",
-  "evidence_retention_commit": "109e8649c304f6920d7c94216ba266b0c7a67798",
-  "native_verify_after": {
-    "quality": {
-      "gate_id": "1fd79f6d-8a8e-4c74-ac9e-329c76c3adbb",
-      "exit": 0,
-      "identical": true
-    },
-    "build": {
-      "gate_id": "41eda8c3-6236-473b-bc20-4dda70a0e991",
-      "exit": 0,
-      "identical": true
-    }
-  }
+  "retained_source": "Complete pinned candidate and required Git objects under dev; evidence correspondence retained.",
+  "retained_authority": "Private Gate authority/artifacts/logs, ordinary target, actual Native outputs/consumer and failed/targeted older workspaces remain outside these exact paths.",
+  "native_verify_before": "quality-gate.json and build-gate.json verify; successful terminal, dead owner, no recovery, cleanup complete, exit-zero status/inspect/verify.",
+  "measurement": "Logical byte/file counts, not allocated or physically reclaimed storage."
 }

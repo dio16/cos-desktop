@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "id": "41eda8c3-6236-473b-bc20-4dda70a0e991",
-  "candidate": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6",
+  "id": "8a9a0517-2b1e-498d-9856-bcded1e204a6",
+  "candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
   "status": {
     "cli_interface_version": 2,
     "operation": "gate.status",
@@ -9,10 +9,10 @@
       "schema_version": 1,
       "result": {
         "schema_version": 1,
-        "gate_id": "41eda8c3-6236-473b-bc20-4dda70a0e991",
-        "gate_label": "mp-img2-w3-awn-build",
+        "gate_id": "8a9a0517-2b1e-498d-9856-bcded1e204a6",
+        "gate_label": "mp-img2-w3-awn2-build",
         "state": "SUCCEEDED",
-        "updated_at": "2026-10-27T16:21:37.913574000Z",
+        "updated_at": "2026-10-27T16:50:50.100673900Z",
         "owner_alive": false,
         "recovery_required": false
       }
@@ -25,10 +25,10 @@
       "schema_version": 1,
       "result": {
         "schema_version": 1,
-        "gate_id": "41eda8c3-6236-473b-bc20-4dda70a0e991",
-        "gate_label": "mp-img2-w3-awn-build",
-        "request_sha256": "sha256:31651e3de722783f570776b33ef5dedcf5c124c27a306a77511f2e46dbaf3d7c",
-        "terminal_state_sha256": "sha256:f1c92626b67c03f8a47c9c4f0457b87de21167da0ffde6c687c1fa2c9e7b98cb",
+        "gate_id": "8a9a0517-2b1e-498d-9856-bcded1e204a6",
+        "gate_label": "mp-img2-w3-awn2-build",
+        "request_sha256": "sha256:10a4769e59b5aac4179237c47052db44e1691cc26d1cc4d6fdb662f35155a473",
+        "terminal_state_sha256": "sha256:e85e09d30d754387ee65f4989ef2d762ab2d5586099e45a2d78a75b4bc5c8838",
         "runtime": {
           "refine_version": "0.3.1",
           "os": "windows",
@@ -37,10 +37,10 @@
         },
         "repository": {
           "location": "<REPOSITORY>",
-          "requested_revision": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6",
-          "resolved_base_commit": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6",
+          "requested_revision": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+          "resolved_base_commit": "f8dfc3009fd7526e1b055968e2fc19892c007190",
           "object_format": "sha1",
-          "final_head": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6"
+          "final_head": "f8dfc3009fd7526e1b055968e2fc19892c007190"
         },
         "limits": {
           "timeout_ms": 600000,
@@ -48,17 +48,17 @@
           "max_output_bytes": 16777216,
           "max_artifact_bytes": 16777216
         },
-        "accepted_at": "2026-10-27T16:19:02.843972400Z",
-        "ended_at": "2026-10-27T16:21:37.913574000Z",
-        "candidate_sha256": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1",
+        "accepted_at": "2026-10-27T16:48:06.522894500Z",
+        "ended_at": "2026-10-27T16:50:50.100673900Z",
+        "candidate_sha256": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4",
         "verification": [
           {
             "id": "build",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 126480,
+            "duration_ms": 134700,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           }
         ],
         "check_logs": [
@@ -74,7 +74,7 @@
             "stderr": {
               "relative_path": "logs/build/stderr",
               "size_bytes": 12705,
-              "sha256": "sha256:b5076899ec4360796e4b7562012246995953480706a8d9f4fbc58fa54af9868e",
+              "sha256": "sha256:4267cf8a9d6464c20f5b0fd95a204e0f2f5eebe430f4a43d846d5df8ab7ccc17",
               "truncated": false,
               "secret": true
             }
@@ -88,10 +88,16 @@
             "sha256": "sha256:699ad9e3427ba6364efa021227e324b111da2eb075aaaeefc214c5cc7966260e"
           },
           {
+            "id": "awn-awn-repair2.json",
+            "relative_path": "artifacts/awn-awn-repair2.json",
+            "size_bytes": 2593,
+            "sha256": "sha256:3010e4962fff305e9f6cf95c4daffd7c05cb9bace41a109037bae0e5a95be276"
+          },
+          {
             "id": "awn-review-history.json",
             "relative_path": "artifacts/awn-review-history.json",
-            "size_bytes": 1310,
-            "sha256": "sha256:28f03b4e235e5628f3430e4719853d6123abb4adc630f8bef0405a3a8aca715b"
+            "size_bytes": 2269,
+            "sha256": "sha256:6cb83571e2a5c1dce2aabb6465781d55425b1d773ed8e526a8c277ac71fe55cc"
           },
           {
             "id": "awn-review-round1-response.txt",
@@ -104,6 +110,18 @@
             "relative_path": "artifacts/awn-review-round1.json",
             "size_bytes": 1799,
             "sha256": "sha256:5a5cafcccf01bcaa1e1484db05fe945023c3a168e7b6efa98020298cb16c2e60"
+          },
+          {
+            "id": "awn-review-round2-response.txt",
+            "relative_path": "artifacts/awn-review-round2-response.txt",
+            "size_bytes": 7143,
+            "sha256": "sha256:66dc91c956c145807d9a21e532c1875b562e7e492fee5e2c67a20f9ec41456e3"
+          },
+          {
+            "id": "awn-review-round2.json",
+            "relative_path": "artifacts/awn-review-round2.json",
+            "size_bytes": 1644,
+            "sha256": "sha256:561130f8b6c9daea5679d22f36b1c44b000d3233ff0963a3465c1b5922f4bca1"
           },
           {
             "id": "initial-quality",
@@ -162,8 +180,8 @@
           {
             "id": "w3-04-test_w3_verify.py",
             "relative_path": "artifacts/w3-04-test_w3_verify.py",
-            "size_bytes": 10249,
-            "sha256": "sha256:0405616e1ef76ba65f8367194db7e1b008f6c68e9a3b7b041923459a8113037d"
+            "size_bytes": 10958,
+            "sha256": "sha256:d155d823b7e2dc3be0f342ff98212336d25f16d2a636b56b31067be2b1f6a0cf"
           },
           {
             "id": "w3-05-w3_fixtures.py",
@@ -186,8 +204,8 @@
           {
             "id": "w3-08-w3_verify.py",
             "relative_path": "artifacts/w3-08-w3_verify.py",
-            "size_bytes": 16280,
-            "sha256": "sha256:27ae542d14670295e5391e8927c7e9a71e55119127994cd1cb0a42c138bf3ae1"
+            "size_bytes": 16445,
+            "sha256": "sha256:47446b77d1ee61531d4bcfaa475c01d84dbfba67e301f1ba50f329f8243036e7"
           },
           {
             "id": "w3-09-wic_admission.ps1",
@@ -210,20 +228,20 @@
           {
             "id": "w3-12-DESKTOP_DESIGN_CONTRACTS.md",
             "relative_path": "artifacts/w3-12-DESKTOP_DESIGN_CONTRACTS.md",
-            "size_bytes": 129688,
-            "sha256": "sha256:404f9fa106105c85e357d2e382fa368b1ec7c4df0497a704ab06074b8a7726c6"
+            "size_bytes": 130015,
+            "sha256": "sha256:2766b472d38317749d6bc43afeb2ab84ab2b1587fd74450b8126b2d8e8b5f2ea"
           },
           {
             "id": "w3-13-BUILD_AND_RUN.md",
             "relative_path": "artifacts/w3-13-BUILD_AND_RUN.md",
-            "size_bytes": 93748,
-            "sha256": "sha256:fc6ff587a38650c70136ee9387f9b79f26b46eff77ee68897cdfeec6d464b3b2"
+            "size_bytes": 94133,
+            "sha256": "sha256:83903d3d095e0068ff96aafbfb66f7cd6e2a64b4f89de0c0effc8c8374a6646f"
           },
           {
             "id": "w3-14-IMPLEMENTATION_MASTER_PLAN.md",
             "relative_path": "artifacts/w3-14-IMPLEMENTATION_MASTER_PLAN.md",
-            "size_bytes": 418432,
-            "sha256": "sha256:ebfc3ae0a77a3ed3a758bf3b9dc933ea52896831bd9d0bdc55c09b9addba0941"
+            "size_bytes": 419316,
+            "sha256": "sha256:65ca2532bdccb705e0283c02efb05174071cc7c98edc19d63a384f077487a1cb"
           },
           {
             "id": "w3-15-before-repair.json",
@@ -252,8 +270,8 @@
           {
             "id": "w3-19-document-validation.json",
             "relative_path": "artifacts/w3-19-document-validation.json",
-            "size_bytes": 284,
-            "sha256": "sha256:be17116b2b2827d1dab1bb5bdeb08148cc54cc3f76dc7675aeac6883ecfacd2d"
+            "size_bytes": 242,
+            "sha256": "sha256:30e1568ff506e90d47338dc365845b4777905e9218010c641fa9d0820bb65d83"
           },
           {
             "id": "w3-20-environment.json",
@@ -271,19 +289,19 @@
             "id": "w3-22-independent-oracle.json",
             "relative_path": "artifacts/w3-22-independent-oracle.json",
             "size_bytes": 7708,
-            "sha256": "sha256:9b30789c15a907fd2a209ce8badf4e3f32ff557381ff4ff7e4fbb96c8310c10e"
+            "sha256": "sha256:c00a987a52d8ab052b9bace072ae3ec4c6f9ffddd2c84240a2cb3c26abd0726c"
           },
           {
             "id": "w3-23-quality.json",
             "relative_path": "artifacts/w3-23-quality.json",
-            "size_bytes": 18096,
-            "sha256": "sha256:069543fac897a2b478a5cca2a467492d99a8ee5a75ecc9519e5584506dbb7f9a"
+            "size_bytes": 23582,
+            "sha256": "sha256:9094eb7df21be2820ee86deca639ca2b3fbc0d6529d7c325e87171e69ef0d24e"
           },
           {
             "id": "w3-24-real-native-matrix.json",
             "relative_path": "artifacts/w3-24-real-native-matrix.json",
-            "size_bytes": 258784,
-            "sha256": "sha256:6d474de7af0e3031044875696289a4d62b7ca61eac4f92f11b3954e3de88ebde"
+            "size_bytes": 258737,
+            "sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3"
           },
           {
             "id": "w3-25-taskern-request.json",
@@ -385,13 +403,13 @@
         "absent_outputs": [],
         "cleanup": "complete",
         "timings": {
-          "preparation_ms": 18993,
+          "preparation_ms": 19108,
           "execution_ms": 0,
-          "verification_ms": 133497,
-          "collection_ms": 2523,
-          "finalization_ms": 8
+          "verification_ms": 141766,
+          "collection_ms": 2650,
+          "finalization_ms": 2
         },
-        "duration_ms": 155064
+        "duration_ms": 163572
       }
     }
   },
@@ -402,12 +420,12 @@
       "schema_version": 1,
       "result": {
         "schema_version": 1,
-        "gate_id": "41eda8c3-6236-473b-bc20-4dda70a0e991",
+        "gate_id": "8a9a0517-2b1e-498d-9856-bcded1e204a6",
         "state": "SUCCEEDED",
-        "request_sha256": "sha256:31651e3de722783f570776b33ef5dedcf5c124c27a306a77511f2e46dbaf3d7c",
-        "terminal_state_sha256": "sha256:f1c92626b67c03f8a47c9c4f0457b87de21167da0ffde6c687c1fa2c9e7b98cb",
-        "observations_sha256": "sha256:79e5c2046d5011f8fb0b9325625662072f103f6cad8f46de403bc541de3377af",
-        "candidate_sha256": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1",
+        "request_sha256": "sha256:10a4769e59b5aac4179237c47052db44e1691cc26d1cc4d6fdb662f35155a473",
+        "terminal_state_sha256": "sha256:e85e09d30d754387ee65f4989ef2d762ab2d5586099e45a2d78a75b4bc5c8838",
+        "observations_sha256": "sha256:8e0f7afd749e7304090eab70f31b947629869204c65fb446af068ea69b0fd082",
+        "candidate_sha256": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4",
         "artifacts": [
           {
             "id": "awn-awn-repair.json",
@@ -416,10 +434,16 @@
             "sha256": "sha256:699ad9e3427ba6364efa021227e324b111da2eb075aaaeefc214c5cc7966260e"
           },
           {
+            "id": "awn-awn-repair2.json",
+            "relative_path": "artifacts/awn-awn-repair2.json",
+            "size_bytes": 2593,
+            "sha256": "sha256:3010e4962fff305e9f6cf95c4daffd7c05cb9bace41a109037bae0e5a95be276"
+          },
+          {
             "id": "awn-review-history.json",
             "relative_path": "artifacts/awn-review-history.json",
-            "size_bytes": 1310,
-            "sha256": "sha256:28f03b4e235e5628f3430e4719853d6123abb4adc630f8bef0405a3a8aca715b"
+            "size_bytes": 2269,
+            "sha256": "sha256:6cb83571e2a5c1dce2aabb6465781d55425b1d773ed8e526a8c277ac71fe55cc"
           },
           {
             "id": "awn-review-round1-response.txt",
@@ -432,6 +456,18 @@
             "relative_path": "artifacts/awn-review-round1.json",
             "size_bytes": 1799,
             "sha256": "sha256:5a5cafcccf01bcaa1e1484db05fe945023c3a168e7b6efa98020298cb16c2e60"
+          },
+          {
+            "id": "awn-review-round2-response.txt",
+            "relative_path": "artifacts/awn-review-round2-response.txt",
+            "size_bytes": 7143,
+            "sha256": "sha256:66dc91c956c145807d9a21e532c1875b562e7e492fee5e2c67a20f9ec41456e3"
+          },
+          {
+            "id": "awn-review-round2.json",
+            "relative_path": "artifacts/awn-review-round2.json",
+            "size_bytes": 1644,
+            "sha256": "sha256:561130f8b6c9daea5679d22f36b1c44b000d3233ff0963a3465c1b5922f4bca1"
           },
           {
             "id": "initial-quality",
@@ -490,8 +526,8 @@
           {
             "id": "w3-04-test_w3_verify.py",
             "relative_path": "artifacts/w3-04-test_w3_verify.py",
-            "size_bytes": 10249,
-            "sha256": "sha256:0405616e1ef76ba65f8367194db7e1b008f6c68e9a3b7b041923459a8113037d"
+            "size_bytes": 10958,
+            "sha256": "sha256:d155d823b7e2dc3be0f342ff98212336d25f16d2a636b56b31067be2b1f6a0cf"
           },
           {
             "id": "w3-05-w3_fixtures.py",
@@ -514,8 +550,8 @@
           {
             "id": "w3-08-w3_verify.py",
             "relative_path": "artifacts/w3-08-w3_verify.py",
-            "size_bytes": 16280,
-            "sha256": "sha256:27ae542d14670295e5391e8927c7e9a71e55119127994cd1cb0a42c138bf3ae1"
+            "size_bytes": 16445,
+            "sha256": "sha256:47446b77d1ee61531d4bcfaa475c01d84dbfba67e301f1ba50f329f8243036e7"
           },
           {
             "id": "w3-09-wic_admission.ps1",
@@ -538,20 +574,20 @@
           {
             "id": "w3-12-DESKTOP_DESIGN_CONTRACTS.md",
             "relative_path": "artifacts/w3-12-DESKTOP_DESIGN_CONTRACTS.md",
-            "size_bytes": 129688,
-            "sha256": "sha256:404f9fa106105c85e357d2e382fa368b1ec7c4df0497a704ab06074b8a7726c6"
+            "size_bytes": 130015,
+            "sha256": "sha256:2766b472d38317749d6bc43afeb2ab84ab2b1587fd74450b8126b2d8e8b5f2ea"
           },
           {
             "id": "w3-13-BUILD_AND_RUN.md",
             "relative_path": "artifacts/w3-13-BUILD_AND_RUN.md",
-            "size_bytes": 93748,
-            "sha256": "sha256:fc6ff587a38650c70136ee9387f9b79f26b46eff77ee68897cdfeec6d464b3b2"
+            "size_bytes": 94133,
+            "sha256": "sha256:83903d3d095e0068ff96aafbfb66f7cd6e2a64b4f89de0c0effc8c8374a6646f"
           },
           {
             "id": "w3-14-IMPLEMENTATION_MASTER_PLAN.md",
             "relative_path": "artifacts/w3-14-IMPLEMENTATION_MASTER_PLAN.md",
-            "size_bytes": 418432,
-            "sha256": "sha256:ebfc3ae0a77a3ed3a758bf3b9dc933ea52896831bd9d0bdc55c09b9addba0941"
+            "size_bytes": 419316,
+            "sha256": "sha256:65ca2532bdccb705e0283c02efb05174071cc7c98edc19d63a384f077487a1cb"
           },
           {
             "id": "w3-15-before-repair.json",
@@ -580,8 +616,8 @@
           {
             "id": "w3-19-document-validation.json",
             "relative_path": "artifacts/w3-19-document-validation.json",
-            "size_bytes": 284,
-            "sha256": "sha256:be17116b2b2827d1dab1bb5bdeb08148cc54cc3f76dc7675aeac6883ecfacd2d"
+            "size_bytes": 242,
+            "sha256": "sha256:30e1568ff506e90d47338dc365845b4777905e9218010c641fa9d0820bb65d83"
           },
           {
             "id": "w3-20-environment.json",
@@ -599,19 +635,19 @@
             "id": "w3-22-independent-oracle.json",
             "relative_path": "artifacts/w3-22-independent-oracle.json",
             "size_bytes": 7708,
-            "sha256": "sha256:9b30789c15a907fd2a209ce8badf4e3f32ff557381ff4ff7e4fbb96c8310c10e"
+            "sha256": "sha256:c00a987a52d8ab052b9bace072ae3ec4c6f9ffddd2c84240a2cb3c26abd0726c"
           },
           {
             "id": "w3-23-quality.json",
             "relative_path": "artifacts/w3-23-quality.json",
-            "size_bytes": 18096,
-            "sha256": "sha256:069543fac897a2b478a5cca2a467492d99a8ee5a75ecc9519e5584506dbb7f9a"
+            "size_bytes": 23582,
+            "sha256": "sha256:9094eb7df21be2820ee86deca639ca2b3fbc0d6529d7c325e87171e69ef0d24e"
           },
           {
             "id": "w3-24-real-native-matrix.json",
             "relative_path": "artifacts/w3-24-real-native-matrix.json",
-            "size_bytes": 258784,
-            "sha256": "sha256:6d474de7af0e3031044875696289a4d62b7ca61eac4f92f11b3954e3de88ebde"
+            "size_bytes": 258737,
+            "sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3"
           },
           {
             "id": "w3-25-taskern-request.json",
@@ -723,7 +759,7 @@
             "stderr": {
               "relative_path": "logs/build/stderr",
               "size_bytes": 12705,
-              "sha256": "sha256:b5076899ec4360796e4b7562012246995953480706a8d9f4fbc58fa54af9868e",
+              "sha256": "sha256:4267cf8a9d6464c20f5b0fd95a204e0f2f5eebe430f4a43d846d5df8ab7ccc17",
               "truncated": false,
               "secret": true
             }
@@ -738,9 +774,9 @@
     "verify": 0
   },
   "transport": {
-    "name": "awn-build",
-    "start": "2026-10-27T16:19:00.319Z",
-    "end": "2026-10-27T16:21:37.936Z",
+    "name": "awn2-build",
+    "start": "2026-10-27T16:48:03.972Z",
+    "end": "2026-10-27T16:50:50.133Z",
     "exit": 0,
     "signal": null
   }

@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "candidate": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6",
-  "build_gate": "41eda8c3-6236-473b-bc20-4dda70a0e991",
-  "path": "targets/r4/build/debug/cos-desktop.exe",
+  "candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+  "build_gate": "8a9a0517-2b1e-498d-9856-bcded1e204a6",
+  "path": "targets/r5/build/debug/cos-desktop.exe",
   "bytes": 32275456,
-  "sha256": "sha256:22c1b01158e113fdec6ec8655e4510f6dc6ffb7141c1a9c4cc4ba7084e0b187b",
-  "observation": "Caller observed the real successful Build Gate product before exact scratch disposal. Not a declared immutable artifact or a desktop GUI startup claim. Actual exercised CLI consumer/worker proof is real-native-matrix.json."
+  "sha256": "sha256:b145eca41c4028afe1f0ee6c935659c1227ff72f876c359a086d7c7a5cf1a3e9",
+  "observation": "Caller observed the real Build Gate product before exact scratch disposal. Not a declared immutable artifact or a GUI startup claim; actual CLI consumer/worker proof is real-native-matrix.json."
 }

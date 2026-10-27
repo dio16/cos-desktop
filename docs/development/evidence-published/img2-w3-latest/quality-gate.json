@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "id": "1fd79f6d-8a8e-4c74-ac9e-329c76c3adbb",
-  "candidate": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6",
+  "id": "aed94841-c578-452f-8f62-8d4ad366a234",
+  "candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
   "status": {
     "cli_interface_version": 2,
     "operation": "gate.status",
@@ -9,10 +9,10 @@
       "schema_version": 1,
       "result": {
         "schema_version": 1,
-        "gate_id": "1fd79f6d-8a8e-4c74-ac9e-329c76c3adbb",
-        "gate_label": "mp-img2-w3-awn-quality",
+        "gate_id": "aed94841-c578-452f-8f62-8d4ad366a234",
+        "gate_label": "mp-img2-w3-awn2-quality",
         "state": "SUCCEEDED",
-        "updated_at": "2026-10-27T16:18:50.382765700Z",
+        "updated_at": "2026-10-27T16:47:58.445340100Z",
         "owner_alive": false,
         "recovery_required": false
       }
@@ -25,10 +25,10 @@
       "schema_version": 1,
       "result": {
         "schema_version": 1,
-        "gate_id": "1fd79f6d-8a8e-4c74-ac9e-329c76c3adbb",
-        "gate_label": "mp-img2-w3-awn-quality",
-        "request_sha256": "sha256:2fc465ae95feb9c90e59c719453e7ae85a244f30aa454e8c417a53f62e0260c5",
-        "terminal_state_sha256": "sha256:1651d7317976b741d85f58f2c69aac7a1449d1d8d0a9a99640c1b21375272557",
+        "gate_id": "aed94841-c578-452f-8f62-8d4ad366a234",
+        "gate_label": "mp-img2-w3-awn2-quality",
+        "request_sha256": "sha256:41351c80e264050209eab0a1ed3a4734e7c69594084d05df4decc5e0df7fc1d2",
+        "terminal_state_sha256": "sha256:88b6d8daadb6ff8677cdf20030af70f75955cfdca6e63da827806c96f1c27f32",
         "runtime": {
           "refine_version": "0.3.1",
           "os": "windows",
@@ -37,10 +37,10 @@
         },
         "repository": {
           "location": "<REPOSITORY>",
-          "requested_revision": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6",
-          "resolved_base_commit": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6",
+          "requested_revision": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+          "resolved_base_commit": "f8dfc3009fd7526e1b055968e2fc19892c007190",
           "object_format": "sha1",
-          "final_head": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6"
+          "final_head": "f8dfc3009fd7526e1b055968e2fc19892c007190"
         },
         "limits": {
           "timeout_ms": 600000,
@@ -48,113 +48,113 @@
           "max_output_bytes": 16777216,
           "max_artifact_bytes": 16777216
         },
-        "accepted_at": "2026-10-27T16:12:26.293584600Z",
-        "ended_at": "2026-10-27T16:18:50.382765700Z",
-        "candidate_sha256": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1",
+        "accepted_at": "2026-10-27T16:41:39.682390000Z",
+        "ended_at": "2026-10-27T16:47:58.445340100Z",
+        "candidate_sha256": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4",
         "verification": [
           {
             "id": "fmt",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 1559,
+            "duration_ms": 1563,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "metadata",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 647,
+            "duration_ms": 651,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "dependency-self-test",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 1094,
+            "duration_ms": 1069,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "dependency-rules",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 756,
+            "duration_ms": 774,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "clippy",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 97414,
+            "duration_ms": 97252,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "tests",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 157028,
+            "duration_ms": 149410,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "r0-python",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 13629,
+            "duration_ms": 16561,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "img2-python",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 1457,
+            "duration_ms": 1571,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "w2-probe-selftest",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 13945,
+            "duration_ms": 15156,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "w2-oracle",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 13705,
+            "duration_ms": 13731,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "w3-retained-native-replay",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 735,
+            "duration_ms": 726,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "wic-admission-selftest",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 1271,
+            "duration_ms": 1168,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           },
           {
             "id": "w1-runner-selftest",
             "kind": "command",
             "outcome": "pass",
-            "duration_ms": 689,
+            "duration_ms": 658,
             "observed_exit": 0,
-            "candidate_binding": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1"
+            "candidate_binding": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4"
           }
         ],
         "check_logs": [
@@ -180,7 +180,7 @@
             "stdout": {
               "relative_path": "logs/metadata/stdout",
               "size_bytes": 23306,
-              "sha256": "sha256:9d035401ee336548cc5370a6b9c4677b06069d8aafc8351c1142465b087d9c4f",
+              "sha256": "sha256:c77955d693637267d6aaa6bfe049e461b7afefce5435d86fdf88991c3c634462",
               "truncated": false,
               "secret": true
             },
@@ -204,7 +204,7 @@
             "stderr": {
               "relative_path": "logs/dependency-self-test/stderr",
               "size_bytes": 2680,
-              "sha256": "sha256:9e7c0299524615ea6ccb7d20e907527c50ca35eebe0cd20d4ac201e098bf12f9",
+              "sha256": "sha256:9dfea748d288e7fb3060a9bd9c2897940f90738e753b626b823bf9f1b94d86ec",
               "truncated": false,
               "secret": true
             }
@@ -238,7 +238,7 @@
             "stderr": {
               "relative_path": "logs/clippy/stderr",
               "size_bytes": 12946,
-              "sha256": "sha256:fab651ce2d22d1eeba17e01a8875b901a22dc3109f612c965120104b9e6fdfbc",
+              "sha256": "sha256:860d1e68b0c530c6575c60dcf6ea764e6f0ddd6f52b35a390531b2568d45d653",
               "truncated": false,
               "secret": true
             }
@@ -248,14 +248,14 @@
             "stdout": {
               "relative_path": "logs/tests/stdout",
               "size_bytes": 43420,
-              "sha256": "sha256:59d7e1880eb2691fe53f12bb30c66791f60e03755d597e2cc0460347a65fbbed",
+              "sha256": "sha256:873a814bb6036e0e0a3a5977f92ecfe9c81dc3c50f376531a9044a5daab977e1",
               "truncated": false,
               "secret": true
             },
             "stderr": {
               "relative_path": "logs/tests/stderr",
               "size_bytes": 16762,
-              "sha256": "sha256:aeab4f73e8190aad6b323c82e842709c497d16683847eaed90caf2adc77e3cbc",
+              "sha256": "sha256:c7bec69c88c63717dbe1598a2382e6366a6b4c96e360478d2907936fa6fdf234",
               "truncated": false,
               "secret": true
             }
@@ -272,7 +272,7 @@
             "stderr": {
               "relative_path": "logs/r0-python/stderr",
               "size_bytes": 683,
-              "sha256": "sha256:16e8efacbe224f2dbeba39e32a3c79e354e47f0fd25edad8c5f9f3fb65726803",
+              "sha256": "sha256:b26a089b4d01bbacd60568157067e7c8d267c27dbfbb6d552b4e6fdd2a3452d4",
               "truncated": false,
               "secret": true
             }
@@ -288,8 +288,8 @@
             },
             "stderr": {
               "relative_path": "logs/img2-python/stderr",
-              "size_bytes": 182,
-              "sha256": "sha256:1d0ec88fa05f80d3487ef77dc330d072bd2b7fc093eab5864a8d04ec1adf1e7f",
+              "size_bytes": 183,
+              "sha256": "sha256:6aa4e30d868542ee9b8fcf97bde22ff68f0789d7a88995d44a9212c34e87acf2",
               "truncated": false,
               "secret": true
             }
@@ -388,10 +388,16 @@
             "sha256": "sha256:699ad9e3427ba6364efa021227e324b111da2eb075aaaeefc214c5cc7966260e"
           },
           {
+            "id": "awn-awn-repair2.json",
+            "relative_path": "artifacts/awn-awn-repair2.json",
+            "size_bytes": 2593,
+            "sha256": "sha256:3010e4962fff305e9f6cf95c4daffd7c05cb9bace41a109037bae0e5a95be276"
+          },
+          {
             "id": "awn-review-history.json",
             "relative_path": "artifacts/awn-review-history.json",
-            "size_bytes": 1310,
-            "sha256": "sha256:28f03b4e235e5628f3430e4719853d6123abb4adc630f8bef0405a3a8aca715b"
+            "size_bytes": 2269,
+            "sha256": "sha256:6cb83571e2a5c1dce2aabb6465781d55425b1d773ed8e526a8c277ac71fe55cc"
           },
           {
             "id": "awn-review-round1-response.txt",
@@ -404,6 +410,18 @@
             "relative_path": "artifacts/awn-review-round1.json",
             "size_bytes": 1799,
             "sha256": "sha256:5a5cafcccf01bcaa1e1484db05fe945023c3a168e7b6efa98020298cb16c2e60"
+          },
+          {
+            "id": "awn-review-round2-response.txt",
+            "relative_path": "artifacts/awn-review-round2-response.txt",
+            "size_bytes": 7143,
+            "sha256": "sha256:66dc91c956c145807d9a21e532c1875b562e7e492fee5e2c67a20f9ec41456e3"
+          },
+          {
+            "id": "awn-review-round2.json",
+            "relative_path": "artifacts/awn-review-round2.json",
+            "size_bytes": 1644,
+            "sha256": "sha256:561130f8b6c9daea5679d22f36b1c44b000d3233ff0963a3465c1b5922f4bca1"
           },
           {
             "id": "initial-quality",
@@ -462,8 +480,8 @@
           {
             "id": "w3-04-test_w3_verify.py",
             "relative_path": "artifacts/w3-04-test_w3_verify.py",
-            "size_bytes": 10249,
-            "sha256": "sha256:0405616e1ef76ba65f8367194db7e1b008f6c68e9a3b7b041923459a8113037d"
+            "size_bytes": 10958,
+            "sha256": "sha256:d155d823b7e2dc3be0f342ff98212336d25f16d2a636b56b31067be2b1f6a0cf"
           },
           {
             "id": "w3-05-w3_fixtures.py",
@@ -486,8 +504,8 @@
           {
             "id": "w3-08-w3_verify.py",
             "relative_path": "artifacts/w3-08-w3_verify.py",
-            "size_bytes": 16280,
-            "sha256": "sha256:27ae542d14670295e5391e8927c7e9a71e55119127994cd1cb0a42c138bf3ae1"
+            "size_bytes": 16445,
+            "sha256": "sha256:47446b77d1ee61531d4bcfaa475c01d84dbfba67e301f1ba50f329f8243036e7"
           },
           {
             "id": "w3-09-wic_admission.ps1",
@@ -510,20 +528,20 @@
           {
             "id": "w3-12-DESKTOP_DESIGN_CONTRACTS.md",
             "relative_path": "artifacts/w3-12-DESKTOP_DESIGN_CONTRACTS.md",
-            "size_bytes": 129688,
-            "sha256": "sha256:404f9fa106105c85e357d2e382fa368b1ec7c4df0497a704ab06074b8a7726c6"
+            "size_bytes": 130015,
+            "sha256": "sha256:2766b472d38317749d6bc43afeb2ab84ab2b1587fd74450b8126b2d8e8b5f2ea"
           },
           {
             "id": "w3-13-BUILD_AND_RUN.md",
             "relative_path": "artifacts/w3-13-BUILD_AND_RUN.md",
-            "size_bytes": 93748,
-            "sha256": "sha256:fc6ff587a38650c70136ee9387f9b79f26b46eff77ee68897cdfeec6d464b3b2"
+            "size_bytes": 94133,
+            "sha256": "sha256:83903d3d095e0068ff96aafbfb66f7cd6e2a64b4f89de0c0effc8c8374a6646f"
           },
           {
             "id": "w3-14-IMPLEMENTATION_MASTER_PLAN.md",
             "relative_path": "artifacts/w3-14-IMPLEMENTATION_MASTER_PLAN.md",
-            "size_bytes": 418432,
-            "sha256": "sha256:ebfc3ae0a77a3ed3a758bf3b9dc933ea52896831bd9d0bdc55c09b9addba0941"
+            "size_bytes": 419316,
+            "sha256": "sha256:65ca2532bdccb705e0283c02efb05174071cc7c98edc19d63a384f077487a1cb"
           },
           {
             "id": "w3-15-before-repair.json",
@@ -552,8 +570,8 @@
           {
             "id": "w3-19-document-validation.json",
             "relative_path": "artifacts/w3-19-document-validation.json",
-            "size_bytes": 284,
-            "sha256": "sha256:be17116b2b2827d1dab1bb5bdeb08148cc54cc3f76dc7675aeac6883ecfacd2d"
+            "size_bytes": 242,
+            "sha256": "sha256:30e1568ff506e90d47338dc365845b4777905e9218010c641fa9d0820bb65d83"
           },
           {
             "id": "w3-20-environment.json",
@@ -571,19 +589,19 @@
             "id": "w3-22-independent-oracle.json",
             "relative_path": "artifacts/w3-22-independent-oracle.json",
             "size_bytes": 7708,
-            "sha256": "sha256:9b30789c15a907fd2a209ce8badf4e3f32ff557381ff4ff7e4fbb96c8310c10e"
+            "sha256": "sha256:c00a987a52d8ab052b9bace072ae3ec4c6f9ffddd2c84240a2cb3c26abd0726c"
           },
           {
             "id": "w3-23-quality.json",
             "relative_path": "artifacts/w3-23-quality.json",
-            "size_bytes": 18096,
-            "sha256": "sha256:069543fac897a2b478a5cca2a467492d99a8ee5a75ecc9519e5584506dbb7f9a"
+            "size_bytes": 23582,
+            "sha256": "sha256:9094eb7df21be2820ee86deca639ca2b3fbc0d6529d7c325e87171e69ef0d24e"
           },
           {
             "id": "w3-24-real-native-matrix.json",
             "relative_path": "artifacts/w3-24-real-native-matrix.json",
-            "size_bytes": 258784,
-            "sha256": "sha256:6d474de7af0e3031044875696289a4d62b7ca61eac4f92f11b3954e3de88ebde"
+            "size_bytes": 258737,
+            "sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3"
           },
           {
             "id": "w3-25-taskern-request.json",
@@ -685,13 +703,13 @@
         "absent_outputs": [],
         "cleanup": "complete",
         "timings": {
-          "preparation_ms": 19328,
+          "preparation_ms": 18924,
           "execution_ms": 0,
-          "verification_ms": 361887,
-          "collection_ms": 2676,
+          "verification_ms": 357072,
+          "collection_ms": 2564,
           "finalization_ms": 3
         },
-        "duration_ms": 384083
+        "duration_ms": 378755
       }
     }
   },
@@ -702,12 +720,12 @@
       "schema_version": 1,
       "result": {
         "schema_version": 1,
-        "gate_id": "1fd79f6d-8a8e-4c74-ac9e-329c76c3adbb",
+        "gate_id": "aed94841-c578-452f-8f62-8d4ad366a234",
         "state": "SUCCEEDED",
-        "request_sha256": "sha256:2fc465ae95feb9c90e59c719453e7ae85a244f30aa454e8c417a53f62e0260c5",
-        "terminal_state_sha256": "sha256:1651d7317976b741d85f58f2c69aac7a1449d1d8d0a9a99640c1b21375272557",
-        "observations_sha256": "sha256:bbb7d5444d37646fecebd1dd6b8428ee53fe1ac5a8f3922a17d2bc7aa10aac14",
-        "candidate_sha256": "sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1",
+        "request_sha256": "sha256:41351c80e264050209eab0a1ed3a4734e7c69594084d05df4decc5e0df7fc1d2",
+        "terminal_state_sha256": "sha256:88b6d8daadb6ff8677cdf20030af70f75955cfdca6e63da827806c96f1c27f32",
+        "observations_sha256": "sha256:391fd7f5157f28f0cd0fae54990e44c2c22abb45c38eee78f67b1a057c3437e7",
+        "candidate_sha256": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4",
         "artifacts": [
           {
             "id": "awn-awn-repair.json",
@@ -716,10 +734,16 @@
             "sha256": "sha256:699ad9e3427ba6364efa021227e324b111da2eb075aaaeefc214c5cc7966260e"
           },
           {
+            "id": "awn-awn-repair2.json",
+            "relative_path": "artifacts/awn-awn-repair2.json",
+            "size_bytes": 2593,
+            "sha256": "sha256:3010e4962fff305e9f6cf95c4daffd7c05cb9bace41a109037bae0e5a95be276"
+          },
+          {
             "id": "awn-review-history.json",
             "relative_path": "artifacts/awn-review-history.json",
-            "size_bytes": 1310,
-            "sha256": "sha256:28f03b4e235e5628f3430e4719853d6123abb4adc630f8bef0405a3a8aca715b"
+            "size_bytes": 2269,
+            "sha256": "sha256:6cb83571e2a5c1dce2aabb6465781d55425b1d773ed8e526a8c277ac71fe55cc"
           },
           {
             "id": "awn-review-round1-response.txt",
@@ -732,6 +756,18 @@
             "relative_path": "artifacts/awn-review-round1.json",
             "size_bytes": 1799,
             "sha256": "sha256:5a5cafcccf01bcaa1e1484db05fe945023c3a168e7b6efa98020298cb16c2e60"
+          },
+          {
+            "id": "awn-review-round2-response.txt",
+            "relative_path": "artifacts/awn-review-round2-response.txt",
+            "size_bytes": 7143,
+            "sha256": "sha256:66dc91c956c145807d9a21e532c1875b562e7e492fee5e2c67a20f9ec41456e3"
+          },
+          {
+            "id": "awn-review-round2.json",
+            "relative_path": "artifacts/awn-review-round2.json",
+            "size_bytes": 1644,
+            "sha256": "sha256:561130f8b6c9daea5679d22f36b1c44b000d3233ff0963a3465c1b5922f4bca1"
           },
           {
             "id": "initial-quality",
@@ -790,8 +826,8 @@
           {
             "id": "w3-04-test_w3_verify.py",
             "relative_path": "artifacts/w3-04-test_w3_verify.py",
-            "size_bytes": 10249,
-            "sha256": "sha256:0405616e1ef76ba65f8367194db7e1b008f6c68e9a3b7b041923459a8113037d"
+            "size_bytes": 10958,
+            "sha256": "sha256:d155d823b7e2dc3be0f342ff98212336d25f16d2a636b56b31067be2b1f6a0cf"
           },
           {
             "id": "w3-05-w3_fixtures.py",
@@ -814,8 +850,8 @@
           {
             "id": "w3-08-w3_verify.py",
             "relative_path": "artifacts/w3-08-w3_verify.py",
-            "size_bytes": 16280,
-            "sha256": "sha256:27ae542d14670295e5391e8927c7e9a71e55119127994cd1cb0a42c138bf3ae1"
+            "size_bytes": 16445,
+            "sha256": "sha256:47446b77d1ee61531d4bcfaa475c01d84dbfba67e301f1ba50f329f8243036e7"
           },
           {
             "id": "w3-09-wic_admission.ps1",
@@ -838,20 +874,20 @@
           {
             "id": "w3-12-DESKTOP_DESIGN_CONTRACTS.md",
             "relative_path": "artifacts/w3-12-DESKTOP_DESIGN_CONTRACTS.md",
-            "size_bytes": 129688,
-            "sha256": "sha256:404f9fa106105c85e357d2e382fa368b1ec7c4df0497a704ab06074b8a7726c6"
+            "size_bytes": 130015,
+            "sha256": "sha256:2766b472d38317749d6bc43afeb2ab84ab2b1587fd74450b8126b2d8e8b5f2ea"
           },
           {
             "id": "w3-13-BUILD_AND_RUN.md",
             "relative_path": "artifacts/w3-13-BUILD_AND_RUN.md",
-            "size_bytes": 93748,
-            "sha256": "sha256:fc6ff587a38650c70136ee9387f9b79f26b46eff77ee68897cdfeec6d464b3b2"
+            "size_bytes": 94133,
+            "sha256": "sha256:83903d3d095e0068ff96aafbfb66f7cd6e2a64b4f89de0c0effc8c8374a6646f"
           },
           {
             "id": "w3-14-IMPLEMENTATION_MASTER_PLAN.md",
             "relative_path": "artifacts/w3-14-IMPLEMENTATION_MASTER_PLAN.md",
-            "size_bytes": 418432,
-            "sha256": "sha256:ebfc3ae0a77a3ed3a758bf3b9dc933ea52896831bd9d0bdc55c09b9addba0941"
+            "size_bytes": 419316,
+            "sha256": "sha256:65ca2532bdccb705e0283c02efb05174071cc7c98edc19d63a384f077487a1cb"
           },
           {
             "id": "w3-15-before-repair.json",
@@ -880,8 +916,8 @@
           {
             "id": "w3-19-document-validation.json",
             "relative_path": "artifacts/w3-19-document-validation.json",
-            "size_bytes": 284,
-            "sha256": "sha256:be17116b2b2827d1dab1bb5bdeb08148cc54cc3f76dc7675aeac6883ecfacd2d"
+            "size_bytes": 242,
+            "sha256": "sha256:30e1568ff506e90d47338dc365845b4777905e9218010c641fa9d0820bb65d83"
           },
           {
             "id": "w3-20-environment.json",
@@ -899,19 +935,19 @@
             "id": "w3-22-independent-oracle.json",
             "relative_path": "artifacts/w3-22-independent-oracle.json",
             "size_bytes": 7708,
-            "sha256": "sha256:9b30789c15a907fd2a209ce8badf4e3f32ff557381ff4ff7e4fbb96c8310c10e"
+            "sha256": "sha256:c00a987a52d8ab052b9bace072ae3ec4c6f9ffddd2c84240a2cb3c26abd0726c"
           },
           {
             "id": "w3-23-quality.json",
             "relative_path": "artifacts/w3-23-quality.json",
-            "size_bytes": 18096,
-            "sha256": "sha256:069543fac897a2b478a5cca2a467492d99a8ee5a75ecc9519e5584506dbb7f9a"
+            "size_bytes": 23582,
+            "sha256": "sha256:9094eb7df21be2820ee86deca639ca2b3fbc0d6529d7c325e87171e69ef0d24e"
           },
           {
             "id": "w3-24-real-native-matrix.json",
             "relative_path": "artifacts/w3-24-real-native-matrix.json",
-            "size_bytes": 258784,
-            "sha256": "sha256:6d474de7af0e3031044875696289a4d62b7ca61eac4f92f11b3954e3de88ebde"
+            "size_bytes": 258737,
+            "sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3"
           },
           {
             "id": "w3-25-taskern-request.json",
@@ -1033,7 +1069,7 @@
             "stdout": {
               "relative_path": "logs/metadata/stdout",
               "size_bytes": 23306,
-              "sha256": "sha256:9d035401ee336548cc5370a6b9c4677b06069d8aafc8351c1142465b087d9c4f",
+              "sha256": "sha256:c77955d693637267d6aaa6bfe049e461b7afefce5435d86fdf88991c3c634462",
               "truncated": false,
               "secret": true
             },
@@ -1057,7 +1093,7 @@
             "stderr": {
               "relative_path": "logs/dependency-self-test/stderr",
               "size_bytes": 2680,
-              "sha256": "sha256:9e7c0299524615ea6ccb7d20e907527c50ca35eebe0cd20d4ac201e098bf12f9",
+              "sha256": "sha256:9dfea748d288e7fb3060a9bd9c2897940f90738e753b626b823bf9f1b94d86ec",
               "truncated": false,
               "secret": true
             }
@@ -1091,7 +1127,7 @@
             "stderr": {
               "relative_path": "logs/clippy/stderr",
               "size_bytes": 12946,
-              "sha256": "sha256:fab651ce2d22d1eeba17e01a8875b901a22dc3109f612c965120104b9e6fdfbc",
+              "sha256": "sha256:860d1e68b0c530c6575c60dcf6ea764e6f0ddd6f52b35a390531b2568d45d653",
               "truncated": false,
               "secret": true
             }
@@ -1101,14 +1137,14 @@
             "stdout": {
               "relative_path": "logs/tests/stdout",
               "size_bytes": 43420,
-              "sha256": "sha256:59d7e1880eb2691fe53f12bb30c66791f60e03755d597e2cc0460347a65fbbed",
+              "sha256": "sha256:873a814bb6036e0e0a3a5977f92ecfe9c81dc3c50f376531a9044a5daab977e1",
               "truncated": false,
               "secret": true
             },
             "stderr": {
               "relative_path": "logs/tests/stderr",
               "size_bytes": 16762,
-              "sha256": "sha256:aeab4f73e8190aad6b323c82e842709c497d16683847eaed90caf2adc77e3cbc",
+              "sha256": "sha256:c7bec69c88c63717dbe1598a2382e6366a6b4c96e360478d2907936fa6fdf234",
               "truncated": false,
               "secret": true
             }
@@ -1125,7 +1161,7 @@
             "stderr": {
               "relative_path": "logs/r0-python/stderr",
               "size_bytes": 683,
-              "sha256": "sha256:16e8efacbe224f2dbeba39e32a3c79e354e47f0fd25edad8c5f9f3fb65726803",
+              "sha256": "sha256:b26a089b4d01bbacd60568157067e7c8d267c27dbfbb6d552b4e6fdd2a3452d4",
               "truncated": false,
               "secret": true
             }
@@ -1141,8 +1177,8 @@
             },
             "stderr": {
               "relative_path": "logs/img2-python/stderr",
-              "size_bytes": 182,
-              "sha256": "sha256:1d0ec88fa05f80d3487ef77dc330d072bd2b7fc093eab5864a8d04ec1adf1e7f",
+              "size_bytes": 183,
+              "sha256": "sha256:6aa4e30d868542ee9b8fcf97bde22ff68f0789d7a88995d44a9212c34e87acf2",
               "truncated": false,
               "secret": true
             }
@@ -1242,9 +1278,9 @@
     "verify": 0
   },
   "transport": {
-    "name": "awn-quality",
-    "start": "2026-10-27T16:12:23.716Z",
-    "end": "2026-10-27T16:18:50.409Z",
+    "name": "awn2-quality",
+    "start": "2026-10-27T16:41:36.984Z",
+    "end": "2026-10-27T16:47:58.476Z",
     "exit": 0,
     "signal": null
   }
