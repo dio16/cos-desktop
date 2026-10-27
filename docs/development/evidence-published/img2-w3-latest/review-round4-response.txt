@@ -1,0 +1,405 @@
+ChatGPT の発言:
+MP-IMG2-W3 Round 4 — 固定候補独立レビュー
+
+判定：HOLD 0 / 1 / 0
+
+前回のA-W3-R3-01は大部分が解消されています。今回のSOURCE manifest、証拠HEADの指定、GateとSOURCEの対応を実バイトで確認しました。
+
+ただし、Gate捕捉後に変更されたMP本文の実バイトが提出物に含まれておらず、3件のdocs-only差分すべてを独立検証するには証拠が1点不足しています。
+
+製品SOURCEに対する新規不具合は確認していません。
+
+1. 添付・固定版の検証
+
+検証項目
+
+	
+
+独立結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+572,901 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+238,971 bytes、SHA256一致
+
+
+
+
+SOURCE files
+
+	
+
+44/44 manifest一致
+
+
+
+
+Evidence files
+
+	
+
+71件、重複なし
+
+
+
+
+SOURCE raw/LF
+
+	
+
+テキスト43件、binary1件を照合
+
+
+
+
+Git archive SOURCEコメント
+
+	
+
+f8dfc300… 一致
+
+
+
+
+Git archive Evidenceコメント
+
+	
+
+481a29e4… 一致
+
+
+
+
+W2/W3 Python tests
+
+	
+
+79/79 PASS
+
+
+
+
+Native structural replay
+
+	
+
+PASS、24 workers
+
+
+
+
+Bgr565独立pixel照合
+
+	
+
+10/10 RGBA完全一致
+
+
+
+
+Gate間artifact tuples
+
+	
+
+53/53一致
+
+
+
+
+Native source bindings
+
+	
+
+16/16一致
+
+ZIPコメントはそれぞれ指定されたcommit OIDを保持しています。ただし、Git commit object全体や親子関係を証明するものではありません。
+
+2. A-W3-R3-01の修正確認
+
+修正項目
+
+	
+
+判定
+
+	
+
+根拠
+
+
+
+
+① 証拠HEADの一意化
+
+	
+
+解消
+
+	
+
+外部manifest、Evidence ZIPのSHA256・commitコメントが一致
+
+
+
+
+② Gate後のdocs-only差分
+
+	
+
+一部未検証
+
+	
+
+3件中2件の現行実バイト一致。更新後MP本文は未収録
+
+
+
+
+③ SOURCE44件manifest
+
+	
+
+解消
+
+	
+
+今回のreview-package-source.jsonを確認、44/44一致
+
+① 証拠HEAD — 解消
+
+今回の外部review-package.jsonでは、証拠HEADが次に固定されています。
+
+481a29e4b2e5186fff44993cfb0f2da290cab9fb
+
+実Evidence ZIPのGit archiveコメントも、このOIDと一致しました。
+
+Round 3で混同されていたf5ec02fと83a847fについても、review-round3-package-reconciliation.jsonにそれぞれstorage closureとrequest metadataの役割が明記されています。
+
+今回の証拠版の指定は明確になっています。
+
+③ SOURCE manifest — 解消
+
+前回欠落していたreview-package-source.jsonがEvidence ZIPに存在します。
+
+44件すべてについて、ZIPエントリーの原バイト数・SHA256と、宣言されたLF正規化後のバイト数・SHA256を再計算しました。
+
+44/44一致しています。
+
+固定SOURCE候補f8dfc300…と現行Quality/Build Gateのcandidate identityも一致しています。
+
+3. 残存指摘
+A-W3-R4-01 — 更新後MP本文の実バイトがなく、3件目の差分を検証できない
+
+種別：ACTIONABLE NON-BLOCKING
+
+対象：
+
+docs/development/IMPLEMENTATION_MASTER_PLAN.md
+
+review-round3-package-reconciliation.json
+
+review-package.json
+
+Evidence ZIPの収録範囲
+
+Gate捕捉版と今回の証拠HEADについて、次の差分が宣言されています。
+
+ファイル
+
+	
+
+Gate捕捉
+
+	
+
+証拠HEAD
+
+	
+
+独立照合
+
+
+
+
+review-history.json
+
+	
+
+2,269 B
+
+	
+
+3,494 B
+
+	
+
+一致
+
+
+
+
+document-validation.json
+
+	
+
+242 B
+
+	
+
+237 B
+
+	
+
+一致
+
+
+
+
+IMPLEMENTATION_MASTER_PLAN.md
+
+	
+
+419,316 B
+
+	
+
+420,331 B
+
+	
+
+現行バイト未収録
+
+更新後MPについて、manifestには次のSHA256が記載されています。
+
+46e81d438441a4fcce2467392ff407335bffe34239a17cb0bd0816f359acafc1
+
+しかし、SOURCE ZIP内のMPはGate捕捉時点の製品候補版です。Evidence ZIPはimg2-w3-latest配下のみを収録しており、証拠HEAD時点のMP本文を含みません。
+
+したがって、更新後MPのSHA256、変更箇所、§19.54/19.55の保持を、申告から独立して確認できません。
+
+最小修正条件
+
+証拠HEAD 481a29e4…から取得したMP本文を、原バイトまたは明示されたLF形式で追加してください。
+
+そのうえで以下を示せば十分です。
+
+実SHA256が46e81d43…に一致すること
+
+Gate捕捉版との差分が記録されたdocs-only変更だけであること
+
+§19.54/19.55と既存hard prerequisitesが保持されていること
+
+固定SOURCE、Native記録、Gate artifactが変更されていないこと
+
+既存のSOURCEを修正したり、Native実測・Refine Gateを再実行したりする必要はありません。
+
+4. 前回CLOSED事項・技術成果の維持
+
+A-W3-R2-01の修正も確認しました。
+
+実Native記録からrefusedを削除し、stage連番・trace bytes・SHA256・件数を再計算する独立改変を、6ケースすべてで実施しました。
+
+対象
+
+	
+
+結果
+
+
+
+
+truncated
+
+	
+
+native_stage_set_incomplete
+
+
+
+
+bad_masks
+
+	
+
+同上
+
+
+
+
+overlap_masks
+
+	
+
+同上
+
+
+
+
+bad_header
+
+	
+
+同上
+
+
+
+
+inconsistent
+
+	
+
+同上
+
+
+
+
+unsupported
+
+	
+
+同上
+
+すべてok=falseです。正常Native recordはok=trueで、79件のportableテストも通過しました。
+
+Bgr565についても独立BMP565→RGBA展開とPNGのCRC・inflate・filter復元を行い、10件すべての画素一致を確認しました。
+
+A-W3-R2-01はCLOSEDを維持します。
+
+5. Gate再実行の要否
+
+今回の修正内容に対して、既存の成功Gateを再実行しない判断は適切です。
+
+Quality Gate aed94841-c578-452f-8f62-8d4ad366a234は13/13、Build Gate 8a9a0517-2b1e-498d-9856-bcded1e204a6は1/1で、ともにSUCCEEDEDです。
+
+両Gateは同じ製品候補とcandidate digest b0c12483…c5e5a4に結び付いています。status/inspect/verifyの保存結果もexit 0です。
+
+今回問題となっているのは製品候補の実装変更ではなく、Gate後のドキュメント差分を独立検証するための提出バイトです。
+
+16K、WIC内部scratch・stride、真の同時peak、cooperative cancellation、region/sequential/tiled、ICC/orientation、JPEG絶対raster、full Decode/Upload、Runtime、measured R0は引き続き未達として正しく分離されています。
+
+W3の限定技術的事実は裏付けられていますが、固定証拠版の完全な0/0/0 closureは、更新後MPの実バイト照合まで保留します。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 1
+
+EXCESSIVE 0
+
+REVIEW COMPLETE
+
+HOLD 0 / 1 / 0

@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+  "evidence_head": "481a29e4b2e5186fff44993cfb0f2da290cab9fb",
+  "package_manifest_commit": "b923e7de9e8105a1aa8f110827c22de424a3421b",
+  "request_commit": "25d260baea3b36bb42d6559385bf37413f3bf21c",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "ea184650-1d1a-4271-b262-b31e437b3f7a"
+  ],
+  "assistant_ids": [
+    "50d1f4c8-6995-41fd-a2a7-87dd4ff23650"
+  ],
+  "first_read": "2026-10-27T17:14:28.290Z",
+  "second_read": "2026-10-27T17:14:58.330Z",
+  "elapsed_ms": 30040,
+  "identical_complete_reads": true,
+  "streaming": false,
+  "request_sha256": "sha256:ae85357638f0e3475f8aa022cd3bcc9cb2369f250d69b1130ec26d701defd086",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 2893,
+      "expected": 2893,
+      "preview": "MP-IMG2-W3 再評価 Round 4 — A-W3-R3-01（証拠パッケージ対応）のみの修正です。Round "
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 5,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "terminal": "HOLD 0 / 1 / 0",
+  "parser_exit": 1,
+  "parser": {
+    "blocking": 0,
+    "actionable": 1,
+    "excessive": 0,
+    "passLine": null,
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": false,
+    "sawPassLine": false
+  },
+  "closed": [
+    "A-W3-R2-01 confirmed"
+  ],
+  "resolved": [
+    "A-W3-R3-01:① evidence head",
+    "A-W3-R3-01:③ SOURCE manifest"
+  ],
+  "open": [
+    "A-W3-R4-01"
+  ]
+}

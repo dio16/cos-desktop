@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "finding": "A-W3-R4-01",
+  "evidence_head": "recorded-by-review-package.json#evidence_head",
+  "gate_captured_source": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+  "gate_captured_plan": {
+    "bytes": 419316,
+    "sha256": "sha256:65ca2532bdccb705e0283c02efb05174071cc7c98edc19d63a384f077487a1cb"
+  },
+  "evidence_plan": {
+    "bytes": 421190,
+    "sha256": "sha256:e80718cd25a4871dd11be54ab022feb2a5fa907c3cb3bbdc5a6339d6cf12e95e",
+    "path": "review-round4/IMPLEMENTATION_MASTER_PLAN.md",
+    "format": "LF bytes exactly as committed at the evidence head"
+  },
+  "plan_diff": {
+    "path": "review-round4/plan-capture-to-head.diff",
+    "bytes": 6696,
+    "sha256": "sha256:a5306aa4d8b439fe73fa54244b6131bff3946649c459d3028590863544893cb6",
+    "added_lines": 3,
+    "removed_lines": 1,
+    "scope": "Only the Round 2 clause wording and the Round 3/4 evidence bullets differ. Documented facts, Gate IDs, verdicts and measured values are unchanged."
+  },
+  "other_changed_documents": {
+    "review-history.json": {
+      "bytes": 4647,
+      "sha256": "sha256:4634e0e9873a0cd576f09addc7e5004e2570512fb90a30d8c647bcafc2574f70",
+      "path": "review-history.json in the evidence ZIP",
+      "change": "Round 3/4 receipt links and current status added; prior verdicts unchanged."
+    },
+    "document-validation.json": {
+      "path": "document-validation.json in the evidence ZIP",
+      "change": "Link/heading/preserved-section validation refreshed after the bundle."
+    }
+  },
+  "preserved": {
+    "required_sections": [
+      "### 19.54",
+      "### 19.55",
+      "### 19.56"
+    ],
+    "all_present": true,
+    "old_heading_count": 163,
+    "new_heading_count": 164,
+    "missing_old_headings": []
+  },
+  "product_scope": {
+    "product_source_changed_since_candidate": false,
+    "native_record_changed": false,
+    "gate_artifacts_changed": false,
+    "statement": "The candidate-to-evidence diff contains documentation and evidence records only. No WIC probe/decoder, fixture, oracle, media API/budget, consumer, Runtime or Taskern file changed."
+  },
+  "verification": {
+    "plan_copy_is_lf": true,
+    "capture_is_lf": true,
+    "diff_is_between_capture_and_evidence_copy": true,
+    "source_candidate_unchanged": "f8dfc3009fd7526e1b055968e2fc19892c007190"
+  }
+}
