@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "candidate": "7786f9fd7c42ee35b5006c9ad236b64bcc2c0511",
+  "reports": {
+    "quality": {
+      "exit": 0,
+      "outcome": "unknown",
+      "nonpassing": [
+        {
+          "id": "check_runtime",
+          "outcome": "unknown",
+          "message": "toolchain/SDK runtime compatibility, command results and timeout sufficiency require a real check; none was launched"
+        },
+        {
+          "id": "outputs",
+          "outcome": "unknown",
+          "message": "declared output paths are structurally admitted; existence, scope and delivery remain candidate/runtime and caller checks"
+        },
+        {
+          "id": "authorization",
+          "outcome": "unknown",
+          "message": "caller permission and domain acceptance are external and cannot be established by preflight"
+        }
+      ]
+    },
+    "build": {
+      "exit": 0,
+      "outcome": "unknown",
+      "nonpassing": [
+        {
+          "id": "check_runtime",
+          "outcome": "unknown",
+          "message": "toolchain/SDK runtime compatibility, command results and timeout sufficiency require a real check; none was launched"
+        },
+        {
+          "id": "outputs",
+          "outcome": "unknown",
+          "message": "declared output paths are structurally admitted; existence, scope and delivery remain candidate/runtime and caller checks"
+        },
+        {
+          "id": "authorization",
+          "outcome": "unknown",
+          "message": "caller permission and domain acceptance are external and cannot be established by preflight"
+        }
+      ]
+    }
+  },
+  "caller_resolution": "Same authorized finite W3 implementation/repair scope. Exact full candidate and check/output/disposal scope recorded. Static external UNKNOWN retained; real required checks decide execution outcome, not permission or acceptance."
+}

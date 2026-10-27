@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "candidate": "7786f9fd7c42ee35b5006c9ad236b64bcc2c0511",
+  "gate_id": "ef6fd28b-1cea-4e2a-a85b-8143464d4d17",
+  "observer": "caller after terminal independent Cargo build, before exact target disposal",
+  "binary": "cos-desktop.exe",
+  "bytes": 32275456,
+  "sha256": "sha256:1a1cef2a6030a87c34bc6a4813d7c1a3b9d8985f0478fa88ae53669251810ce4",
+  "not_immutable_declared_gate_artifact": true,
+  "native_gui_smoke": false,
+  "retention": "digest/size only per ADR13; rebuild is not claimed bit-identical; ordinary-target actual WIC consumer remains retained separately"
+}
