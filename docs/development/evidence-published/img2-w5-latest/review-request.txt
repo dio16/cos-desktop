@@ -1,0 +1,39 @@
+MP-IMG2-W5 の固定ソース独立レビューをお願いします。目的は、実Windows WICのorientation metadata取得とICC/profile取得を、decoded rasterへの適用・colour transformの証明から分離し、metadata観測でfull-frame admissionを迂回できないことを確認することです。
+
+Repository dio16/cos-desktop、branch dev（未push）。開始commit 37d4643c128598352c7052b859b2b4a74b25c4fa。製品固定候補 42e4774ab27cb51258bd28a586b397ebfc406ecc。証拠HEADはreview-package.jsonに記載。CallerはADR-0009/0012の継続実装を指示。製品ICC/orientation policy、Runtime、push/main/releaseは非対象です。
+
+実装:
+- wic_probe.ps1にopt-in `-Metadata -MaxMetadataBytes` と `-ApplyOrientation`。metadataはfull-frame admission後・OnLoad前に読み、profile streamは上限付き。
+- orientationは presence/raw/interpreted、WIC自動適用、明示probe回転を別フィールド。欠落tagをidentityへ補完しない。明示回転はprobeの変換であり製品policyではない。
+- ICCは presence/readable/length/sha256 と application/colour fidelity を分離。BGRA32変換をICC変換と呼ばない。
+- 64KiB超profileは `metadata_cap_exceeded` でOnLoad前拒否、出力なし。
+- TIFF orientation 1/3/6/8、invalid 99、conflicting duplicate、ICC absent/valid/truncated/over-cap、PNG/BMP metadata absent、未対応container、cancel/timeoutの16 case。
+- 独立oracleはTIFF IFD/strip、PNG、BMP24を自前解析し、回転を保存rasterから定義。WIC出力から期待値を作らない。
+
+添付:
+1. w5-review-source.zip（固定候補のgit archive）
+2. w5-review-evidence.zip（証拠HEADのgit archive）
+3. review-package.json（SOURCE/evidence commit、ZIP bytes/SHA256、entry対応、Gate対応）
+
+独立検証してほしい点:
+A. orientation存在・raw値と、実際の回転適用を混同していないか。WICが自動回転しなかった事実と明示probe回転を分離しているか。
+B. ICC取得とcolour transformを混同していないか。profile_applied / colour_transform_fidelity がNOT_VERIFIEDのままか。
+C. metadata不読・invalid/conflicting tagをdefault成功にしていないか。
+D. 64KiB超profileがOnLoad前に拒否され、full-frame admissionを迂回しないか。
+E. codec別capabilityの帰属が正しいか。未対応containerをverifiedへ上げていないか。
+F. W1-W4回帰（W3 f8dfc30、W4 e357888eのhistorical replayを含む）とlegacy CLI/ROI互換性。
+G. cancel/timeoutがW2停止契約に従うか。
+H. SOURCE/Native/Gate/evidence/ZIPのdigest対応が閉じているか。
+I. full Decode ExitやUXを誤って完了扱いしていないか。
+
+主要実測:
+- TIFF orientation 1/3/6/8: tag read、WIC自動回転 not observed、明示90°回転は期待rasterと全画素一致。
+- ICC valid: 540 bytes、digest一致、readable。application/fidelityはNOT_VERIFIED。
+- truncated ICC: WICはinvalid tagを無視しpresent=false。decoded自体は成功。
+- over-cap ICC: oversize/metadata_cap_exceeded、OnLoad未到達、出力なし。
+- 通常quality 535 pass/1 ignored、feature 539/1 ignored、img2 128、W5 16 negatives、R0 340/12 skip。
+- Quality Gate eef8d1a1-e570-4922-9c4f-d7619471f033 15/15、Build 83fb9a6f-2baf-4b7e-85d4-09e2d36d02d9 1/1、candidate digest sha256:bc252351…、44 tuples一致、status/inspect/verify exit0、cleanup complete、owner dead、recovery不要。
+
+未測定: ICC colour fidelity、全codec対応、JPEG絶対raster、真のpartial/sequential/tiled、16K、内部scratch/実予約/同時peak、cooperative cancellation、full Decode Exit、MP-IMG3、Runtime、measured R0、UX/video。製品ICC/orientation policyはDESIGN_BLOCKEDです。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘にはファイル・条件・再現・最小修正を示してください。添付から独立に検証し、最後に REVIEW COMPLETE と最終verdict/countsを記してください。
