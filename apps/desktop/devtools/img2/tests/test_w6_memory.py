@@ -3,10 +3,13 @@ from __future__ import annotations
 
 from pathlib import Path
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from w6_memory_verify import matched_differences, requirements, window_metrics
+from w6_memory_matrix import _work_bytes
 
 
 class MemoryArithmeticTests(unittest.TestCase):
@@ -43,6 +46,27 @@ class MemoryArithmeticTests(unittest.TestCase):
         for row in differences:
             self.assertEqual(row["difference"]["max_observed_window_private"], -20)
             self.assertEqual(row["difference"]["max_observed_window_working_set"], -40)
+
+
+class WorkAccountingTests(unittest.TestCase):
+    def test_publication_rename_still_charges_output_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            observe = work / "workers" / "case" / "observe"
+            observe.mkdir(parents=True)
+            pending = observe / "pending.png"
+            pending.write_bytes(b"bounded png")
+            pending.rename(observe.parent / "output.png")
+            # Enumeration observed the pending name immediately before the rename.
+            with patch.object(Path, "rglob", return_value=iter([pending])):
+                self.assertEqual(_work_bytes(work), 11)
+
+    def test_unexplained_disappearance_remains_an_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            with patch.object(Path, "rglob", return_value=iter([work / "unrelated"])):
+                with self.assertRaises(FileNotFoundError):
+                    _work_bytes(work)
 
 
 if __name__ == "__main__":

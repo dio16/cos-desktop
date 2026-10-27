@@ -7,9 +7,10 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+from stat import S_ISREG
 import time
 
-from w2_resource_matrix import Worker, _safe_path, _work_bytes
+from w2_resource_matrix import Worker, _safe_path
 from w2_resource_verify import canonical, file_sha, redact_paths, sha
 from w6_memory_fixtures import generate, compare
 from w6_memory_sample import SAMPLE_SCRIPT, capture_window
@@ -43,6 +44,22 @@ def source_identity(pwsh, harness):
     return {"source_commit": commit, "files": files, "pwsh_sha256": file_sha(pwsh),
             "harness_sha256": file_sha(harness),
             "normalization": "Raw Native hashes plus explicitly declared LF-normalized Git correspondence"}
+
+
+def _work_bytes(work):
+    total = 0
+    for path in work.rglob("*"):
+        try:
+            info = path.stat()
+        except FileNotFoundError:
+            # The probe atomically renames this exact pending file on publication.
+            # Charge its published bytes rather than dropping it from the bound.
+            if path.name != "pending.png" or path.parent.name != "observe":
+                raise
+            info = (path.parent.parent / "output.png").stat()
+        if S_ISREG(info.st_mode):
+            total += info.st_size
+    return total
 
 
 def guard(work, started, workers=()):
