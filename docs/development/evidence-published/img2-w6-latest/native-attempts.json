@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "attempts": [
+    {
+      "attempt": "r1",
+      "source": "484f4aff718ef1d48ff5cdc2fded743b55203339",
+      "exit": 1,
+      "complete": true,
+      "groups": 12,
+      "failures": [],
+      "consumer_observations": [
+        {
+          "case": "bgr565_1024.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bgr565_256.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bmp24_1024.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bmp24_256.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "manifest.json",
+          "outcome": "unsupported",
+          "pixels": false
+        },
+        {
+          "case": "png_1024.png",
+          "outcome": "decoded",
+          "pixels": true
+        }
+      ],
+      "disposition": "SUPERSEDED; not final closure evidence"
+    },
+    {
+      "attempt": "r2",
+      "source": "d59888d98afaa63ec98a54ddd11651dcd3aed6fd",
+      "exit": 1,
+      "complete": false,
+      "groups": 7,
+      "failures": [
+        {
+          "id": "cohort_small_1",
+          "failure": "FileNotFoundError:[WinError 2] 指定されたファイルが見つかりません。: 'C:\\\\dev\\\\cos-desktop-verification\\\\img2-w6-2026-10-28\\\\native-r2-work\\\\workers\\\\cohort_small_1_png_256\\\\observe\\\\pending.png'"
+        }
+      ],
+      "consumer_observations": [
+        {
+          "case": "bgr565_1024.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bgr565_256.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bmp24_1024.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bmp24_256.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "manifest.json",
+          "outcome": "unsupported",
+          "pixels": false
+        },
+        {
+          "case": "png_1024.png",
+          "outcome": "decoded",
+          "pixels": true
+        }
+      ],
+      "disposition": "SUPERSEDED; not final closure evidence"
+    },
+    {
+      "attempt": "r3",
+      "source": "c54331b665471faf964201dc62859f9f0d7537e6",
+      "exit": 0,
+      "complete": true,
+      "groups": 12,
+      "failures": [],
+      "consumer_observations": [
+        {
+          "case": "bgr565_1024.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bgr565_256.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bmp24_1024.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bmp24_256.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "manifest.json",
+          "outcome": "unsupported",
+          "pixels": false
+        },
+        {
+          "case": "png_1024.png",
+          "outcome": "decoded",
+          "pixels": true
+        }
+      ],
+      "disposition": "SUPERSEDED; not final closure evidence"
+    },
+    {
+      "attempt": "r4",
+      "source": "50a9ad9c5a5b3a0476159dd5c2c54f75d5b5b2b9",
+      "exit": 0,
+      "complete": true,
+      "groups": 12,
+      "failures": [],
+      "consumer_observations": [
+        {
+          "case": "bgr565_1024.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bgr565_256.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bmp24_1024.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "bmp24_256.bmp",
+          "outcome": "decoded",
+          "pixels": true
+        },
+        {
+          "case": "manifest.json",
+          "outcome": "unsupported",
+          "pixels": false
+        },
+        {
+          "case": "png_1024.png",
+          "outcome": "decoded",
+          "pixels": true
+        }
+      ],
+      "disposition": "SUPERSEDED; not final closure evidence"
+    }
+  ],
+  "final": {
+    "attempt": "r5",
+    "source": "15e67da5638299e291520718aaf7af87333afc5a",
+    "record": "native-memory-matrix.json",
+    "verified": true
+  },
+  "repairs": [
+    "Align terminal fields with the unchanged probe contract; output bytes checked from real stdout and PNG.",
+    "Publication rename during work scan charges the published file; unrelated disappearance remains fatal.",
+    "Exact immutable source/output-byte cache bounds repeated raster work, without trusting claimed digest/case ID.",
+    "Consumer manifest annotates but does not filter; non-image manifest moved out and all six image/pixel outcomes required."
+  ]
+}

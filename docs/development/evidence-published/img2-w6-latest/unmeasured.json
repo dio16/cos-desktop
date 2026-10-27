@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "unmeasured": [
+    "WIC internal scratch/stride",
+    "actual allocator reservations",
+    "true concurrent allocation peak",
+    "cooperative in-decoder cancellation",
+    "16K full decode",
+    "true region/sequential/tiled decode",
+    "JPEG absolute raster",
+    "ICC colour fidelity",
+    "product orientation/display policy"
+  ],
+  "not_closed": [
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3 Upload prerequisite",
+    "Runtime RC-*",
+    "measured R0",
+    "product UX/video",
+    "main/release"
+  ],
+  "limitations": [
+    "Sequential process-counter reads are not an atomic OS snapshot.",
+    "PowerShell/.NET/runtime/library costs are included; not WIC-only allocations.",
+    "Sample gaps can hide memory changes; observed maxima are not true peaks.",
+    "Before/after groups use different workers, so differences are matched-run observations.",
+    "Boundary holds are artificial instrumentation, not decoder latency.",
+    "No product concurrency policy or numeric memory SLO is selected."
+  ]
+}

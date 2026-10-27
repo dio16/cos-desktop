@@ -1,0 +1,11 @@
+{
+  "actually_proven_peak_concurrent_allocation": "NOT_MEASURED",
+  "atomic_snapshot": false,
+  "boundary_hold": "ARTIFICIAL_INSTRUMENTATION_NOT_DECODER_TIME",
+  "decoder_internal_scratch_peak": "NOT_MEASURED",
+  "explicit_known_reservations_bytes": "NOT_MEASURED",
+  "lifetime_peak": "PROCESS_LIFETIME_OS_COUNTER_NOT_CONCURRENT_ALLOCATION",
+  "maximum": "MAX_OBSERVED_WINDOW_SUM",
+  "wic_decoder_latency_ns": null,
+  "window_sum": "DERIVED_WINDOW_SUM"
+}

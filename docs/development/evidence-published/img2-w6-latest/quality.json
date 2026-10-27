@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "native_source": "15e67da5638299e291520718aaf7af87333afc5a",
+  "checks": {
+    "w6-consumer-build": {
+      "name": "w6-consumer-build",
+      "start": "2026-10-27T21:46:38.314Z",
+      "end": "2026-10-27T21:46:40.923Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:c758e1cc28cf53ac78a5ce76fd4c7e72f6438ae030f33ce1825e50e7351aaffd"
+    },
+    "w6-native-r5": {
+      "name": "w6-native-r5",
+      "start": "2026-10-27T22:03:39.204Z",
+      "end": "2026-10-27T22:04:31.092Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:5ecca46d19d79798986c1c195dd388cdbef003a8cdfb928ff2370aae20ee5ba4",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w6-candidate-img2": {
+      "name": "w6-candidate-img2",
+      "start": "2026-10-27T22:04:31.107Z",
+      "end": "2026-10-27T22:04:47.318Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:5e9f481dd4fda50b4a8b5e66ceeb3505f5ab468b51afa06fe84a3211ec9ddc02"
+    },
+    "w6-candidate-negative-evidence": {
+      "name": "w6-candidate-negative-evidence",
+      "start": "2026-10-27T22:04:31.111Z",
+      "end": "2026-10-27T22:04:42.330Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:8769192e8bdb6031cd71a94d98e3b5817e72d2f3e3c677d5763cc0377e2774e3",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w6-final-quality": {
+      "name": "w6-final-quality",
+      "start": "2026-10-27T22:02:25.997Z",
+      "end": "2026-10-27T22:02:47.288Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:a474f1d012cbc52570e69fd6293e96a431d6bd2d182f6a25fb27c59bba68a14d",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w6-feature-clippy": {
+      "name": "w6-feature-clippy",
+      "start": "2026-10-27T21:58:21.580Z",
+      "end": "2026-10-27T21:58:30.566Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:6b868dc3fa476df1397869da597cecaa574ebe21c23353a0d40156368fd70215"
+    },
+    "w6-feature-build": {
+      "name": "w6-feature-build",
+      "start": "2026-10-27T21:58:21.585Z",
+      "end": "2026-10-27T21:58:27.634Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:5d6e9aef6abda3967f261380ce8ec6470a7e3af1b69f52eda3285f931d5383fe"
+    },
+    "w6-feature-tests": {
+      "name": "w6-feature-tests",
+      "start": "2026-10-27T21:58:21.591Z",
+      "end": "2026-10-27T21:59:14.650Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:b3e88d7345c7fb737342d617ab127d98fdadaf1e96bf83d559ad4242132239f3",
+      "stderr_sha256": "sha256:664decd029f98855154a25d27f58ffa8c5ede89ec647655ace11a44d19d97cec"
+    },
+    "w6-r0": {
+      "name": "w6-r0",
+      "start": "2026-10-27T21:53:21.560Z",
+      "end": "2026-10-27T21:53:47.363Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:f5abb98468b10c82e5ea77c46a371be397f06f8435a426d1915ebe892c35aae1",
+      "stderr_sha256": "sha256:8714f6684fad31d4c735327d7adf5ffe2d5ce856d13695ac13012a90241274dd"
+    }
+  },
+  "default_rust": {
+    "passed": 535,
+    "failed": 0,
+    "ignored": 1
+  },
+  "feature_rust": {
+    "passed": 539,
+    "failed": 0,
+    "ignored": 1
+  },
+  "img2": {
+    "passed": 151,
+    "failed": 0,
+    "w6_methods": 14,
+    "negative_classes": 24
+  },
+  "r0": {
+    "total": 352,
+    "executed": 340,
+    "passed": 340,
+    "skipped": 12,
+    "expected_failures": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped_cases": [
+      {
+        "test": "test_real_observation_of_a_window (test_n03_observe.N03Observation.test_real_observation_of_a_window)",
+        "reason": "NOT_RUN: no COS Desktop window is running in this session"
+      },
+      {
+        "test": "test_arbitrary_repo_root_is_refused_with_a_closed_error (test_n07_verify.N07Verifier.test_arbitrary_repo_root_is_refused_with_a_closed_error)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_historical_record_matches_its_recorded_archive_and_names_live_drift (test_n07_verify.N07Verifier.test_historical_record_matches_its_recorded_archive_and_names_live_drift)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_live_tree_matches_the_recorded_baseline (test_n07_verify.N07Verifier.test_live_tree_matches_the_recorded_baseline)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_mismatch_still_exits_nonzero_and_is_named (test_n07_verify.N07Verifier.test_mismatch_still_exits_nonzero_and_is_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_missing_expected_value_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_expected_value_is_not_measured_while_live_drift_stays_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_missing_helper_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_helper_is_not_measured_while_live_drift_stays_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_omitted_repo_root_uses_the_canonical_root (test_n07_verify.N07Verifier.test_omitted_repo_root_uses_the_canonical_root)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_same_inputs_produce_identical_record_bytes (test_n07_verify.N07Verifier.test_same_inputs_produce_identical_record_bytes)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_scratch_copy_only_is_not_verified_and_names_the_path_item (test_n07_verify.N07Verifier.test_scratch_copy_only_is_not_verified_and_names_the_path_item)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_tampered_manifest_names_the_manifest_mismatch (test_n07_verify.N07Verifier.test_tampered_manifest_names_the_manifest_mismatch)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_verdict_precedence_names_both_kinds (test_n07_verify.N07Verifier.test_verdict_precedence_names_both_kinds)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      }
+    ]
+  },
+  "historical_regressions": "historical-regressions.json",
+  "scope": "Python-only W6 changes; Rust and product UI source unchanged. Actual Native smoke is the real WIC CLI path, not a newly exercised GUI startup. Feature tests serialized; no R0 skipped case is promoted."
+}

@@ -1,0 +1,678 @@
+{
+  "schema_version": 1,
+  "raw_records": "native-memory-matrix.json#/experiments/<group-index>/windows",
+  "groups": [
+    {
+      "id": "single_png_256",
+      "record_pointer": "/experiments/0/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 2,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 42561536,
+        "max_observed_window_working_set": 116588544
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113333772522400,
+          "end_ns": 113334326235300,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 41283584,
+            "working_set_bytes": 114434048
+          },
+          "case_ids": [
+            "single_png_256_png_256"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113334330371800,
+          "end_ns": 113334880153000,
+          "gap_ns": 4136500,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 42561536,
+            "working_set_bytes": 116588544
+          },
+          "case_ids": [
+            "single_png_256_png_256"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "single_bmp24_256",
+      "record_pointer": "/experiments/1/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 2,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 41078784,
+        "max_observed_window_working_set": 115077120
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113335856895100,
+          "end_ns": 113336386754800,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 40599552,
+            "working_set_bytes": 113737728
+          },
+          "case_ids": [
+            "single_bmp24_256_bmp24_256"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113336392222000,
+          "end_ns": 113336926382800,
+          "gap_ns": 5467200,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 41078784,
+            "working_set_bytes": 115077120
+          },
+          "case_ids": [
+            "single_bmp24_256_bmp24_256"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "single_bgr565_256",
+      "record_pointer": "/experiments/2/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 2,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 41402368,
+        "max_observed_window_working_set": 115527680
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113337935204400,
+          "end_ns": 113338471872800,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 40275968,
+            "working_set_bytes": 113582080
+          },
+          "case_ids": [
+            "single_bgr565_256_bgr565_256"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113338478554200,
+          "end_ns": 113339019499800,
+          "gap_ns": 6681400,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 41402368,
+            "working_set_bytes": 115527680
+          },
+          "case_ids": [
+            "single_bgr565_256_bgr565_256"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "single_png_1024",
+      "record_pointer": "/experiments/3/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 2,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 46075904,
+        "max_observed_window_working_set": 120188928
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113340040931000,
+          "end_ns": 113340579606300,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 46051328,
+            "working_set_bytes": 118792192
+          },
+          "case_ids": [
+            "single_png_1024_png_1024"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113340587288200,
+          "end_ns": 113341128082400,
+          "gap_ns": 7681900,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 46075904,
+            "working_set_bytes": 120188928
+          },
+          "case_ids": [
+            "single_png_1024_png_1024"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "single_bmp24_1024",
+      "record_pointer": "/experiments/4/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 2,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 46583808,
+        "max_observed_window_working_set": 120803328
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113343385747200,
+          "end_ns": 113343926524300,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 45342720,
+            "working_set_bytes": 118636544
+          },
+          "case_ids": [
+            "single_bmp24_1024_bmp24_1024"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113343936820500,
+          "end_ns": 113344473180900,
+          "gap_ns": 10296200,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 46583808,
+            "working_set_bytes": 120803328
+          },
+          "case_ids": [
+            "single_bmp24_1024_bmp24_1024"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "single_bgr565_1024",
+      "record_pointer": "/experiments/5/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 2,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 44707840,
+        "max_observed_window_working_set": 118878208
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113346907403900,
+          "end_ns": 113347458969800,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 43778048,
+            "working_set_bytes": 117059584
+          },
+          "case_ids": [
+            "single_bgr565_1024_bgr565_1024"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113347469099500,
+          "end_ns": 113347998009700,
+          "gap_ns": 10129700,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 44707840,
+            "working_set_bytes": 118878208
+          },
+          "case_ids": [
+            "single_bgr565_1024_bgr565_1024"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "cohort_small_1",
+      "record_pointer": "/experiments/6/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 3,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 129269760,
+        "max_observed_window_working_set": 355151872
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113350686831500,
+          "end_ns": 113351242168100,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 125390848,
+            "working_set_bytes": 345985024
+          },
+          "case_ids": [
+            "cohort_small_1_png_256",
+            "cohort_small_1_bmp24_256",
+            "cohort_small_1_bgr565_256"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113351256510900,
+          "end_ns": 113351816510400,
+          "gap_ns": 14342800,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 127721472,
+            "working_set_bytes": 350978048
+          },
+          "case_ids": [
+            "cohort_small_1_png_256",
+            "cohort_small_1_bmp24_256",
+            "cohort_small_1_bgr565_256"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 2,
+          "start_ns": 113351837130800,
+          "end_ns": 113352409901200,
+          "gap_ns": 20620400,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 129269760,
+            "working_set_bytes": 355151872
+          },
+          "case_ids": [
+            "cohort_small_1_png_256",
+            "cohort_small_1_bmp24_256",
+            "cohort_small_1_bgr565_256"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "cohort_small_2",
+      "record_pointer": "/experiments/7/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 3,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 135208960,
+        "max_observed_window_working_set": 367013888
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113354023698900,
+          "end_ns": 113354631467600,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 132333568,
+            "working_set_bytes": 354164736
+          },
+          "case_ids": [
+            "cohort_small_2_png_256",
+            "cohort_small_2_bmp24_256",
+            "cohort_small_2_bgr565_256"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113354656390700,
+          "end_ns": 113355279074700,
+          "gap_ns": 24923100,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 133660672,
+            "working_set_bytes": 359763968
+          },
+          "case_ids": [
+            "cohort_small_2_png_256",
+            "cohort_small_2_bmp24_256",
+            "cohort_small_2_bgr565_256"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 2,
+          "start_ns": 113355300812400,
+          "end_ns": 113355878184600,
+          "gap_ns": 21737700,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 135208960,
+            "working_set_bytes": 367013888
+          },
+          "case_ids": [
+            "cohort_small_2_png_256",
+            "cohort_small_2_bmp24_256",
+            "cohort_small_2_bgr565_256"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "cohort_large_1",
+      "record_pointer": "/experiments/8/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 3,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 145141760,
+        "max_observed_window_working_set": 373837824
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113357311518000,
+          "end_ns": 113357867201600,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 142688256,
+            "working_set_bytes": 363806720
+          },
+          "case_ids": [
+            "cohort_large_1_png_1024",
+            "cohort_large_1_bmp24_1024",
+            "cohort_large_1_bgr565_1024"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113357888111400,
+          "end_ns": 113358452541100,
+          "gap_ns": 20909800,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 143421440,
+            "working_set_bytes": 368123904
+          },
+          "case_ids": [
+            "cohort_large_1_png_1024",
+            "cohort_large_1_bmp24_1024",
+            "cohort_large_1_bgr565_1024"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 2,
+          "start_ns": 113358474165200,
+          "end_ns": 113359048401600,
+          "gap_ns": 21624100,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 145141760,
+            "working_set_bytes": 373837824
+          },
+          "case_ids": [
+            "cohort_large_1_png_1024",
+            "cohort_large_1_bmp24_1024",
+            "cohort_large_1_bgr565_1024"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "cohort_large_2",
+      "record_pointer": "/experiments/9/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 3,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 138625024,
+        "max_observed_window_working_set": 362602496
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113360604754100,
+          "end_ns": 113361159021400,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 134479872,
+            "working_set_bytes": 354291712
+          },
+          "case_ids": [
+            "cohort_large_2_png_1024",
+            "cohort_large_2_bmp24_1024",
+            "cohort_large_2_bgr565_1024"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113361186686400,
+          "end_ns": 113361737189300,
+          "gap_ns": 27665000,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 137588736,
+            "working_set_bytes": 359780352
+          },
+          "case_ids": [
+            "cohort_large_2_png_1024",
+            "cohort_large_2_bmp24_1024",
+            "cohort_large_2_bgr565_1024"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 2,
+          "start_ns": 113361763357100,
+          "end_ns": 113362316515800,
+          "gap_ns": 26167800,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 138625024,
+            "working_set_bytes": 362602496
+          },
+          "case_ids": [
+            "cohort_large_2_png_1024",
+            "cohort_large_2_bmp24_1024",
+            "cohort_large_2_bgr565_1024"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "cohort_before_1",
+      "record_pointer": "/experiments/10/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 3,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 133263360,
+        "max_observed_window_working_set": 364019712
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113363444566200,
+          "end_ns": 113364010527500,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 131059712,
+            "working_set_bytes": 352079872
+          },
+          "case_ids": [
+            "cohort_before_1_png_256",
+            "cohort_before_1_bmp24_256",
+            "cohort_before_1_bgr565_256"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113364039182100,
+          "end_ns": 113364609382200,
+          "gap_ns": 28654600,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 132194304,
+            "working_set_bytes": 358170624
+          },
+          "case_ids": [
+            "cohort_before_1_png_256",
+            "cohort_before_1_bmp24_256",
+            "cohort_before_1_bgr565_256"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 2,
+          "start_ns": 113364642259100,
+          "end_ns": 113365240816400,
+          "gap_ns": 32876900,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 133263360,
+            "working_set_bytes": 364019712
+          },
+          "case_ids": [
+            "cohort_before_1_png_256",
+            "cohort_before_1_bmp24_256",
+            "cohort_before_1_bgr565_256"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "cohort_before_2",
+      "record_pointer": "/experiments/11/windows",
+      "metrics": {
+        "classification": "MAX_OBSERVED_WINDOW_SUM",
+        "complete_window_count": 3,
+        "incomplete_window_count": 0,
+        "max_observed_window_private": 126480384,
+        "max_observed_window_working_set": 347865088
+      },
+      "windows": [
+        {
+          "index": 0,
+          "start_ns": 113366208193600,
+          "end_ns": 113366756278400,
+          "gap_ns": null,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 121978880,
+            "working_set_bytes": 338272256
+          },
+          "case_ids": [
+            "cohort_before_2_png_256",
+            "cohort_before_2_bmp24_256",
+            "cohort_before_2_bgr565_256"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 1,
+          "start_ns": 113366791758900,
+          "end_ns": 113367354122200,
+          "gap_ns": 35480500,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 123510784,
+            "working_set_bytes": 343248896
+          },
+          "case_ids": [
+            "cohort_before_2_png_256",
+            "cohort_before_2_bmp24_256",
+            "cohort_before_2_bgr565_256"
+          ],
+          "observer_exit": 0
+        },
+        {
+          "index": 2,
+          "start_ns": 113367387024400,
+          "end_ns": 113367969344900,
+          "gap_ns": 32902200,
+          "complete": true,
+          "failure": null,
+          "totals": {
+            "private_bytes": 126480384,
+            "working_set_bytes": 347865088
+          },
+          "case_ids": [
+            "cohort_before_2_png_256",
+            "cohort_before_2_bmp24_256",
+            "cohort_before_2_bgr565_256"
+          ],
+          "observer_exit": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,295 @@
+{
+  "schema_version": 1,
+  "outputs": [
+    {
+      "group": "single_png_256",
+      "case_id": "single_png_256_png_256",
+      "fixture_id": "png_256",
+      "output_sha256": "sha256:7b41846091d325c005dad40dbe637d90978cc15784546910e30d9d6a548fddff",
+      "output_bytes": 879,
+      "oracle": {
+        "actual_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "expected_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "height": 256,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 256
+      }
+    },
+    {
+      "group": "single_bmp24_256",
+      "case_id": "single_bmp24_256_bmp24_256",
+      "fixture_id": "bmp24_256",
+      "output_sha256": "sha256:88bbe549f2577b8ff74be6c5c4bef23198c9179105e53f9dd005d80f7522f7b8",
+      "output_bytes": 879,
+      "oracle": {
+        "actual_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "expected_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "height": 256,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 256
+      }
+    },
+    {
+      "group": "single_bgr565_256",
+      "case_id": "single_bgr565_256_bgr565_256",
+      "fixture_id": "bgr565_256",
+      "output_sha256": "sha256:7080d0a4487b9ff61f58e0f43ce8fdb1714421e10dce7a545993def6a8ed2a82",
+      "output_bytes": 28294,
+      "oracle": {
+        "actual_rgba_sha256": "1412298d8f31b93f544d0262319f6d6e04a575433f5c4aa80bc148a2da72fd5c",
+        "expected_rgba_sha256": "1412298d8f31b93f544d0262319f6d6e04a575433f5c4aa80bc148a2da72fd5c",
+        "height": 256,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 256
+      }
+    },
+    {
+      "group": "single_png_1024",
+      "case_id": "single_png_1024_png_1024",
+      "fixture_id": "png_1024",
+      "output_sha256": "sha256:8c0392d329c3739da22e305d82af3a75119c17204db9e50a72708d5d2f436eb6",
+      "output_bytes": 6416,
+      "oracle": {
+        "actual_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "expected_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "height": 1024,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 1024
+      }
+    },
+    {
+      "group": "single_bmp24_1024",
+      "case_id": "single_bmp24_1024_bmp24_1024",
+      "fixture_id": "bmp24_1024",
+      "output_sha256": "sha256:f9f5e77b0148007dd7d3a62d0d4c603d7148533ea1d9489ba44007cafabe2076",
+      "output_bytes": 6416,
+      "oracle": {
+        "actual_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "expected_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "height": 1024,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 1024
+      }
+    },
+    {
+      "group": "single_bgr565_1024",
+      "case_id": "single_bgr565_1024_bgr565_1024",
+      "fixture_id": "bgr565_1024",
+      "output_sha256": "sha256:f5302da9bd1eda599e578ba017a54839be8eddcf0ddfd91f7b599a0d8be67cfe",
+      "output_bytes": 181214,
+      "oracle": {
+        "actual_rgba_sha256": "b7e057cba2da0cc39611162c47461c1d20e4f465e9f99cda569f9bf1cacc1bb1",
+        "expected_rgba_sha256": "b7e057cba2da0cc39611162c47461c1d20e4f465e9f99cda569f9bf1cacc1bb1",
+        "height": 1024,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 1024
+      }
+    },
+    {
+      "group": "cohort_small_1",
+      "case_id": "cohort_small_1_png_256",
+      "fixture_id": "png_256",
+      "output_sha256": "sha256:7b41846091d325c005dad40dbe637d90978cc15784546910e30d9d6a548fddff",
+      "output_bytes": 879,
+      "oracle": {
+        "actual_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "expected_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "height": 256,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 256
+      }
+    },
+    {
+      "group": "cohort_small_1",
+      "case_id": "cohort_small_1_bmp24_256",
+      "fixture_id": "bmp24_256",
+      "output_sha256": "sha256:88bbe549f2577b8ff74be6c5c4bef23198c9179105e53f9dd005d80f7522f7b8",
+      "output_bytes": 879,
+      "oracle": {
+        "actual_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "expected_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "height": 256,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 256
+      }
+    },
+    {
+      "group": "cohort_small_1",
+      "case_id": "cohort_small_1_bgr565_256",
+      "fixture_id": "bgr565_256",
+      "output_sha256": "sha256:7080d0a4487b9ff61f58e0f43ce8fdb1714421e10dce7a545993def6a8ed2a82",
+      "output_bytes": 28294,
+      "oracle": {
+        "actual_rgba_sha256": "1412298d8f31b93f544d0262319f6d6e04a575433f5c4aa80bc148a2da72fd5c",
+        "expected_rgba_sha256": "1412298d8f31b93f544d0262319f6d6e04a575433f5c4aa80bc148a2da72fd5c",
+        "height": 256,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 256
+      }
+    },
+    {
+      "group": "cohort_small_2",
+      "case_id": "cohort_small_2_png_256",
+      "fixture_id": "png_256",
+      "output_sha256": "sha256:7b41846091d325c005dad40dbe637d90978cc15784546910e30d9d6a548fddff",
+      "output_bytes": 879,
+      "oracle": {
+        "actual_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "expected_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "height": 256,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 256
+      }
+    },
+    {
+      "group": "cohort_small_2",
+      "case_id": "cohort_small_2_bmp24_256",
+      "fixture_id": "bmp24_256",
+      "output_sha256": "sha256:88bbe549f2577b8ff74be6c5c4bef23198c9179105e53f9dd005d80f7522f7b8",
+      "output_bytes": 879,
+      "oracle": {
+        "actual_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "expected_rgba_sha256": "0ce850569e842fc87928c5ce33abcbef4b88f7412b3a9d4c85a0db2635ab6f66",
+        "height": 256,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 256
+      }
+    },
+    {
+      "group": "cohort_small_2",
+      "case_id": "cohort_small_2_bgr565_256",
+      "fixture_id": "bgr565_256",
+      "output_sha256": "sha256:7080d0a4487b9ff61f58e0f43ce8fdb1714421e10dce7a545993def6a8ed2a82",
+      "output_bytes": 28294,
+      "oracle": {
+        "actual_rgba_sha256": "1412298d8f31b93f544d0262319f6d6e04a575433f5c4aa80bc148a2da72fd5c",
+        "expected_rgba_sha256": "1412298d8f31b93f544d0262319f6d6e04a575433f5c4aa80bc148a2da72fd5c",
+        "height": 256,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 256
+      }
+    },
+    {
+      "group": "cohort_large_1",
+      "case_id": "cohort_large_1_png_1024",
+      "fixture_id": "png_1024",
+      "output_sha256": "sha256:8c0392d329c3739da22e305d82af3a75119c17204db9e50a72708d5d2f436eb6",
+      "output_bytes": 6416,
+      "oracle": {
+        "actual_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "expected_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "height": 1024,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 1024
+      }
+    },
+    {
+      "group": "cohort_large_1",
+      "case_id": "cohort_large_1_bmp24_1024",
+      "fixture_id": "bmp24_1024",
+      "output_sha256": "sha256:f9f5e77b0148007dd7d3a62d0d4c603d7148533ea1d9489ba44007cafabe2076",
+      "output_bytes": 6416,
+      "oracle": {
+        "actual_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "expected_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "height": 1024,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 1024
+      }
+    },
+    {
+      "group": "cohort_large_1",
+      "case_id": "cohort_large_1_bgr565_1024",
+      "fixture_id": "bgr565_1024",
+      "output_sha256": "sha256:f5302da9bd1eda599e578ba017a54839be8eddcf0ddfd91f7b599a0d8be67cfe",
+      "output_bytes": 181214,
+      "oracle": {
+        "actual_rgba_sha256": "b7e057cba2da0cc39611162c47461c1d20e4f465e9f99cda569f9bf1cacc1bb1",
+        "expected_rgba_sha256": "b7e057cba2da0cc39611162c47461c1d20e4f465e9f99cda569f9bf1cacc1bb1",
+        "height": 1024,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 1024
+      }
+    },
+    {
+      "group": "cohort_large_2",
+      "case_id": "cohort_large_2_png_1024",
+      "fixture_id": "png_1024",
+      "output_sha256": "sha256:8c0392d329c3739da22e305d82af3a75119c17204db9e50a72708d5d2f436eb6",
+      "output_bytes": 6416,
+      "oracle": {
+        "actual_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "expected_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "height": 1024,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 1024
+      }
+    },
+    {
+      "group": "cohort_large_2",
+      "case_id": "cohort_large_2_bmp24_1024",
+      "fixture_id": "bmp24_1024",
+      "output_sha256": "sha256:f9f5e77b0148007dd7d3a62d0d4c603d7148533ea1d9489ba44007cafabe2076",
+      "output_bytes": 6416,
+      "oracle": {
+        "actual_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "expected_rgba_sha256": "18d01b824ebe64bf216faeaf4861c863c7a49179da515990c611c986c89d9593",
+        "height": 1024,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 1024
+      }
+    },
+    {
+      "group": "cohort_large_2",
+      "case_id": "cohort_large_2_bgr565_1024",
+      "fixture_id": "bgr565_1024",
+      "output_sha256": "sha256:f5302da9bd1eda599e578ba017a54839be8eddcf0ddfd91f7b599a0d8be67cfe",
+      "output_bytes": 181214,
+      "oracle": {
+        "actual_rgba_sha256": "b7e057cba2da0cc39611162c47461c1d20e4f465e9f99cda569f9bf1cacc1bb1",
+        "expected_rgba_sha256": "b7e057cba2da0cc39611162c47461c1d20e4f465e9f99cda569f9bf1cacc1bb1",
+        "height": 1024,
+        "method": "independent encoded-source BMP/PNG parse and W2 CRC/inflate/filter output decode; all-channel pixel comparison",
+        "mismatch_count": 0,
+        "ok": true,
+        "width": 1024
+      }
+    }
+  ],
+  "actual_output_bytes": "native-memory-matrix.json#/experiments/<group-index>/workers/<worker-index>/output_hex",
+  "verified_outputs": 18
+}

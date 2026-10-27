@@ -1,0 +1,436 @@
+{
+  "schema_version": 1,
+  "control": {
+    "ok": true,
+    "closure_eligible": true,
+    "workers": 24,
+    "experiments": 12,
+    "windows": 30,
+    "decoded": 18,
+    "pixel_verified": 18,
+    "comparison": [
+      {
+        "boundary": "after_onload",
+        "case_id": "single_png_256_png_256",
+        "codec": "png",
+        "group_id": "single_png_256",
+        "max_sampled_private": 42561536,
+        "max_sampled_working_set": 116588544,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 1
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "single_bmp24_256_bmp24_256",
+        "codec": "bmp24",
+        "group_id": "single_bmp24_256",
+        "max_sampled_private": 41078784,
+        "max_sampled_working_set": 115077120,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 1
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "single_bgr565_256_bgr565_256",
+        "codec": "bgr565",
+        "group_id": "single_bgr565_256",
+        "max_sampled_private": 41402368,
+        "max_sampled_working_set": 115527680,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 1
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "single_png_1024_png_1024",
+        "codec": "png",
+        "group_id": "single_png_1024",
+        "max_sampled_private": 46075904,
+        "max_sampled_working_set": 120188928,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 1024,
+        "workers": 1
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "single_bmp24_1024_bmp24_1024",
+        "codec": "bmp24",
+        "group_id": "single_bmp24_1024",
+        "max_sampled_private": 46583808,
+        "max_sampled_working_set": 120803328,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 1024,
+        "workers": 1
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "single_bgr565_1024_bgr565_1024",
+        "codec": "bgr565",
+        "group_id": "single_bgr565_1024",
+        "max_sampled_private": 44707840,
+        "max_sampled_working_set": 118878208,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 1024,
+        "workers": 1
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_small_1_png_256",
+        "codec": "png",
+        "group_id": "cohort_small_1",
+        "max_sampled_private": 42156032,
+        "max_sampled_working_set": 116604928,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_small_1_bmp24_256",
+        "codec": "bmp24",
+        "group_id": "cohort_small_1",
+        "max_sampled_private": 42303488,
+        "max_sampled_working_set": 116903936,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_small_1_bgr565_256",
+        "codec": "bgr565",
+        "group_id": "cohort_small_1",
+        "max_sampled_private": 44810240,
+        "max_sampled_working_set": 121643008,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_small_2_png_256",
+        "codec": "png",
+        "group_id": "cohort_small_2",
+        "max_sampled_private": 44523520,
+        "max_sampled_working_set": 121974784,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_small_2_bmp24_256",
+        "codec": "bmp24",
+        "group_id": "cohort_small_2",
+        "max_sampled_private": 45309952,
+        "max_sampled_working_set": 122970112,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_small_2_bgr565_256",
+        "codec": "bgr565",
+        "group_id": "cohort_small_2",
+        "max_sampled_private": 45375488,
+        "max_sampled_working_set": 122068992,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_large_1_png_1024",
+        "codec": "png",
+        "group_id": "cohort_large_1",
+        "max_sampled_private": 50397184,
+        "max_sampled_working_set": 127463424,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 1024,
+        "workers": 3
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_large_1_bmp24_1024",
+        "codec": "bmp24",
+        "group_id": "cohort_large_1",
+        "max_sampled_private": 49844224,
+        "max_sampled_working_set": 126861312,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 1024,
+        "workers": 3
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_large_1_bgr565_1024",
+        "codec": "bgr565",
+        "group_id": "cohort_large_1",
+        "max_sampled_private": 44900352,
+        "max_sampled_working_set": 119513088,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 1024,
+        "workers": 3
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_large_2_png_1024",
+        "codec": "png",
+        "group_id": "cohort_large_2",
+        "max_sampled_private": 47472640,
+        "max_sampled_working_set": 122122240,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 1024,
+        "workers": 3
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_large_2_bmp24_1024",
+        "codec": "bmp24",
+        "group_id": "cohort_large_2",
+        "max_sampled_private": 46596096,
+        "max_sampled_working_set": 121241600,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 1024,
+        "workers": 3
+      },
+      {
+        "boundary": "after_onload",
+        "case_id": "cohort_large_2_bgr565_1024",
+        "codec": "bgr565",
+        "group_id": "cohort_large_2",
+        "max_sampled_private": 44556288,
+        "max_sampled_working_set": 119238656,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 1024,
+        "workers": 3
+      },
+      {
+        "boundary": "before_onload",
+        "case_id": "cohort_before_1_png_256",
+        "codec": "png",
+        "group_id": "cohort_before_1",
+        "max_sampled_private": 44281856,
+        "max_sampled_working_set": 121417728,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      },
+      {
+        "boundary": "before_onload",
+        "case_id": "cohort_before_1_bmp24_256",
+        "codec": "bmp24",
+        "group_id": "cohort_before_1",
+        "max_sampled_private": 44269568,
+        "max_sampled_working_set": 121516032,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      },
+      {
+        "boundary": "before_onload",
+        "case_id": "cohort_before_1_bgr565_256",
+        "codec": "bgr565",
+        "group_id": "cohort_before_1",
+        "max_sampled_private": 44711936,
+        "max_sampled_working_set": 121085952,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      },
+      {
+        "boundary": "before_onload",
+        "case_id": "cohort_before_2_png_256",
+        "codec": "png",
+        "group_id": "cohort_before_2",
+        "max_sampled_private": 42278912,
+        "max_sampled_working_set": 115879936,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      },
+      {
+        "boundary": "before_onload",
+        "case_id": "cohort_before_2_bmp24_256",
+        "codec": "bmp24",
+        "group_id": "cohort_before_2",
+        "max_sampled_private": 41771008,
+        "max_sampled_working_set": 115462144,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      },
+      {
+        "boundary": "before_onload",
+        "case_id": "cohort_before_2_bgr565_256",
+        "codec": "bgr565",
+        "group_id": "cohort_before_2",
+        "max_sampled_private": 42430464,
+        "max_sampled_working_set": 116523008,
+        "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
+        "size": 256,
+        "workers": 3
+      }
+    ],
+    "allocation_scope": {
+      "window_sum": "DERIVED_WINDOW_SUM",
+      "maximum": "MAX_OBSERVED_WINDOW_SUM",
+      "atomic_snapshot": false,
+      "decoder_internal_scratch_peak": "NOT_MEASURED",
+      "explicit_known_reservations_bytes": "NOT_MEASURED",
+      "actually_proven_peak_concurrent_allocation": "NOT_MEASURED",
+      "wic_decoder_latency_ns": null,
+      "boundary_hold": "ARTIFICIAL_INSTRUMENTATION_NOT_DECODER_TIME",
+      "lifetime_peak": "PROCESS_LIFETIME_OS_COUNTER_NOT_CONCURRENT_ALLOCATION"
+    }
+  },
+  "mutations": [
+    {
+      "number": 1,
+      "mutation": "pid_swap",
+      "ok": false,
+      "error": "sample_identity_or_order_invalid"
+    },
+    {
+      "number": 2,
+      "mutation": "start_ticks",
+      "ok": false,
+      "error": "sample_identity_or_order_invalid"
+    },
+    {
+      "number": 3,
+      "mutation": "executable_identity",
+      "ok": false,
+      "error": "worker_identity_mismatch"
+    },
+    {
+      "number": 4,
+      "mutation": "worker_missing",
+      "ok": false,
+      "error": "worker_or_window_cap_exceeded"
+    },
+    {
+      "number": 5,
+      "mutation": "window_missing",
+      "ok": false,
+      "error": "group_scope_or_window_missing"
+    },
+    {
+      "number": 6,
+      "mutation": "sampling_order",
+      "ok": false,
+      "error": "sample_identity_or_order_invalid"
+    },
+    {
+      "number": 7,
+      "mutation": "negative_counter",
+      "ok": false,
+      "error": "sample_counter_invalid"
+    },
+    {
+      "number": 8,
+      "mutation": "zero_counter",
+      "ok": false,
+      "error": "sample_counter_invalid"
+    },
+    {
+      "number": 9,
+      "mutation": "window_totals",
+      "ok": false,
+      "error": "window_totals_or_bound_invalid"
+    },
+    {
+      "number": 10,
+      "mutation": "observed_maximum",
+      "ok": false,
+      "error": "observed_maximum_invalid"
+    },
+    {
+      "number": 11,
+      "mutation": "exit_during_window",
+      "ok": false,
+      "error": "sample_lifetime_invalid"
+    },
+    {
+      "number": 12,
+      "mutation": "observer_nonzero",
+      "ok": false,
+      "error": "sampler_not_complete"
+    },
+    {
+      "number": 13,
+      "mutation": "truncated_capture_as_complete",
+      "ok": false,
+      "error": "observer_capture_invalid"
+    },
+    {
+      "number": 14,
+      "mutation": "false_concurrent_peak",
+      "ok": false,
+      "error": "allocation_scope_escalation"
+    },
+    {
+      "number": 15,
+      "mutation": "private_as_scratch",
+      "ok": false,
+      "error": "allocation_scope_escalation"
+    },
+    {
+      "number": 16,
+      "mutation": "requirement_as_reservation",
+      "ok": false,
+      "error": "allocation_scope_escalation"
+    },
+    {
+      "number": 17,
+      "mutation": "matched_runs_as_same_instant",
+      "ok": false,
+      "error": "comparison_scope_or_value_invalid"
+    },
+    {
+      "number": 18,
+      "mutation": "hold_as_decoder_latency",
+      "ok": false,
+      "error": "allocation_scope_escalation"
+    },
+    {
+      "number": 19,
+      "mutation": "missing_sample_as_success",
+      "ok": false,
+      "error": "window_worker_missing"
+    },
+    {
+      "number": 20,
+      "mutation": "cancel_as_published_decode",
+      "ok": false,
+      "error": "required_stop_unconfirmed"
+    },
+    {
+      "number": 21,
+      "mutation": "refusal_as_decode",
+      "ok": false,
+      "error": "probe_outcome_invalid"
+    },
+    {
+      "number": 22,
+      "mutation": "old_source_identity",
+      "ok": false,
+      "error": "source_set_invalid"
+    },
+    {
+      "number": 23,
+      "mutation": "worker_count_bound",
+      "ok": false,
+      "error": "worker_or_window_cap_exceeded"
+    },
+    {
+      "number": 24,
+      "mutation": "resource_bounds",
+      "ok": false,
+      "error": "run_resource_or_cleanup_invalid"
+    }
+  ],
+  "all_rejected": true
+}

@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "owner_contract": "DC-MP-IMG2",
+  "fixtures": [
+    {
+      "id": "png_256",
+      "codec": "png",
+      "width": 256,
+      "height": 256,
+      "source_format": "Bgr24",
+      "channel_depth": 8,
+      "storage_depth": 24,
+      "pixel_output": "VERIFIED",
+      "process_counters": "MEASURED",
+      "allocator_peak": "NOT_MEASURED",
+      "internal_scratch": "NOT_MEASURED",
+      "actual_reservations": "NOT_MEASURED"
+    },
+    {
+      "id": "bmp24_256",
+      "codec": "bmp24",
+      "width": 256,
+      "height": 256,
+      "source_format": "Bgr24",
+      "channel_depth": 8,
+      "storage_depth": 24,
+      "pixel_output": "VERIFIED",
+      "process_counters": "MEASURED",
+      "allocator_peak": "NOT_MEASURED",
+      "internal_scratch": "NOT_MEASURED",
+      "actual_reservations": "NOT_MEASURED"
+    },
+    {
+      "id": "bgr565_256",
+      "codec": "bgr565",
+      "width": 256,
+      "height": 256,
+      "source_format": "Bgr565",
+      "channel_depth": 6,
+      "storage_depth": 16,
+      "pixel_output": "VERIFIED",
+      "process_counters": "MEASURED",
+      "allocator_peak": "NOT_MEASURED",
+      "internal_scratch": "NOT_MEASURED",
+      "actual_reservations": "NOT_MEASURED"
+    },
+    {
+      "id": "png_1024",
+      "codec": "png",
+      "width": 1024,
+      "height": 1024,
+      "source_format": "Bgr24",
+      "channel_depth": 8,
+      "storage_depth": 24,
+      "pixel_output": "VERIFIED",
+      "process_counters": "MEASURED",
+      "allocator_peak": "NOT_MEASURED",
+      "internal_scratch": "NOT_MEASURED",
+      "actual_reservations": "NOT_MEASURED"
+    },
+    {
+      "id": "bmp24_1024",
+      "codec": "bmp24",
+      "width": 1024,
+      "height": 1024,
+      "source_format": "Bgr24",
+      "channel_depth": 8,
+      "storage_depth": 24,
+      "pixel_output": "VERIFIED",
+      "process_counters": "MEASURED",
+      "allocator_peak": "NOT_MEASURED",
+      "internal_scratch": "NOT_MEASURED",
+      "actual_reservations": "NOT_MEASURED"
+    },
+    {
+      "id": "bgr565_1024",
+      "codec": "bgr565",
+      "width": 1024,
+      "height": 1024,
+      "source_format": "Bgr565",
+      "channel_depth": 6,
+      "storage_depth": 16,
+      "pixel_output": "VERIFIED",
+      "process_counters": "MEASURED",
+      "allocator_peak": "NOT_MEASURED",
+      "internal_scratch": "NOT_MEASURED",
+      "actual_reservations": "NOT_MEASURED"
+    }
+  ],
+  "decoder_adoption": "NOT_SELECTED",
+  "product_numeric_slo": "NOT_RATIFIED",
+  "full_decode_exit": "OPEN"
+}
