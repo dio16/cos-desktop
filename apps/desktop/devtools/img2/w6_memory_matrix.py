@@ -11,7 +11,7 @@ from stat import S_ISREG
 import time
 
 from w2_resource_matrix import Worker, _safe_path
-from w2_resource_verify import canonical, file_sha, redact_paths, sha
+from w2_resource_verify import canonical, file_sha, sha
 from w6_memory_fixtures import generate, compare
 from w6_memory_sample import SAMPLE_SCRIPT, capture_window
 from w6_memory_verify import (ALLOCATION_SCOPE, BOUNDS, LIMITS, SOURCE_FILES, groups,
@@ -154,39 +154,6 @@ def run_group(spec, work, pwsh, inventory, started, executable_sha):
     return group
 
 
-def consumer_run(work, pwsh, harness, fixtures):
-    """The unchanged consumer resolves the same explicit experimental DecodeBudget."""
-    manifest = []
-    for fixture in fixtures:
-        manifest.append(f'{fixture["path"]}|expected:{fixture["width"]}x{fixture["height"]}'
-                        f'|pixels:{fixture["expected_rgba_sha256"]}|decoded')
-    (work / "cases" / "cases.txt").write_text("\n".join(manifest) + "\n", encoding="utf-8")
-    output = work / "consumer.json"
-    argv = [str(harness), "--cases", str(work / "cases"), "--candidate",
-            "wic=pwsh:" + (ROOT / "apps/desktop/examples/decode_compare/wic_probe.ps1").as_posix(),
-            "--out", str(output), "--output-policy", "canonical-png", "--max-cases", "6",
-            "--max-observations", "6", "--timeout-ms", "15000", "--sample-interval-ms", "0",
-            "--max-output-file-bytes", str(BOUNDS["max_output_bytes"])]
-    for key, value in LIMITS.items():
-        argv += ["--" + key.replace("_", "-"), str(value)]
-    env = dict(os.environ)
-    env["PATH"] = str(pwsh.parent) + os.pathsep + env.get("PATH", "")
-    with (work / "consumer.stdout").open("xb") as stdout, (work / "consumer.stderr").open("xb") as stderr:
-        result = subprocess.run(argv, env=env, stdout=stdout, stderr=stderr, timeout=120)
-    for name in ("consumer.stdout", "consumer.stderr"):
-        if (work / name).stat().st_size > BOUNDS["max_capture_bytes"]:
-            raise ValueError("consumer_capture_cap_exceeded")
-    if result.returncode or not output.is_file() or output.stat().st_size > BOUNDS["max_report_bytes"]:
-        raise ValueError("real_consumer_failed")
-    data = output.read_bytes()
-    record = json.loads(data)
-    return {"exit_code": result.returncode, "raw_record_sha256": sha(data),
-            "resolved_limits": {key: record["decode_budget"][key] for key in LIMITS},
-            "record": redact_paths(record, [(work, "<work-root>"), (ROOT, "<repository>"),
-                                             (harness.parent, "<harness-dir>")]),
-            "scope": "Six sequential uninstrumented consumer cases, separate from the24 instrumented worker cases"}
-
-
 def run(work, out, pwsh, harness):
     work, out, pwsh, harness = map(_safe_path, (work, out, pwsh, harness))
     if work.exists() or out.exists() or out.is_relative_to(work):
@@ -197,12 +164,9 @@ def run(work, out, pwsh, harness):
     started = time.monotonic_ns()
     work.mkdir(parents=True, exist_ok=False)
     fixtures = generate(work / "cases")
-    # The consumer enumerates files; its cases.txt annotates, but does not filter.
-    (work / "cases" / "manifest.json").rename(work / "fixture-manifest.json")
     inventory = {f["id"]: dict(f, case_id=f["id"], sha256="sha256:" + f["sha256"]) for f in fixtures}
     # Worker accepts prefixed digests; the fixture/oracle contract uses bare hex.
     oracle_inventory = {f["id"]: f for f in fixtures}
-    consumer = consumer_run(work, pwsh, harness, fixtures)
     experiments = []
     for spec in groups():
         # Keep the original bare digest available to the independent oracle.
@@ -227,7 +191,7 @@ def run(work, out, pwsh, harness):
               and all(g["failure"] is None for g in experiments) and unchanged,
               "bounds": BOUNDS, "decode_limits": dict(LIMITS), "run_id": work.name,
               "source_identity": identity, "platform": json.loads(platform.stdout),
-              "fixtures": list(oracle_inventory.values()), "consumer": consumer,
+              "fixtures": list(oracle_inventory.values()),
               "sampler_script_sha256": sha(SAMPLE_SCRIPT.encode("utf-8")),
               "experiments": experiments, "allocation_scope": dict(ALLOCATION_SCOPE),
               "duration_ns": time.monotonic_ns() - started, "work_bytes": _work_bytes(work),

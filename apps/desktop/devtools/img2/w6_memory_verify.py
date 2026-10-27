@@ -274,6 +274,7 @@ def _verify(record, source):
     need(len(canonical(record)) <= BOUNDS["max_report_bytes"], "report_cap_exceeded")
     need(record["schema_version"] == 1 and record["complete"] is True
          and record["bounds"] == BOUNDS and record["decode_limits"] == LIMITS, "record_bounds_invalid")
+    need(record.get("consumer") is None, "undeclared_decode_phase")
     need(record["allocation_scope"] == ALLOCATION_SCOPE, "allocation_scope_escalation")
     need(record["sampler_script_sha256"] == sha(SAMPLE_SCRIPT.encode("utf-8")), "sampler_script_identity_invalid")
     need(record["cleanup"] == {"complete": True, "live_direct_children": []}
@@ -334,23 +335,6 @@ def _verify(record, source):
     need(record["comparison"] == comparison_rows(experiments, expected)
          and record["matched_run_differences"] == matched_differences(experiments), "comparison_scope_or_value_invalid")
     need(record["measurement_complete"] == eligible, "missing_sample_promoted")
-    consumer = record["consumer"]
-    need(consumer["exit_code"] == 0 and consumer["resolved_limits"] == LIMITS, "consumer_budget_invalid")
-    observations = consumer["record"]["observations"]
-    expected_cases = {f["path"]: f for f in expected}
-    need(consumer["record"]["cases_truncated"] is False
-         and consumer["record"]["observations_truncated"] is False
-         and len(observations) == len(expected_cases)
-         and {o["case_id"] for o in observations} == set(expected_cases), "consumer_case_set_invalid")
-    for observation in observations:
-        fixture = expected_cases[observation["case_id"]]
-        need(observation["observed_outcome"] == "decoded" and observation["exit_code"] == 0
-             and observation["output_present"] is True and observation["pixel_verified"] is True
-             and observation["validity"] == "pixels_verified" and observation["inspected_complete"] is True
-             and (observation["inspected_width"], observation["inspected_height"]) ==
-                 (fixture["width"], fixture["height"])
-             and observation["pixel_digest"] == observation["pixel_expectation"] ==
-                 fixture["expected_rgba_sha256"], "consumer_decode_or_pixel_invalid")
     return {"ok": True, "closure_eligible": eligible, "workers": 24, "experiments": len(experiments),
             "windows": sum(len(g["windows"]) for g in experiments),
             "decoded": sum(w["outcome"] == "decoded" for g in experiments for w in g["workers"]),

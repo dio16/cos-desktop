@@ -129,15 +129,10 @@ class NativeMutationTests(unittest.TestCase):
         worker["stdout_bytes"] = len(worker["stdout_utf8"].encode("utf-8"))
         self.assertFalse(verify(record, ROOT)["ok"])
 
-    def test_consumer_must_exercise_every_image_not_enumerated_manifest_json(self):
+    def test_extra_decode_phase_cannot_expand_total_case_budget(self):
         record = copy.deepcopy(self.native)
-        record["consumer"]["record"]["observations"][0]["case_id"] = "manifest.json"
-        self.assertEqual(verify(record, ROOT).get("error"), "consumer_case_set_invalid")
-
-    def test_consumer_pixel_mismatch_cannot_pass_on_process_exit(self):
-        record = copy.deepcopy(self.native)
-        record["consumer"]["record"]["observations"][0]["pixel_verified"] = False
-        self.assertEqual(verify(record, ROOT).get("error"), "consumer_decode_or_pixel_invalid")
+        record["consumer"] = {"record": {"observations": [{"case_id": "extra"}]}}
+        self.assertEqual(verify(record, ROOT).get("error"), "undeclared_decode_phase")
 
     def test_sample_and_report_limits_are_also_enforced(self):
         for field in ("samples", "report"):
