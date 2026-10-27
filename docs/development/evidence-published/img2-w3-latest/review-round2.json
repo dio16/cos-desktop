@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "candidate": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6",
+  "evidence_commit": "ed2dc100755ba911e215bc1962ad4e540545b8cf",
+  "submission_metadata_commit": "885f2d465b57df11d4e563dbd976163eb0a8f923",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "970a5f01-d39c-4907-af4e-40632558dfe9"
+  ],
+  "assistant_ids": [
+    "76662bc4-6c76-4edd-92b1-37d6fb1be6fd"
+  ],
+  "first_read": "2026-10-27T16:32:35.596Z",
+  "second_read": "2026-10-27T16:33:20.696Z",
+  "elapsed_ms": 45100,
+  "identical_complete_reads": true,
+  "streaming": false,
+  "request_sha256": "sha256:9152fda43e87c479d808ed7352fee84eae3fe2699f4979e92e3d43893ebd9fd2",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 3902,
+      "expected": 3902,
+      "preview": "MP-IMG2-W3 再評価 Round 2 — A-W3-01 の限定修正です。既存会話の前回 assistant 5"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 4,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "terminal": "HOLD 0 / 1 / 0",
+  "parser_exit": 1,
+  "parser": {
+    "blocking": 0,
+    "actionable": 1,
+    "excessive": 0,
+    "passLine": null,
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": false,
+    "sawPassLine": false
+  },
+  "closed": [
+    "A-W3-01"
+  ],
+  "open": [
+    "A-W3-R2-01"
+  ]
+}

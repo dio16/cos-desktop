@@ -1,0 +1,368 @@
+ChatGPT の発言:
+MP-IMG2-W3 Round 2 — 固定SOURCE独立レビュー
+
+判定：HOLD 0 / 1 / 0
+
+前回の A-W3-01はCLOSED と判定します。指摘された4件のfalse-greenと終端traceの不一致は、今回の修正で拒否されることを独立に確認しました。
+
+ただし、追加検証で拒否traceの欠落を許容する新規ACTIONABLE 1件を発見しました。実Native記録そのものは正常ですが、検証器のfail-closed条件が1つ不足しています。
+
+1. 固定候補と独立検証結果
+
+今回のSOURCE candidate
+
+添付限定レビュー
+
+5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6
+
+Evidence: ed2dc100755ba911e215bc1962ad4e540545b8cf
+
+検証項目
+
+	
+
+独立結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+572,294 bytes・SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+172,592 bytes・SHA256一致
+
+
+
+
+SOURCE manifest
+
+	
+
+44/44一致
+
+
+
+
+Evidence manifest
+
+	
+
+52/52一致
+
+
+
+
+raw/LF区別
+
+	
+
+テキスト43件＋binary1件を適切に照合
+
+
+
+
+Python W2/W3 tests
+
+	
+
+78/78 PASS
+
+
+
+
+Native report構造検証
+
+	
+
+PASS、24 workers
+
+
+
+
+BMP fixture再生成
+
+	
+
+12/12 原バイト一致
+
+
+
+
+Bgr565実decoded出力
+
+	
+
+10/10 RGBA全画素一致
+
+
+
+
+Consumer記録
+
+	
+
+正常5件 pixels_verified
+
+
+
+
+Gate artifact correspondence
+
+	
+
+50/50一致
+
+
+
+
+Native source bindings
+
+	
+
+16/16一致
+
+BMPとPNGの画素検査は、提出されたoracleとは別に実装しました。BMP565のbitfield展開とPNGのCRC・zlib・scanline filterを再計算し、10出力すべてのRGBAが一致しています。
+
+2. A-W3-01修正確認
+
+A-W3-01 — CLOSED
+
+対象：apps/desktop/devtools/img2/w3_verify.py:185–204
+
+既知の不正BMPに対して、以下の状態が必須になっています。
+
+プレーンテキスト
+outcome          = corrupt
+reason_code      = invalid_metadata
+admission_status = refused
+materialization  = not_requested
+
+また、probe_exitのoutcome / reason_code / admission_status / materializationはprobe_resultと照合されています。
+
+今回、probe_result・stdout・終端traceを整合させて改変したうえで、実際にverify()を呼び出しました。
+
+独立改変
+
+	
+
+結果
+
+
+
+
+planes=0 → win_unknown_image_format
+
+	
+
+拒否
+
+
+
+
+zero masks → max_bit_depth_exceeded
+
+	
+
+拒否
+
+
+
+
+overlap masks → admitted
+
+	
+
+拒否
+
+
+
+
+truncated → not_enforced
+
+	
+
+拒否
+
+
+
+
+invalid DIB → win_bad_header
+
+	
+
+拒否
+
+
+
+
+終端4フィールドを個別に不一致化
+
+	
+
+4/4拒否
+
+期待エラーはそれぞれheader_admission_refusal_invalidとprobe_exit_result_mismatchでした。
+
+したがって、前回指摘した不正なreason/statusと終端不一致の経路は閉じています。
+
+3. 新規指摘
+A-W3-R2-01 — 不正BMPのrefused stage欠落がfalse-greenになる
+
+種別：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w3_verify.py:193–209
+
+現在の検証器は、既知の不正BMPに対してreason/statusと、onload_enteredが存在しないことを検証します。
+
+しかし、正常なNative記録に存在する**refused stage自体を必須としていません**。
+
+実記録のformat_bad_masksは次の順序です。
+
+プレーンテキスト
+process_observed
+input_opened
+refused
+probe_exit
+
+ここからrefusedだけを削除し、残りのstageの連番、trace件数、trace SHA256、traceバイト数を再計算しました。
+
+probe_result、stdout、終端の拒否理由は変更していません。
+
+独立再現結果
+
+元Native記録
+
+ok=true
+
+refused stageを削除
+
+ok=true
+
+本来はnative_stage_set_incomplete等で拒否すべき改変です。
+
+この改変は以下の6ケースすべてで成功してしまいました。
+
+format_truncated、format_bad_masks、format_overlap_masks、format_bad_header、format_inconsistent、format_unsupported
+
+問題の意味： probe_exitが拒否を報告していても、途中の拒否イベントが欠落したNative traceを完全な実行記録として認定できます。
+
+既存のoversize検証ではstage列全体の一致を要求していますが、malformed/unsupported分岐には同等の条件がありません。
+
+今回の実Native記録に欠落はなく、Bgr565デコード結果にも問題は認められません。ただし、W3の独立証拠検証では、不完全なtraceをfail-closedにする必要があります。
+
+必要最小限の修正：
+
+既知のheader拒否5ケースでは、少なくとも次のstage列を必須にしてください。
+
+Python
+実行
+[
+    "process_observed",
+    "input_opened",
+    "refused",
+    "probe_exit",
+]
+
+unsupportedも、既存probe仕様に基づく拒否stageを検証してください。
+
+さらに、上記6ケースからrefusedをそれぞれ削除してtrace整合性を再計算する負例を追加し、すべてok=falseとなることを確認してください。
+
+修正対象はW3検証器とテストに限定できます。WIC decoder、BMP生成器、pixel oracle、crates/media、DecodeBudget、Runtimeの変更は不要です。
+
+4. 新Gate・SOURCE・証拠の対応
+
+今回のGateは旧候補のものではありません。
+
+Gate
+
+	
+
+ID
+
+	
+
+結果
+
+
+
+
+Quality
+
+	
+
+1fd79f6d-8a8e-4c74-ac9e-329c76c3adbb
+
+	
+
+SUCCEEDED 13/13
+
+
+
+
+Build
+
+	
+
+41eda8c3-6236-473b-bc20-4dda70a0e991
+
+	
+
+SUCCEEDED 1/1
+
+両Gateのcandidate digestは次と一致しました。
+
+sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1
+
+また、提出されたGate記録について、以下が成立しています。
+
+final_headは今回の5e10cb2b…
+
+50 artifact tuplesが両Gateで同一
+
+50件すべての添付実バイトが対応するdigest・サイズと一致
+
+status/inspect/verifyはexit 0
+
+cleanup complete
+
+owner_alive=false、recovery_required=false
+
+preflight UNKNOWNはUNKNOWNのまま
+
+前回Gateはhistorical recordとして区別
+
+ただし、これは添付に含まれる記録の独立整合性確認です。GitHubの未push commit全体、Windows実機でのWIC/Gate再実行、Storageの物理削除は検証していません。
+
+5. 限定技術完了の判断
+
+今回のSOURCEとNative記録から、以下の限定事実は十分に裏付けられています。
+
+実WICでのBgr565認識、channel depth 6、storage 16 bpp、10件の全画素一致、Bgr555の区別、admission前拒否、bounded execution、独立Gate成功です。
+
+通常のquality結果についても、Rust 535 pass / 1 ignored、画像78 pass、R0 340 pass / 12 skippedが記録されています。featureの並列実行失敗は保持され、逐次実行539 pass / 1 ignoredと区別されています。これを新たなW3製品不具合とは判定しません。
+
+未達の16K、内部scratch、実予約、真の同時peak、cooperative cancellation、region/sequential/tiled、ICC/orientation、JPEG absolute raster、full Decode/Upload、Runtimeおよびmeasured R0は今回の指摘対象外です。
+
+結論として、前回A-W3-01は解消しましたが、新規A-W3-R2-01が残るため、W3 LIMITED TECHNICAL COMPLETIONの0/0/0 closureは保留します。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 1
+
+EXCESSIVE 0
+
+REVIEW COMPLETE
+
+HOLD 0 / 1 / 0
