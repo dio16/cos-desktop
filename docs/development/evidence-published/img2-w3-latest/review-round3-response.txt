@@ -1,0 +1,347 @@
+ChatGPT の発言:
+MP-IMG2-W3 Round 3 — 固定SOURCE独立レビュー
+
+判定：HOLD 0 / 1 / 0
+
+前回の A-W3-R2-01はCLOSED と判定します。6種類のrefused欠落に対するfalse-greenは解消されています。
+
+実装・テスト・実Native記録に新たな不具合は確認できませんでした。ただし、今回の提出パッケージに固定証拠版の対応不整合が1件残っています。
+
+1. 独立検証結果
+
+検証項目
+
+	
+
+結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+572,901 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+218,444 bytes、SHA256一致
+
+
+
+
+SOURCE
+
+	
+
+44件、前版不変39件＋新Gate一致5件
+
+
+
+
+Evidence manifest
+
+	
+
+66/66件、サイズ・digest一致
+
+
+
+
+W2/W3 Python tests
+
+	
+
+79/79 PASS
+
+
+
+
+Native report構造検証
+
+	
+
+PASS、24 workers
+
+
+
+
+refused削除の独立負例
+
+	
+
+6/6拒否
+
+
+
+
+Bgr565実出力
+
+	
+
+10/10 RGBA全画素一致
+
+
+
+
+Gate間artifact tuples
+
+	
+
+53/53一致
+
+
+
+
+添付現行バイトとGate捕捉値
+
+	
+
+52/53一致
+
+
+
+
+Native SOURCE bindings
+
+	
+
+16/16一致
+
+BMP565の展開とPNGのCRC・inflate・filter復元は独立実装で確認しました。Bgr565の10出力すべてが、元BMPから算出したRGBAと一致しています。5-bit/6-bit値の8-bit変換はbit replication方式で一致しました。
+
+2. 前回指摘 A-W3-R2-01
+
+CLOSED
+
+対象：apps/desktop/devtools/img2/w3_verify.py:193–211
+
+malformed/unsupportedの拒否分岐で、次の完全なstage列が必須になっています。
+
+Python
+実行
+[
+    "process_observed",
+    "input_opened",
+    "refused",
+    "probe_exit",
+]
+
+独立に次の6ケースを改変しました。
+
+ケース
+
+	
+
+refused削除後
+
+
+
+
+format_truncated
+
+	
+
+拒否
+
+
+
+
+format_bad_masks
+
+	
+
+拒否
+
+
+
+
+format_overlap_masks
+
+	
+
+拒否
+
+
+
+
+format_bad_header
+
+	
+
+拒否
+
+
+
+
+format_inconsistent
+
+	
+
+拒否
+
+
+
+
+format_unsupported
+
+	
+
+拒否
+
+すべてtraceの連番・bytes・SHA256・件数を再計算し、probe_result、stdout、終端reasonを維持した条件で実行しました。
+
+結果は6件ともok=false / native_stage_set_incompleteです。
+
+既存のbudget-overは従来のadmitted prefixと拒否stageを要求し、正常decodeは完全なstage列と実画素一致を要求しています。両経路ともportable replayでPASSしました。
+
+前回指摘した拒否イベント欠落の誤認定経路は閉じています。
+
+3. 新規指摘
+A-W3-R3-01 — 提出証拠版の対応関係が完全に閉じていない
+
+種別：ACTIONABLE NON-BLOCKING
+
+対象：review-package(2).json、review-history.json、gate-artifact-correspondence.json、証拠ZIPの構成
+
+今回、3つの不一致を確認しました。
+
+① 証拠コミットの指定が異なる
+
+依頼本文の証拠コミット：
+
+f5ec02f0cd3999ce370261f9f18f959f2cfaa583
+
+添付review-package.jsonのevidence_commit：
+
+83a847f766fec36b473bde82901cd65326086b7f
+
+後者のmanifestと提出されたEvidence ZIPの実バイトは一致します。しかし、前者との祖先関係、追加変更範囲、どちらを今回の固定証拠HEADとするかは添付だけでは確定できません。
+
+② Gate捕捉後のreview-history.jsonに版差がある
+
+比較対象
+
+	
+
+サイズ
+
+	
+
+SHA256
+
+
+
+
+Gate捕捉artifact
+
+	
+
+2,269 bytes
+
+	
+
+6cb83571…fe55cc
+
+
+
+
+Evidence ZIPの現行版（LF）
+
+	
+
+2,485 bytes
+
+	
+
+26b3e720…891096ea
+
+両Gateの53 artifact台帳は完全一致します。しかし、添付された現行ファイルとの実バイト一致は52件であり、review-history.jsonのみ一致しません。
+
+これはGate後のdocs-only更新で説明できる可能性があります。Gate失敗や証拠改ざんを意味する指摘ではありません。 ただし、捕捉版と提出版の対応が明示されていません。
+
+③ 今回版のSOURCE entry manifestが含まれていない
+
+review-package.jsonは、証拠ZIP内のreview-package-source.jsonを参照しています。
+
+実際に含まれているのは過去ラウンドの次の2件です。
+
+review-round1-package-source.json
+
+review-round2-package-source.json
+
+今回版の同名ファイルはありません。
+
+ただし、前ラウンドのmanifestと今回のGate correspondenceを組み合わせることで、SOURCE44件のうち不変39件、変更5件のdigestを独立照合できています。
+
+したがって、SOURCEの実装同一性が崩れたという指摘ではなく、今回の提出manifestとしての完全性不足です。
+
+必要最小限の修正
+
+製品SOURCE、Native実測、Taskern、Refine Gateを変更する必要はありません。
+
+今回の固定証拠HEADを一意に確定し、f5ec02f0…と83a847f7…の関係を記録してください。また、Gate捕捉時点のreview-history.jsonと提出版の違いを明示し、今回SOURCE44件の実バイトmanifestを追加してください。
+
+既存の成功Gateを再実行せず、docs-onlyの証拠対応修正と再パッケージで解消可能です。
+
+4. 独立Gateと品質
+
+今回の新Gateは、過去ラウンドの成功記録と区別されています。
+
+Gate
+
+	
+
+結果
+
+
+
+
+Quality aed94841-c578-452f-8f62-8d4ad366a234
+
+	
+
+SUCCEEDED 13/13
+
+
+
+
+Build 8a9a0517-2b1e-498d-9856-bcded1e204a6
+
+	
+
+SUCCEEDED 1/1
+
+両Gateのcandidateはf8dfc3009fd7526e1b055968e2fc19892c007190、candidate digestはb0c12483…c5e5a4で一致します。
+
+status/inspect/verifyはすべてexit 0、cleanup complete、owner_alive=false、recovery_required=falseです。PreflightのUNKNOWNはUNKNOWNのままです。
+
+Rust 535 pass / 1 ignored、画像79 pass、R0 isolated 316 pass / 36 skipの結果も保存されています。通常実行のR0 340 pass / 12 skipとは区別されています。
+
+Storageの5対象、10,006 files、4,124,111,230 logical bytesという削除記録も算術上一致します。実Windowsで削除を再実行したわけではありません。
+
+5. W3限定技術完了の評価
+
+技術面では、実Bgr565 format認識、depth 6、storage 16 bpp、限定fixtureの全画素一致、Bgr555対照、admission前拒否、拒否traceの完全性、bounded process lifecycleが裏付けられています。
+
+未測定のWIC内部scratch、実予約、真の同時peak、16K、region/sequential/tiled、cooperative decoder cancellation、ICC/orientation、JPEG absolute raster、full Decode/Upload、Runtime、measured R0は今回の指摘に含めません。
+
+W3のSOURCE実装に対する新規修正要求はありません。 残件は証拠パッケージの固定版対応だけです。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 1
+
+EXCESSIVE 0
+
+REVIEW COMPLETE
+
+HOLD 0 / 1 / 0

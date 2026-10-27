@@ -42,8 +42,31 @@
       "finding": "A-W3-R2-01",
       "request_body_present_in_linked_user_node": true,
       "source_package_manifest": "review-round2-package-source.json"
+    },
+    {
+      "round": 3,
+      "source_candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+      "evidence_commit_ref": "review-package.json#evidence_commit",
+      "submission_metadata_commit": "f34370a7c30d93df10b9c734b1620ab2702d8c88",
+      "request": "review-request.txt",
+      "response": "review-round3-response.txt",
+      "receipt": "review-round3.json",
+      "source_package": "w3-awn2-review-source.zip",
+      "evidence_package": "w3-awn2-review-evidence.zip",
+      "package_manifest": "review-package.json",
+      "package_reconciliation": "review-round3-package-reconciliation.json",
+      "quality_gate_export": "quality-gate.json",
+      "build_gate_export": "build-gate.json",
+      "gate_correspondence": "gate-artifact-correspondence.json",
+      "storage": "storage.json",
+      "verdict": "HOLD 0 / 1 / 0",
+      "closed": [
+        "A-W3-R2-01"
+      ],
+      "finding": "A-W3-R3-01",
+      "request_body_present_in_linked_user_node": true
     }
   ],
   "historical_relative_pointers": "Paths inside round1 snapshots refer to fixed evidence commit366834be6174e92fbf36763da801cfdd0077867f, not to later canonical working-tree files. Renames retain snapshot bytes and never rewrite old Gate or review outcomes.",
-  "current": "A-W3-R2-01 repaired at f8dfc3009fd7526e1b055968e2fc19892c007190 with new pinned Gates aed94841-c578-452f-8f62-8d4ad366a234 / 8a9a0517-2b1e-498d-9856-bcded1e204a6; round-three review pending; no W3 completion yet."
+  "current": "A-W3-R3-01 evidence-package correspondence repaired at docs-only level; existing successful Gates aed94841-c578-452f-8f62-8d4ad366a234 / 8a9a0517-2b1e-498d-9856-bcded1e204a6 retained without rerun; round-four review pending; no W3 completion yet."
 }

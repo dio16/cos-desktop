@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+  "evidence_commit": "83a847f766fec36b473bde82901cd65326086b7f",
+  "submission_metadata_commit": "f34370a7c30d93df10b9c734b1620ab2702d8c88",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "d1ff53e4-4378-4057-9134-b8dfe9aa03ef"
+  ],
+  "assistant_ids": [
+    "781b9b27-5840-4252-aedf-6b8aa3a50005"
+  ],
+  "first_read": "2026-10-27T17:02:47.543Z",
+  "second_read": "2026-10-27T17:03:17.585Z",
+  "elapsed_ms": 30042,
+  "identical_complete_reads": true,
+  "streaming": false,
+  "request_sha256": "sha256:fe8ad630a3249ae3acd8d4b0feea55a2ecd8faa14e2052ee771d10820b0969f3",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 3873,
+      "expected": 3873,
+      "preview": "MP-IMG2-W3 再評価 Round 3 — A-W3-R2-01 の限定修正です。Round 2の完全な HOLD"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 4,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "terminal": "HOLD 0 / 1 / 0",
+  "parser_exit": 1,
+  "parser": {
+    "blocking": 0,
+    "actionable": 1,
+    "excessive": 0,
+    "passLine": null,
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": false,
+    "sawPassLine": false
+  },
+  "closed": [
+    "A-W3-R2-01"
+  ],
+  "open": [
+    "A-W3-R3-01"
+  ]
+}

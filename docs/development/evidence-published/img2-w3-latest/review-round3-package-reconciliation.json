@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "finding": "A-W3-R3-01",
+  "review": "review-round3.json",
+  "purpose": "Close the evidence-package correspondence only; no product source, Native observation, Gate authority or Taskern packet changes.",
+  "fixed_source_candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+  "commit_chain": [
+    {
+      "commit": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+      "role": "fixed product/evidence source candidate verified by both Gates",
+      "gate_capture": true
+    },
+    {
+      "commit": "18ad601e62a4493f966c79a701ed46da99a740c0",
+      "role": "docs-only: retain Gate pair, artifact correspondence, prepared disposal inventory",
+      "descends_from_candidate": true
+    },
+    {
+      "commit": "f5ec02f0cd3999ce370261f9f18f959f2cfaa583",
+      "role": "docs-only: close storage integrity after exact scratch disposal",
+      "descends_from_candidate": true
+    },
+    {
+      "commit": "83a847f766fec36b473bde82901cd65326086b7f",
+      "role": "round-three request submission metadata; the evidence ZIP and package manifest were built from this commit",
+      "descends_from_candidate": true
+    },
+    {
+      "commit": "f34370a7c30d93df10b9c734b1620ab2702d8c88",
+      "role": "round-three package identity manifest commit",
+      "descends_from_candidate": true
+    },
+    {
+      "commit": "recorded-by-review-package.json",
+      "role": "canonical round-four evidence HEAD, assigned by the commit that contains this reconciliation file; review-package.json records that exact OID and the ZIP built from it",
+      "descends_from_candidate": true
+    }
+  ],
+  "round_three_ambiguity": {
+    "request_named_evidence_commit": "f5ec02f0cd3999ce370261f9f18f959f2cfaa583",
+    "package_manifest_named_evidence_commit": "83a847f766fec36b473bde82901cd65326086b7f",
+    "explanation": "The request named the storage-closure commit, while the ZIP was actually generated after the request file was committed, so its manifest named 83a847f. Both are docs-only descendants of the same fixed candidate and neither is a second product version. From this round on, one canonical evidence HEAD is named by review-package.json and by the ZIP bytes.",
+    "resolution": "Rebuild from the reconciliation commit and name that OID exactly; no Gate rerun is required because no product, source-identity or Gate-bound artifact changed."
+  },
+  "gate_capture_versus_round3_submission": {
+    "captured_artifacts": 53,
+    "byte_identical_at_round3_submission": 51,
+    "docs_only_changed": [
+      {
+        "id": "awn-review-history.json",
+        "path": "docs/development/evidence-published/img2-w3-latest/review-history.json",
+        "captured_bytes": 2269,
+        "captured_sha256": "sha256:6cb83571e2a5c1dce2aabb6465781d55425b1d773ed8e526a8c277ac71fe55cc",
+        "round3_submitted_bytes": 2485,
+        "round3_submitted_sha256": "sha256:26b3e72022cd40486510160822fc0cb4c4e02f748afff08bb42fd23d891096ea",
+        "delta": "Round-two snapshot paths renamed to review-round2-* and the current-round statement updated. No prior verdict, Gate ID or finding was rewritten."
+      },
+      {
+        "id": "w3-14-IMPLEMENTATION_MASTER_PLAN.md",
+        "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+        "captured_bytes": 419316,
+        "captured_sha256": "sha256:65ca2532bdccb705e0283c02efb05174071cc7c98edc19d63a384f077487a1cb",
+        "round3_submitted_bytes": 419340,
+        "round3_submitted_sha256": "sha256:3dbb5fb71a338ba4d22d99cad01487f070535bdaa1da0cad024c1b20f68d27c0",
+        "delta": "One clause changed from 'a new pinned Gate pair and clean re-review remain required' to 'its own pinned Gate pair and Tern re-review are separate receipts, not transferred' so the plan text is not stale after Gate completion."
+      }
+    ],
+    "round_four_addition": "This reconciliation commit also adds the round-three bullet to the plan. That further documentation delta is bound by review-package.json's file digests taken from the evidence HEAD, not by the round-three submission digests above.",
+    "scope": "Both differences are documentation only. Every other artifact, including all sixteen Native source bindings, is byte-identical to the candidate capture. This is not Gate failure, acceptance transfer or evidence tampering."
+  },
+  "source_entry_manifest": {
+    "file": "review-package-source.json",
+    "entries": 44,
+    "note": "The round-three package referenced this file but the ZIP was generated before it was committed. The round-four evidence ZIP includes it."
+  },
+  "what_did_not_change": [
+    "fixed source candidate f8dfc30",
+    "WIC probe/decode/admission",
+    "Bgr565 fixtures and independent pixel oracle",
+    "crates/media budgets and consumer",
+    "Native 24-worker record and 53 Gate artifact captures",
+    "Quality aed94841-c578-452f-8f62-8d4ad366a234 and Build 8a9a0517-2b1e-498d-9856-bcded1e204a6"
+  ],
+  "verification": {
+    "all_53_captures_equal_candidate_blobs": true,
+    "two_submitted_differences_are_docs_only": true,
+    "source_zip_entries": 44,
+    "no_gate_rerun": true
+  }
+}
