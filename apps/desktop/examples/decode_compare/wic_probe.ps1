@@ -177,7 +177,11 @@ param(
 
     [string] $PauseAtStage = '',
 
-    [int] $PauseTimeoutMs = 0
+    [int] $PauseTimeoutMs = 0,
+
+    [string] $Roi = '',
+
+    [long] $MaxRoiOutputBytes = 0
 )
 
 Set-StrictMode -Version 3.0
@@ -202,6 +206,9 @@ $script:pendingPath = $null
 $script:publishedOutputPath = $null
 $script:publishedOutputByProbe = $false
 $script:traceEncoding = $null
+$script:roiRequested = $false
+$script:roiSpec = $null
+$script:roiSource = $null
 
 function Remove-InstrumentedFiles {
     $removed = $true
@@ -694,8 +701,62 @@ try {
     }
     $result.bits_per_channel = $formatSpec.Depth
     $result.bits_per_pixel = $formatSpec.BitsPerPixel
+
+    # Opt-in rectangle output. A successful rectangle is not a partial decode: the
+    # cache mode and full-frame requirement stay explicit and the full-frame budget
+    # below is never reduced by a small ROI.
+    $script:roiRequested = $PSBoundParameters.ContainsKey('Roi')
+    if ($script:roiRequested) {
+        $result.roi_requested = $true
+        $result.decoder_cache_mode = 'OnLoad'
+        $result.full_frame_materialization = 'not_observed'
+        $result.true_partial_decode = 'not_verified'
+        $result.sequential_decode = 'not_verified'
+        $result.tiled_decode = 'not_verified'
+        $result.roi_output = 'not_produced'
+        $script:roiSpec = Get-RoiSpec -Text $Roi
+        if ($null -eq $script:roiSpec -or $script:roiSpec.Width -le 0 -or $script:roiSpec.Height -le 0) {
+            $result.outcome = 'corrupt'
+            $result.reason_code = 'invalid_roi'
+            $result.reason = 'ROI must be a strict x,y,width,height decimal rectangle with positive extent'
+            $result.admission_status = 'refused'
+            Write-ProbeResult -Result $result -ExitCode $exitCorrupt
+        }
+        if ([string]::IsNullOrWhiteSpace($OutputPath)) {
+            $result.outcome = 'corrupt'
+            $result.reason_code = 'invalid_roi'
+            $result.reason = 'ROI output requires an explicit output path'
+            $result.admission_status = 'refused'
+            Write-ProbeResult -Result $result -ExitCode $exitCorrupt
+        }
+        if ($MaxRoiOutputBytes -le 0) {
+            $result.outcome = 'error'
+            $result.reason_code = 'invalid_limits'
+            $result.reason = 'ROI output requires a positive output-byte bound'
+            Write-ProbeResult -Result $result -ExitCode $exitError
+        }
+        $roiRight = $script:roiSpec.X + $script:roiSpec.Width
+        $roiBottom = $script:roiSpec.Y + $script:roiSpec.Height
+        if ($roiRight -gt [System.Numerics.BigInteger] $result.width -or
+            $roiBottom -gt [System.Numerics.BigInteger] $result.height) {
+            $result.outcome = 'corrupt'
+            $result.reason_code = 'invalid_roi'
+            $result.reason = 'ROI lies outside the declared source bounds'
+            $result.admission_status = 'refused'
+            Write-ProbeResult -Result $result -ExitCode $exitCorrupt
+        }
+        $roiBytes = $script:roiSpec.Width * $script:roiSpec.Height * 4
+        $result.roi_x = [long] $script:roiSpec.X
+        $result.roi_y = [long] $script:roiSpec.Y
+        $result.roi_width = [long] $script:roiSpec.Width
+        $result.roi_height = [long] $script:roiSpec.Height
+        $result.roi_output_bytes_required = ConvertTo-ReportedLong $roiBytes
+    }
     $math = Get-AdmissionArithmetic -Width $result.width -Height $result.height `
         -BitsPerPixel $formatSpec.BitsPerPixel -DeclaredScratch $DeclaredScratchBytes
+    if ($script:roiRequested) {
+        $result.full_frame_decoded_bytes = ConvertTo-ReportedLong $math.Decoded
+    }
 
     if ($budgetDeclared) {
         $result.limits_source = 'argv'
@@ -740,6 +801,15 @@ try {
         $result.admission_status = 'refused'
         Write-ProbeResult -Result $result -ExitCode $exitOversize
     }
+    if ($script:roiRequested -and
+        ($script:roiSpec.Width * $script:roiSpec.Height * 4) -gt
+            [System.Numerics.BigInteger] $MaxRoiOutputBytes) {
+        $result.outcome = 'oversize'
+        $result.reason_code = 'roi_output_exceeded'
+        $result.reason = 'ROI output exceeds its declared byte bound'
+        $result.admission_status = 'refused'
+        Write-ProbeResult -Result $result -ExitCode $exitOversize
+    }
     $result.row_bytes = ConvertTo-ReportedLong $math.RowBytes
     $result.decoded_bytes_required = ConvertTo-ReportedLong $math.Decoded
     $result.bgra32_bytes_required = ConvertTo-ReportedLong $math.Bgra32
@@ -770,6 +840,9 @@ try {
         [System.Windows.Media.Imaging.BitmapCreateOptions]::None,
         [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad)
     Write-ProbeTraceStage -Stage 'onload_returned'
+    if ($script:roiRequested) {
+        $result.full_frame_materialization = 'observed'
+    }
     Write-ProbeTraceStage -Stage 'after_onload'
     Write-ProbeTraceStage -Stage 'conversion_entered'
     $converted = [System.Windows.Media.Imaging.FormatConvertedBitmap]::new(
@@ -783,6 +856,30 @@ try {
     $converted.CopyPixels([System.Windows.Int32Rect]::new(0, 0, 1, 1), $sample, 4, 0)
     Write-ProbeTraceStage -Stage 'copy_pixels_returned'
 
+    if ($script:roiRequested) {
+        $roiStride = [int] $result.roi_width * 4
+        $roiPixels = [byte[]]::new([int] $result.roi_output_bytes_required)
+        $converted.CopyPixels(
+            [System.Windows.Int32Rect]::new(
+                [int] $result.roi_x,
+                [int] $result.roi_y,
+                [int] $result.roi_width,
+                [int] $result.roi_height),
+            $roiPixels,
+            $roiStride,
+            0)
+        $script:roiSource = [System.Windows.Media.Imaging.BitmapSource]::Create(
+            [int] $result.roi_width,
+            [int] $result.roi_height,
+            96.0,
+            96.0,
+            [System.Windows.Media.PixelFormats]::Bgra32,
+            $null,
+            $roiPixels,
+            $roiStride)
+        $result.roi_output = 'produced_pending_publish'
+    }
+
     if (-not [string]::IsNullOrWhiteSpace($OutputPath)) {
         $encoder = switch ([System.IO.Path]::GetExtension($OutputPath).ToLowerInvariant()) {
             '.png' { [System.Windows.Media.Imaging.PngBitmapEncoder]::new() }
@@ -795,7 +892,8 @@ try {
             $result.reason = 'unsupported output extension (.png and .bmp only)'
             Write-ProbeResult -Result $result -ExitCode $exitUnsupported
         }
-        $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($converted))
+        $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create(
+            $(if ($null -ne $script:roiSource) { $script:roiSource } else { $converted })))
         if ($script:traceActive) {
             $pendingExtension = [System.IO.Path]::GetExtension($OutputPath).ToLowerInvariant()
             $script:pendingPath = [System.IO.Path]::Combine(

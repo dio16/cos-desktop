@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "cases": [],
+  "meaning": "Operator boundary hold plus issued kill and non-zero reap; not cooperative decoder cancellation."
+}

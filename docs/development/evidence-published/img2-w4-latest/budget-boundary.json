@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "full_frame_case": {
+    "case_id": "full_frame_budget_small_roi",
+    "roi_width": 1,
+    "roi_height": 1,
+    "roi_output_bytes_required": 4,
+    "full_frame_decoded_bytes": 12288,
+    "max_decoded_bytes": 1024,
+    "outcome": "oversize",
+    "reason_code": "max_decoded_bytes_exceeded",
+    "roi_output": "refused",
+    "true_partial_decode": "not_verified"
+  },
+  "roi_output_budget": {
+    "case_id": "roi_output_budget",
+    "roi_output_bytes_required": 140,
+    "max_roi_output_bytes": 100,
+    "outcome": "oversize",
+    "reason_code": "roi_output_exceeded"
+  },
+  "meaning": "A 1x1 ROI cannot bypass the full-frame decoded bound; ROI output also has its own bound."
+}

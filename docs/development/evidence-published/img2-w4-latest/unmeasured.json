@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "unmeasured": [
+    "WIC internal stride/scratch",
+    "allocator reservations",
+    "true concurrent allocation peak",
+    "cooperative in-decoder cancellation",
+    "16K full decode",
+    "region/sequential/tiled decode",
+    "ICC/orientation complete behavior",
+    "JPEG absolute raster",
+    "full Decode exit"
+  ],
+  "not_verified": [
+    "true partial-region decode",
+    "sequential decode",
+    "tiled decode",
+    "cooperative in-decoder cancellation",
+    "ICC/orientation complete behavior",
+    "JPEG absolute raster"
+  ],
+  "not_closed": [
+    "full MP-IMG2 Decode exit",
+    "MP-IMG3 Upload",
+    "Runtime RC-*",
+    "measured R0D",
+    "product UX/video",
+    "main/release"
+  ]
+}

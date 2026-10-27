@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "request_sha256": "sha256:099457c8eba3c82068ccae00f8ef7cd76af6152c9fdc707491f9744301f29ba7",
+  "response": "tern-next-directive.txt",
+  "directive": "MP-IMG2-W4",
+  "start_commit": "0ce5651f862ea6ce48c666a7088bc9a250c17784",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 1237,
+      "expected": 1237,
+      "preview": "MP-IMG2-W3はRound 5で PASS 0 BLOCKING / 0 ACTIONABLE NON-BLOCK"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 5,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "duration_note": "done in 298s (5 assistant messages; event=generation-ended)",
+  "meaning": "Next eligible MP directive requested after W3 PASS and executed from the same conversation. Reviewer wording does not grant push/main/release/Runtime authority."
+}

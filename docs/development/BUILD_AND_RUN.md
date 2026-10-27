@@ -819,6 +819,38 @@ the `refused` row while keeping the terminal reason is a rejected negative fixtu
 not a complete run; header admission also requires `corrupt / invalid_metadata /
 refused` and terminal fields agreeing with the probe result.
 
+### 4.24 MP-IMG2-W4 rectangle output and partial-decode classification (2026-10-27)
+
+W4 adds an opt-in `-Roi x,y,width,height` and `-MaxRoiOutputBytes` to the existing
+managed WIC probe. Bounds are strict decimal, checked with `BigInteger`, never
+clamped, and refused before `OnLoad`. The full-frame decoded/conversion/scratch
+admission still runs first; a 1×1 rectangle cannot reduce it. The rectangle is
+copied from the existing `OnLoad` Bgra32 conversion, so it proves rectangle
+output only: `true_partial_decode`, `sequential_decode` and `tiled_decode` stay
+`NOT_VERIFIED`, and `internal_decoder_scratch` stays `NOT_MEASURED`.
+
+```powershell
+cargo build --locked -p cos-desktop --example decode_compare
+python -B apps/desktop/devtools/img2/w4_region_matrix.py run `
+  --work-root <absolute-absent-owned-directory> --out <absolute-absent-report.json> `
+  --pwsh <absolute-qualified-pwsh.exe>
+python -B apps/desktop/devtools/img2/w4_region_matrix.py verify `
+  --report docs/development/evidence-published/img2-w4-latest/real-native-matrix.json `
+  --source-root <repository>
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_w4*.py"
+```
+
+The manifest bounds twenty-four cases, one decoder at a time, 45 s per worker,
+300 s overall, 1 MiB input, 16 MiB output, 64 MiB work, 128 trace rows/128 KiB,
+64 KiB capture and 8 MiB report. Positive cases cover full, center, both 1×1
+corners, 1-pixel-wide/high, odd and boundary rectangles over PNG RGB/RGBA,
+24-bit BMP and Bgr565, plus a Bgr555 control that is never certified as Bgr565.
+Negatives cover negative/zero/outside/overflowing rectangles, ROI output above
+its own bound, a 64×64 source above the full-frame decoded bound with a 1×1 ROI,
+malformed/unsupported source, cancellation and timeout. The PNG/BMP oracle
+reconstructs the source raster independently and slices the exact expected ROI;
+WIC output never supplies an expectation.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |

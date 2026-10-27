@@ -1,0 +1,132 @@
+{
+  "protocol": 1,
+  "op": "prepare",
+  "args": {
+    "draft": {
+      "draft_version": 1,
+      "plan_id": "cos-desktop-img2-w4",
+      "revision": 1,
+      "goal": "Classify real-WIC rectangle pixel output separately from true partial-region decode capability while preserving full-frame budget admission and bounded execution.",
+      "invariants": [],
+      "milestones": [],
+      "tasks": [
+        {
+          "task_id": "img2-w4",
+          "goal": "Classify real-WIC rectangle pixel output separately from true partial-region decode capability while preserving full-frame budget admission and bounded execution.",
+          "inputs": [
+            {
+              "id": "scope",
+              "description": "dev starts at 0ce5651f862ea6ce48c666a7088bc9a250c17784. Complete Tern W4 directive belongs only to DC-MP-IMG2 under ADR-0008/0009/0012/0013. Reuse existing wic_probe admission, W2 stage tracing/stop state machine, W3 BMP565 fixtures/oracle and the real decode_compare consumer. Add only an opt-in strict x,y,width,height rectangle output with a positive output-byte bound. No new dependency, unsafe/FFI, GPU, Runtime, default budget, production acquisition or GPUI change.",
+              "context_ids": []
+            }
+          ],
+          "constraints": [
+            {
+              "id": "capability",
+              "level": "MUST",
+              "text": "Record roi_output, true_partial_decode, sequential_decode, tiled_decode, full_frame_materialization, internal_decoder_scratch and preview_fallback as separate closed fields. Rectangle all-pixel success may certify only roi_output; the OnLoad path keeps true/sequential/tiled NOT_VERIFIED."
+            },
+            {
+              "id": "budget",
+              "level": "MUST",
+              "text": "A small ROI never reduces the full-frame decoded/conversion/scratch requirement. A source above the full-frame decoded bound must refuse max_decoded_bytes_exceeded before OnLoad even for a 1x1 ROI. Record full-frame and ROI requirements independently, and refuse ROI output above its own bound."
+            },
+            {
+              "id": "bounds",
+              "level": "MUST",
+              "text": "Strict decimal ROI; no clamp, leading plus/zero, negative, zero extent, out-of-source, checked overflow. Finite matrix, one decoder at a time, worker45s/global300s, input1MiB, output16MiB, work64MiB, trace128rows/128KiB, capture64KiB, report8MiB. Owned fresh roots and W2 stop states; kill without boundary hold is not cancellation."
+            },
+            {
+              "id": "oracle",
+              "level": "MUST",
+              "text": "Independent PNG CRC/inflate/filter, BMP24 rows and BMP565/555 bitfield reconstruction; compare every ROI RGBA sample. Never derive expectations from WIC output; malformed/unsupported/cancel/timeout expose no valid output."
+            },
+            {
+              "id": "negative",
+              "level": "MUST",
+              "text": "Fail closed on changed output digest, ROI or source dimensions, expected pixels, accepted out-of-bounds ROI, admitted full-frame-over-budget source, ROI bytes substituted for full-frame requirement, OnLoad after refusal, missing refused/probe_exit stage, trace digest mismatch, unsupported promoted to decoded, partial/sequential/tiled claims without evidence, cancellation promoted to decoded, and old source/Gate digest."
+            },
+            {
+              "id": "workflow",
+              "level": "MUST",
+              "text": "Actual WIC native matrix; W1/W2/W3 regressions; unchanged default and feature quality; R0 Python; pin complete candidate; independent Refine Quality/Build same candidate digest/artifact tuples with status/inspect/verify terminal; tracked latest evidence; exact successful scratch disposal with unchanged native integrity; complete fresh Tern review to PASS0/0/0; no remote push/main/release."
+            }
+          ],
+          "outputs": [
+            {
+              "id": "w4",
+              "description": "Opt-in bounded real-WIC ROI output, independent rectangle oracle, finite native matrix, fail-closed verifier with negative regressions, capability and budget-boundary tables, quality/Gate/storage/Tern evidence and unmeasured boundaries.",
+              "media_type": "application/json"
+            }
+          ],
+          "acceptance": [
+            {
+              "id": "capability",
+              "statement": "Actual WIC rectangle RGBA output matches the independent source slice, while true partial/sequential/tiled decode remain NOT_VERIFIED; a small ROI cannot bypass full-frame decoded/scratch admission or publish after refusal/stop.",
+              "output_ids": [
+                "w4"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "regression",
+              "statement": "All specified negative classes fail closed; W1/W2/W3 existing tests, oracle and stop lifecycle remain intact; unmeasured WIC internals stay NOT_MEASURED.",
+              "output_ids": [
+                "w4"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "closure",
+              "statement": "Required quality and independent pinned Refine Quality/Build SUCCEEDED with identical artifacts/candidate; complete Tern PASS0/0/0 and durable evidence justify only W4 limited technical closure, never full Decode exit.",
+              "output_ids": [
+                "w4"
+              ],
+              "evaluation_ids": [
+                "quality"
+              ]
+            }
+          ],
+          "evaluation": [
+            {
+              "id": "behavior",
+              "kind": "automated",
+              "requirement": "Run portable verifier mutations, independent PNG/BMP ROI oracle and real Windows WIC rectangle/budget/refusal/stop matrix under explicit bounds.",
+              "metric": []
+            },
+            {
+              "id": "quality",
+              "kind": "automated",
+              "requirement": "Run unchanged Rust/Python quality and W1/W2/W3 regressions, pinned independent Refine gates/integrity/storage and complete Tern review.",
+              "metric": []
+            }
+          ],
+          "dependencies": [],
+          "context": [],
+          "annotations": []
+        }
+      ]
+    },
+    "handoff": [
+      {
+        "task_id": "img2-w4",
+        "context": {
+          "schema_version": 1,
+          "items": []
+        },
+        "budget": {
+          "schema_version": 1,
+          "window_tokens": 32000,
+          "reserved_output_tokens": 4000,
+          "tool_reserve_tokens": 4000,
+          "max_input_bytes": 24000
+        }
+      }
+    ],
+    "emit": "both"
+  }
+}

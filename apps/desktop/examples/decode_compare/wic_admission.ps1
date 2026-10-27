@@ -83,6 +83,25 @@ function Get-BudgetPresence {
     return @($keys | Where-Object { $BoundNames -contains $_ }).Count -gt 0
 }
 
+# Opt-in ROI syntax is a strict decimal rectangle, never a clamped or localized
+# parse. Zero width/height and leading zeros/plus signs are refused here; the
+# caller checks overflow and source bounds with BigInteger before any allocation.
+function Get-RoiSpec {
+    param([string] $Text)
+
+    if ([string]::IsNullOrEmpty($Text)) { return $null }
+    if ($Text -cnotmatch '^(0|[1-9][0-9]*),(0|[1-9][0-9]*),(0|[1-9][0-9]*),(0|[1-9][0-9]*)$') {
+        return $null
+    }
+    $parts = $Text.Split(',')
+    return [ordered]@{
+        X = [System.Numerics.BigInteger]::Parse($parts[0])
+        Y = [System.Numerics.BigInteger]::Parse($parts[1])
+        Width = [System.Numerics.BigInteger]::Parse($parts[2])
+        Height = [System.Numerics.BigInteger]::Parse($parts[3])
+    }
+}
+
 # Container admission, not a pixel-format claim. WIC tolerates planes=0 and
 # normalizes invalid masks, so budget mode cannot delegate these checks to it.
 # The caller reads at most 66 header bytes, never attacker-sized metadata.

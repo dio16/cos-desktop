@@ -44,7 +44,18 @@ $huge = Get-AdmissionArithmetic -Width 2147483647 -Height 2147483647 -BitsPerPix
 Check 'huge_decoded_reported_as_null' { $null -eq (ConvertTo-ReportedLong $huge.Decoded) }
 Check 'small_decoded_reported_as_long' { (ConvertTo-ReportedLong $rgb.Decoded) -eq 768 }
 
-$summary = [ordered]@{ checks = 19; failures = $failures }
+$roi = Get-RoiSpec '1,2,3,4'
+Check 'roi_parses_coordinates' { $roi.X -eq 1 -and $roi.Y -eq 2 -and $roi.Width -eq 3 -and $roi.Height -eq 4 }
+Check 'roi_zero_origin_is_valid' { $null -ne (Get-RoiSpec '0,0,1,1') }
+Check 'roi_zero_width_is_still_spec' { (Get-RoiSpec '0,0,0,1').Width -eq 0 }
+Check 'roi_negative_is_rejected' { $null -eq (Get-RoiSpec '-1,0,1,1') }
+Check 'roi_plus_is_rejected' { $null -eq (Get-RoiSpec '+1,0,1,1') }
+Check 'roi_leading_zero_is_rejected' { $null -eq (Get-RoiSpec '01,0,1,1') }
+Check 'roi_spaces_are_rejected' { $null -eq (Get-RoiSpec '1, 2,3,4') }
+Check 'roi_three_fields_rejected' { $null -eq (Get-RoiSpec '1,2,3') }
+Check 'roi_empty_is_rejected' { $null -eq (Get-RoiSpec '') }
+
+$summary = [ordered]@{ checks = 28; failures = $failures }
 [Console]::Out.WriteLine(($summary | ConvertTo-Json -Compress))
 if ($failures.Count -gt 0) { exit 1 }
 exit 0

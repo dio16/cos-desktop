@@ -1,0 +1,409 @@
+{
+  "schema_version": 1,
+  "run_id": "w4-final-work",
+  "bounds": {
+    "max_capture_bytes": 65536,
+    "max_cases": 24,
+    "max_input_bytes": 1048576,
+    "max_output_bytes": 16777216,
+    "max_report_bytes": 8388608,
+    "max_total_seconds": 300,
+    "max_trace_bytes": 131072,
+    "max_trace_records": 128,
+    "max_work_bytes": 67108864,
+    "max_worker_seconds": 45
+  },
+  "duration_ns": 24303954200,
+  "work_bytes": 105686,
+  "cases": [
+    {
+      "case_id": "roi_full_png",
+      "fixture": "png_rgb",
+      "roi": "0,0,7,5",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "roi_center_png",
+      "fixture": "png_rgb",
+      "roi": "2,1,3,2",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "roi_top_left_1x1",
+      "fixture": "png_rgb",
+      "roi": "0,0,1,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "roi_bottom_right_1x1",
+      "fixture": "png_rgb",
+      "roi": "6,4,1,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "roi_vertical_rgba",
+      "fixture": "png_rgba",
+      "roi": "0,0,1,4",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "roi_horizontal_rgba",
+      "fixture": "png_rgba",
+      "roi": "0,2,6,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "roi_odd_bmp24",
+      "fixture": "bmp24",
+      "roi": "1,1,5,3",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "roi_boundary_bmp24",
+      "fixture": "bmp24",
+      "roi": "1,1,6,4",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "roi_full_bgr565",
+      "fixture": "bmp565",
+      "roi": "0,0,5,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "roi_center_bgr565_odd",
+      "fixture": "bmp565_odd",
+      "roi": "1,1,1,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "roi_full_bgr555_control",
+      "fixture": "bmp555_control",
+      "roi": "0,0,3,3",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "roi_negative_x",
+      "fixture": "png_rgb",
+      "roi": "-1,0,1,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": "corrupt",
+      "expected_reason": "invalid_roi"
+    },
+    {
+      "case_id": "roi_negative_y",
+      "fixture": "png_rgb",
+      "roi": "0,-1,1,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": "corrupt",
+      "expected_reason": "invalid_roi"
+    },
+    {
+      "case_id": "roi_zero_width",
+      "fixture": "png_rgb",
+      "roi": "1,1,0,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": "corrupt",
+      "expected_reason": "invalid_roi"
+    },
+    {
+      "case_id": "roi_zero_height",
+      "fixture": "png_rgb",
+      "roi": "1,1,1,0",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": "corrupt",
+      "expected_reason": "invalid_roi"
+    },
+    {
+      "case_id": "roi_x_outside",
+      "fixture": "png_rgb",
+      "roi": "7,0,1,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": "corrupt",
+      "expected_reason": "invalid_roi"
+    },
+    {
+      "case_id": "roi_y_outside",
+      "fixture": "png_rgb",
+      "roi": "0,5,1,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": "corrupt",
+      "expected_reason": "invalid_roi"
+    },
+    {
+      "case_id": "roi_arithmetic_overflow",
+      "fixture": "png_rgb",
+      "roi": "9223372036854775807,0,1,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": "corrupt",
+      "expected_reason": "invalid_roi"
+    },
+    {
+      "case_id": "roi_output_budget",
+      "fixture": "png_rgb",
+      "roi": "0,0,7,5",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 100,
+      "kind": "roi",
+      "expected_outcome": "oversize",
+      "expected_reason": "roi_output_exceeded"
+    },
+    {
+      "case_id": "full_frame_budget_small_roi",
+      "fixture": "png_large",
+      "roi": "0,0,1,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 1024,
+        "max_scratch_bytes": 4096
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": "oversize",
+      "expected_reason": "max_decoded_bytes_exceeded"
+    },
+    {
+      "case_id": "malformed_source",
+      "fixture": "bmp565_truncated",
+      "roi": "0,0,1,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": "corrupt",
+      "expected_reason": "invalid_metadata"
+    },
+    {
+      "case_id": "unsupported_source",
+      "fixture": "bmp565_unsupported",
+      "roi": "0,0,1,1",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "roi",
+      "expected_outcome": "unsupported",
+      "expected_reason": "win_unknown_image_format"
+    },
+    {
+      "case_id": "cancel_roi",
+      "fixture": "png_rgb",
+      "roi": "2,1,3,2",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "cancel",
+      "expected_outcome": null,
+      "expected_reason": null
+    },
+    {
+      "case_id": "timeout_roi",
+      "fixture": "png_rgb",
+      "roi": "2,1,3,2",
+      "limits": {
+        "max_dimension": 64,
+        "max_pixels": 4096,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 65536,
+        "max_scratch_bytes": 131072
+      },
+      "max_roi_output_bytes": 65536,
+      "kind": "timeout",
+      "expected_outcome": null,
+      "expected_reason": null
+    }
+  ],
+  "cleanup": {
+    "complete": true,
+    "live_direct_children": []
+  },
+  "work_root_disposable": true
+}

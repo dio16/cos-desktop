@@ -161,7 +161,7 @@ def stop_outcome(cancel, result):
 
 
 class Worker:
-    def __init__(self, spec, work, pwsh, fixtures, limits):
+    def __init__(self, spec, work, pwsh, fixtures, limits, roi=None, max_roi_output=None):
         self.cid, self.fid, self.kind, self.hold = spec
         self.fixture = fixtures[self.fid]
         self.work, self.pwsh = work, pwsh
@@ -180,6 +180,8 @@ class Worker:
                            "max_scratch_bytes": "MaxScratchBytes"}[key], str(value)]
         argv += ["-ObservationRoot", str(self.observe), "-TraceMaxRecords", str(BOUNDS["max_trace_records"]),
                  "-TraceMaxBytes", str(BOUNDS["max_trace_bytes"])]
+        if roi is not None:
+            argv += ["-Roi", roi, "-MaxRoiOutputBytes", str(max_roi_output)]
         if self.hold:
             argv += ["-PauseAtStage", self.hold, "-PauseTimeoutMs", "10000"]
         self.started = time.monotonic_ns()
