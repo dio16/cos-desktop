@@ -688,5 +688,319 @@
     "status": 0,
     "inspect": 0,
     "verify": 0
-  }
+  },
+  "verify_after_disposal": {
+    "cli_interface_version": 2,
+    "operation": "gate.verify",
+    "outcome": {
+      "schema_version": 1,
+      "result": {
+        "schema_version": 1,
+        "gate_id": "ef6fd28b-1cea-4e2a-a85b-8143464d4d17",
+        "state": "SUCCEEDED",
+        "request_sha256": "sha256:5aa992ea2a768ed438081908348e807f46df0e90fdac1e2bac33216f829ce109",
+        "terminal_state_sha256": "sha256:de7ab785b1d60ec0fb58c8bcd94e3db616571876653eb4db4ad94a086118a51b",
+        "observations_sha256": "sha256:7147ce023d9d39c6313199917a64aa71ca7eae69ac7a5873d506a139c7ac5d09",
+        "candidate_sha256": "sha256:22b5014354d2bde275f2cec8719f8d2a3e6ed6ab4055c91efb26998c401705d9",
+        "artifacts": [
+          {
+            "id": "initial-quality",
+            "relative_path": "artifacts/initial-quality",
+            "size_bytes": 45465,
+            "sha256": "sha256:35b9a53bdf06806d73fcbb73886a23960f422965d3de768c36708c0ce4df3861"
+          },
+          {
+            "id": "initial-storage",
+            "relative_path": "artifacts/initial-storage",
+            "size_bytes": 1375,
+            "sha256": "sha256:1173028e20608676efbc4ec2d80d95b533516e93fd6c2def838619e850ec042b"
+          },
+          {
+            "id": "repair1-quality",
+            "relative_path": "artifacts/repair1-quality",
+            "size_bytes": 46989,
+            "sha256": "sha256:9ec5d40137855bb2ae206bb01e02ada51151eb8777d36e7ff52010d74a771d28"
+          },
+          {
+            "id": "repair1-storage",
+            "relative_path": "artifacts/repair1-storage",
+            "size_bytes": 1292,
+            "sha256": "sha256:2d85775acc151f11839e0c37b35ae45b1aaef04ef5fa453b16a2152e1dafc3d0"
+          },
+          {
+            "id": "test-policy-cleanup",
+            "relative_path": "artifacts/test-policy-cleanup",
+            "size_bytes": 894,
+            "sha256": "sha256:8e8df06b1b01889a300ae09b3d2bc9f6f3f49e6fd7df3dcce7541493c803b4cf"
+          },
+          {
+            "id": "verifier-repair",
+            "relative_path": "artifacts/verifier-repair",
+            "size_bytes": 1065,
+            "sha256": "sha256:2ab13656aa6acc6c572602dc632a575ead18e243d911cd89000811325009d3ec"
+          },
+          {
+            "id": "w3-01-test_w2_resource_verify.py",
+            "relative_path": "artifacts/w3-01-test_w2_resource_verify.py",
+            "size_bytes": 10142,
+            "sha256": "sha256:1d5cedeff466c9b5e96b000613efcb3b64bc4ed96effec33fa3fd7994c1e982b"
+          },
+          {
+            "id": "w3-02-test_w3_fixtures.py",
+            "relative_path": "artifacts/w3-02-test_w3_fixtures.py",
+            "size_bytes": 3219,
+            "sha256": "sha256:56e41f73958af67328287fc53a4268254ebca8c5dc6df0663506663adec729a6"
+          },
+          {
+            "id": "w3-03-test_w3_oracle.py",
+            "relative_path": "artifacts/w3-03-test_w3_oracle.py",
+            "size_bytes": 4344,
+            "sha256": "sha256:c70843ff04a33bae2131818bf23e70423bcaa36b3987271bb1709d4cdc3e42d9"
+          },
+          {
+            "id": "w3-04-test_w3_verify.py",
+            "relative_path": "artifacts/w3-04-test_w3_verify.py",
+            "size_bytes": 7681,
+            "sha256": "sha256:92ef5b95cbc7347c8867afa74d5862cefe3a786d71fd91e37bea2d84c7579ee2"
+          },
+          {
+            "id": "w3-05-w3_fixtures.py",
+            "relative_path": "artifacts/w3-05-w3_fixtures.py",
+            "size_bytes": 5398,
+            "sha256": "sha256:27d209e20615a515ea3ff435c2153c698cc111375ff78fc818aab5c54a900735"
+          },
+          {
+            "id": "w3-06-w3_native_matrix.py",
+            "relative_path": "artifacts/w3-06-w3_native_matrix.py",
+            "size_bytes": 9491,
+            "sha256": "sha256:f9dc1b888b5944b625dc8e1f4be7ef9425776556825dbaf44522cdf1b0664f81"
+          },
+          {
+            "id": "w3-07-w3_oracle.py",
+            "relative_path": "artifacts/w3-07-w3_oracle.py",
+            "size_bytes": 5883,
+            "sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e"
+          },
+          {
+            "id": "w3-08-w3_verify.py",
+            "relative_path": "artifacts/w3-08-w3_verify.py",
+            "size_bytes": 15786,
+            "sha256": "sha256:7c6fcf73e2c5f6ed8051d3a6b904fb9b8462f40486a183f6ec6bb5e955d79f94"
+          },
+          {
+            "id": "w3-09-wic_admission.ps1",
+            "relative_path": "artifacts/w3-09-wic_admission.ps1",
+            "size_bytes": 5622,
+            "sha256": "sha256:5238978c007d7dc8f459e4ae7b092d30bcfc444e0aaff14fd65b9fac670a2abe"
+          },
+          {
+            "id": "w3-10-wic_probe.ps1",
+            "relative_path": "artifacts/w3-10-wic_probe.ps1",
+            "size_bytes": 39753,
+            "sha256": "sha256:96bbf070d4e8712ba0beede2fca47c3d2be243ba505e79ed9f567a1312873dbe"
+          },
+          {
+            "id": "w3-11-decode_compare_harness.rs",
+            "relative_path": "artifacts/w3-11-decode_compare_harness.rs",
+            "size_bytes": 203960,
+            "sha256": "sha256:4cd3d0c9409a8ff02f5233f08ca5bbe4a3504826b8eda1b41635845abe54ee8d"
+          },
+          {
+            "id": "w3-12-DESKTOP_DESIGN_CONTRACTS.md",
+            "relative_path": "artifacts/w3-12-DESKTOP_DESIGN_CONTRACTS.md",
+            "size_bytes": 129688,
+            "sha256": "sha256:404f9fa106105c85e357d2e382fa368b1ec7c4df0497a704ab06074b8a7726c6"
+          },
+          {
+            "id": "w3-13-BUILD_AND_RUN.md",
+            "relative_path": "artifacts/w3-13-BUILD_AND_RUN.md",
+            "size_bytes": 93748,
+            "sha256": "sha256:fc6ff587a38650c70136ee9387f9b79f26b46eff77ee68897cdfeec6d464b3b2"
+          },
+          {
+            "id": "w3-14-IMPLEMENTATION_MASTER_PLAN.md",
+            "relative_path": "artifacts/w3-14-IMPLEMENTATION_MASTER_PLAN.md",
+            "size_bytes": 417465,
+            "sha256": "sha256:d249255979351540389d97042e92a7b71cce20cff6e17f9d0deb5331385b504d"
+          },
+          {
+            "id": "w3-15-before-repair.json",
+            "relative_path": "artifacts/w3-15-before-repair.json",
+            "size_bytes": 9985,
+            "sha256": "sha256:3a364fa0a82056709db26a00063f3cdcc24c44ea683763f8fc153afbab24b9ce"
+          },
+          {
+            "id": "w3-16-capability-table.json",
+            "relative_path": "artifacts/w3-16-capability-table.json",
+            "size_bytes": 1331,
+            "sha256": "sha256:0a642b62668c5825fd020c5d61409d4ba8e961cacfcd85e1d20990c3703cb685"
+          },
+          {
+            "id": "w3-17-compatibility.json",
+            "relative_path": "artifacts/w3-17-compatibility.json",
+            "size_bytes": 697,
+            "sha256": "sha256:85571711d509b23d2c28cd3b1a08165ec2f0e8fba200c0e9f5a64013a7da8cd3"
+          },
+          {
+            "id": "w3-18-directive-receipt.json",
+            "relative_path": "artifacts/w3-18-directive-receipt.json",
+            "size_bytes": 755,
+            "sha256": "sha256:1ee61ab33236fe18b89388a48eb77f5c6daa97ee01d41c4e3aad6c1150e873d9"
+          },
+          {
+            "id": "w3-19-document-validation.json",
+            "relative_path": "artifacts/w3-19-document-validation.json",
+            "size_bytes": 185,
+            "sha256": "sha256:41e36f5ec3069db638b370bbe2a55140f617baf7d02e433d52c11511e1f69ec9"
+          },
+          {
+            "id": "w3-20-environment.json",
+            "relative_path": "artifacts/w3-20-environment.json",
+            "size_bytes": 3705,
+            "sha256": "sha256:3b3861d14475070e49e48540a2d7e9fd5637628f372e36cefefed04dde2d02d5"
+          },
+          {
+            "id": "w3-21-fixture-manifest.json",
+            "relative_path": "artifacts/w3-21-fixture-manifest.json",
+            "size_bytes": 10065,
+            "sha256": "sha256:9a35a689b17f373601461f990c8784fefd0dbc769a53f29bd12e38fab4baaad1"
+          },
+          {
+            "id": "w3-22-independent-oracle.json",
+            "relative_path": "artifacts/w3-22-independent-oracle.json",
+            "size_bytes": 7708,
+            "sha256": "sha256:a8514a856a81eba319fc965de92149ff68fee5636844ebcf88cee3e4bf18ec4d"
+          },
+          {
+            "id": "w3-23-quality.json",
+            "relative_path": "artifacts/w3-23-quality.json",
+            "size_bytes": 13708,
+            "sha256": "sha256:69ee74194964dcd0811a1b33b48712a73a2d6222e5d7377cf49bfc18e6925bda"
+          },
+          {
+            "id": "w3-24-real-native-matrix.json",
+            "relative_path": "artifacts/w3-24-real-native-matrix.json",
+            "size_bytes": 258735,
+            "sha256": "sha256:abb297224f670bafe12626c2953f03f34819e8d5f995fd1fe4db8d5151068c1a"
+          },
+          {
+            "id": "w3-25-taskern-request.json",
+            "relative_path": "artifacts/w3-25-taskern-request.json",
+            "size_bytes": 6538,
+            "sha256": "sha256:59a02ba12aaea36f5539e45f5c1540179bc0cb34a2e9b4934117058dc6ff0d2e"
+          },
+          {
+            "id": "w3-26-taskern-response.json",
+            "relative_path": "artifacts/w3-26-taskern-response.json",
+            "size_bytes": 9810,
+            "sha256": "sha256:1e478261e16b0f2d385f7243b5a92a1128408bf968a144c8a1a26c5c04b1ba1a"
+          },
+          {
+            "id": "w3-27-tern-directive.txt",
+            "relative_path": "artifacts/w3-27-tern-directive.txt",
+            "size_bytes": 17153,
+            "sha256": "sha256:34838fa3060e6e47c183ab4c494b28f0cb3f60322fec6508b21c54bca955d035"
+          },
+          {
+            "id": "w3-28-tool-discovery.json",
+            "relative_path": "artifacts/w3-28-tool-discovery.json",
+            "size_bytes": 6917,
+            "sha256": "sha256:7d088cb091e1929a5d4ce7d0c146046b6f3072c6a9f53709a6f8427665a459ad"
+          },
+          {
+            "id": "w3-29-unmeasured.json",
+            "relative_path": "artifacts/w3-29-unmeasured.json",
+            "size_bytes": 658,
+            "sha256": "sha256:be274de79525f61d0b50ea8038215744fb099b9546a0788ac869bc6407c197e6"
+          },
+          {
+            "id": "w3-30-verifier-results.json",
+            "relative_path": "artifacts/w3-30-verifier-results.json",
+            "size_bytes": 2302,
+            "sha256": "sha256:a9e4c3f3756186a8f1f7938bc26ad64926c15cbe7aec10f63282fd011d291106"
+          },
+          {
+            "id": "w3-31-w1-regression.json",
+            "relative_path": "artifacts/w3-31-w1-regression.json",
+            "size_bytes": 76477,
+            "sha256": "sha256:2865eb43385e3ff2e998e43b7dbc37ef3bb05a2ecc3792213478c04c4da2b5ba"
+          },
+          {
+            "id": "w3-32-w2-regression.json",
+            "relative_path": "artifacts/w3-32-w2-regression.json",
+            "size_bytes": 136345,
+            "sha256": "sha256:f878015fc7b9dfdaa7b11b92bbcf78f4b564efb09c164f91d974373e6f597e42"
+          },
+          {
+            "id": "w3-33-harness.rs",
+            "relative_path": "artifacts/w3-33-harness.rs",
+            "size_bytes": 159533,
+            "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+          },
+          {
+            "id": "w3-34-inspect.rs",
+            "relative_path": "artifacts/w3-34-inspect.rs",
+            "size_bytes": 24568,
+            "sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558"
+          },
+          {
+            "id": "w3-35-pixels.rs",
+            "relative_path": "artifacts/w3-35-pixels.rs",
+            "size_bytes": 27817,
+            "sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136"
+          },
+          {
+            "id": "w3-36-decode_compare.rs",
+            "relative_path": "artifacts/w3-36-decode_compare.rs",
+            "size_bytes": 1041,
+            "sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e"
+          },
+          {
+            "id": "w3-37-decode.rs",
+            "relative_path": "artifacts/w3-37-decode.rs",
+            "size_bytes": 11964,
+            "sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf"
+          },
+          {
+            "id": "w3-38-Cargo.lock",
+            "relative_path": "artifacts/w3-38-Cargo.lock",
+            "size_bytes": 158990,
+            "sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b"
+          },
+          {
+            "id": "w3-39-rust-toolchain.toml",
+            "relative_path": "artifacts/w3-39-rust-toolchain.toml",
+            "size_bytes": 152,
+            "sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8"
+          },
+          {
+            "id": "w3-40-quality.ps1",
+            "relative_path": "artifacts/w3-40-quality.ps1",
+            "size_bytes": 18303,
+            "sha256": "sha256:d3c8ae9f88dd761f98e42d10c7ad8a5c8bb0392ca9b7114ae2d2f9b4b5f64b50"
+          }
+        ],
+        "check_logs": [
+          {
+            "check_id": "build",
+            "stdout": {
+              "relative_path": "logs/build/stdout",
+              "size_bytes": 0,
+              "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "truncated": false,
+              "secret": true
+            },
+            "stderr": {
+              "relative_path": "logs/build/stderr",
+              "size_bytes": 12705,
+              "sha256": "sha256:d7c346842b503957a1cbb447e113dbf2c31312a54945220b5779c186556f76fd",
+              "truncated": false,
+              "secret": true
+            }
+          }
+        ]
+      }
+    }
+  },
+  "post_disposal_integrity_identical": true
 }

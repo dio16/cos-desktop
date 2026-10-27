@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "candidate": "7786f9fd7c42ee35b5006c9ad236b64bcc2c0511",
-  "status": "PREPARED_NOT_YET_DISPOSED",
+  "status": "DISPOSED_INTEGRITY_UNCHANGED",
   "quality_gate": "cae83706-e59c-4943-b911-63981383e2f3",
   "build_gate": "ef6fd28b-1cea-4e2a-a85b-8143464d4d17",
   "paths": [
@@ -9,31 +9,36 @@
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\cae83706-e59c-4943-b911-63981383e2f3\\work\\repo",
       "files": 439,
       "logical_bytes": 12548726,
-      "no_reparse": true
+      "no_reparse": true,
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\ef6fd28b-1cea-4e2a-a85b-8143464d4d17\\work\\repo",
       "files": 439,
       "logical_bytes": 12414843,
-      "no_reparse": true
+      "no_reparse": true,
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r3\\clippy",
       "files": 3015,
       "logical_bytes": 663884472,
-      "no_reparse": true
+      "no_reparse": true,
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r3\\tests",
       "files": 3144,
       "logical_bytes": 1841546576,
-      "no_reparse": true
+      "no_reparse": true,
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r3\\build",
       "files": 2911,
       "logical_bytes": 1592997024,
-      "no_reparse": true
+      "no_reparse": true,
+      "removed": true
     }
   ],
   "live_process_dependencies": [],
@@ -44,5 +49,18 @@
     "initial-storage.json",
     "repair1-storage.json"
   ],
-  "measurement": "logical bytes/files, not filesystem allocation or physical reclaimed capacity"
+  "measurement": "logical bytes/files, not filesystem allocation or physical reclaimed capacity",
+  "evidence_retention_commit": "641d409bcb27e4b54535aa38a5a5084cdb92cae9",
+  "native_verify_after": {
+    "quality": {
+      "gate_id": "cae83706-e59c-4943-b911-63981383e2f3",
+      "exit": 0,
+      "identical": true
+    },
+    "build": {
+      "gate_id": "ef6fd28b-1cea-4e2a-a85b-8143464d4d17",
+      "exit": 0,
+      "identical": true
+    }
+  }
 }
