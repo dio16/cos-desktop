@@ -1,0 +1,43 @@
+MP-IMG2-W3 の固定ソース独立レビューをお願いします。今回の目的は real-WIC Bgr565 の限定技術完了判定です。まだ W3 の完了、full MP-IMG2 / Decode Exit、製品 UX の完了は主張していません。
+
+Repository: dio16/cos-desktop / local dev
+開始 SHA: 16ce231c452e97b3ca15695c5f326c45f8851067
+最終 SOURCE candidate: 7786f9fd7c42ee35b5006c9ad236b64bcc2c0511
+証拠 ZIP の固定 HEAD: 366834be6174e92fbf36763da801cfdd0077867f
+Taskern 0.2.0 actual prepare packet: sha256:467be02452a981a0f0f7848f59757f394bb2fdf4239580f8dd859db992af822b
+Owner: DC-MP-IMG2。hard prerequisites、DecodeBudget/default/API、full Decode Exit は変更していません。
+
+【参照範囲と提出物】
+この candidate は remote に push していません。GitHub に見えるとは主張せず、添付バイトに限定したレビューを依頼します。SOURCE ZIP / evidence ZIP / review-package.json の3添付を実際に開いてください。既存 W1/W2 PASS を新 SOURCE へ流用しないでください。
+- w3-final-review-source.zip: 571534 bytes, sha256:019e37fbdaa1e37b3078542ec744b5ad485d40b5e34886ecd6341a409d3d70b5; SOURCE 7786f9fd7c42ee35b5006c9ad236b64bcc2c0511 の列挙ファイル。全 Git object/history の証明ではありません。
+- w3-final-review-evidence.zip: 123810 bytes, sha256:eca084c5761c371af667e217f451340578447cba62477e74f73ce31501579f89; evidence HEAD 366834be6174e92fbf36763da801cfdd0077867f の img2-w3-latest 全37ファイル。
+- review-package.json: 両 ZIP の identity / commit / entry byte-form manifest。SOURCE 内44エントリーのうち43テキスト、evidence 内37テキストは ZIP が CRLF です。Git blob / Gate capture / Native raw / ZIP を同一バイトと混同せず、明示した LF 正規化を参照してください。元 BMP/PNG の hex bytes、UTC ticks 等の JSON 整数は変更していません。
+
+【実装と実際に得た結果】
+Python stdlib の deterministic BI_BITFIELDS fixtures12件、独立 BMP565 payload→RGBA / PNG CRC・inflate・filter oracle、bounded real-WIC runner / fail-closed verifier を追加。WIC の実 declaredFrame.Format が Bgr565、最大 channel depth6 / storage16bpp の場合だけ認定します。Bgr555 control は実 Bgr555 / depth5 と記録し、Bgr565 capability に入れません。
+実際に decode_compare をビルド・実行し、正常5ケースを全 RGBA digest 一致で検証しました。別の instrumented Native24 workers は decoded11（Bgr56510 + Bgr555 control1）、corrupt5、unsupported1、oversize5、cancelled1、timeout1。Bgr56510出力の raw PNG と12入力の原byte、trace、stdout、PID/lifetime/sample は real-native-matrix.json 内に保持し、独立 oracle が全画素一致を再計算します。consumer 自身は既存仕様で出力を削除するので、保持 raw PNG を consumer 出力コピーと偽っていません。
+primaries / intermediate channels / width1 / odd width / multiple rows / top-down / bottom-up、5種類の at / one-unit-over limits、malformed masks/header/planes/truncation/unsupported を実入力で実施しました。encoded BMP aligned stride と logical source row bytes と unknown WIC internals を分離しています。
+上限: instrumented cases24、decoder concurrency1、worker45s / global300s、encoded1MiB / output16MiB / work64MiB / trace128rows128KiB / capture64KiB / report8MiB。timeout は人工holdで worker start から少なくとも5秒経過後に kill/reap。hold のない kill は stop_confirmed に昇格させません。
+
+【観測した不具合と修正】
+1. WIC は planes=0 を許容して有効な PNG を出力しました。before-repair.json は原入力/出力byteも保持します。owning DC に先に記録し、budget-enabled 16-bit bitfield BMP の66-byte header admission（planes、dims、nonzero/disjoint/contiguous masks、encoded row extent）を OnLoad 前に追加。修正後は invalid_metadata / materialization not_requested / no output。non-budget legacy は変更していません。
+2. Tern提出前の4負例で verifier の false-green を実際に再現しました。top-downをbottom-upに置換、wrong refusal reason、OnLoad-return欠落、source width矛盾を拒否するよう修正し、全72 Python testsと新規Native matrixが通過。
+3. 既存 sampler regression が2500ms依存で123pass/1fail。既存 completion handshake / sampling_guard を再利用し、flush後の終了通知と別spawn logへ修正。元の value-discard assertions は維持。focused2件、default/feature全体と独立Gateが通過。
+4. incidental non-empty-return assertion 1行を削除。product/Native sourceは同じですが full candidate が変わるため旧Gateは流用していません。
+
+【実際の品質・独立 Gate】
+ローカル unchanged quality.ps1 は535 Rust pass / 1 ignored、feature clippy・539 pass / 1 ignored・build。compiler warnings0。画像 Python72=既存W2 45 + W3 27、R0 Python352 total /340pass /12skip。W1は19 arithmetic /7 runner selftest、real9fixtures /12boundary /11edge /9cancel legs。W2 real20-worker回帰とprobe selftestも実施、unheld raceはnot_verifiedのままです。R0のskipはNative window absent1と失われた元N07 binary11で、PASSに数えていません。
+最終 Quality Gate cae83706-e59c-4943-b911-63981383e2f3: SUCCEEDED13/13。
+最終 Build Gate ef6fd28b-1cea-4e2a-a85b-8143464d4d17: SUCCEEDED1/1。
+両方 full candidate=7786f9fd7c42ee35b5006c9ad236b64bcc2c0511、candidate digest=sha256:22b5014354d2bde275f2cec8719f8d2a3e6ed6ab4055c91efb26998c401705d9、46 artifact tuples一致。status/inspect/verify exit0、cleanup complete、owner_alive=false、recovery_required=false。
+独立Qualityは535 Rust pass /1ignored、画像72、R0 352total /316pass /36skip。詳細skipは gate-test-counts.json に保持。preflightの3 external UNKNOWNはUNKNOWNのままです。
+gate-artifact-correspondence.json は全46 captured bytes と pinned Git blobs の raw equality、Native16 source LF identities（13はdeclared captures、全16はSOURCE ZIP）とZIP byte formsを照合。Gate captureしたplanはcandidate版です。後から別planのPASSへ読み替えていません。
+初期 a6488236 Quality13/13 と c9e667d3 Quality13/13 は superseded。旧Buildはdispatchせず、最終候補にだけ新Quality/Build pairを実施しました。各成功scratchは証拠commit後にexact allowlist / no active dependency / no reparseで処分、native verify前後一致。最終5pathsは4,123,391,641 logical bytesで、物理回収容量ではありません。authority/artifacts/logs、pinned Git objects、ordinary targetは保持。新Build exeは32,275,456 bytes / sha256:1a1cef2a6030a87c34bc6a4813d7c1a3b9d8985f0478fa88ae53669251810ce4、Native GUI成功とは主張しません。
+
+【明示した未達・権限】
+WIC internal stride/scratch、true concurrent peak / actual reservations、cooperative in-decoder cancel、16K、region/sequential/tiled、ICC/orientation全体、JPEG absolute raster、full Decode/Upload、Runtime RC-*、R0 full closureは未証明。新dependency/unsafe/FFI/GPU/Runtime改変、push、main/release、credential/permission変更なし。
+Caller は「実装計画に基づき実装・Tern評価・次タスク指示を受取実装。このループを継続し実装計画を完遂すること。実装計画はすべて承認済み。」と直接指示しています。W3技術完了後はADR-0009に従い次の実行可能タスクへ継続しますが、レビュー結果を新たな外部権限や測定成功へ変換しません。
+
+【依頼】
+実添付から design / implementation / tests / security / consistency を独立評価し、BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEを分類してください。限定技術完了を妨げる実在の問題と、明示的な非目標を分離してください。Windows実行を再現した、またはGitHubのunpushed commitを読んだと偽らないでください。
+この応答ではレビューのみを行い、次directiveはclean review後の別依頼でお願いします。最後は独立した「最終判定」セクションに3分類の実件数をそれぞれ書き、最終行を PASS または HOLD と実際の b / a / e 件数で終えてください。0/0/0は実際に指摘が解決している場合だけです。
