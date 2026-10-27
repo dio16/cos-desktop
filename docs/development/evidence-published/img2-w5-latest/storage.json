@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "candidate": "d75df9d0fef8d9eca39c41c563ada11252ed21cb",
-  "status": "PREPARED_AFTER_SUCCESSFUL_TERMINAL_VERIFY",
+  "status": "DISPOSED_INTEGRITY_UNCHANGED",
   "quality_gate": "3148ac79-4791-4109-9566-d82236d0f65a",
   "build_gate": "6b472805-20d5-455f-812d-d88156e0cba3",
   "paths": [
@@ -10,36 +10,47 @@
       "files": 603,
       "logical_bytes": 16587877,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\6b472805-20d5-455f-812d-d88156e0cba3\\work\\repo",
       "files": 603,
       "logical_bytes": 16596125,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r13\\clippy",
       "files": 3015,
       "logical_bytes": 663885503,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r13\\tests",
       "files": 3144,
       "logical_bytes": 1841539631,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r13\\build",
       "files": 2911,
       "logical_bytes": 1593014585,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     }
   ],
-  "live_process_dependencies": []
+  "live_process_dependencies": [],
+  "evidence_retention_commit": "7901132140520c5180d53d819f2b2085c8760b39",
+  "native_verify_after": {
+    "quality": {
+      "exit": 0,
+      "identical": true
+    },
+    "build": {
+      "exit": 0,
+      "identical": true
+    }
+  }
 }
