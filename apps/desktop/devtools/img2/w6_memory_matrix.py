@@ -197,6 +197,8 @@ def run(work, out, pwsh, harness):
     started = time.monotonic_ns()
     work.mkdir(parents=True, exist_ok=False)
     fixtures = generate(work / "cases")
+    # The consumer enumerates files; its cases.txt annotates, but does not filter.
+    (work / "cases" / "manifest.json").rename(work / "fixture-manifest.json")
     inventory = {f["id"]: dict(f, case_id=f["id"], sha256="sha256:" + f["sha256"]) for f in fixtures}
     # Worker accepts prefixed digests; the fixture/oracle contract uses bare hex.
     oracle_inventory = {f["id"]: f for f in fixtures}

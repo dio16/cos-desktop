@@ -336,6 +336,21 @@ def _verify(record, source):
     need(record["measurement_complete"] == eligible, "missing_sample_promoted")
     consumer = record["consumer"]
     need(consumer["exit_code"] == 0 and consumer["resolved_limits"] == LIMITS, "consumer_budget_invalid")
+    observations = consumer["record"]["observations"]
+    expected_cases = {f["path"]: f for f in expected}
+    need(consumer["record"]["cases_truncated"] is False
+         and consumer["record"]["observations_truncated"] is False
+         and len(observations) == len(expected_cases)
+         and {o["case_id"] for o in observations} == set(expected_cases), "consumer_case_set_invalid")
+    for observation in observations:
+        fixture = expected_cases[observation["case_id"]]
+        need(observation["observed_outcome"] == "decoded" and observation["exit_code"] == 0
+             and observation["output_present"] is True and observation["pixel_verified"] is True
+             and observation["validity"] == "pixels_verified" and observation["inspected_complete"] is True
+             and (observation["inspected_width"], observation["inspected_height"]) ==
+                 (fixture["width"], fixture["height"])
+             and observation["pixel_digest"] == observation["pixel_expectation"] ==
+                 fixture["expected_rgba_sha256"], "consumer_decode_or_pixel_invalid")
     return {"ok": True, "closure_eligible": eligible, "workers": 24, "experiments": len(experiments),
             "windows": sum(len(g["windows"]) for g in experiments),
             "decoded": sum(w["outcome"] == "decoded" for g in experiments for w in g["workers"]),
