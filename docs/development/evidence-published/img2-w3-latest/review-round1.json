@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "candidate": "7786f9fd7c42ee35b5006c9ad236b64bcc2c0511",
+  "evidence_commit": "366834be6174e92fbf36763da801cfdd0077867f",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "ecc8ace6-c3a1-4378-b095-817f3afe4fee"
+  ],
+  "assistant_ids": [
+    "57c94dfb-0520-433e-8fb9-50b0e05ba058"
+  ],
+  "baseline": [
+    {
+      "role": "fallback-turn-9:0:user",
+      "ids": [
+        "4862d73a-96b8-4172-bcb1-8f511d100439"
+      ]
+    },
+    {
+      "role": "fallback-turn-9:2:assistant",
+      "ids": [
+        "b73c1832-be1a-4c14-bddf-e2e49ad40b65"
+      ]
+    }
+  ],
+  "first_read": "2026-10-27T15:48:16.965Z",
+  "second_read": "2026-10-27T15:51:56.518Z",
+  "elapsed_ms": 219553,
+  "identical_complete_reads": true,
+  "streaming": false,
+  "request_sha256": "sha256:e41666fd050c3f1a8e38a86f860265dd5181e2b247040cb7f2254ceb1a97da1e",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 5895,
+      "expected": 5895,
+      "preview": "MP-IMG2-W3 の固定ソース独立レビューをお願いします。今回の目的は real-WIC Bgr565 の限定技術完"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 5,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "terminal": "HOLD 0 / 1 / 0",
+  "parser_exit": 1,
+  "parser": {
+    "blocking": 0,
+    "actionable": 1,
+    "excessive": 0,
+    "passLine": null,
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": false,
+    "sawPassLine": false
+  }
+}

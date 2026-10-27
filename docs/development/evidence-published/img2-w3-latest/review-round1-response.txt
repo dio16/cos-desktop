@@ -1,0 +1,369 @@
+ChatGPT の発言:
+MP-IMG2-W3 固定SOURCE独立レビュー
+
+判定：HOLD — ACTIONABLE NON-BLOCKING 1件
+
+製品候補 7786f9fd7c42ee35b5006c9ad236b64bcc2c0511について、添付3点を実際に読み込み、SOURCE・Native記録・独立pixel oracle・Gateを検査しました。
+
+Bgr565の実デコードと画素一致は確認できました。ただし、不正BMPのadmission結果を検証器が誤って受け入れる経路が1件残っています。
+
+1. 独立検証結果
+
+検証対象
+
+	
+
+結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+571,534 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+123,810 bytes、SHA256一致
+
+
+
+
+SOURCE 44 entries
+
+	
+
+44/44 digest・byte-form一致
+
+
+
+
+Evidence 37 files
+
+	
+
+37/37 LF正規化後digest一致
+
+
+
+
+Python W2/W3 tests
+
+	
+
+72/72 PASS（独立実行）
+
+
+
+
+Native report replay
+
+	
+
+PASS、24 workers
+
+
+
+
+fixture再生成
+
+	
+
+12/12 原バイト一致
+
+
+
+
+実Bgr565出力
+
+	
+
+10/10 RGBA全画素一致
+
+
+
+
+Bgr555対照
+
+	
+
+Bgr565認定から除外
+
+
+
+
+Consumer record
+
+	
+
+正常5件、pixels_verified
+
+
+
+
+Quality Gate
+
+	
+
+SUCCEEDED 13/13
+
+
+
+
+Build Gate
+
+	
+
+SUCCEEDED 1/1
+
+
+
+
+Gate artifact tuples
+
+	
+
+46/46 一致
+
+
+
+
+Native SOURCE binding
+
+	
+
+16/16 LF digest一致
+
+独立pixel検証では、提出されたw3_oracle.pyとは別の実装でBMPの16-bit bitfieldを読み取り、PNGのCRC、zlib、scanline filterを復元しました。
+
+その結果、保持されたBgr565実worker出力10件すべてが、元BMPから独立に算出したRGBAと一致しています。
+
+2. 実装・Native観測の評価
+
+wic_probe.ps1では、budget-enabledの16-bit BI_BITFIELDS BMPに対し、66-byte header admissionがBitmapCacheOption::OnLoadより前に配置されています。
+
+wic_admission.ps1のGet-BmpBitfieldsHeaderError()は、planes、寸法、maskの非ゼロ・重複・連続性、encoded row extentを検査します。
+
+提出された実Native記録では、24 workerが次の結果でした。
+
+Outcome
+
+	
+
+件数
+
+
+
+
+decoded
+
+	
+
+11
+
+
+
+
+corrupt
+
+	
+
+5
+
+
+
+
+unsupported
+
+	
+
+1
+
+
+
+
+oversize
+
+	
+
+5
+
+
+
+
+cancelled
+
+	
+
+1
+
+
+
+
+timeout
+
+	
+
+1
+
+正常デコード11件の内訳は、Bgr565が10件、Bgr555対照が1件です。
+
+特にplanes=0、invalid masks、overlapping masks、truncated BMPでは、invalid_metadata、materialization=not_requested、出力なしが記録されています。
+
+この実記録自体に矛盾は確認されませんでした。
+
+停止確認も既存W2のoperator boundary holdに限定されており、協調的in-decoder cancellationとは区別されています。
+
+3. 指摘事項
+A-W3-01 — malformed BMPの拒否理由・admission状態にfalse-greenが残る
+
+種別：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w3_verify.py、_verify()内のmalformed/refusal分岐（概ね182–198行）
+
+現在の検証器は、不正fixtureについて以下を確認しています。
+
+outcomeがcorruptまたはunsupported
+
+reasonが広いclosed vocabularyに含まれる
+
+onload_enteredが存在しない
+
+出力が存在しない
+
+materialization=not_requested
+
+しかし、不正BMPの種類に対応した拒否理由、admission_status=refused、trace終端に記録された結果との一致は十分に検査していません。
+
+独立再現したfalse-greenは次のとおりです。
+
+改変したNative記録
+
+	
+
+本来の期待
+
+	
+
+検証器の結果
+
+
+
+
+format_inconsistent：invalid_metadata → win_unknown_image_format
+
+	
+
+不正planesをheader admissionで拒否
+
+	
+
+ok=true
+
+
+
+
+format_bad_masks：reason → max_bit_depth_exceeded
+
+	
+
+不正maskをmetadata拒否
+
+	
+
+ok=true
+
+
+
+
+format_overlap_masks：admission_status → admitted
+
+	
+
+refused必須
+
+	
+
+ok=true
+
+
+
+
+format_truncated：admission_status → not_enforced
+
+	
+
+refused必須
+
+	
+
+ok=true
+
+各改変ではprobe_resultとstdout_utf8を整合させてから、実際のverify(record, source_root)を呼び出しました。
+
+いずれも検証成功となりました。
+
+これは提出された実Native記録が誤っているという指摘ではありません。しかし、W3で新たに実装したheader admissionの証明が、不正なNative recordに対してfail-closedになっていません。
+
+修正条件：
+
+自前のheader admissionで必ず拒否される既知fixture（planes=0、zero/overlap masks、invalid header、truncation）について、期待reasonをinvalid_metadataに結び付ける。
+
+該当ケースでadmission_status=refusedを必須にする。
+
+probe_exit stageのoutcome、reason_code、admission_status、materializationをprobe_resultと照合する。
+
+上記4改変を独立負例に追加し、すべてok=falseになることを確認する。
+
+未知形式に対するWIC固有HRESULTまで一律に固定する必要はありません。今回の修正対象は、既存SOURCEによって拒否理由を確定できるBMP header admissionです。
+
+crates/media、DecodeBudget、WIC decoder、正常画素変換、GPU、Runtimeを変更する必要はありません。
+
+4. Gate・Taskern・証拠相関
+
+Taskern actual prepareは、revision 1、img2-w3、packet digest 467be024…2af822bで一致しました。
+
+独立Refine Gateも以下を確認できました。
+
+Quality cae83706-e59c-4943-b911-63981383e2f3：SUCCEEDED、13/13
+
+Build ef6fd28b-1cea-4e2a-a85b-8143464d4d17：SUCCEEDED、1/1
+
+candidate digest：22b50143…1705d9
+
+両Gateのartifact tuples：46件一致
+
+status/inspect/verify：保存記録上exit 0
+
+cleanup complete、owner_alive=false、recovery_required=false
+
+preflight UNKNOWNはUNKNOWNのまま維持
+
+Storageの成功workspace・targetの有限廃棄、削除前後のverify一致も記録上整合しています。ただし、Windows上で実際の削除を再実行したものではありません。
+
+5. 限定技術完了の判断
+
+Bgr565の実Native能力については、提示された小さなfixtureの範囲で、WIC source format・depth 6・16 bpp・RGBA画素一致を裏付ける証拠が成立しています。
+
+未達のWIC internal scratch、true concurrent peak、実予約、cooperative cancellation、16K、region/sequential/tiled、ICC/orientation、JPEG absolute raster、full Decode Exit、Upload、Runtime等は、今回の指摘には含めません。
+
+ただしA-W3-01が残るため、独立検証器を含むW3限定技術完了の0/0/0 closureは保留します。
+
+正常デコード・fixture・consumerに再実測を要求する指摘ではありません。まずW3 verifierの限定修正と負例を追加し、新しい固定候補で必要なGate・独立再レビューを実施してください。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 1
+
+EXCESSIVE 0
+
+HOLD 0 / 1 / 0
