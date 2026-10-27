@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "candidate": "6bf7b63cdbe43c621d3c911f367083ce317128c8",
-  "build_gate": "6c3c8dbc-9c68-4069-9242-a418ab6f8224",
-  "path": "targets/r7/build/debug/cos-desktop.exe",
+  "candidate": "e357888e1d622a3b672cb20f18143ac8468cc745",
+  "build_gate": "dce7ca2f-c207-4de2-ad29-e5d532cbb059",
+  "path": "targets/r8/build/debug/cos-desktop.exe",
   "bytes": 32275456,
-  "sha256": "sha256:4afca555f99e938864ec9bcf88ab25ba92cb2b23a3084ae8a761e3fbf826c194",
-  "observation": "Successful Build Gate product before exact scratch disposal; not a GUI startup claim."
+  "sha256": "sha256:d627be972b1eda2faee1f81c3600270374a389dfd727e97ca961072b1638abc7",
+  "observation": "Build Gate product before exact scratch disposal; not a GUI startup claim."
 }

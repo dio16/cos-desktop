@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "candidate": "6bf7b63cdbe43c621d3c911f367083ce317128c8",
-  "quality_gate": "a674563c-e6c0-4c70-a9d7-f987b0df6796",
-  "build_gate": "6c3c8dbc-9c68-4069-9242-a418ab6f8224",
+  "candidate": "e357888e1d622a3b672cb20f18143ac8468cc745",
+  "quality_gate": "bf315d47-65b0-4f32-921b-1df7f495f612",
+  "build_gate": "dce7ca2f-c207-4de2-ad29-e5d532cbb059",
   "rust": {
     "passed": 535,
     "failed": 0,
     "ignored": 1
   },
   "img2": {
-    "total": 107,
+    "total": 112,
     "ok": true
   },
   "r0": {
@@ -38,12 +38,12 @@
       "passed": 539,
       "ignored": 1
     },
-    "img2": 107,
+    "img2": 112,
     "r0": {
       "total": 352,
       "passed": 340,
       "skipped": 12
     }
   },
-  "r0_scope": "Isolated sanitized availability differs from ordinary workspace; skips never counted as PASS."
+  "r0_scope": "Isolated availability differs; skips never counted as PASS."
 }

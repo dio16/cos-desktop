@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
-  "candidate": "6bf7b63cdbe43c621d3c911f367083ce317128c8",
-  "candidate_sha256": "sha256:b0ef94f29ae1082d42f5d0658074baf6fc9c96b38b4131bea0ad604afbd81335",
-  "quality_gate": "a674563c-e6c0-4c70-a9d7-f987b0df6796",
-  "build_gate": "6c3c8dbc-9c68-4069-9242-a418ab6f8224",
+  "candidate": "e357888e1d622a3b672cb20f18143ac8468cc745",
+  "candidate_sha256": "sha256:20d3fa135300ec126904c5c4d871464a2b0e3d8c14c0d552490e041129d42edc",
+  "quality_gate": "bf315d47-65b0-4f32-921b-1df7f495f612",
+  "build_gate": "dce7ca2f-c207-4de2-ad29-e5d532cbb059",
   "identical_artifact_tuples": true,
   "artifacts": [
     {
-      "id": "w4r2-BUILD_AND_RUN.md-20",
+      "id": "w4r3-BUILD_AND_RUN.md-20",
       "path": "docs/development/BUILD_AND_RUN.md",
       "artifact": {
-        "id": "w4r2-BUILD_AND_RUN.md-20",
-        "relative_path": "artifacts/w4r2-BUILD_AND_RUN.md-20",
+        "id": "w4r3-BUILD_AND_RUN.md-20",
+        "relative_path": "artifacts/w4r3-BUILD_AND_RUN.md-20",
         "size_bytes": 96053,
         "sha256": "sha256:4195850c33cd50f6967915279e70ec526972f17e275cdd94f9e4beb663da3951"
       },
@@ -19,11 +19,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-Cargo.lock-16",
+      "id": "w4r3-Cargo.lock-16",
       "path": "Cargo.lock",
       "artifact": {
-        "id": "w4r2-Cargo.lock-16",
-        "relative_path": "artifacts/w4r2-Cargo.lock-16",
+        "id": "w4r3-Cargo.lock-16",
+        "relative_path": "artifacts/w4r3-Cargo.lock-16",
         "size_bytes": 158990,
         "sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b"
       },
@@ -31,11 +31,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-DESKTOP_DESIGN_CONTRACTS.md-19",
+      "id": "w4r3-DESKTOP_DESIGN_CONTRACTS.md-19",
       "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
       "artifact": {
-        "id": "w4r2-DESKTOP_DESIGN_CONTRACTS.md-19",
-        "relative_path": "artifacts/w4r2-DESKTOP_DESIGN_CONTRACTS.md-19",
+        "id": "w4r3-DESKTOP_DESIGN_CONTRACTS.md-19",
+        "relative_path": "artifacts/w4r3-DESKTOP_DESIGN_CONTRACTS.md-19",
         "size_bytes": 130926,
         "sha256": "sha256:c16cb3ca4867eec89e5f0c98752e97f52cc1880f2e4861f01b5a337d11f7ff58"
       },
@@ -43,23 +43,23 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-IMPLEMENTATION_MASTER_PLAN.md-21",
+      "id": "w4r3-IMPLEMENTATION_MASTER_PLAN.md-21",
       "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
       "artifact": {
-        "id": "w4r2-IMPLEMENTATION_MASTER_PLAN.md-21",
-        "relative_path": "artifacts/w4r2-IMPLEMENTATION_MASTER_PLAN.md-21",
-        "size_bytes": 425938,
-        "sha256": "sha256:b392892f206fdd9cf66e012e8e14db7173c3b73a856d9938527181f348433107"
+        "id": "w4r3-IMPLEMENTATION_MASTER_PLAN.md-21",
+        "relative_path": "artifacts/w4r3-IMPLEMENTATION_MASTER_PLAN.md-21",
+        "size_bytes": 425849,
+        "sha256": "sha256:c5eaa36981bb0295664145ab5907b215ae6c9da032721e7afde661bdb67a95da"
       },
-      "git_blob_sha256": "sha256:b392892f206fdd9cf66e012e8e14db7173c3b73a856d9938527181f348433107",
+      "git_blob_sha256": "sha256:c5eaa36981bb0295664145ab5907b215ae6c9da032721e7afde661bdb67a95da",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-decode.rs-15",
+      "id": "w4r3-decode.rs-15",
       "path": "crates/media/src/decode.rs",
       "artifact": {
-        "id": "w4r2-decode.rs-15",
-        "relative_path": "artifacts/w4r2-decode.rs-15",
+        "id": "w4r3-decode.rs-15",
+        "relative_path": "artifacts/w4r3-decode.rs-15",
         "size_bytes": 11964,
         "sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf"
       },
@@ -67,11 +67,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-decode_compare_harness.rs-14",
+      "id": "w4r3-decode_compare_harness.rs-14",
       "path": "apps/desktop/tests/decode_compare_harness.rs",
       "artifact": {
-        "id": "w4r2-decode_compare_harness.rs-14",
-        "relative_path": "artifacts/w4r2-decode_compare_harness.rs-14",
+        "id": "w4r3-decode_compare_harness.rs-14",
+        "relative_path": "artifacts/w4r3-decode_compare_harness.rs-14",
         "size_bytes": 203960,
         "sha256": "sha256:4cd3d0c9409a8ff02f5233f08ca5bbe4a3504826b8eda1b41635845abe54ee8d"
       },
@@ -79,11 +79,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-disposition.json-24",
+      "id": "w4r3-disposition.json-24",
       "path": "docs/development/evidence-published/img2-w3-latest/disposition.json",
       "artifact": {
-        "id": "w4r2-disposition.json-24",
-        "relative_path": "artifacts/w4r2-disposition.json-24",
+        "id": "w4r3-disposition.json-24",
+        "relative_path": "artifacts/w4r3-disposition.json-24",
         "size_bytes": 3732,
         "sha256": "sha256:84aef4b4fe898fd928b02bd9f0b8b76ed588ebda73d053a18b180977b6fa75ba"
       },
@@ -91,47 +91,47 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-budget-boundary.json",
+      "id": "w4r3-evidence-budget-boundary.json",
       "path": "docs/development/evidence-published/img2-w4-latest/budget-boundary.json",
       "artifact": {
-        "id": "w4r2-evidence-budget-boundary.json",
-        "relative_path": "artifacts/w4r2-evidence-budget-boundary.json",
-        "size_bytes": 704,
-        "sha256": "sha256:c3a6af7b0916ff424000b642a7127fdf8470fc8e9431d74e5dcb3627fc3b9732"
+        "id": "w4r3-evidence-budget-boundary.json",
+        "relative_path": "artifacts/w4r3-evidence-budget-boundary.json",
+        "size_bytes": 699,
+        "sha256": "sha256:a425ec96d89f623d318327435efdc14f6f9936bffb7b4f502b5880e4dfc3eed7"
       },
-      "git_blob_sha256": "sha256:c3a6af7b0916ff424000b642a7127fdf8470fc8e9431d74e5dcb3627fc3b9732",
+      "git_blob_sha256": "sha256:a425ec96d89f623d318327435efdc14f6f9936bffb7b4f502b5880e4dfc3eed7",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-cancellation-record.json",
+      "id": "w4r3-evidence-cancellation-record.json",
       "path": "docs/development/evidence-published/img2-w4-latest/cancellation-record.json",
       "artifact": {
-        "id": "w4r2-evidence-cancellation-record.json",
-        "relative_path": "artifacts/w4r2-evidence-cancellation-record.json",
-        "size_bytes": 1792,
-        "sha256": "sha256:fe375eb49d81aac2af0829aea3fcbcad57e6a44824f144ef42f751a6f974076d"
+        "id": "w4r3-evidence-cancellation-record.json",
+        "relative_path": "artifacts/w4r3-evidence-cancellation-record.json",
+        "size_bytes": 1796,
+        "sha256": "sha256:cab551ec3336c3a0771a426dc0dfd6943c4a729e7648124795fc66b66c7ca091"
       },
-      "git_blob_sha256": "sha256:fe375eb49d81aac2af0829aea3fcbcad57e6a44824f144ef42f751a6f974076d",
+      "git_blob_sha256": "sha256:cab551ec3336c3a0771a426dc0dfd6943c4a729e7648124795fc66b66c7ca091",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-capability-table.json",
+      "id": "w4r3-evidence-capability-table.json",
       "path": "docs/development/evidence-published/img2-w4-latest/capability-table.json",
       "artifact": {
-        "id": "w4r2-evidence-capability-table.json",
-        "relative_path": "artifacts/w4r2-evidence-capability-table.json",
-        "size_bytes": 6392,
-        "sha256": "sha256:9fd34c5284eeb6a265abb65b9f252d494146a4e114cee7437f6d97e540aaef55"
+        "id": "w4r3-evidence-capability-table.json",
+        "relative_path": "artifacts/w4r3-evidence-capability-table.json",
+        "size_bytes": 6368,
+        "sha256": "sha256:e21ef9ba3c4798c768554d81a94167bff90a11edd3343e38c3bd478af184dac0"
       },
-      "git_blob_sha256": "sha256:9fd34c5284eeb6a265abb65b9f252d494146a4e114cee7437f6d97e540aaef55",
+      "git_blob_sha256": "sha256:e21ef9ba3c4798c768554d81a94167bff90a11edd3343e38c3bd478af184dac0",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-document-validation.json",
+      "id": "w4r3-evidence-document-validation.json",
       "path": "docs/development/evidence-published/img2-w4-latest/document-validation.json",
       "artifact": {
-        "id": "w4r2-evidence-document-validation.json",
-        "relative_path": "artifacts/w4r2-evidence-document-validation.json",
+        "id": "w4r3-evidence-document-validation.json",
+        "relative_path": "artifacts/w4r3-evidence-document-validation.json",
         "size_bytes": 223,
         "sha256": "sha256:006531a88bb1a6d54986b0f2e6e044380193653892f6c8eda324ba479c5ab869"
       },
@@ -139,35 +139,35 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-execution-manifest.json",
+      "id": "w4r3-evidence-execution-manifest.json",
       "path": "docs/development/evidence-published/img2-w4-latest/execution-manifest.json",
       "artifact": {
-        "id": "w4r2-evidence-execution-manifest.json",
-        "relative_path": "artifacts/w4r2-evidence-execution-manifest.json",
+        "id": "w4r3-evidence-execution-manifest.json",
+        "relative_path": "artifacts/w4r3-evidence-execution-manifest.json",
         "size_bytes": 10556,
-        "sha256": "sha256:138c2af54108f95ce28ce8dea1e33c8acb8ac466dc11e9223261dff534d531d5"
+        "sha256": "sha256:670240f315202c14163e3e962631cca5565face82a07a8882d0c088289053701"
       },
-      "git_blob_sha256": "sha256:138c2af54108f95ce28ce8dea1e33c8acb8ac466dc11e9223261dff534d531d5",
+      "git_blob_sha256": "sha256:670240f315202c14163e3e962631cca5565face82a07a8882d0c088289053701",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-fixture-manifest.json",
+      "id": "w4r3-evidence-fixture-manifest.json",
       "path": "docs/development/evidence-published/img2-w4-latest/fixture-manifest.json",
       "artifact": {
-        "id": "w4r2-evidence-fixture-manifest.json",
-        "relative_path": "artifacts/w4r2-evidence-fixture-manifest.json",
-        "size_bytes": 63267,
-        "sha256": "sha256:ba7da06ffa2c417500cd0618b1a1dbab76ee7760320e01a3f78621f2e67462c0"
+        "id": "w4r3-evidence-fixture-manifest.json",
+        "relative_path": "artifacts/w4r3-evidence-fixture-manifest.json",
+        "size_bytes": 63227,
+        "sha256": "sha256:695dbf549c8e6c1f2c1618f6abab369c5270ed15d905936f7fe8cf920780c2ce"
       },
-      "git_blob_sha256": "sha256:ba7da06ffa2c417500cd0618b1a1dbab76ee7760320e01a3f78621f2e67462c0",
+      "git_blob_sha256": "sha256:695dbf549c8e6c1f2c1618f6abab369c5270ed15d905936f7fe8cf920780c2ce",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-quality.json",
-      "path": "docs/development/evidence-published/img2-w4-latest/quality.json",
+      "id": "w4r3-evidence-gate-captured-quality.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/gate-captured-quality.json",
       "artifact": {
-        "id": "w4r2-evidence-quality.json",
-        "relative_path": "artifacts/w4r2-evidence-quality.json",
+        "id": "w4r3-evidence-gate-captured-quality.json",
+        "relative_path": "artifacts/w4r3-evidence-gate-captured-quality.json",
         "size_bytes": 7133,
         "sha256": "sha256:aa5fc4061c6d260d43487f8329a0c553c63b8c9c7461eb6775838f75324b99c5"
       },
@@ -175,23 +175,47 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-real-native-matrix.json",
-      "path": "docs/development/evidence-published/img2-w4-latest/real-native-matrix.json",
+      "id": "w4r3-evidence-gate-captured-quality.json.reconciliation.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/gate-captured-quality.json.reconciliation.json",
       "artifact": {
-        "id": "w4r2-evidence-real-native-matrix.json",
-        "relative_path": "artifacts/w4r2-evidence-real-native-matrix.json",
-        "size_bytes": 308336,
-        "sha256": "sha256:0242a89e5420cab979721d4d033b4adce16399005ba33d264f6a20d6e9e45f5b"
+        "id": "w4r3-evidence-gate-captured-quality.json.reconciliation.json",
+        "relative_path": "artifacts/w4r3-evidence-gate-captured-quality.json.reconciliation.json",
+        "size_bytes": 715,
+        "sha256": "sha256:548d7afa7b5e4d6ad6679250e693b44def3cb5d02d8f1a9d2053882970f99c9c"
       },
-      "git_blob_sha256": "sha256:0242a89e5420cab979721d4d033b4adce16399005ba33d264f6a20d6e9e45f5b",
+      "git_blob_sha256": "sha256:548d7afa7b5e4d6ad6679250e693b44def3cb5d02d8f1a9d2053882970f99c9c",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-repair-round1.json",
+      "id": "w4r3-evidence-quality.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/quality.json",
+      "artifact": {
+        "id": "w4r3-evidence-quality.json",
+        "relative_path": "artifacts/w4r3-evidence-quality.json",
+        "size_bytes": 9326,
+        "sha256": "sha256:509f5cc992aea36701d23e6566871cdc07ca1d7fb9047f30bb438328e4d861d3"
+      },
+      "git_blob_sha256": "sha256:509f5cc992aea36701d23e6566871cdc07ca1d7fb9047f30bb438328e4d861d3",
+      "raw_equal_to_git": true
+    },
+    {
+      "id": "w4r3-evidence-real-native-matrix.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/real-native-matrix.json",
+      "artifact": {
+        "id": "w4r3-evidence-real-native-matrix.json",
+        "relative_path": "artifacts/w4r3-evidence-real-native-matrix.json",
+        "size_bytes": 308965,
+        "sha256": "sha256:bd3a413a3017b677f6ff4773ebdbd5717417d1d4a3ea1abbc3d288ee840b4250"
+      },
+      "git_blob_sha256": "sha256:bd3a413a3017b677f6ff4773ebdbd5717417d1d4a3ea1abbc3d288ee840b4250",
+      "raw_equal_to_git": true
+    },
+    {
+      "id": "w4r3-evidence-repair-round1.json",
       "path": "docs/development/evidence-published/img2-w4-latest/repair-round1.json",
       "artifact": {
-        "id": "w4r2-evidence-repair-round1.json",
-        "relative_path": "artifacts/w4r2-evidence-repair-round1.json",
+        "id": "w4r3-evidence-repair-round1.json",
+        "relative_path": "artifacts/w4r3-evidence-repair-round1.json",
         "size_bytes": 1855,
         "sha256": "sha256:c33d4670e3e9dfd4adc7ea07dbd2b254776c8cfd9b7eeeef323c7d1a84c6093c"
       },
@@ -199,11 +223,23 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-review-round1-response.txt",
+      "id": "w4r3-evidence-repair-round2.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/repair-round2.json",
+      "artifact": {
+        "id": "w4r3-evidence-repair-round2.json",
+        "relative_path": "artifacts/w4r3-evidence-repair-round2.json",
+        "size_bytes": 1878,
+        "sha256": "sha256:149c16ae168d236eb45cf630b9cffda00c4cf8ac340bf42505ea5c8fc1e3e3f0"
+      },
+      "git_blob_sha256": "sha256:149c16ae168d236eb45cf630b9cffda00c4cf8ac340bf42505ea5c8fc1e3e3f0",
+      "raw_equal_to_git": true
+    },
+    {
+      "id": "w4r3-evidence-review-round1-response.txt",
       "path": "docs/development/evidence-published/img2-w4-latest/review-round1-response.txt",
       "artifact": {
-        "id": "w4r2-evidence-review-round1-response.txt",
-        "relative_path": "artifacts/w4r2-evidence-review-round1-response.txt",
+        "id": "w4r3-evidence-review-round1-response.txt",
+        "relative_path": "artifacts/w4r3-evidence-review-round1-response.txt",
         "size_bytes": 9198,
         "sha256": "sha256:0fac6a28c085a5505d2661c8b074acc0b18a057705beb7d866f8519814306eac"
       },
@@ -211,11 +247,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-review-round1.json",
+      "id": "w4r3-evidence-review-round1.json",
       "path": "docs/development/evidence-published/img2-w4-latest/review-round1.json",
       "artifact": {
-        "id": "w4r2-evidence-review-round1.json",
-        "relative_path": "artifacts/w4r2-evidence-review-round1.json",
+        "id": "w4r3-evidence-review-round1.json",
+        "relative_path": "artifacts/w4r3-evidence-review-round1.json",
         "size_bytes": 1709,
         "sha256": "sha256:a1d4df1eb7d45cfe15cc7bc82bdc588d3286367d8793789ef186fd5ae556c3f9"
       },
@@ -223,35 +259,59 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-roi-oracle.json",
+      "id": "w4r3-evidence-review-round2-response.txt",
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round2-response.txt",
+      "artifact": {
+        "id": "w4r3-evidence-review-round2-response.txt",
+        "relative_path": "artifacts/w4r3-evidence-review-round2-response.txt",
+        "size_bytes": 8258,
+        "sha256": "sha256:eef22c237802ff85c61d9e6aa6d7e24817617344c5288501a23f771a9e7f7073"
+      },
+      "git_blob_sha256": "sha256:eef22c237802ff85c61d9e6aa6d7e24817617344c5288501a23f771a9e7f7073",
+      "raw_equal_to_git": true
+    },
+    {
+      "id": "w4r3-evidence-review-round2.json",
+      "path": "docs/development/evidence-published/img2-w4-latest/review-round2.json",
+      "artifact": {
+        "id": "w4r3-evidence-review-round2.json",
+        "relative_path": "artifacts/w4r3-evidence-review-round2.json",
+        "size_bytes": 1698,
+        "sha256": "sha256:f5cb05a5f8ea8f2fbd5163df3416b8151455bc86ca1ef0df0570ddad1d98a0ae"
+      },
+      "git_blob_sha256": "sha256:f5cb05a5f8ea8f2fbd5163df3416b8151455bc86ca1ef0df0570ddad1d98a0ae",
+      "raw_equal_to_git": true
+    },
+    {
+      "id": "w4r3-evidence-roi-oracle.json",
       "path": "docs/development/evidence-published/img2-w4-latest/roi-oracle.json",
       "artifact": {
-        "id": "w4r2-evidence-roi-oracle.json",
-        "relative_path": "artifacts/w4r2-evidence-roi-oracle.json",
-        "size_bytes": 9047,
-        "sha256": "sha256:ed2fb03ab7c8ea5361339211a33e4af6bd1dc51248f1e81f808e9502ac13bd51"
+        "id": "w4r3-evidence-roi-oracle.json",
+        "relative_path": "artifacts/w4r3-evidence-roi-oracle.json",
+        "size_bytes": 9028,
+        "sha256": "sha256:99910136f86f14b327cd61381c57500537acd0f6eb0c871bef0da65545fe0604"
       },
-      "git_blob_sha256": "sha256:ed2fb03ab7c8ea5361339211a33e4af6bd1dc51248f1e81f808e9502ac13bd51",
+      "git_blob_sha256": "sha256:99910136f86f14b327cd61381c57500537acd0f6eb0c871bef0da65545fe0604",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-source-identity.json",
+      "id": "w4r3-evidence-source-identity.json",
       "path": "docs/development/evidence-published/img2-w4-latest/source-identity.json",
       "artifact": {
-        "id": "w4r2-evidence-source-identity.json",
-        "relative_path": "artifacts/w4r2-evidence-source-identity.json",
-        "size_bytes": 4711,
-        "sha256": "sha256:432fd9781f18eee108801e131b69478352fdfdfc8c1d599173b5be996955e921"
+        "id": "w4r3-evidence-source-identity.json",
+        "relative_path": "artifacts/w4r3-evidence-source-identity.json",
+        "size_bytes": 4684,
+        "sha256": "sha256:43a6101e412279a59c2e0521ed1a6e3ea29cd7ee5a3c2cdb9b196c0958713fd6"
       },
-      "git_blob_sha256": "sha256:432fd9781f18eee108801e131b69478352fdfdfc8c1d599173b5be996955e921",
+      "git_blob_sha256": "sha256:43a6101e412279a59c2e0521ed1a6e3ea29cd7ee5a3c2cdb9b196c0958713fd6",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-taskern-request.json",
+      "id": "w4r3-evidence-taskern-request.json",
       "path": "docs/development/evidence-published/img2-w4-latest/taskern-request.json",
       "artifact": {
-        "id": "w4r2-evidence-taskern-request.json",
-        "relative_path": "artifacts/w4r2-evidence-taskern-request.json",
+        "id": "w4r3-evidence-taskern-request.json",
+        "relative_path": "artifacts/w4r3-evidence-taskern-request.json",
         "size_bytes": 6820,
         "sha256": "sha256:250ae53361412378ad56e41e443fcd4f18b378a741ca40f89df7c36ebe65f61a"
       },
@@ -259,11 +319,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-taskern-response.json",
+      "id": "w4r3-evidence-taskern-response.json",
       "path": "docs/development/evidence-published/img2-w4-latest/taskern-response.json",
       "artifact": {
-        "id": "w4r2-evidence-taskern-response.json",
-        "relative_path": "artifacts/w4r2-evidence-taskern-response.json",
+        "id": "w4r3-evidence-taskern-response.json",
+        "relative_path": "artifacts/w4r3-evidence-taskern-response.json",
         "size_bytes": 10189,
         "sha256": "sha256:7997f435a81e46a36262b9fb11e7aa3bf9fc69bac463d524816bd82e1e615a69"
       },
@@ -271,11 +331,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-unmeasured.json",
+      "id": "w4r3-evidence-unmeasured.json",
       "path": "docs/development/evidence-published/img2-w4-latest/unmeasured.json",
       "artifact": {
-        "id": "w4r2-evidence-unmeasured.json",
-        "relative_path": "artifacts/w4r2-evidence-unmeasured.json",
+        "id": "w4r3-evidence-unmeasured.json",
+        "relative_path": "artifacts/w4r3-evidence-unmeasured.json",
         "size_bytes": 724,
         "sha256": "sha256:7e3e7c2013d9c8d3a8e70cb33fe60a315e97a1e385f558e4f03ee30e7e3ab6d1"
       },
@@ -283,23 +343,23 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-evidence-verifier-results.json",
+      "id": "w4r3-evidence-verifier-results.json",
       "path": "docs/development/evidence-published/img2-w4-latest/verifier-results.json",
       "artifact": {
-        "id": "w4r2-evidence-verifier-results.json",
-        "relative_path": "artifacts/w4r2-evidence-verifier-results.json",
-        "size_bytes": 7345,
-        "sha256": "sha256:504ed36c8a08c486d1c5bd03199b215ef7f30524fb647436aff8feb61fbf58f9"
+        "id": "w4r3-evidence-verifier-results.json",
+        "relative_path": "artifacts/w4r3-evidence-verifier-results.json",
+        "size_bytes": 7470,
+        "sha256": "sha256:ed9b8260d9f577574e27f6fbd2a04e9b44de2f90a30d216dd0139ad6fb65861f"
       },
-      "git_blob_sha256": "sha256:504ed36c8a08c486d1c5bd03199b215ef7f30524fb647436aff8feb61fbf58f9",
+      "git_blob_sha256": "sha256:ed9b8260d9f577574e27f6fbd2a04e9b44de2f90a30d216dd0139ad6fb65861f",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-harness.rs-11",
+      "id": "w4r3-harness.rs-11",
       "path": "apps/desktop/examples/decode_compare/harness.rs",
       "artifact": {
-        "id": "w4r2-harness.rs-11",
-        "relative_path": "artifacts/w4r2-harness.rs-11",
+        "id": "w4r3-harness.rs-11",
+        "relative_path": "artifacts/w4r3-harness.rs-11",
         "size_bytes": 159533,
         "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
       },
@@ -307,11 +367,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-inspect.rs-12",
+      "id": "w4r3-inspect.rs-12",
       "path": "apps/desktop/examples/decode_compare/inspect.rs",
       "artifact": {
-        "id": "w4r2-inspect.rs-12",
-        "relative_path": "artifacts/w4r2-inspect.rs-12",
+        "id": "w4r3-inspect.rs-12",
+        "relative_path": "artifacts/w4r3-inspect.rs-12",
         "size_bytes": 24568,
         "sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558"
       },
@@ -319,11 +379,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-pixels.rs-13",
+      "id": "w4r3-pixels.rs-13",
       "path": "apps/desktop/examples/decode_compare/pixels.rs",
       "artifact": {
-        "id": "w4r2-pixels.rs-13",
-        "relative_path": "artifacts/w4r2-pixels.rs-13",
+        "id": "w4r3-pixels.rs-13",
+        "relative_path": "artifacts/w4r3-pixels.rs-13",
         "size_bytes": 27817,
         "sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136"
       },
@@ -331,11 +391,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-quality.ps1-18",
+      "id": "w4r3-quality.ps1-18",
       "path": "scripts/quality.ps1",
       "artifact": {
-        "id": "w4r2-quality.ps1-18",
-        "relative_path": "artifacts/w4r2-quality.ps1-18",
+        "id": "w4r3-quality.ps1-18",
+        "relative_path": "artifacts/w4r3-quality.ps1-18",
         "size_bytes": 18303,
         "sha256": "sha256:d3c8ae9f88dd761f98e42d10c7ad8a5c8bb0392ca9b7114ae2d2f9b4b5f64b50"
       },
@@ -343,11 +403,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-real-native-matrix.json-25",
+      "id": "w4r3-real-native-matrix.json-25",
       "path": "docs/development/evidence-published/img2-w3-latest/real-native-matrix.json",
       "artifact": {
-        "id": "w4r2-real-native-matrix.json-25",
-        "relative_path": "artifacts/w4r2-real-native-matrix.json-25",
+        "id": "w4r3-real-native-matrix.json-25",
+        "relative_path": "artifacts/w4r3-real-native-matrix.json-25",
         "size_bytes": 258737,
         "sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3"
       },
@@ -355,11 +415,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-rust-toolchain.toml-17",
+      "id": "w4r3-rust-toolchain.toml-17",
       "path": "rust-toolchain.toml",
       "artifact": {
-        "id": "w4r2-rust-toolchain.toml-17",
-        "relative_path": "artifacts/w4r2-rust-toolchain.toml-17",
+        "id": "w4r3-rust-toolchain.toml-17",
+        "relative_path": "artifacts/w4r3-rust-toolchain.toml-17",
         "size_bytes": 152,
         "sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8"
       },
@@ -367,11 +427,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-tern-next-directive.json-23",
+      "id": "w4r3-tern-next-directive.json-23",
       "path": "docs/development/evidence-published/img2-w3-latest/tern-next-directive.json",
       "artifact": {
-        "id": "w4r2-tern-next-directive.json-23",
-        "relative_path": "artifacts/w4r2-tern-next-directive.json-23",
+        "id": "w4r3-tern-next-directive.json-23",
+        "relative_path": "artifacts/w4r3-tern-next-directive.json-23",
         "size_bytes": 974,
         "sha256": "sha256:1faeb4b3e3a2abe09d473d4ec03adee0ecad58166fb5454d7a923a3c40664e4b"
       },
@@ -379,11 +439,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-tern-next-directive.txt-22",
+      "id": "w4r3-tern-next-directive.txt-22",
       "path": "docs/development/evidence-published/img2-w3-latest/tern-next-directive.txt",
       "artifact": {
-        "id": "w4r2-tern-next-directive.txt-22",
-        "relative_path": "artifacts/w4r2-tern-next-directive.txt-22",
+        "id": "w4r3-tern-next-directive.txt-22",
+        "relative_path": "artifacts/w4r3-tern-next-directive.txt-22",
         "size_bytes": 28395,
         "sha256": "sha256:fb6a1c259de641553b2c4610803ff9ee92094356ad5dde54a6bc022e23fc89ac"
       },
@@ -391,11 +451,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-test_w4_fixtures.py-8",
+      "id": "w4r3-test_w4_fixtures.py-8",
       "path": "apps/desktop/devtools/img2/tests/test_w4_fixtures.py",
       "artifact": {
-        "id": "w4r2-test_w4_fixtures.py-8",
-        "relative_path": "artifacts/w4r2-test_w4_fixtures.py-8",
+        "id": "w4r3-test_w4_fixtures.py-8",
+        "relative_path": "artifacts/w4r3-test_w4_fixtures.py-8",
         "size_bytes": 2760,
         "sha256": "sha256:faca6bb057bbbe119f9d0d92832fa6304c8780c9512efbda58158c0802fc8877"
       },
@@ -403,23 +463,23 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-test_w4_verify.py-9",
+      "id": "w4r3-test_w4_verify.py-9",
       "path": "apps/desktop/devtools/img2/tests/test_w4_verify.py",
       "artifact": {
-        "id": "w4r2-test_w4_verify.py-9",
-        "relative_path": "artifacts/w4r2-test_w4_verify.py-9",
-        "size_bytes": 8808,
-        "sha256": "sha256:a5ba29ddd9078340ac72f508f5b52f3fff758486a12de809f98bd99c372edd76"
+        "id": "w4r3-test_w4_verify.py-9",
+        "relative_path": "artifacts/w4r3-test_w4_verify.py-9",
+        "size_bytes": 9948,
+        "sha256": "sha256:823a866009fe6d368dc8069e6c108a56a0b20ead131e6e3dad09981d1df3b84c"
       },
-      "git_blob_sha256": "sha256:a5ba29ddd9078340ac72f508f5b52f3fff758486a12de809f98bd99c372edd76",
+      "git_blob_sha256": "sha256:823a866009fe6d368dc8069e6c108a56a0b20ead131e6e3dad09981d1df3b84c",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-w2_resource_matrix.py-2",
+      "id": "w4r3-w2_resource_matrix.py-2",
       "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
       "artifact": {
-        "id": "w4r2-w2_resource_matrix.py-2",
-        "relative_path": "artifacts/w4r2-w2_resource_matrix.py-2",
+        "id": "w4r3-w2_resource_matrix.py-2",
+        "relative_path": "artifacts/w4r3-w2_resource_matrix.py-2",
         "size_bytes": 28731,
         "sha256": "sha256:f52cadb0baac0f5690560dec8a8df04d8e9898214c4715dc35c3c26e8f78439d"
       },
@@ -427,11 +487,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-w3_native_matrix.py-3",
+      "id": "w4r3-w3_native_matrix.py-3",
       "path": "apps/desktop/devtools/img2/w3_native_matrix.py",
       "artifact": {
-        "id": "w4r2-w3_native_matrix.py-3",
-        "relative_path": "artifacts/w4r2-w3_native_matrix.py-3",
+        "id": "w4r3-w3_native_matrix.py-3",
+        "relative_path": "artifacts/w4r3-w3_native_matrix.py-3",
         "size_bytes": 10534,
         "sha256": "sha256:fca17e82aa3ae396726af3d0dddf476946f94e03ab8300aaeed8c81a64c64f15"
       },
@@ -439,11 +499,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-w4_fixtures.py-4",
+      "id": "w4r3-w4_fixtures.py-4",
       "path": "apps/desktop/devtools/img2/w4_fixtures.py",
       "artifact": {
-        "id": "w4r2-w4_fixtures.py-4",
-        "relative_path": "artifacts/w4r2-w4_fixtures.py-4",
+        "id": "w4r3-w4_fixtures.py-4",
+        "relative_path": "artifacts/w4r3-w4_fixtures.py-4",
         "size_bytes": 4581,
         "sha256": "sha256:e9a8ec23620799a1cef246b1c48078b045fca4d3fc0cb530f25192a6d9b72c89"
       },
@@ -451,11 +511,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-w4_region_matrix.py-6",
+      "id": "w4r3-w4_region_matrix.py-6",
       "path": "apps/desktop/devtools/img2/w4_region_matrix.py",
       "artifact": {
-        "id": "w4r2-w4_region_matrix.py-6",
-        "relative_path": "artifacts/w4r2-w4_region_matrix.py-6",
+        "id": "w4r3-w4_region_matrix.py-6",
+        "relative_path": "artifacts/w4r3-w4_region_matrix.py-6",
         "size_bytes": 7257,
         "sha256": "sha256:f5197dc0c8bd0a89de288690f10f252cc820dd885bebfbca11cc54e6675da644"
       },
@@ -463,11 +523,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-w4_region_oracle.py-5",
+      "id": "w4r3-w4_region_oracle.py-5",
       "path": "apps/desktop/devtools/img2/w4_region_oracle.py",
       "artifact": {
-        "id": "w4r2-w4_region_oracle.py-5",
-        "relative_path": "artifacts/w4r2-w4_region_oracle.py-5",
+        "id": "w4r3-w4_region_oracle.py-5",
+        "relative_path": "artifacts/w4r3-w4_region_oracle.py-5",
         "size_bytes": 5745,
         "sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298"
       },
@@ -475,23 +535,23 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-w4_region_verify.py-7",
+      "id": "w4r3-w4_region_verify.py-7",
       "path": "apps/desktop/devtools/img2/w4_region_verify.py",
       "artifact": {
-        "id": "w4r2-w4_region_verify.py-7",
-        "relative_path": "artifacts/w4r2-w4_region_verify.py-7",
-        "size_bytes": 17649,
-        "sha256": "sha256:d5eb7beb304ad075d49fd6286104550443d796d272652648149b07dca30ae7f8"
+        "id": "w4r3-w4_region_verify.py-7",
+        "relative_path": "artifacts/w4r3-w4_region_verify.py-7",
+        "size_bytes": 17936,
+        "sha256": "sha256:7450b7e4c77ac32ecdc431e51773bece8d151943424875814c65c7a32b2972f9"
       },
-      "git_blob_sha256": "sha256:d5eb7beb304ad075d49fd6286104550443d796d272652648149b07dca30ae7f8",
+      "git_blob_sha256": "sha256:7450b7e4c77ac32ecdc431e51773bece8d151943424875814c65c7a32b2972f9",
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-wic_admission.ps1-1",
+      "id": "w4r3-wic_admission.ps1-1",
       "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
       "artifact": {
-        "id": "w4r2-wic_admission.ps1-1",
-        "relative_path": "artifacts/w4r2-wic_admission.ps1-1",
+        "id": "w4r3-wic_admission.ps1-1",
+        "relative_path": "artifacts/w4r3-wic_admission.ps1-1",
         "size_bytes": 6399,
         "sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5"
       },
@@ -499,11 +559,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-wic_admission_selftest.ps1-10",
+      "id": "w4r3-wic_admission_selftest.ps1-10",
       "path": "apps/desktop/tests/wic_admission_selftest.ps1",
       "artifact": {
-        "id": "w4r2-wic_admission_selftest.ps1-10",
-        "relative_path": "artifacts/w4r2-wic_admission_selftest.ps1-10",
+        "id": "w4r3-wic_admission_selftest.ps1-10",
+        "relative_path": "artifacts/w4r3-wic_admission_selftest.ps1-10",
         "size_bytes": 3346,
         "sha256": "sha256:6908a1f75ae05097c649d59d9bfe1bd75dd8f16cedd13531159ffc0f03cf4a70"
       },
@@ -511,11 +571,11 @@
       "raw_equal_to_git": true
     },
     {
-      "id": "w4r2-wic_probe.ps1-0",
+      "id": "w4r3-wic_probe.ps1-0",
       "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
       "artifact": {
-        "id": "w4r2-wic_probe.ps1-0",
-        "relative_path": "artifacts/w4r2-wic_probe.ps1-0",
+        "id": "w4r3-wic_probe.ps1-0",
+        "relative_path": "artifacts/w4r3-wic_probe.ps1-0",
         "size_bytes": 44150,
         "sha256": "sha256:bffc5a6ef2805ae298701c091c1e33caa43b6bda646a5523ff5a6005700f6d75"
       },
@@ -523,5 +583,5 @@
       "raw_equal_to_git": true
     }
   ],
-  "scope": "Each of 43 captures raw-equals its candidate-commit Git blob; both Gates carry identical tuples."
+  "scope": "Each of 48 captures raw-equals its candidate-commit blob; both Gates carry identical tuples."
 }

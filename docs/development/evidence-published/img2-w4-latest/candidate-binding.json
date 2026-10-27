@@ -1,10 +1,13 @@
 {
   "schema_version": 1,
-  "product_candidate": "6bf7b63cdbe43c621d3c911f367083ce317128c8",
-  "gate_candidate_digest": "sha256:b0ef94f29ae1082d42f5d0658074baf6fc9c96b38b4131bea0ad604afbd81335",
-  "quality_gate": "a674563c-e6c0-4c70-a9d7-f987b0df6796",
-  "build_gate": "6c3c8dbc-9c68-4069-9242-a418ab6f8224",
+  "product_candidate": "e357888e1d622a3b672cb20f18143ac8468cc745",
+  "gate_candidate_digest": "sha256:20d3fa135300ec126904c5c4d871464a2b0e3d8c14c0d552490e041129d42edc",
+  "quality_gate": "bf315d47-65b0-4f32-921b-1df7f495f612",
+  "build_gate": "dce7ca2f-c207-4de2-ad29-e5d532cbb059",
   "taskern_packet_sha256": "sha256:90344f49f89097826fae9c703f5eff80d5a8181060d0eab55d9c391ff5ae17be",
   "start_commit": "0ce5651f862ea6ce48c666a7088bc9a250c17784",
-  "superseded_candidate": "f1495133562b644a41bb2d4bdb8108cd04dede41"
+  "superseded_candidates": [
+    "f1495133562b644a41bb2d4bdb8108cd04dede41",
+    "6bf7b63cdbe43c621d3c911f367083ce317128c8"
+  ]
 }
