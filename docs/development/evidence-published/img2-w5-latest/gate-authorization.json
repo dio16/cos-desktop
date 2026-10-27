@@ -1,11 +1,6 @@
 {
   "schema_version": 1,
-  "candidate": "81383f062d13ca89763d8bf19de06e4f3a6e33d7",
-  "basis": [
-    "ADR-0009",
-    "ADR-0012",
-    "W5 repair"
-  ],
+  "candidate": "086d957fc8acc38ba62c08bf400d913da9104c22",
   "quality_checks": [
     "fmt",
     "metadata",
@@ -266,16 +261,12 @@
       "id": "w5r2-evidence-manifest.json",
       "path": "docs/development/evidence-published/img2-w5-latest/historical-gate-artifacts/manifest.json",
       "required": true
+    },
+    {
+      "id": "w5r3-repair-round2",
+      "path": "docs/development/evidence-published/img2-w5-latest/repair-round2.json",
+      "required": true
     }
   ],
-  "limits": {
-    "trust": "trusted_local",
-    "timeout_ms": 600000,
-    "termination_grace_ms": 5000,
-    "max_output_bytes": 16777216,
-    "max_artifact_bytes": 16777216,
-    "expected_changes": "none",
-    "required_capabilities": []
-  },
   "no_remote_push": true
 }

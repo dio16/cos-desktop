@@ -1,8 +1,7 @@
 {
   "schema_version": 1,
-  "candidate": "81383f062d13ca89763d8bf19de06e4f3a6e33d7",
-  "build_gate": "629abe26-46b8-427e-b903-8376a9a06daa",
-  "path": "targets/r10/build/debug/cos-desktop.exe",
+  "candidate": "086d957fc8acc38ba62c08bf400d913da9104c22",
+  "build_gate": "f9b4fda6-6af5-4d48-a432-056b99e07125",
   "bytes": 32275456,
-  "sha256": "sha256:1fd533a9a51a181f243b8403181119c26fe5307ae2e81f42b651f848f8eae703"
+  "sha256": "sha256:18b9d55ccf9c2af19b99cfcf291417cf10820bd3b730cf0151cbd7198582269a"
 }
