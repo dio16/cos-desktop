@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "candidate": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6",
+  "caller_instruction": "実装計画に基づき実装・Tern評価・次タスク指示を受取実装。このループを継続し実装計画を完遂すること。実装計画はすべて承認済み。",
+  "basis": [
+    "ADR-0009 continuous execution and completed-slice acceptance",
+    "ADR-0012 remaining implementation authorization",
+    "W3 fixed-source independent Gate directive"
+  ],
+  "quality_checks": [
+    "fmt",
+    "metadata",
+    "dependency-self-test",
+    "dependency-rules",
+    "clippy",
+    "tests",
+    "r0-python",
+    "img2-python",
+    "w2-probe-selftest",
+    "w2-oracle",
+    "w3-retained-native-replay",
+    "wic-admission-selftest",
+    "w1-runner-selftest"
+  ],
+  "build_checks": [
+    "build"
+  ],
+  "outputs": [
+    {
+      "id": "w3-01-test_w2_resource_verify.py",
+      "path": "apps/desktop/devtools/img2/tests/test_w2_resource_verify.py",
+      "required": true
+    },
+    {
+      "id": "w3-02-test_w3_fixtures.py",
+      "path": "apps/desktop/devtools/img2/tests/test_w3_fixtures.py",
+      "required": true
+    },
+    {
+      "id": "w3-03-test_w3_oracle.py",
+      "path": "apps/desktop/devtools/img2/tests/test_w3_oracle.py",
+      "required": true
+    },
+    {
+      "id": "w3-04-test_w3_verify.py",
+      "path": "apps/desktop/devtools/img2/tests/test_w3_verify.py",
+      "required": true
+    },
+    {
+      "id": "w3-05-w3_fixtures.py",
+      "path": "apps/desktop/devtools/img2/w3_fixtures.py",
+      "required": true
+    },
+    {
+      "id": "w3-06-w3_native_matrix.py",
+      "path": "apps/desktop/devtools/img2/w3_native_matrix.py",
+      "required": true
+    },
+    {
+      "id": "w3-07-w3_oracle.py",
+      "path": "apps/desktop/devtools/img2/w3_oracle.py",
+      "required": true
+    },
+    {
+      "id": "w3-08-w3_verify.py",
+      "path": "apps/desktop/devtools/img2/w3_verify.py",
+      "required": true
+    },
+    {
+      "id": "w3-09-wic_admission.ps1",
+      "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+      "required": true
+    },
+    {
+      "id": "w3-10-wic_probe.ps1",
+      "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+      "required": true
+    },
+    {
+      "id": "w3-11-decode_compare_harness.rs",
+      "path": "apps/desktop/tests/decode_compare_harness.rs",
+      "required": true
+    },
+    {
+      "id": "w3-12-DESKTOP_DESIGN_CONTRACTS.md",
+      "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+      "required": true
+    },
+    {
+      "id": "w3-13-BUILD_AND_RUN.md",
+      "path": "docs/development/BUILD_AND_RUN.md",
+      "required": true
+    },
+    {
+      "id": "w3-14-IMPLEMENTATION_MASTER_PLAN.md",
+      "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+      "required": true
+    },
+    {
+      "id": "w3-15-before-repair.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/before-repair.json",
+      "required": true
+    },
+    {
+      "id": "w3-16-capability-table.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/capability-table.json",
+      "required": true
+    },
+    {
+      "id": "w3-17-compatibility.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/compatibility.json",
+      "required": true
+    },
+    {
+      "id": "w3-18-directive-receipt.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/directive-receipt.json",
+      "required": true
+    },
+    {
+      "id": "w3-19-document-validation.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/document-validation.json",
+      "required": true
+    },
+    {
+      "id": "w3-20-environment.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/environment.json",
+      "required": true
+    },
+    {
+      "id": "w3-21-fixture-manifest.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/fixture-manifest.json",
+      "required": true
+    },
+    {
+      "id": "w3-22-independent-oracle.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/independent-oracle.json",
+      "required": true
+    },
+    {
+      "id": "w3-23-quality.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/quality.json",
+      "required": true
+    },
+    {
+      "id": "w3-24-real-native-matrix.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/real-native-matrix.json",
+      "required": true
+    },
+    {
+      "id": "w3-25-taskern-request.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/taskern-request.json",
+      "required": true
+    },
+    {
+      "id": "w3-26-taskern-response.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/taskern-response.json",
+      "required": true
+    },
+    {
+      "id": "w3-27-tern-directive.txt",
+      "path": "docs/development/evidence-published/img2-w3-latest/tern-directive.txt",
+      "required": true
+    },
+    {
+      "id": "w3-28-tool-discovery.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/tool-discovery.json",
+      "required": true
+    },
+    {
+      "id": "w3-29-unmeasured.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/unmeasured.json",
+      "required": true
+    },
+    {
+      "id": "w3-30-verifier-results.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/verifier-results.json",
+      "required": true
+    },
+    {
+      "id": "w3-31-w1-regression.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/w1-regression.json",
+      "required": true
+    },
+    {
+      "id": "w3-32-w2-regression.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/w2-regression.json",
+      "required": true
+    },
+    {
+      "id": "w3-33-harness.rs",
+      "path": "apps/desktop/examples/decode_compare/harness.rs",
+      "required": true
+    },
+    {
+      "id": "w3-34-inspect.rs",
+      "path": "apps/desktop/examples/decode_compare/inspect.rs",
+      "required": true
+    },
+    {
+      "id": "w3-35-pixels.rs",
+      "path": "apps/desktop/examples/decode_compare/pixels.rs",
+      "required": true
+    },
+    {
+      "id": "w3-36-decode_compare.rs",
+      "path": "apps/desktop/examples/decode_compare.rs",
+      "required": true
+    },
+    {
+      "id": "w3-37-decode.rs",
+      "path": "crates/media/src/decode.rs",
+      "required": true
+    },
+    {
+      "id": "w3-38-Cargo.lock",
+      "path": "Cargo.lock",
+      "required": true
+    },
+    {
+      "id": "w3-39-rust-toolchain.toml",
+      "path": "rust-toolchain.toml",
+      "required": true
+    },
+    {
+      "id": "w3-40-quality.ps1",
+      "path": "scripts/quality.ps1",
+      "required": true
+    },
+    {
+      "id": "verifier-repair",
+      "path": "docs/development/evidence-published/img2-w3-latest/verifier-repair.json",
+      "required": true
+    },
+    {
+      "id": "initial-quality",
+      "path": "docs/development/evidence-published/img2-w3-latest/superseded-initial-quality.json",
+      "required": true
+    },
+    {
+      "id": "initial-storage",
+      "path": "docs/development/evidence-published/img2-w3-latest/initial-storage.json",
+      "required": true
+    },
+    {
+      "id": "test-policy-cleanup",
+      "path": "docs/development/evidence-published/img2-w3-latest/test-policy-cleanup.json",
+      "required": true
+    },
+    {
+      "id": "repair1-quality",
+      "path": "docs/development/evidence-published/img2-w3-latest/superseded-repair1-quality.json",
+      "required": true
+    },
+    {
+      "id": "repair1-storage",
+      "path": "docs/development/evidence-published/img2-w3-latest/repair1-storage.json",
+      "required": true
+    },
+    {
+      "id": "awn-awn-repair.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/awn-repair.json",
+      "required": true
+    },
+    {
+      "id": "awn-review-round1.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1.json",
+      "required": true
+    },
+    {
+      "id": "awn-review-round1-response.txt",
+      "path": "docs/development/evidence-published/img2-w3-latest/review-round1-response.txt",
+      "required": true
+    },
+    {
+      "id": "awn-review-history.json",
+      "path": "docs/development/evidence-published/img2-w3-latest/review-history.json",
+      "required": true
+    }
+  ],
+  "limits": {
+    "trust": "trusted_local",
+    "timeout_ms": 600000,
+    "termination_grace_ms": 5000,
+    "max_output_bytes": 16777216,
+    "max_artifact_bytes": 16777216,
+    "expected_changes": "none",
+    "required_capabilities": []
+  },
+  "storage_scope": {
+    "new_owned_private_root": "<PRIVATE_ROOT>",
+    "prospective_workspace": "state/gates/<accepted exact Gate ID>/work/repo; bind each accepted ID before disposal",
+    "exact_external_targets": [
+      "targets/r3/clippy",
+      "targets/r3/tests",
+      "targets/r3/build"
+    ],
+    "disposal": "Only newly successful Gate work/repo and exact owned targets after tracked export, retained pinned Git objects, terminal SUCCEEDED/dead owner/complete process cleanup, no reparse/active dependency, native integrity before and identical after; retain all failed/nonterminal/authority/artifact/log storage",
+    "volume_free_bytes": 65180598272,
+    "expected_equivalent_bytes": 4121648092
+  },
+  "no_remote_push": true,
+  "initial_attempt": "a6488236 initial Quality13/13 is superseded and its successful scratch disposed with unchanged integrity; no Build was dispatched",
+  "superseded_candidates": [
+    {
+      "candidate": "a6488236a009d82da8e4abbce5818909326c3d17",
+      "quality_gate": "0590ae30-dbd3-4966-bb93-bfc895bf6ff8",
+      "disposition": "superseded by verifier repair, exact successful scratch disposed"
+    },
+    {
+      "candidate": "c9e667d35a514bc1b25d2d364347ef2cad19d329",
+      "quality_gate": "eeb880f4-a854-48eb-914d-4355f6f8e35d",
+      "disposition": "superseded by incidental-test deletion, exact successful scratch disposed"
+    }
+  ],
+  "repair": "A-W3-01, round1 HOLD0/1/0; new finite pinned Quality+Build pair, no automatic retry.",
+  "ordinary_target_retention": "Retain <REPOSITORY>/target and all actual Native outputs; successful independent r4 scratch only is eligible for exact disposal after evidence commit and terminal verification."
+}
