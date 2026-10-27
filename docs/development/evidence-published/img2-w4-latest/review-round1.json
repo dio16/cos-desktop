@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "candidate": "f1495133562b644a41bb2d4bdb8108cd04dede41",
+  "evidence_head": "f2f3c7ffcbcf3bab30d59d37e90fd0010426de6b",
+  "package_manifest_commit": "9434570fe1e35529e3ca6177f6ee25afeb0fc65b",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "7f1003ae-8ba3-45f5-ad5a-acb3a8ba2665"
+  ],
+  "assistant_ids": [
+    "a5b53416-8e0d-470d-80ea-cb377cd39228"
+  ],
+  "first_read": "2026-10-27T18:14:22.778Z",
+  "second_read": "2026-10-27T18:14:52.820Z",
+  "elapsed_ms": 30042,
+  "identical_complete_reads": true,
+  "streaming": false,
+  "request_sha256": "sha256:abbe734cc519827c8b42a8539753f17f7ae64127f19628a8e0781de1cb9797d2",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 3172,
+      "expected": 3172,
+      "preview": "MP-IMG2-W4 の固定ソース独立レビューをお願いします。目的は、実Windows WICの矩形画素出力（ROI o"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 5,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "terminal": "HOLD 0 / 2 / 0",
+  "parser_exit": 1,
+  "parser": {
+    "blocking": 0,
+    "actionable": 2,
+    "excessive": 0,
+    "passLine": null,
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": false,
+    "sawPassLine": false
+  },
+  "findings": [
+    "A-W4-01 Bgr555/Bgr565 attribution",
+    "A-W4-02 cancellation cause/exit contract"
+  ]
+}

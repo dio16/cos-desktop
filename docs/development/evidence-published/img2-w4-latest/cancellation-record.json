@@ -1,5 +1,60 @@
 {
   "schema_version": 1,
-  "cases": [],
+  "cases": [
+    {
+      "case_id": "cancel_roi",
+      "kind": "stop",
+      "outcome": "cancelled",
+      "exit_code": 1,
+      "cancellation": {
+        "alive_at_request": true,
+        "cause": "boundary_hold",
+        "exit_after_request": 1,
+        "exit_before_request": false,
+        "hold_established": true,
+        "kill_error": null,
+        "kill_issued": true,
+        "last_observed_stage": "before_publish",
+        "method": "direct_child_terminate_wait",
+        "observed_ns": 99488272960900,
+        "reachability": "reached",
+        "reap_confirmed": true,
+        "reason": "cancel",
+        "requested_ns": 99488253065400,
+        "returncode_before_request": null,
+        "state": "stop_confirmed",
+        "waited": true
+      },
+      "output_present": false,
+      "published_success": false
+    },
+    {
+      "case_id": "timeout_roi",
+      "kind": "stop",
+      "outcome": "timeout",
+      "exit_code": 1,
+      "cancellation": {
+        "alive_at_request": true,
+        "cause": "boundary_hold",
+        "exit_after_request": 1,
+        "exit_before_request": false,
+        "hold_established": true,
+        "kill_error": null,
+        "kill_issued": true,
+        "last_observed_stage": "before_publish",
+        "method": "direct_child_terminate_wait",
+        "observed_ns": 99493310683100,
+        "reachability": "reached",
+        "reap_confirmed": true,
+        "reason": "timeout",
+        "requested_ns": 99493291590900,
+        "returncode_before_request": null,
+        "state": "stop_confirmed",
+        "waited": true
+      },
+      "output_present": false,
+      "published_success": false
+    }
+  ],
   "meaning": "Operator boundary hold plus issued kill and non-zero reap; not cooperative decoder cancellation."
 }

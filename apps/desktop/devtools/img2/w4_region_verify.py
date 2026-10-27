@@ -39,6 +39,12 @@ SOURCE_FILES = (
     "apps/desktop/devtools/img2/w4_region_matrix.py",
     "apps/desktop/devtools/img2/w4_region_verify.py",
 )
+FORMAT_EXPECT = {
+    "png_rgb": ("Bgr24", 8, 24), "png_large": ("Bgr24", 8, 24),
+    "bmp24": ("Bgr24", 8, 24), "png_rgba": ("Bgra32", 8, 32),
+    "bmp565": ("Bgr565", 6, 16), "bmp565_odd": ("Bgr565", 6, 16),
+    "bmp555_control": ("Bgr555", 5, 16),
+}
 BASE_LIMITS = {"max_dimension": 64, "max_pixels": 4096, "max_bit_depth": 8,
                "max_decoded_bytes": 65536, "max_scratch_bytes": 131072}
 LARGE_LIMITS = {**BASE_LIMITS, "max_decoded_bytes": 1024, "max_scratch_bytes": 4096}
@@ -166,12 +172,17 @@ def _verify(record, source_root):
             x = y = width = height = None
         if entry in ("cancel", "timeout"):
             _need(w["output_present"] is False and w["output_hex"] is None, "output_after_stop")
-            _need(w["cancellation"]["state"] == "stop_confirmed" and
-                  w["cancellation"]["hold_established"] is True and
-                  w["cancellation"]["kill_issued"] is True and
-                  w["cancellation"]["reap_confirmed"] is True and
-                  w["cancellation"]["alive_at_request"] is True and
-                  w["cancellation"]["exit_after_request"] not in (None, 0), "stop_not_confirmed")
+            cancel = w["cancellation"]
+            _need(cancel["state"] == "stop_confirmed" and cancel["cause"] == "boundary_hold" and
+                  cancel["method"] == "direct_child_terminate_wait" and
+                  cancel["kill_error"] is None and cancel["waited"] is True and
+                  cancel["hold_established"] is True and cancel["kill_issued"] is True and
+                  cancel["reap_confirmed"] is True and cancel["alive_at_request"] is True and
+                  cancel["requested_ns"] is not None and cancel["observed_ns"] is not None and
+                  cancel["exit_after_request"] not in (None, 0) and
+                  cancel["exit_after_request"] == w["exit_code"], "stop_not_confirmed")
+            _need(w["started_ns"] <= cancel["requested_ns"] <= cancel["observed_ns"] == w["exited_ns"],
+                  "stop_lifecycle_invalid")
             _need(names == list(STAGES[:STAGES.index("before_publish") + 1]),
                   "native_stage_set_incomplete")
             _need(stages[-1].get("artificial_instrumentation_hold") is True and
@@ -199,6 +210,12 @@ def _verify(record, source_root):
                   result["outcome"] == "decoded" and result["admission_status"] == "admitted" and
                   result["materialization"] == "completed", "decode_missing")
             _need(names == list(STAGES), "native_stage_set_incomplete")
+            expected_format = FORMAT_EXPECT[fid]
+            _need((result["pixel_format"], result["bits_per_channel"], result["bits_per_pixel"]) ==
+                  expected_format, "source_format_mismatch")
+            admission = next(stage for stage in stages if stage["stage"] == "admitted")
+            _need((admission["bits_per_channel"], admission["bits_per_pixel"]) ==
+                  expected_format[1:], "trace_admission_format_mismatch")
             _need(result["full_frame_materialization"] == "observed", "full_frame_not_observed")
             _need(result["true_partial_decode"] == "not_verified" and
                   result["sequential_decode"] == "not_verified" and

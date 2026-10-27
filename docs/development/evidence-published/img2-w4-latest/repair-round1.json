@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "review": "review-round1.json",
+  "reviewed_source": "f1495133562b644a41bb2d4bdb8108cd04dede41",
+  "findings": [
+    {
+      "id": "A-W4-01",
+      "problem": "The verifier trusted probe_result pixel format/depth, so Bgr555 control could be certified as Bgr565 and the reverse.",
+      "fix": "Derive the expected source format/depth/storage independently from each known fixture (Bgr24/8/24, Bgra32/8/32, Bgr565/6/16, Bgr555/5/16), require probe_result and the admitted stage to match, and add both-direction negatives.",
+      "negative": "Bgr555→Bgr565 and Bgr565→Bgr555 both fail with source_format_mismatch."
+    },
+    {
+      "id": "A-W4-02",
+      "problem": "Stop validation checked state/hold/kill/reap but not cause, method, kill_error, waited, request time monotonicity or worker-exit agreement.",
+      "fix": "Require cause=boundary_hold, method=direct_child_terminate_wait, kill_error=null, waited=true, requested/observed/started/exited monotonic agreement, non-zero exit and exit_after_request == worker exit_code.",
+      "negative": "Unattributable cause, never-issued method, missing request time and exit-code mismatch all fail with stop_not_confirmed."
+    }
+  ],
+  "portable_tests": {"before": 22, "after": 28, "failures": 0},
+  "native_refresh": {
+    "reason": "The verifier is part of the recorded Native source identity, so the real-WIC record was regenerated instead of edited.",
+    "workers": 24,
+    "roi_pixels_verified": 11,
+    "cancel_cases": 2,
+    "exit": 0
+  },
+  "evidence_repair": "cancellation-record.json now retains both cancel_roi and timeout_roi, including cause, method, request/observation times and worker exit codes.",
+  "gate_and_review": "Changed source requires a new pinned Gate pair and fresh Tern review; the round-one pair under review-round1-* is not transferred."
+}

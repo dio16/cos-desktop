@@ -158,6 +158,39 @@ class W4RecordTests(unittest.TestCase):
             record["source_identity"]["files"][name]["lf_sha256"] = "sha256:" + "0" * 64
         self.reject(change, "source_digest_mismatch", source=True)
 
+    def test_bgr555_control_cannot_be_reclassified_as_bgr565(self):
+        def change(record):
+            self.set_result(self.worker(record, "roi_full_bgr555_control"),
+                            pixel_format="Bgr565", bits_per_channel=6)
+        self.reject(change, "source_format_mismatch")
+
+    def test_bgr565_cannot_be_reclassified_as_bgr555(self):
+        def change(record):
+            self.set_result(self.worker(record, "roi_full_bgr565"),
+                            pixel_format="Bgr555", bits_per_channel=5)
+        self.reject(change, "source_format_mismatch")
+
+    def test_cancel_cause_is_required(self):
+        def change(record):
+            self.worker(record, "cancel_roi")["cancellation"]["cause"] = "unattributable"
+        self.reject(change, "stop_not_confirmed")
+
+    def test_cancel_method_is_required(self):
+        def change(record):
+            self.worker(record, "timeout_roi")["cancellation"]["method"] = "never_issued"
+        self.reject(change, "stop_not_confirmed")
+
+    def test_cancel_request_time_is_required(self):
+        def change(record):
+            self.worker(record, "cancel_roi")["cancellation"]["requested_ns"] = None
+        self.reject(change, "stop_not_confirmed")
+
+    def test_stop_exit_code_must_match_reap(self):
+        def change(record):
+            worker = self.worker(record, "cancel_roi")
+            worker["exit_code"] = 0
+        self.reject(change, "stop_not_confirmed")
+
     def test_duplicate_and_missing_case(self):
         self.reject(lambda r: r["workers"].pop(), "worker_count_invalid")
         self.reject(lambda r: r["workers"].append(copy.deepcopy(r["workers"][0])), "worker_count_invalid")

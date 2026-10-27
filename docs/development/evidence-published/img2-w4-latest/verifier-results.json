@@ -223,7 +223,7 @@
       "test_w4_verify.py",
       "test_w4_fixtures.py"
     ],
-    "count": 22,
+    "count": 28,
     "failures": 0
   },
   "negative_classes": [
@@ -242,6 +242,12 @@
     "ROI output as partial decode",
     "sequential/tiled without evidence",
     "cancellation promoted",
-    "old source digest"
+    "old source digest",
+    "Bgr555→Bgr565",
+    "Bgr565→Bgr555",
+    "cancel cause",
+    "cancel method",
+    "missing request time",
+    "stop exit code mismatch"
   ]
 }

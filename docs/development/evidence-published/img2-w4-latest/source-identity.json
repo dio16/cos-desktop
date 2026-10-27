@@ -40,9 +40,9 @@
         "raw_sha256": "sha256:95d31fbe15e2d7bef6a14a1d7dd2f1e5cbbb6530f4788ad83bc84f3f579285f2"
       },
       "apps/desktop/devtools/img2/w4_region_verify.py": {
-        "bytes": 16784,
-        "lf_sha256": "sha256:c0c1e75f7327a16421ae43d29f9b5457ddfbfbf61a9165a682552d902b40ea9a",
-        "raw_sha256": "sha256:8601ea2d96d58418aa5b6afc64588fafa95c6dfd9afde68cc4eb73800d44279d"
+        "bytes": 17948,
+        "lf_sha256": "sha256:d5eb7beb304ad075d49fd6286104550443d796d272652648149b07dca30ae7f8",
+        "raw_sha256": "sha256:79a1c1680643b10eca46ba5460f340ca1863bd1a6dfc859f9bb0d6b007236165"
       },
       "apps/desktop/examples/decode_compare/harness.rs": {
         "bytes": 163269,

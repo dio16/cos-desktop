@@ -1,0 +1,618 @@
+ChatGPT の発言:
+MP-IMG2-W4 固定SOURCE独立レビュー
+
+判定：HOLD — 実デコードとROI画素検証は成立していますが、独立検証器にACTIONABLE NON-BLOCKING 2件があります。
+
+今回の判定は、添付された固定SOURCE・Native証拠・Gate記録を対象とする独立レビューです。W1～W3の過去のPASSをW4へ流用していません。
+
+1. レビュー対象
+
+項目
+
+	
+
+固定値
+
+
+
+
+Repository
+
+	
+
+dio16/cos-desktop
+
+
+
+
+Branch
+
+	
+
+dev、未push
+
+
+
+
+開始SHA
+
+	
+
+0ce5651f862ea6ce48c666a7088bc9a250c17784
+
+
+
+
+製品候補
+
+	
+
+f1495133562b644a41bb2d4bdb8108cd04dede41
+
+
+
+
+Evidence HEAD
+
+	
+
+f2f3c7ffcbcf3bab30d59d37e90fd0010426de6b
+
+
+
+
+Owner
+
+	
+
+DC-MP-IMG2
+
+
+
+
+対象
+
+	
+
+W4 LIMITED TECHNICAL COMPLETIONのみ
+
+2. 独立検証結果
+
+検証項目
+
+	
+
+結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+461,912 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+123,450 bytes、SHA256一致
+
+
+
+
+SOURCE manifest
+
+	
+
+29/29一致
+
+
+
+
+Evidence manifest
+
+	
+
+26/26一致
+
+
+
+
+raw/LF正規化
+
+	
+
+全収録ファイル一致
+
+
+
+
+W4 portable tests
+
+	
+
+22/22 PASS
+
+
+
+
+Native structural replay
+
+	
+
+PASS、24 workers
+
+
+
+
+独立ROI画素検証
+
+	
+
+11/11 RGBA全画素一致
+
+
+
+
+1×1 ROIのfull-frame予算拒否
+
+	
+
+確認
+
+
+
+
+Gate間artifact tuples
+
+	
+
+40/40一致
+
+
+
+
+Gate artifactと添付実バイト
+
+	
+
+40/40一致
+
+
+
+
+Native SOURCE identity
+
+	
+
+15/15一致
+
+W4 SOURCE ZIPは最小提出物のため、テスト依存のw2_independent_oracle.pyを含みません。過去に提出された固定SOURCEから同モジュールを一時的に補完して22件のテストを実行しました。この補完を今回のSOURCE ZIPの収録物とは扱っていません。
+
+3. 実Native結果・画素・予算
+
+正常ROI
+
+11/11
+全画素一致
+
+拒否
+
+11
+corrupt 8 / oversize 2 / unsupported 1
+
+停止
+
+2
+cancel 1 / timeout 1
+
+PNG RGB/RGBA、BMP24、Bgr565、Bgr555について、提出oracleとは別のPNG CRC・inflate・filter復元およびBMP bitfield展開処理で期待RGBAを計算しました。
+
+実出力11件すべてが、指定矩形の期待画素と完全一致しています。実Native記録ではBgr555対照はBgr555として正しく記録されています。
+
+また、64×64 source、1×1 ROIの拒否記録は次のとおりです。
+
+項目
+
+	
+
+実記録
+
+
+
+
+ROI output requirement
+
+	
+
+4 bytes
+
+
+
+
+Full-frame decoded requirement
+
+	
+
+12,288 bytes
+
+
+
+
+許容decoded予算
+
+	
+
+1,024 bytes
+
+
+
+
+Outcome
+
+	
+
+oversize
+
+
+
+
+Reason
+
+	
+
+max_decoded_bytes_exceeded
+
+
+
+
+OnLoad
+
+	
+
+未到達
+
+
+
+
+Output
+
+	
+
+なし
+
+ROIサイズによってfull-frame予算を縮小していません。
+
+4. Capability分類
+
+提出された能力表は、今回の実測範囲で適切です。
+
+能力
+
+	
+
+判定
+
+
+
+
+ROI rectangle output
+
+	
+
+verified
+
+
+
+
+True partial decode
+
+	
+
+not_verified
+
+
+
+
+Sequential decode
+
+	
+
+not_verified
+
+
+
+
+Tiled decode
+
+	
+
+not_verified
+
+
+
+
+Full-frame materialization
+
+	
+
+observed
+
+
+
+
+WIC internal scratch
+
+	
+
+not_measured
+
+
+
+
+Preview fallback
+
+	
+
+bounded_full_frame
+
+OnLoad後のCopyPixels(Int32Rect)によるROI成功を、真のregion decodeへ昇格していません。実装と能力表の基本設計はDC-MP-IMG2の限定範囲と整合しています。
+
+5. 指摘事項
+A-W4-01 — Bgr555対照をBgr565として誤認定できる
+
+種別：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w4_region_verify.py:197–229
+
+検証器は、probe_result.pixel_format == "Bgr565"の場合に、channel depth 6、storage 16 bppを確認しています。
+
+しかし、そのformatが元BMPのbitfield masksおよびadmitted stageのformat情報と一致しているかを確認していません。
+
+独立改変テストで次を再現しました。
+
+roi_full_bgr555_controlの元BMP、mask、出力PNGは変更しない。
+
+probe_result.pixel_formatをBgr555からBgr565へ変更する。
+
+bits_per_channelを5から6へ変更する。
+
+stdoutを変更後のprobe_resultと一致させる。
+
+verify()を実行する。
+
+結果：
+
+プレーンテキスト
+fixture_id            = bmp555_control
+actual BMP masks      = 0x7C00 / 0x03E0 / 0x001F
+claimed pixel_format  = Bgr565
+claimed channel depth = 6
+
+verify.ok             = true
+bgr565_limited_proof  = true
+
+逆方向、すなわち実Bgr565をBgr555として記録した場合も検証成功しました。
+
+これは実Native結果の誤りではありません。しかし、検証器が能力表のformat帰属を誤った値で認定できるため、W4の受入条件に関係します。
+
+最小修正条件
+
+既知fixtureについて、元BMPのbitfield masksから期待formatを独立に確定し、probe_resultのpixel formatとdepthに照合してください。
+
+少なくともBgr565はBgr565 / 6 / 16、Bgr555対照はBgr555 / 5 / 16を必須とします。admitted stageのdepth・storage値もprobe_resultと照合してください。
+
+両方向の誤認定を負例へ追加し、必ずok=falseとなることを確認してください。
+
+WIC decoderやpixel oracleを変更する必要はありません。
+
+A-W4-02 — cancellationの原因・終了コード不整合を検証器が許容する
+
+種別：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w4_region_verify.py:167–180
+
+W4検証器はstop_confirmed、hold成立、kill発行、reap成立を検査しますが、W2で確定した状態機械のすべての条件を検査していません。
+
+独立改変テストでは、実Native記録のcancel_roiとtimeout_roiについて、以下が再現しました。
+
+改変
+
+	
+
+期待
+
+	
+
+実際のverify()
+
+
+
+
+cause = unattributable
+
+	
+
+拒否
+
+	
+
+ok=true
+
+
+
+
+method = never_issued
+
+	
+
+拒否
+
+	
+
+ok=true
+
+
+
+
+requested_ns = null
+
+	
+
+拒否
+
+	
+
+ok=true
+
+
+
+
+worker exit_code = 0
+
+	
+
+拒否
+
+	
+
+ok=true
+
+両ケースで同じ結果です。
+
+特に、exit_after_request=1を保持したままworkerのexit_code=0に変更しても、検証器は成功します。
+
+つまり、実際のプロセス停止結果が不整合でも、confirmed cancellationとして認定できる経路が残っています。
+
+なお、提出された実Native記録自体はcause=boundary_hold、kill発行済み、終了コード1で整合しています。
+
+最小修正条件
+
+W4検証器に、W2の確定済み停止契約を反映してください。
+
+cause=boundary_hold、method=direct_child_terminate_wait、kill_errorなし、waited=true、停止要求時刻の存在、reap結果とworker終了コードの一致、非ゼロ終了を必須とします。
+
+requested_ns、observed_ns、started_ns、exited_nsについても、既存の単調時計契約と整合することを確認してください。
+
+また、提出されたcancellation-record.jsonはcases=[]ですが、Native reportにはcancel/timeoutが各1件あります。独立証拠として使用するなら、両ケースへの参照を保持してください。
+
+実際のWorker.stop()やWIC処理を再設計する必要はありません。W4 verifierと限定負例テストの修正で対応できます。
+
+6. 独立Refine Gate・Storage
+
+Gate
+
+	
+
+独立照合結果
+
+
+
+
+Quality f7ea3916-f489-4152-b8f9-06a142d9e2c7
+
+	
+
+SUCCEEDED 14/14
+
+
+
+
+Build 2d68baa4-4348-49fd-a2bd-ae52f9b11a98
+
+	
+
+SUCCEEDED 1/1
+
+
+
+
+Candidate digest
+
+	
+
+両Gate一致
+
+
+
+
+Artifact tuples
+
+	
+
+40/40一致
+
+
+
+
+status/inspect/verify
+
+	
+
+保存記録上すべてexit 0
+
+
+
+
+Cleanup
+
+	
+
+complete
+
+
+
+
+Owner alive
+
+	
+
+false
+
+
+
+
+Recovery required
+
+	
+
+false
+
+Candidate digestは次と一致しました。
+
+sha256:335ebb5f40d820cd50bbc4453b77a0163b09abed76c943514fb121b5085ba1e8
+
+通常実行のRust 535 pass / 1 ignored、画像Python 101 pass、R0 340 pass / 12 skippedと、Gate隔離環境のR0 316 pass / 36 skippedは適切に区別されています。
+
+Storageは5対象、10,094 files、4,126,886,413 logical bytesで集計が一致しました。所有・reparse・プロセス不在・削除前後verifyの条件は記録されていますが、物理削除をレビュー環境で再実行したわけではありません。
+
+7. 限定closure判断
+
+今回の実測から、ROI outputの画素正確性と、ROIによるfull-frame予算迂回が発生しないことは裏付けられています。
+
+また、true partial / sequential / tiled decodeを未証明のまま維持する分類も適切です。
+
+しかし、A-W4-01とA-W4-02により、能力帰属とcancellationの不正記録を検証器が受け入れるため、W4 LIMITED TECHNICAL COMPLETIONの0/0/0 closureは保留します。
+
+今回の修正はW4 verifier・限定テスト・必要な証拠整備に絞れます。SOURCEが変更される場合は新しい固定候補に対する独立Gateとレビューが必要です。
+
+16K、内部scratch、真の同時peak、cooperative decoder cancellation、region/sequential/tiled、ICC/orientation、JPEG絶対raster、full Decode/Upload、Runtime、measured R0は引き続き未達であり、今回の指摘件数には含めません。
+
+今回のレビューでは、未push Git commit全体の取得、Windows WIC、GUI、Refine Gateの実機再実行は行っていません。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 2
+
+EXCESSIVE 0
+
+REVIEW COMPLETE
+
+HOLD 0 / 2 / 0

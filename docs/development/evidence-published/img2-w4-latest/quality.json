@@ -97,6 +97,60 @@
       "exit": 0,
       "stdout_sha256": null,
       "stderr_sha256": null
+    },
+    "w4r2-quality-ps": {
+      "name": "w4r2-quality-ps",
+      "start": "2026-10-27T18:13:44.287Z",
+      "end": "2026-10-27T18:14:14.218Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:f1fd5f6166d208651fc732d4cb4258b8dbdaaab196d05584de2f8ff1e86aea85",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w4r2-img2": {
+      "name": "w4r2-img2",
+      "start": "2026-10-27T18:13:44.298Z",
+      "end": "2026-10-27T18:13:45.757Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:f718362212eb02463313f148f88d35d32421d5ae7fb706301ddaa84e4107efe5"
+    },
+    "w4r2-w3-replay": {
+      "name": "w4r2-w3-replay",
+      "start": "2026-10-27T18:13:44.305Z",
+      "end": "2026-10-27T18:13:45.748Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:b5ed1d72736ab0e375221a676854ccffc5bb59174f770f87c6dc4d020893fc35",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w4r2-wic-selftest": {
+      "name": "w4r2-wic-selftest",
+      "start": "2026-10-27T18:13:44.314Z",
+      "end": "2026-10-27T18:13:45.196Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:a83888ce721623ea98cc2060a8462e6a14066f632a3a81105762ba56fe3b6f93",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w4r2-w2-probe": {
+      "name": "w4r2-w2-probe",
+      "start": "2026-10-27T18:13:44.324Z",
+      "end": "2026-10-27T18:13:58.365Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:c8e3c070f834d8ef8d7a1fdfdbe2262f8d0a78df0505a4a61cc6e2184c91e311",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "w4r2-r0": {
+      "name": "w4r2-r0",
+      "start": "2026-10-27T18:13:44.343Z",
+      "end": "2026-10-27T18:14:10.299Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:f5abb98468b10c82e5ea77c46a371be397f06f8435a426d1915ebe892c35aae1",
+      "stderr_sha256": "sha256:d94b699510bce1088ed2165ec1daa90da4a99660c99546b5b47ce98f938c5c15"
     }
   },
   "rust": {
@@ -109,7 +163,7 @@
     "failed": 0,
     "ignored": 1
   },
-  "python_img2": 101,
+  "python_img2": 107,
   "python_r0": {
     "total": 352,
     "passed": 340,
@@ -117,10 +171,11 @@
   },
   "feature_threads": 1,
   "ambient": "Ordinary local target inherits the user-global Cargo rustflags -C link-arg=-fuse-ld=lld; MSVC link.exe LNK4044 ignores it. Not a Rust lint or gate failure; pinned Gate uses CARGO_ENCODED_RUSTFLAGS empty.",
-  "negative_tests": 22,
+  "negative_tests": 28,
   "native_cases": 24,
   "w3_historical_replay": "f8dfc30 historical source identity",
   "w2_probe_selftest": "exit 0",
   "w2_oracle": "exit 0",
-  "w1_selftest": "exit 0"
+  "w1_selftest": "exit 0",
+  "round1": "First candidate f1495133 Gate pair moved to review-round1-*; this record covers the verifier repair candidate."
 }
