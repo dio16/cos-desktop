@@ -1,0 +1,42 @@
+MP-IMG2-W6 修正後の固定SOURCE・独立Gateの再レビューを依頼します。対象は Windows WIC のcodec・寸法・同時worker別のbounded process-memory scalingと、round 1で指摘された検証器の修正だけです。round 1のPASS/成功を今回へ流用しないでください。
+
+Repository: dio16/cos-desktop / branch dev / 未push。
+Native実行前の固定SOURCE: f99bf25b5d61152e3bb22a88e2e8efccc823b9ad。
+最終の製品候補・両Gate候補: 8bb1b6dd3071d7e355e685dba4977361f24b8f2f。
+両Gateのcandidate digest: sha256:e29012dc581999c921dc3bd97b5b78a1c8805e3cee39df12bdaa1df338afe728。
+Owner: DC-MP-IMG2。Taskern 0.2.0 prepareの同一packetを継続使用。完全なW6指示は img2-w5-latest/tern-next-directive.txt/.json に保持。
+
+添付は w6r2-review-source.zip / w6r2-review-evidence.zip / review-package.json(サーバー側で日時付きに改名されます)の3点です。
+- SOURCE ZIPは候補8bb1b6d…のGit archiveです。656 entry、4,326,877 bytes、SHA256 sha256:572101b2bdd94c7fc9961321e24b8aa48ac5ebe2764325e6e2185f1a50897853。全entryが候補Git blobとrawまたは明示LF正規化で一致します。
+- Evidence HEADはreview-package.jsonのevidence_headに記載した単一full SHAです。Evidence ZIPはそのcommitのGit archiveで、W6全証拠に加え更新済みMP本文・BUILD_AND_RUN本文・TESTING本文・必要な歴史的Native記録を含みます。65 entry、1,207,120 bytes。
+- 両ZIPにprivate Git objects、Windows WIC本体、Refine state/private log/実行ファイルは含めません。manifest自身はEvidence HEADの子commitで、self hashは主張しません。
+
+round 1からの変更(この範囲だけ):
+1. w6_memory_verify.py が worker の identity_verified と boundary_hold_is_instrumentation を decoded/cancelled/timeout すべてで必須化。
+2. decoded について trace_complete=true、trace_partial_bytes==0、末尾改行を必須化。cancelled/timeout は従来の停止境界とpartial traceを維持。
+3. これらに対応する回帰を追加。修正前は4メソッド/7 subtestが失敗、修正後は全て通過。garbage末尾・改行欠落・終端stage欠落・停止系partial tail維持を個別に確認。
+4. WIC probe、sampler、Rust、Budget、Runtime、依存は未変更。そのため実験SOURCEはf99bf25…で、同じ24 case/30 window matrixを再実行し直しています。
+
+再実行と品質:
+- Native: 12 groups、全24 decode case、同時最大3、30/30完全window、18/18 decoded出力の全RGBA独立一致、before_onloadのcancel3件/timeout3件はW2の実stop状態機械。source identityとharness bytesはrun前後で同一。harness_sha256は当該run時点の実行ファイルbytesで、その後のrebuildが同一bytesを再現するとは主張しません。
+- ローカル: IMG2 156 PASS、24 negative全て拒否、quality.ps1 Rust535 PASS/1 ignored、workspace feature Rust539 PASS/1 ignored、feature clippy/build成功、R0 340 PASS/12 skipped。W1～W5 replay・WIC admission selftest・w2 oracle/probe selftestを保持。
+- Quality Gate fdfdb7a2-3c90-409e-b645-61ab450f58e6: SUCCEEDED 16/16。
+- Build Gate 98d2bb81-80d2-43b6-a3cb-ce0c090f7a71: SUCCEEDED 1/1。
+- 両Gateの候補・digest一致、60/60 artifact tuplesと実bytes一致、60/60捕捉物が候補Git blobとraw一致。status/inspect/verifyは両方exit0、cleanup complete、owner_alive=false、recovery_required=false。preflightの集約はUNKNOWN(外部4 slot)でPASSとは記録していません。
+- 隔離GateのR0は316 PASS/36 skippedで、ローカル340/12と混ぜていません。
+- 実Build出力32,275,456 bytes、sha256:c06bbcb92ab31298be4e577ebd8320a7e456176ba4a5dd84e608ba05a639be0cを削除前に実測。binaryをimmutable artifactとして保存したとは主張しません。
+- 成功した正確なGate2件のwork/repoとtargets/r3 clippy/tests/buildだけを、owner/reparse不在とnative verify確認後に削除。10,398 files、4,139,248,461 logical bytes。削除後も両Gateのverifyはexit0で内容同一。
+- round 1のreceipts、supersededな初回/r2 Gate、round 1 candidateはreview-round1-*とsuperseded-*に分離し、成功を転送していません。
+
+重点確認:
+- 追加したidentity/holdとsuccessful-traceの必須条件が、実際にconsumer-visibleな矛盾(未確認identity、分類矛盾、未解析末尾、改行欠落、終端stage欠落)を拒否するか。停止系のpartial traceを誤って拒否していないか。
+- 24規定negativeと、round 1で指摘された追加false-greenの再現・修正が実装のコピーや文字列一致に依存していないか。
+- SOURCE/Native/Gate/evidenceの実bytes対応、Evidence ZIPの本文が現在版であること、候補以降のdocs-only差分、manifestの単一Evidence HEAD・子commit境界、60 artifactの対応、storage前後integrity。
+- MP-IMG1/SEC3 hard prerequisites、62 DC-MP link、41 DAG edges、decision gates、W1～W5本文/歴史記録の保持。
+
+実行可能範囲の正直な扱い:
+添付だけではprivate Git履歴/objects、Windows WIC、Refine state/private logs/実行ファイルは使えません。fixture/oracle/arithmetic/replay試験、raw sample・PNG・hashの再計算は可能ですが、固定Git source-bound検証・Windows実行・Refine再実行・GUIはNOT_RUNと明記してください。Gitやテストを偽装してPASSにしないでください。保存済み証拠の照合と再実行を区別してください。
+
+今回はproduct numeric memory SLO、decoder採用、GPUI Upload、Runtime変更、16K、true partial/region/sequential/tiled decode、内部scratch/実予約/true concurrent allocation peak、cooperative in-decoder cancellation、ICC fidelity、full MP-IMG2 Decode Exit、MP-IMG3 prerequisite、measured R0、UX/video、main/releaseを完了しません。未測定のまま保持できた場合にだけW6 LIMITED TECHNICAL COMPLETIONの可否を判断してください。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘はファイル・条件・再現・最小修正まで示してください。添付読取が未完なら未完と明示してください。最後に独立行で REVIEW COMPLETE、その次の最終行に verdict/counts(例: PASS 0 / 0 / 0、またはHOLDと実件数)を記してください。
