@@ -1,0 +1,29 @@
+MP-IMG2-W5 再評価 Round 2 — A-W5-01〜05の限定修正です。Round 1の完全な HOLD 0/5/0、assistant 07739e2d-fe5c-4812-a354-5203c749ad92 は review-round1-response.txt/json に保持し、旧Gate eef8d1a1…/83fb9a6f… は review-round1-* に保存しています。
+
+Repository dio16/cos-desktop、branch dev（未push）。開始commit 37d4643c128598352c7052b859b2b4a74b25c4fa。製品固定候補 81383f062d13ca89763d8bf19de06e4f3a6e33d7。証拠HEADはreview-package.jsonに記載。CallerはADR-0009/0012の継続実装を指示。製品ICC/orientation policy、Runtime、push/main/releaseは非対象です。
+
+修正:
+- A-W5-01: cancel/timeoutに requested_ns/observed_ns存在、started<=requested<=observed==exited、alive_after_wait=false、case別outcome、published_success=false、outputなしを追加。時刻・outcome・alive・publishedの負例を追加。
+- A-W5-02: 既知fixtureのmetadata availability（TIFF true、PNG true/metadata object、BMP false）を照合。有効ICCはColorContexts>=1・icc_present/readable/digest一致、truncatedはmetadata availableかつicc_present=false、over-capはicc_present=trueを必須化。conflicting orientationはcapabilityでCONFLICTINGとして分離。
+- A-W5-03: 入力寸法・formatからrow/decoded/BGRA/scratchを独立計算し、probe_resultとadmitted stageを照合。decoded=0改変を拒否。
+- A-W5-04: W4 historical replayを e357888e のSOURCE/verifier/Nativeで再実行し、コマンド・stdout・exit 0を w4-historical-replay.json に保存。quality.jsonのexit1は混用試行として保持。
+- A-W5-05: W5 Gateが捕捉したhistorical artifact 6件を historical-gate-artifacts/ に原バイトで収納し、manifestでサイズ/SHA/current差分を記録。44/44を今回添付から照合可能。
+- verifier source変更のためNative 16 caseを再生成。portable tests 20。通常quality、img2 128、feature 539/1 ignored、R0 340/12 skip、W3 f8dfc30 replay、W4 e357888e replay、WIC selftest成功。
+- WIC probe/decoder、fixture、oracle、crates/media、Runtime、Taskern packetは不変。
+
+新Gate:
+Quality 1b1d4373-c063-4ff7-bfce-d68a4f099a48 SUCCEEDED 15/15
+Build 629abe26-46b8-427e-b903-8376a9a06daa SUCCEEDED 1/1
+candidate digest sha256:489b92a6…、48 tuples一致、48/48 capture=candidate blob、status/inspect/verify exit0、cleanup complete、owner dead、recovery不要。
+
+確認してほしい点:
+1. A-W5-01の停止時刻・outcome・alive・published負例が拒否され、W2契約と一致するか。
+2. metadata availability/ColorContexts/ICC presence/digestの前提がcapability OBSERVED/VERIFIEDより前に検証されるか。over-cap ICCがpresent=trueのままrefusedになるか。
+3. full-frame admission値が元寸法/formatから独立計算され、0改変を拒否するか。
+4. W4 historical replayがe357888eでexit0、混用exit1と分離されているか。
+5. 44/44 Gate artifactが今回の添付実バイトから照合できるか。
+6. orientation/ICC実測、legacy CLI/ROI、W1-W4回帰、cancel/timeout、SOURCE/Native/Gate対応が維持されているか。
+
+未測定: ICC colour fidelity、全codec対応、JPEG絶対raster、true partial/sequential/tiled、16K、内部scratch/実予約/同時peak、cooperative cancellation、full Decode Exit、MP-IMG3、Runtime、measured R0、UX/video。製品ICC/orientation policyはDESIGN_BLOCKEDです。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘にはファイル・条件・再現・最小修正を示してください。添付から独立に検証し、最後に REVIEW COMPLETE と最終verdict/countsを記してください。
