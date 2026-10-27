@@ -813,6 +813,12 @@ dimensions/codecs, 16K, ICC/orientation, region/tiled behavior and full Decode e
 remain explicitly unmeasured. W3 is a limited format proof, not product-wide media
 completion or GPU upload evidence.
 
+Malformed and unsupported refusals additionally require the observed
+`process_observed → input_opened → refused → probe_exit` population. Removing only
+the `refused` row while keeping the terminal reason is a rejected negative fixture,
+not a complete run; header admission also requires `corrupt / invalid_metadata /
+refused` and terminal fields agreeing with the probe result.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |

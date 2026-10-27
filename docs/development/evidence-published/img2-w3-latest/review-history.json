@@ -19,8 +19,30 @@
       "finding": "A-W3-01",
       "completion_verification_exit": 0,
       "request_body_present_in_linked_user_node": true
+    },
+    {
+      "round": 2,
+      "source_candidate": "5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6",
+      "evidence_commit": "ed2dc100755ba911e215bc1962ad4e540545b8cf",
+      "submission_metadata_commit": "885f2d465b57df11d4e563dbd976163eb0a8f923",
+      "request": "review-request.txt",
+      "response": "review-round2-response.txt",
+      "receipt": "review-round2.json",
+      "source_package": "w3-awn-review-source.zip",
+      "evidence_package": "w3-awn-review-evidence.zip",
+      "package_manifest": "review-package.json",
+      "quality_gate_export": "quality-gate.json",
+      "build_gate_export": "build-gate.json",
+      "gate_correspondence": "gate-artifact-correspondence.json",
+      "storage": "storage.json",
+      "verdict": "HOLD 0 / 1 / 0",
+      "closed": [
+        "A-W3-01"
+      ],
+      "finding": "A-W3-R2-01",
+      "request_body_present_in_linked_user_node": true
     }
   ],
   "historical_relative_pointers": "Paths inside round1 snapshots refer to fixed evidence commit366834be6174e92fbf36763da801cfdd0077867f, not to later canonical working-tree files. Renames retain snapshot bytes and never rewrite old Gate or review outcomes.",
-  "current": "A-W3-01 scoped repair in progress; no clean review or W3 completion yet"
+  "current": "A-W3-R2-01 scoped repair implemented and re-verified locally; new pinned Gate pair and round-three review pending; no W3 completion yet."
 }

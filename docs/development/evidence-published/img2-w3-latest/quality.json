@@ -395,6 +395,113 @@
         "failures": 0,
         "errors": 0
       }
+    },
+    "r2-quality-ps": {
+      "name": "r2-quality-ps",
+      "start": "2026-10-27T16:38:44.330Z",
+      "end": "2026-10-27T16:39:45.425Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 535,
+        "failed": 0,
+        "ignored": 1
+      },
+      "python_total": 18,
+      "python_skipped": 0,
+      "stdout_sha256": "sha256:ac076e1719a7b59939e4ecdc4f4f429ba273e20c01c0f5739d26c3db80cec14c",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "r2-focused-after": {
+      "name": "r2-focused-after",
+      "start": "2026-10-27T16:34:36.082Z",
+      "end": "2026-10-27T16:34:37.018Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 79,
+      "python_skipped": 0,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:7c630a193310ed3780192e0852159269693749661533b3b2337d1dca68411358"
+    },
+    "r2-r0": {
+      "name": "r2-r0",
+      "start": "2026-10-27T16:39:51.256Z",
+      "end": "2026-10-27T16:40:15.911Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python_total": 352,
+      "python_skipped": 12,
+      "r0": {
+        "total": 352,
+        "executed": 340,
+        "passed": 340,
+        "skipped": 12,
+        "expected_failures": 0,
+        "failures": 0,
+        "errors": 0,
+        "skipped_cases": [
+          {
+            "test": "test_real_observation_of_a_window (test_n03_observe.N03Observation.test_real_observation_of_a_window)",
+            "reason": "NOT_RUN: no COS Desktop window is running in this session"
+          },
+          {
+            "test": "test_arbitrary_repo_root_is_refused_with_a_closed_error (test_n07_verify.N07Verifier.test_arbitrary_repo_root_is_refused_with_a_closed_error)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_historical_record_matches_its_recorded_archive_and_names_live_drift (test_n07_verify.N07Verifier.test_historical_record_matches_its_recorded_archive_and_names_live_drift)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_live_tree_matches_the_recorded_baseline (test_n07_verify.N07Verifier.test_live_tree_matches_the_recorded_baseline)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_mismatch_still_exits_nonzero_and_is_named (test_n07_verify.N07Verifier.test_mismatch_still_exits_nonzero_and_is_named)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_missing_expected_value_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_expected_value_is_not_measured_while_live_drift_stays_named)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_missing_helper_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_helper_is_not_measured_while_live_drift_stays_named)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_omitted_repo_root_uses_the_canonical_root (test_n07_verify.N07Verifier.test_omitted_repo_root_uses_the_canonical_root)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_same_inputs_produce_identical_record_bytes (test_n07_verify.N07Verifier.test_same_inputs_produce_identical_record_bytes)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_scratch_copy_only_is_not_verified_and_names_the_path_item (test_n07_verify.N07Verifier.test_scratch_copy_only_is_not_verified_and_names_the_path_item)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_tampered_manifest_names_the_manifest_mismatch (test_n07_verify.N07Verifier.test_tampered_manifest_names_the_manifest_mismatch)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          },
+          {
+            "test": "test_verdict_precedence_names_both_kinds (test_n07_verify.N07Verifier.test_verdict_precedence_names_both_kinds)",
+            "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+          }
+        ]
+      },
+      "stdout_sha256": "sha256:f5abb98468b10c82e5ea77c46a371be397f06f8435a426d1915ebe892c35aae1",
+      "stderr_sha256": "sha256:e5159e30c9de165fdaab3929393a6a28dfbd588b874f46ceb42e7c24cc9864a3"
     }
   },
   "r0_unavailable": "one live-window observation and eleven missing historical N07 binary cases; actual skips are not PASS",
@@ -476,7 +583,10 @@
     "awn-instrumentation-tests-serial",
     "awn-instrumentation-build",
     "awn-python-final",
-    "awn-r0-python"
+    "awn-r0-python",
+    "r2-quality-ps",
+    "r2-focused-after",
+    "r2-r0"
   ],
   "test_policy_cleanup": "One incidental non-empty-return assertion removed. All product/Native source and Rust code are unchanged; normal/feature checks above retain their exercised source scope. Full new-candidate independent Gates are required, not transferred.",
   "awn_scope": "A-W3-01 changes verifier and its negative cases only; new Native record refreshes source identity. Existing incidental test-policy history remains historical.",
@@ -497,5 +607,6 @@
       "cause": "Concurrent cancellation_records_latency_and_a_cancelled_class received no candidate claim before300ms kill. Actual class Cancelled; none differs from expected claim. Retained, not relabeled PASS.",
       "passing_route": "Full feature suite rerun with --test-threads=1;539 passed/1 ignored. No test excluded, deadline/assertion/source changed. Default unchanged parallel full quality535 passed/1 ignored."
     }
-  ]
+  ],
+  "r2_ambient": "Ordinary local target inherits the user-global Cargo rustflags \"-C link-arg=-fuse-ld=lld\"; MSVC link.exe reports LNK4044 and ignores it. It is a linker option notice, not a Rust lint, and quality.ps1/gates pass. Pinned Gate uses CARGO_ENCODED_RUSTFLAGS=\"\" and does not inherit it."
 }

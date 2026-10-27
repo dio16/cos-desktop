@@ -191,6 +191,18 @@ class W3RecordTests(unittest.TestCase):
                     self.change_terminal(worker, **{field: wrong})
                 self.reject(contradict, "probe_exit_result_mismatch")
 
+    def test_refusal_stage_is_required_for_every_malformed_input(self):
+        for fixture in ("truncated", "bad_masks", "overlap_masks", "bad_header",
+                        "inconsistent", "unsupported"):
+            with self.subTest(fixture=fixture):
+                def omit(record):
+                    worker = next(w for w in record["workers"] if w["fixture_id"] == fixture)
+                    worker["stages"] = [s for s in worker["stages"] if s["stage"] != "refused"]
+                    for seq, stage in enumerate(worker["stages"], 1):
+                        stage["seq"] = seq
+                    self.change_terminal(worker)
+                self.reject(omit, "native_stage_set_incomplete")
+
 
 if __name__ == "__main__":
     unittest.main()

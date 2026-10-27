@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "ok": true,
-  "native_record_sha256": "sha256:6d474de7af0e3031044875696289a4d62b7ca61eac4f92f11b3954e3de88ebde",
+  "native_record_sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3",
   "method": "original BMP masks/payload and fixed5/6/5 bit replication; existing independent PNG CRC/inflate/filter reconstruction; all RGBA bytes; complete trace and source dimensions enforced",
   "worker_rasters": [
     {

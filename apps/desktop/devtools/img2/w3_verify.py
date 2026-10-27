@@ -204,6 +204,9 @@ def _verify(r, source_root):
                       result["admission_status"] == "refused", "budget_refusal_reason_invalid")
                 _need(names == list(STAGES[:5]) + ["refused", "probe_exit"],
                       "native_stage_set_incomplete")
+            else:
+                _need(names == ["process_observed", "input_opened", "refused", "probe_exit"],
+                      "native_stage_set_incomplete")
             _need("onload_entered" not in names and not w["output_present"] and not w["published_success"] and
                   w["output_hex"] is None and result["materialization"] == "not_requested", "output_after_refusal")
             continue
