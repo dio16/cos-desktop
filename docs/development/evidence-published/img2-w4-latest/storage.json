@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "candidate": "6bf7b63cdbe43c621d3c911f367083ce317128c8",
-  "status": "PREPARED_AFTER_SUCCESSFUL_TERMINAL_VERIFY",
+  "status": "DISPOSED_INTEGRITY_UNCHANGED",
   "quality_gate": "a674563c-e6c0-4c70-a9d7-f987b0df6796",
   "build_gate": "6c3c8dbc-9c68-4069-9242-a418ab6f8224",
   "paths": [
@@ -10,40 +10,53 @@
       "files": 526,
       "logical_bytes": 14444970,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\6c3c8dbc-9c68-4069-9242-a418ab6f8224\\work\\repo",
       "files": 526,
       "logical_bytes": 14474422,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r7\\clippy",
       "files": 3015,
       "logical_bytes": 663884472,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r7\\tests",
       "files": 3144,
       "logical_bytes": 1841554768,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r7\\build",
       "files": 2911,
       "logical_bytes": 1592997024,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     }
   ],
   "live_process_dependencies": [],
   "retained_source": "Pinned candidate and Git objects under dev; review-round1 and current correspondence retained.",
   "retained_authority": "Gate authority/artifacts/logs, ordinary target, real Native outputs and superseded workspaces remain outside exact paths.",
   "native_verify_before": "quality-gate.json/build-gate.json verify exit0, successful terminal, dead owner, no recovery, cleanup complete.",
-  "measurement": "Logical byte/file counts, not allocated storage."
+  "measurement": "Logical byte/file counts, not allocated storage.",
+  "evidence_retention_commit": "59fe469da3d7590acd4d2990dc77e65afc4a77eb",
+  "native_verify_after": {
+    "quality": {
+      "gate_id": "a674563c-e6c0-4c70-a9d7-f987b0df6796",
+      "exit": 0,
+      "identical": true
+    },
+    "build": {
+      "gate_id": "6c3c8dbc-9c68-4069-9242-a418ab6f8224",
+      "exit": 0,
+      "identical": true
+    }
+  }
 }
