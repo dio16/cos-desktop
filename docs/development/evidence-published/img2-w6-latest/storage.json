@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "candidate": "8bb1b6dd3071d7e355e685dba4977361f24b8f2f",
+  "approval": "Successful-Gate workspace disposal per AGENTS.md and the caller-authorized finite retention step, applied only to these five exact paths.",
+  "removal_targets": [
+    "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/state/gates/fdfdb7a2-3c90-409e-b645-61ab450f58e6/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/state/gates/98d2bb81-80d2-43b6-a3cb-ce0c090f7a71/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/clippy",
+    "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/tests",
+    "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/build"
+  ],
+  "removed": [
+    {
+      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/state/gates/fdfdb7a2-3c90-409e-b645-61ab450f58e6/work/repo",
+      "removed": true
+    },
+    {
+      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/state/gates/98d2bb81-80d2-43b6-a3cb-ce0c090f7a71/work/repo",
+      "removed": true
+    },
+    {
+      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/clippy",
+      "removed": true
+    },
+    {
+      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/tests",
+      "removed": true
+    },
+    {
+      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/build",
+      "removed": true
+    }
+  ],
+  "ownership": {
+    "dependencies": [],
+    "reparse": []
+  },
+  "inventory": [
+    {
+      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/state/gates/fdfdb7a2-3c90-409e-b645-61ab450f58e6/work/repo",
+      "files": 664,
+      "logical_bytes": 20408237
+    },
+    {
+      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/state/gates/98d2bb81-80d2-43b6-a3cb-ce0c090f7a71/work/repo",
+      "files": 664,
+      "logical_bytes": 20403498
+    },
+    {
+      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/clippy",
+      "files": 3015,
+      "logical_bytes": 663884626
+    },
+    {
+      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/tests",
+      "files": 3144,
+      "logical_bytes": 1841554922
+    },
+    {
+      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/build",
+      "files": 2911,
+      "logical_bytes": 1592997178
+    }
+  ],
+  "files_removed": 10398,
+  "logical_bytes_removed": 4139248461,
+  "post_disposal_verify": {
+    "quality": {
+      "exit": 0,
+      "state": "SUCCEEDED",
+      "candidate": "sha256:e29012dc581999c921dc3bd97b5b78a1c8805e3cee39df12bdaa1df338afe728",
+      "artifacts": 60,
+      "logs": 16
+    },
+    "build": {
+      "exit": 0,
+      "state": "SUCCEEDED",
+      "candidate": "sha256:e29012dc581999c921dc3bd97b5b78a1c8805e3cee39df12bdaa1df338afe728",
+      "artifacts": 60,
+      "logs": 1
+    }
+  },
+  "retained": [
+    "state/gates/<id>/request.json,state.json,observations.json,artifacts/,logs/,check-spools/",
+    "pinned source repository",
+    "native evidence, captures and private logs",
+    "ordinary targets/r3/w2-oracle-check.json"
+  ],
+  "boundaries": [
+    "No failed, interrupted or nonterminal workspace is deleted.",
+    "No blanket deletion of build trees or immutable evidence.",
+    "Deletion is caller-side scratch retention, not Gate success or acceptance."
+  ]
+}

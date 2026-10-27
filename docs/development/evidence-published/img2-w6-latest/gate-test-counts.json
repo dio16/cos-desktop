@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "candidate": "8bb1b6dd3071d7e355e685dba4977361f24b8f2f",
+  "quality_gate": "fdfdb7a2-3c90-409e-b645-61ab450f58e6",
+  "build_gate": "98d2bb81-80d2-43b6-a3cb-ce0c090f7a71",
+  "isolated": {
+    "r0": {
+      "total": 352,
+      "executed": 316,
+      "passed": 316,
+      "skipped": 36
+    },
+    "img2": {
+      "ran": 156,
+      "failed": 0
+    },
+    "rust": {
+      "passed": 535,
+      "failed": 0,
+      "ignored": 1
+    }
+  },
+  "local": {
+    "r0": {
+      "total": 352,
+      "executed": 340,
+      "passed": 340,
+      "skipped": 12
+    },
+    "img2": {
+      "ran": 156,
+      "failed": 0
+    },
+    "rust": {
+      "passed": 535,
+      "failed": 0,
+      "ignored": 1
+    },
+    "feature_rust": {
+      "passed": 539,
+      "failed": 0,
+      "ignored": 1
+    }
+  },
+  "scope": "The isolated Gate records PowerShell/Git/PATH-dependent and historical-baseline skips; local counts are not substituted for them, and no skipped case is promoted to PASS."
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "candidate": "8bb1b6dd3071d7e355e685dba4977361f24b8f2f",
+  "build_gate": "98d2bb81-80d2-43b6-a3cb-ce0c090f7a71",
+  "bytes": 32275456,
+  "sha256": "sha256:c06bbcb92ab31298be4e577ebd8320a7e456176ba4a5dd84e608ba05a639be0c",
+  "measured_at": "2026-10-27T23:22:12.531Z",
+  "scope": "Actual isolated Build Gate Cargo output (CARGO_TARGET_DIR=targets/r3/build) hashed before approved scratch disposal; digest is not inferred and no GUI startup claim is made.",
+  "declared_immutable_artifact": false,
+  "retention": "Build executable itself is disposable; pinned source, build receipt and logs are retained."
+}
