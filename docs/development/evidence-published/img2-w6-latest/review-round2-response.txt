@@ -1,0 +1,741 @@
+
+Round 1の2指摘は、両方ともCLOSEDと判定します。 修正後の検証器は、identity未確認、人工hold分類の矛盾、正常decode traceの未解析末尾を拒否し、cancel/timeoutのpartial traceを維持しています。
+
+新しいNative実測、画素照合、memory window集計、独立Quality/Build Gateにも不整合は認められませんでした。
+
+残存1件は、別添review-package.jsonが指すsource manifestがEvidence ZIPに存在しないという、証拠パッケージの参照先不整合です。製品SOURCE・Native・Gateの再実行を必要とする問題ではありません。
+
+1. 固定候補・添付の整合性
+
+項目
+
+	
+
+独立検証結果
+
+
+
+
+Native実行SOURCE
+
+	
+
+f99bf25b5d61152e3bb22a88e2e8efccc823b9ad
+
+
+
+
+最終製品・Gate候補
+
+	
+
+8bb1b6dd3071d7e355e685dba4977361f24b8f2f
+
+
+
+
+Evidence HEAD
+
+	
+
+4ddf9453d400344c98346d8c71e3c3835ccfee1f
+
+
+
+
+SOURCE ZIP
+
+	
+
+4,326,877 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+1,207,120 bytes、SHA256一致
+
+
+
+
+SOURCE収録ファイル
+
+	
+
+656/656存在・manifestのraw hash一致
+
+
+
+
+Evidence収録ファイル
+
+	
+
+65件、ZIP全体のSHA256一致
+
+
+
+
+ZIP破損検査
+
+	
+
+両方PASS
+
+
+
+
+Native SOURCE 18ファイル
+
+	
+
+18/18 LF/hash一致
+
+両ZIPのGit archiveコメントは指定されたcommitと一致しました。
+
+Round 1のSOURCEとの差分を比較すると、既存ファイルの変更は次の4件でした。
+
+w6_memory_verify.py
+
+test_w6_negative.py
+
+IMPLEMENTATION_MASTER_PLAN.md
+
+BUILD_AND_RUN.md
+
+WIC probe、sampler、fixture generator、oracle、Rust、Budget、Runtimeの実装差分はありません。
+
+2. Round 1指摘の再現・修正確認
+
+前回指摘
+
+	
+
+判定
+
+	
+
+今回の独立結果
+
+
+
+
+A-W6-01：worker identityとhold分類
+
+	
+
+CLOSED
+
+	
+
+decoded/cancelled/timeoutの6改変を全拒否
+
+
+
+
+A-W6-02：正常decode trace完全性
+
+	
+
+CLOSED
+
+	
+
+garbage末尾・改行欠落・終端stage欠落を全拒否
+
+A-W6-01
+
+apps/desktop/devtools/img2/w6_memory_verify.py:139–140
+
+今回追加された条件：
+
+Python
+実行
+need(w["identity_verified"] is True, "worker_identity_not_verified")
+need(w["boundary_hold_is_instrumentation"] is True, "hold_classification_mismatch")
+
+実Native記録を複製し、decoded・cancelled・timeoutそれぞれについて2フィールドを個別にfalseへ変更しました。
+
+6/6拒否を確認しました。実Nativeの正常記録はPASSしています。
+
+A-W6-02
+
+apps/desktop/devtools/img2/w6_memory_verify.py:181–183
+
+今回追加された正常decode条件：
+
+Python
+実行
+need(
+    w["trace_complete"] is True
+    and w["trace_partial_bytes"] == 0
+    and raw.endswith(b"\n"),
+    "successful_trace_incomplete"
+)
+
+独立改変
+
+	
+
+検証結果
+
+
+
+
+正常traceにgarbageを追加
+
+	
+
+拒否
+
+
+
+
+最終改行を削除
+
+	
+
+拒否
+
+
+
+
+終端stageを削除
+
+	
+
+拒否
+
+
+
+
+Cancel traceにpartial tail追加
+
+	
+
+受理（期待どおり）
+
+
+
+
+Timeout traceにpartial tail追加
+
+	
+
+受理（期待どおり）
+
+正常traceの厳格化によって、既存の停止状態機械を破壊していません。
+
+3. 規定24負例と実行可能範囲
+
+提出された固定SOURCEのmutation()を実Native recordに適用し、現行verify()を直接呼び出しました。
+
+検証
+
+	
+
+結果
+
+
+
+
+正常Nativeの構造replay
+
+	
+
+PASS
+
+
+
+
+構造replayのclosure_eligible
+
+	
+
+false
+
+
+
+
+添付だけで実行可能な規定負例
+
+	
+
+23/23拒否
+
+
+
+
+旧SOURCE commit差し替え
+
+	
+
+Git-bound実行はNOT_RUN
+
+
+
+
+保存されたsource-bound負例結果
+
+	
+
+24/24拒否と記録
+
+
+
+
+Round 1修正の追加負例
+
+	
+
+9/9拒否
+
+
+
+
+停止系partial trace正例
+
+	
+
+2/2受理
+
+規定負例22番の旧SOURCE commit差し替えは、source_rootを与えない構造replayではok=trueとなります。しかし同時にsource_identity_verified=false、closure_eligible=falseであり、SOURCE確認済みには昇格しません。
+
+private Git objectが必要な固定Git検証を、今回はPASSとして数えていません。
+
+また、実際に再実行できたW6 fixture・算術テストは9/9 PASSでした。IMG2全156件の成功は保存済み品質記録による確認であり、このレビュー環境での全数再実行ではありません。
+
+4. Native・Memory・Pixelの独立再計算
+
+項目
+
+	
+
+結果
+
+
+
+
+実験group
+
+	
+
+12
+
+
+
+
+Decode実行数
+
+	
+
+24
+
+
+
+
+同時worker最大
+
+	
+
+3
+
+
+
+
+Complete collection windows
+
+	
+
+30/30
+
+
+
+
+Process counter samples
+
+	
+
+66
+
+
+
+
+Decoded
+
+	
+
+18
+
+
+
+
+Cancelled
+
+	
+
+3
+
+
+
+
+Timeout
+
+	
+
+3
+
+
+
+
+Window totals再計算
+
+	
+
+30/30一致
+
+
+
+
+Group maxima再計算
+
+	
+
+12/12一致
+
+
+
+
+独立RGBA画素照合
+
+	
+
+18/18全画素一致
+
+画素照合では、提出されたW6 oracleの成功フラグに依存せず、PNG出力を別の画像デコーダーで復元しました。
+
+入力はPNG/BMP24を独立デコードし、Bgr565はBMPのBI_BITFIELDS maskから直接画素値を展開しました。
+
+40,108,032 RGBA bytesが完全一致しています。
+
+計測値の区分も維持されています。
+
+DERIVED_WINDOW_SUM：同一collection window内で逐次取得したcounterの合計
+
+MAX_OBSERVED_WINDOW_SUM：観測済みwindow合計の最大値
+
+MATCHED_RUN_DIFFERENCE：別worker実行間の比較
+
+異時刻のworker maximaを合算したtrue concurrent peakの主張はありません。
+
+WIC内部scratch、実予約、true concurrent allocation peakは、引き続きNOT_MEASUREDです。
+
+5. 新Refine Gate・60成果物の確認
+
+項目
+
+	
+
+Quality
+
+	
+
+Build
+
+
+
+
+Gate ID
+
+	
+
+fdfdb7a2…
+
+	
+
+98d2bb81…
+
+
+
+
+State
+
+	
+
+SUCCEEDED
+
+	
+
+SUCCEEDED
+
+
+
+
+必須チェック
+
+	
+
+16/16 PASS
+
+	
+
+1/1 PASS
+
+
+
+
+Candidate SHA
+
+	
+
+一致
+
+	
+
+一致
+
+
+
+
+Candidate digest
+
+	
+
+一致
+
+	
+
+一致
+
+
+
+
+inspect/verify artifacts
+
+	
+
+60/60一致
+
+	
+
+60/60一致
+
+
+
+
+Cleanup
+
+	
+
+complete
+
+	
+
+complete
+
+
+
+
+Owner alive
+
+	
+
+false
+
+	
+
+false
+
+
+
+
+Recovery required
+
+	
+
+false
+
+	
+
+false
+
+Candidate digest：
+
+sha256:e29012dc581999c921dc3bd97b5b78a1c8805e3cee39df12bdaa1df338afe728
+
+両Gateのinspect/verifyに記載された60 artifact tuplesを比較し、全件一致しました。
+
+さらに、実際のSOURCE ZIPを読み、60/60のcaptureサイズ・SHA256が原バイトまたは明示LF正規化後の値と一致することを確認しました。
+
+Round 1のGateやsupersededなGate IDは今回の成功候補に転用されていません。
+
+隔離GateのR0は316 PASS/36 skipped、ローカル記録は340 PASS/12 skippedとして区別されています。
+
+Build executableについては32,275,456 bytes、SHA256 c06bbcb9…a639be0cの捕捉記録があります。実バイナリは添付されていないため、そのSHA256の独立再計算はNOT_RUNです。
+
+6. 残存指摘
+A-W6-R2-01 — Manifestが存在しないsource manifestをEvidence ZIP内に指定している
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：別添review-package.json:5273
+
+次の項目が存在します。
+
+JSON
+{
+  "source_manifest_inside_evidence_zip": "docs/development/evidence-published/img2-w6-latest/review-package-source.json"
+}
+
+しかし、実際のEvidence ZIPの65ファイルにはreview-package-source.jsonが含まれていません。SOURCE ZIPにもこのパスは存在しません。
+
+独立再現条件：
+
+Python
+実行
+assert (
+    manifest["source_manifest_inside_evidence_zip"]
+    not in evidence_zip.namelist()
+)
+
+この条件は成立しました。
+
+ただし、別添review-package.json自身にSOURCE 656件のentry情報があり、そのraw hashは全件検証できています。 したがって今回のSOURCE、Native、Gate、60 artifactの一致が失われるわけではありません。
+
+問題は、Evidence ZIP内部にsource manifestが存在するというmanifest上の参照が誤っていることです。
+
+最小修正条件：
+
+別添manifestのsource_manifest_inside_evidence_zipを、実際の提供方式に一致させてください。
+
+最小案は、この項目を削除またはnullにし、SOURCE entry manifestが別添review-package.jsonのsource_zip.entriesに収録されていることを明記する方法です。
+
+Evidence ZIPに独立ファイルを追加する必要はありません。製品SOURCE変更、Native再実測、Refine Gate再実行も不要です。
+
+7. Storage・計画・未測定境界
+
+Storageの5対象は最終成功Gate2件のwork/repoとr3 clippy/tests/buildのみです。
+
+項目
+
+	
+
+照合結果
+
+
+
+
+削除対象
+
+	
+
+5件
+
+
+
+
+Files
+
+	
+
+10,398
+
+
+
+
+Logical bytes
+
+	
+
+4,139,248,461
+
+
+
+
+所有process依存
+
+	
+
+なしと記録
+
+
+
+
+Reparse
+
+	
+
+なしと記録
+
+
+
+
+削除後verify
+
+	
+
+Quality/BuildともSUCCEEDED、exit 0
+
+各対象のfile数とlogical bytesの独立合計は、Storage記録と一致しました。物理削除そのものはNOT_RUNです。
+
+最新のIMPLEMENTATION_MASTER_PLAN.mdはEvidence ZIPから実際に読みました。保存されたdocument validationは62 task cards、62 contracts、41 DAG edges、acyclic=trueで、W1〜W5の歴史的記録も同梱されています。
+
+ただし、Git commit ancestryと、SOURCE候補からEvidence HEADへの全変更がGit上でdocs-onlyであることの再検証にはprivate Git objectが必要です。今回確認できたのは提出ZIP・manifest・文書差分の整合です。
+
+W6をfull MP-IMG2 Decode ExitやMP-IMG3 prerequisite充足へ昇格する記述は認められませんでした。product numeric memory SLO、ICC fidelity、16K、true partial/sequential/tiled、cooperative cancellation、Runtime、measured R0、UX/videoも未測定・非対象のままです。
+
+8. Closure判断
+
+Round 1の2件は修正済みです。新Native実測、独立画素照合、process-memory算術、SOURCE対応、独立Quality/Build Gateに、追加の製品実装上の問題は認められません。
+
+残るのは別添manifestの1項目だけです。これをdocs-onlyで訂正し、添付・manifestの整合を保てば、W6 LIMITED TECHNICAL COMPLETIONの最終0/0/0判断に進めます。
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+0
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+1
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+A-W6-01：CLOSED
+
+A-W6-02：CLOSED
+
+A-W6-R2-01：manifest参照修正待ち
+
+MP-IMG2-W6 LIMITED TECHNICAL COMPLETION：保留
+
+REVIEW COMPLETE
+
+HOLD 0 / 1 / 0

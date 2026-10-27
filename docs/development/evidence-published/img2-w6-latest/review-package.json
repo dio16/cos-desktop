@@ -5270,7 +5270,6 @@
     "sha256": "sha256:67ebc3b3a1c162b9c64945edf93eea674ace7274b311083218beaa8b9cf33260"
   },
   "evidence_entries": 65,
-  "source_manifest_inside_evidence_zip": "docs/development/evidence-published/img2-w6-latest/review-package-source.json",
   "gates": {
     "quality": "fdfdb7a2-3c90-409e-b645-61ab450f58e6",
     "build": "98d2bb81-80d2-43b6-a3cb-ce0c090f7a71"
@@ -5836,5 +5835,18 @@
     "git_objects": "Not attached. Fixed Git-bound verification needs the retained repository; archive bytes are compared to it here and the comparison is recorded.",
     "private_refine": "Authority, raw private logs and executables are not attached; saved status/inspect/verify and artifact hashes are attached.",
     "disposition": "Tern round-2 review pending; no W6 closure, full Decode/Upload/Runtime/measured R0/UX claim."
+  },
+  "source_entry_manifest": {
+    "where": "attached review-package.json, key source_zip.entries",
+    "inside_evidence_zip": false,
+    "entries": 656,
+    "note": "review-package-source.json is a later commit in the repository, not a member of the evidence archive; the reviewer-supplied path claim was wrong."
+  },
+  "manifest_self_correction": {
+    "review": "round 2",
+    "finding": "A-W6-R2-01",
+    "superseded_field": "source_manifest_inside_evidence_zip",
+    "removed_value": "docs/development/evidence-published/img2-w6-latest/review-package-source.json",
+    "correction": "docs-only manifest reference fix; the two attached ZIPs are unchanged."
   }
 }

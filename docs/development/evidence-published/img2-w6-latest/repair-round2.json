@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "review": "round 2",
+  "reviewed_candidate": "8bb1b6dd3071d7e355e685dba4977361f24b8f2f",
+  "reviewed_evidence_head": "4ddf9453d400344c98346d8c71e3c3835ccfee1f",
+  "round1_findings": {
+    "A-W6-01": "CLOSED by independent replay of 6 mutations",
+    "A-W6-02": "CLOSED by independent replay of 4 successful and 2 stopped trace mutations"
+  },
+  "finding": {
+    "id": "A-W6-R2-01",
+    "classification": "ACTIONABLE NON-BLOCKING",
+    "condition": "review-package.json declared source_manifest_inside_evidence_zip at a path that is not a member of the evidence archive (65 files).",
+    "impact": "Package reference only; SOURCE, Native, Gate and 60 artifacts were not affected.",
+    "minimal_fix": "Replace the claim with the actual provision: source entries live in the attached manifest; the evidence archive has 65 files and no source manifest member.",
+    "scope": "docs-only; both attached ZIPs and their SHA256 values stay unchanged; no product source, Native rerun or Gate rerun."
+  },
+  "verification": {
+    "check": "Assert inside_evidence_zip is false, the named path is absent from the archive, evidence_entries equals the real 65 files and source entries equal 656.",
+    "result": "pass"
+  },
+  "rejected_alternatives": [
+    "Adding a file inside the evidence archive would change both reviewed ZIP hashes for a documentation-reference error that the reviewer classified as needing no archive change."
+  ]
+}
