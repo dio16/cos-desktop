@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "change": "Removed one incidental assertTrue(generate(fresh_child)) non-empty return assertion. The meaningful fresh-root refusal, malformed byte structure, whole-raster oracle and all false-green regression assertions are unchanged.",
+  "scope": "test-only deletion; no probe, generator, Native runner, oracle, verifier, Rust or contract semantics changed from c9e667d35a514bc1b25d2d364347ef2cad19d329",
+  "native_reuse": "real-native-matrix.json is still current: all sixteen explicitly inventoried executed source-file normalized identities are unchanged; the changed test file is not an executed Native-source dependency. Do not claim that the earlier whole-candidate Quality Gate verifies the new candidate.",
+  "gate_policy": "pin a new complete candidate and run its own required Quality/Build pair; c9e667d3 Quality is retained only as superseded evidence"
+}

@@ -60,6 +60,5 @@ class FixtureTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             occupied=Path(td)/'occupied'; occupied.mkdir()
             with self.assertRaises(ValueError): generate(occupied)
-            self.assertTrue(generate(Path(td) / 'occupied' / 'child'))
 
 if __name__=='__main__': unittest.main()

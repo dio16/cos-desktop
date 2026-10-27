@@ -276,6 +276,16 @@
       "exit": 0,
       "signal": null,
       "warnings": []
+    },
+    "focused-python-policy-cleanup": {
+      "name": "focused-python-policy-cleanup",
+      "start": "2026-10-27T15:07:29.070Z",
+      "end": "2026-10-27T15:07:30.140Z",
+      "exit": 0,
+      "signal": null,
+      "total": 72,
+      "passed": 72,
+      "skipped": 0
     }
   },
   "r0_unavailable": "one live-window observation and eleven missing historical N07 binary cases; actual skips are not PASS",
@@ -353,9 +363,10 @@
   },
   "final_check_names": [
     "standard-quality-repair1",
-    "focused-python-repair1",
+    "focused-python-policy-cleanup",
     "feature-clippy-repair1",
     "feature-tests-repair1",
     "feature-build-repair1"
-  ]
+  ],
+  "test_policy_cleanup": "One incidental non-empty-return assertion removed. All product/Native source and Rust code are unchanged; normal/feature checks above retain their exercised source scope. Full new-candidate independent Gates are required, not transferred."
 }
