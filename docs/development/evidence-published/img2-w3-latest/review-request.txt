@@ -1,0 +1,35 @@
+MP-IMG2-W3 再評価 Round 2 — A-W3-01 の限定修正です。既存会話の前回 assistant 57c94dfb-0520-433e-8fb9-50b0e05ba058 / request ecc8ace6-c3a1-4378-b095-817f3afe4fee は完全な HOLD 0 BLOCKING / 1 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE として保持しています。前回のGate成功を新候補へ転用しません。
+
+Repository dio16/cos-desktop、branch dev。今回の固定ソースは 5e10cb2b036c8eb6c826e999c8a0a4aef2f81ba6、別の証拠コミットは ed2dc100755ba911e215bc1962ad4e540545b8cf。remote pushはしていません。Callerは承認済み実装計画の実装→独立Gate→Tern評価→次タスクの継続を直接指示しています。ADR-0009/0012に従い、技術的完了を確認するまで受入・完了を捏造しません。主設計/既定予算/Runtime/main/release/権限設定の変更はありません。
+
+添付を実際に開いて確認してください。
+1. w3-awn-review-source.zip: 44ファイル、572294 bytes、sha256:fcf86333b71b904b1c84ce99b4ce5af5607033c6e05ea4b59d20a4d7f5f8e927。固定ソース由来。
+2. w3-awn-review-evidence.zip: 52ファイル、172592 bytes、sha256:0f0182a528fec734164ec649d5d92fd22e3997dbffa9d3e2707f7cb2efa95e4e。証拠コミット由来。
+3. review-package.json: 両ZIPとGit blobのバイト数・digest・raw/LF区別。Git archiveのテキストはCRLF、Git/captured artifactはLFです。ZIP原バイト=Git原バイトとは主張しません。sourceの対応表は証拠ZIP内review-package-source.json。過去のGate/パッケージはreview-round1-*に改名して原内容を保持し、review-history.jsonで固定版を関連付けています。
+
+A-W3-01修正:
+- w3_verify.py: truncated / bad_masks / overlap_masks / bad_header / inconsistent は必ず corrupt / invalid_metadata / refused。一般的WIC HRESULTを全て固定したわけではなく、既知のヘッダーadmission拒否だけを固定しました。
+- 終端probe_exitのoutcome / reason_code / admission_status / materializationをprobe_resultと一致させます。stdout一致の既存条件も残します。
+- test_w3_verify.py: ご指摘4例にinvalid DIB負例と終端4フィールドの不一致を追加。ヘッダー負例はprobe_result・stdout・終端を同時に整合して改変するため、単なる終端不一致検査だけでは通りません。既存の予算拒否理由負例も終端を整合させています。
+- 旧検証器に対して25テスト中9失敗（5メソッド+終端4subcases）を実測し、修正後は画像全78件（W2 45/W3 33）成功。awn-repair.json参照。
+- Taskern packet467be024… / DC-MP-IMG2は変更なし。WIC worker/probe、BMP生成器、oracle、crates/mediaのAPI/唯一の予算authority、default、依存/GPU/Runtimeを変更していません。
+
+実測/独立Gate:
+- verifierがNativeの16 source bindingsに含まれるため、実WIC記録だけは現ソースで更新。24 worker、Bgr565全10出力の独立RGBA一致、別の実decode_compare consumer正常5件pixels_verified。これは通常decode/fixture/consumer再測定を新要件とするものではありません。
+- 変更後の通常quality.ps1は全段成功、Rust535 pass/1 ignored。計測feature clippy/build成功。画像78成功。R0 ordinary352 total/340 pass/12 skip。
+- 計測featureの最初の並列実行では既存の300ms取消テストが子の申告前にkillして None≠Some(cancelled_at_cancel)で失敗しました。失敗をquality.jsonに保持。全テストを除外せず --test-threads=1 で実行したfeature全539 pass/1 ignored。テスト/期限/アサーションや製品をそのために変更していません。誤ったfeature名でチェック開始前に失敗した2回も記録しています。
+- 新Quality Gate 1fd79f6d-8a8e-4c74-ac9e-329c76c3adbb: SUCCEEDED 13/13。
+- 新Build Gate 41eda8c3-6236-473b-bc20-4dda70a0e991: SUCCEEDED 1/1。
+- 両方 candidate digest sha256:541d15b3056305a769bb93b34eb39d1ddc73a9a0581381c5a6cdf119029467e1、同一50 artifact tuples。50/50 capture原バイト=固定Git blob。Native16/16 LF一致、13は宣言artifact、16全てsource ZIP提供。
+- 隔離Gate Rust535 pass/1 ignored、画像78 pass、R0 total352/pass316/skip36。実際のskip全件と理由をgate-test-counts.jsonに保持し、skipをPASSとはしていません。
+- 両Gateはowner dead/recovery不要/cleanup complete、native status/inspect/verify exit0。preflight UNKNOWN(check_runtime/outputs/authorization)はUNKNOWNのまま保持。
+- 証拠を109e8649c304f6920d7c94216ba266b0c7a67798に先に保存し、成功した2 work/repo + r4 clippy/tests/buildの正確な5パスのみ削除。9978 files / 4123605402 logical bytes。active process依存なし、reparseなし、削除前後のnative verify原出力一致。ordinary target、実Native入力/出力/consumer、private authority/artifacts/logs、失敗/非終端/過去workspaceは保持。storage.json参照。
+
+評価してほしい点:
+1. A-W3-01の4改変がそれぞれ独立して拒否され、known header refusalとterminal agreementが誤った緑を防いでいるか。
+2. 新source/evidence/Native/Gate/50 tuples/ZIP byte formsの対応が閉じているか。旧成功を転用していないか。
+3. 変更が限定範囲に留まり、既存positive/consumer/budget boundary/stop evidenceを壊していないか。
+
+WIC内部stride/scratch、真の同時peak/reservations、cooperative decoder cancellation、16K、region/sequential/tiled、ICC/orientation、JPEG absolute raster、full Decode/Upload、Runtime/measured R0は引き続き未測定です。W3をfull MP-IMG2完了とは呼びません。実Windows/GUI再実行をレビュー環境で行ったとは主張しないでください。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘があればファイル・条件・再現・必要最小限の修正を示してください。添付読取不能や未完了なら明示してください。今回も添付から独立に検証し、最後に REVIEW COMPLETE と最終 verdict / counts を記してください。
