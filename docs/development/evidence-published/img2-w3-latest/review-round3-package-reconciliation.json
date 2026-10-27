@@ -63,10 +63,24 @@
         "round3_submitted_bytes": 419340,
         "round3_submitted_sha256": "sha256:3dbb5fb71a338ba4d22d99cad01487f070535bdaa1da0cad024c1b20f68d27c0",
         "delta": "One clause changed from 'a new pinned Gate pair and clean re-review remain required' to 'its own pinned Gate pair and Tern re-review are separate receipts, not transferred' so the plan text is not stale after Gate completion."
+      },
+      {
+        "id": "w3-19-document-validation.json",
+        "path": "docs/development/evidence-published/img2-w3-latest/document-validation.json",
+        "captured_bytes": 242,
+        "captured_sha256": "sha256:be17116b2b2827d1dab1bb5bdeb08148cc54cc3f76dc7675aeac6883ecfacd2d",
+        "evidence_head_bytes": 237,
+        "evidence_head_sha256": "sha256:7ed61de8467de1422a892af99caae00a4fd296de7dc506a7e135bc2aa7fc362e",
+        "delta": "Fresh documentation-link validation for the round-four edit. It records the same preserved-heading and relative-link checks with updated counts."
       }
     ],
-    "round_four_addition": "This reconciliation commit also adds the round-three bullet to the plan. That further documentation delta is bound by review-package.json's file digests taken from the evidence HEAD, not by the round-three submission digests above.",
-    "scope": "Both differences are documentation only. Every other artifact, including all sixteen Native source bindings, is byte-identical to the candidate capture. This is not Gate failure, acceptance transfer or evidence tampering."
+    "round_four_addition": "This reconciliation commit also adds the round-three bullet to the plan and refreshes the link-validation record. Those further documentation deltas are bound by review-package.json's file digests taken from the evidence HEAD.",
+    "evidence_head_summary": {
+      "byte_identical_to_capture": 50,
+      "docs_only_changed": 3,
+      "non_documentation_changes": 0
+    },
+    "scope": "All differences are documentation only. Every other artifact, including all sixteen Native source bindings, is byte-identical to the candidate capture. This is not Gate failure, acceptance transfer or evidence tampering."
   },
   "source_entry_manifest": {
     "file": "review-package-source.json",
