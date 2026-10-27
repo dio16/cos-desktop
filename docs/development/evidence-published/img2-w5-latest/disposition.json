@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W5",
+  "owner_contract": "DC-MP-IMG2",
+  "product_candidate": "d75df9d0fef8d9eca39c41c563ada11252ed21cb",
+  "evidence_head": "a663307773caf9f539cb2f3094682635535808e0",
+  "quality_gate": "3148ac79-4791-4109-9566-d82236d0f65a",
+  "build_gate": "6b472805-20d5-455f-812d-d88156e0cba3",
+  "gate_candidate_digest": "sha256:021768ff0dc22fd84feecdfc9b4d5f1fe22dcb6f208cb45f66ada2824444132f",
+  "taskern_packet_sha256": "sha256:42c979d2f487906762e51a09d07c776b296a40a38ea6c432830172f21e5d1360",
+  "verdict": "PASS 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
+  "acceptance_basis": "ADR-0009 / review-round6.json",
+  "completed_scope": [
+    "orientation presence/raw/interpretation separate from WIC application and explicit probe rotation",
+    "12 decoded outputs with independent all-RGBA equality",
+    "11-bit-facing? no: Bgr24/8/24 source attribution verified",
+    "ICC presence/readability/length/digest separate from application and colour fidelity",
+    "over-cap ICC refused metadata_cap_exceeded before OnLoad with no output",
+    "unsupported and stop states tied to worker/probe/terminal/publication",
+    "two independent Gates with 51 identical artifact tuples and complete receipts"
+  ],
+  "unmeasured_or_open": [
+    "ICC colour-transform fidelity",
+    "all-codec orientation/ICC support",
+    "JPEG absolute raster",
+    "true region/sequential/tiled decode",
+    "16K full decode",
+    "WIC internal scratch/reservations/true peak",
+    "cooperative in-decoder cancellation",
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3 Upload",
+    "Runtime RC-*",
+    "measured R0D",
+    "product UX/video",
+    "main/release"
+  ],
+  "design_blocked": [
+    "product ICC colour policy",
+    "product orientation/display policy",
+    "canonical identity metadata inclusion"
+  ],
+  "boundaries": [
+    "Attachment-bound review; Windows WIC/GUI/Gate were not re-executed by the reviewer.",
+    "Explicit probe rotation is not a product orientation policy.",
+    "ICC readability is not colour conversion fidelity.",
+    "W5 does not close full MP-IMG2 or MP-IMG3 prerequisites.",
+    "Build product digest is NOT_CAPTURED because exact r13 scratch was disposed without a pre-disposal capture."
+  ]
+}

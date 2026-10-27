@@ -1,0 +1,457 @@
+MP-IMG2-W5 Round 6 — 固定SOURCE・Gate証拠独立レビュー
+
+対象は製品候補 d75df9d0fef8d9eca39c41c563ada11252ed21cb、Evidence HEAD a663307773caf9f539cb2f3094682635535808e0 です。
+
+1. 添付の整合性
+
+対象
+
+	
+
+実バイト検証
+
+
+
+
+SOURCE ZIP
+
+	
+
+548,955 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+203,104 bytes、SHA256一致
+
+
+
+
+SOURCE ZIPのcommit識別
+
+	
+
+固定製品候補と一致
+
+
+
+
+Evidence ZIPのcommit識別
+
+	
+
+新Evidence HEADと一致
+
+
+
+
+ZIP破損検査
+
+	
+
+両方PASS
+
+今回のSOURCE ZIPはRound 5と同一サイズ・同一SHA256です。したがって製品候補は変更されておらず、今回の審査範囲はGate証拠の補完に限定できます。
+
+2. 前回のGate証拠不足は解消
+
+quality-gate.jsonとbuild-gate.jsonに、前回欠落していた実際のstatus、inspect、verify応答が収録されています。
+
+確認項目
+
+	
+
+Quality
+
+	
+
+Build
+
+
+
+
+Gate ID
+
+	
+
+3148ac79…
+
+	
+
+6b472805…
+
+
+
+
+status.state
+
+	
+
+SUCCEEDED
+
+	
+
+SUCCEEDED
+
+
+
+
+必須チェック
+
+	
+
+15/15 pass
+
+	
+
+1/1 pass
+
+
+
+
+verify.state
+
+	
+
+SUCCEEDED
+
+	
+
+SUCCEEDED
+
+
+
+
+status exit
+
+	
+
+0
+
+	
+
+0
+
+
+
+
+inspect exit
+
+	
+
+0
+
+	
+
+0
+
+
+
+
+verify exit
+
+	
+
+0
+
+	
+
+0
+
+
+
+
+Cleanup
+
+	
+
+complete
+
+	
+
+complete
+
+
+
+
+Owner alive
+
+	
+
+false
+
+	
+
+false
+
+
+
+
+Recovery required
+
+	
+
+false
+
+	
+
+false
+
+両Gateの固定候補SHAは一致しています。Candidate digestも同一です。
+
+sha256:021768ff0dc22fd84feecdfc9b4d5f1fe22dcb6f208cb45f66ada2824444132f
+
+Preflightについても、両GateともUNKNOWN、fail 0であり、PASSへ書き換えられていません。
+
+3. Gate成果物51件の独立照合
+
+gate-artifact-correspondence.jsonを基準に、各成果物をQuality/Buildのinspect・verifyと照合しました。
+
+照合項目
+
+	
+
+結果
+
+
+
+
+Quality inspect ↔ verify
+
+	
+
+51/51一致
+
+
+
+
+Build inspect ↔ verify
+
+	
+
+51/51一致
+
+
+
+
+Quality ↔ Build
+
+	
+
+51/51一致
+
+
+
+
+成果物サイズ・SHA256
+
+	
+
+51/51一致
+
+
+
+
+Historical補足6件
+
+	
+
+6/6原バイト一致
+
+
+
+
+Check log metadata
+
+	
+
+両Gateでinspect/verify一致
+
+
+
+
+各checkのcandidate binding
+
+	
+
+16/16一致
+
+各artifactのID、相対パス、サイズ、SHA256を比較し、SOURCE/Evidence ZIPの実バイトから再計算しました。
+
+加えて、両Gateのrequest_sha256、terminal_state_sha256は、それぞれのinspectとverifyで一致しています。
+
+B-W5-R5-01：CLOSED
+
+4. Build productの扱い
+
+今回のbuild-product.jsonは次の状態です。
+
+JSON
+{
+  "candidate": "d75df9d0fef8d9eca39c41c563ada11252ed21cb",
+  "build_gate": "6b472805-20d5-455f-812d-d88156e0cba3",
+  "state": "NOT_CAPTURED"
+}
+
+旧候補1daa70ec…のBuild成果物はreview-round4-build-product.jsonに分離されており、新候補の成果物として使われていません。
+
+この扱いは妥当です。
+
+Build Gateの実行成功はstatus/inspect/verifyで確認できる。
+
+実行時のバイナリそのもののdigestは取得されていない。
+
+バイナリの同一性・再現可能性までは主張できない。
+
+未取得のdigestを推定値で補完していない。
+
+W5 LIMITED TECHNICAL COMPLETIONの必須条件である独立Build Gate成功は満たします。ただし、バイナリ配布やreleaseの再現性証明には使用できません。
+
+A-W5-R5-01：CLOSED
+
+5. Native・回帰・未測定境界
+
+Round 5から今回までの証拠ZIPをファイル単位で比較しました。
+
+項目
+
+	
+
+結果
+
+
+
+
+製品SOURCE ZIP
+
+	
+
+完全同一
+
+
+
+
+Native metadata matrix
+
+	
+
+不変
+
+
+
+
+Orientation oracle
+
+	
+
+不変
+
+
+
+
+Fixture manifest
+
+	
+
+不変
+
+
+
+
+Capability table
+
+	
+
+不変
+
+
+
+
+Quality結果
+
+	
+
+不変
+
+
+
+
+W4 historical replay
+
+	
+
+不変
+
+
+
+
+SOURCE identity bindings
+
+	
+
+14/14一致
+
+新GateのQualityチェックには、W3 retained Native replay、W4 Native replay、W5 Native replayが含まれ、すべてpass / exit 0です。
+
+今回、新たなWindows Native実行やGate再実行はしていません。実行済みの証拠原本と新Gate receiptの相互整合を検証しました。
+
+ICC colour fidelity、16K、true partial/sequential/tiled decode、WIC内部scratch・実予約・同時peak、cooperative cancellation、full Decode Exit、MP-IMG3、Runtime、measured R0、UX/videoは引き続き未測定または非対象です。製品ICC/orientation policyもDESIGN_BLOCKEDのままです。
+
+6. Closure判断
+
+Round 5で成立していたSOURCE・Native・画素検証に加え、今回不足していた独立Gate成功証拠がそろいました。
+
+新たなBLOCKINGまたはACTIONABLE NON-BLOCKINGはありません。
+
+今回の承認対象は、製品候補d75df9d0fef8d9eca39c41c563ada11252ed21cbに対するMP-IMG2-W5 LIMITED TECHNICAL COMPLETIONです。
+
+Full MP-IMG2 Decode Exit、MP-IMG3 prerequisite充足、製品policy、Runtime、main/releaseの承認ではありません。
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+0
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+0
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+B-W5-R5-01：CLOSED
+
+A-W5-R5-01：CLOSED
+
+MP-IMG2-W5 LIMITED TECHNICAL COMPLETION：承認
+
+Final verdict：PASS 0 / 0 / 0
+
+REVIEW COMPLETE

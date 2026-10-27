@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "round": 6,
+  "candidate": "d75df9d0fef8d9eca39c41c563ada11252ed21cb",
+  "evidence_head": "a663307773caf9f539cb2f3094682635535808e0",
+  "package_manifest_commit": "9b67eb4",
+  "assistant_id": "round6",
+  "terminal": "PASS 0 / 0 / 0",
+  "parser": {
+    "blocking": 0,
+    "actionable": 0,
+    "excessive": 0,
+    "clean": true
+  },
+  "request_sha256": "sha256:9930c5fb9e5a3967dbe6246e7f730aa54d6d256c0276d158ab2dd9573418bb20",
+  "complete": true
+}
