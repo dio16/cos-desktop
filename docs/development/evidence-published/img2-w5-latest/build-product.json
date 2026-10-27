@@ -1,7 +1,9 @@
 {
   "schema_version": 1,
-  "candidate": "1daa70ecd819002636e08bdb95842fdc381cbe1c",
-  "build_gate": "5847493a-ddaa-4074-82d7-a58195e9ffd6",
-  "bytes": 32275456,
-  "sha256": "sha256:3d6b7151bf55c0e30ce0f47ca5cb61b4a0422bf4227c22b977362e34cae7f4b1"
+  "candidate": "d75df9d0fef8d9eca39c41c563ada11252ed21cb",
+  "build_gate": "6b472805-20d5-455f-812d-d88156e0cba3",
+  "state": "NOT_CAPTURED",
+  "reason": "The exact r13 Build Gate scratch target was disposed after evidence retention without a pre-disposal product digest. This is not a Gate failure and no product digest is inferred.",
+  "gate_state": "SUCCEEDED",
+  "gate_receipt": "build-gate.json"
 }
