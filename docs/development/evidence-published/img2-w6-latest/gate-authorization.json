@@ -1,0 +1,352 @@
+{
+  "schema_version": 1,
+  "candidate": "76d8998bea494a0c7fc97c7cc27071594330ba17",
+  "native_source": "edfcdf104f66e89bf9deae6b03bde22427c84e9c",
+  "authority": "Caller continuous MP instruction under ADR-0009/0012 and verbatim W6 directive; bounded repair replaces the superseded candidate, without retrying or rewriting its accepted Gate.",
+  "quality_checks": [
+    "fmt",
+    "metadata",
+    "dependency-self-test",
+    "dependency-rules",
+    "clippy",
+    "tests",
+    "r0-python",
+    "img2-python",
+    "w2-probe-selftest",
+    "w2-oracle",
+    "w3-retained-native-replay",
+    "wic-admission-selftest",
+    "w1-runner-selftest",
+    "w4-native-replay",
+    "w5-native-replay",
+    "w6-native-replay"
+  ],
+  "build_checks": [
+    "build"
+  ],
+  "policy": {
+    "trust": "trusted_local",
+    "timeout_ms": 600000,
+    "termination_grace_ms": 5000,
+    "max_output_bytes": 16777216,
+    "max_artifact_bytes": 16777216,
+    "expected_changes": "none",
+    "required_capabilities": []
+  },
+  "outputs": [
+    {
+      "id": "w6r3-0",
+      "path": "Cargo.lock",
+      "required": true
+    },
+    {
+      "id": "w6r3-1",
+      "path": "apps/desktop/devtools/img2/w2_independent_oracle.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-2",
+      "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-3",
+      "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-4",
+      "path": "apps/desktop/devtools/img2/w3_oracle.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-5",
+      "path": "apps/desktop/devtools/img2/w4_region_oracle.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-6",
+      "path": "apps/desktop/devtools/img2/w6_memory_fixtures.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-7",
+      "path": "apps/desktop/devtools/img2/w6_memory_matrix.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-8",
+      "path": "apps/desktop/devtools/img2/w6_memory_sample.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-9",
+      "path": "apps/desktop/devtools/img2/w6_memory_verify.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-10",
+      "path": "apps/desktop/examples/decode_compare.rs",
+      "required": true
+    },
+    {
+      "id": "w6r3-11",
+      "path": "apps/desktop/examples/decode_compare/harness.rs",
+      "required": true
+    },
+    {
+      "id": "w6r3-12",
+      "path": "apps/desktop/examples/decode_compare/inspect.rs",
+      "required": true
+    },
+    {
+      "id": "w6r3-13",
+      "path": "apps/desktop/examples/decode_compare/pixels.rs",
+      "required": true
+    },
+    {
+      "id": "w6r3-14",
+      "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+      "required": true
+    },
+    {
+      "id": "w6r3-15",
+      "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+      "required": true
+    },
+    {
+      "id": "w6r3-16",
+      "path": "crates/media/src/decode.rs",
+      "required": true
+    },
+    {
+      "id": "w6r3-17",
+      "path": "rust-toolchain.toml",
+      "required": true
+    },
+    {
+      "id": "w6r3-18",
+      "path": "apps/desktop/devtools/img2/tests/test_w6_fixtures.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-19",
+      "path": "apps/desktop/devtools/img2/tests/test_w6_memory.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-20",
+      "path": "apps/desktop/devtools/img2/tests/test_w6_negative.py",
+      "required": true
+    },
+    {
+      "id": "w6r3-21",
+      "path": "docs/development/evidence-published/img2-w6-latest/admission-boundary.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-22",
+      "path": "docs/development/evidence-published/img2-w6-latest/allocation-scope.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-23",
+      "path": "docs/development/evidence-published/img2-w6-latest/capability-table.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-24",
+      "path": "docs/development/evidence-published/img2-w6-latest/cohort-comparison.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-25",
+      "path": "docs/development/evidence-published/img2-w6-latest/document-validation.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-26",
+      "path": "docs/development/evidence-published/img2-w6-latest/execution-manifest.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-27",
+      "path": "docs/development/evidence-published/img2-w6-latest/fixture-manifest.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-28",
+      "path": "docs/development/evidence-published/img2-w6-latest/historical-regressions.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-29",
+      "path": "docs/development/evidence-published/img2-w6-latest/memory-sample-series.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-30",
+      "path": "docs/development/evidence-published/img2-w6-latest/native-attempts.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-31",
+      "path": "docs/development/evidence-published/img2-w6-latest/native-memory-matrix.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-32",
+      "path": "docs/development/evidence-published/img2-w6-latest/negative-tests.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-33",
+      "path": "docs/development/evidence-published/img2-w6-latest/pixel-oracle.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-34",
+      "path": "docs/development/evidence-published/img2-w6-latest/quality.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-35",
+      "path": "docs/development/evidence-published/img2-w6-latest/source-identity.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-36",
+      "path": "docs/development/evidence-published/img2-w6-latest/taskern-rejected-1-request.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-37",
+      "path": "docs/development/evidence-published/img2-w6-latest/taskern-rejected-1-response.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-38",
+      "path": "docs/development/evidence-published/img2-w6-latest/taskern-request.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-39",
+      "path": "docs/development/evidence-published/img2-w6-latest/taskern-response.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-40",
+      "path": "docs/development/evidence-published/img2-w6-latest/unmeasured.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-41",
+      "path": "docs/development/evidence-published/img2-w6-latest/verifier-results.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-42",
+      "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+      "required": true
+    },
+    {
+      "id": "w6r3-43",
+      "path": "docs/development/BUILD_AND_RUN.md",
+      "required": true
+    },
+    {
+      "id": "w6r3-44",
+      "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+      "required": true
+    },
+    {
+      "id": "w6r3-45",
+      "path": "scripts/quality.ps1",
+      "required": true
+    },
+    {
+      "id": "w6r3-46",
+      "path": "Cargo.toml",
+      "required": true
+    },
+    {
+      "id": "w6r3-47",
+      "path": "docs/development/evidence-published/img2-w2-latest/native-matrix.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-48",
+      "path": "docs/development/evidence-published/img2-w2-latest/native-repeat.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-49",
+      "path": "docs/development/evidence-published/img2-w2-latest/native-rasters.zip",
+      "required": true
+    },
+    {
+      "id": "w6r3-50",
+      "path": "docs/development/evidence-published/img2-w3-latest/real-native-matrix.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-51",
+      "path": "docs/development/evidence-published/img2-w4-latest/real-native-matrix.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-52",
+      "path": "docs/development/evidence-published/img2-w5-latest/metadata-native-matrix.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-53",
+      "path": "docs/development/evidence-published/img2-w5-latest/tern-next-directive.txt",
+      "required": true
+    },
+    {
+      "id": "w6r3-54",
+      "path": "docs/development/evidence-published/img2-w5-latest/tern-next-directive.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-55",
+      "path": "docs/development/evidence-published/img2-w6-latest/superseded-quality-gate.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-56",
+      "path": "docs/development/evidence-published/img2-w6-latest/superseded-storage.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-57",
+      "path": "docs/development/evidence-published/img2-w6-latest/superseded-r2-gates.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-58",
+      "path": "docs/development/evidence-published/img2-w6-latest/superseded-r2-storage.json",
+      "required": true
+    },
+    {
+      "id": "w6r3-59",
+      "path": "docs/development/evidence-published/img2-w6-latest/verification-repair.json",
+      "required": true
+    }
+  ],
+  "storage": {
+    "state": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/state",
+    "scratch_targets": [
+      "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/clippy",
+      "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/tests",
+      "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/build"
+    ],
+    "successful_workspace_disposal": "Accepted successful Gate IDs only, exact work/repo, retained Git candidate on dev and private authority/artifacts/logs, no live process/reparse, native verify before and unchanged after. Failed/nonterminal material retained."
+  },
+  "dispatch": "Sequential Quality then Build. Prior Quality repository error was pre-acceptance and is not replayed; new pair is for new repaired source.",
+  "quality_gate": "e3ca75cd-cdfe-4cef-aa3d-1cae176707eb",
+  "build_gate": "d1df7552-70c0-47fe-be6e-4339004c17a5",
+  "candidate_digest": "sha256:0b8f805832f7d9541fdc69a28008ed4c0fc252f3df3403a60583786f043a20b9",
+  "acceptance_scope": "Technical Gate evidence only; Tern review and limited Caller disposition are separate. No product full Decode/Upload/Runtime/R0/UX approval."
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "candidate": "76d8998bea494a0c7fc97c7cc27071594330ba17",
+  "build_gate": "d1df7552-70c0-47fe-be6e-4339004c17a5",
+  "bytes": 32275456,
+  "sha256": "sha256:9839984c7d6508350f778212767a8e402607bc647d0d1166a3b82e853787e966",
+  "scope": "Actual final Gate Cargo build output hashed before approved scratch disposal; digest is not inferred and no GUI startup claim is made.",
+  "declared_immutable_artifact": false,
+  "retention": "Build executable itself is disposable; pinned source, build receipt and logs are retained."
+}
