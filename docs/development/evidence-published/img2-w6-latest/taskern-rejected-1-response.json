@@ -1,0 +1,1 @@
+{"protocol":1,"ok":false,"error":{"domain":"contract","code":"LIMIT_EXCEEDED","diagnostics":[{"input":"draft","code":"LIMIT_EXCEEDED","path":"/tasks/0/acceptance","source_path":"/args/draft/tasks/0/acceptance","location_redacted":false,"rule":"shape.range","expected":"Keep the value inside its declared bounds.","observed":"out_of_range"}],"truncated":false}}

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "70f5de25-7280-4f58-86d4-14171b48d581"
+  ],
+  "assistant_ids": [
+    "0558a3a6-06d8-4744-8340-80ba83c6faa8"
+  ],
+  "first_read": "2026-10-27T21:32:04.092Z",
+  "second_read": "2026-10-27T21:33:29.911Z",
+  "elapsed_ms": 85819,
+  "identical_complete_reads": true,
+  "streaming": false,
+  "directive_sha256": "sha256:b01080d428705b01eaf38302b72c64b0b8b099834441e2c7024a7a894e8e2285",
+  "request_sha256": "sha256:6bb24b2093909718ca68d03688f486726259957d768cadc05c7d35c43af9a6ff",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 1230,
+      "expected": 1230,
+      "preview": "MP-IMG2-W5はRound 6でPASS 0 BLOCKING / 0 ACTIONABLE NON-BLOCKI"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 5,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "next_slice": "MP-IMG2-W6",
+  "completion": "DIRECTIVE COMPLETE"
+}

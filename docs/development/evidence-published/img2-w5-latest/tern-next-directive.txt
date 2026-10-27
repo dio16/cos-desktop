@@ -1,0 +1,1276 @@
+
+# COS Desktop — 継続実装指示
+# MP-IMG2-W6：実Windows WICのcodec・画像サイズ・同時worker別
+#              メモリ負荷スケーリング実測とbounded cohort検証
+#
+# 実行方式：
+# Taskern → 実装 → 実Windows Native実測 → 独立Quality/Build Gate
+# → Tern独立レビュー → 限定技術完了判定 → 次eligible task選定
+#
+# Caller承認：ADR-0009 / ADR-0012の既存権限内
+# 禁止：remote push / main / release / Runtime変更 / 未承認設計判断
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 固定開始状態
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Repository:
+dio16/cos-desktop
+
+Branch:
+dev（ローカル、未push）
+
+開始HEAD:
+57c330ab28c8777ba5aa004e14540279b28c6dfd
+
+直前の製品固定候補:
+d75df9d0fef8d9eca39c41c563ada11252ed21cb
+
+W5 reviewed evidence HEAD:
+a663307773caf9f539cb2f3094682635535808e0
+
+W5 review:
+PASS 0 BLOCKING /
+     0 ACTIONABLE NON-BLOCKING /
+     0 EXCESSIVE
+
+W5 Gates:
+Quality 3148ac79-4791-4109-9566-d82236d0f65a
+Build   6b472805-20d5-455f-812d-d88156e0cba3
+
+W5 Build executable digest:
+NOT_CAPTURED
+
+新規タスク:
+MP-IMG2-W6
+
+唯一のowner contract:
+DC-MP-IMG2
+
+製品側責務owner:
+crates/media（decode side、GPU非所有）
+
+今回の実装対象:
+既存のdevelopment-only WIC resource observation経路。
+
+W5の成功GateをW6へ流用しない。
+W5 dispositionをfull Decode Exitへ読み替えない。
+
+作業開始時に必ず確認する。
+
+- git status --short
+- git branch --show-current
+- git rev-parse HEAD
+- git log -n 8 --oneline
+- git diff
+- rust-toolchain.toml
+- Cargo.lock
+- MP-IMG2/W5 disposition
+- DC-MP-IMG2
+- W2 memory observation contract
+- W5のNOT_MEASURED境界
+
+開始HEADが異なる場合は差分を調べる。
+他タスクや未pushの変更をresetしない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. Hard prerequisitesとタスク選択
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MP-IMG2のhard prerequisites:
+
+- MP-IMG1
+- MP-SEC3
+
+両者のDesktop-local技術完了証拠と
+現行DAG状態を最初に確認する。
+
+今回の実行対象はMP-IMG2内部のbounded sliceである。
+
+MP-IMG3のhard prerequisiteはfull MP-IMG2であり、
+W1〜W5の限定技術完了では充足しない。
+
+したがってMP-IMG3 Uploadへは進まない。
+
+W1〜W5で成立した内容:
+
+W1:
+実WIC materialization前のbudget admission。
+
+W2:
+process-memory観測、bounded worker、
+stage hold、cancel/timeoutの停止帰属。
+
+W3:
+実Bgr565のformat admissionと画素検証。
+
+W4:
+矩形ROI出力とfull-frame budgetの分離。
+
+W5:
+orientation/ICC metadata取得と、
+画素・colour transform適用証明の分離。
+
+一方、W2が示した3-worker memory値は
+single collection windowの非原子的な合計である。
+
+それは実際のprocess countersの観測だが、
+WIC internal scratch、allocator reservation、
+真の同時allocation peakではない。
+
+W6ではW2を単に再実行するのではなく、
+
+- codec差
+- source寸法差
+- 同時worker数差
+- before-OnLoad / after-OnLoad段階差
+- repeated collection windows
+- sample欠落・worker終了時の証拠境界
+
+を新規に実装・実測する。
+
+目的は実WICのprocess-memory負荷について、
+どの範囲まで定量的に比較可能かを前進させることである。
+
+W6で実測されたprocess countersを、
+decoder内部allocationへ帰属させてはならない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. 正典と不変条件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+必読:
+
+docs/development/IMPLEMENTATION_MASTER_PLAN.md
+- MP-IMG2
+- MP-SEC3
+- §19.55 W2
+- §19.56 W3
+- §19.57 W4
+- §19.58 W5および最新disposition
+
+docs/architecture/DESKTOP_DESIGN_CONTRACTS.md
+- Media input admission and integrity
+- DC-MP-IMG2
+
+docs/development/BUILD_AND_RUN.md
+- MP-IMG2 W1〜W5の実行条件
+
+既存rendering architecture
+- §6
+- §6.1 Decode
+- §10の性能・予算区分
+
+ADR-0009 / ADR-0012
+
+不変条件:
+
+1. DecodeBudget/default/APIを変更しない。
+
+2. crates/media::decodeのadmit_decodeは、
+   decoder-agnostic preflight authorityであり続ける。
+
+3. 各workerはfull-frame requirementを満たしてから
+   materializationへ進む。
+
+4. ROI/metadata観測でfull-frame予算を減額しない。
+
+5. 内部scratchをprocess private bytesから逆算しない。
+
+6. 実予約をdeclared logical requirementと混同しない。
+
+7. 別時刻のworker maximaを合算して
+   concurrent peakと呼ばない。
+
+8. boundary holdの持続時間を
+   WIC decoder処理時間と呼ばない。
+
+9. W2のstop-confirmed state machineを維持する。
+
+10. 未承認のnumeric SLO、decoder採用、
+    production concurrency policyを決定しない。
+
+11. W1〜W5のSOURCE・Native・Gate証拠は不変。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. W6の技術目標
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+以下を新たに実証する。
+
+A. 同じdecoded寸法で、
+   codec/containerごとにprocess-memory観測が
+   どのように異なるか。
+
+B. 同じcodecで、
+   256×256と1024×1024のbounded sourceについて
+   観測されたmemory値がどう変化するか。
+
+C. 1-workerと3-worker cohortにおいて、
+   各processのmemory値と
+   同一collection windowでの合計値が
+   どう異なるか。
+
+D. before_onloadとafter_onloadという
+   明示的なinstrumentation boundaryで、
+   process-memory観測を分離できるか。
+
+E. 複数collection windowを記録し、
+   sample timing、観測欠落、PID再利用、
+   process早期終了を正しく扱えるか。
+
+F. 以上の結果から、実測値と未測定値を
+   混同しないcapability/resource表を生成できるか。
+
+W6の成果物は単なるPASS表ではなく、
+同一条件の観測系列と比較可能な数値を含めること。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. Taskernの実使用
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+インストール済みTaskernの実CLI仕様を確認する。
+
+taskern --version
+taskern --help
+
+prepare / compile / inspect等の実operationを
+インストール済みCLIから確認する。
+
+存在しないCLI形式を推測で実行しない。
+
+W6の新規Taskern requestを作成する。
+
+plan_id:
+cos-desktop-img2-w6
+
+task_id:
+img2-w6
+
+revision:
+1
+
+owner:
+DC-MP-IMG2
+
+goal:
+Measure bounded real-WIC process-memory scaling across
+codecs, image-size classes and concurrent worker cohorts,
+using repeated identity-verified collection windows while
+preserving the distinction between sampled process counters,
+logical requirements, internal scratch and actual reservations.
+
+packetには次を含める。
+
+- fixture generation
+- bounded observation runner
+- process identity verification
+- repeated memory collection
+- cohort arithmetic
+- independent verifier
+- negative mutations
+- Native source binding
+- W1〜W5 regressions
+- independent Refine Gates
+- Tern review
+- evidence closure
+
+実際にprepare/compileを実行する。
+
+Taskern requestとresponseの実バイト、
+packet SHA256、revision、operation resultを保存する。
+
+W5 packetをW6 packetとして転用しない。
+
+Taskernが実際に失敗した場合は
+TASKERN_BLOCKEDとして原因を記録する。
+成功応答を捏造しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. 実装可能範囲
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+主たる新規ファイル:
+
+apps/desktop/devtools/img2/
+- w6_memory_fixtures.py
+- w6_memory_matrix.py
+- w6_memory_verify.py
+
+apps/desktop/devtools/img2/tests/
+- test_w6_fixtures.py
+- test_w6_memory.py
+- test_w6_negative.py
+
+既存資産を再利用する。
+
+- w2_resource_matrix.py
+- w2_resource_verify.py
+- w3_fixtures.py
+- w3_oracle.py
+- w4_fixtures.py
+- w4_region_oracle.py
+- w5_metadata_fixtures.py
+- w5_metadata_oracle.py
+- wic_probe.ps1
+- wic_admission.ps1
+- decode_compare harness
+
+必要ならW2のsampler機能を共有helperとして
+抽出してよい。
+
+ただしW2の既存schema、CLI、結果、試験、
+historical replayを破壊してはならない。
+
+W5のmetadata/ROI/decoderの実装は変更しない。
+
+wic_probe.ps1の新しいhookが必要な場合は、
+既存のopt-in境界では実現できない理由と
+最小追加範囲を先に記録する。
+
+独立の新decoderや新しい製品APIは追加しない。
+
+許可されるSOURCE変更は、
+W6計測・検証に必要なdevelopment-only範囲と
+対応するテストに限定する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. FixtureとNative matrix
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+新しいdeterministic fixtureを生成する。
+
+原則として次の3種類を使う。
+
+- PNG RGB 8-bit
+- BMP24
+- BMP Bgr565
+
+寸法クラス:
+
+- 256×256
+- 1024×1024
+
+合計6組のcodec/size組合せを基本集合とする。
+
+Bgr565はW3と同じbitfield admission条件を使用する。
+Bgr555対照をBgr565に混入させない。
+
+ピクセルパターンには、
+全単色だけでなく、繰り返しのある
+非一様なdeterministic patternを使用する。
+
+ランダムなOS entropyには依存しない。
+
+fixture単位で記録する。
+
+- fixture_id
+- generator identity
+- container
+- encoded bytes
+- encoded SHA256
+- source dimensions
+- source pixel format
+- channel depth/storage bpp
+- logical row bytes
+- decoded requirement
+- BGRA32 requirement
+- declared scratch requirement
+- independent RGBA oracle digest
+
+入力サイズと全decoded要求量をchecked arithmeticで
+計算する。
+
+必須Native実験:
+
+SET A — Single-worker scaling
+6 codec/size組合せ。
+after_onload boundaryで1 workerずつ観測。
+
+SET B — Three-worker cohort
+256×256の3 codecを同時に起動し、
+after_onload boundaryで観測。
+
+SET C — Three-worker cohort
+1024×1024の3 codecを同時に起動し、
+after_onload boundaryで観測。
+
+SET D — Before-OnLoad cohort
+同じ3 codecのbounded cohortを使用し、
+before_onload boundaryで観測。
+
+SET B/C/Dについて少なくとも2回の反復を行う。
+
+最大worker数:
+3
+
+最大case数:
+24
+
+標準matrix:
+6 singles + 4〜6 cohorts相当を上限内で構成。
+
+各cohortのcase identityとsize/formatを固定し、
+反復間で入力バイトが同一であることを確認する。
+
+実行時に必要なメモリが安全上限を超える場合、
+対象cohortを縮小するかREFUSEDとする。
+
+上限を引き上げて成功を作ってはならない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. 実測観測点とsampler
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W2の実装を基準に、
+実Windows System.Diagnostics.Process countersを使用する。
+
+必須:
+
+- PID
+- Process.StartTime UTC ticks
+- 実行ファイルidentity
+- worker source identity
+- WorkingSet64
+- PrivateMemorySize64
+- 観測window開始/終了
+- timestamp clock domain
+- process alive before/after
+- observer command exit
+- capture byte length
+- observation completeness
+
+利用可能なら追加:
+
+- PeakWorkingSet64
+
+ただし、PeakWorkingSet64は
+process lifetimeのOS counterであり、
+WIC decoder固有scratchでも
+真の同時allocation peakでもない。
+
+OS counterやAPIが利用できない場合、
+その値はNOT_MEASUREDとする。
+
+W2の既存samplerは、
+同じcollection window内で
+各processを逐次読み取る。
+
+W6はこの実測を時間系列へ拡張する。
+
+各cohortについて
+少なくとも3つの有効collection windowを目標とする。
+
+各windowには:
+
+- sampler_start
+- sampler_end
+- QPC開始/終了とfrequency
+- parent monotonic開始/終了
+- per-worker sampling order
+- per-worker counter value
+- summed counters
+- sample gap
+- complete/partial status
+
+を保持する。
+
+重要:
+
+異なるworkerのcounter取得は
+原子的なsnapshotではない。
+
+window合計は
+DERIVED_WINDOW_SUMと分類する。
+
+複数window中の最大値は
+MAX_OBSERVED_WINDOW_SUMとする。
+
+「true concurrent peak」
+「allocator peak」
+「reserved memory」
+「decoder scratch peak」
+という名称へ変換しない。
+
+別々のprocess lifetime peakの合計を
+同時peakと呼ばない。
+
+取得期間にprocessが終了した場合、
+そのwindowを完全な成功標本として扱わない。
+
+途中失敗のwindowを無言で削除せず、
+失敗と欠落を記録する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. サイズ・同時数ごとの比較
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+比較表の軸:
+
+codec:
+PNG / BMP24 / Bgr565
+
+source size:
+256 / 1024
+
+workers:
+1 / 3
+
+observation boundary:
+before_onload / after_onload
+
+minimum metrics:
+
+- encoded_input_bytes
+- decoded_bytes_required
+- BGRA32_bytes_required
+- declared_scratch_bytes
+- sum_of_known_requirements
+- sampled_working_set_bytes
+- sampled_private_bytes
+- complete_window_count
+- incomplete_window_count
+- max_observed_window_working_set
+- max_observed_window_private
+- per-worker lifetime counter if available
+- worker status
+- sample status
+
+single-workerと3-workerの比較は、
+同一のmeasurement scopeに限定する。
+
+異なるsourceサイズ・codec・worker数を
+同じ1つのpeak値として集計しない。
+
+baselineとpost-OnLoadが別workerの場合、
+その差はMATCHED_RUN_DIFFERENCEと呼ぶ。
+
+WICの実allocation差と断定しない。
+
+期間中の真のallocation変動は
+サンプル間に隠れている可能性がある。
+
+結論には必ず次を含める。
+
+- 何を測定したか
+- どのworkerを測定したか
+- いつ測定したか
+- どのcounterを使ったか
+- 何は測定していないか
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. Resource authorityと上限
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+既存W2/W5のbounded executionを維持する。
+
+基本上限:
+
+- worker数: 最大3
+- 全case数: 最大24
+- worker deadline: 最大45秒
+- global deadline: 最大300秒
+- max dimension: 1024
+- max pixels: 1,048,576
+- decoded bytes: 最大4MiB
+- declared scratch: 最大8MiB
+- output file: 最大16MiB
+- owned work root: 最大64MiB
+- trace: 最大128 records / 128KiB
+- captured stdout/stderr: 各64KiBを上限とする
+- report: 最大8MiB
+- complete/incomplete sample windows合計: 最大32
+- observed private-byte bound: 768MiB
+
+以上はW2のbounded実験制約を引き継ぐ
+実験上限であり、製品のratified SLOではない。
+
+samplerが追加work root容量を必要とする場合、
+上限を自動的に増やさない。
+
+3標本を期限内に取得できなかった場合は
+取得数と不足理由を残す。
+
+不足を埋めるためにworkerを無期限に保持しない。
+
+WIC内部からの実予約情報は
+今回の利用可能APIにない。
+
+したがって:
+
+explicit_known_reservations_bytes:
+NOT_MEASURED
+
+decoder_internal_scratch_peak:
+NOT_MEASURED
+
+actually_proven_peak_concurrent_allocation:
+NOT_MEASURED
+
+を維持する。
+
+新しい予約APIや独立allocator計測手段が
+必要と判明した場合は、必要なAPIと権限を
+DESIGN_BLOCKEDとして記録する。
+
+今回、製品側に仮の予約管理APIを追加しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. Stop / timeout / cleanup
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W2のclosed stop state machineをそのまま使用する。
+
+有効なcancel/timeoutの証明には:
+
+- child alive at request
+- exit_before_request=false
+- hold_established=true
+- last stageが指定boundary
+- termination actually issued
+- kill_errorなし
+- reap confirmed
+- non-zero exit
+- requested/observed/exited整合
+- successful output未公開
+
+を要求する。
+
+単なるkill()成功、
+自然終了とのrace、
+OnLoad中の推定停止は
+confirmed cancellationにしない。
+
+観測中にworkerが自然終了した場合、
+実際のterminal outcomeを保持する。
+
+unverified_raceをcancelledへ昇格しない。
+
+sampleに失敗しただけで
+workerを成功終了したとみなさない。
+
+workerが残存する場合、
+所有processのみをboundedに回収する。
+
+他processや過去work rootを操作しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. 独立検証器と負例
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+新規w6_memory_verify.pyは
+正常recordと不正recordを独立検証する。
+
+必須検証:
+
+- case集合の固定
+- fixture digest
+- decoded requirement算術
+- process identity
+- executable identity
+- process lifetime
+- stage reachability
+- sampler exit 0
+- complete capture
+- sample window order
+- QPC domain/frequency
+- window内worker全数
+- per-worker counter存在
+- per-window合計の再計算
+- max observed windowの再計算
+- sampling gapsの明示
+- bound超過拒否
+- closed resource classification
+- output publication
+- stop契約
+- source identity
+
+最低限のnegative mutations:
+
+1. PIDだけを他workerへ交換
+2. PID start ticksを改変
+3. executable identityを変更
+4. workerを1件欠落
+5. windowを1件欠落
+6. sample順序を交換
+7. counterを負数にする
+8. counterをゼロ偽装
+9. window totalsだけを変更
+10. maximaだけを変更
+11. sample終了前にworker exit
+12. sampler exitを非ゼロへ変更
+13. truncated captureをcompleteと申告
+14. 逐次worker maxima合計をtrue peakと申告
+15. process private bytesをscratch peakへ昇格
+16. decoded requirementをactual reservationと申告
+17. pre/postを同一時点と偽装
+18. hold時間をWIC decoder latencyへ計上
+19. missing sampleを成功値へ置換
+20. cancelをdecoded/publishedへ変更
+21. unsupported/oversizeをdecodedへ変更
+22. source/probe identityを旧W5へ変更
+23. worker数を上限超過
+24. work/sample/report上限超過
+
+各負例は実際にverify()を呼び出し、
+正常recordのみPASSすること。
+
+検証器の期待値を
+Native resultから逆算してはならない。
+
+論理requirementとcounter sampleを
+別々の根拠から照合する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. Native実行条件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実Windows 11で実行する。
+
+PowerShell、.NET、WIC decoder identityを記録する。
+
+既存decode_compare consumerをビルドする。
+
+ビルドコマンドは現在のCargo target/feature定義と
+一致することを確認する。
+
+SOURCEを固定した後でNative実験を実行する。
+
+SOURCE変更後は、
+そのSOURCEでNative証拠を取り直す。
+
+保存するもの:
+
+- fixture生成結果
+- 入力digest
+- worker実行条件
+- probe result
+- stage trace
+- sampler window series
+- counter raw values
+- cohort totals
+- measurement limitations
+- worker terminal result
+- Native SOURCE identity
+- observer executable identity
+
+実験sourceに対して
+before/after hashを照合する。
+
+Windows OS counterが取得不能なら
+そのscopeはNOT_MEASURED。
+
+架空sampleを生成しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. Acceptance criteria
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W6の限定技術完了には
+次の全条件を要求する。
+
+A1. 新しいW6 SOURCEとTaskern packetが固定される。
+
+A2. 6種類の基本codec/size fixtureが
+    deterministicに再生成できる。
+
+A3. 実Windowsでsingle-workerと
+    3-worker cohortを実行する。
+
+A4. 少なくともbefore/afterの
+    明示boundary観測を区別する。
+
+A5. 反復されたcollection windowの
+    process counter値を取得・保持する。
+
+A6. PID、process lifetime、executable identityが
+    観測前後で検証される。
+
+A7. Window合計は各sampleから独立再計算できる。
+
+A8. Max observed valueを
+    異時刻worker maximaの和から作らない。
+
+A9. PNG/BMP24/Bgr565のdecoded outputを
+    独立RGBA oracleで照合する。
+
+A10. Full-frame admission requirementを保持する。
+
+A11. Refusal/cancel/timeoutが既存state machineを守る。
+
+A12. Process-level measurementと
+     allocator/internal scratchの未測定を分離する。
+
+A13. Native sample不足・sampler failureを
+     成功へ書き換えない。
+
+A14. Negative verifier testsがPASSする。
+
+A15. W1〜W5の回帰がPASSする。
+
+A16. 新固定SOURCEに対する独立Quality/Build Gateが
+     SUCCEEDEDする。
+
+A17. Tern独立レビューが0/0/0になる。
+
+W6の完了条件は
+「bounded process-memory scalingが実測でき、
+その証拠が検証可能なこと」である。
+
+真のallocator peakやWIC internal scratchの
+取得はW6の成功条件にしない。
+
+ただし、取得できていない事実を必ず残す。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. ローカル品質と回帰
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実行する。
+
+- W6 focused tests
+- W6 deterministic fixture regeneration
+- W6 independent pixel oracle
+- W6 memory arithmetic tests
+- W6 negative verifier tests
+- W6 real-WIC Native matrix
+- W5 portable regressions
+- W5 metadata/admission regressions
+- W4 ROI/budget regressions
+- W3 Bgr565 regressions
+- W2 memory/stop regressions
+- W1 pre-materialization admission
+- WIC admission selftest
+- decode_compare harness tests
+- crates/media admission tests
+- quality.ps1
+- workspace Rust tests
+- feature clippy/build/tests
+- R0 Python suite
+
+Rust品質確認:
+
+cargo fmt --all -- --check
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo test --locked --workspace
+cargo build --locked --workspace
+
+feature-specificコマンドは
+現行repositoryの正規手順に従う。
+
+W3/W4/W5 historical replayは
+各時点の固定SOURCE・verifier・Native記録を使用する。
+
+現行W6 SOURCE identityを
+historical Native記録に混入しない。
+
+各テストで:
+
+- passed
+- failed
+- ignored
+- skipped
+- NOT_RUN
+
+を区別する。
+
+既存accepted test数の減少が発生した場合は、
+原因を解決するまでclosureしない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. Refine独立Gates
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実験・SOURCE・Native記録を確定後、
+製品SOURCEをローカルcommitする。
+
+新しいfull candidate SHAを固定する。
+
+その固定候補に対して新規に実行する。
+
+- independent Quality Gate
+- independent Build Gate
+
+実際のRefine CLI仕様を確認して使用する。
+
+要求事項:
+
+- candidate full SHA一致
+- candidate digest一致
+- Quality全必須check PASS
+- Build全必須check PASS
+- status SUCCEEDED
+- inspect SUCCEEDED
+- verify SUCCEEDED
+- status/inspect/verify exit 0
+- artifact tuples一致
+- artifact原バイトとGit blob一致
+- cleanup complete
+- owner_alive=false
+- recovery_required=false
+
+preflight UNKNOWNを
+仮のPASSへ書き換えない。
+
+W5のGateを流用しない。
+
+Gate間で異なるcandidateを使用しない。
+
+実行がFAILED、NOT_RUN、repository error、
+recovery requiredとなった場合、
+それぞれ正しく保存する。
+
+SOURCE修正後は新candidateとする。
+
+docs-only証拠修正だけの場合、
+既存成功Gateを不要に再実行しない。
+
+Build executable digestを捕捉する場合は、
+実バイトから計算する。
+
+取得できない場合:
+NOT_CAPTURED
+
+と記録し、推定値で埋めない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. Tern独立レビュー
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tern-OMP review loopのみ使用する。
+
+omp -pは禁止。
+
+提出物:
+
+1. w6-review-source.zip
+2. w6-review-evidence.zip
+3. review-package.json
+
+review-packageには:
+
+- SOURCE full SHA
+- evidence HEAD
+- ZIP bytes/SHA256
+- source entry hashes
+- evidence entry hashes
+- Git blob/LF/CRLF correspondence
+- Native SOURCE identity
+- sampler identity
+- Gate candidate SHA/digest
+- Gate status/inspect/verify receipts
+- artifact tuples
+- capture実バイト対応
+- docs-only後続差分
+
+を含める。
+
+レビュー重点項目:
+
+R1. 実測をdecoder scratchへ誤帰属していないか。
+
+R2. 非原子的collection windowを
+    instantaneous peakとして扱っていないか。
+
+R3. 異時刻worker maximaを合計していないか。
+
+R4. PID再利用・worker早期終了を検出できるか。
+
+R5. before/afterのsource条件が一致するか。
+
+R6. 同時worker数が実際に3であった証拠があるか。
+
+R7. collection欠落を成功で隠していないか。
+
+R8. Full-frame admissionを維持しているか。
+
+R9. Bgr565のcodec/format帰属が正しいか。
+
+R10. W2 stop state machineを破壊していないか。
+
+R11. Legacy WIC CLI、ROI、metadata opt-inが維持されるか。
+
+R12. SOURCE/Native/Gate/evidenceの実バイトが一致するか。
+
+R13. 未測定項目をVERIFIEDへ昇格していないか。
+
+R14. W6をfull MP-IMG2 Decode Exitや
+     MP-IMG3 prerequisite充足として扱っていないか。
+
+レビュー分類:
+
+BLOCKING
+ACTIONABLE NON-BLOCKING
+EXCESSIVE
+
+レビューがHOLDなら、
+実指摘に限定して修正する。
+
+修正SOURCEを再固定し、
+必要なGateを取得して再レビューする。
+
+0/0/0まで評価ループを継続する。
+
+ただし無制限に新しい仕様や
+未承認のedge-case探索を拡張しない。
+
+曖昧・未解析の判定は
+手動確認境界として保持する。
+
+Tern回答は全文を取得し、
+request identity、実assistant identity、
+terminal verdict、countsを照合する。
+
+不完全なresponseをPASSとしない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. Evidence保存
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+保存先:
+
+docs/development/evidence-published/img2-w6-latest/
+
+最低限:
+
+- taskern-request.json
+- taskern-response.json
+- source-identity.json
+- execution-manifest.json
+- fixture-manifest.json
+- native-memory-matrix.json
+- memory-sample-series.json
+- cohort-comparison.json
+- allocation-scope.json
+- capability-table.json
+- admission-boundary.json
+- pixel-oracle.json
+- verifier-results.json
+- negative-tests.json
+- quality.json
+- quality-gate.json
+- build-gate.json
+- gate-preflight.json
+- gate-artifact-correspondence.json
+- source-evidence-reconciliation.json
+- storage.json
+- unmeasured.json
+- review-request.txt
+- review-response.txt
+- review.json
+- disposition.json
+
+実データの保存量を有限にする。
+
+fixture・pixel output・sampler recordは、
+必要な最小バイトとdigestを保持する。
+
+不要なraw private logs、credentials、
+executables、大容量scratchは保存しない。
+
+W5の既存証拠を変更しない。
+
+MP-IMG2-W6の新しい節を
+IMPLEMENTATION_MASTER_PLAN.mdに追加する。
+
+既存W1〜W5の本文・historyを保持する。
+広範囲の文字列置換は禁止する。
+
+BUILD_AND_RUN.mdにW6再現手順を記載する。
+
+Gate捕捉版と後続docs-only版を区別する。
+
+保存後のscratch削除は次を必須とする。
+
+- exact owned allowlist
+- successful completed work/repoのみ
+- evidence保存済み
+- owner process不在
+- reparseなし
+- 削除前Native verify exit 0
+- 削除後Native verify exit 0
+- verify結果一致
+
+FAILED/nonterminal Gate、authority、
+private logs、既存workspaceは削除しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. 明示的な非対象
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+今回は実装・承認しない。
+
+- product numeric memory SLO
+- decoder採用判断
+- FFmpeg製品依存導入
+- GPUI Upload
+- 新しい製品scheduler
+- 新しい製品allocation reservation API
+- WIC internal scratch実測の断定
+- true concurrent allocation peakの断定
+- actual allocator reservationの断定
+- cooperative in-decoder cancellation
+- 16K full decode
+- true region/sequential/tiled decode
+- 全codec対応
+- JPEG absolute raster correctness
+- ICC colour fidelity
+- 製品ICC/orientation policy
+- GPU memory allocation
+- MP-IMG3/IMG4/IMG5
+- Runtime RC-*
+- measured R0D ratification
+- UX/video closure
+- remote push
+- main merge
+- release
+
+既存Render/Decode契約の技術要件を
+今回の測定結果に合わせて縮小しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. 停止条件と権限境界
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実装はCallerの既存権限内で直ちに開始する。
+
+許可:
+
+- Taskern実行
+- W6 bounded devtool実装
+- 小型fixture生成
+- 実Windows Native観測
+- ローカル品質検証
+- ローカルSOURCE commit
+- 独立Refine Gate
+- Tern独立レビュー
+- docs-only evidence commit
+- 成功scratchの限定処分
+
+禁止:
+
+- remote push
+- main/release
+- Runtime変更
+- security authority変更
+- 新decoder採用
+- 新規dependencyの無断追加
+- unsafe / FFI
+- production budget API変更
+- OS権限変更
+- credential変更
+- 別repository変更
+
+停止条件:
+
+1. 必須hard prereqが失われている。
+2. Native samplerのprocess identityを証明できない。
+3. worker/processが安全上限を超過する。
+4. work rootの所有・削除境界を保証できない。
+5. SOURCEとNative identityが一致しない。
+6. 取得したcounterが不正または未定義。
+7. 新しいOS privileged APIが必要。
+8. 未承認のdecoder/allocator設計判断が必要。
+9. Refine Gateの実状態を確認できない。
+10. Ternのレビュー結果を完全取得できない。
+
+停止は該当操作に限定する。
+
+例えば、WIC内部scratchを取得できなくても、
+取得可能なWorkingSet/PrivateMemoryの
+bounded実測は続行する。
+
+未承認事項:
+DESIGN_BLOCKED
+
+権限不足:
+AUTHORITY_BLOCKED
+
+計測不能:
+NOT_MEASURED
+
+未実行:
+NOT_RUN
+
+証明不足:
+NOT_VERIFIED
+
+として個別に残す。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+21. W6限定closureと次の一手
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W6 LIMITED TECHNICAL COMPLETIONには:
+
+- 新規Taskern packet成立
+- 固定SOURCE成立
+- 実Windows bounded memory matrix成立
+- 複数codec・複数dimension実測
+- single/3-worker比較成立
+- process identityとsample window検証成立
+- independent pixel oracle成立
+- admission/stop/timeout不変
+- memory classificationの誤昇格なし
+- W1〜W5回帰成立
+- 独立Quality Gate成功
+- 独立Build Gate成功
+- Gate artifact実バイト対応成立
+- Tern independent review 0/0/0
+- 未測定境界の保存
+- 証拠とSOURCEの完全な対応
+
+を必要とする。
+
+成功した場合のみ
+MP-IMG2-W6 LIMITED TECHNICAL COMPLETIONと記録する。
+
+これは:
+
+full MP-IMG2 Decode Exit
+MP-IMG3 prerequisite
+R0D measured ratification
+Runtime acceptance
+Product UX acceptance
+main/release acceptance
+
+を意味しない。
+
+W6の後は、
+実測されたmemoryスケーリングと
+DC-MP-IMG2の残存要求を照合する。
+
+とくに:
+
+- 真のpartial/sequential/tiled API
+- decoder internal scratchを取得可能なAPI
+- actual allocator reservations
+- cooperative cancellation
+- 16Kと安全なfallback
+- decoder比較・adoption decision
+
+のうち、次に実装可能な単一sliceを選ぶ。
+
+未承認designを必要とする項目は分離し、
+利用可能な技術実験を不必要に停止しない。
+
+次のMP-IDと開始SHAは
+W6の最終固定状態から決定する。
+
+W6終了時の報告には:
+
+- SOURCE full SHA
+- evidence HEAD
+- Taskern packet digest
+- Native matrix結果
+- peak sampled metricsとlimitations
+- 回帰結果
+- Quality/Build Gate IDs
+- artifact correspondence
+- Tern verdict/counts
+- remaining full Decode Exit
+- next eligible single task
+
+を必ず含める。
+
+DIRECTIVE COMPLETE

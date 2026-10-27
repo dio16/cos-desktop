@@ -1,0 +1,312 @@
+{
+  "protocol": 1,
+  "op": "prepare",
+  "args": {
+    "draft": {
+      "draft_version": 1,
+      "plan_id": "cos-desktop-img2-w6",
+      "revision": 1,
+      "goal": "Measure bounded real-WIC process-memory scaling across codecs, image-size classes and concurrent worker cohorts using repeated identity-verified collection windows, separating process counters from logical requirements, internal scratch and actual reservations.",
+      "invariants": [],
+      "milestones": [],
+      "tasks": [
+        {
+          "task_id": "img2-w6",
+          "goal": "Implement and measure the W6 codec-size/concurrency matrix under DC-MP-IMG2 without changing product decode policy.",
+          "inputs": [
+            {
+              "id": "directive",
+              "description": "Full caller-selected directive: docs/development/evidence-published/img2-w5-latest/tern-next-directive.txt; correlated assistant0558a3a6-06d8-4744-8340-80ba83c6faa8. All constraints and acceptance below are caller-authored projections of that directive.",
+              "context_ids": []
+            },
+            {
+              "id": "canon",
+              "description": "MP-IMG1 local A/B and MP-SEC3 encoded admission technical completion; MP §19.55-.58; DC media-input-admission-and-integrity and DC-MP-IMG2; BUILD_AND_RUN W1-W5; Rendering§6/6.1/10; ADR0009/0012. Current W5 d75df9d0fef8d9eca39c41c563ada11252ed21cb accepted only limited scope; no W5 Gate reuse.",
+              "context_ids": []
+            },
+            {
+              "id": "existing",
+              "description": "Reuse w2_resource_matrix.Worker, closed stop state machine and observation hooks; w2_resource_verify constants/helpers, w3 Bgr565 oracle/fixture builders, w4 PNG/BMP oracle and historical replay patterns. No W5 probe/metadata/ROI edits planned.",
+              "context_ids": []
+            }
+          ],
+          "constraints": [
+            {
+              "id": "scope",
+              "level": "MUST",
+              "text": "Use DC-MP-IMG2 only under ADR-0009/0012. Start 57c330ab28c8777ba5aa004e14540279b28c6dfd on dev. W5 is limited technical completion; no full Decode Exit or IMG3 prerequisite claim. Preserve W1-W5 source/native/Gate bytes."
+            },
+            {
+              "id": "boundaries",
+              "level": "MUST",
+              "text": "Do not change product DecodeBudget/default/API, crates/media admission authority, GPUI, decoder dependencies, Runtime, OS privileges, credentials, unsafe/FFI, push, main or release. Reuse existing opt-in WIC hooks; no new hook unless its necessity is recorded first."
+            },
+            {
+              "id": "fixtures",
+              "level": "MUST",
+              "text": "Deterministic non-uniform PNG RGB8, BMP24, actual Bgr565 BI_BITFIELDS, each 256x256 and 1024x1024. Record encoded digest/length, dimensions, storage/channel depth, logical row/decoded/BGRA/scratch requirements and independent RGBA digest. Never mix Bgr555 into Bgr565."
+            },
+            {
+              "id": "matrix",
+              "level": "MUST",
+              "text": "SET A six after_onload singles. SET B 256x256 three-codec after_onload cohort twice. SET C 1024x1024 three-codec after_onload cohort twice. SET D fixed three-codec before_onload cohort twice. At most 24 worker cases, 3 live workers, 32 complete/incomplete windows. Target 3 windows per multiworker cohort; record any shortage explicitly, never extend holding indefinitely."
+            },
+            {
+              "id": "limits",
+              "level": "MUST",
+              "text": "Enforce worker45s/global300s, dimension1024/pixels1048576, decoded4MiB/scratch8MiB/output16MiB/work64MiB, trace128records/128KiB, captured stdout/stderr each64KiB, report8MiB, windows32, observed cohort private768MiB. These are experiment bounds, not product SLOs."
+            },
+            {
+              "id": "sampler",
+              "level": "MUST",
+              "text": "Real System.Diagnostics.Process: PID/StartTime UTC ticks/executable/source identity; WorkingSet64/PrivateMemorySize64; optional PeakWorkingSet64 classified as process-lifetime OS counter. Per-window QPC and parent monotonic brackets, sampling order, values, arithmetic totals, gaps, observer exit/capture length and complete/partial state. Preserve failed/partial windows. Process lifetime ends inside a window invalidate completeness."
+            },
+            {
+              "id": "classification",
+              "level": "MUST",
+              "text": "Classify non-atomic sequential window sums as DERIVED_WINDOW_SUM and maxima of valid windows as MAX_OBSERVED_WINDOW_SUM. Separate groups by codec,size,count,boundary. Separate-worker baseline/post differences are MATCHED_RUN_DIFFERENCE. No internal scratch, allocator reservation, true concurrent allocation peak or WIC-only latency claim. Missing APIs remain NOT_MEASURED."
+            },
+            {
+              "id": "stop",
+              "level": "MUST",
+              "text": "Reuse W2 Worker.stop exactly: alive request; exit_before_request false; established marked hold at specified boundary; termination issued; no kill error; nonzero exit; reap; monotonic request/observed/exit; no publication. Natural exit retains real outcome and unverified race never becomes cancelled."
+            },
+            {
+              "id": "negative",
+              "level": "MUST",
+              "text": "Exercise verify for all24 classes: PIDswap,startticks,exeidentity,missingworker,missingwindow,orderchange,negativecounter,zerocounter,wrongtotals,wrongmaxima,exitduringwindow,samplernonzero,truncatedcomplete,falseconcurrentpeak,privateasscratch,logicalasreservation,prepostfalsifiedsimultaneous,holdasWIClatency,missingassuccess,cancelasdecodedpublished,unsupportedoversizeasdecoded,oldW5sourceidentity,toomanyworkers,work/window/reportbounds. Expectations derive from independent source/logical arithmetic, never Native output."
+            },
+            {
+              "id": "source",
+              "level": "MUST",
+              "text": "Pin experimental source before Native; bind source and observer/harness executables before/after. Retain actual input/output pixels minimally with digest and reproducible generator to remain within 8MiB report. Build existing decode_compare. W3/W4/W5 historical replay uses each historical source, not current W6 hashes."
+            },
+            {
+              "id": "quality",
+              "level": "MUST",
+              "text": "Run W6 fixtures/oracle/memory/24negatives; W1-W5 regressions; WIC admission selftest; decode_compare/media admission tests; unchanged quality.ps1; workspace fmt/metadata/dependency-selftest/rules/clippy/tests/build; feature clippy/build/serialized tests; complete R0 Python. Separate pass/fail/ignored/skipped/NOT_RUN."
+            },
+            {
+              "id": "evidence",
+              "level": "MUST",
+              "text": "New same-candidate independent Refine Quality/Build, native status/inspect/verify and exact artifact/Git bytes; preflight UNKNOWN remains UNKNOWN. Capture build hash before allowed scratch disposal or NOT_CAPTURED. Required evidence lives under docs/development/evidence-published/img2-w6-latest; exact successful scratch only after retention, no process/reparse, before/after native integrity. Keep receipts, authority, logs and failed workspaces. Tern package contains source/evidence hashes and correspondence; resolve complete correlated review to0/0/0; record limited disposition and ask next single slice."
+            }
+          ],
+          "outputs": [
+            {
+              "id": "tooling",
+              "description": "Deterministic W6 fixtures, repeated process sampler/matrix, independent fail-closed verifier and focused tests.",
+              "media_type": "text/plain"
+            },
+            {
+              "id": "native",
+              "description": "Bounded Windows matrix, raw sample series, source/executable identities, cohort comparisons, arithmetic, independent raster proof and explicit measurement limitations.",
+              "media_type": "application/json"
+            },
+            {
+              "id": "closure",
+              "description": "Local quality and historical regression outcomes; pinned same-candidate Quality/Build receipts, artifact bytes, retention, complete Tern review and limited disposition.",
+              "media_type": "application/json"
+            }
+          ],
+          "acceptance": [
+            {
+              "id": "a01",
+              "statement": "New W6 SOURCE and Taskern packet are fixed.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a02",
+              "statement": "Six codec-size fixtures regenerate byte-identically.",
+              "output_ids": [
+                "tooling"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a03",
+              "statement": "Real Windows single-worker and three-worker experiments execute.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a04",
+              "statement": "before_onload and after_onload observations are explicitly distinct.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a05",
+              "statement": "Repeated collection windows preserve actual process counters.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a06",
+              "statement": "PID, lifetime and executable identity are verified before and after observation.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a07",
+              "statement": "Window sums independently recompute from per-process samples.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a08",
+              "statement": "Observed maxima are per-window maxima, never a sum of worker lifetime maxima.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a09",
+              "statement": "PNG/BMP24/Bgr565 decoded output matches an independent RGBA oracle.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a10",
+              "statement": "Full-frame admission remains unchanged.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a11",
+              "statement": "Refusal/cancel/timeout preserve the existing W2 state machine.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a12",
+              "statement": "Process measurement is separate from unmeasured allocator/internal scratch.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a13",
+              "statement": "Insufficient Native samples and sampler failures are never rewritten as success.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a14",
+              "statement": "All 24 negative verifier mutation classes fail closed.",
+              "output_ids": [
+                "tooling"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a15",
+              "statement": "W1-W5 regression behavior remains intact.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "a16",
+              "statement": "Independent Quality and Build Gates succeed on one new candidate. A complete correlated Tern review reaches 0/0/0.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            }
+          ],
+          "evaluation": [
+            {
+              "id": "behavior",
+              "kind": "automated",
+              "requirement": "Actual bounded Windows WIC measurements plus independent source-raster/arithmetic/identity verification and deterministic mutation tests, preserving all missing/failure facts.",
+              "metric": []
+            },
+            {
+              "id": "workflow",
+              "kind": "automated",
+              "requirement": "Actual Taskern; complete unchanged local/feature/R0/historical checks; new independent same-candidate Refine Quality/Build and native integrity; privacy-reviewed Tern packages and complete0/0/0.",
+              "metric": []
+            }
+          ],
+          "dependencies": [],
+          "context": [],
+          "annotations": []
+        }
+      ]
+    },
+    "handoff": [
+      {
+        "task_id": "img2-w6",
+        "context": {
+          "schema_version": 1,
+          "items": []
+        },
+        "budget": {
+          "schema_version": 1,
+          "window_tokens": 32000,
+          "reserved_output_tokens": 4000,
+          "tool_reserve_tokens": 4000,
+          "max_input_bytes": 24000
+        }
+      }
+    ],
+    "emit": "both"
+  }
+}
