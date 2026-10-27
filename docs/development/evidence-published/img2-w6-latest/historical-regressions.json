@@ -9,11 +9,10 @@
         "--selftest"
       ],
       "result": {
-        "id": "w1-runner-selftest",
         "exit": 0,
-        "error": null,
-        "stdout_sha256": "sha256:a2ff3a5d6e44f07eba7f56d6cbdf278bf96b8f2923d8ee1b85ff6bf08ea593c0",
-        "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "signal": null,
+        "start": "2026-10-27T23:05:24.417Z",
+        "end": "2026-10-27T23:05:24.549Z"
       },
       "stdout": "{\"checks\": 7, \"failures\": []}\r\n",
       "stderr": ""
@@ -26,11 +25,10 @@
         "apps/desktop/tests/wic_admission_selftest.ps1"
       ],
       "result": {
-        "id": "wic-admission-selftest",
         "exit": 0,
-        "error": null,
-        "stdout_sha256": "sha256:a83888ce721623ea98cc2060a8462e6a14066f632a3a81105762ba56fe3b6f93",
-        "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "signal": null,
+        "start": "2026-10-27T23:05:24.470Z",
+        "end": "2026-10-27T23:05:25.500Z"
       },
       "stdout": "{\"checks\":28,\"failures\":[]}\r\n",
       "stderr": ""
@@ -43,11 +41,10 @@
         "apps/desktop/devtools/img2/w2_probe_selftest.ps1"
       ],
       "result": {
-        "id": "w2-probe-selftest",
         "exit": 0,
-        "error": null,
-        "stdout_sha256": "sha256:c8e3c070f834d8ef8d7a1fdfdbe2262f8d0a78df0505a4a61cc6e2184c91e311",
-        "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "signal": null,
+        "start": "2026-10-27T23:05:24.485Z",
+        "end": "2026-10-27T23:05:38.459Z"
       },
       "stdout": "w2_probe_selftest: PASS\r\n",
       "stderr": ""
@@ -64,14 +61,13 @@
         "--rasters",
         "docs/development/evidence-published/img2-w2-latest/native-rasters.zip",
         "--out",
-        "<private-evidence>/regression-output/w2-oracle-check.json"
+        "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/r1-w2-oracle.json"
       ],
       "result": {
-        "id": "w2-oracle",
         "exit": 0,
-        "error": null,
-        "stdout_sha256": "sha256:07f3d8ed2280f035ddfc89339504c103e8cd861f9a0318b46f64bd2242f18e22",
-        "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "signal": null,
+        "start": "2026-10-27T23:05:24.425Z",
+        "end": "2026-10-27T23:05:39.534Z"
       },
       "stdout": "{\"ok\": true, \"runs\": 2, \"decoded_worker_rasters\": [10, 9], \"structural_repeats_identical\": true, \"sha256\": \"sha256:0a06c1f49d9e828724954d828388c907a62b405c1c6400006414ddbb80bfd456\"}\r\n",
       "stderr": ""
@@ -90,11 +86,10 @@
         "f8dfc3009fd7526e1b055968e2fc19892c007190"
       ],
       "result": {
-        "id": "w3-retained-native-replay",
         "exit": 0,
-        "error": null,
-        "stdout_sha256": "sha256:b5ed1d72736ab0e375221a676854ccffc5bb59174f770f87c6dc4d020893fc35",
-        "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "signal": null,
+        "start": "2026-10-27T23:05:24.435Z",
+        "end": "2026-10-27T23:05:25.902Z"
       },
       "stdout": "{\"capability_rows\": [{\"bpp\": 16, \"case_id\": \"format_primaries\", \"depth\": 6, \"format\": \"Bgr565\", \"height\": 1, \"pixel_verified\": true, \"width\": 5}, {\"bpp\": 16, \"case_id\": \"format_midtones\", \"depth\": 6, \"format\": \"Bgr565\", \"height\": 2, \"pixel_verified\": true, \"width\": 7}, {\"bpp\": 16, \"case_id\": \"format_narrow_bottom\", \"depth\": 6, \"format\": \"Bgr565\", \"height\": 3, \"pixel_verified\": true, \"width\": 1}, {\"bpp\": 16, \"case_id\": \"format_odd_bottom\", \"depth\": 6, \"format\": \"Bgr565\", \"height\": 3, \"pixel_verified\": true, \"width\": 3}, {\"bpp\": 16, \"case_id\": \"format_odd_top\", \"depth\": 6, \"format\": \"Bgr565\", \"height\": 3, \"pixel_verified\": true, \"width\": 3}, {\"bpp\": 16, \"case_id\": \"max_dimension_at\", \"depth\": 6, \"format\": \"Bgr565\", \"height\": 3, \"pixel_verified\": true, \"width\": 3}, {\"bpp\": 16, \"case_id\": \"max_pixels_at\", \"depth\": 6, \"format\": \"Bgr565\", \"height\": 3, \"pixel_verified\": true, \"width\": 3}, {\"bpp\": 16, \"case_id\": \"max_bit_depth_at\", \"depth\": 6, \"format\": \"Bgr565\", \"height\": 3, \"pixel_verified\": true, \"width\": 3}, {\"bpp\": 16, \"case_id\": \"max_decoded_bytes_at\", \"depth\": 6, \"format\": \"Bgr565\", \"height\": 3, \"pixel_verified\": true, \"width\": 3}, {\"bpp\": 16, \"case_id\": \"max_scratch_bytes_at\", \"depth\": 6, \"format\": \"Bgr565\", \"height\": 3, \"pixel_verified\": true, \"width\": 3}], \"consumer_pixels_verified\": 5, \"fixture_count\": 12, \"meaning\": \"replay of retained raw Native bytes and observations; not a new WIC run\", \"ok\": true, \"unmeasured\": [\"WIC internal stride/scratch\", \"true concurrent allocation peak\", \"actual reservations\", \"cooperative in-decoder cancellation\", \"region/sequential/tiled decode\", \"ICC/orientation complete behavior\", \"16K decode\", \"JPEG absolute raster\", \"full Decode exit\"], \"worker_count\": 24}\r\n",
       "stderr": ""
@@ -113,11 +108,10 @@
         "e357888e1d622a3b672cb20f18143ac8468cc745"
       ],
       "result": {
-        "id": "w4-native-replay",
         "exit": 0,
-        "error": null,
-        "stdout_sha256": "sha256:0fbf58a26b13833569ca9f48566fb7629bb5b0e10c501e14f1ee183b824cbcbb",
-        "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "signal": null,
+        "start": "2026-10-27T23:05:24.447Z",
+        "end": "2026-10-27T23:05:25.863Z"
       },
       "stdout": "{\"budget_boundary\": {\"case_id\": \"full_frame_budget_small_roi\", \"full_frame_decoded_bytes\": 12288, \"max_decoded_bytes\": 1024, \"outcome\": \"oversize\", \"reason_code\": \"max_decoded_bytes_exceeded\", \"roi_height\": 1, \"roi_output\": \"refused\", \"roi_output_bytes_required\": 4, \"roi_width\": 1, \"true_partial_decode\": \"not_verified\"}, \"capability_rows\": [{\"bits_per_channel\": 8, \"bits_per_pixel\": 24, \"case_id\": \"roi_full_png\", \"full_frame_materialization\": \"observed\", \"height\": 5, \"internal_decoder_scratch\": \"not_measured\", \"preview_fallback\": \"bounded_full_frame\", \"roi_output\": \"verified\", \"sequential_decode\": \"not_verified\", \"source_format\": \"Bgr24\", \"tiled_decode\": \"not_verified\", \"true_partial_decode\": \"not_verified\", \"width\": 7, \"x\": 0, \"y\": 0}, {\"bits_per_channel\": 8, \"bits_per_pixel\": 24, \"case_id\": \"roi_center_png\", \"full_frame_materialization\": \"observed\", \"height\": 2, \"internal_decoder_scratch\": \"not_measured\", \"preview_fallback\": \"bounded_full_frame\", \"roi_output\": \"verified\", \"sequential_decode\": \"not_verified\", \"source_format\": \"Bgr24\", \"tiled_decode\": \"not_verified\", \"true_partial_decode\": \"not_verified\", \"width\": 3, \"x\": 2, \"y\": 1}, {\"bits_per_channel\": 8, \"bits_per_pixel\": 24, \"case_id\": \"roi_top_left_1x1\", \"full_frame_materialization\": \"observed\", \"height\": 1, \"internal_decoder_scratch\": \"not_measured\", \"preview_fallback\": \"bounded_full_frame\", \"roi_output\": \"verified\", \"sequential_decode\": \"not_verified\", \"source_format\": \"Bgr24\", \"tiled_decode\": \"not_verified\", \"true_partial_decode\": \"not_verified\", \"width\": 1, \"x\": 0, \"y\": 0}, {\"bits_per_channel\": 8, \"bits_per_pixel\": 24, \"case_id\": \"roi_bottom_right_1x1\", \"full_frame_materialization\": \"observed\", \"height\": 1, \"internal_decoder_scratch\": \"not_measured\", \"preview_fallback\": \"bounded_full_frame\", \"roi_output\": \"verified\", \"sequential_decode\": \"not_verified\", \"source_format\": \"Bgr24\", \"tiled_decode\": \"not_verified\", \"true_partial_decode\": \"not_verified\", \"width\": 1, \"x\": 6, \"y\": 4}, {\"bits_per_channel\": 8, \"bits_per_pixel\": 32, \"case_id\": \"roi_vertical_rgba\", \"full_frame_materialization\": \"observed\", \"height\": 4, \"internal_decoder_scratch\": \"not_measured\", \"preview_fallback\": \"bounded_full_frame\", \"roi_output\": \"verified\", \"sequential_decode\": \"not_verified\", \"source_format\": \"Bgra32\", \"tiled_decode\": \"not_verified\", \"true_partial_decode\": \"not_verified\", \"width\": 1, \"x\": 0, \"y\": 0}, {\"bits_per_channel\": 8, \"bits_per_pixel\": 32, \"case_id\": \"roi_horizontal_rgba\", \"full_frame_materialization\": \"observed\", \"height\": 1, \"internal_decoder_scratch\": \"not_measured\", \"preview_fallback\": \"bounded_full_frame\", \"roi_output\": \"verified\", \"sequential_decode\": \"not_verified\", \"source_format\": \"Bgra32\", \"tiled_decode\": \"not_verified\", \"true_partial_decode\": \"not_verified\", \"width\": 6, \"x\": 0, \"y\": 2}, {\"bits_per_channel\": 8, \"bits_per_pixel\": 24, \"case_id\": \"roi_odd_bmp24\", \"full_frame_materialization\": \"observed\", \"height\": 3, \"internal_decoder_scratch\": \"not_measured\", \"preview_fallback\": \"bounded_full_frame\", \"roi_output\": \"verified\", \"sequential_decode\": \"not_verified\", \"source_format\": \"Bgr24\", \"tiled_decode\": \"not_verified\", \"true_partial_decode\": \"not_verified\", \"width\": 5, \"x\": 1, \"y\": 1}, {\"bits_per_channel\": 8, \"bits_per_pixel\": 24, \"case_id\": \"roi_boundary_bmp24\", \"full_frame_materialization\": \"observed\", \"height\": 4, \"internal_decoder_scratch\": \"not_measured\", \"preview_fallback\": \"bounded_full_frame\", \"roi_output\": \"verified\", \"sequential_decode\": \"not_verified\", \"source_format\": \"Bgr24\", \"tiled_decode\": \"not_verified\", \"true_partial_decode\": \"not_verified\", \"width\": 6, \"x\": 1, \"y\": 1}, {\"bgr565_limited_proof\": true, \"bits_per_channel\": 6, \"bits_per_pixel\": 16, \"case_id\": \"roi_full_bgr565\", \"full_frame_materialization\": \"observed\", \"height\": 1, \"internal_decoder_scratch\": \"not_measured\", \"preview_fallback\": \"bounded_full_frame\", \"roi_output\": \"verified\", \"sequential_decode\": \"not_verified\", \"source_format\": \"Bgr565\", \"tiled_decode\": \"not_verified\", \"true_partial_decode\": \"not_verified\", \"width\": 5, \"x\": 0, \"y\": 0}, {\"bgr565_limited_proof\": true, \"bits_per_channel\": 6, \"bits_per_pixel\": 16, \"case_id\": \"roi_center_bgr565_odd\", \"full_frame_materialization\": \"observed\", \"height\": 1, \"internal_decoder_scratch\": \"not_measured\", \"preview_fallback\": \"bounded_full_frame\", \"roi_output\": \"verified\", \"sequential_decode\": \"not_verified\", \"source_format\": \"Bgr565\", \"tiled_decode\": \"not_verified\", \"true_partial_decode\": \"not_verified\", \"width\": 1, \"x\": 1, \"y\": 1}, {\"bits_per_channel\": 5, \"bits_per_pixel\": 16, \"case_id\": \"roi_full_bgr555_control\", \"full_frame_materialization\": \"observed\", \"height\": 3, \"internal_decoder_scratch\": \"not_measured\", \"preview_fallback\": \"bounded_full_frame\", \"roi_output\": \"verified\", \"sequential_decode\": \"not_verified\", \"source_format\": \"Bgr555\", \"tiled_decode\": \"not_verified\", \"true_partial_decode\": \"not_verified\", \"width\": 3, \"x\": 0, \"y\": 0}], \"fixture_count\": 9, \"meaning\": \"Actual WIC rectangle output and refusals; rectangle output is not region decode.\", \"ok\": true, \"roi_pixels_verified\": 11, \"unmeasured\": [\"WIC internal stride/scratch\", \"allocator reservations\", \"true concurrent allocation peak\", \"cooperative in-decoder cancellation\", \"16K full decode\", \"region/sequential/tiled decode\", \"ICC/orientation complete behavior\", \"JPEG absolute raster\", \"full Decode exit\"], \"worker_count\": 24}\r\n",
       "stderr": ""
@@ -134,15 +128,15 @@
         "."
       ],
       "result": {
-        "id": "w5-native-replay",
         "exit": 0,
-        "error": null,
-        "stdout_sha256": "sha256:a7dcceca9825b783e8386702655bf82f3f4af95a412fb39b4367bb93ef4c4f30",
-        "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        "signal": null,
+        "start": "2026-10-27T23:05:24.459Z",
+        "end": "2026-10-27T23:05:24.679Z"
       },
       "stdout": "{\"capability_rows\": [{\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"ABSENT\", \"ICC_readability\": \"NOT_APPLICABLE\", \"case_id\": \"png_plain\", \"codec\": \"png\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate\", \"measured_output_dimensions\": [3, 2], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"NOT_OBSERVED\", \"orientation_metadata\": \"ABSENT\", \"orientation_value\": null, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"ABSENT\", \"ICC_readability\": \"NOT_APPLICABLE\", \"case_id\": \"bmp24_plain\", \"codec\": \"bmp\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate\", \"measured_output_dimensions\": [3, 2], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"NOT_OBSERVED\", \"orientation_metadata\": \"ABSENT\", \"orientation_value\": null, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"ABSENT\", \"ICC_readability\": \"NOT_APPLICABLE\", \"case_id\": \"tiff_ori1\", \"codec\": \"tif\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate\", \"measured_output_dimensions\": [3, 2], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"NOT_OBSERVED\", \"orientation_metadata\": \"OBSERVED\", \"orientation_value\": 1, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"ABSENT\", \"ICC_readability\": \"NOT_APPLICABLE\", \"case_id\": \"tiff_ori3\", \"codec\": \"tif\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate\", \"measured_output_dimensions\": [3, 2], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"NOT_OBSERVED\", \"orientation_metadata\": \"OBSERVED\", \"orientation_value\": 3, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"ABSENT\", \"ICC_readability\": \"NOT_APPLICABLE\", \"case_id\": \"tiff_ori6\", \"codec\": \"tif\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate\", \"measured_output_dimensions\": [3, 2], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"NOT_OBSERVED\", \"orientation_metadata\": \"OBSERVED\", \"orientation_value\": 6, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"ABSENT\", \"ICC_readability\": \"NOT_APPLICABLE\", \"case_id\": \"tiff_ori8\", \"codec\": \"tif\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate\", \"measured_output_dimensions\": [3, 2], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"NOT_OBSERVED\", \"orientation_metadata\": \"OBSERVED\", \"orientation_value\": 8, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"ABSENT\", \"ICC_readability\": \"NOT_APPLICABLE\", \"case_id\": \"tiff_ori_invalid\", \"codec\": \"tif\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate\", \"measured_output_dimensions\": [3, 2], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"NOT_OBSERVED\", \"orientation_metadata\": \"OBSERVED\", \"orientation_value\": 99, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"ABSENT\", \"ICC_readability\": \"NOT_APPLICABLE\", \"case_id\": \"tiff_ori_conflict\", \"codec\": \"tif\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate\", \"measured_output_dimensions\": [3, 2], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"NOT_OBSERVED\", \"orientation_metadata\": \"CONFLICTING\", \"orientation_value\": 6, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"ABSENT\", \"ICC_readability\": \"NOT_APPLICABLE\", \"case_id\": \"tiff_icc_absent\", \"codec\": \"tif\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate\", \"measured_output_dimensions\": [3, 2], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"NOT_OBSERVED\", \"orientation_metadata\": \"OBSERVED\", \"orientation_value\": 1, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"VERIFIED\", \"ICC_readability\": \"VERIFIED\", \"case_id\": \"tiff_icc_valid\", \"codec\": \"tif\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate\", \"measured_output_dimensions\": [3, 2], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"NOT_OBSERVED\", \"orientation_metadata\": \"OBSERVED\", \"orientation_value\": 1, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"INVALID_TAG_IGNORED\", \"ICC_readability\": \"NOT_READABLE\", \"case_id\": \"tiff_icc_truncated\", \"codec\": \"tif\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"rectangle/format conversion is not ICC colour conversion; WIC did not auto-rotate\", \"measured_output_dimensions\": [3, 2], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"NOT_OBSERVED\", \"orientation_metadata\": \"OBSERVED\", \"orientation_value\": 1, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"ABSENT\", \"ICC_readability\": \"NOT_APPLICABLE\", \"case_id\": \"tiff_ori6_apply\", \"codec\": \"tif\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"VERIFIED\", \"full_frame_admission\": \"ENFORCED\", \"limitation\": \"explicit probe rotation, not a product policy\", \"measured_output_dimensions\": [2, 3], \"measured_source_dimensions\": [3, 2], \"orientation_application\": \"VERIFIED\", \"orientation_metadata\": \"OBSERVED\", \"orientation_value\": 6, \"source_format\": \"Bgr24\"}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"OBSERVED\", \"ICC_readability\": \"REFUSED_CAP\", \"case_id\": \"tiff_icc_oversized\", \"codec\": \"tiff\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"REFUSED\", \"full_frame_admission\": \"admitted_then_metadata_refused\", \"limitation\": \"metadata byte bound\", \"orientation_application\": \"NOT_RUN\", \"orientation_metadata\": \"OBSERVED\", \"orientation_value\": 1}, {\"ICC_application\": \"NOT_VERIFIED\", \"ICC_presence\": \"UNAVAILABLE\", \"ICC_readability\": \"UNAVAILABLE\", \"case_id\": \"unsupported_source\", \"codec\": \"bmp\", \"colour_transform_fidelity\": \"NOT_VERIFIED\", \"decoded_output\": \"UNSUPPORTED\", \"full_frame_admission\": \"not_enforced\", \"limitation\": \"unsupported container is not a metadata capability\", \"orientation_metadata\": \"UNAVAILABLE\"}], \"fixture_count\": 14, \"meaning\": \"Actual WIC metadata observation; orientation/ICC presence is not transform fidelity.\", \"ok\": true, \"orientation_verified\": 1, \"unmeasured\": [\"WIC internal colour pipeline and scratch\", \"allocator reservations\", \"true concurrent allocation peak\", \"cooperative in-decoder cancellation\", \"16K full decode\", \"true region/sequential/tiled decode\", \"ICC colour transform fidelity\", \"JPEG absolute raster\", \"product orientation/colour policy\"], \"worker_count\": 16}\r\n",
       "stderr": ""
     }
   ],
-  "scope": "W3/W4 replay is bound to each historical source commit, W5 current source is byte-unchanged. Not a new W1–W5 Native execution."
+  "scope": "W3/W4 replay is bound to each historical source commit, W5 current source is byte-unchanged. Not a new W1–W5 Native execution.",
+  "regression_source": "f99bf25b5d61152e3bb22a88e2e8efccc823b9ad"
 }

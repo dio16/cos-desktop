@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source": "edfcdf104f66e89bf9deae6b03bde22427c84e9c",
+  "source": "f99bf25b5d61152e3bb22a88e2e8efccc823b9ad",
   "platform": {
     "dotnet": ".NET 10.0.13",
     "os": "Microsoft Windows NT 10.0.26300.0",
@@ -28,11 +28,11 @@
     "max_pixels": 1048576,
     "max_scratch_bytes": 8388608
   },
-  "duration_ns": 42160711800,
-  "work_bytes": 7356312,
+  "duration_ns": 42631409600,
+  "work_bytes": 7356293,
   "total_decode_cases": 24,
   "additional_consumer_decode_cases": 0,
-  "harness_build_sha256": "sha256:9f15861363888a6191ba331dea08b2afe74e48ac56d42022cc8cd2a761344794",
+  "harness_build_sha256": "sha256:d72e0762efb0dd210cb462d97db00ae2f364f873ff49a84999ae43cab3b9dd49",
   "harness_execution": "NOT_RUN_BY_MEMORY_MATRIX; separately built and exercised by existing harness tests",
   "groups": [
     {

@@ -6,8 +6,8 @@
       "case_id": "single_png_256_png_256",
       "codec": "png",
       "group_id": "single_png_256",
-      "max_sampled_private": 41156608,
-      "max_sampled_working_set": 114888704,
+      "max_sampled_private": 42012672,
+      "max_sampled_working_set": 113745920,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 1
@@ -17,8 +17,8 @@
       "case_id": "single_bmp24_256_bmp24_256",
       "codec": "bmp24",
       "group_id": "single_bmp24_256",
-      "max_sampled_private": 41758720,
-      "max_sampled_working_set": 116150272,
+      "max_sampled_private": 42692608,
+      "max_sampled_working_set": 116903936,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 1
@@ -28,8 +28,8 @@
       "case_id": "single_bgr565_256_bgr565_256",
       "codec": "bgr565",
       "group_id": "single_bgr565_256",
-      "max_sampled_private": 41562112,
-      "max_sampled_working_set": 116154368,
+      "max_sampled_private": 41603072,
+      "max_sampled_working_set": 115924992,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 1
@@ -39,8 +39,8 @@
       "case_id": "single_png_1024_png_1024",
       "codec": "png",
       "group_id": "single_png_1024",
-      "max_sampled_private": 47030272,
-      "max_sampled_working_set": 121442304,
+      "max_sampled_private": 46592000,
+      "max_sampled_working_set": 120745984,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 1024,
       "workers": 1
@@ -50,8 +50,8 @@
       "case_id": "single_bmp24_1024_bmp24_1024",
       "codec": "bmp24",
       "group_id": "single_bmp24_1024",
-      "max_sampled_private": 46645248,
-      "max_sampled_working_set": 120987648,
+      "max_sampled_private": 49192960,
+      "max_sampled_working_set": 123981824,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 1024,
       "workers": 1
@@ -61,8 +61,8 @@
       "case_id": "single_bgr565_1024_bgr565_1024",
       "codec": "bgr565",
       "group_id": "single_bgr565_1024",
-      "max_sampled_private": 44519424,
-      "max_sampled_working_set": 118861824,
+      "max_sampled_private": 44056576,
+      "max_sampled_working_set": 118214656,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 1024,
       "workers": 1
@@ -72,8 +72,8 @@
       "case_id": "cohort_small_1_png_256",
       "codec": "png",
       "group_id": "cohort_small_1",
-      "max_sampled_private": 45395968,
-      "max_sampled_working_set": 122306560,
+      "max_sampled_private": 44584960,
+      "max_sampled_working_set": 121720832,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -83,8 +83,8 @@
       "case_id": "cohort_small_1_bmp24_256",
       "codec": "bmp24",
       "group_id": "cohort_small_1",
-      "max_sampled_private": 45166592,
-      "max_sampled_working_set": 122089472,
+      "max_sampled_private": 45195264,
+      "max_sampled_working_set": 122818560,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -94,8 +94,8 @@
       "case_id": "cohort_small_1_bgr565_256",
       "codec": "bgr565",
       "group_id": "cohort_small_1",
-      "max_sampled_private": 42680320,
-      "max_sampled_working_set": 117882880,
+      "max_sampled_private": 44810240,
+      "max_sampled_working_set": 121708544,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -105,8 +105,8 @@
       "case_id": "cohort_small_2_png_256",
       "codec": "png",
       "group_id": "cohort_small_2",
-      "max_sampled_private": 44433408,
-      "max_sampled_working_set": 121401344,
+      "max_sampled_private": 44896256,
+      "max_sampled_working_set": 121561088,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -116,8 +116,8 @@
       "case_id": "cohort_small_2_bmp24_256",
       "codec": "bmp24",
       "group_id": "cohort_small_2",
-      "max_sampled_private": 44572672,
-      "max_sampled_working_set": 121495552,
+      "max_sampled_private": 41717760,
+      "max_sampled_working_set": 116310016,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -127,8 +127,8 @@
       "case_id": "cohort_small_2_bgr565_256",
       "codec": "bgr565",
       "group_id": "cohort_small_2",
-      "max_sampled_private": 42397696,
-      "max_sampled_working_set": 117612544,
+      "max_sampled_private": 44765184,
+      "max_sampled_working_set": 121061376,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -138,8 +138,8 @@
       "case_id": "cohort_large_1_png_1024",
       "codec": "png",
       "group_id": "cohort_large_1",
-      "max_sampled_private": 47370240,
-      "max_sampled_working_set": 122183680,
+      "max_sampled_private": 46911488,
+      "max_sampled_working_set": 121409536,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 1024,
       "workers": 3
@@ -149,8 +149,8 @@
       "case_id": "cohort_large_1_bmp24_1024",
       "codec": "bmp24",
       "group_id": "cohort_large_1",
-      "max_sampled_private": 46764032,
-      "max_sampled_working_set": 121708544,
+      "max_sampled_private": 49512448,
+      "max_sampled_working_set": 126345216,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 1024,
       "workers": 3
@@ -160,8 +160,8 @@
       "case_id": "cohort_large_1_bgr565_1024",
       "codec": "bgr565",
       "group_id": "cohort_large_1",
-      "max_sampled_private": 44871680,
-      "max_sampled_working_set": 119635968,
+      "max_sampled_private": 44806144,
+      "max_sampled_working_set": 119377920,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 1024,
       "workers": 3
@@ -171,8 +171,8 @@
       "case_id": "cohort_large_2_png_1024",
       "codec": "png",
       "group_id": "cohort_large_2",
-      "max_sampled_private": 46964736,
-      "max_sampled_working_set": 121880576,
+      "max_sampled_private": 47026176,
+      "max_sampled_working_set": 121597952,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 1024,
       "workers": 3
@@ -182,8 +182,8 @@
       "case_id": "cohort_large_2_bmp24_1024",
       "codec": "bmp24",
       "group_id": "cohort_large_2",
-      "max_sampled_private": 49487872,
-      "max_sampled_working_set": 126554112,
+      "max_sampled_private": 47026176,
+      "max_sampled_working_set": 121532416,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 1024,
       "workers": 3
@@ -193,8 +193,8 @@
       "case_id": "cohort_large_2_bgr565_1024",
       "codec": "bgr565",
       "group_id": "cohort_large_2",
-      "max_sampled_private": 47038464,
-      "max_sampled_working_set": 124342272,
+      "max_sampled_private": 44703744,
+      "max_sampled_working_set": 119439360,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 1024,
       "workers": 3
@@ -204,8 +204,8 @@
       "case_id": "cohort_before_1_png_256",
       "codec": "png",
       "group_id": "cohort_before_1",
-      "max_sampled_private": 44498944,
-      "max_sampled_working_set": 121921536,
+      "max_sampled_private": 41938944,
+      "max_sampled_working_set": 116264960,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -215,8 +215,8 @@
       "case_id": "cohort_before_1_bmp24_256",
       "codec": "bmp24",
       "group_id": "cohort_before_1",
-      "max_sampled_private": 44453888,
-      "max_sampled_working_set": 122122240,
+      "max_sampled_private": 41779200,
+      "max_sampled_working_set": 116219904,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -226,8 +226,8 @@
       "case_id": "cohort_before_1_bgr565_256",
       "codec": "bgr565",
       "group_id": "cohort_before_1",
-      "max_sampled_private": 45514752,
-      "max_sampled_working_set": 122105856,
+      "max_sampled_private": 43466752,
+      "max_sampled_working_set": 117940224,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -237,8 +237,8 @@
       "case_id": "cohort_before_2_png_256",
       "codec": "png",
       "group_id": "cohort_before_2",
-      "max_sampled_private": 44064768,
-      "max_sampled_working_set": 120594432,
+      "max_sampled_private": 41639936,
+      "max_sampled_working_set": 115384320,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -248,8 +248,8 @@
       "case_id": "cohort_before_2_bmp24_256",
       "codec": "bmp24",
       "group_id": "cohort_before_2",
-      "max_sampled_private": 44097536,
-      "max_sampled_working_set": 120565760,
+      "max_sampled_private": 44478464,
+      "max_sampled_working_set": 120500224,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -259,8 +259,8 @@
       "case_id": "cohort_before_2_bgr565_256",
       "codec": "bgr565",
       "group_id": "cohort_before_2",
-      "max_sampled_private": 44716032,
-      "max_sampled_working_set": 120733696,
+      "max_sampled_private": 42377216,
+      "max_sampled_working_set": 116482048,
       "scope": "MAX_OBSERVED_PROCESS_SAMPLE_NOT_ALLOCATION_PEAK",
       "size": 256,
       "workers": 3
@@ -283,8 +283,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 2,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 41156608,
-        "max_observed_window_working_set": 114888704
+        "max_observed_window_private": 42012672,
+        "max_observed_window_working_set": 113745920
       }
     },
     {
@@ -303,8 +303,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 2,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 41758720,
-        "max_observed_window_working_set": 116150272
+        "max_observed_window_private": 42692608,
+        "max_observed_window_working_set": 116903936
       }
     },
     {
@@ -323,8 +323,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 2,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 41562112,
-        "max_observed_window_working_set": 116154368
+        "max_observed_window_private": 41603072,
+        "max_observed_window_working_set": 115924992
       }
     },
     {
@@ -343,8 +343,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 2,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 47030272,
-        "max_observed_window_working_set": 121442304
+        "max_observed_window_private": 46592000,
+        "max_observed_window_working_set": 120745984
       }
     },
     {
@@ -363,8 +363,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 2,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 46645248,
-        "max_observed_window_working_set": 120987648
+        "max_observed_window_private": 49192960,
+        "max_observed_window_working_set": 123981824
       }
     },
     {
@@ -383,8 +383,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 2,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 44519424,
-        "max_observed_window_working_set": 118861824
+        "max_observed_window_private": 44056576,
+        "max_observed_window_working_set": 118214656
       }
     },
     {
@@ -403,8 +403,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 3,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 133242880,
-        "max_observed_window_working_set": 362278912
+        "max_observed_window_private": 134590464,
+        "max_observed_window_working_set": 366247936
       }
     },
     {
@@ -423,8 +423,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 3,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 131403776,
-        "max_observed_window_working_set": 360509440
+        "max_observed_window_private": 131379200,
+        "max_observed_window_working_set": 358932480
       }
     },
     {
@@ -443,8 +443,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 3,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 139005952,
-        "max_observed_window_working_set": 363528192
+        "max_observed_window_private": 141230080,
+        "max_observed_window_working_set": 367132672
       }
     },
     {
@@ -463,8 +463,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 3,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 143491072,
-        "max_observed_window_working_set": 372776960
+        "max_observed_window_private": 138756096,
+        "max_observed_window_working_set": 362569728
       }
     },
     {
@@ -483,8 +483,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 3,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 134467584,
-        "max_observed_window_working_set": 366149632
+        "max_observed_window_private": 127184896,
+        "max_observed_window_working_set": 350425088
       }
     },
     {
@@ -503,8 +503,8 @@
         "classification": "MAX_OBSERVED_WINDOW_SUM",
         "complete_window_count": 3,
         "incomplete_window_count": 0,
-        "max_observed_window_private": 132878336,
-        "max_observed_window_working_set": 361893888
+        "max_observed_window_private": 128495616,
+        "max_observed_window_working_set": 352366592
       }
     }
   ],
@@ -514,8 +514,8 @@
       "before_group": "cohort_before_1",
       "classification": "MATCHED_RUN_DIFFERENCE",
       "difference": {
-        "max_observed_window_private": -1224704,
-        "max_observed_window_working_set": -3870720
+        "max_observed_window_private": 7405568,
+        "max_observed_window_working_set": 15822848
       },
       "same_instant": false,
       "same_processes": false
@@ -525,8 +525,8 @@
       "before_group": "cohort_before_2",
       "classification": "MATCHED_RUN_DIFFERENCE",
       "difference": {
-        "max_observed_window_private": -1474560,
-        "max_observed_window_working_set": -1384448
+        "max_observed_window_private": 2883584,
+        "max_observed_window_working_set": 6565888
       },
       "same_instant": false,
       "same_processes": false

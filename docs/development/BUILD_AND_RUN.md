@@ -925,6 +925,14 @@ Limits remain 45 s/worker, 300 s/run, 1024/1,048,576 pixels, 4 MiB decoded,
 8 MiB scratch, 16 MiB/output, 64 MiB/work root, 128 trace rows/128 KiB,
 64 KiB per captured stream, 8 MiB/report and 768 MiB observed cohort private
 bytes. These are bounded experiment limits, not ratified product memory SLOs.
+The verifier rejects a worker whose recorded `identity_verified` or
+`boundary_hold_is_instrumentation` is not `true`, for every decoded, cancelled
+and timeout outcome. A `decoded` worker must also declare
+`trace_complete=true`, zero `trace_partial_bytes` and a newline-terminated
+trace, so an unparsed tail cannot be called complete. Stopped workers keep their
+partial trace and their existing stop-boundary checks; the successful-only
+requirement is not widened to them.
+
 Native source binding, later evidence/Gate commits and docs-only differences
 must be kept separate; W6 is not full Decode Exit or Upload acceptance.
 

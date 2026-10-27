@@ -51,7 +51,7 @@
       "failures": [
         {
           "id": "cohort_small_1",
-          "failure": "FileNotFoundError:[WinError 2] 指定されたファイルが見つかりません。: 'C:\\\\dev\\\\cos-desktop-verification\\\\img2-w6-2026-10-28\\\\native-r2-work\\\\workers\\\\cohort_small_1_png_256\\\\observe\\\\pending.png'"
+          "failure": "FileNotFoundError:[WinError 2] \u6307\u5b9a\u3055\u308c\u305f\u30d5\u30a1\u30a4\u30eb\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3002: 'C:\\\\dev\\\\cos-desktop-verification\\\\img2-w6-2026-10-28\\\\native-r2-work\\\\workers\\\\cohort_small_1_png_256\\\\observe\\\\pending.png'"
         }
       ],
       "consumer_observations": [
@@ -191,16 +191,31 @@
       "exit": 0,
       "total_decode_cases": 24,
       "disposition": "SUPERSEDED by final fixed-object verifier and clean diagnostics; no Gate result transferred."
+    },
+    {
+      "id": "review-r1",
+      "work_root": "img2-w6-2026-10-28/review-r1-native-work",
+      "report": "img2-w6-2026-10-28/review-r1-native.json",
+      "outcome": "rejected",
+      "reason": "The first repaired run wrote to an existing report path; the runner refused with fresh_owned_work_and_external_report_required and produced no Native data."
+    },
+    {
+      "id": "review-r2",
+      "work_root": "img2-w6-2026-10-28/review-r2-native-work",
+      "report": "native-memory-matrix.json",
+      "outcome": "accepted",
+      "reason": "Fresh owned work root and absent report after a clean default consumer rebuild; 24 cases, 30 windows, 18/18 pixel matches, identity-bound harness bytes."
     }
   ],
   "final": {
-    "attempt": "r8",
-    "source": "edfcdf104f66e89bf9deae6b03bde22427c84e9c",
+    "attempt": "review-r2",
+    "source": "f99bf25b5d61152e3bb22a88e2e8efccc823b9ad",
     "record": "native-memory-matrix.json",
     "total_decode_cases": 24,
     "additional_decode_cases": 0,
     "source_identity_verified": true,
-    "verified": true
+    "verified": true,
+    "supersedes_round1_source": "edfcdf104f66e89bf9deae6b03bde22427c84e9c"
   },
   "repairs": [
     "Align terminal fields with the unchanged probe contract; output bytes checked from real stdout and PNG.",
@@ -208,6 +223,7 @@
     "Exact immutable source/output-byte cache bounds repeated raster work, without trusting claimed digest/case ID.",
     "Consumer manifest annotates but does not filter; non-image manifest moved out and all six image/pixel outcomes required.",
     "Remove the unrequired extra six-case consumer phase; preserve actual separate build identity and harness tests. The entire memory run now executes only the fixed24 cases.",
-    "Verify actual fixed Git objects and fail contradictory group errors; structural-only replay is not closure eligible. Qualify Git and narrow absent-executable handling without a type suppression."
+    "Verify actual fixed Git objects and fail contradictory group errors; structural-only replay is not closure eligible. Qualify Git and narrow absent-executable handling without a type suppression.",
+    "Reject a worker whose recorded identity_verified or boundary_hold_is_instrumentation is false, and require zero partial bytes plus a terminal newline for decoded traces only; stopped workers keep their partial tails."
   ]
 }
