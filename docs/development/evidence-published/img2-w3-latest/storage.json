@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
-  "status": "PREPARED_AFTER_SUCCESSFUL_TERMINAL_VERIFY",
+  "status": "DISPOSED_INTEGRITY_UNCHANGED",
   "quality_gate": "aed94841-c578-452f-8f62-8d4ad366a234",
   "build_gate": "8a9a0517-2b1e-498d-9856-bcded1e204a6",
   "paths": [
@@ -10,40 +10,53 @@
       "files": 468,
       "logical_bytes": 12804229,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\8a9a0517-2b1e-498d-9856-bcded1e204a6\\work\\repo",
       "files": 468,
       "logical_bytes": 12870737,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r5\\clippy",
       "files": 3015,
       "logical_bytes": 663884472,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r5\\tests",
       "files": 3144,
       "logical_bytes": 1841538384,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     },
     {
       "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r5\\build",
       "files": 2911,
       "logical_bytes": 1593013408,
       "no_reparse": true,
-      "removed": false
+      "removed": true
     }
   ],
   "live_process_dependencies": [],
   "retained_source": "Complete pinned candidate and required Git objects under dev; evidence correspondence retained.",
   "retained_authority": "Private Gate authority/artifacts/logs, ordinary target, actual Native outputs/consumer and failed/targeted older workspaces remain outside these exact paths.",
   "native_verify_before": "quality-gate.json and build-gate.json verify; successful terminal, dead owner, no recovery, cleanup complete, exit-zero status/inspect/verify.",
-  "measurement": "Logical byte/file counts, not allocated or physically reclaimed storage."
+  "measurement": "Logical byte/file counts, not allocated or physically reclaimed storage.",
+  "evidence_retention_commit": "18ad601e62a4493f966c79a701ed46da99a740c0",
+  "native_verify_after": {
+    "quality": {
+      "gate_id": "aed94841-c578-452f-8f62-8d4ad366a234",
+      "exit": 0,
+      "identical": true
+    },
+    "build": {
+      "gate_id": "8a9a0517-2b1e-498d-9856-bcded1e204a6",
+      "exit": 0,
+      "identical": true
+    }
+  }
 }
