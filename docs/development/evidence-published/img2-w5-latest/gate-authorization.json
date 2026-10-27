@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "candidate": "42e4774ab27cb51258bd28a586b397ebfc406ecc",
+  "basis": [
+    "ADR-0009 continuous execution",
+    "ADR-0012 authorization",
+    "W5 directive"
+  ],
+  "quality_checks": [
+    "fmt",
+    "metadata",
+    "dependency-self-test",
+    "dependency-rules",
+    "clippy",
+    "tests",
+    "r0-python",
+    "img2-python",
+    "w2-probe-selftest",
+    "w2-oracle",
+    "w3-retained-native-replay",
+    "wic-admission-selftest",
+    "w1-runner-selftest",
+    "w4-native-replay",
+    "w5-native-replay"
+  ],
+  "build_checks": [
+    "build"
+  ],
+  "outputs": [
+    {
+      "id": "w5-wic_probe.ps1-0",
+      "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+      "required": true
+    },
+    {
+      "id": "w5-wic_admission.ps1-1",
+      "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+      "required": true
+    },
+    {
+      "id": "w5-w2_resource_matrix.py-2",
+      "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+      "required": true
+    },
+    {
+      "id": "w5-w3_native_matrix.py-3",
+      "path": "apps/desktop/devtools/img2/w3_native_matrix.py",
+      "required": true
+    },
+    {
+      "id": "w5-w4_region_matrix.py-4",
+      "path": "apps/desktop/devtools/img2/w4_region_matrix.py",
+      "required": true
+    },
+    {
+      "id": "w5-w4_region_verify.py-5",
+      "path": "apps/desktop/devtools/img2/w4_region_verify.py",
+      "required": true
+    },
+    {
+      "id": "w5-w5_metadata_fixtures.py-6",
+      "path": "apps/desktop/devtools/img2/w5_metadata_fixtures.py",
+      "required": true
+    },
+    {
+      "id": "w5-w5_metadata_oracle.py-7",
+      "path": "apps/desktop/devtools/img2/w5_metadata_oracle.py",
+      "required": true
+    },
+    {
+      "id": "w5-w5_metadata_matrix.py-8",
+      "path": "apps/desktop/devtools/img2/w5_metadata_matrix.py",
+      "required": true
+    },
+    {
+      "id": "w5-w5_metadata_verify.py-9",
+      "path": "apps/desktop/devtools/img2/w5_metadata_verify.py",
+      "required": true
+    },
+    {
+      "id": "w5-test_w5_verify.py-10",
+      "path": "apps/desktop/devtools/img2/tests/test_w5_verify.py",
+      "required": true
+    },
+    {
+      "id": "w5-wic_admission_selftest.ps1-11",
+      "path": "apps/desktop/tests/wic_admission_selftest.ps1",
+      "required": true
+    },
+    {
+      "id": "w5-harness.rs-12",
+      "path": "apps/desktop/examples/decode_compare/harness.rs",
+      "required": true
+    },
+    {
+      "id": "w5-inspect.rs-13",
+      "path": "apps/desktop/examples/decode_compare/inspect.rs",
+      "required": true
+    },
+    {
+      "id": "w5-pixels.rs-14",
+      "path": "apps/desktop/examples/decode_compare/pixels.rs",
+      "required": true
+    },
+    {
+      "id": "w5-decode_compare_harness.rs-15",
+      "path": "apps/desktop/tests/decode_compare_harness.rs",
+      "required": true
+    },
+    {
+      "id": "w5-decode.rs-16",
+      "path": "crates/media/src/decode.rs",
+      "required": true
+    },
+    {
+      "id": "w5-Cargo.lock-17",
+      "path": "Cargo.lock",
+      "required": true
+    },
+    {
+      "id": "w5-rust-toolchain.toml-18",
+      "path": "rust-toolchain.toml",
+      "required": true
+    },
+    {
+      "id": "w5-quality.ps1-19",
+      "path": "scripts/quality.ps1",
+      "required": true
+    },
+    {
+      "id": "w5-DESKTOP_DESIGN_CONTRACTS.md-20",
+      "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+      "required": true
+    },
+    {
+      "id": "w5-BUILD_AND_RUN.md-21",
+      "path": "docs/development/BUILD_AND_RUN.md",
+      "required": true
+    },
+    {
+      "id": "w5-IMPLEMENTATION_MASTER_PLAN.md-22",
+      "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+      "required": true
+    },
+    {
+      "id": "w5-real-native-matrix.json-23",
+      "path": "docs/development/evidence-published/img2-w3-latest/real-native-matrix.json",
+      "required": true
+    },
+    {
+      "id": "w5-tern-next-directive.txt-24",
+      "path": "docs/development/evidence-published/img2-w3-latest/tern-next-directive.txt",
+      "required": true
+    },
+    {
+      "id": "w5-disposition.json-25",
+      "path": "docs/development/evidence-published/img2-w3-latest/disposition.json",
+      "required": true
+    },
+    {
+      "id": "w5-real-native-matrix.json-26",
+      "path": "docs/development/evidence-published/img2-w4-latest/real-native-matrix.json",
+      "required": true
+    },
+    {
+      "id": "w5-disposition.json-27",
+      "path": "docs/development/evidence-published/img2-w4-latest/disposition.json",
+      "required": true
+    },
+    {
+      "id": "w5-review-package.json-28",
+      "path": "docs/development/evidence-published/img2-w4-latest/review-package.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-taskern-request.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/taskern-request.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-taskern-response.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/taskern-response.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-source-identity.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/source-identity.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-execution-manifest.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/execution-manifest.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-fixture-manifest.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/fixture-manifest.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-metadata-native-matrix.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/metadata-native-matrix.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-orientation-oracle.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/orientation-oracle.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-colour-profile-observations.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/colour-profile-observations.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-capability-table.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/capability-table.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-admission-boundary.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/admission-boundary.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-verifier-results.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/verifier-results.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-quality.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/quality.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-document-validation.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/document-validation.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-unmeasured.json",
+      "path": "docs/development/evidence-published/img2-w5-latest/unmeasured.json",
+      "required": true
+    },
+    {
+      "id": "w5-evidence-tern-directive.txt",
+      "path": "docs/development/evidence-published/img2-w5-latest/tern-directive.txt",
+      "required": true
+    }
+  ],
+  "limits": {
+    "trust": "trusted_local",
+    "timeout_ms": 600000,
+    "termination_grace_ms": 5000,
+    "max_output_bytes": 16777216,
+    "max_artifact_bytes": 16777216,
+    "expected_changes": "none",
+    "required_capabilities": []
+  },
+  "no_remote_push": true
+}

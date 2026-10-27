@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "candidate": "42e4774ab27cb51258bd28a586b397ebfc406ecc",
+  "build_gate": "83fb9a6f-2baf-4b7e-85d4-09e2d36d02d9",
+  "path": "targets/r9/build/debug/cos-desktop.exe",
+  "bytes": 32275456,
+  "sha256": "sha256:f040a17b40ed9a1dfc4898c9432d0cdbb28264a605f57d93a0b0a12d6b292fdf"
+}

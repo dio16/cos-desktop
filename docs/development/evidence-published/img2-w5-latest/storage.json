@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "candidate": "42e4774ab27cb51258bd28a586b397ebfc406ecc",
+  "status": "PREPARED_AFTER_SUCCESSFUL_TERMINAL_VERIFY",
+  "quality_gate": "eef8d1a1-e570-4922-9c4f-d7619471f033",
+  "build_gate": "83fb9a6f-2baf-4b7e-85d4-09e2d36d02d9",
+  "paths": [
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\eef8d1a1-e570-4922-9c4f-d7619471f033\\work\\repo",
+      "files": 567,
+      "logical_bytes": 15473241,
+      "no_reparse": true,
+      "removed": false
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\83fb9a6f-2baf-4b7e-85d4-09e2d36d02d9\\work\\repo",
+      "files": 567,
+      "logical_bytes": 15472040,
+      "no_reparse": true,
+      "removed": false
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r9\\clippy",
+      "files": 3015,
+      "logical_bytes": 663900856,
+      "no_reparse": true,
+      "removed": false
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r9\\tests",
+      "files": 3144,
+      "logical_bytes": 1841554768,
+      "no_reparse": true,
+      "removed": false
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r9\\build",
+      "files": 2911,
+      "logical_bytes": 1593013408,
+      "no_reparse": true,
+      "removed": false
+    }
+  ],
+  "live_process_dependencies": [],
+  "retained_source": "Pinned candidate and Git objects under dev; prior W1-W4 evidence retained.",
+  "retained_authority": "Gate authority/artifacts/logs, ordinary target, Native outputs, prior workspaces untouched.",
+  "native_verify_before": "Gates SUCCEEDED, verify exit0, dead owner, no recovery, cleanup complete.",
+  "measurement": "Logical bytes/files."
+}

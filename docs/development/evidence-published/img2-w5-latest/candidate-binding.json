@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "product_candidate": "42e4774ab27cb51258bd28a586b397ebfc406ecc",
+  "gate_candidate_digest": "sha256:bc252351d3a1dd31dfe6501b9a054a7fd78721269b22369488ccf42ad4a29228",
+  "quality_gate": "eef8d1a1-e570-4922-9c4f-d7619471f033",
+  "build_gate": "83fb9a6f-2baf-4b7e-85d4-09e2d36d02d9",
+  "taskern_packet_sha256": "sha256:42c979d2f487906762e51a09d07c776b296a40a38ea6c432830172f21e5d1360",
+  "start_commit": "37d4643c128598352c7052b859b2b4a74b25c4fa"
+}
