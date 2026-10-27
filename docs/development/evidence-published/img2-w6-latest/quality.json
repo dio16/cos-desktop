@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "native_source": "50a4b9a5ac6f95d5a9d10f09c8360041a2c366e7",
+  "native_source": "edfcdf104f66e89bf9deae6b03bde22427c84e9c",
   "checks": {
     "w6-consumer-build": {
       "name": "w6-consumer-build",
@@ -11,40 +11,38 @@
       "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "stderr_sha256": "sha256:c758e1cc28cf53ac78a5ce76fd4c7e72f6438ae030f33ce1825e50e7351aaffd"
     },
-    "w6-native-r5": {
-      "name": "w6-native-r5",
-      "start": "2026-10-27T22:03:39.204Z",
-      "end": "2026-10-27T22:04:31.092Z",
+    "w6-native-r8": {
+      "name": "w6-native-r8",
+      "start": "2026-10-27T22:23:27.692Z",
+      "end": "2026-10-27T22:24:11.516Z",
       "exit": 0,
-      "signal": null,
-      "stdout_sha256": "sha256:5ecca46d19d79798986c1c195dd388cdbef003a8cdfb928ff2370aae20ee5ba4",
-      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "signal": null
     },
-    "w6-candidate-img2": {
-      "name": "w6-candidate-img2",
-      "start": "2026-10-27T22:04:31.107Z",
-      "end": "2026-10-27T22:04:47.318Z",
+    "w6-fixed-img2": {
+      "name": "w6-fixed-img2",
+      "start": "2026-10-27T22:24:28.780Z",
+      "end": "2026-10-27T22:25:01.767Z",
       "exit": 0,
       "signal": null,
       "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_sha256": "sha256:5e9f481dd4fda50b4a8b5e66ceeb3505f5ab468b51afa06fe84a3211ec9ddc02"
+      "stderr_sha256": "sha256:ac9d346ca0c8676bf1ebece5d5760615bf15ba3ad2d6cfd37237368683afd060"
     },
-    "w6-candidate-negative-evidence": {
-      "name": "w6-candidate-negative-evidence",
-      "start": "2026-10-27T22:04:31.111Z",
-      "end": "2026-10-27T22:04:42.330Z",
+    "w6-fixed-negative-evidence": {
+      "name": "w6-fixed-negative-evidence",
+      "start": "2026-10-27T22:24:28.784Z",
+      "end": "2026-10-27T22:24:55.082Z",
       "exit": 0,
       "signal": null,
       "stdout_sha256": "sha256:8769192e8bdb6031cd71a94d98e3b5817e72d2f3e3c677d5763cc0377e2774e3",
       "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
-    "w6-final-quality": {
-      "name": "w6-final-quality",
-      "start": "2026-10-27T22:02:25.997Z",
-      "end": "2026-10-27T22:02:47.288Z",
+    "w6-fixed-quality": {
+      "name": "w6-fixed-quality",
+      "start": "2026-10-27T22:24:28.788Z",
+      "end": "2026-10-27T22:24:48.234Z",
       "exit": 0,
       "signal": null,
-      "stdout_sha256": "sha256:a474f1d012cbc52570e69fd6293e96a431d6bd2d182f6a25fb27c59bba68a14d",
+      "stdout_sha256": "sha256:d8df74899b50a2c937c9f7f284931aab45f732f1c08b8fe1ec1bc2385f6efea1",
       "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "w6-feature-clippy": {
@@ -82,33 +80,6 @@
       "signal": null,
       "stdout_sha256": "sha256:f5abb98468b10c82e5ea77c46a371be397f06f8435a426d1915ebe892c35aae1",
       "stderr_sha256": "sha256:8714f6684fad31d4c735327d7adf5ffe2d5ce856d13695ac13012a90241274dd"
-    },
-    "w6-strict-img2": {
-      "name": "w6-strict-img2",
-      "start": "2026-10-27T22:15:44.011Z",
-      "end": "2026-10-27T22:16:02.211Z",
-      "exit": 0,
-      "signal": null,
-      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderr_sha256": "sha256:f0d12b4a850f429ccfa3ec853acab94a2c646ebc24a90b62ad864cac043504e1"
-    },
-    "w6-strict-negative-evidence": {
-      "name": "w6-strict-negative-evidence",
-      "start": "2026-10-27T22:15:44.016Z",
-      "end": "2026-10-27T22:15:57.047Z",
-      "exit": 0,
-      "signal": null,
-      "stdout_sha256": "sha256:8769192e8bdb6031cd71a94d98e3b5817e72d2f3e3c677d5763cc0377e2774e3",
-      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    "w6-strict-quality": {
-      "name": "w6-strict-quality",
-      "start": "2026-10-27T22:15:44.020Z",
-      "end": "2026-10-27T22:16:03.463Z",
-      "exit": 0,
-      "signal": null,
-      "stdout_sha256": "sha256:caf664ae0aee2cc13b0684b27c331d9a5d4d5b297e01e7efc1493055f97bca2b",
-      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   },
   "default_rust": {
@@ -122,9 +93,9 @@
     "ignored": 1
   },
   "img2": {
-    "passed": 150,
+    "passed": 152,
     "failed": 0,
-    "w6_methods": 13,
+    "w6_methods": 15,
     "negative_classes": 24
   },
   "r0": {
@@ -187,5 +158,5 @@
     ]
   },
   "historical_regressions": "historical-regressions.json",
-  "scope": "Current final-source IMG2/negative/full quality checks are w6-strict-*. Previous consumer/caching controls are retained only as intermediate checks. Feature checks are on unchanged Rust source. Actual Native smoke is the 24-case real WIC CLI path, not GUI startup. No skipped R0 case is promoted."
+  "scope": "Final fixed-object W6 Native/IMG2/negative/full-quality checks are current. Harness build and feature checks exercise unchanged Rust source. Actual smoke is exactly24 WIC CLI cases, not GUI startup; no R0 skipped case is promoted."
 }

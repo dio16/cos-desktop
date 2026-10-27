@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source": "50a4b9a5ac6f95d5a9d10f09c8360041a2c366e7",
+  "source": "edfcdf104f66e89bf9deae6b03bde22427c84e9c",
   "platform": {
     "dotnet": ".NET 10.0.13",
     "os": "Microsoft Windows NT 10.0.26300.0",
@@ -28,8 +28,8 @@
     "max_pixels": 1048576,
     "max_scratch_bytes": 8388608
   },
-  "duration_ns": 42434232300,
-  "work_bytes": 7356274,
+  "duration_ns": 42160711800,
+  "work_bytes": 7356312,
   "total_decode_cases": 24,
   "additional_consumer_decode_cases": 0,
   "harness_build_sha256": "sha256:9f15861363888a6191ba331dea08b2afe74e48ac56d42022cc8cd2a761344794",

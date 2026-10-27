@@ -888,6 +888,10 @@ identities and verifies that source and executable bytes did not change.
 `--harness` binds the separately built existing example's bytes; the memory
 matrix does not execute it or add cases beyond the total 24. Existing harness
 and media admission tests remain part of workspace quality.
+Fixed-source verification also reads the declared commit's actual Git objects;
+qualify `GIT_EXECUTABLE` when Git is not on the trusted command path. Source
+bytes are compared using the declared LF normalization. Replay without
+`--source-root` is structural only and is not closure eligible.
 
 ```powershell
 cargo build --locked -p cos-desktop --example decode_compare

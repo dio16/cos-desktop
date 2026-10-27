@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "before": {
+    "source": "50a4b9a5ac6f95d5a9d10f09c8360041a2c366e7",
+    "old_source_commit_accepted": true,
+    "failed_group_accepted": true
+  },
+  "after": {
+    "source": "edfcdf104f66e89bf9deae6b03bde22427c84e9c",
+    "old_source_commit": {
+      "ok": false,
+      "error": "fixed_source_commit_mismatch",
+      "closure_eligible": false
+    },
+    "failed_group": {
+      "ok": false,
+      "error": "group_failure_not_closed",
+      "closure_eligible": false
+    }
+  },
+  "scope": "Check actual fixed Git source objects against retained hashes; structural-only replay cannot claim fixed-source verification. Failed group cannot contradict overall completeness. Existing product/WIC/budget/Runtime code unchanged."
+}
