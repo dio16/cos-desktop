@@ -1,0 +1,22 @@
+MP-IMG2-W6 round 3 — A-W6-R2-01 の訂正確認のみを依頼します。製品SOURCE、Native実測、両Gate、添付ZIPは変更していません。
+
+Repository: dio16/cos-desktop / branch dev / 未push。
+候補: 8bb1b6dd3071d7e355e685dba4977361f24b8f2f。
+Evidence HEAD: 4ddf9453d400344c98346d8c71e3c3835ccfee1f(round 2と同じ)。
+添付は訂正後の review-package.json のみです。round 2で読んだ2つのZIPは同一bytesで、再添付していません。
+- w6r2-review-source.zip: 4,326,877 bytes / sha256:572101b2bdd94c7fc9961321e24b8aa48ac5ebe2764325e6e2185f1a50897853
+- w6r2-review-evidence.zip: 1,207,120 bytes / sha256:67ebc3b3a1c162b9c64945edf93eea674ace7274b311083218beaa8b9cf33260
+
+訂正内容(該当1項目のみ):
+- 旧 source_manifest_inside_evidence_zip を削除しました。Evidence ZIPにsource manifestは含まれておらず、SOUCE ZIPにも当該pathはありません。
+- 新 source_entry_manifest は実際の提供方式を示します: source entry一覧は別添review-package.jsonの source_zip.entries(656件)、Evidence ZIPは65ファイルでsource manifest memberを持たない。
+- manifest_self_correction に、削除した旧fieldと値、round 2 finding ID、ZIPが不変であることを記録しました。
+
+独立確認してほしい点:
+- 旧参照が残っていないこと、新fieldが実際の添付構成と一致すること。
+- evidence_entries=65 と source entry=656 が実ファイル/ZIPと一致すること。
+- この訂正がSOURCE・Native・Gate・60 artifact・Storage・未測定境界のいずれの主張も変更していないこと。
+
+これはdocs-onlyの参照訂正であり、製品実装の再実行は不要と判断しています。もし他に製品側の実装問題が残るなら、その根拠を示してください。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘はファイル・条件・再現・最小修正まで示してください。添付読取が未完なら未完と明示してください。最後に独立行で REVIEW COMPLETE、その次の最終行に verdict/counts(例: PASS 0 / 0 / 0、またはHOLDと実件数)を記してください。0/0/0で閉じる場合は、その後にW6 LIMITED TECHNICAL COMPLETIONの可否と、残る未測定境界を明記してください。
