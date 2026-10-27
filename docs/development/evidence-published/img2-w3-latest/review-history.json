@@ -90,8 +90,32 @@
       ],
       "finding": "A-W3-R4-01",
       "request_body_present_in_linked_user_node": true
+    },
+    {
+      "round": 5,
+      "source_candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+      "evidence_head": "fe516b2c4ef318ab720956afd796190141be2e81",
+      "package_manifest_commit": "05f97b281adb2d5a955cc578734f00a6f438f803",
+      "request_commit": "290e54060a5bfd31108312f78e9aaf1f09df4ed8",
+      "request": "review-request.txt",
+      "response": "review-round5-response.txt",
+      "receipt": "review-round5.json",
+      "source_package": "w3-awn2-review-source.zip",
+      "evidence_package": "w3-awn2-review-evidence.zip",
+      "package_manifest": "review-package.json",
+      "package_reconciliation": "review-round3-package-reconciliation.json",
+      "quality_gate_export": "quality-gate.json",
+      "build_gate_export": "build-gate.json",
+      "gate_correspondence": "gate-artifact-correspondence.json",
+      "storage": "storage.json",
+      "verdict": "PASS 0 / 0 / 0",
+      "closed": [
+        "A-W3-R4-01"
+      ],
+      "completion": "MP-IMG2-W3 LIMITED TECHNICAL COMPLETION",
+      "request_body_present_in_linked_user_node": true
     }
   ],
   "historical_relative_pointers": "Paths inside round1 snapshots refer to fixed evidence commit366834be6174e92fbf36763da801cfdd0077867f, not to later canonical working-tree files. Renames retain snapshot bytes and never rewrite old Gate or review outcomes.",
-  "current": "A-W3-R4-01 open: updated plan bytes were absent from the evidence ZIP. A docs-only bundle now carries the updated plan, history and validation bytes plus the capture-to-evidence diff; product source, Native record and Gate pair are unchanged. Round-five review pending; no W3 completion yet."
+  "current": "MP-IMG2-W3 LIMITED TECHNICAL COMPLETION accepted under ADR-0009 after W3-R5 PASS 0/0/0 on f8dfc30; residual media/Runtime boundaries remain. Awaiting and executing the next eligible directive."
 }

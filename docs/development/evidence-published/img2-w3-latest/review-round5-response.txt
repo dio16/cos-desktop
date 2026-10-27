@@ -1,0 +1,442 @@
+ChatGPT の発言:
+MP-IMG2-W3 Round 5 — 固定候補独立レビュー
+
+判定：PASS 0 / 0 / 0
+
+A-W3-R4-01はCLOSED。MP-IMG2-W3 LIMITED TECHNICAL COMPLETIONを承認します。
+
+今回添付されたSOURCE ZIP、Evidence ZIP、review-package.jsonを実際に読み込み、前回不足していたMP本文の実バイト、Gate捕捉版との差分、SOURCE・Native・Gateの対応を独立検証しました。
+
+製品SOURCEへの新規修正要求はありません。
+
+1. 今回の固定対象
+
+項目
+
+	
+
+固定値
+
+
+
+
+Repository
+
+	
+
+dio16/cos-desktop
+
+
+
+
+Branch
+
+	
+
+dev（未push）
+
+
+
+
+Product candidate
+
+	
+
+f8dfc3009fd7526e1b055968e2fc19892c007190
+
+
+
+
+Evidence HEAD
+
+	
+
+fe516b2c4ef318ab720956afd796190141be2e81
+
+
+
+
+Package manifest commit
+
+	
+
+05f97b281adb2d5a955cc578734f00a6f438f803
+
+
+
+
+Owner
+
+	
+
+DC-MP-IMG2
+
+
+
+
+審査対象
+
+	
+
+W3 LIMITED TECHNICAL COMPLETIONのみ
+
+2. A-W3-R4-01 — CLOSED
+
+前回の問題は、Gate後に更新されたIMPLEMENTATION_MASTER_PLAN.mdの実バイトが添付に存在せず、docs-only変更を独立検証できないことでした。
+
+今回は、その欠落が解消されています。
+
+照合対象
+
+	
+
+独立結果
+
+
+
+
+更新後MP本文
+
+	
+
+421,190 bytes、SHA256一致
+
+
+
+
+Gate捕捉MP
+
+	
+
+419,316 bytes、SHA256一致
+
+
+
+
+capture-to-head diff
+
+	
+
+6,696 bytes、SHA256一致
+
+
+
+
+diffの再計算
+
+	
+
+同梱diffと完全一致
+
+
+
+
+追加・削除
+
+	
+
+3行追加／1行削除
+
+
+
+
+§19.54
+
+	
+
+保持
+
+
+
+
+§19.55
+
+	
+
+保持
+
+
+
+
+§19.56
+
+	
+
+保持
+
+更新後MPのLF正規化後SHA256は、申告された値と完全一致しました。
+
+e80718cd25a4871dd11be54ab022feb2a5fa907c3cb3bbdc5a6339d6cf12e95e
+
+Gate捕捉版から独立に差分を再計算したところ、変更は§19.56内の次の内容に限定されていました。
+
+Round 2の時刻依存表現の修正
+
+Round 3のレビュー結果の追記
+
+Round 4のレビュー結果の追記
+
+既存のhard prerequisites、DecodeBudget、Gate ID、実測値、過去の判定は変更されていません。
+
+前回の修正条件を満たしています。
+
+3. SOURCE・Native・Gateの整合性
+
+検証項目
+
+	
+
+結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+572,901 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+381,898 bytes、SHA256一致
+
+
+
+
+SOURCE manifest
+
+	
+
+44/44一致
+
+
+
+
+Native SOURCE bindings
+
+	
+
+16/16一致
+
+
+
+
+Gate間artifact tuples
+
+	
+
+53/53一致
+
+
+
+
+Gate捕捉版と同一の成果物
+
+	
+
+50/50一致
+
+
+
+
+docs-only変更の3成果物
+
+	
+
+3/3現行digest一致
+
+
+
+
+W2/W3 portable tests
+
+	
+
+79/79 PASS
+
+
+
+
+Native report構造検証
+
+	
+
+PASS
+
+
+
+
+Bgr565独立pixel再検証
+
+	
+
+10/10 RGBA完全一致
+
+Gate捕捉後の3変更
+
+ファイル
+
+	
+
+Gate捕捉版
+
+	
+
+証拠HEAD版
+
+	
+
+判定
+
+
+
+
+review-history.json
+
+	
+
+2,269 B
+
+	
+
+4,647 B
+
+	
+
+整合
+
+
+
+
+IMPLEMENTATION_MASTER_PLAN.md
+
+	
+
+419,316 B
+
+	
+
+421,190 B
+
+	
+
+整合
+
+
+
+
+document-validation.json
+
+	
+
+242 B
+
+	
+
+279 B
+
+	
+
+整合
+
+53件のartifactについて、両Gateのinspectとverifyに保持された台帳を比較しました。いずれも完全一致しています。
+
+50件は現在の提出実バイトと一致し、残り3件は更新後の実バイト・サイズ・SHA256が申告と一致しました。
+
+変更33パスの提出一覧はすべてdocs/配下です。製品SOURCE 44件とNative source identity 16件も一致しており、提出範囲で製品変更は認められません。
+
+なお、未pushのGit履歴全体やcommit間の親子関係を直接取得したわけではありません。両ZIPのGit archiveコメントと申告OIDの一致、および収録バイトの整合性に基づくattachment-bound判定です。
+
+4. 前回CLOSED事項の維持
+
+A-W3-R2-01はCLOSEDを維持します。
+
+今回のSOURCEで79件のPythonテストを再実行し、全件通過しました。
+
+特に、6種類の不正BMPについて、refused stageを削除してtraceの連番・件数・SHA256を再構成する負例は、すべてnative_stage_set_incompleteとして拒否する実装・テストが保持されています。
+
+実Native recordは正常に検証され、既存のbudget拒否と正常decode経路も保持されています。
+
+Bgr565の画素については、提出oracleとは別のBMP565→RGBA展開とPNG CRC・inflate・filter復元処理で、実出力10件すべての全画素一致を再確認しました。
+
+5. Refine Gate再実行の要否
+
+再実行は不要と判定します。
+
+Gate
+
+	
+
+結果
+
+
+
+
+Quality aed94841-c578-452f-8f62-8d4ad366a234
+
+	
+
+SUCCEEDED 13/13
+
+
+
+
+Build 8a9a0517-2b1e-498d-9856-bcded1e204a6
+
+	
+
+SUCCEEDED 1/1
+
+両Gateとも、固定SOURCE f8dfc300…、candidate digest b0c12483…c5e5a4に対応しています。
+
+保存されたstatus/inspect/verifyはexit 0、cleanup complete、owner_alive=false、recovery_required=falseです。PreflightのUNKNOWNはUNKNOWNのまま保持されています。
+
+今回の修正はGate後の証拠文書と提出パッケージに限定され、製品SOURCEを変更していません。既存成功Gateを別製品候補へ転用している事実もありません。
+
+6. W3限定技術完了の承認範囲
+
+今回の確認により、次の限定範囲を承認できます。
+
+実Windows WICにおけるBgr565のformat admission
+
+channel depth 6、storage 16 bppの識別
+
+Bgr555対照との区別
+
+Bgr565実出力10件のRGBA全画素一致
+
+BMP header不正・予算超過のmaterialization前拒否
+
+拒否trace・終端結果のfail-closed検証
+
+bounded worker lifecycle、cancel/timeout区別
+
+固定SOURCE・Native・独立Gate・証拠パッケージの整合性
+
+ただし、WIC内部stride/scratch、実予約、真の同時peak、16K full decode、region/sequential/tiled、協調的decoder cancellation、ICC/orientation、JPEG絶対raster、full MP-IMG2 Decode Exit、MP-IMG3 Upload、Runtime RC-*、measured R0は引き続き未達です。
+
+W3 LIMITED TECHNICAL COMPLETIONの承認は、MP-IMG2全体の完了や製品UX受入れを意味しません。
+
+今回のレビュー環境ではWindows Native WIC、GUI、Refine Gateの再実行やGitHub未push commit全体の取得は行っていません。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 0
+
+EXCESSIVE 0
+
+A-W3-R4-01：CLOSED
+
+MP-IMG2-W3 LIMITED TECHNICAL COMPLETION：承認
+
+REVIEW COMPLETE
+
+PASS 0 / 0 / 0

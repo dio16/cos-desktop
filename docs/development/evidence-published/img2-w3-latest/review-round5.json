@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+  "evidence_head": "fe516b2c4ef318ab720956afd796190141be2e81",
+  "package_manifest_commit": "05f97b281adb2d5a955cc578734f00a6f438f803",
+  "request_commit": "290e54060a5bfd31108312f78e9aaf1f09df4ed8",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "755600f4-d569-480f-b09f-925bf4c52744"
+  ],
+  "assistant_ids": [
+    "0301b057-113a-4d0a-afae-041bf6b9c484"
+  ],
+  "first_read": "2026-10-27T17:24:48.560Z",
+  "second_read": "2026-10-27T17:25:18.602Z",
+  "elapsed_ms": 30042,
+  "identical_complete_reads": true,
+  "streaming": false,
+  "request_sha256": "sha256:a346bd20fe0c2ce700e15305a482e84300f2581054e6636c1e4e4f9f6fd5456d",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 3075,
+      "expected": 3075,
+      "preview": "MP-IMG2-W3 再評価 Round 5 — A-W3-R4-01（更新後MP本文の欠落）のみの修正です。Round"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 5,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "terminal": "PASS 0 / 0 / 0",
+  "parser_exit": 0,
+  "parser": {
+    "blocking": 0,
+    "actionable": 0,
+    "excessive": 0,
+    "passLine": [
+      0,
+      0,
+      0
+    ],
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": true,
+    "sawPassLine": true
+  },
+  "closed": [
+    "A-W3-R4-01"
+  ],
+  "completion": "MP-IMG2-W3 LIMITED TECHNICAL COMPLETION",
+  "residual": [
+    "WIC internal stride/scratch",
+    "actual reservations",
+    "true concurrent allocation peak",
+    "16K full decode",
+    "region/sequential/tiled",
+    "cooperative in-decoder cancellation",
+    "ICC/orientation",
+    "JPEG absolute raster",
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3 Upload",
+    "Runtime RC-*",
+    "measured R0",
+    "product UX acceptance"
+  ]
+}
