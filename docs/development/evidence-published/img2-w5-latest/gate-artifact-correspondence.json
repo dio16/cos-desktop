@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "candidate": "086d957fc8acc38ba62c08bf400d913da9104c22",
-  "candidate_sha256": "sha256:420eea29e610f19deab643c7cb28edfe2434c89c19bc1db572bcd98af685dcc5",
-  "quality_gate": "2f8787fb-6599-4dcc-bc6a-e143950c64cf",
-  "build_gate": "f9b4fda6-6af5-4d48-a432-056b99e07125",
+  "candidate": "1daa70ecd819002636e08bdb95842fdc381cbe1c",
+  "candidate_sha256": "sha256:cb5bee12e61b800568b09f62409c9a316cc5daf6bf3aa7f13a9514378c2a0c35",
+  "quality_gate": "88b59a3c-3364-4a85-8088-e22c48639cfc",
+  "build_gate": "5847493a-ddaa-4074-82d7-a58195e9ffd6",
   "identical_artifact_tuples": true,
   "artifacts": [
     {
@@ -100,8 +100,8 @@
       "artifact": {
         "id": "w5r2-evidence-admission-boundary.json",
         "relative_path": "artifacts/w5r2-evidence-admission-boundary.json",
-        "size_bytes": 269,
-        "sha256": "sha256:7932fade23ae8f980756b19b0ef44f865e2f8feee73dcdb7ca6faf8bd0206ccb"
+        "size_bytes": 255,
+        "sha256": "sha256:8511c46e4cf088631af12c78cc5f51e352d8c124e43bd8a40b1dcc4c9ec7d6a0"
       },
       "raw_equal_to_git": true
     },
@@ -111,8 +111,8 @@
       "artifact": {
         "id": "w5r2-evidence-capability-table.json",
         "relative_path": "artifacts/w5r2-evidence-capability-table.json",
-        "size_bytes": 9768,
-        "sha256": "sha256:9be854c90d4df7d7d7e24e18818442a70de45b945f05da7a9b0ddafc4006116d"
+        "size_bytes": 9508,
+        "sha256": "sha256:28c1de19b782ffd0cbc0c30a558e935b38c9c1054067636aac5312ec36789636"
       },
       "raw_equal_to_git": true
     },
@@ -145,7 +145,7 @@
         "id": "w5r2-evidence-execution-manifest.json",
         "relative_path": "artifacts/w5r2-evidence-execution-manifest.json",
         "size_bytes": 3059,
-        "sha256": "sha256:c4167f5df5c867a6cb78a4200eac5b404abb654ff0a400c80811af46a176e97d"
+        "sha256": "sha256:663751a07d4d4f999e104cd79386d2a15a56e454bc8dbb3de69667c4d4ab408f"
       },
       "raw_equal_to_git": true
     },
@@ -155,8 +155,8 @@
       "artifact": {
         "id": "w5r2-evidence-fixture-manifest.json",
         "relative_path": "artifacts/w5r2-evidence-fixture-manifest.json",
-        "size_bytes": 154429,
-        "sha256": "sha256:862a402fd32b85360764ed8ea03d1ca142332f81f73ebf59c67f73789c61698f"
+        "size_bytes": 154324,
+        "sha256": "sha256:f36cfd4ef23b85381ec649c368a502334283ddecad069b9c2eca116855560292"
       },
       "raw_equal_to_git": true
     },
@@ -178,7 +178,7 @@
         "id": "w5r2-evidence-metadata-native-matrix.json",
         "relative_path": "artifacts/w5r2-evidence-metadata-native-matrix.json",
         "size_bytes": 356284,
-        "sha256": "sha256:577847caf034d93f0601f5beb27a357da8c526ec8ae6e3d7bc76b5d5fd1e8087"
+        "sha256": "sha256:79b5306572ede7a08ad6115cb41f6402febb2e6c6fa2989566b8660f356c273c"
       },
       "raw_equal_to_git": true
     },
@@ -189,7 +189,7 @@
         "id": "w5r2-evidence-orientation-oracle.json",
         "relative_path": "artifacts/w5r2-evidence-orientation-oracle.json",
         "size_bytes": 11126,
-        "sha256": "sha256:5afec9ee1260391072d84322d216dfeee59912b552448655f3d9cd3e3b39b5e6"
+        "sha256": "sha256:53e1c56b59c628246538e42d8308502f6434b9e1ac3eadb66d2ffe3f1ad32540"
       },
       "raw_equal_to_git": true
     },
@@ -199,8 +199,8 @@
       "artifact": {
         "id": "w5r2-evidence-quality.json",
         "relative_path": "artifacts/w5r2-evidence-quality.json",
-        "size_bytes": 4929,
-        "sha256": "sha256:717a1f69255aa50e32ec23e186feacbf2772ff994af530f9a07aec9c2e4d3b08"
+        "size_bytes": 5122,
+        "sha256": "sha256:730ac1b9bd4a71ff229d8fb5550142f030d1fe1aa31772b230e8b5330a588d91"
       },
       "raw_equal_to_git": true
     },
@@ -244,7 +244,7 @@
         "id": "w5r2-evidence-source-identity.json",
         "relative_path": "artifacts/w5r2-evidence-source-identity.json",
         "size_bytes": 4316,
-        "sha256": "sha256:e25e407d9209084826284056db9c3bb7daba5fdeea22546a5a906faadbdac391"
+        "sha256": "sha256:f63b127678baf2e05a0603a22407868b6f9326430d53e490a800f7df9a2fa36f"
       },
       "raw_equal_to_git": true
     },
@@ -287,8 +287,8 @@
       "artifact": {
         "id": "w5r2-evidence-verifier-results.json",
         "relative_path": "artifacts/w5r2-evidence-verifier-results.json",
-        "size_bytes": 10617,
-        "sha256": "sha256:106f8e77a30532476f7c9e1398a763bf910c46e4e520eefe38263aaeb6f3743b"
+        "size_bytes": 10031,
+        "sha256": "sha256:f126b2dc201c2bfcdec3355742b1c5360b02032fd4fbe2507018247f3f1933fb"
       },
       "raw_equal_to_git": true
     },
@@ -408,8 +408,8 @@
       "artifact": {
         "id": "w5r2-test_w5_verify.py-10",
         "relative_path": "artifacts/w5r2-test_w5_verify.py-10",
-        "size_bytes": 10803,
-        "sha256": "sha256:36426623f24dd77ce25ae822175dbe953fa97598a7450340e840bd93d6682065"
+        "size_bytes": 12834,
+        "sha256": "sha256:f7f01fa3f093d76f6a3937a7497ae634157009b6b05a0b8791a0b6046ec76e76"
       },
       "raw_equal_to_git": true
     },
@@ -496,8 +496,8 @@
       "artifact": {
         "id": "w5r2-w5_metadata_verify.py-9",
         "relative_path": "artifacts/w5r2-w5_metadata_verify.py-9",
-        "size_bytes": 18138,
-        "sha256": "sha256:342e37ac032199f98169bccc3703bc1a7231db5ef65141a87563b4a099d46481"
+        "size_bytes": 18973,
+        "sha256": "sha256:62ebd2c6db855896fcb2719b940f9c75a4b22d6af362cd6a0b04ee8b3eaa5b13"
       },
       "raw_equal_to_git": true
     },
@@ -542,6 +542,17 @@
         "relative_path": "artifacts/w5r3-repair-round2",
         "size_bytes": 447,
         "sha256": "sha256:df837c8a5670f178ecba07d6d97707a62901232684db20f24f7d10df729c1b9c"
+      },
+      "raw_equal_to_git": true
+    },
+    {
+      "id": "w5r4-repair-round3",
+      "path": "docs/development/evidence-published/img2-w5-latest/repair-round3.json",
+      "artifact": {
+        "id": "w5r4-repair-round3",
+        "relative_path": "artifacts/w5r4-repair-round3",
+        "size_bytes": 362,
+        "sha256": "sha256:571eed4700cdcd1bc050b1956d45981c6991276c31e2e205bbd8305fe2745334"
       },
       "raw_equal_to_git": true
     }

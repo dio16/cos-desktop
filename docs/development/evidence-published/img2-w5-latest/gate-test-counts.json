@@ -1,25 +1,15 @@
 {
   "schema_version": 1,
-  "candidate": "086d957fc8acc38ba62c08bf400d913da9104c22",
+  "candidate": "1daa70ecd819002636e08bdb95842fdc381cbe1c",
   "rust": {
     "passed": 535,
     "failed": 0,
     "ignored": 1
   },
-  "img2": 134,
+  "img2": 136,
   "r0": {
     "total": 352,
     "passed": 316,
     "skipped": 36
-  },
-  "ordinary": {
-    "rust": 535,
-    "feature": 539,
-    "img2": 128,
-    "w5": 22,
-    "r0": [
-      340,
-      12
-    ]
   }
 }

@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "product_candidate": "086d957fc8acc38ba62c08bf400d913da9104c22",
-  "gate_candidate_digest": "sha256:420eea29e610f19deab643c7cb28edfe2434c89c19bc1db572bcd98af685dcc5",
-  "quality_gate": "2f8787fb-6599-4dcc-bc6a-e143950c64cf",
-  "build_gate": "f9b4fda6-6af5-4d48-a432-056b99e07125",
+  "product_candidate": "1daa70ecd819002636e08bdb95842fdc381cbe1c",
+  "gate_candidate_digest": "sha256:cb5bee12e61b800568b09f62409c9a316cc5daf6bf3aa7f13a9514378c2a0c35",
+  "quality_gate": "88b59a3c-3364-4a85-8088-e22c48639cfc",
+  "build_gate": "5847493a-ddaa-4074-82d7-a58195e9ffd6",
   "taskern_packet_sha256": "sha256:42c979d2f487906762e51a09d07c776b296a40a38ea6c432830172f21e5d1360"
 }

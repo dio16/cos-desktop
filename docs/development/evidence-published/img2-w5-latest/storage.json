@@ -1,56 +1,45 @@
 {
   "schema_version": 1,
-  "candidate": "086d957fc8acc38ba62c08bf400d913da9104c22",
-  "status": "DISPOSED_INTEGRITY_UNCHANGED",
-  "quality_gate": "2f8787fb-6599-4dcc-bc6a-e143950c64cf",
-  "build_gate": "f9b4fda6-6af5-4d48-a432-056b99e07125",
+  "candidate": "1daa70ecd819002636e08bdb95842fdc381cbe1c",
+  "status": "PREPARED_AFTER_SUCCESSFUL_TERMINAL_VERIFY",
+  "quality_gate": "88b59a3c-3364-4a85-8088-e22c48639cfc",
+  "build_gate": "5847493a-ddaa-4074-82d7-a58195e9ffd6",
   "paths": [
     {
-      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\2f8787fb-6599-4dcc-bc6a-e143950c64cf\\work\\repo",
-      "files": 601,
-      "logical_bytes": 16539222,
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\88b59a3c-3364-4a85-8088-e22c48639cfc\\work\\repo",
+      "files": 602,
+      "logical_bytes": 16553310,
       "no_reparse": true,
-      "removed": true
+      "removed": false
     },
     {
-      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\f9b4fda6-6af5-4d48-a432-056b99e07125\\work\\repo",
-      "files": 601,
-      "logical_bytes": 16538247,
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\5847493a-ddaa-4074-82d7-a58195e9ffd6\\work\\repo",
+      "files": 602,
+      "logical_bytes": 16553123,
       "no_reparse": true,
-      "removed": true
+      "removed": false
     },
     {
-      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r11\\clippy",
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r12\\clippy",
       "files": 3015,
       "logical_bytes": 663885503,
       "no_reparse": true,
-      "removed": true
+      "removed": false
     },
     {
-      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r11\\tests",
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r12\\tests",
       "files": 3144,
       "logical_bytes": 1841539631,
       "no_reparse": true,
-      "removed": true
+      "removed": false
     },
     {
-      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r11\\build",
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r12\\build",
       "files": 2911,
       "logical_bytes": 1592998201,
       "no_reparse": true,
-      "removed": true
+      "removed": false
     }
   ],
-  "live_process_dependencies": [],
-  "evidence_retention_commit": "58a82403f0eaf0257566940d0fef896b55b82889",
-  "native_verify_after": {
-    "quality": {
-      "exit": 0,
-      "identical": true
-    },
-    "build": {
-      "exit": 0,
-      "identical": true
-    }
-  }
+  "live_process_dependencies": []
 }

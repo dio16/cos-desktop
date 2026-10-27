@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "candidate": "086d957fc8acc38ba62c08bf400d913da9104c22",
+  "candidate": "1daa70ecd819002636e08bdb95842fdc381cbe1c",
   "quality_checks": [
     "fmt",
     "metadata",
@@ -265,6 +265,11 @@
     {
       "id": "w5r3-repair-round2",
       "path": "docs/development/evidence-published/img2-w5-latest/repair-round2.json",
+      "required": true
+    },
+    {
+      "id": "w5r4-repair-round3",
+      "path": "docs/development/evidence-published/img2-w5-latest/repair-round3.json",
       "required": true
     }
   ],

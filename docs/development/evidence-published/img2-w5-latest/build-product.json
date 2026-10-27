@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "candidate": "086d957fc8acc38ba62c08bf400d913da9104c22",
-  "build_gate": "f9b4fda6-6af5-4d48-a432-056b99e07125",
+  "candidate": "1daa70ecd819002636e08bdb95842fdc381cbe1c",
+  "build_gate": "5847493a-ddaa-4074-82d7-a58195e9ffd6",
   "bytes": 32275456,
-  "sha256": "sha256:18b9d55ccf9c2af19b99cfcf291417cf10820bd3b730cf0151cbd7198582269a"
+  "sha256": "sha256:3d6b7151bf55c0e30ce0f47ca5cb61b4a0422bf4227c22b977362e34cae7f4b1"
 }
