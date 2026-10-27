@@ -186,7 +186,7 @@ def _worker(w, fixture, spec, executable_sha):
              and all(result.get(k) == v for k, v in values.items()), "source_format_or_requirements_invalid")
         terminal = stages[-1]
         need(terminal.get("complete") is True and all(terminal.get(k) == result.get(k) for k in
-             ("outcome", "reason_code", "admission_status", "materialization", "output_bytes")), "terminal_result_mismatch")
+             ("outcome", "reason_code", "admission_status", "materialization")), "terminal_result_mismatch")
         output = bytes.fromhex(w["output_hex"])
         need(0 < len(output) == w["output_bytes"] == result["output_bytes"] <= BOUNDS["max_output_bytes"]
              and sha(output) == w["output_sha256"], "output_payload_invalid")

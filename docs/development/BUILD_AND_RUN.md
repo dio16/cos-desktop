@@ -878,6 +878,49 @@ independent oracle parses TIFF IFD/strips, PNG and BMP24 itself and defines all
 rotations from stored pixels. The cap case admits the full frame, refuses
 `metadata_cap_exceeded` before OnLoad and publishes nothing.
 
+### 4.26 MP-IMG2-W6 bounded process-memory scaling (2026-10-28)
+
+W6 uses the unchanged WIC probe and W2 worker stop state machine. It observes
+PNG RGB8, BMP24 and real Bgr565 at 256²/1024², before or after `OnLoad`, with
+one or three workers. Pin the experimental source before running: the runner
+checks every executed source file against that commit, records raw and LF
+identities and verifies that source and executable bytes did not change.
+
+```powershell
+cargo build --locked -p cos-desktop --example decode_compare
+python -B apps/desktop/devtools/img2/w6_memory_matrix.py run `
+  --work-root <absolute-absent-owned-directory> --out <absolute-absent-report.json> `
+  --pwsh <absolute-qualified-pwsh.exe> `
+  --harness <absolute-repository>/target/debug/examples/decode_compare.exe
+python -B apps/desktop/devtools/img2/w6_memory_matrix.py verify `
+  --report docs/development/evidence-published/img2-w6-latest/native-memory-matrix.json `
+  --source-root <repository>
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_w6*.py"
+```
+
+The fixed instrumented matrix has six singles and six three-worker groups
+(24 worker cases, at most three live). Singles collect two windows; cohorts
+collect three, totalling 30 under the inherited 32-window cap. Each window
+retains ordered PID/start-time/executable/alive checks, raw observer capture,
+QPC/parent-monotonic brackets, working set/private bytes and optional process
+lifetime peak working set. Failed windows remain explicit and contribute no
+numeric maximum. Independent PNG/BMP parsing verifies all decoded RGBA pixels.
+
+`DERIVED_WINDOW_SUM` is sequential, not atomic; `MAX_OBSERVED_WINDOW_SUM` is
+the maximum of those windows, never a sum of different workers' lifetime
+maxima. Separate pre/post workers yield `MATCHED_RUN_DIFFERENCE`, not a WIC
+allocation measurement. Full-frame admission stays in force. Declared logical
+requirements are not reservations; internal scratch, actual reservations and
+true concurrent allocation peaks remain `NOT_MEASURED`. Holds are artificial,
+not decoder latency or cooperative cancellation.
+
+Limits remain 45 s/worker, 300 s/run, 1024/1,048,576 pixels, 4 MiB decoded,
+8 MiB scratch, 16 MiB/output, 64 MiB/work root, 128 trace rows/128 KiB,
+64 KiB per captured stream, 8 MiB/report and 768 MiB observed cohort private
+bytes. These are bounded experiment limits, not ratified product memory SLOs.
+Native source binding, later evidence/Gate commits and docs-only differences
+must be kept separate; W6 is not full Decode Exit or Upload acceptance.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |
