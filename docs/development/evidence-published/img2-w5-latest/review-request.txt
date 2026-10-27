@@ -1,16 +1,16 @@
-MP-IMG2-W5 再評価 Round 4 — A-W5-R3-01/R3-02の限定修正です。Round 3 HOLD 0/2/0 は review-round3-response.txt/json に保持し、旧Gate 2f8787fb…/f9b4fda6… は review-round3-* に保存しています。
+MP-IMG2-W5 再評価 Round 5 — A-W5-R4-01/R4-02の限定修正です。Round 4 HOLD 0/2/0 は review-round4-response.txt/json に保持し、旧Gate 88b59a3c…/5847493a… は review-round4-* に保存しています。
 
-Repository dio16/cos-desktop、branch dev（未push）。開始commit 37d4643c128598352c7052b859b2b4a74b25c4fa。製品固定候補 1daa70ecd819002636e08bdb95842fdc381cbe1c。証拠HEADはreview-package.jsonに記載。CallerはADR-0009/0012の継続実装を指示。製品policy/Runtime/push/main/releaseは非対象です。
+Repository dio16/cos-desktop、branch dev（未push）。開始commit 37d4643c128598352c7052b859b2b4a74b25c4fa。製品固定候補 d75df9d0fef8d9eca39c41c563ada11252ed21cb。証拠HEADはreview-package.jsonに記載。CallerはADR-0009/0012の継続実装を指示。製品policy/Runtime/push/main/releaseは非対象です。
 
 修正:
-- A-W5-R3-01: tiff_icc_oversizedでも元fixtureからwidth/height/Bgr24/8/24/TiffBitmapDecoder/orientation query/raw=1を照合した後にadmission_mathを実行。Bgr24→Bgr565の整合改変、width、decoder、fake query、raw変更の負例を追加。
-- A-W5-R3-02: decodedはworker decoded・published_success=true・output存在・bytes一致、unsupportedはworker unsupported・非公開・output_bytes=0、oversizeはworker oversize・非公開・output_bytes=0・materialization not_requestedを一体検証。5改変の負例を追加。
-- verifier変更のためNative 16 case再生成、portable tests 24。通常quality、img2 128、feature 539/1 ignored、R0 340/12 skip、W3 f8dfc30、W4 e357888e replay成功。
+- A-W5-R4-01: over-cap分岐でも w5_metadata_oracle.source() で元TIFFを独立解析し、IFD width/height、orientation raw=1、ICC tag存在、ICC宣言長>64KiBを必須化。fixture/probe寸法改変、ICC宣言長64 bytes改変の負例を追加。
+- A-W5-R4-02: unsupported拒否で output_hex=null、output_sha256=null、output_bytes=0、output_present=false、published_success=falseを一体検証。output_hex="00"、偽shaの負例を追加。
+- verifier変更のためNative 16 case再生成、portable tests 25。通常quality、img2 128、feature 539/1 ignored、R0 340/12 skip、W3 f8dfc30、W4 e357888e replay成功。
 - WIC probe/decoder、fixture、oracle、crates/media、Runtime、Taskern packetは不変。
 
-新Gate: Quality 88b59a3c-3364-4a85-8088-e22c48639cfc SUCCEEDED 15/15、Build 5847493a-ddaa-4074-82d7-a58195e9ffd6 SUCCEEDED 1/1、candidate digest sha256:cb5bee12…、50 tuples一致、50/50 capture=candidate blob、status/inspect/verify exit0、cleanup complete、owner dead、recovery不要。
+新Gate: Quality 3148ac79-4791-4109-9566-d82236d0f65a SUCCEEDED 15/15、Build 6b472805-20d5-455f-812d-d88156e0cba3 SUCCEEDED 1/1、candidate digest sha256:cb5bee… から更新、51 tuples一致、capture=candidate blob、status/inspect/verify exit0、cleanup complete、owner dead、recovery不要。
 
-確認: cap分岐のsource帰属とadmission、worker/terminal/公開出力の一致、orientation/ICC実測、50 artifact対応、W1-W4回帰、legacy CLI/ROI、stop契約。
+確認: over-cap拒否が元TIFF metadataと結び付くか、unsupportedでoutput payloadが残らないか、orientation/ICC実測、51 artifact対応、W1-W4回帰、legacy CLI/ROI、stop契約。
 
 未測定: ICC colour fidelity、全codec対応、JPEG絶対raster、true partial/sequential/tiled、16K、内部scratch/実予約/同時peak、cooperative cancellation、full Decode Exit、MP-IMG3、Runtime、measured R0、UX/video。製品policyはDESIGN_BLOCKEDです。
 
