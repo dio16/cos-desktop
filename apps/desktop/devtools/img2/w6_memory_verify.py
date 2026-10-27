@@ -268,7 +268,8 @@ def _window(window, workers, index, previous_end, script_sha, executable_sha, ho
 
 def _fixed_source_blob(source, commit, path):
     git = os.environ.get("GIT_EXECUTABLE") or shutil.which("git")
-    need(git is not None, "git_executable_unavailable")
+    if git is None:
+        raise ValueError("git_executable_unavailable")
     try:
         return subprocess.run([git, "show", f"{commit}:{path}"], cwd=source,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE,
