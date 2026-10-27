@@ -84,6 +84,7 @@ def fixture_bytes(fixture_id: str) -> bytes:
             _bmp(width, height, rgba, 24 if codec == "bmp24" else 16))
 
 
+@lru_cache(maxsize=len(FIXTURE_IDS))
 def _decode_source(data: bytes) -> dict:
     if not isinstance(data, bytes) or len(data) > _MAX_SOURCE:
         raise ValueError("encoded source must be bytes within the 4 MiB source bound")
@@ -180,11 +181,17 @@ def generate(root: Path) -> list[dict]:
 def compare(fixture: dict, input_bytes: bytes, output_png: bytes) -> dict:
     expected = source_rgba(fixture, input_bytes)["rgba"]
     _need(isinstance(output_png, bytes) and len(output_png) <= _MAX_OUTPUT, "output PNG exceeds bound or is not bytes")
+    return dict(_compare_raster(expected, fixture["width"], fixture["height"], output_png))
+
+
+@lru_cache(maxsize=len(FIXTURE_IDS))
+def _compare_raster(expected: bytes, expected_width: int, expected_height: int, output_png: bytes) -> dict:
+    # Cache exact immutable source/output bytes, never a claimed digest or case ID.
     try:
         width, height, actual = png_oracle.png_pixels(output_png)
     except Exception as exc:
         raise ValueError("invalid or unsupported output PNG") from exc
-    _need((width, height) == (fixture["width"], fixture["height"]), "output dimensions differ from source")
+    _need((width, height) == (expected_width, expected_height), "output dimensions differ from source")
     mismatch_count = sum(a != b for a, b in zip(expected, actual))
     return {"ok": mismatch_count == 0, "width": width, "height": height,
             "expected_rgba_sha256": _sha(expected), "actual_rgba_sha256": _sha(actual),
