@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "candidate": "76d8998bea494a0c7fc97c7cc27071594330ba17",
+  "evidence_head": "401270993ee962a2b54408b286d3b0d6fc4c17d7",
+  "package_manifest_commit": "7117b88b24b17043b41be26000ee9533c3b76247",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "555d0a05-ac7c-48d6-bb30-a59dce5927bf"
+  ],
+  "assistant_ids": [
+    "50dc6b79-3932-43a8-a285-b2bc09eec87c"
+  ],
+  "first_read": "2026-10-27T22:56:59.141Z",
+  "second_read": "2026-10-27T22:57:58.857Z",
+  "elapsed_ms": 59716,
+  "identical_complete_reads": true,
+  "streaming": false,
+  "request_sha256": "sha256:dc5b721a8b54fe4a8c5b4653d48aab5af3b9526442b096b39ab471291cae66b8",
+  "complete": true,
+  "terminal": "HOLD 0 / 2 / 0",
+  "findings": {
+    "blocking": 0,
+    "actionable": 2,
+    "excessive": 0
+  },
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 4959,
+      "expected": 4959,
+      "preview": "MP-IMG2-W6 の固定SOURCE独立レビューを依頼します。対象は Windows WIC のcodec・寸法・同"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 5,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+    "via": "pin"
+  },
+  "response_serialization": "Exact expanded live DOM innerText, including visible role label; preserved in review-round1-response.txt."
+}

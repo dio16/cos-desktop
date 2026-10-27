@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -138,6 +139,57 @@ class NativeMutationTests(unittest.TestCase):
         record = copy.deepcopy(self.native)
         record["experiments"][0]["failure"] = "observer failed"
         self.assertEqual(verify(record, ROOT).get("error"), "group_failure_not_closed")
+
+    def test_worker_identity_verification_covers_all_terminal_outcomes(self):
+        for outcome in ("decoded", "cancelled", "timeout"):
+            with self.subTest(outcome=outcome):
+                record = copy.deepcopy(self.native)
+                worker = next(w for g in record["experiments"] for w in g["workers"]
+                              if w["outcome"] == outcome)
+                worker["identity_verified"] = False
+                self.assertFalse(verify(record, ROOT)["ok"])
+
+    def test_artificial_hold_classification_covers_all_terminal_outcomes(self):
+        for outcome in ("decoded", "cancelled", "timeout"):
+            with self.subTest(outcome=outcome):
+                record = copy.deepcopy(self.native)
+                worker = next(w for g in record["experiments"] for w in g["workers"]
+                              if w["outcome"] == outcome)
+                worker["boundary_hold_is_instrumentation"] = False
+                self.assertFalse(verify(record, ROOT)["ok"])
+
+    def test_successful_trace_requires_a_complete_newline_terminated_payload(self):
+        for damage in ("unparsed_tail", "missing_newline", "missing_terminal"):
+            with self.subTest(damage=damage):
+                record = copy.deepcopy(self.native)
+                worker = record["experiments"][0]["workers"][0]
+                if damage == "unparsed_tail":
+                    worker["trace_utf8"] += "garbage"
+                elif damage == "missing_newline":
+                    worker["trace_utf8"] = worker["trace_utf8"][:-1]
+                else:
+                    worker["trace_utf8"] = worker["trace_utf8"].rsplit("\n", 2)[0] + "\n"
+                    worker["stages"].pop()
+                    worker["trace_records"] -= 1
+                raw = worker["trace_utf8"].encode("utf-8")
+                worker["trace_bytes"] = len(raw)
+                worker["trace_sha256"] = "sha256:" + hashlib.sha256(raw).hexdigest()
+                worker["trace_partial_bytes"] = len(raw) - raw.rfind(b"\n") - 1
+                worker["trace_complete"] = True
+                self.assertFalse(verify(record, ROOT)["ok"])
+
+    def test_confirmed_stops_keep_their_partial_trace_tail(self):
+        for outcome in ("cancelled", "timeout"):
+            with self.subTest(outcome=outcome):
+                record = copy.deepcopy(self.native)
+                worker = next(w for g in record["experiments"] for w in g["workers"]
+                              if w["outcome"] == outcome)
+                worker["trace_utf8"] += "garbage"
+                raw = worker["trace_utf8"].encode("utf-8")
+                worker["trace_bytes"] = len(raw)
+                worker["trace_sha256"] = "sha256:" + hashlib.sha256(raw).hexdigest()
+                worker["trace_partial_bytes"] = len(raw) - raw.rfind(b"\n") - 1
+                self.assertTrue(verify(record, ROOT)["ok"])
 
     def test_structural_replay_does_not_claim_fixed_source_identity(self):
         result = verify(self.native)

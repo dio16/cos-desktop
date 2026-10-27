@@ -136,6 +136,8 @@ def _worker(w, fixture, spec, executable_sha):
     need(integer(w["pid"], 1) and integer(w["start_utc_ticks"], 1)
          and w["exe_sha256"] == executable_sha
          and w["input_sha256"] == "sha256:" + fixture["sha256"], "worker_identity_mismatch")
+    need(w["identity_verified"] is True, "worker_identity_not_verified")
+    need(w["boundary_hold_is_instrumentation"] is True, "hold_classification_mismatch")
     need(w["reaped"] is True and w["alive_after_wait"] is False, "worker_not_reaped")
     need(w["clock_domain"] == "python_monotonic_ns" and w["cross_process_clock_subtraction"] is False,
          "worker_clock_invalid")
@@ -177,7 +179,9 @@ def _worker(w, fixture, spec, executable_sha):
     need((json.loads(w["stdout_utf8"]) if w["stdout_utf8"] else None) == result, "worker_stdout_mismatch")
     stop = w["cancellation"]
     if spec["action"] == "release":
-        need(w["outcome"] == "decoded" and w["exit_code"] == 0 and w["trace_complete"] is True
+        need(w["trace_complete"] is True and w["trace_partial_bytes"] == 0
+             and raw.endswith(b"\n"), "successful_trace_incomplete")
+        need(w["outcome"] == "decoded" and w["exit_code"] == 0
              and w["published_success"] is True and w["output_present"] is True, "decode_publication_invalid")
         need(stop["state"] == "not_requested" and stop["requested_ns"] is None
              and stop["kill_issued"] is False and stop["cause"] == "not_requested", "unexpected_stop")

@@ -1,0 +1,712 @@
+ChatGPT の発言:
+MP-IMG2-W6 — 固定SOURCE独立レビュー
+
+最終判定：HOLD 0 / 2 / 0
+
+実Windows WICのbounded process-memory scalingというW6の中心的な実測成果は、提出証拠と独立計算で整合しています。 ただし、SOURCEのW6検証器に、worker identity確認状態とtrace完全性について2件のfalse-greenを再現しました。
+
+実Native原本の値は正常です。今回のHOLDは、実測結果の誤りではなく、矛盾したNative証拠を成功として認定できる検証器側の残件によるものです。
+
+1. 添付・固定候補の確認
+
+項目
+
+	
+
+独立検証結果
+
+
+
+
+Repository
+
+	
+
+dio16/cos-desktop
+
+
+
+
+Native実行SOURCE
+
+	
+
+edfcdf104f66e89bf9deae6b03bde22427c84e9c
+
+
+
+
+製品・Gate候補
+
+	
+
+76d8998bea494a0c7fc97c7cc27071594330ba17
+
+
+
+
+Evidence HEAD
+
+	
+
+401270993ee962a2b54408b286d3b0d6fc4c17d7
+
+
+
+
+SOURCE ZIP
+
+	
+
+2,200,025 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+1,089,470 bytes、SHA256一致
+
+
+
+
+SOURCE manifest
+
+	
+
+266/266一致
+
+
+
+
+Evidence manifest
+
+	
+
+50/50一致
+
+
+
+
+raw/LF byte対応
+
+	
+
+316/316一致
+
+
+
+
+Native SOURCE files
+
+	
+
+18/18 LF/hash一致
+
+
+
+
+Gate artifacts
+
+	
+
+60/60実バイト一致
+
+両ZIPのGit archiveコメントは指定されたcommitと一致しました。
+
+SOURCE ZIPの266ファイルとEvidence ZIPの50ファイルを展開し、全エントリーについて原バイトまたはLF正規化後のサイズ・SHA256を再計算しました。
+
+Native実行後に変更された製品SOURCE 18件はなく、候補への変更はその範囲でdocs-onlyです。
+
+ただし、private Git objectがないため、edfcdf104…と76d8998…の実Git objectを用いた固定source-bound検証そのものはNOT_RUNです。提出された実バイト・manifestとの一致と区別します。
+
+2. W6 Native実測の独立検証
+
+項目
+
+	
+
+結果
+
+
+
+
+Codec/size fixture
+
+	
+
+6/6一致
+
+
+
+
+Decode実行
+
+	
+
+24件
+
+
+
+
+同時worker最大
+
+	
+
+3
+
+
+
+
+実験group
+
+	
+
+12
+
+
+
+
+Complete collection windows
+
+	
+
+30/30
+
+
+
+
+Process counter samples
+
+	
+
+66件
+
+
+
+
+正常decoded
+
+	
+
+18件
+
+
+
+
+独立RGBA画素比較
+
+	
+
+18/18全画素一致
+
+
+
+
+Cancel
+
+	
+
+3件
+
+
+
+
+Timeout
+
+	
+
+3件
+
+
+
+
+Worker・window上限
+
+	
+
+24件・30窓、いずれも上限内
+
+Python標準ライブラリで生成するfixture・算術テストは、レビュー環境で9/9 PASSしました。
+
+また、提出されたW6 oracleとは別に、PNGのCRCを確認し、独立した画像デコーダーとBMP bitfield解析を用いて元encoded rasterとWIC出力を比較しました。
+
+18出力、合計40,108,032 RGBA bytesが一致しました。Bgr565は0xF800 / 0x07E0 / 0x001Fのmaskから5/6-bit値を展開して照合しています。
+
+Memory scalingの独立再計算
+
+MAX_OBSERVED_WINDOW_SUM — bytesからMiBへ換算。非原子的な逐次取得値の合計であり、真の同時allocation peakではありません。
+
+Private bytes
+Working set
+0 MiB
+95 MiB
+190 MiB
+285 MiB
+380 MiB
+256² 3-worker R1
+256² 3-worker R2
+1024² 3-worker R1
+1024² 3-worker R2
+Before R1
+Before R2
+256² 3-worker R1: Private bytes 127.1 MiB, Working set 345.5 MiB
+256² 3-worker R2: Private bytes 125.3 MiB, Working set 343.8 MiB
+1024² 3-worker R1: Private bytes 132.6 MiB, Working set 346.7 MiB
+1024² 3-worker R2: Private bytes 136.8 MiB, Working set 355.5 MiB
+Before R1: Private bytes 128.2 MiB, Working set 349.2 MiB
+Before R2: Private bytes 126.7 MiB, Working set 345.1 MiB
+
+各groupの完全窓における最大観測合計。before/afterは別worker。
+
+30窓すべてで各workerのcounterを再集計し、記録されたwindow totalsとgroup maximaが一致しました。
+
+以下の区分も正しく維持されています。
+
+DERIVED_WINDOW_SUM：同じcollection window内の逐次counter合計
+
+MAX_OBSERVED_WINDOW_SUM：観測したwindow合計の最大値
+
+MATCHED_RUN_DIFFERENCE：異なるworker実行間の比較
+
+WIC内部scratch、実予約、true concurrent allocation peakは、いずれもNOT_MEASUREDです。
+
+3. Negative mutationの再検証
+
+今回のverify()を、提出されたNative記録のコピーに対して直接実行しました。
+
+項目
+
+	
+
+独立実行結果
+
+
+
+
+正常Native構造replay
+
+	
+
+PASS
+
+
+
+
+構造だけのclosure_eligible
+
+	
+
+false
+
+
+
+
+添付だけで再現可能な負例
+
+	
+
+23/23拒否
+
+
+
+
+旧SOURCE commit差し替え負例
+
+	
+
+source-bound実行はNOT_RUN
+
+
+
+
+保存された実Git検証結果
+
+	
+
+24/24拒否と記録
+
+旧SOURCE commit差し替えは、source_rootなしではok=trueになりますが、同時にsource_identity_verified=false、closure_eligible=falseです。
+
+これは元から定義された構造replayの境界であり、今回の指摘にはしません。
+
+一方、24件の規定負例とは別に検証すると、次の2件が成功扱いされました。
+
+4. 残存指摘
+A-W6-01 — workerのidentity確認状態をfalseにしても正常認定される
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w6_memory_verify.py:130–143
+
+現在の_worker()はPID、開始UTC ticks、executable SHA256、input SHA256を照合します。
+
+しかし、W6 producerが記録しているidentity_verifiedを検証していません。
+
+独立再現：
+
+Python
+実行
+worker["identity_verified"] = False
+
+正常decoded workerでも、before-OnLoad停止workerでも、構造検証器はok=trueを返します。
+
+さらに、次の改変も受理されました。
+
+Python
+実行
+worker["boundary_hold_is_instrumentation"] = False
+
+前者はworker identityの確認が成立していないと明示された記録を受理する問題です。後者はstageの人工hold証拠とworker-levelの分類が矛盾している問題です。
+
+実Native記録は両フィールドともtrueです。
+
+最小修正条件
+
+_worker()に以下を必須化してください。
+
+Python
+実行
+need(
+    w["identity_verified"] is True,
+    "worker_identity_not_verified"
+)
+need(
+    w["boundary_hold_is_instrumentation"] is True,
+    "hold_classification_mismatch"
+)
+
+decodedおよびcancel/timeoutでの個別負例を追加してください。Sampler、WIC probe、Windows APIの変更は不要です。
+
+A-W6-02 — 完全なdecode traceに未解析の末尾bytesがあっても受理される
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w6_memory_verify.py:144–150, 179–181
+
+現行検証器はtraceのSHA256、長さ、解析できたstage列を確認します。
+
+しかし、trace_complete=trueに対してtrace_partial_bytes=0を要求しません。
+
+独立再現では、正常decoded workerのtrace末尾に次を追加しました。
+
+プレーンテキスト
+garbage
+
+合わせてtrace_sha256、trace_bytes、trace_partial_bytes=7を再計算しました。
+
+結果は次のとおりです。
+
+項目
+
+	
+
+改変後
+
+
+
+
+trace_complete
+
+	
+
+true
+
+
+
+
+最終解析stage
+
+	
+
+probe_exit
+
+
+
+
+trace_partial_bytes
+
+	
+
+7
+
+
+
+
+Trace SHA256・長さ
+
+	
+
+改変後バイトと一致
+
+
+
+
+verify().ok
+
+	
+
+true
+
+つまり、最終stageの後に未解析データが残ったtraceを「完全」と認定できます。
+
+最小修正条件
+
+正常decodedについて、少なくとも以下を必須としてください。
+
+Python
+実行
+need(
+    w["trace_complete"] is True
+    and w["trace_partial_bytes"] == 0
+    and raw.endswith(b"\n"),
+    "successful_trace_incomplete"
+)
+
+既存のstage順序・SHA256・payload解析は維持します。
+
+未解析末尾bytes、終端改行欠落、偽のtrace_complete=trueの負例を追加してください。
+
+Cancel/timeoutでは、既存の停止境界とpartial-traceの扱いを維持し、正常decodeと一律同条件にはしないでください。
+
+5. 新Refine Gateとartifact対応
+
+項目
+
+	
+
+Quality
+
+	
+
+Build
+
+
+
+
+Gate ID
+
+	
+
+e3ca75cd…
+
+	
+
+d1df7552…
+
+
+
+
+State
+
+	
+
+SUCCEEDED
+
+	
+
+SUCCEEDED
+
+
+
+
+必須チェック
+
+	
+
+16/16 PASS
+
+	
+
+1/1 PASS
+
+
+
+
+Candidate SHA
+
+	
+
+一致
+
+	
+
+一致
+
+
+
+
+Candidate digest
+
+	
+
+一致
+
+	
+
+一致
+
+
+
+
+status / inspect / verify
+
+	
+
+exit 0
+
+	
+
+exit 0
+
+
+
+
+Artifacts
+
+	
+
+60/60一致
+
+	
+
+60/60一致
+
+
+
+
+Cleanup
+
+	
+
+complete
+
+	
+
+complete
+
+
+
+
+Owner alive
+
+	
+
+false
+
+	
+
+false
+
+
+
+
+Recovery required
+
+	
+
+false
+
+	
+
+false
+
+
+
+
+Preflight
+
+	
+
+UNKNOWN
+
+	
+
+UNKNOWN
+
+Candidate digest：
+
+sha256:0b8f805832f7d9541fdc69a28008ed4c0fc252f3df3403a60583786f043a20b9
+
+両Gateのinspect・verifyのartifact tuplesが一致し、60件すべてを添付SOURCE/EvidenceのLF正規化実バイトと再照合しました。
+
+W3/W4/W5 replayも新Quality Gateの保存結果ではPASSです。旧Gateやsupersededな実行の成功を今回候補に転用していません。
+
+Build実行ファイルについては、**32,275,456 bytes、SHA256 9839984c…787e966**という削除前捕捉記録があります。ただし、実バイナリは添付されておらず、このSHA256の再計算はNOT_RUNです。
+
+6. Storage・設計境界
+
+Storageの5対象を独立集計すると、10,362 files / 4,137,743,281 logical bytesで一致しました。
+
+保存証拠では、対象は最終成功Gate2件のwork/repoとr3のclippy/tests/buildに限定され、削除前後のNative verifyは両方exit 0で一致しています。Windows上の物理削除を今回実行したわけではありません。
+
+実装計画のMermaid DAGは、62 task nodes・41 edgesでした。MP-IMG2のhard prerequisitesはMP-IMG1とMP-SEC3、MP-IMG3の依存先はfull MP-IMG2であり、W6限定実測でこの条件が解除されるわけではありません。
+
+7. W6限定closure判断
+
+今回、次の主要技術事実は裏付けられました。
+
+3 codec × 2寸法のbounded scaling計測
+
+1-workerと3-workerの比較
+
+30 complete collection windows、66 process samples
+
+18 decoded outputの独立全画素一致
+
+QPCとprocess lifetimeを使った観測記録
+
+window totals/maximaの独立再計算
+
+artificial holdとdecoder latencyの分離
+
+process countersとallocation peakの分離
+
+新Quality/Build GateのSOURCE・artifact対応
+
+ただし、worker identity確認状態と成功trace完全性についてfalse-greenが残るため、0/0/0の独立closureは保留します。
+
+修正対象はw6_memory_verify.pyとW6の限定負例テストです。実測の中心部分をやり直す理由はなく、製品WIC・Budget・Runtimeの変更も不要です。SOURCE identityを変更した場合は、既存契約に従ってNative binding・新Gate・独立レビューを取り直してください。
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+0
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+2
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+MP-IMG2-W6 LIMITED TECHNICAL COMPLETION：保留
+
+REVIEW COMPLETE
+
+HOLD 0 / 2 / 0

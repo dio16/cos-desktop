@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "review": "review-round1.json",
+  "reviewed_candidate": "76d8998bea494a0c7fc97c7cc27071594330ba17",
+  "reviewed_evidence_head": "401270993ee962a2b54408b286d3b0d6fc4c17d7",
+  "findings": [
+    {
+      "id": "A-W6-01",
+      "classification": "ACTIONABLE NON-BLOCKING",
+      "change": "Require worker identity_verified and artificial-hold classification for decoded,cancelled,timeout outcomes.",
+      "regressions": "Two methods independently mutate each flag for all three lifecycle outcomes."
+    },
+    {
+      "id": "A-W6-02",
+      "classification": "ACTIONABLE NON-BLOCKING",
+      "change": "Require successful trace_complete=true,zero partial bytes and a terminal newline; stopped-worker partial tails remain allowed.",
+      "regressions": "Unparsed garbage tail,missing final newline,missing terminal stage,and positive partial-tail controls for confirmed cancellation/timeout."
+    }
+  ],
+  "failing_before": {
+    "tests": 10,
+    "failed_subtests": 7,
+    "observed": "identity false:3; artificial-hold classification false:3; decoded garbage suffix:1. Missing terminal/newline and stop-tail controls are also exercised.",
+    "transport": "ctx_execute response timed out at30s; completed unittest stderr records32.609s and7 failures. No process exit code is claimed.",
+    "stderr_sha256": "sha256:6dfd3912ed286faf18966e6190fe506cf26c6fff95956f2e0970c23e45756d64"
+  },
+  "scope": "Only W6 verifier and negative tests change. WIC probe,sampler,Budget,Runtime,Rust and dependencies remain unchanged. New Native source binding and a new independent Gate pair are required; no previous Gate success transfers."
+}
