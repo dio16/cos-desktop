@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "candidate": "c9e667d35a514bc1b25d2d364347ef2cad19d329",
+  "gate_id": "eeb880f4-a854-48eb-914d-4355f6f8e35d",
+  "status": "PREPARED_NOT_YET_DISPOSED",
+  "paths": [
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\state\\gates\\eeb880f4-a854-48eb-914d-4355f6f8e35d\\work\\repo",
+      "files": 434,
+      "logical_bytes": 12351884,
+      "no_reparse": true
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r2\\clippy",
+      "files": 3015,
+      "logical_bytes": 663900856,
+      "no_reparse": true
+    },
+    {
+      "path": "C:\\dev\\cos-desktop-verification\\img2-w3-2026-10-27\\targets\\r2\\tests",
+      "files": 3144,
+      "logical_bytes": 1841538384,
+      "no_reparse": true
+    }
+  ],
+  "live_process_dependencies": [],
+  "native_before_verify": "superseded-repair1-quality.json verify",
+  "retained": "pinned commit under dev; state/authority/artifacts/logs retained outside work/repo",
+  "storage_measurement": "logical bytes/files, not filesystem allocation"
+}
