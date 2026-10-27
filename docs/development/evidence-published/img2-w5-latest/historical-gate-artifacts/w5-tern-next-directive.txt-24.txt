@@ -1,0 +1,995 @@
+# COS Desktop — CONTINUOUS IMPLEMENTATION DIRECTIVE
+# MP-IMG2-W4: Real-WIC Region Output and Partial-Decode Capability Classification
+# Execution: Taskern → Implementation → Native Verification
+#            → Quality → Independent Refine Gates
+#            → Tern Review → Evidence Closure
+#
+# Authority boundary: ADR-0008 / ADR-0009 / ADR-0012 / ADR-0013
+# Single owner: DC-MP-IMG2
+# No remote push / main / release authorization
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 対象と開始条件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Repository:
+dio16/cos-desktop
+
+Branch:
+dev（ローカル、未push）
+
+開始commit:
+0ce5651f862ea6ce48c666a7088bc9a250c17784
+
+対象MP:
+MP-IMG2 — Decode admission gate
+
+今回の単一slice:
+MP-IMG2-W4
+
+単一owner contract:
+DC-MP-IMG2
+
+既存のhard prerequisites:
+- MP-IMG1
+- MP-SEC3
+
+両者は既存計画上、今回の限定実験を開始できる状態にある。
+
+既完了slice:
+- MP-IMG2 decoder-agnostic preflight
+- MP-IMG2-W1 LIMITED TECHNICAL COMPLETION
+- MP-IMG2-W2 LIMITED TECHNICAL COMPLETION
+- MP-IMG2-W3 LIMITED TECHNICAL COMPLETION
+
+W3固定製品候補:
+f8dfc3009fd7526e1b055968e2fc19892c007190
+
+W3最終review:
+PASS 0 / 0 / 0
+
+W3独立Gate:
+Quality aed94841-c578-452f-8f62-8d4ad366a234
+Build   8a9a0517-2b1e-498d-9856-bcded1e204a6
+
+これらはW3の証拠であり、W4のGateやレビューとして流用しない。
+
+開始時に以下を確認する。
+
+- git status
+- HEAD
+- branch
+- origin/devとの差分
+- Cargo.lock
+- rust-toolchain.toml
+- GPUI pin
+- W3 disposition
+- §19.54 / §19.55 / §19.56の保持
+
+開始SHAとHEADが異なる場合、勝手にresetしない。
+差分と実際の現在状態を確認し、今回のW4対象だけを扱う。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. W4の目的
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実Windows WIC経路について、次の3つを厳密に区別する。
+
+A. ROI OUTPUT
+   指定した矩形の画素を正しく出力できること。
+
+B. PARTIAL DECODE
+   全画像をmaterializeせず、必要領域だけを
+   decoderが処理できること。
+
+C. SEQUENTIAL / TILED CAPABILITY
+   scanline、region、tile単位で処理・中断・再利用でき、
+   対応するmemory/lifetime上限が証明できること。
+
+既存のwic_probe.ps1は原則として
+BitmapCacheOption.OnLoadを使用する。
+
+したがって、矩形CopyPixelsやCroppedBitmapが成功しても、
+それだけでBまたはCを証明したことにはならない。
+
+W4ではこの区別を実SOURCEとNative記録に固定する。
+
+特に重要な安全要件:
+
+「小さなROIを要求した」という理由だけで、
+全フレームdecodeのメモリ予算を縮小してはならない。
+
+ROIが1×1でも、decoderが全画像をmaterializeするなら、
+全画像分のdecoded/conversion/scratch予算を
+admission時点で必要とする。
+
+今回の中心成果は、
+WICの矩形画素出力能力と、
+真のregion decode能力の証明状態を分離した
+実測capability tableである。
+
+W4は新しい製品タイルエンジンを実装するタスクではない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. 正典と設計境界
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実装前に次を読む。
+
+- docs/development/IMPLEMENTATION_MASTER_PLAN.md
+  MP-IMG2、§19.54、§19.55、§19.56
+
+- docs/architecture/DESKTOP_DESIGN_CONTRACTS.md
+  DC-MP-IMG2
+  Media input admission and integrity
+
+- docs/architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md
+  §6
+  §6.1 Decode
+  §10
+
+- docs/development/BUILD_AND_RUN.md
+  §4.21〜§4.23
+
+- docs/decisions/ADR-0008-OWNER-RATIFICATION.md
+- docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md
+- docs/decisions/ADR-0012-HOLD-RELEASE.md
+- docs/decisions/ADR-0013-EVIDENCE-RETENTION.md
+
+DC-MP-IMG2が要求する
+per-codec region capability、sequential/tiled behavior、
+scratch/allocation bounds、cancellation granularityのうち、
+W4はregion outputとpartial-decode capability分類を扱う。
+
+既存契約のacceptanceを変更しない。
+
+新しい設計判断が必要な場合は、
+既存契約で確定している条件を実装し、
+未確定部分のみDESIGN_BLOCKEDとして記録する。
+
+Callerの継続実装指示を、
+新しい設計・依存追加・Runtime変更の承認と解釈しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. Taskern実行
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+インストール済みTaskern 0.2.0を実際に使用する。
+
+以下を確認する。
+
+taskern --version
+taskern describe capabilities --json
+taskern describe operation prepare --human
+
+新しいTaskern requestを作成する。
+
+protocol: 1
+op: prepare
+
+plan_id:
+cos-desktop-img2-w4
+
+task_id:
+img2-w4
+
+revision:
+1
+
+goal:
+Independently classify real-WIC ROI output versus
+true partial-region decode capability, preserving
+full-frame budget admission and bounded execution.
+
+実行:
+
+taskern call --request <W4-request.json> --json
+
+成功応答に含まれる
+packet identity、compiled state、packet SHA256を確認する。
+
+Taskernの実応答を保存する。
+W3のpacketを新しいW4 packetとして扱わない。
+
+Taskernが実行できない場合、
+実行したことにせずTASKERN_BLOCKEDと記録する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. 実装可能範囲
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+優先して再利用するSOURCE:
+
+- apps/desktop/examples/decode_compare/wic_probe.ps1
+- apps/desktop/examples/decode_compare/wic_admission.ps1
+- apps/desktop/examples/decode_compare/harness.rs
+- apps/desktop/examples/decode_compare/inspect.rs
+- apps/desktop/examples/decode_compare/pixels.rs
+- apps/desktop/tests/decode_compare_harness.rs
+
+- apps/desktop/devtools/img2/w2_*.py
+- apps/desktop/devtools/img2/w3_*.py
+- apps/desktop/devtools/img2/tests/
+
+必要な新規ファイル:
+
+- apps/desktop/devtools/img2/w4_region_matrix.py
+- apps/desktop/devtools/img2/w4_region_verify.py
+- apps/desktop/devtools/img2/w4_region_oracle.py
+- apps/desktop/devtools/img2/tests/test_w4_*.py
+
+名前は既存規約に合わせて最小調整してよい。
+
+既存fixture generator、pixel oracle、
+W2 worker lifecycle、W3 BMP admissionを再利用する。
+
+新しいframeworkを作らない。
+
+変更禁止:
+- crates/mediaのDecodeBudget API/default
+- 新規Rust dependency
+- 新規unsafe / FFI
+- GPU upload
+- Runtime
+- production acquisition
+- authentication/security設定
+- GPUI pin
+- Cargo.lockの不要変更
+
+crates/mediaは今回の権限ある予算authorityとして参照する。
+W4に別の予算正典を作らない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. Opt-in ROI実験経路
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+既存のreal-WIC probeに、
+開発用途限定のopt-in ROI指定経路を追加する。
+
+実装可能な方法:
+- 明示的な矩形を受け取る
+- admission後にWICで画素を取得する
+- 指定矩形のRGBA/BGRA出力を作成する
+- bounded PNGとして保存する
+
+既存WPF公開APIの
+CopyPixels(Int32Rect)またはCroppedBitmap等を
+使用できる場合はそれを優先する。
+
+ただし、WPFのROI画素取得APIを
+真のpartial decoder APIと同一視しない。
+
+必須の入力検証:
+
+- x >= 0
+- y >= 0
+- width > 0
+- height > 0
+- x + width のchecked arithmetic
+- y + height のchecked arithmetic
+- ROIがsource bounds内
+- output strideのchecked arithmetic
+- output bytesの上限
+- full-frame budgetの確認
+- cancellation確認
+
+範囲外矩形を黙ってclampしない。
+
+ROI指定がない従来実行は
+CLI、出力形式、exit meaning、output policyを維持する。
+
+新機能のopt-inがない場合、
+既存W1/W2/W3の測定意味を変更しない。
+
+出力はowned pendingからpublishする。
+失敗・cancel・timeout後にvalid outputを残さない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. 実測case matrix
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Python標準ライブラリのdeterministic fixtureを使う。
+
+最低限の正常入力:
+
+1. PNG RGB/RGBA
+2. BMP 24-bit
+3. BMP Bgr565
+4. 必要なら既存Bgr555 control
+
+実際にWICが報告したsource formatを保存する。
+
+ROIケース:
+
+A. 全フレーム
+B. 中央矩形
+C. 左上1×1
+D. 右下1×1
+E. 幅1の縦長矩形
+F. 高さ1の横長矩形
+G. odd-width矩形
+H. full-frame境界と一致する矩形
+
+負例:
+
+I. x < 0
+J. y < 0
+K. width=0
+L. height=0
+M. x+widthがsource幅を超過
+N. y+heightがsource高さを超過
+O. 算術overflow
+P. output budget超過
+Q. full-frame budget超過、ROI自体は小さい
+R. malformed source
+S. unsupported source
+T. cancellation / timeout
+
+各ケースについて以下を記録する。
+
+- codec/container
+- declared source format
+- source dimensions
+- ROI coordinates
+- ROI dimensions
+- logical full-frame bytes
+- logical ROI output bytes
+- declared scratch
+- admitted/rejected
+- materialization state
+- decoder/cache mode
+- actual output size/SHA256
+- actual pixel validity
+- process identity
+- bounded stage trace
+- outcome/reason
+
+測定不能な値はnull/NOT_MEASUREDとする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. Full-frame budget不変条件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本sliceで最も重要な検証項目とする。
+
+既存OnLoad full-frame経路について:
+
+ROI requestが1×1であっても、
+decoded full-frame requirementを減額しない。
+
+例:
+
+source full frameが設定されたdecode上限を超え、
+ROI自体が上限内にある入力。
+
+この場合、既存OnLoad経路では
+materialization前にoversize拒否しなければならない。
+
+小さいROIという理由で
+巨大sourceを全フレームdecodeしてはならない。
+
+独立verifierは次を確認する。
+
+- full-frame requirement
+- ROI output requirement
+- admission decision
+- OnLoad未到達
+- output未公開
+- 正しいrefusal reason
+
+ROIだけのbyte数でadmissionを通した場合は
+必ず検証FAILとする。
+
+これにより、ROI output capabilityから
+region decode capabilityへの誤った昇格を防止する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. 独立pixel oracle
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実WICの矩形出力について、
+元画像の既知RGBAから独立に期待値を計算する。
+
+PNG:
+- CRC
+- zlib inflate
+- filter reconstruction
+- RGBA
+
+BMP:
+- row direction
+- stride/padding
+- channel layout
+- bitfield masks
+- RGBA
+
+W3 Bgr565については、
+5/6/5展開の既存独立oracleを再利用する。
+
+期待値は実WIC出力から生成しない。
+
+各ROIで:
+- dimensions
+- pixel count
+- RGBA全画素
+- output digest
+を検証する。
+
+lossy JPEGを今回追加する場合、
+絶対pixel oracleが成立しない限り
+pixels_verifiedとしない。
+
+JPEGは必須caseにしない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. Capability分類
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+各codec/dimension classについて、
+以下を別フィールドとして記録する。
+
+roi_output:
+- verified
+- unsupported
+- not_verified
+
+true_partial_decode:
+- verified
+- not_verified
+- unsupported
+
+sequential_decode:
+- verified
+- not_verified
+- unsupported
+
+tiled_decode:
+- verified
+- not_verified
+- unsupported
+
+full_frame_materialization:
+- observed
+- not_observed
+- not_measured
+
+internal_decoder_scratch:
+- measured
+- not_measured
+
+preview_fallback:
+- bounded_full_frame
+- verified_bounded_conversion
+- unavailable
+- not_verified
+
+分類条件:
+
+ROIの全画素一致だけでverifiedにできるのは
+roi_outputのみ。
+
+true_partial_decodeのverifiedには、
+全フレームmaterializationを必要としない
+実decode経路とそのallocation/lifetime根拠が必要。
+
+今回の既存OnLoad経路では、
+真のpartial capabilityを原則として
+NOT_VERIFIEDに保持する。
+
+「APIに矩形引数がある」
+「出力が小さい」
+「1×1 CopyPixelsに成功した」
+だけでは真のpartial decodeを証明できない。
+
+sequential/tiledも同様。
+
+未実装であることと、
+実測によりunsupportedと判明したことを混同しない。
+
+安全なbounded previewが成立するcaseだけ
+preview_fallback=bounded_full_frameを記録できる。
+
+全フレーム予算を超える入力については、
+verified bounded conversionがない限り
+unavailableとする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. Native計測と資源制約
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実Windowsで既存decode_compareをビルド・実行する。
+
+cargo build --locked -p cos-desktop --example decode_compare
+
+新しいW4 matrixは小さなfixtureで実施する。
+
+実験上限:
+- decoder concurrency: 1
+- worker timeout: 45秒以内
+- global deadline: 300秒以内
+- encoded input: 1 MiB以内
+- output: 16 MiB以内
+- work root: 64 MiB以内
+- trace: 128 rows / 128 KiB以内
+- capture: 64 KiB以内
+- report: 8 MiB以内
+
+case数もmanifestで有限にする。
+
+新しい大容量fixtureは作らない。
+16K full decodeは実行しない。
+
+既存W2 stop state machineを維持する。
+
+- already_exited
+- stop_confirmed
+- unverified_race
+- not_requested
+
+operator boundary holdなしのkillを
+stop_confirmedにしてはならない。
+
+process kill/reapと
+cooperative decoder cancellationを区別する。
+
+WIC内部scratch、実予約、真の同時peakを
+process memory sampleから推定して証明しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. Fail-closed verifierと回帰
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+新しい独立verifierを実装する。
+
+SOURCE codeから独立したPython stdlib検証を優先する。
+
+検証対象:
+- manifest identity
+- source identity
+- duplicate/missing case
+- case outcome
+- full-frame admission
+- ROI bounds
+- pixel oracle
+- output digest
+- stage completeness
+- terminal consistency
+- process lifecycle
+- timeout/cancel classification
+- capability claim
+
+最低限の改変負例:
+
+1. ROI output digest改変
+2. ROI dimensions改変
+3. source dimensions改変
+4. expected pixel改変
+5. ROI bounds外をacceptedへ改変
+6. full-frame超過をadmittedへ改変
+7. ROI bytesをfull-frame requirementと偽装
+8. OnLoad到達をrefusedとして偽装
+9. missing refused stage
+10. missing probe_exit
+11. trace bytes/SHA不一致
+12. unsupportedをverifiedへ変更
+13. ROI成功だけでtrue_partial_decode=verified
+14. sequential/tiled能力を無根拠でverified
+15. cancellationをdecodedへ変更
+16. old source/Gate digest混入
+
+各負例は実際にverify()を呼び出す。
+
+正常記録はPASS、不正記録は必ずFAIL。
+
+W3までの検証器を変更する必要がある場合は
+互換性と新契約の理由を明記する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. 品質検証
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+以下を実行する。
+
+- W4 focused Python tests
+- W4 independent oracle
+- W4 negative verifier tests
+- W4 real-WIC Native matrix
+- W3 79件を含む既存画像テスト
+- W3 Bgr565 regression
+- W2 worker-stop regression
+- W2 resource verifier regression
+- W1 admission/regression
+- decode_compare harness tests
+- crates/media tests
+- cargo fmt --all -- --check
+- cargo clippy --locked --workspace --all-targets -- -D warnings
+- cargo test --locked --workspace
+- cargo build --locked --workspace
+- pwsh scripts/quality.ps1
+- 既存feature route
+- R0 Python suite
+
+通常実行とGate隔離環境のtest countを分離する。
+
+skip、ignored、NOT_RUNはPASSに加算しない。
+
+既知のN07 historical binary欠落や
+Native window不在によるskipを成功扱いしない。
+
+ツールの起動失敗と製品テスト失敗を分離する。
+
+既存成功テストを削除、skip、弱体化しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. 独立Refine Gates
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SOURCE実装とNative検証が完了した時点で、
+ローカル製品SOURCE commitを作成する。
+
+full SHAを固定する。
+
+その固定SOURCEに対して、
+Refine 0.3.1の独立Quality/Build Gateを実行する。
+
+必要条件:
+
+- Quality SUCCEEDED
+- Build SUCCEEDED
+- 全必須checks PASS
+- 両Gateのcandidate SHA一致
+- candidate digest一致
+- artifact tuples一致
+- missing artifactsなし
+- status exit0
+- inspect exit0
+- verify exit0
+- cleanup complete
+- owner_alive=false
+- recovery_required=false
+
+preflight UNKNOWNはUNKNOWNのまま保存する。
+
+Gateを実行する前に、
+固定SOURCE・正典・テストが確定していることを確認する。
+
+Gate捕捉後にplanを変更した場合は、
+capture版とpost-Gate docs版の対応を実バイトで記録する。
+
+SOURCE修正時は新candidateを作成し、
+そのcandidateに必要なGateを新規実行する。
+
+同じSOURCEで成功済みのGateを
+docs-only変更のために再実行しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. Tern独立レビュー
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tern-OMPの既存review loopを使用する。
+omp -pは禁止。
+
+レビュー提出物:
+
+- repository/branch
+- 開始SHA
+- 固定SOURCE full SHA
+- evidence HEAD
+- Taskern packet digest
+- 新旧SOURCE差分
+- W4実行manifest
+- fixture原バイト
+- 実WIC source format
+- ROI output PNG
+- 独立RGBA oracle
+- Native stage trace
+- capability table
+- full-frame予算拒否証拠
+- cancellation/timeout証拠
+- Python/Rust/PowerShell品質結果
+- Refine Gate IDs
+- artifact correspondence
+- raw/LF identity
+- NOT_MEASURED一覧
+
+重点レビュー観点:
+
+A. ROI outputの成功を
+   true partial decodeと誤認定していないか。
+
+B. 小さなROIでfull-frame予算を迂回できないか。
+
+C. decoded/output/scratchの予算が
+   二重計上または過少計上されていないか。
+
+D. 範囲外ROIがfail-closedで拒否されるか。
+
+E. 既存OnLoad経路とlegacy CLI互換性。
+
+F. 本当にdecodeしたsourceと
+   output/oracleのsource identity一致。
+
+G. process lifecycle、cancel/timeout、出力cleanup。
+
+H. SOURCE、Native、Gate、evidenceの固定候補相関。
+
+I. unsupported / not_verified / unavailableの意味。
+
+J. full Decode ExitやMP-IMG3への誤った昇格の有無。
+
+分類:
+BLOCKING
+ACTIONABLE NON-BLOCKING
+EXCESSIVE
+
+実件数0/0/0に至るまで、
+指摘されたSOURCEまたは証拠を修正・再評価する。
+
+Tern回答は完全なものだけを使用する。
+
+request correlation、
+fresh assistant ID、
+streaming=false、
+parsed/complete状態、
+全文取得、
+独立した終端verdictを確認する。
+
+必要な2回の安定読取とcompletion verificationを行い、
+途中応答をPASSとしない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. Evidence保存
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+保存先:
+
+docs/development/evidence-published/img2-w4-latest/
+
+最低限保存する。
+
+- taskern-request.json
+- taskern-response.json
+- source-identity.json
+- execution-manifest.json
+- fixture-manifest.json
+- real-native-matrix.json
+- roi-oracle.json
+- capability-table.json
+- budget-boundary.json
+- cancellation-record.json
+- verifier-results.json
+- quality.json
+- quality-gate.json
+- build-gate.json
+- gate-artifact-correspondence.json
+- review-request.txt
+- review-response.txt
+- review.json
+- storage.json
+- disposition.json
+- unmeasured.json
+
+必要な原fixture/出力は、
+有限のtracked archiveとして保持する。
+
+秘密情報、raw private logs、
+executables、巨大scratch、個人画像は保存しない。
+
+review用packageは固定SOURCEと証拠HEADに結び付ける。
+
+package manifestには:
+- SOURCE commit
+- evidence commit
+- ZIP bytes/SHA256
+- entry list
+- raw/LF identity
+- Gate capture correspondence
+を含める。
+
+manifest自身が含まれるcommitと、
+その前の証拠HEADを区別する。
+
+必要な文書変更では、
+§19.54、§19.55、§19.56を必ず保持する。
+
+W4は§19.57等の新しい一意な節へ記録する。
+既存見出しの部分文字列を使った広範囲置換は禁止。
+
+新しい成功scratchだけを、
+owned path、inactive process、no reparse、
+証拠保存後のintegrity確認を条件として処分する。
+
+failed/nonterminal Gate、
+authority/artifacts/private logs、
+過去workspaceを削除しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. 明示的な非対象
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+今回は以下を実装・承認しない。
+
+- 真のpartial decoderが未証明のままの採用
+- production tiled image engine
+- pyramid generator
+- GPU texture upload
+- MP-IMG3 Upload
+- GPUI renderer変更
+- WIC内部scratchの真のpeak証明
+- allocator actual reservations
+- true concurrent allocation peak
+- cooperative in-decoder cancellation
+- 16K full decode
+- 大規模sequential/tiled実装
+- ICC/orientation全体
+- JPEG absolute raster
+- FFmpeg製品採用
+- 新decoder dependency
+- unsafe/FFI
+- MP-R0A/R0C full closure
+- R0D measured attainment
+- FLOW2
+- Runtime RC-*
+- Product UX / Video acceptance
+- main merge
+- release
+
+W4を完了しても、
+MP-IMG2全体のDecode Exitを完了扱いしない。
+
+MP-IMG3のhard prerequisiteを
+W4単独の完了で充足したことにしない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. 権限・停止条件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+許可される作業:
+
+- ローカルdevでのW4限定SOURCE変更
+- Taskern実使用
+- 小規模fixture生成
+- 実Windows WIC CLI検証
+- focused/full quality
+- ローカル製品SOURCE commit
+- 独立Refine Gate
+- Tern独立レビュー
+- evidenceのローカルcommit
+- 所有が証明された成功scratchの有限削除
+
+許可されない作業:
+
+- remote push
+- main merge
+- release
+- 別repository変更
+- Runtime変更
+- credentials/permission/security設定変更
+- 新dependency/unsafe/FFIの無断導入
+- 未承認の設計決定
+- 過去Gate receiptの成功結果への書換え
+
+実行を停止する境界:
+
+1. 新しい外部権限が必要になったとき
+2. 安全な有限実行上限を確保できないとき
+3. 自動cleanupが未所有領域へ及ぶとき
+4. source identityを固定できないとき
+5. independent Gateの真正性を確認できないとき
+6. 必須Native検証が実行できないとき
+
+ただし、停止は該当する操作に限定する。
+
+設計未確定または外部権限不足によって
+実行可能な別のW4検証まで停止しない。
+
+未実施部分は:
+- DESIGN_BLOCKED
+- AUTHORITY_BLOCKED
+- NOT_RUN
+- NOT_MEASURED
+- NOT_VERIFIED
+
+の適切な状態で記録する。
+
+未測定項目をPASSに変換しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. W4 LIMITED TECHNICAL COMPLETION条件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+以下がすべて成立した場合のみ、
+W4限定技術完了候補とする。
+
+1. Taskern W4 packetが実際に生成されている。
+
+2. 既存real-WIC consumerで
+   opt-in ROI outputが実行されている。
+
+3. 対象codecの矩形画素が
+   独立RGBA oracleと一致する。
+
+4. ROI outputとtrue partial decodeが
+   明確に別能力として記録されている。
+
+5. 小さなROIを利用した
+   full-frame予算の迂回が拒否される。
+
+6. 不正ROI・malformed sourceが
+   fail-closedで拒否される。
+
+7. Native caseのsource/output/process identity、
+   stage trace、cleanupが整合する。
+
+8. 正常caseと負例の独立verifierがPASSする。
+
+9. W1/W2/W3の回帰が維持されている。
+
+10. 全必須Quality checksがPASSする。
+
+11. 固定SOURCEに対する
+    Refine Quality/Build GateがSUCCEEDEDする。
+
+12. Tern独立レビューが
+    BLOCKING 0 /
+    ACTIONABLE NON-BLOCKING 0 /
+    EXCESSIVE 0
+    となる。
+
+13. 固定SOURCE、Gate、Native、
+    evidence packageのdigest対応が成立する。
+
+14. 新しい未測定境界と残存Decode Exitが
+    明示的に記録されている。
+
+真のregion decode、sequential/tiled能力が
+NOT_VERIFIEDのままでも、
+それを正しく分類するW4限定実験は完了可能とする。
+
+ただし、その状態で
+full MP-IMG2 Decode Exitを完了としてはならない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. 完了報告と次タスク境界
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+最終報告に必ず含める。
+
+- 開始commit
+- Taskern packet SHA256
+- 製品SOURCE full SHA
+- evidence HEAD
+- 変更ファイル一覧
+- 実WIC Native case結果
+- ROI pixel oracle結果
+- capability table
+- full-frame budget拒否結果
+- cancellation/timeout結果
+- W1/W2/W3回帰結果
+- local quality結果
+- Refine Quality/Build Gate IDs
+- Gate candidate digest
+- artifact correspondence
+- Tern独立review verdict
+- storage integrity
+- W4限定技術完了可否
+- full Decode Exit残存項目
+- DESIGN_BLOCKED/AUTHORITY_BLOCKED項目
+
+0/0/0到達後は、
+ADR-0009に沿ってW4の限定完了を記録できる。
+
+ただし、このdirectiveだけを根拠に
+remote push、main merge、releaseを実行しない。
+
+次のタスク選択は、
+W4 closureを確定した後、
+hard DAGと残存MP-IMG2要求を再照合して行う。
+
+その時点でMP-IMG2全体が未完了なら、
+MP-IMG3へ進まず、
+次のeligibleなMP-IMG2 sliceを選択する。
+
+今回の作業はW4に限定する。
+
+DIRECTIVE COMPLETE

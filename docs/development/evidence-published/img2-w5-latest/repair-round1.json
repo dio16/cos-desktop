@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "review": "review-round1.json",
+  "findings": [
+    "A-W5-01 stop false-green",
+    "A-W5-02 metadata consistency",
+    "A-W5-03 admission requirement",
+    "A-W5-04 W4 replay evidence",
+    "A-W5-05 historical artifacts"
+  ],
+  "fixes": [
+    "full W2 stop time/outcome/alive/published checks",
+    "metadata availability/ColorContexts/ICC presence checks",
+    "independent row/decoded/BGRA/scratch recomputation",
+    "captured W4 historical replay command/exit/stdout",
+    "six historical Gate-captured artifacts in evidence package"
+  ],
+  "portable_tests": 20,
+  "native_refresh": 16,
+  "gate_and_review": "New candidate requires new pinned Gates and review."
+}

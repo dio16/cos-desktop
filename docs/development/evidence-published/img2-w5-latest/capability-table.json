@@ -166,7 +166,7 @@
       "case_id": "tiff_ori_conflict",
       "codec": "tif",
       "source_format": "Bgr24",
-      "orientation_metadata": "OBSERVED",
+      "orientation_metadata": "CONFLICTING",
       "orientation_value": 6,
       "orientation_application": "NOT_OBSERVED",
       "ICC_presence": "ABSENT",
@@ -305,13 +305,13 @@
     }
   ],
   "vocabulary": {
-    "VERIFIED": "observed and independently verified for this measured case",
-    "OBSERVED": "observed but not sufficient for verified",
+    "VERIFIED": "observed and independently verified for this case",
+    "OBSERVED": "observed but not verified",
     "NOT_VERIFIED": "not proven",
     "NOT_MEASURED": "no endpoint",
     "NOT_RUN": "not executed",
     "UNSUPPORTED": "actual unsupported response",
-    "UNAVAILABLE": "no capability offered"
+    "UNAVAILABLE": "no capability"
   },
-  "scope": "Only listed codecs/cases; no all-codec generalisation; product ICC/orientation policy is DESIGN_BLOCKED."
+  "scope": "Per measured codec/case only; product ICC/orientation policy DESIGN_BLOCKED."
 }

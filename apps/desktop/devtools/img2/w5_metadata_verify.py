@@ -52,6 +52,16 @@ CASES = [
 CASE_IDS = tuple(c[0] for c in CASES)
 
 
+def admission_math(fixture, result):
+    bpp = {"Bgr24": 24, "Bgr32": 32, "Bgra32": 32, "Bgr565": 16, "Bgr555": 16}[result["pixel_format"]]
+    row = (fixture["width"] * bpp + 7) // 8
+    decoded = row * fixture["height"]
+    bgra = fixture["width"] * fixture["height"] * 4
+    scratch = bgra + result["declared_scratch_bytes"]
+    return {"row_bytes": row, "decoded_bytes_required": decoded,
+            "bgra32_bytes_required": bgra, "scratch_bytes_required": scratch}
+
+
 def _need(cond, msg):
     if not cond:
         raise ValueError(msg)
@@ -116,7 +126,11 @@ def _verify(record, source_root):
                   cancel["exit_after_request"] == w["exit_code"] not in (None, 0),
                   "stop_not_confirmed")
             _need(names == list(STAGES[:STAGES.index("before_publish") + 1]), "native_stage_set_incomplete")
-            _need(w["output_present"] is False and w["outcome"] in ("cancelled", "timeout"),
+            expected_outcome = "cancelled" if cid == "cancel_metadata" else "timeout"
+            _need(w["outcome"] == expected_outcome and not w["published_success"] and
+                  w["output_present"] is False and w["alive_after_wait"] is False and
+                  cancel["requested_ns"] is not None and cancel["observed_ns"] is not None and
+                  w["started_ns"] <= cancel["requested_ns"] <= cancel["observed_ns"] == w["exited_ns"],
                   "success_after_stop")
             continue
         _need(w["trace_complete"] is True and names[-1] == "probe_exit" and
@@ -138,6 +152,8 @@ def _verify(record, source_root):
                                  "limitation": "unsupported container is not a metadata capability"})
             continue
         if cid == "tiff_icc_oversized":
+            _need(result.get("metadata_available") is True and result.get("icc_present") is True,
+                  "metadata_presence_mismatch")
             _need(w["exit_code"] == 4 and result["outcome"] == "oversize" and
                   result["reason_code"] == "metadata_cap_exceeded" and
                   result["admission_status"] == "refused" and result["materialization"] == "not_requested",
@@ -155,6 +171,12 @@ def _verify(record, source_root):
               result["admission_status"] == "admitted" and result["materialization"] == "completed",
               "decode_missing")
         _need(names == list(STAGES), "native_stage_set_incomplete")
+        expected_metadata = {"png_plain": True, "bmp24_plain": False}.get(fid, True)
+        _need(result.get("metadata_available") is expected_metadata, "metadata_availability_mismatch")
+        math = admission_math(fixture, result)
+        _need(all(result[k] == v for k, v in math.items()), "full_frame_requirement_invalid")
+        admitted = next(s for s in stages if s["stage"] == "admitted")
+        _need(all(admitted[k] == v for k, v in math.items()), "trace_admission_mismatch")
         source_oracle = source(fixture, data)
         _need((fixture["width"], fixture["height"]) ==
               (source_oracle["width"], source_oracle["height"]), "source_dimensions_mismatch")
@@ -185,11 +207,13 @@ def _verify(record, source_root):
         icc_expected = oracle.get("icc_expected_sha256")
         if cid == "tiff_icc_valid":
             _need(result["icc_present"] is True and result["icc_readable"] is True and
+                  result.get("colour_contexts", 0) >= 1 and
                   result["icc_sha256"] == icc_expected and
                   result["icc_length"] == oracle["icc_declared_length"], "icc_digest_mismatch")
             icc = {"presence": "VERIFIED", "readability": "VERIFIED", "application": "NOT_VERIFIED"}
         elif cid == "tiff_icc_truncated":
-            _need(result["icc_present"] is False and result["icc_readable"] is False, "icc_invalid_tag_accepted")
+            _need(result.get("metadata_available") is True and result["icc_present"] is False and
+                  result["icc_readable"] is False, "icc_invalid_tag_accepted")
             icc = {"presence": "INVALID_TAG_IGNORED", "readability": "NOT_READABLE", "application": "NOT_VERIFIED"}
         elif cid == "tiff_icc_absent":
             _need(result["icc_present"] is False, "icc_presence_mismatch")
@@ -208,7 +232,8 @@ def _verify(record, source_root):
             "orientation_application_mismatch")
         capabilities.append({
             "case_id": cid, "codec": fixture["container"], "source_format": result["pixel_format"],
-            "orientation_metadata": "OBSERVED" if status != "absent" else "ABSENT",
+            "orientation_metadata": ("CONFLICTING" if status == "conflicting"
+                                     else "OBSERVED" if status != "absent" else "ABSENT"),
             "orientation_value": value if status != "absent" else None,
             "orientation_application": "VERIFIED" if apply_orientation else "NOT_OBSERVED",
             "ICC_presence": icc["presence"], "ICC_readability": icc["readability"],

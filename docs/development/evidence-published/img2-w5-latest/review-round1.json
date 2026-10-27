@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "candidate": "42e4774ab27cb51258bd28a586b397ebfc406ecc",
+  "evidence_head": "b0d8e3d3b8a1d34d9e65dd2201ee6aec9be68eee",
+  "package_manifest_commit": "bb1cca9",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "a5fed5e7-5f23-4c55-8e85-ec9045b469d2"
+  ],
+  "assistant_ids": [
+    "07739e2d-fe5c-4812-a354-5203c749ad92"
+  ],
+  "terminal": "HOLD 0 / 5 / 0",
+  "parser": {
+    "blocking": 0,
+    "actionable": 5,
+    "excessive": 0,
+    "passLine": null,
+    "parsed": true,
+    "conflict": false,
+    "partialFinal": false,
+    "incomplete": false,
+    "unreadable": false,
+    "clean": false,
+    "sawPassLine": false
+  },
+  "request_sha256": "sha256:f30ca39b41675d98a4118976d61379b8e39910dc9588fcf8d2135f8a25503dc2",
+  "streaming": false,
+  "complete": true,
+  "findings": [
+    "A-W5-01",
+    "A-W5-02",
+    "A-W5-03",
+    "A-W5-04",
+    "A-W5-05"
+  ]
+}

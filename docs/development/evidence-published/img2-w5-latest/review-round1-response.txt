@@ -1,0 +1,521 @@
+ChatGPT の発言:
+MP-IMG2-W5 固定SOURCE独立レビュー
+
+対象は製品候補 42e4774ab27cb51258bd28a586b397ebfc406ecc、証拠HEAD b0d8e3d3b8a1d34d9e65dd2201ee6aec9be68eee です。
+
+Orientation・ICCの実測結果そのものは概ね整合しています。ただし、検証器のfalse-greenと回帰証拠の不整合が確認されたため、現時点でW5 LIMITED TECHNICAL COMPLETIONの承認はできません。
+
+1. 独立に確認できた事実
+
+検証項目
+
+	
+
+結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+456,173 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+72,055 bytes、SHA256一致
+
+
+
+
+SOURCE manifest
+
+	
+
+31/31一致
+
+
+
+
+Evidence manifest
+
+	
+
+26/26一致
+
+
+
+
+ZIP内raw/LF対応
+
+	
+
+全件一致
+
+
+
+
+W5 portable tests
+
+	
+
+16/16 PASS
+
+
+
+
+Deterministic fixtures
+
+	
+
+14/14再生成一致
+
+
+
+
+Native report構造
+
+	
+
+16 worker、現行verifierでPASS
+
+
+
+
+正常decoded raster
+
+	
+
+12/12独立全画素一致
+
+
+
+
+TIFF orientation
+
+	
+
+1/3/6/8の原tag値一致
+
+
+
+
+明示90°回転
+
+	
+
+2×3のRGBA全画素一致
+
+
+
+
+ICC valid
+
+	
+
+540 bytes、SHA256一致
+
+
+
+
+ICC over-cap
+
+	
+
+70,540-byte原payload、OnLoad前拒否記録
+
+
+
+
+Quality / Build Gate
+
+	
+
+SUCCEEDED 15/15、1/1
+
+
+
+
+Gate間artifact tuples
+
+	
+
+44/44一致
+
+画素検査では、W5の提出oracleとは別にTIFFのIFD・stripを解析し、PNG/BMPおよび出力PNGを復元しました。12件とも元encoded rasterから計算した期待値と一致しています。
+
+記録上、TIFFのorientation 3/6/8ではWICの自動回転は観測されず、明示的なprobe回転のみが画素変換として確認されています。ICC取得は色変換の正確性に昇格されておらず、NOT_VERIFIEDが維持されています。
+
+2. Full-frame admissionと能力分類
+
+wic_probe.ps1では、既存の寸法・画素数・decoded bytes・scratch予算のadmissionが先に実行され、metadata読取はその後、OnLoadの前に配置されています。
+
+超過ICCの実記録は次のとおりです。
+
+outcome=oversize
+
+reason_code=metadata_cap_exceeded
+
+materialization=not_requested
+
+output_present=false
+
+traceはadmitted → refused → probe_exitで終了
+
+これは提出された実Native記録がfull-frame admission後にmetadata上限で拒否されたことを裏付けます。一方、検証器自身が改変されたadmission証拠を拒否するかは別の受入条件です。
+
+3. 指摘事項
+A-W5-01 — cancel/timeoutの停止状態にfalse-greenが残る
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w5_metadata_verify.py:106–121
+
+W5検証器はstop_confirmed、hold、kill/reapを確認しますが、W4で確定した停止状態の時刻・終了整合条件を十分に引き継いでいません。
+
+独立改変結果：
+
+改変
+
+	
+
+verify()
+
+
+
+
+cancelのrequested_ns=null
+
+	
+
+ok=true
+
+
+
+
+timeoutのobserved_ns=null
+
+	
+
+ok=true
+
+
+
+
+cancelのoutcome=timeout
+
+	
+
+ok=true
+
+
+
+
+cancelのalive_after_wait=true
+
+	
+
+ok=true
+
+
+
+
+cancelのpublished_success=true
+
+	
+
+ok=true
+
+いずれも保存されたNative記録では正常な値です。問題は改変された不正記録を拒否できないことです。
+
+最小修正： W4の停止検証条件と同等の時刻単調性、process終了状態、case別outcome、success未公開を要求し、各改変をstop_not_confirmed等で拒否してください。
+
+A-W5-02 — metadata取得状態の矛盾を能力証拠として受け入れる
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：w5_metadata_verify.py:140–165, 185–205
+
+probe_resultとstdoutを同時に更新して整合させたうえで、次のfalse-greenを再現しました。
+
+改変
+
+	
+
+verify()
+
+
+
+
+TIFF orientation=6でmetadata_available=false
+
+	
+
+ok=true
+
+
+
+
+TIFF orientation queryを架空値へ変更
+
+	
+
+ok=true
+
+
+
+
+有効ICCでcolour_contexts=0
+
+	
+
+ok=true
+
+
+
+
+有効ICCでmetadata_available=false
+
+	
+
+ok=true
+
+
+
+
+over-cap ICCでicc_present=false
+
+	
+
+ok=true
+
+特に最後のケースでは、検証器が実際のicc_present=falseを許容しながら、能力表にはICC_presence=OBSERVEDを出力します。
+
+最小修正： 既知fixtureについて、metadata availability、取得経路、ColorContexts数、ICC presence/readabilityを元encoded metadataおよびprobe観測結果と照合してください。能力表のOBSERVED/VERIFIEDを出力する前に、その前提が成立していることを必須にしてください。
+
+不正・重複orientation tagについても、取得できた最初の値と元入力に存在する競合を区別し、製品policyで有効と確定したように扱わないでください。
+
+A-W5-03 — full-frame admission必要量の改ざんを検証器が受け入れる
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：w5_metadata_verify.py:140–157
+
+tiff_icc_oversizedの元fixtureと出力拒否記録は変更せず、probe_resultとadmitted stage双方のdecoded_bytes_requiredを0に変更しました。
+
+stdout、trace件数、trace SHA256、終端は整合させています。
+
+結果：verify().ok=true
+
+正常なorientation=6ケースでも同様に成功します。
+
+実際のWIC admission処理はfull-frame予算を先に確認しています。しかし、独立検証器は元寸法・pixel formatから計算できる必要量と、Nativeが申告したadmission値の一致を要求していません。
+
+最小修正： 入力寸法・formatからrow bytes、decoded bytes、conversion/scratch requirementを独立計算し、admitted stageとprobe_resultを照合してください。metadata cap拒否が、正しいfull-frame admissionの後で行われたことを検証可能にしてください。
+
+4. W4 historical replayの証拠不整合
+A-W5-04 — quality.json上のW4 replayはexit 1
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：docs/development/evidence-published/img2-w5-latest/quality.json
+
+提出された品質記録では、次の結果が保存されています。
+
+項目
+
+	
+
+Exit
+
+
+
+
+W5 quality.ps1
+
+	
+
+0
+
+
+
+
+W5 image tests
+
+	
+
+0
+
+
+
+
+W3 historical replay
+
+	
+
+0
+
+
+
+
+W4 historical replay
+
+	
+
+1
+
+
+
+
+WIC admission selftest
+
+	
+
+0
+
+
+
+
+R0
+
+	
+
+0
+
+これに対し、品質記録の説明欄はW4 historical replayを実施済みの回帰として記載しています。
+
+切り分けのため、以前提出されたW4の固定SOURCE e357888e…と対応するNative recordを使用して独立に再検証したところ、W4 verifierはPASSしました。
+
+一方、W5の現行SOURCE identityをW4のhistorical recordへ適用するとsource_digest_mismatchになります。今回のexit 1がこの混用に起因したかは、保存されたコマンドとstdout本文がないため断定できません。
+
+最小修正： 失敗したexit 1を保持したまま、W4当時のSOURCE・verifier・Native recordを固定して再実行し、コマンド・stdout・exit 0を別記録として保存してください。製品SOURCEに変更がない場合、新しいRefine Gateを必須とはしません。
+
+5. Gate artifact実バイトの提出範囲
+A-W5-05 — 44件中6件が今回のZIPに収録されていない
+
+分類：ACTIONABLE NON-BLOCKING
+
+Quality/Build両Gateのinspect.artifactsは44/44件一致しています。固定候補SHA・candidate digestも一致しています。
+
+ただし、今回のSOURCE/Evidence ZIPに含まれる実バイトから直接照合できたのは38/44件です。
+
+残る6件はW3/W4のhistorical artifactで、今回のZIPには含まれません。このうち4件は過去に提出された添付から同じdigestを確認できましたが、W4のdisposition.jsonとreview-package.jsonの捕捉版は直接照合できていません。
+
+最小修正： 少なくともこの2件のGate捕捉版実バイトを提出し、サイズ・SHA256を照合可能にしてください。今回の3添付だけで44/44件を再現可能にする場合は、historical artifact 6件すべてを補足パッケージに収録してください。
+
+これはGate失敗の指摘ではなく、実バイト独立検証の残件です。
+
+6. Gate・Storage・技術的境界
+
+項目
+
+	
+
+確認結果
+
+
+
+
+Quality Gate eef8d1a1-e570-4922-9c4f-d7619471f033
+
+	
+
+SUCCEEDED 15/15
+
+
+
+
+Build Gate 83fb9a6f-2baf-4b7e-85d4-09e2d36d02d9
+
+	
+
+SUCCEEDED 1/1
+
+
+
+
+Candidate digest
+
+	
+
+bc252351…4a29228
+
+
+
+
+Gate間artifact tuples
+
+	
+
+44/44一致
+
+
+
+
+status/inspect/verify
+
+	
+
+両Gateともexit 0
+
+
+
+
+Owner alive
+
+	
+
+false
+
+
+
+
+Recovery required
+
+	
+
+false
+
+
+
+
+Preflight UNKNOWN
+
+	
+
+UNKNOWN維持
+
+
+
+
+Storage
+
+	
+
+5対象、10,204 files、4,129,414,313 logical bytes
+
+Gate実行とStorageの物理削除はレビュー環境で再実行していません。保存された状態・集計の整合性確認です。
+
+今回の問題は、実Nativeのorientation/ICC観測を否定するものではありません。また、製品ICC/orientation policy、ICC colour fidelity、全codec対応、16K、true partial/sequential/tiled、WIC内部scratch・実予約・同時peak、cooperative cancellation、full Decode Exit、Runtime、UX/videoを今回の指摘に含めていません。
+
+W5の中心的な技術実測は成立していますが、Native証拠を独立に認定する検証器と回帰・Gate対応のclosureが未完了です。 まずW5 verifierと限定負例、W4 replay証拠、historical artifact提出を修正対象としてください。SOURCEを変更した場合のみ、その新候補に対する独立Gateと再レビューが必要です。
+
+最終判定
+
+BLOCKING 0
+
+ACTIONABLE NON-BLOCKING 5
+
+EXCESSIVE 0
+
+MP-IMG2-W5 LIMITED TECHNICAL COMPLETION：保留
+
+REVIEW COMPLETE
+
+HOLD 0 / 5 / 0

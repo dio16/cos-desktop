@@ -35,9 +35,9 @@
         "raw_sha256": "sha256:0cc238526ca88b5fb3e108e113dba53cf79a55d169de7f81339ffbb68174572d"
       },
       "apps/desktop/devtools/img2/w5_metadata_verify.py": {
-        "bytes": 15206,
-        "lf_sha256": "sha256:50753a4fd5d6b887ed6708dcef49804b4c04a4644950fe8fb90f85f57641910d",
-        "raw_sha256": "sha256:14070fbb7f0ca6d841a11e152ae5a1d132c1ae63bc77f10011ab0b73f5fd6fb4"
+        "bytes": 16912,
+        "lf_sha256": "sha256:702470ff9797d743bfa55da68a956976837f006cb01b4df7fe483fb1cda834f1",
+        "raw_sha256": "sha256:7bf3197b05e8561822ce591967bd5367d21e3d2f6b4436b9dfc6f1a89b569409"
       },
       "apps/desktop/examples/decode_compare/harness.rs": {
         "bytes": 163269,
@@ -76,6 +76,5 @@
       }
     },
     "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
-  },
-  "meaning": "Source identity of the retained WIC run; product/Gate binding added after commit."
+  }
 }

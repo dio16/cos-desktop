@@ -40,12 +40,8 @@
     },
     "w5-w4-replay": {
       "name": "w5-w4-replay",
-      "start": "2026-10-27T19:11:50.780Z",
-      "end": "2026-10-27T19:11:50.997Z",
       "exit": 1,
-      "signal": null,
-      "stdout_sha256": "sha256:174345af538b6e940f2bd2cced55ec5c8de8b5df637446631158f43799fa18c5",
-      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "note": "superseded mixed-current-source attempt retained in review round1"
     },
     "w5-wic-selftest": {
       "name": "w5-wic-selftest",
@@ -91,6 +87,24 @@
       "signal": null,
       "stdout_sha256": "sha256:ba3ea461a918c20cd0981115420516850106b2393871ecc49cb4f47012228f04",
       "stderr_sha256": "sha256:9179e8d47f1eb73ea3c2be77d716d9435a01388a07eb787195e1dae262d2c12c"
+    },
+    "w5-r5-tests": {
+      "name": "w5-r5-tests",
+      "start": "2026-10-27T19:40:43.276Z",
+      "end": "2026-10-27T19:40:43.651Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:827ff632532da220d937c15d4fe2e99d1eef34fc8f55ef26b3bfe933e73b98ad"
+    },
+    "w5-w4-replay-hist": {
+      "name": "w5-w4-replay-hist",
+      "start": "2026-10-27T19:40:43.280Z",
+      "end": "2026-10-27T19:40:44.241Z",
+      "exit": 0,
+      "signal": null,
+      "stdout_sha256": "sha256:0fbf58a26b13833569ca9f48566fb7629bb5b0e10c501e14f1ee183b824cbcbb",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   },
   "rust": {
@@ -104,7 +118,7 @@
     "ignored": 1
   },
   "python_img2": 128,
-  "w5_portable": 16,
+  "w5_portable": 20,
   "r0": {
     "total": 352,
     "passed": 340,
@@ -112,5 +126,6 @@
   },
   "w1_w4_regressions": "W3 historical f8dfc30 replay, W4 historical e357888e replay, WIC admission selftest",
   "negative_tests": 16,
-  "ambient": "User-global Cargo rustflags add -fuse-ld=lld; MSVC link.exe LNK4044 ignores it; not a Rust lint or Gate failure."
+  "ambient": "User-global Cargo rustflags add -fuse-ld=lld; MSVC link.exe LNK4044 ignores it; not a Rust lint or Gate failure.",
+  "w4_historical": "w5-w4-replay-hist exit0 against e357888e"
 }

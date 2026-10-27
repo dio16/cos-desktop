@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W3",
+  "owner_contract": "DC-MP-IMG2",
+  "product_candidate": "f8dfc3009fd7526e1b055968e2fc19892c007190",
+  "gate_candidate_digest": "sha256:b0c1248374394101c277455cedd7cdb406bc887ffe26871a07db332784c5e5a4",
+  "evidence_head": "fe516b2c4ef318ab720956afd796190141be2e81",
+  "package_manifest_commit": "05f97b281adb2d5a955cc578734f00a6f438f803",
+  "request_commit": "290e54060a5bfd31108312f78e9aaf1f09df4ed8",
+  "gates": {
+    "quality": {"id": "aed94841-c578-452f-8f62-8d4ad366a234", "state": "SUCCEEDED", "checks": "13/13"},
+    "build": {"id": "8a9a0517-2b1e-498d-9856-bcded1e204a6", "state": "SUCCEEDED", "checks": "1/1"}
+  },
+  "acceptance_basis": {
+    "adr": "docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md",
+    "review": "review-round5.json — PASS 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
+    "rounds": [
+      "W3-R1 HOLD 0/1/0 (A-W3-01 forged header-refusal validation)",
+      "W3-R2 HOLD 0/1/0 (A-W3-01 closed; A-W3-R2-01 missing refused stage)",
+      "W3-R3 HOLD 0/1/0 (A-W3-R2-01 closed; A-W3-R3-01 package correspondence)",
+      "W3-R4 HOLD 0/1/0 (A-W3-R3-01 mostly closed; A-W3-R4-01 updated plan bytes absent)",
+      "W3-R5 PASS 0/0/0"
+    ]
+  },
+  "completed_scope": [
+    "actual Windows WIC recognition of 16-bit BI_BITFIELDS BMP as Bgr565, channel depth 6, storage 16 bpp",
+    "Bgr555 control distinguished and excluded from Bgr565 certification",
+    "ten actual Bgr565 outputs with independent all-RGBA equality against reconstructed source pixels",
+    "pre-materialization refusal of malformed plane/dimension/mask/row declarations and each declared budget",
+    "fail-closed refusal trace requiring process_observed, input_opened, refused and probe_exit plus terminal agreement",
+    "bounded worker lifecycle with separately attributed cancel and timeout evidence and no output after refusal/stop",
+    "bounded real decode_compare consumer replay with five pixel-verified positive observations",
+    "two independent Refine Gates on one pinned candidate digest with identical fifty-three artifact tuples and byte correspondence",
+    "attachment-bound review closure after four documented repairs"
+  ],
+  "unmeasured_or_open": [
+    "WIC internal stride and scratch",
+    "actual allocator reservations",
+    "true concurrent allocation peak",
+    "16K full decode",
+    "region/sequential/tiled decode",
+    "cooperative in-decoder cancellation",
+    "ICC/profile and orientation handling",
+    "JPEG absolute raster equality",
+    "full DC-MP-IMG2 Decode exit",
+    "MP-IMG3 Upload",
+    "Runtime RC-* acceptance",
+    "measured R0D attainment",
+    "MP-FLOW2 stages",
+    "product UX and video acceptance",
+    "main integration, push and release"
+  ],
+  "boundaries": [
+    "The review was attachment-bound because the candidate is unpushed; no GitHub visibility or complete Git-object proof is claimed.",
+    "Native observations are real Windows CLI runs by this agent; the reviewer independently verified retained bytes and rasters but did not re-execute WIC, GUI or Refine Gates.",
+    "The successful Gate pair binds f8dfc30; all later commits are documentation/evidence only and are listed in review-package.json (33 docs paths). The Gate pair was not rerun, and its success is not transferred to a different product candidate.",
+    "Storage disposal covers exactly the two successful Gate work/repo directories and the r5 clippy/tests/build targets: 10,006 files and 4,124,111,230 logical bytes. Native verify reports before and after are identical; ordinary target, Native outputs and private authority remain.",
+    "W3 limited completion is not full MP-IMG2, Upload, Runtime, measured R0 or product UX approval."
+  ]
+}

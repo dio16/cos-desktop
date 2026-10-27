@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "run_id": "w5-final-work",
+  "run_id": "w5-r4-work",
   "bounds": {
     "max_capture_bytes": 65536,
     "max_cases": 16,
@@ -14,8 +14,8 @@
     "max_work_bytes": 67108864,
     "max_worker_seconds": 45
   },
-  "duration_ns": 18480665600,
-  "work_bytes": 151784,
+  "duration_ns": 18636694100,
+  "work_bytes": 151765,
   "cases": [
     {
       "case_id": "png_plain",
@@ -133,6 +133,5 @@
   "cleanup": {
     "complete": true,
     "live_direct_children": []
-  },
-  "work_root_disposable": true
+  }
 }

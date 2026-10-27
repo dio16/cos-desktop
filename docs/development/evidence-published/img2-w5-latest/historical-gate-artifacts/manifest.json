@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "gate": "eef8d1a1-e570-4922-9c4f-d7619471f033",
+  "artifacts": [
+    {
+      "id": "w5-disposition.json-25",
+      "path": "docs/development/evidence-published/img2-w3-latest/disposition.json",
+      "capture_file": "historical-gate-artifacts\\w5-disposition.json-25.json",
+      "bytes": 3732,
+      "sha256": "sha256:84aef4b4fe898fd928b02bd9f0b8b76ed588ebda73d053a18b180977b6fa75ba",
+      "current_equal": true
+    },
+    {
+      "id": "w5-disposition.json-27",
+      "path": "docs/development/evidence-published/img2-w4-latest/disposition.json",
+      "capture_file": "historical-gate-artifacts\\w5-disposition.json-27.json",
+      "bytes": 3782,
+      "sha256": "sha256:d328afb0965b69a457489413eed5a4f245c2eddb4a2fda04f9a45904522d269a",
+      "current_equal": false
+    },
+    {
+      "id": "w5-real-native-matrix.json-23",
+      "path": "docs/development/evidence-published/img2-w3-latest/real-native-matrix.json",
+      "capture_file": "historical-gate-artifacts\\w5-real-native-matrix.json-23.json",
+      "bytes": 258737,
+      "sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3",
+      "current_equal": true
+    },
+    {
+      "id": "w5-real-native-matrix.json-26",
+      "path": "docs/development/evidence-published/img2-w4-latest/real-native-matrix.json",
+      "capture_file": "historical-gate-artifacts\\w5-real-native-matrix.json-26.json",
+      "bytes": 308965,
+      "sha256": "sha256:bd3a413a3017b677f6ff4773ebdbd5717417d1d4a3ea1abbc3d288ee840b4250",
+      "current_equal": true
+    },
+    {
+      "id": "w5-review-package.json-28",
+      "path": "docs/development/evidence-published/img2-w4-latest/review-package.json",
+      "capture_file": "historical-gate-artifacts\\w5-review-package.json-28.json",
+      "bytes": 31380,
+      "sha256": "sha256:735662bb3fbaef45e2c72f7f0976e24abf29179b2fb4deff30e1079a522d8865",
+      "current_equal": false
+    },
+    {
+      "id": "w5-tern-next-directive.txt-24",
+      "path": "docs/development/evidence-published/img2-w3-latest/tern-next-directive.txt",
+      "capture_file": "historical-gate-artifacts\\w5-tern-next-directive.txt-24.txt",
+      "bytes": 28395,
+      "sha256": "sha256:fb6a1c259de641553b2c4610803ff9ee92094356ad5dde54a6bc022e23fc89ac",
+      "current_equal": false
+    }
+  ]
+}

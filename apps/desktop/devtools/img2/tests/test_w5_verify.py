@@ -61,7 +61,7 @@ class W5RecordTests(unittest.TestCase):
     def test_source_dimensions(self):
         def change(record):
             next(f for f in record["fixtures"] if f["id"] == "tiff_ori6")["width"] += 1
-        self.reject(change, "source_dimensions_mismatch")
+        self.reject(change, "full_frame_requirement_invalid")
 
     def test_output_dimensions(self):
         self.reject(lambda r: self.set_result(self.worker(r, "tiff_ori6_apply"), output_width=3),
@@ -131,6 +131,51 @@ class W5RecordTests(unittest.TestCase):
             self.set_result(worker, outcome="decoded", admission_status="admitted",
                             materialization="completed")
         self.reject(change, "probe_exit_result_mismatch")
+
+    def test_stop_time_and_outcome_contract(self):
+        def req(record):
+            self.worker(record, "cancel_metadata")["cancellation"]["requested_ns"] = None
+        self.reject(req, "success_after_stop")
+        def obs(record):
+            self.worker(record, "timeout_metadata")["cancellation"]["observed_ns"] = None
+        self.reject(obs, "success_after_stop")
+        def swap(record):
+            self.worker(record, "cancel_metadata")["outcome"] = "timeout"
+        self.reject(swap, "success_after_stop")
+        def alive(record):
+            self.worker(record, "cancel_metadata")["alive_after_wait"] = True
+        self.reject(alive, "success_after_stop")
+        def published(record):
+            self.worker(record, "cancel_metadata")["published_success"] = True
+        self.reject(published, "success_after_stop")
+
+    def test_metadata_availability_and_presence_must_be_consistent(self):
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_ori6"), metadata_available=False),
+                    "metadata_availability_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "bmp24_plain"), metadata_available=True),
+                    "metadata_availability_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_icc_valid"), colour_contexts=0),
+                    "icc_digest_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_icc_valid"), metadata_available=False),
+                    "metadata_availability_mismatch")
+        self.reject(lambda r: self.set_result(self.worker(r, "tiff_icc_oversized"), icc_present=False),
+                    "metadata_presence_mismatch")
+
+    def test_full_frame_requirement_cannot_be_zeroed(self):
+        def change(record):
+            worker = self.worker(record, "tiff_ori6")
+            self.set_result(worker, decoded_bytes_required=0)
+            admitted = next(s for s in worker["stages"] if s["stage"] == "admitted")
+            admitted["decoded_bytes_required"] = 0
+            raw = "".join(json.dumps(st, separators=(",", ":")) + "\n" for st in worker["stages"])
+            worker.update(trace_utf8=raw, trace_sha256=sha(raw.encode()),
+                          trace_bytes=len(raw.encode()), trace_records=len(worker["stages"]))
+        self.reject(change, "full_frame_requirement_invalid")
+
+    def test_conflicting_orientation_is_not_reported_as_clean(self):
+        def change(record):
+            self.set_result(self.worker(record, "tiff_ori_conflict"), orientation_raw=8)
+        self.reject(change, "orientation_value_mismatch")
 
     def test_cancellation_cannot_be_decoded(self):
         def change(record):

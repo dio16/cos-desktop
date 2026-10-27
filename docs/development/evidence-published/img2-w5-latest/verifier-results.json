@@ -168,7 +168,7 @@
       "case_id": "tiff_ori_conflict",
       "codec": "tif",
       "source_format": "Bgr24",
-      "orientation_metadata": "OBSERVED",
+      "orientation_metadata": "CONFLICTING",
       "orientation_value": 6,
       "orientation_application": "NOT_OBSERVED",
       "ICC_presence": "ABSENT",
@@ -323,24 +323,26 @@
     "files": [
       "test_w5_verify.py"
     ],
-    "count": 16,
+    "count": 20,
     "failures": 0
   },
   "negative_classes": [
     "orientation relabel",
     "transform claim without effect",
     "double rotation",
-    "source dimensions",
-    "output dimensions",
-    "ICC digest",
-    "ICC presence",
+    "source/output dimensions",
+    "ICC digest/presence",
     "readability as colour conversion",
     "metadata unreadable as verified",
     "cap admitted",
-    "materialization after refusal",
+    "OnLoad after refusal",
     "missing terminal",
-    "source identity",
+    "identity mismatch",
     "unsupported promotion",
-    "cancellation promotion"
+    "cancellation promotion",
+    "stop time/outcome/alive/published",
+    "metadata availability",
+    "admission requirement zeroed",
+    "conflicting orientation"
   ]
 }
