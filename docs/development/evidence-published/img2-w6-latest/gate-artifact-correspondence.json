@@ -16,8 +16,8 @@
       "candidate_blob_sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:60d328dd9be8c160bbf96c341c21f71762f729b9631ba350e0922f29082d7a49",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:60d328dd9be8c160bbf96c341c21f71762f729b9631ba350e0922f29082d7a49",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-1",
@@ -29,8 +29,8 @@
       "candidate_blob_sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-10",
@@ -42,8 +42,8 @@
       "candidate_blob_sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:1cbc230a7ce870c5a68e7837ea0750876498944a9e3e4c5a8cb9854e94f8feea",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:1cbc230a7ce870c5a68e7837ea0750876498944a9e3e4c5a8cb9854e94f8feea",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-11",
@@ -55,8 +55,8 @@
       "candidate_blob_sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:ed6b0b45437a036aa8b6ae274829d0001e6b53c0e8301c4a39c4548cd1b2cacf",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:ed6b0b45437a036aa8b6ae274829d0001e6b53c0e8301c4a39c4548cd1b2cacf",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-12",
@@ -68,8 +68,8 @@
       "candidate_blob_sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:8edd645b943e3821d546494871a915df64aa17c14d4fbd43a8de02ea5f1ca1bc",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:8edd645b943e3821d546494871a915df64aa17c14d4fbd43a8de02ea5f1ca1bc",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-13",
@@ -81,8 +81,8 @@
       "candidate_blob_sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:55fb88e8f81dfc63836c89f3a82c5ad27b3a05441fdfae890765c578173abe73",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:55fb88e8f81dfc63836c89f3a82c5ad27b3a05441fdfae890765c578173abe73",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-14",
@@ -94,8 +94,8 @@
       "candidate_blob_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-15",
@@ -107,8 +107,8 @@
       "candidate_blob_sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:32666558c588ae93be5fc929f54307398aeddadf4458c5bdb80780e8e7bf9741",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:32666558c588ae93be5fc929f54307398aeddadf4458c5bdb80780e8e7bf9741",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-16",
@@ -120,8 +120,8 @@
       "candidate_blob_sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-17",
@@ -133,8 +133,8 @@
       "candidate_blob_sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-18",
@@ -146,8 +146,8 @@
       "candidate_blob_sha256": "sha256:ab027fbe34161701ee629b0f3df250d7a628d101a45bbfb471ab13ed16936576",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:ab027fbe34161701ee629b0f3df250d7a628d101a45bbfb471ab13ed16936576",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:ab027fbe34161701ee629b0f3df250d7a628d101a45bbfb471ab13ed16936576",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-19",
@@ -159,8 +159,8 @@
       "candidate_blob_sha256": "sha256:985b57fb4c88bc77d0b2534bdb48aefa42917b48902c06dd65d790812455a611",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:985b57fb4c88bc77d0b2534bdb48aefa42917b48902c06dd65d790812455a611",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:985b57fb4c88bc77d0b2534bdb48aefa42917b48902c06dd65d790812455a611",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-2",
@@ -172,8 +172,8 @@
       "candidate_blob_sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:18224967ecd367d9eb584e45c35b63cebef5ba800760e192891096ba02e90816",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:18224967ecd367d9eb584e45c35b63cebef5ba800760e192891096ba02e90816",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-20",
@@ -185,8 +185,8 @@
       "candidate_blob_sha256": "sha256:1e98e95a57db90f4606ad11057a42212551900eb64513b51cbaced25c5dc984c",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:1e98e95a57db90f4606ad11057a42212551900eb64513b51cbaced25c5dc984c",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:1e98e95a57db90f4606ad11057a42212551900eb64513b51cbaced25c5dc984c",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-21",
@@ -198,8 +198,8 @@
       "candidate_blob_sha256": "sha256:3e405c19b1a33c5b3990520106ad4518a6763b373e0735c16c2cdaee9aedb8ba",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:3e405c19b1a33c5b3990520106ad4518a6763b373e0735c16c2cdaee9aedb8ba",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:3e405c19b1a33c5b3990520106ad4518a6763b373e0735c16c2cdaee9aedb8ba",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-22",
@@ -211,8 +211,8 @@
       "candidate_blob_sha256": "sha256:80d18e02608de2761008288a9041cd24392bd5d8f0d0e1fa59a0961618012743",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:80d18e02608de2761008288a9041cd24392bd5d8f0d0e1fa59a0961618012743",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:80d18e02608de2761008288a9041cd24392bd5d8f0d0e1fa59a0961618012743",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-23",
@@ -224,8 +224,8 @@
       "candidate_blob_sha256": "sha256:ca6ed2483227fff073cc065f9bee0c3858c5e7cb89fd93e2774e098de2a78ae7",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:ca6ed2483227fff073cc065f9bee0c3858c5e7cb89fd93e2774e098de2a78ae7",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:ca6ed2483227fff073cc065f9bee0c3858c5e7cb89fd93e2774e098de2a78ae7",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-24",
@@ -237,8 +237,8 @@
       "candidate_blob_sha256": "sha256:5233c534742a9f3c6b0449f4142175235fe96a80b71d923a04b49e2da73edcd8",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:5233c534742a9f3c6b0449f4142175235fe96a80b71d923a04b49e2da73edcd8",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:5233c534742a9f3c6b0449f4142175235fe96a80b71d923a04b49e2da73edcd8",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-25",
@@ -250,8 +250,8 @@
       "candidate_blob_sha256": "sha256:d3899b2dcf12d1c31ca4199b1eb17548d64ab17ada7fa612fd9d31345938d6b4",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:d3899b2dcf12d1c31ca4199b1eb17548d64ab17ada7fa612fd9d31345938d6b4",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:d3899b2dcf12d1c31ca4199b1eb17548d64ab17ada7fa612fd9d31345938d6b4",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-26",
@@ -263,8 +263,8 @@
       "candidate_blob_sha256": "sha256:23534a2b01d0bc252f0ff21774d41d6887ad2d344896d275b48f427168d18ea9",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:23534a2b01d0bc252f0ff21774d41d6887ad2d344896d275b48f427168d18ea9",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:23534a2b01d0bc252f0ff21774d41d6887ad2d344896d275b48f427168d18ea9",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-27",
@@ -276,8 +276,8 @@
       "candidate_blob_sha256": "sha256:38e63a3a459832cf5ca72a502bad2a7dc0a6f1678f72209483c8e3a15b0e1972",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:38e63a3a459832cf5ca72a502bad2a7dc0a6f1678f72209483c8e3a15b0e1972",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:38e63a3a459832cf5ca72a502bad2a7dc0a6f1678f72209483c8e3a15b0e1972",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-28",
@@ -289,8 +289,8 @@
       "candidate_blob_sha256": "sha256:e8f780b42ebb267b0716ee682bc56e5eda599936de5aeede2c9c609ef0d5bd72",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:e8f780b42ebb267b0716ee682bc56e5eda599936de5aeede2c9c609ef0d5bd72",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:e8f780b42ebb267b0716ee682bc56e5eda599936de5aeede2c9c609ef0d5bd72",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-29",
@@ -302,8 +302,8 @@
       "candidate_blob_sha256": "sha256:eb4a3f3c4a470cbc2024e3085a24c436d2c3a9ce406d11e40a3570733e6f9def",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:eb4a3f3c4a470cbc2024e3085a24c436d2c3a9ce406d11e40a3570733e6f9def",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:eb4a3f3c4a470cbc2024e3085a24c436d2c3a9ce406d11e40a3570733e6f9def",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-3",
@@ -315,8 +315,8 @@
       "candidate_blob_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-30",
@@ -328,8 +328,8 @@
       "candidate_blob_sha256": "sha256:d18b29b080ca448abc0cd0d4d1885e52809167ac74090a42af5464b86234ad28",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:d18b29b080ca448abc0cd0d4d1885e52809167ac74090a42af5464b86234ad28",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:d18b29b080ca448abc0cd0d4d1885e52809167ac74090a42af5464b86234ad28",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-31",
@@ -341,8 +341,8 @@
       "candidate_blob_sha256": "sha256:bdd917be4fdcfc4f53afebf613cce2b3e16ff03857529225aa9bd59a355f989c",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:bdd917be4fdcfc4f53afebf613cce2b3e16ff03857529225aa9bd59a355f989c",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:bdd917be4fdcfc4f53afebf613cce2b3e16ff03857529225aa9bd59a355f989c",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-32",
@@ -354,8 +354,8 @@
       "candidate_blob_sha256": "sha256:b36e144849d964f6556525f0743d3d3eccb7a3c50a13ee7d8d9a0a5439b530c2",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:66e26e16dee65e82e0e0f340877d002bdf1f8b32a1b43f02a6501e1b96f129b9",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:66e26e16dee65e82e0e0f340877d002bdf1f8b32a1b43f02a6501e1b96f129b9",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-33",
@@ -367,8 +367,8 @@
       "candidate_blob_sha256": "sha256:c9a9f1bf3bf643997e36f48f82b5b01569087ec1c37d60e0357f672df2e9a993",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:c9a9f1bf3bf643997e36f48f82b5b01569087ec1c37d60e0357f672df2e9a993",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:c9a9f1bf3bf643997e36f48f82b5b01569087ec1c37d60e0357f672df2e9a993",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-34",
@@ -380,8 +380,8 @@
       "candidate_blob_sha256": "sha256:e776094a3e8824a2c836696c561724d30a9551456597094c6f569da085ebf192",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:e776094a3e8824a2c836696c561724d30a9551456597094c6f569da085ebf192",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:e776094a3e8824a2c836696c561724d30a9551456597094c6f569da085ebf192",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-35",
@@ -393,8 +393,8 @@
       "candidate_blob_sha256": "sha256:7fa32a4e18cd4313f694af4e37af199eb0b99aa428b6ecffc52c0de40665c958",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:7fa32a4e18cd4313f694af4e37af199eb0b99aa428b6ecffc52c0de40665c958",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:7fa32a4e18cd4313f694af4e37af199eb0b99aa428b6ecffc52c0de40665c958",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-36",
@@ -406,8 +406,8 @@
       "candidate_blob_sha256": "sha256:efc4b2999c7516b70cc1132ce6447864d7c21f2bf88c9fa451e7de2c236000f0",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:efc4b2999c7516b70cc1132ce6447864d7c21f2bf88c9fa451e7de2c236000f0",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:efc4b2999c7516b70cc1132ce6447864d7c21f2bf88c9fa451e7de2c236000f0",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-37",
@@ -419,8 +419,8 @@
       "candidate_blob_sha256": "sha256:ff1f9b6393c222b587990d74f3267b0f3b3929b34d69d286f6c3888b1a2e48b3",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:ff1f9b6393c222b587990d74f3267b0f3b3929b34d69d286f6c3888b1a2e48b3",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:ff1f9b6393c222b587990d74f3267b0f3b3929b34d69d286f6c3888b1a2e48b3",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-38",
@@ -432,8 +432,8 @@
       "candidate_blob_sha256": "sha256:f101a15d1f863c83f9f90597cd028de50f9697b45d2fce059abc371248bf2a4a",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:f101a15d1f863c83f9f90597cd028de50f9697b45d2fce059abc371248bf2a4a",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:f101a15d1f863c83f9f90597cd028de50f9697b45d2fce059abc371248bf2a4a",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-39",
@@ -445,8 +445,8 @@
       "candidate_blob_sha256": "sha256:d1d4792b538a3c7db2d8306f0ab7e64ce60f6e78be0c77d256efc85839abb263",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:d1d4792b538a3c7db2d8306f0ab7e64ce60f6e78be0c77d256efc85839abb263",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:d1d4792b538a3c7db2d8306f0ab7e64ce60f6e78be0c77d256efc85839abb263",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-4",
@@ -458,8 +458,8 @@
       "candidate_blob_sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-40",
@@ -471,8 +471,8 @@
       "candidate_blob_sha256": "sha256:eb4fb765597881e8d549741fc35db790a88bdb93fa85e46b3d352873d90fcd80",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:eb4fb765597881e8d549741fc35db790a88bdb93fa85e46b3d352873d90fcd80",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:eb4fb765597881e8d549741fc35db790a88bdb93fa85e46b3d352873d90fcd80",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-41",
@@ -484,8 +484,8 @@
       "candidate_blob_sha256": "sha256:0b0a718bc049c2c68db52ec14e8b0d01ceb2944c73f09d336165bab6bfcc3604",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:0b0a718bc049c2c68db52ec14e8b0d01ceb2944c73f09d336165bab6bfcc3604",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:0b0a718bc049c2c68db52ec14e8b0d01ceb2944c73f09d336165bab6bfcc3604",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-42",
@@ -497,8 +497,8 @@
       "candidate_blob_sha256": "sha256:5819dc7f8f26b2846233e5ab78d3ad86abdf07a385e338ff76f1a60aae48be3e",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:13942a3eb2cedfa4af9fc1442be4c76bf69d4e4ed9c0a33c39b6a339fa07ba7d",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:13942a3eb2cedfa4af9fc1442be4c76bf69d4e4ed9c0a33c39b6a339fa07ba7d",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-43",
@@ -510,8 +510,8 @@
       "candidate_blob_sha256": "sha256:ea464fd3b114e9f522792d6527d3de91bd8e2cac696019d16fe27cfd857c3b37",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:765e4ce7bf9617c1c72c1cf9ee3061a1107edadae2008fd80050852d603c1327",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:765e4ce7bf9617c1c72c1cf9ee3061a1107edadae2008fd80050852d603c1327",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-44",
@@ -523,8 +523,8 @@
       "candidate_blob_sha256": "sha256:2efde0277416b8dcc7839f3be0a5297a9bea97d9c11f90d8945a9345bb605212",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:3acfa213c0f10de081fc4ad9ca6328e3c93c9d22981f2e0585c1dd885d4e6d5c",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:3acfa213c0f10de081fc4ad9ca6328e3c93c9d22981f2e0585c1dd885d4e6d5c",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-45",
@@ -536,8 +536,8 @@
       "candidate_blob_sha256": "sha256:d3c8ae9f88dd761f98e42d10c7ad8a5c8bb0392ca9b7114ae2d2f9b4b5f64b50",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:280e812d830d1c8d754cc24db74aa7b7549910fd1c9b57fb66d4408da79045be",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:280e812d830d1c8d754cc24db74aa7b7549910fd1c9b57fb66d4408da79045be",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-46",
@@ -549,8 +549,8 @@
       "candidate_blob_sha256": "sha256:8ca2525bc57ba81fba40da9040232efeb8ef6d4543feffb3cbefbdc93bbb0cd8",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:beb7696ca89b8f1472dd9ffe58fedef99ef984a1dfbd5353fb65bec72d87608d",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:beb7696ca89b8f1472dd9ffe58fedef99ef984a1dfbd5353fb65bec72d87608d",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-47",
@@ -562,8 +562,8 @@
       "candidate_blob_sha256": "sha256:2bf013b7f64a706aa372089d14ed1a45337f4a5f7d4e5c0e7279466be5298176",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:2bf013b7f64a706aa372089d14ed1a45337f4a5f7d4e5c0e7279466be5298176",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:2bf013b7f64a706aa372089d14ed1a45337f4a5f7d4e5c0e7279466be5298176",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-48",
@@ -575,8 +575,8 @@
       "candidate_blob_sha256": "sha256:aadda0443cffe38940d866313893c27e6214fb03445a4724742c8917f99f1d71",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:aadda0443cffe38940d866313893c27e6214fb03445a4724742c8917f99f1d71",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:aadda0443cffe38940d866313893c27e6214fb03445a4724742c8917f99f1d71",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-49",
@@ -588,8 +588,8 @@
       "candidate_blob_sha256": "sha256:c9168a0cdc646ba1ae3382a85f0ad40276b90f47d49b4087631607772815046a",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": false,
-      "current_raw_sha256": "sha256:c9168a0cdc646ba1ae3382a85f0ad40276b90f47d49b4087631607772815046a",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:c9168a0cdc646ba1ae3382a85f0ad40276b90f47d49b4087631607772815046a",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-5",
@@ -601,8 +601,8 @@
       "candidate_blob_sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:95d31fbe15e2d7bef6a14a1d7dd2f1e5cbbb6530f4788ad83bc84f3f579285f2",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:95d31fbe15e2d7bef6a14a1d7dd2f1e5cbbb6530f4788ad83bc84f3f579285f2",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-50",
@@ -614,8 +614,8 @@
       "candidate_blob_sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:ce5ce154cd638b24b4b86dbe91dff9ca3a34a5de84c1ee3b336e08f2f2277ad3",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-51",
@@ -627,8 +627,8 @@
       "candidate_blob_sha256": "sha256:bd3a413a3017b677f6ff4773ebdbd5717417d1d4a3ea1abbc3d288ee840b4250",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:bd3a413a3017b677f6ff4773ebdbd5717417d1d4a3ea1abbc3d288ee840b4250",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:bd3a413a3017b677f6ff4773ebdbd5717417d1d4a3ea1abbc3d288ee840b4250",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-52",
@@ -640,8 +640,8 @@
       "candidate_blob_sha256": "sha256:54296244c8caac9e2181a3b39e34d7d56c75381102eed07c2d034bfb4fa2aff3",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:54296244c8caac9e2181a3b39e34d7d56c75381102eed07c2d034bfb4fa2aff3",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:54296244c8caac9e2181a3b39e34d7d56c75381102eed07c2d034bfb4fa2aff3",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-53",
@@ -653,8 +653,8 @@
       "candidate_blob_sha256": "sha256:b01080d428705b01eaf38302b72c64b0b8b099834441e2c7024a7a894e8e2285",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:b01080d428705b01eaf38302b72c64b0b8b099834441e2c7024a7a894e8e2285",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:b01080d428705b01eaf38302b72c64b0b8b099834441e2c7024a7a894e8e2285",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-54",
@@ -666,8 +666,8 @@
       "candidate_blob_sha256": "sha256:dc273a8d9aee7349a30ff7c2bfc2e63814cd3b49a99ce9ffc67dae15f3c629eb",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:dc273a8d9aee7349a30ff7c2bfc2e63814cd3b49a99ce9ffc67dae15f3c629eb",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:dc273a8d9aee7349a30ff7c2bfc2e63814cd3b49a99ce9ffc67dae15f3c629eb",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-55",
@@ -679,8 +679,8 @@
       "candidate_blob_sha256": "sha256:94fed944bdf5a3a182bbf636bb2ace519f2739d35bff76c73d4912c72e4f6b11",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:94fed944bdf5a3a182bbf636bb2ace519f2739d35bff76c73d4912c72e4f6b11",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:94fed944bdf5a3a182bbf636bb2ace519f2739d35bff76c73d4912c72e4f6b11",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-56",
@@ -692,8 +692,8 @@
       "candidate_blob_sha256": "sha256:fae52328ff8f4ca130c4c450ecf2312e785ef42d2d375cc7d15720bb7b921a3c",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:fae52328ff8f4ca130c4c450ecf2312e785ef42d2d375cc7d15720bb7b921a3c",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:fae52328ff8f4ca130c4c450ecf2312e785ef42d2d375cc7d15720bb7b921a3c",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-57",
@@ -705,8 +705,8 @@
       "candidate_blob_sha256": "sha256:5d46d1bd94941929c925eb3facb9323013d0f84033a0044b4007851f9864d290",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:5d46d1bd94941929c925eb3facb9323013d0f84033a0044b4007851f9864d290",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:5d46d1bd94941929c925eb3facb9323013d0f84033a0044b4007851f9864d290",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-58",
@@ -718,8 +718,8 @@
       "candidate_blob_sha256": "sha256:6b78259ed5972580d30e1ba27b4865ea7c9dd08b91b12d2f72567b8246a56816",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:6b78259ed5972580d30e1ba27b4865ea7c9dd08b91b12d2f72567b8246a56816",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:6b78259ed5972580d30e1ba27b4865ea7c9dd08b91b12d2f72567b8246a56816",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-59",
@@ -731,8 +731,8 @@
       "candidate_blob_sha256": "sha256:cd8587b9fbb893c7c2cb78694447f33a38cb493271b27497e0bfae587898f906",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:cd8587b9fbb893c7c2cb78694447f33a38cb493271b27497e0bfae587898f906",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:cd8587b9fbb893c7c2cb78694447f33a38cb493271b27497e0bfae587898f906",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-6",
@@ -744,8 +744,8 @@
       "candidate_blob_sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-7",
@@ -757,8 +757,8 @@
       "candidate_blob_sha256": "sha256:ebaf3b3f94f52114ff52db85186b2af90a088a0aec466fdd183a03ad6d1b7184",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:ebaf3b3f94f52114ff52db85186b2af90a088a0aec466fdd183a03ad6d1b7184",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:ebaf3b3f94f52114ff52db85186b2af90a088a0aec466fdd183a03ad6d1b7184",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-8",
@@ -770,8 +770,8 @@
       "candidate_blob_sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     },
     {
       "id": "w6r3-9",
@@ -783,10 +783,12 @@
       "candidate_blob_sha256": "sha256:832bce0c44214868308b6a661a804383013e33c1ef9ef80edb5432897e401d44",
       "raw_equal_to_candidate_git": true,
       "lf_equal_to_candidate_git": true,
-      "current_raw_sha256": "sha256:832bce0c44214868308b6a661a804383013e33c1ef9ef80edb5432897e401d44",
-      "current_LF_equal_to_capture": true
+      "working_tree_at_candidate_raw_sha256": "sha256:832bce0c44214868308b6a661a804383013e33c1ef9ef80edb5432897e401d44",
+      "working_tree_at_candidate_LF_equal_to_capture": true
     }
   ],
   "native_source_files": 18,
-  "scope": "Every capture is checked from actual retained bytes against both Gate tuples and pinned candidate Git blobs. Later docs-only changes are listed by review-package.json."
+  "scope": "Every capture is checked from actual retained bytes against both Gate tuples and pinned candidate Git blobs. Later docs-only changes are listed by review-package.json.",
+  "working_tree_snapshot_git_head": "76d8998bea494a0c7fc97c7cc27071594330ba17",
+  "later_evidence_head_comparison": "Separate exact entry/capture comparison in review-package.json; this snapshot is not a claim about a later plan-status document."
 }
