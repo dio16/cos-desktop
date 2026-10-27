@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "finding": "A-W3-01",
+  "review": "review-round1.json",
+  "reviewed_source": "7786f9fd7c42ee35b5006c9ad236b64bcc2c0511",
+  "problem": "Known malformed BMP header refusals accepted forged reason/status values, including coherently edited stdout and terminal trace.",
+  "code_scope": ["apps/desktop/devtools/img2/w3_verify.py", "apps/desktop/devtools/img2/tests/test_w3_verify.py"],
+  "invariants": {
+    "known_header_refusals": ["truncated", "bad_masks", "overlap_masks", "bad_header", "inconsistent"],
+    "required_result": {"outcome": "corrupt", "reason_code": "invalid_metadata", "admission_status": "refused"},
+    "terminal_agreement": ["outcome", "reason_code", "admission_status", "materialization"]
+  },
+  "before": {"attempt": "awn-before", "total": 25, "failures": 9, "exit": 1, "detail": "Five independent known-header negative methods and four terminal-field subcases failed against the reviewed verifier."},
+  "after": {"attempt": "awn-focused-after", "total": 78, "passed": 78, "failures": 0, "exit": 0, "breakdown": {"w2": 45, "w3": 33}},
+  "negative_cases": ["planes-zero wrong decoder reason", "zero masks wrong depth reason", "overlap masks admitted", "truncated rows not_enforced", "invalid DIB wrong decoder reason", "each of four terminal fields disagrees with result"],
+  "negative_independence": "Header negatives update probe_result, stdout and terminal coherently; they cannot pass merely by a terminal/result mismatch. Existing budget-reason negative also updates its terminal coherently.",
+  "native_refresh": {"attempt": "awn-native", "record": "real-native-matrix.json", "reason": "Refresh all sixteen source bindings because the verifier is part of Native source identity; not a newly required ordinary decode/fixture/consumer remeasurement.", "workers": 24, "bgr565_rasters": 10, "consumer_pixels_verified": 5, "exit": 0},
+  "unchanged": ["WIC decode/probe/adapter", "crates/media API and budget authority", "default limits", "decoder dependency", "GPU/Upload", "Runtime", "Taskern packet/acceptance"],
+  "gate_and_review": "Changed source requires a new pinned Gate pair and complete Tern re-review; historical round-one success is not transferred."
+}

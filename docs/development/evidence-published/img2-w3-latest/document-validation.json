@@ -5,5 +5,6 @@
   "task_cards": 62,
   "hard_DAG_unchanged": true,
   "preexisting_sections_preserved": true,
-  "errors": []
+  "errors": [],
+  "scope": "MP, BUILD_AND_RUN and owning DC links; preserved sections19.53-19.55 against16ce231c"
 }

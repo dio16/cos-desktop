@@ -36,6 +36,20 @@ class W3RecordTests(unittest.TestCase):
             worker["stdout_utf8"] = json.dumps(worker["probe_result"]) + "\n"
         return change
 
+    def change_terminal(self, worker, **fields):
+        worker["stages"][-1].update(fields)
+        raw = "".join(json.dumps(s, separators=(",", ":")) + "\n" for s in worker["stages"])
+        worker.update(trace_utf8=raw, trace_sha256=sha(raw.encode()),
+                      trace_bytes=len(raw.encode()), trace_records=len(worker["stages"]))
+
+    def change_header_result(self, case_id, **fields):
+        def change(record):
+            worker = next(w for w in record["workers"] if w["case_id"] == case_id)
+            worker["probe_result"].update(fields)
+            worker["stdout_utf8"] = json.dumps(worker["probe_result"]) + "\n"
+            self.change_terminal(worker, **fields)
+        return change
+
     def test_retained_raw_bytes_replay(self):
         result = verify(self.native)
         self.assertTrue(result["ok"], result)
@@ -133,6 +147,7 @@ class W3RecordTests(unittest.TestCase):
             worker = next(w for w in record["workers"] if w["case_id"] == "max_pixels_over")
             worker["probe_result"]["reason_code"] = "max_dimension_exceeded"
             worker["stdout_utf8"] = json.dumps(worker["probe_result"]) + "\n"
+            self.change_terminal(worker, reason_code="max_dimension_exceeded")
         self.reject(substitute, "budget_refusal_reason_invalid")
 
     def test_bottom_up_cannot_replace_required_top_down_case(self):
@@ -144,6 +159,37 @@ class W3RecordTests(unittest.TestCase):
                 if worker["fixture_id"] == "odd_top":
                     worker["input_sha256"] = "sha256:" + top["sha256"]
         self.reject(replace, "required_fixture_coverage_missing")
+
+    def test_inconsistent_planes_require_metadata_refusal(self):
+        self.reject(self.change_header_result("format_inconsistent",
+                                             reason_code="win_unknown_image_format"),
+                    "header_admission_refusal_invalid")
+
+    def test_zero_masks_cannot_claim_bit_depth_refusal(self):
+        self.reject(self.change_header_result("format_bad_masks",
+                                             reason_code="max_bit_depth_exceeded"),
+                    "header_admission_refusal_invalid")
+
+    def test_overlapping_masks_cannot_claim_admitted(self):
+        self.reject(self.change_header_result("format_overlap_masks", admission_status="admitted"),
+                    "header_admission_refusal_invalid")
+
+    def test_truncated_rows_require_enforced_refusal(self):
+        self.reject(self.change_header_result("format_truncated", admission_status="not_enforced"),
+                    "header_admission_refusal_invalid")
+
+    def test_invalid_dib_header_is_not_a_decoder_refusal(self):
+        self.reject(self.change_header_result("format_bad_header", reason_code="win_bad_header"),
+                    "header_admission_refusal_invalid")
+
+    def test_terminal_truth_must_match_probe_result(self):
+        for field, wrong in (("outcome", "unsupported"), ("reason_code", "win_bad_image"),
+                             ("admission_status", "admitted"), ("materialization", "completed")):
+            with self.subTest(field=field):
+                def contradict(record):
+                    worker = next(w for w in record["workers"] if w["case_id"] == "format_inconsistent")
+                    self.change_terminal(worker, **{field: wrong})
+                self.reject(contradict, "probe_exit_result_mismatch")
 
 
 if __name__ == "__main__":

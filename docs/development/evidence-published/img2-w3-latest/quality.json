@@ -286,6 +286,115 @@
       "total": 72,
       "passed": 72,
       "skipped": 0
+    },
+    "awn-standard-quality": {
+      "name": "awn-standard-quality",
+      "start": "2026-10-27T16:03:26.723Z",
+      "end": "2026-10-27T16:04:03.113Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 535,
+        "failed": 0,
+        "ignored": 1
+      },
+      "python": [
+        18
+      ],
+      "problem_count": 0,
+      "stdout_sha256": "sha256:f17967d23a95ae21da16b5e6d6ef1cc2665cd889b2da854762836e946adfe8ad",
+      "stderr_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "awn-instrumentation-clippy": {
+      "name": "awn-instrumentation-clippy",
+      "start": "2026-10-27T16:07:45.172Z",
+      "end": "2026-10-27T16:07:47.709Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python": [],
+      "problem_count": 0,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:e328a59927f53ce33cda3e7cc78675442c83ad3abd71163c23f09b7ec788b21f"
+    },
+    "awn-instrumentation-tests-serial": {
+      "name": "awn-instrumentation-tests-serial",
+      "start": "2026-10-27T16:10:49.627Z",
+      "end": "2026-10-27T16:11:34.249Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 539,
+        "failed": 0,
+        "ignored": 1
+      },
+      "python": [],
+      "problem_count": 0,
+      "stdout_sha256": "sha256:5a58f64751bc6ac3724f598e770c8968a445a6396d41ea7df96422b36f226a84",
+      "stderr_sha256": "sha256:7cc4ffe920f6fb0dc201bc4ee4d0aebb4020b1cd8dda705ea3284beaf8431419"
+    },
+    "awn-instrumentation-build": {
+      "name": "awn-instrumentation-build",
+      "start": "2026-10-27T16:08:43.835Z",
+      "end": "2026-10-27T16:08:45.271Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python": [],
+      "problem_count": 0,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:4fecf46cd9364ff3ea2071c1ff3d6d7868d9143472cb7dd6defda78e2f8a182b"
+    },
+    "awn-python-final": {
+      "name": "awn-python-final",
+      "start": "2026-10-27T16:07:45.182Z",
+      "end": "2026-10-27T16:07:46.473Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python": [
+        78
+      ],
+      "problem_count": 0,
+      "stdout_sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "sha256:3708879c2c4125903fdb2aab91dd6f459184147073282c3d69b4e05b489b1c89"
+    },
+    "awn-r0-python": {
+      "name": "awn-r0-python",
+      "start": "2026-10-27T16:08:22.183Z",
+      "end": "2026-10-27T16:08:52.780Z",
+      "exit": 0,
+      "signal": null,
+      "rust": {
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "python": [
+        352
+      ],
+      "problem_count": 0,
+      "stdout_sha256": "sha256:f5abb98468b10c82e5ea77c46a371be397f06f8435a426d1915ebe892c35aae1",
+      "stderr_sha256": "sha256:eeb88ee19aed727c1d485c5c3bc73a321221bfac33312eaf217a32f255b5bc19",
+      "r0": {
+        "total": 352,
+        "passed": 340,
+        "skipped": 12,
+        "failures": 0,
+        "errors": 0
+      }
     }
   },
   "r0_unavailable": "one live-window observation and eleven missing historical N07 binary cases; actual skips are not PASS",
@@ -343,8 +452,8 @@
   ],
   "focused_breakdown": {
     "w2": 45,
-    "w3": 27,
-    "total": 72
+    "w3": 33,
+    "total": 78
   },
   "admission_selftest": {
     "checks": 19,
@@ -362,11 +471,31 @@
     "after": "two focused cases pass; final complete default535/feature539 routes pass without warnings"
   },
   "final_check_names": [
-    "standard-quality-repair1",
-    "focused-python-policy-cleanup",
-    "feature-clippy-repair1",
-    "feature-tests-repair1",
-    "feature-build-repair1"
+    "awn-standard-quality",
+    "awn-instrumentation-clippy",
+    "awn-instrumentation-tests-serial",
+    "awn-instrumentation-build",
+    "awn-python-final",
+    "awn-r0-python"
   ],
-  "test_policy_cleanup": "One incidental non-empty-return assertion removed. All product/Native source and Rust code are unchanged; normal/feature checks above retain their exercised source scope. Full new-candidate independent Gates are required, not transferred."
+  "test_policy_cleanup": "One incidental non-empty-return assertion removed. All product/Native source and Rust code are unchanged; normal/feature checks above retain their exercised source scope. Full new-candidate independent Gates are required, not transferred.",
+  "awn_scope": "A-W3-01 changes verifier and its negative cases only; new Native record refreshes source identity. Existing incidental test-policy history remains historical.",
+  "awn_attempts": [
+    {
+      "name": "awn-feature-clippy",
+      "exit": 101,
+      "cause": "Incorrect feature selector cos-desktop/decode-compare; no checks executed."
+    },
+    {
+      "name": "awn-feature-tests",
+      "exit": 101,
+      "cause": "Same incorrect selector; no tests executed."
+    },
+    {
+      "name": "awn-instrumentation-tests",
+      "exit": 101,
+      "cause": "Concurrent cancellation_records_latency_and_a_cancelled_class received no candidate claim before300ms kill. Actual class Cancelled; none differs from expected claim. Retained, not relabeled PASS.",
+      "passing_route": "Full feature suite rerun with --test-threads=1;539 passed/1 ignored. No test excluded, deadline/assertion/source changed. Default unchanged parallel full quality535 passed/1 ignored."
+    }
+  ]
 }

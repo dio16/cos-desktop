@@ -185,6 +185,9 @@ def _verify(r, source_root):
               names[-1] == "probe_exit" and stages[-1]["complete"] is True, "native_incomplete")
         result = w["probe_result"]
         _need(json.loads(w["stdout_utf8"]) == result, "stdout_result_mismatch")
+        _need(all(stages[-1][key] == result[key] for key in
+                  ("outcome", "reason_code", "admission_status", "materialization")),
+              "probe_exit_result_mismatch")
         over = s["id"].endswith("_over")
         malformed = s["fixture"] not in POSITIVE and s["fixture"] != "not_bgr565"
         if over or malformed:
@@ -193,6 +196,9 @@ def _verify(r, source_root):
                   result["reason_code"] in ("invalid_metadata", "win_unknown_image_format", "win_bad_image",
                     "win_bad_header", "win_bad_stream_data", "max_dimension_exceeded", "max_pixels_exceeded",
                     "max_bit_depth_exceeded", "max_decoded_bytes_exceeded", "max_scratch_bytes_exceeded"), "refusal_class_invalid")
+            if s["fixture"] in ("truncated", "bad_masks", "overlap_masks", "bad_header", "inconsistent"):
+                _need((result["outcome"], result["reason_code"], result["admission_status"]) ==
+                      ("corrupt", "invalid_metadata", "refused"), "header_admission_refusal_invalid")
             if over:
                 _need(result["reason_code"] == s["id"][:-5] + "_exceeded" and
                       result["admission_status"] == "refused", "budget_refusal_reason_invalid")
