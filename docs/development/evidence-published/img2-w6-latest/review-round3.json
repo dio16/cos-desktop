@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "candidate": "8bb1b6dd3071d7e355e685dba4977361f24b8f2f",
+  "evidence_head": "4ddf9453d400344c98346d8c71e3c3835ccfee1f",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "1f1384ba-cd9b-4fde-b7f2-8386e161350d"
+  ],
+  "assistant_ids": [
+    "77c50717-7048-48c7-b750-0a00f804badb"
+  ],
+  "first_read": "2026-10-27T23:41:28.915Z",
+  "second_read": "2026-10-27T23:42:00.958Z",
+  "identical_complete_reads": true,
+  "streaming": false,
+  "request_sha256": "sha256:5dae4420171febe8fdbd98f362dcdee30e055444ad6d018edccb231c204ebcd7",
+  "terminal": "PASS 0 / 0 / 0",
+  "complete": true,
+  "findings": {
+    "blocking": 0,
+    "actionable": 0,
+    "excessive": 0
+  },
+  "closure": "MP-IMG2-W6 LIMITED TECHNICAL COMPLETION approved by review; product/Runtime/push boundaries unchanged."
+}
