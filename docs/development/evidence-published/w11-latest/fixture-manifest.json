@@ -1,0 +1,52 @@
+{
+  "source_commit": "a99620d6e1b4101d0cdb009293d8cb4c783b2c05",
+  "fixtures": [
+    {
+      "bytes": 589275,
+      "case_id": "jpeg_gray_4k",
+      "codec": "jpeg",
+      "geometry": {
+        "bits_per_channel": 8,
+        "bits_per_pixel": 8,
+        "blocks": 262144,
+        "component_count": 1,
+        "decoder": "JpegBitmapDecoder",
+        "entropy_bytes": 588963,
+        "height": 4096,
+        "pixel_format": "Gray8",
+        "quantization_step": 8,
+        "sof_marker": "SOF0",
+        "width": 4096
+      },
+      "height": 4096,
+      "method": "streamed DC-only grayscale baseline JPEG; 64 KiB entropy chunks; Q=8; block level=48+20*((3*bx+5*by+(bx^by)) mod 9); no full-frame raster",
+      "path": "jpeg_gray_4k.jpg",
+      "sha256": "sha256:9ea35ad3a09de79119d8c8335092251cd4aa36bf9177ea4a0b3575e4500c16d6",
+      "width": 4096
+    },
+    {
+      "bytes": 9424021,
+      "case_id": "jpeg_gray_16k",
+      "codec": "jpeg",
+      "geometry": {
+        "bits_per_channel": 8,
+        "bits_per_pixel": 8,
+        "blocks": 4194304,
+        "component_count": 1,
+        "decoder": "JpegBitmapDecoder",
+        "entropy_bytes": 9423709,
+        "height": 16384,
+        "pixel_format": "Gray8",
+        "quantization_step": 8,
+        "sof_marker": "SOF0",
+        "width": 16384
+      },
+      "height": 16384,
+      "method": "streamed DC-only grayscale baseline JPEG; 64 KiB entropy chunks; Q=8; block level=48+20*((3*bx+5*by+(bx^by)) mod 9); no full-frame raster",
+      "path": "jpeg_gray_16k.jpg",
+      "sha256": "sha256:5a12d606db03426128909796f8dcd16e836f04ac15a3484cdd19e5d8c41cb390",
+      "width": 16384
+    }
+  ],
+  "producer": "Chunked DC-only grayscale JPEG; no full-raster/coefficient plane. Independent parser validates every DC/EOB and final padding."
+}

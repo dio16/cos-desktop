@@ -1081,6 +1081,46 @@ is a differential reference, not an absolute JPEG oracle. ICC-valid WIC/GDI+
 outputs differ; colour-conversion correctness stays `NOT_MEASURED`. Invalid or
 truncated metadata accepted by either decoder stays `DECODED_TAMPER_NOT_VERIFIED`.
 
+### 4.31 MP-IMG2-W11 bounded JPEG admission and ROI experiment (2026-10-28)
+
+W11 directly reuses the unchanged managed WIC probe and W2 single-boundary worker.
+Its streamed DC-only grayscale sources are 4096² and 16384²; the latter is only
+header/admission input and must never reach OnLoad. GDI+ 16K is not executed.
+
+```powershell
+python -B apps/desktop/devtools/img2/w11_jpeg_matrix.py run `
+  --work-root <absolute-absent-owned-directory> --out <absolute-absent-report.json> `
+  --pwsh <absolute-qualified-pwsh.exe>
+python -B apps/desktop/devtools/img2/w11_jpeg_matrix.py verify `
+  --report docs/development/evidence-published/w11-latest/native-jpeg-matrix.json `
+  --source-root <repository>
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_w11_*.py"
+```
+
+The fixed experiment permits dimension 4096, 16,777,216 pixels, eight bits,
+64 MiB declared source bytes and 64 MiB BGRA32 conversion/scratch charge.
+Input is capped at 16 MiB, raw ROI at 256×256×4 bytes, encoded output at 1 MiB,
+capture at 64 KiB, trace at 128 KiB / 128 records, report at 8 MiB and work
+at 128 MiB. One worker runs at a time, with 45 s per worker, 300 s per batch
+and 768 MiB maximum observed private bytes. These are sampled/file-monitor
+bounds, not an instantaneous OS quota or a product SLO.
+
+Five scenarios use nine serial workers. Each successful 4K ROI scenario uses
+three independent lifetimes, one hold each at before_onload, after_onload and
+before_publish. Counters must not be subtracted as a same-process allocation
+delta or called WIC-internal memory. Both 16K requests and the 4095 edge-bound
+control refuse before OnLoad. A 1×1 ROI never reduces the full-frame charge.
+All output pixels are checked against the independent DC/block-coordinate
+oracle; success is ROI_OUTPUT_VERIFIED, never true partial decode.
+
+Native source files must be committed before execution. Keep the complete
+report separate from command metadata: use distinct filenames and exclusive
+creation, and record the actual child cwd. Portable verification can return
+structural ok with closure/source-identity false; only a real Git-bound replay
+may establish source closure. Before every Tern evaluation, commit source and
+evidence, push explicit dev:dev and require exact remote-SHA correspondence.
+
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |

@@ -1,0 +1,68 @@
+{
+  "classes": 36,
+  "mutations": [
+    "case_missing",
+    "fixture_identity_coherent",
+    "fixture_geometry",
+    "source_file_missing",
+    "source_changed",
+    "source_digest_invalid",
+    "source_commit_invalid",
+    "foreign_platform",
+    "budget_override",
+    "roi_coordinate",
+    "roi_reduced_full_frame_charge",
+    "admission_reduced_charge_coherent",
+    "refusal_materialized",
+    "refusal_reason",
+    "stage_order",
+    "stage_clock_reversed",
+    "stage_hold_missing",
+    "pixel_tamper_coherent_oracle",
+    "output_digest",
+    "refusal_published",
+    "worker_not_reaped",
+    "unrequested_stop_contradiction",
+    "cleanup_incomplete",
+    "false_partial_decode",
+    "false_memory_peak",
+    "counter_negative_coherent",
+    "counter_over_cap_coherent",
+    "counter_outside_hold_coherent",
+    "observer_incomplete",
+    "observer_identity",
+    "atomic_counter_claim",
+    "workers_overlap",
+    "worker_deadline",
+    "run_deadline",
+    "work_cap",
+    "classification"
+  ],
+  "all_rejected": true,
+  "basis": "The successful real unittest semantic test executes every listed mutation against the mandatory retained Native control; no skips. Copies are synchronized for result/trace/counter/pixel forgeries.",
+  "suite_tests": 9,
+  "suite_command": {
+    "command": [
+      "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+      "-B",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "apps/desktop/devtools/img2/tests",
+      "-p",
+      "test_w11_*.py"
+    ],
+    "cwd": "C:\\dev\\cos-desktop",
+    "exit_code": 0,
+    "duration_seconds": 38.43208499997854,
+    "stdout": {
+      "bytes": 0,
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stderr": {
+      "bytes": 113,
+      "sha256": "sha256:5e69cd5711c4ddabb1a15508aa5787cc1e8140e72a2853ec626b377dddff12a4"
+    }
+  }
+}

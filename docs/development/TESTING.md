@@ -204,6 +204,33 @@ Publication exclusively writes, flushes, syncs and closes all three artifacts pl
 
 [R0A-S1 admission](evidence/README.md#historical-records) bounds this slice to the versioned manifest contract (rendering §10.1), a bounded loader, the §11.2 result contract, structural validation and an offline CLI in `apps/desktop/devtools/r0` (Python standard library only). [Validation](evidence/README.md#historical-records) records eleven unittest cases and CLI outcomes: valid manifests and results validate; missing fields, wrong types and unsupported versions fail; oversize, duplicate-key, malformed and non-finite JSON fail closed before publication; unmeasured endpoints and metrics stay `NOT_MEASURED` with explicit reasons and null percentiles; `NOT_IMPLEMENTED` cannot become observed; failed/censored/excluded counts stay separate from observed; result identity must match the manifest; error output reflects only stable codes and JSON paths, never input text or paths. The tool launches nothing, fetches nothing, executes no input value and performs no measurement; R0A-S2/S3 drivers, R0B baselines, R0C attribution, R0D ratification and any numeric claim remain NOT_RUN.
 
+## 22. MP-IMG2-W11 JPEG full-frame admission and ROI boundary
+
+`test_w11_jpeg_fixtures.py` validates fixed 4K/16K DC-only encoded identities,
+bounded entropy/padding, real coordinate-dependent ROI pixels, exclusive output
+creation and PNG framing/inflate limits. No full-frame RGBA is generated.
+`test_w11_jpeg_monitor.py` exercises the real pending-to-final filesystem
+transition after enumeration: an owned publication is conservatively charged,
+while disappearing immutable or foreign files remain errors.
+`test_w11_jpeg_negative.py` uses the mandatory retained real Native control and
+mutates fixture/source identity, geometry/budgets, ROI/full-frame charges,
+stage order/clock/holds, actual pixels with coherent producer hashes, refusal
+publication, cancellation/cleanup, process-window identity/bounds and claimed
+partial/peak results. Coherent stdout/trace and observer copies cannot turn
+contradictory observations into verified output. Missing control fails.
+
+The matrix covers five fixed scenarios / nine serial workers, including six
+all-pixel-verified ROI outputs and three pre-OnLoad refusals. Three stage
+windows for each 4K scenario come from separate process lifetimes, not a
+same-process memory delta. Repetition must preserve deterministic fixture,
+probe, pixel and classification relations; PIDs, clocks and real counters
+are not forced equal. Portable replay cannot grant Git source closure.
+Unchanged W1–W10 regression, full repository quality, five fresh committed
+Refine Gates, before/after disposal integrity and pushed-SHA Tern review remain
+separate exits. GUI startup, true partial decode, 16K full-decode memory,
+internal scratch/reservations/concurrent peak, cooperative cancellation and
+product adoption are not established by this experiment.
+
 ## 21. MP-IMG2-W10 JPEG metadata interpretation
 
 `test_w10_metadata_fixtures.py` and `test_w10_metadata_negative.py` cover W10.

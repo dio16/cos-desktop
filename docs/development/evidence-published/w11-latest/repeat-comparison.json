@@ -1,0 +1,199 @@
+{
+  "source_commit": "a99620d6e1b4101d0cdb009293d8cb4c783b2c05",
+  "same_source_identity": true,
+  "fixtures_identical": true,
+  "volatile_probe_fields_excluded": [],
+  "other_volatile_fields": "PIDs/lifetimes/QPC/monotonic times/process counters/runtime duration/work bytes remain real and are not required equal. No thresholds or fabricated memory equality.",
+  "workers": [
+    {
+      "worker": "S01_before_onload",
+      "checks": {
+        "case_id": true,
+        "fixture_id": true,
+        "kind": true,
+        "hold_stage": true,
+        "input_sha256": true,
+        "limits": true,
+        "output_bytes": true,
+        "output_sha256": true,
+        "output_hex": true,
+        "oracle": true,
+        "outcome": true,
+        "exit_code": true,
+        "reaped": true,
+        "alive_after_wait": true,
+        "probe_result_without_elapsed": true,
+        "stage_names": true
+      }
+    },
+    {
+      "worker": "S01_after_onload",
+      "checks": {
+        "case_id": true,
+        "fixture_id": true,
+        "kind": true,
+        "hold_stage": true,
+        "input_sha256": true,
+        "limits": true,
+        "output_bytes": true,
+        "output_sha256": true,
+        "output_hex": true,
+        "oracle": true,
+        "outcome": true,
+        "exit_code": true,
+        "reaped": true,
+        "alive_after_wait": true,
+        "probe_result_without_elapsed": true,
+        "stage_names": true
+      }
+    },
+    {
+      "worker": "S01_before_publish",
+      "checks": {
+        "case_id": true,
+        "fixture_id": true,
+        "kind": true,
+        "hold_stage": true,
+        "input_sha256": true,
+        "limits": true,
+        "output_bytes": true,
+        "output_sha256": true,
+        "output_hex": true,
+        "oracle": true,
+        "outcome": true,
+        "exit_code": true,
+        "reaped": true,
+        "alive_after_wait": true,
+        "probe_result_without_elapsed": true,
+        "stage_names": true
+      }
+    },
+    {
+      "worker": "S02_before_onload",
+      "checks": {
+        "case_id": true,
+        "fixture_id": true,
+        "kind": true,
+        "hold_stage": true,
+        "input_sha256": true,
+        "limits": true,
+        "output_bytes": true,
+        "output_sha256": true,
+        "output_hex": true,
+        "oracle": true,
+        "outcome": true,
+        "exit_code": true,
+        "reaped": true,
+        "alive_after_wait": true,
+        "probe_result_without_elapsed": true,
+        "stage_names": true
+      }
+    },
+    {
+      "worker": "S02_after_onload",
+      "checks": {
+        "case_id": true,
+        "fixture_id": true,
+        "kind": true,
+        "hold_stage": true,
+        "input_sha256": true,
+        "limits": true,
+        "output_bytes": true,
+        "output_sha256": true,
+        "output_hex": true,
+        "oracle": true,
+        "outcome": true,
+        "exit_code": true,
+        "reaped": true,
+        "alive_after_wait": true,
+        "probe_result_without_elapsed": true,
+        "stage_names": true
+      }
+    },
+    {
+      "worker": "S02_before_publish",
+      "checks": {
+        "case_id": true,
+        "fixture_id": true,
+        "kind": true,
+        "hold_stage": true,
+        "input_sha256": true,
+        "limits": true,
+        "output_bytes": true,
+        "output_sha256": true,
+        "output_hex": true,
+        "oracle": true,
+        "outcome": true,
+        "exit_code": true,
+        "reaped": true,
+        "alive_after_wait": true,
+        "probe_result_without_elapsed": true,
+        "stage_names": true
+      }
+    },
+    {
+      "worker": "S03_before_admission",
+      "checks": {
+        "case_id": true,
+        "fixture_id": true,
+        "kind": true,
+        "hold_stage": true,
+        "input_sha256": true,
+        "limits": true,
+        "output_bytes": true,
+        "output_sha256": true,
+        "output_hex": true,
+        "oracle": true,
+        "outcome": true,
+        "exit_code": true,
+        "reaped": true,
+        "alive_after_wait": true,
+        "probe_result_without_elapsed": true,
+        "stage_names": true
+      }
+    },
+    {
+      "worker": "S04_before_admission",
+      "checks": {
+        "case_id": true,
+        "fixture_id": true,
+        "kind": true,
+        "hold_stage": true,
+        "input_sha256": true,
+        "limits": true,
+        "output_bytes": true,
+        "output_sha256": true,
+        "output_hex": true,
+        "oracle": true,
+        "outcome": true,
+        "exit_code": true,
+        "reaped": true,
+        "alive_after_wait": true,
+        "probe_result_without_elapsed": true,
+        "stage_names": true
+      }
+    },
+    {
+      "worker": "S05_before_admission",
+      "checks": {
+        "case_id": true,
+        "fixture_id": true,
+        "kind": true,
+        "hold_stage": true,
+        "input_sha256": true,
+        "limits": true,
+        "output_bytes": true,
+        "output_sha256": true,
+        "output_hex": true,
+        "oracle": true,
+        "outcome": true,
+        "exit_code": true,
+        "reaped": true,
+        "alive_after_wait": true,
+        "probe_result_without_elapsed": true,
+        "stage_names": true
+      }
+    }
+  ],
+  "all_deterministic_equal": true
+}
