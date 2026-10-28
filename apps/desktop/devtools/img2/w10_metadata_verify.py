@@ -145,9 +145,12 @@ def _check_wic_metadata(name, result, case, fixture, structure):
         need(result.get("icc_sha256") == icc["sha256"], "wic_icc_digest_mismatch")
         need(result.get("colour_contexts") == 1, "wic_colour_context_count_invalid")
     if name == "wic_transform":
-        need(result.get("transform_requested") != "none", "transform_not_requested")
-        need(result.get("transform_applied") == fixture["expected_transform"],
-             "transform_applied_mismatch")
+        request = {1: "explicit_identity", 3: "explicit_rotate_180",
+                   6: "explicit_rotate_90", 8: "explicit_rotate_270"}.get(orientation)
+        applied = "by_probe_no_rotation" if orientation == 1 else "by_probe"
+        need(request is not None, "transform_without_orientation")
+        need(result.get("transform_requested") == request, "transform_request_mismatch")
+        need(result.get("transform_applied") == applied, "transform_applied_mismatch")
         need(result.get("output_width") == fixture["expected_output_width"]
              and result.get("output_height") == fixture["expected_output_height"],
              "transform_dims_mismatch")
