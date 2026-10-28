@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "decision": "HOLD \u2014 MP-IMG2 FULL DECODE EXIT",
+  "based_on_pushed_disposition": "c05fff720f19af1e35ce6e19d8e37067dbf818e8",
+  "permission_facts": {
+    "human_control": "RECEIVED; already exercised and released",
+    "native_fixed_executable_startup": "SCOPED VERIFIED",
+    "runtime_verification": "RECEIVED; do not request the same approval again"
+  },
+  "blockers": [
+    {
+      "next_decision": "Fix the product decode capability and measurement/acceptance contract under DC-MP-IMG2",
+      "owner": "Caller / Product and Desktop design owner",
+      "scope": [
+        "supported codecs and dimensions; 16K direct decode versus bounded preview/derivative/unavailable",
+        "required partial/region/sequential/tiled capability and fallback",
+        "process termination/reap versus cooperative in-decoder cancellation",
+        "scratch/reservation/concurrent-peak measurement or verifiable conservative bounds",
+        "pixel tolerance, ICC/EXIF policy, product memory and cancellation targets; FFmpeg dependency/licence only if adopted"
+      ]
+    },
+    {
+      "next_task": "Separately bound Runtime-owned producer, authorization and Desktop trusted transport implementation",
+      "owner": "Caller + Runtime owner + Desktop transport owner",
+      "scope": "Existing DC-MP-RT2/RT6/IMG6; no automatic Runtime launch or Task dispatch"
+    }
+  ],
+  "unchanged": [
+    "W1-W13 LIMITED TECHNICAL COMPLETION",
+    "MP-IMG3 NOT_STARTED",
+    "keyboard/IME/DPI/multi-monitor acceptance unconfirmed/unmeasured"
+  ],
+  "no_new_execution": [
+    "W14",
+    "W1-W13 rerun",
+    "new Gate",
+    "Runtime launch/source mutation",
+    "additional GUI action"
+  ]
+}

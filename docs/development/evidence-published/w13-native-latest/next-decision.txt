@@ -1,0 +1,218 @@
+MP-IMG2 Decode Exit — 次タスク判断
+HOLD 継続
+
+結論：新しい実装・計測スライスを開始する条件は、まだ満たされていません。
+
+GitHubのdevが指定されたc05fff720f19af1e35ce6e19d8e37067dbf818e8と一致することを確認しました。実装計画§19.66、DC-MP-IMG2、Decode Exit未完了要件を照合しました。
+
+今回のCaller承認により、従来の停止条件は次のように更新されます。
+
+項目
+
+	
+
+現在の状態
+
+
+
+
+人間による実機操作承認
+
+	
+
+RECEIVED — 解決済み
+
+
+
+
+W13固定exeの起動・通常終了
+
+	
+
+SCOPED VERIFIED
+
+
+
+
+Runtime検証許可
+
+	
+
+RECEIVED — 解決済み
+
+
+
+
+Runtime producer・trusted transport・descriptor実装
+
+	
+
+BLOCKED — 未実装／未接続
+
+
+
+
+Live Runtime認可・統合
+
+	
+
+NOT_VERIFIED
+
+
+
+
+Decode capability・measurement・product policy
+
+	
+
+Caller判断待ち
+
+
+
+
+W1〜W13
+
+	
+
+LIMITED TECHNICAL COMPLETION維持
+
+
+
+
+MP-IMG2 Full Decode Exit
+
+	
+
+HOLD
+
+
+
+
+MP-IMG3
+
+	
+
+NOT_STARTED
+
+人間操作やRuntime検証の承認を再要求する必要はありません。
+
+1. 次に必要な判断：CallerによるDecode構成の確定
+
+決定責任者：Caller（製品・Desktop設計責任者）
+
+現行DC-MP-IMG2の範囲で、まず以下の製品要件と検証方針を確定する必要があります。
+
+サポート範囲： 対応codec、最大画像寸法、16Kを直接decodeするか、preview／bounded derivative／unavailableに限定するか。
+
+Decoder能力： true partial・region・sequential・tiled decodeをどこまで必須とするか。非対応codecのfallbackをどう扱うか。
+
+Cancellation： worker processのterminate/reapを許容する範囲と、cooperative in-decoder cancellationが必須の範囲。
+
+メモリ証明： WIC内部scratch、allocator reservations、true concurrent allocation peakについて、実測方式または検証可能な保守的上界をどう定めるか。
+
+製品受入： codec別のdecode許容差、ICC/EXIF処理方針、製品memory SLOとcancellation latency、decoder選定基準。
+
+FFmpegを製品に採用する場合は、別途dependency/licence判断も必要です。現時点で採用が承認されたとは扱いません。
+
+これらが未決定のままW14を追加しても、既存の未測定項目を閉じるための受入基準がありません。
+
+2. Runtime側は別の実装前提
+
+決定・実装責任者：Caller＋Runtime owner／Desktop transport owner
+
+Runtime検証の許可は取得済みですが、前回の限定証拠では次の問題が残っています。
+
+現行Desktop Runtime経路はAppCore::disconnectedを構築する。
+
+実運用向けtrusted transportは接続されていない。
+
+観測されたlegacy descriptorにはDesktopが要求するidentity・audience・expiryが不足している。
+
+指定された/api/readyは観測時にECONNREFUSEDだった。
+
+したがって、必要なのは追加の「検証許可」ではなく、既存DC-MP-RT2／RT6／IMG6に沿った、Runtime ownerが責任を持つ個別に範囲を定めたproducer・authorization・transport実装作業です。
+
+その作業の選定・実施は、今回のMP-IMG2次タスク判断では認可されていません。Runtimeを起動して自動Task dispatchを発生させることも認可されていません。
+
+3. 今回の実行判断
+
+操作
+
+	
+
+判定
+
+
+
+
+新しいW14の作成
+
+	
+
+実施しない
+
+
+
+
+既存W1〜W13の再実行
+
+	
+
+不要
+
+
+
+
+新Refine Gate
+
+	
+
+実施しない
+
+
+
+
+Runtime起動・ソース変更
+
+	
+
+実施しない
+
+
+
+
+追加GUI操作
+
+	
+
+実施しない
+
+
+
+
+MP-IMG3開始
+
+	
+
+不可
+
+
+
+
+既存の限定完了承認
+
+	
+
+維持
+
+なお、今回解決したのは指定実行ファイルのstartup subsetであり、keyboard・IME・DPI・multi-monitorの完全受入ではありません。
+
+最終結論
+
+HOLD — MP-IMG2 FULL DECODE EXIT
+
+次に必要な具体的判断は、CallerがDC-MP-IMG2の製品decode構成とmeasurement／acceptance方針を確定することです。
+
+Runtimeについては、検証権限の問題ではなく、Runtime ownerが担当するproducer・trusted transport・descriptor実装の問題として別管理します。
+
+W13完了、実機起動確認、Runtime検証許可はすべて維持します。今回の承認を新しい設計・実装権限に拡張することはしません。
