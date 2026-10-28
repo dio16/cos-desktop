@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "candidate": "598827291f89d3d8e5f7f259016122256285db64",
+  "candidate": "86cc666b2debc95cb470c456b0b24a986bb9b702",
   "approval": "Successful-Gate workspace disposal per AGENTS.md and the caller-authorized finite retention step, applied only to these eight exact paths.",
   "removal_targets": [
-    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/c7902882-ac4d-441f-8a7b-34d16cb69208/work/repo",
-    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/3b45567c-c459-4712-8074-ec88a8933ac2/work/repo",
-    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/0a832afc-6f35-4af5-8765-01061459dba8/work/repo",
-    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/92789622-c744-4c51-9514-bcec4dd86989/work/repo",
-    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/1e4c7407-f611-404d-addf-5419419fa9b7/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/ee2acb40-272c-42f0-88aa-aacbd8030dac/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/d98dfeaf-723b-4ed8-9487-7f4f5d522a69/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/4046304f-6c6a-405f-9860-7f4048ecf15e/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/8a35342a-4c01-4370-8d00-7595b37afd3f/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/7b129b5e-dead-4149-b405-85b6b5502452/work/repo",
     "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/clippy",
     "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/tests",
     "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/build"
@@ -17,21 +17,27 @@
     "process_dependencies": [],
     "reparse_points": []
   },
-  "files_removed": 13230,
-  "logical_bytes_removed": 4241515029,
+  "files_removed": 13240,
+  "logical_bytes_removed": 4243075863,
   "post_disposal_verify": {
-    "c7902882": "SUCCEEDED:33",
-    "3b45567c": "SUCCEEDED:33",
-    "0a832afc": "SUCCEEDED:33",
-    "92789622": "SUCCEEDED:33",
-    "1e4c7407": "SUCCEEDED:33"
+    "ee2acb40": "SUCCEEDED:33",
+    "d98dfeaf": "SUCCEEDED:33",
+    "4046304f": "SUCCEEDED:33",
+    "8a35342a": "SUCCEEDED:33",
+    "7b129b5e": "SUCCEEDED:33"
   },
-  "previous_disposal": {
-    "files": 13145,
-    "logical_bytes": 4239033046,
-    "candidate": "a8423ab696e6079ee17694ced4983b29280e3dbd",
-    "note": "The superseded r1 Gates were disposed first; their work repos are gone and their receipts remain."
-  },
+  "previous_disposals": [
+    {
+      "candidate": "a8423ab696e6079ee17694ced4983b29280e3dbd",
+      "files": 13145,
+      "logical_bytes": 4239033046
+    },
+    {
+      "candidate": "598827291f89d3d8e5f7f259016122256285db64",
+      "files": 13230,
+      "logical_bytes": 4241515029
+    }
+  ],
   "retained": [
     "gate request/state/observations/artifacts/logs/check-spools",
     "pinned source",
