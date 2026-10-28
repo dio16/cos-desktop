@@ -159,5 +159,5 @@
     }
   },
   "reproduction": "w7_large_fixtures.write_fixture; streams rows and never buffers a full frame",
-  "regeneration": "verifier recomputes each case digest from the generator"
+  "regeneration": "the verifier recomputes each case digest from the generator"
 }
