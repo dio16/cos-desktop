@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "native_source": "60f3aecc99802d865190a03071c20204a344fad7",
-  "computed_against": "282b2251ca909fce45366e90444d0f6ea5f9bcd1",
+  "native_source": "bfdc1f0b4101e267dfbbbfef5c048a4178ad54c3",
+  "computed_against": "e9560ea49d9d6e01398d5ffaad06b4c8ab0be824",
   "source_files": 18,
   "all_source_files_pinned": true,
   "candidate_equals_native_source": true,
@@ -15,6 +15,7 @@
     "docs/development/evidence-published/img2-w8-latest/gate-artifact-correspondence.json",
     "docs/development/evidence-published/img2-w8-latest/gate-build-receipts.json",
     "docs/development/evidence-published/img2-w8-latest/gate-img2-receipts.json",
+    "docs/development/evidence-published/img2-w8-latest/gate-preflight.json",
     "docs/development/evidence-published/img2-w8-latest/gate-w8-receipts.json",
     "docs/development/evidence-published/img2-w8-latest/gate-workspace-receipts.json",
     "docs/development/evidence-published/img2-w8-latest/native-decoder-matrix.json",

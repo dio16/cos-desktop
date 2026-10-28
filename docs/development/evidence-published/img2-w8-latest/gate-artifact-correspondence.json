@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "candidate": "a7ecc9f67327e08812336ca6d8a145b915834ddf",
+  "candidate": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
   "gates": {
-    "workspace": "e374ec63-74a0-4271-bc2e-0b2d0b6df93d",
-    "img2": "1c2ce2fa-ee6b-4bee-b19a-b7921e7513da",
-    "w8": "4b1e1d9f-a4ec-44c1-a02b-a1655e114836",
-    "build": "1587b7e0-ee28-4041-8132-86275bcc9692"
+    "workspace": "71f60580-65bd-4c90-992a-19795e8bcf48",
+    "img2": "51879d5c-e842-495c-a3c8-fcfa01c353ef",
+    "w8": "fe1c26cd-863d-411e-be2a-f53d313db8fb",
+    "build": "3f3cec15-ac4a-45ce-bc28-da1b263df52d"
   },
-  "candidate_digest": "sha256:f4970ab68bd5a7cf715ab37e1065367bb3545842e242e3023daaed8405da121b",
+  "candidate_digest": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5",
   "artifact_tuples": 32,
   "gates_identical": 32,
   "raw_equal": 32,
@@ -33,12 +33,12 @@
       "id": "w8-1",
       "path": "apps/desktop/devtools/img2/tests/test_w8_negative.py",
       "sha256": {
-        "workspace": "sha256:023e21aff47494e347d7d47ac1fd4508ecbe97f53f2ca1a17133d33da66ca98f",
-        "img2": "sha256:023e21aff47494e347d7d47ac1fd4508ecbe97f53f2ca1a17133d33da66ca98f",
-        "w8": "sha256:023e21aff47494e347d7d47ac1fd4508ecbe97f53f2ca1a17133d33da66ca98f",
-        "build": "sha256:023e21aff47494e347d7d47ac1fd4508ecbe97f53f2ca1a17133d33da66ca98f"
+        "workspace": "sha256:1600fc0d3f956b116f6ec210c4e6b9b730441795f290d9b9b422534b9ad52e11",
+        "img2": "sha256:1600fc0d3f956b116f6ec210c4e6b9b730441795f290d9b9b422534b9ad52e11",
+        "w8": "sha256:1600fc0d3f956b116f6ec210c4e6b9b730441795f290d9b9b422534b9ad52e11",
+        "build": "sha256:1600fc0d3f956b116f6ec210c4e6b9b730441795f290d9b9b422534b9ad52e11"
       },
-      "candidate_blob_sha256": "sha256:023e21aff47494e347d7d47ac1fd4508ecbe97f53f2ca1a17133d33da66ca98f",
+      "candidate_blob_sha256": "sha256:1600fc0d3f956b116f6ec210c4e6b9b730441795f290d9b9b422534b9ad52e11",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -93,12 +93,12 @@
       "id": "w8-5",
       "path": "apps/desktop/devtools/img2/w8_jpeg_verify.py",
       "sha256": {
-        "workspace": "sha256:64435b4812becd304c5eb5514a9c28854790feb1498c6e4f36b28f78aff0e973",
-        "img2": "sha256:64435b4812becd304c5eb5514a9c28854790feb1498c6e4f36b28f78aff0e973",
-        "w8": "sha256:64435b4812becd304c5eb5514a9c28854790feb1498c6e4f36b28f78aff0e973",
-        "build": "sha256:64435b4812becd304c5eb5514a9c28854790feb1498c6e4f36b28f78aff0e973"
+        "workspace": "sha256:fbad9119585fc3530fd600ce35894f83f35ef3fe41c718962de496d25f0a56a7",
+        "img2": "sha256:fbad9119585fc3530fd600ce35894f83f35ef3fe41c718962de496d25f0a56a7",
+        "w8": "sha256:fbad9119585fc3530fd600ce35894f83f35ef3fe41c718962de496d25f0a56a7",
+        "build": "sha256:fbad9119585fc3530fd600ce35894f83f35ef3fe41c718962de496d25f0a56a7"
       },
-      "candidate_blob_sha256": "sha256:64435b4812becd304c5eb5514a9c28854790feb1498c6e4f36b28f78aff0e973",
+      "candidate_blob_sha256": "sha256:fbad9119585fc3530fd600ce35894f83f35ef3fe41c718962de496d25f0a56a7",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -153,12 +153,12 @@
       "id": "w8-9",
       "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
       "sha256": {
-        "workspace": "sha256:9b9723bbe656bd337bf17813a912a163086c1931e111ce2b2bae24c2c75536d9",
-        "img2": "sha256:9b9723bbe656bd337bf17813a912a163086c1931e111ce2b2bae24c2c75536d9",
-        "w8": "sha256:9b9723bbe656bd337bf17813a912a163086c1931e111ce2b2bae24c2c75536d9",
-        "build": "sha256:9b9723bbe656bd337bf17813a912a163086c1931e111ce2b2bae24c2c75536d9"
+        "workspace": "sha256:8700536469e1a542e15cd263e7d98b51706920eaa061ab58ef55080af6b40727",
+        "img2": "sha256:8700536469e1a542e15cd263e7d98b51706920eaa061ab58ef55080af6b40727",
+        "w8": "sha256:8700536469e1a542e15cd263e7d98b51706920eaa061ab58ef55080af6b40727",
+        "build": "sha256:8700536469e1a542e15cd263e7d98b51706920eaa061ab58ef55080af6b40727"
       },
-      "candidate_blob_sha256": "sha256:9b9723bbe656bd337bf17813a912a163086c1931e111ce2b2bae24c2c75536d9",
+      "candidate_blob_sha256": "sha256:8700536469e1a542e15cd263e7d98b51706920eaa061ab58ef55080af6b40727",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -168,12 +168,12 @@
       "id": "w8-10",
       "path": "docs/development/TESTING.md",
       "sha256": {
-        "workspace": "sha256:6ad817281cf554538f2b3ebd18da3e6efe0003d25e39f69af39a2c387ce56166",
-        "img2": "sha256:6ad817281cf554538f2b3ebd18da3e6efe0003d25e39f69af39a2c387ce56166",
-        "w8": "sha256:6ad817281cf554538f2b3ebd18da3e6efe0003d25e39f69af39a2c387ce56166",
-        "build": "sha256:6ad817281cf554538f2b3ebd18da3e6efe0003d25e39f69af39a2c387ce56166"
+        "workspace": "sha256:32188461813a3063fb48972f84f1b5af77b233b57ed0cfd0135124b5578c7920",
+        "img2": "sha256:32188461813a3063fb48972f84f1b5af77b233b57ed0cfd0135124b5578c7920",
+        "w8": "sha256:32188461813a3063fb48972f84f1b5af77b233b57ed0cfd0135124b5578c7920",
+        "build": "sha256:32188461813a3063fb48972f84f1b5af77b233b57ed0cfd0135124b5578c7920"
       },
-      "candidate_blob_sha256": "sha256:6ad817281cf554538f2b3ebd18da3e6efe0003d25e39f69af39a2c387ce56166",
+      "candidate_blob_sha256": "sha256:32188461813a3063fb48972f84f1b5af77b233b57ed0cfd0135124b5578c7920",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -243,12 +243,12 @@
       "id": "w8-15",
       "path": "docs/development/evidence-published/img2-w8-latest/environment.json",
       "sha256": {
-        "workspace": "sha256:59ed16a3dc2a355d2294a609f95e3d1ae811667034b303e024e64fc37570cc55",
-        "img2": "sha256:59ed16a3dc2a355d2294a609f95e3d1ae811667034b303e024e64fc37570cc55",
-        "w8": "sha256:59ed16a3dc2a355d2294a609f95e3d1ae811667034b303e024e64fc37570cc55",
-        "build": "sha256:59ed16a3dc2a355d2294a609f95e3d1ae811667034b303e024e64fc37570cc55"
+        "workspace": "sha256:c6050c14c7a6b7f9914318a40108cce9398acdea0c79dd3794d3b74c22a13cdd",
+        "img2": "sha256:c6050c14c7a6b7f9914318a40108cce9398acdea0c79dd3794d3b74c22a13cdd",
+        "w8": "sha256:c6050c14c7a6b7f9914318a40108cce9398acdea0c79dd3794d3b74c22a13cdd",
+        "build": "sha256:c6050c14c7a6b7f9914318a40108cce9398acdea0c79dd3794d3b74c22a13cdd"
       },
-      "candidate_blob_sha256": "sha256:59ed16a3dc2a355d2294a609f95e3d1ae811667034b303e024e64fc37570cc55",
+      "candidate_blob_sha256": "sha256:c6050c14c7a6b7f9914318a40108cce9398acdea0c79dd3794d3b74c22a13cdd",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -258,12 +258,12 @@
       "id": "w8-16",
       "path": "docs/development/evidence-published/img2-w8-latest/execution-manifest.json",
       "sha256": {
-        "workspace": "sha256:199586058140d4a17e9d7d5135440454801e9703ce16ad4f906cbd2104a09de7",
-        "img2": "sha256:199586058140d4a17e9d7d5135440454801e9703ce16ad4f906cbd2104a09de7",
-        "w8": "sha256:199586058140d4a17e9d7d5135440454801e9703ce16ad4f906cbd2104a09de7",
-        "build": "sha256:199586058140d4a17e9d7d5135440454801e9703ce16ad4f906cbd2104a09de7"
+        "workspace": "sha256:b8b299a4f2cec5530bbcb8e0b2c70dae6a207f4fd7d279b2f35ad04161db6f9c",
+        "img2": "sha256:b8b299a4f2cec5530bbcb8e0b2c70dae6a207f4fd7d279b2f35ad04161db6f9c",
+        "w8": "sha256:b8b299a4f2cec5530bbcb8e0b2c70dae6a207f4fd7d279b2f35ad04161db6f9c",
+        "build": "sha256:b8b299a4f2cec5530bbcb8e0b2c70dae6a207f4fd7d279b2f35ad04161db6f9c"
       },
-      "candidate_blob_sha256": "sha256:199586058140d4a17e9d7d5135440454801e9703ce16ad4f906cbd2104a09de7",
+      "candidate_blob_sha256": "sha256:b8b299a4f2cec5530bbcb8e0b2c70dae6a207f4fd7d279b2f35ad04161db6f9c",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -333,12 +333,12 @@
       "id": "w8-21",
       "path": "docs/development/evidence-published/img2-w8-latest/native-decoder-matrix.json",
       "sha256": {
-        "workspace": "sha256:53b7e79bf3927bb0a0633063e51f4c0f22b6ca33140cc075de09d10e3cea9936",
-        "img2": "sha256:53b7e79bf3927bb0a0633063e51f4c0f22b6ca33140cc075de09d10e3cea9936",
-        "w8": "sha256:53b7e79bf3927bb0a0633063e51f4c0f22b6ca33140cc075de09d10e3cea9936",
-        "build": "sha256:53b7e79bf3927bb0a0633063e51f4c0f22b6ca33140cc075de09d10e3cea9936"
+        "workspace": "sha256:b28836ae23340aee77907728541ff3e8f9789405f76824f735dc71c554e7be63",
+        "img2": "sha256:b28836ae23340aee77907728541ff3e8f9789405f76824f735dc71c554e7be63",
+        "w8": "sha256:b28836ae23340aee77907728541ff3e8f9789405f76824f735dc71c554e7be63",
+        "build": "sha256:b28836ae23340aee77907728541ff3e8f9789405f76824f735dc71c554e7be63"
       },
-      "candidate_blob_sha256": "sha256:53b7e79bf3927bb0a0633063e51f4c0f22b6ca33140cc075de09d10e3cea9936",
+      "candidate_blob_sha256": "sha256:b28836ae23340aee77907728541ff3e8f9789405f76824f735dc71c554e7be63",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -348,12 +348,12 @@
       "id": "w8-22",
       "path": "docs/development/evidence-published/img2-w8-latest/negative-tests.json",
       "sha256": {
-        "workspace": "sha256:c0e727acf203204336b42882c5533f1ca3140672667fe4763ec4e5d01c07df42",
-        "img2": "sha256:c0e727acf203204336b42882c5533f1ca3140672667fe4763ec4e5d01c07df42",
-        "w8": "sha256:c0e727acf203204336b42882c5533f1ca3140672667fe4763ec4e5d01c07df42",
-        "build": "sha256:c0e727acf203204336b42882c5533f1ca3140672667fe4763ec4e5d01c07df42"
+        "workspace": "sha256:d476ae2ed20e05ddaa9de65f379384a401c65f98355334d315adad46a9379f07",
+        "img2": "sha256:d476ae2ed20e05ddaa9de65f379384a401c65f98355334d315adad46a9379f07",
+        "w8": "sha256:d476ae2ed20e05ddaa9de65f379384a401c65f98355334d315adad46a9379f07",
+        "build": "sha256:d476ae2ed20e05ddaa9de65f379384a401c65f98355334d315adad46a9379f07"
       },
-      "candidate_blob_sha256": "sha256:c0e727acf203204336b42882c5533f1ca3140672667fe4763ec4e5d01c07df42",
+      "candidate_blob_sha256": "sha256:d476ae2ed20e05ddaa9de65f379384a401c65f98355334d315adad46a9379f07",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -378,12 +378,12 @@
       "id": "w8-24",
       "path": "docs/development/evidence-published/img2-w8-latest/quality.json",
       "sha256": {
-        "workspace": "sha256:b163eb2d1ae2b79c9eedd54d941eb442c9feed92cf45c1422f7fd003cb4f33c0",
-        "img2": "sha256:b163eb2d1ae2b79c9eedd54d941eb442c9feed92cf45c1422f7fd003cb4f33c0",
-        "w8": "sha256:b163eb2d1ae2b79c9eedd54d941eb442c9feed92cf45c1422f7fd003cb4f33c0",
-        "build": "sha256:b163eb2d1ae2b79c9eedd54d941eb442c9feed92cf45c1422f7fd003cb4f33c0"
+        "workspace": "sha256:3d19af95d3f5e8629fb4a2ecbafdc485c67d9f6ef06eabe2520fe8d4ed6c80ba",
+        "img2": "sha256:3d19af95d3f5e8629fb4a2ecbafdc485c67d9f6ef06eabe2520fe8d4ed6c80ba",
+        "w8": "sha256:3d19af95d3f5e8629fb4a2ecbafdc485c67d9f6ef06eabe2520fe8d4ed6c80ba",
+        "build": "sha256:3d19af95d3f5e8629fb4a2ecbafdc485c67d9f6ef06eabe2520fe8d4ed6c80ba"
       },
-      "candidate_blob_sha256": "sha256:b163eb2d1ae2b79c9eedd54d941eb442c9feed92cf45c1422f7fd003cb4f33c0",
+      "candidate_blob_sha256": "sha256:3d19af95d3f5e8629fb4a2ecbafdc485c67d9f6ef06eabe2520fe8d4ed6c80ba",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -393,12 +393,12 @@
       "id": "w8-25",
       "path": "docs/development/evidence-published/img2-w8-latest/source-identity.json",
       "sha256": {
-        "workspace": "sha256:7201b18cfba6277b76d624e1e804d8bc638ffbabf2ec9178c88ffe6009c3f064",
-        "img2": "sha256:7201b18cfba6277b76d624e1e804d8bc638ffbabf2ec9178c88ffe6009c3f064",
-        "w8": "sha256:7201b18cfba6277b76d624e1e804d8bc638ffbabf2ec9178c88ffe6009c3f064",
-        "build": "sha256:7201b18cfba6277b76d624e1e804d8bc638ffbabf2ec9178c88ffe6009c3f064"
+        "workspace": "sha256:c74cd9ae1c91091decb62f205bef994033d471a47a515eda358593324e37e6c8",
+        "img2": "sha256:c74cd9ae1c91091decb62f205bef994033d471a47a515eda358593324e37e6c8",
+        "w8": "sha256:c74cd9ae1c91091decb62f205bef994033d471a47a515eda358593324e37e6c8",
+        "build": "sha256:c74cd9ae1c91091decb62f205bef994033d471a47a515eda358593324e37e6c8"
       },
-      "candidate_blob_sha256": "sha256:7201b18cfba6277b76d624e1e804d8bc638ffbabf2ec9178c88ffe6009c3f064",
+      "candidate_blob_sha256": "sha256:c74cd9ae1c91091decb62f205bef994033d471a47a515eda358593324e37e6c8",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,

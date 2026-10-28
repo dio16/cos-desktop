@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "candidate": "e4ff23cf10d7db1218f577877ae85c713a19c24a",
-  "quality_core": {
+  "candidate": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
+  "current": {
     "cli_interface_version": 2,
     "operation": "gate.preflight",
     "outcome": {
@@ -248,276 +248,6 @@
             "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
           },
           {
-            "id": "img2-python",
-            "outcome": "pass",
-            "message": "check executable exists and matches its configured identity pin"
-          },
-          {
-            "id": "img2-python",
-            "outcome": "pass",
-            "message": "`CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "img2-python",
-            "outcome": "pass",
-            "message": "`CC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "img2-python",
-            "outcome": "pass",
-            "message": "`CXX` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "img2-python",
-            "outcome": "pass",
-            "message": "`RUSTC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "img2-python",
-            "outcome": "pass",
-            "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w2-probe-selftest",
-            "outcome": "pass",
-            "message": "check executable exists and matches its configured identity pin"
-          },
-          {
-            "id": "w2-probe-selftest",
-            "outcome": "pass",
-            "message": "`CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w2-probe-selftest",
-            "outcome": "pass",
-            "message": "`CC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w2-probe-selftest",
-            "outcome": "pass",
-            "message": "`CXX` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w2-probe-selftest",
-            "outcome": "pass",
-            "message": "`RUSTC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w2-probe-selftest",
-            "outcome": "pass",
-            "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w2-oracle",
-            "outcome": "pass",
-            "message": "check executable exists and matches its configured identity pin"
-          },
-          {
-            "id": "w2-oracle",
-            "outcome": "pass",
-            "message": "`CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w2-oracle",
-            "outcome": "pass",
-            "message": "`CC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w2-oracle",
-            "outcome": "pass",
-            "message": "`CXX` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w2-oracle",
-            "outcome": "pass",
-            "message": "`RUSTC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w2-oracle",
-            "outcome": "pass",
-            "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w3-retained-native-replay",
-            "outcome": "pass",
-            "message": "check executable exists and matches its configured identity pin"
-          },
-          {
-            "id": "w3-retained-native-replay",
-            "outcome": "pass",
-            "message": "`CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w3-retained-native-replay",
-            "outcome": "pass",
-            "message": "`CC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w3-retained-native-replay",
-            "outcome": "pass",
-            "message": "`CXX` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w3-retained-native-replay",
-            "outcome": "pass",
-            "message": "`RUSTC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w3-retained-native-replay",
-            "outcome": "pass",
-            "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "wic-admission-selftest",
-            "outcome": "pass",
-            "message": "check executable exists and matches its configured identity pin"
-          },
-          {
-            "id": "wic-admission-selftest",
-            "outcome": "pass",
-            "message": "`CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "wic-admission-selftest",
-            "outcome": "pass",
-            "message": "`CC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "wic-admission-selftest",
-            "outcome": "pass",
-            "message": "`CXX` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "wic-admission-selftest",
-            "outcome": "pass",
-            "message": "`RUSTC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "wic-admission-selftest",
-            "outcome": "pass",
-            "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w1-runner-selftest",
-            "outcome": "pass",
-            "message": "check executable exists and matches its configured identity pin"
-          },
-          {
-            "id": "w1-runner-selftest",
-            "outcome": "pass",
-            "message": "`CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w1-runner-selftest",
-            "outcome": "pass",
-            "message": "`CC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w1-runner-selftest",
-            "outcome": "pass",
-            "message": "`CXX` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w1-runner-selftest",
-            "outcome": "pass",
-            "message": "`RUSTC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w1-runner-selftest",
-            "outcome": "pass",
-            "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w4-native-replay",
-            "outcome": "pass",
-            "message": "check executable exists and matches its configured identity pin"
-          },
-          {
-            "id": "w4-native-replay",
-            "outcome": "pass",
-            "message": "`CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w4-native-replay",
-            "outcome": "pass",
-            "message": "`CC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w4-native-replay",
-            "outcome": "pass",
-            "message": "`CXX` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w4-native-replay",
-            "outcome": "pass",
-            "message": "`RUSTC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w4-native-replay",
-            "outcome": "pass",
-            "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w5-native-replay",
-            "outcome": "pass",
-            "message": "check executable exists and matches its configured identity pin"
-          },
-          {
-            "id": "w5-native-replay",
-            "outcome": "pass",
-            "message": "`CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w5-native-replay",
-            "outcome": "pass",
-            "message": "`CC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w5-native-replay",
-            "outcome": "pass",
-            "message": "`CXX` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w5-native-replay",
-            "outcome": "pass",
-            "message": "`RUSTC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w5-native-replay",
-            "outcome": "pass",
-            "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w6-native-replay",
-            "outcome": "pass",
-            "message": "check executable exists and matches its configured identity pin"
-          },
-          {
-            "id": "w6-native-replay",
-            "outcome": "pass",
-            "message": "`CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w6-native-replay",
-            "outcome": "pass",
-            "message": "`CC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w6-native-replay",
-            "outcome": "pass",
-            "message": "`CXX` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w6-native-replay",
-            "outcome": "pass",
-            "message": "`RUSTC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
-            "id": "w6-native-replay",
-            "outcome": "pass",
-            "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
-          },
-          {
             "id": "check_runtime",
             "outcome": "unknown",
             "message": "toolchain/SDK runtime compatibility, command results and timeout sufficiency require a real check; none was launched"
@@ -540,13 +270,23 @@
     {
       "gate": "fee1203c-91b9-4128-b3d1-09ac8660890e",
       "state": "FAILED",
-      "reason": "Isolated IMG2 check failed because the record predated the LF probe identity. NOT_TRANSFERRED."
+      "reason": "Record predated the LF probe identity."
     },
     {
       "gate": "c108b974-2f1f-4037-b2ec-399382963cc0",
       "state": "FAILED",
-      "reason": "The IMG2 check hit its 300 s per-check timeout after the W8 suite grew. NOT_TRANSFERRED."
+      "reason": "IMG2 check hit its 300 s per-check timeout."
+    },
+    {
+      "gate": "0b7b54f3-9284-47ff-98b6-f5a20c1fb14a",
+      "state": "FAILED",
+      "reason": "Combined core Gate exhausted the 600 s policy budget."
+    },
+    {
+      "gate": "e374ec63/1c2ce2fa/4b1e1d9f/1587b7e0",
+      "state": "SUCCEEDED_BUT_SUPERSEDED",
+      "reason": "Earlier candidate after round-1 findings; not transferred to the round-2/3 candidate."
     }
   ],
-  "note": "Preflight is static and unknown; no failed or superseded dispatch is transferred to the successful pair."
+  "note": "Preflight is static and unknown; this record belongs to the current candidate and no failed dispatch is transferred."
 }

@@ -1,10 +1,9 @@
 {
   "schema_version": 1,
-  "candidate": "a7ecc9f67327e08812336ca6d8a145b915834ddf",
-  "build_gate": "1587b7e0-ee28-4041-8132-86275bcc9692",
+  "candidate": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
+  "build_gate": "3f3cec15-ac4a-45ce-bc28-da1b263df52d",
   "status": "NOT_CAPTURED",
-  "reason": "The isolated build output was disposed by the approved scratch step before its bytes were hashed, so no digest exists for this candidate.",
-  "prior_capture_not_transferred": "The 32,275,456-byte / sha256:32b94b17\u2026 capture belongs to the earlier W8 candidate and is not transferred here.",
+  "reason": "The isolated build output was disposed by the approved scratch step before its bytes were hashed.",
   "declared_immutable_artifact": false,
   "retention": "The executable is disposable; source, receipt and logs are retained."
 }
