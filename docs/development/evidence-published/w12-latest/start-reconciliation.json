@@ -1,0 +1,31 @@
+{
+  "start_head": "8cc44ad9a2bb1d6da260cc42c900e2287f5eed07",
+  "remote_dev": "8cc44ad9a2bb1d6da260cc42c900e2287f5eed07",
+  "tree_clean": true,
+  "tree": "152c74e315eeee7f67b87e6d224036fbdc703aa3",
+  "directive_sha256": "sha256:b950f37f0dc2243291c7d742ced7f0d6491d731d048d19c25655e05ed61dd76c",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 3131,
+      "expected": 3131,
+      "preview": "W11 is stopped at its completion boundary. Your Round1 revie"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 4,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ae1da01-fefc-83e8-89f8-b09b2713f314",
+    "via": "pin"
+  },
+  "w11_disposition": {
+    "status": "LIMITED_TECHNICAL_COMPLETION",
+    "candidate": "d182ee9eeb2d587eb69c28188dc66675c4a9b7dc",
+    "evidence": "0937aaa336856e1f9048f07c424ae29de7b2fc6f",
+    "native_source": "a99620d6e1b4101d0cdb009293d8cb4c783b2c05",
+    "review": "PASS"
+  },
+  "authority": "Existing Caller continuous MP implementation grant only. No new design, dependency, unsafe/COM, product policy, Runtime, GUI, main or release authority."
+}

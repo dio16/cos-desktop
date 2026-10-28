@@ -1,0 +1,338 @@
+{
+  "protocol": 1,
+  "ok": true,
+  "summary": {
+    "operation": "prepare",
+    "claim": "packet_compiled",
+    "plan_id": "cos-desktop-img2-w12",
+    "revision": 1,
+    "task_id": "img2-w12",
+    "packet_sha256": "sha256:8d10df06d46c38a3041ae9be4ce430fea346f0442f22eca3b094b324c749d142"
+  },
+  "artifacts": {
+    "plan": {
+      "schema_version": 1,
+      "plan_id": "cos-desktop-img2-w12",
+      "revision": 1,
+      "goal": "Matched-raster 4K JPEG/PNG WIC decode and whole-process memory differential under DC-MP-IMG2; no decoder adoption or memory-SLO claim.",
+      "invariants": [],
+      "milestones": [],
+      "tasks": [
+        {
+          "schema_version": 1,
+          "identity": {
+            "task_id": "img2-w12",
+            "plan_id": "cos-desktop-img2-w12",
+            "plan_revision": 1
+          },
+          "goal": "Decode pixel-identical 4K grayscale JPEG and PNG in six fixed serial scenarios, verify exact ROI equality and pre-OnLoad refusal, and record bounded whole-process observations with an independent repeat.",
+          "inputs": [
+            {
+              "id": "directive",
+              "description": "Verbatim W12 directive at docs/development/evidence-published/w12-latest/tern-directive.txt; start head 8cc44ad9a2bb1d6da260cc42c900e2287f5eed07 is the pushed W11 disposition.",
+              "context_ids": []
+            },
+            {
+              "id": "canon",
+              "description": "DC-MP-IMG2 plus existing W2 worker, W4 ROI, W6 sampler, W7 PNG/4K verification, W8-W11 JPEG fixtures/verifiers and ADR-0009/0013.",
+              "context_ids": []
+            }
+          ],
+          "constraints": [
+            {
+              "id": "scope",
+              "level": "MUST",
+              "text": "Only new w12_* tooling, tests, plan/BUILD_AND_RUN/TESTING and w12-latest evidence. No W2/W4/W6/W7/W8-W11 edits, WIC probe semantics, crates/media, Runtime/GPU/UI, dependencies, unsafe/FFI/COM or product policy."
+            },
+            {
+              "id": "raster",
+              "level": "MUST",
+              "text": "Reuse the existing W11 4K grayscale JPEG byte-for-byte. New PNG is streamed 8-bit grayscale with the identical DC/block pattern, bounded zlib, exclusive create, never a re-encoding of decoder output. Independent parsers validate JPEG and PNG and prove every input pixel equals the fixed coordinate oracle; failure to prove equality is HOLD."
+            },
+            {
+              "id": "budget",
+              "level": "MUST",
+              "text": "Limits 4096 dimension, 16777216 pixels, 8 depth, 67108864 decoded/scratch; 16MiB encoded input per fixture, 262144 ROI bytes, 1MiB output, 128MiB work, 8MiB report; six workers per repeat, one at a time, 45s worker/300s batch, 64KiB capture, 128KiB/128-record trace, 768MiB observed private. Keep the W11 owned pending-to-final rename allowance only; forbid other missing/reparse/unknown outputs."
+            },
+            {
+              "id": "memory",
+              "level": "MUST",
+              "text": "Reuse the W6 sampler at the same after_onload boundary for S01-S04. Each worker is a separate process lifetime; classify OBSERVED_WHOLE_PROCESS_DIFFERENTIAL and never claim WIC-internal scratch, reservations, concurrent peak, same-process delta, codec advantage or product SLO."
+            },
+            {
+              "id": "workflow",
+              "level": "MUST",
+              "text": "Taskern packet; pinned Native source and two fresh repeats; eight finite Gates each within the 600s producer ceiling on one candidate digest; failed Gates retained; successful-only disposal with before/after native verify; commit, explicit dev:dev push and exact remote SHA before Tern; PASS0/0/0 then docs-only bounded disposition."
+            }
+          ],
+          "outputs": [
+            {
+              "id": "tooling",
+              "description": "W12 PNG fixture, matched-raster oracle, six-case matrix, strict verifier, hermetic and semantic negative tests.",
+              "media_type": "text/plain"
+            },
+            {
+              "id": "native",
+              "description": "Two fresh six-case/twelve-lifetime real Windows records with JPEG/PNG ROI bytes, admission stages, decoder/format observations and whole-process windows.",
+              "media_type": "application/json"
+            },
+            {
+              "id": "closure",
+              "description": "Quality/regressions, eight committed-candidate Gates, artifact correspondence, successful-only disposal integrity, pushed Tern review and limited disposition.",
+              "media_type": "application/json"
+            }
+          ],
+          "acceptance": [
+            {
+              "id": "a1",
+              "statement": "A01/A02: both fixture structures, encoded bytes, digests, dimensions and depth are independently verified, and every JPEG and PNG input pixel equals the fixed DC/block-coordinate oracle; producer hashes alone never approve a fixture.",
+              "output_ids": [
+                "tooling"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a2",
+              "statement": "A03/A04/A05: all four normal ROI outputs reconstruct independently to RGBA; the JPEG/PNG pairs at 1x1 and 256x256 match exactly; both 4K inputs pass full-frame admission and reach OnLoad ROI output.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a3",
+              "statement": "A06/A07/A08: S05 and S06 refuse before OnLoad on the 4095 dimension bound and publish no valid output; all twelve worker lifetimes keep consistent identity, trace and reaping.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a4",
+              "statement": "A09/A10/A11: memory comparisons use the same after_onload boundary, remain OBSERVED_WHOLE_PROCESS_DIFFERENTIAL, are never promoted to WIC-internal or product memory facts, and two fresh repeats agree on deterministic fixtures/outputs/classification.",
+              "output_ids": [
+                "native",
+                "tooling"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a5",
+              "statement": "A12/A14/A15: strict W1-W11 regression is preserved, tampering, stale paths, missing evidence and inconsistent repeats fail closed, and portable replay is distinct from Git source closure.",
+              "output_ids": [
+                "tooling",
+                "closure"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a6",
+              "statement": "A13 plus Gate exit: source identity matches real Git blobs and the Gate candidate, eight fresh Gates share one candidate digest, and commit, explicit dev push, exact remote-SHA confirmation precede the bounded Tern verdict.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            }
+          ],
+          "evaluation": [
+            {
+              "id": "behavior",
+              "kind": "automated",
+              "requirement": "Hermetic/negative tests plus two real Windows matrices; independent JPEG/PNG parsing, all-pixel oracle, ROI equality, admission stages and whole-process windows."
+            },
+            {
+              "id": "workflow",
+              "kind": "automated",
+              "requirement": "Installed Taskern prepare, unchanged quality/W1-W11 regression, eight finite Gates within producer limits, integrity-bounded disposal, explicit push and remote SHA before a clean Tern verdict."
+            }
+          ],
+          "dependencies": [],
+          "completion": {
+            "required_acceptance_ids": [
+              "a1",
+              "a2",
+              "a3",
+              "a4",
+              "a5",
+              "a6"
+            ],
+            "decision_owner": "caller"
+          },
+          "context": []
+        }
+      ]
+    },
+    "packet": {
+      "schema_version": 1,
+      "packet": {
+        "schema_version": 1,
+        "identity": {
+          "task_id": "img2-w12",
+          "plan_id": "cos-desktop-img2-w12",
+          "plan_revision": 1
+        },
+        "goal": "Decode pixel-identical 4K grayscale JPEG and PNG in six fixed serial scenarios, verify exact ROI equality and pre-OnLoad refusal, and record bounded whole-process observations with an independent repeat.",
+        "inputs": [
+          {
+            "id": "directive",
+            "description": "Verbatim W12 directive at docs/development/evidence-published/w12-latest/tern-directive.txt; start head 8cc44ad9a2bb1d6da260cc42c900e2287f5eed07 is the pushed W11 disposition.",
+            "context_ids": []
+          },
+          {
+            "id": "canon",
+            "description": "DC-MP-IMG2 plus existing W2 worker, W4 ROI, W6 sampler, W7 PNG/4K verification, W8-W11 JPEG fixtures/verifiers and ADR-0009/0013.",
+            "context_ids": []
+          }
+        ],
+        "constraints": [
+          {
+            "id": "scope",
+            "level": "MUST",
+            "text": "Only new w12_* tooling, tests, plan/BUILD_AND_RUN/TESTING and w12-latest evidence. No W2/W4/W6/W7/W8-W11 edits, WIC probe semantics, crates/media, Runtime/GPU/UI, dependencies, unsafe/FFI/COM or product policy."
+          },
+          {
+            "id": "raster",
+            "level": "MUST",
+            "text": "Reuse the existing W11 4K grayscale JPEG byte-for-byte. New PNG is streamed 8-bit grayscale with the identical DC/block pattern, bounded zlib, exclusive create, never a re-encoding of decoder output. Independent parsers validate JPEG and PNG and prove every input pixel equals the fixed coordinate oracle; failure to prove equality is HOLD."
+          },
+          {
+            "id": "budget",
+            "level": "MUST",
+            "text": "Limits 4096 dimension, 16777216 pixels, 8 depth, 67108864 decoded/scratch; 16MiB encoded input per fixture, 262144 ROI bytes, 1MiB output, 128MiB work, 8MiB report; six workers per repeat, one at a time, 45s worker/300s batch, 64KiB capture, 128KiB/128-record trace, 768MiB observed private. Keep the W11 owned pending-to-final rename allowance only; forbid other missing/reparse/unknown outputs."
+          },
+          {
+            "id": "memory",
+            "level": "MUST",
+            "text": "Reuse the W6 sampler at the same after_onload boundary for S01-S04. Each worker is a separate process lifetime; classify OBSERVED_WHOLE_PROCESS_DIFFERENTIAL and never claim WIC-internal scratch, reservations, concurrent peak, same-process delta, codec advantage or product SLO."
+          },
+          {
+            "id": "workflow",
+            "level": "MUST",
+            "text": "Taskern packet; pinned Native source and two fresh repeats; eight finite Gates each within the 600s producer ceiling on one candidate digest; failed Gates retained; successful-only disposal with before/after native verify; commit, explicit dev:dev push and exact remote SHA before Tern; PASS0/0/0 then docs-only bounded disposition."
+          }
+        ],
+        "outputs": [
+          {
+            "id": "tooling",
+            "description": "W12 PNG fixture, matched-raster oracle, six-case matrix, strict verifier, hermetic and semantic negative tests.",
+            "media_type": "text/plain"
+          },
+          {
+            "id": "native",
+            "description": "Two fresh six-case/twelve-lifetime real Windows records with JPEG/PNG ROI bytes, admission stages, decoder/format observations and whole-process windows.",
+            "media_type": "application/json"
+          },
+          {
+            "id": "closure",
+            "description": "Quality/regressions, eight committed-candidate Gates, artifact correspondence, successful-only disposal integrity, pushed Tern review and limited disposition.",
+            "media_type": "application/json"
+          }
+        ],
+        "acceptance": [
+          {
+            "id": "a1",
+            "statement": "A01/A02: both fixture structures, encoded bytes, digests, dimensions and depth are independently verified, and every JPEG and PNG input pixel equals the fixed DC/block-coordinate oracle; producer hashes alone never approve a fixture.",
+            "output_ids": [
+              "tooling"
+            ],
+            "evaluation_ids": [
+              "behavior"
+            ]
+          },
+          {
+            "id": "a2",
+            "statement": "A03/A04/A05: all four normal ROI outputs reconstruct independently to RGBA; the JPEG/PNG pairs at 1x1 and 256x256 match exactly; both 4K inputs pass full-frame admission and reach OnLoad ROI output.",
+            "output_ids": [
+              "native"
+            ],
+            "evaluation_ids": [
+              "behavior"
+            ]
+          },
+          {
+            "id": "a3",
+            "statement": "A06/A07/A08: S05 and S06 refuse before OnLoad on the 4095 dimension bound and publish no valid output; all twelve worker lifetimes keep consistent identity, trace and reaping.",
+            "output_ids": [
+              "native"
+            ],
+            "evaluation_ids": [
+              "behavior"
+            ]
+          },
+          {
+            "id": "a4",
+            "statement": "A09/A10/A11: memory comparisons use the same after_onload boundary, remain OBSERVED_WHOLE_PROCESS_DIFFERENTIAL, are never promoted to WIC-internal or product memory facts, and two fresh repeats agree on deterministic fixtures/outputs/classification.",
+            "output_ids": [
+              "native",
+              "tooling"
+            ],
+            "evaluation_ids": [
+              "behavior"
+            ]
+          },
+          {
+            "id": "a5",
+            "statement": "A12/A14/A15: strict W1-W11 regression is preserved, tampering, stale paths, missing evidence and inconsistent repeats fail closed, and portable replay is distinct from Git source closure.",
+            "output_ids": [
+              "tooling",
+              "closure"
+            ],
+            "evaluation_ids": [
+              "behavior"
+            ]
+          },
+          {
+            "id": "a6",
+            "statement": "A13 plus Gate exit: source identity matches real Git blobs and the Gate candidate, eight fresh Gates share one candidate digest, and commit, explicit dev push, exact remote-SHA confirmation precede the bounded Tern verdict.",
+            "output_ids": [
+              "closure"
+            ],
+            "evaluation_ids": [
+              "workflow"
+            ]
+          }
+        ],
+        "evaluation": [
+          {
+            "id": "behavior",
+            "kind": "automated",
+            "requirement": "Hermetic/negative tests plus two real Windows matrices; independent JPEG/PNG parsing, all-pixel oracle, ROI equality, admission stages and whole-process windows."
+          },
+          {
+            "id": "workflow",
+            "kind": "automated",
+            "requirement": "Installed Taskern prepare, unchanged quality/W1-W11 regression, eight finite Gates within producer limits, integrity-bounded disposal, explicit push and remote SHA before a clean Tern verdict."
+          }
+        ],
+        "dependencies": [],
+        "completion": {
+          "required_acceptance_ids": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5",
+            "a6"
+          ],
+          "decision_owner": "caller"
+        },
+        "context": []
+      },
+      "packet_sha256": "sha256:8d10df06d46c38a3041ae9be4ce430fea346f0442f22eca3b094b324c749d142",
+      "context": [],
+      "input_upper_bound_tokens": 5710
+    }
+  }
+}

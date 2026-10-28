@@ -1,0 +1,822 @@
+# COS Desktop — 次タスク決定・実装指示
+# MP-IMG2-W12 — Matched-Raster JPEG/PNG WIC Decode & Memory Differential
+#
+# Repository: dio16/cos-desktop
+# Branch: dev
+# Sole owning contract: DC-MP-IMG2
+#
+# 本指示は既存の継続MP実装・評価権限の範囲内で実行する。
+# 新しい設計・製品policy・環境・GUI操作権限は付与しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 次タスク決定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+次タスクは MP-IMG2-W12 とする。
+
+単一目的：
+同一の4K・8-bit grayscale画素を持つJPEGとPNGを、
+既存Windows WIC OnLoad経路でそれぞれ実decodeし、
+ROI出力・全フレームadmission・process-memory観測を
+同条件で比較する。
+
+W11では4K JPEGのROI検証と16K JPEGの予算拒否を確認した。
+W12では入力寸法・期待画素・ROI・観測境界を揃え、
+codec/containerが異なる場合の実際のWIC観測差を記録する。
+
+実験の目的はcodec別の観測事実の取得である。
+decoder採用、性能優劣の決定、メモリSLO批准ではない。
+
+【選定根拠】
+
+既存実装には以下が存在する。
+
+- W2：有界single-boundary workerと停止・回収処理
+- W4：OnLoad後のROI出力
+- W6：process-memory sampler
+- W7：4K PNGの実decodeと予算検査
+- W11：4K grayscale JPEG、DC/block-coordinate oracle
+- W11：実Windows JPEG ROI・process-counter観測
+
+WICの新API、COM、unsafe、外部decoderを追加せず実行できる。
+
+一方、現行のWIC probeはOnLoadで全フレームをmaterializeする。
+true partial decodeを検証する実経路は存在しない。
+
+したがって、W12でtrue partial decodeの成功や
+WIC内部scratchの測定を要求しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. 開始時の固定前提
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Repository:
+dio16/cos-desktop
+
+Branch:
+dev
+
+W11 disposition HEAD:
+8cc44ad9a2bb1d6da260cc42c900e2287f5eed07
+
+W11 product/Gate candidate:
+d182ee9eeb2d587eb69c28188dc66675c4a9b7dc
+
+W11 reviewed evidence:
+0937aaa336856e1f9048f07c424ae29de7b2fc6f
+
+W11 Native SOURCE:
+a99620d6e1b4101d0cdb009293d8cb4c783b2c05
+
+W11 status:
+LIMITED TECHNICAL COMPLETION
+PASS 0/0/0
+REVIEW COMPLETE
+
+開始前に以下を検証する。
+
+1. local dev HEADと期待SHA
+2. remote dev HEAD
+3. tree clean
+4. W11 dispositionと固定source/evidence pins
+5. DC-MP-IMG2の現行内容
+6. WIC probe・worker・samplerの実際の呼出仕様
+7. Refine 0.3.1と既存Gate check定義
+
+不一致があれば停止して報告する。
+未確認の前提を補完して実装しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. 許可する変更範囲
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+変更可能：
+
+- apps/desktop/devtools/img2/w12_* の新規ファイル
+- apps/desktop/devtools/img2/tests/test_w12_* の新規テスト
+- W12専用fixture generator
+- W12専用matrix runner
+- W12専用独立oracle/verifier
+- docs/development/IMPLEMENTATION_MASTER_PLAN.md
+- docs/development/BUILD_AND_RUN.md
+- docs/development/TESTING.md
+- docs/development/evidence-published/w12-latest/
+
+既存W2/W4/W6/W7/W8～W11の実装・検証器は
+原則として読み取り・再利用のみとする。
+
+既存probeの変更を前提にしない。
+必要になった場合は、変更の理由と影響範囲を評価し、
+本タスク内で既存の意味を変更せず実現できなければHOLDする。
+
+変更禁止：
+
+- crates/mediaの製品decode挙動
+- Runtime・GPU・GPUI・UI
+- 新規dependency / Cargo.lock変更
+- unsafe / FFI / COM decoder実装
+- WIC/GDI+の製品採用
+- ICC/EXIF policy
+- numerical product SLO
+- 既存DC/ADRの再定義
+- 過去sliceのstrict verifier緩和
+- 過去Gate・Native証拠の改変
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. 入力fixture
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+対象寸法：
+4096 × 4096 pixels
+
+Source depth：
+8-bit grayscale
+
+Fixture J：
+W11の既存jpeg_gray_4kを再生成する。
+
+Fixture P：
+Fixture Jの宣言されたDC-only画素パターンと
+全画素が一致するlossless grayscale PNGを
+W12で新規生成する。
+
+JPEGは既存W11 fixture bytes・SHA-256と一致すること。
+
+PNG生成要件：
+
+- streaming row construction
+- 8-bit grayscale PNG
+- bounded zlib compression
+- 正しいPNG signature / IHDR / IDAT / IEND
+- CRC・chunk lengthの検証
+- 全フレームRGBAの一括生成禁止
+- 既存fixtureの上書き禁止
+- exclusive create
+- encoded byte sizeとSHA-256を保存
+
+PNGがJPEG decoderの出力を再符号化したものに
+なってはならない。
+
+独立oracleは以下を確認する。
+
+1. JPEG bitstreamのDC/EOB・padding・EOI
+2. PNG chunk/CRC/inflation
+3. 両方の宣言寸法・depth
+4. JPEGから導出した各座標の期待画素
+5. PNG全画素が同じ座標の期待画素と一致すること
+
+producerの自己申告hashだけではfixtureを承認しない。
+
+2入力の全画素同一性が成立しない場合はHOLDする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. 固定Windowsシナリオ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+既存のWIC probeとW2 Workerを使用する。
+
+全workerはserialで実行する。
+同時decodeは行わない。
+
+正常decodeは既存のafter_onload boundary holdで観測し、
+sampler完了後にreleaseする。
+
+ケース一覧：
+
+S01：
+JPEG 4096²
+ROI = (17,23,1,1)
+期待：decode成功・1×1 RGBA一致
+
+S02：
+PNG 4096²
+ROI = (17,23,1,1)
+期待：decode成功・S01とRGBA一致
+
+S03：
+JPEG 4096²
+ROI = (117,93,256,256)
+期待：decode成功・256² RGBA一致
+
+S04：
+PNG 4096²
+ROI = (117,93,256,256)
+期待：decode成功・S03とRGBA一致
+
+S05：
+JPEG 4096²
+max_dimension = 4095
+ROI = (17,23,1,1)
+期待：OnLoad前のadmission拒否
+
+S06：
+PNG 4096²
+max_dimension = 4095
+ROI = (17,23,1,1)
+期待：OnLoad前のadmission拒否
+
+S05/S06はbefore_admission holdを使用できる場合、
+sampler完了後にreleaseして拒否まで追跡する。
+
+全6ケースで実際のdecoder名・pixel format・admission
+およびstage traceを記録する。
+
+期待したsource formatをWICが報告しない場合は、
+名称から推定せず、実観測を残してHOLDする。
+
+【repeat】
+
+独立したfresh work rootで2回実行する。
+
+各回：
+6 cases / 6 serial worker lifetimes
+
+合計：
+12 worker executions
+
+2回の結果で以下が一致すること。
+
+- fixture identity
+- source geometry
+- admission classification
+- decoder/source-format observations
+- ROI geometry
+- PNG output bytesとRGBA pixels
+- 独立oracleの比較結果
+
+process-memoryの数値一致は要求しない。
+観測値の差はそのまま保持する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. 実験予算
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+固定上限：
+
+max_dimension = 4096
+max_pixels = 16,777,216
+max_bit_depth = 8
+max_decoded_bytes = 67,108,864
+max_scratch_bytes = 67,108,864
+
+max_encoded_input_bytes = 16 MiB / fixture
+max_roi_output_bytes = 262,144
+max_output_file_bytes = 1 MiB
+max_work_root_bytes = 128 MiB
+max_report_bytes = 8 MiB
+
+max_workers = 1
+max_worker_runs = 6 / repeat
+max_worker_seconds = 45
+max_total_seconds = 300 / repeat
+
+max_capture_bytes = 64 KiB / worker
+max_trace_bytes = 128 KiB / worker
+max_trace_records = 128 / worker
+
+max_observed_private_bytes = 768 MiB
+
+上記はW12実験上限であり製品SLOではない。
+
+既存WIC probeのadmission arithmeticを変更しない。
+
+ROIが小さくても、全フレームのdecoded/conversion chargeを
+削減してはならない。
+
+work root、report、各workerの出力はfresh/exclusiveに作成する。
+
+実行中に以下を監視する。
+
+- work root使用量
+- output/pending file size
+- stdout/stderr
+- trace
+- worker lifetime
+- total deadline
+- process identity
+- child exit/reaping
+
+W11で修正したpublication-versus-monitor raceの安全条件を維持する。
+
+許されたowned pending→final renameだけを限定的に扱い、
+missing foreign file・reparse path・不明な出力を許容しない。
+
+monitoringの失敗を正常decodeとして処理しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. Process-memory比較の意味
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+正常ケースS01～S04で
+既存W6 samplerを使用する。
+
+採取するもの：
+
+- worker PID
+- process start identity
+- executable identity
+- source fixture SHA-256
+- stage identity
+- working_set_bytes
+- private_bytes
+- observer clock
+- sampling window
+- capture completeness
+- process lifetime
+
+比較するもの：
+
+A. JPEG vs PNG、同じ1×1 ROI
+B. JPEG vs PNG、同じ256×256 ROI
+C. 同codecでのROIサイズ差
+D. repeat間の観測範囲
+
+結果は各processの観測値を維持する。
+
+比較結果に付ける分類：
+
+OBSERVED_WHOLE_PROCESS_DIFFERENTIAL
+
+禁止する解釈：
+
+- WIC-only allocation delta
+- decoder internal scratch
+- allocator reservations
+- true concurrent allocation peak
+- same-process before/after allocation delta
+- causal codec memory advantage
+- product memory SLO
+
+各workerは独立process lifetimeである。
+異なるworkerのprocess counter差分を
+同一process内のallocation変化と呼ばない。
+
+観測が欠けた場合は推定値を補わず、
+該当runを不完全としてHOLDする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. 独立受入基準
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+A01：
+2 fixtureの構造・encoded bytes・digestが独立検証できる。
+
+A02：
+PNGとJPEGの全入力画素が固定DC/block-coordinate
+期待値に一致する。
+
+A03：
+4つの正常ROIの全出力PNGを独立にRGBA復元できる。
+
+A04：
+S01/S02、S03/S04のRGBAが完全一致する。
+
+A05：
+JPEG・PNGとも4K full-frame budgetを通過し、
+OnLoadを経てROI出力へ到達する。
+
+A06：
+S05/S06は全フレームdimension上限により
+OnLoad前に拒否される。
+
+A07：
+拒否されたworkerにvalid final outputがない。
+
+A08：
+6 worker全件でprocess identity、trace、
+exit/reapingが整合する。
+
+A09：
+process-memory観測が同じafter_onload
+観測境界で比較される。
+
+A10：
+2回のNative repeatでfixture/output/classificationが一致する。
+
+A11：
+比較値をWIC内部scratchや製品SLOへ昇格させない。
+
+A12：
+W1～W11のstrict regressionを維持する。
+
+A13：
+source identityと実Git blob・Gate候補が一致する。
+
+A14：
+失敗、stale path、missing evidence、report tamperingを
+fail-closedとして扱う。
+
+A15：
+portable replayとGit/source-bound closureを区別する。
+
+【negative tests】
+
+最低限、以下を改変して拒否を確認する。
+
+- JPEG entropy/DC
+- PNG chunk/CRC/inflation
+- fixture dimensions
+- fixture digest
+- source SHA
+- ROI coordinates
+- output PNG bytes
+- RGBA identity
+- decoder identity
+- process identity
+- stage ordering
+- sampling completeness
+- memory observation classification
+- admission result
+- cleanup/reaping
+- missing case
+- duplicate case
+- stale output
+- inconsistent repeat
+
+producerとverifierの同一処理による
+自己整合だけでPASSしてはならない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. Taskern → CodingAgent
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+最初にTaskern 0.2.0でW12を単一task packetへcompileする。
+
+Input：
+本指示とDC-MP-IMG2
+
+Taskernの役割：
+計画・scope固定・handoff
+
+CodingAgentの役割：
+実装・テスト・Native実行・証拠生成
+
+YAGNIを優先する。
+
+既存W11 JPEG fixture・oracle、
+W2 Worker、W6 sampler、W7 PNG検証を再利用する。
+
+大規模なframework化はしない。
+新しいdecoder abstractionやproduct codeは作らない。
+
+追加依存、unsafe、native/COM実装が必要なら、
+権限を推定せずHOLDする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. Refine 0.3.1 Independent Gates
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Native実験とhermetic testsを完了したら、
+製品/Gate candidate SHAを固定する。
+
+全Gateは同一のfull committed candidateを対象とする。
+
+Refine operator timeout_ms：
+1..600000のみ
+
+600000を超える値は禁止。
+
+W8+W9の既存合同実測約565秒には余裕が少ない。
+今回は2つの既存checkを変更せず別Gateに分離する。
+
+固定構成：8 Gates
+
+G1：
+Workspace quality / existing workspace regression
+
+G2：
+W1～W7 image regression
+
+G3：
+W8 JPEG regression
+
+G4：
+W9 progressive JPEG regression
+
+G5：
+W10 metadata JPEG regression
+
+G6：
+W11 4K/16K JPEG regression
+
+G7：
+W12 hermetic/negative/Native verification
+
+G8：
+Fresh build
+
+G3/G4は旧W8+W9合同Gateの各checkを
+そのまま独立Gateとして実行する。
+
+checkの内容、引数、期待値を緩和しない。
+
+既存checkが独立実行できない場合はHOLDする。
+一部を省略して合同Gate成功と見なしてはならない。
+
+各Gate：
+- operator timeout_ms <=600000
+- 実際のcheck実行時間が上限内
+- full committed candidate
+- identical candidate digest
+- inspect/verify完了
+- artifact/source correspondence
+- independent receipt保持
+
+Gate definition自体を変更する場合は
+既存の契約と承認があるか確認し、
+新規批准が必要ならHOLDする。
+
+FAILED / EXECUTOR_ERROR / timeout / cleanup incomplete
+を成功として扱わない。
+
+失敗Gateの記録とworkspaceは保持する。
+
+置換が必要な場合は、
+原因と修正内容を確定し、
+明示的で有限の新規Gateとして実行する。
+
+自動無制限retryは禁止。
+
+Preflight aggregateは確認できなければUNKNOWNを維持する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. Source / Native / Evidence pins
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+必ず次のSHAを別々に記録する。
+
+- start HEAD
+- Native SOURCE
+- product/Gate candidate
+- documentation/evidence HEAD
+- review submission remote HEAD
+
+記録するdigest：
+
+- fixture JPEG
+- fixture PNG
+- source files
+- probe executable
+- each Native report
+- output PNG/RGBA
+- each Gate candidate
+- check output/artifact
+- retained build executable
+
+Native SOURCEとGate candidateの関係を明示する。
+
+docs-only証拠追加後にsource/Gate candidateを
+別SHAへ書き換えてはならない。
+
+full Git object databaseなしのportable replayでは
+repository-bound source closureを宣言しない。
+
+Git実体・RAW blob・Refine full candidateの
+対応確認を独立して保持する。
+
+証拠保存先：
+docs/development/evidence-published/w12-latest/
+
+最低限の証拠：
+
+- fixture-manifest
+- source-manifest
+- native-matrix
+- native-repeat-matrix
+- independent-oracle-results
+- process-memory-observations
+- repeat-comparison
+- negative-tests
+- source-evidence-reconciliation
+- Gate receipts
+- artifact correspondence
+- failed/interrupted Gate history（該当時）
+- execution manifest
+- retention/storage record
+- unmeasured record
+- review package
+
+ADR-0013に従い、証拠はrepositoryに保存する。
+
+一時ディレクトリにしか存在しない証拠は、
+承認判断の根拠にしない。
+
+巨大なRAW全ログ・binary・toolchainの複製を禁止する。
+レビュー用source/evidence archiveは
+必要最小限の正確なRAW Git blob subsetとする。
+
+2つ目のfull checkout/toolchain archiveを要求しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. Workspace / Target retention
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+削除可能なのは以下のみ。
+
+- SUCCEEDED Gateのworkspace
+- 所有権が明示されたtarget
+- Callerの既存削除許可範囲
+- 必要な成果物・検証記録が保持済み
+- 削除前後のnative verifyが一致
+
+削除前後で以下を比較する。
+
+- immutable authority digest
+- request/terminal receipt
+- artifact digest
+- check log digest
+- verify result
+
+削除禁止：
+
+- FAILED Gate workspace
+- cleanup-incomplete workspace
+- ownership不明のdirectory
+- private backup
+- 未検証のsource/evidence
+- retained executableの唯一の必要コピー
+
+保存したファイル数・論理byte数と
+削除対象一覧を証拠に残す。
+
+これはRefine disposal機能の実装・変更ではない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. PUSH BEFORE EVERY TERN EVALUATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+この順序は必須。
+例外・未push source添付による代替は認めない。
+
+実行順序：
+
+1. W12 source実装・テスト完了
+2. Native SOURCE SHA固定
+3. Windows Native record/repeat取得・検証
+4. product/Gate candidateをcommitして固定
+5. 新規有限Refine Gatesをすべて実行
+6. Gate証拠をdocs-only commit
+7. source/evidenceのmanifestを整合
+8. normal explicit dev:dev push
+9. git ls-remote origin refs/heads/dev を実行
+10. remote SHAが提出HEADと完全一致することを確認
+11. その後に初めてTern独立評価を依頼
+
+pushは明示的なdev:dev fast-forwardのみ。
+
+禁止：
+- main
+- release
+- private backup refs
+- mirror push
+- force push
+- 意図しないrefの更新
+
+remote不一致・push失敗・source欠落時はHOLDする。
+
+Ternの各再評価ラウンドでも、
+修正commit・必要な新Gate・証拠commit・push・
+remote SHA確認を再実施する。
+
+前ラウンドでpushしたという理由で省略しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. Tern independent review loop
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+レビュー対象：
+
+- fixed source/Gate candidate
+- Native SOURCE
+- evidence commit
+- confirmed remote dev HEAD
+- exact RAW source archive
+- exact evidence archive
+- external manifest
+- full Gate receipts
+- Native recordとrepeat
+- test/mutation結果
+- process-memory観測
+- cleanup/storage結果
+- unmeasured境界
+
+Ternには実ソース・実証拠の独立評価を要求する。
+
+判定：
+BLOCKING
+ACTIONABLE NON-BLOCKING
+EXCESSIVE
+
+結果：
+PASS 0/0/0
+または
+HOLD with counts
+
+HOLDの場合は指摘のみを修正し、
+必要な検証・新Gate・pushを経て再評価する。
+
+未測定事項を推測でPASSに変更しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. 停止条件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+直ちにHOLDする条件：
+
+- 既存DCにない新設計が必要
+- 新規dependency/unsafe/FFIが必要
+- WIC probeの既存意味を変更する必要
+- 同一画素fixtureの独立証明に失敗
+- 既存上限内でPNGを生成できない
+- 完全なWindows Native repeatを取得できない
+- source-bound検証が成立しない
+- 実際のprocess samplingが不完全
+- 期限・byte・process budgetを超過
+- worker cleanup/reap不明
+- Refine checkを省略しないとGateが成立しない
+- installed Refineに必要なGate分割を表現できない
+- failed Gateの履歴が失われた
+- evidenceとsource candidateが不一致
+- push/remote SHA確認に失敗
+- 新しい人間の環境/GUI操作承認が必要
+
+HOLDでは、必要な前提を具体的に報告する。
+権限を合成して実行しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. 未承認事項
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W12成功でも以下は未承認・未完了とする。
+
+- full MP-IMG2 Decode Exit
+- MP-IMG3開始
+- product decoder adoption/tolerance
+- ICC/EXIF product policy
+- 16K full decode
+- true partial/region/sequential/tiled decode
+- WIC internal scratch
+- allocator reservations
+- true concurrent allocation peak
+- cooperative decoder cancellation
+- product memory SLO
+- causal codec memory advantage
+- Runtime mutation
+- measured R0
+- UX/video acceptance
+- main merge/release
+
+Application-window GUI startup：
+NOT_RUN
+
+既存live computer.control.acquire：
+active=false / reason=unanswered
+
+保持済みGate-built executable：
+32,275,456 bytes
+sha256:94b2e412caeefee2e928f3e2c9c232426fed3a882503a6c81099b7eb425c9da4
+
+この実行ファイルが存在することは
+GUI起動の人間承認ではない。
+
+今回のdecoder subprocess成功を
+application startup成功へ読み替えない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. 完了処理
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TernがPASS 0/0/0 / REVIEW COMPLETEを返した場合、
+W12についてのみ次の限定的な完了記録を作成する。
+
+MP-IMG2-W12
+LIMITED TECHNICAL COMPLETION
+
+認められる内容：
+
+- matched-raster 4K JPEG/PNG WIC decode
+- exact ROI output differential
+- full-frame admission/refusal boundary
+- bounded whole-process memory observations
+- independent repeat and source/Gate evidence
+
+認められない内容：
+
+- WIC内部メモリ特性の証明
+- decoder採用判断
+- full MP-IMG2の完了
+- MP-IMG3開始
+- GUI startupの免除
+
+Tern応答原文、verdict counts、
+source/Gate/evidence SHA、
+明示した未測定・未承認事項を
+docs-only dispositionへ記録する。
+
+その記録を通常のdev:dev pushで保存し、
+remote SHA一致を確認して停止する。
+
+次タスクを自動開始せず、
+次の単一MPタスクの指示をこの会話に依頼する。
+
+以上を既存の連続実装・独立評価ループで実行する。
