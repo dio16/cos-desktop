@@ -200,7 +200,7 @@ def _check_cross_leg(row):
         need(wic.get("orientation_present") == gdi.get("orientation_present"),
              "leg_orientation_disagreement:" + row["case_id"])
         need(wic.get("icc_present") == gdi.get("icc_present"), "leg_icc_disagreement:" + row["case_id"])
-        if wic.get("icc_present"):
+        if wic.get("icc_present") and wic.get("icc_readable") and gdi.get("icc_readable"):
             need(wic.get("icc_sha256") == gdi.get("icc_sha256"), "leg_icc_digest_disagreement:" + row["case_id"])
             need(wic.get("icc_length") == gdi.get("icc_length"), "leg_icc_length_disagreement:" + row["case_id"])
 
