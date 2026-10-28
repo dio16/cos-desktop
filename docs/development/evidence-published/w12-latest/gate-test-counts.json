@@ -1,0 +1,33 @@
+{
+  "gate": "940570a1-67e3-4bde-986e-a7d608f780b0",
+  "workspace_rust": {
+    "passed": 535,
+    "failed": 0,
+    "ignored": 1
+  },
+  "r0": {
+    "total": 352,
+    "executed": 316,
+    "passed": 316,
+    "skipped": 36,
+    "failures": 0,
+    "errors": 0
+  },
+  "image_regression": {
+    "suites": [
+      "img2-w1-w7",
+      "img2-w8",
+      "img2-w9",
+      "img2-w10",
+      "w11-fixed-tests"
+    ],
+    "all_pass": true
+  },
+  "w12": {
+    "tests": 21,
+    "passed": 21,
+    "negative_classes": 39
+  },
+  "feature_route": "NOT_RUN for W12; no Rust feature-code change and no older result transferred.",
+  "basis": "Counts come from the eight independent Gates on candidate 018b574 (digest 9311fb7a) plus the retained W12 suite run; skipped R0 cases are not promoted."
+}

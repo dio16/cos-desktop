@@ -1,0 +1,186 @@
+{
+  "gate_candidate": "018b574370ae5b11b8314820c0eac1174ae67982",
+  "candidate_digest": "sha256:9311fb7abe80289f0a6b92fe2270acd118ce073f23c911bb5f7057ec2abf7e5f",
+  "artifacts_per_gate": 53,
+  "captured_artifacts_verified": 424,
+  "raw_git_blob_matches": 53,
+  "artifact_sets_identical": true,
+  "gates": {
+    "workspace": {
+      "gate_id": "940570a1-67e3-4bde-986e-a7d608f780b0",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "fmt",
+          "pass",
+          1023
+        ],
+        [
+          "metadata",
+          "pass",
+          134
+        ],
+        [
+          "dependency-self-test",
+          "pass",
+          533
+        ],
+        [
+          "dependency-rules",
+          "pass",
+          218
+        ],
+        [
+          "clippy",
+          "pass",
+          103941
+        ],
+        [
+          "tests",
+          "pass",
+          120251
+        ],
+        [
+          "r0-python",
+          "pass",
+          13373
+        ]
+      ]
+    },
+    "images": {
+      "gate_id": "a8c7163b-7771-4175-958c-5f0d7d4f5b2d",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "img2-w1-w7",
+          "pass",
+          147517
+        ],
+        [
+          "w8-native-replay",
+          "pass",
+          28822
+        ],
+        [
+          "w7-native-replay",
+          "pass",
+          35417
+        ],
+        [
+          "w6-native-replay",
+          "pass",
+          10727
+        ],
+        [
+          "w5-native-replay",
+          "pass",
+          190
+        ],
+        [
+          "w4-native-replay",
+          "pass",
+          943
+        ],
+        [
+          "w3-retained-native-replay",
+          "pass",
+          958
+        ],
+        [
+          "w1-runner-selftest",
+          "pass",
+          149
+        ],
+        [
+          "w2-oracle",
+          "pass",
+          13226
+        ]
+      ]
+    },
+    "w8": {
+      "gate_id": "75aeb6ab-462f-48a8-86bf-5e66e5bf160a",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "img2-w8",
+          "pass",
+          278337
+        ]
+      ]
+    },
+    "w9": {
+      "gate_id": "354fdf3c-901f-48c3-bfe6-fed512037c1e",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "img2-w9",
+          "pass",
+          257925
+        ]
+      ]
+    },
+    "w10": {
+      "gate_id": "c4167364-9dfa-4c47-9efd-c7cab30c850d",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "img2-w10",
+          "pass",
+          71953
+        ]
+      ]
+    },
+    "w11": {
+      "gate_id": "9055c8ee-dfd3-4288-bc82-59c1bfd9a66f",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "w11-fixed-tests",
+          "pass",
+          25499
+        ],
+        [
+          "w11-source-verifier",
+          "pass",
+          24482
+        ]
+      ]
+    },
+    "w12": {
+      "gate_id": "2c43972f-b190-418a-a760-e379a7f97b2e",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "w12-fixed-tests",
+          "pass",
+          41839
+        ],
+        [
+          "w12-source-verifier",
+          "pass",
+          3310
+        ]
+      ]
+    },
+    "build": {
+      "gate_id": "12628a1a-a092-4d3f-a251-b543173f5322",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "build",
+          "pass",
+          123299
+        ],
+        [
+          "built-binary-digest",
+          "pass",
+          161
+        ]
+      ]
+    }
+  },
+  "failed_gates": {},
+  "native_preflight": "UNKNOWN aggregate; admission diagnostics pass; runtime/output/authorization unknown",
+  "notes": "Eight directed Gates ran as eight finite Gates on one committed candidate; G3/G4 reuse the unchanged W8 and W9 checks as independent Gates. No check was removed, relaxed or auto-retried."
+}
