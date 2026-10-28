@@ -111,6 +111,7 @@ def parse(data: bytes) -> dict:
     unknown = sorted(set(names) - ALLOWED_MARKERS)
     exif = icc = None
     exif_error = icc_error = None
+    icc_partial = None
     app1 = [row for row in rows if row["marker"] == "APP1"]
     app2 = [row for row in rows if row["marker"] == "APP2"]
     if len(app1) > 1:
@@ -123,11 +124,16 @@ def parse(data: bytes) -> dict:
         except (ValueError, KeyError, IndexError, struct.error) as exc:
             exif_error = type(exc).__name__ + ":" + str(exc)[:80]
     if app2:
+        body = app2[0]["body"]
+        if body[:12] == b"ICC_PROFILE\x00" and len(body) > 14:
+            icc_partial = {"bytes": len(body) - 14, "payload_sha256": sha(body[14:]),
+                           "declared_size": int.from_bytes(body[14:18], "big") if len(body) >= 18 else None}
         try:
-            icc = parse_icc(app2[0]["body"])
+            icc = parse_icc(body)
         except (ValueError, KeyError, IndexError, struct.error) as exc:
             icc_error = type(exc).__name__ + ":" + str(exc)[:80]
     structure = {"markers": names, "unknown_markers": unknown, "bytes": len(data),
-                 "exif": exif, "exif_error": exif_error, "icc": icc, "icc_error": icc_error}
+                 "exif": exif, "exif_error": exif_error, "icc": icc, "icc_error": icc_error,
+                 "icc_partial": icc_partial}
     structure["classification"] = classify(structure)
     return structure

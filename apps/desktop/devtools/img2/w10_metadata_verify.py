@@ -137,13 +137,7 @@ def _check_wic_metadata(name, result, case, fixture, structure):
          "wic_orientation_presence_mismatch")
     if orientation is not None:
         need(result.get("orientation_raw") == orientation, "wic_orientation_value_mismatch")
-    icc = structure.get("icc")
-    need(result.get("icc_present") is (icc is not None), "wic_icc_presence_mismatch")
-    if icc is not None:
-        need(result.get("icc_readable") is True, "wic_icc_unreadable")
-        need(result.get("icc_length") == icc["bytes"], "wic_icc_length_mismatch")
-        need(result.get("icc_sha256") == icc["sha256"], "wic_icc_digest_mismatch")
-        need(result.get("colour_contexts") == 1, "wic_colour_context_count_invalid")
+    _check_icc("wic", result, fixture, structure)
     if name == "wic_transform":
         request = {1: "explicit_identity", 3: "explicit_rotate_180",
                    6: "explicit_rotate_90", 8: "explicit_rotate_270"}.get(orientation)
@@ -165,12 +159,34 @@ def _check_gdiplus_metadata(name, result, case, fixture, structure):
          "gdiplus_orientation_presence_mismatch")
     if orientation is not None:
         need(result.get("orientation_raw") == orientation, "gdiplus_orientation_value_mismatch")
-    icc = structure.get("icc")
-    need(result.get("icc_present") is (icc is not None), "gdiplus_icc_presence_mismatch")
-    if icc is not None:
-        need(result.get("icc_readable") is True, "gdiplus_icc_unreadable")
-        need(result.get("icc_length") == icc["bytes"], "gdiplus_icc_length_mismatch")
-        need(result.get("icc_sha256") == icc["sha256"], "gdiplus_icc_digest_mismatch")
+    _check_icc("gdiplus", result, fixture, structure)
+
+
+def _check_icc(prefix, result, fixture, structure):
+    """A truncated profile may still be accepted by a decoder; validity is ours, not theirs."""
+    parsed = structure.get("icc")
+    partial = structure.get("icc_partial")
+    if not fixture["expected_icc"]:
+        need(result.get("icc_present") is False, prefix + "_icc_presence_mismatch")
+        return
+    if parsed is not None:
+        need(result.get("icc_present") is True, prefix + "_icc_presence_mismatch")
+        need(result.get("icc_readable") is True, prefix + "_icc_unreadable")
+        need(result.get("icc_length") == parsed["bytes"], prefix + "_icc_length_mismatch")
+        need(result.get("icc_sha256") == parsed["sha256"], prefix + "_icc_digest_mismatch")
+        if prefix == "wic":
+            need(result.get("colour_contexts") == 1, "wic_colour_context_count_invalid")
+        return
+    need(isinstance(partial, dict), "truncated_icc_without_partial_record")
+    need(structure["classification"] == "METADATA_TAMPERED", "truncated_icc_not_classified")
+    if result.get("icc_present"):
+        need(result.get("icc_length") == partial["bytes"], prefix + "_truncated_icc_length_mismatch")
+        need(result.get("icc_sha256") == partial["payload_sha256"],
+             prefix + "_truncated_icc_payload_mismatch")
+        need(fixture["expected_icc_sha256"] != result.get("icc_sha256"),
+             prefix + "_truncated_icc_promoted_to_full_profile")
+        if prefix == "wic":
+            need(result.get("colour_contexts") == 1, "wic_truncated_colour_context_invalid")
 
 
 def _check_cross_leg(row):
