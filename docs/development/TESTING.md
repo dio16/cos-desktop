@@ -211,7 +211,7 @@ W9 slice. Fixture tests prove the five-source set, byte-identical regeneration a
 the encoded-size bound; marker tests require SOF2, at least a DC and an AC scan,
 valid constraints, no trailing bytes and EOI, prove a high AC band is legal while
 a DC scan with `Se≠0` or `Ss>Se` is not, and prove both malformed streams fail the
-independent parser. The negative suite mutates the retained record in 43 classes —
+independent parser. The negative suite mutates the retained record in 51 classes —
 SOF2/scan/selector/spectral/approximation/order forgeries, truncated entropy,
 missing EOI, segment and digest changes, geometry/precision/sampling, encoded-as-
 decoded, admission, candidate/decoder/case identity, worker/probe/terminal
@@ -233,7 +233,7 @@ DC reference reproduces the declared luminance levels exactly, and the reference
 module contains no decoder, subprocess or image-library import. A synthetic PNG
 pair proves the canonical comparison reports exact, per-pixel, per-channel,
 maximum, mean and first-difference values. The negative suite mutates the
-retained record in 43 classes — geometry, precision, sampling, markers, digests,
+retained record in 51 classes — geometry, precision, sampling, markers, digests,
 decoder identity and probe identity, requirement understatement, encoded-as-
 decoded bytes, forged stages/outcomes/output, unpublished success, absolute
 digests, differential-to-absolute promotion, zeroed mismatch statistics,

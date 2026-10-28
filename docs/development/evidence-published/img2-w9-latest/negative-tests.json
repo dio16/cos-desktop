@@ -310,9 +310,51 @@
       "ok": false,
       "reason": "malformed_leg_identity_invalid",
       "error": "ValueError"
+    },
+    {
+      "number": 44,
+      "mutation": "malformed_input_bytes_missing",
+      "ok": false,
+      "reason": "malformed_input_bytes_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 45,
+      "mutation": "malformed_output_bytes_forged",
+      "ok": false,
+      "reason": "malformed_decoded_output_bytes_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 46,
+      "mutation": "malformed_publication_forged",
+      "ok": false,
+      "reason": "malformed_decoded_publication_missing",
+      "error": "ValueError"
+    },
+    {
+      "number": 47,
+      "mutation": "malformed_output_presence_forged",
+      "ok": false,
+      "reason": "malformed_decoded_publication_missing",
+      "error": "ValueError"
+    },
+    {
+      "number": 48,
+      "mutation": "malformed_declared_output_bytes_missing",
+      "ok": false,
+      "reason": "malformed_decoded_declared_output_bytes_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 49,
+      "mutation": "refused_publication_forged",
+      "ok": false,
+      "reason": "malformed_failure_publication_forged",
+      "error": "ValueError"
     }
   ],
   "required_classes": 40,
-  "shipped_classes": 43,
+  "shipped_classes": 49,
   "all_rejected": true
 }
