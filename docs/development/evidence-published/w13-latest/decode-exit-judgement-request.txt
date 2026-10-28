@@ -1,0 +1,21 @@
+W13 is stopped at its completion boundary. Your Round2 review returned PASS 0/0/0 / REVIEW COMPLETE with B-R1-01 and B-R1-02 both CLOSED, and the docs-only disposition recording your exact response is committed and pushed. Normal dev:dev push succeeded, and `git ls-remote origin refs/heads/dev` returned a03d755ea327f677b250b534af5e48e8bcb37d65 immediately before this message.
+
+Pins: Gate/source candidate 23a6dce30ed9a88136379fdbcc762789de20dfef (digest sha256:d9726be1…); reviewed evidence commit 069d66c352199a95fa2f622cf0ed673c6b10c500; Native SOURCE 9e8dab753b0379d02e053b61234cf6df610a42d4; nine Gates, 27 checks, 621 artifact captures on that candidate.
+
+Retain PUSH BEFORE EVERY TERN EVALUATION: commit source, run new finite Gates, docs-only Gate evidence commit, normal explicit dev:dev push, confirm exact remote SHA, only then request evaluation. No unpushed attachment fallback, no main/release/private refs/mirror/force.
+
+Constraints learned across W11–W13 that still bind:
+- Installed Refine rejects any operator timeout_ms above 600000. W8 alone takes ~280–300 s and W9 ~260–280 s, so they stay as separate single-check Gates; W13's own Gate now takes ~475 s of its 600 s budget, so any further suite must be sized before dispatch.
+- Gate-declared outputs are hashed into the candidate: decide every declared output before pinning, derive counts from real runs, and never patch a declared file afterwards — re-pin and re-run instead.
+- Native SOURCE_FILES includes test files, so a later test edit makes the record non-closable (`source_lf_mismatch`); plan a re-run, never rewrite the old SHA.
+- W13 now owns a strict PNG reader (zlib end marker, no unused/unconsumed data, exact bounded inflation). Reuse it rather than W7's row iterator for any future decoder-output verification.
+
+Your Round19/W13 directive said the next step is to judge, from the W1–W13 observed scope, whether the remaining Decode Exit requirements can be measured with existing machinery, and to stop inventing capability experiments mechanically. Please make that judgement now and give either:
+
+(a) a VERBATIM COPY-READY directive in one fenced code block for a single bounded next slice that adds real information without new design/dependency/unsafe/COM authority — specifying the sole owning DC contract, allowed change scope, inputs and identity method, invariants and hard bounds, independently testable acceptance, real Windows scenarios plus repeat, explicit HOLD triggers, a Gate composition that provably fits 600 s with its declared outputs fixed up front, source/evidence pins, successful-only disposal, and the push/remote-SHA requirement; or
+
+(b) an explicit statement that the remaining Decode Exit requirements cannot be closed with the current machinery, naming for each remaining requirement the exact missing prerequisite and who must decide it (Caller design decision, new dependency/licence decision, new measurement design, cooperative-cancellation design, GUI/human approval, Runtime work, or product acceptance) — in which case say HOLD and do not invent another slice.
+
+Known state you may rely on: 4K JPEG/PNG full-frame output fidelity, ROI differentials at 1×1 and 256², 16K pre-OnLoad admission refusal, max_dimension edge refusal, metadata orientation/ICC differentials, progressive JPEG differential, matched-raster decode equality and bounded whole-process observations are all measured. Still unmeasured by any slice: WIC internal scratch, allocator reservations, true concurrent allocation peak, cooperative in-decoder cancellation, product memory SLO, 16K full-decode memory, true partial/region/sequential/tiled decode, decoder ranking/tolerance, ICC/EXIF product policy. Application-window GUI startup is NOT_RUN because live control approval was unanswered; the retained Gate-built 32,275,456-byte executable (digest sha256:cf6f1705c733d515268fc3460725ae4a2c94d14f3a32993aab386f4aac7c6b9d) exists only for a later human-approved smoke.
+
+This request starts nothing and grants no new design, policy, environment or GUI authority. Separate what you authorize now from what still needs a Caller decision.

@@ -1,0 +1,91 @@
+{
+  "verdict": "HOLD \u2014 MP-IMG2 FULL DECODE EXIT",
+  "judgement_source": "\u6b21\u30bf\u30b9\u30af\u5224\u65ad\uff1a\u9078\u629e\u80a2 (b) \u2014 HOLD\n\nMP-IMG2-W14\u306f\u958b\u59cb\u3057\u307e\u305b\u3093\u3002\u73fe\u884c\u306e\u89b3\u6e2c\u624b\u6bb5\u3068\u8a8d\u53ef\u7bc4\u56f2\u3067\u306f\u3001MP-IMG2 Decode Exit\u3092\u5b8c\u4e86\u3067\u304d\u307e\u305b\u3093\u3002\n\nGitHub\u306e\u6700\u65b0dev\u304ca03d755ea327f677b250b534af5e48e8bcb37d65\u3067\u3042\u308b\u3053\u3068\u3092\u78ba\u8a8d\u3057\u3001DC-MP-IMG2\u3001\u5b9f\u88c5\u8a08\u753b\u00a77.10\u30fb\u00a719.65\u3001ADR-0009\u3092\u7167\u5408\u3057\u307e\u3057\u305f\u3002\n\nW1\u301cW",
+  "w1_w13": "existing LIMITED TECHNICAL COMPLETION states stand",
+  "w14": "not started",
+  "mp_img3": "not started (hard prerequisite unmet)",
+  "requirements": [
+    {
+      "requirement": "WIC internal scratch peak",
+      "missing": "process counters cannot isolate WIC-internal temporaries; no owned/lifetime/max measurement path",
+      "owner": "new measurement design; Caller approves method and instrumentation"
+    },
+    {
+      "requirement": "Allocator reservations",
+      "missing": "no allocator-level evidence separating reserve/commit/used",
+      "owner": "new measurement design; Windows/decoder measurement owner + Caller"
+    },
+    {
+      "requirement": "True concurrent allocation peak",
+      "missing": "serial workers and non-atomic sampling cannot prove a peak under concurrency",
+      "owner": "new measurement design; Caller approves parallel load, endpoints, tolerance or conservative bound"
+    },
+    {
+      "requirement": "Cooperative in-decoder cancellation",
+      "missing": "W2 stop is process termination/reap, not cancellation inside synchronous WIC work",
+      "owner": "new cancellation design; Caller decides whether in-decoder cancellation is required or process termination is the accepted limit"
+    },
+    {
+      "requirement": "True partial/region/sequential/tiled decode",
+      "missing": "W4 ROI is a post-OnLoad rectangle; a small output is not partial-decode evidence",
+      "owner": "Caller design decision on decoder API, capability proof and fallback; may need new COM/FFI/dependency authority"
+    },
+    {
+      "requirement": "16K full-decode memory",
+      "missing": "only pre-OnLoad refusal is proven; the 4K/64 MiB admission ceiling cannot measure it",
+      "owner": "Caller design + measurement decision (support 16K or bound to derivative/preview)"
+    },
+    {
+      "requirement": "Decoder ranking/tolerance",
+      "missing": "no codec-class-aligned peak scratch, cancellation capability and pixel tolerance",
+      "owner": "Caller product acceptance + measurement design"
+    },
+    {
+      "requirement": "FFmpeg 8.0 adoption",
+      "missing": "product dependency, licence, distribution and maintenance terms undecided",
+      "owner": "new dependency/licence decision; WIC-only is permissible"
+    },
+    {
+      "requirement": "ICC/EXIF product policy",
+      "missing": "W5/W10 cover observation and explicit transform only; auto-apply, colour space and invalid-profile handling undecided",
+      "owner": "Caller/Product owner policy decision"
+    },
+    {
+      "requirement": "Product memory SLO and cancellation latency",
+      "missing": "768 MiB is an experiment stop bound, not a product SLO; no\u5224\u5b9a endpoint under real load",
+      "owner": "R0 measurement (MP-R0A/B/C/D) + product acceptance"
+    },
+    {
+      "requirement": "Final admission table and fallback",
+      "missing": "decoder/version, dimensions, region capability, peak scratch, cancellation granularity and fallback cannot be fixed as one record",
+      "owner": "Caller decoder selection and product fallback decision after evidence"
+    },
+    {
+      "requirement": "Application-window GUI startup",
+      "missing": "live human control approval unanswered; the retained executable is not startup proof",
+      "owner": "human operator"
+    },
+    {
+      "requirement": "MP-IMG6 / Runtime production path",
+      "missing": "MP-RT6 authorization, authorized byte acquisition and real Runtime acceptance",
+      "owner": "Runtime owner + Caller; fixture decode cannot substitute"
+    },
+    {
+      "requirement": "MP-IMG3 Upload",
+      "missing": "hard prerequisite full MP-IMG2 unmet",
+      "owner": "separate Caller decision after Decode Exit"
+    },
+    {
+      "requirement": "Full R4 acceptance",
+      "missing": "Decode, Upload and Eviction gates all required",
+      "owner": "product acceptance"
+    }
+  ],
+  "next": "Caller must fix decode capability, measurement and product-acceptance decisions before any further slice is chosen",
+  "constraints_retained": [
+    "Refine operator ceiling 600 s",
+    "Native SOURCE_FILES re-pin after any test edit",
+    "Gate-declared outputs fixed before the candidate",
+    "PUSH BEFORE EVERY TERN EVALUATION"
+  ]
+}

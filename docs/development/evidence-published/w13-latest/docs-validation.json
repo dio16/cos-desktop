@@ -14,5 +14,6 @@
   "w13_doc_links_missing": [],
   "gate_receipts_linked": 9,
   "review_rounds_linked": 2,
-  "disposition_linked": true
+  "disposition_linked": true,
+  "decode_exit_hold_linked": true
 }

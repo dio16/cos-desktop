@@ -1,0 +1,241 @@
+次タスク判断：選択肢 (b) — HOLD
+
+MP-IMG2-W14は開始しません。現行の観測手段と認可範囲では、MP-IMG2 Decode Exitを完了できません。
+
+GitHubの最新devがa03d755ea327f677b250b534af5e48e8bcb37d65であることを確認し、DC-MP-IMG2、実装計画§7.10・§19.65、ADR-0009を照合しました。
+
+W1〜W13によって、既存WIC経路の有界なdecode、4K全画素の正確性、ROI出力、16Kの事前拒否、metadata差分、process-level memory観測は相当に検証されています。
+
+しかし、これらはdecoder選定・製品メモリ上限・decoder内部のキャンセル能力を証明するものではありません。
+
+DC-MP-IMG2は、codec・dimension class別にdecoderを選び、peak scratch、region/sequential/tiled capability、cancellation granularity、fallbackを記録する契約です。実装計画もper-case peak concurrent bytes、cancellation latency、format admission tableを要求しています。
+
+現行probeで既知の画像をさらにdecodeしても、これらの未測定項目を自動的に閉じることはできません。
+
+Decode Exit未完了要件と必要な判断
+
+以下はDC-MP-IMG2とRendering Architecture §6.1に基づく整理です。
+
+未完了要件
+
+	
+
+現行machineryで不足しているもの
+
+	
+
+必要な決定・責任者
+
+
+
+
+WIC内部scratch peak
+
+	
+
+W6のprocess counterはWIC内部の一時領域を分離できない。scratchの所有者・生存期間・最大量を特定する計測経路がない
+
+	
+
+新measurement design。Callerが計測方式と必要なinstrumentationを承認
+
+
+
+
+Allocator reservations
+
+	
+
+予約容量、commit、実使用量を区別するallocator-level証拠がない
+
+	
+
+新measurement design。Windows/decoder計測担当＋Caller
+
+
+
+
+True concurrent allocation peak
+
+	
+
+既存のserial workerや非atomic process samplingでは、同時decode中の全allocation peakを証明できない
+
+	
+
+新measurement design。Callerが並行負荷、計測endpoint、許容誤差または保守的上界の証明方法を承認
+
+
+
+
+Cooperative in-decoder cancellation
+
+	
+
+W2の停止はworker processのtermination/reapであり、同期WIC処理内部のcooperative cancellationではない
+
+	
+
+新cancellation design。Callerがdecoder内停止能力を要求するか、process terminationに限定した対応範囲を認めるか決定
+
+
+
+
+True partial / region / sequential / tiled decode
+
+	
+
+W4のROIはfull-frame OnLoad後の出力rectangle。小さな出力は部分decodeの証拠ではない
+
+	
+
+Caller design decision。使用するdecoder API、能力検証方法、非対応codecのfallbackを決定。必要に応じ新COM/FFI・dependency権限
+
+
+
+
+16K full-decode memory
+
+	
+
+16Kの事前拒否は証明済みだが、full decodeは未実行。現行4K/64MiB admission上限では測定できない
+
+	
+
+Caller design＋measurement decision。16Kを実際に支持するか、bounded derivative/previewに限定するかを先に決定
+
+
+
+
+Decoder ranking / tolerance
+
+	
+
+WIC/GDI+・FFmpegの限定的差分はあるが、codec class別のpeak scratch、キャンセル能力、出力許容差を揃えていない
+
+	
+
+Callerのproduct acceptance＋測定設計。候補比較基準、受入codec、画素許容差、選定ルールを確定
+
+
+
+
+FFmpeg 8.0の採用判断
+
+	
+
+外部harnessでの比較と製品依存関係の採用は別。製品ライセンス・配布・保守条件が未確定
+
+	
+
+新dependency/licence decision。Callerとライセンス・配布責任者。WICのみの限定構成を選ぶ場合はFFmpeg採用は必須ではない
+
+
+
+
+ICC/EXIF product policy
+
+	
+
+W5/W10はmetadataの観測と明示的なtransformの差分まで。自動適用、color space、無効profile時の扱いは未決定
+
+	
+
+Caller/Product ownerのpolicy decision。実装方式と色再現の受入基準は別途検証
+
+
+
+
+Product memory SLO・cancellation latency
+
+	
+
+768MiBなどは実験停止上限であり製品SLOではない。実負荷下の測定と判定可能なendpointが不足
+
+	
+
+R0 measurement＋product acceptance。MP-R0A/B/C/Dの必要な測定・批准を完了し、Callerが製品判定を確定
+
+
+
+
+Codec別の最終admission tableとfallback
+
+	
+
+decoder/version、対応dimension、region capability、peak scratch、cancellation granularity、preview/unavailableを一組として確定できない
+
+	
+
+Callerのdecoder selection・product fallback decision。不足する実測証拠が揃った後に表を確定
+
+重要なのは、すべてのcodecにtrue partial decodeや16K full decodeを実装しなければならないわけではないという点です。
+
+現行DCは、非対応の能力を明示して保守的に拒否し、承認されたbounded previewやunavailableへ移行する構成を許容しています。ただし、どのcodec・dimension classを製品として支持するか、その代替経路が要件を満たすかはCallerが決める必要があります。
+
+したがって、新しいAPIを選ばずに観測だけを増やしても、最終admission tableの確定にはつながりません。
+
+別途残る統合・実機承認
+
+項目
+
+	
+
+正確な停止条件
+
+
+
+
+Application-window GUI startup
+
+	
+
+Humanによるlive control承認が未回答。保持済みexeは起動成功の証拠ではない
+
+
+
+
+MP-IMG6 / Runtime production path
+
+	
+
+MP-RT6の認可、MP-IMG6のauthorized byte acquisitionと実際のRuntime受入が必要。fixture decodeでは代替できない
+
+
+
+
+MP-IMG3 Upload
+
+	
+
+実装計画のhard prerequisiteであるfull MP-IMG2が未完了。W13の限定PASSだけでは開始条件を満たさない
+
+
+
+
+Full R4 acceptance
+
+	
+
+Decode・Upload・Evictionの各Gateが必要。W13のfull-frame fidelityはDecodeの一部であり、R4全体の成功ではない
+
+今回認可される範囲
+
+今回の判断は評価と停止判断のみです。新しい実装、計測方式、dependency導入、Native操作、GUI起動、Gate実行、commit/pushは開始しません。
+
+ADR-0009による完成済みsliceの包括受入は引き続き有効ですが、未測定能力をPASSに変更したり、未決定の製品policyを批准したりする権限ではありません。
+
+次に必要なCaller判断
+
+優先すべきなのは、さらにW14を発案することではなく、Decode Exitを満たす製品decode構成を決定することです。
+
+具体的には、対応codec・最大dimension、16Kの取扱い、full-frameのみのcodecに対するpreview/unavailable fallback、必要なpartial decode能力、キャンセル方式、decoder間の許容差、scratch/peak測定の証明方法を一つの設計判断として確定する必要があります。
+
+その判断後にのみ、未実証の必須能力に対応する最小の実装・計測タスクを選定できます。既存のRefine 600秒上限、SOURCE_FILES再固定、Gate-declared outputs事前固定、PUSH BEFORE EVERY TERN EVALUATIONはすべて維持します。
+
+最終判断：HOLD — MP-IMG2 FULL DECODE EXIT
+
+W1〜W13：既存のLIMITED TECHNICAL COMPLETIONを維持
+MP-IMG2-W14：未開始
+MP-IMG3：前提未達のため未開始
+次の必要条件：Callerによるdecode capability・measurement・product acceptanceの設計判断
