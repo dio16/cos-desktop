@@ -204,6 +204,33 @@ Publication exclusively writes, flushes, syncs and closes all three artifacts pl
 
 [R0A-S1 admission](evidence/README.md#historical-records) bounds this slice to the versioned manifest contract (rendering §10.1), a bounded loader, the §11.2 result contract, structural validation and an offline CLI in `apps/desktop/devtools/r0` (Python standard library only). [Validation](evidence/README.md#historical-records) records eleven unittest cases and CLI outcomes: valid manifests and results validate; missing fields, wrong types and unsupported versions fail; oversize, duplicate-key, malformed and non-finite JSON fail closed before publication; unmeasured endpoints and metrics stay `NOT_MEASURED` with explicit reasons and null percentiles; `NOT_IMPLEMENTED` cannot become observed; failed/censored/excluded counts stay separate from observed; result identity must match the manifest; error output reflects only stable codes and JSON paths, never input text or paths. The tool launches nothing, fetches nothing, executes no input value and performs no measurement; R0A-S2/S3 drivers, R0B baselines, R0C attribution, R0D ratification and any numeric claim remain NOT_RUN.
 
+## 18. MP-IMG2-W7 large-dimension admission
+
+`test_w7_fixtures.py`, `test_w7_admission.py` and `test_w7_negative.py` cover the
+W7 slice with the standard library only. Fixture regeneration is byte-identical
+for the bounded cases, every encoded input stays under 64 MiB, the pattern-derived
+RGBA digest equals the digest parsed independently from the encoded bytes for all
+three codecs, and the Bgr565 mask expansion is checked directly. Admission tests
+prove that the full-frame requirement — not the 1×1 ROI output — decides
+refusal, that encoded size is never used as the decoded budget, and that the
+materialized cases sit exactly inside the experimental limits. Oracle tests
+reject a corrupted CRC, an incomplete inflate stream and a wrong byte-lane
+addition. The negative suite mutates the retained real record in 24 classes
+(declared width, codec, bpp, encoded-as-decoded bytes, promoted 8K/16K
+admissions, ROI reduction, tampered budget values, OnLoad in a refusal,
+published output or success after refusal, terminal-stage disagreement, fixture
+digest, old source commit, decoder identity, altered oracle digest, decoded
+trace tail, missing output, timeout-as-cancellation, private bytes as scratch,
+refusal as 16K capability, preview promotion, incomplete capture as complete and
+bound overruns) and requires the real `verify()` to reject each one, while a
+structural-only replay must keep `source_identity_verified=false` and
+`closure_eligible=false`.
+
+The W7 Native matrix itself is evidence, not a test: 180 IMG2 tests, the W1–W6
+replays, the WIC admission selftest and the workspace/feature/R0 quality gates
+are the executed checks. `NOT_MEASURED` counters and damaged-container decodes
+stay unverified; no skipped R0 case is promoted.
+
 ## 16. MP-IMG2 decoder-agnostic decode preflight
 
 `crates/media/tests/decode_admission.rs` exercises the public preflight only: exact decoded-byte computation (8/16-bit RGBA, 1-bit rounding), inclusive budget boundaries with one-byte-over rejection, `max_dimension`/`max_pixels` rejection, invalid bit-depth/channel declarations, invalid limits (zero dimension/pixels/bytes, bit depth outside 1–16) and cancellation. No decoder, codec capability, profile, region, scratch allocation or GPU object is exercised; those remain IMG2 experiment/adoption or IMG3 work. R0 measurement authorization and decoder selection are unchanged.

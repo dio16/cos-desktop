@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "control": {
+    "ok": true,
+    "decoded_verified": 6,
+    "refused": 4,
+    "tamper_not_verified": 2,
+    "source_identity_verified": true,
+    "closure_eligible": true
+  },
+  "mutations": [
+    {
+      "number": 1,
+      "mutation": "declared_width_off_by_one",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "fixture_declaration_mismatch:png_4096"
+    },
+    {
+      "number": 2,
+      "mutation": "source_format_swapped",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "fixture_declaration_mismatch:bmp24_4096"
+    },
+    {
+      "number": 3,
+      "mutation": "declared_bpp_understated",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "trace_payload_mismatch"
+    },
+    {
+      "number": 4,
+      "mutation": "encoded_as_decoded_bytes",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "trace_payload_mismatch"
+    },
+    {
+      "number": 5,
+      "mutation": "8192_promoted_to_admitted",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "refusal_classification_invalid:png_8192"
+    },
+    {
+      "number": 6,
+      "mutation": "16384_promoted_to_admitted",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "refusal_classification_invalid:png_16384"
+    },
+    {
+      "number": 7,
+      "mutation": "roi_reduces_full_frame",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "roi_reduced_full_frame_requirement"
+    },
+    {
+      "number": 8,
+      "mutation": "admitted_budget_tampered",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "trace_payload_mismatch"
+    },
+    {
+      "number": 9,
+      "mutation": "refusal_gains_onload",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "stage_sequence_invalid"
+    },
+    {
+      "number": 10,
+      "mutation": "refusal_gains_output",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "refusal_published_output:png_8192"
+    },
+    {
+      "number": 11,
+      "mutation": "refusal_claims_published_success",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "refusal_published_output:png_16384"
+    },
+    {
+      "number": 12,
+      "mutation": "terminal_stage_mismatch",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "decode_terminal_stage_mismatch:png_4096"
+    },
+    {
+      "number": 13,
+      "mutation": "fixture_digest_mismatch",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "fixture_regeneration_mismatch:png_2048"
+    },
+    {
+      "number": 14,
+      "mutation": "old_source_commit",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "source_commit_unavailable"
+    },
+    {
+      "number": 15,
+      "mutation": "decoder_identity_forged",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "decoder_identity_mismatch:png_2048"
+    },
+    {
+      "number": 16,
+      "mutation": "oracle_expected_digest_altered",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "decode_expected_digest_not_independent:bmp24_2048"
+    },
+    {
+      "number": 17,
+      "mutation": "decoded_trace_has_tail",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "decode_trace_incomplete"
+    },
+    {
+      "number": 18,
+      "mutation": "missing_output_as_success",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "decode_output_missing:png_2048"
+    },
+    {
+      "number": 19,
+      "mutation": "timeout_as_confirmed_cancel",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "decode_exit_invalid:png_4096"
+    },
+    {
+      "number": 20,
+      "mutation": "private_as_wic_scratch",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "allocation_scope_invalid"
+    },
+    {
+      "number": 21,
+      "mutation": "refusal_as_16k_capability",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "decode_limits_invalid"
+    },
+    {
+      "number": 22,
+      "mutation": "preview_promoted",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "allocation_scope_invalid"
+    },
+    {
+      "number": 23,
+      "mutation": "incomplete_capture_as_complete",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "process_sample_incomplete:png_2048"
+    },
+    {
+      "number": 24,
+      "mutation": "bounds_exceeded",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "run_deadline_exceeded"
+    }
+  ],
+  "all_rejected": true,
+  "count": 24
+}

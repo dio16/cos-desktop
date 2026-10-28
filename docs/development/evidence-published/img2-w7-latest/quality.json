@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "native_source": "21b7aff2410fe12741f0cd4691a7c08dedbefaef",
+  "checks": {
+    "quality.ps1": {
+      "log": "C:\\dev\\cos-desktop-verification\\img2-w7-2026-10-28\\rust-quality.log",
+      "log_sha256": "sha256:c271bd5b16f5cea3b74991bf2c2f85f3e2728d0055ad75c572969bfe3af4a456",
+      "marker": "QUALITY_EXIT=0",
+      "satisfied": true
+    },
+    "feature-clippy": {
+      "log": "C:\\dev\\cos-desktop-verification\\img2-w7-2026-10-28\\rust-quality.log",
+      "log_sha256": "sha256:c271bd5b16f5cea3b74991bf2c2f85f3e2728d0055ad75c572969bfe3af4a456",
+      "marker": "FCLIPPY_EXIT=0",
+      "satisfied": true
+    },
+    "feature-build": {
+      "log": "C:\\dev\\cos-desktop-verification\\img2-w7-2026-10-28\\rust-quality.log",
+      "log_sha256": "sha256:c271bd5b16f5cea3b74991bf2c2f85f3e2728d0055ad75c572969bfe3af4a456",
+      "marker": "FBUILD_EXIT=0",
+      "satisfied": true
+    },
+    "feature-tests": {
+      "log": "C:\\dev\\cos-desktop-verification\\img2-w7-2026-10-28\\rust-quality.log",
+      "log_sha256": "sha256:c271bd5b16f5cea3b74991bf2c2f85f3e2728d0055ad75c572969bfe3af4a456",
+      "marker": "FTEST_EXIT=0",
+      "satisfied": true
+    },
+    "img2-python": {
+      "log_sha256": "sha256:438d6414909a0cf3319d4aaf3d2da6eacb4b749d801c3aea8980cc1049f35da6",
+      "ran": 180,
+      "ok": true
+    },
+    "r0-python": {
+      "summary": {
+        "total": 352,
+        "executed": 340,
+        "passed": 340,
+        "skipped": 12,
+        "failures": 0,
+        "errors": 0
+      },
+      "log_sha256": "sha256:b0445d438bb6e5c0d6ffa58df3a117121dbec8f4c472ba82c1ca6f711722433d"
+    },
+    "w1-w6-replays-and-selftests": {
+      "log_sha256": "sha256:b0445d438bb6e5c0d6ffa58df3a117121dbec8f4c472ba82c1ca6f711722433d",
+      "markers": {
+        "W6REPLAY": true,
+        "W5": true,
+        "W4": true,
+        "W3": true,
+        "W1SELF": true,
+        "W2ORACLE": true,
+        "WICSELF": true,
+        "W2SELF": true
+      }
+    }
+  },
+  "default_rust": {
+    "passed": 535,
+    "failed": 0,
+    "ignored": 1
+  },
+  "feature_rust": {
+    "passed": 539,
+    "failed": 0,
+    "ignored": 1
+  },
+  "img2": {
+    "passed": 180,
+    "failed": 0,
+    "w7_methods": 24,
+    "negative_classes": 24
+  },
+  "r0": {
+    "total": 352,
+    "executed": 340,
+    "passed": 340,
+    "skipped": 12,
+    "failures": 0,
+    "errors": 0
+  },
+  "historical_regressions": "historical-regressions.json",
+  "scope": "Current pinned-source W7 Native plus unchanged workspace quality. R0 skip reasons are retained; no skipped case is promoted."
+}

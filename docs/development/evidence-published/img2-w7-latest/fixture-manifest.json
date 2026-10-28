@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "fixtures": [
+    {
+      "bytes": 69456,
+      "case_id": "png_2048",
+      "codec": "png",
+      "height": 2048,
+      "path": "png_2048.png",
+      "sha256": "sha256:56d2039b3d1fad69f76269467b2971664a0c1a640a0c338c6ccd282c84e4d75d",
+      "width": 2048
+    },
+    {
+      "bytes": 243832,
+      "case_id": "png_4096",
+      "codec": "png",
+      "height": 4096,
+      "path": "png_4096.png",
+      "sha256": "sha256:f2158ddd05c1b74131bfebb7a9f90f591a165d34fde844b04159bf220e7bf7c3",
+      "width": 4096
+    },
+    {
+      "bytes": 12582966,
+      "case_id": "bmp24_2048",
+      "codec": "bmp24",
+      "height": 2048,
+      "path": "bmp24_2048.png",
+      "sha256": "sha256:12c4b80eff17ce1bac8d42957ae04094c6bb959069621beb6f227d9675dd44ea",
+      "width": 2048
+    },
+    {
+      "bytes": 50331702,
+      "case_id": "bmp24_4096",
+      "codec": "bmp24",
+      "height": 4096,
+      "path": "bmp24_4096.png",
+      "sha256": "sha256:306bbd3a7e10ad24d6c6070ac06ed6cc7bda156805f0da6d4964a7c83b7f2156",
+      "width": 4096
+    },
+    {
+      "bytes": 8388674,
+      "case_id": "bgr565_2048",
+      "codec": "bgr565",
+      "height": 2048,
+      "path": "bgr565_2048.png",
+      "sha256": "sha256:29641a796be203afcca0f5a7185b85f467358d20a60259605bcba4dce1cab86e",
+      "width": 2048
+    },
+    {
+      "bytes": 33554498,
+      "case_id": "bgr565_4096",
+      "codec": "bgr565",
+      "height": 4096,
+      "path": "bgr565_4096.png",
+      "sha256": "sha256:b0ced89cb0a40ec280bd82ac5dd30626b6ad2f49f6e99bb0ebacfb6fb358a40f",
+      "width": 4096
+    },
+    {
+      "bytes": 927981,
+      "case_id": "png_8192",
+      "codec": "png",
+      "height": 8192,
+      "path": "png_8192.png",
+      "sha256": "sha256:9ddf3c80bc9b183ae83e3a06d7214d4edd3cb60549f2d3b78f4680fcca7a17a6",
+      "width": 8192
+    },
+    {
+      "bytes": 3593657,
+      "case_id": "png_16384",
+      "codec": "png",
+      "height": 16384,
+      "path": "png_16384.png",
+      "sha256": "sha256:f115b03526ee715e231d150edfcf59b73c5149fe688dd6165eea008f2434c3ce",
+      "width": 16384
+    },
+    {
+      "bytes": 927981,
+      "case_id": "roi_8192_1x1",
+      "codec": "png",
+      "height": 8192,
+      "path": "roi_8192_1x1.png",
+      "sha256": "sha256:9ddf3c80bc9b183ae83e3a06d7214d4edd3cb60549f2d3b78f4680fcca7a17a6",
+      "width": 8192
+    },
+    {
+      "bytes": 3593657,
+      "case_id": "roi_16384_1x1",
+      "codec": "png",
+      "height": 16384,
+      "path": "roi_16384_1x1.png",
+      "sha256": "sha256:f115b03526ee715e231d150edfcf59b73c5149fe688dd6165eea008f2434c3ce",
+      "width": 16384
+    },
+    {
+      "bytes": 4608,
+      "case_id": "corrupt_4096_truncated",
+      "codec": "png",
+      "height": 4096,
+      "path": "corrupt_4096_truncated.png",
+      "sha256": "sha256:f2a04eea68d11d14c76189162cc452ebda32f593e93f407b136e321af451bd12",
+      "width": 4096
+    },
+    {
+      "bytes": 243832,
+      "case_id": "corrupt_4096_dimension",
+      "codec": "png",
+      "height": 4096,
+      "path": "corrupt_4096_dimension.png",
+      "sha256": "sha256:e3f040c915caf6f27af65df4018555b20f307bcf4b445b9763858e73b76a63ef",
+      "width": 4000
+    }
+  ],
+  "geometry": {
+    "bgr565_2048": {
+      "height": 2048,
+      "width": 2048
+    },
+    "bgr565_4096": {
+      "height": 4096,
+      "width": 4096
+    },
+    "bmp24_2048": {
+      "height": 2048,
+      "width": 2048
+    },
+    "bmp24_4096": {
+      "height": 4096,
+      "width": 4096
+    },
+    "corrupt_4096_dimension": {
+      "error": "ValueError:png_crc_mismatch"
+    },
+    "corrupt_4096_truncated": {
+      "error": "ValueError:png_chunk_body_truncated"
+    },
+    "png_16384": {
+      "height": 16384,
+      "width": 16384
+    },
+    "png_2048": {
+      "height": 2048,
+      "width": 2048
+    },
+    "png_4096": {
+      "height": 4096,
+      "width": 4096
+    },
+    "png_8192": {
+      "height": 8192,
+      "width": 8192
+    },
+    "roi_16384_1x1": {
+      "height": 16384,
+      "width": 16384
+    },
+    "roi_8192_1x1": {
+      "height": 8192,
+      "width": 8192
+    }
+  },
+  "reproduction": "w7_large_fixtures.write_fixture; streams rows and never buffers a full frame",
+  "regeneration": "verifier recomputes each case digest from the generator"
+}

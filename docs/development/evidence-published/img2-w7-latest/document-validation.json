@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "validator": "Retained plan validator: contract-card/card-contract link completeness, decision-gate and DAG stability against the recorded pre-slice revision.",
+  "result": {
+    "ok": true,
+    "task_cards": 62,
+    "contracts": 62,
+    "edges": 41,
+    "gates_unchanged": true,
+    "DAG_unchanged": true,
+    "acyclic": true,
+    "errors": []
+  },
+  "command": "bun -e <retained validator>",
+  "scope": "Plan/document consistency only; not product acceptance and not a Gate result."
+}

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "outputs": [
+    {
+      "case_id": "png_2048",
+      "codec": "png",
+      "expected_rgba_sha256": "sha256:43e471d7c6ad23fccf21da390cddd7a67f9a896113eaad5cd25dc63b3739f216",
+      "actual_rgba_sha256": "sha256:43e471d7c6ad23fccf21da390cddd7a67f9a896113eaad5cd25dc63b3739f216",
+      "compared_pixels": 4194304,
+      "compared_rows": 2048,
+      "first_mismatch": null,
+      "ok": true,
+      "output_sha256": "sha256:2412a1ef0cba6d90aad92091da3fc55edfdb91c6f7d0997a5748f76aec5ba525",
+      "output_bytes": 23327,
+      "method": "independent streaming PNG CRC/inflate/filter, BMP24 header/stride and Bgr565 BI_BITFIELDS mask reconstruction compared row by row against the reported output"
+    },
+    {
+      "case_id": "png_4096",
+      "codec": "png",
+      "expected_rgba_sha256": "sha256:f1462efd505aa84a6b0a5c90520d142748e9176386b9eaf0b8b37a373a72a38b",
+      "actual_rgba_sha256": "sha256:f1462efd505aa84a6b0a5c90520d142748e9176386b9eaf0b8b37a373a72a38b",
+      "compared_pixels": 16777216,
+      "compared_rows": 4096,
+      "first_mismatch": null,
+      "ok": true,
+      "output_sha256": "sha256:70f4040c3e2ee1cc976290631f18903b2b817d3c74c286507cf2a4a2113a0db9",
+      "output_bytes": 83198,
+      "method": "independent streaming PNG CRC/inflate/filter, BMP24 header/stride and Bgr565 BI_BITFIELDS mask reconstruction compared row by row against the reported output"
+    },
+    {
+      "case_id": "bmp24_2048",
+      "codec": "bmp24",
+      "expected_rgba_sha256": "sha256:43e471d7c6ad23fccf21da390cddd7a67f9a896113eaad5cd25dc63b3739f216",
+      "actual_rgba_sha256": "sha256:43e471d7c6ad23fccf21da390cddd7a67f9a896113eaad5cd25dc63b3739f216",
+      "compared_pixels": 4194304,
+      "compared_rows": 2048,
+      "first_mismatch": null,
+      "ok": true,
+      "output_sha256": "sha256:b42188f94160a527020e57f53eabf3ebef0968c9d0f72f343f3146bbdf4a46cd",
+      "output_bytes": 23327,
+      "method": "independent streaming PNG CRC/inflate/filter, BMP24 header/stride and Bgr565 BI_BITFIELDS mask reconstruction compared row by row against the reported output"
+    },
+    {
+      "case_id": "bmp24_4096",
+      "codec": "bmp24",
+      "expected_rgba_sha256": "sha256:f1462efd505aa84a6b0a5c90520d142748e9176386b9eaf0b8b37a373a72a38b",
+      "actual_rgba_sha256": "sha256:f1462efd505aa84a6b0a5c90520d142748e9176386b9eaf0b8b37a373a72a38b",
+      "compared_pixels": 16777216,
+      "compared_rows": 4096,
+      "first_mismatch": null,
+      "ok": true,
+      "output_sha256": "sha256:7f82a9b69278441ae6b93f7e920bca19e8fc3f03e40728e2dfe7f10c67988b4e",
+      "output_bytes": 83198,
+      "method": "independent streaming PNG CRC/inflate/filter, BMP24 header/stride and Bgr565 BI_BITFIELDS mask reconstruction compared row by row against the reported output"
+    },
+    {
+      "case_id": "bgr565_2048",
+      "codec": "bgr565",
+      "expected_rgba_sha256": "sha256:5967fdbfa232b1179629dbdf7664370363e81372230d1509cb1efdbdb2e4c1d6",
+      "actual_rgba_sha256": "sha256:5967fdbfa232b1179629dbdf7664370363e81372230d1509cb1efdbdb2e4c1d6",
+      "compared_pixels": 4194304,
+      "compared_rows": 2048,
+      "first_mismatch": null,
+      "ok": true,
+      "output_sha256": "sha256:912b132bf74a5212edfd6599e2c90fce6ac1287092b9e4ef6a1be5d570157b5c",
+      "output_bytes": 25137,
+      "method": "independent streaming PNG CRC/inflate/filter, BMP24 header/stride and Bgr565 BI_BITFIELDS mask reconstruction compared row by row against the reported output"
+    },
+    {
+      "case_id": "bgr565_4096",
+      "codec": "bgr565",
+      "expected_rgba_sha256": "sha256:6c1960b6f29123ea592d97033aec9d159d67dc252bb538127b59d0a7aa0b4639",
+      "actual_rgba_sha256": "sha256:6c1960b6f29123ea592d97033aec9d159d67dc252bb538127b59d0a7aa0b4639",
+      "compared_pixels": 16777216,
+      "compared_rows": 4096,
+      "first_mismatch": null,
+      "ok": true,
+      "output_sha256": "sha256:a66d9f56ed44af791cea3be4c64d0a68d79389f5912efc4fad945ad3bde42a91",
+      "output_bytes": 89637,
+      "method": "independent streaming PNG CRC/inflate/filter, BMP24 header/stride and Bgr565 BI_BITFIELDS mask reconstruction compared row by row against the reported output"
+    }
+  ],
+  "method": "expected rows come from independent PNG/BMP parsing; compared row by row with the reported output",
+  "verified": 6
+}

@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "cases": 12,
+  "decoded_verified": 6,
+  "refused": 4,
+  "tamper_not_verified": 2,
+  "source_identity_verified": true,
+  "closure_eligible": true,
+  "fixture_regeneration_verified": true,
+  "measurement_scope": "process-level observation; internal scratch, reservations and true concurrent peaks remain NOT_MEASURED"
+}

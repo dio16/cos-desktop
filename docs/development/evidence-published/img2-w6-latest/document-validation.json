@@ -1,16 +1,10 @@
 {
-  "schema_version": 1,
-  "validator": "Contract-card/card-contract link, decision-gate and DAG check over IMPLEMENTATION_MASTER_PLAN.md against DESKTOP_DESIGN_CONTRACTS.md and the recorded pre-slice revision.",
-  "result": {
-    "ok": true,
-    "task_cards": 62,
-    "contracts": 62,
-    "edges": 41,
-    "gates_unchanged": true,
-    "DAG_unchanged": true,
-    "acyclic": true,
-    "errors": []
-  },
-  "command": "bun -e <retained validator>",
-  "scope": "Plan/document consistency only; not product acceptance and not a Gate result."
+  "ok": true,
+  "task_cards": 62,
+  "contracts": 62,
+  "edges": 41,
+  "gates_unchanged": true,
+  "DAG_unchanged": true,
+  "acyclic": true,
+  "errors": []
 }

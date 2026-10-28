@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "native": {
+    "files": {
+      "Cargo.lock": {
+        "bytes": 165475,
+        "git_blob_sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b",
+        "lf_sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b",
+        "raw_sha256": "sha256:60d328dd9be8c160bbf96c341c21f71762f729b9631ba350e0922f29082d7a49",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w2_independent_oracle.py": {
+        "bytes": 9766,
+        "git_blob_sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26",
+        "lf_sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26",
+        "raw_sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w2_resource_matrix.py": {
+        "bytes": 29498,
+        "git_blob_sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941",
+        "lf_sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941",
+        "raw_sha256": "sha256:18224967ecd367d9eb584e45c35b63cebef5ba800760e192891096ba02e90816",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w2_resource_verify.py": {
+        "bytes": 26365,
+        "git_blob_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
+        "lf_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
+        "raw_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w3_oracle.py": {
+        "bytes": 5883,
+        "git_blob_sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e",
+        "lf_sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e",
+        "raw_sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w4_region_oracle.py": {
+        "bytes": 5868,
+        "git_blob_sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298",
+        "lf_sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298",
+        "raw_sha256": "sha256:95d31fbe15e2d7bef6a14a1d7dd2f1e5cbbb6530f4788ad83bc84f3f579285f2",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w5_metadata_oracle.py": {
+        "bytes": 6904,
+        "git_blob_sha256": "sha256:bb2910bac17c47677058bb79ca24b21f3a87356d1a0b432c9427a37193bbab60",
+        "lf_sha256": "sha256:bb2910bac17c47677058bb79ca24b21f3a87356d1a0b432c9427a37193bbab60",
+        "raw_sha256": "sha256:0cc238526ca88b5fb3e108e113dba53cf79a55d169de7f81339ffbb68174572d",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w6_memory_fixtures.py": {
+        "bytes": 9459,
+        "git_blob_sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5",
+        "lf_sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5",
+        "raw_sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w6_memory_sample.py": {
+        "bytes": 19017,
+        "git_blob_sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
+        "lf_sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
+        "raw_sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w6_memory_verify.py": {
+        "bytes": 23316,
+        "git_blob_sha256": "sha256:99cc5ecb251c71e42340614d51de471029b8a3247e29ee12f8dabc553972e919",
+        "lf_sha256": "sha256:99cc5ecb251c71e42340614d51de471029b8a3247e29ee12f8dabc553972e919",
+        "raw_sha256": "sha256:99cc5ecb251c71e42340614d51de471029b8a3247e29ee12f8dabc553972e919",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w7_large_fixtures.py": {
+        "bytes": 11614,
+        "git_blob_sha256": "sha256:fefb3724623f79d5ac4f1b98b4af43c8dddde0dfa2e727294bf7e208ac2707bc",
+        "lf_sha256": "sha256:fefb3724623f79d5ac4f1b98b4af43c8dddde0dfa2e727294bf7e208ac2707bc",
+        "raw_sha256": "sha256:fefb3724623f79d5ac4f1b98b4af43c8dddde0dfa2e727294bf7e208ac2707bc",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w7_large_matrix.py": {
+        "bytes": 12484,
+        "git_blob_sha256": "sha256:53c84378b68b4a0a5c77251a013f2e207b38cf8315a76440e7260ea6dc097e56",
+        "lf_sha256": "sha256:53c84378b68b4a0a5c77251a013f2e207b38cf8315a76440e7260ea6dc097e56",
+        "raw_sha256": "sha256:53c84378b68b4a0a5c77251a013f2e207b38cf8315a76440e7260ea6dc097e56",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w7_large_oracle.py": {
+        "bytes": 12588,
+        "git_blob_sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6",
+        "lf_sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6",
+        "raw_sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w7_large_verify.py": {
+        "bytes": 26536,
+        "git_blob_sha256": "sha256:db907d94645945b0f5b3bc440d6b4fa7843f3485335f5b2e2a470111e8195920",
+        "lf_sha256": "sha256:db907d94645945b0f5b3bc440d6b4fa7843f3485335f5b2e2a470111e8195920",
+        "raw_sha256": "sha256:db907d94645945b0f5b3bc440d6b4fa7843f3485335f5b2e2a470111e8195920",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare.rs": {
+        "bytes": 1063,
+        "git_blob_sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e",
+        "lf_sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e",
+        "raw_sha256": "sha256:1cbc230a7ce870c5a68e7837ea0750876498944a9e3e4c5a8cb9854e94f8feea",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare/harness.rs": {
+        "bytes": 163269,
+        "git_blob_sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896",
+        "lf_sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896",
+        "raw_sha256": "sha256:ed6b0b45437a036aa8b6ae274829d0001e6b53c0e8301c4a39c4548cd1b2cacf",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare/inspect.rs": {
+        "bytes": 25173,
+        "git_blob_sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558",
+        "lf_sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558",
+        "raw_sha256": "sha256:8edd645b943e3821d546494871a915df64aa17c14d4fbd43a8de02ea5f1ca1bc",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare/pixels.rs": {
+        "bytes": 28621,
+        "git_blob_sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136",
+        "lf_sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136",
+        "raw_sha256": "sha256:55fb88e8f81dfc63836c89f3a82c5ad27b3a05441fdfae890765c578173abe73",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare/wic_admission.ps1": {
+        "bytes": 6399,
+        "git_blob_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
+        "lf_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
+        "raw_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare/wic_probe.ps1": {
+        "bytes": 52168,
+        "git_blob_sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c",
+        "lf_sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c",
+        "raw_sha256": "sha256:32666558c588ae93be5fc929f54307398aeddadf4458c5bdb80780e8e7bf9741",
+        "unchanged_after_run": true
+      },
+      "crates/media/src/decode.rs": {
+        "bytes": 11964,
+        "git_blob_sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf",
+        "lf_sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf",
+        "raw_sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf",
+        "unchanged_after_run": true
+      },
+      "rust-toolchain.toml": {
+        "bytes": 152,
+        "git_blob_sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8",
+        "lf_sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8",
+        "raw_sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8",
+        "unchanged_after_run": true
+      }
+    },
+    "harness_sha256": "sha256:d72e0762efb0dd210cb462d97db00ae2f364f873ff49a84999ae43cab3b9dd49",
+    "normalization": "Raw Native hashes plus explicitly declared LF-normalized Git correspondence",
+    "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+    "source_commit": "21b7aff2410fe12741f0cd4691a7c08dedbefaef"
+  },
+  "experimental_source": "21b7aff2410fe12741f0cd4691a7c08dedbefaef"
+}

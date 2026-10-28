@@ -936,6 +936,47 @@ requirement is not widened to them.
 Native source binding, later evidence/Gate commits and docs-only differences
 must be kept separate; W6 is not full Decode Exit or Upload acceptance.
 
+### 4.27 MP-IMG2-W7 large-dimension admission and bounded materialization (2026-10-28)
+
+W7 reuses the unchanged WIC probe and W2 worker, so the budget arguments are the
+same ones the product adapter would supply. Its experimental limits are larger
+than the product defaults and are never ratified values: maximum dimension 4096,
+16,777,216 pixels, 8 bits per channel, 67,108,864 decoded bytes and
+67,108,864 scratch bytes with a zero declared scratch allowance. Output is capped
+at 96 MiB, the work root at 512 MiB, the report at 8 MiB, the trace at 128
+records/128 KiB, each capture at 64 KiB, one worker per case, 45 s per worker,
+300 s per run and twelve cases total.
+
+```powershell
+cargo build --locked -p cos-desktop --example decode_compare
+python -B apps/desktop/devtools/img2/w7_large_matrix.py run `
+  --work-root <absolute-absent-owned-directory> --out <absolute-absent-report.json> `
+  --pwsh <absolute-qualified-pwsh.exe> `
+  --harness <absolute-repository>/target/debug/examples/decode_compare.exe
+python -B apps/desktop/devtools/img2/w7_large_matrix.py verify `
+  --report docs/development/evidence-published/img2-w7-latest/native-large-matrix.json `
+  --source-root <repository>
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_w7*.py"
+```
+
+The six 2K/4K decodes hold at `after_onload`, are sampled once, released and
+compared row by row against an independent streaming PNG/BMP/Bgr565 oracle; the
+four large cases and both damaged containers hold at `before_admission`, so the
+process identity and counters are observed before the refusal they produce. A
+1×1 ROI request never reduces the full-frame requirement: the refusal reason
+stays `max_dimension_exceeded` rather than an ROI output-bound code.
+
+WIC silently decodes a truncated PNG and a PNG whose IHDR width was changed
+without updating its CRC. The harness therefore classifies such a decode as
+`TAMPER_NOT_VERIFIED` whenever the independent oracle cannot reconstruct the
+declared raster; a decoded outcome is never promoted on the decoder's own word.
+
+Process counters remain whole-process observations under an artificial hold.
+Internal scratch, actual reservations, true concurrent allocation peak,
+WIC-only deltas, partial residency, 16K full decode and preview fallback remain
+`NOT_MEASURED`/`NOT_PROVEN`. A refused 16K source is not 16K decode capability,
+and W7 is not full Decode Exit or Upload acceptance.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |

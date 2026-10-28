@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "source_round": "W6 round 3 clean verdict plus next-directive request",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "0562ba90-9a0f-4b95-9f11-a4ae886498e5"
+  ],
+  "assistant_ids": [
+    "48eaa717-83bf-47d4-962e-dedfc32ee92a"
+  ],
+  "first_read": "2026-10-27T23:49:33.534Z",
+  "second_read": "2026-10-27T23:50:04.586Z",
+  "identical": true,
+  "streaming": false,
+  "terminal": "NEXT DIRECTIVE",
+  "contains_next_directive": true,
+  "chars": 21181,
+  "retained": "tern-next-directive.txt"
+}

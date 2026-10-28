@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "png_2048",
+      "encoded_bytes": 69456,
+      "decoded_bytes_required": 12582912,
+      "ratio": 181.2,
+      "role": "decode",
+      "refused_despite_small_encoded_size": false
+    },
+    {
+      "case_id": "png_4096",
+      "encoded_bytes": 243832,
+      "decoded_bytes_required": 50331648,
+      "ratio": 206.4,
+      "role": "decode",
+      "refused_despite_small_encoded_size": false
+    },
+    {
+      "case_id": "png_8192",
+      "encoded_bytes": 927981,
+      "decoded_bytes_required": 201326592,
+      "ratio": 217.0,
+      "role": "refusal",
+      "refused_despite_small_encoded_size": true
+    },
+    {
+      "case_id": "png_16384",
+      "encoded_bytes": 3593657,
+      "decoded_bytes_required": 805306368,
+      "ratio": 224.1,
+      "role": "refusal",
+      "refused_despite_small_encoded_size": true
+    },
+    {
+      "case_id": "roi_8192_1x1",
+      "encoded_bytes": 927981,
+      "decoded_bytes_required": 201326592,
+      "ratio": 217.0,
+      "role": "roi_refusal",
+      "refused_despite_small_encoded_size": true
+    },
+    {
+      "case_id": "roi_16384_1x1",
+      "encoded_bytes": 3593657,
+      "decoded_bytes_required": 805306368,
+      "ratio": 224.1,
+      "role": "roi_refusal",
+      "refused_despite_small_encoded_size": true
+    },
+    {
+      "case_id": "corrupt_4096_truncated",
+      "encoded_bytes": 4608,
+      "decoded_bytes_required": 50331648,
+      "ratio": 10922.7,
+      "role": "corrupt",
+      "refused_despite_small_encoded_size": false
+    },
+    {
+      "case_id": "corrupt_4096_dimension",
+      "encoded_bytes": 243832,
+      "decoded_bytes_required": 49152000,
+      "ratio": 201.6,
+      "role": "corrupt",
+      "refused_despite_small_encoded_size": false
+    }
+  ],
+  "note": "Encoded size never substitutes for the decoded requirement; large PNGs are refused although their encoded bytes are small."
+}

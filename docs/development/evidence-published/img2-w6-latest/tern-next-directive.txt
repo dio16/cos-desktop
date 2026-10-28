@@ -1,0 +1,1204 @@
+
+# MP-IMG2-W7
+# Large-Dimension WIC Decode Admission, Bounded Materialization,
+# and Fail-Closed Fallback Verification
+#
+# 実行：Taskern → 実装 → Windows Native実測 → Refine独立Gate
+#       → Tern独立レビュー → 0/0/0判定 → 限定完了記録
+#
+# 承認範囲：ADR-0009 / ADR-0012に基づく既存Caller権限
+# 実行方式：ローカル連続実装。各段階で評価・修正を行う。
+# 禁止：remote push / main / release / Runtime変更 / 未承認設計判断
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 実行対象と固定開始状態
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Repository:
+dio16/cos-desktop
+
+Branch:
+dev（ローカル、未push）
+
+開始HEAD:
+daddc4ac82f2432e18e7545e1d37045240650e64
+
+直前の製品・Gate候補:
+8bb1b6dd3071d7e355e685dba4977361f24b8f2f
+
+W6 Native実行SOURCE:
+f99bf25b5d61152e3bb22a88e2e8efccc823b9ad
+
+W6独立Gate:
+Quality fdfdb7a2-3c90-409e-b645-61ab450f58e6
+Build   98d2bb81-80d2-43b6-a3cb-ce0c090f7a71
+
+W6最終評価:
+PASS 0 BLOCKING
+     0 ACTIONABLE NON-BLOCKING
+     0 EXCESSIVE
+
+W6 disposition:
+LIMITED TECHNICAL COMPLETION
+
+今回の対象ID:
+MP-IMG2-W7
+
+唯一のowner contract:
+DC-MP-IMG2
+
+製品責務owner:
+crates/media（decode側、GPU非所有）
+
+新規authority:
+不要。DC-MP-IMG2の既存bounded experimental scope内。
+
+ただし以下が必要になった場合は別途承認を要求する。
+
+- unsafe / FFI
+- 新しいnative decoder API
+- 外部decoder製品依存
+- 製品DecodeBudgetの変更
+- 製品decoder選定
+- Runtime・GPU変更
+- 数値性能SLOの批准
+
+今回のW7は、W1～W6の限定完了を前提とする
+同一MP内部の新しいbounded implementation sliceである。
+
+MP-IMG3への移行ではない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. Hard prerequisitesと開始時検査
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MP-IMG2のhard prerequisites:
+
+- MP-IMG1
+- MP-SEC3
+
+両者のDesktop-local technical completionを確認する。
+
+MP-IMG6のRuntime authorizationを、
+ローカルfixture使用のhard prerequisiteと混同しない。
+
+MP-IMG3はfull MP-IMG2をhard prerequisiteとする。
+W7の開始・完了によってこれを解除しない。
+
+作業開始前に実行する。
+
+git status --short
+git branch --show-current
+git rev-parse HEAD
+git log -n 10 --oneline
+git diff
+
+次の正典を読む。
+
+docs/development/IMPLEMENTATION_MASTER_PLAN.md
+
+docs/architecture/DESKTOP_DESIGN_CONTRACTS.md
+- DC-MP-IMG2
+- DC-MP-IMG3
+- Media input admission and integrity
+
+docs/architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md
+- §6
+- §6.1 Decode
+- §10
+
+docs/development/BUILD_AND_RUN.md
+
+docs/development/TESTING.md
+
+docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md
+docs/decisions/ADR-0012-HOLD-RELEASE.md
+
+既存証拠:
+
+docs/development/evidence-published/img2-w1-latest/
+docs/development/evidence-published/img2-w2-latest/
+docs/development/evidence-published/img2-w3-latest/
+docs/development/evidence-published/img2-w4-latest/
+docs/development/evidence-published/img2-w5-latest/
+docs/development/evidence-published/img2-w6-latest/
+
+開始HEADが指定値と異なる場合は原因を確認する。
+
+他タスクの未committed変更を破棄しない。
+W1～W6のSOURCE、Native、Gate、review履歴を変更しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. W7を選択する理由
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W6で成立したもの:
+
+- PNG RGB8 / BMP24 / Bgr565
+- 256² / 1024²
+- single-worker / three-worker
+- 実Windows WIC decode
+- 24 worker cases
+- 30 complete collection windows
+- 18/18 decoded raster一致
+- process-memory scalingの観測
+- W2停止契約の維持
+
+ただしW6は、1024²より大きい入力に対する
+実decodeの安全性を実証していない。
+
+また、16K-class source、超高圧縮率入力、
+小さいROI要求とfull-frame admissionの組合せについて、
+新しい寸法クラスでの証拠が不足している。
+
+今回のW7では、16K full decodeを直接実行して
+成功を主張するのではなく、まず次を進める。
+
+A. 2K/4K-class inputの実WIC bounded decode。
+
+B. 8K/16K-class inputのfull-frame admission拒否。
+
+C. 大きなencoded sourceに対する小さいROI要求が、
+   full-frame admissionを迂回できないことの実証。
+
+D. 圧縮率が高い入力でも、encoded bytesの少なさから
+   decoder materialization予算を過少計上しないこと。
+
+E. 正常decodeとrefusalを、入力・画像・process-memory・
+   trace・出力公開の証拠で独立に検証すること。
+
+F. 明示的なpreview/unavailable fallback分類。
+
+これは既存WIC probeの単なる再実行ではない。
+
+新しいサイズクラス、encoded/decoded比率、
+full-frame budgetの境界を実Windowsで検証する。
+
+一方、16K full-resolution decode、
+true partial/sequential/tiled decoding、
+preview-onlyの製品採用は証明しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. 不変条件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+以下を変更しない。
+
+1. crates/media::decode の
+   DecodeLimits / DecodeRequest / DecodeAdmission。
+
+2. admit_decodeのchecked arithmeticと
+   pre-materialization admission authority。
+
+3. W1のfull-frame budget判定。
+
+4. W2のstage trace、stop-confirmed state machine。
+
+5. W3のBgr565 BI_BITFIELDS admission。
+
+6. W4のROI出力とtrue region decodeの区別。
+
+7. W5のorientation/ICC metadata分類。
+
+8. W6のprocess-memory観測と未測定区分。
+
+9. legacy decode_compare CLIと出力契約。
+
+10. Native SOURCE / Gate SOURCEの厳密な帰属。
+
+特に次を禁止する。
+
+- encoded file sizeをdecoded allocationと見なす。
+- ROIのoutput bytesをfull-frame requirementの代わりにする。
+- 小さいCopyPixels出力をtrue partial decodeと呼ぶ。
+- BitmapCacheOption::Noneだけで内部部分decodeを証明する。
+- process private bytesをWIC scratchへ帰属する。
+- 別時刻のprocess maximaをconcurrent peakと呼ぶ。
+- timeoutによるworker killをcooperative cancellationと呼ぶ。
+- header-only成功をdecoded成功へ昇格する。
+- fallback unavailableをpreview成功として報告する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. 実装スコープ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+新規development-only toolingを実装する。
+
+想定ファイル:
+
+apps/desktop/devtools/img2/
+- w7_large_fixtures.py
+- w7_large_matrix.py
+- w7_large_oracle.py
+- w7_large_verify.py
+
+apps/desktop/devtools/img2/tests/
+- test_w7_fixtures.py
+- test_w7_admission.py
+- test_w7_verify.py
+- test_w7_negative.py
+
+既存の以下を再利用する。
+
+- w2_resource_matrix.py
+- w2_resource_verify.py
+- w3_fixtures.py
+- w3_oracle.py
+- w4_region_oracle.py
+- w5_metadata_oracle.py
+- w6_memory_fixtures.py
+- w6_memory_verify.py
+- decode_compare harness
+- wic_probe.ps1
+- wic_admission.ps1
+
+不要な汎用frameworkを新設しない。
+
+既存CLIで実現できる場合、
+WIC probe自体を変更しない。
+
+追加のopt-in observation hookが不可欠な場合だけ、
+その必要性と既存CLI互換性を記録して実装する。
+
+既存の製品Rust decoder、
+GPU、Runtime、Taskern本体、Refine本体は変更しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. Deterministic fixtures
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+正常materialization候補:
+
+PNG RGB8 2048×2048
+PNG RGB8 4096×4096
+
+BMP24 2048×2048
+BMP24 4096×4096
+
+BMP Bgr565 BI_BITFIELDS 2048×2048
+BMP Bgr565 BI_BITFIELDS 4096×4096
+
+以上6件。
+
+Refusal専用の大型候補:
+
+PNG RGB8 8192×8192
+PNG RGB8 16384×16384
+
+以上2件。
+
+追加負例:
+
+- 8192×8192への1×1 ROI要求
+- 16384×16384への1×1 ROI要求
+- 大型PNG header/dimension改ざん
+- 大型PNG truncated/CRC-invalid input
+
+合計case数:
+最大12
+
+同時worker:
+1
+
+4K decoded outputの最大論理BGRA32量:
+67,108,864 bytes
+
+8K decoded outputのBGRA32量:
+268,435,456 bytes
+
+16K decoded outputのBGRA32量:
+1,073,741,824 bytes
+
+実験上限では8K/16Kをmaterializeしない。
+
+大型PNGはstreaming encoderで生成し、
+生成器自身が巨大なRGBA full-frame bufferを
+確保しない構造とする。
+
+画像は単色ではなく、
+行・列・channelで変化する決定論的patternを使用する。
+
+生成したPNGはCRC/inflate/filterを独立検証する。
+
+過度に圧縮される入力についても、
+encoded長とdecoded requirementを別値として保存する。
+
+BMP24/Bgr565のencoded row padding、
+bitfield masks、source depth、channel bit depthを
+元encoded bytesから独立解析する。
+
+fixture generationが実験上限を超える場合は
+生成を停止し、NOT_RUNと理由を記録する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. W7実験予算
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+以下はW7専用の暫定的な実験上限とする。
+
+製品budget、SLO、ratified limitsではない。
+
+Maximum materialized dimension:
+4096
+
+Maximum materialized pixels:
+16,777,216
+
+Maximum materialized BGRA32 bytes:
+67,108,864
+
+Maximum declared conversion/scratch allowance:
+67,108,864 bytes
+
+Maximum encoded input per case:
+64 MiB
+
+Maximum output per case:
+96 MiB
+
+Maximum owned work root:
+512 MiB
+
+Maximum report:
+8 MiB
+
+Maximum trace:
+128 records / 128 KiB
+
+Maximum stdout/stderr capture:
+各64 KiB
+
+Maximum worker runtime:
+45 seconds
+
+Maximum global runtime:
+300 seconds
+
+Maximum concurrent workers:
+1
+
+Maximum Native cases:
+12
+
+Process private-byte observation ceiling:
+768 MiB
+
+上限の変更はdev-only実験条件の変更として
+記録し、事前のboundedness検証を必要とする。
+
+成功を作るために自動で上限を拡大しない。
+
+OSのprocess counterは事後観測である。
+実予約をOSが事前に強制制限したことにはならない。
+
+同期OnLoad中にprivate bytesが急増する可能性を
+process samplingだけでは完全に排除できない。
+
+そのため、入力・寸法・論理要求量による
+materialization前の拒否を第一の安全境界とする。
+
+4096²の実験は、
+encoded・decoded・scratch・disk headroomを
+事前検査した場合に限り実行する。
+
+環境の空き資源や実装経路が不明な場合は、
+4K materializationを実施せず
+SAFETY_BLOCKEDとして理由を保持する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. 実Windows WIC matrix
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実Windowsで固定SOURCEから実行する。
+
+事前記録:
+
+- Windows version
+- PowerShell version
+- .NET version
+- WIC decoder identity
+- process identity
+- native probe SHA256
+- harness executable SHA256
+- fixture generator SHA256
+- fixed SOURCE commit
+- input manifest SHA256
+
+必須stage:
+
+process_observed
+input_opened
+admitted または refused
+
+decodedの場合:
+OnLoad materialization開始・完了の観測可能境界
+pixel conversion
+output publication
+probe_exit
+
+refusedの場合:
+OnLoad stageなし
+output publicationなし
+probe_exit
+
+既存trace schemaの実stage名と順序を使用し、
+架空stageを成功記録へ追加しない。
+
+W7は次を観測する。
+
+A. 2K/4K正常decode。
+
+B. 8K/16Kのfull-frame admission拒否。
+
+C. 8K/16Kに対する1×1 ROI要求の拒否。
+
+D. 高圧縮率でもdecoded requirementを保持。
+
+E. metadata/ROIがbudget authorityを迂回しない。
+
+F. process identityとmemory counterの観測。
+
+4K decodeに成功した場合は
+actual decoded rasterを独立oracleで照合する。
+
+4K decodeが期限・安全条件で失敗した場合、
+その実際の失敗を保持する。
+
+別サイズの成功で置き換えない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. MaterializationとRefusalの区別
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+次の状態を厳密に分離する。
+
+HEADER_READ
+ADMITTED
+REFUSED
+DECODED
+TIMEOUT
+CANCELLED
+NOT_VERIFIED
+NOT_RUN
+
+Refusalの受入には次を要求する。
+
+- 元encoded geometryの独立確認
+- checked arithmeticによるfull-frame requirement
+- 実験DecodeLimitsとの比較
+- refusal reasonの一致
+- OnLoad未到達
+- outputなし
+- success未公開
+- trace完結
+- worker停止・終了の確認
+
+Encoded bytesが小さいことは
+materialization成功の根拠にならない。
+
+1×1 ROI要求は出力矩形の指定だけであり、
+source全体の予算を減額しない。
+
+Large sourceを拒否した場合:
+
+fallback:
+UNAVAILABLE
+
+preview:
+NOT_PROVEN
+
+と記録する。
+
+実際の別経路でpreviewが生成・画素検証されない限り、
+PREVIEW_AVAILABLEと報告しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. 独立Raster oracle
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W7の期待画像はWIC outputから生成しない。
+
+PNG:
+
+- signature
+- IHDR
+- CRC
+- IDAT
+- inflate
+- filter
+- row/column pixel reconstruction
+
+を独立解析する。
+
+BMP24:
+
+- headers
+- geometry
+- stride
+- signed height
+- BGR payload
+
+を独立解析する。
+
+Bgr565:
+
+- BI_BITFIELDS
+- RGB masks
+- storage width
+- row padding
+- independent channel expansion
+
+を独立解析する。
+
+実WIC出力PNGのdecoded RGBAを
+期待RGBAと全画素比較する。
+
+大きいfixtureはstreaming row comparisonを使用し、
+oracle側で不要なfull-frame bufferを確保しない。
+
+以下を保存する。
+
+- input SHA256
+- expected RGBA SHA256
+- actual RGBA SHA256
+- compared pixel count
+- first mismatch coordinate
+- oracle implementation identity
+- output validity
+
+実際のRGBA検証なしに
+content_verifiedを付けない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. Memory観測と未測定の区分
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W6の実測contractを保持する。
+
+取得可能な場合に記録する。
+
+- WorkingSet64
+- PrivateMemorySize64
+- PeakWorkingSet64
+- Process.StartTime
+- observer timestamp
+- parent monotonic timestamp
+- lifetime identity
+- sample completeness
+
+これはprocess-level observationである。
+
+以下は引き続きNOT_MEASURED:
+
+- WIC internal scratch peak
+- actual allocator reservations
+- true concurrent allocation peak
+- WIC-only allocation delta
+- in-decoder cooperative cancellation
+- actual partial decode residency
+
+2Kと4Kの観測値を比較しても、
+codecの内部scratch増加量と断定しない。
+
+16K拒否後のprocess memoryが小さくても、
+16K full decodeの安全性を証明したことにはしない。
+
+観測不能なcounterは
+0ではなくNOT_MEASUREDとする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. Stop、timeout、cleanup
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W2で確定した停止契約を維持する。
+
+Confirmed stopには:
+
+- 停止要求時にworker alive
+- exit_before_request=false
+- explicit hold成立
+- termination issued
+- observed exit
+- non-zero exit
+- reap confirmed
+- no published output
+
+を要求する。
+
+OnLoad中のworkerをkillしただけでは、
+cooperative cancellationと呼ばない。
+
+Artificial hold時間を
+WIC decoder latencyに加算しない。
+
+Timeout後にworkerが残存した場合は、
+所有processだけをboundedに回収する。
+
+終了原因が不明なら
+UNVERIFIED_RACEとして記録する。
+
+他processや通常workspaceを掃除しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. Independent verifierと負例
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+w7_large_verify.pyを実装する。
+
+Verifierは以下を独立に確認する。
+
+- 固定case集合
+- fixture再生成SHA
+- encoded geometry
+- source format
+- bit depth
+- checked row arithmetic
+- decoded bytes
+- BGRA32 requirement
+- scratch allowance
+- full-frame admission
+- ROI非迂回
+- OnLoad reachability
+- output publication
+- pixel correctness
+- process identity
+- source identity
+- terminal trace
+- deadline
+- work root ownership
+- unmeasured classification
+
+最低限のnegative mutations:
+
+01. 4096のwidthを4095へ偽装
+02. source formatをBgr24からBgr565へ偽装
+03. source bppを変更してadmissionを過少申告
+04. encoded input bytesとdecoded bytesを混同
+05. 8192²をadmittedへ変更
+06. 16384²をadmittedへ変更
+07. 1×1 ROIでfull-frame requirementを削減
+08. admitted traceに不正なbudget値を設定
+09. refused traceにOnLoad stageを追加
+10. refused workerにoutput payloadを追加
+11. refused workerにpublished_success=trueを設定
+12. worker outcomeとterminal stageを不一致にする
+13. source/fixture digestの不一致
+14. native SOURCEを旧W6 SHAへ差し替える
+15. decoder identityを偽装
+16. pixel oracle expected digestを改変
+17. decoded resultに未解析trace tailを追加
+18. outputなしをdecoded成功へ昇格
+19. timeoutをconfirmed cancellationへ偽装
+20. private bytesをWIC scratchとしてVERIFIEDへ昇格
+21. 16K refusalを16K decode capabilityへ昇格
+22. preview未生成をPREVIEW_AVAILABLEへ昇格
+23. incomplete captureをcompleteへ偽装
+24. case deadlineまたはwork root上限を超過
+
+全負例を実際にverify()へ通す。
+
+Mockの成功や単なる文字列検査を
+consumer-visible contradictionの拒否証拠としない。
+
+Private Git objectがない環境では、
+SOURCE検証済みを主張しない。
+
+Structure-only replayは:
+
+source_identity_verified=false
+closure_eligible=false
+
+を維持する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. Taskern
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+インストール済みTaskern 0.2.0の
+実CLI仕様を確認する。
+
+新規Taskern requestを作成する。
+
+plan_id:
+cos-desktop-img2-w7
+
+task_id:
+img2-w7
+
+revision:
+1
+
+owner:
+DC-MP-IMG2
+
+goal:
+Implement and measure bounded real-WIC decode admission for
+2K/4K materialization and 8K/16K refusal, including
+high-compression inputs and ROI non-bypass, without claiming
+full 16K decode or internal decoder allocation bounds.
+
+Taskern packetのacceptanceには
+Native、oracle、negative verifier、Gate、Tern reviewを含める。
+
+prepare/compileの実operationを確認し、
+正典仕様に従って実行する。
+
+W6のpacketを再利用しない。
+
+request、response、diagnostic、
+packet digestを保存する。
+
+Taskern failureは記録して修復する。
+成功応答を捏造しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. 品質検証
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+必須:
+
+- W7 fixture tests
+- W7 bounded large input tests
+- W7 independent PNG/BMP oracle
+- W7 negative verifier tests
+- W7 real-Windows Native matrix
+- WIC admission selftest
+- decode_compare harness tests
+- crates/media admission tests
+- W1～W6 regressions
+- quality.ps1
+- workspace Rust tests
+- feature Rust tests
+- feature clippy
+- feature build
+- R0 Python suite
+
+Rust側の現行正規コマンドを確認し、
+少なくとも次を実行する。
+
+cargo fmt --all -- --check
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo test --locked --workspace
+cargo build --locked --workspace
+
+Feature-specific build/testは
+既存のBUILD_AND_RUN.mdの定義に従う。
+
+Windowsでfeature testsのserialized実行が
+必要な場合は既存手順を維持する。
+
+W1～W6 historical replayは
+各時点の固定SOURCEと対応するNative記録を使用する。
+
+新W7 SOURCEをhistorical recordへ適用し、
+digest mismatchを回帰失敗と誤判定しない。
+
+ただし、実装互換性の回帰は
+現行SOURCEを使って別途検査する。
+
+ローカルqualityと隔離Gate qualityは
+環境差・skip差を混合しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. Refine独立Quality/Build Gate
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W7 SOURCEとNativeを固定した後、
+新しい製品候補をローカルcommitする。
+
+新候補full SHAを固定する。
+
+その候補で新規に実行する。
+
+- independent Quality Gate
+- independent Build Gate
+
+W6 Gate IDを使用しない。
+
+実際のRefine CLIとcheck構成を確認する。
+
+Quality Gateには:
+
+- W7 focused tests
+- W7 negative tests
+- fixture regeneration
+- Native verification
+- source binding
+- W1～W6 historical regressions
+- admission contract tests
+- workspace quality
+- feature quality
+- R0 scoped tests
+- docs/source consistency
+
+を含める。
+
+Build Gateでは正規のfeature構成による
+実build成功を確認する。
+
+必須Gate条件:
+
+- candidate SHA一致
+- candidate digest一致
+- 全mandatory checks PASS
+- status SUCCEEDED
+- inspect SUCCEEDED
+- verify SUCCEEDED
+- 各exit 0
+- artifact tuples一致
+- artifactの実バイト一致
+- candidate Git blob一致
+- cleanup complete
+- owner_alive=false
+- recovery_required=false
+
+Preflight UNKNOWNをPASSへ書き換えない。
+
+Build executable SHA256を取得する場合は、
+削除前の実バイトから計算する。
+
+取得できない場合:
+NOT_CAPTURED
+
+Gate失敗・repository error・NOT_RUNを
+成功として処理しない。
+
+SOURCE変更後は候補を再固定する。
+
+docs-only訂正の場合は、
+SOURCEが同一であることを確認し、
+成功Gateの不要な再実行を避ける。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. Tern独立レビュー
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tern-OMPの既存review loopを使用する。
+
+omp -pは禁止。
+
+提出:
+
+1. w7-review-source.zip
+2. w7-review-evidence.zip
+3. review-package.json
+
+重点:
+
+A. 2K/4K real WIC decodeは実materializationか。
+
+B. 8K/16Kは確実にOnLoad前拒否か。
+
+C. 高圧縮率inputでbudgetを過少計上していないか。
+
+D. ROIでfull-frame admissionを迂回できないか。
+
+E. 16K refusalを16K decode supportとしていないか。
+
+F. 独立oracleはWIC outputから期待値を作っていないか。
+
+G. Memory scopeとscratch/allocationを混同していないか。
+
+H. Worker/process/source identityが成立しているか。
+
+I. Timeout/cancellationがW2契約に従うか。
+
+J. Legacy WIC、ROI、metadata CLIが不変か。
+
+K. W1～W6の回帰が保持されているか。
+
+L. SOURCE/Native/Gate/evidenceの実バイト対応が成立するか。
+
+M. Full MP-IMG2 Decode Exitを完了扱いしていないか。
+
+N. MP-IMG3とRuntimeへ権限を拡大していないか。
+
+レビューは次の分類で受領する。
+
+BLOCKING
+ACTIONABLE NON-BLOCKING
+EXCESSIVE
+
+HOLDの場合は実指摘に限定して修正する。
+
+修正後は必要なNative/Gateを取得し、
+新しい固定候補で再レビューする。
+
+0/0/0を目標に実装・評価ループを続ける。
+
+未解決の設計変更・権限不足・実行環境不足を
+隠して0/0/0へ合わせない。
+
+Review requestとresponseの実ID、
+SOURCE、verdict、countsを二読照合する。
+
+途中応答や不完全応答をPASSにしない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. Evidence保存
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+保存先:
+
+docs/development/evidence-published/img2-w7-latest/
+
+保存する。
+
+- taskern-request.json
+- taskern-response.json
+- source-identity.json
+- execution-manifest.json
+- environment.json
+- fixture-manifest.json
+- native-large-matrix.json
+- admission-boundary.json
+- compression-ratio-observations.json
+- roi-nonbypass.json
+- memory-observations.json
+- independent-raster-oracle.json
+- capability-table.json
+- negative-tests.json
+- verifier-results.json
+- historical-regressions.json
+- quality.json
+- quality-gate.json
+- build-gate.json
+- gate-preflight.json
+- build-product.json
+- gate-artifact-correspondence.json
+- source-evidence-reconciliation.json
+- storage.json
+- unmeasured.json
+- review-request.txt
+- review-response.txt
+- review.json
+- disposition.json
+
+現行の計画本文にW7節を追加する。
+
+IMPLEMENTATION_MASTER_PLAN.md
+BUILD_AND_RUN.md
+TESTING.md
+
+W1～W6の成功記録と歴史的Gateを不変にする。
+
+Native SOURCE、最終製品候補、
+Gate候補、Evidence HEADを区別する。
+
+Source ZIP:
+固定製品候補のGit archive。
+
+Evidence ZIP:
+固定Evidence HEADのGit archive。
+
+Review package:
+それらの実バイトに対応する別添manifest。
+
+ZIP内に存在しないmanifestを参照しない。
+
+Raw/LF/CRLF対応を明示する。
+
+Gate artifactは実際のGit blobまたは
+明示的な正規化バイトと照合する。
+
+Scratchの削除はexact owned allowlist限定。
+
+- 成功済みGate work/repo
+- 終了済みの所有target
+- process不在
+- reparseなし
+- Native integrity verify成功
+- 保持対象の証拠・sourceを除外
+
+を必須とする。
+
+削除前後でNative verifyを照合する。
+
+FAILED/nonterminal Gate、
+private logs、authority、
+通常workspaceは削除しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. 明示的な非対象
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+今回実装・承認しない。
+
+- 製品numeric memory SLO
+- 製品decoder選定・採用
+- FFmpeg製品dependency導入
+- 16K full-resolution decodeの成功主張
+- 16K全画素correctness
+- true partial/region/sequential/tiled decode
+- WIC internal scratchの実測
+- actual allocator reservations
+- true concurrent allocation peak
+- cooperative in-decoder cancellation
+- ICC colour fidelity
+- orientation/ICC product policy
+- 全codec対応
+- JPEG absolute raster correctness
+- MP-IMG3 Upload
+- GPUI texture/upload
+- Runtime RC-*
+- measured R0D ratification
+- UX/video acceptance
+- main merge
+- remote push
+- release
+
+8K/16Kが正しく拒否されても、
+full Decode Exitを閉じてはならない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. 停止条件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当scopeを停止する条件:
+
+1. Hard prerequisiteの未充足。
+
+2. 固定SOURCEとNativeのidentity不一致。
+
+3. 元encoded geometryを独立検証できない。
+
+4. Full-frame admission前のmaterializationが必要。
+
+5. WIC probeを安全にbounded実行できない。
+
+6. OS memory・disk容量不足。
+
+7. Work rootの所有境界が不明。
+
+8. Timeout後のworker回収が不確実。
+
+9. 既存WIC/ROI/metadata CLIの破壊。
+
+10. 新しいunsafe/FFIや製品dependencyが必要。
+
+11. RuntimeやGPUI変更が必要。
+
+12. Refineの実Gate状態を取得できない。
+
+13. Ternレビューのverdict/countsを完全取得できない。
+
+14. 新しいdecoder adoption判断が必要。
+
+15. 新しい数値SLO批准が必要。
+
+停止したscopeは次のいずれかで記録する。
+
+DESIGN_BLOCKED
+AUTHORITY_BLOCKED
+SAFETY_BLOCKED
+NOT_RUN
+NOT_MEASURED
+NOT_VERIFIED
+
+実行可能な独立scopeは継続する。
+
+ただし受入必須のNative caseが未実行なら、
+W7全体を技術完了としてはならない。
+
+未承認設計を独自に決定して
+停止条件を回避しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+21. W7 LIMITED TECHNICAL COMPLETION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W7限定完了には全条件を要求する。
+
+1. Taskernの新規W7 packetが成立する。
+
+2. W7 SOURCEが固定される。
+
+3. 6件の2K/4K fixtureが再生成可能。
+
+4. 大型8K/16K fixtureのencoded bytesが検証可能。
+
+5. 2K/4K real WIC decode結果が存在する。
+
+6. 正常decoded全件の独立RGBA比較が一致する。
+
+7. 8K/16Kがfull-frame admissionで拒否される。
+
+8. 1×1 ROIによる予算迂回がない。
+
+9. RefusalはOnLoad前・output未公開である。
+
+10. 高圧縮率inputでもdecoded requirementが正しい。
+
+11. Memory counterと内部scratchを混同しない。
+
+12. Existing stop/timeout契約を維持する。
+
+13. Negative verifierが全件拒否する。
+
+14. W1～W6の回帰が成立する。
+
+15. 新候補の独立Quality GateがSUCCEEDEDする。
+
+16. 新候補の独立Build GateがSUCCEEDEDする。
+
+17. Gate artifactとGit SOURCEが実バイト対応する。
+
+18. Tern独立レビューが0/0/0となる。
+
+19. 全てのNOT_MEASURED/NOT_VERIFIEDを保持する。
+
+20. 未承認の製品policy・Runtime・Uploadに変更がない。
+
+完了時は以下のみ宣言する。
+
+MP-IMG2-W7
+LIMITED TECHNICAL COMPLETION
+
+これは:
+
+- MP-IMG2 full Decode Exit
+- MP-IMG3 hard prerequisite completion
+- 16K full decode capability
+- production preview fallback acceptance
+- Runtime acceptance
+- measured R0D acceptance
+- UX acceptance
+- main/release acceptance
+
+を意味しない。
+
+W7終了時に、DC-MP-IMG2の残件と今回の測定結果を
+対応付け、次に実装可能な単一sliceを選ぶ。
+
+特に次を別々に評価する。
+
+- 16K full decodeに必要なbounded実装経路
+- true partial/sequential/tiled API availability
+- WIC内部scratch取得の実API
+- actual reservationとlifetimeの観測手段
+- cooperative cancellationの実装可能境界
+- decoder比較・製品採用の未承認design gate
+
+W7の成功だけでこれらを完了としない。
+
+最終報告には:
+
+- SOURCE full SHA
+- Evidence HEAD
+- Taskern packet digest
+- Native case counts
+- decoded/refused/timeout counts
+- pixel oracle結果
+- size別memory観測
+- source/Native/Gate対応
+- Quality/Build Gate IDs
+- artifact tuples
+- Tern verdict/counts
+- remaining full Decode Exit
+- next eligible task
+
+を記載する。
+
+Caller権限内で直ちに実装ループを開始する。
+
+NEXT DIRECTIVE

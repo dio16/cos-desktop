@@ -1,0 +1,262 @@
+{
+  "protocol": 1,
+  "op": "prepare",
+  "args": {
+    "draft": {
+      "draft_version": 1,
+      "plan_id": "cos-desktop-img2-w7",
+      "revision": 1,
+      "goal": "Implement and measure bounded real-WIC decode admission for 2K/4K materialization and 8K/16K refusal, including high-compression inputs and ROI non-bypass, without claiming full 16K decode or internal decoder allocation bounds.",
+      "invariants": [],
+      "milestones": [],
+      "tasks": [
+        {
+          "task_id": "img2-w7",
+          "goal": "Implement and measure the W7 large-dimension admission/materialization matrix under DC-MP-IMG2 without changing product decode policy.",
+          "inputs": [
+            {
+              "id": "directive",
+              "description": "Full caller-selected W7 directive: docs/development/evidence-published/img2-w6-latest/tern-next-directive.txt (verbatim, 1205 lines) with two-read correlation in tern-next-directive.json. All constraints and acceptance below are caller-authored projections of it.",
+              "context_ids": []
+            },
+            {
+              "id": "canon",
+              "description": "MP-IMG1 and MP-SEC3 technical completion; MP ss19.55-.59; DC-MP-IMG2 and media input admission/integrity; BUILD_AND_RUN 4.23-4.26; TESTING; Rendering ss6/6.1/10; ADR-0009/0012. W6 limited completion does not satisfy MP-IMG3.",
+              "context_ids": []
+            },
+            {
+              "id": "existing",
+              "description": "Reuse w2_resource_matrix.Worker with its closed stop state machine and ROI/budget/limit arguments, w2_resource_verify constants, w2_independent_oracle and w3/w4/w5/w6 fixture/oracle/verifier patterns, decode_compare harness and wic_probe.ps1 without editing the probe.",
+              "context_ids": []
+            }
+          ],
+          "constraints": [
+            {
+              "id": "scope",
+              "level": "MUST",
+              "text": "Use DC-MP-IMG2 only under ADR-0009/0012. Start daddc4ac82f2432e18e7545e1d37045240650e64 on dev. Preserve W1-W6 source, native, Gate and review bytes; no push, main or release."
+            },
+            {
+              "id": "boundaries",
+              "level": "MUST",
+              "text": "Do not change crates/media DecodeLimits/DecodeRequest/admit_decode authority, W1 full-frame budget, W2 trace/stop contract, W3 Bgr565 admission, W4 ROI output semantics, W5 metadata classification, W6 memory scope, legacy CLI contract, GPUI, Runtime, dependencies or unsafe/FFI."
+            },
+            {
+              "id": "fixtures",
+              "level": "MUST",
+              "text": "Six deterministic non-uniform 2K/4K fixtures (PNG RGB8, BMP24, real Bgr565 BI_BITFIELDS at 2048 and 4096), two refusal PNGs at 8192 and 16384, and four derived negative inputs (1x1 ROI requests on both refusal sizes, dimension-tampered and truncated 16384 PNG). Twelve cases total, single worker, encoded input at most 64 MiB per case."
+            },
+            {
+              "id": "budget",
+              "level": "MUST",
+              "text": "W7 experimental limits only: max dimension 4096, max pixels 16777216, max decoded 67108864, max scratch 67108864 with zero declared scratch, output 96 MiB, work root 512 MiB, report 8 MiB, trace 128 records/128 KiB, 64 KiB per capture, 45 s per worker, 300 s global, observed private ceiling 768 MiB. Never enlarge a limit to manufacture success."
+            },
+            {
+              "id": "admission",
+              "level": "MUST",
+              "text": "Admission is the safety boundary: 8K/16K are refused before OnLoad by full-frame dimension/pixels with no output and no published success; a 1x1 ROI never reduces the full-frame requirement. Encoded size is never treated as decoded allocation."
+            },
+            {
+              "id": "classes",
+              "level": "MUST",
+              "text": "Keep HEADER_READ, ADMITTED, REFUSED, DECODED, TIMEOUT, CANCELLED, NOT_VERIFIED and NOT_RUN distinct. Refusals record UNAVAILABLE fallback and NOT_PROVEN preview. Unobservable counters stay NOT_MEASURED, never zero."
+            },
+            {
+              "id": "oracle",
+              "level": "MUST",
+              "text": "Expected pixels come from independent PNG/BMP/Bgr565 parsing with streaming row comparison, never from WIC output; record input, expected RGBA, actual RGBA digests, compared pixels and first mismatch."
+            },
+            {
+              "id": "stop",
+              "level": "MUST",
+              "text": "Preserve the W2 confirmed-stop contract; a killed OnLoad worker is not cooperative cancellation, and artificial hold time is not decoder latency. Recover only owned processes."
+            },
+            {
+              "id": "negative",
+              "level": "MUST",
+              "text": "Ship a fail-closed verifier and exercise at least the 24 required mutation classes through verify(); structural-only replay must report source_identity_verified=false and closure_eligible=false."
+            },
+            {
+              "id": "authority",
+              "level": "MUST",
+              "text": "Stop and record DESIGN_BLOCKED, AUTHORITY_BLOCKED, SAFETY_BLOCKED, NOT_RUN, NOT_MEASURED or NOT_VERIFIED instead of inventing an unapproved design; 4K runs only after pre-checking encoded, decoded, scratch and disk headroom."
+            }
+          ],
+          "outputs": [
+            {
+              "id": "tooling",
+              "description": "Deterministic W6 fixtures, repeated process sampler/matrix, independent fail-closed verifier and focused tests.",
+              "media_type": "text/plain"
+            },
+            {
+              "id": "native",
+              "description": "Bounded Windows matrix, raw sample series, source/executable identities, cohort comparisons, arithmetic, independent raster proof and explicit measurement limitations.",
+              "media_type": "application/json"
+            },
+            {
+              "id": "closure",
+              "description": "Local quality and historical regression outcomes; pinned same-candidate Quality/Build receipts, artifact bytes, retention, complete Tern review and limited disposition.",
+              "media_type": "application/json"
+            }
+          ],
+          "acceptance": [
+            {
+              "id": "a01",
+              "statement": "New W7 SOURCE and Taskern packet are fixed before Native execution.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a02",
+              "statement": "Six 2K/4K fixtures regenerate byte-identically and the large inputs' encoded geometry is independently verified.",
+              "output_ids": [
+                "tooling"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a03",
+              "statement": "Real Windows 2K/4K WIC decodes materialize and every decoded output matches the independent RGBA oracle.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a04",
+              "statement": "8K and 16K inputs are refused at full-frame admission before OnLoad with no output or published success.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a05",
+              "statement": "1x1 ROI requests on 8K/16K are refused by the same full-frame budget, proving no ROI bypass.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a06",
+              "statement": "High-compression inputs still declare the full decoded requirement; encoded size is never used as the budget.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a07",
+              "statement": "Process identity, lifetime and memory counters are observed and separated from internal scratch and true allocation peaks.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a08",
+              "statement": "All required negative mutation classes are rejected by the real verifier.",
+              "output_ids": [
+                "tooling"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a09",
+              "statement": "W1-W6 historical regressions and current-source compatibility checks pass without rewriting historical records.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "a10",
+              "statement": "A new independent Quality Gate and Build Gate succeed on the same pinned candidate with byte-identical artifact correspondence.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "a11",
+              "statement": "The complete Tern review of the fixed candidate returns 0/0/0 with two-read correlation.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "a12",
+              "statement": "W7 limited completion is recorded while 16K full decode, partial/sequential/tiled, internal scratch, reservations, concurrent peak, cooperative cancellation, ICC, Decode Exit, IMG3, Runtime and UX stay unmeasured.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            }
+          ],
+          "evaluation": [
+            {
+              "id": "behavior",
+              "kind": "automated",
+              "requirement": "Actual bounded Windows WIC execution plus independent source-raster, arithmetic, admission, identity and mutation verification that preserves every missing or failing fact.",
+              "metric": []
+            },
+            {
+              "id": "workflow",
+              "kind": "automated",
+              "requirement": "Actual Taskern prepare, unchanged local/feature/R0/historical checks, new same-candidate Refine Quality/Build with native integrity, privacy-reviewed Tern packages and complete 0/0/0.",
+              "metric": []
+            }
+          ],
+          "dependencies": [],
+          "context": [],
+          "annotations": []
+        }
+      ]
+    },
+    "handoff": [
+      {
+        "task_id": "img2-w7",
+        "context": {
+          "schema_version": 1,
+          "items": []
+        },
+        "budget": {
+          "schema_version": 1,
+          "window_tokens": 32000,
+          "reserved_output_tokens": 4000,
+          "tool_reserve_tokens": 4000,
+          "max_input_bytes": 24000
+        }
+      }
+    ],
+    "emit": "both"
+  }
+}

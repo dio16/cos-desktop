@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "roi_8192_1x1",
+      "roi": "0,0,1,1",
+      "roi_output_bytes_required": 4,
+      "full_frame_decoded_bytes": 201326592,
+      "reason_code": "max_dimension_exceeded",
+      "roi_output": "not_produced",
+      "true_partial_decode": "not_verified",
+      "full_frame_materialization": "not_observed",
+      "onload_reached": false,
+      "bypassed_full_frame_budget": false
+    },
+    {
+      "case_id": "roi_16384_1x1",
+      "roi": "0,0,1,1",
+      "roi_output_bytes_required": 4,
+      "full_frame_decoded_bytes": 805306368,
+      "reason_code": "max_dimension_exceeded",
+      "roi_output": "not_produced",
+      "true_partial_decode": "not_verified",
+      "full_frame_materialization": "not_observed",
+      "onload_reached": false,
+      "bypassed_full_frame_budget": false
+    }
+  ],
+  "note": "A 1x1 ROI output never reduces the declared full-frame requirement."
+}

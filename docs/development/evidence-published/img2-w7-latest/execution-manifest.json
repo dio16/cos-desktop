@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "source": "21b7aff2410fe12741f0cd4691a7c08dedbefaef",
+  "platform": {
+    "dotnet": ".NET 10.0.13",
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "powershell": "7.6.7",
+    "windows": true
+  },
+  "bounds": {
+    "max_capture_bytes": 65536,
+    "max_cases": 12,
+    "max_encoded_input_bytes": 67108864,
+    "max_observed_private_bytes": 805306368,
+    "max_output_bytes": 100663296,
+    "max_report_bytes": 8388608,
+    "max_roi_output_bytes": 4,
+    "max_samples": 32,
+    "max_total_seconds": 300,
+    "max_trace_bytes": 131072,
+    "max_trace_records": 128,
+    "max_work_bytes": 536870912,
+    "max_worker_seconds": 45,
+    "max_workers": 1
+  },
+  "decode_limits": {
+    "max_bit_depth": 8,
+    "max_decoded_bytes": 67108864,
+    "max_dimension": 4096,
+    "max_pixels": 16777216,
+    "max_scratch_bytes": 67108864
+  },
+  "duration_ns": 117393074600,
+  "work_bytes": 115416045,
+  "total_cases": 12,
+  "sampler_script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+  "cases": [
+    {
+      "case_id": "png_2048",
+      "role": "decode",
+      "hold_stage": "after_onload",
+      "classification": "DECODED_AND_VERIFIED"
+    },
+    {
+      "case_id": "png_4096",
+      "role": "decode",
+      "hold_stage": "after_onload",
+      "classification": "DECODED_AND_VERIFIED"
+    },
+    {
+      "case_id": "bmp24_2048",
+      "role": "decode",
+      "hold_stage": "after_onload",
+      "classification": "DECODED_AND_VERIFIED"
+    },
+    {
+      "case_id": "bmp24_4096",
+      "role": "decode",
+      "hold_stage": "after_onload",
+      "classification": "DECODED_AND_VERIFIED"
+    },
+    {
+      "case_id": "bgr565_2048",
+      "role": "decode",
+      "hold_stage": "after_onload",
+      "classification": "DECODED_AND_VERIFIED"
+    },
+    {
+      "case_id": "bgr565_4096",
+      "role": "decode",
+      "hold_stage": "after_onload",
+      "classification": "DECODED_AND_VERIFIED"
+    },
+    {
+      "case_id": "png_8192",
+      "role": "refusal",
+      "hold_stage": "before_admission",
+      "classification": "REFUSED_FULL_FRAME"
+    },
+    {
+      "case_id": "png_16384",
+      "role": "refusal",
+      "hold_stage": "before_admission",
+      "classification": "REFUSED_FULL_FRAME"
+    },
+    {
+      "case_id": "roi_8192_1x1",
+      "role": "roi_refusal",
+      "hold_stage": "before_admission",
+      "classification": "REFUSED_FULL_FRAME"
+    },
+    {
+      "case_id": "roi_16384_1x1",
+      "role": "roi_refusal",
+      "hold_stage": "before_admission",
+      "classification": "REFUSED_FULL_FRAME"
+    },
+    {
+      "case_id": "corrupt_4096_truncated",
+      "role": "corrupt",
+      "hold_stage": "before_admission",
+      "classification": "TAMPER_NOT_VERIFIED"
+    },
+    {
+      "case_id": "corrupt_4096_dimension",
+      "role": "corrupt",
+      "hold_stage": "before_admission",
+      "classification": "TAMPER_NOT_VERIFIED"
+    }
+  ],
+  "cleanup": {
+    "complete": true,
+    "live_direct_children": []
+  },
+  "work_root_disposable": true
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "unmeasured": [
+    "WIC internal scratch peak",
+    "actual allocator reservations",
+    "true concurrent allocation peak",
+    "WIC-only allocation delta",
+    "in-decoder cooperative cancellation",
+    "actual partial decode residency",
+    "16K full-resolution decode",
+    "true region/sequential/tiled decode",
+    "product numeric memory SLO",
+    "decoder adoption"
+  ],
+  "not_closed": [
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3 Upload prerequisite",
+    "Runtime RC-*",
+    "measured R0",
+    "products UX/video",
+    "main/release"
+  ],
+  "limitations": [
+    "Process counters are whole-process observations, not WIC-internal allocations.",
+    "Sequential counter reads are not an atomic snapshot.",
+    "Boundary holds are artificial instrumentation, not decoder latency.",
+    "A refused large source states only that admission refused it; no 16K decode capability is shown.",
+    "Decoded outputs are re-encoded PNGs, not the decoder's internal residency."
+  ]
+}

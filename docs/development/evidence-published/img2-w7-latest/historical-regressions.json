@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "checks": [
+    {
+      "id": "w1-runner-selftest",
+      "marker": "\"checks\": 7",
+      "stdout": [
+        "{\"checks\": 7, \"failures\": []}"
+      ]
+    },
+    {
+      "id": "wic-admission-selftest",
+      "marker": "\"checks\":28",
+      "stdout": [
+        "{\"checks\":28,\"failures\":[]}"
+      ]
+    },
+    {
+      "id": "w2-probe-selftest",
+      "marker": "w2_probe_selftest: PASS"
+    },
+    {
+      "id": "w2-oracle",
+      "marker": "structural_repeats_identical"
+    },
+    {
+      "id": "w3-retained-native-replay",
+      "source_commit": "f8dfc3009fd7526e1b055968e2fc19892c007190"
+    },
+    {
+      "id": "w4-native-replay",
+      "source_commit": "e357888e1d622a3b672cb20f18143ac8468cc745"
+    },
+    {
+      "id": "w5-native-replay",
+      "source_commit": "current source byte-unchanged"
+    },
+    {
+      "id": "w6-native-replay",
+      "source_commit": "f99bf25b5d61152e3bb22a88e2e8efccc823b9ad"
+    }
+  ],
+  "scope": "Historical replays use each slice's own fixed SOURCE and retained Native record; the W7 source is not applied to them. Log digest retained in quality.json.",
+  "log_sha256": "sha256:b0445d438bb6e5c0d6ffa58df3a117121dbec8f4c472ba82c1ca6f711722433d"
+}

@@ -1,0 +1,424 @@
+{
+  "schema_version": 1,
+  "limits": {
+    "max_dimension": 4096,
+    "max_pixels": 16777216,
+    "max_bit_depth": 8,
+    "max_decoded_bytes": 67108864,
+    "max_scratch_bytes": 67108864
+  },
+  "bounds": {
+    "max_cases": 12,
+    "max_workers": 1,
+    "max_worker_seconds": 45,
+    "max_total_seconds": 300,
+    "max_output_bytes": 100663296,
+    "max_work_bytes": 536870912,
+    "max_trace_records": 128,
+    "max_trace_bytes": 131072,
+    "max_samples": 32,
+    "max_capture_bytes": 65536,
+    "max_report_bytes": 8388608,
+    "max_observed_private_bytes": 805306368,
+    "max_encoded_input_bytes": 67108864,
+    "max_roi_output_bytes": 4
+  },
+  "cases": [
+    {
+      "case_id": "png_2048",
+      "role": "decode",
+      "classification": "DECODED_AND_VERIFIED",
+      "declared": {
+        "width": 2048,
+        "height": 2048,
+        "bits_per_channel": 8,
+        "bits_per_pixel": 24,
+        "row_bytes": 6144,
+        "decoded_bytes_required": 12582912,
+        "bgra32_bytes_required": 16777216,
+        "scratch_bytes_required": 16777216
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": null,
+      "observed": {
+        "outcome": "decoded",
+        "reason_code": null,
+        "admission_status": "admitted",
+        "materialization": "completed",
+        "decoder": "PngBitmapDecoder"
+      },
+      "onload_reached": true,
+      "output_present": true,
+      "published_success": true
+    },
+    {
+      "case_id": "png_4096",
+      "role": "decode",
+      "classification": "DECODED_AND_VERIFIED",
+      "declared": {
+        "width": 4096,
+        "height": 4096,
+        "bits_per_channel": 8,
+        "bits_per_pixel": 24,
+        "row_bytes": 12288,
+        "decoded_bytes_required": 50331648,
+        "bgra32_bytes_required": 67108864,
+        "scratch_bytes_required": 67108864
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": null,
+      "observed": {
+        "outcome": "decoded",
+        "reason_code": null,
+        "admission_status": "admitted",
+        "materialization": "completed",
+        "decoder": "PngBitmapDecoder"
+      },
+      "onload_reached": true,
+      "output_present": true,
+      "published_success": true
+    },
+    {
+      "case_id": "bmp24_2048",
+      "role": "decode",
+      "classification": "DECODED_AND_VERIFIED",
+      "declared": {
+        "width": 2048,
+        "height": 2048,
+        "bits_per_channel": 8,
+        "bits_per_pixel": 24,
+        "row_bytes": 6144,
+        "decoded_bytes_required": 12582912,
+        "bgra32_bytes_required": 16777216,
+        "scratch_bytes_required": 16777216
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": null,
+      "observed": {
+        "outcome": "decoded",
+        "reason_code": null,
+        "admission_status": "admitted",
+        "materialization": "completed",
+        "decoder": "BmpBitmapDecoder"
+      },
+      "onload_reached": true,
+      "output_present": true,
+      "published_success": true
+    },
+    {
+      "case_id": "bmp24_4096",
+      "role": "decode",
+      "classification": "DECODED_AND_VERIFIED",
+      "declared": {
+        "width": 4096,
+        "height": 4096,
+        "bits_per_channel": 8,
+        "bits_per_pixel": 24,
+        "row_bytes": 12288,
+        "decoded_bytes_required": 50331648,
+        "bgra32_bytes_required": 67108864,
+        "scratch_bytes_required": 67108864
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": null,
+      "observed": {
+        "outcome": "decoded",
+        "reason_code": null,
+        "admission_status": "admitted",
+        "materialization": "completed",
+        "decoder": "BmpBitmapDecoder"
+      },
+      "onload_reached": true,
+      "output_present": true,
+      "published_success": true
+    },
+    {
+      "case_id": "bgr565_2048",
+      "role": "decode",
+      "classification": "DECODED_AND_VERIFIED",
+      "declared": {
+        "width": 2048,
+        "height": 2048,
+        "bits_per_channel": 6,
+        "bits_per_pixel": 16,
+        "row_bytes": 4096,
+        "decoded_bytes_required": 8388608,
+        "bgra32_bytes_required": 16777216,
+        "scratch_bytes_required": 16777216
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": null,
+      "observed": {
+        "outcome": "decoded",
+        "reason_code": null,
+        "admission_status": "admitted",
+        "materialization": "completed",
+        "decoder": "BmpBitmapDecoder"
+      },
+      "onload_reached": true,
+      "output_present": true,
+      "published_success": true
+    },
+    {
+      "case_id": "bgr565_4096",
+      "role": "decode",
+      "classification": "DECODED_AND_VERIFIED",
+      "declared": {
+        "width": 4096,
+        "height": 4096,
+        "bits_per_channel": 6,
+        "bits_per_pixel": 16,
+        "row_bytes": 8192,
+        "decoded_bytes_required": 33554432,
+        "bgra32_bytes_required": 67108864,
+        "scratch_bytes_required": 67108864
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": null,
+      "observed": {
+        "outcome": "decoded",
+        "reason_code": null,
+        "admission_status": "admitted",
+        "materialization": "completed",
+        "decoder": "BmpBitmapDecoder"
+      },
+      "onload_reached": true,
+      "output_present": true,
+      "published_success": true
+    },
+    {
+      "case_id": "png_8192",
+      "role": "refusal",
+      "classification": "REFUSED_FULL_FRAME",
+      "declared": {
+        "width": 8192,
+        "height": 8192,
+        "bits_per_channel": 8,
+        "bits_per_pixel": 24,
+        "row_bytes": 24576,
+        "decoded_bytes_required": 201326592,
+        "bgra32_bytes_required": 268435456,
+        "scratch_bytes_required": 268435456
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": "max_dimension_exceeded",
+      "observed": {
+        "outcome": "oversize",
+        "reason_code": "max_dimension_exceeded",
+        "admission_status": "refused",
+        "materialization": "not_requested",
+        "decoder": "PngBitmapDecoder"
+      },
+      "onload_reached": false,
+      "output_present": false,
+      "published_success": false
+    },
+    {
+      "case_id": "png_16384",
+      "role": "refusal",
+      "classification": "REFUSED_FULL_FRAME",
+      "declared": {
+        "width": 16384,
+        "height": 16384,
+        "bits_per_channel": 8,
+        "bits_per_pixel": 24,
+        "row_bytes": 49152,
+        "decoded_bytes_required": 805306368,
+        "bgra32_bytes_required": 1073741824,
+        "scratch_bytes_required": 1073741824
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": "max_dimension_exceeded",
+      "observed": {
+        "outcome": "oversize",
+        "reason_code": "max_dimension_exceeded",
+        "admission_status": "refused",
+        "materialization": "not_requested",
+        "decoder": "PngBitmapDecoder"
+      },
+      "onload_reached": false,
+      "output_present": false,
+      "published_success": false
+    },
+    {
+      "case_id": "roi_8192_1x1",
+      "role": "roi_refusal",
+      "classification": "REFUSED_FULL_FRAME",
+      "declared": {
+        "width": 8192,
+        "height": 8192,
+        "bits_per_channel": 8,
+        "bits_per_pixel": 24,
+        "row_bytes": 24576,
+        "decoded_bytes_required": 201326592,
+        "bgra32_bytes_required": 268435456,
+        "scratch_bytes_required": 268435456
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": "max_dimension_exceeded",
+      "observed": {
+        "outcome": "oversize",
+        "reason_code": "max_dimension_exceeded",
+        "admission_status": "refused",
+        "materialization": "not_requested",
+        "decoder": "PngBitmapDecoder"
+      },
+      "onload_reached": false,
+      "output_present": false,
+      "published_success": false
+    },
+    {
+      "case_id": "roi_16384_1x1",
+      "role": "roi_refusal",
+      "classification": "REFUSED_FULL_FRAME",
+      "declared": {
+        "width": 16384,
+        "height": 16384,
+        "bits_per_channel": 8,
+        "bits_per_pixel": 24,
+        "row_bytes": 49152,
+        "decoded_bytes_required": 805306368,
+        "bgra32_bytes_required": 1073741824,
+        "scratch_bytes_required": 1073741824
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": "max_dimension_exceeded",
+      "observed": {
+        "outcome": "oversize",
+        "reason_code": "max_dimension_exceeded",
+        "admission_status": "refused",
+        "materialization": "not_requested",
+        "decoder": "PngBitmapDecoder"
+      },
+      "onload_reached": false,
+      "output_present": false,
+      "published_success": false
+    },
+    {
+      "case_id": "corrupt_4096_truncated",
+      "role": "corrupt",
+      "classification": "TAMPER_NOT_VERIFIED",
+      "declared": {
+        "width": 4096,
+        "height": 4096,
+        "bits_per_channel": 8,
+        "bits_per_pixel": 24,
+        "row_bytes": 12288,
+        "decoded_bytes_required": 50331648,
+        "bgra32_bytes_required": 67108864,
+        "scratch_bytes_required": 67108864
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": null,
+      "observed": {
+        "outcome": "decoded",
+        "reason_code": null,
+        "admission_status": "admitted",
+        "materialization": "completed",
+        "decoder": "PngBitmapDecoder"
+      },
+      "onload_reached": true,
+      "output_present": true,
+      "published_success": true
+    },
+    {
+      "case_id": "corrupt_4096_dimension",
+      "role": "corrupt",
+      "classification": "TAMPER_NOT_VERIFIED",
+      "declared": {
+        "width": 4000,
+        "height": 4096,
+        "bits_per_channel": 8,
+        "bits_per_pixel": 24,
+        "row_bytes": 12000,
+        "decoded_bytes_required": 49152000,
+        "bgra32_bytes_required": 65536000,
+        "scratch_bytes_required": 65536000
+      },
+      "limits": {
+        "max_dimension": 4096,
+        "max_pixels": 16777216,
+        "max_bit_depth": 8,
+        "max_decoded_bytes": 67108864,
+        "max_scratch_bytes": 67108864
+      },
+      "expected_refusal": null,
+      "observed": {
+        "outcome": "decoded",
+        "reason_code": null,
+        "admission_status": "admitted",
+        "materialization": "completed",
+        "decoder": "PngBitmapDecoder"
+      },
+      "onload_reached": true,
+      "output_present": true,
+      "published_success": true
+    }
+  ]
+}
