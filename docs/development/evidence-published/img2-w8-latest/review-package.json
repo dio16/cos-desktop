@@ -1,42 +1,44 @@
 {
   "schema_version": 1,
   "slice": "MP-IMG2-W8",
-  "round": 1,
-  "experimental_native_source": "85efc5c50a2e16e44d392b274bd41eda22766291",
-  "gate_candidate": "e4ff23cf10d7db1218f577877ae85c713a19c24a",
-  "candidate_digest": "sha256:d463597e091e0f5c379ca5c1f17f97fc115f92ea2e93c4a3ba08f3952af7b48e",
-  "evidence_head": "665cace905d531548be1518d6c0364ab4e4fe778",
-  "manifest_commit_relationship": "This manifest is committed as a child of evidence_head; both archives are exactly Git archives at the commits named here and this manifest is not inside its own archive.",
+  "round": 2,
+  "experimental_native_source": "60f3aecc99802d865190a03071c20204a344fad7",
+  "gate_candidate": "a7ecc9f67327e08812336ca6d8a145b915834ddf",
+  "candidate_digest": "sha256:f4970ab68bd5a7cf715ab37e1065367bb3545842e242e3023daaed8405da121b",
+  "evidence_head": "2b0132d1f529c2b32f3387d739c0a2ac0fabf538",
+  "manifest_commit_relationship": "This manifest is committed as a child of evidence_head; both archives are exact Git archives at the commits named here and this manifest is not inside its own archive.",
   "source_zip": {
     "schema_version": 1,
     "archive": "w8-review-source.zip",
-    "commit": "e4ff23cf10d7db1218f577877ae85c713a19c24a",
-    "bytes": 5353081,
-    "sha256": "sha256:4b02f2afd00c7896396ae06dac59ede3c274024a1cda7721ad8fc474fbaedec1"
+    "commit": "a7ecc9f67327e08812336ca6d8a145b915834ddf",
+    "bytes": 5421394,
+    "sha256": "sha256:146910bca3de489ad7e40e7f3207c5ea58863d8feb1916c8e97e4d0177cffa3f"
   },
-  "source_entries": 751,
+  "source_entries": 765,
   "source_entry_manifest": {
     "path_inside_evidence_zip": "docs/development/evidence-published/img2-w8-latest/review-package-source.json",
     "present": true,
-    "entries": 751,
+    "entries": 765,
     "matches_source_archive_sha256": true
   },
   "evidence_zip": {
     "archive": "w8-review-evidence.zip",
-    "commit": "665cace905d531548be1518d6c0364ab4e4fe778",
-    "bytes": 864177,
-    "sha256": "sha256:7ad97d2a8f2758e1d9ac3c646889c8d0c139d2669e57111639f1c109f74ba07b",
-    "files": 38
+    "commit": "2b0132d1f529c2b32f3387d739c0a2ac0fabf538",
+    "bytes": 882821,
+    "sha256": "sha256:c1ac000cd3f8ac2166ffd21522392779dbb74f6ca237990e0f63070813dcb8f0",
+    "files": 44
   },
   "gates": {
-    "quality": "4da3f2a0-f117-45bc-84df-72c69521acdb",
-    "quality_w8": "e00bf926-2436-4899-9ebe-c80704e8c822",
-    "build": "33f33f7d-8c34-4749-a53f-2807ee578d66"
+    "workspace": "e374ec63-74a0-4271-bc2e-0b2d0b6df93d",
+    "img2": "1c2ce2fa-ee6b-4bee-b19a-b7921e7513da",
+    "w8": "4b1e1d9f-a4ec-44c1-a02b-a1655e114836",
+    "build": "1587b7e0-ee28-4041-8132-86275bcc9692"
   },
   "artifact_correspondence": "gate-artifact-correspondence.json",
   "raw_gate_receipts": [
-    "gate-quality_core-receipts.json",
-    "gate-quality_w8-receipts.json",
+    "gate-workspace-receipts.json",
+    "gate-img2-receipts.json",
+    "gate-w8-receipts.json",
     "gate-build-receipts.json"
   ],
   "candidate_to_evidence_changed_paths": [
@@ -45,18 +47,24 @@
     "docs/development/evidence-published/img2-w8-latest/build-product.json",
     "docs/development/evidence-published/img2-w8-latest/gate-artifact-correspondence.json",
     "docs/development/evidence-published/img2-w8-latest/gate-build-receipts.json",
-    "docs/development/evidence-published/img2-w8-latest/gate-preflight.json",
-    "docs/development/evidence-published/img2-w8-latest/gate-quality_core-receipts.json",
-    "docs/development/evidence-published/img2-w8-latest/gate-quality_w8-receipts.json",
+    "docs/development/evidence-published/img2-w8-latest/gate-img2-receipts.json",
+    "docs/development/evidence-published/img2-w8-latest/gate-w8-receipts.json",
+    "docs/development/evidence-published/img2-w8-latest/gate-workspace-receipts.json",
     "docs/development/evidence-published/img2-w8-latest/quality-core-gate.json",
+    "docs/development/evidence-published/img2-w8-latest/quality-img2-gate.json",
     "docs/development/evidence-published/img2-w8-latest/quality-w8-gate.json",
     "docs/development/evidence-published/img2-w8-latest/review-package-source.json",
     "docs/development/evidence-published/img2-w8-latest/source-evidence-reconciliation.json",
     "docs/development/evidence-published/img2-w8-latest/storage.json"
   ],
   "all_after_candidate_changes_docs_only": true,
+  "round1_findings": {
+    "A-W8-01": "Decoded legs now require probe outcome, worker outcome, exit code and terminal stage to agree, and bind candidate/case identity plus probe identity.",
+    "A-W8-02": "Both malformed sources now require exactly two legs with conditional outcome, exit, output and publication checks; four mutations were added."
+  },
+  "build_product": "NOT_CAPTURED: the isolated build output was disposed before hashing, so no digest is claimed.",
   "package_boundaries": {
-    "native": "Observed Windows WIC and GDI+ runs: 12 sources, 20 legs, 3 absolute cases, 5 differential cases, 2 malformed streams. No GUI claim.",
+    "native": "Observed Windows WIC and GDI+ runs: 12 sources, 20 legs, 3 absolute, 5 differential, 2 malformed. No GUI claim.",
     "git_objects": "Not attached; archive bytes were compared to the retained repository before packaging.",
     "private_refine": "Authority, raw private logs and executables are not attached; raw status/inspect/verify responses and artifact hashes are attached.",
     "disposition": "Tern review pending; no decoder adoption, tolerance, full Decode Exit, Runtime or UX claim."
