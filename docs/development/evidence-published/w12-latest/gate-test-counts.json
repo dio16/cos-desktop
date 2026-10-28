@@ -24,10 +24,38 @@
     "all_pass": true
   },
   "w12": {
-    "tests": 21,
-    "passed": 21,
-    "negative_classes": 39
+    "tests": 22,
+    "passed": 22,
+    "negative_classes": 39,
+    "basis": "Final repaired-pin W12 suite: 22 tests OK, 39 semantic mutation classes; the 21-test runs are recorded as earlier attempts in execution-manifest.json and negative-tests.json keeps 22."
   },
   "feature_route": "NOT_RUN for W12; no Rust feature-code change and no older result transferred.",
-  "basis": "Counts come from the eight independent Gates on the repaired candidate 9b60d16 (digest ef831f8b) plus the retained W12 suite run; skipped R0 cases are not promoted."
+  "basis": "Counts come from the eight independent Gates on the repaired candidate 9b60d16 (digest ef831f8b) plus the retained W12 suite run; skipped R0 cases are not promoted.",
+  "earlier_w12_attempts": {
+    "w12-tests-r1": "failed run retained",
+    "w12-tests-r2": "21 tests, pre-A-R1-01",
+    "w12-tests-r3": "21 tests, pin 23f6e6c",
+    "w12-tests-r4": "22 tests on the A-R1-01 repaired pin"
+  },
+  "gate_checks": {
+    "note": "Each Gate receipt is authoritative for its own check outcomes; these counts summarise the same runs.",
+    "w12_gate_checks": [
+      [
+        "w12-fixed-tests",
+        "pass"
+      ],
+      [
+        "w12-source-verifier",
+        "pass"
+      ]
+    ],
+    "workspace_checks": 7,
+    "images_checks": 9,
+    "w8_checks": 1,
+    "w9_checks": 1,
+    "w10_checks": 1,
+    "w11_checks": 2,
+    "build_checks": 2,
+    "total_checks": 25
+  }
 }
