@@ -1,0 +1,45 @@
+MP-IMG2-W8 の固定SOURCE独立レビューを依頼します。対象は Windows WIC と GDI+ による JPEG 実decode、独立marker解析とabsolute reference、decoder間のdifferential比較だけです。W1～W7のPASSやGateを今回の成功として流用しないでください。
+
+Repository: dio16/cos-desktop / branch dev / 未push。
+Native実行前の固定SOURCE: 85efc5c50a2e16e44d392b274bd41eda22766291。
+製品・3 Gate候補: e4ff23cf10d7db1218f577877ae85c713a19c24a。
+candidate digest: sha256:d463597e091e0f5c379ca5c1f17f97fc115f92ea2e93c4a3ba08f3952af7b48e。
+Evidence HEAD: 665cace905d531548be1518d6c0364ab4e4fe778。
+Owner: DC-MP-IMG2。Taskern packet sha256:07e84912f10274bfb91b7459a2965292d306110f19154aaefcb66a31a85e9f26。
+
+添付は w8-review-source.zip / w8-review-evidence.zip / review-package.json(別添・日時付き改名)の3点です。
+- SOURCE ZIP: 候補e4ff23c…のGit archive、751 entry、5,353,081 bytes、sha256:4b02f2afd00c7896396ae06dac59ede3c274024a1cda7721ad8fc474fbaedec1。全entryが候補Git blobとrawまたは明示LF正規化で一致。
+- Evidence ZIP: Evidence HEAD 665cace…のGit archive、38 file、sha256:7ad97d2a8f2758e1d9ac3c646889c8d0c139d2669e57111639f1c109f74ba07b。review-package-source.json(751 entryのsource manifest)を実memberとして含み、提出前にmanifestとZIPの全entryを照合済み(不一致0)。
+- private Git objects、Windows decoder本体、Refine state/private logは含めません。manifestはEvidence HEADの子commitで、自己ZIP hashは主張しません。
+
+実装と実測:
+1. 12 fixed source: DC-only hand-built baseline grayscale 3件(8x8、16x16、32x24)、非一様baseline 5件(4:4:4/4:2:0 × 256²/1024²、低quant変種)、派生malformed 2件、progressive 2件はNOT_RUN(承認済みprogressive encoderが無いため)。
+2. 全encoded bytesはin-repo generator製。外部encoderは使いません。marker parserはSOI/DQT/SOF/DHT/SOS/entropy/EOI、segment bounds、precision、sampling、量子化/Huffman表を独立解析し、EOI欠落や長さ不正を拒否します。
+3. absolute referenceはDC-only caseのみ、parsed DQT/DC係数/level shiftから導出。decoder出力は一切使っていません。3/3がWIC・GDI+両方で全画素一致。
+4. 非一様5件はWIC/GDI+のcanonical PNG RGBAを全画素比較。全件exact一致(differing 0)。ただし両者は同じWindows JPEG codecを使うため、これはDIFFERENTIAL_ONLYでありabsolute correctnessではありません。
+5. malformed: truncated scanは両decoderが画素を返すがEOI欠落のためTAMPER_NOT_VERIFIED、segment長不正はWIC corrupt/GDI+ errorで、どちらもcontent verificationへ昇格していません。
+6. GDI+はheader-only loadもtraceも持たないため、lifetime/memory/stagesはNOT_MEASURED。WICのprocess counterは人工hold下のwhole-process観測です。
+
+品質と独立Gate:
+- W8 tests 14(fixtures/reference 9、negative 5)。32 mutation classesを実verify()が全拒否、structural replayはsource_identity_verified=false / closure_eligible=false。
+- IMG2 194 PASS、W1～W7 replay、WIC admission selftest、w2 probe selftest/oracle、w1 runner selftest、quality.ps1 Rust535/1、feature Rust539/1、feature clippy/build、R0 340/12。
+- Quality Core Gate 4da3f2a0-f117-45bc-84df-72c69521acdb: SUCCEEDED 16/16、32 artifacts。
+- W8 Quality Gate e00bf926-2436-4899-9ebe-c80704e8c822: SUCCEEDED 3/3、32 artifacts。
+- Build Gate 33f33f7d-8c34-4749-a53f-2807ee578d66: SUCCEEDED 1/1、32 artifacts。
+- 3 Gate同一候補・同一digest、32/32 artifact tuplesと実bytes一致、候補Git blob一致。status/inspect/verifyは全てexit0、cleanup complete、owner_alive=false、recovery_required=false。生receiptを保存済み。preflightはUNKNOWNのまま。
+- 先行dispatch 2件はFAILED(LF probe identity導入前、IMG2 check 300秒timeout)として保持し、成功を転送していません。
+- 実Build出力32,275,456 bytes、sha256:32b94b1728b12f171ef0ea05aee78613be9d82d9a5d68d06ebf4805bfb1c9c7cを削除前に実測。成功3 Gateのwork/repoとcheck環境targets 3件のみ削除(11,347 files、4,180,300,328 logical bytes)。削除後も3 GateのverifyはSUCCEEDED。
+
+重点確認:
+- encoded JPEGを独立解析しているか。absolute referenceがdecoder出力由来でないか。
+- differential一致をabsolute correctnessへ誤昇格していないか。元画像を復元後の期待値としていないか。
+- sampling/precision/classの混同、正規化条件の不一致、ICC/EXIFの誤帰属がないか。
+- full-frame admission、encoded size非流用、malformedのfail-closed、stop契約。
+- W1～W7回帰とlegacy CLIの不変性、SOURCE/Native/Gate/Evidenceの実バイト対応、product decoder採用やSLOの無断批准がないか。
+
+実行可能範囲:
+添付だけではprivate Git objects、Windows decoder、Refine stateは使えません。fixture再生成、marker再解析、absolute reference再計算、differential再計算、32 mutation replay、receipt照合は可能です。固定Git source-bound検証・Windows実行・Refine再実行・GUIはNOT_RUNと明記してください。Gitやテストを偽装してPASSにしないでください。
+
+今回は全JPEGのabsolute correctness、全codec、製品decoder選定/adoption、製品tolerance、ICC colour fidelity、EXIF自動適用、16K full decode、true partial/region/sequential/tiled decode、内部scratch、実予約、true concurrent peak、cooperative cancellation、product numeric SLO、full MP-IMG2 Decode Exit、MP-IMG3 Upload、Runtime、measured R0、UX/video、main/releaseを完了しません。未測定のまま保持できた場合にだけMP-IMG2-W8 LIMITED TECHNICAL COMPLETIONの可否を判断してください。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘はファイル・条件・再現・最小修正まで示してください。添付読取が未完なら未完と明示してください。最後に独立行で REVIEW COMPLETE、その次の最終行に verdict/countsを記してください。
