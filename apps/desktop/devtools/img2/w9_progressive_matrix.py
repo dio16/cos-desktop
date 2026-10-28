@@ -64,7 +64,7 @@ def _work_bytes(work):
     for path in work.rglob("*"):
         info = path.stat()
         if S_ISREG(info.st_mode):
-            total += info.size
+            total += info.st_size
     return total
 
 
