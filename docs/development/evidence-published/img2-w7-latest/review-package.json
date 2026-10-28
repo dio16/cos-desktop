@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W7",
+  "round": 1,
+  "experimental_native_source": "dbb42bb55a98563e9daea6ecd3002a7ca5d02cca",
+  "gate_candidate": "71951642d6d8acd519e5276a02e91595a9281971",
+  "candidate_digest": "sha256:e386bdfaf9315b8d95df1094e61222a5512d8a1d836e149c7e4b6d3b13c5299a",
+  "evidence_head": "41b7a9dc061a3016a9e5cef4aadddf2e88688eb9",
+  "manifest_commit_relationship": "This manifest is committed as a child of evidence_head; both ZIPs are exactly Git archives at the commits named here and the manifest is not inside its own archive.",
+  "source_zip": {
+    "archive": "w7-review-source.zip",
+    "commit": "71951642d6d8acd519e5276a02e91595a9281971",
+    "bytes": 4698201,
+    "sha256": "sha256:e395602c9d720562049fbc05ad5c795a0ddd24423dbb3e58d2efd6d5dabfae8d"
+  },
+  "source_entries": 702,
+  "evidence_zip": {
+    "archive": "w7-review-evidence.zip",
+    "commit": "41b7a9dc061a3016a9e5cef4aadddf2e88688eb9",
+    "bytes": 490606,
+    "sha256": "sha256:cf9bc1ec46147a484b189830d21c67573fee3427fade888d8b7b638d8f27f3fd"
+  },
+  "evidence_entries": 34,
+  "source_entry_manifest": {
+    "where": "attached review-package.json, key source_zip.entries (also in the evidence ZIP as review-package-source.json)",
+    "inside_evidence_zip": true,
+    "entries": 702
+  },
+  "gates": {
+    "quality": "5a106756-1910-4173-add4-21e92e35717e",
+    "build": "7803c9f0-efee-446b-94cf-d2cf40a6e37b"
+  },
+  "artifact_correspondence": "gate-artifact-correspondence.json",
+  "candidate_to_evidence_changed_paths": [
+    "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+    "docs/development/evidence-published/img2-w7-latest/build-gate.json",
+    "docs/development/evidence-published/img2-w7-latest/build-product.json",
+    "docs/development/evidence-published/img2-w7-latest/gate-artifact-correspondence.json",
+    "docs/development/evidence-published/img2-w7-latest/gate-preflight.json",
+    "docs/development/evidence-published/img2-w7-latest/gate-test-counts.json",
+    "docs/development/evidence-published/img2-w7-latest/quality-gate.json",
+    "docs/development/evidence-published/img2-w7-latest/storage.json"
+  ],
+  "all_after_candidate_changes_docs_only": true,
+  "package_boundaries": {
+    "native": "Observed Windows WIC CLI run: 12 cases, 6 decoded with full-raster oracle matches, 4 admission refusals, 2 damaged containers NOT_VERIFIED. No GUI claim.",
+    "git_objects": "Not attached; archive bytes are compared to the retained repository here and the comparison is recorded.",
+    "private_refine": "Authority, raw private logs and executables are not attached; saved status/inspect/verify and artifact hashes are attached.",
+    "disposition": "Tern review pending; no W7 closure, full Decode/Upload/Runtime/measured R0/UX claim."
+  }
+}

@@ -1,0 +1,48 @@
+MP-IMG2-W7 の固定SOURCE独立レビューを依頼します。対象は Windows WIC の大寸法入力に対する decode admission と bounded materialization、および 8K/16K の full-frame refusal だけです。W1～W6のPASSや過去のGateを今回の成功として流用しないでください。
+
+Repository: dio16/cos-desktop / branch dev / 未push。
+Native実行前の固定SOURCE: dbb42bb55a98563e9daea6ecd3002a7ca5d02cca。
+製品・両Gate候補: 71951642d6d8acd519e5276a02e91595a9281971。
+両Gateのcandidate digest: sha256:e386bdfaf9315b8d95df1094e61222a5512d8a1d836e149c7e4b6d3b13c5299a。
+Owner: DC-MP-IMG2。Taskern 0.2.0 prepareの新packet sha256:abbb99e75750b866bef0a76d2ea46dd46a8be824ac0bbb1c9bae0a39b29f7147。完全なW7指示は img2-w6-latest/tern-next-directive.txt/.json に保持。
+
+添付は w7-review-source.zip / w7-review-evidence.zip / review-package.json(サーバー側で日時付きに改名)の3点です。
+- SOURCE ZIPは候補7195164…のGit archive: 702 entry、4,698,201 bytes、SHA256 sha256:e395602c9d720562049fbc05ad5c795a0ddd24423dbb3e58d2efd6d5dabfae8d。全entryが候補Git blobとrawまたは明示LF正規化で一致します。
+- Evidence ZIPはreview-package.jsonのevidence_head(41b7a9d…)のGit archive: 34 entry、490,606 bytes、SHA256 sha256:cf9bc1ec46147a484b189830d21c67573fee3427fade888d8b7b638d8f27f3fd。W7全証拠、更新済みMP/BUILD_AND_RUN/TESTING本文、W7指示、W1 runner selftestを含みます。
+- 候補からEvidence HEADへの変更はdocs-only 8件です。private Git objects、Windows WIC本体、Refine state/private log/実行ファイルは含めません。manifestはEvidence HEADの子commitで、自己hashは主張しません。
+
+実装と実測:
+1. 12 fixed case: PNG RGB8/BMP24/実Bgr565 BI_BITFIELDSの2048²と4096²(6件)、8192²と16384²のfull-frame refusal(2件)、同サイズへの1×1 ROI要求(2件)、budget内に収めたtruncated PNGとIHDR width改変PNG(2件)。single worker。
+2. W7 experimental limits: dimension 4096、pixels 16,777,216、bit depth 8、decoded 67,108,864、scratch 67,108,864(declared scratch 0)。output 96 MiB、work root 512 MiB、report 8 MiB、trace 128 records/128 KiB、capture 64 KiB、worker 45 s、global 300 s。製品budgetやSLOではありません。
+3. 2K/4Kの6件はafter_onloadで人工holdしてprocess counterを1回観測し、release後に実decode。期待画素は独立PNG CRC/inflate/filter、BMP24 header/stride、Bgr565 maskからstreaming row比較で構成し、WIC出力から期待値を作っていません。6/6が全画素一致(4096²は67,108,864 RGBA bytes比較)。
+4. 8K/16Kの4件はbefore_admissionで観測後、`max_dimension_exceeded`で拒否。OnLoad stageなし、outputなし、published_success=false。1×1 ROI要求でもfull-frame requirementは減らず、reasonはROI出力上限ではなく予算拒否です。
+5. 高圧縮率PNG(encoded 3.5 MB)でもdecoded requirement 805 MBを保持して拒否しており、encoded bytesをdecoded allocationと見なしていません。
+6. 破損入力2件はWICが黙ってdecodeしてしまったため、独立oracleが内容を再構成できず`TAMPER_NOT_VERIFIED`として成功扱いしていません。decoderの自己申告を成功根拠にしない境界です。
+7. process counterはwhole-process観測で、内部scratch・実予約・true concurrent peak・WIC-only delta・partial residency・16K full decode・preview fallbackはNOT_MEASURED/NOT_PROVENのまま保持。
+
+品質と独立Gate:
+- W7 tests: fixtures 11、admission 6、negative 7。24 mutation classesを実際のverify()が全て拒否し、structural replayはsource_identity_verified=false / closure_eligible=false。
+- IMG2 180 PASS、W1～W6 replay、WIC admission selftest、w2 probe selftest/oracle、w1 runner selftest、quality.ps1 Rust535 PASS/1 ignored、feature Rust539 PASS/1 ignored、feature clippy/build、R0 340 PASS/12 skipped。
+- Quality Gate 5a106756-1910-4173-add4-21e92e35717e: SUCCEEDED 20/20。
+- Build Gate 7803c9f0-efee-446b-94cf-d2cf40a6e37b: SUCCEEDED 1/1。
+- 両Gateの候補・digest一致、33/33 artifact tuplesと実bytes一致、33/33捕捉物が候補Git blobとraw一致。status/inspect/verifyは両方SUCCEEDED、cleanup complete、owner_alive=false、recovery_required=false。preflight集約はUNKNOWN(外部4 slot)でPASSとは記録していません。
+- 隔離GateのR0は316 PASS/36 skipped、IMG2 180、W7 11/6/7、Rust 535で、ローカル340/12と混ぜていません。
+- 最初のQuality GateはW7 checkにGit環境が無く失敗(FAILED)。request環境を整えて再実行し、成功を転送していません。SOURCE変更なし。
+- 実Build出力32,275,456 bytes、sha256:a324d29bb1369c068c06e789ef56fd5be2b18d98705d2914262644b40add940aを削除前に実測。binaryはimmutable artifactとして保存していません。
+- 成功した正確な2 Gateのwork/repoと、check環境が使ったtargets 3件だけを、process/reparse不在とnative verify確認後に削除。10,490 files、4,148,253,045 logical bytes。削除後も両GateのverifyはSUCCEEDEDで内容同一。
+
+重点確認:
+- 2K/4Kが実materializationで、独立oracleがWIC出力から期待値を作っていないこと。
+- 8K/16KがOnLoad前に確実に拒否され、output/publicationがないこと。
+- 1×1 ROIがfull-frame admissionを迂回しないこと。encoded sizeがbudgetに混入していないこと。
+- 破損入力の扱いがfail-closedか。16K refusalを16K decode capabilityへ昇格していないこと。
+- process counterとinternal scratch/actual reservation/concurrent peakの区別、W2 stop契約、W1～W6 CLI/replayの不変性。
+- SOURCE/Native/Gate/evidenceの実bytes対応、Evidence ZIPの本文が現在版であること、候補以降のdocs-only差分、manifestのEvidence HEAD・子commit境界、33 artifactの対応、storage前後integrity。
+- MP-IMG1/SEC3 hard prerequisites、62 DC-MP link、41 DAG edges、decision gates、W1～W6本文/歴史記録の保持。
+
+実行可能範囲の正直な扱い:
+添付だけではprivate Git履歴/objects、Windows WIC、Refine state/private logs/実行ファイルを使えません。fixture再生成、oracle再計算、arith/replay試験は可能ですが、固定Git source-bound検証・Windows実行・Refine再実行・GUIはNOT_RUNと明記してください。Gitやテストを偽装してPASSにしないでください。保存済み証拠の照合と再実行を区別してください。
+
+今回はproduct numeric memory SLO、decoder採用、全codec、16K full decode、true partial/region/sequential/tiled decode、WIC内部scratch、実予約、true concurrent allocation peak、cooperative in-decoder cancellation、ICC fidelity、full MP-IMG2 Decode Exit、MP-IMG3 prerequisite、GPUI Upload、Runtime、measured R0、UX/video、main/releaseを完了しません。未測定のまま保持できた場合にだけMP-IMG2-W7 LIMITED TECHNICAL COMPLETIONの可否を判断してください。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘はファイル・条件・再現・最小修正まで示してください。添付読取が未完なら未完と明示してください。最後に独立行で REVIEW COMPLETE、その次の最終行に verdict/counts(例: PASS 0 / 0 / 0、またはHOLDと実件数)を記してください。
