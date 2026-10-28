@@ -514,7 +514,7 @@ def _run_worker(case: dict, hold: str, work: Path, pwsh: Path, fixture_inventory
             raise ValueError("worker_finish_incomplete")
         if result["probe_result"] != json.loads(stdout_utf8):
             raise ValueError("probe_capture_mismatch")
-        observation = _decoder_observation(result, fixture_by_id[case["fixture_id"]])
+        observation = _decoder_observation(result["probe_result"], fixture_by_id[case["fixture_id"]])
         if decode:
             if (result["exit_code"] != 0 or result["outcome"] != "decoded"
                     or not result["output_present"] or not result["published_success"]):
