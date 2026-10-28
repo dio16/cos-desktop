@@ -24,7 +24,7 @@ ICC_PROFILE = _profile()
 
 
 def sha(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
+    return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
 def _need(condition: bool, message: str) -> None:
@@ -146,5 +146,5 @@ def write_fixture(case_id: str, path) -> dict:
             "expected_orientation": expected_orientation(case),
             "expected_transform": expected_transform(case),
             "expected_icc": bool("icc" in case["segments"]),
-            "expected_icc_sha256": "sha256:" + sha(ICC_PROFILE) if "icc" in case["segments"] else None,
+            "expected_icc_sha256": sha(ICC_PROFILE) if "icc" in case["segments"] else None,
             "truncated": case["truncated"], "reference": case["reference"]}

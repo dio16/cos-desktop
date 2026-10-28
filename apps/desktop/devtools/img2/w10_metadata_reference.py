@@ -13,7 +13,7 @@ ALLOWED_MARKERS = {"SOI", "APP1", "APP2", "DQT", "SOF0", "DHT", "SOS", "EOI"}
 
 
 def sha(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
+    return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
 def _need(condition: bool, message: str) -> None:
@@ -88,7 +88,7 @@ def parse_icc(body: bytes) -> dict:
     _need(profile[36:40] == b"acsp", "icc_signature_invalid")
     _need(profile[16:20] in (b"RGB ", b"CMYK", b"GRAY"), "icc_colour_space_invalid")
     return {"sequence": sequence, "total": total, "bytes": len(profile),
-            "sha256": "sha256:" + sha(profile), "colour_space": profile[16:20].decode("ascii").strip(),
+            "sha256": sha(profile), "colour_space": profile[16:20].decode("ascii").strip(),
             "version": f"{profile[8]}.{profile[9] >> 4}"}
 
 
