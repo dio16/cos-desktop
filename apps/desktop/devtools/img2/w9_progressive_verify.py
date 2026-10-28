@@ -158,6 +158,8 @@ def _wic_progressive(case, leg, fixture):
         need(result.get(key) == values[key], "wic_requirement_mismatch:" + key)
     need(result.get("input_bytes") == len(fixture), "wic_input_bytes_mismatch")
     need(result.get("admission_status") == "admitted", "wic_admission_forged")
+    need(record.get("fixture_id") == case["id"] and record.get("input_sha256") == sha(fixture),
+         "wic_worker_fixture_binding_invalid")
     stages, _ = _trace(record)
     need([stage["stage"] for stage in stages] == list(DECODE_STAGES), "wic_stage_sequence_invalid")
     terminal = stages[-1]
@@ -173,6 +175,7 @@ def _wic_progressive(case, leg, fixture):
     need(output.get("present") is True and output.get("hex"), "wic_output_missing")
     data = bytes.fromhex(output["hex"])
     need(output["sha256"] == sha(data) and output["bytes"] == len(data), "wic_output_digest_mismatch")
+    need(result.get("output_bytes") == len(data), "wic_declared_output_bytes_mismatch")
     need(record.get("published_success") is True and record.get("output_present") is True,
          "wic_publication_inconsistent")
     return data
@@ -192,6 +195,7 @@ def _gdi_progressive(case, leg, fixture):
     need(result.get("width") == case["width"] and result.get("height") == case["height"],
          "gdiplus_geometry_mismatch")
     need(result.get("input_bytes") == len(fixture), "gdiplus_input_bytes_mismatch")
+    need(leg.get("case_id") == case["id"], "gdiplus_case_identity_invalid")
     output = record.get("output") or {}
     need(output.get("present") is True and output.get("hex"), "gdiplus_output_missing")
     data = bytes.fromhex(output["hex"])
@@ -320,9 +324,19 @@ def verify(record: dict, source_root=None) -> dict:
                      and [leg.get("candidate") for leg in legs_rows] == ["wic", "gdiplus"],
                      "malformed_legs_missing:" + case["id"])
                 for leg in legs_rows:
+                    need(leg.get("case_id") == case["id"], "malformed_leg_identity_invalid")
                     record_leg = leg.get("leg") or {}
                     result = record_leg.get("probe_result") or {}
                     observed = result.get("outcome")
+                    expected_probe = ("wic-gdiplus-v1" if leg.get("candidate") == "wic"
+                                      else "system-drawing-gdiplus-v1")
+                    need(result.get("probe") == expected_probe, "malformed_probe_identity_invalid")
+                    if result.get("input_bytes") is not None:
+                        need(result["input_bytes"] == len(fixture), "malformed_input_bytes_mismatch")
+                    if leg.get("candidate") == "wic":
+                        need(record_leg.get("fixture_id") == case["id"]
+                             and record_leg.get("input_sha256") == sha(fixture),
+                             "malformed_worker_fixture_binding_invalid")
                     need(observed in ("decoded", "corrupt", "error", "unsupported", "oversize"),
                          "malformed_outcome_invalid:" + case["id"])
                     if leg.get("candidate") == "wic":

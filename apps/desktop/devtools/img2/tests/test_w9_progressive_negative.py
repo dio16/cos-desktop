@@ -26,7 +26,8 @@ NEGATIVE_NAMES = (
     "malformed_promoted_to_content", "malformed_leg_removed", "malformed_outcome_key_removed",
     "malformed_output_digest_forged", "malformed_trace_tail", "trace_sha_mismatch",
     "incomplete_capture_as_complete", "process_identity_swapped", "old_source_commit",
-    "stop_classification_forged",
+    "stop_classification_forged", "progressive_output_bytes_forged", "worker_fixture_id_forged",
+    "malformed_leg_identity_forged",
 )
 
 
@@ -140,6 +141,12 @@ def mutation(record, number):
         worker = _leg(record, "progressive_gray_256", "wic")["leg"]
         worker["outcome"] = "cancelled"
         worker["cancellation"] = dict(worker.get("cancellation") or {}, state="stop_confirmed")
+    elif number == 41:
+        _leg(record, "progressive_gray_256", "wic")["leg"]["probe_result"]["output_bytes"] = 0
+    elif number == 42:
+        _leg(record, "progressive_gray_1024", "wic")["leg"]["fixture_id"] = "other"
+    elif number == 43:
+        _leg(record, "malformed_scan_truncated", "gdiplus")["case_id"] = "other"
     else:
         raise ValueError("unknown negative class")
 
