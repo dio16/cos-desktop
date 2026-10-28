@@ -1,0 +1,264 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/dio16/cos-desktop",
+  "branch": "dev",
+  "remote_sha_observed_before_review": "ddf2d30503b152d81c848ebd7ce9e6913c3ea563",
+  "source_candidate": "f4564d146999c5a8732247b5ca9262334f89a571",
+  "native_source": "95b90483fd3bf4e4619a305c0ec02065ed6b76d8",
+  "source_archive": {
+    "candidate": "f4564d146999c5a8732247b5ca9262334f89a571",
+    "archive": "w10-review-source-r3.zip",
+    "bytes": 260708,
+    "sha256": "sha256:cf7b25fb2049efbcfd1a66165f49ed2daefeb4d51701991797918b7801132ad2",
+    "source_subset": true,
+    "purpose": "Exact Git-blob W10 and existing image helper source subset for portable review, not a full Git object database. Gates verify the full pinned repository. Git archive uses command-local core.autocrlf=false; earlier CRLF archives are superseded and not submitted."
+  },
+  "evidence_archive": {
+    "archive": "w10-review-evidence-r1.zip",
+    "commit": "ddf2d30503b152d81c848ebd7ce9e6913c3ea563",
+    "bytes": 970374,
+    "sha256": "sha256:df4f5a84f1697b1faf32d4c603f521ecec9606de982d3c096d7661c84822af0c",
+    "entries": [
+      {
+        "path": "docs/architecture/COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md",
+        "bytes": 41794,
+        "sha256": "sha256:bbbf8ac346b9b96a4ebdfff26c010650593af94265b692aebc478a1a01a1b553"
+      },
+      {
+        "path": "docs/architecture/DESKTOP_DESIGN_CANON.md",
+        "bytes": 26199,
+        "sha256": "sha256:ba4ad1a17544e2fd10d0272db16c19bcbd34f4560f458190c47f8f54c4fba9a8"
+      },
+      {
+        "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+        "bytes": 131878,
+        "sha256": "sha256:2efde0277416b8dcc7839f3be0a5297a9bea97d9c11f90d8945a9345bb605212"
+      },
+      {
+        "path": "docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md",
+        "bytes": 3000,
+        "sha256": "sha256:f15e6e7d4e36e2e6255b8fccf2a993b4077331fe1ebc5be0b223f377c643dec3"
+      },
+      {
+        "path": "docs/decisions/ADR-0012-HOLD-RELEASE.md",
+        "bytes": 3609,
+        "sha256": "sha256:1f4c91a34295f519099f31a2bfd5ab7b022b4fa546617bd2e15441b99796b3b8"
+      },
+      {
+        "path": "docs/decisions/ADR-0013-EVIDENCE-RETENTION.md",
+        "bytes": 2911,
+        "sha256": "sha256:a403560f95c6d59e71e8ffad7033f32e9d9c6a8b7c356e2dcf83f20ada79c352"
+      },
+      {
+        "path": "docs/development/BUILD_AND_RUN.md",
+        "bytes": 109457,
+        "sha256": "sha256:92fa5fb915eec0ebd2345da226e7cc252dc74806984c0605d284e911341f622a"
+      },
+      {
+        "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+        "bytes": 450258,
+        "sha256": "sha256:d633551b352b3bf0eccc3858673da7ebc6218cd953b4f5a3749b038ce1a8375f"
+      },
+      {
+        "path": "docs/development/TESTING.md",
+        "bytes": 54171,
+        "sha256": "sha256:8bf886b62c087baf065658a3219d63f53f6fb19b80b65486151c607f18a7b339"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/build-product.json",
+        "bytes": 810,
+        "sha256": "sha256:13e3913045625ca63ac8076694edf79a3136b84de2d69fd6db8d40e9742d8144"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/decoder-environment.json",
+        "bytes": 244,
+        "sha256": "sha256:7a05db5a4c96fc8ca200d6e07ad2ee0dbc823fe997be5498af8ff96a078bd999"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/differential-summary.json",
+        "bytes": 30835,
+        "sha256": "sha256:3b0b9663b89a7c74940ee5ff2b2ad8e66d4fa97df11e83d0e77afd42190fd64c"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/docs-validation.json",
+        "bytes": 442,
+        "sha256": "sha256:57e2fbf73b76def6f69f5518b3e9f4100864ee2d4a15478775f7f2f923331e3f"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/environment.json",
+        "bytes": 981,
+        "sha256": "sha256:6efa76d3a2a04dd01cb785c6e33d35eadde81c0638ad36c2f975de96128ed4d9"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/execution-manifest.json",
+        "bytes": 3372,
+        "sha256": "sha256:4df286855196bd642f955b49129b9bf5fe13507472090a7bfe54c9a7271fa356"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/fixture-manifest.json",
+        "bytes": 9852,
+        "sha256": "sha256:16637d96385d22dc79ed1254a65f0394b9a79bf0ecaa1e3aba44326401069eab"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/gate-artifact-correspondence.json",
+        "bytes": 37158,
+        "sha256": "sha256:ef6e5e5230c7e7f68334455a1f37856254f72be90b4d6f64e939b35fecab05bb"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/gate-build-receipts.json",
+        "bytes": 29503,
+        "sha256": "sha256:c63b717adfd3a8e270386d1956e8a98820724ccbf21fd2c00e4b9f56a621c37e"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/gate-images-receipts.json",
+        "bytes": 42046,
+        "sha256": "sha256:512c820d7ce57f68b79e199cabe7730e0ce163e5d90f2e27a9a30c27659fc7f0"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/gate-jpeg-receipts.json",
+        "bytes": 29429,
+        "sha256": "sha256:78e56b74184a6e03a3989e55a20ee21f86a3defe192e0dc56c6e063832bedd35"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/gate-test-counts.json",
+        "bytes": 10417,
+        "sha256": "sha256:0882bc9914dfdc6a582be6a82fcb3d72621ec05285a5834bc5af4da0e962284b"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/gate-w10-receipts.json",
+        "bytes": 34838,
+        "sha256": "sha256:d7b2286f777a363a7d53da135d3b84323cdafc711c358c4613dc5aa466c300fe"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/gate-workspace-receipts.json",
+        "bytes": 38195,
+        "sha256": "sha256:33c474e485e57842d04e2adf9bebce90d69c5d42882fc8d40af91f109bb03712"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/jpeg-interruption.json",
+        "bytes": 2785,
+        "sha256": "sha256:bdf15f1b32e4cf7f0afd45382017f7a5b4204d76844b7c2ac9752a832216cfb6"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/leg-observations.json",
+        "bytes": 30429,
+        "sha256": "sha256:78ad3896550946b26f74ed58822207c46a0d76a2e3f0a9222e4c7d3e26c5e4bc"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/legacy-preservation.json",
+        "bytes": 737,
+        "sha256": "sha256:9662ae02ced28483e925a3cdebdb61e0151ba08bf65fab6aeb1ba9e065e6d220"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/native-metadata-matrix.json",
+        "bytes": 773426,
+        "sha256": "sha256:d7088cb6bed2b4c8eab809a8668d21dadc2016e95b98a9feb5a866814896faf2"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/native-repeat-matrix.json",
+        "bytes": 773427,
+        "sha256": "sha256:6931e1f585549101e3c0dba53e2d12fa749ceed1a60753bc28e5297e97a0f586"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/negative-tests.json",
+        "bytes": 6151,
+        "sha256": "sha256:435e9a6f23d0a51f746e9659e1384f945f8e7ff58d0dae678510f6828f7ebc06"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/probe-refusal-smoke.json",
+        "bytes": 1242,
+        "sha256": "sha256:a623dc785591623121f320096b5b08410fe481af99216ceb3a247c12f701e3b0"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/push-audit.json",
+        "bytes": 669,
+        "sha256": "sha256:5415355d8fc8ecfa5dd0e07eb524053d6995b77ee55a636cb83ba215c8fa3d35"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/quality.json",
+        "bytes": 2142,
+        "sha256": "sha256:cdf8921c0e2dff93ca1d44e69b4f62cd88392f47565377dac378344f64a28030"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/repeat-comparison.json",
+        "bytes": 450,
+        "sha256": "sha256:b7a2789591ce86312eb63846dbdea3f3ed60534370119b222e72421c774b84fd"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/review-privacy.json",
+        "bytes": 528,
+        "sha256": "sha256:88c10b1bf13466018cef2b9953ed5e56b4b86533227ecb2ad8a6bbcef8af266e"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/review-source-manifest.json",
+        "bytes": 15461,
+        "sha256": "sha256:4fde8cc727e31cdb119dff90316e3fe1ba560df8fe5b420c1ab7f5c246d9f242"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/source-evidence-reconciliation.json",
+        "bytes": 3383,
+        "sha256": "sha256:17679e664d198a8e805588f08fa0c3f6936339ca2cbd99826d6d6fe0760d66c9"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/storage.json",
+        "bytes": 81642,
+        "sha256": "sha256:404edfd7fc094b913b223b2fd5dfa9939454e7f9639353fe9d3acdfdec7694b3"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/taskern-request.json",
+        "bytes": 6107,
+        "sha256": "sha256:009cbbafbbfd5bfe98bcf548f4d94eed550bf6e0c47e4b4b0215642b0bde6e55"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/taskern-response.json",
+        "bytes": 8269,
+        "sha256": "sha256:30e9fe05de1e0df987ac0ba3f0cb34892f3002ef06fdcc517976df7312fe34b7"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/tern-directive.txt",
+        "bytes": 5173,
+        "sha256": "sha256:3a6952ae56b5b3cfa8e7b053b5274ff2868be2555d63003cb7111e64fd314abc"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/tool-use.json",
+        "bytes": 1108,
+        "sha256": "sha256:676112d3c92c55382127964a636785124d8d429f7ee455ad6fdc4ac3c2d2ffdf"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/unmeasured.json",
+        "bytes": 788,
+        "sha256": "sha256:7e7847f2dbb53882683b79eb73f6dc7216ae0457bc238273feea9d86676e3d29"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/verifier-results.json",
+        "bytes": 265,
+        "sha256": "sha256:d93976904a52cd3edc94efc212c7eb8fdc8d9b776aae8f2b3e3159b1fdaae00a"
+      },
+      {
+        "path": "docs/development/evidence-published/w10-latest/worker-stop-smoke.json",
+        "bytes": 381,
+        "sha256": "sha256:8b329559ee0feb101f91ff0c9df2a9150df6034e36e0cbc4cd8a9871c084c17a"
+      },
+      {
+        "path": "docs/integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md",
+        "bytes": 24649,
+        "sha256": "sha256:06f2fba70e4c92f6bcd17cf4537ee96926c6b122ecb433208a8cf7d69f913879"
+      }
+    ]
+  },
+  "source_manifest_location": "docs/development/evidence-published/w10-latest/review-source-manifest.json",
+  "manifest_boundary": "This manifest is outside both archives and does not claim to hash itself. Both archives contain exact raw Git blobs at their distinct pinned commits. No Git object database, private logs/config or binaries included.",
+  "gate_candidate_digest": "sha256:a771e8a50c615b47580cfba3abe11b16865c9faa6496f99853ad9234ddbeb196",
+  "native_application_surface": "NOT_RUN: live desktop confirmation unanswered",
+  "review_boundary": "Limited W10 technical completion only; not full MP-IMG2/MP-IMG3, ICC policy, decoder adoption, Runtime, measured R0, UX/video, main or release. Portable structural replay cannot establish repository source closure or Windows decoder execution.",
+  "push_audit": {
+    "head": "ddf2d30503b152d81c848ebd7ce9e6913c3ea563",
+    "base": "f4564d146999c5a8732247b5ca9262334f89a571",
+    "commits": 1,
+    "blobs": 19,
+    "blob_bytes": 780295,
+    "credential_pattern_hits": [],
+    "private_evidence_paths": [],
+    "scope": "Normal fast-forward dev:dev only; not all refs, mirror, main, release or private backups. Pattern audit is not exhaustive secret detection."
+  }
+}

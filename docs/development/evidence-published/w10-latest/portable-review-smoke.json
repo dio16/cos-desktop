@@ -1,0 +1,30 @@
+{
+  "command": [
+    "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+    "-B",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "apps/desktop/devtools/img2/tests",
+    "-p",
+    "test_w10_*.py"
+  ],
+  "exit_code": 0,
+  "duration_seconds": 74.35126140000648,
+  "stdout": {
+    "bytes": 0,
+    "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "bytes": 111,
+    "sha256": "sha256:31b21f162185d295ac5af32cc93619404a36b6bd7cbf05f01cb1a4e3a19d2842"
+  },
+  "tests": 7,
+  "status": "PASS",
+  "source_archive_sha256": "sha256:cf7b25fb2049efbcfd1a66165f49ed2daefeb4d51701991797918b7801132ad2",
+  "evidence_archive_sha256": "sha256:df4f5a84f1697b1faf32d4c603f521ecec9606de982d3c096d7661c84822af0c",
+  "git_objects_present": false,
+  "claim": "Portable hermetic test replay only; no repository source closure, Refine or Windows decoder rerun claim.",
+  "temporary_extraction_removed": true
+}

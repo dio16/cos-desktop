@@ -18,7 +18,7 @@
       "discovered": true,
       "loaded": true,
       "invoked": true,
-      "execution": "existing authenticated directive read; W10 review pending"
+      "execution": "Existing authenticated conversation: directive read, three privacy-reviewed attachments uploaded, full-text-verified single send --wait completed. Round 1 PASS 0/0/0 and REVIEW COMPLETE; source/Gate and evidence commits pushed and exact remote SHA confirmed before submission."
     }
   },
   "scope": "No Runtime, main, release or product policy authority inferred. The Caller explicitly requires dev push and remote-SHA confirmation before every Tern evaluation."

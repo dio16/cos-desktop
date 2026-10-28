@@ -1,0 +1,192 @@
+MP-IMG2-W10 — 独立評価 Round 1
+PASS
+
+BLOCKING 0 / ACTIONABLE NON-BLOCKING 0 / EXCESSIVE 0
+
+判定：LIMITED TECHNICAL COMPLETION 承認
+
+添付されたソース62ファイル、証拠45ファイル、外部レビューpackageを直接検査し、GitHubの固定コミットと照合しました。今回の限定スコープ内で、修正を要求する不備は確認されませんでした。
+
+1. 独立検証結果
+
+評価対象
+
+	
+
+結果
+
+
+
+
+ZIP SHA-256・ファイルmanifest
+
+	
+
+PASS
+
+
+
+
+GitHub dev / 固定SHA
+
+	
+
+PASS
+
+
+
+
+Native SOURCEとGate候補の関連19 Git blobs
+
+	
+
+PASS
+
+
+
+
+JPEG/EXIF/ICC fixture・構造解析
+
+	
+
+PASS
+
+
+
+
+PNG/RGBA独立再構成
+
+	
+
+PASS
+
+
+
+
+EXIF回転5ケース
+
+	
+
+PASS
+
+
+
+
+malformedのfail-closed分類
+
+	
+
+PASS
+
+
+
+
+semantic mutation 40件
+
+	
+
+PASS
+
+
+
+
+W8/W9 legacy保存
+
+	
+
+PASS
+
+
+
+
+成功Gate 5件の証拠対応
+
+	
+
+PASS
+
+
+
+
+中断JPEG Gateの扱い
+
+	
+
+PASS
+
+
+
+
+保存領域削除後の整合性
+
+	
+
+PASS
+
+2. 実decode・ピクセル検証
+
+native-metadata-matrix.json と native-repeat-matrix.json を再検証しました。
+
+各実行12ケース・29レッグ、うち28レッグがPNG出力を保持
+
+Pillowを使った別実装のRGBA復元で、全56 PNG出力の寸法・SHA-256が一致
+
+Orientation 1/3/6/8および複合ケースの5回転が、全ピクセルで一致
+
+2実行間の復元RGBAが全ケースで一致
+
+ICC-validとEXIF+ICCでは、WIC/GDI+間で49,152ピクセルに差異を確認（最大チャネル差63）
+
+この差異を不適切に補正・許容せず、そのまま保存している点も妥当です。ICC色変換の正当性とJPEG絶対画質は引き続き未検証です。
+
+3. 異常系・実行境界
+
+40件のsemantic mutationを別途実行し、40/40件すべて拒否されました。単純なJSON複製不一致ではなく、metadata・source identity・出力digest・回転関係・分類・cleanupなどの意味的な検査によって拒否されています。
+
+GDI+がMaxPixels検査前にImage.FromStreamを実行する制約も確認しました。事前allocation防止は成立していませんが、その保証を主張しておらず、今回の受入範囲に対するBLOCKINGではありません。
+
+4. Git・Gate・保存証拠
+
+GitHubコネクタから、リモートdevが以下と一致することを確認しました。
+
+ddf2d30503b152d81c848ebd7ce9e6913c3ea563
+
+Native SOURCEと製品/Gate候補の関連19 Git blobsも、添付RAWファイルから計算したGit blob SHA-1と一致しました。W8/W9 verifierおよびlegacy GDI+ probeは、W10開始時点のGit blobと同一です。
+
+5件の成功Gateはすべて同一の候補digestを保持し、44 artifact × 5 Gateの220件の対応記録も整合しています。Gate後に変更された3件の文書・証拠については、候補時点のRAWファイルと混同せず、別コミットの変更として扱いました。
+
+最初のJPEG Gate e840237f... はFAILED/EXECUTOR_ERRORのまま保持され、別Gate 9843e96a... の成功を流用していません。
+
+保存領域削除後の5件のgate.verify結果も削除前と完全一致しました。
+
+5. 明示的に未完了とする境界
+
+今回のサンドボックスでは、Windows decoderの新規実行とRefineの再実行、実アプリケーションのGUI起動は行っていません。既存Windows記録の再検算とGit実体の照合による評価です。サンドボックス内のポータブル検証自体を、Windowsでのsource-bound closureの実行結果とは扱いません。
+
+GUI起動のNOT_RUNはW10限定承認を妨げません。 今回の受入対象は独立したdecoder-process実験であり、アプリケーション起動・画面表示は別の未完了受入条件です。
+
+また、次の事項は引き続き未承認です。
+
+ICC/EXIF製品policyとdecoder採用
+
+16K full decode、真の部分decode、内部scratch・concurrent peak
+
+cooperative cancellation、product memory SLO
+
+full MP-IMG2 Decode Exit、MP-IMG3
+
+Runtime、measured R0、UX/video
+
+main統合・release
+
+最終判定
+
+MP-IMG2-W10 LIMITED TECHNICAL COMPLETION：承認
+
+BLOCKING：0
+ACTIONABLE NON-BLOCKING：0
+EXCESSIVE：0
+
+PASS 0 / 0 / 0
+
+REVIEW COMPLETE

@@ -1,0 +1,38 @@
+MP-IMG2-W10 independent evaluation, round 1. Please review the actual attached source and evidence, not my summary. The Caller now explicitly requires PUSH BEFORE EVERY TERN EVALUATION. This requirement was satisfied: normal dev:dev push succeeded, and git ls-remote origin refs/heads/dev returned ddf2d30503b152d81c848ebd7ce9e6913c3ea563 immediately before this submission.
+
+Repository https://github.com/dio16/cos-desktop, branch dev.
+Pushed source/Gate candidate: f4564d146999c5a8732247b5ca9262334f89a571.
+Pushed documentation/evidence commit and confirmed remote dev: ddf2d30503b152d81c848ebd7ce9e6913c3ea563.
+Native SOURCE: 95b90483fd3bf4e4619a305c0ec02065ed6b76d8; 19/19 relevant source Git blobs reconcile with the Gate candidate.
+Fixed review tree: https://github.com/dio16/cos-desktop/tree/ddf2d30503b152d81c848ebd7ce9e6913c3ea563
+Evidence folder: docs/development/evidence-published/w10-latest/ ; implementation plan §19.62, BUILD_AND_RUN §4.30, TESTING §21. Sole owning contract DC-MP-IMG2; full IMG2 remains incomplete, so IMG3 still cannot start.
+
+Attachments:
+1. w10-review-source-r3.zip: 62 exact RAW Git-blob source files at f4564d1 (command-local core.autocrlf=false). SHA256 cf7b25fb2049efbcfd1a66165f49ed2daefeb4d51701991797918b7801132ad2, 260708 bytes. Includes the image helper sources/tests, unchanged WIC/legacy GDI+, and isolated W10 GDI+ probe; a subset, NOT a full Git object database.
+2. w10-review-evidence-r1.zip: 45 exact RAW Git-blob evidence/docs files at ddf2d30, SHA256 df4f5a84f1697b1faf32d4c603f521ecec9606de982d3c096d7661c84822af0c, 970374 bytes. Includes the source manifest; no recursive self-hash claim.
+3. w10-review-package-r1.json outside both archives: exact pins, archive digests/member manifest, scope, outgoing publication audit. No private operator configuration/raw process logs, executable, credentials or Git object database. Public structured Gate records include local tooling paths. Prior CRLF-normalized r1/r2 source archives are superseded and are NOT attached.
+
+Implementation/observations to independently inspect:
+- Twelve real 256x192 baseline 4:2:0 JPEG sources: no metadata control; EXIF1/3/6/8; ICC-valid; truncated EXIF/ICC; invalid EXIF type; invalid ICC length/signature; EXIF+ICC. Bounded encoded-byte JPEG/EXIF/ICC parser; invalid/truncated cases retain explicit partial observations and never become verified valid.
+- Two actual Windows WIC/GDI+ runs, each 29 serial decoder legs: WIC metadata12, GDI metadata12, explicit WIC rotation5. Schema2 retains actual PNG bytes (hex), lengths/hashes and independently reconstructed RGBA hashes. Independent comparisons recompute all WIC/GDI/control differences and exact coordinate rotation for all5 transformed cases. Deterministic observations agree across repeats. ICC-valid and EXIF+ICC WIC/GDI pixels differ and that difference is preserved without choosing a winner/tolerance. Absolute JPEG correctness is NOT_VERIFIED; ICC colour conversion is NOT_MEASURED.
+- Native WIC unchanged. W10 System.Drawing probe isolated in gdiplus_metadata_probe.ps1. Legacy gdiplus_probe.ps1 and strict W8/W9 verifiers exactly restored to W10-start bytes (legacy-preservation.json), no weakened live-source acceptance. GDI ICC actual property type1 BYTE was observed and handled alongside7; metadata errors are not silently reported absent.
+- Bounded monitored file spools/output/time/work with kill/reap on failure; fresh/exclusive paths. Real smoke verifies worker forced-stop/reaping, metadata cap refusal and stale-output preservation. GDI's first load occurs before its MaxPixels check: NO preallocation guarantee. NOT cooperative cancellation.
+- Seven W10 tests including40 semantic mutations, with captured JSON copies coherent; missing baseline is failure, not skip. Portable replay can run python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p test_w10_*.py after merging the archive roots. Do not fake Git/source closure: without real Git objects source-bound verification is NOT_RUN; portable structural verification cannot establish closure. Windows decoder rerun/Refine execution likewise NOT_RUN in a non-Windows review sandbox.
+
+Independent Refine0.3.1 outcomes (full pinned candidate, trusted_local, NOT an OS sandbox):
+workspace 1ffaabdd-f3cb-4437-afba-caf03180110e 7/7;
+images d20664d7-adc3-4dbc-aa91-82dc17781312 9/9;
+JPEG 9843e96a-7697-4049-aa8e-47ce71a433fe 2/2;
+W10 1dfa42f2-12e7-4376-a197-7d562e60e213 5/5;
+build 790f641c-ad1d-448f-bc3c-1a1829f6cfa0 2/2.
+All same candidate digest sha256:a771e8a50c615b47580cfba3abe11b16865c9faa6496f99853ad9234ddbeb196; all44 outputs per Gate, 220 actual captured tuples, agree in size/digest/bytes and raw candidate Git blob (gate-artifact-correspondence.json). Native status/inspect/verify complete and retained. Preflight aggregate remains UNKNOWN, not static PASS. Fresh Rust535 passed/1 ignored; R0 316 passed/36 skipped, not measured R0; W1-7 180, W8 14, W9 12, W10 7 passed (213 total), no old result transfer or new feature-route claim.
+
+The FIRST JPEG Gate e840237f-e63e-4ac2-9650-1b62d72a7f23 lost its owner. Native recover finalized FAILED/EXECUTOR_ERROR interrupted with incomplete cleanup. Its workspace/records stay retained; its empty checks are NOT PASS. One finite, explicit replacement with identical check/output/candidate scope produced the successful JPEG Gate above; no automatic retry or rewritten receipt.
+
+Caller-side terminal retention completed for only five successful work/repo plus three explicitly scoped targets:13,394 files /4,222,509,209 logical bytes. Native gate verify after deletion exactly equals before for every immutable authority/artifact/log digest. The real fresh-built32275456-byte executable is retained once elsewhere, digest sha256:cc738d56ce951ad3e872d72dd299ccbd3da9431579291b8778c9c37e979b748a. Failed/cleanup-incomplete first JPEG workspace remains. This is not a Refine disposal feature or a cleanup-state rewrite.
+
+Known actual prerequisite: application-window/native GUI startup is NOT_RUN. Live computer.control.acquire returned active=false/reason=unanswered. The real decoder-process matrix is NOT application startup. The retained executable permits later human-approved startup; do not waive that repository route or infer product completion. Please distinguish a bounded W10 technical verdict from overall product/application verification; if missing startup prevents the limited disposition, state HOLD and the exact unresolved criterion rather than fabricate success.
+
+Please independently examine parser/fixture independence, PNG/RGBA evidence and coordinate transformations, fail-closed malformed metadata, bounded capture/cleanup and stale paths, strict legacy preservation, source/Gate/artifact correlation, interrupted-Gate treatment, storage integrity, and pushed SHA/manifest correspondence. The Caller authorizes implementation/repair and technically completed slice disposition under existing ADR0009/0012, not new design, decoder adoption, full IMG2/IMG3, ICC/orientation product policy, Runtime mutation, measured R0, UX/video, main merge or release.
+
+Return concrete findings classified BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE with counts. Finish with an explicit bounded verdict PASS 0 / 0 / 0 or HOLD with counts and a separate line REVIEW COMPLETE. No next-task implementation is requested in this review round.
