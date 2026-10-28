@@ -1,0 +1,42 @@
+MP-IMG2-W11 independent evaluation, round 1. Inspect the actual attached source and evidence; do not rely on my summary.
+
+PUSH-BEFORE-EVALUATION satisfied: normal explicit dev:dev push succeeded and `git ls-remote origin refs/heads/dev` returned 0937aaa336856e1f9048f07c424ae29de7b2fc6f immediately before this submission.
+
+Repository https://github.com/dio16/cos-desktop, branch dev.
+Gate/source candidate: d182ee9eeb2d587eb69c28188dc66675c4a9b7dc, candidate digest sha256:a458a64b07c5e030e7e00a1325f607928cdb8d784319eaecebacbc60613ac7b3.
+Confirmed remote dev / evidence commit: 0937aaa336856e1f9048f07c424ae29de7b2fc6f (six commits on top of the pushed W10 disposition 133903874ddef3704417e1b0159ad445f7e7392f; candidate is an ancestor).
+Native SOURCE for decoder runs: a99620d6e1b4101d0cdb009293d8cb4c783b2c05 (product source; later commits are W11 docs/evidence and Gate receipts).
+Fixed tree: https://github.com/dio16/cos-desktop/tree/0937aaa336856e1f9048f07c424ae29de7b2fc6f
+Evidence: docs/development/evidence-published/w11-latest/ ; plan §19.63, BUILD_AND_RUN §4.31, TESTING §22. Sole owning contract DC-MP-IMG2. Full IMG2 and IMG3 stay open.
+
+Attachments (exact raw Git blobs; both archives built with command-local core.autocrlf=false and each member verified byte-equal to `git show`):
+1. w11-review-source-r1.zip — 30 files at d182ee9, SHA256 a0f2652cb4a6974ce904efe9d6c53f533b14350361e97dc7697b7e6ebb81a35d.
+2. w11-review-evidence-r1.zip — 41 files at 0937aaa, SHA256 3510e52f34ac9c55257185749ec3dedde8e731820fde794eee244f172087d522.
+3. w11-review-package-r1.json outside both archives: pins, member manifests, digests, push audit. No Git object database, private operator config, raw harness logs or executables.
+
+What W11 did: a bounded existing-WIC experiment, five fixed scenarios / nine serial workers.
+- Two streaming DC-only grayscale JPEGs, 4096² (589,275 B) and 16384² (9,424,021 B), generated in chunks without any full-frame RGBA or coefficient plane. An independent parser validates framing, tables, every DC/EOB, final padding and EOI, and derives ROI pixels from absolute block coordinates.
+- S01 4K ROI 1×1 and S02 4K ROI 256×256 succeed and are compared pixel-by-pixel. S03 16K without ROI, S04 16K with 1×1 ROI and S05 4K with max_dimension=4095 all refuse before OnLoad and publish no output. A 1×1 ROI never reduced the full-frame charge.
+- Both 4K scenarios use three separate worker lifetimes, one hold each at before_onload / after_onload / before_publish. They are not a same-process allocation delta, not WIC-internal memory and not a true concurrent peak. GDI+ 16K is NOT_RUN; true partial decode NOT_VERIFIED; 16K full-decode memory NOT_MEASURED.
+- Two complete retained real-Windows records agree on fixture identity, probe results, raw PNG bytes, every oracle relation and classification (repeat-comparison.json).
+
+Independent Refine 0.3.1 Gates, all on the same candidate digest (six finite Gates for the five directed scopes):
+workspace 08c4d0a5-327d-4f69-b61f-32c3b7ca0453 7/7;
+images 7d19172a-efdc-49ad-99f4-d0ad9b7ab861 9/9;
+jpeg  da00e25e-a9a3-45ab-beb0-c3a931d92115 2/2;
+w10jpeg 2dd89cf2-30c2-4a1f-b3d3-68193271f5ed 1/1;
+w11 0c9be42b-6a44-479f-b73d-304fe06eab2d 2/2;
+build 95e5d234-eac0-4647-b16c-bbb0d211cc6c 2/2.
+56 declared artifacts × 6 Gates = 336 captures match their receipts and the raw Git blobs. Fresh workspace: 535 Rust passes / 1 ignored, R0 316 passes / 36 skipped (not measured R0). Native preflight aggregate stays UNKNOWN.
+
+Please judge these points independently:
+1. Whether the six-Gate split is acceptable given the installed producer rejects any operator timeout_ms above 600000 and the unchanged W8+W9 definition plus the now-prior W10 suite measured ~658 s of work. No check was removed or relaxed; the alternative was to drop W10 coverage, which I rejected.
+2. Two earlier Gate attempts failed and were retained, not reused: images r1 (0e783d76…) because the w2-oracle check's operator scratch directory did not exist, and jpeg r1 (93dfe8bb…) because the dispatched request still carried the third check and timed out. Records: gate-images-failure.json / gate-jpeg-failure.json in the private evidence, summarized in gate-split.json and §19.63. Judge whether the repair and the single explicit replacement were handled correctly.
+3. Two Native report roots were destroyed by my own capture helper's metadata-name collision (native-r1/native-r2). They were excluded rather than reconstructed; execution-manifest.json records that. A third run hit a real publication-vs-monitor race; monitor-race-reproduction.json reproduces it on a real filesystem, monitor-race-repair.json records the bounded repair. Judge whether any success is claimed where evidence is absent.
+4. W10's earlier "archive-only" portable smoke was misattributed (helper forced the repository cwd). The claim is withdrawn, the original record is unchanged, and w10-portable-smoke-correction.json records an actual archive-only run. Judge whether that correction is honest and sufficient.
+5. Storage: only the six successful checkouts plus one approved target root were removed (13,333 files / 3,905,290,539 logical bytes); all six native integrity results are unchanged afterwards; the two failed workspaces remain. The Gate-built 32,275,456-byte executable was moved once out of the target with digest sha256:94b2e412caeefee2e928f3e2c9c232426fed3a882503a6c81099b7eb425c9da4.
+6. Whether ROI_OUTPUT_VERIFIED is kept strictly distinct from TRUE_PARTIAL_DECODE_VERIFIED and whether any claim overstates measured facts. Application-window GUI startup is NOT_RUN because live control approval was unanswered; decoder-process evidence must not be read as application startup.
+
+Caller authority: implementation, repair and limited technically-completed-slice disposition under the existing ADR-0009/0013 rules, plus explicit dev push. NOT authorized: new design, product decoder adoption/tolerance, ICC/EXIF policy, 16K adoption, full IMG2/IMG3, Runtime changes, measured R0, UX/video, main merge or release.
+
+Return findings classified BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE with explicit counts, and finish with an explicit bounded verdict PASS 0 / 0 / 0 or HOLD with counts plus a separate line REVIEW COMPLETE. Do not provide a next-task directive in this round.

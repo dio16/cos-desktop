@@ -12,5 +12,7 @@
     "status": "NOT_RUN",
     "reason": "Live computer approval unanswered; no GUI startup claim."
   },
-  "gate_receipts_linked": 6
+  "gate_receipts_linked": 6,
+  "disposition_linked": true,
+  "review_linked": true
 }

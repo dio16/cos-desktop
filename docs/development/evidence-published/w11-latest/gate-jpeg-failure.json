@@ -1,0 +1,26 @@
+{
+  "gate_id": "93dfe8bb-bd67-41a5-ac06-559583da3d30",
+  "gate_label": "mp-img2-w11-r1-jpeg",
+  "state": "FAILED",
+  "failure": {
+    "code": "EXECUTOR_ERROR",
+    "stage": "verifying",
+    "detail": "timeout",
+    "message": "verification command exceeded its effective deadline",
+    "cleanup": "complete"
+  },
+  "cause": "The dispatched JPEG request still carried the third (img2-w10) check inside the 600 s operator ceiling. img2-w8 and img2-w9 passed in 282.8 s and 261.5 s, leaving insufficient time for the third check, which then hit the remaining-deadline timeout. This is a caller request-composition defect: the intended split into two finite Gates had not been applied to the dispatched file.",
+  "passed_checks_not_reused": [
+    "img2-w8",
+    "img2-w9",
+    "img2-w10 (timed out, no verdict)"
+  ],
+  "retained": [
+    "failed Gate authority/record",
+    "work/repo",
+    "check logs",
+    "cleanup=complete"
+  ],
+  "repair": "The unchanged JPEG definition is expressed with img2-w8 and img2-w9 only; the now-prior W10 suite is a separate finite Gate. No check argument, output, candidate or candidate binding changed.",
+  "replacement": "Two explicit replacement Gates: JPEG (w8+w9) and W10 JPEG regression. No automatic retry; neither failed record is rewritten."
+}

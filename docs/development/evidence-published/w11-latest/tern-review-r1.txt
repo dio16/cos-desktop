@@ -1,0 +1,171 @@
+MP-IMG2-W11 — 独立評価 Round 1
+PASS
+
+BLOCKING 0 / ACTIONABLE NON-BLOCKING 0 / EXCESSIVE 0
+
+判定：LIMITED TECHNICAL COMPLETION 承認
+
+添付ソース30ファイル、証拠41ファイル、外部packageを直接検査し、GitHubの固定SHAと照合しました。W11の限定スコープ内で修正を要求する不備は確認されませんでした。
+
+1. 独立検証結果
+
+対象
+
+	
+
+結果
+
+
+
+
+ZIP SHA-256・全71ファイルmanifest
+
+	
+
+PASS
+
+
+
+
+GitHub dev・候補SHA・コミット関係
+
+	
+
+PASS
+
+
+
+
+W11 hermetic tests
+
+	
+
+9/9 PASS
+
+
+
+
+Semantic mutations
+
+	
+
+36/36 拒否
+
+
+
+
+Native記録2本の再検算
+
+	
+
+PASS
+
+
+
+
+JPEG fixture・全DC/EOB構造検証
+
+	
+
+PASS
+
+
+
+
+PNG/RGBA独立復元
+
+	
+
+PASS
+
+
+
+
+16KのOnLoad前拒否
+
+	
+
+PASS
+
+
+
+
+Gate分割・成功受領書
+
+	
+
+PASS
+
+
+
+
+失敗GateとNative失敗履歴の区別
+
+	
+
+PASS
+
+
+
+
+保存領域削除後の証拠整合
+
+	
+
+PASS
+
+2. Native decode・ROIの独立検証
+
+native-jpeg-matrix.json と native-repeat-matrix.json を固定ソースのverifierで再検算しました。
+
+両方とも5シナリオ・9 workerを満たし、6件のROI出力と3件のOnLoad前拒否が一致しています。
+
+さらにPillowを使った独立RGBA再構成では、12件のPNG出力、合計393,222ピクセルすべてが絶対ブロック座標から求めた期待値と一致しました。両実行のPNGバイト列も一致しています。
+
+16K拒否はmax_dimension_exceededによるものです。これを16K full decode能力や部分decode能力の証明に拡大していません。
+
+3. 指定された6項目の判断
+
+① 6 Gateへの分割：妥当
+
+Refineの600秒制限を守りつつ、W8/W9とW10の全回帰checkを維持しています。6 Gate・計23 checkは全件PASSで、候補digestも共通です。
+
+② 失敗Gateの扱い：妥当
+
+Images R1とJPEG R1はFAILEDとして保持されています。成功した別Gateへの置換は明示され、元の失敗を成功へ変更していません。
+
+③ Native記録の紛失・race修正：妥当
+
+r1/r2はreport紛失、r3は失敗として除外されています。r3の原因推定も事実と区別されています。修正後のr4/r5のみが成功証拠として採用されています。
+
+④ W10 portable smokeの訂正：妥当
+
+旧記録を改変せず、誤った実行ディレクトリへの帰属を撤回しています。新たなarchive-only実行を別証拠として保持しており、過去の誤認を隠していません。
+
+⑤ Storage：妥当
+
+削除対象は成功Gateの6 checkoutと承認済みtarget 1件に限定されています。削除後の6件のverifyでは、request/terminal digest、artifact manifest、check logsが受領書と一致しました。失敗workspaceも保持されています。
+
+⑥ Capability境界：妥当
+
+ROI_OUTPUT_VERIFIEDとTRUE_PARTIAL_DECODE_VERIFIEDを区別し、process counterをWIC内部allocationや同一プロセスのメモリ差分と誤認していません。
+
+4. 承認しない範囲
+
+今回のサンドボックスでは、Windows decoderとRefineの新規実行は行っていません。GitHubのGit実体、添付RAWファイル、Windows実測記録の独立再計算に基づく評価です。ポータブル検証結果もclosure_eligible=falseを維持しています。
+
+アプリケーションGUI起動はNOT_RUNのままです。これを免除する判定ではありません。
+
+また、full MP-IMG2、MP-IMG3、16K decode採用、製品decoder policy、内部scratch・true concurrent peak、measured R0、Runtime、main/releaseはいずれも未承認です。Preflight aggregateもUNKNOWNを維持します。
+
+最終判定
+
+MP-IMG2-W11 LIMITED TECHNICAL COMPLETION：承認
+
+BLOCKING：0
+ACTIONABLE NON-BLOCKING：0
+EXCESSIVE：0
+
+PASS 0 / 0 / 0
+
+REVIEW COMPLETE

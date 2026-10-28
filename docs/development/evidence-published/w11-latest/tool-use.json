@@ -11,13 +11,13 @@
       "loaded": true,
       "invoked": true,
       "version": "0.3.1",
-      "execution": "route/contracts read; five new finite Gates pending on the committed candidate; no prior receipt transferred"
+      "execution": "describe/route read; six finite Gates executed on one candidate digest with two retained failed attempts and one explicit replacement each; no prior receipt transferred."
     },
     "tern-chatgpt-review": {
       "discovered": true,
       "loaded": true,
       "invoked": true,
-      "execution": "existing authenticated conversation read for the W11 directive; review deferred until Gates, docs-only evidence commit, explicit dev push and exact remote-SHA confirmation"
+      "execution": "Existing authenticated conversation: W11 directive read; three privacy-reviewed attachments uploaded; one full-text-verified send --wait completed. Round 1 PASS 0/0/0 and REVIEW COMPLETE; source/Gate and evidence commits pushed with exact remote SHA confirmed before submission."
     }
   },
   "scope": "No Runtime, main, release or product-policy authority inferred."

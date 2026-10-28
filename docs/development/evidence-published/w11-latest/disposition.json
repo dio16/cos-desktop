@@ -1,0 +1,57 @@
+{
+  "slice": "MP-IMG2-W11",
+  "status": "LIMITED_TECHNICAL_COMPLETION",
+  "gate_candidate": "d182ee9eeb2d587eb69c28188dc66675c4a9b7dc",
+  "gate_candidate_digest": "sha256:a458a64b07c5e030e7e00a1325f607928cdb8d784319eaecebacbc60613ac7b3",
+  "native_source": "a99620d6e1b4101d0cdb009293d8cb4c783b2c05",
+  "reviewed_evidence_commit": "0937aaa336856e1f9048f07c424ae29de7b2fc6f",
+  "pushed_before_review": true,
+  "remote_sha_confirmed_before_review": "0937aaa336856e1f9048f07c424ae29de7b2fc6f",
+  "review": {
+    "round": 1,
+    "verdict": "PASS",
+    "blocking": 0,
+    "actionable_non_blocking": 0,
+    "excessive": 0,
+    "complete": true,
+    "response_sha256": "sha256:d9afe83ab8bfea1a412a6840ad2181fdbdf4f45a07aae2bfe800880a8a098d8d",
+    "attribution": "Reviewer-reported independent checks (archive/manifest, GitHub SHAs, 9/9 tests, 36/36 mutation rejection, two Native records, Pillow RGBA reconstruction, Gate judgement) are retained as reported. They are not a claimed fresh Windows decoder run, Refine execution or GUI startup by this agent."
+  },
+  "gates": {
+    "workspace": "08c4d0a5-327d-4f69-b61f-32c3b7ca0453",
+    "images": "7d19172a-efdc-49ad-99f4-d0ad9b7ab861",
+    "jpeg": "da00e25e-a9a3-45ab-beb0-c3a931d92115",
+    "w10jpeg": "2dd89cf2-30c2-4a1f-b3d3-68193271f5ed",
+    "w11": "0c9be42b-6a44-479f-b73d-304fe06eab2d",
+    "build": "95e5d234-eac0-4647-b16c-bbb0d211cc6c"
+  },
+  "failed_gates_retained": {
+    "images_r1": "0e783d76-128b-46d9-a00c-8ba5491cfd26",
+    "jpeg_r1": "93dfe8bb-bd67-41a5-ac06-559583da3d30"
+  },
+  "caller_disposition": {
+    "authority": "ADR-0009 section 2 as adopted for technically completed limited slices",
+    "accepted_scope": "Bounded existing-WIC 4K ROI output and 16K pre-OnLoad admission experiment only",
+    "application_startup_accepted": false,
+    "full_img2_accepted": false,
+    "img3_started": false
+  },
+  "excluded": [
+    "true partial/region/sequential/tiled decode",
+    "16K full decode and its memory",
+    "WIC internal scratch and allocator reservations",
+    "true concurrent allocation peak",
+    "cooperative in-decoder cancellation",
+    "product memory SLO",
+    "product decoder adoption/tolerance",
+    "ICC/EXIF product policy",
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3",
+    "Runtime changes",
+    "measured R0",
+    "UX/video acceptance",
+    "main merge/release",
+    "application-window GUI startup"
+  ],
+  "next": "Receive the next bounded directive in the existing conversation; do not infer missing prerequisites or authority."
+}

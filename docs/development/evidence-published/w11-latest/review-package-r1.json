@@ -1,0 +1,395 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/dio16/cos-desktop",
+  "branch": "dev",
+  "remote_sha_observed_before_review": "0937aaa336856e1f9048f07c424ae29de7b2fc6f",
+  "gate_candidate": "d182ee9eeb2d587eb69c28188dc66675c4a9b7dc",
+  "gate_candidate_digest": "sha256:a458a64b07c5e030e7e00a1325f607928cdb8d784319eaecebacbc60613ac7b3",
+  "native_source": "a99620d6e1b4101d0cdb009293d8cb4c783b2c05",
+  "evidence_commit": "0937aaa336856e1f9048f07c424ae29de7b2fc6f",
+  "source_archive": {
+    "archive": "w11-review-source-r1.zip",
+    "commit": "d182ee9eeb2d587eb69c28188dc66675c4a9b7dc",
+    "bytes": 206644,
+    "sha256": "sha256:a0f2652cb4a6974ce904efe9d6c53f533b14350361e97dc7697b7e6ebb81a35d",
+    "entries": [
+      {
+        "path": "Cargo.lock",
+        "bytes": 158990,
+        "sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/tests/test_w11_jpeg_fixtures.py",
+        "bytes": 6067,
+        "sha256": "sha256:d519877cd07f1784575e2a44754dbee8d9edcfec8cc7ce5f6be38b6575c114ad"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/tests/test_w11_jpeg_monitor.py",
+        "bytes": 2067,
+        "sha256": "sha256:f7b9546babcf6819e7545301bd32cfa1b82409b5cb7d88cb2f497cea6338f594"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/tests/test_w11_jpeg_negative.py",
+        "bytes": 9180,
+        "sha256": "sha256:cd4554b91adc289bcfa2dc1f8b76dce6524baf153a6ef8733f6808d201b6fb77"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w11_jpeg_fixtures.py",
+        "bytes": 4868,
+        "sha256": "sha256:77e523c52b54734bd00b833f2d671fadf7ff6023ee1cb15449332bc609d291ed"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w11_jpeg_matrix.py",
+        "bytes": 23741,
+        "sha256": "sha256:60d84675ade782627d99d540a0442ec7d7873286b91ae18b484336b18d00e37c"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w11_jpeg_oracle.py",
+        "bytes": 11619,
+        "sha256": "sha256:13c39da9eed989336e56f8c41a5fc4d1ba8a597a48cdb5cf9014f787b3cbea9f"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w11_jpeg_verify.py",
+        "bytes": 21050,
+        "sha256": "sha256:004123496b6535e38760ef311dfdbc5563a52567633413c8ce6c8411151b99c0"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w2_independent_oracle.py",
+        "bytes": 9766,
+        "sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+        "bytes": 28958,
+        "sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+        "bytes": 26365,
+        "sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w3_oracle.py",
+        "bytes": 5883,
+        "sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w4_region_oracle.py",
+        "bytes": 5745,
+        "sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w5_metadata_oracle.py",
+        "bytes": 6744,
+        "sha256": "sha256:bb2910bac17c47677058bb79ca24b21f3a87356d1a0b432c9427a37193bbab60"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w6_memory_fixtures.py",
+        "bytes": 9459,
+        "sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w6_memory_sample.py",
+        "bytes": 19017,
+        "sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w6_memory_verify.py",
+        "bytes": 23316,
+        "sha256": "sha256:99cc5ecb251c71e42340614d51de471029b8a3247e29ee12f8dabc553972e919"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_fixtures.py",
+        "bytes": 11614,
+        "sha256": "sha256:fefb3724623f79d5ac4f1b98b4af43c8dddde0dfa2e727294bf7e208ac2707bc"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_matrix.py",
+        "bytes": 12484,
+        "sha256": "sha256:53c84378b68b4a0a5c77251a013f2e207b38cf8315a76440e7260ea6dc097e56"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_oracle.py",
+        "bytes": 12588,
+        "sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_verify.py",
+        "bytes": 30502,
+        "sha256": "sha256:74d8ca71fd545bf2991316c2fd6c34073b376763744cfc380b43b97e5ab554f8"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w8_jpeg_fixtures.py",
+        "bytes": 15609,
+        "sha256": "sha256:033389d5b1c700b1da09516f42b1bc4a0cc2a861fb307e9da1efbd068c843925"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare.rs",
+        "bytes": 1041,
+        "sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/harness.rs",
+        "bytes": 159533,
+        "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/inspect.rs",
+        "bytes": 24568,
+        "sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/pixels.rs",
+        "bytes": 27817,
+        "sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+        "bytes": 6399,
+        "sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+        "bytes": 51013,
+        "sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c"
+      },
+      {
+        "path": "crates/media/src/decode.rs",
+        "bytes": 11964,
+        "sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf"
+      },
+      {
+        "path": "rust-toolchain.toml",
+        "bytes": 152,
+        "sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8"
+      }
+    ]
+  },
+  "evidence_archive": {
+    "archive": "w11-review-evidence-r1.zip",
+    "commit": "0937aaa336856e1f9048f07c424ae29de7b2fc6f",
+    "bytes": 375820,
+    "sha256": "sha256:3510e52f34ac9c55257185749ec3dedde8e731820fde794eee244f172087d522",
+    "entries": [
+      {
+        "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+        "bytes": 131878,
+        "sha256": "sha256:2efde0277416b8dcc7839f3be0a5297a9bea97d9c11f90d8945a9345bb605212"
+      },
+      {
+        "path": "docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md",
+        "bytes": 3000,
+        "sha256": "sha256:f15e6e7d4e36e2e6255b8fccf2a993b4077331fe1ebc5be0b223f377c643dec3"
+      },
+      {
+        "path": "docs/decisions/ADR-0013-EVIDENCE-RETENTION.md",
+        "bytes": 2911,
+        "sha256": "sha256:a403560f95c6d59e71e8ffad7033f32e9d9c6a8b7c356e2dcf83f20ada79c352"
+      },
+      {
+        "path": "docs/development/BUILD_AND_RUN.md",
+        "bytes": 111758,
+        "sha256": "sha256:5f58262e56455cfd7c40846c1ef97b8dc1a787a171eeeb157730b125a1461bb7"
+      },
+      {
+        "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+        "bytes": 457500,
+        "sha256": "sha256:491a6029318e47096fcedbf4920fca367f26bcef4da842833b9ab1039ad10741"
+      },
+      {
+        "path": "docs/development/TESTING.md",
+        "bytes": 55948,
+        "sha256": "sha256:b1cd0e71f9682cb31adf7ddeeef63f34a2874b9078c71aa6d904224cac0af5d6"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/build-product.json",
+        "bytes": 921,
+        "sha256": "sha256:dc45015ae2d08185e7050188cae6e9d32abbfb11a7bf00b6f662d225472fbb16"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/capture-artifact-correction.json",
+        "bytes": 1771,
+        "sha256": "sha256:635ab00ae3e54ecbb45d38244f874a13c128124da2bd54d5cca712fc3841f2f6"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/directive-request.txt",
+        "bytes": 3104,
+        "sha256": "sha256:3e39ccfb3cf3c6671a35462b72e0810b3f33719d3971f755151bed459b7d0396"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/docs-validation.json",
+        "bytes": 438,
+        "sha256": "sha256:586234a4159bd29f5229520c9cc60eec5b3b61e876e97c5ae8a3e61813d06f36"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/environment.json",
+        "bytes": 739,
+        "sha256": "sha256:f72f284fe6ec677724ea1744ab818be674df7c2172d2c26b59db3581350f3846"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/execution-manifest.json",
+        "bytes": 10017,
+        "sha256": "sha256:8630ce9854607e4b9095a8ce00312addb1fcd780c235ac6e272af15275898f31"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/fixture-manifest.json",
+        "bytes": 1789,
+        "sha256": "sha256:e43770222cc8bd29184b5558693841d4be253d0a194c0efdf5e17e77010a10d7"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/gate-artifact-correspondence.json",
+        "bytes": 4937,
+        "sha256": "sha256:0b981f85690cfac4b0538659d5f0c667fe5781db407a400dd5751187b237a42b"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/gate-build-receipt.json",
+        "bytes": 16494,
+        "sha256": "sha256:6001b4613a730e5130d1524f1cba493c1cb0f2db7f9b73158a7e9f56dee9dfa6"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/gate-images-receipt.json",
+        "bytes": 22874,
+        "sha256": "sha256:703e6e8113db9c53777ce07bcb9aaeb5f210616ba731ad148856627ae8d11b22"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/gate-jpeg-receipt.json",
+        "bytes": 16451,
+        "sha256": "sha256:6e5d98b25ffb161710d7f9baf5d8c825ff87fae3361847a25c2456eb3e9c03c8"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/gate-operator-scope.json",
+        "bytes": 1275,
+        "sha256": "sha256:6183e1257b282b67c77aa307c20c1f5b7569b062259662bc113057b40ea04492"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/gate-split.json",
+        "bytes": 1141,
+        "sha256": "sha256:ce9454b5298db43a75459136dc4d84e41d5621c3e95ff0602325785f5475936d"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/gate-test-counts.json",
+        "bytes": 749,
+        "sha256": "sha256:9d30a8c08330eecb9066b449471fc36d6b1f1a31dc37b0f23d201202ba48876f"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/gate-w10jpeg-receipt.json",
+        "bytes": 15588,
+        "sha256": "sha256:d0227d16dc0aa46bad121f695472eed90d20fa214bbd5361f6520f0ac6de1471"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/gate-w11-receipt.json",
+        "bytes": 16524,
+        "sha256": "sha256:f00a039aeb85155d95fc9b32c43d7cf82fa1b17954b51a674d3e809fa83dc9ca"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/gate-workspace-receipt.json",
+        "bytes": 20903,
+        "sha256": "sha256:0f217c3f49d1314d6d27a59f7a1078cc71e6b52ca267b155af0b853bd6cf24de"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/memory-observations.json",
+        "bytes": 7999,
+        "sha256": "sha256:b45b87a32727d370c47967c743a10cfda1eeabb6e60c212bf40fb0ecf9af1c81"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/monitor-race-repair.json",
+        "bytes": 2910,
+        "sha256": "sha256:d0911c5465265d96393e9f5b5da263bfde5b58625d7504235bef77a75d4affb3"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/monitor-race-reproduction.json",
+        "bytes": 597,
+        "sha256": "sha256:1640ec8b1396037d9ac6c60049ae559a05b97b9a741c839bf66947f91487efa6"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/native-jpeg-matrix.json",
+        "bytes": 149329,
+        "sha256": "sha256:1ca856f3da0407a2816cc56934049b989d7e6002f7614a8d1905c0d7bb42538b"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/native-repeat-matrix.json",
+        "bytes": 149389,
+        "sha256": "sha256:81c929803772af1f7178449a3fd6b2c9bb1348e30b96690185b814718ba2e27c"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/negative-tests.json",
+        "bytes": 1921,
+        "sha256": "sha256:516f58d17ac1778e4271af2714b14e56d1af94e3b21eb26e764dfc199efe7778"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/quality.json",
+        "bytes": 1321,
+        "sha256": "sha256:f8f66b6bed1d10dec1674b23f23c46245fda203dd3bd09c6e315428c78604883"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/repeat-comparison.json",
+        "bytes": 5196,
+        "sha256": "sha256:71148e2cf743e9afee4f62db60d5707e82540282eb98a1d0961181e3a3600258"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/review-privacy.json",
+        "bytes": 415,
+        "sha256": "sha256:c2cf0180f8a8637a22368d2fcad70b8ffe7f4bae9c82f8e9c40bd1948cdc483a"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/start-reconciliation.json",
+        "bytes": 3169,
+        "sha256": "sha256:bd6bb0b94e359c3d2a210bdc59f1d11799a7ed2e20c1fb1c403110d939ce6b8f"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/storage.json",
+        "bytes": 111002,
+        "sha256": "sha256:a67fd915a886a73e8dba182784b0ff908726bc122fae8c9ae7e5606bbf2ea584"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/taskern-request.json",
+        "bytes": 8255,
+        "sha256": "sha256:535ee7feac654da1e48be6d7c91b282027e846606152bd4e74d4dc925934ab36"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/taskern-response.json",
+        "bytes": 16118,
+        "sha256": "sha256:68b066f6a0957a4d0ad4a49e5abea9cbecd97120f3c5538bd7ab0066830fdabb"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/tern-directive.txt",
+        "bytes": 15654,
+        "sha256": "sha256:bb248b4fd65167d6eb5c1be02fa57e143d54eb682297d958b33e0ba4b56d1dea"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/tool-use.json",
+        "bytes": 925,
+        "sha256": "sha256:9655619177fd8036906bf555252caff4d888102db4bd51156f8cd4a9030bbcae"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/unmeasured.json",
+        "bytes": 1057,
+        "sha256": "sha256:8d0bec3455efe05ee3b99a58b10122dc132dbe89856f5c133ce763ea983bf186"
+      },
+      {
+        "path": "docs/development/evidence-published/w11-latest/w10-portable-smoke-correction.json",
+        "bytes": 1834,
+        "sha256": "sha256:6826ea6d17fba44601aa86bc7d6ccc208166e7a1924d5ba6bd014ee3d4bcac0d"
+      },
+      {
+        "path": "docs/integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md",
+        "bytes": 24649,
+        "sha256": "sha256:06f2fba70e4c92f6bcd17cf4537ee96926c6b122ecb433208a8cf7d69f913879"
+      }
+    ]
+  },
+  "manifest_boundary": "This manifest stays outside both archives and does not hash itself. Both archives contain exact raw Git blobs at their distinct pinned commits. No Git object database, private logs/config or executables included.",
+  "review_boundary": "Bounded existing-WIC 4K/16K admission, ROI and process-counter experiment only. Not full MP-IMG2, MP-IMG3, decoder/ICC policy, Runtime, measured R0, GUI startup, main or release. Portable structural replay cannot establish Git source closure.",
+  "push_audit": {
+    "head": "0937aaa336856e1f9048f07c424ae29de7b2fc6f",
+    "base": "133903874ddef3704417e1b0159ad445f7e7392f",
+    "commits": 6,
+    "includes_gate_candidate": true,
+    "blobs": 50,
+    "blob_bytes": 2269452,
+    "credential_pattern_hits": [],
+    "private_evidence_paths": [],
+    "binary_or_archive_paths": [],
+    "scope": "Explicit dev:dev fast-forward of W11 source, evidence and Gate-receipt commits; no main, release, mirror or private backup refs. Recognizable pattern scanning is not exhaustive."
+  }
+}

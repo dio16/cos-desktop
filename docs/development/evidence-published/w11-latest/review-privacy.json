@@ -1,5 +1,9 @@
 {
   "scope": "Selected exact-Git source subset and published structured evidence only; no private operator config, raw harness logs, credentials, Git object database or executables.",
   "known_disclosure": "Published receipts contain local tooling/evidence paths already authorized for this review.",
-  "limitation": "Recognizable credential-pattern scanning does not prove the absence of every possible secret."
+  "limitation": "Recognizable credential-pattern scanning does not prove the absence of every possible secret.",
+  "files_scanned": 71,
+  "recognizable_credential_pattern_hits": [],
+  "source_archive": "w11-review-source-r1.zip",
+  "evidence_archive": "w11-review-evidence-r1.zip"
 }

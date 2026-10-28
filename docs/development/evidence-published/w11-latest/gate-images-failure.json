@@ -1,0 +1,15 @@
+{
+  "gate_id": "0e783d76-128b-46d9-a00c-8ba5491cfd26",
+  "gate_label": "mp-img2-w11-r1-images",
+  "state": "FAILED",
+  "cause": "The unchanged w2-oracle check writes its report to an operator scratch path that did not exist in the new w11 private root. The check itself never evaluated the candidate; its observed failure is a caller-side environment-preparation defect, not a product or regression failure.",
+  "evidence": "FileNotFoundError on C:\\dev\\cos-desktop-verification\\w11\\scratch\\w2-oracle-r1.json; the other eight image checks passed on candidate digest sha256:a458a64b07c5e030e7e00a1325f607928cdb8d784319eaecebacbc60613ac7b3.",
+  "retained": [
+    "failed Gate authority/record",
+    "work/repo",
+    "check logs",
+    "cleanup=complete"
+  ],
+  "repair": "Create the owned scratch directory and ensure the report path is absent. No request check, argument, output, timeout or candidate changed.",
+  "replacement": "One explicit replacement images Gate (r2) on the same committed candidate. No automatic retry and the failed record is not rewritten."
+}
