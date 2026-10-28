@@ -204,6 +204,24 @@ Publication exclusively writes, flushes, syncs and closes all three artifacts pl
 
 [R0A-S1 admission](evidence/README.md#historical-records) bounds this slice to the versioned manifest contract (rendering §10.1), a bounded loader, the §11.2 result contract, structural validation and an offline CLI in `apps/desktop/devtools/r0` (Python standard library only). [Validation](evidence/README.md#historical-records) records eleven unittest cases and CLI outcomes: valid manifests and results validate; missing fields, wrong types and unsupported versions fail; oversize, duplicate-key, malformed and non-finite JSON fail closed before publication; unmeasured endpoints and metrics stay `NOT_MEASURED` with explicit reasons and null percentiles; `NOT_IMPLEMENTED` cannot become observed; failed/censored/excluded counts stay separate from observed; result identity must match the manifest; error output reflects only stable codes and JSON paths, never input text or paths. The tool launches nothing, fetches nothing, executes no input value and performs no measurement; R0A-S2/S3 drivers, R0B baselines, R0C attribution, R0D ratification and any numeric claim remain NOT_RUN.
 
+## 24. MP-IMG2-W13 4K full-frame output verification
+
+`test_w13_full_frame.py` proves both inputs' 16,777,216 pixels equal the fixed
+formula, pins the expected-row construction, replays each retained full-frame
+output from its stored bytes through the bounded streaming reader (4096 rows,
+67,108,864 inflated bytes, one canonical RGBA digest) and rejects truncated or
+trailing-byte outputs. `test_w13_negative.py` requires the retained real control,
+proves the unmodified control passes source-bound verification first, and mutates
+40 semantic classes: fixtures/source identity, budget and admission fields,
+decoder identity, unexpected ROI or partial-decode claims, refusal publication,
+stage order and holds, PNG CRC/truncation/trailing bytes, output digests, worker
+reaping/cancellation, cleanup, collection identity and bounds, false memory or
+scratch claims, record size and repeat disagreement. A repository without the
+pinned Git objects fails at setUpClass instead of reporting unearned rejections.
+
+Unchanged W1–W12 regression, full quality, nine fresh committed Refine Gates,
+disposal integrity and pushed-SHA Tern review remain separate exits.
+
 ## 23. MP-IMG2-W12 matched-raster JPEG/PNG differential
 
 `test_w12_png_fixtures.py` covers the streamed grayscale producer and its

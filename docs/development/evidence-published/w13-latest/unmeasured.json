@@ -1,0 +1,35 @@
+{
+  "not_measured": [
+    "WIC internal scratch",
+    "allocator reservations",
+    "true concurrent allocation peak",
+    "same-process before/after allocation delta",
+    "product memory SLO",
+    "16K full decode memory"
+  ],
+  "not_run": [
+    "GDI+ decoder legs",
+    "Rust decode_compare harness process",
+    "application-window GUI startup",
+    "Refine execution inside an external reviewer sandbox"
+  ],
+  "not_verified": [
+    "true partial/region/sequential/tiled decode",
+    "codec causal memory advantage or latency benchmark",
+    "decoder performance ranking"
+  ],
+  "separate": "Each of the four workers is an independent process lifetime; full-frame pixel verification proves output fidelity only.",
+  "not_authorized": [
+    "product decoder adoption/tolerance",
+    "ICC/EXIF product policy",
+    "16K decode adoption",
+    "true partial/sequential/tiled decode implementation",
+    "cooperative cancellation implementation",
+    "product memory SLO",
+    "Runtime/GPU/Upload",
+    "measured R0",
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3",
+    "main/release"
+  ]
+}

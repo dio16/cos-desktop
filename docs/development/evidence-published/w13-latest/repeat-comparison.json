@@ -1,0 +1,65 @@
+{
+  "source_identity_equal": true,
+  "fixtures_equal": true,
+  "deterministic_rows": [
+    {
+      "case_id": "S01",
+      "classification": "FULL_FRAME_OUTPUT_VERIFIED",
+      "canonical_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
+      "output_sha256": "sha256:31dd5d03aedb6ead8640d07100eadc0ed490a839fe8a172bb899f4065ba9519d",
+      "private_bytes": [
+        60776448,
+        61333504
+      ],
+      "working_set_bytes": [
+        135110656,
+        135159808
+      ]
+    },
+    {
+      "case_id": "S02",
+      "classification": "FULL_FRAME_OUTPUT_VERIFIED",
+      "canonical_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
+      "output_sha256": "sha256:31dd5d03aedb6ead8640d07100eadc0ed490a839fe8a172bb899f4065ba9519d",
+      "private_bytes": [
+        57532416,
+        59240448
+      ],
+      "working_set_bytes": [
+        131534848,
+        133582848
+      ]
+    },
+    {
+      "case_id": "S03",
+      "classification": "REFUSED_FULL_FRAME",
+      "canonical_rgba_sha256": null,
+      "output_sha256": null,
+      "private_bytes": [
+        41091072,
+        41820160
+      ],
+      "working_set_bytes": [
+        115236864,
+        115535872
+      ]
+    },
+    {
+      "case_id": "S04",
+      "classification": "REFUSED_FULL_FRAME",
+      "canonical_rgba_sha256": null,
+      "output_sha256": null,
+      "private_bytes": [
+        41787392,
+        44318720
+      ],
+      "working_set_bytes": [
+        115286016,
+        118951936
+      ]
+    }
+  ],
+  "counters_not_forced_equal": true,
+  "cases": 4,
+  "codec_pairs_identical": true
+}

@@ -1,0 +1,27 @@
+{
+  "items": [
+    {
+      "case_id": "jpeg_gray_4k",
+      "path": "jpeg_gray_4k.jpeg",
+      "codec": "jpeg",
+      "width": 4096,
+      "height": 4096,
+      "bytes": 589275,
+      "sha256": "sha256:9ea35ad3a09de79119d8c8335092251cd4aa36bf9177ea4a0b3575e4500c16d6",
+      "method": "streamed DC-only grayscale baseline JPEG; 64 KiB entropy chunks; Q=8; block level=48+20*((3*bx+5*by+(bx^by)) mod 9); no full-frame raster"
+    },
+    {
+      "case_id": "png_gray_matched_4k",
+      "path": "png_gray_matched_4k.png",
+      "codec": "png",
+      "width": 4096,
+      "height": 4096,
+      "bytes": 259602,
+      "sha256": "sha256:784105420468e055ba712aaa7d16bf3a33dc82c32b8372951238c108ca8c53d4",
+      "method": "streamed 8-bit grayscale PNG: one filter-0 row (4096 bytes) at a time, chunked deflate with a fixed producer level, CRC32 per chunk; no full-frame raster buffer"
+    }
+  ],
+  "input_pixels": 16777216,
+  "inputs_pixel_identical": true,
+  "note": "Both fixtures are the unchanged W11/W12 producers; all input pixels equal the fixed coordinate formula."
+}

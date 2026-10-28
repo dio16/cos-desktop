@@ -1,0 +1,137 @@
+{
+  "classification": "OBSERVED_WHOLE_PROCESS_DIFFERENTIAL",
+  "boundary": "after_onload for S01/S02, before_admission for S03/S04",
+  "source_commit": "f76c811c3cf709821381eaf1c2966e5bf6b2c5a7",
+  "scope": {
+    "allocator_reservations": "NOT_MEASURED",
+    "atomic_snapshot": false,
+    "boundary_hold": "ARTIFICIAL_INSTRUMENTATION_NOT_DECODER_TIME",
+    "codec_memory_advantage": "NOT_CLAIMED",
+    "comparison": "OBSERVED_WHOLE_PROCESS_DIFFERENTIAL",
+    "decoder_internal_scratch_peak": "NOT_MEASURED",
+    "process_counters": "PROCESS_LEVEL_OBSERVATION",
+    "same_process_allocation_delta": "NOT_MEASURED",
+    "true_concurrent_allocation_peak": "NOT_MEASURED",
+    "true_partial_decode": "NOT_VERIFIED",
+    "wic_decoder_latency_ns": null,
+    "worker_lifetimes": "INDEPENDENT_PROCESS_PER_CASE"
+  },
+  "unmeasured": [
+    "WIC internal scratch",
+    "allocator reservations",
+    "true concurrent allocation peak",
+    "same-process before/after allocation delta",
+    "codec causal memory advantage or latency",
+    "product memory SLO",
+    "cooperative in-decoder cancellation",
+    "true partial/region/sequential/tiled decode",
+    "16K full decode memory"
+  ],
+  "forbidden_interpretations": [
+    "same-process allocation delta",
+    "WIC-only memory",
+    "actual decoder scratch peak",
+    "true concurrent allocation peak",
+    "allocator reservation",
+    "causal codec memory advantage",
+    "codec latency benchmark",
+    "product memory SLO"
+  ],
+  "windows": [
+    {
+      "case_id": "S01",
+      "codec": "jpeg",
+      "role": "decode",
+      "pid": 69220,
+      "start_utc_ticks": 639288062953772864,
+      "hold_stage": "after_onload",
+      "working_set_bytes": 135110656,
+      "private_bytes": 60776448,
+      "peak_working_set_bytes": 135110656,
+      "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+      "sample_clock": "python_monotonic_ns",
+      "observer_clock": "windows_qpc",
+      "qpc_start": 1841972967761,
+      "qpc_end": 1841973457890,
+      "qpc_frequency": 10000000,
+      "complete": true,
+      "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
+    },
+    {
+      "case_id": "S02",
+      "codec": "png",
+      "role": "decode",
+      "pid": 65304,
+      "start_utc_ticks": 639288062991058197,
+      "hold_stage": "after_onload",
+      "working_set_bytes": 131534848,
+      "private_bytes": 57532416,
+      "peak_working_set_bytes": 131534848,
+      "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+      "sample_clock": "python_monotonic_ns",
+      "observer_clock": "windows_qpc",
+      "qpc_start": 1842009189601,
+      "qpc_end": 1842009742427,
+      "qpc_frequency": 10000000,
+      "complete": true,
+      "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
+    },
+    {
+      "case_id": "S03",
+      "codec": "jpeg",
+      "role": "refuse",
+      "pid": 1948,
+      "start_utc_ticks": 639288063027293289,
+      "hold_stage": "before_admission",
+      "working_set_bytes": 115236864,
+      "private_bytes": 41091072,
+      "peak_working_set_bytes": 115240960,
+      "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+      "sample_clock": "python_monotonic_ns",
+      "observer_clock": "windows_qpc",
+      "qpc_start": 1842044898923,
+      "qpc_end": 1842045498848,
+      "qpc_frequency": 10000000,
+      "complete": true,
+      "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
+    },
+    {
+      "case_id": "S04",
+      "codec": "png",
+      "role": "refuse",
+      "pid": 20264,
+      "start_utc_ticks": 639288063041794193,
+      "hold_stage": "before_admission",
+      "working_set_bytes": 115286016,
+      "private_bytes": 41787392,
+      "peak_working_set_bytes": 115290112,
+      "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+      "sample_clock": "python_monotonic_ns",
+      "observer_clock": "windows_qpc",
+      "qpc_start": 1842059413359,
+      "qpc_end": 1842059866145,
+      "qpc_frequency": 10000000,
+      "complete": true,
+      "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
+    }
+  ],
+  "repeat_private_bytes": {
+    "S01": [
+      60776448,
+      61333504
+    ],
+    "S02": [
+      57532416,
+      59240448
+    ],
+    "S03": [
+      41091072,
+      41820160
+    ],
+    "S04": [
+      41787392,
+      44318720
+    ]
+  },
+  "note": "Whole-process counters from independent lifetimes; full-frame pixel verification is not a memory-performance proof."
+}

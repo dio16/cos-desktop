@@ -1,0 +1,37 @@
+{
+  "local_quality": {
+    "command": [
+      "C:/Program Files/PowerShell/7/pwsh.exe",
+      "-NoProfile",
+      "-File",
+      "scripts/quality.ps1"
+    ],
+    "cwd": "C:\\dev\\cos-desktop",
+    "exit_code": 0,
+    "duration_seconds": 39.66954470000928,
+    "stdout": {
+      "bytes": 50330,
+      "sha256": "sha256:0151e630880c0096d74fd7156d7f37f9b38d7132c8757014aa29777640c5be25"
+    },
+    "stderr": {
+      "bytes": 0,
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "rust_test_totals": {
+    "passed": 535,
+    "failed": 0,
+    "ignored": 1
+  },
+  "w13_tests": {
+    "count": 9,
+    "passed": 9,
+    "negative_classes": 40
+  },
+  "native_application_surface": {
+    "status": "NOT_RUN",
+    "reason": "Live computer approval unanswered; no GUI startup claim."
+  },
+  "feature_route": "NOT_RUN for W13; no Rust feature-code change and no older result transferred.",
+  "independent_gates": "pending"
+}

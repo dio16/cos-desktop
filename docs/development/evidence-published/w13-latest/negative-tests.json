@@ -1,0 +1,76 @@
+{
+  "classes": 40,
+  "mutations": [
+    "case_missing",
+    "case_duplicated",
+    "fixture_digest",
+    "fixture_geometry",
+    "fixture_codec",
+    "source_file_missing",
+    "source_changed",
+    "source_commit",
+    "foreign_platform",
+    "budget_override",
+    "unexpected_roi",
+    "admission_charge",
+    "decoder_identity",
+    "partial_claim",
+    "refusal_materialized",
+    "refusal_reason",
+    "refusal_published",
+    "stage_order",
+    "stage_hold_missing",
+    "output_crc_mutation",
+    "output_truncated_coherent",
+    "output_trailing_bytes",
+    "output_digest",
+    "worker_not_reaped",
+    "unrequested_stop",
+    "cleanup_incomplete",
+    "false_memory_class",
+    "false_scratch_claim",
+    "codec_advantage_claim",
+    "counter_over_cap",
+    "memory_outside_hold",
+    "observer_incomplete",
+    "sample_missing",
+    "workers_overlap",
+    "worker_deadline",
+    "run_deadline",
+    "work_cap",
+    "oracle_digest",
+    "record_size",
+    "classification"
+  ],
+  "all_rejected": true,
+  "premise": "setUpClass requires the unmodified control to pass source-bound verification before any source-bound mutation is counted.",
+  "modes": {
+    "portable": "all mutants except source_commit rejected structurally; source_commit asserted portable-ok/closure-false",
+    "source_bound": "all mutants rejected against the real repository"
+  },
+  "suite_tests": 9,
+  "suite_command": {
+    "command": [
+      "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+      "-B",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "apps/desktop/devtools/img2/tests",
+      "-p",
+      "test_w13_*.py"
+    ],
+    "cwd": "C:\\dev\\cos-desktop",
+    "exit_code": 0,
+    "duration_seconds": 139.95512499997858,
+    "stdout": {
+      "bytes": 0,
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stderr": {
+      "bytes": 114,
+      "sha256": "sha256:3b443b5fa8cd67b1acf977e2a81388864095aeb66c4f9a9d048f32c52d84430a"
+    }
+  }
+}

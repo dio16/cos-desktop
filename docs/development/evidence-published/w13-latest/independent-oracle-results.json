@@ -1,0 +1,168 @@
+{
+  "source_commit": "f76c811c3cf709821381eaf1c2966e5bf6b2c5a7",
+  "outputs": [
+    {
+      "case_id": "S01",
+      "codec": "jpeg",
+      "classification": "FULL_FRAME_OUTPUT_VERIFIED",
+      "decoder": "JpegBitmapDecoder",
+      "pixel_format": "Gray8",
+      "output_bytes": 299214,
+      "output_sha256": "sha256:31dd5d03aedb6ead8640d07100eadc0ed490a839fe8a172bb899f4065ba9519d",
+      "oracle": {
+        "canonical_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
+        "compared_pixels": 16777216,
+        "encoded_bytes": 299214,
+        "expected_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
+        "first_mismatch": null,
+        "height": 4096,
+        "inflated_rgba_bytes": 67108864,
+        "ok": true,
+        "rows": 4096,
+        "width": 4096
+      },
+      "stage_names": [
+        "process_observed",
+        "input_opened",
+        "metadata_available",
+        "before_admission",
+        "admission_started",
+        "admitted",
+        "before_onload",
+        "onload_entered",
+        "onload_returned",
+        "after_onload",
+        "conversion_entered",
+        "conversion_returned",
+        "copy_pixels_entered",
+        "copy_pixels_returned",
+        "encode_entered",
+        "encode_returned",
+        "before_publish",
+        "output_published",
+        "probe_exit"
+      ],
+      "admission": {
+        "admission_status": "admitted",
+        "materialization": "completed",
+        "row_bytes": 4096,
+        "decoded_bytes_required": 16777216,
+        "bgra32_bytes_required": 67108864,
+        "scratch_bytes_required": 67108864,
+        "reason_code": null
+      }
+    },
+    {
+      "case_id": "S02",
+      "codec": "png",
+      "classification": "FULL_FRAME_OUTPUT_VERIFIED",
+      "decoder": "PngBitmapDecoder",
+      "pixel_format": "Gray8",
+      "output_bytes": 299214,
+      "output_sha256": "sha256:31dd5d03aedb6ead8640d07100eadc0ed490a839fe8a172bb899f4065ba9519d",
+      "oracle": {
+        "canonical_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
+        "compared_pixels": 16777216,
+        "encoded_bytes": 299214,
+        "expected_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
+        "first_mismatch": null,
+        "height": 4096,
+        "inflated_rgba_bytes": 67108864,
+        "ok": true,
+        "rows": 4096,
+        "width": 4096
+      },
+      "stage_names": [
+        "process_observed",
+        "input_opened",
+        "metadata_available",
+        "before_admission",
+        "admission_started",
+        "admitted",
+        "before_onload",
+        "onload_entered",
+        "onload_returned",
+        "after_onload",
+        "conversion_entered",
+        "conversion_returned",
+        "copy_pixels_entered",
+        "copy_pixels_returned",
+        "encode_entered",
+        "encode_returned",
+        "before_publish",
+        "output_published",
+        "probe_exit"
+      ],
+      "admission": {
+        "admission_status": "admitted",
+        "materialization": "completed",
+        "row_bytes": 4096,
+        "decoded_bytes_required": 16777216,
+        "bgra32_bytes_required": 67108864,
+        "scratch_bytes_required": 67108864,
+        "reason_code": null
+      }
+    },
+    {
+      "case_id": "S03",
+      "codec": "jpeg",
+      "classification": "REFUSED_FULL_FRAME",
+      "decoder": "JpegBitmapDecoder",
+      "pixel_format": "Gray8",
+      "output_bytes": 0,
+      "output_sha256": null,
+      "oracle": null,
+      "stage_names": [
+        "process_observed",
+        "input_opened",
+        "metadata_available",
+        "before_admission",
+        "admission_started",
+        "refused",
+        "probe_exit"
+      ],
+      "admission": {
+        "admission_status": "refused",
+        "materialization": "not_requested",
+        "row_bytes": null,
+        "decoded_bytes_required": null,
+        "bgra32_bytes_required": null,
+        "scratch_bytes_required": null,
+        "reason_code": "max_dimension_exceeded"
+      }
+    },
+    {
+      "case_id": "S04",
+      "codec": "png",
+      "classification": "REFUSED_FULL_FRAME",
+      "decoder": "PngBitmapDecoder",
+      "pixel_format": "Gray8",
+      "output_bytes": 0,
+      "output_sha256": null,
+      "oracle": null,
+      "stage_names": [
+        "process_observed",
+        "input_opened",
+        "metadata_available",
+        "before_admission",
+        "admission_started",
+        "refused",
+        "probe_exit"
+      ],
+      "admission": {
+        "admission_status": "refused",
+        "materialization": "not_requested",
+        "row_bytes": null,
+        "decoded_bytes_required": null,
+        "bgra32_bytes_required": null,
+        "scratch_bytes_required": null,
+        "reason_code": "max_dimension_exceeded"
+      }
+    }
+  ],
+  "full_frame_outputs_verified": 2,
+  "output_pixels_verified": 33554432,
+  "codec_rgba_identical": true,
+  "canonical_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
+  "method": "Each retained output PNG is streamed row by row through the bounded W7 reader and compared pixel-by-pixel to level(bx,by)=48+20*((3*bx+5*by+(bx^by)) mod 9) with alpha 255; only running digests are retained."
+}

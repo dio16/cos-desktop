@@ -1157,6 +1157,37 @@ the worktree differs from the pinned commit, and a later source change makes the
 record non-closable (`source_lf_mismatch`) instead of silently passing.
 
 
+### 4.33 MP-IMG2-W13 full-frame WIC output verification (2026-10-29)
+
+W13 decodes the same 4096² eight-bit grayscale raster as JPEG and as PNG with no
+ROI request, so the existing OnLoad path materializes and publishes a complete frame.
+
+```powershell
+python -B apps/desktop/devtools/img2/w13_matrix.py run `
+  --work-root <absolute-absent-owned-directory> --out <absolute-absent-report.json> `
+  --pwsh <absolute-qualified-pwsh.exe>
+python -B apps/desktop/devtools/img2/w13_matrix.py verify `
+  --report docs/development/evidence-published/w13-latest/native-full-matrix.json `
+  --source-root <repository>
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_w13_*.py"
+```
+
+Four scenarios run as four serial lifetimes: JPEG and PNG full-frame decode, then
+JPEG and PNG refusal at `max_dimension` 4095. Decode workers hold at after_onload;
+refusal workers hold at before_admission. Budgets are 4096 dimension, 16,777,216
+pixels, eight bits, 64 MiB decoded/scratch, 16 MiB encoded input, 8 MiB encoded
+output, 32 MiB report, 128 MiB work root, 45 s worker, 300 s batch and 768 MiB
+observed private. Encoded PNG size and inflated RGBA size (exactly 67,108,864
+bytes) are checked separately, and exceeding a cap is a HOLD, never a silent raise.
+
+Outputs are verified row by row against the fixed formula; a full RGBA array is
+never built and never used as its own expectation. Counters are whole-process
+observations from independent lifetimes, so full-frame pixel fidelity must not be
+read as a memory or latency result. Note that the probe omits its ROI-only fields
+(`roi_requested`, `decoder_cache_mode`, `full_frame_materialization`,
+`true_partial_decode`) when no rectangle is requested; the verifier treats an
+absent value as the honest observation and still refuses any positive claim.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |
