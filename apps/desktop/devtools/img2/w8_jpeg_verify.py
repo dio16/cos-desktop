@@ -455,6 +455,13 @@ def verify(record: dict, source_root=None) -> dict:
                              and terminal.get("outcome") == observed
                              and terminal.get("complete") is True,
                              "malformed_terminal_outcome_mismatch:" + case["id"])
+                        # A completed malformed WIC trace must be fully consumed: an
+                        # unparsed tail cannot hide behind complete=true. Stopped or
+                        # partial traces are outside this branch.
+                        need(record.get("trace_complete") is True
+                             and record.get("trace_partial_bytes") == 0
+                             and str(record.get("trace_utf8") or "").endswith("\n"),
+                             "malformed_complete_trace_has_partial_tail:" + case["id"])
                     if observed == "decoded":
                         need(record.get("exit_code") == 0 and output.get("present") is True
                              and isinstance(output.get("hex"), str) and output["hex"]

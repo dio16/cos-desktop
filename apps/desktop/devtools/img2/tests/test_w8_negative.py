@@ -31,7 +31,8 @@ NEGATIVE_NAMES = (
     "malformed_worker_outcome_mismatch", "gdiplus_width_forged",
     "gdiplus_input_bytes_forged", "gdiplus_output_bytes_forged",
     "malformed_outcome_key_removed", "malformed_trace_payload_tampered",
-    "gdiplus_output_bytes_removed",
+    "gdiplus_output_bytes_removed", "malformed_decoded_trace_tail",
+    "malformed_corrupt_trace_tail",
 )
 
 
@@ -172,6 +173,20 @@ def mutation(record, number):
         leg["trace_partial_bytes"] = 0
     elif number == 43:
         _leg(record, "dc_gray_32x24", "gdiplus")["leg"]["probe_result"].pop("output_bytes", None)
+    elif number == 44:
+        leg = _leg(record, "malformed_truncated", "wic")["leg"]
+        leg["trace_utf8"] += "garbage"
+        raw = leg["trace_utf8"].encode("utf-8")
+        leg["trace_sha256"] = "sha256:" + hashlib.sha256(raw).hexdigest()
+        leg["trace_bytes"] = len(raw)
+        leg["trace_partial_bytes"] = len(raw) - raw.rfind(b"\n") - 1
+    elif number == 45:
+        leg = _leg(record, "malformed_bad_length", "wic")["leg"]
+        leg["trace_utf8"] += "tail"
+        raw = leg["trace_utf8"].encode("utf-8")
+        leg["trace_sha256"] = "sha256:" + hashlib.sha256(raw).hexdigest()
+        leg["trace_bytes"] = len(raw)
+        leg["trace_partial_bytes"] = len(raw) - raw.rfind(b"\n") - 1
     else:
         raise ValueError("unknown negative class")
 
