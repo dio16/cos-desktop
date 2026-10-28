@@ -182,8 +182,11 @@ def classify(record, row):
     result = record.get("probe_result") or {}
     outcome = result.get("outcome")
     if outcome == "decoded":
-        if row.get("reference_class") == "ABSOLUTE":
+        reference_class = row.get("reference_class")
+        if reference_class == "ABSOLUTE":
             return "DECODED_CONTENT_VERIFIED"
+        if reference_class == "NOT_VERIFIED":
+            return "TAMPER_NOT_VERIFIED"
         return "DECODED_DIFFERENTIAL_ONLY"
     if outcome == "oversize":
         return "OVERSIZE"

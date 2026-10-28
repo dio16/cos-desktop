@@ -355,6 +355,9 @@ def verify(record: dict, source_root=None) -> dict:
             else:
                 need(row.get("classification") == "TAMPER_NOT_VERIFIED",
                      "malformed_case_cannot_claim_content:" + case["id"])
+                for leg in row.get("legs") or []:
+                    need(leg.get("classification") not in ("DECODED_CONTENT_VERIFIED",),
+                         "malformed_leg_promoted:" + case["id"])
                 not_verified += 1
         need(integer(absolute_verified) and absolute_verified == 3, "absolute_reference_case_count_invalid")
         need(differential == 7, "differential_case_count_invalid")

@@ -78,11 +78,13 @@ def parse(data: bytes) -> dict:
     _need(frame is not None, "jpeg_sof_missing")
     _need(scan is not None, "jpeg_sos_missing")
     assert frame is not None and scan is not None
+    _need(offset + 2 <= len(data) and data[offset:offset + 2] == b"\xff\xd9", "jpeg_eoi_missing")
+    _need(offset + 2 == len(data), "jpeg_trailing_bytes")
     return {"frame": frame, "quant": quant, "huffman": huffman, "scan": scan,
             "restart_interval": restart_interval, "entropy": entropy,
             "segments": segments, "bytes": len(data),
             "progressive": frame["variant"] == "progressive_dct",
-            "trailing_bytes": len(data) - (offset + 2 if data[offset:offset + 2] == b"\xff\xd9" else offset)}
+            "trailing_bytes": 0}
 
 
 def _parse_sof(marker: int, body: bytes) -> dict:
