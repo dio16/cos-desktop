@@ -1,0 +1,1614 @@
+# MP-IMG2-W9
+# Progressive JPEG — Real Decoder Capability,
+# Multi-Scan Integrity and Bounded Raster Verification
+#
+# 実行方式:
+# Taskern → 設計境界確認 → 実装 → Windows Native実測
+# → 独立Oracle → Refine独立Gate → Tern独立レビュー
+# → 修正・再評価 → LIMITED TECHNICAL COMPLETION判定
+#
+# 基本方針:
+# W8でNOT_RUNだったprogressive JPEGを、次の限定技術検証対象とする。
+# 対象はWindows WIC/GDI+の実decode、multi-scan構造、
+# full-frame admission、画素差異、malformed fail-closedに限定する。
+#
+# 新しい製品decoderの採用やJPEG toleranceの批准は行わない。
+# Progressive JPEGの限定実測を、全JPEG対応や
+# MP-IMG2 full Decode Exitへ昇格しない。
+#
+# 実行はローカルのみ。push/main/releaseは禁止。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 固定開始状態
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Repository:
+dio16/cos-desktop
+
+Branch:
+dev
+
+Remote state:
+未push
+
+開始HEAD:
+870cd2749c5e6b76b370ab48049f29854b4f6af8
+
+直前の製品・Gate候補:
+73d53d04b1beda143fd6f3f8af00b234401d8800
+
+W8 Native SOURCE:
+05ea4d10ef6a24ce3a710d3de7365c023c60e838
+
+W8独立Gate:
+
+Workspace:
+06412352-d63f-403d-a662-5433513bda46
+7/7 PASS
+
+IMG2 Replay:
+6e61da1a-8c0b-4667-ad27-6cde46e98542
+9/9 PASS
+
+W8 Quality:
+2e0234c1-0320-4ec8-88eb-adf6142e990f
+3/3 PASS
+
+Build:
+683f4a31-db03-4fd2-8146-364f453b58e1
+1/1 PASS
+
+W8独立レビュー:
+Round 1～4 HOLD
+Round 5 PASS 0 / 0 / 0
+
+W8 disposition:
+LIMITED TECHNICAL COMPLETION
+
+今回のタスクID:
+MP-IMG2-W9
+
+Owner contract:
+DC-MP-IMG2
+
+製品責務owner:
+crates/media — decode側、GPU非所有
+
+Authority:
+DC-MP-IMG2の既存実験・比較権限。
+
+本指示はprogressive JPEGのdevelopment-only検証を
+既存decode比較scopeとして実施する。
+
+正典を確認した結果、追加の製品設計批准が必要なら
+該当scopeをAUTHORITY_BLOCKEDとして停止する。
+
+本指示自体を新規設計authorityと解釈しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. Hard prerequisites
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MP-IMG2のhard prerequisites:
+
+- MP-IMG1
+- MP-SEC3
+
+既存のDesktop-local technical completionを確認する。
+
+受入済みの限定成果:
+
+MP-IMG2-W1:
+実WIC pre-materialization admission。
+
+MP-IMG2-W2:
+bounded process observation / stop contract。
+
+MP-IMG2-W3:
+Bgr565 BI_BITFIELDS。
+
+MP-IMG2-W4:
+ROI output / true partial decodeの区別。
+
+MP-IMG2-W5:
+orientation / ICC metadata分類。
+
+MP-IMG2-W6:
+process-memory scaling evidence。
+
+MP-IMG2-W7:
+2K/4K bounded materialization、
+8K/16K full-frame refusal、
+ROI非迂回。
+
+MP-IMG2-W8:
+baseline JPEGの限定実測。
+DC-only absolute reference 3/3。
+非一様JPEG differential 5/5 exact。
+Malformed fail-closed。
+45 negative mutation classes。
+独立4 Gate 32/32 artifact対応。
+
+W1～W8のLIMITED TECHNICAL COMPLETIONを
+full Decode Exitの代替として扱わない。
+
+MP-IMG3はfull MP-IMG2 Decode Exitを
+hard prerequisiteとする。
+
+W9の完了によってこれを解除しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. 開始時確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+最初に実行する。
+
+git status --short
+git branch --show-current
+git rev-parse HEAD
+git log -n 10 --oneline
+git diff
+
+開始HEADが異なる場合は原因を確認する。
+
+他タスクの未committed変更を破棄しない。
+reset --hardや無断cleanを実行しない。
+
+必ず読む正典:
+
+docs/development/IMPLEMENTATION_MASTER_PLAN.md
+
+docs/architecture/DESKTOP_DESIGN_CONTRACTS.md
+
+- DC-MP-IMG2
+- DC-MP-IMG3
+- Media input admission and integrity
+
+docs/architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md
+
+- §6
+- §6.1 Decode
+- §10
+
+docs/development/BUILD_AND_RUN.md
+docs/development/TESTING.md
+
+docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md
+docs/decisions/ADR-0012-HOLD-RELEASE.md
+
+既存実装:
+
+apps/desktop/devtools/img2/
+apps/desktop/examples/decode_compare/
+
+特にW8の以下を確認する。
+
+- w8_jpeg_fixtures.py
+- w8_jpeg_reference.py
+- w8_jpeg_matrix.py
+- w8_jpeg_verify.py
+- W8 negative tests
+- W8 Native matrix
+- W8 accepted review evidence
+
+まず現行実装のAPI・fixture format・実行契約を調べる。
+
+存在しないAPIやCLI引数を推測して使用しない。
+
+W1～W8のSOURCE、Native、Gate、
+review、disposition、歴史的証拠は変更しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. W9の技術目標
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W8ではprogressive JPEGが2 source NOT_RUNだった。
+
+理由:
+承認済みのprogressive encoderが存在しなかったため。
+
+W9では外部製品dependencyを追加せず、
+progressive JPEGの限定クラスについて
+実Windows decoder capabilityを検証する。
+
+技術目標:
+
+A.
+正当なprogressive JPEG fixtureを
+再生成可能な形で用意する。
+
+B.
+SOF2、DQT、DHT、SOS、
+複数scan、entropy、EOIを独立解析する。
+
+C.
+Baseline JPEGとprogressive JPEGを
+実encoded markerから区別する。
+
+D.
+WIC/GDI+の両候補で実decodeを行う。
+
+E.
+Decoded outputをcanonical RGBAへ正規化し、
+decoder間の全画素比較を実施する。
+
+F.
+Progressive multi-scanの破損・欠落入力を
+content-verifiedへ昇格させない。
+
+G.
+Full-frame admissionとbounded resource contractを維持する。
+
+H.
+実decode capabilityとabsolute correctness、
+partial decode、sequential decodeを厳密に分離する。
+
+今回の主要成果は:
+
+PROGRESSIVE_DECODE_CAPABILITY_OBSERVED
+
+および
+
+PROGRESSIVE_DIFFERENTIAL_VERIFIED
+
+を、実Native evidenceに基づいて限定的に成立させること。
+
+全progressive JPEG対応や全画素の絶対正当性は主張しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. 実装スコープ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+新規development-only toolingを実装する。
+
+推奨ファイル:
+
+apps/desktop/devtools/img2/
+- w9_progressive_fixtures.py
+- w9_progressive_reference.py
+- w9_progressive_matrix.py
+- w9_progressive_verify.py
+
+apps/desktop/devtools/img2/tests/
+- test_w9_progressive_fixtures.py
+- test_w9_progressive_markers.py
+- test_w9_progressive_verify.py
+- test_w9_progressive_negative.py
+
+既存W8 parser / matrix / verifier / oracleを再利用する。
+
+必要な場合のみ、
+既存development-only helperに最小限の拡張を行う。
+
+製品側の次の範囲は変更しない。
+
+- crates/media
+- DecodeLimits
+- DecodeRequest
+- DecodeAdmission
+- WIC product policy
+- GDI+ product policy
+- Runtime
+- GPUI
+
+既存WIC/GDI+ probeに不足がある場合、
+まず既存公開APIで実行可能な方法を検討する。
+
+新しいunsafe/FFI、COM interop、
+native dependencyが必要なら、
+その設計を勝手に実装せず
+DESIGN_BLOCKEDとして記録する。
+
+YAGNIを適用する。
+
+Progressive JPEG専用の新しい汎用decoder framework、
+cache layer、task schedulerを作らない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. Progressive JPEG fixture
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W9の必須fixture:
+
+P1:
+Progressive grayscale
+256×256
+8-bit
+SOF2
+複数scan
+
+P2:
+Progressive grayscale
+1024×1024
+8-bit
+SOF2
+複数scan
+
+両fixtureは非一様な画素構造を持つこと。
+
+単一DC値だけの画像を
+progressive一般能力の証拠にしない。
+
+少なくとも以下を確認する。
+
+- DC scanが存在する
+- AC scanが存在する
+- scan順序が有効
+- 各scanのcomponent selectorが有効
+- spectral selectionが有効
+- successive approximationが有効
+- entropy scan boundariesが有効
+- scan終了とEOIが整合
+- scan外のsegment lengthが正しい
+
+実装が初回のDC/AC scanだけを扱う場合、
+refinement scan対応を主張しない。
+
+Refinementを含む有効fixtureが
+既存権限内で準備できた場合のみ
+別classとして追加してよい。
+
+Fixture生成の優先順位:
+
+1.
+既存in-repo generatorの安全な拡張。
+
+2.
+仕様を満たす小型の決定論的in-repo encoder。
+
+3.
+出所・権利・encoded bytesが確認できる
+既存の承認済みfixture。
+
+外部encoderを新たに製品dependencyへ追加しない。
+
+手書きJPEG encoderを導入する場合も、
+W9の固定fixture生成に必要な最小機能に限定する。
+
+独立検証で正当性を確認できなければ、
+そのfixtureをVALIDとしない。
+
+追加のmalformed fixture:
+
+M1:
+Progressive JPEGの途中scanをtruncate。
+
+M2:
+SOSのspectral selectionまたは
+segment lengthを不正化。
+
+Control:
+
+C1:
+W8 accepted baseline JPEGを1件使用する。
+
+ただしC1は回帰確認専用。
+W9 progressive capabilityの成功件数へ含めない。
+
+必須source数:
+5
+
+- Progressive 2件
+- Malformed 2件
+- Baseline control 1件
+
+Decoder candidate:
+WIC
+GDI+
+
+最大Native legs:
+10
+
+任意追加caseは、必要性と予算を記録し、
+固定matrixの上限を超えないこと。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. Encoded JPEGの独立解析
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W8 marker parserを再利用する。
+
+Progressive専用に以下を検査する。
+
+- SOF2識別
+- 8-bit precision
+- dimensions
+- components
+- sampling factors
+- DQT
+- DHT
+- scan count
+- SOS parameters
+- spectral selection Ss/Se
+- successive approximation Ah/Al
+- entropy segment bounds
+- byte stuffing
+- restart marker整合
+- EOI
+- trailing bytes
+
+SOF2 markerの存在だけでは
+VALID_PROGRESSIVEとしない。
+
+複数scanが実際に存在し、
+各scanの構造が規格上妥当であることを要求する。
+
+Scan構造が正当でも、
+entropyの内容を検証していなければ
+FULL_ENTROPY_VERIFIEDと記録しない。
+
+独立fixture generatorを使用する場合、
+generatorによる成功申告だけで
+encoded streamの正当性を証明しない。
+
+独立parserで成立した事実を保存する。
+
+Output分類:
+
+VALID_PROGRESSIVE_STRUCTURE
+STRUCTURE_INVALID
+ENTROPY_NOT_VERIFIED
+CONTENT_NOT_VERIFIED
+
+必要な区分を併記し、
+単一のbooleanで未検証領域を隠さない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. Absolute referenceとdifferentialの区別
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W8の証拠契約を維持する。
+
+ABSOLUTE_VERIFIED:
+独立したencoded→raster referenceが成立し、
+実decode出力と全画素一致した場合のみ。
+
+DIFFERENTIAL_VERIFIED:
+WIC/GDI+の実出力をcanonical RGBAで比較し、
+差異を独立に算出できた場合。
+
+NOT_VERIFIED:
+Reference不足、出力未取得、分類不整合など。
+
+W9のprogressive caseでは、
+原則としてdifferential比較を実施する。
+
+元画像のピクセルをJPEG復元後の
+絶対期待値として使用しない。
+
+WIC/GDI+の出力一致だけで
+absolute correctnessを主張しない。
+
+追加のabsolute referenceを作る場合は、
+JPEG encoded coefficientsとnormative reconstructionから
+独立に期待画素を導出できるclassに限る。
+
+実装が不必要に大きくなる場合は
+absolute referenceの追加を行わない。
+
+W8で受入済みのDC-only absolute referenceは
+回帰確認対象であり、
+新しいW9 progressive absolute proofではない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. Canonical pixel comparison
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WIC/GDI+の実decode結果を
+同一のcanonical RGBAへ正規化する。
+
+記録する。
+
+- decoder identity
+- decoder version
+- encoded source SHA256
+- width/height
+- source pixel format
+- normalized output format
+- output bytes
+- output SHA256
+- normalized RGBA SHA256
+- compared pixels
+- differing pixels
+- differing channels
+- maximum channel difference
+- mean absolute channel difference
+- first mismatch coordinate
+
+全画素exact一致の場合:
+
+DIFFERENTIAL_EXACT
+
+差異がある場合:
+
+DIFFERENTIAL_MISMATCH_OBSERVED
+
+差異があっても、
+恣意的なtoleranceで自動PASSへ変更しない。
+
+差異を保存することと、
+decoderのどちらかを不正と判断することは別である。
+
+JPEG toleranceの製品批准は行わない。
+
+実出力が得られない場合は、
+別decoderの成功で不足を埋めない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. Admissionとbounded execution
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W1～W7のfull-frame admission契約を維持する。
+
+W9実験上限:
+
+max_dimension:
+2048
+
+max_pixels:
+4,194,304
+
+max_source_depth:
+8 bits/channel
+
+max_BGRA32_output:
+16 MiB
+
+max_declared_scratch:
+16 MiB
+
+max_encoded_input:
+16 MiB
+
+max_output_file:
+32 MiB
+
+max_work_root:
+256 MiB
+
+max_report:
+8 MiB
+
+max_trace:
+128 records / 128 KiB
+
+max_stdout_stderr_capture:
+各64 KiB
+
+max_worker_runtime:
+45 seconds
+
+max_global_runtime_per_batch:
+300 seconds
+
+max_concurrent_workers:
+1
+
+max_native_legs:
+10
+
+すべてW9専用の実験上限であり、
+製品DecodeBudgetやSLOではない。
+
+Full-frame requirementは
+元encoded source dimensionsから計算する。
+
+Encoded sizeからdecoded bytesを推定しない。
+
+Progressive JPEGでscanが複数存在しても、
+decoded output予算をscan数で割ってはならない。
+
+ROI要求がある場合も
+full-frame admissionを迂回させない。
+
+Process memoryを観測する場合は
+whole-process counterとして記録する。
+
+WIC internal scratch:
+NOT_MEASURED
+
+Actual reservation:
+NOT_MEASURED
+
+True concurrent allocation peak:
+NOT_MEASURED
+
+Progressive scanごとの内部residency:
+NOT_MEASURED
+
+実装・観測のないpartial decode能力を
+Progressive JPEGのmulti-scan性から推論しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. Windows Native実行
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Native実行は必須。
+
+実Windows環境で、固定SOURCEから実行する。
+
+必須対象:
+
+- WIC progressive P1/P2
+- GDI+ progressive P1/P2
+- WIC/GDI+ malformed M1/M2
+- baseline control C1
+
+合計最大10 decoder legs。
+
+実行前に固定する。
+
+- Git SOURCE full SHA
+- SOURCE file digest
+- fixture digest
+- executable digest
+- Windows version
+- decoder identity
+- WIC/GDI+ probe identity
+- process identity
+
+WIC側では取得可能な:
+
+- admission
+- materialization
+- output
+- terminal trace
+- process counter
+
+を保存する。
+
+GDI+に存在しない:
+
+- WIC stage trace
+- header-only stage
+- WIC lifetime contract
+
+を捏造しない。
+
+GDI+では実際に取得できる:
+
+- decoder outcome
+- exit code
+- input identity
+- output bytes
+- output SHA256
+- normalized raster
+
+を検証する。
+
+W2のstop-confirmed state machineを維持する。
+
+Process killを
+cooperative in-decoder cancellationと呼ばない。
+
+人工holdをdecoder latencyへ加算しない。
+
+測定できないlatencyは
+NOT_MEASUREDとする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. Malformed progressiveのfail-closed
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Malformed M1/M2について、
+WIC/GDI+の両legを実行する。
+
+各legを次に分類する。
+
+CORRUPT_REFUSED
+UNSUPPORTED
+DECODED_TAMPER_NOT_VERIFIED
+TIMEOUT
+CANCELLED
+NOT_RUN
+
+Malformed sourceをdecoderがdecodeした場合も、
+独立encoded integrityが不成立なら
+CONTENT_VERIFIEDへ昇格しない。
+
+WICについて必須:
+
+- worker identity
+- worker outcome
+- probe outcome
+- terminal outcome
+- raw trace SHA256
+- trace bytes
+- trace completeness
+- exit code
+- output publication
+- output bytes/SHA256（存在する場合）
+
+完了traceでは:
+
+trace_complete == true
+trace_partial_bytes == 0
+trace_utf8末尾改行あり
+
+を要求する。
+
+途中停止・partial traceに
+完了traceの条件を無条件で適用しない。
+
+GDI+について必須:
+
+- candidate/case identity
+- probe identity
+- outcome
+- exit code
+- input bytes
+- source dimensions
+- output publication
+- output bytes/SHA256（存在する場合）
+
+Malformedのdecoder successは、
+content verification成功とは別区分にする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. Independent verifier
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+w9_progressive_verify.pyを実装する。
+
+次を独立照合する。
+
+- fixed source matrix
+- fixture bytes/SHA256
+- SOF2
+- scan count
+- SOS構造
+- entropy boundaries
+- input geometry
+- precision
+- decoder identity
+- admission arithmetic
+- outcome
+- exit code
+- output publication
+- output bytes/SHA256
+- canonical RGBA
+- differential statistics
+- trace payload
+- process identity
+- fixed SOURCE identity
+
+正常decodeの必須フィールドは
+存在そのものを要求する。
+
+「値があれば比較する」方式で
+必須証拠の欠落を許容しない。
+
+Malformedではdecoded/failureごとに
+必要な証拠を明示的に分ける。
+
+最低限のnegative mutation:
+
+01. SOF2→SOF0改変
+02. scan count偽装
+03. SOS component selector改変
+04. spectral selection改変
+05. successive approximation改変
+06. 不正なscan順序
+07. entropy segment truncation
+08. EOI欠落
+09. 不正segment length
+10. fixture SHA256改変
+11. source width改変
+12. source height改変
+13. precision改変
+14. sampling factors改変
+15. encoded bytesをdecoded requirementへ流用
+16. decoded requirement過少申告
+17. full-frame admission偽装
+18. decoder candidate改変
+19. decoder identity改変
+20. case_id改変
+21. 正常worker outcome改変
+22. probe outcome改変
+23. terminal outcome改変
+24. output publication偽装
+25. output bytes改変
+26. output SHA256改変
+27. normalized RGBA digest改変
+28. differing pixel count偽装
+29. first mismatch coordinate偽装
+30. differentialをabsoluteへ昇格
+31. malformedをCONTENT_VERIFIEDへ昇格
+32. malformed decoder leg削除
+33. malformed worker outcomeキー削除
+34. malformed output digest偽装
+35. 完了trace末尾へのcoherent partial追加
+36. trace SHA256/bytes不一致
+37. incomplete captureをcompleteへ変更
+38. process identity改変
+39. Native SOURCEを旧W8へ差し替える
+40. stop/timeout classification偽装
+
+全負例を実際のverify()へ通す。
+
+Coherent mutationでは、
+必要に応じてtrace payload、長さ、SHA256を
+整合させてから意味的矛盾を検証する。
+
+単なるraw hash mismatchだけによる拒否を
+算術・状態整合の検証成功と混同しない。
+
+Private Git objectsが利用できない
+structural replayでは:
+
+source_identity_verified=false
+closure_eligible=false
+
+を維持する。
+
+実Git SOURCE-bound検証を省略して
+full closureを宣言しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. Taskern 0.2.0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+インストール済みTaskernの実CLI仕様を確認する。
+
+新規request:
+
+plan_id:
+cos-desktop-img2-w9
+
+task_id:
+img2-w9
+
+revision:
+1
+
+owner:
+DC-MP-IMG2
+
+goal:
+Verify bounded real-Windows progressive JPEG decode capability
+for WIC/GDI+ using independently validated multi-scan fixtures,
+canonical differential comparison and fail-closed malformed
+classification, without authorizing decoder adoption,
+absolute correctness for all JPEGs, or product policy changes.
+
+既存W8 packetを流用しない。
+
+prepare/compileは
+Taskern 0.2.0の正規仕様に従う。
+
+保存:
+
+- taskern-request.json
+- taskern-response.json
+- taskern-diagnostic.json
+- packet digest
+- handoff
+- Taskern version
+
+失敗時は正確な診断を保存する。
+
+成功したと推測して次工程へ進まない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. ローカル検証
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+必須check:
+
+- W9 deterministic fixture regeneration
+- W9 marker parser
+- W9 multi-scan integrity
+- W9 progressive decode verification
+- W9 canonical differential comparison
+- W9 malformed classification
+- W9 negative mutation tests
+- W9 fixed Native replay
+- W8 JPEG regressions
+- W1～W7 historical regressions
+- WIC admission selftest
+- W2 probe/stop selftest
+- decode_compare legacy compatibility
+- IMG2 Rust tests
+- workspace Rust tests
+- feature Rust tests
+- feature clippy/build
+- quality.ps1
+- R0 Python suite
+
+Rustコマンドは現行正典に従い、
+少なくとも以下を実行する。
+
+cargo fmt --all -- --check
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo test --locked --workspace
+cargo build --locked --workspace
+
+Windows feature固有のコマンド、
+serialized実行条件はBUILD_AND_RUN.mdに従う。
+
+Localと独立Gateのテスト数を混合しない。
+
+各checkについて:
+
+PASS
+FAIL
+SKIPPED
+IGNORED
+NOT_RUN
+
+を別々に記録する。
+
+W1～W8歴史的replayは
+各時点の固定SOURCEとNativeを使用する。
+
+過去の成功GateをW9成功として流用しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. 独立Refine Gate
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W9 SOURCEとNativeを固定した後、
+新製品候補をローカルcommitする。
+
+その候補に対して新規Gateを実行する。
+
+Refine operator上限:
+600 seconds
+
+W8で成立したGate分割方式を使用してよい。
+
+推奨4 Gate:
+
+Gate A — Workspace Quality
+
+- workspace Rust tests
+- feature tests
+- feature clippy
+- feature build
+- R0 scoped suite
+- dependency/document checks
+
+Gate B — IMG2 Replay
+
+- W1～W8 historical replay
+- WIC admission selftest
+- W2 probe/stop selftest
+- decode_compare regression
+- IMG2 existing tests
+
+Gate C — W9 Quality
+
+- fixture regeneration
+- marker/multi-scan parser
+- progressive reference validation
+- fixed Native replay
+- canonical differential oracle
+- malformed verification
+- negative mutation suite
+- SOURCE binding
+
+Gate D — Build
+
+- 正規feature build
+- build result verification
+
+各Gateのoperator実行時間を
+600秒未満に収める。
+
+W9 Qualityの実行が上限に近づく場合、
+bounded sub-Gateへ分割してよい。
+
+ただし以下は禁止。
+
+- mandatory checkの省略
+- check条件の弱体化
+- FAILED Gateの成功転用
+- 別candidateのcheck結果混合
+- Gate timeoutの成功扱い
+- operator予算の無断変更
+
+すべて同一candidateとdigestで実行する。
+
+各Gateの必須条件:
+
+- fixed candidate full SHA一致
+- candidate digest一致
+- all mandatory checks PASS
+- status SUCCEEDED
+- inspect SUCCEEDED
+- verify SUCCEEDED
+- status/inspect/verify exit 0
+- artifact tuples一致
+- artifact実バイト一致
+- Git candidate blob対応
+- cleanup complete
+- owner_alive=false
+- recovery_required=false
+
+生receiptを必ず保存する。
+
+- raw status response
+- raw inspect response
+- raw verify response
+- exit codes
+- request SHA256
+- terminal state SHA256
+- check outcomes
+- artifact tuples
+- cleanup/owner/recovery state
+
+Preflight UNKNOWNをPASSとしない。
+
+失敗dispatchの履歴を保持する。
+
+Build executable digestは、
+削除前に実バイナリから取得できた場合だけ記録する。
+
+取得できなければ:
+
+NOT_CAPTURED
+
+とする。
+
+過去候補のdigestを転用しない。
+
+SOURCE変更後はcandidateを再固定する。
+
+docs-only訂正ではSOURCE不変性を検証し、
+必要のないNative/Gate再実行を避ける。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. Evidence保存
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+保存先:
+
+docs/development/evidence-published/img2-w9-latest/
+
+最低限保存:
+
+- taskern-request.json
+- taskern-response.json
+- source-identity.json
+- execution-manifest.json
+- environment.json
+- fixture-manifest.json
+- progressive-marker-analysis.json
+- multi-scan-integrity.json
+- reference-classification.json
+- native-decoder-matrix.json
+- decoder-capability-table.json
+- differential-pixel-comparison.json
+- admission-boundary.json
+- memory-observations.json
+- malformed-outcomes.json
+- negative-tests.json
+- verifier-results.json
+- historical-regressions.json
+- quality.json
+- quality-workspace-gate.json
+- quality-img2-gate.json
+- quality-w9-gate.json
+- build-gate.json
+- gate-preflight.json
+- build-product.json
+- gate-artifact-correspondence.json
+- source-evidence-reconciliation.json
+- storage.json
+- unmeasured.json
+- review-request.txt
+- review-response.txt
+- review.json
+- disposition.json
+
+正典へW9の限定結果を追記する。
+
+docs/development/IMPLEMENTATION_MASTER_PLAN.md
+docs/development/BUILD_AND_RUN.md
+docs/development/TESTING.md
+
+W1～W8の歴史記録は不変。
+
+Review提出物:
+
+1. w9-review-source.zip
+2. w9-review-evidence.zip
+3. review-package.json
+
+SOURCE ZIP:
+固定製品候補のGit archive。
+
+Evidence ZIP:
+固定Evidence HEADのGit archive。
+
+Review package:
+両ZIPの実bytes/SHA256と
+SOURCE/Native/Gate/Evidenceの対応を持つ別添manifest。
+
+SOURCE entry manifestは
+今回の固定候補から全件再生成する。
+
+過去候補のentry一覧を転用しない。
+
+Evidence ZIP内にmanifestを含めるなら、
+実memberの存在と原バイトを検証する。
+
+Raw/LF/CRLF正規化を明示する。
+
+Manifestの自己ZIP hashは要求しない。
+
+SOURCE ZIP全entryとmanifestを
+独立に照合可能な形で提出する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. Storageとscratch cleanup
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+削除対象は所有境界が確認できたものだけ。
+
+- terminal SUCCEEDED Gateの正確なwork/repo
+- 終了済みのcheck target
+- W9が所有する明示allowlistのscratch
+
+削除前の必須条件:
+
+- Gate ID確定
+- terminal state確定
+- process不存在
+- reparse不存在
+- evidence保存済み
+- SOURCE対応確認済み
+- Native verification成功
+
+削除後の確認:
+
+- Native verify不変
+- Gate verify SUCCEEDED
+- artifact tuple不変
+- source identity不変
+
+FAILED/nonterminal Gate、
+private logs、Refine authority、
+通常workspace、
+他タスク資産を削除しない。
+
+削除結果は:
+
+- path
+- ownership
+- file count
+- logical bytes
+- pre-delete checks
+- post-delete verification
+
+を保存する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. Tern独立レビュー
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tern-OMP review loopを使用する。
+
+omp -pは禁止。
+
+レビュー重点:
+
+1.
+Progressive JPEGのSOF2/multi-scan構造が
+実encoded bytesから検証されているか。
+
+2.
+正当なfixtureをgenerator自己申告だけで
+承認していないか。
+
+3.
+実Windows WIC/GDI+ decodeが成立しているか。
+
+4.
+正常decoder legsのidentity/outcome/outputが
+相互に結合されているか。
+
+5.
+Progressive differentialをabsolute correctnessへ
+誤昇格していないか。
+
+6.
+元画像を非可逆JPEG復元後の
+絶対期待値にしていないか。
+
+7.
+Canonical comparisonが全画素・実バイトから
+再計算できるか。
+
+8.
+Sampling/precision/scan structureを
+混同していないか。
+
+9.
+Malformed progressiveがfail-closedか。
+
+10.
+Raw trace、terminal outcome、
+output publicationが整合するか。
+
+11.
+必須フィールド欠落を拒否できるか。
+
+12.
+Full-frame admissionを維持しているか。
+
+13.
+Encoded bytesをdecoded requirementへ流用していないか。
+
+14.
+W2 stop契約が維持されているか。
+
+15.
+W1～W8歴史的replayとlegacy CLIが不変か。
+
+16.
+SOURCE/Native/Gate/Evidenceが
+実バイトで対応するか。
+
+17.
+全Gateの生receiptとartifact tuplesが成立するか。
+
+18.
+Product decoder adoption、tolerance、
+full Decode Exit、MP-IMG3、Runtimeへ
+権限を拡大していないか。
+
+指摘分類:
+
+BLOCKING
+ACTIONABLE NON-BLOCKING
+EXCESSIVE
+
+HOLDの場合:
+
+- 実指摘を特定する
+- 最小修正を行う
+- 必要なSOURCE/Native/Gateを再固定する
+- 新候補で独立再レビューする
+
+0/0/0まで既存権限内で評価する。
+
+ただし、未承認設計や未測定の事実を
+推測でPASSにしない。
+
+Review responseの実ID、verdict、
+counts、terminal responseを照合する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. W9受入条件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W9 LIMITED TECHNICAL COMPLETIONには
+以下の全条件を要求する。
+
+A1.
+新Taskern W9 packetが成立する。
+
+A2.
+固定SOURCEとNative SOURCE identityが成立する。
+
+A3.
+256²/1024²の正当なprogressive JPEG fixtureが
+決定論的に再生成できる。
+
+A4.
+SOF2と複数SOS scanの構造を
+encoded bytesから独立検証できる。
+
+A5.
+DC/AC scanが実在し、
+scan構造の正当性が検証される。
+
+A6.
+WIC/GDI+双方のprogressive実decode結果が存在する。
+
+A7.
+正常progressive出力のRGBAを
+全画素比較できる。
+
+A8.
+差異があれば正確に保存し、
+無断toleranceでPASSに変更しない。
+
+A9.
+Progressive differentialを
+absolute correctnessに昇格しない。
+
+A10.
+Malformed M1/M2の両decoder legsを実測する。
+
+A11.
+Malformedのdecoder successを
+content verificationへ昇格しない。
+
+A12.
+Full-frame admission、
+resource、stop契約を維持する。
+
+A13.
+Negative verifierの全必須負例が拒否される。
+
+A14.
+W1～W8の既存regressionsが成立する。
+
+A15.
+新Workspace GateがSUCCEEDEDする。
+
+A16.
+新IMG2 Replay GateがSUCCEEDEDする。
+
+A17.
+新W9 Quality GateがSUCCEEDEDする。
+
+A18.
+新Build GateがSUCCEEDEDする。
+
+A19.
+全Gateの実receipt、artifact tuples、
+SOURCE Git blobが対応する。
+
+A20.
+Tern独立レビューがPASS 0/0/0となる。
+
+A21.
+未測定・未承認の境界を保持する。
+
+A22.
+製品decoder、Runtime、Upload、
+dependencyへ未承認変更がない。
+
+実験結果が不一致だった場合は、
+一致したことに修正してはならない。
+
+実データに基づきcapabilityを分類する。
+
+必須fixtureを生成・検証できない場合、
+または必要なNative実行が成立しない場合は、
+LIMITED TECHNICAL COMPLETIONを宣言しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+21. 明示的な非対象
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+今回完了しない。
+
+- 全JPEGのabsolute raster correctness
+- 全progressive JPEG対応
+- Progressive refinement scan全種
+- 全codec
+- 製品decoder選定/adoption
+- 新規FFmpeg製品dependency
+- JPEG toleranceの製品批准
+- ICC colour fidelity
+- EXIF orientation自動適用
+- 16K full decode
+- true partial/region/sequential/tiled decode
+- Progressive scan単位のpartial materialization
+- WIC internal scratch
+- actual allocation reservations
+- true concurrent allocation peak
+- cooperative in-decoder cancellation
+- product numeric memory SLO
+- full MP-IMG2 Decode Exit
+- MP-IMG3 prerequisite completion
+- GPUI Upload
+- Runtime RC-*
+- measured R0D
+- UX/video acceptance
+- main merge
+- remote push
+- release
+
+Progressive JPEGのmulti-scanは、
+true sequential/tiled decodeの実装証明ではない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+22. 禁止操作
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+今回の指示では以下を許可しない。
+
+1. remote push
+2. main merge
+3. release/tag作成
+4. 他repositoryの変更
+5. Refine本体変更
+6. Taskern本体変更
+7. Runtime RC-*変更
+8. GPUI Upload実装
+9. 未承認native API追加
+10. 新規製品dependency導入
+11. 製品decoder採用判断
+12. 製品JPEG tolerance批准
+13. 製品memory SLO批准
+14. W1～W8 historical evidence改変
+15. 既存Gate成功の新候補への転用
+16. FAILED Gateの成功扱い
+17. 未測定値の推測補完
+18. 他タスクworktreeの削除
+19. Refine private authorityの削除
+20. 無断の設計契約変更
+
+既存DCの範囲外と判明した変更は
+実施前に停止・記録する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+23. 停止条件と記録区分
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+停止条件:
+
+S1.
+Hard prerequisite不成立。
+
+S2.
+開始SOURCEまたはauthorityを確認できない。
+
+S3.
+正当なprogressive fixtureを生成・検証できない。
+
+S4.
+Multi-scan parserの正当性を
+独立に検証できない。
+
+S5.
+新しい未承認native decoder APIが必要。
+
+S6.
+新規dependency/licence判断が必要。
+
+S7.
+WIC/GDI+の両候補による必須Native実行が
+成立しない。
+
+S8.
+Full-frame admission前にmaterializationが必要。
+
+S9.
+Memory/disk/timeの実験予算を超える。
+
+S10.
+Workerを安全に停止・回収できない。
+
+S11.
+W1～W8の既存契約を破壊する。
+
+S12.
+製品JPEG tolerance判断が必要。
+
+S13.
+Runtime/GPUI/製品policy変更が必要。
+
+S14.
+Refine Gateの実状態を取得できない。
+
+S15.
+Tern reviewの完全なverdict/countsが
+取得できない。
+
+停止時の記録区分:
+
+DESIGN_BLOCKED:
+未承認設計判断が必要。
+
+AUTHORITY_BLOCKED:
+既存Caller権限外。
+
+DEPENDENCY_BLOCKED:
+新規dependency/licence判断が必要。
+
+SAFETY_BLOCKED:
+実験上限・process回収・所有境界が不成立。
+
+NOT_RUN:
+未実行。
+
+NOT_MEASURED:
+必要な測定値が取得できない。
+
+NOT_VERIFIED:
+観測はあるが正当性未証明。
+
+FAILED:
+実行して失敗。
+
+UNSUPPORTED:
+実decoderで非対応を観測。
+
+停止理由、対象case、SOURCE、最終stage、
+必要authority、次の安全な対応を保存する。
+
+該当scopeだけを停止し、
+独立して安全に実行できる既承認scopeは継続する。
+
+ただし必須受入条件が未達なら、
+W9全体を技術完了としない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+24. W9限定closure
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+すべての受入条件が成立し、
+独立レビュー0/0/0を取得した場合のみ、
+
+MP-IMG2-W9
+LIMITED TECHNICAL COMPLETION
+
+と記録する。
+
+承認範囲:
+
+- 限定progressive JPEG fixture
+- 実WIC/GDI+ decode capability
+- Multi-scan structural validation
+- Canonical differential raster verification
+- Malformed fail-closed classification
+- Bounded admission/resource evidence
+
+W9の限定完了は:
+
+- 全JPEG correctness
+- 製品decoder採用
+- 製品tolerance批准
+- true partial/sequential/tiled decode
+- 16K full decode
+- full MP-IMG2 Decode Exit
+- MP-IMG3 prerequisite completion
+- GPUI Upload
+- Runtime
+- measured R0
+- UX/video
+- release
+
+を意味しない。
+
+最終報告には以下を含める。
+
+- SOURCE full SHA
+- Native SOURCE full SHA
+- Evidence HEAD
+- Taskern packet digest
+- Progressive fixture IDs
+- SOF2/scan structure検証結果
+- WIC/GDI+ decoder leg counts
+- Decoded/unsupported/corrupt outcomes
+- Differential pixel comparison
+- Absolute/relative verification classification
+- Admission/resource observations
+- Negative verifier results
+- W1～W8 historical regressions
+- Workspace/IMG2/W9/Build Gate IDs
+- Gate receipt/exit codes
+- Artifact correspondence
+- Storage cleanup evidence
+- Unmeasured boundaries
+- Tern verdict/counts
+- Remaining full Decode Exit requirements
+- Next eligible task
+
+W9の完了後、DC-MP-IMG2の残件を再評価する。
+
+次の有力候補:
+
+- True region/sequential/tiled capability probe
+- WIC internal allocation/scratch可観測性調査
+- 16K full decode実行経路の設計境界確認
+- Per-codec decoder adoption判断に必要な証拠整理
+
+これらはW9で承認されたものではない。
+
+次タスクは、その時点の最新SOURCE、
+accepted evidence、owner authority、
+hard prerequisitesに従って単一sliceを選択する。
+
+実装 → Native → Gate → 独立レビュー → 修正の
+既存評価ループを継続する。
+
+既存Caller権限内で直ちにW9実装を開始する。
+
+NEXT DIRECTIVE

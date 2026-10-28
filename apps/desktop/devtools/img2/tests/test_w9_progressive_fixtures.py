@@ -74,8 +74,10 @@ class MarkerTests(unittest.TestCase):
         frame = {"variant": "progressive_dct"}
         self.assertTrue(reference.progressive_constraints(frame, 0, 0, 0, 0))
         self.assertFalse(reference.progressive_constraints(frame, 0, 1, 0, 0))
-        self.assertFalse(reference.progressive_constraints(frame, 40, 63, 0, 0))
+        self.assertFalse(reference.progressive_constraints(frame, 40, 0, 0, 0))
         self.assertFalse(reference.progressive_constraints(frame, 5, 2, 0, 0))
+        # A high AC band is legal in progressive JPEG and must not be rejected.
+        self.assertTrue(reference.progressive_constraints(frame, 40, 63, 0, 0))
 
     def test_eoi_and_trailing_bytes_are_required(self):
         data = fixtures.fixture_bytes("progressive_gray_256")
