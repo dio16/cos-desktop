@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "gate_id": "083d08bf-cdd1-4d2e-9438-8c14dc3c2857",
+  "gate_id": "0a832afc-6f35-4af5-8765-01061459dba8",
   "status": {
     "state": "SUCCEEDED",
     "owner_alive": false,
     "recovery_required": false
   },
   "inspect": {
-    "candidate_sha256": "sha256:3f8ee98c82507c7cf58d8f0153d51fd7ac5f39ba043241dd71ddfc663c9cc5b4",
+    "candidate_sha256": "sha256:72ca741d590184a21ccad875c9a598a118f0b786b14659740666e82dd539ba92",
     "verification": [
       "img2-w8:pass",
       "img2-w9:pass"

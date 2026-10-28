@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "candidate": "a8423ab696e6079ee17694ced4983b29280e3dbd",
+  "candidate": "598827291f89d3d8e5f7f259016122256285db64",
   "approval": "Successful-Gate workspace disposal per AGENTS.md and the caller-authorized finite retention step, applied only to these eight exact paths.",
   "removal_targets": [
-    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/a7a5a749-6a06-4cf3-93c5-32a4a8833244/work/repo",
-    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/783fcc13-efba-426c-88b4-8b5ba7f30053/work/repo",
-    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/083d08bf-cdd1-4d2e-9438-8c14dc3c2857/work/repo",
-    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/dca1dc7e-7f40-4871-badc-74f2d1915b4a/work/repo",
-    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/3c603a91-983a-4a4d-a56e-3a388e98000c/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/c7902882-ac4d-441f-8a7b-34d16cb69208/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/3b45567c-c459-4712-8074-ec88a8933ac2/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/0a832afc-6f35-4af5-8765-01061459dba8/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/92789622-c744-4c51-9514-bcec4dd86989/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/1e4c7407-f611-404d-addf-5419419fa9b7/work/repo",
     "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/clippy",
     "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/tests",
     "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/build"
@@ -17,56 +17,20 @@
     "process_dependencies": [],
     "reparse_points": []
   },
-  "inventory": [
-    {
-      "path": "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/a7a5a749-6a06-4cf3-93c5-32a4a8833244/work/repo",
-      "files": 815,
-      "logical_bytes": 28023735
-    },
-    {
-      "path": "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/783fcc13-efba-426c-88b4-8b5ba7f30053/work/repo",
-      "files": 815,
-      "logical_bytes": 28138642
-    },
-    {
-      "path": "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/083d08bf-cdd1-4d2e-9438-8c14dc3c2857/work/repo",
-      "files": 815,
-      "logical_bytes": 28186216
-    },
-    {
-      "path": "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/dca1dc7e-7f40-4871-badc-74f2d1915b4a/work/repo",
-      "files": 815,
-      "logical_bytes": 28123735
-    },
-    {
-      "path": "C:/dev/cos-desktop-verification/img2-w9-2026-10-28/state/gates/3c603a91-983a-4a4d-a56e-3a388e98000c/work/repo",
-      "files": 815,
-      "logical_bytes": 28124454
-    },
-    {
-      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/clippy",
-      "files": 3015,
-      "logical_bytes": 663884472
-    },
-    {
-      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/tests",
-      "files": 3144,
-      "logical_bytes": 1841538384
-    },
-    {
-      "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/build",
-      "files": 2911,
-      "logical_bytes": 1593013408
-    }
-  ],
-  "files_removed": 13145,
-  "logical_bytes_removed": 4239033046,
+  "files_removed": 13230,
+  "logical_bytes_removed": 4241515029,
   "post_disposal_verify": {
-    "a7a5a749": "SUCCEEDED:33",
-    "783fcc13": "SUCCEEDED:33",
-    "083d08bf": "SUCCEEDED:33",
-    "dca1dc7e": "SUCCEEDED:33",
-    "3c603a91": "SUCCEEDED:33"
+    "c7902882": "SUCCEEDED:33",
+    "3b45567c": "SUCCEEDED:33",
+    "0a832afc": "SUCCEEDED:33",
+    "92789622": "SUCCEEDED:33",
+    "1e4c7407": "SUCCEEDED:33"
+  },
+  "previous_disposal": {
+    "files": 13145,
+    "logical_bytes": 4239033046,
+    "candidate": "a8423ab696e6079ee17694ced4983b29280e3dbd",
+    "note": "The superseded r1 Gates were disposed first; their work repos are gone and their receipts remain."
   },
   "retained": [
     "gate request/state/observations/artifacts/logs/check-spools",
