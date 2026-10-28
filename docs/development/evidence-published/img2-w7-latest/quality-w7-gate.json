@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "gate_id": "de37d098-8177-4e71-9875-ca6e9ff3b566",
+  "status": {
+    "state": "SUCCEEDED",
+    "owner_alive": false,
+    "recovery_required": false
+  },
+  "inspect": {
+    "state": "recorded",
+    "candidate_sha256": "sha256:cbfb01a9da1fed5f81c61579ff9ec3324378a5b03fdbf1cedcec5d63cdfa94da",
+    "verification": [
+      "w7-fixtures:pass",
+      "w7-admission:pass",
+      "w7-negative:pass",
+      "w7-native-verify:pass"
+    ],
+    "artifacts": 33,
+    "cleanup": "complete"
+  },
+  "verify": {
+    "state": "SUCCEEDED",
+    "candidate_sha256": "sha256:cbfb01a9da1fed5f81c61579ff9ec3324378a5b03fdbf1cedcec5d63cdfa94da",
+    "artifacts": 33,
+    "check_logs": 4
+  },
+  "exits": {
+    "status": 0,
+    "inspect": 0,
+    "verify": 0
+  },
+  "checks": [
+    "w7-fixtures",
+    "w7-admission",
+    "w7-negative",
+    "w7-native-verify"
+  ],
+  "focus": "W7 fixtures, admission, 32 negative classes and native verify",
+  "raw_receipts": "gate-qualityW7-receipts.json"
+}

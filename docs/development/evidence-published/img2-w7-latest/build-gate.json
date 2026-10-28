@@ -1,17 +1,34 @@
 {
   "schema_version": 1,
-  "id": "7803c9f0-efee-446b-94cf-d2cf40a6e37b",
-  "candidate": "71951642d6d8acd519e5276a02e91595a9281971",
-  "candidate_digest": "sha256:e386bdfaf9315b8d95df1094e61222a5512d8a1d836e149c7e4b6d3b13c5299a",
-  "state": "SUCCEEDED",
-  "request_sha256": "sha256:4a65e3b1276f38386ff2fbca35e0e885259c943c547163b4f502b388e3f76db9",
-  "verification": [
-    {
-      "id": "build",
-      "outcome": "pass"
-    }
+  "gate_id": "021de65f-5ca4-470f-960a-6b294a247d69",
+  "status": {
+    "state": "SUCCEEDED",
+    "owner_alive": false,
+    "recovery_required": false
+  },
+  "inspect": {
+    "state": "recorded",
+    "candidate_sha256": "sha256:cbfb01a9da1fed5f81c61579ff9ec3324378a5b03fdbf1cedcec5d63cdfa94da",
+    "verification": [
+      "build:pass"
+    ],
+    "artifacts": 33,
+    "cleanup": "complete"
+  },
+  "verify": {
+    "state": "SUCCEEDED",
+    "candidate_sha256": "sha256:cbfb01a9da1fed5f81c61579ff9ec3324378a5b03fdbf1cedcec5d63cdfa94da",
+    "artifacts": 33,
+    "check_logs": 1
+  },
+  "exits": {
+    "status": 0,
+    "inspect": 0,
+    "verify": 0
+  },
+  "checks": [
+    "build"
   ],
-  "artifacts": 33,
-  "cleanup": "complete",
-  "absent_outputs": []
+  "focus": "workspace build",
+  "raw_receipts": "gate-build-receipts.json"
 }

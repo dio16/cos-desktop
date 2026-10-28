@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "candidate": "71951642d6d8acd519e5276a02e91595a9281971",
-  "quality": {
+  "candidate": "c78982d0ee9ccafb8c9882260c20962134aac79e",
+  "quality_core": {
     "cli_interface_version": 2,
     "operation": "gate.preflight",
     "outcome": {
@@ -518,6 +518,61 @@
             "message": "`RUSTDOC` names an existing absolute toolchain/linker file; execution compatibility is not yet known"
           },
           {
+            "id": "check_runtime",
+            "outcome": "unknown",
+            "message": "toolchain/SDK runtime compatibility, command results and timeout sufficiency require a real check; none was launched"
+          },
+          {
+            "id": "outputs",
+            "outcome": "unknown",
+            "message": "declared output paths are structurally admitted; existence, scope and delivery remain candidate/runtime and caller checks"
+          },
+          {
+            "id": "authorization",
+            "outcome": "unknown",
+            "message": "caller permission and domain acceptance are external and cannot be established by preflight"
+          }
+        ]
+      }
+    }
+  },
+  "quality_w7": {
+    "cli_interface_version": 2,
+    "operation": "gate.preflight",
+    "outcome": {
+      "schema_version": 1,
+      "result": {
+        "schema_version": 1,
+        "product_version": "0.3.1",
+        "outcome": "unknown",
+        "effective_limits": {
+          "timeout_ms": 600000,
+          "termination_grace_ms": 5000,
+          "max_output_bytes": 16777216,
+          "max_artifact_bytes": 16777216
+        },
+        "diagnostics": [
+          {
+            "id": "binary",
+            "outcome": "pass",
+            "message": "this installed native binary supplies the reported product version"
+          },
+          {
+            "id": "admission",
+            "outcome": "pass",
+            "message": "native config, request, policy, capability, allowlist and environment admission passed"
+          },
+          {
+            "id": "state_boundary",
+            "outcome": "pass",
+            "message": "state root is separate from protected source ownership paths; no state was created"
+          },
+          {
+            "id": "candidate",
+            "outcome": "unknown",
+            "message": "local commit cannot be inspected; no fetch or network probe was attempted"
+          },
+          {
             "id": "w7-fixtures",
             "outcome": "pass",
             "message": "check executable exists and matches its configured identity pin"
@@ -656,5 +711,17 @@
       }
     }
   },
-  "note": "Preflight is static: its process exit is 0 even for fail/unknown, and the unknown aggregate is not recorded as PASS."
+  "superseded_dispatches": [
+    {
+      "gate": "da759f23-cdd9-47f5-9690-fcd39997503e",
+      "state": "FAILED",
+      "reason": "The combined 20-check Quality Gate exhausted the contract 600 s policy budget once the W7 suite grew."
+    },
+    {
+      "gate": "0a2d71d9-34f8-437d-9a8b-8552918a3b6b",
+      "state": "FAILED",
+      "reason": "Same candidate and checks; only the final native-verify check was cut by the same 600 s aggregate budget."
+    }
+  ],
+  "note": "Preflight is static and unknown; the installed contract caps an operator limit at 600 s, so the work is split into bounded Gates instead of widening the limit."
 }
