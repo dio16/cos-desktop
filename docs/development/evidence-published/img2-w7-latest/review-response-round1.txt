@@ -1,0 +1,678 @@
+MP-IMG2-W7 — 固定SOURCE独立レビュー
+
+最終判定：HOLD 1 / 3 / 0
+
+W7の中心的な技術成果は確認できました。 2K/4Kの実materialization、6件の全画素一致、8K/16KのOnLoad前拒否、ROIによる予算非迂回、未測定境界の保持について、提出されたNative証拠と独立計算は整合しています。
+
+ただし、独立Gateの原receipt不足が1件、W7検証器のfalse-greenが2件、review manifestの参照不整合が1件あります。
+
+1. 固定SOURCE・証拠の整合
+
+項目
+
+	
+
+独立検証結果
+
+
+
+
+Native SOURCE
+
+	
+
+dbb42bb55a98563e9daea6ecd3002a7ca5d02cca
+
+
+
+
+製品・Gate候補
+
+	
+
+71951642d6d8acd519e5276a02e91595a9281971
+
+
+
+
+Evidence HEAD
+
+	
+
+41b7a9dc061a3016a9e5cef4aadddf2e88688eb9
+
+
+
+
+SOURCE ZIP
+
+	
+
+4,698,201 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+490,606 bytes、SHA256一致
+
+
+
+
+SOURCE entries
+
+	
+
+702件
+
+
+
+
+Evidence entries
+
+	
+
+34件
+
+
+
+
+ZIP破損検査
+
+	
+
+両方PASS
+
+
+
+
+両ZIPのGit archive識別
+
+	
+
+指定commitと一致
+
+
+
+
+Gate artifact台帳とSOURCE実バイト
+
+	
+
+33/33一致
+
+SOURCEとEvidenceの共通27ファイルを比較した結果、実バイト差分はIMPLEMENTATION_MASTER_PLAN.mdのみでした。Evidenceにのみ存在する7ファイルはいずれもW7のGate・Storage関連文書です。
+
+したがって、添付で確認できる差分は申告されたdocs-onlyの8件と一致します。
+
+ただし、private Git objectsがないため、全702ファイルのcandidate Git blob照合とcommit ancestryの再検証はNOT_RUNです。
+
+2. Native・画素・Admission
+
+項目
+
+	
+
+独立結果
+
+
+
+
+固定Native case
+
+	
+
+12件
+
+
+
+
+2K/4K decoded
+
+	
+
+6件
+
+
+
+
+8K/16K full-frame refusal
+
+	
+
+4件
+
+
+
+
+破損入力
+
+	
+
+2件、TAMPER_NOT_VERIFIED
+
+
+
+
+W7 fixture tests
+
+	
+
+11/11 PASS
+
+
+
+
+W7 admission tests
+
+	
+
+6/6 PASS
+
+
+
+
+構造Native replay
+
+	
+
+ok=true
+
+
+
+
+構造replayのSOURCE認定
+
+	
+
+false
+
+
+
+
+構造replayのclosure eligibility
+
+	
+
+false
+
+
+
+
+独立PNG出力復元
+
+	
+
+6/6一致
+
+6件の正常decodeについて、保存されたoutput_hexからPNGを独立デコードしました。
+
+RGBA全画素の照合結果
+
+Format
+
+	
+
+2048²
+
+	
+
+4096²
+
+
+
+
+PNG RGB8
+
+	
+
+PASS
+
+	
+
+PASS
+
+
+
+
+BMP24
+
+	
+
+PASS
+
+	
+
+PASS
+
+
+
+
+Bgr565
+
+	
+
+PASS
+
+	
+
+PASS
+
+合計251,658,240 RGBA bytesの実出力digestが、保存された期待RGBA digestと一致しました。
+
+8K/16K拒否4件は、実Native trace上でadmission_started → refused → probe_exitとなり、OnLoad stageは存在しません。出力・公開成功もありません。
+
+元encoded寸法から算出されるfull-frame requirementと、1×1 ROIに対して予算が減額されないことも確認しました。
+
+破損入力2件については、WIC workerがdecodedを返した事実を保持しながら、画像内容を検証済みに昇格させずTAMPER_NOT_VERIFIEDに分類しています。この判断自体は妥当です。
+
+3. 規定24負例
+
+提出SOURCEのmutation()を使用して、現行verify()を直接実行しました。
+
+項目
+
+	
+
+結果
+
+
+
+
+添付だけで再現可能な規定負例
+
+	
+
+23/23拒否
+
+
+
+
+旧SOURCE commit差し替え
+
+	
+
+ok=true、closure_eligible=false
+
+
+
+
+固定Git SOURCE-bound負例
+
+	
+
+NOT_RUN
+
+
+
+
+保存済み負例実行記録
+
+	
+
+24/24拒否と記録
+
+旧commit差し替えが構造replayでok=trueになることは、SOURCE未検証と明示されている限り、今回の問題にはしません。
+
+ただし、規定負例の一部はtraceの値を変更してもraw traceを更新していないため、算術不一致ではなくtrace_payload_mismatchで拒否されています。この点は次の指摘に含めます。
+
+4. 指摘事項
+B-W7-01 — 独立Gateのstatus/inspect/verify原receiptが同梱されていない
+
+分類：BLOCKING
+
+対象：
+
+img2-w7-latest/quality-gate.json
+
+img2-w7-latest/build-gate.json
+
+img2-w7-latest/gate-artifact-correspondence.json
+
+提出されたGate記録は、Quality SUCCEEDED / 20 pass、Build SUCCEEDED / 1 passの要約を保持しています。
+
+しかし、両Gateの実際のstatus、inspect、verifyの応答本文・exit codeが収録されていません。
+
+必要な照合
+
+	
+
+今回の状態
+
+
+
+
+Candidate SHA/digest
+
+	
+
+要約上は一致
+
+
+
+
+Quality 20/20
+
+	
+
+要約上はPASS
+
+
+
+
+Build 1/1
+
+	
+
+要約上はPASS
+
+
+
+
+Artifact台帳とSOURCE実バイト
+
+	
+
+33/33一致
+
+
+
+
+実status応答
+
+	
+
+NOT_AVAILABLE
+
+
+
+
+実inspect応答
+
+	
+
+NOT_AVAILABLE
+
+
+
+
+実verify応答・exit code
+
+	
+
+NOT_AVAILABLE
+
+
+
+
+Owner/recoveryの実応答
+
+	
+
+NOT_AVAILABLE
+
+33件のSOURCEバイトが台帳に一致することと、その台帳が実Refineのinspect/verifyから取得されたことは別の証明です。
+
+最小修正条件： 既存Gateの実status/inspect/verify応答を保存し、candidate、digest、checks、33 artifact tuples、終了コード、cleanup、owner、recoveryを照合可能にしてください。
+
+実Gateが成功していればGate再実行は不要です。
+
+A-W7-01 — Decode/Refusalのprobe_resultでadmission数値を偽装できる
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w7_large_verify.py:299–317, 352–392
+
+現行検証器は、正常decodeのadmitted stageについて元寸法から予算を再計算します。
+
+一方、同じ事実を記録するprobe_resultの寸法・format・必要bytesについて、対応する照合がありません。
+
+独立改変結果：
+
+元Native記録への改変
+
+	
+
+verify()
+
+
+
+
+png_4096: decoded_bytes_required=0
+
+	
+
+ok=true
+
+
+
+
+png_2048: pixel_format="Bgr565"
+
+	
+
+ok=true
+
+
+
+
+png_2048: width=32
+
+	
+
+ok=true
+
+
+
+
+png_8192: decoded_bytes_required=0
+
+	
+
+ok=true
+
+
+
+
+png_16384: scratch_bytes_required=0
+
+	
+
+ok=true
+
+いずれも実Native原本の画像・stage・outputを変更せず、該当するprobe_resultの1項目だけを改変した結果です。
+
+最小修正条件： 正常decodeではprobe_resultとadmitted stage、元fixtureのdimensions/format/depth/decoded/BGRA/scratchを相互照合してください。
+
+早期dimension refusalでは、probeが計算していない項目を勝手に実測値として要求せず、未取得として扱いながら、元fixtureから独立算出した値と矛盾する数値申告を拒否してください。
+
+改変後のtrace・SHA256まで整合させた負例を追加してください。WIC probeや製品Budgetの変更は不要です。
+
+A-W7-02 — 破損入力のworker状態が矛盾しても検証成功する
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w7_large_verify.py:462–466
+
+破損入力分岐ではclassification=="TAMPER_NOT_VERIFIED"だけを検証しており、worker結果とtraceの整合条件がありません。
+
+独立改変結果：
+
+改変
+
+	
+
+verify()
+
+
+
+
+corrupt_4096_dimensionのworker outcomeをoversizeへ変更
+
+	
+
+ok=true
+
+
+
+
+同workerのpublished_success=false
+
+	
+
+ok=true
+
+
+
+
+corrupt_4096_truncatedのoutput SHA256を偽装
+
+	
+
+ok=true
+
+
+
+
+同caseのoracleをok=trueへ偽装
+
+	
+
+ok=true
+
+元記録はWICが破損入力をdecodedとして返しているため、TAMPER_NOT_VERIFIEDの分類は維持すべきです。
+
+問題は、未検証として保持する場合でも、観測したworkerの実際の状態・output payloadの整合確認を省略していることです。
+
+最小修正条件： 破損入力について、outcome、terminal stage、exit code、公開状態、output bytes/SHA256、oracle状態の整合を条件付きで検証してください。WICがdecodedを返した事実は保持し、独立oracleの不成立を理由に画像内容は検証済みに昇格させないでください。
+
+A-W7-03 — Review manifestのsource-entry参照先が実在しない
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：別添review-package.json:24–28
+
+現行記述は次の2箇所をsource entry一覧の所在として指定しています。
+
+source_zip.entries
+
+Evidence ZIP内のreview-package-source.json
+
+しかし、前者のキーは存在せず、後者のファイルもEvidence ZIPの34エントリーに存在しません。
+
+最小修正条件： 実際の提供方式に合わせてsource_entry_manifestを修正してください。全702件のentry manifestを同梱する場合はその原本を提示し、含めない場合は未同梱として正確に記録してください。存在しない参照先を残さないでください。
+
+この件はdocs-onlyで修正できます。SOURCE、Native、Gateの再実行は不要です。
+
+5. Storage・回帰・未測定境界
+
+Storage記録にある5対象を独立集計しました。
+
+項目
+
+	
+
+結果
+
+
+
+
+削除対象
+
+	
+
+5件
+
+
+
+
+Files
+
+	
+
+10,490
+
+
+
+
+Logical bytes
+
+	
+
+4,148,253,045
+
+
+
+
+保持されたpost-disposal状態
+
+	
+
+Quality/BuildともSUCCEEDED
+
+
+
+
+物理削除の再実行
+
+	
+
+NOT_RUN
+
+IMPLEMENTATION_MASTER_PLAN.mdはEvidence ZIPの現行本文を使用しました。保持されたdocument validationは62 task cards、62 contracts、41 DAG edges、acyclic=trueです。検証器そのものを再実行した結果ではありません。
+
+W7の限定実測から、16K full decode、製品decoder採用、GPUI Upload、Runtime、measured R0などへ承認を拡張する記述は確認されませんでした。
+
+また、process-level memory countersは、WIC内部scratch、actual reservation、true concurrent allocation peakとは区別されています。
+
+6. 限定closure判断
+
+今回確認できたW7の技術的成果は有効です。しかし、Gate成功の原receiptと、admission・破損入力の検証器整合性が未解決です。
+
+W7 LIMITED TECHNICAL COMPLETIONは保留します。
+
+修正が必要なのはW7の独立検証器・負例テストと、Gate/review evidenceです。WIC decoder、crates/media、Runtime、既存W1～W6の実装を変更する根拠はありません。
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+1
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+3
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+MP-IMG2-W7 LIMITED TECHNICAL COMPLETION：保留
+
+REVIEW COMPLETE
+
+HOLD 1 / 3 / 0
