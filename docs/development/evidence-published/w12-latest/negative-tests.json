@@ -1,0 +1,71 @@
+{
+  "classes": 39,
+  "mutations": [
+    "case_missing",
+    "case_duplicated",
+    "fixture_digest",
+    "fixture_dimension",
+    "fixture_codec",
+    "source_missing_file",
+    "source_changed",
+    "source_commit",
+    "foreign_platform",
+    "budget_override",
+    "roi_coordinate",
+    "roi_reduced_full_frame",
+    "decoder_identity",
+    "admission_reduced_charge",
+    "refusal_materialized",
+    "refusal_reason",
+    "refusal_published",
+    "stage_order",
+    "stage_hold_missing",
+    "output_digest",
+    "png_pixels_tampered_coherent",
+    "matched_pair_inequality",
+    "worker_not_reaped",
+    "unrequested_stop",
+    "cleanup_incomplete",
+    "false_partial_decode",
+    "false_memory_class",
+    "codec_advantage_claim",
+    "counter_over_cap",
+    "memory_outside_hold",
+    "observer_incomplete",
+    "sample_atomic_claim",
+    "sample_missing",
+    "workers_overlap",
+    "worker_lifetime_reused",
+    "worker_deadline",
+    "run_deadline",
+    "work_cap",
+    "classification"
+  ],
+  "all_rejected": true,
+  "basis": "Actual successful suite on the repaired pin: every mutation is applied to the retained real control and verified against the real repository.",
+  "suite_tests": 21,
+  "suite_command": {
+    "command": [
+      "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+      "-B",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "apps/desktop/devtools/img2/tests",
+      "-p",
+      "test_w12_*.py"
+    ],
+    "cwd": "C:\\dev\\cos-desktop",
+    "exit_code": 0,
+    "duration_seconds": 39.28723430001992,
+    "stdout": {
+      "bytes": 0,
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "stderr": {
+      "bytes": 126,
+      "sha256": "sha256:310c8ed6476d967f87ecd48e778f52bf271ca1b34e35786840083018f30cfffd"
+    }
+  }
+}

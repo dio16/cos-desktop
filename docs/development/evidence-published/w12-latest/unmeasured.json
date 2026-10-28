@@ -1,0 +1,32 @@
+{
+  "not_measured": [
+    "WIC internal scratch",
+    "allocator reservations",
+    "true concurrent allocation peak",
+    "same-process before/after allocation delta",
+    "product memory SLO",
+    "16K full decode memory"
+  ],
+  "not_run": [
+    "GDI+ decoder legs",
+    "Rust decode_compare harness process",
+    "application-window GUI startup",
+    "Refine execution inside an external reviewer sandbox"
+  ],
+  "not_verified": [
+    "true partial/region/sequential/tiled decode",
+    "codec causal memory advantage"
+  ],
+  "separate": "Each of the six workers is an independent process lifetime; no before/after delta inside one process and no instantaneous concurrent peak exists in this experiment.",
+  "not_authorized": [
+    "product decoder adoption/tolerance",
+    "ICC/EXIF product policy",
+    "16K adoption",
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3",
+    "Runtime",
+    "measured R0",
+    "UX/video",
+    "main/release"
+  ]
+}

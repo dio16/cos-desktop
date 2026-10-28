@@ -1,0 +1,104 @@
+{
+  "source_commit": "23f6e6c3af6ac5f8e6dc5e507249751bf7533b1c",
+  "fixture_pixel_equality": {
+    "pixels": 16777216,
+    "jpeg_and_png_equal": true,
+    "method": "independent JPEG DC/EOB scan and independent PNG chunk/CRC/bounded-inflate scan, both compared to the fixed DC/block-coordinate formula"
+  },
+  "decoder_outputs": [
+    {
+      "case_id": "S01",
+      "codec": "jpeg",
+      "roi": [
+        17,
+        23,
+        1,
+        1
+      ],
+      "ok": true,
+      "compared_pixels": 1,
+      "output_sha256": "sha256:9391bb5c200f3cefd197e84713d82372ce864451ae9479da44e5b85174f2937f",
+      "output_bytes": 120,
+      "decoder": "JpegBitmapDecoder",
+      "pixel_format": "Gray8"
+    },
+    {
+      "case_id": "S02",
+      "codec": "png",
+      "roi": [
+        17,
+        23,
+        1,
+        1
+      ],
+      "ok": true,
+      "compared_pixels": 1,
+      "output_sha256": "sha256:9391bb5c200f3cefd197e84713d82372ce864451ae9479da44e5b85174f2937f",
+      "output_bytes": 120,
+      "decoder": "PngBitmapDecoder",
+      "pixel_format": "Gray8"
+    },
+    {
+      "case_id": "S03",
+      "codec": "jpeg",
+      "roi": [
+        117,
+        93,
+        256,
+        256
+      ],
+      "ok": true,
+      "compared_pixels": 65536,
+      "output_sha256": "sha256:69b653c712156549b2e28769b8753637878c855e4b55dde5d58975764fbb2c0b",
+      "output_bytes": 2629,
+      "decoder": "JpegBitmapDecoder",
+      "pixel_format": "Gray8"
+    },
+    {
+      "case_id": "S04",
+      "codec": "png",
+      "roi": [
+        117,
+        93,
+        256,
+        256
+      ],
+      "ok": true,
+      "compared_pixels": 65536,
+      "output_sha256": "sha256:69b653c712156549b2e28769b8753637878c855e4b55dde5d58975764fbb2c0b",
+      "output_bytes": 2629,
+      "decoder": "PngBitmapDecoder",
+      "pixel_format": "Gray8"
+    }
+  ],
+  "matched_pairs": [
+    {
+      "cases": [
+        "S01",
+        "S02"
+      ],
+      "roi": [
+        17,
+        23,
+        1,
+        1
+      ],
+      "byte_identical": true,
+      "pixels": 1
+    },
+    {
+      "cases": [
+        "S03",
+        "S04"
+      ],
+      "roi": [
+        117,
+        93,
+        256,
+        256
+      ],
+      "byte_identical": true,
+      "pixels": 65536
+    }
+  ]
+}

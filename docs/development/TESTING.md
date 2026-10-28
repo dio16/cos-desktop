@@ -204,6 +204,34 @@ Publication exclusively writes, flushes, syncs and closes all three artifacts pl
 
 [R0A-S1 admission](evidence/README.md#historical-records) bounds this slice to the versioned manifest contract (rendering §10.1), a bounded loader, the §11.2 result contract, structural validation and an offline CLI in `apps/desktop/devtools/r0` (Python standard library only). [Validation](evidence/README.md#historical-records) records eleven unittest cases and CLI outcomes: valid manifests and results validate; missing fields, wrong types and unsupported versions fail; oversize, duplicate-key, malformed and non-finite JSON fail closed before publication; unmeasured endpoints and metrics stay `NOT_MEASURED` with explicit reasons and null percentiles; `NOT_IMPLEMENTED` cannot become observed; failed/censored/excluded counts stay separate from observed; result identity must match the manifest; error output reflects only stable codes and JSON paths, never input text or paths. The tool launches nothing, fetches nothing, executes no input value and performs no measurement; R0A-S2/S3 drivers, R0B baselines, R0C attribution, R0D ratification and any numeric claim remain NOT_RUN.
 
+## 23. MP-IMG2-W12 matched-raster JPEG/PNG differential
+
+`test_w12_png_fixtures.py` covers the streamed grayscale producer and its
+independent reader: fixed bytes/digest, exclusive create, chunk/CRC/IHDR/IDAT/
+IEND structure, wrong dimensions/depth/colour type, bad CRC, missing IEND,
+trailing bytes, excess inflation, missing deflate tail, unknown filter, a single
+tampered pixel and ROI bounds. `test_w12_matched.py` proves every one of the
+16,777,216 input pixels of both fixtures equals the fixed DC/block-coordinate
+raster and that the oracle is applied only to bounded decoder ROI output, never
+to the 4096-square source. `test_w12_negative.py` requires the two retained real
+Native records and mutates 39 semantic classes — fixtures, source identity,
+budgets, ROI charges, decoder identity, admission, stage order/holds, retained
+pixels with coherent producer hashes, refusal publication, cancellation,
+cleanup, sampling identity/completeness/bounds, false partial/peak/codec claims
+and repeat disagreement. Mutations are verified against the real repository, so
+a forged source commit or blob digest is re-checkable rather than merely
+unproven; a missing control fails instead of skipping.
+
+The matrix runs six fixed scenarios as six serial lifetimes and repeats them in
+a fresh work root. Deterministic relations (fixtures, decoder/format
+observation, admission, ROI geometry, output bytes, oracle results and
+classification) must agree across repeats; PIDs, clocks and whole-process
+counters are intentionally retained as unequal observations. Portable replay
+cannot grant Git source closure, and a source change after the pin makes the
+record non-closable. Unchanged W1–W11 regression, full quality, eight fresh
+committed Refine Gates, disposal integrity and pushed-SHA Tern review stay
+separate exits.
+
 ## 22. MP-IMG2-W11 JPEG full-frame admission and ROI boundary
 
 `test_w11_jpeg_fixtures.py` validates fixed 4K/16K DC-only encoded identities,

@@ -1,0 +1,262 @@
+{
+  "classification": "OBSERVED_WHOLE_PROCESS_DIFFERENTIAL",
+  "boundary": "after_onload for S01-S04; before_admission for S05-S06",
+  "source_commit": "23f6e6c3af6ac5f8e6dc5e507249751bf7533b1c",
+  "scope": {
+    "allocator_reservations": "NOT_MEASURED",
+    "atomic_snapshot": false,
+    "boundary_hold": "ARTIFICIAL_INSTRUMENTATION_NOT_DECODER_TIME",
+    "codec_memory_advantage": "NOT_CLAIMED",
+    "comparison": "OBSERVED_WHOLE_PROCESS_DIFFERENTIAL",
+    "decoder_internal_scratch_peak": "NOT_MEASURED",
+    "process_counters": "PROCESS_LEVEL_OBSERVATION",
+    "same_process_allocation_delta": "NOT_MEASURED",
+    "true_concurrent_allocation_peak": "NOT_MEASURED",
+    "true_partial_decode": "NOT_VERIFIED",
+    "wic_decoder_latency_ns": null,
+    "worker_lifetimes": "INDEPENDENT_PROCESS_PER_CASE"
+  },
+  "unmeasured": [
+    "WIC internal scratch",
+    "allocator reservations",
+    "true concurrent allocation peak",
+    "same-process before/after allocation delta",
+    "codec causal memory advantage",
+    "product memory SLO",
+    "cooperative in-decoder cancellation",
+    "true partial/region/sequential/tiled decode",
+    "16K full decode memory"
+  ],
+  "forbidden_interpretations": [
+    "WIC-only allocation delta",
+    "decoder internal scratch",
+    "allocator reservations",
+    "true concurrent allocation peak",
+    "same-process before/after allocation delta",
+    "causal codec memory advantage",
+    "product memory SLO"
+  ],
+  "windows": [
+    {
+      "case_id": "S01",
+      "codec": "jpeg",
+      "role": "decode",
+      "pid": 74632,
+      "start_utc_ticks": 639287993201551452,
+      "hold_stage": "after_onload",
+      "working_set_bytes": 135323648,
+      "private_bytes": 61313024,
+      "peak_working_set_bytes": 135323648,
+      "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+      "sample_clock": "python_monotonic_ns",
+      "observer_clock": "windows_qpc",
+      "qpc_start": 1772220813247,
+      "qpc_end": 1772221297284,
+      "qpc_frequency": 10000000,
+      "complete": true,
+      "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+      "observer_script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b"
+    },
+    {
+      "case_id": "S02",
+      "codec": "png",
+      "role": "decode",
+      "pid": 65484,
+      "start_utc_ticks": 639287993218178247,
+      "hold_stage": "after_onload",
+      "working_set_bytes": 136003584,
+      "private_bytes": 61464576,
+      "peak_working_set_bytes": 136007680,
+      "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+      "sample_clock": "python_monotonic_ns",
+      "observer_clock": "windows_qpc",
+      "qpc_start": 1772237033771,
+      "qpc_end": 1772237514733,
+      "qpc_frequency": 10000000,
+      "complete": true,
+      "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+      "observer_script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b"
+    },
+    {
+      "case_id": "S03",
+      "codec": "jpeg",
+      "role": "decode",
+      "pid": 4928,
+      "start_utc_ticks": 639287993234265885,
+      "hold_stage": "after_onload",
+      "working_set_bytes": 131657728,
+      "private_bytes": 57647104,
+      "peak_working_set_bytes": 131674112,
+      "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+      "sample_clock": "python_monotonic_ns",
+      "observer_clock": "windows_qpc",
+      "qpc_start": 1772252873322,
+      "qpc_end": 1772253368444,
+      "qpc_frequency": 10000000,
+      "complete": true,
+      "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+      "observer_script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b"
+    },
+    {
+      "case_id": "S04",
+      "codec": "png",
+      "role": "decode",
+      "pid": 63724,
+      "start_utc_ticks": 639287993250984404,
+      "hold_stage": "after_onload",
+      "working_set_bytes": 131829760,
+      "private_bytes": 57749504,
+      "peak_working_set_bytes": 131850240,
+      "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+      "sample_clock": "python_monotonic_ns",
+      "observer_clock": "windows_qpc",
+      "qpc_start": 1772269747649,
+      "qpc_end": 1772270207079,
+      "qpc_frequency": 10000000,
+      "complete": true,
+      "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+      "observer_script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b"
+    },
+    {
+      "case_id": "S05",
+      "codec": "jpeg",
+      "role": "refuse",
+      "pid": 55860,
+      "start_utc_ticks": 639287993268140901,
+      "hold_stage": "before_admission",
+      "working_set_bytes": 119857152,
+      "private_bytes": 45047808,
+      "peak_working_set_bytes": 119873536,
+      "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+      "sample_clock": "python_monotonic_ns",
+      "observer_clock": "windows_qpc",
+      "qpc_start": 1772289166784,
+      "qpc_end": 1772289617394,
+      "qpc_frequency": 10000000,
+      "complete": true,
+      "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+      "observer_script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b"
+    },
+    {
+      "case_id": "S06",
+      "codec": "png",
+      "role": "refuse",
+      "pid": 60636,
+      "start_utc_ticks": 639287993286809355,
+      "hold_stage": "before_admission",
+      "working_set_bytes": 115134464,
+      "private_bytes": 41345024,
+      "peak_working_set_bytes": 115134464,
+      "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+      "sample_clock": "python_monotonic_ns",
+      "observer_clock": "windows_qpc",
+      "qpc_start": 1772304588229,
+      "qpc_end": 1772305131934,
+      "qpc_frequency": 10000000,
+      "complete": true,
+      "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+      "observer_script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b"
+    }
+  ],
+  "repeat_private_bytes": {
+    "S01": [
+      61313024,
+      61276160
+    ],
+    "S02": [
+      61464576,
+      58515456
+    ],
+    "S03": [
+      57647104,
+      58048512
+    ],
+    "S04": [
+      57749504,
+      58142720
+    ],
+    "S05": [
+      45047808,
+      44724224
+    ],
+    "S06": [
+      41345024,
+      41553920
+    ]
+  },
+  "comparisons": {
+    "A_jpeg_vs_png_1x1": {
+      "jpeg": [
+        61313024,
+        61276160
+      ],
+      "png": [
+        61464576,
+        58515456
+      ]
+    },
+    "B_jpeg_vs_png_256": {
+      "jpeg": [
+        57647104,
+        58048512
+      ],
+      "png": [
+        57749504,
+        58142720
+      ]
+    },
+    "C_roi_size_within_codec": {
+      "jpeg_1x1": [
+        61313024,
+        61276160
+      ],
+      "jpeg_256": [
+        57647104,
+        58048512
+      ],
+      "png_1x1": [
+        61464576,
+        58515456
+      ],
+      "png_256": [
+        57749504,
+        58142720
+      ]
+    },
+    "D_repeat_ranges": {
+      "S01": {
+        "min": 61276160,
+        "max": 61313024,
+        "span": 36864
+      },
+      "S02": {
+        "min": 58515456,
+        "max": 61464576,
+        "span": 2949120
+      },
+      "S03": {
+        "min": 57647104,
+        "max": 58048512,
+        "span": 401408
+      },
+      "S04": {
+        "min": 57749504,
+        "max": 58142720,
+        "span": 393216
+      },
+      "S05": {
+        "min": 44724224,
+        "max": 45047808,
+        "span": 323584
+      },
+      "S06": {
+        "min": 41345024,
+        "max": 41553920,
+        "span": 208896
+      }
+    }
+  },
+  "max_observed_private_bytes": 61464576,
+  "max_observed_working_set_bytes": 136003584,
+  "note": "These are whole-process observations from independent lifetimes. Differences are recorded, not interpreted as codec memory behaviour."
+}

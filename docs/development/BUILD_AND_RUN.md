@@ -1120,6 +1120,42 @@ structural ok with closure/source-identity false; only a real Git-bound replay
 may establish source closure. Before every Tern evaluation, commit source and
 evidence, push explicit dev:dev and require exact remote-SHA correspondence.
 
+### 4.32 MP-IMG2-W12 matched-raster JPEG/PNG decode (2026-10-29)
+
+W12 decodes two pixel-identical 4096² eight-bit grayscale inputs — the unchanged
+W11 JPEG and a newly generated PNG — through the same managed WIC probe.
+
+```powershell
+python -B apps/desktop/devtools/img2/w12_matrix.py run `
+  --work-root <absolute-absent-owned-directory> --out <absolute-absent-report.json> `
+  --pwsh <absolute-qualified-pwsh.exe>
+python -B apps/desktop/devtools/img2/w12_matrix.py verify `
+  --report docs/development/evidence-published/w12-latest/native-matched-matrix.json `
+  --source-root <repository>
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_w12_*.py"
+```
+
+The PNG is produced row by row (filter 0, chunked deflate, CRC per chunk,
+exclusive create, 259,602 bytes) and is never a re-encoding of decoder output.
+Independent parsers validate both containers and prove every input pixel equals
+the fixed DC/block-coordinate raster before any decoder result is accepted.
+
+Six scenarios run as six serial lifetimes: JPEG/PNG at a 1×1 ROI, JPEG/PNG at a
+256² ROI, and JPEG/PNG refusal at `max_dimension` 4095. Decode workers hold at
+after_onload; refusal workers hold at before_admission. Budgets match W11
+(4096 dimension, 16,777,216 pixels, eight bits, 64 MiB decoded/scratch, 16 MiB
+encoded input, 256×256 ROI bytes, 1 MiB output, 128 MiB work, 8 MiB report,
+45 s worker, 300 s batch, 768 MiB observed private). Sampled bounds are not an
+OS quota or a product SLO.
+
+Process counters are recorded per independent lifetime and classified
+`OBSERVED_WHOLE_PROCESS_DIFFERENTIAL`; do not subtract them as a same-process
+delta, call them WIC-internal memory, or read a codec advantage from a
+difference. Repeat comparison must keep PIDs, clocks and real counters unequal.
+Source files must be committed before the run: the matrix refuses to start when
+the worktree differs from the pinned commit, and a later source change makes the
+record non-closable (`source_lf_mismatch`) instead of silently passing.
+
 
 ## 6. Troubleshooting (evidence-anchored)
 
