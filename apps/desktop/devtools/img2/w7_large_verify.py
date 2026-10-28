@@ -253,8 +253,8 @@ def _trace(worker: dict):
 def _sample(worker: dict, case: dict):
     window = worker.get("sample")
     need(isinstance(window, dict), "process_sample_missing:" + case["id"])
-    need(window.get("complete") is True and window.get("status") == "complete",
-         "process_sample_incomplete:" + case["id"])
+    need(window.get("complete") is True and window.get("status") == "complete"
+         and window.get("failure") is None, "process_sample_incomplete:" + case["id"])
     need(window.get("case_ids") == [case["id"]], "process_sample_case_mismatch:" + case["id"])
     need(window.get("clock_domain") == "python_monotonic_ns", "process_sample_clock_invalid")
     need(window.get("atomic_snapshot") is False

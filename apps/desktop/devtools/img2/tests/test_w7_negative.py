@@ -178,7 +178,10 @@ class NativeNegativeTests(unittest.TestCase):
         for field in ("work_bytes", "duration_ns"):
             with self.subTest(field=field):
                 record = copy.deepcopy(self.native)
-                record[field] = BOUNDS["max_work_bytes" if field == "work_bytes" else "max_total_seconds" * 1] + 1
+                if field == "work_bytes":
+                    record[field] = BOUNDS["max_work_bytes"] + 1
+                else:
+                    record[field] = (BOUNDS["max_total_seconds"] + 1) * 1_000_000_000
                 self.assertFalse(verify(record, ROOT)["ok"])
 
     def test_limits_cannot_be_widened_to_admit_a_large_source(self):
