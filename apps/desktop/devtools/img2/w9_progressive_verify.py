@@ -157,8 +157,12 @@ def _wic_progressive(case, leg, fixture):
                 "declared_scratch_bytes"):
         need(result.get(key) == values[key], "wic_requirement_mismatch:" + key)
     need(result.get("input_bytes") == len(fixture), "wic_input_bytes_mismatch")
+    need(result.get("admission_status") == "admitted", "wic_admission_forged")
     stages, _ = _trace(record)
     need([stage["stage"] for stage in stages] == list(DECODE_STAGES), "wic_stage_sequence_invalid")
+    terminal = stages[-1]
+    need(terminal.get("outcome") == "decoded" and terminal.get("complete") is True,
+         "wic_terminal_outcome_mismatch")
     need(record.get("trace_complete") is True and record.get("trace_partial_bytes") == 0
          and str(record.get("trace_utf8")).endswith("\n"), "wic_trace_incomplete")
     need(record.get("identity_verified") is True, "wic_identity_not_verified")
@@ -194,6 +198,14 @@ def _gdi_progressive(case, leg, fixture):
     need(output["sha256"] == sha(data) and output["bytes"] == len(data), "gdiplus_output_digest_mismatch")
     need(result.get("output_bytes") == len(data), "gdiplus_declared_output_bytes_mismatch")
     return data
+
+
+def _serialized_structure(structure):
+    return {"frame": structure["frame"], "scans": structure["scans"], "quant": {str(key): value for key, value in structure["quant"].items()},
+            "huffman": [{"table_class": table_class, "table_id": table_id, **body}
+                        for (table_class, table_id), body in sorted(structure["huffman"].items())],
+            "restart_interval": structure["restart_interval"], "bytes": structure["bytes"],
+            "markers": structure["markers"], "classification": classify(structure)}
 
 
 def _structure(row, expected_sof2):
@@ -237,6 +249,14 @@ def verify(record: dict, source_root=None) -> dict:
             need(by_id[case["id"]]["sha256"] == measured["sha256"], "fixture_regeneration_mismatch")
             need(by_id[case["id"]]["bytes"] == measured["bytes"] <= BOUNDS["max_encoded_input"],
                  "fixture_bytes_invalid")
+            if by_id[case["id"]]["kind"] == "malformed":
+                need(by_id[case["id"]]["width"] == case["width"]
+                     and by_id[case["id"]]["height"] == case["height"], "fixture_geometry_mismatch")
+            else:
+                parsed = parse_scans(fixture_bytes(case["id"]))
+                need(by_id[case["id"]]["width"] == parsed["frame"]["width"]
+                     and by_id[case["id"]]["height"] == parsed["frame"]["height"],
+                     "fixture_geometry_mismatch")
         source_verified = _source_identity(record, source_root)
         cases = record.get("cases")
         need(isinstance(cases, list) and len(cases) == len(CASES), "case_count_invalid")
@@ -249,8 +269,11 @@ def verify(record: dict, source_root=None) -> dict:
             need(sha(fixture) == by_id[case["id"]]["sha256"], "fixture_bytes_not_regenerated")
             if case["kind"] in ("progressive", "control"):
                 structure, scans = _structure(row, case["kind"] == "progressive")
-                recomputed = classify(parse_scans(fixture))
-                need(structure.get("classification") == recomputed, "structure_classification_mismatch")
+                parsed = parse_scans(fixture)
+                need(structure == _serialized_structure(parsed), "structure_recomputation_mismatch")
+                need(structure["frame"]["width"] == case["width"]
+                     and structure["frame"]["height"] == case["height"], "marker_geometry_mismatch")
+                recomputed = classify(parsed)
                 if case["kind"] == "progressive":
                     need(recomputed["structure"] == "VALID_PROGRESSIVE_STRUCTURE",
                          "progressive_structure_invalid:" + case["id"])
