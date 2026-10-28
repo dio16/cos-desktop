@@ -1,0 +1,415 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/dio16/cos-desktop",
+  "branch": "dev",
+  "remote_sha_observed_before_review": "5e048fb345ab032c2b2e9244b47a310ba0c6d875",
+  "gate_candidate": "9b60d1684d55d4dbbca348159f1637f597771ed4",
+  "gate_candidate_digest": "sha256:ef831f8b66bbf2917cf7522a72a5ccbcd200bf7e99cf3c5c3c02eb589a28bc22",
+  "native_source": "2f20080e843bc02d356e14b9bf99218cb48dfd71",
+  "evidence_commit": "5e048fb345ab032c2b2e9244b47a310ba0c6d875",
+  "review_round": 2,
+  "previous_round": {
+    "verdict": "HOLD 0/1/0",
+    "finding": "A-R1-01",
+    "superseded_candidate": "018b574370ae5b11b8314820c0eac1174ae67982"
+  },
+  "source_archive": {
+    "archive": "w12-review-source-r2.zip",
+    "commit": "9b60d1684d55d4dbbca348159f1637f597771ed4",
+    "bytes": 221561,
+    "sha256": "sha256:c76af90c2b0936f6e29024c05ca3077ad87201f075e18f7578dbf44de395a53b",
+    "entries": [
+      {
+        "path": "Cargo.lock",
+        "bytes": 158990,
+        "sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/tests/test_w12_matched.py",
+        "bytes": 3362,
+        "sha256": "sha256:554e46bc39fdfd68b66edc6e260726027ba2f9348cf9a31d5038c39ef7202666"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/tests/test_w12_negative.py",
+        "bytes": 12962,
+        "sha256": "sha256:65c2d6164599e6c85c12070bb751deee86384356992c4be674763f3e44656ea1"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/tests/test_w12_png_fixtures.py",
+        "bytes": 12516,
+        "sha256": "sha256:2bd4c7bd8bc45e1ab52c62c5533c52b6f7b2a170ce89496b6d31a99eb69b5487"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w11_jpeg_fixtures.py",
+        "bytes": 4868,
+        "sha256": "sha256:77e523c52b54734bd00b833f2d671fadf7ff6023ee1cb15449332bc609d291ed"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w11_jpeg_oracle.py",
+        "bytes": 11619,
+        "sha256": "sha256:13c39da9eed989336e56f8c41a5fc4d1ba8a597a48cdb5cf9014f787b3cbea9f"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w12_jpeg_verify.py",
+        "bytes": 24689,
+        "sha256": "sha256:7c561219f42d1fb51d4a484fb7180ac131b01897a167aaadd3f48d049aefe2c3"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w12_matched_oracle.py",
+        "bytes": 2927,
+        "sha256": "sha256:2eb41b37bbc2d0a49427e4ae46309b03202ff605affb152bc5dc4068f9f9daf8"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w12_matrix.py",
+        "bytes": 39051,
+        "sha256": "sha256:83829a28469aa683871b14a6a8266b76185291043b83656905abcfb9865d9adb"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w12_png_fixture.py",
+        "bytes": 4694,
+        "sha256": "sha256:485c8b894cfb6f2adc56137156043cd2066fc262bd71b9d9f44c7733a41c6d6c"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w12_png_oracle.py",
+        "bytes": 13583,
+        "sha256": "sha256:3ffc3c8842d262c88cdfaad979fd76d6c9b76290fec74705409b3753836b693a"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w2_independent_oracle.py",
+        "bytes": 9766,
+        "sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+        "bytes": 28958,
+        "sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+        "bytes": 26365,
+        "sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w3_oracle.py",
+        "bytes": 5883,
+        "sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w4_region_oracle.py",
+        "bytes": 5745,
+        "sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w5_metadata_oracle.py",
+        "bytes": 6744,
+        "sha256": "sha256:bb2910bac17c47677058bb79ca24b21f3a87356d1a0b432c9427a37193bbab60"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w6_memory_fixtures.py",
+        "bytes": 9459,
+        "sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w6_memory_sample.py",
+        "bytes": 19017,
+        "sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w6_memory_verify.py",
+        "bytes": 23316,
+        "sha256": "sha256:99cc5ecb251c71e42340614d51de471029b8a3247e29ee12f8dabc553972e919"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_fixtures.py",
+        "bytes": 11614,
+        "sha256": "sha256:fefb3724623f79d5ac4f1b98b4af43c8dddde0dfa2e727294bf7e208ac2707bc"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_matrix.py",
+        "bytes": 12484,
+        "sha256": "sha256:53c84378b68b4a0a5c77251a013f2e207b38cf8315a76440e7260ea6dc097e56"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_oracle.py",
+        "bytes": 12588,
+        "sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_verify.py",
+        "bytes": 30502,
+        "sha256": "sha256:74d8ca71fd545bf2991316c2fd6c34073b376763744cfc380b43b97e5ab554f8"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w8_jpeg_fixtures.py",
+        "bytes": 15609,
+        "sha256": "sha256:033389d5b1c700b1da09516f42b1bc4a0cc2a861fb307e9da1efbd068c843925"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare.rs",
+        "bytes": 1041,
+        "sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/harness.rs",
+        "bytes": 159533,
+        "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/inspect.rs",
+        "bytes": 24568,
+        "sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/pixels.rs",
+        "bytes": 27817,
+        "sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+        "bytes": 6399,
+        "sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+        "bytes": 51013,
+        "sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c"
+      },
+      {
+        "path": "crates/media/src/decode.rs",
+        "bytes": 11964,
+        "sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf"
+      },
+      {
+        "path": "rust-toolchain.toml",
+        "bytes": 152,
+        "sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8"
+      }
+    ]
+  },
+  "evidence_archive": {
+    "archive": "w12-review-evidence-r2.zip",
+    "commit": "5e048fb345ab032c2b2e9244b47a310ba0c6d875",
+    "bytes": 405588,
+    "sha256": "sha256:28b7ab03a037cac7c5f9128df2589c4ad0c875b7a6a43814b3dd17002ee3f11c",
+    "entries": [
+      {
+        "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+        "bytes": 131878,
+        "sha256": "sha256:2efde0277416b8dcc7839f3be0a5297a9bea97d9c11f90d8945a9345bb605212"
+      },
+      {
+        "path": "docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md",
+        "bytes": 3000,
+        "sha256": "sha256:f15e6e7d4e36e2e6255b8fccf2a993b4077331fe1ebc5be0b223f377c643dec3"
+      },
+      {
+        "path": "docs/decisions/ADR-0013-EVIDENCE-RETENTION.md",
+        "bytes": 2911,
+        "sha256": "sha256:a403560f95c6d59e71e8ffad7033f32e9d9c6a8b7c356e2dcf83f20ada79c352"
+      },
+      {
+        "path": "docs/development/BUILD_AND_RUN.md",
+        "bytes": 113788,
+        "sha256": "sha256:8c6ebbe206b00f47ec7c123fc3cbe11946f425b1242ee615b21c0bba823bba77"
+      },
+      {
+        "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+        "bytes": 464723,
+        "sha256": "sha256:c3525c6df7ae3b2bd9fd3663599d88e89b6d4c8bc84b49c35e990d1c1f7201de"
+      },
+      {
+        "path": "docs/development/TESTING.md",
+        "bytes": 57767,
+        "sha256": "sha256:42b2dcfd1348b9d0ed3743f33af942636ff6c7c8f796c8b3d78f79b97ae7a763"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/build-product.json",
+        "bytes": 921,
+        "sha256": "sha256:b60b380838baf027b01084728362bc8a25cedadf8faf1d1fd047bd30a9eedc0e"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/directive-request.txt",
+        "bytes": 3133,
+        "sha256": "sha256:1fc8dc3251bb7910d118a8b6b7fb44de9c9286f547a4c9433759a7233e044466"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/docs-validation.json",
+        "bytes": 435,
+        "sha256": "sha256:393b65ed907eea8af7111dcf709352523a19ea0a143ab04ae4e793041e5ac413"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/environment.json",
+        "bytes": 739,
+        "sha256": "sha256:a046f395f0bccf13beee620844277a00ed1c3f2327a883b77c4545508b21510c"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/execution-manifest.json",
+        "bytes": 16092,
+        "sha256": "sha256:cbed1a491ae13c2a7297decec30e843050ef16b0388692ffd54862eb689177fd"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/fixture-manifest.json",
+        "bytes": 1373,
+        "sha256": "sha256:34902a15b44d2150fffda38fce7fea00664db317b28cb771f23423c935e40b83"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/gate-artifact-correspondence.json",
+        "bytes": 4408,
+        "sha256": "sha256:f19bcb2b790f095da426180d97ebd3a9b6136d1d923a1266d4c995453d2c2847"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/gate-build-receipt.json",
+        "bytes": 18907,
+        "sha256": "sha256:8a4d1d395b9d2452abb6556ba315d1c9e2ed066a316f0ec9c3945e1b55ca03b4"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/gate-images-receipt.json",
+        "bytes": 25282,
+        "sha256": "sha256:0cd92948497fb228d74dc66d804bdf03e07cbd6172d1eaef1bf919528dfe2a5f"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/gate-test-counts.json",
+        "bytes": 786,
+        "sha256": "sha256:1013942a611a46d449c2b73cb7bef6a01f1302497ffcec016067c577c56859e8"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/gate-w10-receipt.json",
+        "bytes": 17987,
+        "sha256": "sha256:4eef94c8282069b78d2fd3c03f6c1e8fa188f7f48b529c4f2348b9f895de2800"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/gate-w11-receipt.json",
+        "bytes": 18934,
+        "sha256": "sha256:c0e3104abdc116419ba7c3d8fc26aacf5aa88e66e977562273ed10eeabaf2d19"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/gate-w12-receipt.json",
+        "bytes": 18934,
+        "sha256": "sha256:00f88a6b70725d8ffab68c652f2efe58ee73811f34580ac4e7ef6c0ded7ad3af"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/gate-w8-receipt.json",
+        "bytes": 17983,
+        "sha256": "sha256:b42dd13f814a9445996cec51a9261da02fc554cb4e2a89e7ee38be555466730a"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/gate-w9-receipt.json",
+        "bytes": 17984,
+        "sha256": "sha256:7a7073344504d62e88dbc14fd5d2b46889a72a98a2333eca81b87a7aad7fbfa3"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/gate-workspace-receipt.json",
+        "bytes": 23313,
+        "sha256": "sha256:76e57d31a7b3d7355b5120d9067b4d8f10df763a2ae627501f0864492f576c0c"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/independent-oracle-results.json",
+        "bytes": 2228,
+        "sha256": "sha256:b7fa631163c51dc17faacb5755d9094cfd75fb06aee9d9272ef27e24997faff2"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/native-matched-matrix.json",
+        "bytes": 158524,
+        "sha256": "sha256:54b0f55e3fad909e9c964a257cab505719d753619e257083829cdec2264aced0"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/native-repeat-matrix.json",
+        "bytes": 158534,
+        "sha256": "sha256:8d9125415ddaacd8c89bd20bf894d02c3181f8288485602c4ba402ab621c1c64"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/negative-tests.json",
+        "bytes": 2242,
+        "sha256": "sha256:9676340df76841ce1790db54277201ddc31ef85d95b7d4e4550983f9329daba2"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/process-memory-observations.json",
+        "bytes": 7914,
+        "sha256": "sha256:55b218e247d76e38d4e11d9c2fc29250d0987a31c60a65528e149825c365c800"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/quality.json",
+        "bytes": 2317,
+        "sha256": "sha256:7202d700a83a8ef3da1be19028cbfaf7f11843b349ec49e3e623918f992a36aa"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/repeat-comparison.json",
+        "bytes": 1393,
+        "sha256": "sha256:18413ea706359192b2d622be3b4743ece81963f5bb1322a1b6c5a45bd211e373"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/review-package-r1.json",
+        "bytes": 16473,
+        "sha256": "sha256:be8de2183f3d84ab88d6d22c6037ae54eb4f4c5a3bdbec7b6e8e1651b260aac2"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/review-privacy.json",
+        "bytes": 584,
+        "sha256": "sha256:8e54b02a5637fa102c85b68d7d988fa08dde70c3379681b752d1bc921ece9569"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/start-reconciliation.json",
+        "bytes": 1206,
+        "sha256": "sha256:f3927a30dc463c0413af7683718ff7fa1bf4482d19a3c79885dc0fb761141a47"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/storage.json",
+        "bytes": 165599,
+        "sha256": "sha256:01fe3c231ee4c076bae592c123a703ac4dcf62df4c5880492ea73bafbbaa3d0c"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/taskern-request.json",
+        "bytes": 8239,
+        "sha256": "sha256:016a0ea3c29536ccebb1c3aa31f5ed35d114eeb8ff99fec6ce27f85fcd485a3f"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/taskern-response.json",
+        "bytes": 16117,
+        "sha256": "sha256:20097bb9fe8d01e17087b7f48788d254dd90f80d697756b6f51f3a2bd8fc0874"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/tern-directive.txt",
+        "bytes": 23173,
+        "sha256": "sha256:b950f37f0dc2243291c7d742ced7f0d6491d731d048d19c25655e05ed61dd76c"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/tern-review-r1.txt",
+        "bytes": 5033,
+        "sha256": "sha256:fd7a6bf7a5e3170702d0b6fd49ccf627cec84a2012c5e213bb3ef445303208c7"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/tern-review-request-r1.txt",
+        "bytes": 5851,
+        "sha256": "sha256:205d8ed865521b82ef681776adb065821c7a08e1171ae65c28b0036291c98b6a"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/tool-use.json",
+        "bytes": 994,
+        "sha256": "sha256:9dc9e784b6de125eee705d2facfcd1228610ac5362cd8bd5b5543533556fb2bd"
+      },
+      {
+        "path": "docs/development/evidence-published/w12-latest/unmeasured.json",
+        "bytes": 1070,
+        "sha256": "sha256:2001655026865564fc891109d47994247aa594ed18e604b78ee4d4a82d0a8535"
+      },
+      {
+        "path": "docs/integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md",
+        "bytes": 24649,
+        "sha256": "sha256:06f2fba70e4c92f6bcd17cf4537ee96926c6b122ecb433208a8cf7d69f913879"
+      }
+    ]
+  },
+  "manifest_boundary": "This manifest stays outside both archives and does not hash itself. Both archives hold exact raw Git blobs at their distinct pins.",
+  "review_boundary": "Bounded existing-WIC matched-raster observation only; portable replay cannot establish Git source closure; no fresh Windows/Refine/GUI execution is claimed by these archives.",
+  "push_audit": {
+    "head": "5e048fb345ab032c2b2e9244b47a310ba0c6d875",
+    "base": "772a954abbb66b2ca6deeca076cc8bd14876af57",
+    "commits": 3,
+    "includes_repaired_candidate": true,
+    "blob_bytes": 1187413,
+    "credential_pattern_hits": [],
+    "private_evidence_paths": [],
+    "binary_or_archive_paths": [],
+    "scope": "Explicit dev:dev fast-forward of the W12 review-repair commits; no main, release or private refs. Pattern scanning is not exhaustive."
+  }
+}

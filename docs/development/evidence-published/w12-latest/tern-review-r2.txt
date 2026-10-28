@@ -1,0 +1,137 @@
+MP-IMG2-W12 — 独立再評価 Round 2
+
+前回指摘 A-R1-01：CLOSED
+
+添付の実ソースと証拠を再検証し、前回問題となったmutationテストの偽陽性条件が解消されたことを確認しました。
+
+setUpClass()が、正常controlのsource-bound検証成功を必須条件に変更。
+
+Git objectのない環境では、39件を成功扱いせず、source_bound_control_invalidで停止することを実際に再現。
+
+39種類のmutationを独立にポータブル検証し、38件が構造矛盾で拒否。source_commitだけは設計どおりポータブルでは検証成功・source closure不可。
+
+新Native記録r6/r7はそれぞれ6ケース・6 worker、ROI成功4件、OnLoad前拒否2件で整合。
+
+修正後の33ソースファイルは固定Git blobと一致。8件の新規Gateは同一候補digestで全25 checkがPASS。
+
+前回候補のGateやNative記録を今回の成功として流用した形跡はありません。
+
+新規指摘：A-R2-01 — ACTIONABLE NON-BLOCKING
+
+対象： docs/development/evidence-published/w12-latest/gate-test-counts.json
+
+修正後のテスト件数に、証拠間の不一致があります。
+
+証拠
+
+	
+
+W12テスト件数
+
+
+
+
+修正後ソースからのテスト検出
+
+	
+
+22
+
+
+
+
+negative-tests.json
+
+	
+
+22
+
+
+
+
+execution-manifest.json のreview-repair-run
+
+	
+
+22、OK
+
+
+
+
+IMPLEMENTATION_MASTER_PLAN.md §19.64
+
+	
+
+22
+
+
+
+
+gate-test-counts.json
+
+	
+
+21 passed / 21 tests
+
+GitHubのevidence HEADからも21 / 21を直接確認しました。
+
+gate-test-counts.jsonは修正後候補と8 Gateを根拠とすると記載しているため、現在のままでは正確な実行件数を一意に読み取れません。
+
+修正条件： W12 Gateの実check結果と22テストの実行証拠を突き合わせ、gate-test-counts.jsonの数値を訂正するか、21件と22件が別スコープならそれぞれの根拠を明記してください。Gate候補時点のartifactや旧受領書は改変しないでください。
+
+これはdocs/evidenceの整合性問題であり、A-R1-01の修正失敗、Native decode不具合、Gate失敗を意味しません。製品ソースを変更する必要はありません。
+
+その他の確認
+
+Source pin：PASS。 r6/r7のsource identityは新Native SOURCE 2f20080e…で一致し、33件のLF正規化SHAと固定Git blob digestが整合しています。
+
+Gate：PASS。 新候補9b60d168…に対して8 Gate・25 checkが成功。67 artifact×8＝536件の受領書が一致しました。
+
+Storage：PASS。 9パス・15,613ファイル・3,980,493,455論理バイトの集計が一致し、削除後の8件のverify結果は各受領書と整合しています。
+
+境界：維持。 GUI startupはNOT_RUN、内部メモリとtrue partial decodeは未実証、full MP-IMG2とMP-IMG3は未承認です。
+
+この再評価では新規Windows decode、Refine Gate、GUI操作は実行していません。添付RAWソース・証拠、ポータブルな独立再計算、GitHub固定コミットの照合に基づきます。
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+0
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+1
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+A-R1-01：CLOSED
+
+W12 LIMITED TECHNICAL COMPLETION：証拠件数の整合待ち
+
+HOLD — 0 / 1 / 0
+
+REVIEW COMPLETE

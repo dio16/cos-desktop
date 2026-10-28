@@ -1,0 +1,30 @@
+MP-IMG2-W12 re-evaluation, round 2, after repairing your only finding A-R1-01. Inspect the actual attached source and evidence.
+
+PUSH-BEFORE-EVALUATION satisfied for this round: normal explicit dev:dev push succeeded and `git ls-remote origin refs/heads/dev` returned 5e048fb345ab032c2b2e9244b47a310ba0c6d875 immediately before this submission. (Round 1 was pushed as 772a954; this round is a new push, not a reuse of that claim.)
+
+Repository https://github.com/dio16/cos-desktop, branch dev.
+Repaired Gate/source candidate: 9b60d1684d55d4dbbca348159f1637f597771ed4, candidate digest sha256:ef831f8b66bbf2917cf7522a72a5ccbcd200bf7e99cf3c5c3c02eb589a28bc22.
+Repaired Native SOURCE: 2f20080e843bc02d356e14b9bf99218cb48dfd71.
+Confirmed remote dev / evidence commit: 5e048fb345ab032c2b2e9244b47a310ba0c6d875.
+Superseded round-1 candidate: 018b574 (digest 9311fb7a…), whose receipts remain historical and are not reused.
+
+Attachments (exact raw Git blobs; each member verified byte-equal to `git show`, archives built with command-local core.autocrlf=false):
+1. w12-review-source-r2.zip — 33 files at 9b60d16, SHA256 c76af90c2b0936f6e29024c05ca3077ad87201f075e18f7578dbf44de395a53b.
+2. w12-review-evidence-r2.zip — 41 files at 5e048fb, SHA256 28b7ab03a037cac7c5f9128df2589c4ad0c875b7a6a43814b3dd17002ee3f11c.
+3. w12-review-package-r2.json outside both archives.
+
+A-R1-01 repair (the only requested change):
+- `setUpClass` now requires the unmodified control to pass source-bound verification (`ok`, `closure_eligible` and `source_identity_verified` all true) before any source-bound mutation can be counted; otherwise the suite fails with `source_bound_control_invalid` instead of reporting unearned successes.
+- A new explicit test `test_source_bound_control_is_verified_before_mutations` proves that premise for both retained records.
+- `test_semantic_mutations_fail_closed` now asserts two separate modes: portable verification must reject every mutant except `source_commit` (asserted explicitly as `ok=true, closure_eligible=false`, because only a real Git lookup can contradict it), and source-bound verification must reject all 39.
+- Your reproduction (a repository without the pinned Git objects) now fails loudly at setUpClass rather than passing the mutation loop.
+
+What changed as a consequence, all recorded rather than glossed:
+- The two Native records were re-taken on the repaired pin so that their source set stays closable: native-r6 and native-r7 are retained; native-r2/r3 (pin d6dc1cc) and native-r4/r5 (pin 23f6e6c) are recorded as SUPERSEDED_PIN, and their replays were refused with `source_lf_mismatch` rather than being rewritten as successes. The image logic, budgets, scenarios and acceptance are unchanged.
+- All eight Gates were re-run on the repaired candidate: workspace b104a5ff… 7/7, images 6d47ec31… 9/9, w8 101c6b38… 1/1, w9 bd924c86… 1/1, w10 34ec0664… 1/1, w11 0d3b7c5e… 2/2, w12 843f52ae… 2/2, build f460f593… 2/2. All report digest ef831f8b…, and 67 declared artifacts × 8 Gates = 536 captures match their receipts and the raw blobs.
+- Disposal was repeated only for those eight successful repaired-candidate checkouts plus one approved target root: 15,613 files / 3,980,493,455 logical bytes, with all eight native integrity results unchanged afterwards. The pre-repair state root stays retained and untouched. The newly built 32,275,456-byte executable was moved once out of the disposable target with digest sha256:d25030d02bc53995b506e9f009f2d33d6b8ccf14aa2b0ef587f94a3bd23b01c4.
+- Suite is now 22 tests, 39 mutation classes, 0 failures; portable and source-bound modes are reported separately in negative-tests.json.
+
+Unchanged and still open: four ROI outputs verified pixel-by-pixel, two byte-identical JPEG/PNG pairs, two pre-OnLoad refusals, six whole-process windows classified OBSERVED_WHOLE_PROCESS_DIFFERENTIAL, TRUE_PARTIAL_DECODE_VERIFIED and all internal-memory/codec-advantage claims NOT made, application-window GUI startup NOT_RUN, full MP-IMG2/MP-IMG3 and all product policy unauthorised. Native preflight aggregate stays UNKNOWN.
+
+Please judge independently whether A-R1-01 is fully repaired, whether the repaired pin is honestly recorded, and whether any new defect was introduced by the repair. Return findings classified BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE with explicit counts and finish with PASS 0 / 0 / 0 or HOLD with counts plus a separate line REVIEW COMPLETE. Do not provide a next-task directive in this round.

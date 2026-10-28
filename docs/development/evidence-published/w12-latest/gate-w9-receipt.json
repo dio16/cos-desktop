@@ -1,15 +1,15 @@
 {
   "raw": {
     "schema_version": 1,
-    "gate_id": "bd924c86-f2c6-4bcf-b1de-6fa3d05b60ae",
+    "gate_id": "48df19b6-dc96-4abb-9b42-80cd5360fdc4",
     "gate_label": "mp-img2-w12-r1-w9",
     "state": "SUCCEEDED",
     "receipt": {
       "schema_version": 1,
-      "gate_id": "bd924c86-f2c6-4bcf-b1de-6fa3d05b60ae",
+      "gate_id": "48df19b6-dc96-4abb-9b42-80cd5360fdc4",
       "gate_label": "mp-img2-w12-r1-w9",
-      "request_sha256": "sha256:239a5139c14bad43e23969be04f5bf96c9bce41b66a141e17d98cfeb6fd53c6f",
-      "terminal_state_sha256": "sha256:da858a7e0baa8709f6af515c21827f5685c94087be3e5a2c6bc829f98305b0e4",
+      "request_sha256": "sha256:8463d47f78ad6dead0db944dd72014ec4014b8fb3b5a2d34e49d6b070290354b",
+      "terminal_state_sha256": "sha256:846e7e473204073e428c1692ad119aaa102e86ae543038c37a20435effc22305",
       "runtime": {
         "refine_version": "0.3.1",
         "os": "windows",
@@ -18,10 +18,10 @@
       },
       "repository": {
         "location": "C:/dev/cos-desktop",
-        "requested_revision": "9b60d1684d55d4dbbca348159f1637f597771ed4",
-        "resolved_base_commit": "9b60d1684d55d4dbbca348159f1637f597771ed4",
+        "requested_revision": "2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b",
+        "resolved_base_commit": "2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b",
         "object_format": "sha1",
-        "final_head": "9b60d1684d55d4dbbca348159f1637f597771ed4"
+        "final_head": "2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b"
       },
       "limits": {
         "timeout_ms": 600000,
@@ -29,17 +29,17 @@
         "max_output_bytes": 16777216,
         "max_artifact_bytes": 16777216
       },
-      "accepted_at": "2026-10-28T16:38:26.691771900Z",
-      "ended_at": "2026-10-28T16:43:01.572925300Z",
-      "candidate_sha256": "sha256:ef831f8b66bbf2917cf7522a72a5ccbcd200bf7e99cf3c5c3c02eb589a28bc22",
+      "accepted_at": "2026-10-28T17:08:21.494834600Z",
+      "ended_at": "2026-10-28T17:12:57.376779500Z",
+      "candidate_sha256": "sha256:0a472db14247de27c002e253f3e64f991eb885000a6ca3bbaf039d5a4a142b50",
       "verification": [
         {
           "id": "img2-w9",
           "kind": "command",
           "outcome": "pass",
-          "duration_ms": 257815,
+          "duration_ms": 258696,
           "observed_exit": 0,
-          "candidate_binding": "sha256:ef831f8b66bbf2917cf7522a72a5ccbcd200bf7e99cf3c5c3c02eb589a28bc22"
+          "candidate_binding": "sha256:0a472db14247de27c002e253f3e64f991eb885000a6ca3bbaf039d5a4a142b50"
         }
       ],
       "check_logs": [
@@ -55,7 +55,7 @@
           "stderr": {
             "relative_path": "logs/img2-w9/stderr",
             "size_bytes": 118,
-            "sha256": "sha256:41c5c2c3487f996f8a1af8a6b6573fd5e5d144f3f7d2123c7034f4f2248214ef",
+            "sha256": "sha256:4355150aa75d99fc97ccd3fa8e9e5865bc6bc82f1d45bdd839ee773d618cabd8",
             "truncated": false,
             "secret": true
           }
@@ -227,8 +227,8 @@
         {
           "id": "w12-33",
           "relative_path": "artifacts/w12-33",
-          "size_bytes": 463851,
-          "sha256": "sha256:c9b9ae780b949c356e4038e6d99fdc6a3bb3b1c6e3ef50c4181dc382c254c579"
+          "size_bytes": 464723,
+          "sha256": "sha256:c3525c6df7ae3b2bd9fd3663599d88e89b6d4c8bc84b49c35e990d1c1f7201de"
         },
         {
           "id": "w12-34",
@@ -240,7 +240,7 @@
           "id": "w12-35",
           "relative_path": "artifacts/w12-35",
           "size_bytes": 921,
-          "sha256": "sha256:6e21107a1f0cbba20751eb883b0a0f37917bcd36a39455432d0998dc1a9e9046"
+          "sha256": "sha256:b60b380838baf027b01084728362bc8a25cedadf8faf1d1fd047bd30a9eedc0e"
         },
         {
           "id": "w12-36",
@@ -251,8 +251,8 @@
         {
           "id": "w12-37",
           "relative_path": "artifacts/w12-37",
-          "size_bytes": 403,
-          "sha256": "sha256:47e6e42c0b09f16a1e0d4812770d54d1149131ad6ac0a4ba99b4f42a574530f1"
+          "size_bytes": 435,
+          "sha256": "sha256:393b65ed907eea8af7111dcf709352523a19ea0a143ab04ae4e793041e5ac413"
         },
         {
           "id": "w12-38",
@@ -281,56 +281,56 @@
         {
           "id": "w12-41",
           "relative_path": "artifacts/w12-41",
-          "size_bytes": 3729,
-          "sha256": "sha256:1e5701a5d29401a9a47a2def71269bcee8a61b4f190f2c76e9cf5ceb57601627"
+          "size_bytes": 4408,
+          "sha256": "sha256:f19bcb2b790f095da426180d97ebd3a9b6136d1d923a1266d4c995453d2c2847"
         },
         {
           "id": "w12-42",
           "relative_path": "artifacts/w12-42",
-          "size_bytes": 15844,
-          "sha256": "sha256:61f9dc9af8aa3a113df1eae6041c833f2d03a06b15489bffbda8f6f69a6b27d0"
+          "size_bytes": 18907,
+          "sha256": "sha256:8a4d1d395b9d2452abb6556ba315d1c9e2ed066a316f0ec9c3945e1b55ca03b4"
         },
         {
           "id": "w12-43",
           "relative_path": "artifacts/w12-43",
-          "size_bytes": 22221,
-          "sha256": "sha256:5e42861414ab395254e3d34b321ea1cd469b8374430bda96c2cc598e9af67dbe"
+          "size_bytes": 25282,
+          "sha256": "sha256:0cd92948497fb228d74dc66d804bdf03e07cbd6172d1eaef1bf919528dfe2a5f"
         },
         {
           "id": "w12-44",
           "relative_path": "artifacts/w12-44",
-          "size_bytes": 773,
-          "sha256": "sha256:8ed71eda1edfa25d1f27353cda7bc92795c1d36addb160c0061cacc39e066e91"
+          "size_bytes": 1683,
+          "sha256": "sha256:a3688df3605a2eb99043093955e7bcaf4fa94f24fbc68ec6525c56be2c59aa81"
         },
         {
           "id": "w12-45",
           "relative_path": "artifacts/w12-45",
-          "size_bytes": 14926,
-          "sha256": "sha256:b3056468dd5f503d35f0f41f44ac4c1ca26f0341c1f023d13c77d6569323d790"
+          "size_bytes": 17987,
+          "sha256": "sha256:4eef94c8282069b78d2fd3c03f6c1e8fa188f7f48b529c4f2348b9f895de2800"
         },
         {
           "id": "w12-46",
           "relative_path": "artifacts/w12-46",
-          "size_bytes": 15873,
-          "sha256": "sha256:629e13704f62cc378220ab1ef8261dc69547881ad9ae2d910bbcc77ac6f51c5b"
+          "size_bytes": 18934,
+          "sha256": "sha256:c0e3104abdc116419ba7c3d8fc26aacf5aa88e66e977562273ed10eeabaf2d19"
         },
         {
           "id": "w12-47",
           "relative_path": "artifacts/w12-47",
-          "size_bytes": 15873,
-          "sha256": "sha256:15fdc326c670670b2d1d621385fdab96f29c36b5bfeca3912732d7257eb0ad66"
+          "size_bytes": 18934,
+          "sha256": "sha256:00f88a6b70725d8ffab68c652f2efe58ee73811f34580ac4e7ef6c0ded7ad3af"
         },
         {
           "id": "w12-48",
           "relative_path": "artifacts/w12-48",
-          "size_bytes": 14922,
-          "sha256": "sha256:f5045b8655ee2c056568893007c645d7622aff9229d960c4d3547d1133b09810"
+          "size_bytes": 17983,
+          "sha256": "sha256:b42dd13f814a9445996cec51a9261da02fc554cb4e2a89e7ee38be555466730a"
         },
         {
           "id": "w12-49",
           "relative_path": "artifacts/w12-49",
-          "size_bytes": 14915,
-          "sha256": "sha256:4324d88937610d0b458acb4737bc8fe89d5338aff293b5ccae69ef4f592a5b71"
+          "size_bytes": 17984,
+          "sha256": "sha256:7a7073344504d62e88dbc14fd5d2b46889a72a98a2333eca81b87a7aad7fbfa3"
         },
         {
           "id": "w12-5",
@@ -341,8 +341,8 @@
         {
           "id": "w12-50",
           "relative_path": "artifacts/w12-50",
-          "size_bytes": 20252,
-          "sha256": "sha256:0d96c34655aade21a5e2f3c259d6533269c4a00d7bf69a06639baa1b6cbabfae"
+          "size_bytes": 23313,
+          "sha256": "sha256:76e57d31a7b3d7355b5120d9067b4d8f10df763a2ae627501f0864492f576c0c"
         },
         {
           "id": "w12-51",
@@ -389,14 +389,14 @@
         {
           "id": "w12-58",
           "relative_path": "artifacts/w12-58",
-          "size_bytes": 584,
-          "sha256": "sha256:8e54b02a5637fa102c85b68d7d988fa08dde70c3379681b752d1bc921ece9569"
+          "size_bytes": 16473,
+          "sha256": "sha256:be8de2183f3d84ab88d6d22c6037ae54eb4f4c5a3bdbec7b6e8e1651b260aac2"
         },
         {
           "id": "w12-59",
           "relative_path": "artifacts/w12-59",
-          "size_bytes": 1206,
-          "sha256": "sha256:f3927a30dc463c0413af7683718ff7fa1bf4482d19a3c79885dc0fb761141a47"
+          "size_bytes": 584,
+          "sha256": "sha256:8e54b02a5637fa102c85b68d7d988fa08dde70c3379681b752d1bc921ece9569"
         },
         {
           "id": "w12-6",
@@ -407,42 +407,60 @@
         {
           "id": "w12-60",
           "relative_path": "artifacts/w12-60",
-          "size_bytes": 136930,
-          "sha256": "sha256:9062e4913d7446c4c4638c35db0b8477411a62fffe6bdfd28b30dbd677984303"
+          "size_bytes": 1206,
+          "sha256": "sha256:f3927a30dc463c0413af7683718ff7fa1bf4482d19a3c79885dc0fb761141a47"
         },
         {
           "id": "w12-61",
           "relative_path": "artifacts/w12-61",
-          "size_bytes": 8239,
-          "sha256": "sha256:016a0ea3c29536ccebb1c3aa31f5ed35d114eeb8ff99fec6ce27f85fcd485a3f"
+          "size_bytes": 165599,
+          "sha256": "sha256:01fe3c231ee4c076bae592c123a703ac4dcf62df4c5880492ea73bafbbaa3d0c"
         },
         {
           "id": "w12-62",
           "relative_path": "artifacts/w12-62",
-          "size_bytes": 16117,
-          "sha256": "sha256:20097bb9fe8d01e17087b7f48788d254dd90f80d697756b6f51f3a2bd8fc0874"
+          "size_bytes": 8239,
+          "sha256": "sha256:016a0ea3c29536ccebb1c3aa31f5ed35d114eeb8ff99fec6ce27f85fcd485a3f"
         },
         {
           "id": "w12-63",
           "relative_path": "artifacts/w12-63",
-          "size_bytes": 23173,
-          "sha256": "sha256:b950f37f0dc2243291c7d742ced7f0d6491d731d048d19c25655e05ed61dd76c"
+          "size_bytes": 16117,
+          "sha256": "sha256:20097bb9fe8d01e17087b7f48788d254dd90f80d697756b6f51f3a2bd8fc0874"
         },
         {
           "id": "w12-64",
           "relative_path": "artifacts/w12-64",
-          "size_bytes": 994,
-          "sha256": "sha256:9dc9e784b6de125eee705d2facfcd1228610ac5362cd8bd5b5543533556fb2bd"
+          "size_bytes": 23173,
+          "sha256": "sha256:b950f37f0dc2243291c7d742ced7f0d6491d731d048d19c25655e05ed61dd76c"
         },
         {
           "id": "w12-65",
           "relative_path": "artifacts/w12-65",
-          "size_bytes": 1070,
-          "sha256": "sha256:2001655026865564fc891109d47994247aa594ed18e604b78ee4d4a82d0a8535"
+          "size_bytes": 5033,
+          "sha256": "sha256:fd7a6bf7a5e3170702d0b6fd49ccf627cec84a2012c5e213bb3ef445303208c7"
         },
         {
           "id": "w12-66",
           "relative_path": "artifacts/w12-66",
+          "size_bytes": 5851,
+          "sha256": "sha256:205d8ed865521b82ef681776adb065821c7a08e1171ae65c28b0036291c98b6a"
+        },
+        {
+          "id": "w12-67",
+          "relative_path": "artifacts/w12-67",
+          "size_bytes": 994,
+          "sha256": "sha256:9dc9e784b6de125eee705d2facfcd1228610ac5362cd8bd5b5543533556fb2bd"
+        },
+        {
+          "id": "w12-68",
+          "relative_path": "artifacts/w12-68",
+          "size_bytes": 1070,
+          "sha256": "sha256:2001655026865564fc891109d47994247aa594ed18e604b78ee4d4a82d0a8535"
+        },
+        {
+          "id": "w12-69",
+          "relative_path": "artifacts/w12-69",
           "size_bytes": 152,
           "sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8"
         },
@@ -468,13 +486,13 @@
       "absent_outputs": [],
       "cleanup": "complete",
       "timings": {
-        "preparation_ms": 13359,
+        "preparation_ms": 13410,
         "execution_ms": 0,
-        "verification_ms": 260140,
-        "collection_ms": 1335,
+        "verification_ms": 261072,
+        "collection_ms": 1358,
         "finalization_ms": 2
       },
-      "duration_ms": 274876
+      "duration_ms": 275877
     }
   },
   "command": {
@@ -486,19 +504,19 @@
       "--request",
       "C:/dev/cos-desktop-verification/w12/w9-request-r1.json",
       "--state-dir",
-      "C:/dev/cos-desktop-verification/w12/state-b",
+      "C:/dev/cos-desktop-verification/w12/state-c",
       "--json"
     ],
     "cwd": "C:\\dev\\cos-desktop",
     "exit_code": 0,
-    "duration_seconds": 275.34378509997623,
+    "duration_seconds": 276.4251080000249,
     "stdout": {
-      "bytes": 12189,
-      "sha256": "sha256:b6e848e7284f8e967fd2b122f693dac2fb8817139ca653f26e9b74e808e4ea98"
+      "bytes": 12647,
+      "sha256": "sha256:093f829b84e24bded59243c5e5f08dc460acafdd4a9c9365fcccadb363e63870"
     },
     "stderr": {
       "bytes": 229,
-      "sha256": "sha256:8e61839ec953ac9cdda5af5b6f0ffa5eebdd9ce2a57837299be0674bf21d1c05"
+      "sha256": "sha256:654a38ec42ce863f687048c7672c227fee0b7ef98e96473c989c36b6531a25ed"
     }
   }
 }

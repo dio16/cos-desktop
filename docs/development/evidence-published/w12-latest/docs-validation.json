@@ -12,5 +12,6 @@
     "status": "NOT_RUN",
     "reason": "Live computer approval unanswered; no GUI startup claim."
   },
-  "review_round1_linked": true
+  "review_round1_linked": true,
+  "review_rounds_linked": 2
 }

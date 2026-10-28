@@ -1,5 +1,5 @@
 {
-  "gate": "b104a5ff-49e6-4ce2-ae63-ebe2b2b82add",
+  "gate": "d6141434-fda6-4644-883f-34186247e73b",
   "workspace_rust": {
     "passed": 535,
     "failed": 0,
@@ -30,7 +30,7 @@
     "basis": "Final repaired-pin W12 suite: 22 tests OK, 39 semantic mutation classes; the 21-test runs are recorded as earlier attempts in execution-manifest.json and negative-tests.json keeps 22."
   },
   "feature_route": "NOT_RUN for W12; no Rust feature-code change and no older result transferred.",
-  "basis": "Counts come from the eight independent Gates on the repaired candidate 9b60d16 (digest ef831f8b) plus the retained W12 suite run; skipped R0 cases are not promoted.",
+  "basis": "Counts come from the eight independent Gates on candidate 2eafa7d (digest 0a472db1) plus the retained W12 suite run; skipped R0 cases are not promoted.",
   "earlier_w12_attempts": {
     "w12-tests-r1": "failed run retained",
     "w12-tests-r2": "21 tests, pre-A-R1-01",
