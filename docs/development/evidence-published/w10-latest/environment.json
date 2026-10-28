@@ -1,9 +1,7 @@
 {
   "schema_version": 1,
   "platform": {
-    "dotnet": ".NET 10.0.13",
-    "os": "Microsoft Windows NT 10.0.26300.0",
-    "powershell": "7.6.7",
+    "os": "nt",
     "windows": true
   },
   "bounds": {
@@ -12,8 +10,8 @@
     "max_dimension": 2048,
     "max_encoded_input": 4194304,
     "max_metadata_bytes": 65536,
-    "max_native_legs": 24,
-    "max_output_bytes": 33554432,
+    "max_native_legs": 32,
+    "max_output_bytes": 1048576,
     "max_pixels": 4194304,
     "max_report_bytes": 4194304,
     "max_total_seconds": 300,
@@ -29,7 +27,7 @@
   },
   "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
   "wic_probe_sha256": "sha256:32666558c588ae93be5fc929f54307398aeddadf4458c5bdb80780e8e7bf9741",
-  "gdiplus_probe_sha256": "sha256:eabd6816bca5b669cc9a08fb6077e41fd296700a55fd21224a1b67fbff270139",
-  "duration_ns": 20906001800,
-  "work_bytes": 50120
+  "gdiplus_probe_sha256": "sha256:81e4640bf80822fddd0b94032ec5cc4db2e81667f3acede58cce7b0ca92763bc",
+  "duration_ns": 32923907800,
+  "work_bytes": 423444
 }

@@ -1063,15 +1063,23 @@ python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_w10*
 ```
 
 Limits stay experimental: dimension 2048, 4,194,304 pixels, 8 bits per channel,
-4 MiB encoded input, 64 KiB metadata, 32 MiB output, 128 MiB work root, 4 MiB
-report, 64 KiB capture, 45 s worker, 300 s batch and 24 legs across nine cases.
+4 MiB encoded input, 64 KiB metadata, 1 MiB output, 128 MiB work root, 4 MiB
+report, 64 KiB capture, 45 s worker, 300 s batch and at most 32 serial legs
+(the twelve fixed cases use 29). A fresh owned directory and report are required.
+Capture/output/work caps are observed during execution, and failed workers are
+terminated and reaped. Neither memory sampling nor cooperative decoder cancellation
+is claimed.
 
 The WIC metadata leg only observes; `-ApplyOrientation` is requested solely by the
-transform leg, which must produce the declared 192x256 output for orientations 6
-and 8. GDI+ records the property IDs, orientation value, ICC length and digest and
-never claims a transform. A profile both decoders merely report stays
-`NOT_MEASURED` for colour conversion; a truncated profile that a decoder accepts is
-recorded with its truncated payload digest and keeps `DECODED_TAMPER_NOT_VERIFIED`.
+transform leg. The independent index rotation must match every output pixel, not
+just the declared 192x256 geometry for orientations 6/8. W10's separate
+`gdiplus_metadata_probe.ps1` records orientation and ICC bytes without changing the
+legacy probe or W8/W9 verifiers. Both Native records retain output PNG bytes;
+verification reconstructs RGBA, recalculates digests and decoder/control
+differences, and checks all five independent rotation relations. A decoded control
+is a differential reference, not an absolute JPEG oracle. ICC-valid WIC/GDI+
+outputs differ; colour-conversion correctness stays `NOT_MEASURED`. Invalid or
+truncated metadata accepted by either decoder stays `DECODED_TAMPER_NOT_VERIFIED`.
 
 ## 6. Troubleshooting (evidence-anchored)
 

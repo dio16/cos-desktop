@@ -1,0 +1,25 @@
+{
+  "skills": {
+    "taskern": {
+      "discovered": true,
+      "loaded": true,
+      "invoked": true,
+      "execution": "installed CLI0.2.0 prepare packet_compiled",
+      "mcp_attempt": "Invalid args: unresolved schema references; no semantic execution; CLI used instead"
+    },
+    "refine": {
+      "discovered": true,
+      "loaded": true,
+      "version": "0.3.1",
+      "invoked": "describe operation gate.run",
+      "execution": "not yet dispatched"
+    },
+    "tern-chatgpt-review": {
+      "discovered": true,
+      "loaded": true,
+      "invoked": true,
+      "execution": "existing authenticated directive read; W10 review pending"
+    }
+  },
+  "scope": "No Runtime, main, push, release or product policy authorization inferred."
+}

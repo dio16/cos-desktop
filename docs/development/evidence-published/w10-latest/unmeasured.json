@@ -10,7 +10,9 @@
     "product orientation policy",
     "product ICC policy",
     "product decoder adoption",
-    "full MP-IMG2 Decode Exit"
+    "full MP-IMG2 Decode Exit",
+    "in-decoder cooperative cancellation",
+    "absolute JPEG raster correctness"
   ],
   "product_boundaries": [
     "No crates/media, Runtime, GPU or product decoder change.",

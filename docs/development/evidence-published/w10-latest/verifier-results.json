@@ -1,13 +1,11 @@
 {
   "ok": true,
-  "cases": 9,
-  "legs": 23,
-  "metadata_parsed": 6,
-  "metadata_absent": 1,
-  "metadata_tampered": 2,
-  "differential": 6,
-  "control": 1,
-  "tamper": 2,
+  "cases": 12,
+  "legs": 29,
   "source_identity_verified": true,
-  "closure_eligible": true
+  "closure_eligible": true,
+  "metadata_tampered": 5,
+  "orientation_relations_verified": 5,
+  "icc_colour_conversion": "NOT_MEASURED",
+  "jpeg_absolute_correctness": "NOT_VERIFIED"
 }

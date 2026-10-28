@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "source": "95b90483fd3bf4e4619a305c0ec02065ed6b76d8",
+  "stable_fields": [
+    "fixtures",
+    "structures",
+    "classifications",
+    "probe results",
+    "PNG outputs",
+    "pixel comparisons"
+  ],
+  "identical": true,
+  "volatile_excluded": [
+    "process ids",
+    "monotonic timestamps",
+    "run id",
+    "work size",
+    "duration"
+  ],
+  "runs": [
+    "complete-native-r2-work",
+    "complete-native-r3-work"
+  ]
+}

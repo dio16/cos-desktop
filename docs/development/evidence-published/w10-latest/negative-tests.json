@@ -3,188 +3,248 @@
   "control": {
     "ok": true
   },
-  "shipped_classes": 30,
+  "shipped_classes": 40,
   "all_rejected": true,
   "mutations": [
     {
       "class": 1,
       "name": "orientation_value_forged",
       "rejected": true,
-      "reason": "wic_orientation_value_mismatch"
+      "reason": "ValueError:orientation_value_mismatch"
     },
     {
       "class": 2,
       "name": "orientation_presence_forged",
       "rejected": true,
-      "reason": "wic_orientation_presence_mismatch"
+      "reason": "ValueError:orientation_presence_mismatch"
     },
     {
       "class": 3,
       "name": "transform_request_forged",
       "rejected": true,
-      "reason": "transform_request_mismatch"
+      "reason": "ValueError:transform_request_or_application_mismatch"
     },
     {
       "class": 4,
       "name": "transform_applied_forged",
       "rejected": true,
-      "reason": "transform_applied_mismatch"
+      "reason": "ValueError:transform_request_or_application_mismatch"
     },
     {
       "class": 5,
       "name": "transform_dims_swapped",
       "rejected": true,
-      "reason": "transform_dims_mismatch"
+      "reason": "ValueError:probe_output_geometry_mismatch"
     },
     {
       "class": 6,
       "name": "icc_presence_forged",
       "rejected": true,
-      "reason": "gdiplus_icc_presence_mismatch"
+      "reason": "ValueError:icc_presence_mismatch"
     },
     {
       "class": 7,
       "name": "icc_length_forged",
       "rejected": true,
-      "reason": "wic_icc_length_mismatch"
+      "reason": "ValueError:icc_length_mismatch"
     },
     {
       "class": 8,
       "name": "icc_digest_forged",
       "rejected": true,
-      "reason": "gdiplus_icc_digest_mismatch"
+      "reason": "ValueError:icc_digest_mismatch"
     },
     {
       "class": 9,
       "name": "truncated_icc_promoted",
       "rejected": true,
-      "reason": "gdiplus_truncated_icc_payload_mismatch"
+      "reason": "ValueError:malformed_icc_payload_mismatch"
     },
     {
       "class": 10,
       "name": "truncated_icc_length_forged",
       "rejected": true,
-      "reason": "gdiplus_truncated_icc_length_mismatch"
+      "reason": "ValueError:malformed_icc_payload_mismatch"
     },
     {
       "class": 11,
       "name": "wic_colour_contexts_forged",
       "rejected": true,
-      "reason": "wic_colour_context_count_invalid"
+      "reason": "ValueError:wic_colour_context_count_invalid"
     },
     {
       "class": 12,
       "name": "gdiplus_icc_on_absent",
       "rejected": true,
-      "reason": "gdiplus_icc_presence_mismatch"
+      "reason": "ValueError:icc_presence_mismatch"
     },
     {
       "class": 13,
       "name": "structure_classification_flipped",
       "rejected": true,
-      "reason": "row_structure_not_reproducible:exif_orient6"
+      "reason": "ValueError:structure_or_expectation_forged"
     },
     {
       "class": 14,
       "name": "unknown_marker_added",
       "rejected": true,
-      "reason": "row_structure_not_reproducible:meta_plain"
+      "reason": "ValueError:structure_or_expectation_forged"
     },
     {
       "class": 15,
       "name": "fixture_digest_forged",
       "rejected": true,
-      "reason": "fixture_digest_mismatch:meta_plain"
+      "reason": "ValueError:fixture_bytes_or_digest_mismatch"
     },
     {
       "class": 16,
       "name": "fixture_bytes_forged",
       "rejected": true,
-      "reason": "fixture_bytes_mismatch:meta_plain"
+      "reason": "ValueError:fixture_bytes_or_digest_mismatch"
     },
     {
       "class": 17,
       "name": "leg_removed",
       "rejected": true,
-      "reason": "leg_set_invalid:meta_plain"
+      "reason": "ValueError:leg_set_invalid"
     },
     {
       "class": 18,
       "name": "leg_order_swapped",
       "rejected": true,
-      "reason": "leg_set_invalid:icc_valid"
+      "reason": "ValueError:leg_set_invalid"
     },
     {
       "class": 19,
       "name": "leg_case_binding_forged",
       "rejected": true,
-      "reason": "leg_case_binding_invalid:wic_metadata"
+      "reason": "ValueError:leg_case_binding_invalid"
     },
     {
       "class": 20,
       "name": "leg_candidate_binding_forged",
       "rejected": true,
-      "reason": "leg_candidate_binding_invalid:wic_metadata"
+      "reason": "ValueError:leg_candidate_binding_invalid"
     },
     {
       "class": 21,
       "name": "tamper_leg_promoted",
       "rejected": true,
-      "reason": "decoded_classification_invalid:wic_metadata"
+      "reason": "ValueError:decoded_classification_invalid"
     },
     {
       "class": 22,
       "name": "wellformed_leg_demoted",
       "rejected": true,
-      "reason": "decoded_classification_invalid:wic_metadata"
+      "reason": "ValueError:decoded_classification_invalid"
     },
     {
       "class": 23,
       "name": "refused_leg_publishes",
       "rejected": true,
-      "reason": "refused_leg_published_output:wic_metadata"
+      "reason": "ValueError:refused_leg_publishes"
     },
     {
       "class": 24,
       "name": "decoded_output_missing",
       "rejected": true,
-      "reason": "decoded_leg_output_missing:gdiplus_metadata"
+      "reason": "ValueError:decoded_output_missing"
     },
     {
       "class": 25,
       "name": "incomplete_run",
       "rejected": true,
-      "reason": "run_incomplete"
+      "reason": "ValueError:run_or_bounds_invalid"
     },
     {
       "class": 26,
       "name": "unmeasured_boundary_changed",
       "rejected": true,
-      "reason": "unmeasured_boundary_changed"
+      "reason": "ValueError:unmeasured_boundary_changed"
     },
     {
       "class": 27,
       "name": "work_bytes_over_cap",
       "rejected": true,
-      "reason": "work_bytes_over_cap"
+      "reason": "ValueError:work_bytes_invalid"
     },
     {
       "class": 28,
       "name": "structure_not_reproducible",
       "rejected": true,
-      "reason": "row_structure_not_reproducible:icc_valid"
+      "reason": "ValueError:structure_or_expectation_forged"
     },
     {
       "class": 29,
       "name": "expected_block_forged",
       "rejected": true,
-      "reason": "row_expected_not_declared:icc_valid"
+      "reason": "ValueError:structure_or_expectation_forged"
     },
     {
       "class": 30,
       "name": "icc_partial_dropped",
       "rejected": true,
-      "reason": "row_structure_not_reproducible:icc_truncated"
+      "reason": "ValueError:structure_or_expectation_forged"
+    },
+    {
+      "class": 31,
+      "name": "png_bytes_forged",
+      "rejected": true,
+      "reason": "ValueError:output_png_header"
+    },
+    {
+      "class": 32,
+      "name": "rgba_digest_forged",
+      "rejected": true,
+      "reason": "ValueError:output_bytes_or_pixels_mismatch"
+    },
+    {
+      "class": 33,
+      "name": "pixel_relation_forged",
+      "rejected": true,
+      "reason": "ValueError:pixel_comparison_forged"
+    },
+    {
+      "class": 34,
+      "name": "input_digest_forged",
+      "rejected": true,
+      "reason": "ValueError:leg_input_digest_mismatch"
+    },
+    {
+      "class": 35,
+      "name": "probe_digest_forged",
+      "rejected": true,
+      "reason": "ValueError:leg_probe_digest_mismatch"
+    },
+    {
+      "class": 36,
+      "name": "exit_outcome_forged",
+      "rejected": true,
+      "reason": "ValueError:probe_exit_outcome_mismatch"
+    },
+    {
+      "class": 37,
+      "name": "cleanup_incomplete",
+      "rejected": true,
+      "reason": "ValueError:cleanup_incomplete"
+    },
+    {
+      "class": 38,
+      "name": "duplicate_case",
+      "rejected": true,
+      "reason": "ValueError:case_or_fixture_set_invalid"
+    },
+    {
+      "class": 39,
+      "name": "worker_not_reaped",
+      "rejected": true,
+      "reason": "ValueError:worker_not_complete"
+    },
+    {
+      "class": 40,
+      "name": "bound_omitted",
+      "rejected": true,
+      "reason": "ValueError:run_or_bounds_invalid"
     }
   ]
 }

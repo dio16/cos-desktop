@@ -1,0 +1,69 @@
+{
+  "local_quality": {
+    "command": [
+      "C:/Program Files/PowerShell/7/pwsh.exe",
+      "-NoProfile",
+      "-File",
+      "scripts/quality.ps1"
+    ],
+    "exit_code": 0,
+    "duration_seconds": 30.763182100025006,
+    "stdout": {
+      "bytes": 50329,
+      "sha256": "sha256:729fea8bcfa1ef1dd719d9c809d223537da399101f85680c98b02c083561eb95"
+    },
+    "stderr": {
+      "bytes": 0,
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "w10_tests": {
+    "count": 7,
+    "passed": 7,
+    "negative_classes": 40,
+    "log_sha256": "sha256:fdda99be1b3c44e027be1b5a0b076becb81dae5075b57498098ae5fb25d1789d"
+  },
+  "native_application_surface": {
+    "status": "NOT_RUN",
+    "reason": "Live computer.control.acquire unanswered; no application startup or GUI claim. Windows WIC/GDI+ matrix completed separately."
+  },
+  "historical_218_test_run": "Superseded by completed pixel-evidence source; no old result transferred to new candidate.",
+  "local_selftests": {
+    "w2-stop-selftest-r1": {
+      "command": [
+        "C:/Program Files/PowerShell/7/pwsh.exe",
+        "-NoProfile",
+        "-File",
+        "apps/desktop/devtools/img2/w2_probe_selftest.ps1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 14.820641300000716,
+      "stdout": {
+        "bytes": 25,
+        "sha256": "sha256:c8e3c070f834d8ef8d7a1fdfdbe2262f8d0a78df0505a4a61cc6e2184c91e311"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "wic-admission-selftest-r1": {
+      "command": [
+        "C:/Program Files/PowerShell/7/pwsh.exe",
+        "-NoProfile",
+        "-File",
+        "apps/desktop/tests/wic_admission_selftest.ps1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 0.7818517999839969,
+      "stdout": {
+        "bytes": 29,
+        "sha256": "sha256:a83888ce721623ea98cc2060a8462e6a14066f632a3a81105762ba56fe3b6f93"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  }
+}

@@ -206,22 +206,21 @@ Publication exclusively writes, flushes, syncs and closes all three artifacts pl
 
 ## 21. MP-IMG2-W10 JPEG metadata interpretation
 
-`test_w10_metadata_fixtures.py` and `test_w10_metadata_negative.py` cover the W10
-slice. Fixture tests prove byte-identical regeneration for all nine sources, a real
-baseline stream with `SOF0`/`SOS` and no unknown markers, the four orientation
-values round-tripping through the independent parser, the declared transform
-geometry, the ICC header being self-consistent with its own declared size, both
-truncated variants classifying as `METADATA_TAMPERED`, and duplicate APP segments,
-a wrong ICC declared size and a broken EXIF signature all being rejected. The
-negative suite mutates the retained record in 30 classes — forged orientation value
-or presence, wrong transform request/application, swapped transform dimensions,
-forged ICC presence/length/digest, a truncated profile promoted to the full digest,
-truncated length, colour-context count, GDI+ ICC on an absent profile, structure and
-marker forgery, fixture digest/bytes, leg removal/order/binding, tamper promotion,
-well-formed demotion, a refused leg publishing output, decoded output removed,
-incomplete run, changed unmeasured boundary, work-byte cap, non-reproducible
-structure, forged expectation and a dropped truncated-profile record — and requires
-`verify()` to reject each one.
+`test_w10_metadata_fixtures.py` and `test_w10_metadata_negative.py` cover W10.
+The independent parser checks bounded JPEG segment/entropy/EOI completion,
+EXIF offsets/types/counts/duplicates, orientations 1/3/6/8, ICC header and tag-table
+bounds/alignment/overlap, and invalid/truncated EXIF/ICC. Twelve deterministic
+sources drive 29 real Windows decoder legs; the retained PNG bytes allow portable
+reconstruction of every RGBA output and independent orientation index rotations.
+The 40 negative classes exercise metadata observations, transform requests and
+geometry, PNG bytes/RGBA digests, recomputed pixel comparisons, input/probe identity,
+case completeness, malformed-success classification, bounds and reaped children.
+Mutations preserve coherent captured JSON so the actual invariant must reject the
+forgery. A missing/invalid retained control fails rather than skipping the suite.
+Structural replay does not claim pinned-source closure. Real Windows repetitions,
+the unchanged W1–W9 regressions and the new independent Gates remain distinct from
+portable verification. Decoder differences are preserved; ICC colour correctness,
+absolute JPEG correctness, product policy and full Decode Exit remain unverified.
 
 ## 20. MP-IMG2-W9 progressive JPEG
 

@@ -1,0 +1,20 @@
+{
+  "base": "d2e4be8db0eb6c9133c17561dc4ae26579d7a1e0",
+  "rows": [
+    {
+      "path": "apps/desktop/examples/decode_compare/gdiplus_probe.ps1",
+      "lf_equal_to_accepted_start": true,
+      "git_blob_sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef"
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w8_jpeg_verify.py",
+      "lf_equal_to_accepted_start": true,
+      "git_blob_sha256": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30"
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w9_progressive_verify.py",
+      "lf_equal_to_accepted_start": true,
+      "git_blob_sha256": "sha256:bd5202575bfb763db35b15e8fc3f437a398501ac1899c26603b8da17c55efb65"
+    }
+  ]
+}

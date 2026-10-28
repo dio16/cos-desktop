@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "364097165c58365ac2cf8850a468770085088d10",
+  "source_commit": "95b90483fd3bf4e4619a305c0ec02065ed6b76d8",
   "legs": [
     {
       "case_id": "meta_plain",
@@ -26,8 +26,11 @@
       "output_bytes": 10890,
       "output": {
         "bytes": 10890,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -38,7 +41,7 @@
       "classification": "DECODED_METADATA_OBSERVED",
       "exit_code": 0,
       "outcome": "decoded",
-      "probe": "system-drawing-gdiplus-v1",
+      "probe": "w10-system-drawing-metadata-v1",
       "input_bytes": 5418,
       "orientation_present": false,
       "orientation_raw": null,
@@ -55,8 +58,11 @@
       "output_bytes": 12996,
       "output": {
         "bytes": 12996,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -84,8 +90,11 @@
       "output_bytes": 10890,
       "output": {
         "bytes": 10890,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -113,8 +122,11 @@
       "output_bytes": 10890,
       "output": {
         "bytes": 10890,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -125,7 +137,7 @@
       "classification": "DECODED_METADATA_OBSERVED",
       "exit_code": 0,
       "outcome": "decoded",
-      "probe": "system-drawing-gdiplus-v1",
+      "probe": "w10-system-drawing-metadata-v1",
       "input_bytes": 5454,
       "orientation_present": true,
       "orientation_raw": 1,
@@ -142,8 +154,11 @@
       "output_bytes": 12996,
       "output": {
         "bytes": 12996,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -171,8 +186,11 @@
       "output_bytes": 10890,
       "output": {
         "bytes": 10890,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -200,8 +218,11 @@
       "output_bytes": 10719,
       "output": {
         "bytes": 10719,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:dcd8681592777c8b5a97fe1ad139a19c2391cfbc3d4fca3c1c068be35c4ce15b"
+        "rgba_sha256": "sha256:ac37c7b49abd80f710158ea45f045eca82ff86c4fb24dca2ccbb9616e5ff65f2",
+        "sha256": "sha256:dcd8681592777c8b5a97fe1ad139a19c2391cfbc3d4fca3c1c068be35c4ce15b",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -212,7 +233,7 @@
       "classification": "DECODED_METADATA_OBSERVED",
       "exit_code": 0,
       "outcome": "decoded",
-      "probe": "system-drawing-gdiplus-v1",
+      "probe": "w10-system-drawing-metadata-v1",
       "input_bytes": 5454,
       "orientation_present": true,
       "orientation_raw": 3,
@@ -229,8 +250,11 @@
       "output_bytes": 12996,
       "output": {
         "bytes": 12996,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -258,8 +282,11 @@
       "output_bytes": 10890,
       "output": {
         "bytes": 10890,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -287,8 +314,11 @@
       "output_bytes": 12482,
       "output": {
         "bytes": 12482,
+        "height": 256,
         "present": true,
-        "sha256": "sha256:sha256:793ed7d17485803434cd733643ce2f6eab319ea2238cb81ab12f315c2188cb25"
+        "rgba_sha256": "sha256:6e795f05d1b0224cb49f5ca12f5539aa16f1ce8de1a3711978ed62ccbc1ad9b1",
+        "sha256": "sha256:793ed7d17485803434cd733643ce2f6eab319ea2238cb81ab12f315c2188cb25",
+        "width": 192
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -299,7 +329,7 @@
       "classification": "DECODED_METADATA_OBSERVED",
       "exit_code": 0,
       "outcome": "decoded",
-      "probe": "system-drawing-gdiplus-v1",
+      "probe": "w10-system-drawing-metadata-v1",
       "input_bytes": 5454,
       "orientation_present": true,
       "orientation_raw": 6,
@@ -316,8 +346,11 @@
       "output_bytes": 12996,
       "output": {
         "bytes": 12996,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -345,8 +378,11 @@
       "output_bytes": 10890,
       "output": {
         "bytes": 10890,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -374,8 +410,11 @@
       "output_bytes": 12565,
       "output": {
         "bytes": 12565,
+        "height": 256,
         "present": true,
-        "sha256": "sha256:sha256:f74caf52b61688ac27e4382e643f0b635fd520115b3bdd48dd6834a3168d39b3"
+        "rgba_sha256": "sha256:bd57289ea4bcac3c3b9094354b9aed74cc16573c1261979006f3d73a84082b18",
+        "sha256": "sha256:f74caf52b61688ac27e4382e643f0b635fd520115b3bdd48dd6834a3168d39b3",
+        "width": 192
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -386,7 +425,7 @@
       "classification": "DECODED_METADATA_OBSERVED",
       "exit_code": 0,
       "outcome": "decoded",
-      "probe": "system-drawing-gdiplus-v1",
+      "probe": "w10-system-drawing-metadata-v1",
       "input_bytes": 5454,
       "orientation_present": true,
       "orientation_raw": 8,
@@ -403,8 +442,11 @@
       "output_bytes": 12996,
       "output": {
         "bytes": 12996,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -432,8 +474,11 @@
       "output_bytes": 10680,
       "output": {
         "bytes": 10680,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:0392b0439686b8170235937640f6f4522386106e0d077bad82c7d65be2c7c8f4"
+        "rgba_sha256": "sha256:ac2c0023abc038e3f6075b3e2025b0c6039e9aec71d162bc145b08332b52f8a6",
+        "sha256": "sha256:0392b0439686b8170235937640f6f4522386106e0d077bad82c7d65be2c7c8f4",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -444,7 +489,7 @@
       "classification": "DECODED_METADATA_OBSERVED",
       "exit_code": 0,
       "outcome": "decoded",
-      "probe": "system-drawing-gdiplus-v1",
+      "probe": "w10-system-drawing-metadata-v1",
       "input_bytes": 5976,
       "orientation_present": false,
       "orientation_raw": null,
@@ -461,8 +506,11 @@
       "output_bytes": 12996,
       "output": {
         "bytes": 12996,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -490,8 +538,11 @@
       "output_bytes": null,
       "output": {
         "bytes": 0,
+        "height": null,
         "present": false,
-        "sha256": null
+        "rgba_sha256": null,
+        "sha256": null,
+        "width": null
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -502,7 +553,7 @@
       "classification": "DECODED_TAMPER_NOT_VERIFIED",
       "exit_code": 0,
       "outcome": "decoded",
-      "probe": "system-drawing-gdiplus-v1",
+      "probe": "w10-system-drawing-metadata-v1",
       "input_bytes": 5436,
       "orientation_present": false,
       "orientation_raw": null,
@@ -519,8 +570,11 @@
       "output_bytes": 12996,
       "output": {
         "bytes": 12996,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -548,8 +602,11 @@
       "output_bytes": 10890,
       "output": {
         "bytes": 10890,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -560,7 +617,7 @@
       "classification": "DECODED_TAMPER_NOT_VERIFIED",
       "exit_code": 0,
       "outcome": "decoded",
-      "probe": "system-drawing-gdiplus-v1",
+      "probe": "w10-system-drawing-metadata-v1",
       "input_bytes": 5462,
       "orientation_present": false,
       "orientation_raw": null,
@@ -577,8 +634,203 @@
       "output_bytes": 12996,
       "output": {
         "bytes": 12996,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
+      },
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "exif_invalid",
+      "leg": "wic_metadata",
+      "candidate": "wic",
+      "classification": "DECODED_TAMPER_NOT_VERIFIED",
+      "exit_code": 0,
+      "outcome": "decoded",
+      "probe": "wic-gdiplus-v1",
+      "input_bytes": 5454,
+      "orientation_present": false,
+      "orientation_raw": null,
+      "orientation_interpreted": "absent",
+      "icc_present": false,
+      "icc_readable": false,
+      "icc_length": null,
+      "icc_sha256": null,
+      "colour_contexts": 0,
+      "transform_requested": "none",
+      "transform_applied": "not_requested",
+      "output_width": 256,
+      "output_height": 192,
+      "output_bytes": 10890,
+      "output": {
+        "bytes": 10890,
+        "height": 192,
+        "present": true,
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58",
+        "width": 256
+      },
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "exif_invalid",
+      "leg": "gdiplus_metadata",
+      "candidate": "gdiplus",
+      "classification": "DECODED_TAMPER_NOT_VERIFIED",
+      "exit_code": 0,
+      "outcome": "decoded",
+      "probe": "w10-system-drawing-metadata-v1",
+      "input_bytes": 5454,
+      "orientation_present": null,
+      "orientation_raw": null,
+      "orientation_interpreted": null,
+      "icc_present": null,
+      "icc_readable": false,
+      "icc_length": null,
+      "icc_sha256": null,
+      "colour_contexts": null,
+      "transform_requested": null,
+      "transform_applied": null,
+      "output_width": null,
+      "output_height": null,
+      "output_bytes": 12996,
+      "output": {
+        "bytes": 12996,
+        "height": 192,
+        "present": true,
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
+      },
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "icc_invalid",
+      "leg": "wic_metadata",
+      "candidate": "wic",
+      "classification": "DECODED_TAMPER_NOT_VERIFIED",
+      "exit_code": 0,
+      "outcome": "decoded",
+      "probe": "wic-gdiplus-v1",
+      "input_bytes": 5976,
+      "orientation_present": false,
+      "orientation_raw": null,
+      "orientation_interpreted": "absent",
+      "icc_present": true,
+      "icc_readable": false,
+      "icc_length": null,
+      "icc_sha256": null,
+      "colour_contexts": 1,
+      "transform_requested": "none",
+      "transform_applied": "not_requested",
+      "output_width": 256,
+      "output_height": 192,
+      "output_bytes": 10890,
+      "output": {
+        "bytes": 10890,
+        "height": 192,
+        "present": true,
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58",
+        "width": 256
+      },
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "icc_invalid",
+      "leg": "gdiplus_metadata",
+      "candidate": "gdiplus",
+      "classification": "DECODED_TAMPER_NOT_VERIFIED",
+      "exit_code": 0,
+      "outcome": "decoded",
+      "probe": "w10-system-drawing-metadata-v1",
+      "input_bytes": 5976,
+      "orientation_present": false,
+      "orientation_raw": null,
+      "orientation_interpreted": null,
+      "icc_present": true,
+      "icc_readable": true,
+      "icc_length": 540,
+      "icc_sha256": "sha256:a31a44a65c0f63773e8fa00f0ab1427d023954af833c465ce67070cc8e73e478",
+      "colour_contexts": null,
+      "transform_requested": null,
+      "transform_applied": null,
+      "output_width": null,
+      "output_height": null,
+      "output_bytes": 12996,
+      "output": {
+        "bytes": 12996,
+        "height": 192,
+        "present": true,
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
+      },
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "icc_signature_invalid",
+      "leg": "wic_metadata",
+      "candidate": "wic",
+      "classification": "DECODED_TAMPER_NOT_VERIFIED",
+      "exit_code": 0,
+      "outcome": "decoded",
+      "probe": "wic-gdiplus-v1",
+      "input_bytes": 5976,
+      "orientation_present": false,
+      "orientation_raw": null,
+      "orientation_interpreted": "absent",
+      "icc_present": true,
+      "icc_readable": false,
+      "icc_length": null,
+      "icc_sha256": null,
+      "colour_contexts": 1,
+      "transform_requested": "none",
+      "transform_applied": "not_requested",
+      "output_width": 256,
+      "output_height": 192,
+      "output_bytes": 10890,
+      "output": {
+        "bytes": 10890,
+        "height": 192,
+        "present": true,
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:fbafd141afcb21128fd90f775f31819abd56d557f5df2619bb1f81a34613bb58",
+        "width": 256
+      },
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "icc_signature_invalid",
+      "leg": "gdiplus_metadata",
+      "candidate": "gdiplus",
+      "classification": "DECODED_TAMPER_NOT_VERIFIED",
+      "exit_code": 0,
+      "outcome": "decoded",
+      "probe": "w10-system-drawing-metadata-v1",
+      "input_bytes": 5976,
+      "orientation_present": false,
+      "orientation_raw": null,
+      "orientation_interpreted": null,
+      "icc_present": true,
+      "icc_readable": true,
+      "icc_length": 540,
+      "icc_sha256": "sha256:dbb10522a12c95d63c4f329705d35fb8eb69e68177a57d34065fa258456d39ff",
+      "colour_contexts": null,
+      "transform_requested": null,
+      "transform_applied": null,
+      "output_width": null,
+      "output_height": null,
+      "output_bytes": 12996,
+      "output": {
+        "bytes": 12996,
+        "height": 192,
+        "present": true,
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -606,8 +858,11 @@
       "output_bytes": 10680,
       "output": {
         "bytes": 10680,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:0392b0439686b8170235937640f6f4522386106e0d077bad82c7d65be2c7c8f4"
+        "rgba_sha256": "sha256:ac2c0023abc038e3f6075b3e2025b0c6039e9aec71d162bc145b08332b52f8a6",
+        "sha256": "sha256:0392b0439686b8170235937640f6f4522386106e0d077bad82c7d65be2c7c8f4",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -635,8 +890,11 @@
       "output_bytes": 12869,
       "output": {
         "bytes": 12869,
+        "height": 256,
         "present": true,
-        "sha256": "sha256:sha256:6ff90541150603cf2a5342eb14e37b0bb9296dfa93d2cac3b25a2066487ae9ce"
+        "rgba_sha256": "sha256:6f38f5dd84255048153458e6c22b21f53c23d59a5af17e5de5cc43ebd7fc6a9e",
+        "sha256": "sha256:6ff90541150603cf2a5342eb14e37b0bb9296dfa93d2cac3b25a2066487ae9ce",
+        "width": 192
       },
       "lifetime": "NOT_MEASURED"
     },
@@ -647,7 +905,7 @@
       "classification": "DECODED_METADATA_OBSERVED",
       "exit_code": 0,
       "outcome": "decoded",
-      "probe": "system-drawing-gdiplus-v1",
+      "probe": "w10-system-drawing-metadata-v1",
       "input_bytes": 6012,
       "orientation_present": true,
       "orientation_raw": 6,
@@ -664,12 +922,15 @@
       "output_bytes": 12996,
       "output": {
         "bytes": 12996,
+        "height": 192,
         "present": true,
-        "sha256": "sha256:sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859"
+        "rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "sha256": "sha256:97d0315a2bd4d0cc48c471ae497bca19aae00b8acac00a33a526ca914f4f5859",
+        "width": 256
       },
       "lifetime": "NOT_MEASURED"
     }
   ],
-  "leg_count": 23,
+  "leg_count": 29,
   "note": "WIC metadata legs request observation only; the transform leg is the only path that asks WIC to rotate."
 }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "364097165c58365ac2cf8850a468770085088d10",
+  "source_commit": "95b90483fd3bf4e4619a305c0ec02065ed6b76d8",
   "fixtures": [
     {
       "case_id": "meta_plain",
@@ -14,7 +14,8 @@
         "SOF0",
         "DHT",
         "DHT",
-        "SOS"
+        "SOS",
+        "EOI"
       ],
       "classification": "METADATA_ABSENT",
       "exif": null,
@@ -39,7 +40,8 @@
         "SOF0",
         "DHT",
         "DHT",
-        "SOS"
+        "SOS",
+        "EOI"
       ],
       "classification": "METADATA_PARSED",
       "exif": {
@@ -70,7 +72,8 @@
         "SOF0",
         "DHT",
         "DHT",
-        "SOS"
+        "SOS",
+        "EOI"
       ],
       "classification": "METADATA_PARSED",
       "exif": {
@@ -101,7 +104,8 @@
         "SOF0",
         "DHT",
         "DHT",
-        "SOS"
+        "SOS",
+        "EOI"
       ],
       "classification": "METADATA_PARSED",
       "exif": {
@@ -132,7 +136,8 @@
         "SOF0",
         "DHT",
         "DHT",
-        "SOS"
+        "SOS",
+        "EOI"
       ],
       "classification": "METADATA_PARSED",
       "exif": {
@@ -163,7 +168,8 @@
         "SOF0",
         "DHT",
         "DHT",
-        "SOS"
+        "SOS",
+        "EOI"
       ],
       "classification": "METADATA_PARSED",
       "exif": null,
@@ -199,7 +205,8 @@
         "SOF0",
         "DHT",
         "DHT",
-        "SOS"
+        "SOS",
+        "EOI"
       ],
       "classification": "METADATA_TAMPERED",
       "exif": null,
@@ -224,7 +231,8 @@
         "SOF0",
         "DHT",
         "DHT",
-        "SOS"
+        "SOS",
+        "EOI"
       ],
       "classification": "METADATA_TAMPERED",
       "exif": null,
@@ -234,6 +242,92 @@
       "icc_partial": {
         "bytes": 26,
         "payload_sha256": "sha256:6a5b9b7dc477ea39cdd6d8c72b9afc4ac05b1ce0f4f10b72ad6cd2bd5656b4d0",
+        "declared_size": 540
+      },
+      "expected_transform": "none",
+      "expected_output_width": 256,
+      "expected_output_height": 192
+    },
+    {
+      "case_id": "exif_invalid",
+      "kind": "malformed",
+      "bytes": 5454,
+      "sha256": "sha256:22ed0bba87f8971775c0335ad5713b282558b54d24443fcac0d862c983dc5530",
+      "markers": [
+        "SOI",
+        "APP1",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS",
+        "EOI"
+      ],
+      "classification": "METADATA_TAMPERED",
+      "exif": null,
+      "exif_error": "ValueError:exif_orientation_type_invalid",
+      "icc": null,
+      "icc_error": null,
+      "icc_partial": null,
+      "expected_transform": "none",
+      "expected_output_width": 256,
+      "expected_output_height": 192
+    },
+    {
+      "case_id": "icc_invalid",
+      "kind": "malformed",
+      "bytes": 5976,
+      "sha256": "sha256:007be67552d6f3ebad8c38f2838ad5649ba5d4c6d7928d80acdd835ca4491e3d",
+      "markers": [
+        "SOI",
+        "APP2",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS",
+        "EOI"
+      ],
+      "classification": "METADATA_TAMPERED",
+      "exif": null,
+      "exif_error": null,
+      "icc": null,
+      "icc_error": "ValueError:icc_declared_size_mismatch",
+      "icc_partial": {
+        "bytes": 540,
+        "payload_sha256": "sha256:a31a44a65c0f63773e8fa00f0ab1427d023954af833c465ce67070cc8e73e478",
+        "declared_size": 544
+      },
+      "expected_transform": "none",
+      "expected_output_width": 256,
+      "expected_output_height": 192
+    },
+    {
+      "case_id": "icc_signature_invalid",
+      "kind": "malformed",
+      "bytes": 5976,
+      "sha256": "sha256:fbe595d9c0d1fbfb252fc396bdf9d5cc1666c723597b6dd4d5a0f4f3f409ddb4",
+      "markers": [
+        "SOI",
+        "APP2",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS",
+        "EOI"
+      ],
+      "classification": "METADATA_TAMPERED",
+      "exif": null,
+      "exif_error": null,
+      "icc": null,
+      "icc_error": "ValueError:icc_signature_invalid",
+      "icc_partial": {
+        "bytes": 540,
+        "payload_sha256": "sha256:dbb10522a12c95d63c4f329705d35fb8eb69e68177a57d34065fa258456d39ff",
         "declared_size": 540
       },
       "expected_transform": "none",
@@ -254,7 +348,8 @@
         "SOF0",
         "DHT",
         "DHT",
-        "SOS"
+        "SOS",
+        "EOI"
       ],
       "classification": "METADATA_PARSED",
       "exif": {

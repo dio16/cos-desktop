@@ -1,0 +1,8 @@
+{
+  "observed_after_native_runs": true,
+  "powershell": "7.6.7",
+  "dotnet": ".NET 10.0.13",
+  "os": "Microsoft Windows NT 10.0.26300.0",
+  "wic": "10.0.26100.9711 (WinBuild.160101.0800)",
+  "gdiplus": "10.0.26100.9711 (WinBuild.160101.0800)"
+}

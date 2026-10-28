@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "364097165c58365ac2cf8850a468770085088d10",
+  "source_commit": "95b90483fd3bf4e4619a305c0ec02065ed6b76d8",
   "cases": [
     {
       "case_id": "meta_plain",
@@ -202,7 +202,79 @@
         }
       ],
       "expected": {
+        "icc_present": true,
+        "icc_sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
+        "orientation": null,
+        "output_height": 192,
+        "output_width": 256,
+        "transform": "none"
+      }
+    },
+    {
+      "case_id": "exif_invalid",
+      "kind": "malformed",
+      "structure_classification": "METADATA_TAMPERED",
+      "row_classification": "TAMPER_CLASSIFIED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "DECODED_TAMPER_NOT_VERIFIED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_TAMPER_NOT_VERIFIED"
+        }
+      ],
+      "expected": {
         "icc_present": false,
+        "icc_sha256": null,
+        "orientation": null,
+        "output_height": 192,
+        "output_width": 256,
+        "transform": "none"
+      }
+    },
+    {
+      "case_id": "icc_invalid",
+      "kind": "malformed",
+      "structure_classification": "METADATA_TAMPERED",
+      "row_classification": "TAMPER_CLASSIFIED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "DECODED_TAMPER_NOT_VERIFIED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_TAMPER_NOT_VERIFIED"
+        }
+      ],
+      "expected": {
+        "icc_present": true,
+        "icc_sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
+        "orientation": null,
+        "output_height": 192,
+        "output_width": 256,
+        "transform": "none"
+      }
+    },
+    {
+      "case_id": "icc_signature_invalid",
+      "kind": "malformed",
+      "structure_classification": "METADATA_TAMPERED",
+      "row_classification": "TAMPER_CLASSIFIED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "DECODED_TAMPER_NOT_VERIFIED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_TAMPER_NOT_VERIFIED"
+        }
+      ],
+      "expected": {
+        "icc_present": true,
         "icc_sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
         "orientation": null,
         "output_height": 192,
@@ -240,11 +312,566 @@
     }
   ],
   "counts": {
-    "metadata_parsed": 6,
-    "metadata_absent": 1,
-    "metadata_tampered": 2,
-    "differential": 6,
-    "control": 1,
-    "tamper": 2
+    "metadata_tampered": 5
+  },
+  "pixel_relations": {
+    "exif_icc_combined": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        },
+        "wic_metadata": {
+          "differing_pixels": 49152,
+          "exact": false,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 63,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:ac2c0023abc038e3f6075b3e2025b0c6039e9aec71d162bc145b08332b52f8a6",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": {
+        "differing_pixels": 49152,
+        "exact": false,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:ac2c0023abc038e3f6075b3e2025b0c6039e9aec71d162bc145b08332b52f8a6",
+        "left_width": 256,
+        "maximum_channel_difference": 63,
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      },
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": {
+        "degrees": 90,
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 256,
+        "left_rgba_sha256": "sha256:6f38f5dd84255048153458e6c22b21f53c23d59a5af17e5de5cc43ebd7fc6a9e",
+        "left_width": 192,
+        "maximum_channel_difference": 0,
+        "reference": "independent index rotation of the untransformed decoded raster",
+        "right_height": 256,
+        "right_rgba_sha256": "sha256:6f38f5dd84255048153458e6c22b21f53c23d59a5af17e5de5cc43ebd7fc6a9e",
+        "right_width": 192
+      }
+    },
+    "exif_invalid": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        },
+        "wic_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": {
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "left_width": 256,
+        "maximum_channel_difference": 0,
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      },
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": null
+    },
+    "exif_orient1": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        },
+        "wic_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": {
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "left_width": 256,
+        "maximum_channel_difference": 0,
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      },
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": {
+        "degrees": 0,
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "left_width": 256,
+        "maximum_channel_difference": 0,
+        "reference": "independent index rotation of the untransformed decoded raster",
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      }
+    },
+    "exif_orient3": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        },
+        "wic_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": {
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "left_width": 256,
+        "maximum_channel_difference": 0,
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      },
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": {
+        "degrees": 180,
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:ac37c7b49abd80f710158ea45f045eca82ff86c4fb24dca2ccbb9616e5ff65f2",
+        "left_width": 256,
+        "maximum_channel_difference": 0,
+        "reference": "independent index rotation of the untransformed decoded raster",
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:ac37c7b49abd80f710158ea45f045eca82ff86c4fb24dca2ccbb9616e5ff65f2",
+        "right_width": 256
+      }
+    },
+    "exif_orient6": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        },
+        "wic_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": {
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "left_width": 256,
+        "maximum_channel_difference": 0,
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      },
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": {
+        "degrees": 90,
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 256,
+        "left_rgba_sha256": "sha256:6e795f05d1b0224cb49f5ca12f5539aa16f1ce8de1a3711978ed62ccbc1ad9b1",
+        "left_width": 192,
+        "maximum_channel_difference": 0,
+        "reference": "independent index rotation of the untransformed decoded raster",
+        "right_height": 256,
+        "right_rgba_sha256": "sha256:6e795f05d1b0224cb49f5ca12f5539aa16f1ce8de1a3711978ed62ccbc1ad9b1",
+        "right_width": 192
+      }
+    },
+    "exif_orient8": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        },
+        "wic_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": {
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "left_width": 256,
+        "maximum_channel_difference": 0,
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      },
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": {
+        "degrees": 270,
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 256,
+        "left_rgba_sha256": "sha256:bd57289ea4bcac3c3b9094354b9aed74cc16573c1261979006f3d73a84082b18",
+        "left_width": 192,
+        "maximum_channel_difference": 0,
+        "reference": "independent index rotation of the untransformed decoded raster",
+        "right_height": 256,
+        "right_rgba_sha256": "sha256:bd57289ea4bcac3c3b9094354b9aed74cc16573c1261979006f3d73a84082b18",
+        "right_width": 192
+      }
+    },
+    "exif_truncated": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": null,
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": null
+    },
+    "icc_invalid": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        },
+        "wic_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": {
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "left_width": 256,
+        "maximum_channel_difference": 0,
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      },
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": null
+    },
+    "icc_signature_invalid": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        },
+        "wic_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": {
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "left_width": 256,
+        "maximum_channel_difference": 0,
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      },
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": null
+    },
+    "icc_truncated": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        },
+        "wic_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": {
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "left_width": 256,
+        "maximum_channel_difference": 0,
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      },
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": null
+    },
+    "icc_valid": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        },
+        "wic_metadata": {
+          "differing_pixels": 49152,
+          "exact": false,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 63,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:ac2c0023abc038e3f6075b3e2025b0c6039e9aec71d162bc145b08332b52f8a6",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": {
+        "differing_pixels": 49152,
+        "exact": false,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:ac2c0023abc038e3f6075b3e2025b0c6039e9aec71d162bc145b08332b52f8a6",
+        "left_width": 256,
+        "maximum_channel_difference": 63,
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      },
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": null
+    },
+    "meta_plain": {
+      "control_relations": {
+        "gdiplus_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        },
+        "wic_metadata": {
+          "differing_pixels": 0,
+          "exact": true,
+          "geometry_equal": true,
+          "left_height": 192,
+          "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "left_width": 256,
+          "maximum_channel_difference": 0,
+          "right_height": 192,
+          "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+          "right_width": 256
+        }
+      },
+      "decoder_differential": {
+        "differing_pixels": 0,
+        "exact": true,
+        "geometry_equal": true,
+        "left_height": 192,
+        "left_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "left_width": 256,
+        "maximum_channel_difference": 0,
+        "right_height": 192,
+        "right_rgba_sha256": "sha256:5c2cf19f9be5b4f3857c7fc568af7128d5285d5bf82fdb46f2307e398bb304d3",
+        "right_width": 256
+      },
+      "icc_colour_conversion": "NOT_MEASURED",
+      "jpeg_absolute_correctness": "NOT_VERIFIED",
+      "orientation_relation": null
+    }
   }
 }

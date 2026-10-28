@@ -1,63 +1,106 @@
 {
   "schema_version": 1,
-  "native_source": "364097165c58365ac2cf8850a468770085088d10",
-  "candidate": "3fa215986d4ebc5855ca8a5db5672c7643e63b31",
-  "run_id": "native-r10-work",
-  "cases": 9,
-  "legs": 23,
+  "native_source": "95b90483fd3bf4e4619a305c0ec02065ed6b76d8",
+  "candidate": "Native source in this pre-Gate manifest; exact Gate candidate will be bound by the independent receipts and reconciliation.",
+  "run_id": "complete-native-r2-work",
+  "cases": 12,
+  "legs": 29,
   "verify": {
     "ok": true,
-    "cases": 9,
-    "legs": 23,
-    "metadata_parsed": 6,
-    "metadata_absent": 1,
-    "metadata_tampered": 2,
-    "differential": 6,
-    "control": 1,
-    "tamper": 2,
+    "cases": 12,
+    "legs": 29,
     "source_identity_verified": true,
-    "closure_eligible": true
+    "closure_eligible": true,
+    "metadata_tampered": 5,
+    "orientation_relations_verified": 5,
+    "icc_colour_conversion": "NOT_MEASURED",
+    "jpeg_absolute_correctness": "NOT_VERIFIED"
   },
   "files": [
     {
+      "path": "decoder-environment.json",
+      "bytes": 244,
+      "sha256": "sha256:7a05db5a4c96fc8ca200d6e07ad2ee0dbc823fe997be5498af8ff96a078bd999"
+    },
+    {
       "path": "differential-summary.json",
-      "bytes": 6682,
-      "sha256": "sha256:9283f20d9a0390f1055d13915eb054540941be3d14dbd98972871f6c6429a4f6"
+      "bytes": 30835,
+      "sha256": "sha256:3b0b9663b89a7c74940ee5ff2b2ad8e66d4fa97df11e83d0e77afd42190fd64c"
+    },
+    {
+      "path": "docs-validation.json",
+      "bytes": 399,
+      "sha256": "sha256:f569769743164f0c147b800f6d63593b44063688699b610c7b832d77b42fe0c6"
     },
     {
       "path": "environment.json",
-      "bytes": 1069,
-      "sha256": "sha256:f355b1a36730572cfe3f985594b9563183b9ec979197ca7bdb6d6659870667ac"
+      "bytes": 981,
+      "sha256": "sha256:6efa76d3a2a04dd01cb785c6e33d35eadde81c0638ad36c2f975de96128ed4d9"
     },
     {
       "path": "fixture-manifest.json",
-      "bytes": 7432,
-      "sha256": "sha256:ef426ab701f4f326fc3b1c7f754c07728f05109cf0dc3abb69ac82d30560582c"
+      "bytes": 9852,
+      "sha256": "sha256:16637d96385d22dc79ed1254a65f0394b9a79bf0ecaa1e3aba44326401069eab"
     },
     {
       "path": "leg-observations.json",
-      "bytes": 21004,
-      "sha256": "sha256:e9eacd35fbecb08fff9552cd5fed80fd6221d5d4b41dc4be7409fe5b4c8ea04d"
+      "bytes": 30429,
+      "sha256": "sha256:78ad3896550946b26f74ed58822207c46a0d76a2e3f0a9222e4c7d3e26c5e4bc"
+    },
+    {
+      "path": "legacy-preservation.json",
+      "bytes": 737,
+      "sha256": "sha256:9662ae02ced28483e925a3cdebdb61e0151ba08bf65fab6aeb1ba9e065e6d220"
     },
     {
       "path": "native-metadata-matrix.json",
-      "bytes": 67788,
-      "sha256": "sha256:f3fc079cb69edd8f7fb506051e19dc795d852f80ad77b68511250c4ad128b75d"
+      "bytes": 773426,
+      "sha256": "sha256:d7088cb6bed2b4c8eab809a8668d21dadc2016e95b98a9feb5a866814896faf2"
+    },
+    {
+      "path": "native-repeat-matrix.json",
+      "bytes": 773427,
+      "sha256": "sha256:6931e1f585549101e3c0dba53e2d12fa749ceed1a60753bc28e5297e97a0f586"
     },
     {
       "path": "negative-tests.json",
-      "bytes": 4547,
-      "sha256": "sha256:8f66f4761e6a2a720526bbf8a373781f0eba335a06f53e09d7428db17fce00a7"
+      "bytes": 6151,
+      "sha256": "sha256:435e9a6f23d0a51f746e9659e1384f945f8e7ff58d0dae678510f6828f7ebc06"
+    },
+    {
+      "path": "quality.json",
+      "bytes": 2211,
+      "sha256": "sha256:ae267a2e1b188931f63422e1eb43a4dc6274d549892f870976161cf5f2a04785"
+    },
+    {
+      "path": "repeat-comparison.json",
+      "bytes": 450,
+      "sha256": "sha256:b7a2789591ce86312eb63846dbdea3f3ed60534370119b222e72421c774b84fd"
+    },
+    {
+      "path": "taskern-request.json",
+      "bytes": 6107,
+      "sha256": "sha256:009cbbafbbfd5bfe98bcf548f4d94eed550bf6e0c47e4b4b0215642b0bde6e55"
+    },
+    {
+      "path": "taskern-response.json",
+      "bytes": 8269,
+      "sha256": "sha256:30e9fe05de1e0df987ac0ba3f0cb34892f3002ef06fdcc517976df7312fe34b7"
+    },
+    {
+      "path": "tool-use.json",
+      "bytes": 772,
+      "sha256": "sha256:9db1f8ae24de4ce6385bdf2fd92a967b11a28ddf9dff0145bd704702e9de700f"
     },
     {
       "path": "unmeasured.json",
-      "bytes": 705,
-      "sha256": "sha256:9f0949dfe60f6fa1cb88b8fb12f1842ad01309f4c562d4935c88d4b05c15a575"
+      "bytes": 788,
+      "sha256": "sha256:7e7847f2dbb53882683b79eb73f6dc7216ae0457bc238273feea9d86676e3d29"
     },
     {
       "path": "verifier-results.json",
-      "bytes": 235,
-      "sha256": "sha256:5c96cee7f54c077536771334763d24b6da6c1aad56fb674e2f67aed717320e0e"
+      "bytes": 265,
+      "sha256": "sha256:d93976904a52cd3edc94efc212c7eb8fdc8d9b776aae8f2b3e3159b1fdaae00a"
     }
   ]
 }
