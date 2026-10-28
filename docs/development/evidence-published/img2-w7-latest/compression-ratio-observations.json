@@ -66,5 +66,5 @@
       "refused_despite_small_encoded_size": false
     }
   ],
-  "note": "Encoded size never substitutes for the decoded requirement; large PNGs are refused although their encoded bytes are small."
+  "note": "Encoded size never substitutes for the decoded requirement."
 }

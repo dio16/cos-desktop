@@ -176,8 +176,65 @@
       "ok": false,
       "error": "ValueError",
       "reason": "run_deadline_exceeded"
+    },
+    {
+      "number": 25,
+      "mutation": "probe_decoded_bytes_zero",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "probe_requirement_mismatch:png_4096:decoded_bytes_required"
+    },
+    {
+      "number": 26,
+      "mutation": "probe_pixel_format_swapped",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "probe_pixel_format_mismatch:png_2048"
+    },
+    {
+      "number": 27,
+      "mutation": "probe_width_shrunk",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "probe_requirement_mismatch:png_2048:width"
+    },
+    {
+      "number": 28,
+      "mutation": "refusal_scratch_zero",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "refusal_requirement_contradiction:png_16384:scratch_bytes_required"
+    },
+    {
+      "number": 29,
+      "mutation": "corrupt_outcome_swapped",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "corrupt_terminal_stage_mismatch:corrupt_4096_dimension"
+    },
+    {
+      "number": 30,
+      "mutation": "corrupt_publication_flipped",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "corrupt_decode_publication_inconsistent:corrupt_4096_dimension"
+    },
+    {
+      "number": 31,
+      "mutation": "corrupt_output_digest_forged",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "corrupt_output_payload_inconsistent:corrupt_4096_truncated"
+    },
+    {
+      "number": 32,
+      "mutation": "corrupt_oracle_promoted",
+      "ok": false,
+      "error": "ValueError",
+      "reason": "corrupt_oracle_promoted:corrupt_4096_truncated"
     }
   ],
-  "all_rejected": true,
-  "count": 24
+  "required_classes": 24,
+  "shipped_classes": 32,
+  "all_rejected": true
 }

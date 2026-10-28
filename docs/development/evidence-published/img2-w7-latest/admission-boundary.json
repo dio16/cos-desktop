@@ -52,10 +52,12 @@
         "admission_status": "admitted",
         "materialization": "completed",
         "decoder": "PngBitmapDecoder",
+        "pixel_format": "Bgr24",
         "decoded_bytes_required": 12582912,
         "bgra32_bytes_required": 16777216,
         "scratch_bytes_required": 16777216
       },
+      "probe_matches_declared": true,
       "onload_reached": true,
       "output_present": true,
       "published_success": true
@@ -88,10 +90,12 @@
         "admission_status": "admitted",
         "materialization": "completed",
         "decoder": "PngBitmapDecoder",
+        "pixel_format": "Bgr24",
         "decoded_bytes_required": 50331648,
         "bgra32_bytes_required": 67108864,
         "scratch_bytes_required": 67108864
       },
+      "probe_matches_declared": true,
       "onload_reached": true,
       "output_present": true,
       "published_success": true
@@ -124,10 +128,12 @@
         "admission_status": "admitted",
         "materialization": "completed",
         "decoder": "BmpBitmapDecoder",
+        "pixel_format": "Bgr24",
         "decoded_bytes_required": 12582912,
         "bgra32_bytes_required": 16777216,
         "scratch_bytes_required": 16777216
       },
+      "probe_matches_declared": true,
       "onload_reached": true,
       "output_present": true,
       "published_success": true
@@ -160,10 +166,12 @@
         "admission_status": "admitted",
         "materialization": "completed",
         "decoder": "BmpBitmapDecoder",
+        "pixel_format": "Bgr24",
         "decoded_bytes_required": 50331648,
         "bgra32_bytes_required": 67108864,
         "scratch_bytes_required": 67108864
       },
+      "probe_matches_declared": true,
       "onload_reached": true,
       "output_present": true,
       "published_success": true
@@ -196,10 +204,12 @@
         "admission_status": "admitted",
         "materialization": "completed",
         "decoder": "BmpBitmapDecoder",
+        "pixel_format": "Bgr565",
         "decoded_bytes_required": 8388608,
         "bgra32_bytes_required": 16777216,
         "scratch_bytes_required": 16777216
       },
+      "probe_matches_declared": true,
       "onload_reached": true,
       "output_present": true,
       "published_success": true
@@ -232,10 +242,12 @@
         "admission_status": "admitted",
         "materialization": "completed",
         "decoder": "BmpBitmapDecoder",
+        "pixel_format": "Bgr565",
         "decoded_bytes_required": 33554432,
         "bgra32_bytes_required": 67108864,
         "scratch_bytes_required": 67108864
       },
+      "probe_matches_declared": true,
       "onload_reached": true,
       "output_present": true,
       "published_success": true
@@ -268,10 +280,12 @@
         "admission_status": "refused",
         "materialization": "not_requested",
         "decoder": "PngBitmapDecoder",
+        "pixel_format": "Bgr24",
         "decoded_bytes_required": null,
         "bgra32_bytes_required": null,
         "scratch_bytes_required": null
       },
+      "probe_matches_declared": true,
       "onload_reached": false,
       "output_present": false,
       "published_success": false
@@ -304,10 +318,12 @@
         "admission_status": "refused",
         "materialization": "not_requested",
         "decoder": "PngBitmapDecoder",
+        "pixel_format": "Bgr24",
         "decoded_bytes_required": null,
         "bgra32_bytes_required": null,
         "scratch_bytes_required": null
       },
+      "probe_matches_declared": true,
       "onload_reached": false,
       "output_present": false,
       "published_success": false
@@ -340,10 +356,12 @@
         "admission_status": "refused",
         "materialization": "not_requested",
         "decoder": "PngBitmapDecoder",
+        "pixel_format": "Bgr24",
         "decoded_bytes_required": null,
         "bgra32_bytes_required": null,
         "scratch_bytes_required": null
       },
+      "probe_matches_declared": true,
       "onload_reached": false,
       "output_present": false,
       "published_success": false
@@ -376,10 +394,12 @@
         "admission_status": "refused",
         "materialization": "not_requested",
         "decoder": "PngBitmapDecoder",
+        "pixel_format": "Bgr24",
         "decoded_bytes_required": null,
         "bgra32_bytes_required": null,
         "scratch_bytes_required": null
       },
+      "probe_matches_declared": true,
       "onload_reached": false,
       "output_present": false,
       "published_success": false
@@ -412,10 +432,12 @@
         "admission_status": "admitted",
         "materialization": "completed",
         "decoder": "PngBitmapDecoder",
+        "pixel_format": "Bgr24",
         "decoded_bytes_required": 50331648,
         "bgra32_bytes_required": 67108864,
         "scratch_bytes_required": 67108864
       },
+      "probe_matches_declared": true,
       "onload_reached": true,
       "output_present": true,
       "published_success": true
@@ -448,10 +470,12 @@
         "admission_status": "admitted",
         "materialization": "completed",
         "decoder": "PngBitmapDecoder",
+        "pixel_format": "Bgr24",
         "decoded_bytes_required": 49152000,
         "bgra32_bytes_required": 65536000,
         "scratch_bytes_required": 65536000
       },
+      "probe_matches_declared": true,
       "onload_reached": true,
       "output_present": true,
       "published_success": true

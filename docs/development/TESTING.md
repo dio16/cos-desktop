@@ -215,7 +215,7 @@ prove that the full-frame requirement — not the 1×1 ROI output — decides
 refusal, that encoded size is never used as the decoded budget, and that the
 materialized cases sit exactly inside the experimental limits. Oracle tests
 reject a corrupted CRC, an incomplete inflate stream and a wrong byte-lane
-addition. The negative suite mutates the retained real record in 24 classes
+addition. The negative suite mutates the retained real record in 32 classes (the 24 required plus probe-result and corrupt-worker consistency)
 (declared width, codec, bpp, encoded-as-decoded bytes, promoted 8K/16K
 admissions, ROI reduction, tampered budget values, OnLoad in a refusal,
 published output or success after refusal, terminal-stage disagreement, fixture

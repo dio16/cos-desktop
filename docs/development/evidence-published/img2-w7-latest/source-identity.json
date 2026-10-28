@@ -94,10 +94,10 @@
         "unchanged_after_run": true
       },
       "apps/desktop/devtools/img2/w7_large_verify.py": {
-        "bytes": 26678,
-        "git_blob_sha256": "sha256:2aaba664730581f0a4b1d424a2b1588a89c41a9ff9e7af06b874027ef2a41766",
-        "lf_sha256": "sha256:2aaba664730581f0a4b1d424a2b1588a89c41a9ff9e7af06b874027ef2a41766",
-        "raw_sha256": "sha256:2aaba664730581f0a4b1d424a2b1588a89c41a9ff9e7af06b874027ef2a41766",
+        "bytes": 30502,
+        "git_blob_sha256": "sha256:74d8ca71fd545bf2991316c2fd6c34073b376763744cfc380b43b97e5ab554f8",
+        "lf_sha256": "sha256:74d8ca71fd545bf2991316c2fd6c34073b376763744cfc380b43b97e5ab554f8",
+        "raw_sha256": "sha256:74d8ca71fd545bf2991316c2fd6c34073b376763744cfc380b43b97e5ab554f8",
         "unchanged_after_run": true
       },
       "apps/desktop/examples/decode_compare.rs": {
@@ -160,7 +160,7 @@
     "harness_sha256": "sha256:670071ef83f57e554e376e1adc6ef00c5eac68a2d1b4f6fa3638dea4e74d3514",
     "normalization": "Raw Native hashes plus explicitly declared LF-normalized Git correspondence",
     "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
-    "source_commit": "dbb42bb55a98563e9daea6ecd3002a7ca5d02cca"
+    "source_commit": "f080f4c5987b9c5745ad42bfa2a8975e4747e5ed"
   },
-  "experimental_source": "dbb42bb55a98563e9daea6ecd3002a7ca5d02cca"
+  "experimental_source": "f080f4c5987b9c5745ad42bfa2a8975e4747e5ed"
 }

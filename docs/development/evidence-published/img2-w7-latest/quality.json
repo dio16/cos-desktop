@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "native_source": "21b7aff2410fe12741f0cd4691a7c08dedbefaef",
+  "native_source": "f080f4c5987b9c5745ad42bfa2a8975e4747e5ed",
   "checks": {
     "quality.ps1": {
       "log": "C:\\dev\\cos-desktop-verification\\img2-w7-2026-10-28\\rust-quality.log",
@@ -69,8 +69,8 @@
   "img2": {
     "passed": 180,
     "failed": 0,
-    "w7_methods": 24,
-    "negative_classes": 24
+    "w7_methods": 32,
+    "negative_classes": 32
   },
   "r0": {
     "total": 352,
