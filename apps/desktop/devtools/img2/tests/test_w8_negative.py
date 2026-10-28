@@ -28,6 +28,8 @@ NEGATIVE_NAMES = (
     "old_source_commit", "timeout_as_confirmed_cancel",
     "wic_outcome_flipped_corrupt", "gdiplus_outcome_flipped_error",
     "malformed_legs_removed", "malformed_output_forged",
+    "malformed_worker_outcome_mismatch", "gdiplus_width_forged",
+    "gdiplus_input_bytes_forged", "gdiplus_output_bytes_forged",
 )
 
 
@@ -146,6 +148,14 @@ def mutation(record, number):
     elif number == 36:
         leg = _leg(record, "malformed_truncated", "wic")["leg"]
         leg["output"]["sha256"] = "sha256:" + "5" * 64
+    elif number == 37:
+        _leg(record, "malformed_truncated", "wic")["leg"]["outcome"] = "error"
+    elif number == 38:
+        _leg(record, "dc_gray_8x8", "gdiplus")["leg"]["probe_result"]["width"] = 2048
+    elif number == 39:
+        _leg(record, "dc_gray_16x16", "gdiplus")["leg"]["probe_result"]["input_bytes"] = 1
+    elif number == 40:
+        _leg(record, "jpeg_420_256", "gdiplus")["leg"]["probe_result"]["output_bytes"] = 1
     else:
         raise ValueError("unknown negative class")
 
