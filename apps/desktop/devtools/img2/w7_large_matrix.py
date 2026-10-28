@@ -133,6 +133,7 @@ def run_case(case, work, pwsh, fixtures, started, executable_sha):
                                                BOUNDS["max_report_bytes"])
                 except (OSError, ValueError, KeyError, TypeError) as exc:
                     record["oracle_error"] = type(exc).__name__ + ":" + str(exc)[:120]
+            record["sample"] = row["sample"]
             row["worker"] = record
             row["classification"] = classify(case, record)
         finally:
