@@ -168,8 +168,8 @@
       "wic": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c"
     },
     "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
-    "source_commit": "c0b90847daea88aea5f51d4c3b88d2ad4eff959b"
+    "source_commit": "2142ebae822e509c63c4877dd3a81415d4923f3f"
   },
-  "experimental_source": "c0b90847daea88aea5f51d4c3b88d2ad4eff959b",
+  "experimental_source": "2142ebae822e509c63c4877dd3a81415d4923f3f",
   "taskern_packet_sha256": "sha256:b05828a2d7f4ea3271279a49156414ca66f46f0377701c36c6e3519004394233"
 }

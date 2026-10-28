@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source": "c0b90847daea88aea5f51d4c3b88d2ad4eff959b",
+  "source": "2142ebae822e509c63c4877dd3a81415d4923f3f",
   "platform": {
     "dotnet": ".NET 10.0.13",
     "os": "Microsoft Windows NT 10.0.26300.0",
@@ -33,7 +33,7 @@
     "max_pixels": 4194304,
     "max_scratch_bytes": 16777216
   },
-  "duration_ns": 16967806500,
+  "duration_ns": 16905850700,
   "work_bytes": 444320,
   "total_sources": 5,
   "decoder_legs_total": 10,

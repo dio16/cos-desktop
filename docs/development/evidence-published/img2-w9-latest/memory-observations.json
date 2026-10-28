@@ -12,7 +12,7 @@
         "classification": "DERIVED_WINDOW_SUM",
         "clock_domain": "python_monotonic_ns",
         "complete": true,
-        "end_ns": 157914969863000,
+        "end_ns": 158458950736700,
         "failure": null,
         "gap_ns": null,
         "index": 0,
@@ -24,17 +24,17 @@
           "stderr_bytes": 0,
           "stderr_utf8": "",
           "stdout_bytes": 491,
-          "stdout_utf8": "{\"samples\":[{\"case_id\":\"progressive_gray_256_wic\",\"pid\":65920,\"start_utc_ticks\":639287800127840202,\"identity_after_ticks\":639287800127840202,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":114262016,\"private_bytes\":40550400,\"peak_working_set_bytes\":114262016,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1579148585210,\"qpc_end\":1579148796675}],\"errors\":[],\"qpc_start\":1579148339161,\"qpc_end\":1579148865346,\"qpc_frequency\":10000000}\r\n",
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"progressive_gray_256_wic\",\"pid\":62940,\"start_utc_ticks\":639287805568102361,\"identity_after_ticks\":639287805568102361,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":114073600,\"private_bytes\":40579072,\"peak_working_set_bytes\":114073600,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1584588372952,\"qpc_end\":1584588588604}],\"errors\":[],\"qpc_start\":1584588175944,\"qpc_end\":1584588643959,\"qpc_frequency\":10000000}\r\n",
           "timeout": false
         },
-        "qpc_end": 1579148865346,
+        "qpc_end": 1584588643959,
         "qpc_frequency": 10000000,
-        "qpc_start": 1579148339161,
+        "qpc_start": 1584588175944,
         "request_identities": [
           {
             "case_id": "progressive_gray_256_wic",
-            "pid": 65920,
-            "start_utc_ticks": 639287800127840202
+            "pid": 62940,
+            "start_utc_ticks": 639287805568102361
           }
         ],
         "samples": [
@@ -43,23 +43,23 @@
             "alive_before": true,
             "case_id": "progressive_gray_256_wic",
             "exe_verified": true,
-            "identity_after_ticks": 639287800127840202,
+            "identity_after_ticks": 639287805568102361,
             "order": 0,
             "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-            "peak_working_set_bytes": 114262016,
-            "pid": 65920,
-            "private_bytes": 40550400,
-            "qpc_end": 1579148796675,
-            "qpc_start": 1579148585210,
-            "start_utc_ticks": 639287800127840202,
-            "working_set_bytes": 114262016
+            "peak_working_set_bytes": 114073600,
+            "pid": 62940,
+            "private_bytes": 40579072,
+            "qpc_end": 1584588588604,
+            "qpc_start": 1584588372952,
+            "start_utc_ticks": 639287805568102361,
+            "working_set_bytes": 114073600
           }
         ],
-        "start_ns": 157914296713700,
+        "start_ns": 158458349222800,
         "status": "complete",
         "totals": {
-          "private_bytes": 40550400,
-          "working_set_bytes": 114262016
+          "private_bytes": 40579072,
+          "working_set_bytes": 114073600
         }
       }
     },
@@ -74,7 +74,7 @@
         "classification": "DERIVED_WINDOW_SUM",
         "clock_domain": "python_monotonic_ns",
         "complete": true,
-        "end_ns": 157917525002500,
+        "end_ns": 158461394346000,
         "failure": null,
         "gap_ns": null,
         "index": 0,
@@ -86,17 +86,17 @@
           "stderr_bytes": 0,
           "stderr_utf8": "",
           "stdout_bytes": 492,
-          "stdout_utf8": "{\"samples\":[{\"case_id\":\"progressive_gray_1024_wic\",\"pid\":51344,\"start_utc_ticks\":639287800153728393,\"identity_after_ticks\":639287800153728393,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":116752384,\"private_bytes\":42504192,\"peak_working_set_bytes\":117141504,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1579174107530,\"qpc_end\":1579174405489}],\"errors\":[],\"qpc_start\":1579173939186,\"qpc_end\":1579174462149,\"qpc_frequency\":10000000}\r\n",
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"progressive_gray_1024_wic\",\"pid\":66888,\"start_utc_ticks\":639287805592784493,\"identity_after_ticks\":639287805592784493,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":116387840,\"private_bytes\":41635840,\"peak_working_set_bytes\":116387840,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1584612719654,\"qpc_end\":1584613040409}],\"errors\":[],\"qpc_start\":1584612555260,\"qpc_end\":1584613105516,\"qpc_frequency\":10000000}\r\n",
           "timeout": false
         },
-        "qpc_end": 1579174462149,
+        "qpc_end": 1584613105516,
         "qpc_frequency": 10000000,
-        "qpc_start": 1579173939186,
+        "qpc_start": 1584612555260,
         "request_identities": [
           {
             "case_id": "progressive_gray_1024_wic",
-            "pid": 51344,
-            "start_utc_ticks": 639287800153728393
+            "pid": 66888,
+            "start_utc_ticks": 639287805592784493
           }
         ],
         "samples": [
@@ -105,23 +105,23 @@
             "alive_before": true,
             "case_id": "progressive_gray_1024_wic",
             "exe_verified": true,
-            "identity_after_ticks": 639287800153728393,
+            "identity_after_ticks": 639287805592784493,
             "order": 0,
             "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-            "peak_working_set_bytes": 117141504,
-            "pid": 51344,
-            "private_bytes": 42504192,
-            "qpc_end": 1579174405489,
-            "qpc_start": 1579174107530,
-            "start_utc_ticks": 639287800153728393,
-            "working_set_bytes": 116752384
+            "peak_working_set_bytes": 116387840,
+            "pid": 66888,
+            "private_bytes": 41635840,
+            "qpc_end": 1584613040409,
+            "qpc_start": 1584612719654,
+            "start_utc_ticks": 639287805592784493,
+            "working_set_bytes": 116387840
           }
         ],
-        "start_ns": 157916904856000,
+        "start_ns": 158460763626500,
         "status": "complete",
         "totals": {
-          "private_bytes": 42504192,
-          "working_set_bytes": 116752384
+          "private_bytes": 41635840,
+          "working_set_bytes": 116387840
         }
       }
     },
@@ -136,7 +136,7 @@
         "classification": "DERIVED_WINDOW_SUM",
         "clock_domain": "python_monotonic_ns",
         "complete": true,
-        "end_ns": 157920737138200,
+        "end_ns": 158464678833100,
         "failure": null,
         "gap_ns": null,
         "index": 0,
@@ -148,17 +148,17 @@
           "stderr_bytes": 0,
           "stderr_utf8": "",
           "stdout_bytes": 495,
-          "stdout_utf8": "{\"samples\":[{\"case_id\":\"malformed_scan_truncated_wic\",\"pid\":57228,\"start_utc_ticks\":639287800186522719,\"identity_after_ticks\":639287800186522719,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":119603200,\"private_bytes\":44019712,\"peak_working_set_bytes\":119603200,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1579206379245,\"qpc_end\":1579206517396}],\"errors\":[],\"qpc_start\":1579206115591,\"qpc_end\":1579206575836,\"qpc_frequency\":10000000}\r\n",
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"malformed_scan_truncated_wic\",\"pid\":68160,\"start_utc_ticks\":639287805625624232,\"identity_after_ticks\":639287805625624232,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":119488512,\"private_bytes\":44306432,\"peak_working_set_bytes\":119488512,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1584645861087,\"qpc_end\":1584645967587}],\"errors\":[],\"qpc_start\":1584645584887,\"qpc_end\":1584646026428,\"qpc_frequency\":10000000}\r\n",
           "timeout": false
         },
-        "qpc_end": 1579206575836,
+        "qpc_end": 1584646026428,
         "qpc_frequency": 10000000,
-        "qpc_start": 1579206115591,
+        "qpc_start": 1584645584887,
         "request_identities": [
           {
             "case_id": "malformed_scan_truncated_wic",
-            "pid": 57228,
-            "start_utc_ticks": 639287800186522719
+            "pid": 68160,
+            "start_utc_ticks": 639287805625624232
           }
         ],
         "samples": [
@@ -167,23 +167,23 @@
             "alive_before": true,
             "case_id": "malformed_scan_truncated_wic",
             "exe_verified": true,
-            "identity_after_ticks": 639287800186522719,
+            "identity_after_ticks": 639287805625624232,
             "order": 0,
             "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-            "peak_working_set_bytes": 119603200,
-            "pid": 57228,
-            "private_bytes": 44019712,
-            "qpc_end": 1579206517396,
-            "qpc_start": 1579206379245,
-            "start_utc_ticks": 639287800186522719,
-            "working_set_bytes": 119603200
+            "peak_working_set_bytes": 119488512,
+            "pid": 68160,
+            "private_bytes": 44306432,
+            "qpc_end": 1584645967587,
+            "qpc_start": 1584645861087,
+            "start_utc_ticks": 639287805625624232,
+            "working_set_bytes": 119488512
           }
         ],
-        "start_ns": 157920142067600,
+        "start_ns": 158464091936400,
         "status": "complete",
         "totals": {
-          "private_bytes": 44019712,
-          "working_set_bytes": 119603200
+          "private_bytes": 44306432,
+          "working_set_bytes": 119488512
         }
       }
     },
@@ -198,7 +198,7 @@
         "classification": "DERIVED_WINDOW_SUM",
         "clock_domain": "python_monotonic_ns",
         "complete": true,
-        "end_ns": 157924829725200,
+        "end_ns": 158468804910500,
         "failure": null,
         "gap_ns": null,
         "index": 0,
@@ -210,17 +210,17 @@
           "stderr_bytes": 0,
           "stderr_utf8": "",
           "stdout_bytes": 495,
-          "stdout_utf8": "{\"samples\":[{\"case_id\":\"baseline_control_420_256_wic\",\"pid\":60176,\"start_utc_ticks\":639287800227454878,\"identity_after_ticks\":639287800227454878,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":115355648,\"private_bytes\":40812544,\"peak_working_set_bytes\":115355648,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1579247177425,\"qpc_end\":1579247422275}],\"errors\":[],\"qpc_start\":1579246971296,\"qpc_end\":1579247503255,\"qpc_frequency\":10000000}\r\n",
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"baseline_control_420_256_wic\",\"pid\":67788,\"start_utc_ticks\":639287805666723085,\"identity_after_ticks\":639287805666723085,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":120082432,\"private_bytes\":45133824,\"peak_working_set_bytes\":120098816,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1584686970062,\"qpc_end\":1584687182215}],\"errors\":[],\"qpc_start\":1584686797607,\"qpc_end\":1584687252107,\"qpc_frequency\":10000000}\r\n",
           "timeout": false
         },
-        "qpc_end": 1579247503255,
+        "qpc_end": 1584687252107,
         "qpc_frequency": 10000000,
-        "qpc_start": 1579246971296,
+        "qpc_start": 1584686797607,
         "request_identities": [
           {
             "case_id": "baseline_control_420_256_wic",
-            "pid": 60176,
-            "start_utc_ticks": 639287800227454878
+            "pid": 67788,
+            "start_utc_ticks": 639287805666723085
           }
         ],
         "samples": [
@@ -229,23 +229,23 @@
             "alive_before": true,
             "case_id": "baseline_control_420_256_wic",
             "exe_verified": true,
-            "identity_after_ticks": 639287800227454878,
+            "identity_after_ticks": 639287805666723085,
             "order": 0,
             "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-            "peak_working_set_bytes": 115355648,
-            "pid": 60176,
-            "private_bytes": 40812544,
-            "qpc_end": 1579247422275,
-            "qpc_start": 1579247177425,
-            "start_utc_ticks": 639287800227454878,
-            "working_set_bytes": 115355648
+            "peak_working_set_bytes": 120098816,
+            "pid": 67788,
+            "private_bytes": 45133824,
+            "qpc_end": 1584687182215,
+            "qpc_start": 1584686970062,
+            "start_utc_ticks": 639287805666723085,
+            "working_set_bytes": 120082432
           }
         ],
-        "start_ns": 157924224161500,
+        "start_ns": 158468190545900,
         "status": "complete",
         "totals": {
-          "private_bytes": 40812544,
-          "working_set_bytes": 115355648
+          "private_bytes": 45133824,
+          "working_set_bytes": 120082432
         }
       }
     }
