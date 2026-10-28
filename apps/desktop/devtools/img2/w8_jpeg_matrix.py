@@ -232,8 +232,11 @@ def run(work, out, pwsh, harness):
         try:
             structure = parse(data)
             row["structure"] = {key: structure[key] for key in
-                                ("frame", "scan", "quant", "huffman", "restart_interval",
+                                ("frame", "scan", "quant", "restart_interval",
                                  "bytes", "progressive")}
+            row["structure"]["huffman"] = [
+                {"table_class": table_class, "table_id": table_id, **body}
+                for (table_class, table_id), body in sorted(structure["huffman"].items())]
             row["structure"]["segments"] = structure["segments"]
             if case["reference"] == "ABSOLUTE":
                 row["absolute"] = absolute_rgba(structure)
