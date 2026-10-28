@@ -1,135 +1,181 @@
 {
   "schema_version": 1,
-  "native_source": "dbb42bb55a98563e9daea6ecd3002a7ca5d02cca",
-  "computed_against": "f8f34dbc45d362d71114aa13fbe64285dfee6b66",
+  "native_source": "f080f4c5987b9c5745ad42bfa2a8975e4747e5ed",
+  "gate_candidate": "c78982d0ee9ccafb8c9882260c20962134aac79e",
+  "commits_differ": true,
   "source_files": 22,
   "all_source_files_pinned": true,
   "candidate_equals_native_source": true,
   "changed_paths_after_native_source": [
     "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+    "docs/development/TESTING.md",
     "docs/development/evidence-published/img2-w7-latest/admission-boundary.json",
+    "docs/development/evidence-published/img2-w7-latest/compression-ratio-observations.json",
     "docs/development/evidence-published/img2-w7-latest/environment.json",
     "docs/development/evidence-published/img2-w7-latest/execution-manifest.json",
-    "docs/development/evidence-published/img2-w7-latest/fixture-manifest.json",
     "docs/development/evidence-published/img2-w7-latest/memory-observations.json",
     "docs/development/evidence-published/img2-w7-latest/native-large-matrix.json",
-    "docs/development/evidence-published/img2-w7-latest/source-evidence-reconciliation.json",
-    "docs/development/evidence-published/img2-w7-latest/source-identity.json",
-    "docs/development/evidence-published/img2-w7-latest/unmeasured.json"
+    "docs/development/evidence-published/img2-w7-latest/negative-tests.json",
+    "docs/development/evidence-published/img2-w7-latest/quality.json",
+    "docs/development/evidence-published/img2-w7-latest/source-identity.json"
   ],
   "all_after_changes_docs_only": true,
+  "historical": "source-evidence-reconciliation-round1.json retains the round-1 comparison against dbb42bb/f8f34db and is not current.",
   "rows": [
     {
       "path": "apps/desktop/devtools/img2/w7_large_fixtures.py",
+      "native_blob_sha256": "sha256:fefb3724623f79d5ac4f1b98b4af43c8dddde0dfa2e727294bf7e208ac2707bc",
+      "candidate_blob_sha256": "sha256:fefb3724623f79d5ac4f1b98b4af43c8dddde0dfa2e727294bf7e208ac2707bc",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w7_large_oracle.py",
+      "native_blob_sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6",
+      "candidate_blob_sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w7_large_matrix.py",
+      "native_blob_sha256": "sha256:53c84378b68b4a0a5c77251a013f2e207b38cf8315a76440e7260ea6dc097e56",
+      "candidate_blob_sha256": "sha256:53c84378b68b4a0a5c77251a013f2e207b38cf8315a76440e7260ea6dc097e56",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w7_large_verify.py",
+      "native_blob_sha256": "sha256:74d8ca71fd545bf2991316c2fd6c34073b376763744cfc380b43b97e5ab554f8",
+      "candidate_blob_sha256": "sha256:74d8ca71fd545bf2991316c2fd6c34073b376763744cfc380b43b97e5ab554f8",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w6_memory_sample.py",
+      "native_blob_sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
+      "candidate_blob_sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+      "native_blob_sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941",
+      "candidate_blob_sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+      "native_blob_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
+      "candidate_blob_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w2_independent_oracle.py",
+      "native_blob_sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26",
+      "candidate_blob_sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w3_oracle.py",
+      "native_blob_sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e",
+      "candidate_blob_sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w4_region_oracle.py",
+      "native_blob_sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298",
+      "candidate_blob_sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w5_metadata_oracle.py",
+      "native_blob_sha256": "sha256:bb2910bac17c47677058bb79ca24b21f3a87356d1a0b432c9427a37193bbab60",
+      "candidate_blob_sha256": "sha256:bb2910bac17c47677058bb79ca24b21f3a87356d1a0b432c9427a37193bbab60",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w6_memory_fixtures.py",
+      "native_blob_sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5",
+      "candidate_blob_sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/devtools/img2/w6_memory_verify.py",
+      "native_blob_sha256": "sha256:99cc5ecb251c71e42340614d51de471029b8a3247e29ee12f8dabc553972e919",
+      "candidate_blob_sha256": "sha256:99cc5ecb251c71e42340614d51de471029b8a3247e29ee12f8dabc553972e919",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+      "native_blob_sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c",
+      "candidate_blob_sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+      "native_blob_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
+      "candidate_blob_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/examples/decode_compare.rs",
+      "native_blob_sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e",
+      "candidate_blob_sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/examples/decode_compare/harness.rs",
+      "native_blob_sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896",
+      "candidate_blob_sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/examples/decode_compare/inspect.rs",
+      "native_blob_sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558",
+      "candidate_blob_sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "apps/desktop/examples/decode_compare/pixels.rs",
+      "native_blob_sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136",
+      "candidate_blob_sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "crates/media/src/decode.rs",
+      "native_blob_sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf",
+      "candidate_blob_sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "Cargo.lock",
+      "native_blob_sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b",
+      "candidate_blob_sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     },
     {
       "path": "rust-toolchain.toml",
+      "native_blob_sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8",
+      "candidate_blob_sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8",
       "matches_recorded_git_blob": true,
       "candidate_equals_native_source": true
     }
   ],
-  "self_note": "This file is the only difference between computed_against and the amended candidate that contains it; its own addition is a docs path, so the docs-only conclusion is unchanged.",
-  "note": "The Native run pinned its SOURCE before the measured bytes existed; the later candidate adds evidence and documents only."
+  "note": "The Native run pinned SOURCE f080f4c before the measured bytes existed; the Gate candidate adds evidence and documents only, and every declared SOURCE file is byte-identical between the two commits."
 }

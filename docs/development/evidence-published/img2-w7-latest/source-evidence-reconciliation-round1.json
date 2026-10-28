@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "native_source": "dbb42bb55a98563e9daea6ecd3002a7ca5d02cca",
+  "computed_against": "f8f34dbc45d362d71114aa13fbe64285dfee6b66",
+  "source_files": 22,
+  "all_source_files_pinned": true,
+  "candidate_equals_native_source": true,
+  "changed_paths_after_native_source": [
+    "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+    "docs/development/evidence-published/img2-w7-latest/admission-boundary.json",
+    "docs/development/evidence-published/img2-w7-latest/environment.json",
+    "docs/development/evidence-published/img2-w7-latest/execution-manifest.json",
+    "docs/development/evidence-published/img2-w7-latest/fixture-manifest.json",
+    "docs/development/evidence-published/img2-w7-latest/memory-observations.json",
+    "docs/development/evidence-published/img2-w7-latest/native-large-matrix.json",
+    "docs/development/evidence-published/img2-w7-latest/source-evidence-reconciliation.json",
+    "docs/development/evidence-published/img2-w7-latest/source-identity.json",
+    "docs/development/evidence-published/img2-w7-latest/unmeasured.json"
+  ],
+  "all_after_changes_docs_only": true,
+  "rows": [
+    {
+      "path": "apps/desktop/devtools/img2/w7_large_fixtures.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w7_large_oracle.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w7_large_matrix.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w7_large_verify.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_sample.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_independent_oracle.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w3_oracle.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w4_region_oracle.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w5_metadata_oracle.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_fixtures.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_verify.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare.rs",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/harness.rs",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/inspect.rs",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/pixels.rs",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "crates/media/src/decode.rs",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "Cargo.lock",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "rust-toolchain.toml",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    }
+  ],
+  "self_note": "This file is the only difference between computed_against and the amended candidate that contains it; its own addition is a docs path, so the docs-only conclusion is unchanged.",
+  "note": "The Native run pinned its SOURCE before the measured bytes existed; the later candidate adds evidence and documents only."
+}
