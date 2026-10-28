@@ -164,7 +164,7 @@ def mutation(record, number):
     elif number == 50:
         _leg(record, "malformed_spectral_invalid", "wic")["leg"]["output_present"] = True
     elif number == 51:
-        _leg(record, "malformed_spectral_invalid", "wic")["leg"]["probe_result"]["output_bytes"] = 0
+        _leg(record, "malformed_spectral_invalid", "wic")["leg"]["probe_result"]["output_bytes"] = 4096
     else:
         raise ValueError("unknown negative class")
 
