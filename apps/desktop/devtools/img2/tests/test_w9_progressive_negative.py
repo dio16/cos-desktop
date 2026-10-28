@@ -30,6 +30,7 @@ NEGATIVE_NAMES = (
     "malformed_leg_identity_forged", "malformed_input_bytes_missing", "malformed_output_bytes_forged",
     "malformed_publication_forged", "malformed_output_presence_forged",
     "malformed_declared_output_bytes_missing", "refused_publication_forged",
+    "refused_output_presence_forged", "refused_declared_output_forged",
 )
 
 
