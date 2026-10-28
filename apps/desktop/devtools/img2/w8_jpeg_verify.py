@@ -295,7 +295,8 @@ def _check_structure(recorded, parsed):
     recorded_quant = recorded.get("quant")
     need(isinstance(recorded_quant, dict), "quant_tables_missing")
     for key, value in parsed["quant"].items():
-        need(recorded_quant.get(str(key)) == value, "quant_table_mismatch")
+        observed = recorded_quant.get(key, recorded_quant.get(str(key)))
+        need(observed == value, "quant_table_mismatch")
     huffman = recorded.get("huffman")
     need(isinstance(huffman, list) and len(huffman) == len(parsed["huffman"]), "huffman_tables_mismatch")
 
