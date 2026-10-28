@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "gate": "img2",
-  "gate_id": "51879d5c-e842-495c-a3c8-fcfa01c353ef",
+  "gate_id": "4b72a851-ce54-4e89-afc9-ccfbb6d62a4d",
   "operations": {
     "status": {
       "exit_code": 0,
@@ -12,10 +12,10 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "51879d5c-e842-495c-a3c8-fcfa01c353ef",
-            "gate_label": "mp-img2-w8-r6-img2",
+            "gate_id": "4b72a851-ce54-4e89-afc9-ccfbb6d62a4d",
+            "gate_label": "mp-img2-w8-r8-img2",
             "state": "SUCCEEDED",
-            "updated_at": "2026-10-28T05:45:52.232724600Z",
+            "updated_at": "2026-10-28T06:36:30.457255900Z",
             "owner_alive": false,
             "recovery_required": false
           }
@@ -32,10 +32,10 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "51879d5c-e842-495c-a3c8-fcfa01c353ef",
-            "gate_label": "mp-img2-w8-r6-img2",
-            "request_sha256": "sha256:97f04818f889fd723540cfcb51ff22421545e3081977bc19f875b2cf9fee5ba6",
-            "terminal_state_sha256": "sha256:0434beff71fdf9e5fe6c4f00a38d7bcc90470fcfb90941d35a0b9bf0a68e97ee",
+            "gate_id": "4b72a851-ce54-4e89-afc9-ccfbb6d62a4d",
+            "gate_label": "mp-img2-w8-r8-img2",
+            "request_sha256": "sha256:f6b2e8da947a43804ea586ba76d6c98cb0e0b97e486066b1a2fa40179c23120e",
+            "terminal_state_sha256": "sha256:faf6e678a8a21cc82c2e0ca52e1c57d4a6213c648e2803fab694f6d1062f6062",
             "runtime": {
               "refine_version": "0.3.1",
               "os": "windows",
@@ -44,10 +44,10 @@
             },
             "repository": {
               "location": "C:/dev/cos-desktop",
-              "requested_revision": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
-              "resolved_base_commit": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
+              "requested_revision": "c03c2b4492074a503bb70f510ca705212c654ffe",
+              "resolved_base_commit": "c03c2b4492074a503bb70f510ca705212c654ffe",
               "object_format": "sha1",
-              "final_head": "51f68ad738035385fc31dc5b3e70f1be4961afe8"
+              "final_head": "c03c2b4492074a503bb70f510ca705212c654ffe"
             },
             "limits": {
               "timeout_ms": 600000,
@@ -55,81 +55,81 @@
               "max_output_bytes": 16777216,
               "max_artifact_bytes": 16777216
             },
-            "accepted_at": "2026-10-28T05:38:01.282804600Z",
-            "ended_at": "2026-10-28T05:45:52.232724600Z",
-            "candidate_sha256": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5",
+            "accepted_at": "2026-10-28T06:28:07.184884300Z",
+            "ended_at": "2026-10-28T06:36:30.457255900Z",
+            "candidate_sha256": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7",
             "verification": [
               {
                 "id": "img2-python",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 356684,
+                "duration_ms": 387979,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               },
               {
                 "id": "w2-probe-selftest",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 14037,
+                "duration_ms": 14155,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               },
               {
                 "id": "w2-oracle",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 13775,
+                "duration_ms": 13531,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               },
               {
                 "id": "w3-retained-native-replay",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 1467,
+                "duration_ms": 1589,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               },
               {
                 "id": "wic-admission-selftest",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 1250,
+                "duration_ms": 1267,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               },
               {
                 "id": "w1-runner-selftest",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 656,
+                "duration_ms": 675,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               },
               {
                 "id": "w4-native-replay",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 1404,
+                "duration_ms": 1463,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               },
               {
                 "id": "w5-native-replay",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 688,
+                "duration_ms": 734,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               },
               {
                 "id": "w6-native-replay",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 11281,
+                "duration_ms": 11269,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               }
             ],
             "check_logs": [
@@ -145,7 +145,7 @@
                 "stderr": {
                   "relative_path": "logs/img2-python/stderr",
                   "size_bytes": 301,
-                  "sha256": "sha256:0f7e4682b68119925763737f72c8e999857159af9a41660401e237e455b43ca3",
+                  "sha256": "sha256:719d80db55e3638ad3c53d2454409a4c63e690b7f84ad56a9e7f6939e14b2422",
                   "truncated": false,
                   "secret": true
                 }
@@ -297,14 +297,14 @@
               {
                 "id": "w8-1",
                 "relative_path": "artifacts/w8-1",
-                "size_bytes": 9641,
-                "sha256": "sha256:1600fc0d3f956b116f6ec210c4e6b9b730441795f290d9b9b422534b9ad52e11"
+                "size_bytes": 10468,
+                "sha256": "sha256:3664b5a47d337a63d53469ccd2c54a4ebab13260a87aa3b7f7d3502a4769016a"
               },
               {
                 "id": "w8-10",
                 "relative_path": "artifacts/w8-10",
                 "size_bytes": 51703,
-                "sha256": "sha256:32188461813a3063fb48972f84f1b5af77b233b57ed0cfd0135124b5578c7920"
+                "sha256": "sha256:29158db244e36a1ad12d1c143dea34205e9a2fa80f948991baebe92af1840ee0"
               },
               {
                 "id": "w8-11",
@@ -334,13 +334,13 @@
                 "id": "w8-15",
                 "relative_path": "artifacts/w8-15",
                 "size_bytes": 770,
-                "sha256": "sha256:c6050c14c7a6b7f9914318a40108cce9398acdea0c79dd3794d3b74c22a13cdd"
+                "sha256": "sha256:39d36382528898222c16ce425e5e2d90223e39b455de1c49ced4572f4aefa867"
               },
               {
                 "id": "w8-16",
                 "relative_path": "artifacts/w8-16",
                 "size_bytes": 2830,
-                "sha256": "sha256:b8b299a4f2cec5530bbcb8e0b2c70dae6a207f4fd7d279b2f35ad04161db6f9c"
+                "sha256": "sha256:732b1682279cccc5550b47ac96b558e725ce88ff2e81fb079f1a51b8f0147a50"
               },
               {
                 "id": "w8-17",
@@ -370,19 +370,19 @@
                 "id": "w8-20",
                 "relative_path": "artifacts/w8-20",
                 "size_bytes": 22869,
-                "sha256": "sha256:27f0b8c4ee2e77f47c7c656802faa318d3c6891dafbcfd0e7a5b6010d94198b8"
+                "sha256": "sha256:0ccb10f1b9a1a60319aaf257ab300ca42bce26d27ef202f2accf66db1c58dd33"
               },
               {
                 "id": "w8-21",
                 "relative_path": "artifacts/w8-21",
-                "size_bytes": 1448203,
-                "sha256": "sha256:b28836ae23340aee77907728541ff3e8f9789405f76824f735dc71c554e7be63"
+                "size_bytes": 1448204,
+                "sha256": "sha256:380f88c5d50baeaa4e36ddcee1da4be564dcae8dc02149e9a00f21b47c71a5da"
               },
               {
                 "id": "w8-22",
                 "relative_path": "artifacts/w8-22",
-                "size_bytes": 7652,
-                "sha256": "sha256:d476ae2ed20e05ddaa9de65f379384a401c65f98355334d315adad46a9379f07"
+                "size_bytes": 8268,
+                "sha256": "sha256:0593fd6e84dead728154740971630a9748073ac4906bce478d3f8ce359d6d470"
               },
               {
                 "id": "w8-23",
@@ -394,13 +394,13 @@
                 "id": "w8-24",
                 "relative_path": "artifacts/w8-24",
                 "size_bytes": 1436,
-                "sha256": "sha256:3d19af95d3f5e8629fb4a2ecbafdc485c67d9f6ef06eabe2520fe8d4ed6c80ba"
+                "sha256": "sha256:391b16c9ace741c81827322386944ac2b6ca670edf425d1f202aca7ffc4dcaa5"
               },
               {
                 "id": "w8-25",
                 "relative_path": "artifacts/w8-25",
                 "size_bytes": 8525,
-                "sha256": "sha256:c74cd9ae1c91091decb62f205bef994033d471a47a515eda358593324e37e6c8"
+                "sha256": "sha256:e609f1e63bbb17cf4fbc77c535c2ec446f32168c2a6b5ff6f2ecf0239590db79"
               },
               {
                 "id": "w8-26",
@@ -453,8 +453,8 @@
               {
                 "id": "w8-5",
                 "relative_path": "artifacts/w8-5",
-                "size_bytes": 27098,
-                "sha256": "sha256:fbad9119585fc3530fd600ce35894f83f35ef3fe41c718962de496d25f0a56a7"
+                "size_bytes": 27317,
+                "sha256": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439"
               },
               {
                 "id": "w8-6",
@@ -477,20 +477,20 @@
               {
                 "id": "w8-9",
                 "relative_path": "artifacts/w8-9",
-                "size_bytes": 450494,
-                "sha256": "sha256:8700536469e1a542e15cd263e7d98b51706920eaa061ab58ef55080af6b40727"
+                "size_bytes": 450521,
+                "sha256": "sha256:d20849be8dfc201396f397b9567c27ca7f0bdfd127df4f99711ab76c6ade4e2f"
               }
             ],
             "absent_outputs": [],
             "cleanup": "complete",
             "timings": {
-              "preparation_ms": 24405,
+              "preparation_ms": 24499,
               "execution_ms": 0,
-              "verification_ms": 443894,
-              "collection_ms": 2525,
+              "verification_ms": 476091,
+              "collection_ms": 2558,
               "finalization_ms": 2
             },
-            "duration_ms": 470942
+            "duration_ms": 503267
           }
         }
       },
@@ -505,12 +505,12 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "51879d5c-e842-495c-a3c8-fcfa01c353ef",
+            "gate_id": "4b72a851-ce54-4e89-afc9-ccfbb6d62a4d",
             "state": "SUCCEEDED",
-            "request_sha256": "sha256:97f04818f889fd723540cfcb51ff22421545e3081977bc19f875b2cf9fee5ba6",
-            "terminal_state_sha256": "sha256:0434beff71fdf9e5fe6c4f00a38d7bcc90470fcfb90941d35a0b9bf0a68e97ee",
-            "observations_sha256": "sha256:38b0a1db58b083fd8673e321a65d30fe7167ac68346b9001f7fc46e280c3bbf0",
-            "candidate_sha256": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5",
+            "request_sha256": "sha256:f6b2e8da947a43804ea586ba76d6c98cb0e0b97e486066b1a2fa40179c23120e",
+            "terminal_state_sha256": "sha256:faf6e678a8a21cc82c2e0ca52e1c57d4a6213c648e2803fab694f6d1062f6062",
+            "observations_sha256": "sha256:0d56d74ec249bd936f27ccde62fe68dc18af0a8d506955e76569581709652093",
+            "candidate_sha256": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7",
             "artifacts": [
               {
                 "id": "w8-0",
@@ -521,14 +521,14 @@
               {
                 "id": "w8-1",
                 "relative_path": "artifacts/w8-1",
-                "size_bytes": 9641,
-                "sha256": "sha256:1600fc0d3f956b116f6ec210c4e6b9b730441795f290d9b9b422534b9ad52e11"
+                "size_bytes": 10468,
+                "sha256": "sha256:3664b5a47d337a63d53469ccd2c54a4ebab13260a87aa3b7f7d3502a4769016a"
               },
               {
                 "id": "w8-10",
                 "relative_path": "artifacts/w8-10",
                 "size_bytes": 51703,
-                "sha256": "sha256:32188461813a3063fb48972f84f1b5af77b233b57ed0cfd0135124b5578c7920"
+                "sha256": "sha256:29158db244e36a1ad12d1c143dea34205e9a2fa80f948991baebe92af1840ee0"
               },
               {
                 "id": "w8-11",
@@ -558,13 +558,13 @@
                 "id": "w8-15",
                 "relative_path": "artifacts/w8-15",
                 "size_bytes": 770,
-                "sha256": "sha256:c6050c14c7a6b7f9914318a40108cce9398acdea0c79dd3794d3b74c22a13cdd"
+                "sha256": "sha256:39d36382528898222c16ce425e5e2d90223e39b455de1c49ced4572f4aefa867"
               },
               {
                 "id": "w8-16",
                 "relative_path": "artifacts/w8-16",
                 "size_bytes": 2830,
-                "sha256": "sha256:b8b299a4f2cec5530bbcb8e0b2c70dae6a207f4fd7d279b2f35ad04161db6f9c"
+                "sha256": "sha256:732b1682279cccc5550b47ac96b558e725ce88ff2e81fb079f1a51b8f0147a50"
               },
               {
                 "id": "w8-17",
@@ -594,19 +594,19 @@
                 "id": "w8-20",
                 "relative_path": "artifacts/w8-20",
                 "size_bytes": 22869,
-                "sha256": "sha256:27f0b8c4ee2e77f47c7c656802faa318d3c6891dafbcfd0e7a5b6010d94198b8"
+                "sha256": "sha256:0ccb10f1b9a1a60319aaf257ab300ca42bce26d27ef202f2accf66db1c58dd33"
               },
               {
                 "id": "w8-21",
                 "relative_path": "artifacts/w8-21",
-                "size_bytes": 1448203,
-                "sha256": "sha256:b28836ae23340aee77907728541ff3e8f9789405f76824f735dc71c554e7be63"
+                "size_bytes": 1448204,
+                "sha256": "sha256:380f88c5d50baeaa4e36ddcee1da4be564dcae8dc02149e9a00f21b47c71a5da"
               },
               {
                 "id": "w8-22",
                 "relative_path": "artifacts/w8-22",
-                "size_bytes": 7652,
-                "sha256": "sha256:d476ae2ed20e05ddaa9de65f379384a401c65f98355334d315adad46a9379f07"
+                "size_bytes": 8268,
+                "sha256": "sha256:0593fd6e84dead728154740971630a9748073ac4906bce478d3f8ce359d6d470"
               },
               {
                 "id": "w8-23",
@@ -618,13 +618,13 @@
                 "id": "w8-24",
                 "relative_path": "artifacts/w8-24",
                 "size_bytes": 1436,
-                "sha256": "sha256:3d19af95d3f5e8629fb4a2ecbafdc485c67d9f6ef06eabe2520fe8d4ed6c80ba"
+                "sha256": "sha256:391b16c9ace741c81827322386944ac2b6ca670edf425d1f202aca7ffc4dcaa5"
               },
               {
                 "id": "w8-25",
                 "relative_path": "artifacts/w8-25",
                 "size_bytes": 8525,
-                "sha256": "sha256:c74cd9ae1c91091decb62f205bef994033d471a47a515eda358593324e37e6c8"
+                "sha256": "sha256:e609f1e63bbb17cf4fbc77c535c2ec446f32168c2a6b5ff6f2ecf0239590db79"
               },
               {
                 "id": "w8-26",
@@ -677,8 +677,8 @@
               {
                 "id": "w8-5",
                 "relative_path": "artifacts/w8-5",
-                "size_bytes": 27098,
-                "sha256": "sha256:fbad9119585fc3530fd600ce35894f83f35ef3fe41c718962de496d25f0a56a7"
+                "size_bytes": 27317,
+                "sha256": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439"
               },
               {
                 "id": "w8-6",
@@ -701,8 +701,8 @@
               {
                 "id": "w8-9",
                 "relative_path": "artifacts/w8-9",
-                "size_bytes": 450494,
-                "sha256": "sha256:8700536469e1a542e15cd263e7d98b51706920eaa061ab58ef55080af6b40727"
+                "size_bytes": 450521,
+                "sha256": "sha256:d20849be8dfc201396f397b9567c27ca7f0bdfd127df4f99711ab76c6ade4e2f"
               }
             ],
             "check_logs": [
@@ -718,7 +718,7 @@
                 "stderr": {
                   "relative_path": "logs/img2-python/stderr",
                   "size_bytes": 301,
-                  "sha256": "sha256:0f7e4682b68119925763737f72c8e999857159af9a41660401e237e455b43ca3",
+                  "sha256": "sha256:719d80db55e3638ad3c53d2454409a4c63e690b7f84ad56a9e7f6939e14b2422",
                   "truncated": false,
                   "secret": true
                 }

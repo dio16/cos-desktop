@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "candidate": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
-  "build_gate": "3f3cec15-ac4a-45ce-bc28-da1b263df52d",
+  "candidate": "c03c2b4492074a503bb70f510ca705212c654ffe",
+  "build_gate": "7159bc4e-52fd-4c20-a5f3-a0326446b5c1",
   "status": "NOT_CAPTURED",
   "reason": "The isolated build output was disposed by the approved scratch step before its bytes were hashed.",
   "declared_immutable_artifact": false,

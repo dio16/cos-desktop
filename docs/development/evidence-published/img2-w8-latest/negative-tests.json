@@ -289,9 +289,30 @@
       "ok": false,
       "reason": "gdiplus_declared_output_bytes_mismatch:jpeg_420_256",
       "error": "ValueError"
+    },
+    {
+      "number": 41,
+      "mutation": "malformed_outcome_key_removed",
+      "ok": false,
+      "reason": "malformed_worker_outcome_mismatch:malformed_truncated",
+      "error": "ValueError"
+    },
+    {
+      "number": 42,
+      "mutation": "malformed_trace_payload_tampered",
+      "ok": false,
+      "reason": "malformed_terminal_outcome_mismatch:malformed_bad_length",
+      "error": "ValueError"
+    },
+    {
+      "number": 43,
+      "mutation": "gdiplus_output_bytes_removed",
+      "ok": false,
+      "reason": "gdiplus_declared_output_bytes_mismatch:dc_gray_32x24",
+      "error": "ValueError"
     }
   ],
   "required_classes": 32,
-  "shipped_classes": 40,
+  "shipped_classes": 43,
   "all_rejected": true
 }

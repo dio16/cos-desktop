@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "gate": "w8",
-  "gate_id": "fe1c26cd-863d-411e-be2a-f53d313db8fb",
+  "gate_id": "b59b5b82-a988-4f9d-90a0-bd382f98d805",
   "operations": {
     "status": {
       "exit_code": 0,
@@ -12,10 +12,10 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "fe1c26cd-863d-411e-be2a-f53d313db8fb",
-            "gate_label": "mp-img2-w8-r6-w8",
+            "gate_id": "b59b5b82-a988-4f9d-90a0-bd382f98d805",
+            "gate_label": "mp-img2-w8-r8-w8",
             "state": "SUCCEEDED",
-            "updated_at": "2026-10-28T05:50:57.615349900Z",
+            "updated_at": "2026-10-28T06:42:04.134641600Z",
             "owner_alive": false,
             "recovery_required": false
           }
@@ -32,10 +32,10 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "fe1c26cd-863d-411e-be2a-f53d313db8fb",
-            "gate_label": "mp-img2-w8-r6-w8",
-            "request_sha256": "sha256:4a6591b4ca2455586daff028271d5f21ee5cf61c640c166c5b7ec725270bb342",
-            "terminal_state_sha256": "sha256:87eb0702430a3d7c1804ad492d7c81d408039c9bcda6f9c7f72720c044a178ae",
+            "gate_id": "b59b5b82-a988-4f9d-90a0-bd382f98d805",
+            "gate_label": "mp-img2-w8-r8-w8",
+            "request_sha256": "sha256:935925c43c0ea1f4eaee4f996daa3e640df23d2121b274f4e450eab558da0233",
+            "terminal_state_sha256": "sha256:4805a2f6fc6a5f4085b81e4639e860eb38bf01dcd62c9cbdce5c835236475d2a",
             "runtime": {
               "refine_version": "0.3.1",
               "os": "windows",
@@ -44,10 +44,10 @@
             },
             "repository": {
               "location": "C:/dev/cos-desktop",
-              "requested_revision": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
-              "resolved_base_commit": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
+              "requested_revision": "c03c2b4492074a503bb70f510ca705212c654ffe",
+              "resolved_base_commit": "c03c2b4492074a503bb70f510ca705212c654ffe",
               "object_format": "sha1",
-              "final_head": "51f68ad738035385fc31dc5b3e70f1be4961afe8"
+              "final_head": "c03c2b4492074a503bb70f510ca705212c654ffe"
             },
             "limits": {
               "timeout_ms": 600000,
@@ -55,33 +55,33 @@
               "max_output_bytes": 16777216,
               "max_artifact_bytes": 16777216
             },
-            "accepted_at": "2026-10-28T05:46:02.810833900Z",
-            "ended_at": "2026-10-28T05:50:57.615349900Z",
-            "candidate_sha256": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5",
+            "accepted_at": "2026-10-28T06:36:33.082957900Z",
+            "ended_at": "2026-10-28T06:42:04.134641600Z",
+            "candidate_sha256": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7",
             "verification": [
               {
                 "id": "w8-fixtures",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 39615,
+                "duration_ms": 39655,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               },
               {
                 "id": "w8-negative",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 183353,
+                "duration_ms": 218759,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               },
               {
                 "id": "w8-native-verify",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 29083,
+                "duration_ms": 29046,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5"
+                "candidate_binding": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7"
               }
             ],
             "check_logs": [
@@ -97,7 +97,7 @@
                 "stderr": {
                   "relative_path": "logs/w8-fixtures/stderr",
                   "size_bytes": 113,
-                  "sha256": "sha256:4bb2b30f60e804d1e4623d188262fc8b2ffd9cabd75fde28f5d6f4138c9659aa",
+                  "sha256": "sha256:ff745bfd2088136aacd8f26812135439a421c9accbf22351ed5985ecea6c469a",
                   "truncated": false,
                   "secret": true
                 }
@@ -114,7 +114,7 @@
                 "stderr": {
                   "relative_path": "logs/w8-negative/stderr",
                   "size_bytes": 110,
-                  "sha256": "sha256:0d3b8ddd9c0cbea62c4862f71c5f28f8e81a52ad310a3931042c1a04279aa6f4",
+                  "sha256": "sha256:9fb83a5d1953c270cd962456eb5a23534872f17565a16408925353764180a82a",
                   "truncated": false,
                   "secret": true
                 }
@@ -147,14 +147,14 @@
               {
                 "id": "w8-1",
                 "relative_path": "artifacts/w8-1",
-                "size_bytes": 9641,
-                "sha256": "sha256:1600fc0d3f956b116f6ec210c4e6b9b730441795f290d9b9b422534b9ad52e11"
+                "size_bytes": 10468,
+                "sha256": "sha256:3664b5a47d337a63d53469ccd2c54a4ebab13260a87aa3b7f7d3502a4769016a"
               },
               {
                 "id": "w8-10",
                 "relative_path": "artifacts/w8-10",
                 "size_bytes": 51703,
-                "sha256": "sha256:32188461813a3063fb48972f84f1b5af77b233b57ed0cfd0135124b5578c7920"
+                "sha256": "sha256:29158db244e36a1ad12d1c143dea34205e9a2fa80f948991baebe92af1840ee0"
               },
               {
                 "id": "w8-11",
@@ -184,13 +184,13 @@
                 "id": "w8-15",
                 "relative_path": "artifacts/w8-15",
                 "size_bytes": 770,
-                "sha256": "sha256:c6050c14c7a6b7f9914318a40108cce9398acdea0c79dd3794d3b74c22a13cdd"
+                "sha256": "sha256:39d36382528898222c16ce425e5e2d90223e39b455de1c49ced4572f4aefa867"
               },
               {
                 "id": "w8-16",
                 "relative_path": "artifacts/w8-16",
                 "size_bytes": 2830,
-                "sha256": "sha256:b8b299a4f2cec5530bbcb8e0b2c70dae6a207f4fd7d279b2f35ad04161db6f9c"
+                "sha256": "sha256:732b1682279cccc5550b47ac96b558e725ce88ff2e81fb079f1a51b8f0147a50"
               },
               {
                 "id": "w8-17",
@@ -220,19 +220,19 @@
                 "id": "w8-20",
                 "relative_path": "artifacts/w8-20",
                 "size_bytes": 22869,
-                "sha256": "sha256:27f0b8c4ee2e77f47c7c656802faa318d3c6891dafbcfd0e7a5b6010d94198b8"
+                "sha256": "sha256:0ccb10f1b9a1a60319aaf257ab300ca42bce26d27ef202f2accf66db1c58dd33"
               },
               {
                 "id": "w8-21",
                 "relative_path": "artifacts/w8-21",
-                "size_bytes": 1448203,
-                "sha256": "sha256:b28836ae23340aee77907728541ff3e8f9789405f76824f735dc71c554e7be63"
+                "size_bytes": 1448204,
+                "sha256": "sha256:380f88c5d50baeaa4e36ddcee1da4be564dcae8dc02149e9a00f21b47c71a5da"
               },
               {
                 "id": "w8-22",
                 "relative_path": "artifacts/w8-22",
-                "size_bytes": 7652,
-                "sha256": "sha256:d476ae2ed20e05ddaa9de65f379384a401c65f98355334d315adad46a9379f07"
+                "size_bytes": 8268,
+                "sha256": "sha256:0593fd6e84dead728154740971630a9748073ac4906bce478d3f8ce359d6d470"
               },
               {
                 "id": "w8-23",
@@ -244,13 +244,13 @@
                 "id": "w8-24",
                 "relative_path": "artifacts/w8-24",
                 "size_bytes": 1436,
-                "sha256": "sha256:3d19af95d3f5e8629fb4a2ecbafdc485c67d9f6ef06eabe2520fe8d4ed6c80ba"
+                "sha256": "sha256:391b16c9ace741c81827322386944ac2b6ca670edf425d1f202aca7ffc4dcaa5"
               },
               {
                 "id": "w8-25",
                 "relative_path": "artifacts/w8-25",
                 "size_bytes": 8525,
-                "sha256": "sha256:c74cd9ae1c91091decb62f205bef994033d471a47a515eda358593324e37e6c8"
+                "sha256": "sha256:e609f1e63bbb17cf4fbc77c535c2ec446f32168c2a6b5ff6f2ecf0239590db79"
               },
               {
                 "id": "w8-26",
@@ -303,8 +303,8 @@
               {
                 "id": "w8-5",
                 "relative_path": "artifacts/w8-5",
-                "size_bytes": 27098,
-                "sha256": "sha256:fbad9119585fc3530fd600ce35894f83f35ef3fe41c718962de496d25f0a56a7"
+                "size_bytes": 27317,
+                "sha256": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439"
               },
               {
                 "id": "w8-6",
@@ -327,20 +327,20 @@
               {
                 "id": "w8-9",
                 "relative_path": "artifacts/w8-9",
-                "size_bytes": 450494,
-                "sha256": "sha256:8700536469e1a542e15cd263e7d98b51706920eaa061ab58ef55080af6b40727"
+                "size_bytes": 450521,
+                "sha256": "sha256:d20849be8dfc201396f397b9567c27ca7f0bdfd127df4f99711ab76c6ade4e2f"
               }
             ],
             "absent_outputs": [],
             "cleanup": "complete",
             "timings": {
-              "preparation_ms": 23604,
+              "preparation_ms": 23904,
               "execution_ms": 0,
-              "verification_ms": 268631,
-              "collection_ms": 2499,
-              "finalization_ms": 3
+              "verification_ms": 304427,
+              "collection_ms": 2648,
+              "finalization_ms": 2
             },
-            "duration_ms": 294798
+            "duration_ms": 331046
           }
         }
       },
@@ -355,12 +355,12 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "fe1c26cd-863d-411e-be2a-f53d313db8fb",
+            "gate_id": "b59b5b82-a988-4f9d-90a0-bd382f98d805",
             "state": "SUCCEEDED",
-            "request_sha256": "sha256:4a6591b4ca2455586daff028271d5f21ee5cf61c640c166c5b7ec725270bb342",
-            "terminal_state_sha256": "sha256:87eb0702430a3d7c1804ad492d7c81d408039c9bcda6f9c7f72720c044a178ae",
-            "observations_sha256": "sha256:b295f165b2664b48f02a69cae63429df85eaacf907b6184f3bbbb8bc0480240a",
-            "candidate_sha256": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5",
+            "request_sha256": "sha256:935925c43c0ea1f4eaee4f996daa3e640df23d2121b274f4e450eab558da0233",
+            "terminal_state_sha256": "sha256:4805a2f6fc6a5f4085b81e4639e860eb38bf01dcd62c9cbdce5c835236475d2a",
+            "observations_sha256": "sha256:803a2968eebbab6230c1bbb3cc4848f099372e0e1b47333bd3848ae46d47fcd6",
+            "candidate_sha256": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7",
             "artifacts": [
               {
                 "id": "w8-0",
@@ -371,14 +371,14 @@
               {
                 "id": "w8-1",
                 "relative_path": "artifacts/w8-1",
-                "size_bytes": 9641,
-                "sha256": "sha256:1600fc0d3f956b116f6ec210c4e6b9b730441795f290d9b9b422534b9ad52e11"
+                "size_bytes": 10468,
+                "sha256": "sha256:3664b5a47d337a63d53469ccd2c54a4ebab13260a87aa3b7f7d3502a4769016a"
               },
               {
                 "id": "w8-10",
                 "relative_path": "artifacts/w8-10",
                 "size_bytes": 51703,
-                "sha256": "sha256:32188461813a3063fb48972f84f1b5af77b233b57ed0cfd0135124b5578c7920"
+                "sha256": "sha256:29158db244e36a1ad12d1c143dea34205e9a2fa80f948991baebe92af1840ee0"
               },
               {
                 "id": "w8-11",
@@ -408,13 +408,13 @@
                 "id": "w8-15",
                 "relative_path": "artifacts/w8-15",
                 "size_bytes": 770,
-                "sha256": "sha256:c6050c14c7a6b7f9914318a40108cce9398acdea0c79dd3794d3b74c22a13cdd"
+                "sha256": "sha256:39d36382528898222c16ce425e5e2d90223e39b455de1c49ced4572f4aefa867"
               },
               {
                 "id": "w8-16",
                 "relative_path": "artifacts/w8-16",
                 "size_bytes": 2830,
-                "sha256": "sha256:b8b299a4f2cec5530bbcb8e0b2c70dae6a207f4fd7d279b2f35ad04161db6f9c"
+                "sha256": "sha256:732b1682279cccc5550b47ac96b558e725ce88ff2e81fb079f1a51b8f0147a50"
               },
               {
                 "id": "w8-17",
@@ -444,19 +444,19 @@
                 "id": "w8-20",
                 "relative_path": "artifacts/w8-20",
                 "size_bytes": 22869,
-                "sha256": "sha256:27f0b8c4ee2e77f47c7c656802faa318d3c6891dafbcfd0e7a5b6010d94198b8"
+                "sha256": "sha256:0ccb10f1b9a1a60319aaf257ab300ca42bce26d27ef202f2accf66db1c58dd33"
               },
               {
                 "id": "w8-21",
                 "relative_path": "artifacts/w8-21",
-                "size_bytes": 1448203,
-                "sha256": "sha256:b28836ae23340aee77907728541ff3e8f9789405f76824f735dc71c554e7be63"
+                "size_bytes": 1448204,
+                "sha256": "sha256:380f88c5d50baeaa4e36ddcee1da4be564dcae8dc02149e9a00f21b47c71a5da"
               },
               {
                 "id": "w8-22",
                 "relative_path": "artifacts/w8-22",
-                "size_bytes": 7652,
-                "sha256": "sha256:d476ae2ed20e05ddaa9de65f379384a401c65f98355334d315adad46a9379f07"
+                "size_bytes": 8268,
+                "sha256": "sha256:0593fd6e84dead728154740971630a9748073ac4906bce478d3f8ce359d6d470"
               },
               {
                 "id": "w8-23",
@@ -468,13 +468,13 @@
                 "id": "w8-24",
                 "relative_path": "artifacts/w8-24",
                 "size_bytes": 1436,
-                "sha256": "sha256:3d19af95d3f5e8629fb4a2ecbafdc485c67d9f6ef06eabe2520fe8d4ed6c80ba"
+                "sha256": "sha256:391b16c9ace741c81827322386944ac2b6ca670edf425d1f202aca7ffc4dcaa5"
               },
               {
                 "id": "w8-25",
                 "relative_path": "artifacts/w8-25",
                 "size_bytes": 8525,
-                "sha256": "sha256:c74cd9ae1c91091decb62f205bef994033d471a47a515eda358593324e37e6c8"
+                "sha256": "sha256:e609f1e63bbb17cf4fbc77c535c2ec446f32168c2a6b5ff6f2ecf0239590db79"
               },
               {
                 "id": "w8-26",
@@ -527,8 +527,8 @@
               {
                 "id": "w8-5",
                 "relative_path": "artifacts/w8-5",
-                "size_bytes": 27098,
-                "sha256": "sha256:fbad9119585fc3530fd600ce35894f83f35ef3fe41c718962de496d25f0a56a7"
+                "size_bytes": 27317,
+                "sha256": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439"
               },
               {
                 "id": "w8-6",
@@ -551,8 +551,8 @@
               {
                 "id": "w8-9",
                 "relative_path": "artifacts/w8-9",
-                "size_bytes": 450494,
-                "sha256": "sha256:8700536469e1a542e15cd263e7d98b51706920eaa061ab58ef55080af6b40727"
+                "size_bytes": 450521,
+                "sha256": "sha256:d20849be8dfc201396f397b9567c27ca7f0bdfd127df4f99711ab76c6ade4e2f"
               }
             ],
             "check_logs": [
@@ -568,7 +568,7 @@
                 "stderr": {
                   "relative_path": "logs/w8-fixtures/stderr",
                   "size_bytes": 113,
-                  "sha256": "sha256:4bb2b30f60e804d1e4623d188262fc8b2ffd9cabd75fde28f5d6f4138c9659aa",
+                  "sha256": "sha256:ff745bfd2088136aacd8f26812135439a421c9accbf22351ed5985ecea6c469a",
                   "truncated": false,
                   "secret": true
                 }
@@ -585,7 +585,7 @@
                 "stderr": {
                   "relative_path": "logs/w8-negative/stderr",
                   "size_bytes": 110,
-                  "sha256": "sha256:0d3b8ddd9c0cbea62c4862f71c5f28f8e81a52ad310a3931042c1a04279aa6f4",
+                  "sha256": "sha256:9fb83a5d1953c270cd962456eb5a23534872f17565a16408925353764180a82a",
                   "truncated": false,
                   "secret": true
                 }

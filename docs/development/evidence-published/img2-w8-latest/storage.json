@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "candidate": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
+  "candidate": "c03c2b4492074a503bb70f510ca705212c654ffe",
   "approval": "Successful-Gate workspace disposal per AGENTS.md and the caller-authorized finite retention step, applied only to these seven exact paths.",
   "removal_targets": [
-    "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/71f60580-65bd-4c90-992a-19795e8bcf48/work/repo",
-    "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/51879d5c-e842-495c-a3c8-fcfa01c353ef/work/repo",
-    "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/fe1c26cd-863d-411e-be2a-f53d313db8fb/work/repo",
-    "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/3f3cec15-ac4a-45ce-bc28-da1b263df52d/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/3f11d747-af6c-4f67-a499-bc746ab937a7/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/4b72a851-ce54-4e89-afc9-ccfbb6d62a4d/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/b59b5b82-a988-4f9d-90a0-bd382f98d805/work/repo",
+    "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/7159bc4e-52fd-4c20-a5f3-a0326446b5c1/work/repo",
     "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/clippy",
     "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/tests",
     "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/build"
@@ -18,29 +18,29 @@
   },
   "inventory": [
     {
-      "path": "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/71f60580-65bd-4c90-992a-19795e8bcf48/work/repo",
-      "files": 778,
-      "logical_bytes": 27060691
+      "path": "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/3f11d747-af6c-4f67-a499-bc746ab937a7/work/repo",
+      "files": 779,
+      "logical_bytes": 27148375
     },
     {
-      "path": "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/51879d5c-e842-495c-a3c8-fcfa01c353ef/work/repo",
-      "files": 778,
-      "logical_bytes": 27059961
+      "path": "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/4b72a851-ce54-4e89-afc9-ccfbb6d62a4d/work/repo",
+      "files": 779,
+      "logical_bytes": 27144023
     },
     {
-      "path": "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/fe1c26cd-863d-411e-be2a-f53d313db8fb/work/repo",
-      "files": 778,
-      "logical_bytes": 27120127
+      "path": "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/b59b5b82-a988-4f9d-90a0-bd382f98d805/work/repo",
+      "files": 779,
+      "logical_bytes": 27083867
     },
     {
-      "path": "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/3f3cec15-ac4a-45ce-bc28-da1b263df52d/work/repo",
-      "files": 778,
-      "logical_bytes": 27071964
+      "path": "C:/dev/cos-desktop-verification/img2-w8-2026-10-28/state/gates/7159bc4e-52fd-4c20-a5f3-a0326446b5c1/work/repo",
+      "files": 779,
+      "logical_bytes": 27145869
     },
     {
       "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/clippy",
       "files": 3015,
-      "logical_bytes": 663900856
+      "logical_bytes": 663884472
     },
     {
       "path": "C:/dev/cos-desktop-verification/img2-w6-2026-10-28/targets/r3/tests",
@@ -53,13 +53,13 @@
       "logical_bytes": 1592997024
     }
   ],
-  "files_removed": 12182,
-  "logical_bytes_removed": 4206765391,
+  "files_removed": 12186,
+  "logical_bytes_removed": 4206958398,
   "post_disposal_verify": {
-    "71f60580": "SUCCEEDED:32",
-    "51879d5c": "SUCCEEDED:32",
-    "fe1c26cd": "SUCCEEDED:32",
-    "3f3cec15": "SUCCEEDED:32"
+    "3f11d747": "SUCCEEDED:32",
+    "4b72a851": "SUCCEEDED:32",
+    "b59b5b82": "SUCCEEDED:32",
+    "7159bc4e": "SUCCEEDED:32"
   },
   "retained": [
     "gate request/state/observations/artifacts/logs/check-spools",
