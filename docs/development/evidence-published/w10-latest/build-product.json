@@ -1,0 +1,16 @@
+{
+  "bytes": 32275456,
+  "sha256": "sha256:cc738d56ce951ad3e872d72dd299ccbd3da9431579291b8778c9c37e979b748a",
+  "candidate": "f4564d146999c5a8732247b5ca9262334f89a571",
+  "build_gate": "790f641c-ad1d-448f-bc3c-1a1829f6cfa0",
+  "native_application_surface": "NOT_RUN: live desktop confirmation unanswered",
+  "retention": "Keep the only Gate-built executable for deferred native startup, outside disposable build intermediates.",
+  "retention_move": {
+    "old": "C:/dev/cos-desktop-verification/w10/targets/r1/build/debug/cos-desktop.exe",
+    "retained": "C:/dev/cos-desktop-verification/w10/native-app/cos-desktop.exe",
+    "sha256": "sha256:cc738d56ce951ad3e872d72dd299ccbd3da9431579291b8778c9c37e979b748a",
+    "single_move": true,
+    "old_absent": true,
+    "native_application_surface": "NOT_RUN"
+  }
+}

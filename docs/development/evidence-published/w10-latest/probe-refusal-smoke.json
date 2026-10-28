@@ -1,0 +1,45 @@
+{
+  "metadata_cap": {
+    "exit_code": 4,
+    "result": {
+      "outcome": "oversize",
+      "probe": "w10-system-drawing-metadata-v1",
+      "input_bytes": 5976,
+      "width": 256,
+      "height": 192,
+      "output_bytes": null,
+      "orientation_present": false,
+      "orientation_raw": null,
+      "icc_present": true,
+      "icc_readable": false,
+      "icc_length": null,
+      "icc_sha256": null,
+      "metadata_requested": true,
+      "metadata_error": null,
+      "reason": "metadata_cap_exceeded"
+    },
+    "output_present": false
+  },
+  "stale_output": {
+    "exit_code": 1,
+    "result": {
+      "outcome": "error",
+      "probe": "w10-system-drawing-metadata-v1",
+      "input_bytes": null,
+      "width": null,
+      "height": null,
+      "output_bytes": null,
+      "orientation_present": null,
+      "orientation_raw": null,
+      "icc_present": null,
+      "icc_readable": null,
+      "icc_length": null,
+      "icc_sha256": null,
+      "metadata_requested": true,
+      "metadata_error": null,
+      "reason": "output_exists"
+    },
+    "previous_bytes_unchanged": true
+  },
+  "scope": "Real W10-only GDI+ probe, metadata refusal and exclusive-output preservation; no product or pre-allocation GDI+ admission claim."
+}

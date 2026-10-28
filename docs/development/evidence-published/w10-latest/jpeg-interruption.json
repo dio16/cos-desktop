@@ -1,0 +1,78 @@
+{
+  "original_gate_id": "e840237f-e63e-4ac2-9650-1b62d72a7f23",
+  "recovery": {
+    "cli_interface_version": 2,
+    "operation": "gate.recover",
+    "outcome": {
+      "schema_version": 1,
+      "result": {
+        "schema_version": 1,
+        "gate_id": "e840237f-e63e-4ac2-9650-1b62d72a7f23",
+        "gate_label": "mp-img2-w10-r1-jpeg",
+        "state": "FAILED",
+        "receipt": {
+          "schema_version": 1,
+          "gate_id": "e840237f-e63e-4ac2-9650-1b62d72a7f23",
+          "gate_label": "mp-img2-w10-r1-jpeg",
+          "request_sha256": "sha256:8a7164664016a53f58e3a8ecba8f9d4f616ce3568c0897b806353e914f008f62",
+          "terminal_state_sha256": "sha256:b49923db35406afe1caa69d43f5bfda7aef47727b8cb3f2cce061dd1c40bfbfb",
+          "runtime": {
+            "refine_version": "0.3.1",
+            "os": "windows",
+            "architecture": "x86_64"
+          },
+          "repository": {
+            "location": "C:/dev/cos-desktop",
+            "requested_revision": "f4564d146999c5a8732247b5ca9262334f89a571"
+          },
+          "limits": {
+            "timeout_ms": 600000,
+            "termination_grace_ms": 5000,
+            "max_output_bytes": 16777216,
+            "max_artifact_bytes": 16777216
+          },
+          "accepted_at": "2026-10-28T12:57:08.748308700Z",
+          "ended_at": "2026-10-28T13:07:43.082960600Z",
+          "verification": [],
+          "check_logs": [],
+          "artifacts": [],
+          "absent_outputs": [],
+          "cleanup": "incomplete",
+          "timings": {
+            "preparation_ms": 0,
+            "execution_ms": 0,
+            "verification_ms": 0,
+            "collection_ms": 0,
+            "finalization_ms": 0
+          },
+          "failure": {
+            "code": "EXECUTOR_ERROR",
+            "stage": "verifying",
+            "detail": "interrupted",
+            "message": "the owner process disappeared before the record reached a terminal state; no task, check or Git command is replayed",
+            "retryable": false,
+            "cleanup": "incomplete",
+            "secondary": []
+          }
+        }
+      }
+    }
+  },
+  "recovery_exit_code": 7,
+  "observed_process_dependencies": [],
+  "retention": "Interrupted cleanup-incomplete workspace is retained untouched. No former PASS or cleanup completion is inferred.",
+  "replacement": {
+    "request": "jpeg-request-r2.json",
+    "candidate": "f4564d146999c5a8732247b5ca9262334f89a571",
+    "changed_fields": [
+      "gate_label"
+    ],
+    "allowed_checks": [
+      "img2-w8",
+      "img2-w9"
+    ],
+    "bounded_dispatches": 1,
+    "automatic_retries": 0,
+    "authority": "Standing caller implementation/Gate/repair loop; deliberate replacement after native dead-owner recovery and observed no remaining matching test processes."
+  }
+}

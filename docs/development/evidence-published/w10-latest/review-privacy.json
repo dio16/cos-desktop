@@ -1,0 +1,7 @@
+{
+  "files_scanned": 96,
+  "recognizable_credential_pattern_hits": [],
+  "source_archive": "w10-review-source-r3.zip",
+  "scope": "Selected exact-Git source and published structured evidence only. No private operator config, raw process logs, credentials, Git objects or desktop images. Pattern detection does not prove absence of every possible secret.",
+  "known_disclosure": "Structured receipts include local tooling/evidence paths; these published records are included in the caller-authorized dev push and Tern review."
+}

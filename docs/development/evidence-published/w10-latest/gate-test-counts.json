@@ -1,0 +1,199 @@
+{
+  "gate": "1ffaabdd-f3cb-4437-afba-caf03180110e",
+  "workspace_rust": {
+    "passed": 535,
+    "failed": 0,
+    "ignored": 1
+  },
+  "r0": {
+    "total": 352,
+    "executed": 316,
+    "passed": 316,
+    "skipped": 36,
+    "expected_failures": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped_cases": [
+      {
+        "test": "test_cli_refuses_a_probe_that_reports_success_then_fails (test_n03_observe.N03Observation.test_cli_refuses_a_probe_that_reports_success_then_fails)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_cli_refuses_an_unregistered_probe_code (test_n03_observe.N03Observation.test_cli_refuses_an_unregistered_probe_code)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_real_observation_of_a_window (test_n03_observe.N03Observation.test_real_observation_of_a_window)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_cpu_labels_are_explicit (test_n06_attribution.N06Attribution.test_cpu_labels_are_explicit)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_retained_capture_reports_counters (test_n06_attribution.N06Attribution.test_retained_capture_reports_counters)",
+        "reason": "NOT_RUN: the retained S2B bundle is not present in this checkout"
+      },
+      {
+        "test": "test_extra_app_reported_field_is_refused (test_n06_probe.CliFailClosedTests.test_extra_app_reported_field_is_refused)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_nonzero_exit_after_valid_json_is_refused (test_n06_probe.CliFailClosedTests.test_nonzero_exit_after_valid_json_is_refused)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_oversized_output_is_refused (test_n06_probe.CliFailClosedTests.test_oversized_output_is_refused)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_probe_timeout_is_bounded (test_n06_probe.CliFailClosedTests.test_probe_timeout_is_bounded)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_real_cli_records_a_present_value_from_the_fake_probe (test_n06_probe.CliFailClosedTests.test_real_cli_records_a_present_value_from_the_fake_probe)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_registered_probe_error_passes_through (test_n06_probe.CliFailClosedTests.test_registered_probe_error_passes_through)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_truncated_output_is_refused (test_n06_probe.CliFailClosedTests.test_truncated_output_is_refused)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_unregistered_probe_error_code_is_closed (test_n06_probe.CliFailClosedTests.test_unregistered_probe_error_code_is_closed)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_unregistered_reason_code_from_the_probe_is_refused (test_n06_probe.CliFailClosedTests.test_unregistered_reason_code_from_the_probe_is_refused)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_shim_ahead_on_path_is_never_the_interpreter (test_n06_probe.LegacyCpuSpawnTests.test_shim_ahead_on_path_is_never_the_interpreter)",
+        "reason": "NOT_RUN: no powershell.exe for an absolute-path check"
+      },
+      {
+        "test": "test_real_probe_degrades_for_a_live_windowless_process (test_n06_probe.RealHostProbeTests.test_real_probe_degrades_for_a_live_windowless_process)",
+        "reason": "NOT_RUN: Windows PowerShell is not on PATH"
+      },
+      {
+        "test": "test_arbitrary_repo_root_is_refused_with_a_closed_error (test_n07_verify.N07Verifier.test_arbitrary_repo_root_is_refused_with_a_closed_error)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_historical_record_matches_its_recorded_archive_and_names_live_drift (test_n07_verify.N07Verifier.test_historical_record_matches_its_recorded_archive_and_names_live_drift)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_live_tree_matches_the_recorded_baseline (test_n07_verify.N07Verifier.test_live_tree_matches_the_recorded_baseline)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_mismatch_still_exits_nonzero_and_is_named (test_n07_verify.N07Verifier.test_mismatch_still_exits_nonzero_and_is_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_missing_expected_value_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_expected_value_is_not_measured_while_live_drift_stays_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_missing_helper_is_not_measured_while_live_drift_stays_named (test_n07_verify.N07Verifier.test_missing_helper_is_not_measured_while_live_drift_stays_named)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_omitted_repo_root_uses_the_canonical_root (test_n07_verify.N07Verifier.test_omitted_repo_root_uses_the_canonical_root)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_same_inputs_produce_identical_record_bytes (test_n07_verify.N07Verifier.test_same_inputs_produce_identical_record_bytes)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_scratch_copy_only_is_not_verified_and_names_the_path_item (test_n07_verify.N07Verifier.test_scratch_copy_only_is_not_verified_and_names_the_path_item)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_tampered_manifest_names_the_manifest_mismatch (test_n07_verify.N07Verifier.test_tampered_manifest_names_the_manifest_mismatch)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_verdict_precedence_names_both_kinds (test_n07_verify.N07Verifier.test_verdict_precedence_names_both_kinds)",
+        "reason": "NOT_RUN: the new-baseline N07 inputs are not present in this checkout"
+      },
+      {
+        "test": "test_retained_bundles_are_classified_cancelled_and_observed (test_s2b_contracts.S2BWireContract.test_retained_bundles_are_classified_cancelled_and_observed)",
+        "reason": "NOT_RUN: the retained S2B bundle is not present in this checkout"
+      },
+      {
+        "test": "test_bundle_limit_rejects_an_oversized_bundle (test_s3_replay.S3Replay.test_bundle_limit_rejects_an_oversized_bundle)",
+        "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+      },
+      {
+        "test": "test_bundle_with_its_own_result_refuses_caller_acknowledgement (test_s3_replay.S3Replay.test_bundle_with_its_own_result_refuses_caller_acknowledgement)",
+        "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+      },
+      {
+        "test": "test_bundle_without_its_own_result_needs_caller_acknowledgement (test_s3_replay.S3Replay.test_bundle_without_its_own_result_needs_caller_acknowledgement)",
+        "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+      },
+      {
+        "test": "test_bundle_without_its_own_result_refuses_a_separate_file (test_s3_replay.S3Replay.test_bundle_without_its_own_result_refuses_a_separate_file)",
+        "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+      },
+      {
+        "test": "test_cli_bundle_binds_identity_from_the_retained_record (test_s3_replay.S3Replay.test_cli_bundle_binds_identity_from_the_retained_record)",
+        "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+      },
+      {
+        "test": "test_cli_bundle_refuses_a_different_result (test_s3_replay.S3Replay.test_cli_bundle_refuses_a_different_result)",
+        "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+      },
+      {
+        "test": "test_cli_refuses_bundle_and_free_form_identity_together (test_s3_replay.S3Replay.test_cli_refuses_bundle_and_free_form_identity_together)",
+        "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout"
+      },
+      {
+        "test": "test_retained_s2_bundle_replays_deterministically (test_s3_replay.S3Replay.test_retained_s2_bundle_replays_deterministically)",
+        "reason": "NOT_RUN: the retained S2 bundle is not present in this checkout; no simulated replay is substituted"
+      }
+    ]
+  },
+  "feature_route": "NOT_RUN for W10; no feature-code change and no older result transferred.",
+  "image_regression_suites": [
+    {
+      "suite": "img2-w1-w7",
+      "gate": "d20664d7-adc3-4dbc-aa91-82dc17781312",
+      "tests": 180,
+      "duration_seconds": 193.368,
+      "status": "OK",
+      "stderr_sha256": "sha256:49ca853de09e4b1e309ab6701abd5a3321c0bc611a8f38a413d98ebeb208dec7"
+    },
+    {
+      "suite": "img2-w8",
+      "gate": "9843e96a-7697-4049-aa8e-47ce71a433fe",
+      "tests": 14,
+      "duration_seconds": 293.777,
+      "status": "OK",
+      "stderr_sha256": "sha256:7979c3aaf1e82e6a90076e9056f05e8037e1f66258f64f86cac062fb5c32892a"
+    },
+    {
+      "suite": "img2-w9",
+      "gate": "9843e96a-7697-4049-aa8e-47ce71a433fe",
+      "tests": 12,
+      "duration_seconds": 269.319,
+      "status": "OK",
+      "stderr_sha256": "sha256:c8a810fa8f30880459537e1b58df80d9a86fb9545df95e263eaaf53403df413e"
+    },
+    {
+      "suite": "w10-semantic-tests",
+      "gate": "1dfa42f2-12e7-4376-a197-7d562e60e213",
+      "tests": 7,
+      "duration_seconds": 94.613,
+      "status": "OK",
+      "stderr_sha256": "sha256:a299ce860eb036fb942ab9ca7c35afee51e05abd703fbdd8319824c29a9d79f8"
+    }
+  ],
+  "image_test_total": 213
+}

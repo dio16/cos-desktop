@@ -1,0 +1,11 @@
+{
+  "scope": "Only origin/dev..dev, no backup refs, tags, mirror, main or release. Generated structured fixtures/latest evidence are retained under ADR-0013; private operator configs/process logs/executables remain outside the committed tree.",
+  "outgoing_commits": 206,
+  "blobs_scanned": 987,
+  "blob_bytes": 68528325,
+  "recognized_credential_pattern_hits": [],
+  "private_evidence_paths": [],
+  "head": "f4564d146999c5a8732247b5ca9262334f89a571",
+  "remote_tracking_base": "16ce231c452e97b3ca15695c5f326c45f8851067",
+  "limits": "Pattern detection is not proof that every possible secret is absent. Does not authorize private predecessor or backup publication."
+}

@@ -2,9 +2,11 @@
   "cards": 62,
   "single_contract_issues": [],
   "hard_edges": 41,
+  "graph_nodes": 62,
   "dag_acyclic": true,
   "changed_scope_links_missing": [],
   "full_decode_prerequisite": "MP-IMG2 -> MP-IMG3",
+  "img2_img3_edge_present": true,
   "native_application_surface": {
     "status": "NOT_RUN",
     "reason": "Live computer.control.acquire unanswered; no application startup or GUI claim. Windows WIC/GDI+ matrix completed separately."

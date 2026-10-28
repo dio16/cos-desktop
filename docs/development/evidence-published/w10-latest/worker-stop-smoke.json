@@ -1,0 +1,15 @@
+{
+  "failure": "ValueError:worker_deadline_exceeded",
+  "reaped": true,
+  "exit_code": 1,
+  "output": {
+    "present": false,
+    "bytes": 0,
+    "sha256": null,
+    "hex": null,
+    "width": null,
+    "height": null,
+    "rgba_sha256": null
+  },
+  "scope": "Real PowerShell worker deadline termination/reaping; not in-decoder cooperative cancellation or application GUI smoke."
+}

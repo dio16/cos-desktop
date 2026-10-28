@@ -1,0 +1,444 @@
+{
+  "candidate": "f4564d146999c5a8732247b5ca9262334f89a571",
+  "archive": "w10-review-source-r3.zip",
+  "bytes": 260708,
+  "sha256": "sha256:cf7b25fb2049efbcfd1a66165f49ed2daefeb4d51701991797918b7801132ad2",
+  "source_subset": true,
+  "purpose": "Exact Git-blob W10 and existing image helper source subset for portable review, not a full Git object database. Gates verify the full pinned repository. Git archive uses command-local core.autocrlf=false; earlier CRLF archives are superseded and not submitted.",
+  "entries": [
+    {
+      "path": "Cargo.lock",
+      "bytes": 158990,
+      "sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w10_metadata_fixtures.py",
+      "bytes": 5287,
+      "sha256": "sha256:71797a9151c29f1a415d12aac5eabc81495ba5986ab31720016c359426f51a31",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w10_metadata_negative.py",
+      "bytes": 7484,
+      "sha256": "sha256:3189b1996ae90d128b0fe79b8423f80807b4df62ca9a86d1bda09765e83efbdb",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w2_resource_verify.py",
+      "bytes": 10142,
+      "sha256": "sha256:1d5cedeff466c9b5e96b000613efcb3b64bc4ed96effec33fa3fd7994c1e982b",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w2_worker_stop.py",
+      "bytes": 7896,
+      "sha256": "sha256:4dc354ebbed49873dc567a8a02628c4889ba8e572e20a94d0e88af21475862ac",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w3_fixtures.py",
+      "bytes": 3219,
+      "sha256": "sha256:56e41f73958af67328287fc53a4268254ebca8c5dc6df0663506663adec729a6",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w3_oracle.py",
+      "bytes": 4344,
+      "sha256": "sha256:c70843ff04a33bae2131818bf23e70423bcaa36b3987271bb1709d4cdc3e42d9",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w3_verify.py",
+      "bytes": 10958,
+      "sha256": "sha256:d155d823b7e2dc3be0f342ff98212336d25f16d2a636b56b31067be2b1f6a0cf",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w4_fixtures.py",
+      "bytes": 2760,
+      "sha256": "sha256:faca6bb057bbbe119f9d0d92832fa6304c8780c9512efbda58158c0802fc8877",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w4_verify.py",
+      "bytes": 9948,
+      "sha256": "sha256:823a866009fe6d368dc8069e6c108a56a0b20ead131e6e3dad09981d1df3b84c",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w5_verify.py",
+      "bytes": 14750,
+      "sha256": "sha256:ae8ad7b839759ae3663e0639ea6ff5434b71ba8c31c3473186870d8aed5f7766",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w6_fixtures.py",
+      "bytes": 5157,
+      "sha256": "sha256:ab027fbe34161701ee629b0f3df250d7a628d101a45bbfb471ab13ed16936576",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w6_memory.py",
+      "bytes": 3480,
+      "sha256": "sha256:985b57fb4c88bc77d0b2534bdb48aefa42917b48902c06dd65d790812455a611",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w6_negative.py",
+      "bytes": 9638,
+      "sha256": "sha256:7d0a977c770fc05ad6ac291c917fc8c6fc00d57ceaf6a7a72cd2e9d40d3003d9",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w7_admission.py",
+      "bytes": 4205,
+      "sha256": "sha256:ff38e3f974231397fc55c779e24eeb28caf0df8bd1e3e1a45dd5ae072351a90f",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w7_fixtures.py",
+      "bytes": 6395,
+      "sha256": "sha256:f6386ac87b65aa73c5bdfd27ba3ef1af22c65fd4d56bc0d6a3d4060b477db076",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w7_negative.py",
+      "bytes": 10538,
+      "sha256": "sha256:7fdb91dae74a551606a17ec5799a6d158a0886c9347230a5e7f68a34dd23c354",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w8_fixtures.py",
+      "bytes": 6379,
+      "sha256": "sha256:475eb4d6e14ff64741c933daf35a1997732ff83c214304f2b9a80b0d233599a4",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w8_negative.py",
+      "bytes": 11244,
+      "sha256": "sha256:b4492e4dffed9f3744c26ac1840e5e5f7f6815ccec884ad9260a0ea31c7e5b8a",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w9_progressive_fixtures.py",
+      "bytes": 4448,
+      "sha256": "sha256:fe9d6b61fc729f9c9c121efd985fde89853dd884d6564edc38babb51d4995301",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w9_progressive_negative.py",
+      "bytes": 10878,
+      "sha256": "sha256:14958eff57b24d1639abb227d08644d374fd4e7c5c773201490ec60ea44c0617",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w10_metadata_fixtures.py",
+      "bytes": 7440,
+      "sha256": "sha256:6dd8295bf7f86f24cc9cb37cbf479211010073297e4a9513a6cd37038feb37ed",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w10_metadata_matrix.py",
+      "bytes": 10173,
+      "sha256": "sha256:872f2b2a70fc93d629df81a3ac35e01ddc3ccbb24afb2b1a825daf56c896107a",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w10_metadata_pixels.py",
+      "bytes": 4505,
+      "sha256": "sha256:cbf648dc928fc0d98c35bf2a07e0ed258418f6e3c8c4c9b294b0590c7da420c4",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w10_metadata_reference.py",
+      "bytes": 9266,
+      "sha256": "sha256:c31a8b23641b97c3c2338fc990d5a6e7c807d766e8fdf04370f4629872535f7a",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w10_metadata_verify.py",
+      "bytes": 14773,
+      "sha256": "sha256:9e46a198c3fa080071419b7c084a751a332c20d640ae00c9270a42bf0e43dbd5",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_independent_oracle.py",
+      "bytes": 9766,
+      "sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_probe_selftest.ps1",
+      "bytes": 23925,
+      "sha256": "sha256:22f86178b22642995ed2a74742e8990f4a88481da7af228770c2a88ea9f86caf",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+      "bytes": 28958,
+      "sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+      "bytes": 26365,
+      "sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w3_fixtures.py",
+      "bytes": 5398,
+      "sha256": "sha256:27d209e20615a515ea3ff435c2153c698cc111375ff78fc818aab5c54a900735",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w3_native_matrix.py",
+      "bytes": 10534,
+      "sha256": "sha256:fca17e82aa3ae396726af3d0dddf476946f94e03ab8300aaeed8c81a64c64f15",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w3_oracle.py",
+      "bytes": 5883,
+      "sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w3_verify.py",
+      "bytes": 16445,
+      "sha256": "sha256:47446b77d1ee61531d4bcfaa475c01d84dbfba67e301f1ba50f329f8243036e7",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w4_fixtures.py",
+      "bytes": 4581,
+      "sha256": "sha256:e9a8ec23620799a1cef246b1c48078b045fca4d3fc0cb530f25192a6d9b72c89",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w4_region_matrix.py",
+      "bytes": 8194,
+      "sha256": "sha256:04d93382da88482a90570be12fa98474600c636e7cd88be66b53469c37287966",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w4_region_oracle.py",
+      "bytes": 5745,
+      "sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w4_region_verify.py",
+      "bytes": 17936,
+      "sha256": "sha256:7450b7e4c77ac32ecdc431e51773bece8d151943424875814c65c7a32b2972f9",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w5_metadata_fixtures.py",
+      "bytes": 9180,
+      "sha256": "sha256:dc195973d36e30a74f362ca4abe6e1024b4f8a1ef381ed64aead98d62c22d0a5",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w5_metadata_matrix.py",
+      "bytes": 6818,
+      "sha256": "sha256:1f20504b64848c1c6b030fbfaa2bdf44a9db244338c912235b6c56c8b1dfbc0e",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w5_metadata_oracle.py",
+      "bytes": 6744,
+      "sha256": "sha256:bb2910bac17c47677058bb79ca24b21f3a87356d1a0b432c9427a37193bbab60",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w5_metadata_verify.py",
+      "bytes": 19522,
+      "sha256": "sha256:df6d45834b98e1c5fd9a67fa39ae6da5639d41fe9cd5be715339a36fab349643",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_fixtures.py",
+      "bytes": 9459,
+      "sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_matrix.py",
+      "bytes": 12387,
+      "sha256": "sha256:ebaf3b3f94f52114ff52db85186b2af90a088a0aec466fdd183a03ad6d1b7184",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_sample.py",
+      "bytes": 19017,
+      "sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_verify.py",
+      "bytes": 23316,
+      "sha256": "sha256:99cc5ecb251c71e42340614d51de471029b8a3247e29ee12f8dabc553972e919",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w7_large_fixtures.py",
+      "bytes": 11614,
+      "sha256": "sha256:fefb3724623f79d5ac4f1b98b4af43c8dddde0dfa2e727294bf7e208ac2707bc",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w7_large_matrix.py",
+      "bytes": 12484,
+      "sha256": "sha256:53c84378b68b4a0a5c77251a013f2e207b38cf8315a76440e7260ea6dc097e56",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w7_large_oracle.py",
+      "bytes": 12588,
+      "sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w7_large_verify.py",
+      "bytes": 30502,
+      "sha256": "sha256:74d8ca71fd545bf2991316c2fd6c34073b376763744cfc380b43b97e5ab554f8",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w8_jpeg_fixtures.py",
+      "bytes": 15609,
+      "sha256": "sha256:033389d5b1c700b1da09516f42b1bc4a0cc2a861fb307e9da1efbd068c843925",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w8_jpeg_matrix.py",
+      "bytes": 16749,
+      "sha256": "sha256:339801987159e229c0f7691f3f42b54313133b34b167bd31289fd6ea13662085",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w8_jpeg_reference.py",
+      "bytes": 11157,
+      "sha256": "sha256:99b719b6997c4ff0a0a492c1b631910606afc5d29236ce686f37688ddfdc9f57",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w8_jpeg_verify.py",
+      "bytes": 27864,
+      "sha256": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w9_progressive_fixtures.py",
+      "bytes": 8736,
+      "sha256": "sha256:3c4e8da7c82ba9aeef890ec10feebc570b34caae3ba2138ec465990754cea86e",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w9_progressive_matrix.py",
+      "bytes": 10902,
+      "sha256": "sha256:3309e58c7a8bc43eb1d20ad1749c76419e0f28f403ca036ed07ae1698ac0a21a",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w9_progressive_reference.py",
+      "bytes": 7875,
+      "sha256": "sha256:85d813ae25d6512beadeb2be106519fc5a992d9c4613b1d89998b709c135e0fd",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w9_progressive_verify.py",
+      "bytes": 24230,
+      "sha256": "sha256:bd5202575bfb763db35b15e8fc3f437a398501ac1899c26603b8da17c55efb65",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/gdiplus_metadata_probe.ps1",
+      "bytes": 5562,
+      "sha256": "sha256:81e4640bf80822fddd0b94032ec5cc4db2e81667f3acede58cce7b0ca92763bc",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/gdiplus_probe.ps1",
+      "bytes": 15826,
+      "sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+      "bytes": 6399,
+      "sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
+      "raw_equal": true,
+      "lf_equal": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+      "bytes": 51013,
+      "sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c",
+      "raw_equal": true,
+      "lf_equal": true
+    }
+  ]
+}

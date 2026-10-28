@@ -11,8 +11,8 @@
       "discovered": true,
       "loaded": true,
       "version": "0.3.1",
-      "invoked": "describe operation gate.run",
-      "execution": "not yet dispatched"
+      "invoked": "describe, native preflight, gate, status, inspect, verify, recover",
+      "execution": "Five Gates SUCCEEDED on f4564d146999c5a8732247b5ca9262334f89a571; 44 identical captured outputs each; post-disposal integrity unchanged. The first interrupted JPEG Gate remains FAILED/cleanup-incomplete and retained; one explicit replacement succeeded."
     },
     "tern-chatgpt-review": {
       "discovered": true,
@@ -21,5 +21,5 @@
       "execution": "existing authenticated directive read; W10 review pending"
     }
   },
-  "scope": "No Runtime, main, push, release or product policy authorization inferred."
+  "scope": "No Runtime, main, release or product policy authority inferred. The Caller explicitly requires dev push and remote-SHA confirmation before every Tern evaluation."
 }

@@ -1,0 +1,104 @@
+{
+  "native_source": "95b90483fd3bf4e4619a305c0ec02065ed6b76d8",
+  "gate_candidate": "f4564d146999c5a8732247b5ca9262334f89a571",
+  "files": 19,
+  "all_match": true,
+  "rows": [
+    {
+      "path": "Cargo.lock",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w10_metadata_fixtures.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/tests/test_w10_metadata_negative.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w10_metadata_fixtures.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w10_metadata_matrix.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w10_metadata_pixels.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w10_metadata_reference.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w10_metadata_verify.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_independent_oracle.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w3_fixtures.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w4_region_oracle.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w5_metadata_fixtures.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w5_metadata_oracle.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w8_jpeg_fixtures.py",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/gdiplus_metadata_probe.ps1",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+      "native_git_blob_matches_record": true,
+      "native_equals_candidate": true
+    }
+  ],
+  "scope": "Exact Git blobs; no claim that Native and Gate commits are the same SHA."
+}
