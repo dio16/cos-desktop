@@ -1,0 +1,297 @@
+{
+  "schema_version": 1,
+  "source_commit": "364097165c58365ac2cf8850a468770085088d10",
+  "fixtures": [
+    {
+      "case_id": "meta_plain",
+      "kind": "plain",
+      "bytes": 5418,
+      "sha256": "sha256:914238c09759e13c235621f68d749dc941fd0d7b9e90655759005a67e2c8210b",
+      "markers": [
+        "SOI",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS"
+      ],
+      "classification": "METADATA_ABSENT",
+      "exif": null,
+      "exif_error": null,
+      "icc": null,
+      "icc_error": null,
+      "icc_partial": null,
+      "expected_transform": "none",
+      "expected_output_width": 256,
+      "expected_output_height": 192
+    },
+    {
+      "case_id": "exif_orient1",
+      "kind": "orientation",
+      "bytes": 5454,
+      "sha256": "sha256:59b1431811bd098373c14efbe8f5cd32c585535c45f69d61edd264f2bae17f0c",
+      "markers": [
+        "SOI",
+        "APP1",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS"
+      ],
+      "classification": "METADATA_PARSED",
+      "exif": {
+        "byte_order": "II",
+        "entries": [
+          274
+        ],
+        "orientation": 1
+      },
+      "exif_error": null,
+      "icc": null,
+      "icc_error": null,
+      "icc_partial": null,
+      "expected_transform": "identity",
+      "expected_output_width": 256,
+      "expected_output_height": 192
+    },
+    {
+      "case_id": "exif_orient3",
+      "kind": "orientation",
+      "bytes": 5454,
+      "sha256": "sha256:3e8cba6a370003620ba0754a80b83a2b84755404bb566f1d8eb8d02bf551e23c",
+      "markers": [
+        "SOI",
+        "APP1",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS"
+      ],
+      "classification": "METADATA_PARSED",
+      "exif": {
+        "byte_order": "II",
+        "entries": [
+          274
+        ],
+        "orientation": 3
+      },
+      "exif_error": null,
+      "icc": null,
+      "icc_error": null,
+      "icc_partial": null,
+      "expected_transform": "rotate_180",
+      "expected_output_width": 256,
+      "expected_output_height": 192
+    },
+    {
+      "case_id": "exif_orient6",
+      "kind": "orientation",
+      "bytes": 5454,
+      "sha256": "sha256:d1c119312f09417081e6d53689b324e852ac9d321abedf9a04c66ea3d64675c6",
+      "markers": [
+        "SOI",
+        "APP1",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS"
+      ],
+      "classification": "METADATA_PARSED",
+      "exif": {
+        "byte_order": "II",
+        "entries": [
+          274
+        ],
+        "orientation": 6
+      },
+      "exif_error": null,
+      "icc": null,
+      "icc_error": null,
+      "icc_partial": null,
+      "expected_transform": "rotate_90_cw",
+      "expected_output_width": 192,
+      "expected_output_height": 256
+    },
+    {
+      "case_id": "exif_orient8",
+      "kind": "orientation",
+      "bytes": 5454,
+      "sha256": "sha256:e97c384847d6eba4c909806485ab5dc4c95a88efa3e0173726c6d388ae971f2d",
+      "markers": [
+        "SOI",
+        "APP1",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS"
+      ],
+      "classification": "METADATA_PARSED",
+      "exif": {
+        "byte_order": "II",
+        "entries": [
+          274
+        ],
+        "orientation": 8
+      },
+      "exif_error": null,
+      "icc": null,
+      "icc_error": null,
+      "icc_partial": null,
+      "expected_transform": "rotate_90_ccw",
+      "expected_output_width": 192,
+      "expected_output_height": 256
+    },
+    {
+      "case_id": "icc_valid",
+      "kind": "icc",
+      "bytes": 5976,
+      "sha256": "sha256:75ba046ef92bf63972c716aad822348f1cda3ed7cfd48e815fe070533621fe4c",
+      "markers": [
+        "SOI",
+        "APP2",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS"
+      ],
+      "classification": "METADATA_PARSED",
+      "exif": null,
+      "exif_error": null,
+      "icc": {
+        "sequence": 1,
+        "total": 1,
+        "bytes": 540,
+        "sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
+        "colour_space": "RGB",
+        "version": "2.1"
+      },
+      "icc_error": null,
+      "icc_partial": {
+        "bytes": 540,
+        "payload_sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
+        "declared_size": 540
+      },
+      "expected_transform": "none",
+      "expected_output_width": 256,
+      "expected_output_height": 192
+    },
+    {
+      "case_id": "exif_truncated",
+      "kind": "malformed",
+      "bytes": 5436,
+      "sha256": "sha256:135a077491e8aa5fdeb82b53e1dc6d9d8c93543cb4039fdc1400771171278b2c",
+      "markers": [
+        "SOI",
+        "APP1",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS"
+      ],
+      "classification": "METADATA_TAMPERED",
+      "exif": null,
+      "exif_error": "ValueError:exif_ifd_offset_invalid",
+      "icc": null,
+      "icc_error": null,
+      "icc_partial": null,
+      "expected_transform": "none",
+      "expected_output_width": 256,
+      "expected_output_height": 192
+    },
+    {
+      "case_id": "icc_truncated",
+      "kind": "malformed",
+      "bytes": 5462,
+      "sha256": "sha256:d0d09bac3ecef13c8bb1e255b0f21d5da9ffca5ef92eca9f6fb9c8b01c6e5b7d",
+      "markers": [
+        "SOI",
+        "APP2",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS"
+      ],
+      "classification": "METADATA_TAMPERED",
+      "exif": null,
+      "exif_error": null,
+      "icc": null,
+      "icc_error": "ValueError:icc_profile_truncated",
+      "icc_partial": {
+        "bytes": 26,
+        "payload_sha256": "sha256:6a5b9b7dc477ea39cdd6d8c72b9afc4ac05b1ce0f4f10b72ad6cd2bd5656b4d0",
+        "declared_size": 540
+      },
+      "expected_transform": "none",
+      "expected_output_width": 256,
+      "expected_output_height": 192
+    },
+    {
+      "case_id": "exif_icc_combined",
+      "kind": "combined",
+      "bytes": 6012,
+      "sha256": "sha256:dd8c9367e9eeab5536fecebefa4b5c792fd77a386588548f1466f2020b247937",
+      "markers": [
+        "SOI",
+        "APP1",
+        "APP2",
+        "APP0",
+        "DQT",
+        "SOF0",
+        "DHT",
+        "DHT",
+        "SOS"
+      ],
+      "classification": "METADATA_PARSED",
+      "exif": {
+        "byte_order": "II",
+        "entries": [
+          274
+        ],
+        "orientation": 6
+      },
+      "exif_error": null,
+      "icc": {
+        "sequence": 1,
+        "total": 1,
+        "bytes": 540,
+        "sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
+        "colour_space": "RGB",
+        "version": "2.1"
+      },
+      "icc_error": null,
+      "icc_partial": {
+        "bytes": 540,
+        "payload_sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
+        "declared_size": 540
+      },
+      "expected_transform": "rotate_90_cw",
+      "expected_output_width": 192,
+      "expected_output_height": 256
+    }
+  ],
+  "icc_profile": {
+    "bytes": 540,
+    "sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
+    "header": {
+      "size": 540,
+      "signature": "acsp",
+      "colour_space": "RGB"
+    },
+    "provenance": "minimal matrix profile generated by apps/desktop/devtools/img2/w5_metadata_fixtures._profile; no colour-fidelity claim"
+  }
+}

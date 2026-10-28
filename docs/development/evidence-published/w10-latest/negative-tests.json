@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "control": {
+    "ok": true
+  },
+  "shipped_classes": 30,
+  "all_rejected": true,
+  "mutations": [
+    {
+      "class": 1,
+      "name": "orientation_value_forged",
+      "rejected": true,
+      "reason": "wic_orientation_value_mismatch"
+    },
+    {
+      "class": 2,
+      "name": "orientation_presence_forged",
+      "rejected": true,
+      "reason": "wic_orientation_presence_mismatch"
+    },
+    {
+      "class": 3,
+      "name": "transform_request_forged",
+      "rejected": true,
+      "reason": "transform_request_mismatch"
+    },
+    {
+      "class": 4,
+      "name": "transform_applied_forged",
+      "rejected": true,
+      "reason": "transform_applied_mismatch"
+    },
+    {
+      "class": 5,
+      "name": "transform_dims_swapped",
+      "rejected": true,
+      "reason": "transform_dims_mismatch"
+    },
+    {
+      "class": 6,
+      "name": "icc_presence_forged",
+      "rejected": true,
+      "reason": "gdiplus_icc_presence_mismatch"
+    },
+    {
+      "class": 7,
+      "name": "icc_length_forged",
+      "rejected": true,
+      "reason": "wic_icc_length_mismatch"
+    },
+    {
+      "class": 8,
+      "name": "icc_digest_forged",
+      "rejected": true,
+      "reason": "gdiplus_icc_digest_mismatch"
+    },
+    {
+      "class": 9,
+      "name": "truncated_icc_promoted",
+      "rejected": true,
+      "reason": "gdiplus_truncated_icc_payload_mismatch"
+    },
+    {
+      "class": 10,
+      "name": "truncated_icc_length_forged",
+      "rejected": true,
+      "reason": "gdiplus_truncated_icc_length_mismatch"
+    },
+    {
+      "class": 11,
+      "name": "wic_colour_contexts_forged",
+      "rejected": true,
+      "reason": "wic_colour_context_count_invalid"
+    },
+    {
+      "class": 12,
+      "name": "gdiplus_icc_on_absent",
+      "rejected": true,
+      "reason": "gdiplus_icc_presence_mismatch"
+    },
+    {
+      "class": 13,
+      "name": "structure_classification_flipped",
+      "rejected": true,
+      "reason": "row_structure_not_reproducible:exif_orient6"
+    },
+    {
+      "class": 14,
+      "name": "unknown_marker_added",
+      "rejected": true,
+      "reason": "row_structure_not_reproducible:meta_plain"
+    },
+    {
+      "class": 15,
+      "name": "fixture_digest_forged",
+      "rejected": true,
+      "reason": "fixture_digest_mismatch:meta_plain"
+    },
+    {
+      "class": 16,
+      "name": "fixture_bytes_forged",
+      "rejected": true,
+      "reason": "fixture_bytes_mismatch:meta_plain"
+    },
+    {
+      "class": 17,
+      "name": "leg_removed",
+      "rejected": true,
+      "reason": "leg_set_invalid:meta_plain"
+    },
+    {
+      "class": 18,
+      "name": "leg_order_swapped",
+      "rejected": true,
+      "reason": "leg_set_invalid:icc_valid"
+    },
+    {
+      "class": 19,
+      "name": "leg_case_binding_forged",
+      "rejected": true,
+      "reason": "leg_case_binding_invalid:wic_metadata"
+    },
+    {
+      "class": 20,
+      "name": "leg_candidate_binding_forged",
+      "rejected": true,
+      "reason": "leg_candidate_binding_invalid:wic_metadata"
+    },
+    {
+      "class": 21,
+      "name": "tamper_leg_promoted",
+      "rejected": true,
+      "reason": "decoded_classification_invalid:wic_metadata"
+    },
+    {
+      "class": 22,
+      "name": "wellformed_leg_demoted",
+      "rejected": true,
+      "reason": "decoded_classification_invalid:wic_metadata"
+    },
+    {
+      "class": 23,
+      "name": "refused_leg_publishes",
+      "rejected": true,
+      "reason": "refused_leg_published_output:wic_metadata"
+    },
+    {
+      "class": 24,
+      "name": "decoded_output_missing",
+      "rejected": true,
+      "reason": "decoded_leg_output_missing:gdiplus_metadata"
+    },
+    {
+      "class": 25,
+      "name": "incomplete_run",
+      "rejected": true,
+      "reason": "run_incomplete"
+    },
+    {
+      "class": 26,
+      "name": "unmeasured_boundary_changed",
+      "rejected": true,
+      "reason": "unmeasured_boundary_changed"
+    },
+    {
+      "class": 27,
+      "name": "work_bytes_over_cap",
+      "rejected": true,
+      "reason": "work_bytes_over_cap"
+    },
+    {
+      "class": 28,
+      "name": "structure_not_reproducible",
+      "rejected": true,
+      "reason": "row_structure_not_reproducible:icc_valid"
+    },
+    {
+      "class": 29,
+      "name": "expected_block_forged",
+      "rejected": true,
+      "reason": "row_expected_not_declared:icc_valid"
+    },
+    {
+      "class": 30,
+      "name": "icc_partial_dropped",
+      "rejected": true,
+      "reason": "row_structure_not_reproducible:icc_truncated"
+    }
+  ]
+}

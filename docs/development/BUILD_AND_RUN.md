@@ -1046,6 +1046,33 @@ progressives stay `DECODED_TAMPER_NOT_VERIFIED` or refused; a decoder success is
 never content verification. GDI+ keeps its missing admission/trace/lifetime as
 `NOT_MEASURED`.
 
+### 4.30 MP-IMG2-W10 JPEG metadata interpretation evidence (2026-10-28)
+
+W10 reuses the W8 baseline encoder for a real 4:2:0 256x192 JPEG payload and
+constructs the APP1 EXIF and APP2 ICC segments itself, so the metadata bytes are
+reproducible without an external encoder or colour library.
+
+```powershell
+python -B apps/desktop/devtools/img2/w10_metadata_matrix.py run `
+  --work-root <absolute-absent-owned-directory> --out <absolute-absent-report.json> `
+  --pwsh <absolute-qualified-pwsh.exe>
+python -B apps/desktop/devtools/img2/w10_metadata_matrix.py verify `
+  --report docs/development/evidence-published/w10-latest/native-metadata-matrix.json `
+  --source-root <repository>
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_w10*.py"
+```
+
+Limits stay experimental: dimension 2048, 4,194,304 pixels, 8 bits per channel,
+4 MiB encoded input, 64 KiB metadata, 32 MiB output, 128 MiB work root, 4 MiB
+report, 64 KiB capture, 45 s worker, 300 s batch and 24 legs across nine cases.
+
+The WIC metadata leg only observes; `-ApplyOrientation` is requested solely by the
+transform leg, which must produce the declared 192x256 output for orientations 6
+and 8. GDI+ records the property IDs, orientation value, ICC length and digest and
+never claims a transform. A profile both decoders merely report stays
+`NOT_MEASURED` for colour conversion; a truncated profile that a decoder accepts is
+recorded with its truncated payload digest and keeps `DECODED_TAMPER_NOT_VERIFIED`.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |

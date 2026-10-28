@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "source_commit": "364097165c58365ac2cf8850a468770085088d10",
+  "cases": [
+    {
+      "case_id": "meta_plain",
+      "kind": "plain",
+      "structure_classification": "METADATA_ABSENT",
+      "row_classification": "CONTROL_OBSERVED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        }
+      ],
+      "expected": {
+        "icc_present": false,
+        "icc_sha256": null,
+        "orientation": null,
+        "output_height": 192,
+        "output_width": 256,
+        "transform": "none"
+      }
+    },
+    {
+      "case_id": "exif_orient1",
+      "kind": "orientation",
+      "structure_classification": "METADATA_PARSED",
+      "row_classification": "DIFFERENTIAL_OBSERVED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "wic_transform",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        }
+      ],
+      "expected": {
+        "icc_present": false,
+        "icc_sha256": null,
+        "orientation": 1,
+        "output_height": 192,
+        "output_width": 256,
+        "transform": "identity"
+      }
+    },
+    {
+      "case_id": "exif_orient3",
+      "kind": "orientation",
+      "structure_classification": "METADATA_PARSED",
+      "row_classification": "DIFFERENTIAL_OBSERVED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "wic_transform",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        }
+      ],
+      "expected": {
+        "icc_present": false,
+        "icc_sha256": null,
+        "orientation": 3,
+        "output_height": 192,
+        "output_width": 256,
+        "transform": "rotate_180"
+      }
+    },
+    {
+      "case_id": "exif_orient6",
+      "kind": "orientation",
+      "structure_classification": "METADATA_PARSED",
+      "row_classification": "DIFFERENTIAL_OBSERVED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "wic_transform",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        }
+      ],
+      "expected": {
+        "icc_present": false,
+        "icc_sha256": null,
+        "orientation": 6,
+        "output_height": 256,
+        "output_width": 192,
+        "transform": "rotate_90_cw"
+      }
+    },
+    {
+      "case_id": "exif_orient8",
+      "kind": "orientation",
+      "structure_classification": "METADATA_PARSED",
+      "row_classification": "DIFFERENTIAL_OBSERVED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "wic_transform",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        }
+      ],
+      "expected": {
+        "icc_present": false,
+        "icc_sha256": null,
+        "orientation": 8,
+        "output_height": 256,
+        "output_width": 192,
+        "transform": "rotate_90_ccw"
+      }
+    },
+    {
+      "case_id": "icc_valid",
+      "kind": "icc",
+      "structure_classification": "METADATA_PARSED",
+      "row_classification": "DIFFERENTIAL_OBSERVED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        }
+      ],
+      "expected": {
+        "icc_present": true,
+        "icc_sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
+        "orientation": null,
+        "output_height": 192,
+        "output_width": 256,
+        "transform": "none"
+      }
+    },
+    {
+      "case_id": "exif_truncated",
+      "kind": "malformed",
+      "structure_classification": "METADATA_TAMPERED",
+      "row_classification": "TAMPER_CLASSIFIED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "REFUSED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_TAMPER_NOT_VERIFIED"
+        }
+      ],
+      "expected": {
+        "icc_present": false,
+        "icc_sha256": null,
+        "orientation": null,
+        "output_height": 192,
+        "output_width": 256,
+        "transform": "none"
+      }
+    },
+    {
+      "case_id": "icc_truncated",
+      "kind": "malformed",
+      "structure_classification": "METADATA_TAMPERED",
+      "row_classification": "TAMPER_CLASSIFIED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "DECODED_TAMPER_NOT_VERIFIED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_TAMPER_NOT_VERIFIED"
+        }
+      ],
+      "expected": {
+        "icc_present": false,
+        "icc_sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
+        "orientation": null,
+        "output_height": 192,
+        "output_width": 256,
+        "transform": "none"
+      }
+    },
+    {
+      "case_id": "exif_icc_combined",
+      "kind": "combined",
+      "structure_classification": "METADATA_PARSED",
+      "row_classification": "DIFFERENTIAL_OBSERVED",
+      "legs": [
+        {
+          "leg": "wic_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "wic_transform",
+          "classification": "DECODED_METADATA_OBSERVED"
+        },
+        {
+          "leg": "gdiplus_metadata",
+          "classification": "DECODED_METADATA_OBSERVED"
+        }
+      ],
+      "expected": {
+        "icc_present": true,
+        "icc_sha256": "sha256:33136776b935e13ab389b9bd18d80929115247e4e2da327bc238b8f204755adc",
+        "orientation": 6,
+        "output_height": 256,
+        "output_width": 192,
+        "transform": "rotate_90_cw"
+      }
+    }
+  ],
+  "counts": {
+    "metadata_parsed": 6,
+    "metadata_absent": 1,
+    "metadata_tampered": 2,
+    "differential": 6,
+    "control": 1,
+    "tamper": 2
+  }
+}

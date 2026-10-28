@@ -204,6 +204,25 @@ Publication exclusively writes, flushes, syncs and closes all three artifacts pl
 
 [R0A-S1 admission](evidence/README.md#historical-records) bounds this slice to the versioned manifest contract (rendering §10.1), a bounded loader, the §11.2 result contract, structural validation and an offline CLI in `apps/desktop/devtools/r0` (Python standard library only). [Validation](evidence/README.md#historical-records) records eleven unittest cases and CLI outcomes: valid manifests and results validate; missing fields, wrong types and unsupported versions fail; oversize, duplicate-key, malformed and non-finite JSON fail closed before publication; unmeasured endpoints and metrics stay `NOT_MEASURED` with explicit reasons and null percentiles; `NOT_IMPLEMENTED` cannot become observed; failed/censored/excluded counts stay separate from observed; result identity must match the manifest; error output reflects only stable codes and JSON paths, never input text or paths. The tool launches nothing, fetches nothing, executes no input value and performs no measurement; R0A-S2/S3 drivers, R0B baselines, R0C attribution, R0D ratification and any numeric claim remain NOT_RUN.
 
+## 21. MP-IMG2-W10 JPEG metadata interpretation
+
+`test_w10_metadata_fixtures.py` and `test_w10_metadata_negative.py` cover the W10
+slice. Fixture tests prove byte-identical regeneration for all nine sources, a real
+baseline stream with `SOF0`/`SOS` and no unknown markers, the four orientation
+values round-tripping through the independent parser, the declared transform
+geometry, the ICC header being self-consistent with its own declared size, both
+truncated variants classifying as `METADATA_TAMPERED`, and duplicate APP segments,
+a wrong ICC declared size and a broken EXIF signature all being rejected. The
+negative suite mutates the retained record in 30 classes — forged orientation value
+or presence, wrong transform request/application, swapped transform dimensions,
+forged ICC presence/length/digest, a truncated profile promoted to the full digest,
+truncated length, colour-context count, GDI+ ICC on an absent profile, structure and
+marker forgery, fixture digest/bytes, leg removal/order/binding, tamper promotion,
+well-formed demotion, a refused leg publishing output, decoded output removed,
+incomplete run, changed unmeasured boundary, work-byte cap, non-reproducible
+structure, forged expectation and a dropped truncated-profile record — and requires
+`verify()` to reject each one.
+
 ## 20. MP-IMG2-W9 progressive JPEG
 
 `test_w9_progressive_fixtures.py` and `test_w9_progressive_negative.py` cover the

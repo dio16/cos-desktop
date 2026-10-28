@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "unmeasured": [
+    "ICC colour conversion",
+    "absolute colour fidelity",
+    "all JPEG metadata variants",
+    "EXIF orientations outside 1/3/6/8",
+    "GDI+ process lifetime and memory",
+    "WIC internal scratch peak",
+    "product orientation policy",
+    "product ICC policy",
+    "product decoder adoption",
+    "full MP-IMG2 Decode Exit"
+  ],
+  "product_boundaries": [
+    "No crates/media, Runtime, GPU or product decoder change.",
+    "ICC colour conversion is NOT_MEASURED: decoders report profiles, they do not prove applied transforms.",
+    "Only EXIF orientations 1, 3, 6 and 8 are exercised.",
+    "GDI+ exposes no admission, trace or lifetime control."
+  ]
+}

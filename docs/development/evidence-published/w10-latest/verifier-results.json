@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "cases": 9,
+  "legs": 23,
+  "metadata_parsed": 6,
+  "metadata_absent": 1,
+  "metadata_tampered": 2,
+  "differential": 6,
+  "control": 1,
+  "tamper": 2,
+  "source_identity_verified": true,
+  "closure_eligible": true
+}

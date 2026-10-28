@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "native_source": "364097165c58365ac2cf8850a468770085088d10",
+  "candidate": "3fa215986d4ebc5855ca8a5db5672c7643e63b31",
+  "run_id": "native-r10-work",
+  "cases": 9,
+  "legs": 23,
+  "verify": {
+    "ok": true,
+    "cases": 9,
+    "legs": 23,
+    "metadata_parsed": 6,
+    "metadata_absent": 1,
+    "metadata_tampered": 2,
+    "differential": 6,
+    "control": 1,
+    "tamper": 2,
+    "source_identity_verified": true,
+    "closure_eligible": true
+  },
+  "files": [
+    {
+      "path": "differential-summary.json",
+      "bytes": 6682,
+      "sha256": "sha256:9283f20d9a0390f1055d13915eb054540941be3d14dbd98972871f6c6429a4f6"
+    },
+    {
+      "path": "environment.json",
+      "bytes": 1069,
+      "sha256": "sha256:f355b1a36730572cfe3f985594b9563183b9ec979197ca7bdb6d6659870667ac"
+    },
+    {
+      "path": "fixture-manifest.json",
+      "bytes": 7432,
+      "sha256": "sha256:ef426ab701f4f326fc3b1c7f754c07728f05109cf0dc3abb69ac82d30560582c"
+    },
+    {
+      "path": "leg-observations.json",
+      "bytes": 21004,
+      "sha256": "sha256:e9eacd35fbecb08fff9552cd5fed80fd6221d5d4b41dc4be7409fe5b4c8ea04d"
+    },
+    {
+      "path": "native-metadata-matrix.json",
+      "bytes": 67788,
+      "sha256": "sha256:f3fc079cb69edd8f7fb506051e19dc795d852f80ad77b68511250c4ad128b75d"
+    },
+    {
+      "path": "negative-tests.json",
+      "bytes": 4547,
+      "sha256": "sha256:8f66f4761e6a2a720526bbf8a373781f0eba335a06f53e09d7428db17fce00a7"
+    },
+    {
+      "path": "unmeasured.json",
+      "bytes": 705,
+      "sha256": "sha256:9f0949dfe60f6fa1cb88b8fb12f1842ad01309f4c562d4935c88d4b05c15a575"
+    },
+    {
+      "path": "verifier-results.json",
+      "bytes": 235,
+      "sha256": "sha256:5c96cee7f54c077536771334763d24b6da6c1aad56fb674e2f67aed717320e0e"
+    }
+  ]
+}
