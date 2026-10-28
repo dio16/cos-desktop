@@ -270,7 +270,11 @@ def verify(record: dict, source_root=None) -> dict:
             if case["kind"] in ("progressive", "control"):
                 structure, scans = _structure(row, case["kind"] == "progressive")
                 parsed = parse_scans(fixture)
-                need(structure == _serialized_structure(parsed), "structure_recomputation_mismatch")
+                # Normalize through JSON so in-memory integer table keys and their
+                # serialized string form compare identically.
+                expected_view = json.loads(json.dumps(_serialized_structure(parsed), sort_keys=True))
+                recorded_view = json.loads(json.dumps(structure, sort_keys=True))
+                need(recorded_view == expected_view, "structure_recomputation_mismatch")
                 need(structure["frame"]["width"] == case["width"]
                      and structure["frame"]["height"] == case["height"], "marker_geometry_mismatch")
                 recomputed = classify(parsed)
