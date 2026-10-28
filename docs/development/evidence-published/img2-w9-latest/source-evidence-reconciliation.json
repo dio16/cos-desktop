@@ -1,19 +1,17 @@
 {
   "schema_version": 1,
-  "native_source": "c0b90847daea88aea5f51d4c3b88d2ad4eff959b",
-  "computed_against": "06c4044db9c0b47f1405ee7ff0a8755ca0cef411",
+  "native_source": "2142ebae822e509c63c4877dd3a81415d4923f3f",
+  "computed_against": "24acde1328f01b6d343e09df2606b47334f06e64",
   "source_files": 22,
   "all_source_files_pinned": true,
   "candidate_equals_native_source": true,
   "changed_paths_after_native_source": [
     "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
-    "docs/development/TESTING.md",
     "docs/development/evidence-published/img2-w9-latest/environment.json",
     "docs/development/evidence-published/img2-w9-latest/execution-manifest.json",
     "docs/development/evidence-published/img2-w9-latest/memory-observations.json",
     "docs/development/evidence-published/img2-w9-latest/native-decoder-matrix.json",
     "docs/development/evidence-published/img2-w9-latest/negative-tests.json",
-    "docs/development/evidence-published/img2-w9-latest/source-evidence-reconciliation.json",
     "docs/development/evidence-published/img2-w9-latest/source-identity.json"
   ],
   "all_after_changes_docs_only": true,

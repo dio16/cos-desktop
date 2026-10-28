@@ -352,9 +352,23 @@
       "ok": false,
       "reason": "malformed_failure_publication_forged",
       "error": "ValueError"
+    },
+    {
+      "number": 50,
+      "mutation": "refused_output_presence_forged",
+      "ok": false,
+      "reason": "malformed_failure_publication_forged",
+      "error": "ValueError"
+    },
+    {
+      "number": 51,
+      "mutation": "refused_declared_output_forged",
+      "ok": false,
+      "reason": "malformed_failure_declares_output",
+      "error": "ValueError"
     }
   ],
   "required_classes": 40,
-  "shipped_classes": 49,
+  "shipped_classes": 51,
   "all_rejected": true
 }
