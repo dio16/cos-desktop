@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "candidate": "73d53d04b1beda143fd6f3f8af00b234401d8800",
+  "evidence_head": "568a3735c02ef37c885512435a8dedf84325b317",
+  "url": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "request_ids": [
+    "7790f305-b65a-4732-9ce8-077edad7c5cf"
+  ],
+  "assistant_ids": [
+    "2a50ad1c-7ed6-49f7-a214-ad0784669db7"
+  ],
+  "first_read": "2026-10-28T07:49:08.888Z",
+  "second_read": "2026-10-28T07:49:40.943Z",
+  "identical_complete_reads": true,
+  "streaming": false,
+  "terminal": "PASS 0 / 0 / 0",
+  "complete": true,
+  "findings": {
+    "blocking": 0,
+    "actionable": 0,
+    "excessive": 0
+  },
+  "closure": "MP-IMG2-W8 LIMITED TECHNICAL COMPLETION approved by review."
+}

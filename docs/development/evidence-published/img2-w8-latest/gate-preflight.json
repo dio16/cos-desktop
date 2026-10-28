@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "candidate": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
+  "candidate": "73d53d04b1beda143fd6f3f8af00b234401d8800",
   "current": {
     "cli_interface_version": 2,
     "operation": "gate.preflight",
@@ -284,9 +284,9 @@
     },
     {
       "gate": "e374ec63/1c2ce2fa/4b1e1d9f/1587b7e0",
-      "state": "SUCCEEDED_BUT_SUPERSEDED",
-      "reason": "Earlier candidate after round-1 findings; not transferred to the round-2/3 candidate."
+      "state": "SUPERSEDED",
+      "reason": "Successful only for the earlier candidate; not transferred."
     }
   ],
-  "note": "Preflight is static and unknown; this record belongs to the current candidate and no failed dispatch is transferred."
+  "note": "Preflight is static and unknown; this record belongs to the final candidate and superseded dispatches are history only."
 }

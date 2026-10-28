@@ -1,0 +1,371 @@
+MP-IMG2-W8 Round 3 — 固定SOURCE独立レビュー
+
+最終判定：HOLD 0 / 2 / 0
+
+Round 2の2指摘に対する修正を確認しました。正常decodeのoutcome整合、malformed WICのoutcome不一致拒否、GDI+の寸法・バイト数不一致拒否は実装されています。
+
+しかし、必須フィールドを削除した場合に成功扱いされるfalse-greenが2件残っています。 いずれも現行SOURCEのverify()に改変したNative記録を直接投入して再現しました。
+
+製品decoder、JPEG画素、Gate成功そのものの不整合ではありません。
+
+1. SOURCE・Evidence照合
+
+項目
+
+	
+
+独立検証結果
+
+
+
+
+Native SOURCE
+
+	
+
+bfdc1f0b4101e267dfbbbfef5c048a4178ad54c3
+
+
+
+
+製品・Gate候補
+
+	
+
+51f68ad738035385fc31dc5b3e70f1be4961afe8
+
+
+
+
+Evidence HEAD
+
+	
+
+3555caf14299019aa7ec4df2ed83ba8e5ae9a003
+
+
+
+
+SOURCE ZIP
+
+	
+
+5,438,287 bytes、SHA256一致
+
+
+
+
+Evidence ZIP
+
+	
+
+886,233 bytes、SHA256一致
+
+
+
+
+SOURCE manifest
+
+	
+
+770/770原バイト一致
+
+
+
+
+Evidence実ファイル
+
+	
+
+45件
+
+
+
+
+Native SOURCE files
+
+	
+
+18/18 LF/hash一致
+
+
+
+
+ZIP破損検査
+
+	
+
+両方PASS
+
+両ZIPのGit archiveコメントは指定commitと一致しています。
+
+Round 2からの製品実装差分は、指定どおりw8_jpeg_verify.pyとtest_w8_negative.pyの2ファイルでした。その他は文書・証拠の更新です。
+
+ただし、private Git objectsによる固定Git SOURCE-bound検証およびcommit ancestryの再検証はNOT_RUNです。
+
+2. JPEG実測と独立画素照合
+
+項目
+
+	
+
+結果
+
+
+
+
+固定source
+
+	
+
+12件
+
+
+
+
+実decoder legs
+
+	
+
+20件
+
+
+
+
+正常decode legs
+
+	
+
+16件
+
+
+
+
+DC-only absolute reference
+
+	
+
+3/3一致
+
+
+
+
+非一様JPEG differential
+
+	
+
+5/5全画素一致
+
+
+
+
+独立RGBA比較量
+
+	
+
+18,358,784 bytes
+
+
+
+
+Malformed
+
+	
+
+2件、TAMPER_NOT_VERIFIED
+
+
+
+
+Progressive
+
+	
+
+NOT_RUN
+
+
+
+
+構造replay
+
+	
+
+ok=true、closure_eligible=false
+
+保存された16個の正常decoder出力PNGを独立デコードし、RGBA digestを再計算しました。
+
+DC-only 3件は独立期待digestと一致し、通常JPEG 5件はWIC/GDI+の全画素が一致しています。DECODED_DIFFERENTIAL_ONLYをabsolute correctnessへ昇格していません。
+
+保存済みnegative-tests.jsonには40/40拒否が記録されています。ただし、今回のレビュー環境では全40負例の独立再実行は完了していないため、保存記録と実際に再投入した改変を区別します。
+
+3. 独立Gateの確認
+
+| 項目 | Workspace | IMG2 | W8 | Build |
+|---|---:|---:|---:|---:|
+| 必須checks | 7/7 | 9/9 | 3/3 | 1/1 |
+| State | SUCCEEDED | SUCCEEDED | SUCCEEDED | SUCCEEDED |
+| status/inspect/verify exit | 0/0/0 | 0/0/0 | 0/0/0 | 0/0/0 |
+| Artifact tuples | 32/32 | 32/32 | 32/32 | 32/32 |
+| Cleanup | complete | complete | complete | complete |
+| Owner alive | false | false | false |
+| Recovery required | false | false | false |
+
+4 Gateともcandidate digestは次の値に一致しました。
+
+sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5
+
+生inspect/verifyのrequest SHA256、terminal state SHA256、32 artifact tuplesは各Gateで一致し、SOURCE ZIPの実バイトとの対応も32/32一致しました。
+
+Preflightは現候補のUNKNOWN記録であり、PASSとして扱っていません。
+
+Build executable digestは申告どおりNOT_CAPTUREDです。Refineの実再実行はNOT_RUNです。
+
+4. 残存指摘
+A-W8-R3-01 — Malformed WICのworker outcome欠落を受理する
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w8_jpeg_verify.py:444–454
+
+今回、worker・probe・terminal outcomeの一致条件が追加されています。しかし、次の条件式ではworker.outcomeの存在を必須としていません。
+
+Python
+実行
+if record.get("outcome") is not None:
+    need(record["outcome"] == observed, ...)
+
+独立再現
+
+malformed_truncatedのWIC workerからoutcomeフィールドのみを削除しました。
+
+Python
+実行
+worker.pop("outcome")
+
+実際のverify()結果：
+
+プレーンテキスト
+ok = true
+tamper_not_verified = 2
+source_identity_verified = false
+closure_eligible = false
+
+本来decodedとして記録されるべきworker outcomeが欠落しているにもかかわらず、検証成功として受理されています。
+
+さらに、malformed分岐ではstages[-1]を直接読んでおり、正常decodeで使っている_trace()によるraw traceのSHA256・解析済みstageとの一致検証が行われていません。これはSOURCE上で確認できる同じ証拠認定条件の不足です。
+
+最小修正条件
+
+Malformed WICのworker.outcomeを必須とし、probe_result.outcomeとの厳密一致を要求する。
+
+_trace()を適用し、raw trace・解析済みstages・terminal outcomeを結合する。
+
+Decodedとfailureの両経路について、outcome欠落およびtrace不整合を拒否する負例を追加する。
+
+TAMPER_NOT_VERIFIEDの内容分類は変更しない。
+
+A-W8-R3-02 — GDI+のoutput_bytes欠落を受理する
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/w8_jpeg_verify.py:288–294
+
+今回、GDI+のwidth/heightとinput_bytesは必須で照合されました。一方、output_bytesは次の任意条件です。
+
+Python
+実行
+if result.get("output_bytes") is not None:
+    need(result["output_bytes"] == len(data), ...)
+
+このため、値を偽装した場合は拒否しますが、フィールドそのものの削除は受理します。
+
+独立再現
+
+正常dc_gray_8x8のGDI+ legから次を削除しました。
+
+Python
+実行
+leg["probe_result"].pop("output_bytes")
+
+実際のverify()結果：
+
+プレーンテキスト
+ok = true
+source_identity_verified = false
+closure_eligible = false
+
+実Native原本には正しいoutput_bytesが存在します。検証器が欠落を許すことだけが問題です。
+
+最小修正条件
+
+Python
+実行
+need(
+    result.get("output_bytes") == len(data),
+    "gdiplus_declared_output_bytes_mismatch"
+)
+
+output_bytes欠落を独立負例として追加してください。既存のgeometry、input bytes、実出力SHA256検査は維持します。
+
+5. Storage・未測定境界
+
+Storageの7対象を独立集計すると、12,182 files / 4,206,765,391 logical bytesで一致しました。
+
+削除後の4 Gate verifyはSUCCEEDEDと保存されています。物理削除は今回NOT_RUNです。
+
+未測定・未承認の境界も維持されています。全JPEG absolute correctness、progressive、全codec、decoder adoption、製品tolerance、ICC/EXIF policy、16K full decode、true partial/sequential/tiled、内部scratch、実予約、true concurrent peak、cooperative cancellation、product SLO、full Decode Exit、MP-IMG3、Runtime、measured R0、UX/video、main/releaseは完了していません。
+
+6. W8限定closure判断
+
+Round 2で指摘した矛盾値の照合は追加されましたが、必須フィールドの欠落をfail-closedで拒否する条件が不十分です。
+
+そのため、MP-IMG2-W8 LIMITED TECHNICAL COMPLETIONは保留します。
+
+修正は引き続きw8_jpeg_verify.pyと負例テストに限定できます。WIC/GDI+ probe、crates/media、Runtime、W1～W7の変更は不要です。
+
+SOURCEを修正した場合は、Native SOURCE identity・固定候補・独立Gateを新しいSOURCEに対応付け、再レビューしてください。今回の成功Gateを別SOURCEへ転用することはできません。
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+0
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+2
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+A-W8-R2-01：修正不十分（worker outcome欠落・raw trace結合）
+
+A-W8-R2-02：修正不十分（output_bytes欠落）
+
+MP-IMG2-W8 LIMITED TECHNICAL COMPLETION：保留
+
+REVIEW COMPLETE
+
+HOLD 0 / 2 / 0

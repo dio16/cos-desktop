@@ -1,0 +1,312 @@
+MP-IMG2-W8 Round 4 — 固定SOURCE独立レビュー
+
+前回残件2件の修正は、現行verify()への独立改変で確認できました。
+
+前回指摘
+
+	
+
+独立再現結果
+
+	
+
+判定
+
+
+
+
+A-W8-R3-01：malformed WICのworker.outcome欠落
+
+	
+
+malformed_worker_outcome_mismatchで拒否
+
+	
+
+CLOSED
+
+
+
+
+A-W8-R3-01：malformed WICのraw trace矛盾
+
+	
+
+malformed_terminal_outcome_mismatchで拒否
+
+	
+
+CLOSED
+
+
+
+
+A-W8-R3-02：GDI+のoutput_bytes欠落
+
+	
+
+gdiplus_declared_output_bytes_mismatchで拒否
+
+	
+
+CLOSED
+
+43規定負例も現行検証器へ再投入しました。Git objectを必要としない42件は42/42拒否、旧SOURCE commit差し替え1件は構造replayでok=trueですが、source_identity_verified=false、closure_eligible=falseを維持しています。この1件のGit-bound拒否は保存済みGate証拠との照合対象とし、独立実行済みとは扱いません。
+
+SOURCE ZIPのSHA256、771件のentry manifest、Evidence ZIPのSHA256はすべて一致し、manifestの欠落・重複・実バイト不一致は0件です。
+
+4. 4 Gate・Native・Storageの独立照合
+
+検証項目
+
+	
+
+Workspace
+
+	
+
+IMG2
+
+	
+
+W8
+
+	
+
+Build
+
+
+
+
+Gate checks
+
+	
+
+7/7
+
+	
+
+9/9
+
+	
+
+3/3
+
+	
+
+1/1
+
+
+
+
+State
+
+	
+
+SUCCEEDED
+
+	
+
+SUCCEEDED
+
+	
+
+SUCCEEDED
+
+	
+
+SUCCEEDED
+
+
+
+
+status/inspect/verify exit
+
+	
+
+0/0/0
+
+	
+
+0/0/0
+
+	
+
+0/0/0
+
+	
+
+0/0/0
+
+
+
+
+Artifact tuples
+
+	
+
+32/32
+
+	
+
+32/32
+
+	
+
+32/32
+
+	
+
+32/32
+
+
+
+
+Cleanup
+
+	
+
+complete
+
+	
+
+complete
+
+	
+
+complete
+
+	
+
+complete
+
+4 Gateすべてで、candidate SHA、candidate digest、request SHA256、terminal state SHA256の対応を確認しました。
+
+Candidate digest：
+
+sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7
+
+32成果物について、4 Gateそれぞれのinspect/verifyと、実SOURCEの原バイトまたはLF正規化バイトが32/32一致しています。
+
+Native SOURCEの18ファイルについても、保存されたLF digestと現SOURCEの18/18一致を確認しました。
+
+Storageは12,186 files / 4,206,958,398 logical bytesで、7対象の独立集計と一致しました。
+
+PreflightはUNKNOWNのまま、Build executableはNOT_CAPTUREDのままです。private Git object、Windows WIC/GDI+、Refine stateを使用した実行は今回NOT_RUNであり、保存済み生receiptの照合と区別しています。
+
+5. 新たに確認した残存指摘
+A-W8-R4-01 — Malformed WICの完了traceに未解析末尾を追加しても検証成功する
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：
+
+apps/desktop/devtools/img2/w8_jpeg_verify.py:331–350 — _trace()
+
+同ファイル:447–457 — malformed WICの検証
+
+apps/desktop/devtools/img2/tests/test_w8_negative.py
+
+Round 3の指摘どおり、raw traceと解析済みstageの結合、および終端probe_exitの確認は追加されています。
+
+ただし、_trace()は最終改行までのJSON行を解析し、その後の未解析バイトをtrace_partial_bytesとして許容します。Malformed WIC経路では、正常decodeと異なり、完了traceに対してtrace_partial_bytes == 0を要求していません。
+
+独立再現
+
+現Nativeのmalformed_truncatedに対し、WIC workerのtrace末尾へGARBAGEを追加し、次の値を変更しました。
+
+Python
+実行
+worker["trace_utf8"] += "GARBAGE"
+raw = worker["trace_utf8"].encode("utf-8")
+worker["trace_sha256"] = "sha256:" + hashlib.sha256(raw).hexdigest()
+worker["trace_bytes"] = len(raw)
+worker["trace_partial_bytes"] = 7
+
+元のworkerはtrace_complete=true、終端probe_exit.complete=trueであり、trace_partial_bytes=0でした。
+
+改変後の現行verify()の実結果は次のとおりです。
+
+プレーンテキスト
+ok = true
+source_identity_verified = false
+closure_eligible = false
+tamper_not_verified = 2
+
+SOURCE未検証という別の理由でclosure_eligible=falseになるものの、完了済みtraceの未解析末尾を検証器は拒否していません。
+
+最小修正条件
+
+Malformed WICの終端probe_exit.complete=trueを受理する場合は、以下を追加してください。
+
+Python
+実行
+need(
+    record.get("trace_complete") is True
+    and record.get("trace_partial_bytes") == 0
+    and record["trace_utf8"].endswith("\n"),
+    "malformed_complete_trace_has_partial_tail"
+)
+
+これに対応するcoherent mutation負例を追加してください。malformed_truncatedのdecoded経路と、malformed_bad_lengthのcorrupt経路の双方を対象にします。
+
+W2の停止途中traceには一律適用せず、完了したmalformed WIC traceだけを対象としてください。
+
+WIC/GDI+ probe、crates/media、Runtime、既存W1～W7の変更は不要です。
+
+6. W8限定完了の判断
+
+前回の2指摘は解消しました。JPEG absolute reference、differential比較、4 Gate、SOURCE manifest、Storage証拠には追加の不整合を認めませんでした。
+
+しかし、malformed WICの完了traceに対する未解析末尾のfalse-greenが1件残っています。
+
+今回の修正は検証器と負例テストの限定変更で対応可能です。SOURCEが変更されるため、新しい固定SOURCE・Native実測・独立Gateを対応付けたうえで再レビューが必要です。
+
+MP-IMG2-W8 LIMITED TECHNICAL COMPLETIONは保留します。
+
+未測定・未承認の境界は、全JPEGのabsolute correctness、progressive、製品decoder採用・tolerance、ICC/EXIF policy、16K full decode、true partial/sequential/tiled、内部scratch、実予約、true concurrent peak、cooperative cancellation、product SLO、full MP-IMG2 Decode Exit、MP-IMG3、Runtime、measured R0、UX/video、main/releaseのまま維持されています。
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+0
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+1
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+A-W8-R3-01：CLOSED
+
+A-W8-R3-02：CLOSED
+
+A-W8-R4-01：修正待ち
+
+REVIEW COMPLETE
+
+HOLD 0 / 1 / 0
