@@ -1,0 +1,15 @@
+{
+  "cards": 62,
+  "single_contract_issues": [],
+  "hard_edges": 41,
+  "graph_nodes": 62,
+  "dag_acyclic": true,
+  "changed_scope_links_missing": [],
+  "section_anchors_present": true,
+  "img2_img3_edge_present": true,
+  "full_decode_prerequisite": "MP-IMG2 -> MP-IMG3",
+  "native_application_surface": {
+    "status": "NOT_RUN",
+    "reason": "Live computer approval unanswered; no GUI startup claim."
+  }
+}

@@ -1,0 +1,305 @@
+{
+  "runs": [
+    {
+      "id": "native-r1",
+      "status": "CLI_SUCCESS_REPORT_ROOT_LOST",
+      "detail": "Source-bound matrix CLI returned closure true; wrapper metadata used the same name as the report and overwrote it. No retained full report, so this run is not Native evidence.",
+      "stdout": {
+        "16k_full_decode_memory": "NOT_MEASURED",
+        "cases": 5,
+        "closure_eligible": true,
+        "gdi_16k": "NOT_RUN",
+        "memory_comparison": "SEPARATE_PROCESS_LIFETIMES",
+        "ok": true,
+        "refused_before_onload": 3,
+        "roi_outputs_verified": 6,
+        "source_identity_verified": true,
+        "true_partial_decode": "NOT_VERIFIED",
+        "workers": 9
+      },
+      "metadata": "overwritten by the collision"
+    },
+    {
+      "id": "native-r2",
+      "status": "CLI_SUCCESS_REPORT_ROOT_LOST",
+      "detail": "Independent repeat with the same collision; not Native evidence.",
+      "stdout": {
+        "16k_full_decode_memory": "NOT_MEASURED",
+        "cases": 5,
+        "closure_eligible": true,
+        "gdi_16k": "NOT_RUN",
+        "memory_comparison": "SEPARATE_PROCESS_LIFETIMES",
+        "ok": true,
+        "refused_before_onload": 3,
+        "roi_outputs_verified": 6,
+        "source_identity_verified": true,
+        "true_partial_decode": "NOT_VERIFIED",
+        "workers": 9
+      },
+      "metadata": "overwritten by the collision"
+    },
+    {
+      "id": "native-r3",
+      "status": "FAILED_EXCEPTION_RETAINED",
+      "detail": "Interrupted at S01_before_onload with final output present and last trace before_publish; owned workspace retained.",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "apps/desktop/devtools/img2/w11_jpeg_matrix.py",
+          "run",
+          "--work-root",
+          "C:/dev/cos-desktop-verification/w11/native-r3-work",
+          "--out",
+          "C:/dev/cos-desktop-verification/w11/native-r3-report.json",
+          "--pwsh",
+          "C:/Program Files/PowerShell/7/pwsh.exe"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 2,
+        "duration_seconds": 47.47481929999776,
+        "stdout": {
+          "bytes": 43,
+          "sha256": "sha256:0dea7c89b5d0cf13b1ac57e3e2cfdd8a9c00a698ae85ac4019d0c35c9283a2e2"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "id": "native-r4",
+      "status": "SUCCESS_RETAINED",
+      "detail": "Complete five-scenario/nine-worker source-bound matrix; retained as native-jpeg-matrix.json.",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "apps/desktop/devtools/img2/w11_jpeg_matrix.py",
+          "run",
+          "--work-root",
+          "C:/dev/cos-desktop-verification/w11/native-r4-work",
+          "--out",
+          "C:/dev/cos-desktop-verification/w11/native-r4-report.json",
+          "--pwsh",
+          "C:/Program Files/PowerShell/7/pwsh.exe"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 70.5728536999959,
+        "stdout": {
+          "bytes": 288,
+          "sha256": "sha256:7b97fd274fc3dde5ca118cb17e9da12483260f7aa6de6066fea1974c1f6a1d4e"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "id": "native-r5",
+      "status": "SUCCESS_RETAINED",
+      "detail": "Independent complete repeat; retained as native-repeat-matrix.json.",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "apps/desktop/devtools/img2/w11_jpeg_matrix.py",
+          "run",
+          "--work-root",
+          "C:/dev/cos-desktop-verification/w11/native-r5-work",
+          "--out",
+          "C:/dev/cos-desktop-verification/w11/native-r5-report.json",
+          "--pwsh",
+          "C:/Program Files/PowerShell/7/pwsh.exe"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 79.73133019998204,
+        "stdout": {
+          "bytes": 288,
+          "sha256": "sha256:7b97fd274fc3dde5ca118cb17e9da12483260f7aa6de6066fea1974c1f6a1d4e"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    }
+  ],
+  "verification": [
+    {
+      "id": "source-bound-replay",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "apps/desktop/devtools/img2/w11_jpeg_matrix.py",
+          "verify",
+          "--report",
+          "docs/development/evidence-published/w11-latest/native-jpeg-matrix.json",
+          "--source-root",
+          "C:/dev/cos-desktop"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 26.317285099998116,
+        "stdout": {
+          "bytes": 288,
+          "sha256": "sha256:7b97fd274fc3dde5ca118cb17e9da12483260f7aa6de6066fea1974c1f6a1d4e"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "result": {
+        "16k_full_decode_memory": "NOT_MEASURED",
+        "cases": 5,
+        "closure_eligible": true,
+        "gdi_16k": "NOT_RUN",
+        "memory_comparison": "SEPARATE_PROCESS_LIFETIMES",
+        "ok": true,
+        "refused_before_onload": 3,
+        "roi_outputs_verified": 6,
+        "source_identity_verified": true,
+        "true_partial_decode": "NOT_VERIFIED",
+        "workers": 9
+      }
+    },
+    {
+      "id": "portable-replay",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "apps/desktop/devtools/img2/w11_jpeg_matrix.py",
+          "verify",
+          "--report",
+          "docs/development/evidence-published/w11-latest/native-jpeg-matrix.json"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 25.93965610000305,
+        "stdout": {
+          "bytes": 290,
+          "sha256": "sha256:44d33d06ed5a84d44328f2a9f2d2d2569f217d18117e53d3332d565d0d3e4200"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "result": {
+        "16k_full_decode_memory": "NOT_MEASURED",
+        "cases": 5,
+        "closure_eligible": false,
+        "gdi_16k": "NOT_RUN",
+        "memory_comparison": "SEPARATE_PROCESS_LIFETIMES",
+        "ok": true,
+        "refused_before_onload": 3,
+        "roi_outputs_verified": 6,
+        "source_identity_verified": false,
+        "true_partial_decode": "NOT_VERIFIED",
+        "workers": 9
+      }
+    }
+  ],
+  "tests": [
+    {
+      "id": "w11-suite",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "apps/desktop/devtools/img2/tests",
+          "-p",
+          "test_w11_*.py"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 38.43208499997854,
+        "stdout": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "bytes": 113,
+          "sha256": "sha256:5e69cd5711c4ddabb1a15508aa5787cc1e8140e72a2853ec626b377dddff12a4"
+        }
+      },
+      "summary": [
+        "Ran 9 tests in 38.148s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "id": "monitor-regression",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "apps/desktop/devtools/img2/tests",
+          "-p",
+          "test_w11_jpeg_monitor.py"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 0.29715009999927133,
+        "stdout": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "bytes": 105,
+          "sha256": "sha256:d276ce24f7df0df832d00f4a1a5c0f13780199247c21005b2c7d8868238f187a"
+        }
+      }
+    }
+  ],
+  "quality": {
+    "id": "local-quality",
+    "record": {
+      "command": [
+        "C:/Program Files/PowerShell/7/pwsh.exe",
+        "-NoProfile",
+        "-File",
+        "scripts/quality.ps1"
+      ],
+      "cwd": "C:\\dev\\cos-desktop",
+      "exit_code": 0,
+      "duration_seconds": 56.24232609997853,
+      "stdout": {
+        "bytes": 50331,
+        "sha256": "sha256:ca9db657130270bfb5a8b41cd4dc0695f10bf02cfbc3ffc7d3fa6c7eeaf86582"
+      },
+      "stderr": {
+        "bytes": 0,
+        "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  },
+  "corrections": [
+    "capture-artifact-correction.json",
+    "monitor-race-reproduction.json",
+    "monitor-race-repair.json",
+    "w10-portable-smoke-correction.json"
+  ],
+  "retained_but_excluded": [
+    "native-r1-work",
+    "native-r2-work",
+    "native-r3-work"
+  ],
+  "notes": "A CLI exit 0 with a lost report root, an exception, or a failed check is never promoted to Native success. Only retained r4/r5 reports feed repeat comparison and Gate G4."
+}

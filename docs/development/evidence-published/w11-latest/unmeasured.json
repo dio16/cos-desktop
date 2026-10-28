@@ -1,0 +1,35 @@
+{
+  "not_measured": [
+    "WIC internal scratch",
+    "allocator reservations",
+    "true concurrent allocation peak",
+    "cooperative in-decoder cancellation",
+    "product memory SLO",
+    "16K full decode memory",
+    "true partial/region/sequential/tiled decode",
+    "zero metadata allocation for refused sources"
+  ],
+  "not_run": [
+    "GDI+ 16K decoder execution",
+    "Rust decode_compare harness process",
+    "application-window GUI startup",
+    "Refine execution inside an external reviewer sandbox",
+    "true 16K full decode"
+  ],
+  "not_verified": [
+    "absolute JPEG correctness beyond the declared DC-only fixture grammar",
+    "true partial decode"
+  ],
+  "separate": "Process counters are sampled whole-process windows from distinct lifetimes, never WIC-only allocations or a same-process delta.",
+  "not_authorized": [
+    "product decoder adoption/tolerance",
+    "ICC/EXIF product policy",
+    "16K adoption",
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3",
+    "Runtime",
+    "measured R0",
+    "UX/video",
+    "main/release"
+  ]
+}

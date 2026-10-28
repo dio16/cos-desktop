@@ -1,0 +1,28 @@
+{
+  "file": "operator.json copy under w11 private root",
+  "changed": {
+    "timeout_ms": [
+      600000,
+      1800000
+    ],
+    "state_dir": [
+      "C:\\dev\\cos-desktop-verification\\w10\\state",
+      "C:\\dev\\cos-desktop-verification\\w11\\state"
+    ]
+  },
+  "unchanged": [
+    "git_executable",
+    "executables and pinned sha256",
+    "local_repository_roots",
+    "https_origins",
+    "ambient_env",
+    "secret_sources",
+    "termination_grace_ms",
+    "max_output_bytes",
+    "max_artifact_bytes",
+    "max_refinement_steps",
+    "max_evaluation_*"
+  ],
+  "reason": "G3 is required to cover unchanged W8, W9 and W10 JPEG suites in one Gate. The prior two-suite JPEG Gate already took 584.1s against the former 600s operator ceiling; adding the now-prior W10 suite cannot fit. Per-check timeouts remain 480s/480s/600s (worst case 1560s), and each Gate request keeps its own finite overall timeout. This raises an operator duration ceiling; it does not alter, remove or relax any check, and no Gate is auto-retried.",
+  "authority": "Caller-approved finite five-Gate W11 scope in the verbatim directive; not product, Runtime, release or acceptance authority."
+}

@@ -1,0 +1,24 @@
+{
+  "observed": {
+    "powershell": {
+      "pwsh": "7.6.7",
+      "dotnet": ".NET 10.0.13",
+      "os": "Microsoft Windows NT 10.0.26300.0",
+      "windows": true
+    },
+    "python": "3.13.14",
+    "git": "git version 2.51.0.windows.1",
+    "cargo": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "refine": "0.3.1",
+    "taskern": "0.2.0"
+  },
+  "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+  "native_report_platform": {
+    "dotnet": ".NET 10.0.13",
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "powershell": "7.6.7",
+    "windows": true
+  },
+  "scope": "Observed W11 Windows decoder-process environment; not application GUI startup."
+}
