@@ -1,0 +1,5 @@
+{
+  "scope": "Selected exact-Git source subset and published structured evidence only; no private operator config, raw harness logs, credentials, Git object database or executables.",
+  "known_disclosure": "Published receipts contain local tooling/evidence paths already authorized for this review.",
+  "limitation": "Recognizable credential-pattern scanning does not prove the absence of every possible secret."
+}

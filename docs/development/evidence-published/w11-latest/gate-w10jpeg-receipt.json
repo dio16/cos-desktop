@@ -1,0 +1,438 @@
+{
+  "raw": {
+    "schema_version": 1,
+    "gate_id": "2dd89cf2-30c2-4a1f-b3d3-68193271f5ed",
+    "gate_label": "mp-img2-w11-r1-w10jpeg",
+    "state": "SUCCEEDED",
+    "receipt": {
+      "schema_version": 1,
+      "gate_id": "2dd89cf2-30c2-4a1f-b3d3-68193271f5ed",
+      "gate_label": "mp-img2-w11-r1-w10jpeg",
+      "request_sha256": "sha256:c9247e12c1d37b566cc6ca32ae6dd1f31c4aa562ba355eae1a72652a3015b198",
+      "terminal_state_sha256": "sha256:05815c97688be68edadfa9c0070d26df5f24f4ceb9f633ae3c14c24101480ced",
+      "runtime": {
+        "refine_version": "0.3.1",
+        "os": "windows",
+        "architecture": "x86_64",
+        "git_version": "git version 2.51.0.windows.1"
+      },
+      "repository": {
+        "location": "C:/dev/cos-desktop",
+        "requested_revision": "d182ee9eeb2d587eb69c28188dc66675c4a9b7dc",
+        "resolved_base_commit": "d182ee9eeb2d587eb69c28188dc66675c4a9b7dc",
+        "object_format": "sha1",
+        "final_head": "d182ee9eeb2d587eb69c28188dc66675c4a9b7dc"
+      },
+      "limits": {
+        "timeout_ms": 600000,
+        "termination_grace_ms": 5000,
+        "max_output_bytes": 16777216,
+        "max_artifact_bytes": 16777216
+      },
+      "accepted_at": "2026-10-28T15:12:48.916510400Z",
+      "ended_at": "2026-10-28T15:14:26.369490600Z",
+      "candidate_sha256": "sha256:a458a64b07c5e030e7e00a1325f607928cdb8d784319eaecebacbc60613ac7b3",
+      "verification": [
+        {
+          "id": "img2-w10",
+          "kind": "command",
+          "outcome": "pass",
+          "duration_ms": 73757,
+          "observed_exit": 0,
+          "candidate_binding": "sha256:a458a64b07c5e030e7e00a1325f607928cdb8d784319eaecebacbc60613ac7b3"
+        }
+      ],
+      "check_logs": [
+        {
+          "check_id": "img2-w10",
+          "stdout": {
+            "relative_path": "logs/img2-w10/stdout",
+            "size_bytes": 0,
+            "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "truncated": false,
+            "secret": true
+          },
+          "stderr": {
+            "relative_path": "logs/img2-w10/stderr",
+            "size_bytes": 111,
+            "sha256": "sha256:e78a85211b4d9bdd5d4d79045759d9efb43af522a9d4e034406c9a496c723811",
+            "truncated": false,
+            "secret": true
+          }
+        }
+      ],
+      "artifacts": [
+        {
+          "id": "w11-0",
+          "relative_path": "artifacts/w11-0",
+          "size_bytes": 158990,
+          "sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b"
+        },
+        {
+          "id": "w11-1",
+          "relative_path": "artifacts/w11-1",
+          "size_bytes": 6067,
+          "sha256": "sha256:d519877cd07f1784575e2a44754dbee8d9edcfec8cc7ce5f6be38b6575c114ad"
+        },
+        {
+          "id": "w11-10",
+          "relative_path": "artifacts/w11-10",
+          "size_bytes": 26365,
+          "sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7"
+        },
+        {
+          "id": "w11-11",
+          "relative_path": "artifacts/w11-11",
+          "size_bytes": 5883,
+          "sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e"
+        },
+        {
+          "id": "w11-12",
+          "relative_path": "artifacts/w11-12",
+          "size_bytes": 5745,
+          "sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298"
+        },
+        {
+          "id": "w11-13",
+          "relative_path": "artifacts/w11-13",
+          "size_bytes": 6744,
+          "sha256": "sha256:bb2910bac17c47677058bb79ca24b21f3a87356d1a0b432c9427a37193bbab60"
+        },
+        {
+          "id": "w11-14",
+          "relative_path": "artifacts/w11-14",
+          "size_bytes": 9459,
+          "sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5"
+        },
+        {
+          "id": "w11-15",
+          "relative_path": "artifacts/w11-15",
+          "size_bytes": 19017,
+          "sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5"
+        },
+        {
+          "id": "w11-16",
+          "relative_path": "artifacts/w11-16",
+          "size_bytes": 23316,
+          "sha256": "sha256:99cc5ecb251c71e42340614d51de471029b8a3247e29ee12f8dabc553972e919"
+        },
+        {
+          "id": "w11-17",
+          "relative_path": "artifacts/w11-17",
+          "size_bytes": 11614,
+          "sha256": "sha256:fefb3724623f79d5ac4f1b98b4af43c8dddde0dfa2e727294bf7e208ac2707bc"
+        },
+        {
+          "id": "w11-18",
+          "relative_path": "artifacts/w11-18",
+          "size_bytes": 12484,
+          "sha256": "sha256:53c84378b68b4a0a5c77251a013f2e207b38cf8315a76440e7260ea6dc097e56"
+        },
+        {
+          "id": "w11-19",
+          "relative_path": "artifacts/w11-19",
+          "size_bytes": 12588,
+          "sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6"
+        },
+        {
+          "id": "w11-2",
+          "relative_path": "artifacts/w11-2",
+          "size_bytes": 2067,
+          "sha256": "sha256:f7b9546babcf6819e7545301bd32cfa1b82409b5cb7d88cb2f497cea6338f594"
+        },
+        {
+          "id": "w11-20",
+          "relative_path": "artifacts/w11-20",
+          "size_bytes": 30502,
+          "sha256": "sha256:74d8ca71fd545bf2991316c2fd6c34073b376763744cfc380b43b97e5ab554f8"
+        },
+        {
+          "id": "w11-21",
+          "relative_path": "artifacts/w11-21",
+          "size_bytes": 15609,
+          "sha256": "sha256:033389d5b1c700b1da09516f42b1bc4a0cc2a861fb307e9da1efbd068c843925"
+        },
+        {
+          "id": "w11-22",
+          "relative_path": "artifacts/w11-22",
+          "size_bytes": 1041,
+          "sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e"
+        },
+        {
+          "id": "w11-23",
+          "relative_path": "artifacts/w11-23",
+          "size_bytes": 159533,
+          "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+        },
+        {
+          "id": "w11-24",
+          "relative_path": "artifacts/w11-24",
+          "size_bytes": 24568,
+          "sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558"
+        },
+        {
+          "id": "w11-25",
+          "relative_path": "artifacts/w11-25",
+          "size_bytes": 27817,
+          "sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136"
+        },
+        {
+          "id": "w11-26",
+          "relative_path": "artifacts/w11-26",
+          "size_bytes": 6399,
+          "sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5"
+        },
+        {
+          "id": "w11-27",
+          "relative_path": "artifacts/w11-27",
+          "size_bytes": 51013,
+          "sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c"
+        },
+        {
+          "id": "w11-28",
+          "relative_path": "artifacts/w11-28",
+          "size_bytes": 11964,
+          "sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf"
+        },
+        {
+          "id": "w11-29",
+          "relative_path": "artifacts/w11-29",
+          "size_bytes": 111758,
+          "sha256": "sha256:5f58262e56455cfd7c40846c1ef97b8dc1a787a171eeeb157730b125a1461bb7"
+        },
+        {
+          "id": "w11-3",
+          "relative_path": "artifacts/w11-3",
+          "size_bytes": 9180,
+          "sha256": "sha256:cd4554b91adc289bcfa2dc1f8b76dce6524baf153a6ef8733f6808d201b6fb77"
+        },
+        {
+          "id": "w11-30",
+          "relative_path": "artifacts/w11-30",
+          "size_bytes": 455625,
+          "sha256": "sha256:c7a0614615f9e4cefdb108f10e09e39001e877137ed32d778ba4838456d17aa5"
+        },
+        {
+          "id": "w11-31",
+          "relative_path": "artifacts/w11-31",
+          "size_bytes": 55948,
+          "sha256": "sha256:b1cd0e71f9682cb31adf7ddeeef63f34a2874b9078c71aa6d904224cac0af5d6"
+        },
+        {
+          "id": "w11-32",
+          "relative_path": "artifacts/w11-32",
+          "size_bytes": 1771,
+          "sha256": "sha256:635ab00ae3e54ecbb45d38244f874a13c128124da2bd54d5cca712fc3841f2f6"
+        },
+        {
+          "id": "w11-33",
+          "relative_path": "artifacts/w11-33",
+          "size_bytes": 3104,
+          "sha256": "sha256:3e39ccfb3cf3c6671a35462b72e0810b3f33719d3971f755151bed459b7d0396"
+        },
+        {
+          "id": "w11-34",
+          "relative_path": "artifacts/w11-34",
+          "size_bytes": 409,
+          "sha256": "sha256:623b0d4c03a18bb19168acf693194734b041955f983120c767ac1d6d1f214134"
+        },
+        {
+          "id": "w11-35",
+          "relative_path": "artifacts/w11-35",
+          "size_bytes": 739,
+          "sha256": "sha256:f72f284fe6ec677724ea1744ab818be674df7c2172d2c26b59db3581350f3846"
+        },
+        {
+          "id": "w11-36",
+          "relative_path": "artifacts/w11-36",
+          "size_bytes": 10017,
+          "sha256": "sha256:8630ce9854607e4b9095a8ce00312addb1fcd780c235ac6e272af15275898f31"
+        },
+        {
+          "id": "w11-37",
+          "relative_path": "artifacts/w11-37",
+          "size_bytes": 1789,
+          "sha256": "sha256:e43770222cc8bd29184b5558693841d4be253d0a194c0efdf5e17e77010a10d7"
+        },
+        {
+          "id": "w11-38",
+          "relative_path": "artifacts/w11-38",
+          "size_bytes": 1275,
+          "sha256": "sha256:6183e1257b282b67c77aa307c20c1f5b7569b062259662bc113057b40ea04492"
+        },
+        {
+          "id": "w11-39",
+          "relative_path": "artifacts/w11-39",
+          "size_bytes": 1141,
+          "sha256": "sha256:ce9454b5298db43a75459136dc4d84e41d5621c3e95ff0602325785f5475936d"
+        },
+        {
+          "id": "w11-4",
+          "relative_path": "artifacts/w11-4",
+          "size_bytes": 4868,
+          "sha256": "sha256:77e523c52b54734bd00b833f2d671fadf7ff6023ee1cb15449332bc609d291ed"
+        },
+        {
+          "id": "w11-40",
+          "relative_path": "artifacts/w11-40",
+          "size_bytes": 7999,
+          "sha256": "sha256:b45b87a32727d370c47967c743a10cfda1eeabb6e60c212bf40fb0ecf9af1c81"
+        },
+        {
+          "id": "w11-41",
+          "relative_path": "artifacts/w11-41",
+          "size_bytes": 2910,
+          "sha256": "sha256:d0911c5465265d96393e9f5b5da263bfde5b58625d7504235bef77a75d4affb3"
+        },
+        {
+          "id": "w11-42",
+          "relative_path": "artifacts/w11-42",
+          "size_bytes": 597,
+          "sha256": "sha256:1640ec8b1396037d9ac6c60049ae559a05b97b9a741c839bf66947f91487efa6"
+        },
+        {
+          "id": "w11-43",
+          "relative_path": "artifacts/w11-43",
+          "size_bytes": 149329,
+          "sha256": "sha256:1ca856f3da0407a2816cc56934049b989d7e6002f7614a8d1905c0d7bb42538b"
+        },
+        {
+          "id": "w11-44",
+          "relative_path": "artifacts/w11-44",
+          "size_bytes": 149389,
+          "sha256": "sha256:81c929803772af1f7178449a3fd6b2c9bb1348e30b96690185b814718ba2e27c"
+        },
+        {
+          "id": "w11-45",
+          "relative_path": "artifacts/w11-45",
+          "size_bytes": 1921,
+          "sha256": "sha256:516f58d17ac1778e4271af2714b14e56d1af94e3b21eb26e764dfc199efe7778"
+        },
+        {
+          "id": "w11-46",
+          "relative_path": "artifacts/w11-46",
+          "size_bytes": 1321,
+          "sha256": "sha256:f8f66b6bed1d10dec1674b23f23c46245fda203dd3bd09c6e315428c78604883"
+        },
+        {
+          "id": "w11-47",
+          "relative_path": "artifacts/w11-47",
+          "size_bytes": 5196,
+          "sha256": "sha256:71148e2cf743e9afee4f62db60d5707e82540282eb98a1d0961181e3a3600258"
+        },
+        {
+          "id": "w11-48",
+          "relative_path": "artifacts/w11-48",
+          "size_bytes": 3169,
+          "sha256": "sha256:bd6bb0b94e359c3d2a210bdc59f1d11799a7ed2e20c1fb1c403110d939ce6b8f"
+        },
+        {
+          "id": "w11-49",
+          "relative_path": "artifacts/w11-49",
+          "size_bytes": 8255,
+          "sha256": "sha256:535ee7feac654da1e48be6d7c91b282027e846606152bd4e74d4dc925934ab36"
+        },
+        {
+          "id": "w11-5",
+          "relative_path": "artifacts/w11-5",
+          "size_bytes": 23741,
+          "sha256": "sha256:60d84675ade782627d99d540a0442ec7d7873286b91ae18b484336b18d00e37c"
+        },
+        {
+          "id": "w11-50",
+          "relative_path": "artifacts/w11-50",
+          "size_bytes": 16118,
+          "sha256": "sha256:68b066f6a0957a4d0ad4a49e5abea9cbecd97120f3c5538bd7ab0066830fdabb"
+        },
+        {
+          "id": "w11-51",
+          "relative_path": "artifacts/w11-51",
+          "size_bytes": 15654,
+          "sha256": "sha256:bb248b4fd65167d6eb5c1be02fa57e143d54eb682297d958b33e0ba4b56d1dea"
+        },
+        {
+          "id": "w11-52",
+          "relative_path": "artifacts/w11-52",
+          "size_bytes": 925,
+          "sha256": "sha256:9655619177fd8036906bf555252caff4d888102db4bd51156f8cd4a9030bbcae"
+        },
+        {
+          "id": "w11-53",
+          "relative_path": "artifacts/w11-53",
+          "size_bytes": 1057,
+          "sha256": "sha256:8d0bec3455efe05ee3b99a58b10122dc132dbe89856f5c133ce763ea983bf186"
+        },
+        {
+          "id": "w11-54",
+          "relative_path": "artifacts/w11-54",
+          "size_bytes": 1834,
+          "sha256": "sha256:6826ea6d17fba44601aa86bc7d6ccc208166e7a1924d5ba6bd014ee3d4bcac0d"
+        },
+        {
+          "id": "w11-55",
+          "relative_path": "artifacts/w11-55",
+          "size_bytes": 152,
+          "sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8"
+        },
+        {
+          "id": "w11-6",
+          "relative_path": "artifacts/w11-6",
+          "size_bytes": 11619,
+          "sha256": "sha256:13c39da9eed989336e56f8c41a5fc4d1ba8a597a48cdb5cf9014f787b3cbea9f"
+        },
+        {
+          "id": "w11-7",
+          "relative_path": "artifacts/w11-7",
+          "size_bytes": 21050,
+          "sha256": "sha256:004123496b6535e38760ef311dfdbc5563a52567633413c8ce6c8411151b99c0"
+        },
+        {
+          "id": "w11-8",
+          "relative_path": "artifacts/w11-8",
+          "size_bytes": 9766,
+          "sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26"
+        },
+        {
+          "id": "w11-9",
+          "relative_path": "artifacts/w11-9",
+          "size_bytes": 28958,
+          "sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941"
+        }
+      ],
+      "absent_outputs": [],
+      "cleanup": "complete",
+      "timings": {
+        "preparation_ms": 13497,
+        "execution_ms": 0,
+        "verification_ms": 82650,
+        "collection_ms": 1245,
+        "finalization_ms": 2
+      },
+      "duration_ms": 97447
+    }
+  },
+  "command": {
+    "command": [
+      "C:/Users/diobrando/.dsh/tools/refine/bin/refine.exe",
+      "gate",
+      "--config",
+      "C:/dev/cos-desktop-verification/w11/operator.json",
+      "--request",
+      "C:/dev/cos-desktop-verification/w11/w10jpeg-request-r1.json",
+      "--state-dir",
+      "C:/dev/cos-desktop-verification/w11/state",
+      "--json"
+    ],
+    "cwd": "C:\\dev\\cos-desktop",
+    "exit_code": 0,
+    "duration_seconds": 98.03157739999006,
+    "stdout": {
+      "bytes": 10517,
+      "sha256": "sha256:3a6c6b2e7c357f2de9da5788359f23442fbd64ef514c628907a1393e19ed06bc"
+    },
+    "stderr": {
+      "bytes": 232,
+      "sha256": "sha256:0fb26b556635663ee1991587f669735c6c85e1d450ef55f5d9c1d668b2a02703"
+    }
+  }
+}

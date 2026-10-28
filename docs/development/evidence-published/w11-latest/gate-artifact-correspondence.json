@@ -1,0 +1,214 @@
+{
+  "artifact_sets_identical": true,
+  "artifacts_per_gate": 56,
+  "captured_artifact_bytes_verified": 336,
+  "raw_git_blob_bytewise_matches": 56,
+  "raw_git_blob_lf_only_matches": 0,
+  "candidate_sha256": "sha256:a458a64b07c5e030e7e00a1325f607928cdb8d784319eaecebacbc60613ac7b3",
+  "candidate_commit": "d182ee9eeb2d587eb69c28188dc66675c4a9b7dc",
+  "gates": {
+    "workspace": {
+      "gate_id": "08c4d0a5-327d-4f69-b61f-32c3b7ca0453",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "fmt",
+          "pass",
+          1163
+        ],
+        [
+          "metadata",
+          "pass",
+          203
+        ],
+        [
+          "dependency-self-test",
+          "pass",
+          651
+        ],
+        [
+          "dependency-rules",
+          "pass",
+          309
+        ],
+        [
+          "clippy",
+          "pass",
+          116138
+        ],
+        [
+          "tests",
+          "pass",
+          134543
+        ],
+        [
+          "r0-python",
+          "pass",
+          15087
+        ]
+      ]
+    },
+    "images": {
+      "gate_id": "7d19172a-efdc-49ad-99f4-d0ad9b7ab861",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "img2-w1-w7",
+          "pass",
+          157881
+        ],
+        [
+          "w8-native-replay",
+          "pass",
+          29755
+        ],
+        [
+          "w7-native-replay",
+          "pass",
+          36777
+        ],
+        [
+          "w6-native-replay",
+          "pass",
+          11309
+        ],
+        [
+          "w5-native-replay",
+          "pass",
+          211
+        ],
+        [
+          "w4-native-replay",
+          "pass",
+          1024
+        ],
+        [
+          "w3-retained-native-replay",
+          "pass",
+          1062
+        ],
+        [
+          "w1-runner-selftest",
+          "pass",
+          157
+        ],
+        [
+          "w2-oracle",
+          "pass",
+          13654
+        ]
+      ]
+    },
+    "jpeg": {
+      "gate_id": "da00e25e-a9a3-45ab-beb0-c3a931d92115",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "img2-w8",
+          "pass",
+          281079
+        ],
+        [
+          "img2-w9",
+          "pass",
+          258241
+        ]
+      ]
+    },
+    "w10jpeg": {
+      "gate_id": "2dd89cf2-30c2-4a1f-b3d3-68193271f5ed",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "img2-w10",
+          "pass",
+          73757
+        ]
+      ]
+    },
+    "w11": {
+      "gate_id": "0c9be42b-6a44-479f-b73d-304fe06eab2d",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "w11-fixed-tests",
+          "pass",
+          26043
+        ],
+        [
+          "w11-source-verifier",
+          "pass",
+          24983
+        ]
+      ]
+    },
+    "build": {
+      "gate_id": "95e5d234-eac0-4647-b16c-bbb0d211cc6c",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "build",
+          "pass",
+          150248
+        ],
+        [
+          "built-binary-digest",
+          "pass",
+          166
+        ]
+      ]
+    }
+  },
+  "failed_gates": {
+    "images_r1": {
+      "gate_id": "0e783d76-128b-46d9-a00c-8ba5491cfd26",
+      "state": "FAILED",
+      "cleanup": "complete",
+      "failure": {
+        "code": "VERIFICATION_FAILED",
+        "stage": "verifying",
+        "detail": "check_failed",
+        "message": "verification command exited unsuccessfully",
+        "retryable": false,
+        "cleanup": "complete",
+        "secondary": []
+      },
+      "retained_work": true
+    },
+    "jpeg_r1": {
+      "gate_id": "93dfe8bb-bd67-41a5-ac06-559583da3d30",
+      "state": "FAILED",
+      "cleanup": "complete",
+      "failure": {
+        "code": "EXECUTOR_ERROR",
+        "stage": "verifying",
+        "detail": "timeout",
+        "message": "verification command exceeded its effective deadline",
+        "retryable": false,
+        "cleanup": "complete",
+        "secondary": [
+          {
+            "code": "EXECUTOR_ERROR",
+            "detail": "timeout"
+          },
+          {
+            "code": "EXECUTOR_ERROR",
+            "detail": "timeout"
+          }
+        ]
+      },
+      "retained_work": true
+    }
+  },
+  "native_preflight": "UNKNOWN aggregate; admission diagnostics pass; runtime/output/authorization unknown",
+  "g3_split": "Six finite Gates cover five directed scopes; the installed producer rejects timeout_ms>600000, so the unchanged JPEG definition and the now-prior W10 suite run separately.",
+  "six_gate_scope": {
+    "directed": "G1 workspace, G2 W1-W7 images, G3 W8-W10 JPEG, G4 W11, G5 build",
+    "executed": "G1, G2, G3(w8+w9), G3(w10), G4, G5 as six finite Gates",
+    "reason": "Installed Refine 0.3.1 rejects operator timeout_ms>600000, so the unchanged JPEG definition plus the now-prior W10 suite cannot share one ceiling; no check removed or weakened",
+    "failed_gate_records": [
+      "0e783d76-128b-46d9-a00c-8ba5491cfd26",
+      "93dfe8bb-bd67-41a5-ac06-559583da3d30"
+    ]
+  }
+}
