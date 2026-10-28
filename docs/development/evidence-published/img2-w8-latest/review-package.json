@@ -1,38 +1,38 @@
 {
   "schema_version": 1,
   "slice": "MP-IMG2-W8",
-  "round": 3,
-  "experimental_native_source": "bfdc1f0b4101e267dfbbbfef5c048a4178ad54c3",
-  "gate_candidate": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
-  "candidate_digest": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5",
-  "evidence_head": "3555caf14299019aa7ec4df2ed83ba8e5ae9a003",
+  "round": 4,
+  "experimental_native_source": "0feb6a7bda88868e879084374ed5a26f43031915",
+  "gate_candidate": "c03c2b4492074a503bb70f510ca705212c654ffe",
+  "candidate_digest": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7",
+  "evidence_head": "20d4fff7013aad4357f617da225eb311b3faa41b",
   "manifest_commit_relationship": "This manifest is committed as a child of evidence_head; both archives are exact Git archives at the commits named here and this manifest is not inside its own archive.",
   "source_zip": {
     "schema_version": 1,
     "archive": "w8-review-source.zip",
-    "commit": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
-    "bytes": 5438287,
-    "sha256": "sha256:126876675f8a0f7fbf7ee63953ba7af98d299bd7d68a0c09910376535d467afc"
+    "commit": "c03c2b4492074a503bb70f510ca705212c654ffe",
+    "bytes": 5441490,
+    "sha256": "sha256:a1204f334e15509ad0d3b18adf128d2065ea72c9c324b61f02c41f6970871375"
   },
-  "source_entries": 770,
+  "source_entries": 771,
   "source_entry_manifest": {
     "path_inside_evidence_zip": "docs/development/evidence-published/img2-w8-latest/review-package-source.json",
     "present": true,
-    "entries": 770,
+    "entries": 771,
     "matches_source_archive_sha256": true
   },
   "evidence_zip": {
     "archive": "w8-review-evidence.zip",
-    "commit": "3555caf14299019aa7ec4df2ed83ba8e5ae9a003",
-    "bytes": 886233,
-    "sha256": "sha256:1cc45ec7ee595f92099f3fda36899a44ff87972871a83989f68708ecff095c08",
-    "files": 45
+    "commit": "20d4fff7013aad4357f617da225eb311b3faa41b",
+    "bytes": 889254,
+    "sha256": "sha256:e12e77a72e5434a59b1c20144f8965c27d05910b44af16c8ecf6c190376d4013",
+    "files": 46
   },
   "gates": {
-    "workspace": "71f60580-65bd-4c90-992a-19795e8bcf48",
-    "img2": "51879d5c-e842-495c-a3c8-fcfa01c353ef",
-    "w8": "fe1c26cd-863d-411e-be2a-f53d313db8fb",
-    "build": "3f3cec15-ac4a-45ce-bc28-da1b263df52d"
+    "workspace": "3f11d747-af6c-4f67-a499-bc746ab937a7",
+    "img2": "4b72a851-ce54-4e89-afc9-ccfbb6d62a4d",
+    "w8": "b59b5b82-a988-4f9d-90a0-bd382f98d805",
+    "build": "7159bc4e-52fd-4c20-a5f3-a0326446b5c1"
   },
   "artifact_correspondence": "gate-artifact-correspondence.json",
   "raw_gate_receipts": [
@@ -48,7 +48,6 @@
     "docs/development/evidence-published/img2-w8-latest/gate-artifact-correspondence.json",
     "docs/development/evidence-published/img2-w8-latest/gate-build-receipts.json",
     "docs/development/evidence-published/img2-w8-latest/gate-img2-receipts.json",
-    "docs/development/evidence-published/img2-w8-latest/gate-preflight.json",
     "docs/development/evidence-published/img2-w8-latest/gate-w8-receipts.json",
     "docs/development/evidence-published/img2-w8-latest/gate-workspace-receipts.json",
     "docs/development/evidence-published/img2-w8-latest/quality-core-gate.json",
@@ -59,9 +58,9 @@
     "docs/development/evidence-published/img2-w8-latest/storage.json"
   ],
   "all_after_candidate_changes_docs_only": true,
-  "round2_findings": {
-    "A-W8-R2-01": "Malformed WIC legs now require worker, probe and terminal outcome agreement with exit/output checks on both paths.",
-    "A-W8-R2-02": "GDI+ width/height are bound to the parsed SOF geometry and input/output byte counts to the real fixture and output bytes; four mutations added."
+  "round3_findings": {
+    "A-W8-R2-01": "Malformed WIC legs now require the worker outcome field itself, a validated raw trace payload and a probe_exit whose outcome and completeness match the observed result.",
+    "A-W8-R2-02": "GDI+ output_bytes is mandatory and equal to the real output length; three mutations cover the removed field and a tampered trace."
   },
   "build_product": "NOT_CAPTURED: the isolated build output was disposed before hashing, so no digest is claimed.",
   "package_boundaries": {
