@@ -1,0 +1,18 @@
+MP-IMG2-W9 は今回のレビューで LIMITED TECHNICAL COMPLETION 承認（PASS 0/0/0）となりました。disposition を計画・検証ガイド・証拠へ記録済みです。次の作業指示をください。
+
+現在の状態:
+- Repository: dio16/cos-desktop / branch dev / 未push。HEADはW9レビュー判定の記録コミット。
+- W9候補: 86cc666b2debc95cb470c456b0b24a986bb9b702、digest sha256:e8676e2d064ce54ccbc7a6e28666e314b26d1859021799f5b8aebcda4e1fd846、5 Gate SUCCEEDED(7/9/2/1/1)。
+- 承認範囲は限定progressive JPEG fixtureのWIC/GDI+実decode、multi-scan構造検証、canonical differential、malformed fail-closed分類、bounded execution evidenceのみ。
+- 未承認のまま保持: 全JPEG/全progressive対応、refinement scan全種、製品decoder採用・tolerance、ICC/EXIF policy、16K full decode、true partial/sequential/tiled decode、scan単位partial materialization、WIC内部scratch、実予約、true concurrent peak、cooperative cancellation、product memory SLO、full MP-IMG2 Decode Exit、MP-IMG3、Runtime、measured R0、UX/video、main/release。
+- preflightは引き続きunknown、Build executableはNOT_CAPTURED。製品コード（crates/media、WIC/GDI+ probe、Runtime、W1～W8実装）は今回未変更。
+- 環境制約: Windows WIC/GDI+は実行可能。private Git objectsとRefineは本セッションで利用可。GUI検証は別途。
+
+希望する回答形式:
+1. 次に実装するMPタスクID（例: MP-XXX）と、その単一の目的。
+2. 対象範囲（変更してよいファイル/領域）と、明示的な非対象。
+3. 受入基準（観測可能な振る舞い、証拠、Gate、レビュー条件）。
+4. 前提条件と停止条件（未測定のまま保持する境界、権限が必要な操作）。
+5. 既存の未承認事項との依存関係。
+
+複数タスクを提示する場合は優先順位と依存関係を明記してください。実装・検証・独立Gate・Tern評価のループを継続します。
