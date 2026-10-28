@@ -79,9 +79,12 @@ def integer(value, minimum=None):
 
 
 def requirements(case):
-    row = case["width"]
+    # Progressive sources are single-component grayscale; the baseline control is
+    # a three-component colour JPEG, so its declared depth differs.
+    bits = 24 if case.get("kind") == "control" else 8
+    row = (case["width"] * bits + 7) // 8
     return {"width": case["width"], "height": case["height"], "bits_per_channel": 8,
-            "bits_per_pixel": 8, "row_bytes": row, "decoded_bytes_required": row * case["height"],
+            "bits_per_pixel": bits, "row_bytes": row, "decoded_bytes_required": row * case["height"],
             "bgra32_bytes_required": case["width"] * case["height"] * 4,
             "scratch_bytes_required": case["width"] * case["height"] * 4,
             "declared_scratch_bytes": 0}
