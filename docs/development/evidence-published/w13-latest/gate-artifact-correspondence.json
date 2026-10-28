@@ -1,200 +1,215 @@
 {
-  "gate_candidate": "2b08132b662b3f8660a84084b7666c6b9a61108f",
-  "candidate_digest": "sha256:7556e3f86f831eeda3dc01c09bd55db93e01d8b5525f6595bab17846191a269b",
-  "artifacts_per_gate": 53,
-  "captured_artifacts_verified": 477,
-  "raw_git_blob_matches": 53,
+  "gate_candidate": "23a6dce30ed9a88136379fdbcc762789de20dfef",
+  "candidate_digest": "sha256:d9726be1a4c1b3fc33f7b88b87965f0ee654b341315233c67ce0c8280e2bdbeb",
+  "artifacts_per_gate": 69,
+  "captured_artifacts_verified": 621,
+  "raw_git_blob_matches": 69,
   "artifact_sets_identical": true,
   "gates": {
     "workspace": {
-      "gate_id": "cd1ee9e3-40c4-4cc9-94db-4b6317fcf85f",
+      "gate_id": "b9d9ce72-800f-4bc6-89e3-767e9efd512a",
       "state": "SUCCEEDED",
       "checks": [
         [
           "fmt",
           "pass",
-          1026
+          1156
         ],
         [
           "metadata",
           "pass",
-          147
+          150
         ],
         [
           "dependency-self-test",
           "pass",
-          546
+          541
         ],
         [
           "dependency-rules",
           "pass",
-          247
+          249
         ],
         [
           "clippy",
           "pass",
-          96700
+          124207
         ],
         [
           "tests",
           "pass",
-          121936
+          147481
         ],
         [
           "r0-python",
           "pass",
-          13483
+          14708
         ]
       ]
     },
     "images": {
-      "gate_id": "eb7a3e7b-1f8b-461d-80bd-f0e3c7f3274d",
+      "gate_id": "fc3334f2-b70c-4c00-ae33-8550e3bc4893",
       "state": "SUCCEEDED",
       "checks": [
         [
           "img2-w1-w7",
           "pass",
-          153373
+          151734
         ],
         [
           "w8-native-replay",
           "pass",
-          29866
+          29722
         ],
         [
           "w7-native-replay",
           "pass",
-          37662
+          36794
         ],
         [
           "w6-native-replay",
           "pass",
-          11301
+          11197
         ],
         [
           "w5-native-replay",
           "pass",
-          254
+          224
         ],
         [
           "w4-native-replay",
           "pass",
-          984
+          958
         ],
         [
           "w3-retained-native-replay",
           "pass",
-          1059
+          975
         ],
         [
           "w1-runner-selftest",
           "pass",
-          183
+          166
         ],
         [
           "w2-oracle",
           "pass",
-          13613
+          13670
         ]
       ]
     },
     "w8": {
-      "gate_id": "9a4b0243-16e5-4974-8a73-7e3844d853b9",
+      "gate_id": "1dc47c09-06b0-4cce-8ebb-e7acce15921d",
       "state": "SUCCEEDED",
       "checks": [
         [
           "img2-w8",
           "pass",
-          289782
+          278934
         ]
       ]
     },
     "w9": {
-      "gate_id": "2f2c8126-8380-4a10-9d05-37312e295ac5",
+      "gate_id": "b5ad5b01-2a21-4c82-9090-d5ee5da6d0be",
       "state": "SUCCEEDED",
       "checks": [
         [
           "img2-w9",
           "pass",
-          261466
+          254375
         ]
       ]
     },
     "w10": {
-      "gate_id": "92e73289-6f05-44af-a220-1f4ff315ad78",
+      "gate_id": "34696471-0abb-45f7-b4ab-d02c110edfbe",
       "state": "SUCCEEDED",
       "checks": [
         [
           "img2-w10",
           "pass",
-          73733
+          73948
         ]
       ]
     },
     "w11": {
-      "gate_id": "7775e516-2052-48ec-8e48-c0a0aeec6034",
+      "gate_id": "92bf9dd4-abf5-48a8-81b1-01bd133db8db",
       "state": "SUCCEEDED",
       "checks": [
         [
           "w11-fixed-tests",
           "pass",
-          26513
+          26417
         ],
         [
           "w11-source-verifier",
           "pass",
-          25054
+          25129
         ]
       ]
     },
     "w12": {
-      "gate_id": "3d300818-c9a1-4969-9b1d-20926d40fd38",
+      "gate_id": "488645f7-5953-4e53-82df-32cbb58dbd17",
       "state": "SUCCEEDED",
       "checks": [
         [
           "w12-fixed-tests",
           "pass",
-          48516
+          48376
         ],
         [
           "w12-source-verifier",
           "pass",
-          3429
+          3446
         ]
       ]
     },
     "w13": {
-      "gate_id": "62d008f1-a463-4326-a238-9a67a8c54e62",
+      "gate_id": "e660536b-1c0a-4a15-b40f-bd3c8da894be",
       "state": "SUCCEEDED",
       "checks": [
         [
           "w13-fixed-tests",
           "pass",
-          145720
+          474912
         ],
         [
           "w13-source-verifier",
           "pass",
-          6764
+          16600
         ]
       ]
     },
     "build": {
-      "gate_id": "c7bfa696-74bc-4696-b991-0f951ddef677",
+      "gate_id": "7d0b2747-308d-4d86-9699-0114a73dc4d9",
       "state": "SUCCEEDED",
       "checks": [
         [
           "build",
           "pass",
-          24760
+          116606
         ],
         [
           "built-binary-digest",
           "pass",
-          199
+          210
         ]
       ]
     }
+  },
+  "superseded_gate_set": {
+    "candidate": "2b08132b662b3f8660a84084b7666c6b9a61108f",
+    "gates": {
+      "workspace": "cd1ee9e3-40c4-4cc9-94db-4b6317fcf85f",
+      "images": "eb7a3e7b-1f8b-461d-80bd-f0e3c7f3274d",
+      "w8": "9a4b0243-16e5-4974-8a73-7e3844d853b9",
+      "w9": "2f2c8126-8380-4a10-9d05-37312e295ac5",
+      "w10": "92e73289-6f05-44af-a220-1f4ff315ad78",
+      "w11": "7775e516-2052-48ec-8e48-c0a0aeec6034",
+      "w12": "3d300818-c9a1-4969-9b1d-20926d40fd38",
+      "w13": "62d008f1-a463-4326-a238-9a67a8c54e62",
+      "build": "c7bfa696-74bc-4696-b991-0f951ddef677"
+    },
+    "reason": "B-R1-01/B-R1-02 review repair changed the candidate; those receipts remain historical and are not reused."
   },
   "failed_gates": {
     "build_r1": {
@@ -204,6 +219,6 @@
       "retained": true
     }
   },
-  "native_preflight": "UNKNOWN aggregate; admission diagnostics pass; runtime/output/authorization unknown",
-  "notes": "Nine directed Gates on one committed candidate; the build Gate was replaced once with an explicitly documented cause and the failed record kept."
+  "native_preflight": "UNKNOWN aggregate; admission diagnostics pass",
+  "notes": "Nine Gates on the repair candidate; the earlier nine-Gate set and the failed build attempt remain historical."
 }

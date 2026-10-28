@@ -25,10 +25,11 @@
     "errors": 0
   },
   "w13_tests": {
-    "count": 9,
-    "passed": 9,
-    "negative_classes": 40
+    "count": 16,
+    "passed": 16,
+    "negative_classes": 40,
+    "stream_strictness_cases": 8
   },
   "feature_route": "NOT_RUN for W13; no Rust feature-code change.",
-  "basis": "Counts are taken from the nine independent Gates on candidate 2b08132 (digest 7556e3f8) and the retained W13 suite run; the earlier failed build Gate is not counted."
+  "basis": "Counts come from the nine independent Gates on the repair candidate 23a6dce (digest d9726be1) plus the retained W13 suite run; the superseded candidate set and the failed build attempt are excluded."
 }
