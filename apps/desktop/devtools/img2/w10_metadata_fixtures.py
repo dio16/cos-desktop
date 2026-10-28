@@ -60,6 +60,26 @@ def icc_app2(profile: bytes, sequence: int = 1, total: int = 1, truncated: int =
     return _segment(0xE2, payload)
 
 
+def _invalid_exif_app1() -> bytes:
+    tiff = (b"II" + struct.pack("<H", 42) + struct.pack("<I", 8) + struct.pack("<H", 1) +
+            struct.pack("<HHI", 0x0112, 4, 1) + struct.pack("<I", 0xFFFFFFFF) + struct.pack("<I", 0))
+    return _segment(0xE1, b"Exif\x00\x00" + tiff)
+
+
+def _invalid_icc_app2() -> bytes:
+    profile = bytearray(ICC_PROFILE)
+    profile[0:4] = struct.pack(">I", len(profile) + 4)
+    return icc_app2(bytes(profile))
+
+
+def _invalid_icc_signature_app2() -> bytes:
+    profile = bytearray(ICC_PROFILE)
+    profile[36:40] = b"nope"
+    return icc_app2(bytes(profile))
+
+
+
+
 def _assemble(segments: list[bytes]) -> bytes:
     base = encode_jpeg(WIDTH, HEIGHT, SAMPLING, QUANT_SCALE)
     _need(base[:2] == b"\xFF\xD8", "base_stream_missing_soi")
@@ -83,6 +103,12 @@ CASES = (
      "truncated": "exif", "reference": "TAMPER", "segments": ["exif_truncated"]},
     {"id": "icc_truncated", "kind": "malformed", "orientation": None, "icc": "valid",
      "truncated": "icc", "reference": "TAMPER", "segments": ["icc_truncated"]},
+    {"id": "exif_invalid", "kind": "malformed", "orientation": None, "icc": None,
+     "truncated": None, "reference": "TAMPER", "segments": ["exif_invalid"]},
+    {"id": "icc_invalid", "kind": "malformed", "orientation": None, "icc": "valid",
+     "truncated": None, "reference": "TAMPER", "segments": ["icc_invalid"]},
+    {"id": "icc_signature_invalid", "kind": "malformed", "orientation": None, "icc": "valid",
+     "truncated": None, "reference": "TAMPER", "segments": ["icc_signature_invalid"]},
     {"id": "exif_icc_combined", "kind": "combined", "orientation": 6, "icc": "valid",
      "truncated": None, "reference": "DIFFERENTIAL", "segments": ["exif", "icc"]},
 )
@@ -110,10 +136,16 @@ def fixture_bytes(case_id: str) -> bytes:
             segments.append(exif_app1(case["orientation"]))
         elif name == "exif_truncated":
             segments.append(exif_app1(case["orientation"], truncated=True))
+        elif name == "exif_invalid":
+            segments.append(_invalid_exif_app1())
         elif name == "icc":
             segments.append(icc_app2(ICC_PROFILE))
         elif name == "icc_truncated":
             segments.append(icc_app2(ICC_PROFILE, truncated=40))
+        elif name == "icc_invalid":
+            segments.append(_invalid_icc_app2())
+        elif name == "icc_signature_invalid":
+            segments.append(_invalid_icc_signature_app2())
         else:
             raise ValueError("unknown_segment:" + name)
     return _assemble(segments)

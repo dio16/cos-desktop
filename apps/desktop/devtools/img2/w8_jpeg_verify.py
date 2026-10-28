@@ -180,34 +180,28 @@ def _source_identity(record, source_root) -> bool:
     need(isinstance(probes, dict) and set(probes) == {"wic", "gdiplus"}, "probe_identity_missing")
     lf_probes = identity.get("probes_lf")
     need(isinstance(lf_probes, dict) and set(lf_probes) == {"wic", "gdiplus"}, "probe_lf_identity_missing")
-    if source_root is None:
-        # Structural replay has no repository binding, so the shared probe files are
-        # not compared here; the recorded digests stay as the acceptance values.
-        return False
-    root = Path(source_root)
-    git = os.environ.get("GIT_EXECUTABLE") or "git"
-
-    def blob(path):
-        result = subprocess.run([git, "show", f"{commit}:{path}"], cwd=root,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
-        need(result.returncode == 0, "source_blob_missing:" + path)
-        return result.stdout
-
-    for path, item in files.items():
-        data = blob(path)
-        normalized = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
-        need(sha(data) == item["git_blob_sha256"], "source_git_blob_mismatch:" + path)
-        need(sha(normalized) == item["lf_sha256"], "source_lf_digest_mismatch:" + path)
-    # The probes are shared across slices: the historical record is verified against the
-    # blob it was measured with, so a later opt-in switch is drift rather than failure.
     for name, relative in (("wic", "apps/desktop/examples/decode_compare/wic_probe.ps1"),
                            ("gdiplus", "apps/desktop/examples/decode_compare/gdiplus_probe.ps1")):
-        data = blob(relative)
+        data = (ROOT / relative).read_bytes()
         normalized = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
         crlf = normalized.replace(b"\n", b"\r\n")
+        # The raw digest may be the file as checked out with either ending; the LF
+        # digest is the acceptance value, and a foreign digest fails every candidate.
         need(probes[name] in (sha(data), sha(normalized), sha(crlf)),
              "probe_digest_mismatch:" + name)
         need(lf_probes[name] == sha(normalized), "probe_lf_digest_mismatch:" + name)
+    if source_root is None:
+        return False
+    root = Path(source_root)
+    git = os.environ.get("GIT_EXECUTABLE") or "git"
+    for path, item in files.items():
+        data = (root / path).read_bytes()
+        normalized = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        current = subprocess.run([git, "show", f"{commit}:{path}"], cwd=root,
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+        need(current.returncode == 0, "source_blob_missing:" + path)
+        need(sha(normalized) == item["lf_sha256"], "source_lf_digest_mismatch:" + path)
+        need(sha(current.stdout) == item["git_blob_sha256"], "source_git_blob_mismatch:" + path)
     return True
 
 

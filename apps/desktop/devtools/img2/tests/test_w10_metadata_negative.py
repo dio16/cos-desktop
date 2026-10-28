@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from w10_metadata_verify import verify
 
-RECORD = Path(__file__).resolve().parents[4].parent / "docs/development/evidence-published/w10-latest/native-metadata-matrix.json"
+RECORD = Path(__file__).resolve().parents[5] / "docs/development/evidence-published/w10-latest/native-metadata-matrix.json"
 NEGATIVE_NAMES = (
     "orientation_value_forged", "orientation_presence_forged", "transform_request_forged",
     "transform_applied_forged", "transform_dims_swapped", "icc_presence_forged",
@@ -23,6 +23,9 @@ NEGATIVE_NAMES = (
     "tamper_leg_promoted", "wellformed_leg_demoted", "refused_leg_publishes", "decoded_output_missing",
     "incomplete_run", "unmeasured_boundary_changed", "work_bytes_over_cap", "structure_not_reproducible",
     "expected_block_forged", "icc_partial_dropped",
+    "png_bytes_forged", "rgba_digest_forged", "pixel_relation_forged",
+    "input_digest_forged", "probe_digest_forged", "exit_outcome_forged",
+    "cleanup_incomplete", "duplicate_case", "worker_not_reaped", "bound_omitted",
 )
 
 
@@ -102,16 +105,44 @@ def mutation(record, number):
         _row(record, "icc_valid")["expected"]["icc_present"] = False
     elif number == 30:
         _row(record, "icc_truncated")["structure"]["icc_partial"] = None
+    elif number == 31:
+        leg = _leg(record, "icc_valid", "gdiplus_metadata")
+        leg["output"]["hex"] = "00" + leg["output"]["hex"][2:]
+    elif number == 32:
+        _leg(record, "icc_valid", "wic_metadata")["output"]["rgba_sha256"] = "sha256:" + "0" * 64
+    elif number == 33:
+        record["comparisons"]["exif_orient6"]["orientation_relation"]["exact"] = False
+    elif number == 34:
+        _leg(record, "meta_plain", "wic_metadata")["input_sha256"] = "sha256:" + "0" * 64
+    elif number == 35:
+        _leg(record, "meta_plain", "wic_metadata")["probe_sha256"] = "sha256:" + "0" * 64
+    elif number == 36:
+        _leg(record, "meta_plain", "wic_metadata")["exit_code"] = 3
+    elif number == 37:
+        record["cleanup"]["complete"] = False
+    elif number == 38:
+        record["cases"][1] = copy.deepcopy(record["cases"][0])
+    elif number == 39:
+        _leg(record, "meta_plain", "wic_metadata")["reaped"] = False
+    elif number == 40:
+        record["bounds"].pop("max_capture_bytes")
     else:
         raise ValueError("unknown mutation")
+    # Keep the captured JSON coherent so mutations exercise semantic validation,
+    # not merely a mismatch between two copies of the same result.
+    for row in record["cases"]:
+        for leg in row["legs"]:
+            leg["stdout_utf8"] = json.dumps(leg["probe_result"], separators=(",", ":")) + "\n"
+            leg["stdout_bytes"] = len(leg["stdout_utf8"].encode("utf-8"))
 
 
 class NegativeMutations(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if not RECORD.is_file():
-            raise unittest.SkipTest("retained W10 record is not present")
         cls.record = json.loads(RECORD.read_text(encoding="utf-8"))
+        result = verify(cls.record)
+        if not result["ok"]:
+            raise AssertionError("Retained Windows control is invalid: " + str(result))
 
     def test_retained_record_passes_structure_checks(self):
         result = verify(copy.deepcopy(self.record))

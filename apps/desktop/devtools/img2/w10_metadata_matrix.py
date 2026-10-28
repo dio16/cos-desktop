@@ -1,11 +1,4 @@
-"""Bounded W10 JPEG metadata differential matrix over real WIC and GDI+ decoders.
-
-Every leg runs the existing probe scripts as a separate process with an explicit
-deadline, capture and output cap, and a fresh output path. Nothing here decides
-colour management: an ICC profile that both decoders merely report is recorded
-as recognition, never as a colour conversion.
-"""
-
+"""Bounded, pinned Windows WIC/GDI+ JPEG metadata and raster experiment."""
 from __future__ import annotations
 
 import argparse
@@ -14,18 +7,18 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
-from stat import S_ISREG
 import time
 
 from w2_resource_matrix import _safe_path
 from w2_resource_verify import canonical, file_sha, sha
 from w10_metadata_fixtures import CASES, write_fixture
 from w10_metadata_reference import parse
-from w10_metadata_verify import BOUNDS, LIMITS, SOURCE_FILES, UNMEASURED, verify
+from w10_metadata_pixels import output_record, comparisons
+from w10_metadata_verify import BOUNDS, LIMITS, SOURCE_FILES, UNMEASURED, verify, row_class
 
 ROOT = Path(__file__).resolve().parents[4]
 WIC = ROOT / "apps/desktop/examples/decode_compare/wic_probe.ps1"
-GDI = ROOT / "apps/desktop/examples/decode_compare/gdiplus_probe.ps1"
+GDI = ROOT / "apps/desktop/examples/decode_compare/gdiplus_metadata_probe.ps1"
 
 
 def _git(*args):
@@ -48,97 +41,85 @@ def source_identity(pwsh):
         files[path] = {"bytes": len(data), "raw_sha256": sha(data), "lf_sha256": sha(normalized),
                        "git_blob_sha256": sha(blob), "unchanged_after_run": True}
     return {"source_commit": commit, "files": files, "pwsh_sha256": file_sha(pwsh),
-            "wic_probe_sha256": file_sha(WIC), "gdiplus_probe_sha256": file_sha(GDI),
-            "normalization": "Raw Native hashes plus explicitly declared LF-normalized Git correspondence"}
+            "wic_probe_sha256": file_sha(WIC), "gdiplus_probe_sha256": file_sha(GDI)}
 
 
 def _work_bytes(work):
-    total = 0
-    for path in work.rglob("*"):
-        info = path.stat()
-        if S_ISREG(info.st_mode):
-            total += info.st_size
-    return total
+    return sum(path.stat().st_size for path in work.rglob("*") if path.is_file())
 
 
-def _guard(work, started):
-    if time.monotonic_ns() - started > BOUNDS["max_total_seconds"] * 1_000_000_000:
-        raise ValueError("total_deadline_exceeded")
-    if _work_bytes(work) > BOUNDS["max_work_bytes"]:
-        raise ValueError("work_byte_cap")
-
-
-def _run(pwsh, argv, output, work, started):
-    _guard(work, started)
-    began = time.monotonic_ns()
-    process = subprocess.Popen(argv, stdin=subprocess.DEVNULL,
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    try:
-        stdout, stderr = process.communicate(timeout=BOUNDS["max_worker_seconds"])
-    except subprocess.TimeoutExpired:
-        process.kill()
-        stdout, stderr = process.communicate()
-        raise ValueError("worker_deadline_exceeded")
-    ended = time.monotonic_ns()
-    _guard(work, started)
-    if len(stdout) > BOUNDS["max_capture_bytes"] or len(stderr) > BOUNDS["max_capture_bytes"]:
-        raise ValueError("capture_cap")
-    record = {"pid": process.pid, "started_ns": began, "exited_ns": ended,
-              "exit_code": process.returncode, "stdout_bytes": len(stdout),
-              "stderr_bytes": len(stderr),
-              "stdout_utf8": stdout.decode("utf-8", "replace")[:BOUNDS["max_capture_bytes"]],
-              "stderr_utf8": stderr.decode("utf-8", "replace")[:BOUNDS["max_capture_bytes"]],
-              "lifetime": "NOT_MEASURED",
-              "lifetime_reason": "W10 observes metadata interpretation, not process lifetime."}
-    try:
-        record["probe_result"] = json.loads(record["stdout_utf8"]) if record["stdout_utf8"] else None
-    except (UnicodeError, ValueError):
-        record["probe_result"] = None
-    if output.exists():
-        info = output.stat()
-        if info.st_size > BOUNDS["max_output_bytes"]:
-            raise ValueError("output_cap")
-        record["output"] = {"present": True, "bytes": info.st_size,
-                            "sha256": "sha256:" + sha(output.read_bytes())}
-    else:
-        record["output"] = {"present": False, "bytes": 0, "sha256": None}
-    return record
-
-
-def _wic(pwsh, source, output, limits, transform, work, started):
-    argv = [str(pwsh), "-NoProfile", "-File", str(WIC), "-InputPath", str(source),
-            "-OutputPath", str(output), "-Metadata", "-MaxMetadataBytes",
-            str(BOUNDS["max_metadata_bytes"]),
-            "-MaxPixels", str(limits["max_pixels"]), "-MaxDimension", str(limits["max_dimension"]),
-            "-MaxBitDepth", str(limits["max_bit_depth"]),
-            "-MaxDecodedBytes", str(limits["max_decoded_bytes"]),
-            "-MaxScratchBytes", str(limits["max_scratch_bytes"])]
-    if transform:
-        argv.append("-ApplyOrientation")
-    return _run(pwsh, argv, output, work, started)
-
-
-def _gdi(pwsh, source, output, limits, work, started):
-    argv = [str(pwsh), "-NoProfile", "-File", str(GDI), "-InputPath", str(source),
-            "-OutputPath", str(output), "-MaxPixels", str(limits["max_pixels"]),
+def _run(case, name, source, folder, pwsh, work, started):
+    folder.mkdir()
+    output = folder / "output.png"
+    stdout_path, stderr_path = folder / "stdout", folder / "stderr"
+    candidate = "gdiplus" if name == "gdiplus_metadata" else "wic"
+    probe = GDI if candidate == "gdiplus" else WIC
+    argv = [str(pwsh), "-NoProfile", "-File", str(probe), "-InputPath", str(source),
+            "-OutputPath", str(output), "-MaxPixels", str(LIMITS["max_pixels"]),
             "-Metadata", "-MaxMetadataBytes", str(BOUNDS["max_metadata_bytes"])]
-    return _run(pwsh, argv, output, work, started)
-
-
-def _classify(record: dict, structure: dict) -> str:
-    result = record.get("probe_result") or {}
-    outcome = result.get("outcome")
-    if outcome in (None, "not_run"):
-        return "NOT_RUN"
-    if outcome == "oversize":
-        return "OVERSIZE"
-    if outcome in ("unsupported", "corrupt"):
-        return "REFUSED"
-    if outcome == "error":
-        return "TAMPER_NOT_VERIFIED"
-    if structure["classification"] == "METADATA_TAMPERED":
-        return "DECODED_TAMPER_NOT_VERIFIED"
-    return "DECODED_METADATA_OBSERVED"
+    if candidate == "wic":
+        argv += ["-MaxDimension", str(LIMITS["max_dimension"]), "-MaxBitDepth", str(LIMITS["max_bit_depth"]),
+                 "-MaxDecodedBytes", str(LIMITS["max_decoded_bytes"]),
+                 "-MaxScratchBytes", str(LIMITS["max_scratch_bytes"])]
+        if name == "wic_transform":
+            argv.append("-ApplyOrientation")
+    began = time.monotonic_ns()
+    process = None
+    failure = None
+    # File spools bound both memory use and pipe backpressure. Observe every cap
+    # during execution, not after unbounded communicate() has accumulated bytes.
+    with stdout_path.open("xb") as stdout, stderr_path.open("xb") as stderr:
+        try:
+            process = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=stdout, stderr=stderr)
+            while process.poll() is None:
+                now = time.monotonic_ns()
+                if now - began > BOUNDS["max_worker_seconds"] * 1_000_000_000:
+                    raise ValueError("worker_deadline_exceeded")
+                if now - started > BOUNDS["max_total_seconds"] * 1_000_000_000:
+                    raise ValueError("total_deadline_exceeded")
+                if any(p.stat().st_size > BOUNDS["max_capture_bytes"] for p in (stdout_path, stderr_path)):
+                    raise ValueError("capture_cap")
+                if output.exists() and output.stat().st_size > BOUNDS["max_output_bytes"]:
+                    raise ValueError("output_cap")
+                if _work_bytes(work) > BOUNDS["max_work_bytes"]:
+                    raise ValueError("work_byte_cap")
+                time.sleep(.01)
+        except (OSError, ValueError) as exc:
+            failure = type(exc).__name__ + ":" + str(exc)
+        finally:
+            if process is not None and process.poll() is None:
+                process.kill()
+                process.wait(timeout=5)
+    exited = time.monotonic_ns()
+    captures = []
+    for path in (stdout_path, stderr_path):
+        with path.open("rb") as stream:
+            data = stream.read(BOUNDS["max_capture_bytes"] + 1)
+        if len(data) > BOUNDS["max_capture_bytes"]:
+            failure = "capture_cap"
+            data = data[:BOUNDS["max_capture_bytes"]]
+        captures.append(data.decode("utf-8", "strict"))
+    try:
+        result = json.loads(captures[0])
+    except ValueError:
+        result = None
+        failure = failure or "probe_result_missing"
+    data = None
+    if output.exists():
+        with output.open("rb") as stream:
+            data = stream.read(BOUNDS["max_output_bytes"] + 1)
+        if len(data) > BOUNDS["max_output_bytes"]:
+            raise ValueError("output_cap")
+    return {"leg": name, "case_id": case["id"], "candidate": candidate,
+            "input_sha256": file_sha(source), "probe_sha256": file_sha(probe),
+            "pid": process.pid if process is not None else None,
+            "started_ns": began, "exited_ns": exited,
+            "exit_code": process.returncode if process is not None else None,
+            "failure": failure, "reaped": process is not None and process.poll() is not None,
+            "stdout_utf8": captures[0], "stderr_utf8": captures[1],
+            "stdout_bytes": stdout_path.stat().st_size, "stderr_bytes": stderr_path.stat().st_size,
+            "probe_result": result, "output": output_record(data),
+            "lifetime": "NOT_MEASURED"}
 
 
 def run(work, out, pwsh):
@@ -149,108 +130,52 @@ def run(work, out, pwsh):
         raise ValueError("real_executable_required")
     identity = source_identity(pwsh)
     started = time.monotonic_ns()
-    work.mkdir(parents=True, exist_ok=False)
+    work.mkdir(parents=True)
     cases_dir = work / "cases"
     cases_dir.mkdir()
-    workers = work / "workers"
-    workers.mkdir()
-    fixtures = []
-    structures = {}
+    fixtures, rows = [], []
     for case in CASES:
-        record = write_fixture(case["id"], cases_dir / (case["id"] + ".jpg"))
-        fixtures.append(record)
-        structures[case["id"]] = parse((cases_dir / (case["id"] + ".jpg")).read_bytes())
-    rows = []
-    for case in CASES:
-        structure = structures[case["id"]]
+        path = cases_dir / (case["id"] + ".jpg")
+        fixture = write_fixture(case["id"], path)
+        fixtures.append(fixture)
+        structure = parse(path.read_bytes())
+        names = ["wic_metadata"]
+        if fixture["expected_transform"] != "none":
+            names.append("wic_transform")
+        names.append("gdiplus_metadata")
+        legs = [_run(case, name, path, work / (case["id"] + "_" + name), pwsh, work, started)
+                for name in names]
+        for leg in legs:
+            outcome = (leg["probe_result"] or {}).get("outcome")
+            leg["classification"] = ("NOT_RUN" if leg["failure"] else
+                "DECODED_TAMPER_NOT_VERIFIED" if outcome == "decoded" and case["kind"] == "malformed" else
+                "DECODED_METADATA_OBSERVED" if outcome == "decoded" else "REFUSED")
         row = {"case_id": case["id"], "kind": case["kind"], "reference_class": case["reference"],
-               "structure": structure, "expected": {
-                   "orientation": None if "exif" not in case["segments"] else case["orientation"],
-                   "transform": fixtures[CASES.index(case)]["expected_transform"],
-                   "output_width": fixtures[CASES.index(case)]["expected_output_width"],
-                   "output_height": fixtures[CASES.index(case)]["expected_output_height"],
-                   "icc_present": bool("icc" in case["segments"]),
-                   "icc_sha256": fixtures[CASES.index(case)]["expected_icc_sha256"]},
-               "legs": [], "classification": "NOT_RUN"}
-        source = cases_dir / (case["id"] + ".jpg")
-        meta_output = workers / (case["id"] + "_wic.png")
-        meta_output.parent.mkdir(exist_ok=True)
-        row["legs"].append(_leg("wic_metadata", case, source, meta_output, "wic",
-                                lambda: _wic(pwsh, source, meta_output, LIMITS, False, work, started),
-                                structure))
-        if row["expected"]["transform"] not in ("none",):
-            transform_output = workers / (case["id"] + "_wic_transform.png")
-            row["legs"].append(_leg("wic_transform", case, source, transform_output, "wic",
-                                    lambda: _wic(pwsh, source, transform_output, LIMITS, True, work, started),
-                                    structure))
-        gdi_output = workers / (case["id"] + "_gdiplus.png")
-        row["legs"].append(_leg("gdiplus_metadata", case, source, gdi_output, "gdiplus",
-                                lambda: _gdi(pwsh, source, gdi_output, LIMITS, work, started),
-                                structure))
-        row["classification"] = _row_class(row)
+               "structure": structure, "legs": legs,
+               "expected": {"orientation": fixture["expected_orientation"],
+                            "transform": fixture["expected_transform"],
+                            "output_width": fixture["expected_output_width"],
+                            "output_height": fixture["expected_output_height"],
+                            "icc_present": fixture["expected_icc"],
+                            "icc_sha256": fixture["expected_icc_sha256"]}}
+        row["classification"] = row_class(row)
         rows.append(row)
     after = source_identity(pwsh)
     unchanged = identity == after
-    for path, item in identity["files"].items():
-        item["unchanged_after_run"] = unchanged and item == after["files"][path]
-    platform_script = ('[ordered]@{powershell=$PSVersionTable.PSVersion.ToString();'
-                       'dotnet=[Runtime.InteropServices.RuntimeInformation]::FrameworkDescription;'
-                       'os=[Environment]::OSVersion.VersionString;'
-                       'windows=[OperatingSystem]::IsWindows()}|ConvertTo-Json -Compress')
-    platform = subprocess.run([str(pwsh), "-NoProfile", "-Command", platform_script],
-                              capture_output=True, text=True, timeout=5, check=True)
-    record = {"schema_version": 1, "run_id": work.name, "complete": len(rows) == len(CASES) and unchanged,
-              "bounds": BOUNDS, "decode_limits": dict(LIMITS), "source_identity": identity,
-              "platform": json.loads(platform.stdout), "fixtures": fixtures, "cases": rows,
+    record = {"schema_version": 2, "run_id": work.name, "complete": unchanged,
+              "bounds": BOUNDS, "decode_limits": LIMITS, "source_identity": identity,
+              "platform": {"os": os.name, "windows": os.name == "nt"},
+              "fixtures": fixtures, "cases": rows, "comparisons": comparisons(rows),
               "unmeasured": list(UNMEASURED), "duration_ns": time.monotonic_ns() - started,
-              "work_bytes": _work_bytes(work), "cleanup": {"complete": True, "live_direct_children": []},
-              "work_root_disposable": True,
-              "limitations": [
-                  "ICC values are reported, not applied; colour conversion stays NOT_MEASURED.",
-                  "WIC and GDI+ share the installed Windows JPEG codec, so agreement is differential.",
-                  "GDI+ exposes no transform, trace or admission control; its leg is observation only.",
-                  "A decoder accepting truncated metadata is never promoted to content verification.",
-                  "Only the four ASCII EXIF orientations 1, 3, 6 and 8 are exercised."]}
-    data = canonical(record)
-    if len(data) > BOUNDS["max_report_bytes"]:
+              "work_bytes": _work_bytes(work),
+              "cleanup": {"complete": all(leg["reaped"] for row in rows for leg in row["legs"]),
+                          "live_direct_children": []}, "work_root_disposable": True}
+    if len(canonical(record)) > BOUNDS["max_report_bytes"]:
         raise ValueError("report_cap_exceeded")
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("xb") as stream:
-        stream.write(data)
+        stream.write(canonical(record))
     return record
-
-
-def _leg(name, case, source, output, candidate, runner, structure):
-    record = {"leg": name, "case_id": case["id"], "candidate": candidate, "probe": None,
-              "failure": None}
-    try:
-        body = runner()
-        record.update(body)
-        result = record.get("probe_result") or {}
-        record["probe"] = result.get("probe")
-        record["classification"] = _classify(record, structure)
-    except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
-        record["failure"] = type(exc).__name__ + ":" + str(exc)[:160]
-        record["probe_result"] = None
-        record["output"] = {"present": False, "bytes": 0, "sha256": None}
-        record["classification"] = "NOT_RUN"
-    if output.exists():
-        output.unlink()
-    return record
-
-
-def _row_class(row):
-    classes = [leg["classification"] for leg in row["legs"]]
-    if any(value == "NOT_RUN" for value in classes):
-        return "NOT_RUN"
-    if row["kind"] == "malformed":
-        if all(value in ("DECODED_TAMPER_NOT_VERIFIED", "REFUSED", "TAMPER_NOT_VERIFIED")
-               for value in classes):
-            return "TAMPER_CLASSIFIED"
-        return "NOT_VERIFIED"
-    if row["kind"] == "plain":
-        return "CONTROL_OBSERVED" if all(value == "DECODED_METADATA_OBSERVED" for value in classes) else "NOT_VERIFIED"
-    return "DIFFERENTIAL_OBSERVED" if all(value == "DECODED_METADATA_OBSERVED" for value in classes) else "NOT_VERIFIED"
 
 
 def main(argv=None):
@@ -267,12 +192,14 @@ def main(argv=None):
         if args.operation == "run":
             result = verify(run(args.work_root, args.out, args.pwsh), ROOT)
         else:
-            if args.report.stat().st_size > BOUNDS["max_report_bytes"]:
+            with args.report.open("rb") as stream:
+                data = stream.read(BOUNDS["max_report_bytes"] + 1)
+            if len(data) > BOUNDS["max_report_bytes"]:
                 raise ValueError("report_cap_exceeded")
-            result = verify(json.loads(args.report.read_bytes()), args.source_root)
+            result = verify(json.loads(data), args.source_root)
         print(json.dumps(result, sort_keys=True))
         return 0 if result["ok"] and result["closure_eligible"] else 1
-    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as exc:
+    except (OSError, ValueError, KeyError, TypeError, AssertionError, subprocess.SubprocessError) as exc:
         print(json.dumps({"ok": False, "error": type(exc).__name__, "reason": str(exc)[:200]}))
         return 2
 

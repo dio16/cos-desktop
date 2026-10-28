@@ -1,5 +1,4 @@
-"""Fail-closed verification for the W10 JPEG metadata differential matrix."""
-
+"""Fail-closed W10 verification of pinned sources, encoded metadata and real pixels."""
 from __future__ import annotations
 
 import json
@@ -7,16 +6,16 @@ import os
 from pathlib import Path
 import subprocess
 
-from w2_resource_verify import sha
-from w10_metadata_fixtures import CASES, fixture_bytes
+from w2_resource_verify import sha, canonical
+from w10_metadata_fixtures import CASES, fixture_bytes, expected_dims, expected_transform, expected_orientation, ICC_PROFILE, WIDTH, HEIGHT
 from w10_metadata_reference import parse
+from w10_metadata_pixels import output_record, comparisons
 
-ROOT = Path(__file__).resolve().parents[4]
 BOUNDS = {"max_dimension": 2048, "max_pixels": 4194304, "max_bit_depth": 8,
           "max_encoded_input": 4 * 1024 * 1024, "max_metadata_bytes": 64 * 1024,
-          "max_output_bytes": 32 * 1024 * 1024, "max_work_bytes": 128 * 1024 * 1024,
+          "max_output_bytes": 1024 * 1024, "max_work_bytes": 128 * 1024 * 1024,
           "max_report_bytes": 4 * 1024 * 1024, "max_capture_bytes": 64 * 1024,
-          "max_worker_seconds": 45, "max_total_seconds": 300, "max_native_legs": 24}
+          "max_worker_seconds": 45, "max_total_seconds": 300, "max_native_legs": 32}
 LIMITS = {"max_dimension": 2048, "max_pixels": 4194304, "max_bit_depth": 8,
           "max_decoded_bytes": 16 * 1024 * 1024, "max_scratch_bytes": 16 * 1024 * 1024}
 SOURCE_FILES = (
@@ -24,13 +23,20 @@ SOURCE_FILES = (
     "apps/desktop/devtools/img2/w10_metadata_reference.py",
     "apps/desktop/devtools/img2/w10_metadata_matrix.py",
     "apps/desktop/devtools/img2/w10_metadata_verify.py",
+    "apps/desktop/devtools/img2/w10_metadata_pixels.py",
+    "apps/desktop/devtools/img2/tests/test_w10_metadata_fixtures.py",
+    "apps/desktop/devtools/img2/tests/test_w10_metadata_negative.py",
     "apps/desktop/devtools/img2/w5_metadata_fixtures.py",
+    "apps/desktop/devtools/img2/w5_metadata_oracle.py",
+    "apps/desktop/devtools/img2/w4_region_oracle.py",
+    "apps/desktop/devtools/img2/w3_fixtures.py",
     "apps/desktop/devtools/img2/w8_jpeg_fixtures.py",
+    "apps/desktop/devtools/img2/w2_independent_oracle.py",
     "apps/desktop/devtools/img2/w2_resource_matrix.py",
     "apps/desktop/devtools/img2/w2_resource_verify.py",
     "apps/desktop/examples/decode_compare/wic_probe.ps1",
-    "apps/desktop/examples/decode_compare/gdiplus_probe.ps1",
-    "crates/media/src/decode.rs",
+    "apps/desktop/examples/decode_compare/wic_admission.ps1",
+    "apps/desktop/examples/decode_compare/gdiplus_metadata_probe.ps1",
     "Cargo.lock",
 )
 UNMEASURED = (
@@ -38,10 +44,10 @@ UNMEASURED = (
     "EXIF orientations outside 1/3/6/8", "GDI+ process lifetime and memory",
     "WIC internal scratch peak", "product orientation policy", "product ICC policy",
     "product decoder adoption", "full MP-IMG2 Decode Exit",
+    "in-decoder cooperative cancellation", "absolute JPEG raster correctness",
 )
-PROBES = {"wic": "wic-gdiplus-v1", "gdiplus": "system-drawing-gdiplus-v1"}
-LEG_ORDER = {"wic_metadata": 0, "wic_transform": 1, "gdiplus_metadata": 2}
-MUTATION_CLASSES = 24
+PROBES = {"wic": "wic-gdiplus-v1", "gdiplus": "w10-system-drawing-metadata-v1"}
+EXITS = {"decoded": 0, "error": 1, "unsupported": 2, "corrupt": 3, "oversize": 4}
 
 
 def need(condition, message):
@@ -49,232 +55,175 @@ def need(condition, message):
         raise ValueError(message)
 
 
-def integer(value, minimum=None):
-    if type(value) is not int:
+def row_class(row):
+    if any(leg.get("failure") or leg["classification"] == "NOT_RUN" for leg in row["legs"]):
+        return "NOT_RUN"
+    if row["kind"] == "malformed":
+        return "TAMPER_CLASSIFIED"
+    if row["kind"] == "plain":
+        return "CONTROL_OBSERVED"
+    return "DIFFERENTIAL_OBSERVED"
+
+
+def _source_identity(record, root):
+    identity = record["source_identity"]
+    need(set(identity["files"]) == set(SOURCE_FILES), "source_file_set_invalid")
+    commit = identity["source_commit"]
+    need(isinstance(commit, str) and len(commit) == 40 and all(c in "0123456789abcdef" for c in commit),
+         "source_commit_invalid")
+    for item in identity["files"].values():
+        need(item["unchanged_after_run"] is True, "source_changed_during_run")
+    if root is None:
         return False
-    return True if minimum is None else value >= minimum
-
-
-def _source_identity(record, source_root) -> bool:
-    identity = record.get("source_identity")
-    need(isinstance(identity, dict), "source_identity_missing")
-    need(isinstance(identity.get("files"), dict) and identity["files"], "source_files_missing")
-    need(all(path in identity["files"] for path in SOURCE_FILES), "source_files_incomplete")
-    if source_root is None:
-        return False
-    root = Path(source_root)
-    commit = identity.get("source_commit")
-    need(isinstance(commit, str) and len(commit) == 40, "source_commit_invalid")
-
-    def git(*args):
-        executable = os.environ.get("GIT_EXECUTABLE") or "git"
-        return subprocess.run([executable, *args], cwd=root, stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE, check=True, timeout=15).stdout
-
-    for path, item in identity["files"].items():
-        blob = git("show", f"{commit}:{path}")
+    executable = os.environ.get("GIT_EXECUTABLE") or "git"
+    for path in SOURCE_FILES:
+        item = identity["files"][path]
+        blob = subprocess.run([executable, "show", f"{commit}:{path}"], cwd=root,
+                              capture_output=True, check=True, timeout=15).stdout
         normalized = blob.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
-        need(item["git_blob_sha256"] == sha(blob), "source_blob_digest_mismatch:" + path)
-        need(item["lf_sha256"] == sha(normalized), "source_lf_digest_mismatch:" + path)
-        need(item.get("unchanged_after_run") is True, "source_changed_during_run:" + path)
+        live = (Path(root) / path).read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        need(sha(blob) == item["git_blob_sha256"] and sha(normalized) == item["lf_sha256"],
+             "source_blob_digest_mismatch:" + path)
+        need(live == normalized, "candidate_source_differs_from_native:" + path)
+        forms = (blob, normalized, normalized.replace(b"\n", b"\r\n"))
+        need(any(item["raw_sha256"] == sha(body) and item["bytes"] == len(body) for body in forms),
+             "source_raw_digest_mismatch:" + path)
     return True
 
 
-def _expected_legs(case, fixture):
-    names = ["wic_metadata"]
-    if fixture["expected_transform"] != "none":
-        names.append("wic_transform")
-    names.append("gdiplus_metadata")
-    return names
-
-
-def _check_structure(structure, kind):
-    need(structure["classification"] in ("METADATA_PARSED", "METADATA_ABSENT", "METADATA_TAMPERED"),
-         "structure_classification_invalid")
-    need(not structure["unknown_markers"], "structure_unknown_markers")
-    need(structure["markers"][0] == "SOI" and structure["markers"][-1] in ("EOI", "SOS"),
-         "structure_marker_order_invalid")
-    if kind == "malformed":
-        need(structure["classification"] == "METADATA_TAMPERED", "malformed_must_be_tampered")
-    else:
-        need(structure["classification"] != "METADATA_TAMPERED", "wellformed_marked_tampered")
-
-
-def _check_result(leg, case, fixture, structure):
-    result = leg.get("probe_result")
-    need(isinstance(result, dict), "probe_result_missing:" + leg["leg"])
-    need(result.get("probe") == PROBES[leg["candidate"]], "probe_identity_invalid:" + leg["leg"])
-    need(result.get("input_bytes") == fixture["bytes"], "input_bytes_mismatch:" + leg["leg"])
-    outcome = result.get("outcome")
-    need(outcome in ("decoded", "corrupt", "error", "unsupported", "oversize", "not_run"),
-         "outcome_invalid:" + leg["leg"])
-    if leg["classification"] == "NOT_RUN":
-        need(result.get("outcome") in (None, "not_run"), "not_run_with_outcome")
-        return
-    if outcome != "decoded":
-        need(leg.get("output", {}).get("present") is False, "refused_leg_published_output:" + leg["leg"])
-        need(leg["classification"] in ("REFUSED", "TAMPER_NOT_VERIFIED", "OVERSIZE"),
-             "refusal_classification_invalid:" + leg["leg"])
-        return
-    output = leg.get("output") or {}
-    need(output.get("present") is True and integer(output.get("bytes"), 1), "decoded_leg_output_missing:" + leg["leg"])
-    need(result.get("output_bytes") == output["bytes"], "declared_output_bytes_mismatch:" + leg["leg"])
-    need(result.get("output_width") == output.get("width", result.get("output_width")),
-         "output_width_echo_invalid:" + leg["leg"])
-    expected = "DECODED_TAMPER_NOT_VERIFIED" if structure["classification"] == "METADATA_TAMPERED" else "DECODED_METADATA_OBSERVED"
-    need(leg["classification"] == expected, "decoded_classification_invalid:" + leg["leg"])
-    if leg["candidate"] == "wic":
-        need(result.get("metadata_requested") is True, "wic_metadata_not_requested")
-        _check_wic_metadata(leg["leg"], result, case, fixture, structure)
-    else:
-        need(result.get("metadata_requested") is True, "gdiplus_metadata_not_requested")
-        _check_gdiplus_metadata(leg["leg"], result, case, fixture, structure)
-
-
-def _check_wic_metadata(name, result, case, fixture, structure):
-    orientation = None if structure.get("exif") is None else structure["exif"]["orientation"]
-    need(result.get("orientation_present") is (orientation is not None),
-         "wic_orientation_presence_mismatch")
-    if orientation is not None:
-        need(result.get("orientation_raw") == orientation, "wic_orientation_value_mismatch")
-    _check_icc("wic", result, fixture, structure)
-    if name == "wic_transform":
-        request = {1: "explicit_identity", 3: "explicit_rotate_180",
-                   6: "explicit_rotate_90", 8: "explicit_rotate_270"}.get(orientation)
-        applied = "by_probe_no_rotation" if orientation == 1 else "by_probe"
-        need(request is not None, "transform_without_orientation")
-        need(result.get("transform_requested") == request, "transform_request_mismatch")
-        need(result.get("transform_applied") == applied, "transform_applied_mismatch")
-        need(result.get("output_width") == fixture["expected_output_width"]
-             and result.get("output_height") == fixture["expected_output_height"],
-             "transform_dims_mismatch")
+def _metadata(result, fixture, structure, candidate):
+    need(result.get("metadata_requested") is True, "metadata_not_requested")
+    for key in ("orientation_present", "icc_present", "icc_readable"):
+        need(key in result and (type(result[key]) is bool or result[key] is None), "metadata_flag_missing:" + key)
+    # Invalid metadata may be exposed, ignored or refused. Record these differences,
+    # never force agreement between decoders or turn acceptance into validity.
     if structure["classification"] == "METADATA_TAMPERED":
-        need(result.get("transform_applied") in (None, "not_requested", "unavailable", "refused"),
-             "tamper_transform_promoted")
-
-
-def _check_gdiplus_metadata(name, result, case, fixture, structure):
-    orientation = None if structure.get("exif") is None else structure["exif"]["orientation"]
-    need(result.get("orientation_present") is (orientation is not None),
-         "gdiplus_orientation_presence_mismatch")
-    if orientation is not None:
-        need(result.get("orientation_raw") == orientation, "gdiplus_orientation_value_mismatch")
-    _check_icc("gdiplus", result, fixture, structure)
-
-
-def _check_icc(prefix, result, fixture, structure):
-    """A truncated profile may still be accepted by a decoder; validity is ours, not theirs."""
-    parsed = structure.get("icc")
-    partial = structure.get("icc_partial")
-    if not fixture["expected_icc"]:
-        need(result.get("icc_present") is False, prefix + "_icc_presence_mismatch")
+        if result["icc_readable"] is True:
+            partial = structure.get("icc_partial")
+            need(isinstance(partial, dict), "malformed_icc_without_payload")
+            need(result.get("icc_length") == partial["bytes"] and
+                 result.get("icc_sha256") == partial["payload_sha256"], "malformed_icc_payload_mismatch")
         return
-    if parsed is not None:
-        need(result.get("icc_present") is True, prefix + "_icc_presence_mismatch")
-        need(result.get("icc_readable") is True, prefix + "_icc_unreadable")
-        need(result.get("icc_length") == parsed["bytes"], prefix + "_icc_length_mismatch")
-        need(result.get("icc_sha256") == parsed["sha256"], prefix + "_icc_digest_mismatch")
-        if prefix == "wic":
+    need(result.get("metadata_error") is None, "metadata_observation_error")
+    orientation = fixture["expected_orientation"]
+    need(result["orientation_present"] is (orientation is not None), "orientation_presence_mismatch")
+    need(result.get("orientation_raw") == orientation, "orientation_value_mismatch")
+    need(result["icc_present"] is fixture["expected_icc"], "icc_presence_mismatch")
+    if fixture["expected_icc"]:
+        need(result["icc_readable"] is True and result.get("icc_length") == len(ICC_PROFILE), "icc_length_mismatch")
+        need(result.get("icc_sha256") == sha(ICC_PROFILE), "icc_digest_mismatch")
+        if candidate == "wic":
             need(result.get("colour_contexts") == 1, "wic_colour_context_count_invalid")
-        return
-    need(isinstance(partial, dict), "truncated_icc_without_partial_record")
-    need(structure["classification"] == "METADATA_TAMPERED", "truncated_icc_not_classified")
-    if result.get("icc_present"):
-        if result.get("icc_readable"):
-            need(result.get("icc_length") == partial["bytes"], prefix + "_truncated_icc_length_mismatch")
-            need(result.get("icc_sha256") == partial["payload_sha256"],
-                 prefix + "_truncated_icc_payload_mismatch")
-            need(fixture["expected_icc_sha256"] != result.get("icc_sha256"),
-                 prefix + "_truncated_icc_promoted_to_full_profile")
-        need(result.get("icc_sha256") != fixture["expected_icc_sha256"],
-             prefix + "_truncated_icc_promoted_to_full_profile")
-        if prefix == "wic":
-            need(result.get("colour_contexts") == 1, "wic_truncated_colour_context_invalid")
+    else:
+        need(result["icc_readable"] is False and result.get("icc_length") is None and
+             result.get("icc_sha256") is None, "absent_icc_claimed_readable")
 
 
-def _check_cross_leg(row):
-    results = {leg["leg"]: leg.get("probe_result") or {} for leg in row["legs"]}
-    wic = results.get("wic_metadata") or {}
-    gdi = results.get("gdiplus_metadata") or {}
-    if wic.get("outcome") == "decoded" and gdi.get("outcome") == "decoded":
-        need(wic.get("orientation_present") == gdi.get("orientation_present"),
-             "leg_orientation_disagreement:" + row["case_id"])
-        need(wic.get("icc_present") == gdi.get("icc_present"), "leg_icc_disagreement:" + row["case_id"])
-        if wic.get("icc_present") and wic.get("icc_readable") and gdi.get("icc_readable"):
-            need(wic.get("icc_sha256") == gdi.get("icc_sha256"), "leg_icc_digest_disagreement:" + row["case_id"])
-            need(wic.get("icc_length") == gdi.get("icc_length"), "leg_icc_length_disagreement:" + row["case_id"])
-
-
-def _check_row(row, fixtures):
-    case = next(item for item in CASES if item["id"] == row["case_id"])
-    fixture = fixtures[row["case_id"]]
-    need(row["kind"] == case["kind"], "row_kind_mismatch:" + row["case_id"])
-    need(row["reference_class"] == case["reference"], "row_reference_mismatch:" + row["case_id"])
-    expected = parse(fixture_bytes(row["case_id"]))
-    need(row["structure"] == expected, "row_structure_not_reproducible:" + row["case_id"])
-    _check_structure(expected, case["kind"])
-    need(json.dumps(row["expected"], sort_keys=True) == json.dumps({
-        "orientation": None if "exif" not in case["segments"] else case["orientation"],
-        "transform": fixture["expected_transform"],
-        "output_width": fixture["expected_output_width"],
-        "output_height": fixture["expected_output_height"],
-        "icc_present": "icc" in case["segments"],
-        "icc_sha256": fixture["expected_icc_sha256"]}, sort_keys=True),
-        "row_expected_not_declared:" + row["case_id"])
-    names = [leg["leg"] for leg in row["legs"]]
-    need(names == _expected_legs(case, fixture), "leg_set_invalid:" + row["case_id"])
-    for leg in row["legs"]:
-        need(leg["case_id"] == row["case_id"], "leg_case_binding_invalid:" + leg["leg"])
-        need(leg["candidate"] == ("gdiplus" if leg["leg"].startswith("gdiplus") else "wic"),
-             "leg_candidate_binding_invalid:" + leg["leg"])
-        need(leg.get("failure") is None, "leg_failure:" + leg["leg"] + ":" + str(leg.get("failure"))[:80])
-        _check_result(leg, case, fixture, expected)
-    _check_cross_leg(row)
-    expected_row = {"malformed": "TAMPER_CLASSIFIED", "plain": "CONTROL_OBSERVED"}.get(case["kind"], "DIFFERENTIAL_OBSERVED")
-    need(row["classification"] == expected_row, "row_classification_invalid:" + row["case_id"])
+def _leg(leg, case, fixture, structure, identity):
+    need(leg["case_id"] == case["id"], "leg_case_binding_invalid")
+    name = leg["leg"]
+    candidate = "gdiplus" if name == "gdiplus_metadata" else "wic"
+    need(leg["candidate"] == candidate, "leg_candidate_binding_invalid")
+    need(leg["input_sha256"] == fixture["sha256"], "leg_input_digest_mismatch")
+    need(leg["probe_sha256"] == identity[candidate + "_probe_sha256"], "leg_probe_digest_mismatch")
+    need(leg["failure"] is None and leg["reaped"] is True, "worker_not_complete")
+    need(type(leg["pid"]) is int and leg["pid"] > 0, "worker_identity_missing")
+    need(type(leg["started_ns"]) is int and type(leg["exited_ns"]) is int and
+         0 < leg["exited_ns"] - leg["started_ns"] <= BOUNDS["max_worker_seconds"] * 1_000_000_000 + 5_000_000_000,
+         "worker_duration_invalid")
+    for stream in ("stdout", "stderr"):
+        data = leg[stream + "_utf8"].encode("utf-8")
+        need(len(data) == leg[stream + "_bytes"] <= BOUNDS["max_capture_bytes"], "capture_invalid")
+    result = leg["probe_result"]
+    need(json.loads(leg["stdout_utf8"]) == result, "probe_stdout_mismatch")
+    need(result["probe"] == PROBES[candidate], "probe_identity_invalid")
+    need(result["input_bytes"] == fixture["bytes"], "input_bytes_mismatch")
+    outcome = result["outcome"]
+    need(outcome in EXITS and leg["exit_code"] == EXITS[outcome], "probe_exit_outcome_mismatch")
+    output = leg["output"]
+    if outcome == "decoded":
+        need(output["present"] is True and isinstance(output["hex"], str) and
+             len(output["hex"]) <= BOUNDS["max_output_bytes"] * 2, "decoded_output_missing")
+        actual = output_record(bytes.fromhex(output["hex"]))
+        need(actual == output, "output_bytes_or_pixels_mismatch")
+        need(result["output_bytes"] == output["bytes"], "declared_output_bytes_mismatch")
+        expected_dims = ((fixture["expected_output_width"], fixture["expected_output_height"])
+                         if name == "wic_transform" else (WIDTH, HEIGHT))
+        need((output["width"], output["height"]) == expected_dims, "output_geometry_mismatch")
+        need((result["width"], result["height"]) == (WIDTH, HEIGHT), "probe_geometry_mismatch")
+        if candidate == "wic":
+            need((result["output_width"], result["output_height"]) == expected_dims, "probe_output_geometry_mismatch")
+            need(result["admission_status"] == "admitted" and result["materialization"] == "completed", "wic_admission_invalid")
+            need(result["decoded_bytes_required"] == WIDTH * HEIGHT * 3 and
+                 result["bgra32_bytes_required"] == WIDTH * HEIGHT * 4 and
+                 result["scratch_bytes_required"] == WIDTH * HEIGHT * 4, "wic_requirement_mismatch")
+        _metadata(result, fixture, structure, candidate)
+        expected_class = "DECODED_TAMPER_NOT_VERIFIED" if case["kind"] == "malformed" else "DECODED_METADATA_OBSERVED"
+        need(leg["classification"] == expected_class, "decoded_classification_invalid")
+        if name == "wic_transform":
+            orientation = fixture["expected_orientation"]
+            request = {1: "explicit_identity", 3: "explicit_rotate_180", 6: "explicit_rotate_90", 8: "explicit_rotate_270"}[orientation]
+            applied = "by_probe_no_rotation" if orientation == 1 else "by_probe"
+            need(result["transform_requested"] == request and result["transform_applied"] == applied,
+                 "transform_request_or_application_mismatch")
+        elif candidate == "wic":
+            need(result["transform_requested"] == "none" and result["transform_applied"] == "not_requested", "unrequested_transform")
+    else:
+        need(output == output_record(None) and result.get("output_bytes") in (None, 0), "refused_leg_publishes")
+        need(case["kind"] == "malformed" and leg["classification"] == "REFUSED", "required_case_not_decoded")
 
 
 def verify(record, source_root=None):
-    if not isinstance(record, dict):
-        return {"ok": False, "reason": "report_not_object", "closure_eligible": False, "source_identity_verified": False}
     try:
-        need(record.get("schema_version") == 1, "schema_version_invalid")
-        need(record.get("complete") is True, "run_incomplete")
-        bounds = record.get("bounds") or {}
-        need(bounds.get("max_report_bytes") == BOUNDS["max_report_bytes"], "bounds_mismatch")
-        need(record.get("decode_limits") == LIMITS, "decode_limits_mismatch")
-        need(record.get("work_root_disposable") is True, "work_root_not_disposable")
-        need((record.get("cleanup") or {}).get("complete") is True, "cleanup_incomplete")
-        need(record.get("work_bytes", 0) <= BOUNDS["max_work_bytes"], "work_bytes_over_cap")
-        need(record.get("duration_ns", 0) <= BOUNDS["max_total_seconds"] * 1_000_000_000,
-             "duration_over_cap")
-        unmeasured = record.get("unmeasured")
-        need(isinstance(unmeasured, list) and list(unmeasured) == list(UNMEASURED),
-             "unmeasured_boundary_changed")
-        cases = record.get("cases")
-        need(isinstance(cases, list) and cases, "cases_missing")
-        fixtures = {item["case_id"]: item for item in record.get("fixtures") or []}
-        need(list(fixtures) == [case["id"] for case in CASES], "fixture_set_invalid")
-        for case in CASES:
-            fixture = fixtures[case["id"]]
+        need(isinstance(record, dict) and record["schema_version"] == 2, "schema_version_invalid")
+        need(record["complete"] is True and record["bounds"] == BOUNDS and record["decode_limits"] == LIMITS, "run_or_bounds_invalid")
+        need(len(canonical(record)) <= BOUNDS["max_report_bytes"], "report_cap_exceeded")
+        need(record["cleanup"] == {"complete": True, "live_direct_children": []}, "cleanup_incomplete")
+        need(record["platform"]["windows"] is True and record["work_root_disposable"] is True, "native_environment_invalid")
+        need(type(record["work_bytes"]) is int and 0 < record["work_bytes"] <= BOUNDS["max_work_bytes"], "work_bytes_invalid")
+        need(type(record["duration_ns"]) is int and 0 < record["duration_ns"] <= BOUNDS["max_total_seconds"] * 1_000_000_000, "duration_invalid")
+        need(record["unmeasured"] == list(UNMEASURED), "unmeasured_boundary_changed")
+        ids = [case["id"] for case in CASES]
+        need([f["case_id"] for f in record["fixtures"]] == ids and
+             [row["case_id"] for row in record["cases"]] == ids, "case_or_fixture_set_invalid")
+        legs = 0
+        for case, fixture, row in zip(CASES, record["fixtures"], record["cases"]):
             data = fixture_bytes(case["id"])
-            need(fixture["bytes"] == len(data), "fixture_bytes_mismatch:" + case["id"])
-            need(fixture["sha256"] == sha(data), "fixture_digest_mismatch:" + case["id"])
-            need(fixture["width"] == 256 and fixture["height"] == 192, "fixture_geometry_invalid:" + case["id"])
-        need(len(cases) == len(CASES), "case_count_invalid")
-        need(sum(len(row["legs"]) for row in cases) <= BOUNDS["max_native_legs"], "leg_count_over_cap")
-        for row in cases:
-            _check_row(row, fixtures)
+            dims = expected_dims(case)
+            expected = {"orientation": expected_orientation(case), "transform": expected_transform(case),
+                        "output_width": dims[0], "output_height": dims[1],
+                        "icc_present": any(s.startswith("icc") for s in case["segments"]),
+                        "icc_sha256": sha(ICC_PROFILE) if any(s.startswith("icc") for s in case["segments"]) else None}
+            need(fixture["sha256"] == sha(data) and fixture["bytes"] == len(data) <= BOUNDS["max_encoded_input"], "fixture_bytes_or_digest_mismatch")
+            need((fixture["width"], fixture["height"]) == (WIDTH, HEIGHT), "fixture_geometry_invalid")
+            for key, value in expected.items():
+                field = {"orientation": "expected_orientation", "transform": "expected_transform",
+                         "output_width": "expected_output_width", "output_height": "expected_output_height",
+                         "icc_present": "expected_icc", "icc_sha256": "expected_icc_sha256"}[key]
+                need(fixture[field] == value, "fixture_expectation_forged")
+            structure = parse(data)
+            need(row["structure"] == structure and row["expected"] == expected, "structure_or_expectation_forged")
+            need(row["kind"] == case["kind"] and row["reference_class"] == case["reference"], "row_identity_invalid")
+            need((structure["classification"] == "METADATA_TAMPERED") == (case["kind"] == "malformed"), "metadata_classification_invalid")
+            names = ["wic_metadata"] + (["wic_transform"] if expected["transform"] != "none" else []) + ["gdiplus_metadata"]
+            need([leg["leg"] for leg in row["legs"]] == names, "leg_set_invalid")
+            for leg in row["legs"]:
+                _leg(leg, case, fixture, structure, record["source_identity"])
+            need(row["classification"] == row_class(row), "row_classification_invalid")
+            legs += len(row["legs"])
+        need(legs <= BOUNDS["max_native_legs"], "leg_count_over_cap")
+        actual = comparisons(record["cases"])
+        need(record["comparisons"] == actual, "pixel_comparison_forged")
+        for comparison in actual.values():
+            relation = comparison["orientation_relation"]
+            if relation is not None:
+                need(relation["exact"] is True, "orientation_raster_mismatch")
         source_verified = _source_identity(record, source_root)
-        return {"ok": True, "cases": len(cases), "legs": sum(len(row["legs"]) for row in cases),
-                "metadata_parsed": sum(1 for row in cases if row["structure"]["classification"] == "METADATA_PARSED"),
-                "metadata_absent": sum(1 for row in cases if row["structure"]["classification"] == "METADATA_ABSENT"),
-                "metadata_tampered": sum(1 for row in cases if row["structure"]["classification"] == "METADATA_TAMPERED"),
-                "differential": sum(1 for row in cases if row["classification"] == "DIFFERENTIAL_OBSERVED"),
-                "control": sum(1 for row in cases if row["classification"] == "CONTROL_OBSERVED"),
-                "tamper": sum(1 for row in cases if row["classification"] == "TAMPER_CLASSIFIED"),
-                "source_identity_verified": source_verified,
-                "closure_eligible": bool(source_verified)}
-    except (ValueError, KeyError, TypeError, IndexError, subprocess.SubprocessError) as exc:
-        return {"ok": False, "reason": str(exc)[:200], "closure_eligible": False,
-                "source_identity_verified": False}
+        return {"ok": True, "cases": len(CASES), "legs": legs,
+                "source_identity_verified": source_verified, "closure_eligible": source_verified,
+                "metadata_tampered": sum(c["kind"] == "malformed" for c in CASES),
+                "orientation_relations_verified": sum(v["orientation_relation"] is not None for v in actual.values()),
+                "icc_colour_conversion": "NOT_MEASURED", "jpeg_absolute_correctness": "NOT_VERIFIED"}
+    except (OSError, ValueError, KeyError, TypeError, IndexError, AssertionError, StopIteration, subprocess.SubprocessError) as exc:
+        return {"ok": False, "reason": type(exc).__name__ + ":" + str(exc)[:180],
+                "source_identity_verified": False, "closure_eligible": False}

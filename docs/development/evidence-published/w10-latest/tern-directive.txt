@@ -1,0 +1,157 @@
+次タスク：MP-IMG2-W10 — JPEGメタデータ・色変換の実decode差分検証
+
+優先度：P1 / 推奨：単一タスクで実行
+
+W9の次は、JPEG対応範囲をさらに拡張するよりも、EXIF OrientationとICCプロファイルがWIC/GDI+のデコード結果に与える影響を検証することを推奨します。
+
+W8・W9で確認したピクセル一致が、色管理や向き情報を含むJPEGでも成立するかを切り分け、将来のdecoder選定に必要な判断材料を取得します。
+
+1. 単一の目的
+
+MP-IMG2-W10：JPEG metadata interpretation differential
+
+Windows WIC/GDI+によるJPEG実decodeについて、メタデータの有無・内容によるピクセル出力差を再現可能な証拠として記録する。
+
+今回も LIMITED TECHNICAL COMPLETION のみを目指し、色管理方針や製品decoderの採用は行いません。
+
+2. 対象範囲
+
+変更可能領域：
+
+apps/desktop/examples/decode_compare/ の既存WIC/GDI+ probeと比較処理（必要最小限）
+
+apps/desktop/devtools/img2/ のW10専用fixture生成・検証スクリプト
+
+関連するhermetic tests
+
+実装計画、既存検証ガイド、W10専用証拠
+
+対象となる入力は、生成元とSHA-256が固定されたJPEG fixtureに限定します。
+
+検証対象
+
+	
+
+観測事項
+
+
+
+
+EXIF Orientation 1/3/6/8
+
+	
+
+出力寸法、向き、ピクセル差分
+
+
+
+
+ICCなし／有効なICC付き
+
+	
+
+デコード結果とプロファイルの認識状況
+
+
+
+
+不正・切断EXIF/ICC
+
+	
+
+decoder間の許容差、検証失敗の分類
+
+
+
+
+EXIF＋ICC複合入力
+
+	
+
+個別結果との整合性
+
+明示的な非対象： crates/media、Runtime、GPU、W1～W9既存証拠の改変、製品のorientation/ICC policy、新decoder依存、unsafe/FFI追加、全JPEG対応。
+
+3. 受入基準
+
+1. 独立した入力・出力検証
+EXIF/ICCを有界に解析し、生成fixtureの実体・メタデータ・期待値を照合する。decoder同士の一致だけを正解としない。
+
+2. 実Windows比較
+WIC/GDI+の双方を実行し、decode結果、出力寸法、ピクセルdigest、metadataの解釈、失敗理由をケース単位で記録する。
+
+3. fail-closed
+検証不能・不一致・切断・不正なメタデータを、根拠なく content_verified に昇格させない。decoderが入力を許容した事実と、検証成功を区別する。
+
+4. 有界実行・証拠
+W9のtimeout、出力容量上限、worker cleanup、stale-output防止、source/evidence SHA対応を維持する。独立した再実行で決定論的な項目を照合する。
+
+5. 独立Gateとレビュー
+新しい固定候補SHAで既存の該当5 Gateを実行。Gate全成功、実Windows証拠、Tern独立評価 PASS 0/0/0 を必要条件とする。過去Gateの流用は禁止。
+
+ICCの色変換が行われたかどうかは、独立した色基準によって検証できた場合のみ確定します。できなければ NOT_MEASURED とします。
+
+4. 前提条件と停止条件
+
+開始前に、ローカルHEAD、W9製品候補、disposition、5 Gateの整合性を確認してください。GitHubで確認できるリモートdevはW2記録時点であり、未pushのW9最新版は今回直接照合できていません。
+
+次の場合は実装を停止し、HOLDとして報告します。
+
+W9の承認済み挙動を変更する必要が生じた
+
+有効なICC fixtureや独立参照値を確保できない
+
+新規依存、unsafe、製品decoder変更が必要になった
+
+Gate対象と検証証拠のSHAが一致しない
+
+実Windowsの必要ケースが実行できない
+
+preflight=unknown、Build executable=NOT_CAPTURED は証拠が取得できるまで維持し、暗黙にPASSへ変更しません。
+
+devへのpush、main統合、release、製品ポリシー批准は本指示では認可しません。
+
+5. 既存未承認事項との依存関係
+承認済み
+
+W9 — 限定progressive JPEG実decode
+
+今回
+
+W10 — EXIF/ICC差分の実測
+
+今後の独立判断が必要な事項
+
+JPEG refinement scanの追加検証
+
+16K・region/sequential/tiled decode能力
+
+実メモリ予約・true concurrent peak・cooperative cancellation
+
+decoder選定とICC/EXIF policy批准
+
+full MP-IMG2 Decode Exit
+
+MP-IMG3 Upload
+
+W10のPASSは、上記のいずれも自動承認しません。特にMP-IMG3のhard prerequisiteであるfull MP-IMG2は未完了のままです。
+
+実行ループ指示
+
+実装エージェントには次の順序を指示してください。
+
+W9状態と正典DC-MP-IMG2を照合し、W10の有界設計を作成。
+
+実装とhermetic testsを実施。
+
+Windows WIC/GDI+実測と独立比較を実施。
+
+製品候補SHAを固定し、新規の独立Refine Gateを実行。
+
+Ternによる独立レビューを実施。
+
+HOLDなら指摘を修正し、新候補・新Gateで再評価。
+
+PASS 0/0/0後、限定的な完了記録をdocs-onlyで追加して停止。
+
+次の判断ポイントはW10のPASS後です。その時点で、JPEG refinement scanの拡張よりも、16K向けの実際の部分デコード能力とメモリ上限の検証を優先するか判断します。

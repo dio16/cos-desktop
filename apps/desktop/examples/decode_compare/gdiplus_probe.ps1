@@ -142,13 +142,7 @@ param(
 
     [long] $MaxDecodedBytes = 0,
 
-    [long] $MaxScratchBytes = 0,
-
-    # Opt-in metadata observation. Without the switch the result record keeps its
-    # existing shape, so every earlier measurement stays byte-comparable.
-    [switch] $Metadata,
-
-    [long] $MaxMetadataBytes = 0
+    [long] $MaxScratchBytes = 0
 )
 
 Set-StrictMode -Version 3.0
@@ -330,59 +324,6 @@ try {
     # Materialize the whole frame, then require real pixel access.
     $frame = [System.Drawing.Bitmap]::new($image)
     $null = $frame.GetPixel(0, 0)
-
-    if ($Metadata) {
-        if ($MaxMetadataBytes -le 0) {
-            $result.reason_code = 'argument_missing'
-            $result.reason = 'metadata observation requires a positive metadata byte bound'
-            Write-ProbeResult -Result $result -ExitCode $exitError
-        }
-        $result.metadata_requested = $true
-        $result.metadata_ids = @()
-        $result.orientation_present = $false
-        $result.orientation_raw = $null
-        $result.icc_present = $false
-        $result.icc_readable = $false
-        $result.icc_length = $null
-        $result.icc_sha256 = $null
-        $result.metadata_error = $null
-        try {
-            $ids = @()
-            foreach ($id in $image.PropertyIdList) { $ids += [int] $id }
-            $result.metadata_ids = $ids
-            if ($ids -contains 0x0112) {
-                $item = $image.GetPropertyItem(0x0112)
-                if ($null -ne $item -and $item.Len -ge 2) {
-                    $result.orientation_present = $true
-                    $result.orientation_raw = [int] [System.BitConverter]::ToUInt16($item.Value, 0)
-                }
-            }
-            if ($ids -contains 0x8773) {
-                $item = $image.GetPropertyItem(0x8773)
-                if ($null -ne $item) {
-                    $result.icc_present = $true
-                    if ($item.Len -gt $MaxMetadataBytes) {
-                        $result.outcome = 'oversize'
-                        $result.reason_code = 'metadata_cap_exceeded'
-                        $result.reason = 'embedded ICC profile exceeds the metadata byte bound'
-                        Write-ProbeResult -Result $result -ExitCode $exitOversize
-                    }
-                    $bytes = [byte[]] $item.Value
-                    $result.icc_readable = $true
-                    $result.icc_length = [long] $bytes.Length
-                    $sha = [System.Security.Cryptography.SHA256]::Create()
-                    try {
-                        $result.icc_sha256 = 'sha256:' + [System.BitConverter]::ToString(
-                            $sha.ComputeHash($bytes)).Replace('-', '').ToLowerInvariant()
-                    }
-                    finally { $sha.Dispose() }
-                }
-            }
-        }
-        catch {
-            $result.metadata_error = $_.Exception.GetType().Name
-        }
-    }
 
     if (-not [string]::IsNullOrWhiteSpace($OutputPath)) {
         $encoder = switch ([System.IO.Path]::GetExtension($OutputPath).ToLowerInvariant()) {
