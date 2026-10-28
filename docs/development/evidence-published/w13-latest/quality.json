@@ -8,10 +8,10 @@
     ],
     "cwd": "C:\\dev\\cos-desktop",
     "exit_code": 0,
-    "duration_seconds": 39.66954470000928,
+    "duration_seconds": 80.75456020000274,
     "stdout": {
-      "bytes": 50330,
-      "sha256": "sha256:0151e630880c0096d74fd7156d7f37f9b38d7132c8757014aa29777640c5be25"
+      "bytes": 50331,
+      "sha256": "sha256:783b035840c178f8f23f309280f072ae8090771b96609faf30e8fd847330e9c9"
     },
     "stderr": {
       "bytes": 0,
@@ -24,14 +24,14 @@
     "ignored": 1
   },
   "w13_tests": {
-    "count": 9,
-    "passed": 9,
+    "count": 16,
+    "passed": 16,
     "negative_classes": 40
   },
   "native_application_surface": {
     "status": "NOT_RUN",
     "reason": "Live computer approval unanswered; no GUI startup claim."
   },
-  "feature_route": "NOT_RUN for W13; no Rust feature-code change and no older result transferred.",
+  "feature_route": "NOT_RUN for W13; no Rust feature-code change.",
   "independent_gates": "pending"
 }

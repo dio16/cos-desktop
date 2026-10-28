@@ -23,5 +23,5 @@
   ],
   "input_pixels": 16777216,
   "inputs_pixel_identical": true,
-  "note": "Both fixtures are the unchanged W11/W12 producers; all input pixels equal the fixed coordinate formula."
+  "note": "Unchanged W11/W12 producers; all input pixels equal the fixed coordinate formula."
 }

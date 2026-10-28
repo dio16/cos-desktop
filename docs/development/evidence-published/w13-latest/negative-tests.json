@@ -44,11 +44,17 @@
   ],
   "all_rejected": true,
   "premise": "setUpClass requires the unmodified control to pass source-bound verification before any source-bound mutation is counted.",
-  "modes": {
-    "portable": "all mutants except source_commit rejected structurally; source_commit asserted portable-ok/closure-false",
-    "source_bound": "all mutants rejected against the real repository"
-  },
-  "suite_tests": 9,
+  "stream_cases": [
+    "intact accepted",
+    "missing Adler-32 trailer rejected",
+    "truncated stream rejected",
+    "extra compressed bytes after stream rejected",
+    "extra inflated data rejected",
+    "oversized inflation rejected",
+    "wrong IHDR rejected",
+    "bad CRC rejected"
+  ],
+  "suite_tests": 16,
   "suite_command": {
     "command": [
       "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
@@ -63,14 +69,14 @@
     ],
     "cwd": "C:\\dev\\cos-desktop",
     "exit_code": 0,
-    "duration_seconds": 139.95512499997858,
+    "duration_seconds": 449.71447360000457,
     "stdout": {
       "bytes": 0,
       "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "stderr": {
-      "bytes": 114,
-      "sha256": "sha256:3b443b5fa8cd67b1acf977e2a81388864095aeb66c4f9a9d048f32c52d84430a"
+      "bytes": 122,
+      "sha256": "sha256:e7c982d6a50383e0a52cb097ce144e4792e1ad558e974abd668d03f86fb67cc4"
     }
   }
 }

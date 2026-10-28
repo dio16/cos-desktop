@@ -1,5 +1,5 @@
 {
-  "source_commit": "f76c811c3cf709821381eaf1c2966e5bf6b2c5a7",
+  "source_commit": "9e8dab753b0379d02e053b61234cf6df610a42d4",
   "outputs": [
     {
       "case_id": "S01",
@@ -11,12 +11,15 @@
       "output_sha256": "sha256:31dd5d03aedb6ead8640d07100eadc0ed490a839fe8a172bb899f4065ba9519d",
       "oracle": {
         "canonical_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
+        "channels": 4,
         "compared_pixels": 16777216,
+        "compressed_bytes": 299059,
         "encoded_bytes": 299214,
         "expected_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
         "first_mismatch": null,
         "height": 4096,
         "inflated_rgba_bytes": 67108864,
+        "inflated_scanline_bytes": 67112960,
         "ok": true,
         "rows": 4096,
         "width": 4096
@@ -62,12 +65,15 @@
       "output_sha256": "sha256:31dd5d03aedb6ead8640d07100eadc0ed490a839fe8a172bb899f4065ba9519d",
       "oracle": {
         "canonical_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
+        "channels": 4,
         "compared_pixels": 16777216,
+        "compressed_bytes": 299059,
         "encoded_bytes": 299214,
         "expected_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
         "first_mismatch": null,
         "height": 4096,
         "inflated_rgba_bytes": 67108864,
+        "inflated_scanline_bytes": 67112960,
         "ok": true,
         "rows": 4096,
         "width": 4096
@@ -164,5 +170,5 @@
   "output_pixels_verified": 33554432,
   "codec_rgba_identical": true,
   "canonical_rgba_sha256": "sha256:63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610",
-  "method": "Each retained output PNG is streamed row by row through the bounded W7 reader and compared pixel-by-pixel to level(bx,by)=48+20*((3*bx+5*by+(bx^by)) mod 9) with alpha 255; only running digests are retained."
+  "stream_strictness": "W13 now validates the complete zlib stream: explicit end marker, no unused_data, no unconsumed_tail, exact inflated scanline volume (67,112,960 bytes) and a hard per-decompress output cap; truncated, extended, extra-inflate and oversized streams are rejected by tests/test_w13_stream.py."
 }

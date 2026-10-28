@@ -15,7 +15,7 @@
     },
     "authority": "Existing Caller continuous MP grant only; no new design, dependency, unsafe/COM, product policy, Runtime, GUI, main or release authority."
   },
-  "native_source": "f76c811c3cf709821381eaf1c2966e5bf6b2c5a7",
+  "native_source": "9e8dab753b0379d02e053b61234cf6df610a42d4",
   "runs": [
     {
       "id": "native-r1",
@@ -109,8 +109,8 @@
     },
     {
       "id": "native-r4",
-      "status": "SUCCESS_RETAINED",
-      "detail": "Complete four-case matrix on the final pin; retained as native-full-matrix.json.",
+      "status": "SUPERSEDED_PIN",
+      "detail": "Complete matrix on pin f76c811; superseded by the B-R1-01/B-R1-02 verifier repair.",
       "record": {
         "command": [
           "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
@@ -139,8 +139,8 @@
     },
     {
       "id": "native-r5",
-      "status": "SUCCESS_RETAINED",
-      "detail": "Independent complete repeat on the final pin; retained as native-repeat-matrix.json.",
+      "status": "SUPERSEDED_PIN",
+      "detail": "Independent complete repeat on the same superseded pin.",
       "record": {
         "command": [
           "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
@@ -157,6 +157,66 @@
         "cwd": "C:\\dev\\cos-desktop",
         "exit_code": 0,
         "duration_seconds": 21.626475600001868,
+        "stdout": {
+          "bytes": 476,
+          "sha256": "sha256:9b2d6788a1e8968e9eff05afca44f8a415813f26d143a313fbfe9f8a9c62b912"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "id": "native-r6",
+      "status": "SUCCESS_RETAINED",
+      "detail": "Complete matrix on the repair pin; retained as native-full-matrix.json.",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "apps/desktop/devtools/img2/w13_matrix.py",
+          "run",
+          "--work-root",
+          "C:/dev/cos-desktop-verification/w13/native-r6-work",
+          "--out",
+          "C:/dev/cos-desktop-verification/w13/native-r6-report.json",
+          "--pwsh",
+          "C:/Program Files/PowerShell/7/pwsh.exe"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 47.403777600004105,
+        "stdout": {
+          "bytes": 476,
+          "sha256": "sha256:9b2d6788a1e8968e9eff05afca44f8a415813f26d143a313fbfe9f8a9c62b912"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "id": "native-r7",
+      "status": "SUCCESS_RETAINED",
+      "detail": "Independent complete repeat on the repair pin; retained as native-repeat-matrix.json.",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "apps/desktop/devtools/img2/w13_matrix.py",
+          "run",
+          "--work-root",
+          "C:/dev/cos-desktop-verification/w13/native-r7-work",
+          "--out",
+          "C:/dev/cos-desktop-verification/w13/native-r7-report.json",
+          "--pwsh",
+          "C:/Program Files/PowerShell/7/pwsh.exe"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 43.893911100021796,
         "stdout": {
           "bytes": 476,
           "sha256": "sha256:9b2d6788a1e8968e9eff05afca44f8a415813f26d143a313fbfe9f8a9c62b912"
@@ -273,6 +333,7 @@
     },
     {
       "id": "final-run",
+      "status": "SUPERSEDED_PIN",
       "record": {
         "command": [
           "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
@@ -297,8 +358,36 @@
           "sha256": "sha256:3b443b5fa8cd67b1acf977e2a81388864095aeb66c4f9a9d048f32c52d84430a"
         }
       },
+      "detail": "9 tests on pin f76c811, before the stream repairs."
+    },
+    {
+      "id": "repair-run",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "apps/desktop/devtools/img2/tests",
+          "-p",
+          "test_w13_*.py"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 449.71447360000457,
+        "stdout": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "bytes": 122,
+          "sha256": "sha256:e7c982d6a50383e0a52cb097ce144e4792e1ad558e974abd668d03f86fb67cc4"
+        }
+      },
       "summary": [
-        "Ran 9 tests in 139.764s",
+        "Ran 16 tests in 448.952s",
         "",
         "OK"
       ]
@@ -315,10 +404,10 @@
       ],
       "cwd": "C:\\dev\\cos-desktop",
       "exit_code": 0,
-      "duration_seconds": 39.66954470000928,
+      "duration_seconds": 80.75456020000274,
       "stdout": {
-        "bytes": 50330,
-        "sha256": "sha256:0151e630880c0096d74fd7156d7f37f9b38d7132c8757014aa29777640c5be25"
+        "bytes": 50331,
+        "sha256": "sha256:783b035840c178f8f23f309280f072ae8090771b96609faf30e8fd847330e9c9"
       },
       "stderr": {
         "bytes": 0,
@@ -329,7 +418,19 @@
   "excluded_from_closure": [
     "native-r1",
     "native-r2",
-    "native-r3"
+    "native-r3",
+    "native-r4",
+    "native-r5"
   ],
-  "notes": "A CLI exit 0 on a superseded pin, an exception or a failed check is never promoted. Only r4/r5 feed the repeat comparison and Gate G8."
+  "notes": "A CLI exit 0 on a superseded pin, an exception or a failed check is never promoted. Only r4/r5 feed the repeat comparison and Gate G8.",
+  "review_repairs": [
+    {
+      "finding": "B-R1-01",
+      "action": "W13 now reads the zlib stream itself and requires eof, no unused_data and no unconsumed_tail, so a stripped Adler-32 or appended compressed tail is rejected."
+    },
+    {
+      "finding": "B-R1-02",
+      "action": "Inflation is capped at the exact scanline volume with a hard per-call output limit and an immediate overflow refusal; the reported inflated size is the measured value."
+    }
+  ]
 }

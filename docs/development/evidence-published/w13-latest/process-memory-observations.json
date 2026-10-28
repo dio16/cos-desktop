@@ -1,7 +1,7 @@
 {
   "classification": "OBSERVED_WHOLE_PROCESS_DIFFERENTIAL",
   "boundary": "after_onload for S01/S02, before_admission for S03/S04",
-  "source_commit": "f76c811c3cf709821381eaf1c2966e5bf6b2c5a7",
+  "source_commit": "9e8dab753b0379d02e053b61234cf6df610a42d4",
   "scope": {
     "allocator_reservations": "NOT_MEASURED",
     "atomic_snapshot": false,
@@ -42,17 +42,17 @@
       "case_id": "S01",
       "codec": "jpeg",
       "role": "decode",
-      "pid": 69220,
-      "start_utc_ticks": 639288062953772864,
+      "pid": 54584,
+      "start_utc_ticks": 639288085567649093,
       "hold_stage": "after_onload",
-      "working_set_bytes": 135110656,
-      "private_bytes": 60776448,
-      "peak_working_set_bytes": 135110656,
+      "working_set_bytes": 130572288,
+      "private_bytes": 58044416,
+      "peak_working_set_bytes": 130572288,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
       "sample_clock": "python_monotonic_ns",
       "observer_clock": "windows_qpc",
-      "qpc_start": 1841972967761,
-      "qpc_end": 1841973457890,
+      "qpc_start": 1864598951286,
+      "qpc_end": 1864599862093,
       "qpc_frequency": 10000000,
       "complete": true,
       "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
@@ -61,17 +61,17 @@
       "case_id": "S02",
       "codec": "png",
       "role": "decode",
-      "pid": 65304,
-      "start_utc_ticks": 639288062991058197,
+      "pid": 48968,
+      "start_utc_ticks": 639288085670496083,
       "hold_stage": "after_onload",
-      "working_set_bytes": 131534848,
-      "private_bytes": 57532416,
-      "peak_working_set_bytes": 131534848,
+      "working_set_bytes": 132775936,
+      "private_bytes": 58798080,
+      "peak_working_set_bytes": 132775936,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
       "sample_clock": "python_monotonic_ns",
       "observer_clock": "windows_qpc",
-      "qpc_start": 1842009189601,
-      "qpc_end": 1842009742427,
+      "qpc_start": 1864693863804,
+      "qpc_end": 1864694739515,
       "qpc_frequency": 10000000,
       "complete": true,
       "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
@@ -80,17 +80,17 @@
       "case_id": "S03",
       "codec": "jpeg",
       "role": "refuse",
-      "pid": 1948,
-      "start_utc_ticks": 639288063027293289,
+      "pid": 68524,
+      "start_utc_ticks": 639288085765453050,
       "hold_stage": "before_admission",
-      "working_set_bytes": 115236864,
-      "private_bytes": 41091072,
-      "peak_working_set_bytes": 115240960,
+      "working_set_bytes": 115916800,
+      "private_bytes": 42143744,
+      "peak_working_set_bytes": 115924992,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
       "sample_clock": "python_monotonic_ns",
       "observer_clock": "windows_qpc",
-      "qpc_start": 1842044898923,
-      "qpc_end": 1842045498848,
+      "qpc_start": 1864785874589,
+      "qpc_end": 1864786951433,
       "qpc_frequency": 10000000,
       "complete": true,
       "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
@@ -99,17 +99,17 @@
       "case_id": "S04",
       "codec": "png",
       "role": "refuse",
-      "pid": 20264,
-      "start_utc_ticks": 639288063041794193,
+      "pid": 17116,
+      "start_utc_ticks": 639288085785676278,
       "hold_stage": "before_admission",
-      "working_set_bytes": 115286016,
-      "private_bytes": 41787392,
-      "peak_working_set_bytes": 115290112,
+      "working_set_bytes": 114966528,
+      "private_bytes": 41492480,
+      "peak_working_set_bytes": 114966528,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
       "sample_clock": "python_monotonic_ns",
       "observer_clock": "windows_qpc",
-      "qpc_start": 1842059413359,
-      "qpc_end": 1842059866145,
+      "qpc_start": 1864807510753,
+      "qpc_end": 1864808014396,
       "qpc_frequency": 10000000,
       "complete": true,
       "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619"
@@ -117,20 +117,20 @@
   ],
   "repeat_private_bytes": {
     "S01": [
-      60776448,
-      61333504
+      58044416,
+      58802176
     ],
     "S02": [
-      57532416,
-      59240448
+      58798080,
+      57737216
     ],
     "S03": [
-      41091072,
-      41820160
+      42143744,
+      41336832
     ],
     "S04": [
-      41787392,
-      44318720
+      41492480,
+      41885696
     ]
   },
   "note": "Whole-process counters from independent lifetimes; full-frame pixel verification is not a memory-performance proof."
