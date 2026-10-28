@@ -5,8 +5,8 @@
   "native_source": "90182cefb6f6af1d69f7818d5a873927dd3dd534",
   "gate_candidate": "598827291f89d3d8e5f7f259016122256285db64",
   "candidate_digest": "sha256:72ca741d590184a21ccad875c9a598a118f0b786b14659740666e82dd539ba92",
-  "evidence_head": "aa9764f1f860770184a6e7059924a415e418d2bf",
-  "evidence_manifest_relationship": "review-package.json is committed as a child of evidence_head and is therefore not a member of its own evidence archive.",
+  "evidence_head": "b7285325294e287fbcd184597c54027ff34c94f6",
+  "evidence_manifest_relationship": "review-package.json is committed as a child of evidence_head and is therefore not a member of its own evidence archive; source-entry-manifest.json is inside it.",
   "source_zip": {
     "archive": "w9-review-source.zip",
     "commit": "598827291f89d3d8e5f7f259016122256285db64",
@@ -18,15 +18,16 @@
   },
   "evidence_zip": {
     "archive": "w9-review-evidence.zip",
-    "commit": "aa9764f1f860770184a6e7059924a415e418d2bf",
-    "bytes": 508676,
-    "sha256": "sha256:bc74f03eb72a32ba151babd29f803727ae3073093da54efa8547f068b06fc1c7",
-    "files": 44
+    "commit": "b7285325294e287fbcd184597c54027ff34c94f6",
+    "bytes": 553300,
+    "sha256": "sha256:8e07e474de27cf9e5af069f62fd6021594b5c8fae67d0ccd9839cdf84459c565",
+    "files": 45
   },
   "source_entry_manifest": {
     "path_inside_evidence_zip": "docs/development/evidence-published/img2-w9-latest/source-entry-manifest.json",
     "entries": 824,
-    "matches_source_archive": "source-entry-manifest.json"
+    "present_in_evidence_zip": true,
+    "matches_source_archive": true
   },
   "gates": {
     "workspace": "c7902882-ac4d-441f-8a7b-34d16cb69208",
@@ -49,6 +50,8 @@
     "docs/development/evidence-published/img2-w9-latest/quality-jpeg-gate.json",
     "docs/development/evidence-published/img2-w9-latest/quality-w9-gate.json",
     "docs/development/evidence-published/img2-w9-latest/quality-workspace-gate.json",
+    "docs/development/evidence-published/img2-w9-latest/review-package.json",
+    "docs/development/evidence-published/img2-w9-latest/source-entry-manifest.json",
     "docs/development/evidence-published/img2-w9-latest/storage.json"
   ],
   "all_after_candidate_changes_docs_only": true,
