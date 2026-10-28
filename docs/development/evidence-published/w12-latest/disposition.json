@@ -1,0 +1,78 @@
+{
+  "slice": "MP-IMG2-W12",
+  "status": "LIMITED_TECHNICAL_COMPLETION",
+  "gate_candidate": "2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b",
+  "gate_candidate_digest": "sha256:0a472db14247de27c002e253f3e64f991eb885000a6ca3bbaf039d5a4a142b50",
+  "native_source": "2f20080e843bc02d356e14b9bf99218cb48dfd71",
+  "reviewed_evidence_commit": "ded128977c29b4ecb780a9b0796a6fd6356f5ae9",
+  "pushed_before_review": true,
+  "remote_sha_confirmed_before_review": "ded128977c29b4ecb780a9b0796a6fd6356f5ae9",
+  "review_rounds": [
+    {
+      "round": 1,
+      "verdict": "HOLD 0 / 1 / 0",
+      "finding": "A-R1-01",
+      "evidence_commit": "772a954abbb66b2ca6deeca076cc8bd14876af57",
+      "candidate": "018b574370ae5b11b8314820c0eac1174ae67982"
+    },
+    {
+      "round": 2,
+      "verdict": "HOLD 0 / 1 / 0",
+      "finding": "A-R2-01",
+      "note": "A-R1-01 CLOSED",
+      "evidence_commit": "5e048fb345ab032c2b2e9244b47a310ba0c6d875",
+      "candidate": "9b60d1684d55d4dbbca348159f1637f597771ed4"
+    },
+    {
+      "round": 3,
+      "verdict": "PASS 0 / 0 / 0",
+      "blocking": 0,
+      "actionable_non_blocking": 0,
+      "excessive": 0,
+      "closed": [
+        "A-R1-01",
+        "A-R2-01"
+      ],
+      "new_findings": "none",
+      "evidence_commit": "ded128977c29b4ecb780a9b0796a6fd6356f5ae9",
+      "candidate": "2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b"
+    }
+  ],
+  "gates": {
+    "workspace": "d6141434-fda6-4644-883f-34186247e73b",
+    "images": "e8c4c95d-8334-4101-8fb5-78f71de573ec",
+    "w8": "bdb42b03-54a9-4452-befd-1daa5f31c85a",
+    "w9": "48df19b6-dc96-4abb-9b42-80cd5360fdc4",
+    "w10": "c41407dd-a246-4b29-9243-80ec8a3a80b4",
+    "w11": "8ca118eb-d86a-40d4-b146-fd219e124c44",
+    "w12": "619bf474-7cbe-4c5e-85ca-aa1597dc6c61",
+    "build": "bc4aad5b-a2af-4c33-ad7c-04b71fed483d"
+  },
+  "accepted_scope": {
+    "matched_raster_4k_jpeg_png_decode": true,
+    "exact_roi_output_differential": true,
+    "full_frame_admission_and_refusal_boundary": true,
+    "bounded_whole_process_memory_observations": true,
+    "independent_repeat_and_source_gate_evidence": true
+  },
+  "not_accepted": [
+    "WIC internal memory characteristics",
+    "allocator reservations or true concurrent peak",
+    "codec memory advantage",
+    "product decoder adoption/tolerance",
+    "ICC/EXIF product policy",
+    "16K full decode",
+    "true partial/region/sequential/tiled decode",
+    "cooperative decoder cancellation",
+    "product memory SLO",
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3 start",
+    "Runtime changes",
+    "measured R0",
+    "UX/video acceptance",
+    "main merge/release",
+    "application-window GUI startup"
+  ],
+  "reviewer_attribution": "Reviewer-reported checks (archives, Git SHAs, portable re-verification of both Native records, mutation replay, Gate/storage reconciliation) are retained as reported; the reviewer explicitly did not run a new Windows decode, Refine Gate or GUI action.",
+  "caller_disposition": "ADR-0009 section 2 as adopted for technically completed limited slices; not a new grant from the reviewer."
+}

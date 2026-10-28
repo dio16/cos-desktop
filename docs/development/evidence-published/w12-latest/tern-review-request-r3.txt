@@ -1,0 +1,27 @@
+MP-IMG2-W12 re-evaluation, round 3, after repairing your round-2 finding A-R2-01. Inspect the actual attached source and evidence.
+
+PUSH-BEFORE-EVALUATION satisfied for this round: normal explicit dev:dev push succeeded and `git ls-remote origin refs/heads/dev` returned ded128977c29b4ecb780a9b0796a6fd6356f5ae9 immediately before this submission. (Round 1 was 772a954, round 2 was 5e048fb; this is a new push.)
+
+Repository https://github.com/dio16/cos-desktop, branch dev.
+Final Gate/source candidate: 2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b, candidate digest sha256:0a472db14247de27c002e253f3e64f991eb885000a6ca3bbaf039d5a4a142b50.
+Native SOURCE (unchanged since round 2): 2f20080e843bc02d356e14b9bf99218cb48dfd71.
+Confirmed remote dev / evidence commit: ded128977c29b4ecb780a9b0796a6fd6356f5ae9.
+Superseded candidates: 018b574 (round 1), 9b60d16 (round 2; its only remaining defect was the count file).
+
+Attachments (exact raw Git blobs; every member verified byte-equal to `git show`; archives built with command-local core.autocrlf=false):
+1. w12-review-source-r3.zip — 33 files at 2eafa7d, SHA256 ebee1c78fd415a1804a0e46da90e9e4911c256d434126b737ce20e8c26c50884.
+2. w12-review-evidence-r3.zip — 44 files at ded1289, SHA256 d365de403a40131c0d988e9f0b8be08cd429a888475b254d9ce0a9c111a341a5.
+3. w12-review-package-r3.json outside both archives.
+
+A-R2-01 repair: `gate-test-counts.json` no longer claims 21 W12 tests. It now records 22 tests / 22 passed / 39 mutation classes with an explicit basis naming the final repaired-pin suite, lists the earlier 21-test attempts separately (r1 failed, r2 and r3 pre-repair), and states the per-Gate check counts (7+9+1+1+1+2+2+2 = 25) with a note that each Gate receipt remains authoritative for its own outcomes. No Gate candidate artifact or old receipt was rewritten; instead the candidate was re-pinned and all eight Gates were re-run, so the corrected count is itself an artifact of the Gates that certify it.
+
+Consistency check across the whole evidence set: W12 suite is 22 tests in quality.json, negative-tests.json, execution-manifest.json (§19.64 too) and gate-test-counts.json; the only remaining "21" strings are the explicitly labelled earlier attempts and an artifact id, not a test count.
+
+Re-run Gates on 2eafa7d (all report digest 0a472db1…, 25 checks pass):
+workspace d6141434-fda6-4644-883f-34186247e73b 7/7;
+images e8c4c95d-8334-4101-8fb5-78f71de573ec 9/9; w8 bdb42b03-54a9-4452-befd-1daa5f31c85a 1/1; w9 48df19b6-dc96-4abb-9b42-80cd5360fdc4 1/1; w10 c41407dd-a246-4b29-9243-80ec8a3a80b4 1/1; w11 8ca118eb-d86a-40d4-b146-fd219e124c44 2/2; w12 619bf474-7cbe-4c5e-85ca-aa1597dc6c61 2/2; build bc4aad5b-a2af-4c33-ad7c-04b71fed483d 2/2. 70 declared artifacts × 8 Gates = 560 captures match their receipts and the raw Git blobs.
+Disposal repeated for these eight successful checkouts plus one approved target root only: 15,637 files / 3,981,447,033 logical bytes, all eight native integrity results unchanged afterwards, and both earlier state roots retained untouched. The newly built 32,275,456-byte executable was moved once with digest sha256:d80632f0b04ca6ec0fcb27aef7d8d5fb955dd725679ec38ff3f3dcbd51ac320b.
+
+Unchanged and still open: four ROI outputs verified pixel-by-pixel, two byte-identical JPEG/PNG pairs, two pre-OnLoad refusals, six whole-process windows classified OBSERVED_WHOLE_PROCESS_DIFFERENTIAL, A-R1-01 stays closed, TRUE_PARTIAL_DECODE_VERIFIED and internal-memory/codec-advantage claims not made, GUI startup NOT_RUN, full MP-IMG2/MP-IMG3 and all product policy unauthorised, preflight aggregate UNKNOWN.
+
+Please verify that A-R2-01 is fully repaired, that the count now agrees with the Gate it cites, and that the re-pinned candidate introduces no new inconsistency. Return findings classified BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE with explicit counts and finish with PASS 0 / 0 / 0 or HOLD with counts plus a separate line REVIEW COMPLETE. Do not provide a next-task directive in this round.

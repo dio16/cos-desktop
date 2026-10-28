@@ -1,0 +1,293 @@
+MP-IMG2-W12 — 独立再評価 Round 3
+
+添付アーカイブを実際に読み取り、GitHubの固定コミットと照合しました。
+
+固定対象
+
+	
+
+検証結果
+
+
+
+
+Source ZIP：33ファイル
+
+	
+
+SHA-256・全member一致
+
+
+
+
+Evidence ZIP：44ファイル
+
+	
+
+SHA-256・全member一致
+
+
+
+
+Remote dev
+
+	
+
+ded128977c29b4ecb780a9b0796a6fd6356f5ae9 一致
+
+
+
+
+Gate候補
+
+	
+
+2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b
+
+
+
+
+Native SOURCE
+
+	
+
+2f20080e843bc02d356e14b9bf99218cb48dfd71
+
+
+
+
+Gate後の変更
+
+	
+
+docs/evidenceのみ
+
+Round 2の候補を今回の成功として再利用せず、新候補を固定していることを確認しました。
+
+1. A-R2-01 — CLOSED
+
+gate-test-counts.jsonの修正は妥当です。
+
+検証項目
+
+	
+
+結果
+
+
+
+
+修正後テスト定義数
+
+	
+
+22
+
+
+
+
+quality.json
+
+	
+
+22/22
+
+
+
+
+negative-tests.json
+
+	
+
+22 tests / 39 mutations
+
+
+
+
+execution-manifest.json
+
+	
+
+22 tests / OK
+
+
+
+
+最終gate-test-counts.json
+
+	
+
+22/22
+
+
+
+
+新W12 Gate
+
+	
+
+2/2 check PASS
+
+
+
+
+全Gate check合計
+
+	
+
+25/25 PASS
+
+特に、Gate候補2eafa7dに取り込まれた修正済みcountファイル自体が22 testsを記録していることを確認しました。その後、Gate実行で確定したID・候補SHAをdocs-only更新しています。Gate候補のartifactは改変されていません。
+
+以前の21件は過去の実行として区別され、今回の成功件数には使用されていません。
+
+2. A-R1-01 — CLOSED維持
+
+正常controlのsource-bound成立を必須とする実装は維持されています。
+
+39種類のmutationをポータブルに独立再実行した結果、38件が構造的に拒否され、source_commitのみが設計どおりportable-ok / closure-falseでした。
+
+Git objectを含まない環境ではsource-boundテストが失敗するため、未検証の39件を成功として報告する問題も再発していません。
+
+3. 新候補・Gate・Storage
+
+項目
+
+	
+
+結果
+
+
+
+
+新Refine Gate
+
+	
+
+8/8 SUCCEEDED
+
+
+
+
+全check
+
+	
+
+25/25 PASS
+
+
+
+
+Artifact照合
+
+	
+
+70 × 8 = 560件
+
+
+
+
+Candidate digest
+
+	
+
+全Gate一致
+
+
+
+
+各Gateの600秒上限
+
+	
+
+遵守
+
+
+
+
+Cleanup
+
+	
+
+全Gate complete
+
+
+
+
+削除対象
+
+	
+
+成功checkout 8件＋承認済みtarget 1件
+
+
+
+
+削除後の8 Gate verify
+
+	
+
+全件一致
+
+保存領域の集計も、15,637ファイル・3,981,447,033論理バイトで一致しました。過去2候補のstate rootは保持されています。
+
+4. Native・承認境界
+
+2本のNative記録のポータブル再検算はともに成功し、各6ケース・4 ROI出力・2拒否・2組のJPEG/PNG出力一致を確認しました。
+
+ただし、新規Windows実行やRefine実行をこちらで行ったわけではありません。source-boundの成立は、固定Git SHAと保存されたWindows Gate証拠による判断です。
+
+以下は引き続き未承認・未実証です。
+
+TRUE_PARTIAL_DECODE、WIC内部scratch、allocator reservations、true concurrent peak
+
+codec優位性、製品SLO、decoder採用・ICC/EXIF policy
+
+GUI startup：NOT_RUN
+
+full MP-IMG2、MP-IMG3、Runtime、measured R0、main/release
+
+最終判定
+
+MP-IMG2-W12 LIMITED TECHNICAL COMPLETION：承認
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+0
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+0
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+A-R1-01：CLOSED
+A-R2-01：CLOSED
+新規指摘：なし
+
+PASS 0 / 0 / 0
+
+REVIEW COMPLETE
