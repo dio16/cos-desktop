@@ -1,45 +1,45 @@
 {
   "schema_version": 1,
   "slice": "MP-IMG2-W9",
-  "round": 2,
-  "native_source": "90182cefb6f6af1d69f7818d5a873927dd3dd534",
-  "gate_candidate": "598827291f89d3d8e5f7f259016122256285db64",
-  "candidate_digest": "sha256:72ca741d590184a21ccad875c9a598a118f0b786b14659740666e82dd539ba92",
-  "evidence_head": "b7285325294e287fbcd184597c54027ff34c94f6",
-  "evidence_manifest_relationship": "review-package.json is committed as a child of evidence_head and is therefore not a member of its own evidence archive; source-entry-manifest.json is inside it.",
+  "round": 3,
+  "native_source": "2142ebae822e509c63c4877dd3a81415d4923f3f",
+  "gate_candidate": "86cc666b2debc95cb470c456b0b24a986bb9b702",
+  "candidate_digest": "sha256:e8676e2d064ce54ccbc7a6e28666e314b26d1859021799f5b8aebcda4e1fd846",
+  "evidence_head": "c27df0fbf4239994e6dc0af48fe46e26b297b4d7",
+  "evidence_manifest_relationship": "review-package.json is committed as a child of evidence_head and is not a member of its own evidence archive; source-entry-manifest.json is inside it.",
   "source_zip": {
-    "archive": "w9-review-source.zip",
-    "commit": "598827291f89d3d8e5f7f259016122256285db64",
-    "bytes": 5731264,
-    "sha256": "sha256:fa2d90565eda83a74cc61838a27b68e033e3095371400375e4b2331f5dec6144",
-    "entries": 824,
-    "all_entries_match_commit": true,
-    "manifest_in_evidence_zip": "source-entry-manifest.json"
+    "archive": "w9-r3-review-source.zip",
+    "commit": "86cc666b2debc95cb470c456b0b24a986bb9b702",
+    "bytes": 5777672,
+    "sha256": "sha256:784e62d14c204f1b53d34fe3396ea0165c341688b876cdd91bef0e5fe6180c03",
+    "entries": 826,
+    "all_entries_match_commit": true
   },
   "evidence_zip": {
-    "archive": "w9-review-evidence.zip",
-    "commit": "b7285325294e287fbcd184597c54027ff34c94f6",
-    "bytes": 553300,
-    "sha256": "sha256:8e07e474de27cf9e5af069f62fd6021594b5c8fae67d0ccd9839cdf84459c565",
-    "files": 45
+    "archive": "w9-r3-review-evidence.zip",
+    "commit": "c27df0fbf4239994e6dc0af48fe46e26b297b4d7",
+    "bytes": 556757,
+    "sha256": "sha256:7d3800e4185060d64160fdd710b2523458b8efec3f47af0a7eba579d52efbb2e",
+    "files": 46
   },
   "source_entry_manifest": {
     "path_inside_evidence_zip": "docs/development/evidence-published/img2-w9-latest/source-entry-manifest.json",
-    "entries": 824,
+    "entries": 826,
     "present_in_evidence_zip": true,
     "matches_source_archive": true
   },
   "gates": {
-    "workspace": "c7902882-ac4d-441f-8a7b-34d16cb69208",
-    "img2": "3b45567c-c459-4712-8074-ec88a8933ac2",
-    "jpeg": "0a832afc-6f35-4af5-8765-01061459dba8",
-    "w9": "92789622-c744-4c51-9514-bcec4dd86989",
-    "build": "1e4c7407-f611-404d-addf-5419419fa9b7"
+    "workspace": "ee2acb40-272c-42f0-88aa-aacbd8030dac",
+    "img2": "d98dfeaf-723b-4ed8-9487-7f4f5d522a69",
+    "jpeg": "4046304f-6c6a-405f-9860-7f4048ecf15e",
+    "w9": "8a35342a-4c01-4370-8d00-7595b37afd3f",
+    "build": "7b129b5e-dead-4149-b405-85b6b5502452"
   },
   "candidate_digest_equal_across_gates": true,
   "candidate_to_evidence_changed_paths": [
     "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
     "docs/development/evidence-published/img2-w9-latest/build-gate.json",
+    "docs/development/evidence-published/img2-w9-latest/build-product.json",
     "docs/development/evidence-published/img2-w9-latest/gate-artifact-correspondence.json",
     "docs/development/evidence-published/img2-w9-latest/gate-build-receipts.json",
     "docs/development/evidence-published/img2-w9-latest/gate-img2-receipts.json",
@@ -50,16 +50,14 @@
     "docs/development/evidence-published/img2-w9-latest/quality-jpeg-gate.json",
     "docs/development/evidence-published/img2-w9-latest/quality-w9-gate.json",
     "docs/development/evidence-published/img2-w9-latest/quality-workspace-gate.json",
-    "docs/development/evidence-published/img2-w9-latest/review-package.json",
     "docs/development/evidence-published/img2-w9-latest/source-entry-manifest.json",
     "docs/development/evidence-published/img2-w9-latest/storage.json"
   ],
   "all_after_candidate_changes_docs_only": true,
   "build_product": "NOT_CAPTURED: the isolated build output was disposed before hashing, so no digest is claimed.",
-  "review_round_1_resolution": {
-    "B-W9-01": "Root cause recorded: Refine candidate_sha256 covers the declared request composition. The five r1 Gates used per-gate output identifiers and therefore differed; the five r2 Gates declare identical outputs and share one digest. Raw receipts are unchanged.",
-    "A-W9-01": "Malformed legs now require case identity, probe identity, input bytes, and WIC worker fixture_id/input_sha256; mutation classes 41-43 were added and all 43 are rejected by the real verify().",
-    "A-W9-02": "Progressive legs now require probe_result.output_bytes to equal the emitted PNG length; declared bytes are no longer optional."
+  "review_round_2_resolution": {
+    "A-W9-R2-01": "Malformed input_bytes is mandatory; decoded legs bind output.bytes and probe_result.output_bytes to the emitted PNG length; WIC decoded legs require published_success/output_present true; WIC failure legs require both false and no declared output. Classes 44-51 cover each condition and all 51 classes are rejected by the real verify().",
+    "A-W9-R2-02": "source-evidence-reconciliation.json compares the current Native SOURCE with this candidate: 22/22 SOURCE files pinned, candidate equals native source, changed paths docs-only; the round-one comparison is kept only as history."
   },
   "package_boundaries": {
     "native": "Observed Windows WIC and GDI+ runs. No GUI claim.",
