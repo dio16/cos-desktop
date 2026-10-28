@@ -53,6 +53,7 @@ NEW_FILES = (
     "apps/desktop/devtools/img2/w13_matrix.py",
     "apps/desktop/devtools/img2/w13_full_verify.py",
     "apps/desktop/devtools/img2/tests/test_w13_full_frame.py",
+    "apps/desktop/devtools/img2/tests/test_w13_stream.py",
     "apps/desktop/devtools/img2/tests/test_w13_negative.py",
 )
 SOURCE_FILES = tuple(dict.fromkeys((*W7_SOURCE_FILES, *REGRESSION_FILES, *NEW_FILES)))
