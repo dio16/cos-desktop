@@ -1,0 +1,383 @@
+COS Desktop — Native Startup / Runtime Readiness 独立レビュー Round 1
+SCOPED PASS
+
+判定：BLOCKING 0 / ACTIONABLE NON-BLOCKING 0 / EXCESSIVE 0
+
+添付のnative-review-r1.zipとpackage manifestを直接検査し、GitHubの固定コミット、6枚のスクリーンショット、AXツリー、起動・終了証拠、Desktopソースを照合しました。
+
+今回の限定的なNative startup証拠とRuntime readinessの記述は整合しています。
+
+1. Git・添付・実行ファイルの対応
+
+検証項目
+
+	
+
+結果
+
+
+
+
+Remote dev
+
+	
+
+4be9b5720ebe43d409b8e0dd4b01b8255a4eee34 一致
+
+
+
+
+ZIP SHA-256
+
+	
+
+974ba9a6…24bd5693fd 一致
+
+
+
+
+ZIP内の実ファイル
+
+	
+
+27件
+
+
+
+
+ファイルSHA-256
+
+	
+
+27/27一致
+
+
+
+
+Git blob SHA-1
+
+	
+
+27/27一致
+
+
+
+
+新commitの変更
+
+	
+
+§19.66＋Native証拠、計19ファイル
+
+
+
+
+Product source変更
+
+	
+
+なし
+
+
+
+
+新Refine Gate
+
+	
+
+実行主張なし
+
+保持済みBuild Gate 7d0b2747-308d-4d86-9699-0114a73dc4d9の候補・digest・ビルド結果は、添付のbuild-product.jsonとgate-build-receipt.jsonで一致しました。
+
+記録された実行ファイルは32,275,456バイト、SHA-256はcf6f1705…4aac7c6b9dです。AXツリーに記録された起動パスも保持先と一致します。
+
+ただし、実exeそのものは添付されていないため、今回こちらで実行ファイルのバイト列を直接再ハッシュしたわけではありません。固定Gateの証拠と後続Native記録の対応を確認したという評価です。
+
+2. Native startup証拠
+
+Fixtureモード
+
+fixture-startup.pngとAXにFIXTURE / simulated dataが明示されています。Candidate BのViewed状態、Flow graph revision、nodes/edgesは後続画像・AXと一致しています。
+
+シナリオ
+
+	
+
+証拠から確認した範囲
+
+
+
+
+Fixture起動
+
+	
+
+Task-184とFixture表示
+
+
+
+
+Candidate B
+
+	
+
+Viewed · Active、InspectorにもBを表示
+
+
+
+
+Flow操作
+
+	
+
+GraphRevision version 3、Goal/Context、2件のedgeを表示
+
+
+
+
+二重起動
+
+	
+
+終了コード3の記録と既存single-instance拒否実装が整合
+
+
+
+
+Native close
+
+	
+
+終了コード0、shutdown confirmed、preferences save confirmed
+
+
+
+
+通常Runtimeモード
+
+	
+
+NO SOURCE / data withheld、Stop無効
+
+
+
+
+Endpoint設定モード
+
+	
+
+同じくdata withheld、Fixtureへのfallbackなし
+
+実画像を確認した結果、FixtureとRuntimeの表示が混在している問題はありません。
+
+fixture-search.pngとfixture-before-close.pngが同一内容である点も、文字入力を成功扱いしていない記録と整合します。
+
+背景からのCtrl+3操作とGoal入力は、UNCONFIRMEDのままです。ツール操作の不確実性をアプリケーション欠陥と断定していません。
+
+3. Runtime readinessの境界
+
+添付Desktopソースを直接確認すると、main.rsのRuntime分岐はendpointの設定有無にかかわらずAppCore::disconnected(endpoint_configured)を生成します。
+
+app.rsも、明示的な--fixtureなしにFixtureへfallbackしない構成です。
+
+したがって、今回観測されたEndpoint設定モードのdata-withheld表示は現行実装と一致します。
+
+項目
+
+	
+
+判定
+
+
+
+
+Callerの検証許可
+
+	
+
+RECEIVED
+
+
+
+
+指定された/api/ready
+
+	
+
+記録上ECONNREFUSED
+
+
+
+
+Desktopの実Runtime transport
+
+	
+
+未実装・未接続
+
+
+
+
+Runtime descriptor互換性
+
+	
+
+現行ソース観測に基づく不足事項を記録
+
+
+
+
+Live authentication
+
+	
+
+NOT_RUN
+
+
+
+
+Task操作・Runtime変更
+
+	
+
+NOT_RUN
+
+Runtimeリポジトリのソース自体は今回の添付にありません。f9867478…に関するhandlerやlegacy descriptorの詳細は、実施担当者によるread-only inspectionの記録として評価しました。こちらでRuntimeソースやサーバー稼働状態を独立再検証したとの主張はしません。
+
+許可が得られたことと、対応するproducer・trusted transport・descriptor authorizationが実装されていることを明確に分離できています。
+
+4. 承認境界の最終照合
+
+領域
+
+	
+
+今回の判定
+
+
+
+
+Human approvalの未回答状態
+
+	
+
+後続の許可を受領済みとして更新可能
+
+
+
+
+この実行ファイルの限定Native startup
+
+	
+
+VERIFIED within recorded scope
+
+
+
+
+W13 LIMITED TECHNICAL COMPLETION
+
+	
+
+維持
+
+
+
+
+W1–W12のNative証明
+
+	
+
+遡及変更なし
+
+
+
+
+Keyboard / IME / DPI / multi-monitor
+
+	
+
+NOT_RUN / UNCONFIRMED
+
+
+
+
+Real Runtime integration
+
+	
+
+BLOCKED_ON_IMPLEMENTATION_AND_SERVICE
+
+
+
+
+RT2 / RT6 / IMG6
+
+	
+
+Capability・implementation blocked
+
+
+
+
+MP-IMG2 FULL DECODE EXIT
+
+	
+
+HOLD維持
+
+
+
+
+MP-IMG3
+
+	
+
+NOT_STARTED
+
+今回の証拠を理由に、新たな9 Gateの再実行を要求する必要はありません。製品コード・Gate候補は不変更であり、追加されたのは後続の実機観測証拠です。
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+0
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+0
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+Native startup限定証拠：承認
+Runtime permission received：確認
+Runtime integration：未達・実装前提待ち
+MP-IMG2 FULL DECODE EXIT：HOLD継続
+MP-IMG3：未開始
+
+SCOPED PASS 0 / 0 / 0
+
+REVIEW COMPLETE

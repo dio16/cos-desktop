@@ -1,0 +1,10 @@
+{
+  "cards": 62,
+  "single_contract_issues": [],
+  "hard_edges": 41,
+  "dag_acyclic": true,
+  "changed_links_missing": [],
+  "review_linked": true,
+  "disposition_linked": true,
+  "no_new_behavior": "Documentation and observation evidence only; no source/test/Gate changes"
+}

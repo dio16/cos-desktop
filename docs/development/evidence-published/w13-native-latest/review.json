@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "verdict": "SCOPED PASS 0 / 0 / 0",
+  "blocking": 0,
+  "actionable_non_blocking": 0,
+  "excessive": 0,
+  "reviewed_evidence_commit": "4be9b5720ebe43d409b8e0dd4b01b8255a4eee34",
+  "binary_candidate": "23a6dce30ed9a88136379fdbcc762789de20dfef",
+  "pushed_before_review": true,
+  "remote_sha_confirmed": "4be9b5720ebe43d409b8e0dd4b01b8255a4eee34",
+  "later_native_startup": "VERIFIED_WITHIN_RECORDED_SCOPE",
+  "human_approval": "RECEIVED; live control acquired and released",
+  "runtime_permission": "RECEIVED",
+  "runtime_integration": "BLOCKED_ON_IMPLEMENTATION_AND_SERVICE",
+  "decode_exit": "HOLD unchanged",
+  "mp_img3": "NOT_STARTED",
+  "reviewer_attribution": "Reviewer reports inspecting 27 raw Git/package members, six COS Desktop window screenshots and AX trees, exit records, fixed build receipt and Desktop source; no new Windows launch/Gate, direct executable rehash, Runtime-source inspection or live auth test by the reviewer.",
+  "historical_records": "No W13 Gate-declared artifact or earlier Native record rewritten. session.json describes pre-review skill status at the reviewed commit; this record adds the subsequent Tern invocation.",
+  "skills": {
+    "taskern": {
+      "loaded": true,
+      "invoked": false
+    },
+    "refine": {
+      "loaded": true,
+      "invoked": [
+        "gate status",
+        "gate inspect",
+        "gate verify"
+      ],
+      "new_gate": false
+    },
+    "tern_chatgpt_review": {
+      "loaded": true,
+      "invoked": true,
+      "execution": "existing conversation; exact package attached; full-text-verified single send --wait; SCOPED PASS 0/0/0 and REVIEW COMPLETE"
+    }
+  },
+  "acceptance_boundary": "No new product/design/Runtime mutation/main/release authority; startup-only observation within caller approval."
+}
