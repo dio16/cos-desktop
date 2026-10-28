@@ -1,0 +1,13 @@
+{
+  "directed": "G3 = W8\u2013W10 JPEG regression in one Gate",
+  "constraint": "Installed Refine 0.3.1 operator schema rejects timeout_ms>600000 (observed INPUT_INVALID operator_limit_out_of_range), so any single Gate is hard-capped at 600 s.",
+  "measured": "The unchanged two-suite JPEG Gate took 584.1 s on 2026-10-28; the now-prior W10 suite took 94.6 s in its own Gate. Combined work (~658 s plus overhead) cannot fit.",
+  "decision": "Keep the unchanged JPEG definition as one finite Gate (img2-w8, img2-w9) and run the W10 prior-slice JP2 regression suite as a second finite Gate. Six Gates total instead of five; no check removed, weakened, skipped, reordered away or auto-retried.",
+  "alternatives_rejected": [
+    "Raising the operator ceiling: the installed schema forbids it.",
+    "Dropping W10 regression: would weaken G3.",
+    "Sequential in-place runtime trimming: would change check definitions.",
+    "HOLD: no missing authority or safety issue; every required check remains expressible within the enforced bound."
+  ],
+  "review_point": "Tern must independently judge this split; Caller acceptance remains separate."
+}
