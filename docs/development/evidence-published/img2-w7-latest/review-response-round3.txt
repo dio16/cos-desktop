@@ -1,0 +1,357 @@
+
+PASS 0 / 0 / 0
+
+前回の2指摘は両方CLOSEDです。MP-IMG2-W7 LIMITED TECHNICAL COMPLETIONを承認します。
+
+今回の審査はRound 2の証拠不整合2件に限定しました。SOURCE、Native実測、独立Gateの再実行はしていません。
+
+1. B-W7-R2-01 — SOURCE manifest訂正
+
+判定：CLOSED
+
+検証項目
+
+	
+
+独立結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+4,752,066 bytes、SHA256一致
+
+
+
+
+SOURCE候補
+
+	
+
+c78982d0ee9ccafb8c9882260c20962134aac79e
+
+
+
+
+SOURCEファイル数
+
+	
+
+712件
+
+
+
+
+Manifest entry数
+
+	
+
+712件
+
+
+
+
+Entryの重複・欠落
+
+	
+
+0件
+
+
+
+
+原バイトのサイズ・SHA256
+
+	
+
+712/712一致
+
+
+
+
+Evidence内manifest
+
+	
+
+実在、現候補に対応
+
+
+
+
+旧702件manifestとの混同
+
+	
+
+なし
+
+訂正後のreview-package-source.jsonをEvidence ZIPから読み出し、SOURCE ZIPの全712ファイルと直接比較しました。
+
+不一致は0件です。
+
+SOURCE候補のZIP内には歴史的な旧manifestが含まれますが、Evidence HEADのmanifestは現候補の712件を正しく記述しています。固定SOURCEを変更しないdocs-only訂正として整合しています。
+
+2. A-W7-R2-01 — Native SOURCE reconciliation訂正
+
+判定：CLOSED
+
+対象：source-evidence-reconciliation.json
+
+検証項目
+
+	
+
+独立結果
+
+
+
+
+Native SOURCE
+
+	
+
+f080f4c5987b9c5745ad42bfa2a8975e4747e5ed
+
+
+
+
+Gate候補
+
+	
+
+c78982d0ee9ccafb8c9882260c20962134aac79e
+
+
+
+
+commits_differ
+
+	
+
+true
+
+
+
+
+SOURCE file比較
+
+	
+
+22/22一致
+
+
+
+
+SOURCE identity記録との照合
+
+	
+
+22/22一致
+
+
+
+
+変更後のdocs-only path
+
+	
+
+11件、全てdocs配下
+
+
+
+
+旧比較のhistorical分離
+
+	
+
+完全一致を確認
+
+22件はGit blob相当のLF正規化SHA256で一致しています。異なるcommit SHAを同一commitとして扱ってはいません。
+
+また、source-evidence-reconciliation-round1.jsonはRound 2の旧reconciliationと原バイトで完全一致しました。歴史的比較は失われていません。
+
+3. SOURCE・Native・Gateの不変性
+
+Round 2とRound 3のZIPを直接比較しました。
+
+項目
+
+	
+
+確認結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+完全同一
+
+
+
+
+Evidence ZIP
+
+	
+
+41→44ファイル
+
+
+
+
+既存Evidence変更
+
+	
+
+4ファイル
+
+
+
+
+Evidence追加
+
+	
+
+3ファイル
+
+
+
+
+Candidate→Evidenceの変更
+
+	
+
+17件、すべてdocs-only
+
+
+
+
+Native matrix
+
+	
+
+原バイト不変
+
+
+
+
+Admission / compression / memory
+
+	
+
+原バイト不変
+
+
+
+
+3 Gate生receipt
+
+	
+
+原バイト不変
+
+
+
+
+Artifact対応
+
+	
+
+33/33一致
+
+
+
+
+Storage記録
+
+	
+
+原バイト不変
+
+
+
+
+未測定記録
+
+	
+
+原バイト不変
+
+3 Gateの識別子と候補digestも変更されていません。
+
+Quality core 16/16、W7 Quality 4/4、Build 1/1の成功は、前回確認した生receiptと今回の不変な原本に基づきます。
+
+Private Git objectsによるcommit ancestry検証、Windows Native実行、Refine再実行、物理Storage削除は今回NOT_RUNです。
+
+4. W7 LIMITED TECHNICAL COMPLETION
+
+今回の訂正により、Round 2で残っていたSOURCE manifestとNative reconciliationの証拠不整合が解消しました。
+
+追加の製品側実装問題は、この限定レビューでは確認されていません。
+
+承認範囲： Windows WICの2K/4K bounded materialization、8K/16K full-frame refusal、ROI非迂回、独立画素検証および関連証拠の限定技術完了。
+
+以下は引き続き未測定・未承認です。
+
+16K full decode、全codec、JPEG absolute raster
+
+True partial/region/sequential/tiled decode
+
+WIC内部scratch、実予約、true concurrent allocation peak
+
+Cooperative in-decoder cancellation、ICC colour fidelity
+
+Product numeric memory SLO、decoder採用、製品policy
+
+Full MP-IMG2 Decode Exit、MP-IMG3 prerequisite
+
+GPUI Upload、Runtime、measured R0、UX/video、main/release
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+0
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+0
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+B-W7-R2-01：CLOSED
+
+A-W7-R2-01：CLOSED
+
+MP-IMG2-W7 LIMITED TECHNICAL COMPLETION：承認
+
+REVIEW COMPLETE
+
+PASS 0 / 0 / 0

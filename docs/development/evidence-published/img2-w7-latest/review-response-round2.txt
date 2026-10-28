@@ -1,0 +1,621 @@
+
+対象候補： c78982d0ee9ccafb8c9882260c20962134aac79e
+Native実行SOURCE： f080f4c5987b9c5745ad42bfa2a8975e4747e5ed
+Evidence HEAD： 24e56b4a7e3f14a62c5b71f7e017269ee59a2c95
+
+1. Round 1の修正確認
+
+前回の4指摘のうち、検証器に関する2件はSOURCE上で修正され、追加された負例も確認できました。
+
+前回指摘
+
+	
+
+今回の確認結果
+
+
+
+
+B-W7-01：Gate生receipt不足
+
+	
+
+3 Gateのstatus/inspect/verify応答とexit codeを確認
+
+
+
+
+A-W7-01：probe_resultのadmission値偽装
+
+	
+
+正常decodeの値を元fixtureから再計算して照合
+
+
+
+
+A-W7-02：破損入力のworker状態不整合
+
+	
+
+outcome・terminal・出力・oracleの整合条件を追加
+
+
+
+
+A-W7-03：source manifest参照先不在
+
+	
+
+参照先ファイルの実在を確認。ただし内容に不整合あり
+
+今回のSOURCEとEvidence ZIPはどちらも申告SHA256に一致し、破損もありません。
+
+提出物の原バイト照合
+
+対象
+
+	
+
+結果
+
+
+
+
+SOURCE ZIP
+
+	
+
+4,752,066 bytes、一致
+
+
+
+
+Evidence ZIP
+
+	
+
+548,627 bytes、一致
+
+
+
+
+SOURCE実ファイル
+
+	
+
+712件
+
+
+
+
+Evidence実ファイル
+
+	
+
+41件
+
+
+
+
+Git archive commit識別
+
+	
+
+両方一致
+
+
+
+
+Gate artifact候補バイト
+
+	
+
+33/33一致
+
+ただし、Evidence ZIP内のreview-package-source.jsonは、少なくとも13件で今回のSOURCE実バイトと一致しません。その中には修正されたw7_large_verify.pyとtest_w7_negative.pyも含まれます。これらのentryはLF正規化後も一致せず、Round 1の旧SOURCEに対応する値を保持しています。
+
+この不一致はGate artifact台帳の33件一致とは別の問題です。SOURCE全712件の対応を証明するmanifestとしては使用できません。
+
+2. 新GateとNative実測の確認
+
+3 Gateの生receiptは今回の候補に正しく対応しています。
+
+項目
+
+	
+
+Quality core
+
+	
+
+W7 Quality
+
+	
+
+Build
+
+
+
+
+Gate ID
+
+	
+
+bd39ae77…
+
+	
+
+de37d098…
+
+	
+
+021de65f…
+
+
+
+
+状態
+
+	
+
+SUCCEEDED
+
+	
+
+SUCCEEDED
+
+	
+
+SUCCEEDED
+
+
+
+
+必須check
+
+	
+
+16/16
+
+	
+
+4/4
+
+	
+
+1/1
+
+
+
+
+status/inspect/verify
+
+	
+
+exit 0
+
+	
+
+exit 0
+
+	
+
+exit 0
+
+
+
+
+Candidate SHA
+
+	
+
+一致
+
+	
+
+一致
+
+	
+
+一致
+
+
+
+
+Candidate digest
+
+	
+
+一致
+
+	
+
+一致
+
+	
+
+一致
+
+
+
+
+Artifact tuples
+
+	
+
+33/33
+
+	
+
+33/33
+
+	
+
+33/33
+
+
+
+
+Cleanup
+
+	
+
+complete
+
+	
+
+complete
+
+	
+
+complete
+
+
+
+
+Owner alive
+
+	
+
+false
+
+	
+
+false
+
+	
+
+false
+
+
+
+
+Recovery required
+
+	
+
+false
+
+	
+
+false
+
+	
+
+false
+
+Candidate digestは3 Gateすべてで次の値に一致しました。
+
+sha256:cbfb01a9da1fed5f81c61579ff9ec3324378a5b03fdbf1cedcec5d63cdfa94da
+
+inspectとverifyのrequest SHA256、terminal state SHA256、artifact tuplesも各Gateで一致しています。Preflightの集約はUNKNOWNのままです。
+
+B-W7-01：CLOSED。Gate再実行は不要です。
+
+Nativeについては、提出された新実測記録を検証しました。
+
+項目
+
+	
+
+結果
+
+
+
+
+Native SOURCE
+
+	
+
+f080f4c5987b9c5745ad42bfa2a8975e4747e5ed
+
+
+
+
+Source file LF/hash
+
+	
+
+22/22一致
+
+
+
+
+12ケースの構造replay
+
+	
+
+PASS
+
+
+
+
+SOURCE未検証時のclosure
+
+	
+
+false
+
+
+
+
+2K/4K decoded
+
+	
+
+6件
+
+
+
+
+8K/16K拒否
+
+	
+
+4件
+
+
+
+
+破損入力
+
+	
+
+2件、TAMPER_NOT_VERIFIED
+
+
+
+
+独立PNG画素復元
+
+	
+
+6/6一致
+
+
+
+
+比較したRGBAバイト
+
+	
+
+251,658,240 bytes
+
+6出力のPNGを別の画像デコーダーで復元し、保存された独立期待digestと照合しました。すべて一致しています。
+
+4件の大寸法拒否はmax_dimension_exceededであり、OnLoad・出力公開を伴いません。ROI 1×1もfull-frame admissionを迂回していません。
+
+実験時間115.65秒、work root 115,416,045 bytesで、保存されたW7のbounded記録と整合しています。
+
+3. テスト・負例の確認
+
+レビュー環境で実行可能なfixture・admissionテストは17/17 PASSしました。
+
+規定32負例について、保存された実行記録は32/32拒否です。現行verify()への独立再投入は10件まで完了し、10/10拒否でした。全32件の独立再投入は大寸法画像の反復デコードがレビュー環境の実行上限に達したため未完です。
+
+そのため、32/32を今回の独立再実行結果とは表現しません。 一方、W7 Quality Gateの生receiptには、現候補でw7-negativeがpass・exit 0と記録されています。
+
+Round 1で問題となったprobe_resultの値と破損workerの状態については、修正コードと追加負例を確認しました。新たな製品側false-greenは、この限定検証では確認していません。
+
+4. 残存指摘
+B-W7-R2-01 — Source entry manifestが前候補を指しており、現候補712件を証明できない
+
+分類：BLOCKING（SOURCE証拠の完全性）
+
+対象：
+
+docs/development/evidence-published/img2-w7-latest/review-package-source.json
+
+Evidence ZIPの実memberとして存在しますが、内容は次のとおりです。
+
+項目
+
+	
+
+Manifest内部
+
+	
+
+今回の実SOURCE
+
+
+
+
+Commit
+
+	
+
+71951642d6d8…
+
+	
+
+c78982d0ee9c…
+
+
+
+
+Archive SHA256
+
+	
+
+e395602c9d72…
+
+	
+
+52e086ec780f…
+
+
+
+
+Archive bytes
+
+	
+
+4,698,201
+
+	
+
+4,752,066
+
+
+
+
+Entry数
+
+	
+
+702
+
+	
+
+712
+
+全702個の既存entryをSOURCE ZIPの実バイトと照合すると、689件一致、13件不一致でした。新規10ファイルもmanifestに収録されていません。
+
+不一致13件には、w7_large_verify.py、test_w7_negative.py、Native matrix、negative-tests、SOURCE identity、計画本文が含まれます。
+
+特にw7_large_verify.pyはmanifestに27,155 bytesと記録されていますが、今回のSOURCEでは31,031 bytesです。LF正規化後も一致しません。
+
+再現条件： 現SOURCE ZIPを展開し、Evidence ZIP内のreview-package-source.jsonの各entries[].pathについてサイズとSHA256を比較する。13件はraw/LFの双方で不一致となります。
+
+最小修正： 現候補c78982d…のSOURCE 712件についてentry manifestを再生成し、候補SHA・ZIPサイズ・ZIP SHA256・各ファイルのraw/LF対応を訂正してください。固定候補に含まれる旧版と新しいEvidence HEADの訂正版を区別してください。
+
+SOURCE ZIP自身を変更せず、後続docs-only Evidenceとして保存できます。自分自身のZIP hashを内包する循環参照は要求しません。
+
+Gate artifact 33/33とNative SOURCE 22/22の照合は独立に成立していますが、提出された全SOURCE manifestを正しいと認定することはできません。
+
+A-W7-R2-01 — Source/Native reconciliationが旧Round 1のまま
+
+分類：ACTIONABLE NON-BLOCKING
+
+対象：
+
+docs/development/evidence-published/img2-w7-latest/source-evidence-reconciliation.json
+
+このファイルは次の旧値を保持しています。
+
+項目
+
+	
+
+保存値
+
+	
+
+今回の正しい対象
+
+
+
+
+native_source
+
+	
+
+dbb42bb55a98…
+
+	
+
+f080f4c5987b…
+
+
+
+
+computed_against
+
+	
+
+f8f34dbc45d3…
+
+	
+
+現候補c78982d0ee9c…
+
+また、candidate_equals_native_source=trueという判定も旧比較のままです。
+
+再現条件： このJSONと今回のnative-large-matrix.jsonのsource_identity.source_commitを比較すると、異なるSOURCEを指しています。
+
+ただし、今回のNative記録内の22 source fileは、現SOURCE ZIPのLF/hashと22/22一致しました。実際のsource bindingそのものには不整合がありません。
+
+最小修正： 現Native SOURCE f080f4c…と現候補c78982d…に対する22ファイルの再照合結果を保存してください。両commit SHAの相違と、対象SOURCEファイル内容が一致することを別々に記録し、旧比較結果はhistorical evidenceとして分離してください。
+
+こちらもdocs-only訂正で十分です。
+
+5. Storage・未測定境界
+
+Storageの6対象を合算すると、11,230 files / 4,172,961,731 logical bytesで保存集計と一致しました。
+
+3 Gateのpost-disposal verifyはSUCCEEDEDと記録されています。物理削除、private Refine state照合、Windows WIC再実行、private Git objectを使うSOURCE-bound検証は今回NOT_RUNです。
+
+未測定・未承認の境界も維持されています。16K full decode、true partial/region/sequential/tiled、WIC内部scratch、実予約、true concurrent allocation peak、cooperative cancellation、ICC fidelity、製品decoder採用、full MP-IMG2 Decode Exit、MP-IMG3 prerequisite、GPUI Upload、Runtime、measured R0、UX/video、main/releaseは完了扱いされていません。
+
+6. W7限定closure判断
+
+Round 1のB-W7-01、A-W7-01、A-W7-02は修正確認済みです。A-W7-03についても、参照先の実在はCLOSEDですが、そのmanifestの内容が旧候補のままです。
+
+今回の残件はSOURCE・Nativeの証拠対応文書2件に限定されます。
+
+製品WIC、fixture、oracle、Native再実測、3 Gateの再実行は不要です。 正しい候補とGit objectを保持する元環境で、現在のSOURCE manifestとreconciliationをdocs-onlyで更新し、再提出してください。
+
+その訂正が原バイトで一致すれば、W7 LIMITED TECHNICAL COMPLETIONの0/0/0 closureを判定できます。
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+1
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+1
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+MP-IMG2-W7 LIMITED TECHNICAL COMPLETION：保留
+
+REVIEW COMPLETE
+
+HOLD 1 / 1 / 0

@@ -1,0 +1,28 @@
+MP-IMG2-W7 round 3 — round 2 の2件(docs-only)の訂正確認のみを依頼します。製品SOURCE、Native実測、3 Gateは変更していません。
+
+候補: c78982d0ee9ccafb8c9882260c20962134aac79e(不変)。
+Native SOURCE: f080f4c5987b9c5745ad42bfa2a8975e4747e5ed(不変)。
+Evidence HEAD: 714af38fdd3aadff314a99cd900301bb5e9cde50。
+添付: w7-review-source.zip(不変: 712 entry、4,752,066 bytes、sha256:52e086ec780fd490c84456ecefc11113020e1ba863192cf04de15cd459c681e8)、
+w7-review-evidence.zip(更新: 44 files、sha256:cbaebeccc889375de3187f8fd447d9b93061fa23a4f45a9a92eb1e5832c6d22c)、
+review-package.json(別添・日時付き改名)。
+
+B-W7-R2-01(manifestが旧候補):
+- review-package-source.json を現候補c78982dの712 entryで再生成し、Evidence ZIPの実memberとして同梱しました。
+- 提出前に独立照合済み: manifest の archive SHA256/bytes は実SOURCE ZIPと一致し、712 entryすべての raw_sha256 がZIP内の実バイトと一致(不一致0件)。Evidence ZIP内のコピーはcommit済みmanifestと完全一致。
+- 旧702-entry manifest(候補71951642用)は上書きされ、現行Evidenceには残していません。
+
+A-W7-R2-01(reconciliationが旧比較):
+- source-evidence-reconciliation.json を native f080f4c → candidate c78982d で再計算しました。commits_differ=true、changed_paths_after_native_source=17件すべてdocs、22 SOURCE fileは両commitでraw一致(candidate_equals_native_source=true)を別項目として記録。
+- 旧比較(dbb42bb/f8f34db)は source-evidence-reconciliation-round1.json にhistorical evidenceとして分離し、現行ファイルからは参照のみ。
+
+注意点:
+- 添付ZIPは今回、Source ZIP不変・Evidence ZIP更新です。manifestはEvidence HEADの子commit(31d41e2)にあり、自己ZIP hashは主張しません。
+- Gate生receipt、artifact 33/33、Native 6/6画素一致、4/4 refusal、2件TAMPER_NOT_VERIFIED、NOT_MEASURED境界はround 2から変更ありません。
+
+確認してほしい点:
+- 新しいmanifestが現SOURCE 712件を原バイトで証明していること(不一致0)、Evidence ZIP内コピーが同一であること。
+- reconciliationが現Native SOURCEと現候補を正しく対比し、旧比較がhistoricalとして分離されていること。
+- この2訂正がSOURCE・Native・Gate・artifact・storage・未測定境界のいずれの主張も変えていないこと。
+
+他に製品側の実装問題が残る場合はその根拠を示してください。BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、最後に独立行で REVIEW COMPLETE、その次の最終行に verdict/countsを記してください。0/0/0の場合は、その後にMP-IMG2-W7 LIMITED TECHNICAL COMPLETIONの可否と残る未測定境界を明記してください。
