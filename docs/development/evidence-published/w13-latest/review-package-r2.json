@@ -1,0 +1,413 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/dio16/cos-desktop",
+  "branch": "dev",
+  "remote_sha_observed_before_review": "069d66c352199a95fa2f622cf0ed673c6b10c500",
+  "gate_candidate": "23a6dce30ed9a88136379fdbcc762789de20dfef",
+  "gate_candidate_digest": "sha256:d9726be1a4c1b3fc33f7b88b87965f0ee654b341315233c67ce0c8280e2bdbeb",
+  "native_source": "9e8dab753b0379d02e053b61234cf6df610a42d4",
+  "evidence_commit": "069d66c352199a95fa2f622cf0ed673c6b10c500",
+  "review_round": 2,
+  "previous_round": {
+    "verdict": "HOLD 2/0/0",
+    "findings": [
+      "B-R1-01",
+      "B-R1-02"
+    ],
+    "candidate": "2b08132b662b3f8660a84084b7666c6b9a61108f"
+  },
+  "source_archive": {
+    "archive": "w13-review-source-r2.zip",
+    "commit": "23a6dce30ed9a88136379fdbcc762789de20dfef",
+    "bytes": 217311,
+    "sha256": "sha256:040d87cd779310ba9568c93a765b327ffee0cd0648524d6761a63a1ff5458910",
+    "entries": [
+      {
+        "path": "Cargo.lock",
+        "bytes": 158990,
+        "sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/tests/test_w13_full_frame.py",
+        "bytes": 3214,
+        "sha256": "sha256:f90299608f7d5874ccf4121771c3bdcf0c09fddbec08e8fd307d608eb3bf4c00"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/tests/test_w13_negative.py",
+        "bytes": 11221,
+        "sha256": "sha256:d54f1eab63d703e19cf24ead1b3c1c8432287333f3267990234872ad503a82ef"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/tests/test_w13_stream.py",
+        "bytes": 4126,
+        "sha256": "sha256:f46dd486d8a4a7e331494fdbf65563095cada6969bd682294e502d6782b8054d"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w11_jpeg_fixtures.py",
+        "bytes": 4868,
+        "sha256": "sha256:77e523c52b54734bd00b833f2d671fadf7ff6023ee1cb15449332bc609d291ed"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w11_jpeg_oracle.py",
+        "bytes": 11619,
+        "sha256": "sha256:13c39da9eed989336e56f8c41a5fc4d1ba8a597a48cdb5cf9014f787b3cbea9f"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w12_png_fixture.py",
+        "bytes": 4694,
+        "sha256": "sha256:485c8b894cfb6f2adc56137156043cd2066fc262bd71b9d9f44c7733a41c6d6c"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w12_png_oracle.py",
+        "bytes": 13583,
+        "sha256": "sha256:3ffc3c8842d262c88cdfaad979fd76d6c9b76290fec74705409b3753836b693a"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w13_full_oracle.py",
+        "bytes": 10262,
+        "sha256": "sha256:a18926af326750eebd9f47d49134e778e6d06fbf63928efc1d2c9e001f2bbf26"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w13_full_verify.py",
+        "bytes": 24516,
+        "sha256": "sha256:7f8c3702329fa6d5bb7aab1bf6c28b6b3c49bb90cf4be2337a7627c7b348890b"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w13_matrix.py",
+        "bytes": 24041,
+        "sha256": "sha256:48fb1215d117cb17037bb30daf1fc3d7ee723bd9b9bb5c2aec38f884a37e073a"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w2_independent_oracle.py",
+        "bytes": 9766,
+        "sha256": "sha256:0ad3e676f776a4d8e340ff5f431a7d066b67fe55b2755bb62941ca82802b7f26"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+        "bytes": 28958,
+        "sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+        "bytes": 26365,
+        "sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w3_oracle.py",
+        "bytes": 5883,
+        "sha256": "sha256:4f1444f4f936e81c9b541697d2fafccb18bde56e7d9d2be7e80e638a565dcf7e"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w4_region_oracle.py",
+        "bytes": 5745,
+        "sha256": "sha256:b447c3d0cf3a4cd033fa481d1d49d2068c754a2e82eb4e8335fffb5d7a0aa298"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w5_metadata_oracle.py",
+        "bytes": 6744,
+        "sha256": "sha256:bb2910bac17c47677058bb79ca24b21f3a87356d1a0b432c9427a37193bbab60"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w6_memory_fixtures.py",
+        "bytes": 9459,
+        "sha256": "sha256:e6299ab82fbade910f78713c5366c47d5a9b69c9c762d27503a60ec8d4547ef5"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w6_memory_sample.py",
+        "bytes": 19017,
+        "sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w6_memory_verify.py",
+        "bytes": 23316,
+        "sha256": "sha256:99cc5ecb251c71e42340614d51de471029b8a3247e29ee12f8dabc553972e919"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_fixtures.py",
+        "bytes": 11614,
+        "sha256": "sha256:fefb3724623f79d5ac4f1b98b4af43c8dddde0dfa2e727294bf7e208ac2707bc"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_matrix.py",
+        "bytes": 12484,
+        "sha256": "sha256:53c84378b68b4a0a5c77251a013f2e207b38cf8315a76440e7260ea6dc097e56"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_oracle.py",
+        "bytes": 12588,
+        "sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w7_large_verify.py",
+        "bytes": 30502,
+        "sha256": "sha256:74d8ca71fd545bf2991316c2fd6c34073b376763744cfc380b43b97e5ab554f8"
+      },
+      {
+        "path": "apps/desktop/devtools/img2/w8_jpeg_fixtures.py",
+        "bytes": 15609,
+        "sha256": "sha256:033389d5b1c700b1da09516f42b1bc4a0cc2a861fb307e9da1efbd068c843925"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare.rs",
+        "bytes": 1041,
+        "sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/harness.rs",
+        "bytes": 159533,
+        "sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/inspect.rs",
+        "bytes": 24568,
+        "sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/pixels.rs",
+        "bytes": 27817,
+        "sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+        "bytes": 6399,
+        "sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5"
+      },
+      {
+        "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+        "bytes": 51013,
+        "sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c"
+      },
+      {
+        "path": "crates/media/src/decode.rs",
+        "bytes": 11964,
+        "sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf"
+      },
+      {
+        "path": "rust-toolchain.toml",
+        "bytes": 152,
+        "sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8"
+      }
+    ]
+  },
+  "evidence_archive": {
+    "archive": "w13-review-evidence-r2.zip",
+    "commit": "069d66c352199a95fa2f622cf0ed673c6b10c500",
+    "bytes": 960989,
+    "sha256": "sha256:1e5777bbfa2936606df8a8de399229701347dfd1a233d1e7a32cc9eadbfa3ba3",
+    "entries": [
+      {
+        "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+        "bytes": 131878,
+        "sha256": "sha256:2efde0277416b8dcc7839f3be0a5297a9bea97d9c11f90d8945a9345bb605212"
+      },
+      {
+        "path": "docs/decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md",
+        "bytes": 3000,
+        "sha256": "sha256:f15e6e7d4e36e2e6255b8fccf2a993b4077331fe1ebc5be0b223f377c643dec3"
+      },
+      {
+        "path": "docs/decisions/ADR-0013-EVIDENCE-RETENTION.md",
+        "bytes": 2911,
+        "sha256": "sha256:a403560f95c6d59e71e8ffad7033f32e9d9c6a8b7c356e2dcf83f20ada79c352"
+      },
+      {
+        "path": "docs/development/BUILD_AND_RUN.md",
+        "bytes": 115603,
+        "sha256": "sha256:4261bab8b8b11364030880652e0436e96aba8afe722986e20232e1621767e487"
+      },
+      {
+        "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+        "bytes": 471375,
+        "sha256": "sha256:7273d8526ce6841ead894c445e44667a090a7a190f656abe91a8e1701af94bbb"
+      },
+      {
+        "path": "docs/development/TESTING.md",
+        "bytes": 58925,
+        "sha256": "sha256:81fe02d981c897f58c63af081f575d0e7f1d7521cc8b1ef15913c4679f2c6e5b"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/build-product.json",
+        "bytes": 921,
+        "sha256": "sha256:70033ddfd39732e7364038950452def5ee68a624f00206c1273ba37c6dffe8ee"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/directive-request.txt",
+        "bytes": 3687,
+        "sha256": "sha256:02385da8f118d91923a4c3ac8554b6ff9266f902e319e56c408672ed3ef1a29d"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/docs-validation.json",
+        "bytes": 434,
+        "sha256": "sha256:c328d5f7210dc5088d8e79a6eb2fd9a7431228e7dca66f973c18195cb7c69e09"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/environment.json",
+        "bytes": 745,
+        "sha256": "sha256:9d99392964da84c19d973591885789d6f702d382df1559db19a7db0e425e5655"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/execution-manifest.json",
+        "bytes": 15039,
+        "sha256": "sha256:cd4bed4c4f3e7c6ccfdbc272ad47522831b455a97a373ad757fcaea2c178df0c"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/fixture-manifest.json",
+        "bytes": 1046,
+        "sha256": "sha256:c678e71ef4b5c74da2b2f04ef71b2cee3e93d21810c13eae0f953fd4e52c067f"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-artifact-correspondence.json",
+        "bytes": 4835,
+        "sha256": "sha256:78a745f2eee9a236adb31ee6caef64fcc01cf7f88a485e56b6d609c1ccbbfe3a"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-build-failure.json",
+        "bytes": 853,
+        "sha256": "sha256:c0183634628a01321e26b0c7cf3ced0d328172c5c570fe7181a4afb07a165350"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-build-receipt.json",
+        "bytes": 19342,
+        "sha256": "sha256:1c15df130cd64d7179c13b61b9ddcd91aa6ab79c76764795062d3a15bdab511f"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-images-receipt.json",
+        "bytes": 25718,
+        "sha256": "sha256:889a96427974e28cba7bb9abadbecdfdd611a1b4b910dc953158ca52e89a8d89"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-test-counts.json",
+        "bytes": 783,
+        "sha256": "sha256:1dbff4922081646bbd2e999d5478a3aac8bb01e1cc7c919510667f81db714766"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-w10-receipt.json",
+        "bytes": 18423,
+        "sha256": "sha256:41ca8962b606bd48287b8cc1f671e4c8bc25c86a35a33f4b6aae535ff5c3cdf0"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-w11-receipt.json",
+        "bytes": 19371,
+        "sha256": "sha256:6ea64a5f36bdf23ea755b2ddaed64defd66f2056b56564b2cb66f23cc95f4dd0"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-w12-receipt.json",
+        "bytes": 19369,
+        "sha256": "sha256:f96d9abb5b6820277d3145661b3c521ad7ee8075f61145f2c31ef5b13d4d79a6"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-w13-receipt.json",
+        "bytes": 19374,
+        "sha256": "sha256:88d1df05bd804a6c0cb1cf8904d29f9253572a51c0239dc065b6179fd13cb6f4"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-w8-receipt.json",
+        "bytes": 18419,
+        "sha256": "sha256:e8b4cd421c85eb064449d63c2f22fb1960d91b4019ecb3bb14f1989a4513bcf6"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-w9-receipt.json",
+        "bytes": 18420,
+        "sha256": "sha256:67c15993e4393c4983334bc50eab41d9dd8b7f9a9afe695824c47d31d518d35f"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/gate-workspace-receipt.json",
+        "bytes": 23749,
+        "sha256": "sha256:9406a95c41cd3e086b12c165121b2122c2318d40d5781d409599b1b36d7739ef"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/independent-oracle-results.json",
+        "bytes": 5595,
+        "sha256": "sha256:20179c4ffab88093b38d8032ac52f84445e6f9edcb439dbcce77cbf85e570984"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/native-full-matrix.json",
+        "bytes": 1282379,
+        "sha256": "sha256:6cfe6c92e9dc4a6135a14d382cd1967b336ad52bf254a202b3618cb32a0fd6fb"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/native-repeat-matrix.json",
+        "bytes": 1282379,
+        "sha256": "sha256:e9e171624be0c1e010d9d475cca266ba95d8417291af3887d9e8b6b9bafca1d7"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/negative-tests.json",
+        "bytes": 2130,
+        "sha256": "sha256:600d32d2f4f1ca25fcbb31ee042e4a10767c99a89096416783da479fce729211"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/process-memory-observations.json",
+        "bytes": 4528,
+        "sha256": "sha256:10eb6171213c47feab2231fe49eb6f91742f96a28dbc0e4addafec788c40fa74"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/quality.json",
+        "bytes": 932,
+        "sha256": "sha256:369fd8dc925cff4072a189fd53ab5be8aec8d0f8b44d517ee2f10bd902a7f60e"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/repeat-comparison.json",
+        "bytes": 1636,
+        "sha256": "sha256:2978da5fed08bbbbe4459cccee1b172f7369ac89d4590ad0e89b7a5cc381a7aa"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/review-privacy.json",
+        "bytes": 580,
+        "sha256": "sha256:0d1616b134fa9db17449d74ab124f56e2c6bc147449456c19f4069c398133d19"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/start-reconciliation.json",
+        "bytes": 833,
+        "sha256": "sha256:4c777299f5272e0768e378d99d239d5f26fff154dad0165eeab91ebb69acb7ca"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/storage.json",
+        "bytes": 190113,
+        "sha256": "sha256:c7d8cc88710653f55360fb1d8dbca3aa24c85445ca5bcdae786bf16fc18f772c"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/taskern-request.json",
+        "bytes": 8498,
+        "sha256": "sha256:82425e092443965d76d0673b3524541a7636d169367863308d0ebad2cdddf8f3"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/taskern-response.json",
+        "bytes": 16665,
+        "sha256": "sha256:1067f04e3e75341be6122c16dbc22a2652d161a3fc0248d566d0575261102b0e"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/tern-directive.txt",
+        "bytes": 23704,
+        "sha256": "sha256:9d97723d8acbdc98e103b0f77f271cea7e4ea7a4028c1e4f82e6b985f22fc793"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/tool-use.json",
+        "bytes": 946,
+        "sha256": "sha256:2e3368772cc29023034e2101bd0465a8560298f484d30ee4af068c18e7827d25"
+      },
+      {
+        "path": "docs/development/evidence-published/w13-latest/unmeasured.json",
+        "bytes": 1090,
+        "sha256": "sha256:03f391e640f91529d1247f53996c1f626f4a036df47559150ffcf6a94b5dbc76"
+      },
+      {
+        "path": "docs/integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md",
+        "bytes": 24649,
+        "sha256": "sha256:06f2fba70e4c92f6bcd17cf4537ee96926c6b122ecb433208a8cf7d69f913879"
+      }
+    ]
+  },
+  "manifest_boundary": "This manifest stays outside both archives and does not hash itself.",
+  "review_boundary": "Bounded existing-WIC full-frame observation only; portable replay cannot establish Git source closure.",
+  "push_audit": {
+    "head": "069d66c352199a95fa2f622cf0ed673c6b10c500",
+    "base": "c19d57e257bb5f74853766d5681e5934b780d53b",
+    "commits": 3,
+    "includes_repair_candidate": true,
+    "blob_bytes": 3485360,
+    "credential_pattern_hits": [],
+    "private_evidence_paths": [],
+    "binary_or_archive_paths": [],
+    "scope": "Explicit dev:dev fast-forward of the W13 blocking-repair commits."
+  }
+}

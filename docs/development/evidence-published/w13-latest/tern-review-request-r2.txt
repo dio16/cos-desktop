@@ -1,0 +1,29 @@
+MP-IMG2-W13 re-evaluation, round 2, after repairing both of your BLOCKING findings. Inspect the actual attached source and evidence.
+
+PUSH-BEFORE-EVALUATION satisfied for this round: normal explicit dev:dev push succeeded and `git ls-remote origin refs/heads/dev` returned 069d66c352199a95fa2f622cf0ed673c6b10c500 immediately before this submission. (Round 1 was pushed as c19d57e; this is a new push.)
+
+Repository https://github.com/dio16/cos-desktop, branch dev.
+Repair Gate/source candidate: 23a6dce30ed9a88136379fdbcc762789de20dfef, candidate digest sha256:d9726be1a4c1b3fc33f7b88b87965f0ee654b341315233c67ce0c8280e2bdbeb.
+Repair Native SOURCE: 9e8dab753b0379d02e053b61234cf6df610a42d4.
+Confirmed remote dev / evidence commit: 069d66c352199a95fa2f622cf0ed673c6b10c500.
+Superseded round-1 candidate: 2b08132 (its Gate set and Native pins f76c811 remain historical, not reused).
+
+Attachments (exact raw Git blobs; each member verified byte-equal to `git show`; archives built with command-local core.autocrlf=false):
+1. w13-review-source-r2.zip — 33 files at 23a6dce.
+2. w13-review-evidence-r2.zip — 40 files at 069d66c.
+3. w13-review-package-r2.json outside both archives.
+
+B-R1-01 repair (zlib completeness): W13 no longer uses the W7 row iterator for output. `w13_full_oracle.py` now parses chunks itself and inflates with `zlib.decompressobj`, then requires `inflater.eof` true, `unused_data` empty and `unconsumed_tail` empty, plus an explicit `flush()` with no residue. A stripped Adler-32 trailer, a truncated stream and appended compressed bytes are all rejected; `tests/test_w13_stream.py` rebuilds each defect on the real 299,214-byte output with correct chunk lengths and CRCs, so outer CRC cannot mask it.
+
+B-R1-02 repair (bounded inflation): every `decompress` call now passes an explicit `max_length` equal to the remaining allowed bytes, and the loop refuses the moment produced output would exceed the exact scanline volume. The reader reports the *measured* `inflated_scanline_bytes` (67,112,960) and `compressed_bytes`, not a constant. A stream whose correct 4096 rows are followed by 1 MiB or 4096 extra rows is rejected, as is a stream exceeding the per-file compressed bound.
+
+Independent Re-run evidence:
+- Suite is now 16 tests (was 9): 8 stream-strictness cases plus the previous fixture, full-frame, negative and premise tests; 40 mutation classes; 0 failures.
+- Native re-taken twice on the repair pin (native-r6/r7); the two earlier complete runs on f76c811 are recorded as SUPERSEDED_PIN and their replay is refused rather than rewritten.
+- Outputs still verify to the same canonical RGBA digest 63145a22…, 33,554,432 output pixels, both codec pairs identical, both refusals before OnLoad with no output.
+- Nine Gates re-run on the repair candidate: workspace 7/7, images 9/9, w8 1/1, w9 1/1, w10 1/1, w11 2/2, w12 2/2, w13 2/2, build 2/2 — 27 checks, one digest, 69 declared artifacts × 9 = 621 captures matching receipts and raw blobs.
+- Disposal repeated for the nine successful repair checkouts plus one approved target root: 17,026 files / 4,049,790,033 logical bytes; all nine integrity results unchanged. The FAILED first build Gate workspace (stale digest path, kept from round 1) and the superseded state root were preserved untouched. The newly built 32,275,456-byte executable moved once with digest sha256:cf6f1705c733d515268fc3460725ae4a2c94d14f3a32993aab386f4aac7c6b9d.
+
+Unchanged and still open: whole-process-only memory reading, TRUE_PARTIAL_DECODE not verified, no internal scratch/reservation/peak/codec-advantage/latency/SLO claim, GUI startup NOT_RUN, full MP-IMG2/MP-IMG3 and all product policy unauthorised, preflight aggregate UNKNOWN.
+
+Please verify independently that both BLOCKING findings are fully repaired (including that a defect cannot hide behind correct outer CRCs or correct first 4096 rows), that the repaired pin and superseded history are honest, and that the re-run Gates introduce no new inconsistency. Return findings classified BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE with counts and finish with PASS 0 / 0 / 0 or HOLD with counts plus a separate line REVIEW COMPLETE. Do not provide a next-task directive in this round.

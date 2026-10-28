@@ -1,0 +1,64 @@
+{
+  "slice": "MP-IMG2-W13",
+  "status": "LIMITED_TECHNICAL_COMPLETION",
+  "gate_candidate": "23a6dce30ed9a88136379fdbcc762789de20dfef",
+  "gate_candidate_digest": "sha256:d9726be1a4c1b3fc33f7b88b87965f0ee654b341315233c67ce0c8280e2bdbeb",
+  "native_source": "9e8dab753b0379d02e053b61234cf6df610a42d4",
+  "reviewed_evidence_commit": "069d66c352199a95fa2f622cf0ed673c6b10c500",
+  "pushed_before_review": true,
+  "remote_sha_confirmed_before_review": "069d66c352199a95fa2f622cf0ed673c6b10c500",
+  "review_rounds": [
+    {
+      "round": 1,
+      "verdict": "HOLD 2 / 0 / 0",
+      "findings": [
+        "B-R1-01 zlib completeness",
+        "B-R1-02 unbounded inflation"
+      ],
+      "candidate": "2b08132b662b3f8660a84084b7666c6b9a61108f",
+      "evidence_commit": "c19d57e257bb5f74853766d5681e5934b780d53b"
+    },
+    {
+      "round": 2,
+      "verdict": "PASS 0 / 0 / 0",
+      "blocking": 0,
+      "actionable_non_blocking": 0,
+      "excessive": 0,
+      "closed": [
+        "B-R1-01",
+        "B-R1-02"
+      ],
+      "new_findings": "none",
+      "candidate": "23a6dce30ed9a88136379fdbcc762789de20dfef",
+      "evidence_commit": "069d66c352199a95fa2f622cf0ed673c6b10c500"
+    }
+  ],
+  "accepted_scope": {
+    "matched_raster_4k_jpeg_png_full_frame_decode": true,
+    "all_pixel_output_fidelity": true,
+    "codec_output_differential": true,
+    "full_frame_admission_and_refusal": true,
+    "bounded_whole_process_memory_observations": true,
+    "stream_strictness_and_inflation_bounds": true
+  },
+  "not_accepted": [
+    "WIC internal memory characteristics",
+    "allocator reservations or true concurrent peak",
+    "codec memory advantage or latency ranking",
+    "product decoder adoption/tolerance",
+    "ICC/EXIF product policy",
+    "16K full decode",
+    "true partial/region/sequential/tiled decode",
+    "cooperative decoder cancellation",
+    "product memory SLO",
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3 start",
+    "Runtime/GPU/Upload",
+    "measured R0",
+    "UX/video acceptance",
+    "main merge/release",
+    "application-window GUI startup"
+  ],
+  "reviewer_attribution": "Reviewer-reported independent checks (archive/member digests, corruption experiments on the real output, portable re-computation of both Native records, Pillow cross-check, Gate/storage reconciliation) are retained as reported; the reviewer did not run a new Windows decode, Refine Gate or GUI action.",
+  "caller_disposition": "ADR-0009 section 2 as adopted for technically completed limited slices; not a new grant from the reviewer."
+}

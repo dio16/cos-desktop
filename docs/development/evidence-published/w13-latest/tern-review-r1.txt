@@ -1,0 +1,302 @@
+MP-IMG2-W13 — 独立評価 Round 1
+HOLD
+
+添付のNative出力PNGを使って、W13のstreaming verifierが破損したzlibデータを正常な全フレーム出力として受け入れる問題を再現しました。
+
+B-R1-01 — BLOCKING：不完全なzlib streamを受理
+
+対象：
+apps/desktop/devtools/img2/w13_full_oracle.py の verify_full_output()
+apps/desktop/devtools/img2/w7_large_oracle.py の iter_png_rows()
+
+Native S01から取得した実際の299,214バイトのPNGに対し、IDATのzlib終端からAdler-32チェックサム4バイトを除去し、PNG chunk長とCRCを正しく再計算しました。
+
+入力
+
+	
+
+独立再実行結果
+
+
+
+
+元のNative PNG
+
+	
+
+ok=true
+
+
+
+
+zlib終端Adler-32を除去したPNG
+
+	
+
+ok=true（誤受理）
+
+
+
+
+zlib終端に余分なバイトを付加したPNG
+
+	
+
+ok=true（誤受理）
+
+
+
+
+Adler-32の値を破損させたPNG
+
+	
+
+拒否
+
+原因は、W7の行iteratorが4096行を出力すると直ちにreturnし、inflater.eof、unused_data、残余展開データの検査を実行しないことです。W13もそのiteratorをそのまま使用しています。
+
+これはPNGの外側のCRC検証では検出できません。全画素が期待値と一致していても、圧縮stream自体が完全とは限りません。
+
+修正には、正常な全行出力に加えてzlib streamの完全終端、余剰圧縮データ・余剰展開データの不存在を検証する必要があります。既存W7の意味を変更せず、W13専用の厳格な読み取り経路として修正可能か判断してください。
+
+B-R1-02 — BLOCKING：展開バイト数の上限が実装されていない
+
+対象：
+w7_large_oracle.py:150–157
+w13_full_oracle.py:43–83
+
+問題： inflater.decompress(body)に出力量制限がありません。W13は圧縮PNGを8MiB以下に制限していますが、展開後のデータ量を制限していません。
+
+実際のNative PNGの画素データを維持し、zlib streamの末尾に展開後20MiBの追加データを入れて再圧縮しました。
+
+検査
+
+	
+
+結果
+
+
+
+
+改変後PNG
+
+	
+
+218,947 bytes
+
+
+
+
+正規のscanlineデータ
+
+	
+
+67,112,960 bytes
+
+
+
+
+追加された展開データ
+
+	
+
+20,971,520 bytes
+
+
+
+
+実際の展開データ合計
+
+	
+
+88,084,480 bytes
+
+
+
+
+W13 verifier
+
+	
+
+ok=true
+
+
+
+
+W13報告 inflated_rgba_bytes
+
+	
+
+67,108,864 bytes
+
+行を検査する前に追加データまで展開され、4096行を読んだ時点で処理が終了します。報告されるinflated_rgba_bytesは定数であり、実際の展開量を計測した値ではありません。
+
+これはB-R1-01の終端整合性とは別に、展開処理そのものが宣言された有界メモリ処理になっていない問題です。
+
+修正条件： W13で実際の展開量を制限し、4096行分のscanline/filter byte数を超えた時点で拒否すること。展開を適切に分割し、1回のdecompress()で巨大な未検証バッファを生成できないようにしてください。余剰展開データ、zlib stream不完全、後続の余剰圧縮データをそれぞれnegative testで検証してください。
+
+修正後はB-R1-01と合わせて、正常PNG、チェックサム欠落、余剰圧縮データ、余剰展開データ、過大膨張の受理・拒否を独立に確認する必要があります。
+
+その他の指定評価
+
+評価項目
+
+	
+
+判定
+
+
+
+
+4K JPEG/PNG入力ラスターの独立性
+
+	
+
+PASS
+
+
+
+
+Native出力4件の全画素一致
+
+	
+
+PASS
+
+
+
+
+2回のNative repeat・拒否ケース
+
+	
+
+PASS
+
+
+
+
+8MiB encoded PNG上限
+
+	
+
+PASS
+
+
+
+
+zlib完全性・厳密な展開量上限
+
+	
+
+BLOCKING 2件
+
+
+
+
+Whole-processメモリ観測の解釈
+
+	
+
+PASS
+
+
+
+
+失敗・superseded Native履歴
+
+	
+
+PASS
+
+
+
+
+失敗Build Gateと明示的な1回の置換
+
+	
+
+PASS
+
+
+
+
+9 Gate・27 check・477 artifact
+
+	
+
+PASS
+
+
+
+
+Storage・削除後verify
+
+	
+
+PASS
+
+
+
+
+未測定・未承認事項の区別
+
+	
+
+PASS
+
+正常なNative証拠については、両repeatの出力4件を別実装のPillowでも復元しました。各出力のRGBA SHA-256は63145a22…で一致しています。固定verifierのポータブル再計算も両記録で成功しました。ただし、正常入力の画素一致は破損入力を拒否できる証明ではありません。
+
+履歴は、初期例外、source変更による2件の旧Native記録の失効、Git object不在時にmutation成功を主張しない挙動を区別しています。失敗した初回Build Gateも、新しい成功Gateに置き換えられた記録として保持されています。
+
+Gateについては、9受領書の全27 checkが成功し、53件×9 Gateのartifact集合が一致しました。Candidate時点の文書2件もGitHubのRAW blobと照合済みです。Storageは10パス、16,882ファイル、4,046,607,436論理バイトで整合し、削除後の9件のverifyは元の受領書と一致しています。
+
+再評価に必要な条件
+
+今回はdevtoolのPNG出力検証経路に限定して修正してください。W7の既存受入挙動や製品decoderを無断変更する必要はありません。
+
+W13の検証器とテストはSOURCE_FILESに含まれるため、修正後はNative SOURCEを再固定し、Windows Native 2回を再取得してください。旧Native記録のsource SHAを書き換えないでください。
+
+その後、Gate-declared outputsを固定して、新候補に対する全9 Gateを再実行し、docs-only証拠commit、通常のdev:dev push、remote SHA確認を済ませてから再評価してください。
+
+GUI startupは引き続きNOT_RUNです。Full MP-IMG2 Decode Exit、MP-IMG3、製品decoder採用、メモリSLO、Runtime、main/releaseへの権限は付与されません。
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+2
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+0
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+W13 LIMITED TECHNICAL COMPLETION：未承認
+
+HOLD — 2 / 0 / 0
+
+REVIEW COMPLETE

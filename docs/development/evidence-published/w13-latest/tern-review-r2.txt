@@ -1,0 +1,318 @@
+MP-IMG2-W13 — 独立再評価 Round 2
+PASS
+
+BLOCKING 0 / ACTIONABLE NON-BLOCKING 0 / EXCESSIVE 0
+
+B-R1-01、B-R1-02ともにCLOSED。新規指摘はありません。
+
+添付のソース・証拠ZIP、外部manifest、GitHub固定コミットを検査し、前回の不正PNG受理を再現する改変試験を実施しました。
+
+1. 前回BLOCKINGの修正確認
+
+指摘
+
+	
+
+実際の再検証
+
+	
+
+判定
+
+
+
+
+B-R1-01：zlib終端未検証
+
+	
+
+Adler-32欠落、圧縮stream切断、末尾データ追加をすべて拒否
+
+	
+
+CLOSED
+
+
+
+
+B-R1-02：展開量の未制限
+
+	
+
+正常4096行の後ろに1MiBおよび20MiBの展開データを付加しても拒否
+
+	
+
+CLOSED
+
+実Native PNGのIDATを改変し、PNG chunk長とCRCを正しく再計算して試験しました。
+
+改変内容
+
+	
+
+修正後の結果
+
+
+
+
+Adler-32を削除
+
+	
+
+png_inflate_incomplete
+
+
+
+
+zlib stream末尾に余剰圧縮データ
+
+	
+
+png_unexpected_compressed_tail
+
+
+
+
+正常画素の後ろに1MiB追加
+
+	
+
+png_inflated_over_bound
+
+
+
+
+正常画素の後ろに20MiB追加
+
+	
+
+png_inflated_over_bound
+
+
+
+
+streamを途中で切断
+
+	
+
+png_inflate_incomplete
+
+新readerはdecompress(..., max_length)を使用し、実展開量を上限と照合します。期待値を超過したデータが正常画像として通過する前回の欠陥は再現しませんでした。
+
+2. Nativeと固定候補
+
+項目
+
+	
+
+確認結果
+
+
+
+
+Source ZIP
+
+	
+
+33/33ファイル一致
+
+
+
+
+Evidence ZIP
+
+	
+
+40/40ファイル一致
+
+
+
+
+Remote dev
+
+	
+
+069d66c352199a95fa2f622cf0ed673c6b10c500
+
+
+
+
+Gate candidate
+
+	
+
+23a6dce30ed9a88136379fdbcc762789de20dfef
+
+
+
+
+Native SOURCE
+
+	
+
+9e8dab753b0379d02e053b61234cf6df610a42d4
+
+
+
+
+Candidate後の変更
+
+	
+
+docs/evidenceのみ
+
+2本のNative記録を修正後verifierでポータブル再計算し、両方とも整合しました。
+
+各4ケース・4 worker
+
+各2件のfull-frame output成功
+
+各2件のOnLoad前拒否
+
+各33,554,432画素を検証
+
+Canonical RGBA SHA-256：63145a2281fd5ba07f9c8bb212f983427f353bb3af498a971a823b816eccc610
+
+Pillowと独立した座標式でも、保持された4096²出力の全画素一致を確認しました。4つのretained output PNGはバイト単位でも一致します。
+
+旧Native記録r4/r5はSUPERSEDED_PINとして保持され、新SOURCEの成功証拠には転用されていません。
+
+3. Refine Gateと保存証拠
+
+検証
+
+	
+
+結果
+
+
+
+
+新Gate
+
+	
+
+9/9 SUCCEEDED
+
+
+
+
+Check
+
+	
+
+27/27 PASS
+
+
+
+
+Candidate digest
+
+	
+
+9件共通
+
+
+
+
+Artifact集合
+
+	
+
+69件×9 Gate
+
+
+
+
+Artifact照合
+
+	
+
+621件一致
+
+
+
+
+各Gate timeout
+
+	
+
+600,000ms以内
+
+
+
+
+削除後gate.verify
+
+	
+
+9/9一致
+
+
+
+
+Native preflight aggregate
+
+	
+
+UNKNOWN維持
+
+候補時点からdocs-only変更された14ファイルについても、GitHubの候補blobからSHA-256を再計算し、Gate-declared artifactとの一致を確認しました。
+
+Storageは10対象、17,026ファイル・4,049,790,033論理バイトで集計が一致しています。失敗した旧Build Gate workspaceと旧state rootは保持されています。
+
+4. 未測定・権限境界
+
+今回のPASSはW13の4K JPEG/PNG full-frame output fidelityと有界検証に限定されます。
+
+Whole-processメモリ観測は内部scratchやcodec優位性の証明ではありません。True partial decode、cooperative cancellation、16K full decode、製品memory SLOはいずれも未実証です。
+
+Application-window GUI startupはNOT_RUNのままです。Full MP-IMG2 Decode Exit、MP-IMG3、decoder採用・製品policy、Runtime、main/releaseへの承認は含みません。
+
+なお、こちらでは新規Windows WIC実行やRefine Gate実行はしていません。固定ソース・保存Native証拠の再計算、改変試験、GitHub blobとGate受領書の照合に基づく評価です。
+
+最終判定
+
+分類
+
+	
+
+件数
+
+
+
+
+BLOCKING
+
+	
+
+0
+
+
+
+
+ACTIONABLE NON-BLOCKING
+
+	
+
+0
+
+
+
+
+EXCESSIVE
+
+	
+
+0
+
+B-R1-01：CLOSED
+B-R1-02：CLOSED
+新規指摘：なし
+
+MP-IMG2-W13 LIMITED TECHNICAL COMPLETION：承認
+
+PASS 0 / 0 / 0
+
+REVIEW COMPLETE

@@ -1,0 +1,39 @@
+MP-IMG2-W13 independent evaluation, round 1. Inspect the actual attached source and evidence; do not rely on my summary.
+
+PUSH-BEFORE-EVALUATION satisfied: normal explicit dev:dev push succeeded and `git ls-remote origin refs/heads/dev` returned c19d57e257bb5f74853766d5681e5934b780d53b immediately before this submission.
+
+Repository https://github.com/dio16/cos-desktop, branch dev.
+Gate/source candidate: 2b08132b662b3f8660a84084b7666c6b9a61108f, candidate digest sha256:7556e3f86f831eeda3dc01c09bd55db93e01d8b5525f6595bab17846191a269b.
+Native SOURCE: f76c811c3cf709821381eaf1c2966e5bf6b2c5a7 (both retained Windows records).
+Confirmed remote dev / evidence commit: c19d57e257bb5f74853766d5681e5934b780d53b.
+Superseded Native pins: f73e5c3 (two complete but non-closable runs).
+Fixed tree: https://github.com/dio16/cos-desktop/tree/c19d57e257bb5f74853766d5681e5934b780d53b
+Evidence: docs/development/evidence-published/w13-latest/ ; plan §19.65, BUILD_AND_RUN §4.33, TESTING §24. Sole owning contract DC-MP-IMG2.
+
+Attachments (exact raw Git blobs; every member verified byte-equal to `git show`; archives built with command-local core.autocrlf=false):
+1. w13-review-source-r1.zip — 32 files at 2b08132.
+2. w13-review-evidence-r1.zip — 39 files at c19d57e.
+3. w13-review-package-r1.json outside both archives: pins, member manifests, digests, push audit.
+
+What W13 did: the same 4096² eight-bit grayscale raster — unchanged W11 DC-only JPEG and unchanged W12 streamed PNG — is decoded with NO ROI request, so the existing OnLoad path materializes and publishes a complete frame.
+- Four scenarios, four serial lifetimes: S01 JPEG and S02 PNG full-frame decode; S03 JPEG and S04 PNG refuse at max_dimension 4095 before OnLoad. Decode workers hold at after_onload; refusal workers hold at before_admission.
+- Every output is read row by row: structure, CRC, bounded inflation (exactly 67,108,864 bytes) and each of 16,777,216 pixels compared to level(bx,by)=48+20*((3*bx+5*by+(bx^by)) mod 9) with alpha 255. No full RGBA array is built, and no decoder output is used as its own expectation.
+- 33,554,432 output pixels verified across the two retained runs' outputs; JPEG and PNG canonical RGBA digests are identical (63145a22…); both refusals publish no output; decoder names/formats are the observed JpegBitmapDecoder/PngBitmapDecoder with Gray8.
+- Memory: four whole-process windows, classified OBSERVED_WHOLE_PROCESS_DIFFERENTIAL. No same-process delta, WIC-internal scratch, reservation, concurrent peak, codec advantage, latency benchmark or SLO claim.
+
+Nine independent Refine Gates on one candidate digest, 27 checks (exact IDs in the receipts):
+workspace 7/7; images 9/9; w8 1/1; w9 1/1; w10 1/1; w11 2/2; w12 2/2; w13 2/2; build 2/2.
+53 declared artifacts × 9 Gates = 477 captures match receipts and raw blobs. Fresh workspace: 535 Rust passes / 1 ignored, R0 316 passes / 36 skipped. Preflight aggregate stays UNKNOWN.
+
+Please judge independently, and specifically these points:
+1. Whether full-frame fidelity is established by the retained bytes: two producers, independent input all-pixel proof, row-by-row output comparison, canonical RGBA equality, and refusal with no output.
+2. Whether the streaming verifier really holds the bounds it claims (8 MiB encoded, 32 MiB report, exact inflated size, no full array, trailing/truncated rejection).
+3. Whether the memory interpretation stays honest, including that full-frame pixel verification is not a memory or latency result.
+4. Whether history is truthful: one aborted run that read ROI-only fields the probe omits for a no-ROI request, two complete runs superseded when a test repair changed the source set (replay refused with `source_lf_mismatch`), and one suite run that correctly refused to claim mutations while its control was unverifiable.
+5. Whether the first build Gate's failure (reused request pointed its digest check at the W12 target) and its single explicit replacement were handled correctly, with the failed record kept.
+6. Storage: nine successful checkouts plus one approved target root removed — 16,882 files / 4,046,607,436 logical bytes — with all nine native integrity results unchanged; the failed build workspace and earlier W11/W12 state roots were kept. The Gate-built 32,275,456-byte executable was moved once with digest sha256:a91146db9a0da180b5ee5ceeb10fbb5fe544ce4d7a3361c6a1ce066c73d52de3.
+7. Whether any claim overstates measured facts. Application-window GUI startup is NOT_RUN because live control approval was unanswered.
+
+Caller authority: implementation, repair and limited technically-completed-slice disposition under the existing ADR-0009/0013 rules, plus explicit dev push. NOT authorized: new design, decoder adoption/tolerance or ranking, ICC/EXIF policy, 16K adoption, partial/sequential/tiled decode implementation, scratch/allocator measurement design, cooperative cancellation, product memory SLO, Runtime/GPU/Upload, measured R0, full MP-IMG2 Decode Exit, MP-IMG3, main or release.
+
+Return findings classified BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE with explicit counts, and finish with PASS 0 / 0 / 0 or HOLD with counts plus a separate line REVIEW COMPLETE. Do not provide a next-task directive in this round.

@@ -12,5 +12,7 @@
     "reason": "Live computer approval unanswered; no GUI startup claim."
   },
   "w13_doc_links_missing": [],
-  "gate_receipts_linked": 9
+  "gate_receipts_linked": 9,
+  "review_rounds_linked": 2,
+  "disposition_linked": true
 }
