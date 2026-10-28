@@ -69,6 +69,10 @@ UNMEASURED = (
 CLASSIFICATIONS = ("DECODED_CONTENT_VERIFIED", "DECODED_DIFFERENTIAL_ONLY", "UNSUPPORTED",
                    "OVERSIZE", "CORRUPT_REFUSED", "TAMPER_NOT_VERIFIED", "TIMEOUT",
                    "CANCELLED", "UNVERIFIED_RACE", "NOT_RUN")
+CANONICAL_NORMALIZATION = "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+FRAME_KEYS = {"marker", "variant", "precision", "width", "height", "components",
+              "component_count"}
+COMPONENT_KEYS = {"id", "sampling", "h", "v", "quant_table"}
 WIC_STAGES = ("process_observed", "input_opened", "metadata_available", "before_admission",
               "admission_started", "admitted", "before_onload", "onload_entered",
               "onload_returned", "after_onload", "conversion_entered", "conversion_returned",
@@ -173,6 +177,9 @@ def _source_identity(record, source_root) -> bool:
         need(item.get("unchanged_after_run") is True, "source_changed_during_run:" + path)
     probes = identity.get("probes")
     need(isinstance(probes, dict) and set(probes) == {"wic", "gdiplus"}, "probe_identity_missing")
+    for name, relative in (("wic", "apps/desktop/examples/decode_compare/wic_probe.ps1"),
+                           ("gdiplus", "apps/desktop/examples/decode_compare/gdiplus_probe.ps1")):
+        need(probes[name] == sha((ROOT / relative).read_bytes()), "probe_digest_mismatch:" + name)
     if source_root is None:
         return False
     root = Path(source_root)
@@ -226,12 +233,15 @@ def _wic_leg(case, leg, fixture_bytes, expected_absolute):
                 "declared_scratch_bytes"):
         need(result.get(key) == values[key], "wic_requirement_mismatch:" + key)
     need(result.get("input_bytes") == len(fixture_bytes), "wic_input_bytes_mismatch")
+    need(record.get("outcome") == result.get("outcome"), "wic_outcome_disagrees_with_probe")
     stages, _ = _trace(record)
     need([stage["stage"] for stage in stages] == list(WIC_STAGES), "wic_stage_sequence_invalid")
     need(record.get("trace_complete") is True and record.get("trace_partial_bytes") == 0,
          "wic_trace_incomplete")
     need(record.get("identity_verified") is True, "wic_identity_not_verified")
-    need(isinstance(record.get("sample"), dict) and record["sample"].get("complete") is True,
+    sample = record.get("sample")
+    need(isinstance(sample, dict) and sample.get("complete") is True
+         and sample.get("status") == "complete" and sample.get("failure") is None,
          "wic_process_sample_missing")
     output = record.get("output") or {}
     need(output.get("present") is True and output.get("hex"), "wic_output_missing")
@@ -256,6 +266,38 @@ def _gdi_leg(case, leg):
     data = bytes.fromhex(output["hex"])
     need(output["sha256"] == sha(data) and output["bytes"] == len(data), "gdiplus_output_digest_mismatch")
     return data
+
+
+def _check_structure(recorded, parsed):
+    need(isinstance(recorded, dict), "structure_missing")
+    frame = recorded.get("frame")
+    need(isinstance(frame, dict) and set(frame) == FRAME_KEYS, "frame_structure_invalid")
+    reference = parsed["frame"]
+    for key in ("variant", "precision", "width", "height", "component_count"):
+        need(frame.get(key) == reference[key], "frame_field_mismatch:" + key)
+    need(isinstance(frame.get("components"), list) and len(frame["components"]) == len(reference["components"]),
+         "frame_component_count_mismatch")
+    for recorded_component, actual in zip(frame["components"], reference["components"]):
+        need(set(recorded_component) == COMPONENT_KEYS, "component_structure_invalid")
+        need(recorded_component["id"] == actual["id"]
+             and recorded_component["sampling"] == actual["sampling"]
+             and recorded_component["h"] == actual["h"] and recorded_component["v"] == actual["v"]
+             and recorded_component["quant_table"] == actual["quant_table"],
+             "component_field_mismatch")
+    need(recorded.get("bytes") == parsed["bytes"], "structure_byte_count_mismatch")
+    need(recorded.get("progressive") == parsed["progressive"], "progressive_flag_mismatch")
+    segments = recorded.get("segments")
+    need(isinstance(segments, list) and len(segments) == len(parsed["segments"]),
+         "segment_list_mismatch")
+    for recorded_segment, actual in zip(segments, parsed["segments"]):
+        need(recorded_segment.get("marker") == actual["marker"]
+             and recorded_segment.get("length") == actual["length"], "segment_marker_mismatch")
+    recorded_quant = recorded.get("quant")
+    need(isinstance(recorded_quant, dict), "quant_tables_missing")
+    for key, value in parsed["quant"].items():
+        need(recorded_quant.get(str(key)) == value, "quant_table_mismatch")
+    huffman = recorded.get("huffman")
+    need(isinstance(huffman, list) and len(huffman) == len(parsed["huffman"]), "huffman_tables_mismatch")
 
 
 def _trace(record):
@@ -314,6 +356,8 @@ def verify(record: dict, source_root=None) -> dict:
             fixture_bytes = _content(case["id"])
             need(sha(fixture_bytes) == fixtures[case["id"]]["sha256"], "fixture_bytes_not_regenerated")
             need(row.get("classification") in CLASSIFICATIONS, "classification_vocabulary_invalid")
+            if case["kind"] in ("dc", "encoded"):
+                _check_structure(row.get("structure"), parse(fixture_bytes))
             expected = None
             if case["reference"] == "ABSOLUTE":
                 expected = absolute_rgba(parse(fixture_bytes))
@@ -328,6 +372,8 @@ def verify(record: dict, source_root=None) -> dict:
                 comparison = row.get("comparison")
                 need(isinstance(comparison, dict) and "error" not in comparison,
                      "differential_comparison_missing:" + case["id"])
+                need(comparison.get("normalization") == CANONICAL_NORMALIZATION,
+                     "normalization_policy_changed:" + case["id"])
                 recomputed = canonical_compare(wic, gdi, BOUNDS["max_report_bytes"])
                 for key in ("exact", "pixels", "differing_pixels", "differing_channels",
                             "maximum_channel_difference", "first_difference"):
@@ -358,6 +404,12 @@ def verify(record: dict, source_root=None) -> dict:
                 for leg in row.get("legs") or []:
                     need(leg.get("classification") not in ("DECODED_CONTENT_VERIFIED",),
                          "malformed_leg_promoted:" + case["id"])
+                    observed = ((leg.get("leg") or {}).get("probe_result") or {}).get("outcome")
+                    expected_class = {"decoded": "TAMPER_NOT_VERIFIED", "corrupt": "CORRUPT_REFUSED",
+                                      "error": "TAMPER_NOT_VERIFIED", "unsupported": "UNSUPPORTED",
+                                      "oversize": "OVERSIZE"}.get(observed)
+                    need(expected_class is not None and leg.get("classification") == expected_class,
+                         "malformed_leg_classification_inconsistent:" + case["id"])
                 not_verified += 1
         need(integer(absolute_verified) and absolute_verified == 3, "absolute_reference_case_count_invalid")
         need(differential == 5, "differential_case_count_invalid")
