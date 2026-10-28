@@ -1,0 +1,8 @@
+{
+  "observed_exception": "FileNotFoundError",
+  "missing_path": "C:\\dev\\cos-desktop-verification\\w11\\monitor-repro-r1\\workers\\S01_before_onload\\observe\\pending.png",
+  "actual_output_exists": true,
+  "actual_output_bytes": 29,
+  "scope": "Controlled real-filesystem stale enumeration after the same owned pending-to-final rename; not a Native decoder run.",
+  "native_r3_attribution": "Native r3 FileNotFoundError with final output present and last trace before_publish is consistent with this race; exact Native exception path was not retained, so that attribution remains inference."
+}

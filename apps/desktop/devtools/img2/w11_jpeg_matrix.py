@@ -113,7 +113,21 @@ def _work_bytes(work: Path) -> int:
         entries += 1
         if entries > 256 or _is_reparse(path):
             raise ValueError("work_entry_bound_or_reparse")
-        info = path.stat()
+        try:
+            info = path.stat()
+        except FileNotFoundError:
+            parts = path.relative_to(work).parts
+            owned_publish = (
+                len(parts) == 4 and parts[0] == "workers" and parts[2:] == ("observe", "pending.png")
+                and any(parts[1] == case["id"] + "_" + hold
+                        for case in SCENARIOS for hold in _hold_name(case))
+            )
+            if not owned_publish:
+                raise
+            # The probe atomically renames this owned file to output.png. A stale
+            # enumeration must reserve its full cap, not undercount or retry it.
+            total += BOUNDS["max_output_bytes"]
+            continue
         if stat.S_ISREG(info.st_mode):
             total += info.st_size
         elif not stat.S_ISDIR(info.st_mode):
@@ -144,11 +158,16 @@ def _guard(work: Path, started: int, workers=()) -> int:
             if _is_reparse(path) or not path.is_file() or path.stat().st_size > BOUNDS["max_capture_bytes"]:
                 raise ValueError("capture_cap_or_path_invalid")
         for path in (worker.output, worker.observe / "pending.png", worker.observe / "pending.bmp"):
-            if path.exists():
-                if _is_reparse(path) or not path.is_file():
-                    raise ValueError("output_path_invalid")
-                if path.stat().st_size > BOUNDS["max_output_bytes"]:
-                    raise ValueError("output_cap_exceeded")
+            if _is_reparse(path):
+                raise ValueError("output_path_invalid")
+            try:
+                info = path.stat()
+            except FileNotFoundError:
+                continue
+            if not stat.S_ISREG(info.st_mode):
+                raise ValueError("output_path_invalid")
+            if info.st_size > BOUNDS["max_output_bytes"]:
+                raise ValueError("output_cap_exceeded")
     return work_bytes
 
 

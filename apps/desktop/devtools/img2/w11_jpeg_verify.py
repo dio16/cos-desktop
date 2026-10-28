@@ -50,6 +50,7 @@ SOURCE_FILES = tuple(dict.fromkeys((*W7_SOURCE_FILES,
     "apps/desktop/devtools/img2/w11_jpeg_verify.py",
     "apps/desktop/devtools/img2/tests/test_w11_jpeg_fixtures.py",
     "apps/desktop/devtools/img2/tests/test_w11_jpeg_negative.py",
+    "apps/desktop/devtools/img2/tests/test_w11_jpeg_monitor.py",
 )))
 ALLOCATION_SCOPE = {
     "process_counters": "PROCESS_LEVEL_OBSERVATION",

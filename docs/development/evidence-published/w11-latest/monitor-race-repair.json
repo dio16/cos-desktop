@@ -1,0 +1,70 @@
+{
+  "failed_source": "f5cbd5962eaf2435be5a4700e9fa7bfdd1e24f59",
+  "native_r3": {
+    "command": [
+      "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+      "-B",
+      "apps/desktop/devtools/img2/w11_jpeg_matrix.py",
+      "run",
+      "--work-root",
+      "C:/dev/cos-desktop-verification/w11/native-r3-work",
+      "--out",
+      "C:/dev/cos-desktop-verification/w11/native-r3-report.json",
+      "--pwsh",
+      "C:/Program Files/PowerShell/7/pwsh.exe"
+    ],
+    "cwd": "C:\\dev\\cos-desktop",
+    "exit_code": 2,
+    "duration_seconds": 47.47481929999776,
+    "stdout": {
+      "bytes": 43,
+      "sha256": "sha256:0dea7c89b5d0cf13b1ac57e3e2cfdd8a9c00a698ae85ac4019d0c35c9283a2e2"
+    },
+    "stderr": {
+      "bytes": 0,
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "native_error": {
+    "ok": false,
+    "reason": "FileNotFoundError"
+  },
+  "reproduction": {
+    "observed_exception": "FileNotFoundError",
+    "missing_path": "C:\\dev\\cos-desktop-verification\\w11\\monitor-repro-r1\\workers\\S01_before_onload\\observe\\pending.png",
+    "actual_output_exists": true,
+    "actual_output_bytes": 29,
+    "scope": "Controlled real-filesystem stale enumeration after the same owned pending-to-final rename; not a Native decoder run.",
+    "native_r3_attribution": "Native r3 FileNotFoundError with final output present and last trace before_publish is consistent with this race; exact Native exception path was not retained, so that attribution remains inference."
+  },
+  "repair": "The work monitor reserves the full output cap only for a disappeared, exact owned worker observe/pending.png during atomic publication. Missing immutable/foreign entries still fail. Output-path monitoring uses one stat rather than an exists/stat race. No retries or blanket missing-file suppression.",
+  "specific_tests": {
+    "count": 2,
+    "result": {
+      "command": [
+        "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "apps/desktop/devtools/img2/tests",
+        "-p",
+        "test_w11_jpeg_monitor.py"
+      ],
+      "cwd": "C:\\dev\\cos-desktop",
+      "exit_code": 0,
+      "duration_seconds": 0.29715009999927133,
+      "stdout": {
+        "bytes": 0,
+        "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "bytes": 105,
+        "sha256": "sha256:d276ce24f7df0df832d00f4a1a5c0f13780199247c21005b2c7d8868238f187a"
+      }
+    }
+  },
+  "preserved_failed_work": "C:/dev/cos-desktop-verification/w11/native-r3-work",
+  "next_native_scope": "Two explicit fresh runs r4/r5 after the repaired source is committed; prior CLI-only/lost-root and failed records do not count as Native evidence."
+}

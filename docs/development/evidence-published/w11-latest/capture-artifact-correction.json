@@ -1,0 +1,47 @@
+{
+  "defect": "The command wrapper used LABEL.json for metadata. Native --out selected that same name for r1/r2, so the wrapper overwrote both completed Native report roots after their successful CLI verdicts. These are not retained full Native evidence and are excluded from closure.",
+  "preserved": [
+    "native-r1-work",
+    "native-r2-work",
+    "native-r1.stdout",
+    "native-r2.stdout",
+    "native-r1.json",
+    "native-r2.json"
+  ],
+  "repair": "Metadata now uses exclusive LABEL.command.json. Actual generated output and child cwd were exercised by a throwaway sentinel command. New Native reports use separate *-report.json paths.",
+  "replacement_scope": "Exactly two new Native runs r3/r4 on the same pinned source; no new Refine Gate or product change.",
+  "utility_smoke": {
+    "exit_code": 0,
+    "actual_child_cwd": "C:\\dev\\cos-desktop-verification\\w11",
+    "original_named_output_preserved": true,
+    "exclusive_separate_metadata": true
+  },
+  "initial_cli_verdicts": [
+    {
+      "16k_full_decode_memory": "NOT_MEASURED",
+      "cases": 5,
+      "closure_eligible": true,
+      "gdi_16k": "NOT_RUN",
+      "memory_comparison": "SEPARATE_PROCESS_LIFETIMES",
+      "ok": true,
+      "refused_before_onload": 3,
+      "roi_outputs_verified": 6,
+      "source_identity_verified": true,
+      "true_partial_decode": "NOT_VERIFIED",
+      "workers": 9
+    },
+    {
+      "16k_full_decode_memory": "NOT_MEASURED",
+      "cases": 5,
+      "closure_eligible": true,
+      "gdi_16k": "NOT_RUN",
+      "memory_comparison": "SEPARATE_PROCESS_LIFETIMES",
+      "ok": true,
+      "refused_before_onload": 3,
+      "roi_outputs_verified": 6,
+      "source_identity_verified": true,
+      "true_partial_decode": "NOT_VERIFIED",
+      "workers": 9
+    }
+  ]
+}
