@@ -1,0 +1,43 @@
+MP-IMG2-W9 の固定SOURCE独立レビューを依頼します。対象は Windows WIC と GDI+ による progressive JPEG の実decode、multi-scan構造検証、canonical differential比較、malformedのfail-closed分類だけです。W8までのPASSやGateを今回の成功として流用しないでください。
+
+Repository: dio16/cos-desktop / branch dev / 未push。
+Native SOURCE: 47c7e375937b5ca8e672cd9112c9c82da3f860a0。
+製品・5 Gate候補: a8423ab696e6079ee17694ced4983b29280e3dbd。
+candidate digest: sha256:6dc5f5001226b29097e67d5193447f36a03c1abe9bb9ce477961be95f22aa68e。
+Evidence HEAD: 03d4b406f2157508ac632a0de14879095887cee4。
+Taskern packet: sha256:b05828a2d7f4ea3271279a49156414ca66f46f0377701c36c6e3519004394233。
+
+添付:
+- w9-review-source.zip: 候補a8423ab…のGit archive、807 entry、sha256:2cf50e85eccf4f78a3e4ec7855288d4c86184ab060e588eca12caff318a6c185。全entryが候補Git blobとraw/LF一致。
+- w9-review-evidence.zip: Evidence HEAD 03d4b40…のGit archive、42 file、sha256:b0614e3c1a60b84afe6c8a622954bb0cebd6ba85b3a6f7e4af829d6ecd08afa8。review-package-source.json(807 entry)を実memberとして含み、提出前に全entryをZIP実バイトと照合済み(不一致0)。
+- review-package.json(別添・日時付き改名)。
+
+実装:
+1. in-repo minimal SOF2 encoder: progressive grayscale 256²/1024²、初期DC scan(Ss=0,Se=0,Ah=Al=0)と初期AC scan(Ss=1,Se=63,Ah=Al=0)の2 scan。refinement scanは生成せず、対応も主張しません。
+2. 独立multi-scan parser: SOF2、scan数、SOS selector、Ss/Se、Ah/Al、entropy境界、byte stuffing、EOI、trailing bytesをencoded bytesから検証。SOF2の存在だけではvalidとしません。entropy内容は境界確認のみでNOT_VERIFIED。
+3. malformed 2件: 途中scan truncate、SOS spectral selection不正。baseline 4:2:0 control 1件はW8 accepted fixtureを回帰用に使用(capability件数に不算入)。
+4. WIC/GDI+の両legで実decode。canonical PNG RGBAを全画素比較し、differentialのみ。absolute referenceは主張しません。
+
+実測:
+- 12 test passed(fixtures 8、negative 12内包)。40 mutation classesを実verify()が全拒否、structural replayはsource_identity_verified=false / closure_eligible=false。
+- Native: 5 sources、10 legs、progressive 2/2がWIC/GDI+双方decode、differential exact、malformed 2件はcorrupt/refusedまたはDECODED_TAMPER_NOT_VERIFIED、control decode。14.8秒、work root 444,320 bytes。
+- 5 Gate: workspace 7/7(a7a5a749)、image replay 9/9(783fcc13)、JPEG replay 2/2(083d08bf)、W9 1/1(dca1dc7e)、Build 1/1(3c603a91)。同一候補・同一digest、33/33 artifact tuplesが5 Gate間で一致し候補Git blobともraw一致、生receipt保存。
+- 先行のcombined image Gate f992c83b は隔離checkoutにoracle出力ディレクトリが無くFAILED。成功を転送せず、checkの弱体化もしていません。
+- IMG2 206 PASS、W1～W8 replay、R0 340/12、Rust 535/539、feature clippy/build、WIC admission selftestは不変。
+- Build executableは NOT_CAPTURED。成功5 Gateのwork/repoとcheck環境targets 3件のみ削除(13,145 files、4,239,033,046 logical bytes)。削除後も5 Gate verifyはSUCCEEDED。
+
+重点確認:
+- SOF2/multi-scan構造が実encoded bytesから検証されているか。generator自己申告を承認していないか。
+- WIC/GDI+の実decodeが成立し、leg identity/outcome/outputが相互結合されているか。
+- differentialをabsolute correctnessへ誤昇格していないか。元画像を復元後の期待値にしていないか。
+- canonical比較が実バイトから再計算できるか。sampling/precision/scan構造の混同がないか。
+- malformedがfail-closedか。必須フィールド欠落を拒否できるか。full-frame admission、encoded size非流用、W2 stop契約。
+- W1～W8回帰とlegacy CLIの不変性、5 Gateの実receipt/artifact/SOURCE対応、storage前後integrity。
+- product decoder採用、tolerance、full Decode Exit、MP-IMG3、Runtimeへ権限拡大がないこと。
+
+実行可能範囲:
+添付だけではprivate Git objects、Windows decoder、Refine stateは使えません。fixture再生成、marker再解析、differential再計算、40 mutation replay、receipt照合は可能です。固定Git source-bound検証・Windows実行・Refine再実行・GUIはNOT_RUNと明記してください。Gitやテストを偽装してPASSにしないでください。
+
+今回は全JPEG/全progressive対応、refinement scan全種、製品decoder選定/adoption、製品tolerance、ICC/EXIF policy、16K full decode、true partial/sequential/tiled decode、scan単位partial materialization、内部scratch、実予約、true concurrent peak、cooperative cancellation、product SLO、full MP-IMG2 Decode Exit、MP-IMG3、Runtime、measured R0、UX/video、main/releaseを完了しません。未測定のまま保持できた場合にだけW9 LIMITED TECHNICAL COMPLETIONの可否を判断してください。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘はファイル・条件・再現・最小修正まで示してください。添付読取が未完なら未完と明示してください。最後に独立行で REVIEW COMPLETE、その次の最終行に verdict/countsを記してください。
