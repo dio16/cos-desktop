@@ -1,0 +1,209 @@
+{
+  "gate_candidate": "2b08132b662b3f8660a84084b7666c6b9a61108f",
+  "candidate_digest": "sha256:7556e3f86f831eeda3dc01c09bd55db93e01d8b5525f6595bab17846191a269b",
+  "artifacts_per_gate": 53,
+  "captured_artifacts_verified": 477,
+  "raw_git_blob_matches": 53,
+  "artifact_sets_identical": true,
+  "gates": {
+    "workspace": {
+      "gate_id": "cd1ee9e3-40c4-4cc9-94db-4b6317fcf85f",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "fmt",
+          "pass",
+          1026
+        ],
+        [
+          "metadata",
+          "pass",
+          147
+        ],
+        [
+          "dependency-self-test",
+          "pass",
+          546
+        ],
+        [
+          "dependency-rules",
+          "pass",
+          247
+        ],
+        [
+          "clippy",
+          "pass",
+          96700
+        ],
+        [
+          "tests",
+          "pass",
+          121936
+        ],
+        [
+          "r0-python",
+          "pass",
+          13483
+        ]
+      ]
+    },
+    "images": {
+      "gate_id": "eb7a3e7b-1f8b-461d-80bd-f0e3c7f3274d",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "img2-w1-w7",
+          "pass",
+          153373
+        ],
+        [
+          "w8-native-replay",
+          "pass",
+          29866
+        ],
+        [
+          "w7-native-replay",
+          "pass",
+          37662
+        ],
+        [
+          "w6-native-replay",
+          "pass",
+          11301
+        ],
+        [
+          "w5-native-replay",
+          "pass",
+          254
+        ],
+        [
+          "w4-native-replay",
+          "pass",
+          984
+        ],
+        [
+          "w3-retained-native-replay",
+          "pass",
+          1059
+        ],
+        [
+          "w1-runner-selftest",
+          "pass",
+          183
+        ],
+        [
+          "w2-oracle",
+          "pass",
+          13613
+        ]
+      ]
+    },
+    "w8": {
+      "gate_id": "9a4b0243-16e5-4974-8a73-7e3844d853b9",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "img2-w8",
+          "pass",
+          289782
+        ]
+      ]
+    },
+    "w9": {
+      "gate_id": "2f2c8126-8380-4a10-9d05-37312e295ac5",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "img2-w9",
+          "pass",
+          261466
+        ]
+      ]
+    },
+    "w10": {
+      "gate_id": "92e73289-6f05-44af-a220-1f4ff315ad78",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "img2-w10",
+          "pass",
+          73733
+        ]
+      ]
+    },
+    "w11": {
+      "gate_id": "7775e516-2052-48ec-8e48-c0a0aeec6034",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "w11-fixed-tests",
+          "pass",
+          26513
+        ],
+        [
+          "w11-source-verifier",
+          "pass",
+          25054
+        ]
+      ]
+    },
+    "w12": {
+      "gate_id": "3d300818-c9a1-4969-9b1d-20926d40fd38",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "w12-fixed-tests",
+          "pass",
+          48516
+        ],
+        [
+          "w12-source-verifier",
+          "pass",
+          3429
+        ]
+      ]
+    },
+    "w13": {
+      "gate_id": "62d008f1-a463-4326-a238-9a67a8c54e62",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "w13-fixed-tests",
+          "pass",
+          145720
+        ],
+        [
+          "w13-source-verifier",
+          "pass",
+          6764
+        ]
+      ]
+    },
+    "build": {
+      "gate_id": "c7bfa696-74bc-4696-b991-0f951ddef677",
+      "state": "SUCCEEDED",
+      "checks": [
+        [
+          "build",
+          "pass",
+          24760
+        ],
+        [
+          "built-binary-digest",
+          "pass",
+          199
+        ]
+      ]
+    }
+  },
+  "failed_gates": {
+    "build_r1": {
+      "gate_id": "44116023-41d2-453f-be85-11b1a52ec793",
+      "state": "FAILED",
+      "cause": "stale digest path from the reused W12 request",
+      "retained": true
+    }
+  },
+  "native_preflight": "UNKNOWN aggregate; admission diagnostics pass; runtime/output/authorization unknown",
+  "notes": "Nine directed Gates on one committed candidate; the build Gate was replaced once with an explicitly documented cause and the failed record kept."
+}

@@ -1,0 +1,15 @@
+{
+  "gate_id": "44116023-41d2-453f-be85-11b1a52ec793",
+  "gate_label": "mp-img2-w13-r1-build",
+  "state": "FAILED",
+  "cause": "The reused build request still pointed its built-binary-digest check at the W12 target root. The build check itself passed in 188.7 s; only the digest step failed with FileNotFoundError because the W13 executable lives in the W13 target root.",
+  "observed": "build pass, built-binary-digest fail (check_failed, exit 1)",
+  "retained": [
+    "failed Gate authority/record",
+    "work/repo",
+    "check logs",
+    "cleanup=complete"
+  ],
+  "repair": "The digest check path was corrected to the W13 target root. No check argument other than that path, no candidate, no declared output and no timeout changed.",
+  "replacement": "One explicit build Gate replacement on the same candidate; the failed record is not rewritten."
+}

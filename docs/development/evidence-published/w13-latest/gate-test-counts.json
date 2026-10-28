@@ -1,0 +1,34 @@
+{
+  "gates": {
+    "workspace": 7,
+    "images": 9,
+    "w8": 1,
+    "w9": 1,
+    "w10": 1,
+    "w11": 2,
+    "w12": 2,
+    "w13": 2,
+    "build": 2
+  },
+  "total_checks": 27,
+  "workspace_rust": {
+    "passed": 535,
+    "failed": 0,
+    "ignored": 1
+  },
+  "r0": {
+    "total": 352,
+    "executed": 316,
+    "passed": 316,
+    "skipped": 36,
+    "failures": 0,
+    "errors": 0
+  },
+  "w13_tests": {
+    "count": 9,
+    "passed": 9,
+    "negative_classes": 40
+  },
+  "feature_route": "NOT_RUN for W13; no Rust feature-code change.",
+  "basis": "Counts are taken from the nine independent Gates on candidate 2b08132 (digest 7556e3f8) and the retained W13 suite run; the earlier failed build Gate is not counted."
+}
