@@ -23,7 +23,7 @@ def _need(condition: bool, message: str) -> None:
 
 def segments(data: bytes) -> list[dict]:
     _need(data[:2] == b"\xff\xd8", "soi_missing")
-    out = []
+    out = [{"marker": "SOI", "offset": 0, "length": 2}]
     index = 2
     while index < len(data):
         _need(data[index] == 0xFF, "marker_prefix_missing")
