@@ -1,0 +1,39 @@
+MP-IMG2-W8 round 5 — round 4 のA-W8-R4-01(malformed WIC完了traceの未解析末尾)の修正確認を依頼します。変更はw8_jpeg_verify.pyと負例テストだけです。
+
+Repository: dio16/cos-desktop / branch dev / 未push。
+Native SOURCE: 05ea4d10ef6a24ce3a710d3de7365c023c60e838。
+製品・4 Gate候補: 73d53d04b1beda143fd6f3f8af00b234401d8800。
+candidate digest: sha256:fcc01cf75350fc29a030ae21ed00cab38573831fdb221bf11a6253e972d82c3d。
+Evidence HEAD: 568a3735c02ef37c885512435a8dedf84325b317。
+
+添付:
+- w8-review-source.zip: 候補73d53d0…、772 entry、sha256:e5e7464e48d631af10cc437843edb2475b8dd1d0234067bfd788abcda7ee75aa。全entryが候補Git blobとraw/LF一致。
+- w8-review-evidence.zip: Evidence HEAD 568a373…、47 file、sha256:116309fe468a1cf34fbbea58d02355eea3af2e0495c5a4d8c966ab4c2a237b7d。review-package-source.json(772 entry)を実memberとして含み、提出前に全entryを照合済み(不一致0)。
+- review-package.json(別添)。
+
+修正内容:
+- malformed WIC legで、終端probe_exit.complete=trueを受理する場合に `trace_complete is True`、`trace_partial_bytes == 0`、`trace_utf8` が改行で終わることを必須化。
+- 停止途中traceやpartial traceには適用せず、完了したmalformed WIC traceだけを対象。
+- 負例を43→45へ拡張: malformed_truncated(decoded経路)のtrace末尾追加、malformed_bad_length(corrupt経路)のtrace末尾追加。いずれもtrace長/SHA256/partial_bytesを整合させたcoherent mutationで、両方とも実verify()が拒否。45/45拒否、structural replayはsource_identity_verified=false / closure_eligible=false。
+
+再取得:
+- Native再実行: SOURCE 05ea4d1…、12 sources、20 legs、3 absolute(全画素一致)、5 differential(exact)、2 malformed TAMPER_NOT_VERIFIED、49.3秒。
+- 4 Gate: workspace 7/7(06412352)、image replay 9/9(6e61da1a)、W8 3/3(2e0234c1)、Build 1/1(683f4a31)。同一候補・同一digest、32/32 artifact tuples一致、候補Git blobともraw一致、生receipt保存。
+- 先行FAILED dispatches(probe LF identity以前、IMG2 300秒timeout、core 600秒超過)とround1〜4候補の成功は転送していません。
+- Build executableは NOT_CAPTURED。過去digestの転用なし。
+- 成功4 Gateのwork/repoとcheck環境targets 3件のみ削除(12,190 files、4,207,123,647 logical bytes)。削除後も4 Gate verifyはSUCCEEDED。
+- IMG2 194 PASS、W1～W7 replay、R0 340/12、Rust 535/539、feature clippy/build、WIC admission selftestは不変。
+
+重点確認:
+- malformed完了traceのpartial tailが拒否されること(decoded/corrupt両経路)。
+- absolute referenceがdecoder出力由来でないこと、differentialをabsoluteへ昇格していないこと。
+- sampling/precision混同、正規化、ICC/EXIF誤帰属、full-frame admission、encoded size非流用、stop契約。
+- 4 Gateの実bytes対応、manifest実在性、docs-only差分、artifact 32/32、storage前後integrity。
+- W1～W7回帰、product decoder採用/SLO無断批准がないこと。
+
+実行可能範囲:
+添付だけではprivate Git objects、Windows decoder、Refine stateは使えません。fixture再生成、marker再解析、absolute/differential再計算、45 mutation replay、receipt照合は可能です。固定Git source-bound検証・Windows実行・Refine再実行・GUIはNOT_RUNと明記してください。
+
+今回は全JPEG absolute correctness、全codec、decoder adoption、製品tolerance、ICC/EXIF policy、16K full decode、partial/sequential/tiled、内部scratch、実予約、concurrent peak、cooperative cancellation、product SLO、full Decode Exit、MP-IMG3、Runtime、measured R0、UX/video、main/releaseを完了しません。未測定のまま保持できた場合にだけW8 LIMITED TECHNICAL COMPLETIONの可否を判断してください。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘はファイル・条件・再現・最小修正まで示してください。最後に独立行で REVIEW COMPLETE、その次の最終行に verdict/countsを記してください。
