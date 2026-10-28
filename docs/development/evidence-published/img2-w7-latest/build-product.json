@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "candidate": "71951642d6d8acd519e5276a02e91595a9281971",
+  "build_gate": "7803c9f0-efee-446b-94cf-d2cf40a6e37b",
+  "bytes": 32275456,
+  "sha256": "sha256:a324d29bb1369c068c06e789ef56fd5be2b18d98705d2914262644b40add940a",
+  "measured_at": "2026-10-28T01:11:09Z",
+  "scope": "Actual isolated Build Gate Cargo output hashed before approved scratch disposal.",
+  "target_dir_note": "The operated Build check environment inherits CARGO_TARGET_DIR under the previous slice private root; this W7 run recreated that directory and the bytes above are its real output.",
+  "declared_immutable_artifact": false,
+  "retention": "The executable is disposable; the pinned source, receipt and logs are retained."
+}

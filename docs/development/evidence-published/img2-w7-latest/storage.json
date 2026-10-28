@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "candidate": "71951642d6d8acd519e5276a02e91595a9281971",
+  "approval": "Successful-Gate workspace disposal per AGENTS.md and the caller-authorized finite retention step, applied only to these five exact paths.",
+  "removal_targets": [
+    "state/gates/5a106756-1910-4173-add4-21e92e35717e/work/repo",
+    "state/gates/7803c9f0-efee-446b-94cf-d2cf40a6e37b/work/repo",
+    "(inherited) img2-w6-2026-10-28/targets/r3/clippy",
+    "(inherited) img2-w6-2026-10-28/targets/r3/tests",
+    "(inherited) img2-w6-2026-10-28/targets/r3/build"
+  ],
+  "removed_all": true,
+  "ownership": {
+    "process_dependencies": [],
+    "reparse_points": []
+  },
+  "inventory": [
+    {
+      "path": "state/gates/5a106756-1910-4173-add4-21e92e35717e/work/repo",
+      "files": 710,
+      "logical_bytes": 23613115
+    },
+    {
+      "path": "state/gates/7803c9f0-efee-446b-94cf-d2cf40a6e37b/work/repo",
+      "files": 710,
+      "logical_bytes": 23623186
+    },
+    {
+      "path": "(inherited) img2-w6-2026-10-28/targets/r3/clippy",
+      "files": 3015,
+      "logical_bytes": 663884472
+    },
+    {
+      "path": "(inherited) img2-w6-2026-10-28/targets/r3/tests",
+      "files": 3144,
+      "logical_bytes": 1844135248
+    },
+    {
+      "path": "(inherited) img2-w6-2026-10-28/targets/r3/build",
+      "files": 2911,
+      "logical_bytes": 1592997024
+    }
+  ],
+  "files_removed": 10490,
+  "logical_bytes_removed": 4148253045,
+  "post_disposal_verify": {
+    "quality": {
+      "state": "SUCCEEDED",
+      "artifacts": 33
+    },
+    "build": {
+      "state": "SUCCEEDED",
+      "artifacts": 33
+    }
+  },
+  "retained": [
+    "gate request/state/observations/artifacts/logs/check-spools",
+    "pinned source repository",
+    "native record and captures",
+    "private logs"
+  ],
+  "boundaries": [
+    "No failed, interrupted or nonterminal workspace is deleted.",
+    "No blanket deletion of build trees or immutable evidence.",
+    "Two target paths are the operated check environment values inherited from the previous slice; this run recreated them and they are build caches only."
+  ]
+}

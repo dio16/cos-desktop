@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "id": "5a106756-1910-4173-add4-21e92e35717e",
+  "candidate": "71951642d6d8acd519e5276a02e91595a9281971",
+  "candidate_digest": "sha256:e386bdfaf9315b8d95df1094e61222a5512d8a1d836e149c7e4b6d3b13c5299a",
+  "state": "SUCCEEDED",
+  "request_sha256": "sha256:6b92423044f7287dd0b9f3e15f91d5827b4822a5643c7c939b922b0de1df4cc3",
+  "verification": [
+    {
+      "id": "fmt",
+      "outcome": "pass"
+    },
+    {
+      "id": "metadata",
+      "outcome": "pass"
+    },
+    {
+      "id": "dependency-self-test",
+      "outcome": "pass"
+    },
+    {
+      "id": "dependency-rules",
+      "outcome": "pass"
+    },
+    {
+      "id": "clippy",
+      "outcome": "pass"
+    },
+    {
+      "id": "tests",
+      "outcome": "pass"
+    },
+    {
+      "id": "r0-python",
+      "outcome": "pass"
+    },
+    {
+      "id": "img2-python",
+      "outcome": "pass"
+    },
+    {
+      "id": "w2-probe-selftest",
+      "outcome": "pass"
+    },
+    {
+      "id": "w2-oracle",
+      "outcome": "pass"
+    },
+    {
+      "id": "w3-retained-native-replay",
+      "outcome": "pass"
+    },
+    {
+      "id": "wic-admission-selftest",
+      "outcome": "pass"
+    },
+    {
+      "id": "w1-runner-selftest",
+      "outcome": "pass"
+    },
+    {
+      "id": "w4-native-replay",
+      "outcome": "pass"
+    },
+    {
+      "id": "w5-native-replay",
+      "outcome": "pass"
+    },
+    {
+      "id": "w6-native-replay",
+      "outcome": "pass"
+    },
+    {
+      "id": "w7-fixtures",
+      "outcome": "pass"
+    },
+    {
+      "id": "w7-admission",
+      "outcome": "pass"
+    },
+    {
+      "id": "w7-negative",
+      "outcome": "pass"
+    },
+    {
+      "id": "w7-native-verify",
+      "outcome": "pass"
+    }
+  ],
+  "artifacts": 33,
+  "cleanup": "complete",
+  "absent_outputs": []
+}
