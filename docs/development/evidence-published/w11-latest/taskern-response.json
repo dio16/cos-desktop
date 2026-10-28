@@ -1,0 +1,340 @@
+{
+  "protocol": 1,
+  "ok": true,
+  "summary": {
+    "operation": "prepare",
+    "claim": "packet_compiled",
+    "plan_id": "cos-desktop-img2-w11",
+    "revision": 1,
+    "task_id": "img2-w11",
+    "packet_sha256": "sha256:99951d53fd3d74d225d8a8948c2736c283113474fb1c9e865d11a039e16eae5a"
+  },
+  "artifacts": {
+    "plan": {
+      "schema_version": 1,
+      "plan_id": "cos-desktop-img2-w11",
+      "revision": 1,
+      "goal": "Bounded WIC 4K/16K grayscale JPEG full-frame admission, ROI pixels and process memory observations under DC-MP-IMG2; no16K materialization or partial-decode claim.",
+      "invariants": [],
+      "milestones": [],
+      "tasks": [
+        {
+          "schema_version": 1,
+          "identity": {
+            "task_id": "img2-w11",
+            "plan_id": "cos-desktop-img2-w11",
+            "plan_revision": 1
+          },
+          "goal": "Execute S01-S05 with fixed full-frame limits; verify real4K ROI pixels and pre-OnLoad16K refusal independently, with source-bound evidence and honest process-memory observations.",
+          "inputs": [
+            {
+              "id": "directive",
+              "description": "Verbatim W11 directive at docs/development/evidence-published/w11-latest/tern-directive.txt; pushed clean W10 disposition HEAD133903874ddef3704417e1b0159ad445f7e7392f.",
+              "context_ids": []
+            },
+            {
+              "id": "canon",
+              "description": "DC-MP-IMG2, existing W2/W4/W6/W7 observation/admission/ROI contracts, W8 DC JPEG method, ADR0009/0012/0013 and unchanged strict W1-W10 source/verification bindings.",
+              "context_ids": []
+            }
+          ],
+          "constraints": [
+            {
+              "id": "scope",
+              "level": "MUST",
+              "text": "Only W11 experiment tooling/tests/docs/evidence. No accepted W1-W10 edits, WIC API/COM/newdependency/unsafe, product/Runtime/GPU/UI or main/release. No16K full decode or GDI16K execution."
+            },
+            {
+              "id": "budget",
+              "level": "MUST",
+              "text": "Limits4096dimension/16777216pixels/8depth/67108864decoded and scratch; encoded16MiB;1serialworker;45sworker/300sbatch;768MiB observed private; ROImax256x256x4. Explicit bounded capture/trace/output/report/work, live monitoring and kill/reap, never OS-quota guarantee."
+            },
+            {
+              "id": "memory",
+              "level": "MUST",
+              "text": "Reuse unchanged single-hold W2 worker and W6 sampler. S01/S02 each use three sequential independent worker lifetimes, one per before_onload/after_onload/before_publish hold; nine workers total over five scenarios. Distinct process/lifetime windows, never same-process allocation delta, WIC-only memory or truepeak."
+            },
+            {
+              "id": "truth",
+              "level": "MUST",
+              "text": "Streaming DC-only4K/16K JPEG producer without full-frame RGBA; independent bounded JPEG/entropy geometry validation and ROI coordinate oracle. Recompute real source format decoded/BGRA/scratch charge.16K refuses beforeOnLoad regardlessROI. ROI_OUTPUT_VERIFIED is never TRUE_PARTIAL_DECODE_VERIFIED."
+            },
+            {
+              "id": "workflow",
+              "level": "MUST",
+              "text": "Taskern packet; pinned Native source and repeat, fullcandidate5fresh independent Gates and identical output definitions; strict existingregressions; actual builddigest; exact successful-only disposal with nativeverifybefore/after. Commit/push explicitdev:dev and confirmremoteSHA BEFORE eachTern evaluation; PASS0/0/0 onlylimiteddisposition. Failed records retained; no auto retry."
+            }
+          ],
+          "outputs": [
+            {
+              "id": "tooling",
+              "description": "W11 streamingfixtures independent JPEG/ROI oracle boundedmatrix strictverifier hermetic/negative tests.",
+              "media_type": "text/plain"
+            },
+            {
+              "id": "native",
+              "description": "Two pinned realWindows5scenario/9serialworker runs with3stage memory windows per4Kscenario, retainedROI output bytes, trace/source/executable/fixture/pixel identity.",
+              "media_type": "application/json"
+            },
+            {
+              "id": "closure",
+              "description": "Strict regressions/quality, five committed-candidate independentGates, artifactcorrespondence, successfulscratchdisposal integrity, prepushed Ternreview and limiteddisposition.",
+              "media_type": "application/json"
+            }
+          ],
+          "acceptance": [
+            {
+              "id": "a1",
+              "statement": "A01/A02: Fixed five scenarios/order/budgets and two genuine boundedDC-only JPEG fixtures; independent encoded bytes/digest/8bit grayscale geometry and entropy; no full-frame RGBA generation.",
+              "output_ids": [
+                "tooling",
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a2",
+              "statement": "A03/A04/A05: Every real4K1x1/256x256 ROI pixel matches independent coordinates; both16K cases and4095edge limit refuse full-frame admission with exact orderedtrace and noOnLoad.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a3",
+              "statement": "A06/A07: Refusal/failure/stop/timeout never publishes validstale output; all ownedworkers killedwhenneeded/reaped; caps monitored; freshowned paths only.",
+              "output_ids": [
+                "tooling",
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a4",
+              "statement": "A08/A09/A10: Source/executable/fixture/output/result bindings agree; three available boundary windows per4Kscenario are separate lifetime observations; missing/internal/peak/reservation/partial16K facts remain unmeasured and ROI success cannot imply partialdecode.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a5",
+              "statement": "A11/A12: StrictW1-W10 regression preserved; portable structural verification never forges Git sourceclosure. Semantic mutations reject fixture/identity/geometry/budget/ROI/stage/output/cleanup/observation/classification contradictions.",
+              "output_ids": [
+                "tooling",
+                "closure"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a6",
+              "statement": "Five fresh fullcandidate Gates pass with same digest/output correspondence, original failures retained, actual buildretained and successful-only scratchdisposal verified; pushedsource/evidence remoteSHA beforeTernPASS0/0/0 and boundedCallerdisposition without fullIMG2/IMG3/GUI adoption.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            }
+          ],
+          "evaluation": [
+            {
+              "id": "behavior",
+              "kind": "automated",
+              "requirement": "Hermetic/negative tests plus realWindows S01-S05 repeated; independently parsed fixturegeometry andROI pixels, full-frame admission arithmetic/trace and process-lifetime counterwindows."
+            },
+            {
+              "id": "workflow",
+              "kind": "automated",
+              "requirement": "InstalledTaskernprepare, unchangedquality/strictW1-W10, five freshpinnedGates, immutableintegrity, exactsuccessfuldisposal, explicitdevpush/remoteSHA beforeTerncleanverdict."
+            }
+          ],
+          "dependencies": [],
+          "completion": {
+            "required_acceptance_ids": [
+              "a1",
+              "a2",
+              "a3",
+              "a4",
+              "a5",
+              "a6"
+            ],
+            "decision_owner": "caller"
+          },
+          "context": []
+        }
+      ]
+    },
+    "packet": {
+      "schema_version": 1,
+      "packet": {
+        "schema_version": 1,
+        "identity": {
+          "task_id": "img2-w11",
+          "plan_id": "cos-desktop-img2-w11",
+          "plan_revision": 1
+        },
+        "goal": "Execute S01-S05 with fixed full-frame limits; verify real4K ROI pixels and pre-OnLoad16K refusal independently, with source-bound evidence and honest process-memory observations.",
+        "inputs": [
+          {
+            "id": "directive",
+            "description": "Verbatim W11 directive at docs/development/evidence-published/w11-latest/tern-directive.txt; pushed clean W10 disposition HEAD133903874ddef3704417e1b0159ad445f7e7392f.",
+            "context_ids": []
+          },
+          {
+            "id": "canon",
+            "description": "DC-MP-IMG2, existing W2/W4/W6/W7 observation/admission/ROI contracts, W8 DC JPEG method, ADR0009/0012/0013 and unchanged strict W1-W10 source/verification bindings.",
+            "context_ids": []
+          }
+        ],
+        "constraints": [
+          {
+            "id": "scope",
+            "level": "MUST",
+            "text": "Only W11 experiment tooling/tests/docs/evidence. No accepted W1-W10 edits, WIC API/COM/newdependency/unsafe, product/Runtime/GPU/UI or main/release. No16K full decode or GDI16K execution."
+          },
+          {
+            "id": "budget",
+            "level": "MUST",
+            "text": "Limits4096dimension/16777216pixels/8depth/67108864decoded and scratch; encoded16MiB;1serialworker;45sworker/300sbatch;768MiB observed private; ROImax256x256x4. Explicit bounded capture/trace/output/report/work, live monitoring and kill/reap, never OS-quota guarantee."
+          },
+          {
+            "id": "memory",
+            "level": "MUST",
+            "text": "Reuse unchanged single-hold W2 worker and W6 sampler. S01/S02 each use three sequential independent worker lifetimes, one per before_onload/after_onload/before_publish hold; nine workers total over five scenarios. Distinct process/lifetime windows, never same-process allocation delta, WIC-only memory or truepeak."
+          },
+          {
+            "id": "truth",
+            "level": "MUST",
+            "text": "Streaming DC-only4K/16K JPEG producer without full-frame RGBA; independent bounded JPEG/entropy geometry validation and ROI coordinate oracle. Recompute real source format decoded/BGRA/scratch charge.16K refuses beforeOnLoad regardlessROI. ROI_OUTPUT_VERIFIED is never TRUE_PARTIAL_DECODE_VERIFIED."
+          },
+          {
+            "id": "workflow",
+            "level": "MUST",
+            "text": "Taskern packet; pinned Native source and repeat, fullcandidate5fresh independent Gates and identical output definitions; strict existingregressions; actual builddigest; exact successful-only disposal with nativeverifybefore/after. Commit/push explicitdev:dev and confirmremoteSHA BEFORE eachTern evaluation; PASS0/0/0 onlylimiteddisposition. Failed records retained; no auto retry."
+          }
+        ],
+        "outputs": [
+          {
+            "id": "tooling",
+            "description": "W11 streamingfixtures independent JPEG/ROI oracle boundedmatrix strictverifier hermetic/negative tests.",
+            "media_type": "text/plain"
+          },
+          {
+            "id": "native",
+            "description": "Two pinned realWindows5scenario/9serialworker runs with3stage memory windows per4Kscenario, retainedROI output bytes, trace/source/executable/fixture/pixel identity.",
+            "media_type": "application/json"
+          },
+          {
+            "id": "closure",
+            "description": "Strict regressions/quality, five committed-candidate independentGates, artifactcorrespondence, successfulscratchdisposal integrity, prepushed Ternreview and limiteddisposition.",
+            "media_type": "application/json"
+          }
+        ],
+        "acceptance": [
+          {
+            "id": "a1",
+            "statement": "A01/A02: Fixed five scenarios/order/budgets and two genuine boundedDC-only JPEG fixtures; independent encoded bytes/digest/8bit grayscale geometry and entropy; no full-frame RGBA generation.",
+            "output_ids": [
+              "tooling",
+              "native"
+            ],
+            "evaluation_ids": [
+              "behavior"
+            ]
+          },
+          {
+            "id": "a2",
+            "statement": "A03/A04/A05: Every real4K1x1/256x256 ROI pixel matches independent coordinates; both16K cases and4095edge limit refuse full-frame admission with exact orderedtrace and noOnLoad.",
+            "output_ids": [
+              "native"
+            ],
+            "evaluation_ids": [
+              "behavior"
+            ]
+          },
+          {
+            "id": "a3",
+            "statement": "A06/A07: Refusal/failure/stop/timeout never publishes validstale output; all ownedworkers killedwhenneeded/reaped; caps monitored; freshowned paths only.",
+            "output_ids": [
+              "tooling",
+              "native"
+            ],
+            "evaluation_ids": [
+              "behavior"
+            ]
+          },
+          {
+            "id": "a4",
+            "statement": "A08/A09/A10: Source/executable/fixture/output/result bindings agree; three available boundary windows per4Kscenario are separate lifetime observations; missing/internal/peak/reservation/partial16K facts remain unmeasured and ROI success cannot imply partialdecode.",
+            "output_ids": [
+              "native"
+            ],
+            "evaluation_ids": [
+              "behavior"
+            ]
+          },
+          {
+            "id": "a5",
+            "statement": "A11/A12: StrictW1-W10 regression preserved; portable structural verification never forges Git sourceclosure. Semantic mutations reject fixture/identity/geometry/budget/ROI/stage/output/cleanup/observation/classification contradictions.",
+            "output_ids": [
+              "tooling",
+              "closure"
+            ],
+            "evaluation_ids": [
+              "behavior"
+            ]
+          },
+          {
+            "id": "a6",
+            "statement": "Five fresh fullcandidate Gates pass with same digest/output correspondence, original failures retained, actual buildretained and successful-only scratchdisposal verified; pushedsource/evidence remoteSHA beforeTernPASS0/0/0 and boundedCallerdisposition without fullIMG2/IMG3/GUI adoption.",
+            "output_ids": [
+              "closure"
+            ],
+            "evaluation_ids": [
+              "workflow"
+            ]
+          }
+        ],
+        "evaluation": [
+          {
+            "id": "behavior",
+            "kind": "automated",
+            "requirement": "Hermetic/negative tests plus realWindows S01-S05 repeated; independently parsed fixturegeometry andROI pixels, full-frame admission arithmetic/trace and process-lifetime counterwindows."
+          },
+          {
+            "id": "workflow",
+            "kind": "automated",
+            "requirement": "InstalledTaskernprepare, unchangedquality/strictW1-W10, five freshpinnedGates, immutableintegrity, exactsuccessfuldisposal, explicitdevpush/remoteSHA beforeTerncleanverdict."
+          }
+        ],
+        "dependencies": [],
+        "completion": {
+          "required_acceptance_ids": [
+            "a1",
+            "a2",
+            "a3",
+            "a4",
+            "a5",
+            "a6"
+          ],
+          "decision_owner": "caller"
+        },
+        "context": []
+      },
+      "packet_sha256": "sha256:99951d53fd3d74d225d8a8948c2736c283113474fb1c9e865d11a039e16eae5a",
+      "context": [],
+      "input_upper_bound_tokens": 5680
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "head": "133903874ddef3704417e1b0159ad445f7e7392f",
+  "remote_dev": "133903874ddef3704417e1b0159ad445f7e7392f",
+  "tree": "f999ab8e22ab84c522d5f014683ae043f88b08b2",
+  "clean_before_directive_record": true,
+  "w10_disposition": {
+    "slice": "MP-IMG2-W10",
+    "status": "LIMITED_TECHNICAL_COMPLETION",
+    "source_candidate": "f4564d146999c5a8732247b5ca9262334f89a571",
+    "native_source": "95b90483fd3bf4e4619a305c0ec02065ed6b76d8",
+    "reviewed_evidence_commit": "ddf2d30503b152d81c848ebd7ce9e6913c3ea563",
+    "pushed_before_review": true,
+    "remote_sha_confirmed_before_review": "ddf2d30503b152d81c848ebd7ce9e6913c3ea563",
+    "review": {
+      "round": 1,
+      "verdict": "PASS",
+      "blocking": 0,
+      "actionable_non_blocking": 0,
+      "excessive": 0,
+      "complete": true,
+      "response_sha256": "sha256:73d0c0f24bb835df68fd5b846c1ee7bbc2872deac816398c240ce436df4a2d00",
+      "claims_are_attributed": "Reviewer-reported independent Pillow reconstruction/40 mutation replay/GitHub checks are retained verbatim; they are not a claimed fresh Windows/Refine/GUI execution by this agent."
+    },
+    "caller_disposition": {
+      "authority": "ADR-0009 section2; existing Caller acceptance of technically completed limited slices",
+      "accepted_scope": "Independent decoder-process W10 experiment only",
+      "application_startup_accepted": false,
+      "full_img2_accepted": false,
+      "img3_started": false
+    },
+    "gates": {
+      "workspace": "1ffaabdd-f3cb-4437-afba-caf03180110e",
+      "images": "d20664d7-adc3-4dbc-aa91-82dc17781312",
+      "jpeg": "9843e96a-7697-4049-aa8e-47ce71a433fe",
+      "w10": "1dfa42f2-12e7-4376-a197-7d562e60e213",
+      "build": "790f641c-ad1d-448f-bc3c-1a1829f6cfa0"
+    },
+    "native_application_surface": {
+      "status": "NOT_RUN",
+      "reason": "Live control request unanswered; Gate-built executable retained for a later human-approved smoke."
+    },
+    "excluded": [
+      "full MP-IMG2 Decode Exit",
+      "MP-IMG3",
+      "decoder adoption and product EXIF/ICC policy",
+      "16K/true partial decode/internal scratch/concurrent peak",
+      "cooperative cancellation/product memory SLO",
+      "Runtime changes",
+      "measured R0",
+      "UX/video acceptance",
+      "main merge/release"
+    ],
+    "next": "Receive the next bounded directive in the existing Tern conversation; do not infer missing prerequisites or authority."
+  },
+  "directive_sha256": "sha256:bb248b4fd65167d6eb5c1be02fa57e143d54eb682297d958b33e0ba4b56d1dea",
+  "transport": {
+    "inserted": {
+      "ok": true,
+      "verified": "full-text",
+      "length": 3104,
+      "expected": 3104,
+      "preview": "W10 implementation is now stopped at its instructed completi"
+    },
+    "sent": {
+      "ok": true,
+      "via": "button"
+    },
+    "before": 2,
+    "target": "https://chatgpt.com/g/g-p-6a47ade7f6f481918116639ed5c3aab1-hua-xiang-chu-li-wakuhuro/c/6ae1da01-fefc-83e8-89f8-b09b2713f314",
+    "via": "pin"
+  },
+  "authority": "Existing Caller continuous implementation grant only; Tern is not a new authority source. No full16K decode, new dependency/unsafe, productpolicy, GUIcontrol, main or release."
+}
