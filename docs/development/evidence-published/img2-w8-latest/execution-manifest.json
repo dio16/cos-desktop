@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "source": "01049a27f2714c28d1dce99a748bd2410dde92b2",
+  "platform": {
+    "dotnet": ".NET 10.0.13",
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "powershell": "7.6.7",
+    "windows": true
+  },
+  "bounds": {
+    "max_capture_bytes": 65536,
+    "max_concurrent_workers": 1,
+    "max_declared_scratch": 16777216,
+    "max_decoder_legs": 24,
+    "max_dimension": 2048,
+    "max_encoded_input": 16777216,
+    "max_output_bgra32": 16777216,
+    "max_output_file": 33554432,
+    "max_pixels": 4194304,
+    "max_report_bytes": 8388608,
+    "max_source_cases": 12,
+    "max_source_depth": 8,
+    "max_total_seconds": 300,
+    "max_trace_bytes": 131072,
+    "max_trace_records": 128,
+    "max_work_root": 268435456,
+    "max_worker_seconds": 45
+  },
+  "decode_limits": {
+    "max_bit_depth": 8,
+    "max_decoded_bytes": 16777216,
+    "max_dimension": 2048,
+    "max_pixels": 4194304,
+    "max_scratch_bytes": 16777216
+  },
+  "duration_ns": 49594790400,
+  "work_bytes": 1041305,
+  "total_sources": 12,
+  "cases": [
+    {
+      "case_id": "dc_gray_8x8",
+      "reference_class": "ABSOLUTE",
+      "classification": "DECODED_CONTENT_VERIFIED"
+    },
+    {
+      "case_id": "dc_gray_16x16",
+      "reference_class": "ABSOLUTE",
+      "classification": "DECODED_CONTENT_VERIFIED"
+    },
+    {
+      "case_id": "dc_gray_32x24",
+      "reference_class": "ABSOLUTE",
+      "classification": "DECODED_CONTENT_VERIFIED"
+    },
+    {
+      "case_id": "jpeg_444_256",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "jpeg_420_256",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "jpeg_444_256_lowq",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "jpeg_420_1024",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "jpeg_444_1024",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "malformed_truncated",
+      "reference_class": "NOT_VERIFIED",
+      "classification": "TAMPER_NOT_VERIFIED"
+    },
+    {
+      "case_id": "malformed_bad_length",
+      "reference_class": "NOT_VERIFIED",
+      "classification": "TAMPER_NOT_VERIFIED"
+    },
+    {
+      "case_id": "progressive_256",
+      "reference_class": "NOT_RUN",
+      "classification": "NOT_RUN"
+    },
+    {
+      "case_id": "progressive_1024",
+      "reference_class": "NOT_RUN",
+      "classification": "NOT_RUN"
+    }
+  ],
+  "cleanup": {
+    "complete": true,
+    "live_direct_children": []
+  },
+  "work_root_disposable": true,
+  "decoder_legs_total": 20,
+  "verified_decode_legs": 16
+}

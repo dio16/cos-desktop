@@ -1,0 +1,596 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "dc_gray_8x8",
+      "source": "dc",
+      "parsed": true,
+      "structure_error": null,
+      "frame": {
+        "component_count": 1,
+        "components": [
+          {
+            "h": 1,
+            "id": 1,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          }
+        ],
+        "height": 8,
+        "marker": 192,
+        "precision": 8,
+        "variant": "baseline_dct",
+        "width": 8
+      },
+      "segments": [
+        {
+          "length": 67,
+          "marker": 219,
+          "offset": 2
+        },
+        {
+          "length": 11,
+          "marker": 192,
+          "offset": 71
+        },
+        {
+          "length": 31,
+          "marker": 196,
+          "offset": 84
+        },
+        {
+          "length": 181,
+          "marker": 196,
+          "offset": 117
+        },
+        {
+          "length": 8,
+          "marker": 218,
+          "offset": 300
+        }
+      ],
+      "progressive": false,
+      "quant_tables": [
+        "0"
+      ],
+      "huffman_tables": 2,
+      "bytes": 315
+    },
+    {
+      "case_id": "dc_gray_16x16",
+      "source": "dc",
+      "parsed": true,
+      "structure_error": null,
+      "frame": {
+        "component_count": 1,
+        "components": [
+          {
+            "h": 1,
+            "id": 1,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          }
+        ],
+        "height": 16,
+        "marker": 192,
+        "precision": 8,
+        "variant": "baseline_dct",
+        "width": 16
+      },
+      "segments": [
+        {
+          "length": 67,
+          "marker": 219,
+          "offset": 2
+        },
+        {
+          "length": 11,
+          "marker": 192,
+          "offset": 71
+        },
+        {
+          "length": 31,
+          "marker": 196,
+          "offset": 84
+        },
+        {
+          "length": 181,
+          "marker": 196,
+          "offset": 117
+        },
+        {
+          "length": 8,
+          "marker": 218,
+          "offset": 300
+        }
+      ],
+      "progressive": false,
+      "quant_tables": [
+        "0"
+      ],
+      "huffman_tables": 2,
+      "bytes": 323
+    },
+    {
+      "case_id": "dc_gray_32x24",
+      "source": "dc",
+      "parsed": true,
+      "structure_error": null,
+      "frame": {
+        "component_count": 1,
+        "components": [
+          {
+            "h": 1,
+            "id": 1,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          }
+        ],
+        "height": 24,
+        "marker": 192,
+        "precision": 8,
+        "variant": "baseline_dct",
+        "width": 32
+      },
+      "segments": [
+        {
+          "length": 67,
+          "marker": 219,
+          "offset": 2
+        },
+        {
+          "length": 11,
+          "marker": 192,
+          "offset": 71
+        },
+        {
+          "length": 31,
+          "marker": 196,
+          "offset": 84
+        },
+        {
+          "length": 181,
+          "marker": 196,
+          "offset": 117
+        },
+        {
+          "length": 8,
+          "marker": 218,
+          "offset": 300
+        }
+      ],
+      "progressive": false,
+      "quant_tables": [
+        "0"
+      ],
+      "huffman_tables": 2,
+      "bytes": 344
+    },
+    {
+      "case_id": "jpeg_444_256",
+      "source": "encoded",
+      "parsed": true,
+      "structure_error": null,
+      "frame": {
+        "component_count": 3,
+        "components": [
+          {
+            "h": 1,
+            "id": 1,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          },
+          {
+            "h": 1,
+            "id": 2,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          },
+          {
+            "h": 1,
+            "id": 3,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          }
+        ],
+        "height": 256,
+        "marker": 192,
+        "precision": 8,
+        "variant": "baseline_dct",
+        "width": 256
+      },
+      "segments": [
+        {
+          "length": 16,
+          "marker": 224,
+          "offset": 2
+        },
+        {
+          "length": 67,
+          "marker": 219,
+          "offset": 20
+        },
+        {
+          "length": 17,
+          "marker": 192,
+          "offset": 89
+        },
+        {
+          "length": 31,
+          "marker": 196,
+          "offset": 108
+        },
+        {
+          "length": 181,
+          "marker": 196,
+          "offset": 141
+        },
+        {
+          "length": 12,
+          "marker": 218,
+          "offset": 324
+        }
+      ],
+      "progressive": false,
+      "quant_tables": [
+        "0"
+      ],
+      "huffman_tables": 2,
+      "bytes": 13627
+    },
+    {
+      "case_id": "jpeg_420_256",
+      "source": "encoded",
+      "parsed": true,
+      "structure_error": null,
+      "frame": {
+        "component_count": 3,
+        "components": [
+          {
+            "h": 2,
+            "id": 1,
+            "quant_table": 0,
+            "sampling": 34,
+            "v": 2
+          },
+          {
+            "h": 1,
+            "id": 2,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          },
+          {
+            "h": 1,
+            "id": 3,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          }
+        ],
+        "height": 256,
+        "marker": 192,
+        "precision": 8,
+        "variant": "baseline_dct",
+        "width": 256
+      },
+      "segments": [
+        {
+          "length": 16,
+          "marker": 224,
+          "offset": 2
+        },
+        {
+          "length": 67,
+          "marker": 219,
+          "offset": 20
+        },
+        {
+          "length": 17,
+          "marker": 192,
+          "offset": 89
+        },
+        {
+          "length": 31,
+          "marker": 196,
+          "offset": 108
+        },
+        {
+          "length": 181,
+          "marker": 196,
+          "offset": 141
+        },
+        {
+          "length": 12,
+          "marker": 218,
+          "offset": 324
+        }
+      ],
+      "progressive": false,
+      "quant_tables": [
+        "0"
+      ],
+      "huffman_tables": 2,
+      "bytes": 7111
+    },
+    {
+      "case_id": "jpeg_444_256_lowq",
+      "source": "encoded",
+      "parsed": true,
+      "structure_error": null,
+      "frame": {
+        "component_count": 3,
+        "components": [
+          {
+            "h": 1,
+            "id": 1,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          },
+          {
+            "h": 1,
+            "id": 2,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          },
+          {
+            "h": 1,
+            "id": 3,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          }
+        ],
+        "height": 256,
+        "marker": 192,
+        "precision": 8,
+        "variant": "baseline_dct",
+        "width": 256
+      },
+      "segments": [
+        {
+          "length": 16,
+          "marker": 224,
+          "offset": 2
+        },
+        {
+          "length": 67,
+          "marker": 219,
+          "offset": 20
+        },
+        {
+          "length": 17,
+          "marker": 192,
+          "offset": 89
+        },
+        {
+          "length": 31,
+          "marker": 196,
+          "offset": 108
+        },
+        {
+          "length": 181,
+          "marker": 196,
+          "offset": 141
+        },
+        {
+          "length": 12,
+          "marker": 218,
+          "offset": 324
+        }
+      ],
+      "progressive": false,
+      "quant_tables": [
+        "0"
+      ],
+      "huffman_tables": 2,
+      "bytes": 13627
+    },
+    {
+      "case_id": "jpeg_420_1024",
+      "source": "encoded",
+      "parsed": true,
+      "structure_error": null,
+      "frame": {
+        "component_count": 3,
+        "components": [
+          {
+            "h": 2,
+            "id": 1,
+            "quant_table": 0,
+            "sampling": 34,
+            "v": 2
+          },
+          {
+            "h": 1,
+            "id": 2,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          },
+          {
+            "h": 1,
+            "id": 3,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          }
+        ],
+        "height": 1024,
+        "marker": 192,
+        "precision": 8,
+        "variant": "baseline_dct",
+        "width": 1024
+      },
+      "segments": [
+        {
+          "length": 16,
+          "marker": 224,
+          "offset": 2
+        },
+        {
+          "length": 67,
+          "marker": 219,
+          "offset": 20
+        },
+        {
+          "length": 17,
+          "marker": 192,
+          "offset": 89
+        },
+        {
+          "length": 31,
+          "marker": 196,
+          "offset": 108
+        },
+        {
+          "length": 181,
+          "marker": 196,
+          "offset": 141
+        },
+        {
+          "length": 12,
+          "marker": 218,
+          "offset": 324
+        }
+      ],
+      "progressive": false,
+      "quant_tables": [
+        "0"
+      ],
+      "huffman_tables": 2,
+      "bytes": 108675
+    },
+    {
+      "case_id": "jpeg_444_1024",
+      "source": "encoded",
+      "parsed": true,
+      "structure_error": null,
+      "frame": {
+        "component_count": 3,
+        "components": [
+          {
+            "h": 1,
+            "id": 1,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          },
+          {
+            "h": 1,
+            "id": 2,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          },
+          {
+            "h": 1,
+            "id": 3,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          }
+        ],
+        "height": 1024,
+        "marker": 192,
+        "precision": 8,
+        "variant": "baseline_dct",
+        "width": 1024
+      },
+      "segments": [
+        {
+          "length": 16,
+          "marker": 224,
+          "offset": 2
+        },
+        {
+          "length": 67,
+          "marker": 219,
+          "offset": 20
+        },
+        {
+          "length": 17,
+          "marker": 192,
+          "offset": 89
+        },
+        {
+          "length": 31,
+          "marker": 196,
+          "offset": 108
+        },
+        {
+          "length": 181,
+          "marker": 196,
+          "offset": 141
+        },
+        {
+          "length": 12,
+          "marker": 218,
+          "offset": 324
+        }
+      ],
+      "progressive": false,
+      "quant_tables": [
+        "0"
+      ],
+      "huffman_tables": 2,
+      "bytes": 212895
+    },
+    {
+      "case_id": "malformed_truncated",
+      "source": "malformed",
+      "parsed": false,
+      "structure_error": "ValueError:jpeg_eoi_missing",
+      "frame": null,
+      "segments": null,
+      "progressive": null,
+      "quant_tables": [],
+      "huffman_tables": 0,
+      "bytes": null
+    },
+    {
+      "case_id": "malformed_bad_length",
+      "source": "malformed",
+      "parsed": false,
+      "structure_error": "ValueError:jpeg_segment_out_of_bounds",
+      "frame": null,
+      "segments": null,
+      "progressive": null,
+      "quant_tables": [],
+      "huffman_tables": 0,
+      "bytes": null
+    },
+    {
+      "case_id": "progressive_256",
+      "source": "not_run",
+      "parsed": false,
+      "structure_error": null,
+      "frame": null,
+      "segments": null,
+      "progressive": null,
+      "quant_tables": [],
+      "huffman_tables": 0,
+      "bytes": null
+    },
+    {
+      "case_id": "progressive_1024",
+      "source": "not_run",
+      "parsed": false,
+      "structure_error": null,
+      "frame": null,
+      "segments": null,
+      "progressive": null,
+      "quant_tables": [],
+      "huffman_tables": 0,
+      "bytes": null
+    }
+  ]
+}

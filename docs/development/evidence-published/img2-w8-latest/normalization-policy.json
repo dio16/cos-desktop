@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "policy": "both legs asked for canonical PNG; RGBA rows compared byte exactly",
+  "icc_applied": false,
+  "orientation_applied": false,
+  "note": "No colour transform or orientation transform is applied or claimed."
+}

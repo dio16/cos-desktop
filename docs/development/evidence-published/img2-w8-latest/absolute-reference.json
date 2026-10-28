@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "dc_gray_8x8",
+      "dc_step": 1,
+      "blocks": 1,
+      "distinct_levels": [
+        96
+      ],
+      "rgba_sha256": "sha256:9f8b973ad54448be012e78cb5671fd531a88dc746ee3162154a0d6e755f8f391",
+      "pixels": 64,
+      "authority": "parsed DQT/DC coefficients and level shift only"
+    },
+    {
+      "case_id": "dc_gray_16x16",
+      "dc_step": 1,
+      "blocks": 4,
+      "distinct_levels": [
+        32,
+        64,
+        96,
+        160
+      ],
+      "rgba_sha256": "sha256:56bef2d734c2dd171967c8db712c9f4a41becff8a67ac13dd70c5ff4f2f53835",
+      "pixels": 256,
+      "authority": "parsed DQT/DC coefficients and level shift only"
+    },
+    {
+      "case_id": "dc_gray_32x24",
+      "dc_step": 1,
+      "blocks": 12,
+      "distinct_levels": [
+        16,
+        24,
+        48,
+        72,
+        80,
+        112,
+        120,
+        144,
+        176,
+        200,
+        208,
+        232
+      ],
+      "rgba_sha256": "sha256:6967e6d3b6b2f2613223ede61aca6a3ee181e08f45dbdfe56c7b402449430a91",
+      "pixels": 768,
+      "authority": "parsed DQT/DC coefficients and level shift only"
+    }
+  ],
+  "authority": "independent of any decoder output",
+  "eligible_classes": "DC-only baseline grayscale"
+}

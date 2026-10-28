@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "fixtures": [
+    {
+      "bytes": 315,
+      "case_id": "dc_gray_8x8",
+      "height": 8,
+      "path": "dc_gray_8x8.jpg",
+      "reference": "ABSOLUTE",
+      "sha256": "sha256:0b6add9aec1d44a893490b2ad5740d76502e9bb1db7c349851835d198873c05b",
+      "width": 8
+    },
+    {
+      "bytes": 323,
+      "case_id": "dc_gray_16x16",
+      "height": 16,
+      "path": "dc_gray_16x16.jpg",
+      "reference": "ABSOLUTE",
+      "sha256": "sha256:71effae49a16ff0d3e468931735248ae6a4c929982d835ee098fdbc6103e76f5",
+      "width": 16
+    },
+    {
+      "bytes": 344,
+      "case_id": "dc_gray_32x24",
+      "height": 24,
+      "path": "dc_gray_32x24.jpg",
+      "reference": "ABSOLUTE",
+      "sha256": "sha256:ff8ffc7169ab245fcba3d05e19e8a13bada594fa1b5b96333cf567dc6ed2d6ad",
+      "width": 32
+    },
+    {
+      "bytes": 13627,
+      "case_id": "jpeg_444_256",
+      "height": 256,
+      "path": "jpeg_444_256.jpg",
+      "reference": "DIFFERENTIAL",
+      "sha256": "sha256:1750ff70795a24d62bb3601d4c0c2b4e53929128155048f2ca4e3abd001f0aba",
+      "width": 256
+    },
+    {
+      "bytes": 7111,
+      "case_id": "jpeg_420_256",
+      "height": 256,
+      "path": "jpeg_420_256.jpg",
+      "reference": "DIFFERENTIAL",
+      "sha256": "sha256:ecf0819225e599bb42be96258268ceeaf0370da1a7ade67f0248f3dbc61c956d",
+      "width": 256
+    },
+    {
+      "bytes": 13627,
+      "case_id": "jpeg_444_256_lowq",
+      "height": 256,
+      "path": "jpeg_444_256_lowq.jpg",
+      "reference": "DIFFERENTIAL",
+      "sha256": "sha256:0522116db505b554ae619e3b06570d735a63864c142c70cc592e384449a8ca82",
+      "width": 256
+    },
+    {
+      "bytes": 108675,
+      "case_id": "jpeg_420_1024",
+      "height": 1024,
+      "path": "jpeg_420_1024.jpg",
+      "reference": "DIFFERENTIAL",
+      "sha256": "sha256:e8fa14a32855ed167c8724ba836b949b9a1cfba12ce458bb08091a24f1632ec9",
+      "width": 1024
+    },
+    {
+      "bytes": 212895,
+      "case_id": "jpeg_444_1024",
+      "height": 1024,
+      "path": "jpeg_444_1024.jpg",
+      "reference": "DIFFERENTIAL",
+      "sha256": "sha256:4de91f7a820b0118f1df5af4477d8af7913106fa5063e9a08b198ba4084969ed",
+      "width": 1024
+    },
+    {
+      "bytes": 3727,
+      "case_id": "malformed_truncated",
+      "height": 256,
+      "path": "malformed_truncated.jpg",
+      "reference": "NOT_VERIFIED",
+      "sha256": "sha256:12cf67c199e3a2d0dc8e7347145021c8ac1e6c378319dc10f0e2bc22132e43ea",
+      "width": 256
+    },
+    {
+      "bytes": 7111,
+      "case_id": "malformed_bad_length",
+      "height": 256,
+      "path": "malformed_bad_length.jpg",
+      "reference": "NOT_VERIFIED",
+      "sha256": "sha256:f4cd53d253b5f97aaa858ab9f715dd4d0874dbdcabec0c9df3beb8fd7d19a701",
+      "width": 256
+    },
+    {
+      "bytes": 0,
+      "case_id": "progressive_256",
+      "height": 256,
+      "path": null,
+      "reference": "NOT_RUN",
+      "sha256": null,
+      "width": 256
+    },
+    {
+      "bytes": 0,
+      "case_id": "progressive_1024",
+      "height": 1024,
+      "path": null,
+      "reference": "NOT_RUN",
+      "sha256": null,
+      "width": 1024
+    }
+  ],
+  "reproduction": "w8_jpeg_fixtures.write_fixture; DC cases are hand-built, non-uniform cases use the fixed in-repo encoder, malformed cases derive from a fixed source",
+  "regeneration": "the verifier recomputes every runnable digest from the generator"
+}

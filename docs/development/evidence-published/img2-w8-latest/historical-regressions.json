@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "checks": [
+    {
+      "id": "w1-runner-selftest",
+      "marker": "\"checks\": 7"
+    },
+    {
+      "id": "wic-admission-selftest",
+      "marker": "\"checks\":28"
+    },
+    {
+      "id": "w2-probe-selftest",
+      "marker": "w2_probe_selftest: PASS"
+    },
+    {
+      "id": "w2-oracle",
+      "marker": "structural_repeats_identical"
+    },
+    {
+      "id": "w3-retained-native-replay",
+      "source_commit": "f8dfc3009fd7526e1b055968e2fc19892c007190"
+    },
+    {
+      "id": "w4-native-replay",
+      "source_commit": "e357888e1d622a3b672cb20f18143ac8468cc745"
+    },
+    {
+      "id": "w5-native-replay",
+      "source_commit": "current source byte-unchanged"
+    },
+    {
+      "id": "w6-native-replay",
+      "source_commit": "f99bf25b5d61152e3bb22a88e2e8efccc823b9ad"
+    },
+    {
+      "id": "w7-native-replay",
+      "source_commit": "f080f4c5987b9c5745ad42bfa2a8975e4747e5ed"
+    }
+  ],
+  "scope": "Each replay uses its own fixed SOURCE and retained Native record; the W8 source is not applied to them.",
+  "log_sha256": "sha256:99fb3fd154a7e8db3a8aa6fcb0553f456ae72d631f3e0266a8a5c1249e952c8f"
+}

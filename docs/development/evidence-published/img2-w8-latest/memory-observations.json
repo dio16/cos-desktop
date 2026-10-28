@@ -1,0 +1,569 @@
+{
+  "schema_version": 1,
+  "wic": [
+    {
+      "case_id": "dc_gray_8x8",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "dc_gray_8x8_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 131741143769400,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 482,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"dc_gray_8x8_wic\",\"pid\":56692,\"start_utc_ticks\":639287538392295996,\"identity_after_ticks\":639287538392295996,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":113500160,\"private_bytes\":40280064,\"peak_working_set_bytes\":113508352,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1317410568555,\"qpc_end\":1317410657839}],\"errors\":[],\"qpc_start\":1317410314245,\"qpc_end\":1317410712134,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1317410712134,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1317410314245,
+        "request_identities": [
+          {
+            "case_id": "dc_gray_8x8_wic",
+            "pid": 56692,
+            "start_utc_ticks": 639287538392295996
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "dc_gray_8x8_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287538392295996,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 113508352,
+            "pid": 56692,
+            "private_bytes": 40280064,
+            "qpc_end": 1317410657839,
+            "qpc_start": 1317410568555,
+            "start_utc_ticks": 639287538392295996,
+            "working_set_bytes": 113500160
+          }
+        ],
+        "start_ns": 131740587374600,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 40280064,
+          "working_set_bytes": 113500160
+        }
+      }
+    },
+    {
+      "case_id": "dc_gray_16x16",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "dc_gray_16x16_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 131743224248400,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 484,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"dc_gray_16x16_wic\",\"pid\":55208,\"start_utc_ticks\":639287538413368335,\"identity_after_ticks\":639287538413368335,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":115265536,\"private_bytes\":41123840,\"peak_working_set_bytes\":115277824,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1317431294598,\"qpc_end\":1317431414575}],\"errors\":[],\"qpc_start\":1317431059492,\"qpc_end\":1317431468371,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1317431468371,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1317431059492,
+        "request_identities": [
+          {
+            "case_id": "dc_gray_16x16_wic",
+            "pid": 55208,
+            "start_utc_ticks": 639287538413368335
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "dc_gray_16x16_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287538413368335,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 115277824,
+            "pid": 55208,
+            "private_bytes": 41123840,
+            "qpc_end": 1317431414575,
+            "qpc_start": 1317431294598,
+            "start_utc_ticks": 639287538413368335,
+            "working_set_bytes": 115265536
+          }
+        ],
+        "start_ns": 131742689423400,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 41123840,
+          "working_set_bytes": 115265536
+        }
+      }
+    },
+    {
+      "case_id": "dc_gray_32x24",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "dc_gray_32x24_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 131745331895400,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 484,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"dc_gray_32x24_wic\",\"pid\":44388,\"start_utc_ticks\":639287538434072808,\"identity_after_ticks\":639287538434072808,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":119619584,\"private_bytes\":44335104,\"peak_working_set_bytes\":119619584,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1317452417202,\"qpc_end\":1317452508265}],\"errors\":[],\"qpc_start\":1317452179168,\"qpc_end\":1317452564069,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1317452564069,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1317452179168,
+        "request_identities": [
+          {
+            "case_id": "dc_gray_32x24_wic",
+            "pid": 44388,
+            "start_utc_ticks": 639287538434072808
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "dc_gray_32x24_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287538434072808,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 119619584,
+            "pid": 44388,
+            "private_bytes": 44335104,
+            "qpc_end": 1317452508265,
+            "qpc_start": 1317452417202,
+            "start_utc_ticks": 639287538434072808,
+            "working_set_bytes": 119619584
+          }
+        ],
+        "start_ns": 131744796256800,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 44335104,
+          "working_set_bytes": 119619584
+        }
+      }
+    },
+    {
+      "case_id": "jpeg_444_256",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "jpeg_444_256_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 131747458265600,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 483,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"jpeg_444_256_wic\",\"pid\":40164,\"start_utc_ticks\":639287538455445908,\"identity_after_ticks\":639287538455445908,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":115650560,\"private_bytes\":41582592,\"peak_working_set_bytes\":115650560,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1317473708054,\"qpc_end\":1317473794201}],\"errors\":[],\"qpc_start\":1317473473797,\"qpc_end\":1317473849147,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1317473849147,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1317473473797,
+        "request_identities": [
+          {
+            "case_id": "jpeg_444_256_wic",
+            "pid": 40164,
+            "start_utc_ticks": 639287538455445908
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "jpeg_444_256_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287538455445908,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 115650560,
+            "pid": 40164,
+            "private_bytes": 41582592,
+            "qpc_end": 1317473794201,
+            "qpc_start": 1317473708054,
+            "start_utc_ticks": 639287538455445908,
+            "working_set_bytes": 115650560
+          }
+        ],
+        "start_ns": 131746924674600,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 41582592,
+          "working_set_bytes": 115650560
+        }
+      }
+    },
+    {
+      "case_id": "jpeg_420_256",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "jpeg_420_256_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 131749605454200,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 483,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"jpeg_420_256_wic\",\"pid\":57936,\"start_utc_ticks\":639287538476835656,\"identity_after_ticks\":639287538476835656,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":116236288,\"private_bytes\":41619456,\"peak_working_set_bytes\":116236288,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1317495170677,\"qpc_end\":1317495259947}],\"errors\":[],\"qpc_start\":1317494933887,\"qpc_end\":1317495319906,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1317495319906,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1317494933887,
+        "request_identities": [
+          {
+            "case_id": "jpeg_420_256_wic",
+            "pid": 57936,
+            "start_utc_ticks": 639287538476835656
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "jpeg_420_256_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287538476835656,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 116236288,
+            "pid": 57936,
+            "private_bytes": 41619456,
+            "qpc_end": 1317495259947,
+            "qpc_start": 1317495170677,
+            "start_utc_ticks": 639287538476835656,
+            "working_set_bytes": 116236288
+          }
+        ],
+        "start_ns": 131749049208400,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 41619456,
+          "working_set_bytes": 116236288
+        }
+      }
+    },
+    {
+      "case_id": "jpeg_444_256_lowq",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "jpeg_444_256_lowq_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 131751757288400,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 488,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"jpeg_444_256_lowq_wic\",\"pid\":59196,\"start_utc_ticks\":639287538498506853,\"identity_after_ticks\":639287538498506853,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":115654656,\"private_bytes\":41103360,\"peak_working_set_bytes\":115654656,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1317516669178,\"qpc_end\":1317516760973}],\"errors\":[],\"qpc_start\":1317516411840,\"qpc_end\":1317516823871,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1317516823871,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1317516411840,
+        "request_identities": [
+          {
+            "case_id": "jpeg_444_256_lowq_wic",
+            "pid": 59196,
+            "start_utc_ticks": 639287538498506853
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "jpeg_444_256_lowq_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287538498506853,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 115654656,
+            "pid": 59196,
+            "private_bytes": 41103360,
+            "qpc_end": 1317516760973,
+            "qpc_start": 1317516669178,
+            "start_utc_ticks": 639287538498506853,
+            "working_set_bytes": 115654656
+          }
+        ],
+        "start_ns": 131751213716900,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 41103360,
+          "working_set_bytes": 115654656
+        }
+      }
+    },
+    {
+      "case_id": "jpeg_420_1024",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "jpeg_420_1024_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 131753919762200,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 484,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"jpeg_420_1024_wic\",\"pid\":58804,\"start_utc_ticks\":639287538520038141,\"identity_after_ticks\":639287538520038141,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":120356864,\"private_bytes\":45932544,\"peak_working_set_bytes\":120356864,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1317538308395,\"qpc_end\":1317538398989}],\"errors\":[],\"qpc_start\":1317538040479,\"qpc_end\":1317538453467,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1317538453467,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1317538040479,
+        "request_identities": [
+          {
+            "case_id": "jpeg_420_1024_wic",
+            "pid": 58804,
+            "start_utc_ticks": 639287538520038141
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "jpeg_420_1024_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287538520038141,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 120356864,
+            "pid": 58804,
+            "private_bytes": 45932544,
+            "qpc_end": 1317538398989,
+            "qpc_start": 1317538308395,
+            "start_utc_ticks": 639287538520038141,
+            "working_set_bytes": 120356864
+          }
+        ],
+        "start_ns": 131753386885200,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 45932544,
+          "working_set_bytes": 120356864
+        }
+      }
+    },
+    {
+      "case_id": "jpeg_444_1024",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "jpeg_444_1024_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 131757080203500,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 484,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"jpeg_444_1024_wic\",\"pid\":48196,\"start_utc_ticks\":639287538551638843,\"identity_after_ticks\":639287538551638843,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":120496128,\"private_bytes\":45686784,\"peak_working_set_bytes\":120496128,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1317569934769,\"qpc_end\":1317570024099}],\"errors\":[],\"qpc_start\":1317569692186,\"qpc_end\":1317570078846,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1317570078846,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1317569692186,
+        "request_identities": [
+          {
+            "case_id": "jpeg_444_1024_wic",
+            "pid": 48196,
+            "start_utc_ticks": 639287538551638843
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "jpeg_444_1024_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287538551638843,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 120496128,
+            "pid": 48196,
+            "private_bytes": 45686784,
+            "qpc_end": 1317570024099,
+            "qpc_start": 1317569934769,
+            "start_utc_ticks": 639287538551638843,
+            "working_set_bytes": 120496128
+          }
+        ],
+        "start_ns": 131756529844600,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 45686784,
+          "working_set_bytes": 120496128
+        }
+      }
+    },
+    {
+      "case_id": "malformed_truncated",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "malformed_truncated_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 131760143408000,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 490,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"malformed_truncated_wic\",\"pid\":52716,\"start_utc_ticks\":639287538582406737,\"identity_after_ticks\":639287538582406737,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":115441664,\"private_bytes\":40890368,\"peak_working_set_bytes\":115449856,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1317600573553,\"qpc_end\":1317600662279}],\"errors\":[],\"qpc_start\":1317600330920,\"qpc_end\":1317600718836,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1317600718836,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1317600330920,
+        "request_identities": [
+          {
+            "case_id": "malformed_truncated_wic",
+            "pid": 52716,
+            "start_utc_ticks": 639287538582406737
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "malformed_truncated_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287538582406737,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 115449856,
+            "pid": 52716,
+            "private_bytes": 40890368,
+            "qpc_end": 1317600662279,
+            "qpc_start": 1317600573553,
+            "start_utc_ticks": 639287538582406737,
+            "working_set_bytes": 115441664
+          }
+        ],
+        "start_ns": 131759608183800,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 40890368,
+          "working_set_bytes": 115441664
+        }
+      }
+    },
+    {
+      "case_id": "malformed_bad_length",
+      "sample": null
+    }
+  ],
+  "gdiplus": "NOT_MEASURED (no trace or boundary hold)",
+  "scope": "whole-process counters under an artificial hold only"
+}

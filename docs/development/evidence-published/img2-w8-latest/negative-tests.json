@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "control": {
+    "ok": true,
+    "absolute_verified": 3,
+    "differential_only": 5,
+    "tamper_not_verified": 2,
+    "decoder_legs": 16,
+    "source_identity_verified": true,
+    "closure_eligible": true
+  },
+  "mutations": [
+    {
+      "number": 1,
+      "mutation": "source_width_tampered",
+      "ok": false,
+      "reason": "fixture_dimensions_invalid:dc_gray_8x8",
+      "error": "ValueError"
+    },
+    {
+      "number": 2,
+      "mutation": "source_height_tampered",
+      "ok": false,
+      "reason": "fixture_dimensions_invalid:dc_gray_32x24",
+      "error": "ValueError"
+    },
+    {
+      "number": 3,
+      "mutation": "sof_precision_tampered",
+      "ok": false,
+      "reason": "frame_field_mismatch:precision",
+      "error": "ValueError"
+    },
+    {
+      "number": 4,
+      "mutation": "sampling_factor_tampered",
+      "ok": false,
+      "reason": "component_field_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 5,
+      "mutation": "container_marker_tampered",
+      "ok": false,
+      "reason": "wic_decoder_identity_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 6,
+      "mutation": "input_sha_tampered",
+      "ok": false,
+      "reason": "fixture_regeneration_mismatch:jpeg_444_256",
+      "error": "ValueError"
+    },
+    {
+      "number": 7,
+      "mutation": "decoder_identity_tampered",
+      "ok": false,
+      "reason": "gdiplus_decoder_identity_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 8,
+      "mutation": "decoder_version_tampered",
+      "ok": false,
+      "reason": "probe_digest_mismatch:wic",
+      "error": "ValueError"
+    },
+    {
+      "number": 9,
+      "mutation": "decoded_requirement_understated",
+      "ok": false,
+      "reason": "wic_requirement_mismatch:decoded_bytes_required",
+      "error": "ValueError"
+    },
+    {
+      "number": 10,
+      "mutation": "bgra_requirement_understated",
+      "ok": false,
+      "reason": "wic_requirement_mismatch:bgra32_bytes_required",
+      "error": "ValueError"
+    },
+    {
+      "number": 11,
+      "mutation": "encoded_as_decoded",
+      "ok": false,
+      "reason": "wic_requirement_mismatch:decoded_bytes_required",
+      "error": "ValueError"
+    },
+    {
+      "number": 12,
+      "mutation": "admission_stage_forged",
+      "ok": false,
+      "reason": "frame_field_mismatch:variant",
+      "error": "ValueError"
+    },
+    {
+      "number": 13,
+      "mutation": "decoder_outcome_forged",
+      "ok": false,
+      "reason": "trace_payload_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 14,
+      "mutation": "output_bytes_forged",
+      "ok": false,
+      "reason": "wic_output_digest_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 15,
+      "mutation": "output_sha_forged",
+      "ok": false,
+      "reason": "gdiplus_output_digest_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 16,
+      "mutation": "unpublished_as_success",
+      "ok": false,
+      "reason": "wic_publication_inconsistent",
+      "error": "ValueError"
+    },
+    {
+      "number": 17,
+      "mutation": "expected_digest_tampered",
+      "ok": false,
+      "reason": "absolute_reference_mismatch:dc_gray_16x16",
+      "error": "ValueError"
+    },
+    {
+      "number": 18,
+      "mutation": "actual_digest_tampered",
+      "ok": false,
+      "reason": "wic_output_digest_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 19,
+      "mutation": "differential_promoted_to_absolute",
+      "ok": false,
+      "reason": "differential_case_misclassified:jpeg_444_256",
+      "error": "ValueError"
+    },
+    {
+      "number": 20,
+      "mutation": "agreement_as_absolute_proof",
+      "ok": false,
+      "reason": "reference_class_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 21,
+      "mutation": "mismatch_zeroed",
+      "ok": false,
+      "reason": "differential_statistics_mismatch:exact:jpeg_444_256",
+      "error": "ValueError"
+    },
+    {
+      "number": 22,
+      "mutation": "first_mismatch_tampered",
+      "ok": false,
+      "reason": "differential_statistics_mismatch:first_difference:jpeg_420_256",
+      "error": "ValueError"
+    },
+    {
+      "number": 23,
+      "mutation": "normalization_hidden",
+      "ok": false,
+      "reason": "normalization_policy_changed:jpeg_444_1024",
+      "error": "ValueError"
+    },
+    {
+      "number": 24,
+      "mutation": "icc_as_applied",
+      "ok": false,
+      "reason": "unmeasured_set_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 25,
+      "mutation": "orientation_as_applied",
+      "ok": false,
+      "reason": "frame_structure_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 26,
+      "mutation": "malformed_as_verified",
+      "ok": false,
+      "reason": "malformed_case_cannot_claim_content:malformed_truncated",
+      "error": "ValueError"
+    },
+    {
+      "number": 27,
+      "mutation": "unsupported_as_decoded",
+      "ok": false,
+      "reason": "malformed_leg_classification_inconsistent:malformed_bad_length",
+      "error": "ValueError"
+    },
+    {
+      "number": 28,
+      "mutation": "trace_tail_unparsed",
+      "ok": false,
+      "reason": "wic_trace_incomplete",
+      "error": "ValueError"
+    },
+    {
+      "number": 29,
+      "mutation": "incomplete_capture_as_complete",
+      "ok": false,
+      "reason": "wic_process_sample_missing",
+      "error": "ValueError"
+    },
+    {
+      "number": 30,
+      "mutation": "process_identity_swapped",
+      "ok": false,
+      "reason": "stage_identity_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 31,
+      "mutation": "old_source_commit",
+      "ok": false,
+      "reason": "source_blob_missing:apps/desktop/devtools/img2/w8_jpeg_fixtures.py",
+      "error": "ValueError"
+    },
+    {
+      "number": 32,
+      "mutation": "timeout_as_confirmed_cancel",
+      "ok": false,
+      "reason": "wic_outcome_disagrees_with_probe",
+      "error": "ValueError"
+    }
+  ],
+  "required_classes": 32,
+  "shipped_classes": 32,
+  "all_rejected": true
+}

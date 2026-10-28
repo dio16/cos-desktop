@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "legs": [
+    {
+      "case_id": "dc_gray_8x8",
+      "candidate": "wic",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": true,
+      "output_bytes": 130,
+      "output_sha256": "sha256:b0bb58ee56697a578c87bb964c70da86f4d60bbafb6b1ed7d21cf57b1039c43a",
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "dc_gray_8x8",
+      "candidate": "gdiplus",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": null,
+      "output_bytes": 129,
+      "output_sha256": "sha256:caa7f45d8cbf48dc543874d36c907b1ffcbe08e4f8baa2e9a7d68845e4f7dbff",
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "dc_gray_16x16",
+      "candidate": "wic",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": true,
+      "output_bytes": 160,
+      "output_sha256": "sha256:cf36064ad546891e31dd7bf9aedd376d00b2747a07221f5195e489b2bcbaddac",
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "dc_gray_16x16",
+      "candidate": "gdiplus",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": null,
+      "output_bytes": 156,
+      "output_sha256": "sha256:d31187148749f6af79611fda83e67a834c6612d361a2907da2bb6fbfaeb7b63c",
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "dc_gray_32x24",
+      "candidate": "wic",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": true,
+      "output_bytes": 197,
+      "output_sha256": "sha256:69cc1c6dda576f5cb0eec21d4f7a441215a8a997afb55179fff18e6344c21921",
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "dc_gray_32x24",
+      "candidate": "gdiplus",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": null,
+      "output_bytes": 206,
+      "output_sha256": "sha256:7308881e1d946c785304d7967945a627ca23f532788744da839e8d309eaa1f04",
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "jpeg_444_256",
+      "candidate": "wic",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": true,
+      "output_bytes": 18106,
+      "output_sha256": "sha256:1d4d27d1619d5ffb336aa70c557e88ba7ebe18f89739a0be68140193136ded52",
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "jpeg_444_256",
+      "candidate": "gdiplus",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": null,
+      "output_bytes": 23021,
+      "output_sha256": "sha256:8a0f57f01064675f19c5c3a0e96d56c4577aabd3fe8b98f9f1601150494e33aa",
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "jpeg_420_256",
+      "candidate": "wic",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": true,
+      "output_bytes": 19443,
+      "output_sha256": "sha256:fab57a121b979c739f8219b4e4899eddf0a9fa4c15fe14ceab6db349633ff0e1",
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "jpeg_420_256",
+      "candidate": "gdiplus",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": null,
+      "output_bytes": 24775,
+      "output_sha256": "sha256:93aae25c91a98958a23602e615d63f9d3e53bf4fea0a83768f4fa493834b7fa3",
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "jpeg_444_256_lowq",
+      "candidate": "wic",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": true,
+      "output_bytes": 4378,
+      "output_sha256": "sha256:bf3a1e0f72fb8ac832364010a60863067e958a8d5878fcb10d3bb6f9b31e2c46",
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "jpeg_444_256_lowq",
+      "candidate": "gdiplus",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": null,
+      "output_bytes": 6581,
+      "output_sha256": "sha256:838eb8e723c600f6ecee6ed7bf76823a4ad80e935f615988f8e99b848e4491c1",
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "jpeg_420_1024",
+      "candidate": "wic",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": true,
+      "output_bytes": 154567,
+      "output_sha256": "sha256:fdce872fdb33e507f35be1ebb16b3f52eff18b49eae6d90d0929edbf8b88f2a4",
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "jpeg_420_1024",
+      "candidate": "gdiplus",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": null,
+      "output_bytes": 126957,
+      "output_sha256": "sha256:a13a5170daca3d472a8260f33c13b8803d0ce72b504680b13ca757ecb447e688",
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "jpeg_444_1024",
+      "candidate": "wic",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": true,
+      "output_bytes": 128256,
+      "output_sha256": "sha256:55b2da4f52cf90deb3eab0621d1d12277addbc03dbd79f78cd80f8a69293c131",
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "jpeg_444_1024",
+      "candidate": "gdiplus",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": null,
+      "output_bytes": 94993,
+      "output_sha256": "sha256:eae4f2c2ca3fcc54998c580fc89322360f06bfd076954a11a214f099b6a263e0",
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "malformed_truncated",
+      "candidate": "wic",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": true,
+      "output_bytes": 10884,
+      "output_sha256": "sha256:a3d06f709585aa6b3cca9845e2a26907e704ce166f98549bcaba4b8aee61f444",
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "malformed_truncated",
+      "candidate": "gdiplus",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": null,
+      "output_bytes": 13810,
+      "output_sha256": "sha256:f16270617fdf02d30d40bcc5519635f6c4b93188f274b883bb177a28be470de5",
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "malformed_bad_length",
+      "candidate": "wic",
+      "outcome": "corrupt",
+      "exit_code": 3,
+      "published": false,
+      "output_bytes": 0,
+      "output_sha256": null,
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "malformed_bad_length",
+      "candidate": "gdiplus",
+      "outcome": "error",
+      "exit_code": 1,
+      "published": null,
+      "output_bytes": 0,
+      "output_sha256": null,
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    }
+  ]
+}

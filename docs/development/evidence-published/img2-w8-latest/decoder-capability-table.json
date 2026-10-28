@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "legs": [
+    {
+      "case_id": "dc_gray_8x8",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "pixel_format": "Gray8",
+      "classification": "DECODED_CONTENT_VERIFIED",
+      "samples": {
+        "alive_after": true,
+        "alive_before": true,
+        "case_id": "dc_gray_8x8_wic",
+        "exe_verified": true,
+        "identity_after_ticks": 639287538392295996,
+        "order": 0,
+        "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+        "peak_working_set_bytes": 113508352,
+        "pid": 56692,
+        "private_bytes": 40280064,
+        "qpc_end": 1317410657839,
+        "qpc_start": 1317410568555,
+        "start_utc_ticks": 639287538392295996,
+        "working_set_bytes": 113500160
+      }
+    },
+    {
+      "case_id": "dc_gray_8x8",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "pixel_format": "Format8bppIndexed",
+      "classification": "DECODED_CONTENT_VERIFIED",
+      "samples": null
+    },
+    {
+      "case_id": "dc_gray_16x16",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "pixel_format": "Gray8",
+      "classification": "DECODED_CONTENT_VERIFIED",
+      "samples": {
+        "alive_after": true,
+        "alive_before": true,
+        "case_id": "dc_gray_16x16_wic",
+        "exe_verified": true,
+        "identity_after_ticks": 639287538413368335,
+        "order": 0,
+        "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+        "peak_working_set_bytes": 115277824,
+        "pid": 55208,
+        "private_bytes": 41123840,
+        "qpc_end": 1317431414575,
+        "qpc_start": 1317431294598,
+        "start_utc_ticks": 639287538413368335,
+        "working_set_bytes": 115265536
+      }
+    },
+    {
+      "case_id": "dc_gray_16x16",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "pixel_format": "Format8bppIndexed",
+      "classification": "DECODED_CONTENT_VERIFIED",
+      "samples": null
+    },
+    {
+      "case_id": "dc_gray_32x24",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "pixel_format": "Gray8",
+      "classification": "DECODED_CONTENT_VERIFIED",
+      "samples": {
+        "alive_after": true,
+        "alive_before": true,
+        "case_id": "dc_gray_32x24_wic",
+        "exe_verified": true,
+        "identity_after_ticks": 639287538434072808,
+        "order": 0,
+        "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+        "peak_working_set_bytes": 119619584,
+        "pid": 44388,
+        "private_bytes": 44335104,
+        "qpc_end": 1317452508265,
+        "qpc_start": 1317452417202,
+        "start_utc_ticks": 639287538434072808,
+        "working_set_bytes": 119619584
+      }
+    },
+    {
+      "case_id": "dc_gray_32x24",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "pixel_format": "Format8bppIndexed",
+      "classification": "DECODED_CONTENT_VERIFIED",
+      "samples": null
+    },
+    {
+      "case_id": "jpeg_444_256",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "pixel_format": "Bgr24",
+      "classification": "DECODED_DIFFERENTIAL_ONLY",
+      "samples": {
+        "alive_after": true,
+        "alive_before": true,
+        "case_id": "jpeg_444_256_wic",
+        "exe_verified": true,
+        "identity_after_ticks": 639287538455445908,
+        "order": 0,
+        "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+        "peak_working_set_bytes": 115650560,
+        "pid": 40164,
+        "private_bytes": 41582592,
+        "qpc_end": 1317473794201,
+        "qpc_start": 1317473708054,
+        "start_utc_ticks": 639287538455445908,
+        "working_set_bytes": 115650560
+      }
+    },
+    {
+      "case_id": "jpeg_444_256",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "pixel_format": "Format24bppRgb",
+      "classification": "DECODED_DIFFERENTIAL_ONLY",
+      "samples": null
+    },
+    {
+      "case_id": "jpeg_420_256",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "pixel_format": "Bgr24",
+      "classification": "DECODED_DIFFERENTIAL_ONLY",
+      "samples": {
+        "alive_after": true,
+        "alive_before": true,
+        "case_id": "jpeg_420_256_wic",
+        "exe_verified": true,
+        "identity_after_ticks": 639287538476835656,
+        "order": 0,
+        "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+        "peak_working_set_bytes": 116236288,
+        "pid": 57936,
+        "private_bytes": 41619456,
+        "qpc_end": 1317495259947,
+        "qpc_start": 1317495170677,
+        "start_utc_ticks": 639287538476835656,
+        "working_set_bytes": 116236288
+      }
+    },
+    {
+      "case_id": "jpeg_420_256",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "pixel_format": "Format24bppRgb",
+      "classification": "DECODED_DIFFERENTIAL_ONLY",
+      "samples": null
+    },
+    {
+      "case_id": "jpeg_444_256_lowq",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "pixel_format": "Bgr24",
+      "classification": "DECODED_DIFFERENTIAL_ONLY",
+      "samples": {
+        "alive_after": true,
+        "alive_before": true,
+        "case_id": "jpeg_444_256_lowq_wic",
+        "exe_verified": true,
+        "identity_after_ticks": 639287538498506853,
+        "order": 0,
+        "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+        "peak_working_set_bytes": 115654656,
+        "pid": 59196,
+        "private_bytes": 41103360,
+        "qpc_end": 1317516760973,
+        "qpc_start": 1317516669178,
+        "start_utc_ticks": 639287538498506853,
+        "working_set_bytes": 115654656
+      }
+    },
+    {
+      "case_id": "jpeg_444_256_lowq",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "pixel_format": "Format24bppRgb",
+      "classification": "DECODED_DIFFERENTIAL_ONLY",
+      "samples": null
+    },
+    {
+      "case_id": "jpeg_420_1024",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "pixel_format": "Bgr24",
+      "classification": "DECODED_DIFFERENTIAL_ONLY",
+      "samples": {
+        "alive_after": true,
+        "alive_before": true,
+        "case_id": "jpeg_420_1024_wic",
+        "exe_verified": true,
+        "identity_after_ticks": 639287538520038141,
+        "order": 0,
+        "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+        "peak_working_set_bytes": 120356864,
+        "pid": 58804,
+        "private_bytes": 45932544,
+        "qpc_end": 1317538398989,
+        "qpc_start": 1317538308395,
+        "start_utc_ticks": 639287538520038141,
+        "working_set_bytes": 120356864
+      }
+    },
+    {
+      "case_id": "jpeg_420_1024",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "pixel_format": "Format24bppRgb",
+      "classification": "DECODED_DIFFERENTIAL_ONLY",
+      "samples": null
+    },
+    {
+      "case_id": "jpeg_444_1024",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "pixel_format": "Bgr24",
+      "classification": "DECODED_DIFFERENTIAL_ONLY",
+      "samples": {
+        "alive_after": true,
+        "alive_before": true,
+        "case_id": "jpeg_444_1024_wic",
+        "exe_verified": true,
+        "identity_after_ticks": 639287538551638843,
+        "order": 0,
+        "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+        "peak_working_set_bytes": 120496128,
+        "pid": 48196,
+        "private_bytes": 45686784,
+        "qpc_end": 1317570024099,
+        "qpc_start": 1317569934769,
+        "start_utc_ticks": 639287538551638843,
+        "working_set_bytes": 120496128
+      }
+    },
+    {
+      "case_id": "jpeg_444_1024",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "pixel_format": "Format24bppRgb",
+      "classification": "DECODED_DIFFERENTIAL_ONLY",
+      "samples": null
+    },
+    {
+      "case_id": "malformed_truncated",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "pixel_format": "Bgr24",
+      "classification": "TAMPER_NOT_VERIFIED",
+      "samples": {
+        "alive_after": true,
+        "alive_before": true,
+        "case_id": "malformed_truncated_wic",
+        "exe_verified": true,
+        "identity_after_ticks": 639287538582406737,
+        "order": 0,
+        "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+        "peak_working_set_bytes": 115449856,
+        "pid": 52716,
+        "private_bytes": 40890368,
+        "qpc_end": 1317600662279,
+        "qpc_start": 1317600573553,
+        "start_utc_ticks": 639287538582406737,
+        "working_set_bytes": 115441664
+      }
+    },
+    {
+      "case_id": "malformed_truncated",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "pixel_format": "Format24bppRgb",
+      "classification": "TAMPER_NOT_VERIFIED",
+      "samples": null
+    },
+    {
+      "case_id": "malformed_bad_length",
+      "candidate": "wic",
+      "decoder": null,
+      "outcome": "corrupt",
+      "pixel_format": null,
+      "classification": "CORRUPT_REFUSED",
+      "samples": null
+    },
+    {
+      "case_id": "malformed_bad_length",
+      "candidate": "gdiplus",
+      "decoder": null,
+      "outcome": "error",
+      "pixel_format": null,
+      "classification": "TAMPER_NOT_VERIFIED",
+      "samples": null
+    }
+  ],
+  "progressive": "NOT_RUN",
+  "differential_verified": 5,
+  "absolute_verified": 3
+}

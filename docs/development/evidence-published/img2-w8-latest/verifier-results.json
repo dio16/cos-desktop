@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "source_identity_verified": true,
+  "closure_eligible": true,
+  "cases": 12,
+  "absolute_verified": 3,
+  "differential_only": 5,
+  "tamper_not_verified": 2,
+  "decoder_legs": 16,
+  "fixture_regeneration_verified": true,
+  "measurement_scope": "WIC process counters during an artificial hold; GDI+ lifetime, memory, internal scratch and reservations stay NOT_MEASURED"
+}

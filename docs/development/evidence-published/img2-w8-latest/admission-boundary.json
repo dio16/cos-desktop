@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "limits": {
+    "max_dimension": 2048,
+    "max_pixels": 4194304,
+    "max_bit_depth": 8,
+    "max_decoded_bytes": 16777216,
+    "max_scratch_bytes": 16777216
+  },
+  "bounds": {
+    "max_dimension": 2048,
+    "max_pixels": 4194304,
+    "max_source_depth": 8,
+    "max_output_bgra32": 16777216,
+    "max_declared_scratch": 16777216,
+    "max_encoded_input": 16777216,
+    "max_output_file": 33554432,
+    "max_work_root": 268435456,
+    "max_report_bytes": 8388608,
+    "max_trace_records": 128,
+    "max_trace_bytes": 131072,
+    "max_capture_bytes": 65536,
+    "max_worker_seconds": 45,
+    "max_total_seconds": 300,
+    "max_concurrent_workers": 1,
+    "max_source_cases": 12,
+    "max_decoder_legs": 24
+  },
+  "wic": "pre-materialization budget admission in wic_probe.ps1",
+  "gdiplus": "no header-only load or pre-materialization admission; only -MaxPixels is enforced after load",
+  "cases": [
+    {
+      "case_id": "dc_gray_8x8",
+      "reference_class": "ABSOLUTE",
+      "classification": "DECODED_CONTENT_VERIFIED"
+    },
+    {
+      "case_id": "dc_gray_16x16",
+      "reference_class": "ABSOLUTE",
+      "classification": "DECODED_CONTENT_VERIFIED"
+    },
+    {
+      "case_id": "dc_gray_32x24",
+      "reference_class": "ABSOLUTE",
+      "classification": "DECODED_CONTENT_VERIFIED"
+    },
+    {
+      "case_id": "jpeg_444_256",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "jpeg_420_256",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "jpeg_444_256_lowq",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "jpeg_420_1024",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "jpeg_444_1024",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "malformed_truncated",
+      "reference_class": "NOT_VERIFIED",
+      "classification": "TAMPER_NOT_VERIFIED"
+    },
+    {
+      "case_id": "malformed_bad_length",
+      "reference_class": "NOT_VERIFIED",
+      "classification": "TAMPER_NOT_VERIFIED"
+    },
+    {
+      "case_id": "progressive_256",
+      "reference_class": "NOT_RUN",
+      "classification": "NOT_RUN"
+    },
+    {
+      "case_id": "progressive_1024",
+      "reference_class": "NOT_RUN",
+      "classification": "NOT_RUN"
+    }
+  ]
+}

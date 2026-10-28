@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "dc_gray_8x8",
+      "exact": true,
+      "pixels": 64,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    },
+    {
+      "case_id": "dc_gray_16x16",
+      "exact": true,
+      "pixels": 256,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    },
+    {
+      "case_id": "dc_gray_32x24",
+      "exact": true,
+      "pixels": 768,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    },
+    {
+      "case_id": "jpeg_444_256",
+      "exact": true,
+      "pixels": 65536,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    },
+    {
+      "case_id": "jpeg_420_256",
+      "exact": true,
+      "pixels": 65536,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    },
+    {
+      "case_id": "jpeg_444_256_lowq",
+      "exact": true,
+      "pixels": 65536,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    },
+    {
+      "case_id": "jpeg_420_1024",
+      "exact": true,
+      "pixels": 1048576,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    },
+    {
+      "case_id": "jpeg_444_1024",
+      "exact": true,
+      "pixels": 1048576,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    },
+    {
+      "case_id": "malformed_truncated",
+      "exact": true,
+      "pixels": 65536,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    }
+  ],
+  "note": "Both legs requested canonical PNG; agreement is differential evidence only."
+}

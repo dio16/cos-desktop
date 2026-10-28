@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "native_source": "01049a27f2714c28d1dce99a748bd2410dde92b2",
+  "checks": {
+    "quality.ps1": true,
+    "feature-clippy": true,
+    "feature-build": true,
+    "feature-tests": true,
+    "img2-python": {
+      "ran": 194,
+      "ok": true
+    },
+    "r0-python": {
+      "total": 352,
+      "executed": 340,
+      "passed": 340,
+      "skipped": 12,
+      "failures": 0,
+      "errors": 0
+    },
+    "w1-w7-replays": {
+      "W7": true,
+      "W6": true,
+      "W5": true,
+      "W4": true,
+      "W3": true,
+      "W1SELF": true,
+      "W2ORACLE": true,
+      "WICSELF": true,
+      "W2SELF": true
+    }
+  },
+  "default_rust": {
+    "passed": 535,
+    "failed": 0,
+    "ignored": 1
+  },
+  "feature_rust": {
+    "passed": 539,
+    "failed": 0,
+    "ignored": 1
+  },
+  "img2": {
+    "passed": 194,
+    "failed": 0,
+    "w8_tests": 14,
+    "negative_classes": 32
+  },
+  "r0": {
+    "total": 352,
+    "executed": 340,
+    "passed": 340,
+    "skipped": 12,
+    "failures": 0,
+    "errors": 0
+  },
+  "log_sha256": {
+    "rust": "sha256:7dba6ec4e7980de6a6ba7665b91a664aa0dd925294383069fca9a84e8f991a87",
+    "regressions": "sha256:99fb3fd154a7e8db3a8aa6fcb0553f456ae72d631f3e0266a8a5c1249e952c8f",
+    "img2": "sha256:79d1aebc1b746513fbbe579921ac3ca6dd07c07d6ca199ef4d544b2add02725d"
+  },
+  "scope": "Current pinned-source W8 Native plus unchanged workspace quality; skipped and NOT_RUN cases keep their reasons."
+}
