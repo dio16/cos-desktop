@@ -30,6 +30,8 @@ NEGATIVE_NAMES = (
     "malformed_legs_removed", "malformed_output_forged",
     "malformed_worker_outcome_mismatch", "gdiplus_width_forged",
     "gdiplus_input_bytes_forged", "gdiplus_output_bytes_forged",
+    "malformed_outcome_key_removed", "malformed_trace_payload_tampered",
+    "gdiplus_output_bytes_removed",
 )
 
 
@@ -156,6 +158,20 @@ def mutation(record, number):
         _leg(record, "dc_gray_16x16", "gdiplus")["leg"]["probe_result"]["input_bytes"] = 1
     elif number == 40:
         _leg(record, "jpeg_420_256", "gdiplus")["leg"]["probe_result"]["output_bytes"] = 1
+    elif number == 41:
+        leg = _leg(record, "malformed_truncated", "wic")["leg"]
+        leg.pop("outcome", None)
+    elif number == 42:
+        leg = _leg(record, "malformed_bad_length", "wic")["leg"]
+        leg["stages"][-1]["outcome"] = "decoded"
+        raw = "".join(json.dumps(stage) + "\n" for stage in leg["stages"]).encode("utf-8")
+        leg["trace_utf8"] = raw.decode("utf-8")
+        leg["trace_sha256"] = "sha256:" + hashlib.sha256(raw).hexdigest()
+        leg["trace_bytes"] = len(raw)
+        leg["trace_records"] = len(leg["stages"])
+        leg["trace_partial_bytes"] = 0
+    elif number == 43:
+        _leg(record, "dc_gray_32x24", "gdiplus")["leg"]["probe_result"].pop("output_bytes", None)
     else:
         raise ValueError("unknown negative class")
 

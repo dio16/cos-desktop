@@ -74,10 +74,11 @@ FRAME_KEYS = {"marker", "variant", "precision", "width", "height", "components",
               "component_count"}
 COMPONENT_KEYS = {"id", "sampling", "h", "v", "quant_table"}
 WIC_STAGES = ("process_observed", "input_opened", "metadata_available", "before_admission",
-              "admission_started", "admitted", "before_onload", "onload_entered",
+              "admission_started", "admitted", "refused", "before_onload", "onload_entered",
               "onload_returned", "after_onload", "conversion_entered", "conversion_returned",
               "copy_pixels_entered", "copy_pixels_returned", "encode_entered", "encode_returned",
               "before_publish", "output_published", "probe_exit")
+DECODE_STAGES = tuple(stage for stage in WIC_STAGES if stage != "refused")
 
 
 def need(condition, message):
@@ -251,7 +252,7 @@ def _wic_leg(case, leg, fixture_bytes, expected_absolute):
     terminal = stages[-1] if stages else {}
     need(terminal.get("stage") == "probe_exit" and terminal.get("outcome") == "decoded"
          and terminal.get("complete") is True, "wic_terminal_outcome_invalid:" + case["id"])
-    need([stage["stage"] for stage in stages] == list(WIC_STAGES), "wic_stage_sequence_invalid")
+    need([stage["stage"] for stage in stages] == list(DECODE_STAGES), "wic_stage_sequence_invalid")
     need(record.get("trace_complete") is True and record.get("trace_partial_bytes") == 0,
          "wic_trace_incomplete")
     need(record.get("identity_verified") is True, "wic_identity_not_verified")
@@ -289,8 +290,8 @@ def _gdi_leg(case, leg, fixture_bytes):
     need(output.get("present") is True and output.get("hex"), "gdiplus_output_missing")
     data = bytes.fromhex(output["hex"])
     need(output["sha256"] == sha(data) and output["bytes"] == len(data), "gdiplus_output_digest_mismatch")
-    if result.get("output_bytes") is not None:
-        need(result["output_bytes"] == len(data), "gdiplus_declared_output_bytes_mismatch:" + case["id"])
+    need(result.get("output_bytes") == len(data),
+         "gdiplus_declared_output_bytes_mismatch:" + case["id"])
     return data
 
 
@@ -443,14 +444,16 @@ def verify(record: dict, source_root=None) -> dict:
                          "malformed_leg_classification_inconsistent:" + case["id"])
                     record = leg.get("leg") or {}
                     output = record.get("output") or {}
-                    if record.get("outcome") is not None:
-                        need(record["outcome"] == observed,
-                             "malformed_worker_outcome_mismatch:" + case["id"])
                     if leg.get("candidate") == "wic":
-                        stages = record.get("stages") or []
+                        # The WIC worker record must carry its own outcome; a missing
+                        # field is a contradiction, not an absent observation.
+                        need(record.get("outcome") == observed,
+                             "malformed_worker_outcome_mismatch:" + case["id"])
+                        stages, _ = _trace(record)
                         terminal = stages[-1] if stages else {}
                         need(terminal.get("stage") == "probe_exit"
-                             and terminal.get("outcome") == observed,
+                             and terminal.get("outcome") == observed
+                             and terminal.get("complete") is True,
                              "malformed_terminal_outcome_mismatch:" + case["id"])
                     if observed == "decoded":
                         need(record.get("exit_code") == 0 and output.get("present") is True
