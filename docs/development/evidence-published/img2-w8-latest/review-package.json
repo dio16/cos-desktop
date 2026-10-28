@@ -1,38 +1,38 @@
 {
   "schema_version": 1,
   "slice": "MP-IMG2-W8",
-  "round": 2,
-  "experimental_native_source": "60f3aecc99802d865190a03071c20204a344fad7",
-  "gate_candidate": "a7ecc9f67327e08812336ca6d8a145b915834ddf",
-  "candidate_digest": "sha256:f4970ab68bd5a7cf715ab37e1065367bb3545842e242e3023daaed8405da121b",
-  "evidence_head": "2b0132d1f529c2b32f3387d739c0a2ac0fabf538",
+  "round": 3,
+  "experimental_native_source": "bfdc1f0b4101e267dfbbbfef5c048a4178ad54c3",
+  "gate_candidate": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
+  "candidate_digest": "sha256:a4a4b3c606182c07de999bf96f9a541534ed2c93afd81cee566fda35870d2ec5",
+  "evidence_head": "3555caf14299019aa7ec4df2ed83ba8e5ae9a003",
   "manifest_commit_relationship": "This manifest is committed as a child of evidence_head; both archives are exact Git archives at the commits named here and this manifest is not inside its own archive.",
   "source_zip": {
     "schema_version": 1,
     "archive": "w8-review-source.zip",
-    "commit": "a7ecc9f67327e08812336ca6d8a145b915834ddf",
-    "bytes": 5421394,
-    "sha256": "sha256:146910bca3de489ad7e40e7f3207c5ea58863d8feb1916c8e97e4d0177cffa3f"
+    "commit": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
+    "bytes": 5438287,
+    "sha256": "sha256:126876675f8a0f7fbf7ee63953ba7af98d299bd7d68a0c09910376535d467afc"
   },
-  "source_entries": 765,
+  "source_entries": 770,
   "source_entry_manifest": {
     "path_inside_evidence_zip": "docs/development/evidence-published/img2-w8-latest/review-package-source.json",
     "present": true,
-    "entries": 765,
+    "entries": 770,
     "matches_source_archive_sha256": true
   },
   "evidence_zip": {
     "archive": "w8-review-evidence.zip",
-    "commit": "2b0132d1f529c2b32f3387d739c0a2ac0fabf538",
-    "bytes": 882821,
-    "sha256": "sha256:c1ac000cd3f8ac2166ffd21522392779dbb74f6ca237990e0f63070813dcb8f0",
-    "files": 44
+    "commit": "3555caf14299019aa7ec4df2ed83ba8e5ae9a003",
+    "bytes": 886233,
+    "sha256": "sha256:1cc45ec7ee595f92099f3fda36899a44ff87972871a83989f68708ecff095c08",
+    "files": 45
   },
   "gates": {
-    "workspace": "e374ec63-74a0-4271-bc2e-0b2d0b6df93d",
-    "img2": "1c2ce2fa-ee6b-4bee-b19a-b7921e7513da",
-    "w8": "4b1e1d9f-a4ec-44c1-a02b-a1655e114836",
-    "build": "1587b7e0-ee28-4041-8132-86275bcc9692"
+    "workspace": "71f60580-65bd-4c90-992a-19795e8bcf48",
+    "img2": "51879d5c-e842-495c-a3c8-fcfa01c353ef",
+    "w8": "fe1c26cd-863d-411e-be2a-f53d313db8fb",
+    "build": "3f3cec15-ac4a-45ce-bc28-da1b263df52d"
   },
   "artifact_correspondence": "gate-artifact-correspondence.json",
   "raw_gate_receipts": [
@@ -48,6 +48,7 @@
     "docs/development/evidence-published/img2-w8-latest/gate-artifact-correspondence.json",
     "docs/development/evidence-published/img2-w8-latest/gate-build-receipts.json",
     "docs/development/evidence-published/img2-w8-latest/gate-img2-receipts.json",
+    "docs/development/evidence-published/img2-w8-latest/gate-preflight.json",
     "docs/development/evidence-published/img2-w8-latest/gate-w8-receipts.json",
     "docs/development/evidence-published/img2-w8-latest/gate-workspace-receipts.json",
     "docs/development/evidence-published/img2-w8-latest/quality-core-gate.json",
@@ -58,9 +59,9 @@
     "docs/development/evidence-published/img2-w8-latest/storage.json"
   ],
   "all_after_candidate_changes_docs_only": true,
-  "round1_findings": {
-    "A-W8-01": "Decoded legs now require probe outcome, worker outcome, exit code and terminal stage to agree, and bind candidate/case identity plus probe identity.",
-    "A-W8-02": "Both malformed sources now require exactly two legs with conditional outcome, exit, output and publication checks; four mutations were added."
+  "round2_findings": {
+    "A-W8-R2-01": "Malformed WIC legs now require worker, probe and terminal outcome agreement with exit/output checks on both paths.",
+    "A-W8-R2-02": "GDI+ width/height are bound to the parsed SOF geometry and input/output byte counts to the real fixture and output bytes; four mutations added."
   },
   "build_product": "NOT_CAPTURED: the isolated build output was disposed before hashing, so no digest is claimed.",
   "package_boundaries": {
