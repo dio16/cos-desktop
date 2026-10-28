@@ -69,9 +69,9 @@ def guard(work, started, workers=()):
     now = time.monotonic_ns()
     if now - started > BOUNDS["max_total_seconds"] * 1_000_000_000:
         raise ValueError("global_deadline_exceeded")
-    if _work_bytes(work) > BOUNDS["max_work_bytes"]:
+    if _work_bytes(work) > BOUNDS["max_work_root"]:
         raise ValueError("work_cap_exceeded")
-    if len(workers) > BOUNDS["max_workers"]:
+    if len(workers) > BOUNDS["max_concurrent_workers"]:
         raise ValueError("worker_cap_exceeded")
     for worker in workers:
         if now - worker.started > BOUNDS["max_worker_seconds"] * 1_000_000_000:
@@ -80,7 +80,7 @@ def guard(work, started, workers=()):
         for path in (worker.stdout_path, worker.stderr_path):
             if path.stat().st_size > BOUNDS["max_capture_bytes"]:
                 raise ValueError("worker_capture_cap_exceeded")
-        if worker.output.exists() and worker.output.stat().st_size > BOUNDS["max_output_bytes"]:
+        if worker.output.exists() and worker.output.stat().st_size > BOUNDS["max_output_file"]:
             raise ValueError("output_cap_exceeded")
 
 

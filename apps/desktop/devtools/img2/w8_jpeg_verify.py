@@ -328,7 +328,7 @@ def verify(record: dict, source_root=None) -> dict:
                 comparison = row.get("comparison")
                 need(isinstance(comparison, dict) and "error" not in comparison,
                      "differential_comparison_missing:" + case["id"])
-                recomputed = canonical_compare(wic, gdi, BOUNDS["max_report"])
+                recomputed = canonical_compare(wic, gdi, BOUNDS["max_report_bytes"])
                 for key in ("exact", "pixels", "differing_pixels", "differing_channels",
                             "maximum_channel_difference", "first_difference"):
                     need(comparison.get(key) == recomputed[key],
