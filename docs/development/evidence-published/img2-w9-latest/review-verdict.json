@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W9",
+  "round": 3,
+  "conversation": "6ada9028-2184-83ee-bb75-00b47ab5ae23",
+  "verdict": "PASS",
+  "counts": {
+    "blocking": 0,
+    "actionable_non_blocking": 0,
+    "excessive": 0
+  },
+  "limited_technical_completion": "approved",
+  "approved_scope": [
+    "limited progressive JPEG fixtures decoded by WIC and GDI+",
+    "multi-scan structure verification from encoded bytes",
+    "canonical differential comparison",
+    "malformed fail-closed classification",
+    "bounded execution evidence"
+  ],
+  "not_approved": [
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3 prerequisite",
+    "product decoder adoption or tolerance",
+    "ICC/EXIF policy",
+    "16K full decode",
+    "true partial/sequential/tiled decode",
+    "scan-level partial materialization",
+    "WIC internal scratch",
+    "reservations and true concurrent peak",
+    "cooperative cancellation",
+    "product memory SLO",
+    "Runtime",
+    "measured R0",
+    "UX/video",
+    "main/release"
+  ],
+  "reviewer_not_run": [
+    "private Git object ancestry",
+    "Windows WIC/GDI+ re-execution",
+    "Refine re-execution",
+    "GUI verification",
+    "physical deletion re-check"
+  ],
+  "authority": "External review verdict only. Caller acceptance, merge, push and release remain separate decisions.",
+  "candidate": "86cc666b2debc95cb470c456b0b24a986bb9b702",
+  "candidate_digest": "sha256:e8676e2d064ce54ccbc7a6e28666e314b26d1859021799f5b8aebcda4e1fd846",
+  "gates": {
+    "workspace": "ee2acb40-272c-42f0-88aa-aacbd8030dac",
+    "img2": "d98dfeaf-723b-4ed8-9487-7f4f5d522a69",
+    "jpeg": "4046304f-6c6a-405f-9860-7f4048ecf15e",
+    "w9": "8a35342a-4c01-4370-8d00-7595b37afd3f",
+    "build": "7b129b5e-dead-4149-b405-85b6b5502452"
+  }
+}
