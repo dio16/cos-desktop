@@ -66,7 +66,7 @@ try {
             }
             if ($ids -contains 0x8773) {
                 $item=$image.GetPropertyItem(0x8773)
-                if ($null -eq $item -or $item.Type -ne 7 -or $item.Len -lt 1) { throw 'icc_property_invalid' }
+                if ($null -eq $item -or $item.Type -notin @(1,7) -or $item.Len -lt 1) { throw 'icc_property_invalid' }
                 $r.icc_present=$true
                 if ($item.Len -gt $MaxMetadataBytes) { $r.reason='metadata_cap_exceeded'; $r.outcome='oversize'; Emit $r 4 }
                 $bytes=[byte[]]$item.Value
