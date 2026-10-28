@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "archive": "w8-review-source.zip",
-  "commit": "51f68ad738035385fc31dc5b3e70f1be4961afe8",
-  "bytes": 5438287,
-  "sha256": "sha256:126876675f8a0f7fbf7ee63953ba7af98d299bd7d68a0c09910376535d467afc",
+  "commit": "c03c2b4492074a503bb70f510ca705212c654ffe",
+  "bytes": 5441490,
+  "sha256": "sha256:a1204f334e15509ad0d3b18adf128d2065ea72c9c324b61f02c41f6970871375",
   "entries": [
     {
       "path": ".github/workflows/ci.yml",
@@ -199,8 +199,8 @@
     },
     {
       "path": "apps/desktop/devtools/img2/tests/test_w8_negative.py",
-      "bytes": 9847,
-      "raw_sha256": "828c1ad05c3071ca797d9c11b8a74759e2fd80e7c808b08d65fa9f7b7b9735f6",
+      "bytes": 10690,
+      "raw_sha256": "7950aa18ae66a6163a6b6d8ad11d3d89f660e9eedcbe089a18249cfeb37c8e14",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -423,8 +423,8 @@
     },
     {
       "path": "apps/desktop/devtools/img2/w8_jpeg_verify.py",
-      "bytes": 27585,
-      "raw_sha256": "fcb8164a276582770b7882d4fbf4daf4948575b6bd7683afce82e502984cf2bf",
+      "bytes": 27807,
+      "raw_sha256": "49602903718cb2bd998a29992638208c251c1086de6696cc5c3148ea24d6f11a",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -2247,8 +2247,8 @@
     },
     {
       "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
-      "bytes": 452278,
-      "raw_sha256": "1885710b0e79b77d8ef9de7d80c462ff75a3788ccf3966f5c6f5afd71142d882",
+      "bytes": 452305,
+      "raw_sha256": "f3ea78caab3fc47a4bf0a8ee4232ede9af2d617eb2e293b7ad7f97534b1df7a1",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -2272,7 +2272,7 @@
     {
       "path": "docs/development/TESTING.md",
       "bytes": 51980,
-      "raw_sha256": "0e37557b687875685522927171f41df9a48c309e9052f8c7b4192030de02c184",
+      "raw_sha256": "2dc8ae41b13670cd969a97f7c3e56997854281ff05cea62d4fe6a187e91e5b3f",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5064,15 +5064,15 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/build-gate.json",
       "bytes": 555,
-      "raw_sha256": "ea02447c995b9b9c37527c52e9f5eed4083cc471582f087c925b0594c57d500f",
+      "raw_sha256": "01d16b860f86468c6b06c3e9f556719e2647a872bf1f690e146558595d6569d5",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
     },
     {
       "path": "docs/development/evidence-published/img2-w8-latest/build-product.json",
-      "bytes": 614,
-      "raw_sha256": "a788ff9da4db3dae4850e85b03fdf38743d62ba0776ba02a4e6f349797ac3147",
+      "bytes": 418,
+      "raw_sha256": "1fe3e01740dc9b577ffdbcd52e49149160f7f55886f1015eba006362fbf2eb81",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5096,7 +5096,7 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/environment.json",
       "bytes": 791,
-      "raw_sha256": "413b60078996abc1d06ee6ecbe09782654bca2b356ffb94a294f15bbc11bcc03",
+      "raw_sha256": "3bd2da5b8b6953183a14995a2cf4a1b12e84d2b0fe7b7855072ccfb65459d9c6",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5104,7 +5104,7 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/execution-manifest.json",
       "bytes": 2938,
-      "raw_sha256": "23152de25dbd7b2354b903d8ba303671c325fc4c10205bbfff436f1dc5abf9a7",
+      "raw_sha256": "9e6829e2604f8849be67913bbbf94fa0aef3bf6fa71ff9cf3a2520ea70de4272",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5120,7 +5120,7 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/gate-artifact-correspondence.json",
       "bytes": 25530,
-      "raw_sha256": "254ebb1d1b9a97d0bfb8b587f0f3bd71bd3f693ace3cf8dc921cc2f7834fe9df",
+      "raw_sha256": "c0d3786bb4c1b5ccbccef82e2fdd622563f7cd87282dbf61e55a9fc38f4d0e8f",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5128,7 +5128,7 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/gate-build-receipts.json",
       "bytes": 22048,
-      "raw_sha256": "fcd8eb93c8bf784ea6391d09134aab6e533b34b2e6d71eaf06976b2b692c05ba",
+      "raw_sha256": "362962f81104f385a9301c3bc97b71b3d16eec5fa8c8b32f8bc41fec1c048be3",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5136,15 +5136,15 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/gate-img2-receipts.json",
       "bytes": 36779,
-      "raw_sha256": "8b65d6cf3a13a87dc55a8d262b2fb89bf5bd9139577bf0b65c2eef6d48678835",
+      "raw_sha256": "eb541d6bfc2fd89ff3188ff91a2dc5e189d6cb751bca978ad19c4ee8928428f8",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
     },
     {
       "path": "docs/development/evidence-published/img2-w8-latest/gate-preflight.json",
-      "bytes": 23807,
-      "raw_sha256": "03f9a16a4a2ae6c31265bf4b0f6467fd7ac6a03300b205599b3516021c2cbb45",
+      "bytes": 12031,
+      "raw_sha256": "63efc05eed13beec58d0dd0d33e0ffae831ff78a29f88d3a764689386162b4f5",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5167,16 +5167,16 @@
     },
     {
       "path": "docs/development/evidence-published/img2-w8-latest/gate-w8-receipts.json",
-      "bytes": 25714,
-      "raw_sha256": "cddb075c82efacd647fc0d705497888cdbecd2014b6c567daa1ad20cbb3a2b29",
+      "bytes": 25698,
+      "raw_sha256": "7841258fda82130a57a247ee1b12c80cc4dec8e29e3728013c46bdb10c1576d2",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
     },
     {
       "path": "docs/development/evidence-published/img2-w8-latest/gate-workspace-receipts.json",
-      "bytes": 32796,
-      "raw_sha256": "a12f0349a85ace533e09101e9d8201e57741dc831ac2ce41c93e41805659fb6d",
+      "bytes": 32802,
+      "raw_sha256": "bb787302949322cd449ef8ea6ee1b7163597f3e13706a8b11e9bf2dec0e11b87",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5200,23 +5200,23 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/memory-observations.json",
       "bytes": 23438,
-      "raw_sha256": "dc572b4b83d1f158f8d323759dcd7843aaeab1886b74fa15a09849ab04f86573",
+      "raw_sha256": "72d6ef12348c7f484a768a66dac7d978e8152e12963259cab4670612fc8404a6",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
     },
     {
       "path": "docs/development/evidence-published/img2-w8-latest/native-decoder-matrix.json",
-      "bytes": 1448204,
-      "raw_sha256": "280b576ad4b8d2958032476f32615b87f832b2b6096a0034757ce9cfb61396a0",
+      "bytes": 1448205,
+      "raw_sha256": "d8e912583fb56f3b63ee24a842ef4b940b5247e19b6e3aea2ee0227cd1d635e4",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
     },
     {
       "path": "docs/development/evidence-published/img2-w8-latest/negative-tests.json",
-      "bytes": 7949,
-      "raw_sha256": "6add74bfbb9b321c3ce969ee71176f7213984ff911857d7aacea9b7208605bb3",
+      "bytes": 8586,
+      "raw_sha256": "afbb3c4e92d049bb7169bfe7594d0123535903de121af3abeeac888610f0fe13",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5232,7 +5232,7 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/quality-core-gate.json",
       "bytes": 713,
-      "raw_sha256": "2e3abe3be95e98b05a4717f429f17c2e9b2bc8607a0d22865db72d8dfed2e21d",
+      "raw_sha256": "b794e02179da9584fe6e4036b986335853b0b7c2f69129fa529f7a8cbb52c021",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5240,7 +5240,7 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/quality-img2-gate.json",
       "bytes": 828,
-      "raw_sha256": "c4fff01e08f7620e73bdb37eb555aa8b85d0f7ff6766ea4accce98f5a6696972",
+      "raw_sha256": "a1dee2fb5a64777a19ffb567c9b4b55049853d4712f1196a133e077199fe17d1",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5248,7 +5248,7 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/quality-w8-gate.json",
       "bytes": 620,
-      "raw_sha256": "8f18f95d67baad7f36fb25793ebf5756779ea17dc9e9d6865cac6dc12ee2d291",
+      "raw_sha256": "481ec54eaa0b207092932026a16cd00de1ec41138cddf1495f3693a205453e5d",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5256,23 +5256,23 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/quality.json",
       "bytes": 1499,
-      "raw_sha256": "a34c49af07a40136c420857c2c94db544bebe5aad9c9c8e9c4dc636dbf61c990",
+      "raw_sha256": "4335ae924af02ed81c0b2594e6037fe35e1051a8e91c99c187e517979d20c9b1",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
     },
     {
       "path": "docs/development/evidence-published/img2-w8-latest/review-package-source.json",
-      "bytes": 231062,
-      "raw_sha256": "910b3b57270f39cff0b136c7531ca57043da9a0563e695fc64f5c2fb0b02ac08",
+      "bytes": 232622,
+      "raw_sha256": "fd978b94d7befbdfbeaaa9f42231021369c535276cb65528ec5640c8c98a048b",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
     },
     {
       "path": "docs/development/evidence-published/img2-w8-latest/review-package.json",
-      "bytes": 4079,
-      "raw_sha256": "0d9928973bc3b3c070df00ec0fbe465ef0d242dbdff0c31ed84219943da85a91",
+      "bytes": 4132,
+      "raw_sha256": "c6a0dc041a36355e7900a2f887c5072f6937afa20b009b0723b7a537908ed423",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5281,6 +5281,14 @@
       "path": "docs/development/evidence-published/img2-w8-latest/review-request-round2.txt",
       "bytes": 4956,
       "raw_sha256": "56a83202bb11f320ca799f944e0d84b7d356a5fe981b30672c01937256235991",
+      "in_commit": true,
+      "raw_identical": false,
+      "lf_normalized_equal": true
+    },
+    {
+      "path": "docs/development/evidence-published/img2-w8-latest/review-request-round3.txt",
+      "bytes": 4566,
+      "raw_sha256": "6bb9b8760f679c5ef15371932f31ebee1a7fb0817a07b2e6858e0385096a74a3",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5295,8 +5303,8 @@
     },
     {
       "path": "docs/development/evidence-published/img2-w8-latest/source-evidence-reconciliation.json",
-      "bytes": 4909,
-      "raw_sha256": "6d4f010db274a784e853e7514fef64738ebcf9201c5c86c0783de5a8f6597744",
+      "bytes": 4988,
+      "raw_sha256": "774e68f0449c167a640c5ff80c515eb20c59d2ce385e5316e615a87473768792",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
@@ -5304,15 +5312,15 @@
     {
       "path": "docs/development/evidence-published/img2-w8-latest/source-identity.json",
       "bytes": 8672,
-      "raw_sha256": "7666d84688eb74826ff6d2fd2a9718b974780e82860e1f7c7bca385c4387c464",
+      "raw_sha256": "e6a5d12b0a75239b25fb616f6cbc2ac4e70a45c5d1c7df8513a288c2803983aa",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
     },
     {
       "path": "docs/development/evidence-published/img2-w8-latest/storage.json",
-      "bytes": 3195,
-      "raw_sha256": "9e461caf2d653bc6fde4f34a907bf177691ea20ef91a6292bf61a865b2318cdf",
+      "bytes": 3027,
+      "raw_sha256": "3bf9d0c4611aca90e55f00fece5702080e93e150a4277c9cd7e5b99b8d2eaab7",
       "in_commit": true,
       "raw_identical": false,
       "lf_normalized_equal": true
