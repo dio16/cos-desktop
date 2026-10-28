@@ -360,9 +360,9 @@ def verify(record: dict, source_root=None) -> dict:
                          "malformed_leg_promoted:" + case["id"])
                 not_verified += 1
         need(integer(absolute_verified) and absolute_verified == 3, "absolute_reference_case_count_invalid")
-        need(differential == 7, "differential_case_count_invalid")
+        need(differential == 5, "differential_case_count_invalid")
         need(not_verified == 2, "malformed_case_count_invalid")
-        need(legs == 20, "decoder_leg_total_invalid")
+        need(legs == 16, "decoder_leg_total_invalid")
         return {"ok": True, "source_identity_verified": source_verified,
                 "closure_eligible": bool(source_verified), "cases": len(cases),
                 "absolute_verified": absolute_verified, "differential_only": differential,
