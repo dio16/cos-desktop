@@ -1,0 +1,40 @@
+MP-IMG2-W7 round 2 の固定SOURCE独立レビューを依頼します。round 1のHOLD 1/3/0に対する修正は、検証器・負例・Gate生receipt・manifestの4点だけで、WIC probe、crates/media、Runtime、W1～W6実装は変更していません。
+
+Repository: dio16/cos-desktop / branch dev / 未push。
+Native実行前の固定SOURCE: f080f4c5987b9c5745ad42bfa2a8975e4747e5ed。
+製品・3 Gate候補: c78982d0ee9ccafb8c9882260c20962134aac79e。
+candidate digest: sha256:cbfb01a9da1fed5f81c61579ff9ec3324378a5b03fdbf1cedcec5d63cdfa94da。
+Evidence HEAD: 24e56b4a7e3f14a62c5b71f7e017269ee59a2c95。
+Owner: DC-MP-IMG2。Taskern packet sha256:abbb99e75750b866bef0a76d2ea46dd46a8be824ac0bbb1c9bae0a39b29f7147(不変)。
+
+添付は3点です。
+- w7-review-source.zip: 候補c78982d…のGit archive、712 entry、SHA256 sha256:52e086ec780fd490c84456ecefc11113020e1ba863192cf04de15cd459c681e8。全entryが候補Git blobとrawまたは明示LF正規化で一致。
+- w7-review-evidence.zip: Evidence HEAD 24e56b4…のGit archive、41 entry、SHA256 sha256:97a3de99e150f755d7b7927636bd3253cc5f34239d16f17b5c24320f823df4bf。review-package-source.json(712 entry のsource manifest)を実memberとして含みます。
+- review-package.json(別添、サーバー側で日時付き改名): source_entry_manifest.path_inside_evidence_zip が実在pathを指し、present=true、entries=712です。前回指摘のとおり、存在しない参照は残していません。
+
+round 1指摘への対応:
+- B-W7-01(BLOCKING): 3つのGateすべてについて status / inspect / verify の生responseとexit codeを保存しました。gate-qualityCore-receipts.json、gate-qualityW7-receipts.json、gate-build-receipts.json。各exitはstatus/inspect/verifyとも0で、candidate digest、check outcome、33 artifact tuples、cleanup、owner_alive=false、recovery_required=falseを照合できます。Gate再実行はしていません。
+- A-W7-01: decodeではprobe_resultのwidth/height/bits/row/decoded/BGRA/scratch/input_bytes/pixel_formatを独立再計算値と照合します。早期dimension refusalでは未計算項目を要求せず、申告された数値が独立計算と矛盾する場合だけ拒否します。
+- A-W7-02: 破損入力について、outcome、terminal stage、exit code、公開状態、output bytes/SHA256、oracle状態を条件付きで検証します。WICがdecodedを返した事実は保持し、独立oracle不成立のためTAMPER_NOT_VERIFIEDのままです。
+- A-W7-03: 上記のmanifest修正。
+
+その他の変更:
+- 負例を24から32へ拡張(必須24+probe_result 4+破損worker 4)。全32が実verify()で拒否され、structural replayはok=trueのままsource_identity_verified=false / closure_eligible=falseです。
+- SOURCE変更のためNativeを再実行: SOURCE f080f4c…、12 case、6/6全画素一致、4/4 full-frame refusal、2件TAMPER_NOT_VERIFIED、115.7 s、work root 115,416,045 bytes。admission/ROI/compression/memory evidenceと24→32のnegative evidenceを再生成。
+- Gateは3本に分割: Quality core 16/16(bd39ae77)、W7 Quality 4/4(de37d098)、Build 1/1(021de65f)。同一候補・同一digestで、33 artifact tuplesが3 Gate間で一致し、候補Git blobともraw一致。
+- 分割理由: 契約のoperator上限が600 sで、W7 suite拡張後に20-check構成が予算超過したため。da759f23と0a2d71d9はFAILEDとして保持し、成功を転送していません。checkの弱体化やSOURCE変更はしていません。
+- 実Build出力32,275,456 bytes、sha256:7fbcb2fdb667b1318d8e0a93a916605a614554b3ba1a08084929c03f9e0a130fを削除前に実測。成功3 Gateのwork/repoとcheck環境が使ったtargets 3件のみ削除(11,230 files、4,172,961,731 logical bytes)。削除後も3 GateのverifyはSUCCEEDED。
+- 隔離GateのR0は316/36、IMG2 180、W7 11/6/7、Rust 535。ローカルはR0 340/12、Rust 535/539。
+
+重点確認:
+- round 1の4点が実際に解消していること(尤其是認のprobe_result照合と破損worker整合、生receipt、manifest path)。
+- 2K/4K実materializationと独立oracle、8K/16KのOnLoad前拒否、1×1 ROI非迂回、encoded size非流用。
+- 16K refusalをdecode capabilityへ昇格していないこと、NOT_MEASURED/NOT_PROVENの保持。
+- W1～W6 CLI/replayの不変性、62 DC-MP link、41 DAG edges、decision gates、historical record保持。
+
+実行可能範囲:
+添付だけではprivate Git objects、Windows WIC、Refine stateは使えません。fixture再生成、oracle再計算、32 mutation replay、receipt照合は可能です。固定Git source-bound検証・Windows実行・Refine再実行・GUIはNOT_RUNと明記してください。Gitやテストを偽装してPASSにしないでください。
+
+今回はproduct numeric memory SLO、decoder採用、全codec、16K full decode、true partial/region/sequential/tiled decode、WIC内部scratch、実予約、true concurrent allocation peak、cooperative cancellation、ICC fidelity、full MP-IMG2 Decode Exit、MP-IMG3 prerequisite、GPUI Upload、Runtime、measured R0、UX/video、main/releaseを完了しません。未測定のまま保持できた場合にだけMP-IMG2-W7 LIMITED TECHNICAL COMPLETIONの可否を判断してください。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘はファイル・条件・再現・最小修正まで示してください。添付読取が未完なら未完と明示してください。最後に独立行で REVIEW COMPLETE、その次の最終行に verdict/countsを記してください。
