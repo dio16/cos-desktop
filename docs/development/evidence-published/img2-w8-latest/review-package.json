@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "slice": "MP-IMG2-W8",
+  "round": 1,
+  "experimental_native_source": "85efc5c50a2e16e44d392b274bd41eda22766291",
+  "gate_candidate": "e4ff23cf10d7db1218f577877ae85c713a19c24a",
+  "candidate_digest": "sha256:d463597e091e0f5c379ca5c1f17f97fc115f92ea2e93c4a3ba08f3952af7b48e",
+  "evidence_head": "665cace905d531548be1518d6c0364ab4e4fe778",
+  "manifest_commit_relationship": "This manifest is committed as a child of evidence_head; both archives are exactly Git archives at the commits named here and this manifest is not inside its own archive.",
+  "source_zip": {
+    "schema_version": 1,
+    "archive": "w8-review-source.zip",
+    "commit": "e4ff23cf10d7db1218f577877ae85c713a19c24a",
+    "bytes": 5353081,
+    "sha256": "sha256:4b02f2afd00c7896396ae06dac59ede3c274024a1cda7721ad8fc474fbaedec1"
+  },
+  "source_entries": 751,
+  "source_entry_manifest": {
+    "path_inside_evidence_zip": "docs/development/evidence-published/img2-w8-latest/review-package-source.json",
+    "present": true,
+    "entries": 751,
+    "matches_source_archive_sha256": true
+  },
+  "evidence_zip": {
+    "archive": "w8-review-evidence.zip",
+    "commit": "665cace905d531548be1518d6c0364ab4e4fe778",
+    "bytes": 864177,
+    "sha256": "sha256:7ad97d2a8f2758e1d9ac3c646889c8d0c139d2669e57111639f1c109f74ba07b",
+    "files": 38
+  },
+  "gates": {
+    "quality": "4da3f2a0-f117-45bc-84df-72c69521acdb",
+    "quality_w8": "e00bf926-2436-4899-9ebe-c80704e8c822",
+    "build": "33f33f7d-8c34-4749-a53f-2807ee578d66"
+  },
+  "artifact_correspondence": "gate-artifact-correspondence.json",
+  "raw_gate_receipts": [
+    "gate-quality_core-receipts.json",
+    "gate-quality_w8-receipts.json",
+    "gate-build-receipts.json"
+  ],
+  "candidate_to_evidence_changed_paths": [
+    "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+    "docs/development/evidence-published/img2-w8-latest/build-gate.json",
+    "docs/development/evidence-published/img2-w8-latest/build-product.json",
+    "docs/development/evidence-published/img2-w8-latest/gate-artifact-correspondence.json",
+    "docs/development/evidence-published/img2-w8-latest/gate-build-receipts.json",
+    "docs/development/evidence-published/img2-w8-latest/gate-preflight.json",
+    "docs/development/evidence-published/img2-w8-latest/gate-quality_core-receipts.json",
+    "docs/development/evidence-published/img2-w8-latest/gate-quality_w8-receipts.json",
+    "docs/development/evidence-published/img2-w8-latest/quality-core-gate.json",
+    "docs/development/evidence-published/img2-w8-latest/quality-w8-gate.json",
+    "docs/development/evidence-published/img2-w8-latest/review-package-source.json",
+    "docs/development/evidence-published/img2-w8-latest/source-evidence-reconciliation.json",
+    "docs/development/evidence-published/img2-w8-latest/storage.json"
+  ],
+  "all_after_candidate_changes_docs_only": true,
+  "package_boundaries": {
+    "native": "Observed Windows WIC and GDI+ runs: 12 sources, 20 legs, 3 absolute cases, 5 differential cases, 2 malformed streams. No GUI claim.",
+    "git_objects": "Not attached; archive bytes were compared to the retained repository before packaging.",
+    "private_refine": "Authority, raw private logs and executables are not attached; raw status/inspect/verify responses and artifact hashes are attached.",
+    "disposition": "Tern review pending; no decoder adoption, tolerance, full Decode Exit, Runtime or UX claim."
+  }
+}
