@@ -350,8 +350,8 @@ def measure(case_id: str) -> dict:
 
 def fixture_bytes(case_id: str) -> bytes:
     """Regenerate one case's exact encoded bytes (no file system access)."""
-    need(case_id in BY_ID, "unknown_case")
-    need(BY_ID[case_id]["kind"] != "not_run", "not_run_case_has_no_bytes")
+    _need(case_id in BY_ID, "unknown_case")
+    _need(BY_ID[case_id]["kind"] != "not_run", "not_run_case_has_no_bytes")
     return _emit_base(BY_ID[case_id])
 
 
