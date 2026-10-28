@@ -3,7 +3,7 @@
     "head": "8cc44ad9a2bb1d6da260cc42c900e2287f5eed07",
     "remote": true
   },
-  "native_source": "23f6e6c3af6ac5f8e6dc5e507249751bf7533b1c",
+  "native_source": "2f20080e843bc02d356e14b9bf99218cb48dfd71",
   "runs": [
     {
       "id": "native-r1",
@@ -97,8 +97,8 @@
     },
     {
       "id": "native-r4",
-      "status": "SUCCESS_RETAINED",
-      "detail": "Complete six-case matrix on the repaired pin; retained as native-matched-matrix.json.",
+      "status": "SUPERSEDED_PIN",
+      "detail": "Complete matrix on pin 23f6e6c; superseded when the A-R1-01 test repair changed the source set.",
       "record": {
         "command": [
           "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
@@ -127,8 +127,8 @@
     },
     {
       "id": "native-r5",
-      "status": "SUCCESS_RETAINED",
-      "detail": "Independent complete repeat on the same pin; retained as native-repeat-matrix.json.",
+      "status": "SUPERSEDED_PIN",
+      "detail": "Independent complete repeat on the same superseded pin.",
       "record": {
         "command": [
           "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
@@ -154,13 +154,73 @@
           "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         }
       }
+    },
+    {
+      "id": "native-r6",
+      "status": "SUCCESS_RETAINED",
+      "detail": "Complete matrix on the A-R1-01 repaired pin; retained as native-matched-matrix.json.",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "apps/desktop/devtools/img2/w12_matrix.py",
+          "run",
+          "--work-root",
+          "C:/dev/cos-desktop-verification/w12/native-r6-work",
+          "--out",
+          "C:/dev/cos-desktop-verification/w12/native-r6-report.json",
+          "--pwsh",
+          "C:/Program Files/PowerShell/7/pwsh.exe"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 17.453577699983725,
+        "stdout": {
+          "bytes": 342,
+          "sha256": "sha256:ec5b001ccc4872c255ea052b89074713cf00361069ba0b392ee261887cb0d7d6"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "id": "native-r7",
+      "status": "SUCCESS_RETAINED",
+      "detail": "Independent complete repeat on the same repaired pin; retained as native-repeat-matrix.json.",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "apps/desktop/devtools/img2/w12_matrix.py",
+          "run",
+          "--work-root",
+          "C:/dev/cos-desktop-verification/w12/native-r7-work",
+          "--out",
+          "C:/dev/cos-desktop-verification/w12/native-r7-report.json",
+          "--pwsh",
+          "C:/Program Files/PowerShell/7/pwsh.exe"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 17.384242699976312,
+        "stdout": {
+          "bytes": 342,
+          "sha256": "sha256:ec5b001ccc4872c255ea052b89074713cf00361069ba0b392ee261887cb0d7d6"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
     }
   ],
   "verification": [
     {
       "id": "superseded-pin-replay",
       "status": "REFUSED_AS_EXPECTED",
-      "detail": "After the test repair, the d6dc1cc record failed source_lf_mismatch instead of claiming closure.",
+      "detail": "After the test repair, the 23f6e6c record failed source_lf_mismatch instead of claiming closure.",
       "record": {
         "command": [
           "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
@@ -186,7 +246,9 @@
       }
     },
     {
-      "id": "source-bound-replay",
+      "id": "legacy-pin-replay",
+      "status": "REFUSED_AS_EXPECTED",
+      "detail": "The d6dc1cc record failed the same way for the same reason.",
       "record": {
         "command": [
           "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
@@ -201,6 +263,32 @@
         "cwd": "C:\\dev\\cos-desktop",
         "exit_code": 0,
         "duration_seconds": 3.133738100004848,
+        "stdout": {
+          "bytes": 342,
+          "sha256": "sha256:ec5b001ccc4872c255ea052b89074713cf00361069ba0b392ee261887cb0d7d6"
+        },
+        "stderr": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    {
+      "id": "source-bound-replay",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "apps/desktop/devtools/img2/w12_matrix.py",
+          "verify",
+          "--report",
+          "docs/development/evidence-published/w12-latest/native-matched-matrix.json",
+          "--source-root",
+          "C:/dev/cos-desktop"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 3.118824500008486,
         "stdout": {
           "bytes": 342,
           "sha256": "sha256:ec5b001ccc4872c255ea052b89074713cf00361069ba0b392ee261887cb0d7d6"
@@ -287,6 +375,67 @@
         "",
         "OK"
       ]
+    },
+    {
+      "id": "pinned-run",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "apps/desktop/devtools/img2/tests",
+          "-p",
+          "test_w12_*.py"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 39.28723430001992,
+        "stdout": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "bytes": 126,
+          "sha256": "sha256:310c8ed6476d967f87ecd48e778f52bf271ca1b34e35786840083018f30cfffd"
+        }
+      },
+      "detail": "Pre-A-R1-01 repair suite on pin 23f6e6c."
+    },
+    {
+      "id": "review-repair-run",
+      "record": {
+        "command": [
+          "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "apps/desktop/devtools/img2/tests",
+          "-p",
+          "test_w12_*.py"
+        ],
+        "cwd": "C:\\dev\\cos-desktop",
+        "exit_code": 0,
+        "duration_seconds": 44.10357870001462,
+        "stdout": {
+          "bytes": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr": {
+          "bytes": 127,
+          "sha256": "sha256:f28c5de3e16c850fe66c281f497941c05d118e74a289cc082e1527bad3e9acad"
+        }
+      },
+      "summary": [
+        "Ran 22 tests in 43.925s",
+        "",
+        "OK"
+      ],
+      "detail": "A-R1-01 repaired suite: source-bound control premise plus explicit portable/source-bound mutation modes."
     }
   ],
   "quality": {
@@ -312,9 +461,17 @@
     }
   },
   "excluded_from_closure": [
+    "native-r1",
     "native-r2",
     "native-r3",
-    "native-r1"
+    "native-r4",
+    "native-r5"
   ],
-  "notes": "A CLI exit 0 on a superseded pin, an exception, or a failed check is never promoted to Native success. Only r4/r5 feed the repeat comparison and Gate G7."
+  "notes": "A CLI exit 0 on a superseded pin, an exception, or a failed check is never promoted to Native success. Only r6/r7 feed the repeat comparison and Gate G7.",
+  "review_repairs": [
+    {
+      "finding": "A-R1-01",
+      "action": "setUpClass now requires the unmodified control to pass source-bound verification, and the mutation test asserts portable and source-bound modes separately, so a repository without the pinned Git objects fails instead of reporting unearned successes."
+    }
+  ]
 }

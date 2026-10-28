@@ -1,5 +1,5 @@
 {
-  "source_commit": "23f6e6c3af6ac5f8e6dc5e507249751bf7533b1c",
+  "source_commit": "2f20080e843bc02d356e14b9bf99218cb48dfd71",
   "fixture_pixel_equality": {
     "pixels": 16777216,
     "jpeg_and_png_equal": true,

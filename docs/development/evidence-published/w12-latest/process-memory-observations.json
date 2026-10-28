@@ -1,7 +1,7 @@
 {
   "classification": "OBSERVED_WHOLE_PROCESS_DIFFERENTIAL",
   "boundary": "after_onload for S01-S04; before_admission for S05-S06",
-  "source_commit": "23f6e6c3af6ac5f8e6dc5e507249751bf7533b1c",
+  "source_commit": "2f20080e843bc02d356e14b9bf99218cb48dfd71",
   "scope": {
     "allocator_reservations": "NOT_MEASURED",
     "atomic_snapshot": false,
@@ -41,17 +41,17 @@
       "case_id": "S01",
       "codec": "jpeg",
       "role": "decode",
-      "pid": 74632,
-      "start_utc_ticks": 639287993201551452,
+      "pid": 63312,
+      "start_utc_ticks": 639288015973783837,
       "hold_stage": "after_onload",
-      "working_set_bytes": 135323648,
-      "private_bytes": 61313024,
-      "peak_working_set_bytes": 135323648,
+      "working_set_bytes": 130543616,
+      "private_bytes": 57856000,
+      "peak_working_set_bytes": 130560000,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
       "sample_clock": "python_monotonic_ns",
       "observer_clock": "windows_qpc",
-      "qpc_start": 1772220813247,
-      "qpc_end": 1772221297284,
+      "qpc_start": 1794992702440,
+      "qpc_end": 1794993183630,
       "qpc_frequency": 10000000,
       "complete": true,
       "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
@@ -61,17 +61,17 @@
       "case_id": "S02",
       "codec": "png",
       "role": "decode",
-      "pid": 65484,
-      "start_utc_ticks": 639287993218178247,
+      "pid": 74224,
+      "start_utc_ticks": 639288015990033918,
       "hold_stage": "after_onload",
-      "working_set_bytes": 136003584,
-      "private_bytes": 61464576,
-      "peak_working_set_bytes": 136007680,
+      "working_set_bytes": 131420160,
+      "private_bytes": 57503744,
+      "peak_working_set_bytes": 131420160,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
       "sample_clock": "python_monotonic_ns",
       "observer_clock": "windows_qpc",
-      "qpc_start": 1772237033771,
-      "qpc_end": 1772237514733,
+      "qpc_start": 1795008162349,
+      "qpc_end": 1795008723031,
       "qpc_frequency": 10000000,
       "complete": true,
       "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
@@ -81,17 +81,17 @@
       "case_id": "S03",
       "codec": "jpeg",
       "role": "decode",
-      "pid": 4928,
-      "start_utc_ticks": 639287993234265885,
+      "pid": 70884,
+      "start_utc_ticks": 639288016005428315,
       "hold_stage": "after_onload",
-      "working_set_bytes": 131657728,
-      "private_bytes": 57647104,
-      "peak_working_set_bytes": 131674112,
+      "working_set_bytes": 131551232,
+      "private_bytes": 57540608,
+      "peak_working_set_bytes": 131551232,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
       "sample_clock": "python_monotonic_ns",
       "observer_clock": "windows_qpc",
-      "qpc_start": 1772252873322,
-      "qpc_end": 1772253368444,
+      "qpc_start": 1795023579413,
+      "qpc_end": 1795024042963,
       "qpc_frequency": 10000000,
       "complete": true,
       "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
@@ -101,17 +101,17 @@
       "case_id": "S04",
       "codec": "png",
       "role": "decode",
-      "pid": 63724,
-      "start_utc_ticks": 639287993250984404,
+      "pid": 72988,
+      "start_utc_ticks": 639288016021473334,
       "hold_stage": "after_onload",
-      "working_set_bytes": 131829760,
-      "private_bytes": 57749504,
-      "peak_working_set_bytes": 131850240,
+      "working_set_bytes": 131444736,
+      "private_bytes": 57438208,
+      "peak_working_set_bytes": 131448832,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
       "sample_clock": "python_monotonic_ns",
       "observer_clock": "windows_qpc",
-      "qpc_start": 1772269747649,
-      "qpc_end": 1772270207079,
+      "qpc_start": 1795039457983,
+      "qpc_end": 1795039910323,
       "qpc_frequency": 10000000,
       "complete": true,
       "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
@@ -121,17 +121,17 @@
       "case_id": "S05",
       "codec": "jpeg",
       "role": "refuse",
-      "pid": 55860,
-      "start_utc_ticks": 639287993268140901,
+      "pid": 62956,
+      "start_utc_ticks": 639288016037295058,
       "hold_stage": "before_admission",
-      "working_set_bytes": 119857152,
-      "private_bytes": 45047808,
-      "peak_working_set_bytes": 119873536,
+      "working_set_bytes": 115642368,
+      "private_bytes": 42221568,
+      "peak_working_set_bytes": 115654656,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
       "sample_clock": "python_monotonic_ns",
       "observer_clock": "windows_qpc",
-      "qpc_start": 1772289166784,
-      "qpc_end": 1772289617394,
+      "qpc_start": 1795054717189,
+      "qpc_end": 1795055185442,
       "qpc_frequency": 10000000,
       "complete": true,
       "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
@@ -141,17 +141,17 @@
       "case_id": "S06",
       "codec": "png",
       "role": "refuse",
-      "pid": 60636,
-      "start_utc_ticks": 639287993286809355,
+      "pid": 74444,
+      "start_utc_ticks": 639288016052020479,
       "hold_stage": "before_admission",
-      "working_set_bytes": 115134464,
-      "private_bytes": 41345024,
-      "peak_working_set_bytes": 115134464,
+      "working_set_bytes": 114991104,
+      "private_bytes": 41234432,
+      "peak_working_set_bytes": 114995200,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
       "sample_clock": "python_monotonic_ns",
       "observer_clock": "windows_qpc",
-      "qpc_start": 1772304588229,
-      "qpc_end": 1772305131934,
+      "qpc_start": 1795069396819,
+      "qpc_end": 1795069888488,
       "qpc_frequency": 10000000,
       "complete": true,
       "observer_exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
@@ -160,103 +160,103 @@
   ],
   "repeat_private_bytes": {
     "S01": [
-      61313024,
-      61276160
+      57856000,
+      61317120
     ],
     "S02": [
-      61464576,
-      58515456
+      57503744,
+      57516032
     ],
     "S03": [
-      57647104,
-      58048512
+      57540608,
+      57999360
     ],
     "S04": [
-      57749504,
-      58142720
+      57438208,
+      61378560
     ],
     "S05": [
-      45047808,
-      44724224
+      42221568,
+      41193472
     ],
     "S06": [
-      41345024,
-      41553920
+      41234432,
+      41238528
     ]
   },
   "comparisons": {
     "A_jpeg_vs_png_1x1": {
       "jpeg": [
-        61313024,
-        61276160
+        57856000,
+        61317120
       ],
       "png": [
-        61464576,
-        58515456
+        57503744,
+        57516032
       ]
     },
     "B_jpeg_vs_png_256": {
       "jpeg": [
-        57647104,
-        58048512
+        57540608,
+        57999360
       ],
       "png": [
-        57749504,
-        58142720
+        57438208,
+        61378560
       ]
     },
     "C_roi_size_within_codec": {
       "jpeg_1x1": [
-        61313024,
-        61276160
+        57856000,
+        61317120
       ],
       "jpeg_256": [
-        57647104,
-        58048512
+        57540608,
+        57999360
       ],
       "png_1x1": [
-        61464576,
-        58515456
+        57503744,
+        57516032
       ],
       "png_256": [
-        57749504,
-        58142720
+        57438208,
+        61378560
       ]
     },
     "D_repeat_ranges": {
       "S01": {
-        "min": 61276160,
-        "max": 61313024,
-        "span": 36864
+        "min": 57856000,
+        "max": 61317120,
+        "span": 3461120
       },
       "S02": {
-        "min": 58515456,
-        "max": 61464576,
-        "span": 2949120
+        "min": 57503744,
+        "max": 57516032,
+        "span": 12288
       },
       "S03": {
-        "min": 57647104,
-        "max": 58048512,
-        "span": 401408
+        "min": 57540608,
+        "max": 57999360,
+        "span": 458752
       },
       "S04": {
-        "min": 57749504,
-        "max": 58142720,
-        "span": 393216
+        "min": 57438208,
+        "max": 61378560,
+        "span": 3940352
       },
       "S05": {
-        "min": 44724224,
-        "max": 45047808,
-        "span": 323584
+        "min": 41193472,
+        "max": 42221568,
+        "span": 1028096
       },
       "S06": {
-        "min": 41345024,
-        "max": 41553920,
-        "span": 208896
+        "min": 41234432,
+        "max": 41238528,
+        "span": 4096
       }
     }
   },
-  "max_observed_private_bytes": 61464576,
-  "max_observed_working_set_bytes": 136003584,
-  "note": "These are whole-process observations from independent lifetimes. Differences are recorded, not interpreted as codec memory behaviour."
+  "max_observed_private_bytes": 57856000,
+  "max_observed_working_set_bytes": 131551232,
+  "note": "Whole-process observations from independent lifetimes. Differences are recorded, not interpreted as codec memory behaviour."
 }

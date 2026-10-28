@@ -42,8 +42,12 @@
     "classification"
   ],
   "all_rejected": true,
-  "basis": "Actual successful suite on the repaired pin: every mutation is applied to the retained real control and verified against the real repository.",
-  "suite_tests": 21,
+  "premise": "setUpClass requires the unmodified control to pass source-bound verification (ok and closure_eligible true) before any source-bound mutation can be counted; without the pinned Git objects the suite fails instead of reporting unearned successes.",
+  "modes": {
+    "portable": "every mutant except source_commit is rejected structurally; source_commit is asserted portable-ok/closure-false because only a real Git lookup can contradict it",
+    "source_bound": "all 39 mutants rejected against the real repository"
+  },
+  "suite_tests": 22,
   "suite_command": {
     "command": [
       "C:/Users/diobrando/AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe",
@@ -58,14 +62,14 @@
     ],
     "cwd": "C:\\dev\\cos-desktop",
     "exit_code": 0,
-    "duration_seconds": 39.28723430001992,
+    "duration_seconds": 44.10357870001462,
     "stdout": {
       "bytes": 0,
       "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "stderr": {
-      "bytes": 126,
-      "sha256": "sha256:310c8ed6476d967f87ecd48e778f52bf271ca1b34e35786840083018f30cfffd"
+      "bytes": 127,
+      "sha256": "sha256:f28c5de3e16c850fe66c281f497941c05d118e74a289cc082e1527bad3e9acad"
     }
   }
 }

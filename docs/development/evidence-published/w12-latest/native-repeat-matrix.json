@@ -87,7 +87,7 @@
           },
           "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
           "exit_code": 0,
-          "exited_ns": 177246338532800,
+          "exited_ns": 179523603423300,
           "fixture_id": "jpeg_gray_4k",
           "hold_stage": "after_onload",
           "identity_verified": true,
@@ -124,7 +124,7 @@
           "output_path": "workers\\S01_after_onload\\output.png",
           "output_present": true,
           "output_sha256": "sha256:9391bb5c200f3cefd197e84713d82372ce864451ae9479da44e5b85174f2937f",
-          "pid": 73748,
+          "pid": 36916,
           "probe_result": {
             "admission_status": "admitted",
             "bgra32_bytes_required": 67108864,
@@ -175,7 +175,7 @@
             "classification": "DERIVED_WINDOW_SUM",
             "clock_domain": "python_monotonic_ns",
             "complete": true,
-            "end_ns": 177246128702400,
+            "end_ns": 179523417522800,
             "failure": null,
             "gap_ns": null,
             "index": 0,
@@ -187,17 +187,17 @@
               "stderr_bytes": 0,
               "stderr_utf8": "",
               "stdout_bytes": 483,
-              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S01_after_onload\",\"pid\":73748,\"start_utc_ticks\":639287993440659209,\"identity_after_ticks\":639287993440659209,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":135495680,\"private_bytes\":61276160,\"peak_working_set_bytes\":135495680,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1772460009149,\"qpc_end\":1772460490406}],\"errors\":[],\"qpc_start\":1772459825567,\"qpc_end\":1772460547028,\"qpc_frequency\":10000000}\r\n",
+              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S01_after_onload\",\"pid\":36916,\"start_utc_ticks\":639288016213534813,\"identity_after_ticks\":639288016213534813,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":135376896,\"private_bytes\":61317120,\"peak_working_set_bytes\":135376896,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1795233062681,\"qpc_end\":1795233321977}],\"errors\":[],\"qpc_start\":1795232876868,\"qpc_end\":1795233376385,\"qpc_frequency\":10000000}\r\n",
               "timeout": false
             },
-            "qpc_end": 1772460547028,
+            "qpc_end": 1795233376385,
             "qpc_frequency": 10000000,
-            "qpc_start": 1772459825567,
+            "qpc_start": 1795232876868,
             "request_identities": [
               {
                 "case_id": "S01_after_onload",
-                "pid": 73748,
-                "start_utc_ticks": 639287993440659209
+                "pid": 36916,
+                "start_utc_ticks": 639288016213534813
               }
             ],
             "samples": [
@@ -206,33 +206,33 @@
                 "alive_before": true,
                 "case_id": "S01_after_onload",
                 "exe_verified": true,
-                "identity_after_ticks": 639287993440659209,
+                "identity_after_ticks": 639288016213534813,
                 "order": 0,
                 "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-                "peak_working_set_bytes": 135495680,
-                "pid": 73748,
-                "private_bytes": 61276160,
-                "qpc_end": 1772460490406,
-                "qpc_start": 1772460009149,
-                "start_utc_ticks": 639287993440659209,
-                "working_set_bytes": 135495680
+                "peak_working_set_bytes": 135376896,
+                "pid": 36916,
+                "private_bytes": 61317120,
+                "qpc_end": 1795233321977,
+                "qpc_start": 1795233062681,
+                "start_utc_ticks": 639288016213534813,
+                "working_set_bytes": 135376896
               }
             ],
-            "start_ns": 177245539846700,
+            "start_ns": 179522831640000,
             "status": "complete",
             "totals": {
-              "private_bytes": 61276160,
-              "working_set_bytes": 135495680
+              "private_bytes": 61317120,
+              "working_set_bytes": 135376896
             }
           },
           "stages": [
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772453154798,
+              "qpc_ticks": 1795226031136,
               "schema_version": 1,
               "seq": 1,
               "stage": "process_observed"
@@ -240,10 +240,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772453702666,
+              "qpc_ticks": 1795226515047,
               "schema_version": 1,
               "seq": 2,
               "stage": "input_opened"
@@ -251,10 +251,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772454357913,
+              "qpc_ticks": 1795227140989,
               "schema_version": 1,
               "seq": 3,
               "stage": "metadata_available"
@@ -262,10 +262,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772454368116,
+              "qpc_ticks": 1795227151213,
               "schema_version": 1,
               "seq": 4,
               "stage": "before_admission"
@@ -273,10 +273,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772454375704,
+              "qpc_ticks": 1795227158697,
               "schema_version": 1,
               "seq": 5,
               "stage": "admission_started"
@@ -291,10 +291,10 @@
               "height": 4096,
               "input_bytes": 589275,
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772454993108,
+              "qpc_ticks": 1795227778489,
               "row_bytes": 4096,
               "schema_version": 1,
               "scratch_bytes_required": 67108864,
@@ -305,10 +305,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772455045784,
+              "qpc_ticks": 1795227824622,
               "schema_version": 1,
               "seq": 7,
               "stage": "before_onload"
@@ -316,10 +316,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772455054181,
+              "qpc_ticks": 1795227832339,
               "schema_version": 1,
               "seq": 8,
               "stage": "onload_entered"
@@ -327,10 +327,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772455231159,
+              "qpc_ticks": 1795228130096,
               "schema_version": 1,
               "seq": 9,
               "stage": "onload_returned"
@@ -340,10 +340,10 @@
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
               "pause_timeout_ms": 10000,
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772455240287,
+              "qpc_ticks": 1795228139782,
               "schema_version": 1,
               "seq": 10,
               "stage": "after_onload"
@@ -351,10 +351,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772461681613,
+              "qpc_ticks": 1795234366326,
               "schema_version": 1,
               "seq": 11,
               "stage": "conversion_entered"
@@ -362,10 +362,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772461745424,
+              "qpc_ticks": 1795234433886,
               "schema_version": 1,
               "seq": 12,
               "stage": "conversion_returned"
@@ -373,10 +373,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772461755623,
+              "qpc_ticks": 1795234442995,
               "schema_version": 1,
               "seq": 13,
               "stage": "copy_pixels_entered"
@@ -384,10 +384,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772461822591,
+              "qpc_ticks": 1795234504706,
               "schema_version": 1,
               "seq": 14,
               "stage": "copy_pixels_returned"
@@ -395,10 +395,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772462032310,
+              "qpc_ticks": 1795234717941,
               "schema_version": 1,
               "seq": 15,
               "stage": "encode_entered"
@@ -406,10 +406,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772462168091,
+              "qpc_ticks": 1795234849110,
               "schema_version": 1,
               "seq": 16,
               "stage": "encode_returned"
@@ -417,10 +417,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772462180462,
+              "qpc_ticks": 1795234857562,
               "schema_version": 1,
               "seq": 17,
               "stage": "before_publish"
@@ -428,10 +428,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772462303217,
+              "qpc_ticks": 1795234987610,
               "schema_version": 1,
               "seq": 18,
               "stage": "output_published"
@@ -443,18 +443,18 @@
               "materialization": "completed",
               "observer": "wic_probe",
               "outcome": "decoded",
-              "pid": 73748,
-              "process_start_utc_ticks": 639287993440659209,
+              "pid": 36916,
+              "process_start_utc_ticks": 639288016213534813,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772462401027,
+              "qpc_ticks": 1795235082027,
               "reason_code": null,
               "schema_version": 1,
               "seq": 19,
               "stage": "probe_exit"
             }
           ],
-          "start_utc_ticks": 639287993440659209,
-          "started_ns": 177244689720100,
+          "start_utc_ticks": 639288016213534813,
+          "started_ns": 179521977276500,
           "stderr_bytes": 0,
           "stderr_utf8": "",
           "stdout_bytes": 888,
@@ -464,8 +464,8 @@
           "trace_partial_bytes": 0,
           "trace_path": "workers\\S01_after_onload\\observe\\trace.jsonl",
           "trace_records": 19,
-          "trace_sha256": "sha256:cb2ded42da5a8e81f5e62e8df9772249016f660f5974f67c18d7c208fe908bfa",
-          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772453154798,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772453702666,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772454357913,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772454368116,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772454375704,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"admitted\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772454993108,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"width\":4096,\"height\":4096,\"bits_per_channel\":8,\"bits_per_pixel\":8,\"row_bytes\":4096,\"decoded_bytes_required\":16777216,\"bgra32_bytes_required\":67108864,\"declared_scratch_bytes\":0,\"scratch_bytes_required\":67108864,\"input_bytes\":589275}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"before_onload\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772455045784,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":8,\"stage\":\"onload_entered\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772455054181,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":9,\"stage\":\"onload_returned\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772455231159,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":10,\"stage\":\"after_onload\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772455240287,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":11,\"stage\":\"conversion_entered\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772461681613,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":12,\"stage\":\"conversion_returned\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772461745424,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":13,\"stage\":\"copy_pixels_entered\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772461755623,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":14,\"stage\":\"copy_pixels_returned\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772461822591,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":15,\"stage\":\"encode_entered\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772462032310,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":16,\"stage\":\"encode_returned\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772462168091,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":17,\"stage\":\"before_publish\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772462180462,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":18,\"stage\":\"output_published\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772462303217,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":19,\"stage\":\"probe_exit\",\"pid\":73748,\"process_start_utc_ticks\":639287993440659209,\"qpc_ticks\":1772462401027,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"decoded\",\"reason_code\":null,\"admission_status\":\"admitted\",\"materialization\":\"completed\",\"complete\":true}\n"
+          "trace_sha256": "sha256:2d89a516f96c5937919494fc03aa108f2be85614c860b6b044da60a08bdd051f",
+          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795226031136,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795226515047,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795227140989,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795227151213,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795227158697,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"admitted\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795227778489,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"width\":4096,\"height\":4096,\"bits_per_channel\":8,\"bits_per_pixel\":8,\"row_bytes\":4096,\"decoded_bytes_required\":16777216,\"bgra32_bytes_required\":67108864,\"declared_scratch_bytes\":0,\"scratch_bytes_required\":67108864,\"input_bytes\":589275}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"before_onload\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795227824622,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":8,\"stage\":\"onload_entered\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795227832339,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":9,\"stage\":\"onload_returned\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795228130096,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":10,\"stage\":\"after_onload\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795228139782,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":11,\"stage\":\"conversion_entered\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795234366326,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":12,\"stage\":\"conversion_returned\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795234433886,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":13,\"stage\":\"copy_pixels_entered\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795234442995,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":14,\"stage\":\"copy_pixels_returned\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795234504706,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":15,\"stage\":\"encode_entered\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795234717941,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":16,\"stage\":\"encode_returned\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795234849110,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":17,\"stage\":\"before_publish\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795234857562,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":18,\"stage\":\"output_published\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795234987610,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":19,\"stage\":\"probe_exit\",\"pid\":36916,\"process_start_utc_ticks\":639288016213534813,\"qpc_ticks\":1795235082027,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"decoded\",\"reason_code\":null,\"admission_status\":\"admitted\",\"materialization\":\"completed\",\"complete\":true}\n"
         }
       ]
     },
@@ -526,7 +526,7 @@
           },
           "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
           "exit_code": 0,
-          "exited_ns": 177247902803500,
+          "exited_ns": 179525093993400,
           "fixture_id": "png_gray_matched_4k",
           "hold_stage": "after_onload",
           "identity_verified": true,
@@ -563,7 +563,7 @@
           "output_path": "workers\\S02_after_onload\\output.png",
           "output_present": true,
           "output_sha256": "sha256:9391bb5c200f3cefd197e84713d82372ce864451ae9479da44e5b85174f2937f",
-          "pid": 49612,
+          "pid": 72892,
           "probe_result": {
             "admission_status": "admitted",
             "bgra32_bytes_required": 67108864,
@@ -614,7 +614,7 @@
             "classification": "DERIVED_WINDOW_SUM",
             "clock_domain": "python_monotonic_ns",
             "complete": true,
-            "end_ns": 177247709882100,
+            "end_ns": 179524911315700,
             "failure": null,
             "gap_ns": null,
             "index": 0,
@@ -626,17 +626,17 @@
               "stderr_bytes": 0,
               "stderr_utf8": "",
               "stdout_bytes": 483,
-              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S02_after_onload\",\"pid\":49612,\"start_utc_ticks\":639287993457236463,\"identity_after_ticks\":639287993457236463,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":131854336,\"private_bytes\":58515456,\"peak_working_set_bytes\":131854336,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1772476075612,\"qpc_end\":1772476313814}],\"errors\":[],\"qpc_start\":1772475920978,\"qpc_end\":1772476367742,\"qpc_frequency\":10000000}\r\n",
+              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S02_after_onload\",\"pid\":72892,\"start_utc_ticks\":639288016229883230,\"identity_after_ticks\":639288016229883230,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":131252224,\"private_bytes\":57516032,\"peak_working_set_bytes\":131252224,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1795248148721,\"qpc_end\":1795248316807}],\"errors\":[],\"qpc_start\":1795247908487,\"qpc_end\":1795248371334,\"qpc_frequency\":10000000}\r\n",
               "timeout": false
             },
-            "qpc_end": 1772476367742,
+            "qpc_end": 1795248371334,
             "qpc_frequency": 10000000,
-            "qpc_start": 1772475920978,
+            "qpc_start": 1795247908487,
             "request_identities": [
               {
                 "case_id": "S02_after_onload",
-                "pid": 49612,
-                "start_utc_ticks": 639287993457236463
+                "pid": 72892,
+                "start_utc_ticks": 639288016229883230
               }
             ],
             "samples": [
@@ -645,33 +645,33 @@
                 "alive_before": true,
                 "case_id": "S02_after_onload",
                 "exe_verified": true,
-                "identity_after_ticks": 639287993457236463,
+                "identity_after_ticks": 639288016229883230,
                 "order": 0,
                 "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-                "peak_working_set_bytes": 131854336,
-                "pid": 49612,
-                "private_bytes": 58515456,
-                "qpc_end": 1772476313814,
-                "qpc_start": 1772476075612,
-                "start_utc_ticks": 639287993457236463,
-                "working_set_bytes": 131854336
+                "peak_working_set_bytes": 131252224,
+                "pid": 72892,
+                "private_bytes": 57516032,
+                "qpc_end": 1795248316807,
+                "qpc_start": 1795248148721,
+                "start_utc_ticks": 639288016229883230,
+                "working_set_bytes": 131252224
               }
             ],
-            "start_ns": 177247165309100,
+            "start_ns": 179524354711900,
             "status": "complete",
             "totals": {
-              "private_bytes": 58515456,
-              "working_set_bytes": 131854336
+              "private_bytes": 57516032,
+              "working_set_bytes": 131252224
             }
           },
           "stages": [
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772469251661,
+              "qpc_ticks": 1795241797463,
               "schema_version": 1,
               "seq": 1,
               "stage": "process_observed"
@@ -679,10 +679,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772469956823,
+              "qpc_ticks": 1795242224355,
               "schema_version": 1,
               "seq": 2,
               "stage": "input_opened"
@@ -690,10 +690,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772470458923,
+              "qpc_ticks": 1795242712062,
               "schema_version": 1,
               "seq": 3,
               "stage": "metadata_available"
@@ -701,10 +701,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772470646018,
+              "qpc_ticks": 1795242721276,
               "schema_version": 1,
               "seq": 4,
               "stage": "before_admission"
@@ -712,10 +712,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772470656997,
+              "qpc_ticks": 1795242728265,
               "schema_version": 1,
               "seq": 5,
               "stage": "admission_started"
@@ -730,10 +730,10 @@
               "height": 4096,
               "input_bytes": 259602,
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772471157434,
+              "qpc_ticks": 1795243224264,
               "row_bytes": 4096,
               "schema_version": 1,
               "scratch_bytes_required": 67108864,
@@ -744,10 +744,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772471391592,
+              "qpc_ticks": 1795243269982,
               "schema_version": 1,
               "seq": 7,
               "stage": "before_onload"
@@ -755,10 +755,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772471404285,
+              "qpc_ticks": 1795243278652,
               "schema_version": 1,
               "seq": 8,
               "stage": "onload_entered"
@@ -766,10 +766,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772471488391,
+              "qpc_ticks": 1795243363853,
               "schema_version": 1,
               "seq": 9,
               "stage": "onload_returned"
@@ -779,10 +779,10 @@
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
               "pause_timeout_ms": 10000,
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772471497157,
+              "qpc_ticks": 1795243372431,
               "schema_version": 1,
               "seq": 10,
               "stage": "after_onload"
@@ -790,10 +790,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772477274136,
+              "qpc_ticks": 1795249287426,
               "schema_version": 1,
               "seq": 11,
               "stage": "conversion_entered"
@@ -801,10 +801,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772477320006,
+              "qpc_ticks": 1795249334571,
               "schema_version": 1,
               "seq": 12,
               "stage": "conversion_returned"
@@ -812,10 +812,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772477329518,
+              "qpc_ticks": 1795249344587,
               "schema_version": 1,
               "seq": 13,
               "stage": "copy_pixels_entered"
@@ -823,10 +823,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772477381638,
+              "qpc_ticks": 1795249392138,
               "schema_version": 1,
               "seq": 14,
               "stage": "copy_pixels_returned"
@@ -834,10 +834,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772477595733,
+              "qpc_ticks": 1795249583349,
               "schema_version": 1,
               "seq": 15,
               "stage": "encode_entered"
@@ -845,10 +845,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772477734787,
+              "qpc_ticks": 1795249717913,
               "schema_version": 1,
               "seq": 16,
               "stage": "encode_returned"
@@ -856,10 +856,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772477743749,
+              "qpc_ticks": 1795249727399,
               "schema_version": 1,
               "seq": 17,
               "stage": "before_publish"
@@ -867,10 +867,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772477859357,
+              "qpc_ticks": 1795249842753,
               "schema_version": 1,
               "seq": 18,
               "stage": "output_published"
@@ -882,18 +882,18 @@
               "materialization": "completed",
               "observer": "wic_probe",
               "outcome": "decoded",
-              "pid": 49612,
-              "process_start_utc_ticks": 639287993457236463,
+              "pid": 72892,
+              "process_start_utc_ticks": 639288016229883230,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772477946089,
+              "qpc_ticks": 1795249923360,
               "reason_code": null,
               "schema_version": 1,
               "seq": 19,
               "stage": "probe_exit"
             }
           ],
-          "start_utc_ticks": 639287993457236463,
-          "started_ns": 177246347430000,
+          "start_utc_ticks": 639288016229883230,
+          "started_ns": 179523612175000,
           "stderr_bytes": 0,
           "stderr_utf8": "",
           "stdout_bytes": 886,
@@ -903,8 +903,8 @@
           "trace_partial_bytes": 0,
           "trace_path": "workers\\S02_after_onload\\observe\\trace.jsonl",
           "trace_records": 19,
-          "trace_sha256": "sha256:f039f0baecd4c78c96278c9f84ff0e80b61c7b63b781db7ee4989a0feffbe696",
-          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772469251661,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772469956823,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772470458923,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772470646018,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772470656997,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"admitted\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772471157434,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"width\":4096,\"height\":4096,\"bits_per_channel\":8,\"bits_per_pixel\":8,\"row_bytes\":4096,\"decoded_bytes_required\":16777216,\"bgra32_bytes_required\":67108864,\"declared_scratch_bytes\":0,\"scratch_bytes_required\":67108864,\"input_bytes\":259602}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"before_onload\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772471391592,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":8,\"stage\":\"onload_entered\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772471404285,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":9,\"stage\":\"onload_returned\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772471488391,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":10,\"stage\":\"after_onload\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772471497157,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":11,\"stage\":\"conversion_entered\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772477274136,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":12,\"stage\":\"conversion_returned\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772477320006,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":13,\"stage\":\"copy_pixels_entered\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772477329518,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":14,\"stage\":\"copy_pixels_returned\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772477381638,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":15,\"stage\":\"encode_entered\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772477595733,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":16,\"stage\":\"encode_returned\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772477734787,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":17,\"stage\":\"before_publish\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772477743749,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":18,\"stage\":\"output_published\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772477859357,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":19,\"stage\":\"probe_exit\",\"pid\":49612,\"process_start_utc_ticks\":639287993457236463,\"qpc_ticks\":1772477946089,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"decoded\",\"reason_code\":null,\"admission_status\":\"admitted\",\"materialization\":\"completed\",\"complete\":true}\n"
+          "trace_sha256": "sha256:296f14c85312df8cf263e3423ab0324ae17591f7fd9a0a3e522117d53fc913aa",
+          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795241797463,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795242224355,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795242712062,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795242721276,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795242728265,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"admitted\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795243224264,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"width\":4096,\"height\":4096,\"bits_per_channel\":8,\"bits_per_pixel\":8,\"row_bytes\":4096,\"decoded_bytes_required\":16777216,\"bgra32_bytes_required\":67108864,\"declared_scratch_bytes\":0,\"scratch_bytes_required\":67108864,\"input_bytes\":259602}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"before_onload\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795243269982,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":8,\"stage\":\"onload_entered\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795243278652,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":9,\"stage\":\"onload_returned\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795243363853,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":10,\"stage\":\"after_onload\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795243372431,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":11,\"stage\":\"conversion_entered\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795249287426,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":12,\"stage\":\"conversion_returned\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795249334571,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":13,\"stage\":\"copy_pixels_entered\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795249344587,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":14,\"stage\":\"copy_pixels_returned\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795249392138,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":15,\"stage\":\"encode_entered\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795249583349,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":16,\"stage\":\"encode_returned\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795249717913,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":17,\"stage\":\"before_publish\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795249727399,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":18,\"stage\":\"output_published\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795249842753,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":19,\"stage\":\"probe_exit\",\"pid\":72892,\"process_start_utc_ticks\":639288016229883230,\"qpc_ticks\":1795249923360,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"decoded\",\"reason_code\":null,\"admission_status\":\"admitted\",\"materialization\":\"completed\",\"complete\":true}\n"
         }
       ]
     },
@@ -965,7 +965,7 @@
           },
           "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
           "exit_code": 0,
-          "exited_ns": 177249506019900,
+          "exited_ns": 179526624471300,
           "fixture_id": "jpeg_gray_4k",
           "hold_stage": "after_onload",
           "identity_verified": true,
@@ -1002,7 +1002,7 @@
           "output_path": "workers\\S03_after_onload\\output.png",
           "output_present": true,
           "output_sha256": "sha256:69b653c712156549b2e28769b8753637878c855e4b55dde5d58975764fbb2c0b",
-          "pid": 75296,
+          "pid": 74120,
           "probe_result": {
             "admission_status": "admitted",
             "bgra32_bytes_required": 67108864,
@@ -1053,7 +1053,7 @@
             "classification": "DERIVED_WINDOW_SUM",
             "clock_domain": "python_monotonic_ns",
             "complete": true,
-            "end_ns": 177249302846500,
+            "end_ns": 179526432258300,
             "failure": null,
             "gap_ns": null,
             "index": 0,
@@ -1065,17 +1065,17 @@
               "stderr_bytes": 0,
               "stderr_utf8": "",
               "stdout_bytes": 483,
-              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S03_after_onload\",\"pid\":75296,\"start_utc_ticks\":639287993472909285,\"identity_after_ticks\":639287993472909285,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":131612672,\"private_bytes\":58048512,\"peak_working_set_bytes\":131612672,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1772491983921,\"qpc_end\":1772492238026}],\"errors\":[],\"qpc_start\":1772491819398,\"qpc_end\":1772492293525,\"qpc_frequency\":10000000}\r\n",
+              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S03_after_onload\",\"pid\":74120,\"start_utc_ticks\":639288016244816871,\"identity_after_ticks\":639288016244816871,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":131526656,\"private_bytes\":57999360,\"peak_working_set_bytes\":131543040,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1795263199625,\"qpc_end\":1795263458577}],\"errors\":[],\"qpc_start\":1795263041785,\"qpc_end\":1795263565980,\"qpc_frequency\":10000000}\r\n",
               "timeout": false
             },
-            "qpc_end": 1772492293525,
+            "qpc_end": 1795263565980,
             "qpc_frequency": 10000000,
-            "qpc_start": 1772491819398,
+            "qpc_start": 1795263041785,
             "request_identities": [
               {
                 "case_id": "S03_after_onload",
-                "pid": 75296,
-                "start_utc_ticks": 639287993472909285
+                "pid": 74120,
+                "start_utc_ticks": 639288016244816871
               }
             ],
             "samples": [
@@ -1084,33 +1084,33 @@
                 "alive_before": true,
                 "case_id": "S03_after_onload",
                 "exe_verified": true,
-                "identity_after_ticks": 639287993472909285,
+                "identity_after_ticks": 639288016244816871,
                 "order": 0,
                 "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-                "peak_working_set_bytes": 131612672,
-                "pid": 75296,
-                "private_bytes": 58048512,
-                "qpc_end": 1772492238026,
-                "qpc_start": 1772491983921,
-                "start_utc_ticks": 639287993472909285,
-                "working_set_bytes": 131612672
+                "peak_working_set_bytes": 131543040,
+                "pid": 74120,
+                "private_bytes": 57999360,
+                "qpc_end": 1795263458577,
+                "qpc_start": 1795263199625,
+                "start_utc_ticks": 639288016244816871,
+                "working_set_bytes": 131526656
               }
             ],
-            "start_ns": 177248751586500,
+            "start_ns": 179525876046300,
             "status": "complete",
             "totals": {
-              "private_bytes": 58048512,
-              "working_set_bytes": 131612672
+              "private_bytes": 57999360,
+              "working_set_bytes": 131526656
             }
           },
           "stages": [
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772484883083,
+              "qpc_ticks": 1795256791189,
               "schema_version": 1,
               "seq": 1,
               "stage": "process_observed"
@@ -1118,10 +1118,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772485631032,
+              "qpc_ticks": 1795257279167,
               "schema_version": 1,
               "seq": 2,
               "stage": "input_opened"
@@ -1129,10 +1129,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772486118705,
+              "qpc_ticks": 1795257836214,
               "schema_version": 1,
               "seq": 3,
               "stage": "metadata_available"
@@ -1140,10 +1140,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772486322694,
+              "qpc_ticks": 1795257845603,
               "schema_version": 1,
               "seq": 4,
               "stage": "before_admission"
@@ -1151,10 +1151,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772486330102,
+              "qpc_ticks": 1795257852353,
               "schema_version": 1,
               "seq": 5,
               "stage": "admission_started"
@@ -1169,10 +1169,10 @@
               "height": 4096,
               "input_bytes": 589275,
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772486829047,
+              "qpc_ticks": 1795258363809,
               "row_bytes": 4096,
               "schema_version": 1,
               "scratch_bytes_required": 67108864,
@@ -1183,10 +1183,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772487074391,
+              "qpc_ticks": 1795258411537,
               "schema_version": 1,
               "seq": 7,
               "stage": "before_onload"
@@ -1194,10 +1194,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772487082129,
+              "qpc_ticks": 1795258418574,
               "schema_version": 1,
               "seq": 8,
               "stage": "onload_entered"
@@ -1205,10 +1205,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772487303401,
+              "qpc_ticks": 1795258592825,
               "schema_version": 1,
               "seq": 9,
               "stage": "onload_returned"
@@ -1218,10 +1218,10 @@
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
               "pause_timeout_ms": 10000,
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772487312675,
+              "qpc_ticks": 1795258602902,
               "schema_version": 1,
               "seq": 10,
               "stage": "after_onload"
@@ -1229,10 +1229,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772493334435,
+              "qpc_ticks": 1795264571489,
               "schema_version": 1,
               "seq": 11,
               "stage": "conversion_entered"
@@ -1240,10 +1240,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772493386939,
+              "qpc_ticks": 1795264621674,
               "schema_version": 1,
               "seq": 12,
               "stage": "conversion_returned"
@@ -1251,10 +1251,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772493397946,
+              "qpc_ticks": 1795264631093,
               "schema_version": 1,
               "seq": 13,
               "stage": "copy_pixels_entered"
@@ -1262,10 +1262,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772493448090,
+              "qpc_ticks": 1795264680027,
               "schema_version": 1,
               "seq": 14,
               "stage": "copy_pixels_returned"
@@ -1273,10 +1273,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772493649133,
+              "qpc_ticks": 1795264885111,
               "schema_version": 1,
               "seq": 15,
               "stage": "encode_entered"
@@ -1284,10 +1284,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772493801682,
+              "qpc_ticks": 1795265022781,
               "schema_version": 1,
               "seq": 16,
               "stage": "encode_returned"
@@ -1295,10 +1295,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772493811429,
+              "qpc_ticks": 1795265032949,
               "schema_version": 1,
               "seq": 17,
               "stage": "before_publish"
@@ -1306,10 +1306,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772493931141,
+              "qpc_ticks": 1795265141926,
               "schema_version": 1,
               "seq": 18,
               "stage": "output_published"
@@ -1321,18 +1321,18 @@
               "materialization": "completed",
               "observer": "wic_probe",
               "outcome": "decoded",
-              "pid": 75296,
-              "process_start_utc_ticks": 639287993472909285,
+              "pid": 74120,
+              "process_start_utc_ticks": 639288016244816871,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772494014272,
+              "qpc_ticks": 1795265220845,
               "reason_code": null,
               "schema_version": 1,
               "seq": 19,
               "stage": "probe_exit"
             }
           ],
-          "start_utc_ticks": 639287993472909285,
-          "started_ns": 177247914751600,
+          "start_utc_ticks": 639288016244816871,
+          "started_ns": 179525105508200,
           "stderr_bytes": 0,
           "stderr_utf8": "",
           "stdout_bytes": 899,
@@ -1342,8 +1342,8 @@
           "trace_partial_bytes": 0,
           "trace_path": "workers\\S03_after_onload\\observe\\trace.jsonl",
           "trace_records": 19,
-          "trace_sha256": "sha256:81f8c59d86edda4d1311e01d11b6a794fd9d13adfae9c7c75862db56ff2ea069",
-          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772484883083,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772485631032,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772486118705,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772486322694,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772486330102,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"admitted\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772486829047,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"width\":4096,\"height\":4096,\"bits_per_channel\":8,\"bits_per_pixel\":8,\"row_bytes\":4096,\"decoded_bytes_required\":16777216,\"bgra32_bytes_required\":67108864,\"declared_scratch_bytes\":0,\"scratch_bytes_required\":67108864,\"input_bytes\":589275}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"before_onload\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772487074391,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":8,\"stage\":\"onload_entered\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772487082129,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":9,\"stage\":\"onload_returned\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772487303401,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":10,\"stage\":\"after_onload\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772487312675,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":11,\"stage\":\"conversion_entered\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772493334435,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":12,\"stage\":\"conversion_returned\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772493386939,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":13,\"stage\":\"copy_pixels_entered\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772493397946,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":14,\"stage\":\"copy_pixels_returned\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772493448090,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":15,\"stage\":\"encode_entered\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772493649133,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":16,\"stage\":\"encode_returned\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772493801682,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":17,\"stage\":\"before_publish\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772493811429,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":18,\"stage\":\"output_published\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772493931141,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":19,\"stage\":\"probe_exit\",\"pid\":75296,\"process_start_utc_ticks\":639287993472909285,\"qpc_ticks\":1772494014272,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"decoded\",\"reason_code\":null,\"admission_status\":\"admitted\",\"materialization\":\"completed\",\"complete\":true}\n"
+          "trace_sha256": "sha256:09dfa6ca82d9c6ca012dc93862d8c39d83c05cf71875cb07b2ad8bc076c97465",
+          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795256791189,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795257279167,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795257836214,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795257845603,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795257852353,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"admitted\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795258363809,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"width\":4096,\"height\":4096,\"bits_per_channel\":8,\"bits_per_pixel\":8,\"row_bytes\":4096,\"decoded_bytes_required\":16777216,\"bgra32_bytes_required\":67108864,\"declared_scratch_bytes\":0,\"scratch_bytes_required\":67108864,\"input_bytes\":589275}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"before_onload\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795258411537,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":8,\"stage\":\"onload_entered\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795258418574,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":9,\"stage\":\"onload_returned\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795258592825,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":10,\"stage\":\"after_onload\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795258602902,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":11,\"stage\":\"conversion_entered\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795264571489,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":12,\"stage\":\"conversion_returned\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795264621674,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":13,\"stage\":\"copy_pixels_entered\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795264631093,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":14,\"stage\":\"copy_pixels_returned\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795264680027,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":15,\"stage\":\"encode_entered\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795264885111,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":16,\"stage\":\"encode_returned\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795265022781,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":17,\"stage\":\"before_publish\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795265032949,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":18,\"stage\":\"output_published\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795265141926,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":19,\"stage\":\"probe_exit\",\"pid\":74120,\"process_start_utc_ticks\":639288016244816871,\"qpc_ticks\":1795265220845,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"decoded\",\"reason_code\":null,\"admission_status\":\"admitted\",\"materialization\":\"completed\",\"complete\":true}\n"
         }
       ]
     },
@@ -1404,7 +1404,7 @@
           },
           "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
           "exit_code": 0,
-          "exited_ns": 177251154574600,
+          "exited_ns": 179528247787900,
           "fixture_id": "png_gray_matched_4k",
           "hold_stage": "after_onload",
           "identity_verified": true,
@@ -1441,7 +1441,7 @@
           "output_path": "workers\\S04_after_onload\\output.png",
           "output_present": true,
           "output_sha256": "sha256:69b653c712156549b2e28769b8753637878c855e4b55dde5d58975764fbb2c0b",
-          "pid": 74716,
+          "pid": 69864,
           "probe_result": {
             "admission_status": "admitted",
             "bgra32_bytes_required": 67108864,
@@ -1492,7 +1492,7 @@
             "classification": "DERIVED_WINDOW_SUM",
             "clock_domain": "python_monotonic_ns",
             "complete": true,
-            "end_ns": 177250941270300,
+            "end_ns": 179528026242900,
             "failure": null,
             "gap_ns": null,
             "index": 0,
@@ -1504,17 +1504,17 @@
               "stderr_bytes": 0,
               "stderr_utf8": "",
               "stdout_bytes": 483,
-              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S04_after_onload\",\"pid\":74716,\"start_utc_ticks\":639287993489552719,\"identity_after_ticks\":639287993489552719,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":132075520,\"private_bytes\":58142720,\"peak_working_set_bytes\":132075520,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1772508451066,\"qpc_end\":1772508619969}],\"errors\":[],\"qpc_start\":1772508022160,\"qpc_end\":1772508676397,\"qpc_frequency\":10000000}\r\n",
+              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S04_after_onload\",\"pid\":69864,\"start_utc_ticks\":639288016260746714,\"identity_after_ticks\":639288016260746714,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":136019968,\"private_bytes\":61378560,\"peak_working_set_bytes\":136024064,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1795279196107,\"qpc_end\":1795279442386}],\"errors\":[],\"qpc_start\":1795279041941,\"qpc_end\":1795279514842,\"qpc_frequency\":10000000}\r\n",
               "timeout": false
             },
-            "qpc_end": 1772508676397,
+            "qpc_end": 1795279514842,
             "qpc_frequency": 10000000,
-            "qpc_start": 1772508022160,
+            "qpc_start": 1795279041941,
             "request_identities": [
               {
                 "case_id": "S04_after_onload",
-                "pid": 74716,
-                "start_utc_ticks": 639287993489552719
+                "pid": 69864,
+                "start_utc_ticks": 639288016260746714
               }
             ],
             "samples": [
@@ -1523,33 +1523,33 @@
                 "alive_before": true,
                 "case_id": "S04_after_onload",
                 "exe_verified": true,
-                "identity_after_ticks": 639287993489552719,
+                "identity_after_ticks": 639288016260746714,
                 "order": 0,
                 "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-                "peak_working_set_bytes": 132075520,
-                "pid": 74716,
-                "private_bytes": 58142720,
-                "qpc_end": 1772508619969,
-                "qpc_start": 1772508451066,
-                "start_utc_ticks": 639287993489552719,
-                "working_set_bytes": 132075520
+                "peak_working_set_bytes": 136024064,
+                "pid": 69864,
+                "private_bytes": 61378560,
+                "qpc_end": 1795279442386,
+                "qpc_start": 1795279196107,
+                "start_utc_ticks": 639288016260746714,
+                "working_set_bytes": 136019968
               }
             ],
-            "start_ns": 177250360354500,
+            "start_ns": 179527472145300,
             "status": "complete",
             "totals": {
-              "private_bytes": 58142720,
-              "working_set_bytes": 132075520
+              "private_bytes": 61378560,
+              "working_set_bytes": 136019968
             }
           },
           "stages": [
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772501512583,
+              "qpc_ticks": 1795272902345,
               "schema_version": 1,
               "seq": 1,
               "stage": "process_observed"
@@ -1557,10 +1557,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772502188295,
+              "qpc_ticks": 1795273360145,
               "schema_version": 1,
               "seq": 2,
               "stage": "input_opened"
@@ -1568,10 +1568,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772502705651,
+              "qpc_ticks": 1795273875449,
               "schema_version": 1,
               "seq": 3,
               "stage": "metadata_available"
@@ -1579,10 +1579,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772502715596,
+              "qpc_ticks": 1795273887083,
               "schema_version": 1,
               "seq": 4,
               "stage": "before_admission"
@@ -1590,10 +1590,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772502722992,
+              "qpc_ticks": 1795273898649,
               "schema_version": 1,
               "seq": 5,
               "stage": "admission_started"
@@ -1608,10 +1608,10 @@
               "height": 4096,
               "input_bytes": 259602,
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772503249347,
+              "qpc_ticks": 1795274436333,
               "row_bytes": 4096,
               "schema_version": 1,
               "scratch_bytes_required": 67108864,
@@ -1622,10 +1622,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772503294344,
+              "qpc_ticks": 1795274480431,
               "schema_version": 1,
               "seq": 7,
               "stage": "before_onload"
@@ -1633,10 +1633,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772503302468,
+              "qpc_ticks": 1795274488044,
               "schema_version": 1,
               "seq": 8,
               "stage": "onload_entered"
@@ -1644,10 +1644,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772503395941,
+              "qpc_ticks": 1795274570921,
               "schema_version": 1,
               "seq": 9,
               "stage": "onload_returned"
@@ -1657,10 +1657,10 @@
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
               "pause_timeout_ms": 10000,
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772503405666,
+              "qpc_ticks": 1795274580316,
               "schema_version": 1,
               "seq": 10,
               "stage": "after_onload"
@@ -1668,10 +1668,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772509840396,
+              "qpc_ticks": 1795280755573,
               "schema_version": 1,
               "seq": 11,
               "stage": "conversion_entered"
@@ -1679,10 +1679,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772509888884,
+              "qpc_ticks": 1795280804098,
               "schema_version": 1,
               "seq": 12,
               "stage": "conversion_returned"
@@ -1690,10 +1690,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772509898410,
+              "qpc_ticks": 1795280813009,
               "schema_version": 1,
               "seq": 13,
               "stage": "copy_pixels_entered"
@@ -1701,10 +1701,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772509946757,
+              "qpc_ticks": 1795280864921,
               "schema_version": 1,
               "seq": 14,
               "stage": "copy_pixels_returned"
@@ -1712,10 +1712,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772510139269,
+              "qpc_ticks": 1795281058905,
               "schema_version": 1,
               "seq": 15,
               "stage": "encode_entered"
@@ -1723,10 +1723,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772510281045,
+              "qpc_ticks": 1795281208990,
               "schema_version": 1,
               "seq": 16,
               "stage": "encode_returned"
@@ -1734,10 +1734,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772510289829,
+              "qpc_ticks": 1795281219178,
               "schema_version": 1,
               "seq": 17,
               "stage": "before_publish"
@@ -1745,10 +1745,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772510397524,
+              "qpc_ticks": 1795281382685,
               "schema_version": 1,
               "seq": 18,
               "stage": "output_published"
@@ -1760,18 +1760,18 @@
               "materialization": "completed",
               "observer": "wic_probe",
               "outcome": "decoded",
-              "pid": 74716,
-              "process_start_utc_ticks": 639287993489552719,
+              "pid": 69864,
+              "process_start_utc_ticks": 639288016260746714,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772510475707,
+              "qpc_ticks": 1795281459268,
               "reason_code": null,
               "schema_version": 1,
               "seq": 19,
               "stage": "probe_exit"
             }
           ],
-          "start_utc_ticks": 639287993489552719,
-          "started_ns": 177249579144000,
+          "start_utc_ticks": 639288016260746714,
+          "started_ns": 179526698467200,
           "stderr_bytes": 0,
           "stderr_utf8": "",
           "stdout_bytes": 897,
@@ -1781,8 +1781,8 @@
           "trace_partial_bytes": 0,
           "trace_path": "workers\\S04_after_onload\\observe\\trace.jsonl",
           "trace_records": 19,
-          "trace_sha256": "sha256:83c28acc00d2f1a9d78f53cc30ce7583a26c5d46666c733ca56f352a2f0ef348",
-          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772501512583,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772502188295,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772502705651,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772502715596,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772502722992,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"admitted\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772503249347,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"width\":4096,\"height\":4096,\"bits_per_channel\":8,\"bits_per_pixel\":8,\"row_bytes\":4096,\"decoded_bytes_required\":16777216,\"bgra32_bytes_required\":67108864,\"declared_scratch_bytes\":0,\"scratch_bytes_required\":67108864,\"input_bytes\":259602}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"before_onload\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772503294344,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":8,\"stage\":\"onload_entered\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772503302468,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":9,\"stage\":\"onload_returned\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772503395941,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":10,\"stage\":\"after_onload\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772503405666,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":11,\"stage\":\"conversion_entered\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772509840396,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":12,\"stage\":\"conversion_returned\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772509888884,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":13,\"stage\":\"copy_pixels_entered\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772509898410,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":14,\"stage\":\"copy_pixels_returned\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772509946757,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":15,\"stage\":\"encode_entered\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772510139269,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":16,\"stage\":\"encode_returned\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772510281045,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":17,\"stage\":\"before_publish\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772510289829,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":18,\"stage\":\"output_published\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772510397524,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":19,\"stage\":\"probe_exit\",\"pid\":74716,\"process_start_utc_ticks\":639287993489552719,\"qpc_ticks\":1772510475707,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"decoded\",\"reason_code\":null,\"admission_status\":\"admitted\",\"materialization\":\"completed\",\"complete\":true}\n"
+          "trace_sha256": "sha256:986714d40e995e46ca371343febccf29e01f59847ff4b69bd3a0405b2fd17eb5",
+          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795272902345,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795273360145,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795273875449,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795273887083,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795273898649,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"admitted\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795274436333,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"width\":4096,\"height\":4096,\"bits_per_channel\":8,\"bits_per_pixel\":8,\"row_bytes\":4096,\"decoded_bytes_required\":16777216,\"bgra32_bytes_required\":67108864,\"declared_scratch_bytes\":0,\"scratch_bytes_required\":67108864,\"input_bytes\":259602}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"before_onload\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795274480431,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":8,\"stage\":\"onload_entered\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795274488044,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":9,\"stage\":\"onload_returned\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795274570921,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":10,\"stage\":\"after_onload\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795274580316,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":11,\"stage\":\"conversion_entered\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795280755573,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":12,\"stage\":\"conversion_returned\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795280804098,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":13,\"stage\":\"copy_pixels_entered\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795280813009,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":14,\"stage\":\"copy_pixels_returned\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795280864921,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":15,\"stage\":\"encode_entered\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795281058905,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":16,\"stage\":\"encode_returned\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795281208990,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":17,\"stage\":\"before_publish\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795281219178,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":18,\"stage\":\"output_published\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795281382685,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":19,\"stage\":\"probe_exit\",\"pid\":69864,\"process_start_utc_ticks\":639288016260746714,\"qpc_ticks\":1795281459268,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"decoded\",\"reason_code\":null,\"admission_status\":\"admitted\",\"materialization\":\"completed\",\"complete\":true}\n"
         }
       ]
     },
@@ -1843,7 +1843,7 @@
           },
           "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
           "exit_code": 4,
-          "exited_ns": 177252772562100,
+          "exited_ns": 179529737474500,
           "fixture_id": "jpeg_gray_4k",
           "hold_stage": "before_admission",
           "identity_verified": true,
@@ -1870,7 +1870,7 @@
           "output_path": "workers\\S05_before_admission\\output.png",
           "output_present": false,
           "output_sha256": null,
-          "pid": 62296,
+          "pid": 63428,
           "probe_result": {
             "admission_status": "refused",
             "bgra32_bytes_required": null,
@@ -1921,7 +1921,7 @@
             "classification": "DERIVED_WINDOW_SUM",
             "clock_domain": "python_monotonic_ns",
             "complete": true,
-            "end_ns": 177252518801200,
+            "end_ns": 179529549444800,
             "failure": null,
             "gap_ns": null,
             "index": 0,
@@ -1933,17 +1933,17 @@
               "stderr_bytes": 0,
               "stderr_utf8": "",
               "stdout_bytes": 487,
-              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S05_before_admission\",\"pid\":62296,\"start_utc_ticks\":639287993506043859,\"identity_after_ticks\":639287993506043859,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":119840768,\"private_bytes\":44724224,\"peak_working_set_bytes\":119840768,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1772524230357,\"qpc_end\":1772524397708}],\"errors\":[],\"qpc_start\":1772523996783,\"qpc_end\":1772524452882,\"qpc_frequency\":10000000}\r\n",
+              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S05_before_admission\",\"pid\":63428,\"start_utc_ticks\":639288016276987462,\"identity_after_ticks\":639288016276987462,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":115281920,\"private_bytes\":41193472,\"peak_working_set_bytes\":115290112,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1795294452318,\"qpc_end\":1795294700607}],\"errors\":[],\"qpc_start\":1795294300323,\"qpc_end\":1795294756621,\"qpc_frequency\":10000000}\r\n",
               "timeout": false
             },
-            "qpc_end": 1772524452882,
+            "qpc_end": 1795294756621,
             "qpc_frequency": 10000000,
-            "qpc_start": 1772523996783,
+            "qpc_start": 1795294300323,
             "request_identities": [
               {
                 "case_id": "S05_before_admission",
-                "pid": 62296,
-                "start_utc_ticks": 639287993506043859
+                "pid": 63428,
+                "start_utc_ticks": 639288016276987462
               }
             ],
             "samples": [
@@ -1952,33 +1952,33 @@
                 "alive_before": true,
                 "case_id": "S05_before_admission",
                 "exe_verified": true,
-                "identity_after_ticks": 639287993506043859,
+                "identity_after_ticks": 639288016276987462,
                 "order": 0,
                 "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-                "peak_working_set_bytes": 119840768,
-                "pid": 62296,
-                "private_bytes": 44724224,
-                "qpc_end": 1772524397708,
-                "qpc_start": 1772524230357,
-                "start_utc_ticks": 639287993506043859,
-                "working_set_bytes": 119840768
+                "peak_working_set_bytes": 115290112,
+                "pid": 63428,
+                "private_bytes": 41193472,
+                "qpc_end": 1795294700607,
+                "qpc_start": 1795294452318,
+                "start_utc_ticks": 639288016276987462,
+                "working_set_bytes": 115281920
               }
             ],
-            "start_ns": 177251962588600,
+            "start_ns": 179528999282700,
             "status": "complete",
             "totals": {
-              "private_bytes": 44724224,
-              "working_set_bytes": 119840768
+              "private_bytes": 41193472,
+              "working_set_bytes": 115281920
             }
           },
           "stages": [
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 62296,
-              "process_start_utc_ticks": 639287993506043859,
+              "pid": 63428,
+              "process_start_utc_ticks": 639288016276987462,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772518240206,
+              "qpc_ticks": 1795288900023,
               "schema_version": 1,
               "seq": 1,
               "stage": "process_observed"
@@ -1986,10 +1986,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 62296,
-              "process_start_utc_ticks": 639287993506043859,
+              "pid": 63428,
+              "process_start_utc_ticks": 639288016276987462,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772518786558,
+              "qpc_ticks": 1795289317590,
               "schema_version": 1,
               "seq": 2,
               "stage": "input_opened"
@@ -1997,10 +1997,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 62296,
-              "process_start_utc_ticks": 639287993506043859,
+              "pid": 63428,
+              "process_start_utc_ticks": 639288016276987462,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772519290874,
+              "qpc_ticks": 1795289802745,
               "schema_version": 1,
               "seq": 3,
               "stage": "metadata_available"
@@ -2010,10 +2010,10 @@
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
               "pause_timeout_ms": 10000,
-              "pid": 62296,
-              "process_start_utc_ticks": 639287993506043859,
+              "pid": 63428,
+              "process_start_utc_ticks": 639288016276987462,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772519441598,
+              "qpc_ticks": 1795289813779,
               "schema_version": 1,
               "seq": 4,
               "stage": "before_admission"
@@ -2021,10 +2021,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 62296,
-              "process_start_utc_ticks": 639287993506043859,
+              "pid": 63428,
+              "process_start_utc_ticks": 639288016276987462,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772525600147,
+              "qpc_ticks": 1795295746353,
               "schema_version": 1,
               "seq": 5,
               "stage": "admission_started"
@@ -2032,10 +2032,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 62296,
-              "process_start_utc_ticks": 639287993506043859,
+              "pid": 63428,
+              "process_start_utc_ticks": 639288016276987462,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772526352596,
+              "qpc_ticks": 1795296306507,
               "schema_version": 1,
               "seq": 6,
               "stage": "refused"
@@ -2047,18 +2047,18 @@
               "materialization": "not_requested",
               "observer": "wic_probe",
               "outcome": "oversize",
-              "pid": 62296,
-              "process_start_utc_ticks": 639287993506043859,
+              "pid": 63428,
+              "process_start_utc_ticks": 639288016276987462,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772526576718,
+              "qpc_ticks": 1795296331908,
               "reason_code": "max_dimension_exceeded",
               "schema_version": 1,
               "seq": 7,
               "stage": "probe_exit"
             }
           ],
-          "start_utc_ticks": 639287993506043859,
-          "started_ns": 177251228231500,
+          "start_utc_ticks": 639288016276987462,
+          "started_ns": 179528322578800,
           "stderr_bytes": 0,
           "stderr_utf8": "",
           "stdout_bytes": 948,
@@ -2068,8 +2068,8 @@
           "trace_partial_bytes": 0,
           "trace_path": "workers\\S05_before_admission\\observe\\trace.jsonl",
           "trace_records": 7,
-          "trace_sha256": "sha256:50b70995c0f04f0b6cb47586af119a703f519d17dc0f4e70ff583e6a69ce595b",
-          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":62296,\"process_start_utc_ticks\":639287993506043859,\"qpc_ticks\":1772518240206,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":62296,\"process_start_utc_ticks\":639287993506043859,\"qpc_ticks\":1772518786558,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":62296,\"process_start_utc_ticks\":639287993506043859,\"qpc_ticks\":1772519290874,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":62296,\"process_start_utc_ticks\":639287993506043859,\"qpc_ticks\":1772519441598,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":62296,\"process_start_utc_ticks\":639287993506043859,\"qpc_ticks\":1772525600147,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"refused\",\"pid\":62296,\"process_start_utc_ticks\":639287993506043859,\"qpc_ticks\":1772526352596,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"probe_exit\",\"pid\":62296,\"process_start_utc_ticks\":639287993506043859,\"qpc_ticks\":1772526576718,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"oversize\",\"reason_code\":\"max_dimension_exceeded\",\"admission_status\":\"refused\",\"materialization\":\"not_requested\",\"complete\":true}\n"
+          "trace_sha256": "sha256:0e175108cf1c8df85ce400a59bcab47153f9160ced64a312e0b3f40ff4ef8d7e",
+          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":63428,\"process_start_utc_ticks\":639288016276987462,\"qpc_ticks\":1795288900023,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":63428,\"process_start_utc_ticks\":639288016276987462,\"qpc_ticks\":1795289317590,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":63428,\"process_start_utc_ticks\":639288016276987462,\"qpc_ticks\":1795289802745,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":63428,\"process_start_utc_ticks\":639288016276987462,\"qpc_ticks\":1795289813779,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":63428,\"process_start_utc_ticks\":639288016276987462,\"qpc_ticks\":1795295746353,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"refused\",\"pid\":63428,\"process_start_utc_ticks\":639288016276987462,\"qpc_ticks\":1795296306507,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"probe_exit\",\"pid\":63428,\"process_start_utc_ticks\":639288016276987462,\"qpc_ticks\":1795296331908,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"oversize\",\"reason_code\":\"max_dimension_exceeded\",\"admission_status\":\"refused\",\"materialization\":\"not_requested\",\"complete\":true}\n"
         }
       ]
     },
@@ -2130,7 +2130,7 @@
           },
           "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
           "exit_code": 4,
-          "exited_ns": 177254287335700,
+          "exited_ns": 179531193016000,
           "fixture_id": "png_gray_matched_4k",
           "hold_stage": "before_admission",
           "identity_verified": true,
@@ -2157,7 +2157,7 @@
           "output_path": "workers\\S06_before_admission\\output.png",
           "output_present": false,
           "output_sha256": null,
-          "pid": 65972,
+          "pid": 11652,
           "probe_result": {
             "admission_status": "refused",
             "bgra32_bytes_required": null,
@@ -2208,7 +2208,7 @@
             "classification": "DERIVED_WINDOW_SUM",
             "clock_domain": "python_monotonic_ns",
             "complete": true,
-            "end_ns": 177254065823600,
+            "end_ns": 179530997807500,
             "failure": null,
             "gap_ns": null,
             "index": 0,
@@ -2220,17 +2220,17 @@
               "stderr_bytes": 0,
               "stderr_utf8": "",
               "stdout_bytes": 487,
-              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S06_before_admission\",\"pid\":65972,\"start_utc_ticks\":639287993521657507,\"identity_after_ticks\":639287993521657507,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":115171328,\"private_bytes\":41553920,\"peak_working_set_bytes\":115183616,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1772539682755,\"qpc_end\":1772539850926}],\"errors\":[],\"qpc_start\":1772539438706,\"qpc_end\":1772539907613,\"qpc_frequency\":10000000}\r\n",
+              "stdout_utf8": "{\"samples\":[{\"case_id\":\"S06_before_admission\",\"pid\":11652,\"start_utc_ticks\":639288016291307723,\"identity_after_ticks\":639288016291307723,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":115015680,\"private_bytes\":41238528,\"peak_working_set_bytes\":115023872,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1795309013338,\"qpc_end\":1795309183007}],\"errors\":[],\"qpc_start\":1795308782563,\"qpc_end\":1795309241620,\"qpc_frequency\":10000000}\r\n",
               "timeout": false
             },
-            "qpc_end": 1772539907613,
+            "qpc_end": 1795309241620,
             "qpc_frequency": 10000000,
-            "qpc_start": 1772539438706,
+            "qpc_start": 1795308782563,
             "request_identities": [
               {
                 "case_id": "S06_before_admission",
-                "pid": 65972,
-                "start_utc_ticks": 639287993521657507
+                "pid": 11652,
+                "start_utc_ticks": 639288016291307723
               }
             ],
             "samples": [
@@ -2239,33 +2239,33 @@
                 "alive_before": true,
                 "case_id": "S06_before_admission",
                 "exe_verified": true,
-                "identity_after_ticks": 639287993521657507,
+                "identity_after_ticks": 639288016291307723,
                 "order": 0,
                 "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-                "peak_working_set_bytes": 115183616,
-                "pid": 65972,
-                "private_bytes": 41553920,
-                "qpc_end": 1772539850926,
-                "qpc_start": 1772539682755,
-                "start_utc_ticks": 639287993521657507,
-                "working_set_bytes": 115171328
+                "peak_working_set_bytes": 115023872,
+                "pid": 11652,
+                "private_bytes": 41238528,
+                "qpc_end": 1795309183007,
+                "qpc_start": 1795309013338,
+                "start_utc_ticks": 639288016291307723,
+                "working_set_bytes": 115015680
               }
             ],
-            "start_ns": 177253523591500,
+            "start_ns": 179530448968300,
             "status": "complete",
             "totals": {
-              "private_bytes": 41553920,
-              "working_set_bytes": 115171328
+              "private_bytes": 41238528,
+              "working_set_bytes": 115015680
             }
           },
           "stages": [
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 65972,
-              "process_start_utc_ticks": 639287993521657507,
+              "pid": 11652,
+              "process_start_utc_ticks": 639288016291307723,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772533705076,
+              "qpc_ticks": 1795303368602,
               "schema_version": 1,
               "seq": 1,
               "stage": "process_observed"
@@ -2273,10 +2273,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 65972,
-              "process_start_utc_ticks": 639287993521657507,
+              "pid": 11652,
+              "process_start_utc_ticks": 639288016291307723,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772534361007,
+              "qpc_ticks": 1795303784964,
               "schema_version": 1,
               "seq": 2,
               "stage": "input_opened"
@@ -2284,10 +2284,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 65972,
-              "process_start_utc_ticks": 639287993521657507,
+              "pid": 11652,
+              "process_start_utc_ticks": 639288016291307723,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772534913807,
+              "qpc_ticks": 1795304269198,
               "schema_version": 1,
               "seq": 3,
               "stage": "metadata_available"
@@ -2297,10 +2297,10 @@
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
               "pause_timeout_ms": 10000,
-              "pid": 65972,
-              "process_start_utc_ticks": 639287993521657507,
+              "pid": 11652,
+              "process_start_utc_ticks": 639288016291307723,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772535013267,
+              "qpc_ticks": 1795304278518,
               "schema_version": 1,
               "seq": 4,
               "stage": "before_admission"
@@ -2308,10 +2308,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 65972,
-              "process_start_utc_ticks": 639287993521657507,
+              "pid": 11652,
+              "process_start_utc_ticks": 639288016291307723,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772541132911,
+              "qpc_ticks": 1795310217308,
               "schema_version": 1,
               "seq": 5,
               "stage": "admission_started"
@@ -2319,10 +2319,10 @@
             {
               "clock_domain": "windows_qpc",
               "observer": "wic_probe",
-              "pid": 65972,
-              "process_start_utc_ticks": 639287993521657507,
+              "pid": 11652,
+              "process_start_utc_ticks": 639288016291307723,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772541647232,
+              "qpc_ticks": 1795310737936,
               "schema_version": 1,
               "seq": 6,
               "stage": "refused"
@@ -2334,18 +2334,18 @@
               "materialization": "not_requested",
               "observer": "wic_probe",
               "outcome": "oversize",
-              "pid": 65972,
-              "process_start_utc_ticks": 639287993521657507,
+              "pid": 11652,
+              "process_start_utc_ticks": 639288016291307723,
               "qpc_frequency": 10000000,
-              "qpc_ticks": 1772541866710,
+              "qpc_ticks": 1795310759452,
               "reason_code": "max_dimension_exceeded",
               "schema_version": 1,
               "seq": 7,
               "stage": "probe_exit"
             }
           ],
-          "start_utc_ticks": 639287993521657507,
-          "started_ns": 177252789581500,
+          "start_utc_ticks": 639288016291307723,
+          "started_ns": 179529754608200,
           "stderr_bytes": 0,
           "stderr_utf8": "",
           "stdout_bytes": 946,
@@ -2355,8 +2355,8 @@
           "trace_partial_bytes": 0,
           "trace_path": "workers\\S06_before_admission\\observe\\trace.jsonl",
           "trace_records": 7,
-          "trace_sha256": "sha256:2cca8018c45f0dfcbce743de55a2e79e95a9f7456a738c7e50e7f9f6531063ab",
-          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":65972,\"process_start_utc_ticks\":639287993521657507,\"qpc_ticks\":1772533705076,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":65972,\"process_start_utc_ticks\":639287993521657507,\"qpc_ticks\":1772534361007,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":65972,\"process_start_utc_ticks\":639287993521657507,\"qpc_ticks\":1772534913807,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":65972,\"process_start_utc_ticks\":639287993521657507,\"qpc_ticks\":1772535013267,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":65972,\"process_start_utc_ticks\":639287993521657507,\"qpc_ticks\":1772541132911,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"refused\",\"pid\":65972,\"process_start_utc_ticks\":639287993521657507,\"qpc_ticks\":1772541647232,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"probe_exit\",\"pid\":65972,\"process_start_utc_ticks\":639287993521657507,\"qpc_ticks\":1772541866710,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"oversize\",\"reason_code\":\"max_dimension_exceeded\",\"admission_status\":\"refused\",\"materialization\":\"not_requested\",\"complete\":true}\n"
+          "trace_sha256": "sha256:935f5bfe34b90a261b54390a986eccb79c97ba2c4bf58a3533a94af3b1f32086",
+          "trace_utf8": "{\"schema_version\":1,\"seq\":1,\"stage\":\"process_observed\",\"pid\":11652,\"process_start_utc_ticks\":639288016291307723,\"qpc_ticks\":1795303368602,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":2,\"stage\":\"input_opened\",\"pid\":11652,\"process_start_utc_ticks\":639288016291307723,\"qpc_ticks\":1795303784964,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":3,\"stage\":\"metadata_available\",\"pid\":11652,\"process_start_utc_ticks\":639288016291307723,\"qpc_ticks\":1795304269198,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":4,\"stage\":\"before_admission\",\"pid\":11652,\"process_start_utc_ticks\":639288016291307723,\"qpc_ticks\":1795304278518,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"artificial_instrumentation_hold\":true,\"pause_timeout_ms\":10000}\n{\"schema_version\":1,\"seq\":5,\"stage\":\"admission_started\",\"pid\":11652,\"process_start_utc_ticks\":639288016291307723,\"qpc_ticks\":1795310217308,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":6,\"stage\":\"refused\",\"pid\":11652,\"process_start_utc_ticks\":639288016291307723,\"qpc_ticks\":1795310737936,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\"}\n{\"schema_version\":1,\"seq\":7,\"stage\":\"probe_exit\",\"pid\":11652,\"process_start_utc_ticks\":639288016291307723,\"qpc_ticks\":1795310759452,\"qpc_frequency\":10000000,\"clock_domain\":\"windows_qpc\",\"observer\":\"wic_probe\",\"outcome\":\"oversize\",\"reason_code\":\"max_dimension_exceeded\",\"admission_status\":\"refused\",\"materialization\":\"not_requested\",\"complete\":true}\n"
         }
       ]
     }
@@ -2373,7 +2373,7 @@
     "max_pixels": 16777216,
     "max_scratch_bytes": 67108864
   },
-  "duration_ns": 14327983800,
+  "duration_ns": 13917401300,
   "fixture_oracles": [
     {
       "basis": "dc_only_entropy_scan_block_predictor",
@@ -2469,15 +2469,15 @@
         "comparison": "A",
         "interpretation": "WHOLE_PROCESS_COUNTER_DIFFERENCE_OF_SEPARATE_LIFETIMES",
         "jpeg": {
-          "private_bytes": 61276160,
-          "working_set_bytes": 135495680
+          "private_bytes": 61317120,
+          "working_set_bytes": 135376896
         },
         "jpeg_case_id": "S01_after_onload",
-        "observed_private_bytes_difference": 2760704,
-        "observed_working_set_bytes_difference": 3641344,
+        "observed_private_bytes_difference": 3801088,
+        "observed_working_set_bytes_difference": 4124672,
         "png": {
-          "private_bytes": 58515456,
-          "working_set_bytes": 131854336
+          "private_bytes": 57516032,
+          "working_set_bytes": 131252224
         },
         "png_case_id": "S02_after_onload",
         "roi": [
@@ -2491,15 +2491,15 @@
         "comparison": "B",
         "interpretation": "WHOLE_PROCESS_COUNTER_DIFFERENCE_OF_SEPARATE_LIFETIMES",
         "jpeg": {
-          "private_bytes": 58048512,
-          "working_set_bytes": 131612672
+          "private_bytes": 57999360,
+          "working_set_bytes": 131526656
         },
         "jpeg_case_id": "S03_after_onload",
-        "observed_private_bytes_difference": -94208,
-        "observed_working_set_bytes_difference": -462848,
+        "observed_private_bytes_difference": -3379200,
+        "observed_working_set_bytes_difference": -4493312,
         "png": {
-          "private_bytes": 58142720,
-          "working_set_bytes": 132075520
+          "private_bytes": 61378560,
+          "working_set_bytes": 136019968
         },
         "png_case_id": "S04_after_onload",
         "roi": [
@@ -2515,8 +2515,8 @@
         "codec": "jpeg",
         "comparison": "C",
         "interpretation": "WHOLE_PROCESS_COUNTER_DIFFERENCE_OF_SEPARATE_LIFETIMES",
-        "observed_private_bytes_difference": -3227648,
-        "observed_working_set_bytes_difference": -3883008,
+        "observed_private_bytes_difference": -3317760,
+        "observed_working_set_bytes_difference": -3850240,
         "one_pixel_worker": "S01_after_onload",
         "roi_256_worker": "S03_after_onload"
       },
@@ -2524,8 +2524,8 @@
         "codec": "png",
         "comparison": "C",
         "interpretation": "WHOLE_PROCESS_COUNTER_DIFFERENCE_OF_SEPARATE_LIFETIMES",
-        "observed_private_bytes_difference": -372736,
-        "observed_working_set_bytes_difference": 221184,
+        "observed_private_bytes_difference": 3862528,
+        "observed_working_set_bytes_difference": 4767744,
         "one_pixel_worker": "S02_after_onload",
         "roi_256_worker": "S04_after_onload"
       }
@@ -2540,22 +2540,22 @@
       "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
       "fixture_id": "jpeg_gray_4k",
       "input_sha256": "sha256:9ea35ad3a09de79119d8c8335092251cd4aa36bf9177ea4a0b3575e4500c16d6",
-      "lifetime_exited_ns": 177246338532800,
-      "lifetime_started_ns": 177244689720100,
+      "lifetime_exited_ns": 179523603423300,
+      "lifetime_started_ns": 179521977276500,
       "observer_clock": "python_monotonic_ns",
-      "observer_qpc_end": 1772460547028,
+      "observer_qpc_end": 1795233376385,
       "observer_qpc_frequency": 10000000,
-      "observer_qpc_start": 1772459825567,
+      "observer_qpc_start": 1795232876868,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-      "peak_working_set_bytes": 135495680,
-      "pid": 73748,
-      "private_bytes": 61276160,
+      "peak_working_set_bytes": 135376896,
+      "pid": 36916,
+      "private_bytes": 61317120,
       "stage": "after_onload",
-      "start_utc_ticks": 639287993440659209,
-      "window_end_ns": 177246128702400,
-      "window_ns": 588855700,
-      "window_start_ns": 177245539846700,
-      "working_set_bytes": 135495680
+      "start_utc_ticks": 639288016213534813,
+      "window_end_ns": 179523417522800,
+      "window_ns": 585882800,
+      "window_start_ns": 179522831640000,
+      "working_set_bytes": 135376896
     },
     {
       "aggregation": "single_process_window",
@@ -2565,22 +2565,22 @@
       "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
       "fixture_id": "png_gray_matched_4k",
       "input_sha256": "sha256:784105420468e055ba712aaa7d16bf3a33dc82c32b8372951238c108ca8c53d4",
-      "lifetime_exited_ns": 177247902803500,
-      "lifetime_started_ns": 177246347430000,
+      "lifetime_exited_ns": 179525093993400,
+      "lifetime_started_ns": 179523612175000,
       "observer_clock": "python_monotonic_ns",
-      "observer_qpc_end": 1772476367742,
+      "observer_qpc_end": 1795248371334,
       "observer_qpc_frequency": 10000000,
-      "observer_qpc_start": 1772475920978,
+      "observer_qpc_start": 1795247908487,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-      "peak_working_set_bytes": 131854336,
-      "pid": 49612,
-      "private_bytes": 58515456,
+      "peak_working_set_bytes": 131252224,
+      "pid": 72892,
+      "private_bytes": 57516032,
       "stage": "after_onload",
-      "start_utc_ticks": 639287993457236463,
-      "window_end_ns": 177247709882100,
-      "window_ns": 544573000,
-      "window_start_ns": 177247165309100,
-      "working_set_bytes": 131854336
+      "start_utc_ticks": 639288016229883230,
+      "window_end_ns": 179524911315700,
+      "window_ns": 556603800,
+      "window_start_ns": 179524354711900,
+      "working_set_bytes": 131252224
     },
     {
       "aggregation": "single_process_window",
@@ -2590,22 +2590,22 @@
       "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
       "fixture_id": "jpeg_gray_4k",
       "input_sha256": "sha256:9ea35ad3a09de79119d8c8335092251cd4aa36bf9177ea4a0b3575e4500c16d6",
-      "lifetime_exited_ns": 177249506019900,
-      "lifetime_started_ns": 177247914751600,
+      "lifetime_exited_ns": 179526624471300,
+      "lifetime_started_ns": 179525105508200,
       "observer_clock": "python_monotonic_ns",
-      "observer_qpc_end": 1772492293525,
+      "observer_qpc_end": 1795263565980,
       "observer_qpc_frequency": 10000000,
-      "observer_qpc_start": 1772491819398,
+      "observer_qpc_start": 1795263041785,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-      "peak_working_set_bytes": 131612672,
-      "pid": 75296,
-      "private_bytes": 58048512,
+      "peak_working_set_bytes": 131543040,
+      "pid": 74120,
+      "private_bytes": 57999360,
       "stage": "after_onload",
-      "start_utc_ticks": 639287993472909285,
-      "window_end_ns": 177249302846500,
-      "window_ns": 551260000,
-      "window_start_ns": 177248751586500,
-      "working_set_bytes": 131612672
+      "start_utc_ticks": 639288016244816871,
+      "window_end_ns": 179526432258300,
+      "window_ns": 556212000,
+      "window_start_ns": 179525876046300,
+      "working_set_bytes": 131526656
     },
     {
       "aggregation": "single_process_window",
@@ -2615,22 +2615,22 @@
       "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
       "fixture_id": "png_gray_matched_4k",
       "input_sha256": "sha256:784105420468e055ba712aaa7d16bf3a33dc82c32b8372951238c108ca8c53d4",
-      "lifetime_exited_ns": 177251154574600,
-      "lifetime_started_ns": 177249579144000,
+      "lifetime_exited_ns": 179528247787900,
+      "lifetime_started_ns": 179526698467200,
       "observer_clock": "python_monotonic_ns",
-      "observer_qpc_end": 1772508676397,
+      "observer_qpc_end": 1795279514842,
       "observer_qpc_frequency": 10000000,
-      "observer_qpc_start": 1772508022160,
+      "observer_qpc_start": 1795279041941,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-      "peak_working_set_bytes": 132075520,
-      "pid": 74716,
-      "private_bytes": 58142720,
+      "peak_working_set_bytes": 136024064,
+      "pid": 69864,
+      "private_bytes": 61378560,
       "stage": "after_onload",
-      "start_utc_ticks": 639287993489552719,
-      "window_end_ns": 177250941270300,
-      "window_ns": 580915800,
-      "window_start_ns": 177250360354500,
-      "working_set_bytes": 132075520
+      "start_utc_ticks": 639288016260746714,
+      "window_end_ns": 179528026242900,
+      "window_ns": 554097600,
+      "window_start_ns": 179527472145300,
+      "working_set_bytes": 136019968
     },
     {
       "aggregation": "single_process_window",
@@ -2640,22 +2640,22 @@
       "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
       "fixture_id": "jpeg_gray_4k",
       "input_sha256": "sha256:9ea35ad3a09de79119d8c8335092251cd4aa36bf9177ea4a0b3575e4500c16d6",
-      "lifetime_exited_ns": 177252772562100,
-      "lifetime_started_ns": 177251228231500,
+      "lifetime_exited_ns": 179529737474500,
+      "lifetime_started_ns": 179528322578800,
       "observer_clock": "python_monotonic_ns",
-      "observer_qpc_end": 1772524452882,
+      "observer_qpc_end": 1795294756621,
       "observer_qpc_frequency": 10000000,
-      "observer_qpc_start": 1772523996783,
+      "observer_qpc_start": 1795294300323,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-      "peak_working_set_bytes": 119840768,
-      "pid": 62296,
-      "private_bytes": 44724224,
+      "peak_working_set_bytes": 115290112,
+      "pid": 63428,
+      "private_bytes": 41193472,
       "stage": "before_admission",
-      "start_utc_ticks": 639287993506043859,
-      "window_end_ns": 177252518801200,
-      "window_ns": 556212600,
-      "window_start_ns": 177251962588600,
-      "working_set_bytes": 119840768
+      "start_utc_ticks": 639288016276987462,
+      "window_end_ns": 179529549444800,
+      "window_ns": 550162100,
+      "window_start_ns": 179528999282700,
+      "working_set_bytes": 115281920
     },
     {
       "aggregation": "single_process_window",
@@ -2665,22 +2665,22 @@
       "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
       "fixture_id": "png_gray_matched_4k",
       "input_sha256": "sha256:784105420468e055ba712aaa7d16bf3a33dc82c32b8372951238c108ca8c53d4",
-      "lifetime_exited_ns": 177254287335700,
-      "lifetime_started_ns": 177252789581500,
+      "lifetime_exited_ns": 179531193016000,
+      "lifetime_started_ns": 179529754608200,
       "observer_clock": "python_monotonic_ns",
-      "observer_qpc_end": 1772539907613,
+      "observer_qpc_end": 1795309241620,
       "observer_qpc_frequency": 10000000,
-      "observer_qpc_start": 1772539438706,
+      "observer_qpc_start": 1795308782563,
       "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
-      "peak_working_set_bytes": 115183616,
-      "pid": 65972,
-      "private_bytes": 41553920,
+      "peak_working_set_bytes": 115023872,
+      "pid": 11652,
+      "private_bytes": 41238528,
       "stage": "before_admission",
-      "start_utc_ticks": 639287993521657507,
-      "window_end_ns": 177254065823600,
-      "window_ns": 542232100,
-      "window_start_ns": 177253523591500,
-      "working_set_bytes": 115171328
+      "start_utc_ticks": 639288016291307723,
+      "window_end_ns": 179530997807500,
+      "window_ns": 548839200,
+      "window_start_ns": 179530448968300,
+      "working_set_bytes": 115015680
     }
   ],
   "platform": {
@@ -2733,7 +2733,7 @@
       ]
     }
   ],
-  "run_id": "native-r5-work",
+  "run_id": "native-r7-work",
   "sampler_script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
   "schema_version": 1,
   "source_identity": {
@@ -2753,10 +2753,10 @@
         "unchanged_after_run": true
       },
       "apps/desktop/devtools/img2/tests/test_w12_negative.py": {
-        "bytes": 11322,
-        "git_blob_sha256": "sha256:19a932e0d3f1873d6690e2612856ca35ed381a1e7bf062272df69d5a6efabe7f",
-        "lf_sha256": "sha256:19a932e0d3f1873d6690e2612856ca35ed381a1e7bf062272df69d5a6efabe7f",
-        "raw_sha256": "sha256:19a932e0d3f1873d6690e2612856ca35ed381a1e7bf062272df69d5a6efabe7f",
+        "bytes": 12962,
+        "git_blob_sha256": "sha256:65c2d6164599e6c85c12070bb751deee86384356992c4be674763f3e44656ea1",
+        "lf_sha256": "sha256:65c2d6164599e6c85c12070bb751deee86384356992c4be674763f3e44656ea1",
+        "raw_sha256": "sha256:65c2d6164599e6c85c12070bb751deee86384356992c4be674763f3e44656ea1",
         "unchanged_after_run": true
       },
       "apps/desktop/devtools/img2/tests/test_w12_png_fixtures.py": {
@@ -2972,7 +2972,7 @@
     },
     "normalization": "Raw Native hashes plus explicitly declared LF-normalized Git correspondence",
     "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
-    "source_commit": "23f6e6c3af6ac5f8e6dc5e507249751bf7533b1c"
+    "source_commit": "2f20080e843bc02d356e14b9bf99218cb48dfd71"
   },
   "unmeasured": [
     "WIC internal scratch",

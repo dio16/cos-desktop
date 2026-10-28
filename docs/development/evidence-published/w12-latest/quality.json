@@ -24,8 +24,8 @@
     "ignored": 1
   },
   "w12_tests": {
-    "count": 21,
-    "passed": 21,
+    "count": 22,
+    "passed": 22,
     "negative_classes": 39
   },
   "native_application_surface": {
@@ -48,14 +48,14 @@
     ],
     "cwd": "C:\\dev\\cos-desktop",
     "exit_code": 0,
-    "duration_seconds": 39.28723430001992,
+    "duration_seconds": 44.10357870001462,
     "stdout": {
       "bytes": 0,
       "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "stderr": {
-      "bytes": 126,
-      "sha256": "sha256:310c8ed6476d967f87ecd48e778f52bf271ca1b34e35786840083018f30cfffd"
+      "bytes": 127,
+      "sha256": "sha256:f28c5de3e16c850fe66c281f497941c05d118e74a289cc082e1527bad3e9acad"
     }
   },
   "local_quality_first_attempt": {
@@ -76,5 +76,6 @@
       "bytes": 0,
       "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
-  }
+  },
+  "review_repair_note": "A-R1-01: the mutation suite now proves the unmodified control passes source-bound verification before counting rejections."
 }

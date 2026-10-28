@@ -28,5 +28,6 @@
     "measured R0",
     "UX/video",
     "main/release"
-  ]
+  ],
+  "review_repair": "A-R1-01 changed only the W12 test premise; no Native record, image logic, Gate check or scope changed."
 }
