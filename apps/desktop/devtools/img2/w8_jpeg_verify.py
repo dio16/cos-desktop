@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[4]
 BOUNDS = {"max_dimension": 2048, "max_pixels": 4194304, "max_source_depth": 8,
           "max_output_bgra32": 16 * 1024 * 1024, "max_declared_scratch": 16 * 1024 * 1024,
           "max_encoded_input": 16 * 1024 * 1024, "max_output_file": 32 * 1024 * 1024,
-          "max_work_root": 256 * 1024 * 1024, "max_report": 8 * 1024 * 1024,
+          "max_work_root": 256 * 1024 * 1024, "max_report_bytes": 8 * 1024 * 1024,
           "max_trace_records": 128, "max_trace_bytes": 128 * 1024,
           "max_capture_bytes": 64 * 1024, "max_worker_seconds": 45,
           "max_total_seconds": 300, "max_concurrent_workers": 1, "max_source_cases": 12,
@@ -377,6 +377,6 @@ def _rgba_digest(png_bytes: bytes) -> str:
         path = Path(folder) / "output.png"
         path.write_bytes(png_bytes)
         digest = hashlib.sha256()
-        for row in iter_png_rows(path, BOUNDS["max_report"]):
+        for row in iter_png_rows(path, BOUNDS["max_report_bytes"]):
             digest.update(row)
     return "sha256:" + digest.hexdigest()
