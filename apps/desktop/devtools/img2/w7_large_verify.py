@@ -71,6 +71,7 @@ REASON_BY_CODE = {
     "max_decoded_bytes_exceeded": "decoded_bytes",
     "max_scratch_bytes_exceeded": "scratch_bytes",
 }
+DECODERS = {"png": "PngBitmapDecoder", "bmp24": "BmpBitmapDecoder", "bgr565": "BmpBitmapDecoder"}
 UNMEASURED = (
     "WIC internal scratch peak", "actual allocator reservations",
     "true concurrent allocation peak", "WIC-only allocation delta",
@@ -309,6 +310,12 @@ def _decode_case(worker: dict, case: dict, stages: list, expected_rgba: dict, fi
          "admission_arithmetic_invalid:" + case["id"])
     need(result.get("admission_status") == "admitted" and result.get("materialization") == "completed",
          "decode_not_materialized:" + case["id"])
+    need(result.get("decoder") == DECODERS[case["codec"]],
+         "decoder_identity_mismatch:" + case["id"])
+    terminal = stages[-1]
+    need(terminal.get("stage") == "probe_exit" and terminal.get("complete") is True
+         and terminal.get("outcome") == "decoded" and terminal.get("materialization") == "completed",
+         "decode_terminal_stage_mismatch:" + case["id"])
     need(worker.get("output_present") is True and worker.get("published_success") is True,
          "decode_output_missing:" + case["id"])
     hexed = worker.get("output_hex")
@@ -352,6 +359,11 @@ def _refusal_case(worker: dict, case: dict, stages: list, expected_reason: str):
     need(result.get("width") == case["width"] and result.get("height") == case["height"],
          "refusal_declared_geometry_mismatch:" + case["id"])
     need(result.get("reason_code") == expected_reason, "refusal_reason_mismatch:" + case["id"])
+    need(result.get("decoder") == DECODERS[case["codec"]],
+         "refusal_decoder_identity_mismatch:" + case["id"])
+    terminal = stages[-1]
+    need(terminal.get("stage") == "probe_exit" and terminal.get("complete") is True
+         and terminal.get("outcome") == "oversize", "refusal_terminal_stage_mismatch:" + case["id"])
     need(result.get("materialization") == "not_requested", "refusal_requested_materialization")
     need(worker.get("output_present") is False and worker.get("published_success") is False,
          "refusal_published_output:" + case["id"])
