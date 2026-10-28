@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 import struct
 
-ALLOWED_MARKERS = {"SOI", "APP1", "APP2", "DQT", "SOF0", "DHT", "SOS", "EOI"}
+ALLOWED_MARKERS = {"SOI", "APP0", "APP1", "APP2", "DQT", "SOF0", "DHT", "DRI", "COM", "SOS", "EOI"}
 
 
 def sha(data: bytes) -> str:
@@ -40,8 +40,8 @@ def segments(data: bytes) -> list[dict]:
             break
         length = struct.unpack(">H", data[index + 2:index + 4])[0]
         _need(length >= 2, "segment_length_invalid")
-        name = {0xE1: "APP1", 0xE2: "APP2", 0xDB: "DQT", 0xC0: "SOF0",
-                0xC4: "DHT", 0xC2: "SOF2"}.get(marker, "unknown")
+        name = {0xE0: "APP0", 0xE1: "APP1", 0xE2: "APP2", 0xDB: "DQT", 0xC0: "SOF0",
+                0xC4: "DHT", 0xC2: "SOF2", 0xDD: "DRI", 0xFE: "COM"}.get(marker, "unknown")
         out.append({"marker": name, "offset": index, "length": length + 2,
                     "body": data[index + 4:index + 2 + length]})
         index += 2 + length
