@@ -145,6 +145,6 @@ def write_fixture(case_id: str, path) -> dict:
             "expected_output_height": height, "kind": case["kind"],
             "expected_orientation": expected_orientation(case),
             "expected_transform": expected_transform(case),
-            "expected_icc": bool("icc" in case["segments"]),
-            "expected_icc_sha256": sha(ICC_PROFILE) if "icc" in case["segments"] else None,
+            "expected_icc": any(name.startswith("icc") for name in case["segments"]),
+            "expected_icc_sha256": sha(ICC_PROFILE) if any(name.startswith("icc") for name in case["segments"]) else None,
             "truncated": case["truncated"], "reference": case["reference"]}

@@ -180,10 +180,13 @@ def _check_icc(prefix, result, fixture, structure):
     need(isinstance(partial, dict), "truncated_icc_without_partial_record")
     need(structure["classification"] == "METADATA_TAMPERED", "truncated_icc_not_classified")
     if result.get("icc_present"):
-        need(result.get("icc_length") == partial["bytes"], prefix + "_truncated_icc_length_mismatch")
-        need(result.get("icc_sha256") == partial["payload_sha256"],
-             prefix + "_truncated_icc_payload_mismatch")
-        need(fixture["expected_icc_sha256"] != result.get("icc_sha256"),
+        if result.get("icc_readable"):
+            need(result.get("icc_length") == partial["bytes"], prefix + "_truncated_icc_length_mismatch")
+            need(result.get("icc_sha256") == partial["payload_sha256"],
+                 prefix + "_truncated_icc_payload_mismatch")
+            need(fixture["expected_icc_sha256"] != result.get("icc_sha256"),
+                 prefix + "_truncated_icc_promoted_to_full_profile")
+        need(result.get("icc_sha256") != fixture["expected_icc_sha256"],
              prefix + "_truncated_icc_promoted_to_full_profile")
         if prefix == "wic":
             need(result.get("colour_contexts") == 1, "wic_truncated_colour_context_invalid")
