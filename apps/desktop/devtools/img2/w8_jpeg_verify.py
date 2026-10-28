@@ -182,11 +182,13 @@ def _source_identity(record, source_root) -> bool:
     for name, relative in (("wic", "apps/desktop/examples/decode_compare/wic_probe.ps1"),
                            ("gdiplus", "apps/desktop/examples/decode_compare/gdiplus_probe.ps1")):
         data = (ROOT / relative).read_bytes()
-        # Raw bytes when the checkout matches, else the declared LF normalization;
-        # a genuinely different file fails both.
-        need(probes[name] == sha(data)
-             or lf_probes[name] == sha(data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")),
+        normalized = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        crlf = normalized.replace(b"\n", b"\r\n")
+        # The raw digest may be the file as checked out with either ending; the LF
+        # digest is the acceptance value, and a foreign digest fails every candidate.
+        need(probes[name] in (sha(data), sha(normalized), sha(crlf)),
              "probe_digest_mismatch:" + name)
+        need(lf_probes[name] == sha(normalized), "probe_lf_digest_mismatch:" + name)
     if source_root is None:
         return False
     root = Path(source_root)
