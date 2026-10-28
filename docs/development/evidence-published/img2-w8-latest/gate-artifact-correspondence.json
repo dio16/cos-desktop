@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "candidate": "c03c2b4492074a503bb70f510ca705212c654ffe",
+  "candidate": "73d53d04b1beda143fd6f3f8af00b234401d8800",
   "gates": {
-    "workspace": "3f11d747-af6c-4f67-a499-bc746ab937a7",
-    "img2": "4b72a851-ce54-4e89-afc9-ccfbb6d62a4d",
-    "w8": "b59b5b82-a988-4f9d-90a0-bd382f98d805",
-    "build": "7159bc4e-52fd-4c20-a5f3-a0326446b5c1"
+    "workspace": "06412352-d63f-403d-a662-5433513bda46",
+    "img2": "6e61da1a-8c0b-4667-ad27-6cde46e98542",
+    "w8": "2e0234c1-0320-4ec8-88eb-adf6142e990f",
+    "build": "683f4a31-db03-4fd2-8146-364f453b58e1"
   },
-  "candidate_digest": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7",
+  "candidate_digest": "sha256:fcc01cf75350fc29a030ae21ed00cab38573831fdb221bf11a6253e972d82c3d",
   "artifact_tuples": 32,
   "gates_identical": 32,
   "raw_equal": 32,
@@ -33,12 +33,12 @@
       "id": "w8-1",
       "path": "apps/desktop/devtools/img2/tests/test_w8_negative.py",
       "sha256": {
-        "workspace": "sha256:3664b5a47d337a63d53469ccd2c54a4ebab13260a87aa3b7f7d3502a4769016a",
-        "img2": "sha256:3664b5a47d337a63d53469ccd2c54a4ebab13260a87aa3b7f7d3502a4769016a",
-        "w8": "sha256:3664b5a47d337a63d53469ccd2c54a4ebab13260a87aa3b7f7d3502a4769016a",
-        "build": "sha256:3664b5a47d337a63d53469ccd2c54a4ebab13260a87aa3b7f7d3502a4769016a"
+        "workspace": "sha256:b4492e4dffed9f3744c26ac1840e5e5f7f6815ccec884ad9260a0ea31c7e5b8a",
+        "img2": "sha256:b4492e4dffed9f3744c26ac1840e5e5f7f6815ccec884ad9260a0ea31c7e5b8a",
+        "w8": "sha256:b4492e4dffed9f3744c26ac1840e5e5f7f6815ccec884ad9260a0ea31c7e5b8a",
+        "build": "sha256:b4492e4dffed9f3744c26ac1840e5e5f7f6815ccec884ad9260a0ea31c7e5b8a"
       },
-      "candidate_blob_sha256": "sha256:3664b5a47d337a63d53469ccd2c54a4ebab13260a87aa3b7f7d3502a4769016a",
+      "candidate_blob_sha256": "sha256:b4492e4dffed9f3744c26ac1840e5e5f7f6815ccec884ad9260a0ea31c7e5b8a",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -93,12 +93,12 @@
       "id": "w8-5",
       "path": "apps/desktop/devtools/img2/w8_jpeg_verify.py",
       "sha256": {
-        "workspace": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439",
-        "img2": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439",
-        "w8": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439",
-        "build": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439"
+        "workspace": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30",
+        "img2": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30",
+        "w8": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30",
+        "build": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30"
       },
-      "candidate_blob_sha256": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439",
+      "candidate_blob_sha256": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -153,12 +153,12 @@
       "id": "w8-9",
       "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
       "sha256": {
-        "workspace": "sha256:d20849be8dfc201396f397b9567c27ca7f0bdfd127df4f99711ab76c6ade4e2f",
-        "img2": "sha256:d20849be8dfc201396f397b9567c27ca7f0bdfd127df4f99711ab76c6ade4e2f",
-        "w8": "sha256:d20849be8dfc201396f397b9567c27ca7f0bdfd127df4f99711ab76c6ade4e2f",
-        "build": "sha256:d20849be8dfc201396f397b9567c27ca7f0bdfd127df4f99711ab76c6ade4e2f"
+        "workspace": "sha256:6907e1025efabc595c37d34ace47e027ed6724de9f06c8741cf7507f62ac35e0",
+        "img2": "sha256:6907e1025efabc595c37d34ace47e027ed6724de9f06c8741cf7507f62ac35e0",
+        "w8": "sha256:6907e1025efabc595c37d34ace47e027ed6724de9f06c8741cf7507f62ac35e0",
+        "build": "sha256:6907e1025efabc595c37d34ace47e027ed6724de9f06c8741cf7507f62ac35e0"
       },
-      "candidate_blob_sha256": "sha256:d20849be8dfc201396f397b9567c27ca7f0bdfd127df4f99711ab76c6ade4e2f",
+      "candidate_blob_sha256": "sha256:6907e1025efabc595c37d34ace47e027ed6724de9f06c8741cf7507f62ac35e0",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -168,12 +168,12 @@
       "id": "w8-10",
       "path": "docs/development/TESTING.md",
       "sha256": {
-        "workspace": "sha256:29158db244e36a1ad12d1c143dea34205e9a2fa80f948991baebe92af1840ee0",
-        "img2": "sha256:29158db244e36a1ad12d1c143dea34205e9a2fa80f948991baebe92af1840ee0",
-        "w8": "sha256:29158db244e36a1ad12d1c143dea34205e9a2fa80f948991baebe92af1840ee0",
-        "build": "sha256:29158db244e36a1ad12d1c143dea34205e9a2fa80f948991baebe92af1840ee0"
+        "workspace": "sha256:309da25a9eb2617ac965e8210ee21cac2d334866a36bfd5420cc4542ef6e6a97",
+        "img2": "sha256:309da25a9eb2617ac965e8210ee21cac2d334866a36bfd5420cc4542ef6e6a97",
+        "w8": "sha256:309da25a9eb2617ac965e8210ee21cac2d334866a36bfd5420cc4542ef6e6a97",
+        "build": "sha256:309da25a9eb2617ac965e8210ee21cac2d334866a36bfd5420cc4542ef6e6a97"
       },
-      "candidate_blob_sha256": "sha256:29158db244e36a1ad12d1c143dea34205e9a2fa80f948991baebe92af1840ee0",
+      "candidate_blob_sha256": "sha256:309da25a9eb2617ac965e8210ee21cac2d334866a36bfd5420cc4542ef6e6a97",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -243,12 +243,12 @@
       "id": "w8-15",
       "path": "docs/development/evidence-published/img2-w8-latest/environment.json",
       "sha256": {
-        "workspace": "sha256:39d36382528898222c16ce425e5e2d90223e39b455de1c49ced4572f4aefa867",
-        "img2": "sha256:39d36382528898222c16ce425e5e2d90223e39b455de1c49ced4572f4aefa867",
-        "w8": "sha256:39d36382528898222c16ce425e5e2d90223e39b455de1c49ced4572f4aefa867",
-        "build": "sha256:39d36382528898222c16ce425e5e2d90223e39b455de1c49ced4572f4aefa867"
+        "workspace": "sha256:fd2ecbd912a627e08dac3079cf8f3332635b7f0ea75b85044469a20c4582d0aa",
+        "img2": "sha256:fd2ecbd912a627e08dac3079cf8f3332635b7f0ea75b85044469a20c4582d0aa",
+        "w8": "sha256:fd2ecbd912a627e08dac3079cf8f3332635b7f0ea75b85044469a20c4582d0aa",
+        "build": "sha256:fd2ecbd912a627e08dac3079cf8f3332635b7f0ea75b85044469a20c4582d0aa"
       },
-      "candidate_blob_sha256": "sha256:39d36382528898222c16ce425e5e2d90223e39b455de1c49ced4572f4aefa867",
+      "candidate_blob_sha256": "sha256:fd2ecbd912a627e08dac3079cf8f3332635b7f0ea75b85044469a20c4582d0aa",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -258,12 +258,12 @@
       "id": "w8-16",
       "path": "docs/development/evidence-published/img2-w8-latest/execution-manifest.json",
       "sha256": {
-        "workspace": "sha256:732b1682279cccc5550b47ac96b558e725ce88ff2e81fb079f1a51b8f0147a50",
-        "img2": "sha256:732b1682279cccc5550b47ac96b558e725ce88ff2e81fb079f1a51b8f0147a50",
-        "w8": "sha256:732b1682279cccc5550b47ac96b558e725ce88ff2e81fb079f1a51b8f0147a50",
-        "build": "sha256:732b1682279cccc5550b47ac96b558e725ce88ff2e81fb079f1a51b8f0147a50"
+        "workspace": "sha256:5f0cea98ba287a7c6160766352c2df3378d614cf5c8b4a84b193678c581fa5e2",
+        "img2": "sha256:5f0cea98ba287a7c6160766352c2df3378d614cf5c8b4a84b193678c581fa5e2",
+        "w8": "sha256:5f0cea98ba287a7c6160766352c2df3378d614cf5c8b4a84b193678c581fa5e2",
+        "build": "sha256:5f0cea98ba287a7c6160766352c2df3378d614cf5c8b4a84b193678c581fa5e2"
       },
-      "candidate_blob_sha256": "sha256:732b1682279cccc5550b47ac96b558e725ce88ff2e81fb079f1a51b8f0147a50",
+      "candidate_blob_sha256": "sha256:5f0cea98ba287a7c6160766352c2df3378d614cf5c8b4a84b193678c581fa5e2",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -318,12 +318,12 @@
       "id": "w8-20",
       "path": "docs/development/evidence-published/img2-w8-latest/memory-observations.json",
       "sha256": {
-        "workspace": "sha256:0ccb10f1b9a1a60319aaf257ab300ca42bce26d27ef202f2accf66db1c58dd33",
-        "img2": "sha256:0ccb10f1b9a1a60319aaf257ab300ca42bce26d27ef202f2accf66db1c58dd33",
-        "w8": "sha256:0ccb10f1b9a1a60319aaf257ab300ca42bce26d27ef202f2accf66db1c58dd33",
-        "build": "sha256:0ccb10f1b9a1a60319aaf257ab300ca42bce26d27ef202f2accf66db1c58dd33"
+        "workspace": "sha256:62567c6aa0d6dc8ea77651f9565d555ee1a2df492c8b20c91fc1236fb974d80e",
+        "img2": "sha256:62567c6aa0d6dc8ea77651f9565d555ee1a2df492c8b20c91fc1236fb974d80e",
+        "w8": "sha256:62567c6aa0d6dc8ea77651f9565d555ee1a2df492c8b20c91fc1236fb974d80e",
+        "build": "sha256:62567c6aa0d6dc8ea77651f9565d555ee1a2df492c8b20c91fc1236fb974d80e"
       },
-      "candidate_blob_sha256": "sha256:0ccb10f1b9a1a60319aaf257ab300ca42bce26d27ef202f2accf66db1c58dd33",
+      "candidate_blob_sha256": "sha256:62567c6aa0d6dc8ea77651f9565d555ee1a2df492c8b20c91fc1236fb974d80e",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -333,12 +333,12 @@
       "id": "w8-21",
       "path": "docs/development/evidence-published/img2-w8-latest/native-decoder-matrix.json",
       "sha256": {
-        "workspace": "sha256:380f88c5d50baeaa4e36ddcee1da4be564dcae8dc02149e9a00f21b47c71a5da",
-        "img2": "sha256:380f88c5d50baeaa4e36ddcee1da4be564dcae8dc02149e9a00f21b47c71a5da",
-        "w8": "sha256:380f88c5d50baeaa4e36ddcee1da4be564dcae8dc02149e9a00f21b47c71a5da",
-        "build": "sha256:380f88c5d50baeaa4e36ddcee1da4be564dcae8dc02149e9a00f21b47c71a5da"
+        "workspace": "sha256:b4411f6e26ad1070e9dda3d2aef3674c8467ebc6be3729f42d4dc86887abe8ca",
+        "img2": "sha256:b4411f6e26ad1070e9dda3d2aef3674c8467ebc6be3729f42d4dc86887abe8ca",
+        "w8": "sha256:b4411f6e26ad1070e9dda3d2aef3674c8467ebc6be3729f42d4dc86887abe8ca",
+        "build": "sha256:b4411f6e26ad1070e9dda3d2aef3674c8467ebc6be3729f42d4dc86887abe8ca"
       },
-      "candidate_blob_sha256": "sha256:380f88c5d50baeaa4e36ddcee1da4be564dcae8dc02149e9a00f21b47c71a5da",
+      "candidate_blob_sha256": "sha256:b4411f6e26ad1070e9dda3d2aef3674c8467ebc6be3729f42d4dc86887abe8ca",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -348,12 +348,12 @@
       "id": "w8-22",
       "path": "docs/development/evidence-published/img2-w8-latest/negative-tests.json",
       "sha256": {
-        "workspace": "sha256:0593fd6e84dead728154740971630a9748073ac4906bce478d3f8ce359d6d470",
-        "img2": "sha256:0593fd6e84dead728154740971630a9748073ac4906bce478d3f8ce359d6d470",
-        "w8": "sha256:0593fd6e84dead728154740971630a9748073ac4906bce478d3f8ce359d6d470",
-        "build": "sha256:0593fd6e84dead728154740971630a9748073ac4906bce478d3f8ce359d6d470"
+        "workspace": "sha256:bcaaad2b2082d09ce17aa240b0f112cd8849b50a994a7e6de5b066e4afd4afc5",
+        "img2": "sha256:bcaaad2b2082d09ce17aa240b0f112cd8849b50a994a7e6de5b066e4afd4afc5",
+        "w8": "sha256:bcaaad2b2082d09ce17aa240b0f112cd8849b50a994a7e6de5b066e4afd4afc5",
+        "build": "sha256:bcaaad2b2082d09ce17aa240b0f112cd8849b50a994a7e6de5b066e4afd4afc5"
       },
-      "candidate_blob_sha256": "sha256:0593fd6e84dead728154740971630a9748073ac4906bce478d3f8ce359d6d470",
+      "candidate_blob_sha256": "sha256:bcaaad2b2082d09ce17aa240b0f112cd8849b50a994a7e6de5b066e4afd4afc5",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -378,12 +378,12 @@
       "id": "w8-24",
       "path": "docs/development/evidence-published/img2-w8-latest/quality.json",
       "sha256": {
-        "workspace": "sha256:391b16c9ace741c81827322386944ac2b6ca670edf425d1f202aca7ffc4dcaa5",
-        "img2": "sha256:391b16c9ace741c81827322386944ac2b6ca670edf425d1f202aca7ffc4dcaa5",
-        "w8": "sha256:391b16c9ace741c81827322386944ac2b6ca670edf425d1f202aca7ffc4dcaa5",
-        "build": "sha256:391b16c9ace741c81827322386944ac2b6ca670edf425d1f202aca7ffc4dcaa5"
+        "workspace": "sha256:f61de58ac928e55935dba66ab34e72cd55a1064ed0fc43969bc00711ba96084f",
+        "img2": "sha256:f61de58ac928e55935dba66ab34e72cd55a1064ed0fc43969bc00711ba96084f",
+        "w8": "sha256:f61de58ac928e55935dba66ab34e72cd55a1064ed0fc43969bc00711ba96084f",
+        "build": "sha256:f61de58ac928e55935dba66ab34e72cd55a1064ed0fc43969bc00711ba96084f"
       },
-      "candidate_blob_sha256": "sha256:391b16c9ace741c81827322386944ac2b6ca670edf425d1f202aca7ffc4dcaa5",
+      "candidate_blob_sha256": "sha256:f61de58ac928e55935dba66ab34e72cd55a1064ed0fc43969bc00711ba96084f",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,
@@ -393,12 +393,12 @@
       "id": "w8-25",
       "path": "docs/development/evidence-published/img2-w8-latest/source-identity.json",
       "sha256": {
-        "workspace": "sha256:e609f1e63bbb17cf4fbc77c535c2ec446f32168c2a6b5ff6f2ecf0239590db79",
-        "img2": "sha256:e609f1e63bbb17cf4fbc77c535c2ec446f32168c2a6b5ff6f2ecf0239590db79",
-        "w8": "sha256:e609f1e63bbb17cf4fbc77c535c2ec446f32168c2a6b5ff6f2ecf0239590db79",
-        "build": "sha256:e609f1e63bbb17cf4fbc77c535c2ec446f32168c2a6b5ff6f2ecf0239590db79"
+        "workspace": "sha256:0acc424c3bdd3766dd3f12d3be08c8117b42b0942fae88208caa2515c1e821ae",
+        "img2": "sha256:0acc424c3bdd3766dd3f12d3be08c8117b42b0942fae88208caa2515c1e821ae",
+        "w8": "sha256:0acc424c3bdd3766dd3f12d3be08c8117b42b0942fae88208caa2515c1e821ae",
+        "build": "sha256:0acc424c3bdd3766dd3f12d3be08c8117b42b0942fae88208caa2515c1e821ae"
       },
-      "candidate_blob_sha256": "sha256:e609f1e63bbb17cf4fbc77c535c2ec446f32168c2a6b5ff6f2ecf0239590db79",
+      "candidate_blob_sha256": "sha256:0acc424c3bdd3766dd3f12d3be08c8117b42b0942fae88208caa2515c1e821ae",
       "gates_identical": true,
       "raw_equal_to_candidate_blob": true,
       "lf_equal_to_candidate_blob": true,

@@ -59,10 +59,10 @@
         "unchanged_after_run": true
       },
       "apps/desktop/devtools/img2/w8_jpeg_verify.py": {
-        "bytes": 27317,
-        "git_blob_sha256": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439",
-        "lf_sha256": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439",
-        "raw_sha256": "sha256:8c1e01270ba552699d534e79a073696247b77c064fbebe6a11dbc9b16556a439",
+        "bytes": 27864,
+        "git_blob_sha256": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30",
+        "lf_sha256": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30",
+        "raw_sha256": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30",
         "unchanged_after_run": true
       },
       "apps/desktop/examples/decode_compare.rs": {
@@ -140,8 +140,8 @@
       "wic": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c"
     },
     "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
-    "source_commit": "0feb6a7bda88868e879084374ed5a26f43031915"
+    "source_commit": "05ea4d10ef6a24ce3a710d3de7365c023c60e838"
   },
-  "experimental_source": "0feb6a7bda88868e879084374ed5a26f43031915",
+  "experimental_source": "05ea4d10ef6a24ce3a710d3de7365c023c60e838",
   "taskern_packet_sha256": "sha256:07e84912f10274bfb91b7459a2965292d306110f19154aaefcb66a31a85e9f26"
 }
