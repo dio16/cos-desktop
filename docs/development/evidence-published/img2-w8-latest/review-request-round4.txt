@@ -1,0 +1,41 @@
+MP-IMG2-W8 round 4 — round 3 の2件の修正確認を依頼します。変更はw8_jpeg_verify.pyと負例テストだけです。
+
+Repository: dio16/cos-desktop / branch dev / 未push。
+Native SOURCE: 0feb6a7bda88868e879084374ed5a26f43031915。
+製品・4 Gate候補: c03c2b4492074a503bb70f510ca705212c654ffe。
+candidate digest: sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7。
+Evidence HEAD: 20d4fff7013aad4357f617da225eb311b3faa41b。
+
+添付:
+- w8-review-source.zip: 候補c03c2b4…、771 entry、5,441,490 bytes、sha256:a1204f334e15509ad0d3b18adf128d2065ea72c9c324b61f02c41f6970871375。全entryが候補Git blobとraw/LF一致。
+- w8-review-evidence.zip: Evidence HEAD 20d4fff…、46 file、sha256:e12e77a72e5434a59b1c20144f8965c27d05910b44af16c8ecf6c190376d4013。review-package-source.json(771 entry)を実memberとして含み、提出前に全entryを照合済み(不一致0)。
+- review-package.json(別添)。
+
+修正内容:
+- A-W8-R2-01(不十分だった点): malformed WIC legで worker.outcome フィールド自体を必須化(欠落は矛盾として拒否)。加えて `_trace()` による raw trace payload 検証を必須化し、終端 probe_exit の outcome と complete が観測outcomeと一致することを要求。decoded経路は exit0・output公開・digest整合、failure経路は非0 exit・output不在。
+- A-W8-R2-02(不十分だった点): GDI+ の output_bytes を必須化し、実出力バイト数と一致することを要求(欠落は拒否)。
+- 負例を40→43へ拡張: malformed worker outcomeキー削除、malformed WIC trace payload整合改変、GDI+ output_bytes削除。43/43を実verify()が拒否、structural replayはsource_identity_verified=false / closure_eligible=false。
+- 併せて "refused" を WIC trace語彙へ追加(早期segment拒否経路)し、正常decodeの期待stage列は refused を除いた完全列で検証。
+
+再取得:
+- Native再実行: SOURCE 0feb6a7…、12 sources、20 legs、3 absolute(全画素一致)、5 differential(exact)、2 malformed TAMPER_NOT_VERIFIED、49.3秒。
+- 4 Gate: workspace 7/7(3f11d747)、image replay 9/9(4b72a851)、W8 3/3(b59b5b82)、Build 1/1(7159bc4e)。同一候補・同一digest、32/32 artifact tuplesが4 Gate間で一致し候補Git blobともraw一致、生receipt保存。
+- 先行FAILED dispatches(probe LF identity以前、IMG2 300秒timeout、core 600秒超過、およびround1〜3候補)は保持し、成功を転送していません。
+- Build executableは NOT_CAPTURED。削除が先でhash未取得、過去digestの転用なし。
+- 成功4 Gateのwork/repoとcheck環境targets 3件のみ削除(12,186 files、4,206,958,398 logical bytes)。削除後も4 Gate verifyはSUCCEEDED。
+- preflightは現候補workspace requestのUNKNOWN。
+- IMG2 194 PASS、W1～W7 replay、R0 340/12、Rust 535/539、feature clippy/build、WIC admission selftestは不変。
+
+重点確認:
+- 2つの指摘が実解消していること(必須フィールド欠落の拒否、raw trace結合)。
+- absolute referenceがdecoder出力由来でないこと、differentialをabsoluteへ昇格していないこと。
+- sampling/precision混同、正規化、ICC/EXIF誤帰属、full-frame admission、encoded size非流用、malformed fail-closed、stop契約。
+- 4 Gateの実bytes対応、manifest実在性、docs-only差分、artifact 32/32、storage前後integrity。
+- W1～W7回帰、product decoder採用/SLO無断批准がないこと。
+
+実行可能範囲:
+添付だけではprivate Git objects、Windows decoder、Refine stateは使えません。fixture再生成、marker再解析、absolute/differential再計算、43 mutation replay、receipt照合は可能です。固定Git source-bound検証・Windows実行・Refine再実行・GUIはNOT_RUNと明記してください。
+
+今回は全JPEG absolute correctness、全codec、decoder adoption、製品tolerance、ICC/EXIF policy、16K full decode、partial/sequential/tiled、内部scratch、実予約、concurrent peak、cooperative cancellation、product SLO、full Decode Exit、MP-IMG3、Runtime、measured R0、UX/video、main/releaseを完了しません。未測定のまま保持できた場合にだけW8 LIMITED TECHNICAL COMPLETIONの可否を判断してください。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘はファイル・条件・再現・最小修正まで示してください。最後に独立行で REVIEW COMPLETE、その次の最終行に verdict/countsを記してください。
