@@ -1,38 +1,38 @@
 {
   "schema_version": 1,
   "slice": "MP-IMG2-W8",
-  "round": 4,
-  "experimental_native_source": "0feb6a7bda88868e879084374ed5a26f43031915",
-  "gate_candidate": "c03c2b4492074a503bb70f510ca705212c654ffe",
-  "candidate_digest": "sha256:2dc83347b22f457afe7bbe3c6fc1e17d6c589e917260becc86496191a1b42be7",
-  "evidence_head": "20d4fff7013aad4357f617da225eb311b3faa41b",
+  "round": 5,
+  "experimental_native_source": "05ea4d10ef6a24ce3a710d3de7365c023c60e838",
+  "gate_candidate": "73d53d04b1beda143fd6f3f8af00b234401d8800",
+  "candidate_digest": "sha256:fcc01cf75350fc29a030ae21ed00cab38573831fdb221bf11a6253e972d82c3d",
+  "evidence_head": "568a3735c02ef37c885512435a8dedf84325b317",
   "manifest_commit_relationship": "This manifest is committed as a child of evidence_head; both archives are exact Git archives at the commits named here and this manifest is not inside its own archive.",
   "source_zip": {
     "schema_version": 1,
     "archive": "w8-review-source.zip",
-    "commit": "c03c2b4492074a503bb70f510ca705212c654ffe",
-    "bytes": 5441490,
-    "sha256": "sha256:a1204f334e15509ad0d3b18adf128d2065ea72c9c324b61f02c41f6970871375"
+    "commit": "73d53d04b1beda143fd6f3f8af00b234401d8800",
+    "bytes": 5444741,
+    "sha256": "sha256:e5e7464e48d631af10cc437843edb2475b8dd1d0234067bfd788abcda7ee75aa"
   },
-  "source_entries": 771,
+  "source_entries": 772,
   "source_entry_manifest": {
     "path_inside_evidence_zip": "docs/development/evidence-published/img2-w8-latest/review-package-source.json",
     "present": true,
-    "entries": 771,
+    "entries": 772,
     "matches_source_archive_sha256": true
   },
   "evidence_zip": {
     "archive": "w8-review-evidence.zip",
-    "commit": "20d4fff7013aad4357f617da225eb311b3faa41b",
-    "bytes": 889254,
-    "sha256": "sha256:e12e77a72e5434a59b1c20144f8965c27d05910b44af16c8ecf6c190376d4013",
-    "files": 46
+    "commit": "568a3735c02ef37c885512435a8dedf84325b317",
+    "bytes": 892374,
+    "sha256": "sha256:116309fe468a1cf34fbbea58d02355eea3af2e0495c5a4d8c966ab4c2a237b7d",
+    "files": 47
   },
   "gates": {
-    "workspace": "3f11d747-af6c-4f67-a499-bc746ab937a7",
-    "img2": "4b72a851-ce54-4e89-afc9-ccfbb6d62a4d",
-    "w8": "b59b5b82-a988-4f9d-90a0-bd382f98d805",
-    "build": "7159bc4e-52fd-4c20-a5f3-a0326446b5c1"
+    "workspace": "06412352-d63f-403d-a662-5433513bda46",
+    "img2": "6e61da1a-8c0b-4667-ad27-6cde46e98542",
+    "w8": "2e0234c1-0320-4ec8-88eb-adf6142e990f",
+    "build": "683f4a31-db03-4fd2-8146-364f453b58e1"
   },
   "artifact_correspondence": "gate-artifact-correspondence.json",
   "raw_gate_receipts": [
@@ -58,9 +58,8 @@
     "docs/development/evidence-published/img2-w8-latest/storage.json"
   ],
   "all_after_candidate_changes_docs_only": true,
-  "round3_findings": {
-    "A-W8-R2-01": "Malformed WIC legs now require the worker outcome field itself, a validated raw trace payload and a probe_exit whose outcome and completeness match the observed result.",
-    "A-W8-R2-02": "GDI+ output_bytes is mandatory and equal to the real output length; three mutations cover the removed field and a tampered trace."
+  "round4_findings": {
+    "A-W8-R4-01": "A completed malformed WIC trace now requires trace_complete, zero partial bytes and a trailing newline; two coherent tail mutations cover both the decoded and corrupt paths."
   },
   "build_product": "NOT_CAPTURED: the isolated build output was disposed before hashing, so no digest is claimed.",
   "package_boundaries": {
