@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "cases": 5,
+  "progressive_verified": 2,
+  "malformed": 2,
+  "control": 1,
+  "decoder_legs": 10,
+  "source_identity_verified": true,
+  "closure_eligible": true,
+  "fixture_regeneration_verified": true,
+  "measurement_scope": "WIC process counters under an artificial hold; entropy content, refinement scans, GDI+ memory and internal scratch stay NOT_MEASURED"
+}

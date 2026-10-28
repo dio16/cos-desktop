@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "source": "47c7e375937b5ca8e672cd9112c9c82da3f860a0",
+  "platform": {
+    "dotnet": ".NET 10.0.13",
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "powershell": "7.6.7",
+    "windows": true
+  },
+  "bounds": {
+    "max_capture_bytes": 65536,
+    "max_concurrent_workers": 1,
+    "max_declared_scratch": 16777216,
+    "max_dimension": 2048,
+    "max_encoded_input": 16777216,
+    "max_native_legs": 10,
+    "max_output_bgra32": 16777216,
+    "max_output_file": 33554432,
+    "max_pixels": 4194304,
+    "max_report_bytes": 8388608,
+    "max_source_cases": 5,
+    "max_source_depth": 8,
+    "max_total_seconds": 300,
+    "max_trace_bytes": 131072,
+    "max_trace_records": 128,
+    "max_work_root": 268435456,
+    "max_worker_seconds": 45
+  },
+  "decode_limits": {
+    "max_bit_depth": 8,
+    "max_decoded_bytes": 16777216,
+    "max_dimension": 2048,
+    "max_pixels": 4194304,
+    "max_scratch_bytes": 16777216
+  },
+  "duration_ns": 14781415900,
+  "work_bytes": 444320,
+  "total_sources": 5,
+  "decoder_legs_total": 10,
+  "sampler_script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+  "cases": [
+    {
+      "case_id": "progressive_gray_256",
+      "kind": "progressive",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DIFFERENTIAL_VERIFIED"
+    },
+    {
+      "case_id": "progressive_gray_1024",
+      "kind": "progressive",
+      "reference_class": "DIFFERENTIAL",
+      "classification": "DIFFERENTIAL_VERIFIED"
+    },
+    {
+      "case_id": "malformed_scan_truncated",
+      "kind": "malformed",
+      "reference_class": "NOT_VERIFIED",
+      "classification": "DECODED_TAMPER_NOT_VERIFIED"
+    },
+    {
+      "case_id": "malformed_spectral_invalid",
+      "kind": "malformed",
+      "reference_class": "NOT_VERIFIED",
+      "classification": "REFUSED"
+    },
+    {
+      "case_id": "baseline_control_420_256",
+      "kind": "control",
+      "reference_class": "CONTROL",
+      "classification": "CONTROL_VERIFIED"
+    }
+  ],
+  "cleanup": {
+    "complete": true,
+    "live_direct_children": []
+  },
+  "work_root_disposable": true
+}

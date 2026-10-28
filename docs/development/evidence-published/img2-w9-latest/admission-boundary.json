@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "limits": {
+    "max_dimension": 2048,
+    "max_pixels": 4194304,
+    "max_bit_depth": 8,
+    "max_decoded_bytes": 16777216,
+    "max_scratch_bytes": 16777216
+  },
+  "bounds": {
+    "max_dimension": 2048,
+    "max_pixels": 4194304,
+    "max_source_depth": 8,
+    "max_output_bgra32": 16777216,
+    "max_declared_scratch": 16777216,
+    "max_encoded_input": 16777216,
+    "max_output_file": 33554432,
+    "max_work_root": 268435456,
+    "max_report_bytes": 8388608,
+    "max_trace_records": 128,
+    "max_trace_bytes": 131072,
+    "max_capture_bytes": 65536,
+    "max_worker_seconds": 45,
+    "max_total_seconds": 300,
+    "max_concurrent_workers": 1,
+    "max_native_legs": 10,
+    "max_source_cases": 5
+  },
+  "wic": "pre-materialization budget admission in wic_probe.ps1",
+  "gdiplus": "no header-only load or pre-materialization admission; only -MaxPixels is enforced after load",
+  "cases": [
+    {
+      "case_id": "progressive_gray_256",
+      "kind": "progressive",
+      "classification": "DIFFERENTIAL_VERIFIED"
+    },
+    {
+      "case_id": "progressive_gray_1024",
+      "kind": "progressive",
+      "classification": "DIFFERENTIAL_VERIFIED"
+    },
+    {
+      "case_id": "malformed_scan_truncated",
+      "kind": "malformed",
+      "classification": "DECODED_TAMPER_NOT_VERIFIED"
+    },
+    {
+      "case_id": "malformed_spectral_invalid",
+      "kind": "malformed",
+      "classification": "REFUSED"
+    },
+    {
+      "case_id": "baseline_control_420_256",
+      "kind": "control",
+      "classification": "CONTROL_VERIFIED"
+    }
+  ]
+}

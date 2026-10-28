@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "candidate": "a8423ab696e6079ee17694ced4983b29280e3dbd",
+  "build_gate": "3c603a91-983a-4a4d-a56e-3a388e98000c",
+  "status": "NOT_CAPTURED",
+  "reason": "The isolated build output was disposed by the approved scratch step before its bytes were hashed.",
+  "declared_immutable_artifact": false,
+  "retention": "The executable is disposable; source, receipt and logs are retained."
+}

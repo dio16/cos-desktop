@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "progressive_gray_256",
+      "reference_class": "DIFFERENTIAL",
+      "verification": "DIFFERENTIAL_VERIFIED",
+      "absolute_claimed": false
+    },
+    {
+      "case_id": "progressive_gray_1024",
+      "reference_class": "DIFFERENTIAL",
+      "verification": "DIFFERENTIAL_VERIFIED",
+      "absolute_claimed": false
+    },
+    {
+      "case_id": "malformed_scan_truncated",
+      "reference_class": "NOT_VERIFIED",
+      "verification": "DECODED_TAMPER_NOT_VERIFIED",
+      "absolute_claimed": false
+    },
+    {
+      "case_id": "malformed_spectral_invalid",
+      "reference_class": "NOT_VERIFIED",
+      "verification": "REFUSED",
+      "absolute_claimed": false
+    },
+    {
+      "case_id": "baseline_control_420_256",
+      "reference_class": "CONTROL",
+      "verification": "CONTROL_VERIFIED",
+      "absolute_claimed": false
+    }
+  ],
+  "note": "No progressive case claims an absolute reference; the baseline control is a regression control only."
+}

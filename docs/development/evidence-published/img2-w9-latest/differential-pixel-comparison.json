@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "progressive_gray_256",
+      "exact": true,
+      "pixels": 65536,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    },
+    {
+      "case_id": "progressive_gray_1024",
+      "exact": true,
+      "pixels": 1048576,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    },
+    {
+      "case_id": "malformed_scan_truncated",
+      "exact": true,
+      "pixels": 65536,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    },
+    {
+      "case_id": "baseline_control_420_256",
+      "exact": true,
+      "pixels": 65536,
+      "differing_pixels": 0,
+      "differing_channels": 0,
+      "maximum_channel_difference": 0,
+      "mean_channel_difference": 0.0,
+      "first_difference": null,
+      "normalization": "both legs asked for canonical PNG; RGBA rows compared byte exactly"
+    }
+  ],
+  "note": "Both legs requested canonical PNG; agreement is differential evidence only."
+}

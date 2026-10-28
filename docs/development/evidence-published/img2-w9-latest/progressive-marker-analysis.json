@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "progressive_gray_256",
+      "kind": "progressive",
+      "parsed": true,
+      "structure_error": null,
+      "frame": {
+        "component_count": 1,
+        "components": [
+          {
+            "h": 1,
+            "id": 1,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          }
+        ],
+        "height": 256,
+        "marker": 194,
+        "precision": 8,
+        "variant": "progressive_dct",
+        "width": 256
+      },
+      "scan_count": 2,
+      "scans": [
+        {
+          "ah": 0,
+          "al": 0,
+          "components": [
+            {
+              "ac": 0,
+              "dc": 0,
+              "id": 1
+            }
+          ],
+          "entropy_bytes": 1071,
+          "entropy_offset": 310,
+          "frame_variant": "progressive_dct",
+          "restart_markers": false,
+          "se": 0,
+          "ss": 0
+        },
+        {
+          "ah": 0,
+          "al": 0,
+          "components": [
+            {
+              "ac": 0,
+              "dc": 0,
+              "id": 1
+            }
+          ],
+          "entropy_bytes": 8434,
+          "entropy_offset": 1391,
+          "frame_variant": "progressive_dct",
+          "restart_markers": false,
+          "se": 63,
+          "ss": 1
+        }
+      ],
+      "markers": [
+        219,
+        194,
+        196,
+        196,
+        218,
+        218,
+        217
+      ],
+      "bytes": 9827
+    },
+    {
+      "case_id": "progressive_gray_1024",
+      "kind": "progressive",
+      "parsed": true,
+      "structure_error": null,
+      "frame": {
+        "component_count": 1,
+        "components": [
+          {
+            "h": 1,
+            "id": 1,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          }
+        ],
+        "height": 1024,
+        "marker": 194,
+        "precision": 8,
+        "variant": "progressive_dct",
+        "width": 1024
+      },
+      "scan_count": 2,
+      "scans": [
+        {
+          "ah": 0,
+          "al": 0,
+          "components": [
+            {
+              "ac": 0,
+              "dc": 0,
+              "id": 1
+            }
+          ],
+          "entropy_bytes": 17145,
+          "entropy_offset": 310,
+          "frame_variant": "progressive_dct",
+          "restart_markers": false,
+          "se": 0,
+          "ss": 0
+        },
+        {
+          "ah": 0,
+          "al": 0,
+          "components": [
+            {
+              "ac": 0,
+              "dc": 0,
+              "id": 1
+            }
+          ],
+          "entropy_bytes": 134944,
+          "entropy_offset": 17465,
+          "frame_variant": "progressive_dct",
+          "restart_markers": false,
+          "se": 63,
+          "ss": 1
+        }
+      ],
+      "markers": [
+        219,
+        194,
+        196,
+        196,
+        218,
+        218,
+        217
+      ],
+      "bytes": 152411
+    },
+    {
+      "case_id": "malformed_scan_truncated",
+      "kind": "malformed",
+      "parsed": false,
+      "structure_error": "ValueError:jpeg_marker_expected",
+      "frame": null,
+      "scan_count": 0,
+      "scans": null,
+      "markers": null,
+      "bytes": null
+    },
+    {
+      "case_id": "malformed_spectral_invalid",
+      "kind": "malformed",
+      "parsed": false,
+      "structure_error": "ValueError:jpeg_scan_parameters_invalid",
+      "frame": null,
+      "scan_count": 0,
+      "scans": null,
+      "markers": null,
+      "bytes": null
+    },
+    {
+      "case_id": "baseline_control_420_256",
+      "kind": "control",
+      "parsed": true,
+      "structure_error": null,
+      "frame": {
+        "component_count": 3,
+        "components": [
+          {
+            "h": 2,
+            "id": 1,
+            "quant_table": 0,
+            "sampling": 34,
+            "v": 2
+          },
+          {
+            "h": 1,
+            "id": 2,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          },
+          {
+            "h": 1,
+            "id": 3,
+            "quant_table": 0,
+            "sampling": 17,
+            "v": 1
+          }
+        ],
+        "height": 256,
+        "marker": 192,
+        "precision": 8,
+        "variant": "baseline_dct",
+        "width": 256
+      },
+      "scan_count": 1,
+      "scans": [
+        {
+          "ah": 0,
+          "al": 0,
+          "components": [
+            {
+              "ac": 0,
+              "dc": 0,
+              "id": 1
+            },
+            {
+              "ac": 0,
+              "dc": 0,
+              "id": 2
+            },
+            {
+              "ac": 0,
+              "dc": 0,
+              "id": 3
+            }
+          ],
+          "entropy_bytes": 6771,
+          "entropy_offset": 338,
+          "frame_variant": "baseline_dct",
+          "restart_markers": false,
+          "se": 63,
+          "ss": 0
+        }
+      ],
+      "markers": [
+        224,
+        219,
+        192,
+        196,
+        196,
+        218,
+        217
+      ],
+      "bytes": 7111
+    }
+  ]
+}

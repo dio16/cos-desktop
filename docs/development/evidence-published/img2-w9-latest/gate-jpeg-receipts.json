@@ -1,0 +1,587 @@
+{
+  "schema_version": 1,
+  "gate": "jpeg",
+  "gate_id": "083d08bf-cdd1-4d2e-9438-8c14dc3c2857",
+  "operations": {
+    "status": {
+      "exit_code": 0,
+      "stdout": {
+        "cli_interface_version": 2,
+        "operation": "gate.status",
+        "outcome": {
+          "schema_version": 1,
+          "result": {
+            "schema_version": 1,
+            "gate_id": "083d08bf-cdd1-4d2e-9438-8c14dc3c2857",
+            "gate_label": "mp-img2-w9-r1-jpeg",
+            "state": "SUCCEEDED",
+            "updated_at": "2026-10-28T09:01:07.522189700Z",
+            "owner_alive": false,
+            "recovery_required": false
+          }
+        }
+      },
+      "stderr": ""
+    },
+    "inspect": {
+      "exit_code": 0,
+      "stdout": {
+        "cli_interface_version": 2,
+        "operation": "gate.inspect",
+        "outcome": {
+          "schema_version": 1,
+          "result": {
+            "schema_version": 1,
+            "gate_id": "083d08bf-cdd1-4d2e-9438-8c14dc3c2857",
+            "gate_label": "mp-img2-w9-r1-jpeg",
+            "request_sha256": "sha256:6338bcd38ab4de0e34d81dd66b92638752a9dbc29b05ee663ca6821595fe40f3",
+            "terminal_state_sha256": "sha256:b0a1700c54a9b78a9eb69671397755a6ee13d353481a56a0be6be32da419ae82",
+            "runtime": {
+              "refine_version": "0.3.1",
+              "os": "windows",
+              "architecture": "x86_64",
+              "git_version": "git version 2.51.0.windows.1"
+            },
+            "repository": {
+              "location": "C:/dev/cos-desktop",
+              "requested_revision": "a8423ab696e6079ee17694ced4983b29280e3dbd",
+              "resolved_base_commit": "a8423ab696e6079ee17694ced4983b29280e3dbd",
+              "object_format": "sha1",
+              "final_head": "a8423ab696e6079ee17694ced4983b29280e3dbd"
+            },
+            "limits": {
+              "timeout_ms": 600000,
+              "termination_grace_ms": 5000,
+              "max_output_bytes": 16777216,
+              "max_artifact_bytes": 16777216
+            },
+            "accepted_at": "2026-10-28T08:52:49.737866300Z",
+            "ended_at": "2026-10-28T09:01:07.522189700Z",
+            "candidate_sha256": "sha256:3f8ee98c82507c7cf58d8f0153d51fd7ac5f39ba043241dd71ddfc663c9cc5b4",
+            "verification": [
+              {
+                "id": "img2-w8",
+                "kind": "command",
+                "outcome": "pass",
+                "duration_ms": 273033,
+                "observed_exit": 0,
+                "candidate_binding": "sha256:3f8ee98c82507c7cf58d8f0153d51fd7ac5f39ba043241dd71ddfc663c9cc5b4"
+              },
+              {
+                "id": "img2-w9",
+                "kind": "command",
+                "outcome": "pass",
+                "duration_ms": 186264,
+                "observed_exit": 0,
+                "candidate_binding": "sha256:3f8ee98c82507c7cf58d8f0153d51fd7ac5f39ba043241dd71ddfc663c9cc5b4"
+              }
+            ],
+            "check_logs": [
+              {
+                "check_id": "img2-w8",
+                "stdout": {
+                  "relative_path": "logs/img2-w8/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/img2-w8/stderr",
+                  "size_bytes": 120,
+                  "sha256": "sha256:f422eef3a7569bd166c58bb23364f198aff4c43228b5e2c5af53dbbb07065ebf",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "img2-w9",
+                "stdout": {
+                  "relative_path": "logs/img2-w9/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/img2-w9/stderr",
+                  "size_bytes": 118,
+                  "sha256": "sha256:856b6ed62a9179635a56f4aa84db1430105831540500ec93c317164709f8c3b2",
+                  "truncated": false,
+                  "secret": true
+                }
+              }
+            ],
+            "artifacts": [
+              {
+                "id": "w9c-0",
+                "relative_path": "artifacts/w9c-0",
+                "size_bytes": 4448,
+                "sha256": "sha256:fe9d6b61fc729f9c9c121efd985fde89853dd884d6564edc38babb51d4995301"
+              },
+              {
+                "id": "w9c-1",
+                "relative_path": "artifacts/w9c-1",
+                "size_bytes": 9223,
+                "sha256": "sha256:89a4205f45b17432ccac91440295a3e34bff4dfb15c5566dcc7ec4a2040b4f84"
+              },
+              {
+                "id": "w9c-10",
+                "relative_path": "artifacts/w9c-10",
+                "size_bytes": 52899,
+                "sha256": "sha256:fedfa68012ab47102a49006ba24dea4345083ac5172e6e8a26ceaf4cecda2b4b"
+              },
+              {
+                "id": "w9c-11",
+                "relative_path": "artifacts/w9c-11",
+                "size_bytes": 1578,
+                "sha256": "sha256:ac669eb5c3a0f815c9999b3ca17b71fef239a63b7fdd9837e6b9e3a2d73d5409"
+              },
+              {
+                "id": "w9c-12",
+                "relative_path": "artifacts/w9c-12",
+                "size_bytes": 2112,
+                "sha256": "sha256:a6bda0e9e703c21baea2ffbb87bc0117c392803a1d3d7751bcade49d89a9b8fe"
+              },
+              {
+                "id": "w9c-13",
+                "relative_path": "artifacts/w9c-13",
+                "size_bytes": 1579,
+                "sha256": "sha256:2d1f5dea11d197cae26bcd80ff659289bd9aa333332b6515e4cd458ecf826d5e"
+              },
+              {
+                "id": "w9c-14",
+                "relative_path": "artifacts/w9c-14",
+                "size_bytes": 770,
+                "sha256": "sha256:9f8ef396f21560f4b04d1a4ea502986683fb7bc79b9459a0453204368e54e3e3"
+              },
+              {
+                "id": "w9c-15",
+                "relative_path": "artifacts/w9c-15",
+                "size_bytes": 2122,
+                "sha256": "sha256:017dcc732d530efee480eff77ad69a576dfb2eb097a21f285ec69b67e0b9d3e7"
+              },
+              {
+                "id": "w9c-16",
+                "relative_path": "artifacts/w9c-16",
+                "size_bytes": 1846,
+                "sha256": "sha256:05070565a455bba87eb2e8f2601443d710deb189b2edb135efa69cc9bc3107e7"
+              },
+              {
+                "id": "w9c-17",
+                "relative_path": "artifacts/w9c-17",
+                "size_bytes": 1252,
+                "sha256": "sha256:a00a76fdb298bc3f6256f67b9a22d74749db44a2f77d1382f61198090e9d1282"
+              },
+              {
+                "id": "w9c-18",
+                "relative_path": "artifacts/w9c-18",
+                "size_bytes": 1390,
+                "sha256": "sha256:09cd67690a3729ac24a379e8aaaffa44035077bc41fef40037a2000b54ad6fee"
+              },
+              {
+                "id": "w9c-19",
+                "relative_path": "artifacts/w9c-19",
+                "size_bytes": 10430,
+                "sha256": "sha256:762c49c63a3dd6089dd7bb0612899aa6ab541658e846db33086fee94b173c3a3"
+              },
+              {
+                "id": "w9c-2",
+                "relative_path": "artifacts/w9c-2",
+                "size_bytes": 8736,
+                "sha256": "sha256:3c4e8da7c82ba9aeef890ec10feebc570b34caae3ba2138ec465990754cea86e"
+              },
+              {
+                "id": "w9c-20",
+                "relative_path": "artifacts/w9c-20",
+                "size_bytes": 1352,
+                "sha256": "sha256:5aec14b8257d5041bd767198cab97c4f1f7edd40fc1ca3518c1043811fc7c6ed"
+              },
+              {
+                "id": "w9c-21",
+                "relative_path": "artifacts/w9c-21",
+                "size_bytes": 575212,
+                "sha256": "sha256:3b9dfea5380cfa0401e862a1506030b3e10bf07e6adbcb026adcc3c81ae6c295"
+              },
+              {
+                "id": "w9c-22",
+                "relative_path": "artifacts/w9c-22",
+                "size_bytes": 7354,
+                "sha256": "sha256:573d3b2f814f02a8535e8909c4b6604541211bf6610ab5b1a667a0b059e9cc96"
+              },
+              {
+                "id": "w9c-23",
+                "relative_path": "artifacts/w9c-23",
+                "size_bytes": 5040,
+                "sha256": "sha256:31f24776d7d674f371415592dbbbdef4ed7000abe93dc29718f747c236866d7f"
+              },
+              {
+                "id": "w9c-24",
+                "relative_path": "artifacts/w9c-24",
+                "size_bytes": 1454,
+                "sha256": "sha256:53d810ff45f54f4416a79c727c32d1047790afd6a078e23ebd92b7118aeaac02"
+              },
+              {
+                "id": "w9c-25",
+                "relative_path": "artifacts/w9c-25",
+                "size_bytes": 1024,
+                "sha256": "sha256:ec95e4d70255ede2b237a31708b5ae5eb4a6f20223c681cde4602d6b36198122"
+              },
+              {
+                "id": "w9c-26",
+                "relative_path": "artifacts/w9c-26",
+                "size_bytes": 10236,
+                "sha256": "sha256:e2ca2f676cfff7490d9bda3b69804ff70060a146b8b6441539b741f576774d3a"
+              },
+              {
+                "id": "w9c-27",
+                "relative_path": "artifacts/w9c-27",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              {
+                "id": "w9c-28",
+                "relative_path": "artifacts/w9c-28",
+                "size_bytes": 9565,
+                "sha256": "sha256:8be2d4d08fd8c1b0852768c0f70efb48113e4dc285568ce3767903db534aac30"
+              },
+              {
+                "id": "w9c-29",
+                "relative_path": "artifacts/w9c-29",
+                "size_bytes": 12542,
+                "sha256": "sha256:ea29c756611b300c10cd7b3ec7825f961a84f6335fe8d9304c9b1ecc040ec3b8"
+              },
+              {
+                "id": "w9c-3",
+                "relative_path": "artifacts/w9c-3",
+                "size_bytes": 10902,
+                "sha256": "sha256:3309e58c7a8bc43eb1d20ad1749c76419e0f28f403ca036ed07ae1698ac0a21a"
+              },
+              {
+                "id": "w9c-30",
+                "relative_path": "artifacts/w9c-30",
+                "size_bytes": 38975,
+                "sha256": "sha256:7be8e143af94137226617b12f60bcc7f4edbdea7dae1d924d332eb0bfec34817"
+              },
+              {
+                "id": "w9c-31",
+                "relative_path": "artifacts/w9c-31",
+                "size_bytes": 715,
+                "sha256": "sha256:5aad83cb109bc4f356d0ed1bc4d2045c84c38af73ab8773105aaf33e827241ba"
+              },
+              {
+                "id": "w9c-32",
+                "relative_path": "artifacts/w9c-32",
+                "size_bytes": 380,
+                "sha256": "sha256:68ae0f8f792dc2c2a9ee83348d0b1f691934fdf196d34b56a68255ce6be3fed8"
+              },
+              {
+                "id": "w9c-4",
+                "relative_path": "artifacts/w9c-4",
+                "size_bytes": 7875,
+                "sha256": "sha256:85d813ae25d6512beadeb2be106519fc5a992d9c4613b1d89998b709c135e0fd"
+              },
+              {
+                "id": "w9c-5",
+                "relative_path": "artifacts/w9c-5",
+                "size_bytes": 22194,
+                "sha256": "sha256:a99f105d12433637a8a5245e2adc0680944a00cde7c5a2727d824da3ebbf9aa1"
+              },
+              {
+                "id": "w9c-6",
+                "relative_path": "artifacts/w9c-6",
+                "size_bytes": 15826,
+                "sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef"
+              },
+              {
+                "id": "w9c-7",
+                "relative_path": "artifacts/w9c-7",
+                "size_bytes": 51013,
+                "sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c"
+              },
+              {
+                "id": "w9c-8",
+                "relative_path": "artifacts/w9c-8",
+                "size_bytes": 107399,
+                "sha256": "sha256:767e3fc4448b6d5855dfe57ec90635470c6a79feded4a91adee73c377b60fd3f"
+              },
+              {
+                "id": "w9c-9",
+                "relative_path": "artifacts/w9c-9",
+                "size_bytes": 454652,
+                "sha256": "sha256:041aa94d22c7dc35cf4e8112ec4c5a98e15fd9a8f67ad734b3c7db7428909e14"
+              }
+            ],
+            "absent_outputs": [],
+            "cleanup": "complete",
+            "timings": {
+              "preparation_ms": 23838,
+              "execution_ms": 0,
+              "verification_ms": 471385,
+              "collection_ms": 2497,
+              "finalization_ms": 2
+            },
+            "duration_ms": 497777
+          }
+        }
+      },
+      "stderr": ""
+    },
+    "verify": {
+      "exit_code": 0,
+      "stdout": {
+        "cli_interface_version": 2,
+        "operation": "gate.verify",
+        "outcome": {
+          "schema_version": 1,
+          "result": {
+            "schema_version": 1,
+            "gate_id": "083d08bf-cdd1-4d2e-9438-8c14dc3c2857",
+            "state": "SUCCEEDED",
+            "request_sha256": "sha256:6338bcd38ab4de0e34d81dd66b92638752a9dbc29b05ee663ca6821595fe40f3",
+            "terminal_state_sha256": "sha256:b0a1700c54a9b78a9eb69671397755a6ee13d353481a56a0be6be32da419ae82",
+            "observations_sha256": "sha256:fb21a5f5dcbce8148a1f97f88eaf9f3b4ace46778a67acb9a6332e45d2aaf72a",
+            "candidate_sha256": "sha256:3f8ee98c82507c7cf58d8f0153d51fd7ac5f39ba043241dd71ddfc663c9cc5b4",
+            "artifacts": [
+              {
+                "id": "w9c-0",
+                "relative_path": "artifacts/w9c-0",
+                "size_bytes": 4448,
+                "sha256": "sha256:fe9d6b61fc729f9c9c121efd985fde89853dd884d6564edc38babb51d4995301"
+              },
+              {
+                "id": "w9c-1",
+                "relative_path": "artifacts/w9c-1",
+                "size_bytes": 9223,
+                "sha256": "sha256:89a4205f45b17432ccac91440295a3e34bff4dfb15c5566dcc7ec4a2040b4f84"
+              },
+              {
+                "id": "w9c-10",
+                "relative_path": "artifacts/w9c-10",
+                "size_bytes": 52899,
+                "sha256": "sha256:fedfa68012ab47102a49006ba24dea4345083ac5172e6e8a26ceaf4cecda2b4b"
+              },
+              {
+                "id": "w9c-11",
+                "relative_path": "artifacts/w9c-11",
+                "size_bytes": 1578,
+                "sha256": "sha256:ac669eb5c3a0f815c9999b3ca17b71fef239a63b7fdd9837e6b9e3a2d73d5409"
+              },
+              {
+                "id": "w9c-12",
+                "relative_path": "artifacts/w9c-12",
+                "size_bytes": 2112,
+                "sha256": "sha256:a6bda0e9e703c21baea2ffbb87bc0117c392803a1d3d7751bcade49d89a9b8fe"
+              },
+              {
+                "id": "w9c-13",
+                "relative_path": "artifacts/w9c-13",
+                "size_bytes": 1579,
+                "sha256": "sha256:2d1f5dea11d197cae26bcd80ff659289bd9aa333332b6515e4cd458ecf826d5e"
+              },
+              {
+                "id": "w9c-14",
+                "relative_path": "artifacts/w9c-14",
+                "size_bytes": 770,
+                "sha256": "sha256:9f8ef396f21560f4b04d1a4ea502986683fb7bc79b9459a0453204368e54e3e3"
+              },
+              {
+                "id": "w9c-15",
+                "relative_path": "artifacts/w9c-15",
+                "size_bytes": 2122,
+                "sha256": "sha256:017dcc732d530efee480eff77ad69a576dfb2eb097a21f285ec69b67e0b9d3e7"
+              },
+              {
+                "id": "w9c-16",
+                "relative_path": "artifacts/w9c-16",
+                "size_bytes": 1846,
+                "sha256": "sha256:05070565a455bba87eb2e8f2601443d710deb189b2edb135efa69cc9bc3107e7"
+              },
+              {
+                "id": "w9c-17",
+                "relative_path": "artifacts/w9c-17",
+                "size_bytes": 1252,
+                "sha256": "sha256:a00a76fdb298bc3f6256f67b9a22d74749db44a2f77d1382f61198090e9d1282"
+              },
+              {
+                "id": "w9c-18",
+                "relative_path": "artifacts/w9c-18",
+                "size_bytes": 1390,
+                "sha256": "sha256:09cd67690a3729ac24a379e8aaaffa44035077bc41fef40037a2000b54ad6fee"
+              },
+              {
+                "id": "w9c-19",
+                "relative_path": "artifacts/w9c-19",
+                "size_bytes": 10430,
+                "sha256": "sha256:762c49c63a3dd6089dd7bb0612899aa6ab541658e846db33086fee94b173c3a3"
+              },
+              {
+                "id": "w9c-2",
+                "relative_path": "artifacts/w9c-2",
+                "size_bytes": 8736,
+                "sha256": "sha256:3c4e8da7c82ba9aeef890ec10feebc570b34caae3ba2138ec465990754cea86e"
+              },
+              {
+                "id": "w9c-20",
+                "relative_path": "artifacts/w9c-20",
+                "size_bytes": 1352,
+                "sha256": "sha256:5aec14b8257d5041bd767198cab97c4f1f7edd40fc1ca3518c1043811fc7c6ed"
+              },
+              {
+                "id": "w9c-21",
+                "relative_path": "artifacts/w9c-21",
+                "size_bytes": 575212,
+                "sha256": "sha256:3b9dfea5380cfa0401e862a1506030b3e10bf07e6adbcb026adcc3c81ae6c295"
+              },
+              {
+                "id": "w9c-22",
+                "relative_path": "artifacts/w9c-22",
+                "size_bytes": 7354,
+                "sha256": "sha256:573d3b2f814f02a8535e8909c4b6604541211bf6610ab5b1a667a0b059e9cc96"
+              },
+              {
+                "id": "w9c-23",
+                "relative_path": "artifacts/w9c-23",
+                "size_bytes": 5040,
+                "sha256": "sha256:31f24776d7d674f371415592dbbbdef4ed7000abe93dc29718f747c236866d7f"
+              },
+              {
+                "id": "w9c-24",
+                "relative_path": "artifacts/w9c-24",
+                "size_bytes": 1454,
+                "sha256": "sha256:53d810ff45f54f4416a79c727c32d1047790afd6a078e23ebd92b7118aeaac02"
+              },
+              {
+                "id": "w9c-25",
+                "relative_path": "artifacts/w9c-25",
+                "size_bytes": 1024,
+                "sha256": "sha256:ec95e4d70255ede2b237a31708b5ae5eb4a6f20223c681cde4602d6b36198122"
+              },
+              {
+                "id": "w9c-26",
+                "relative_path": "artifacts/w9c-26",
+                "size_bytes": 10236,
+                "sha256": "sha256:e2ca2f676cfff7490d9bda3b69804ff70060a146b8b6441539b741f576774d3a"
+              },
+              {
+                "id": "w9c-27",
+                "relative_path": "artifacts/w9c-27",
+                "size_bytes": 0,
+                "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              {
+                "id": "w9c-28",
+                "relative_path": "artifacts/w9c-28",
+                "size_bytes": 9565,
+                "sha256": "sha256:8be2d4d08fd8c1b0852768c0f70efb48113e4dc285568ce3767903db534aac30"
+              },
+              {
+                "id": "w9c-29",
+                "relative_path": "artifacts/w9c-29",
+                "size_bytes": 12542,
+                "sha256": "sha256:ea29c756611b300c10cd7b3ec7825f961a84f6335fe8d9304c9b1ecc040ec3b8"
+              },
+              {
+                "id": "w9c-3",
+                "relative_path": "artifacts/w9c-3",
+                "size_bytes": 10902,
+                "sha256": "sha256:3309e58c7a8bc43eb1d20ad1749c76419e0f28f403ca036ed07ae1698ac0a21a"
+              },
+              {
+                "id": "w9c-30",
+                "relative_path": "artifacts/w9c-30",
+                "size_bytes": 38975,
+                "sha256": "sha256:7be8e143af94137226617b12f60bcc7f4edbdea7dae1d924d332eb0bfec34817"
+              },
+              {
+                "id": "w9c-31",
+                "relative_path": "artifacts/w9c-31",
+                "size_bytes": 715,
+                "sha256": "sha256:5aad83cb109bc4f356d0ed1bc4d2045c84c38af73ab8773105aaf33e827241ba"
+              },
+              {
+                "id": "w9c-32",
+                "relative_path": "artifacts/w9c-32",
+                "size_bytes": 380,
+                "sha256": "sha256:68ae0f8f792dc2c2a9ee83348d0b1f691934fdf196d34b56a68255ce6be3fed8"
+              },
+              {
+                "id": "w9c-4",
+                "relative_path": "artifacts/w9c-4",
+                "size_bytes": 7875,
+                "sha256": "sha256:85d813ae25d6512beadeb2be106519fc5a992d9c4613b1d89998b709c135e0fd"
+              },
+              {
+                "id": "w9c-5",
+                "relative_path": "artifacts/w9c-5",
+                "size_bytes": 22194,
+                "sha256": "sha256:a99f105d12433637a8a5245e2adc0680944a00cde7c5a2727d824da3ebbf9aa1"
+              },
+              {
+                "id": "w9c-6",
+                "relative_path": "artifacts/w9c-6",
+                "size_bytes": 15826,
+                "sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef"
+              },
+              {
+                "id": "w9c-7",
+                "relative_path": "artifacts/w9c-7",
+                "size_bytes": 51013,
+                "sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c"
+              },
+              {
+                "id": "w9c-8",
+                "relative_path": "artifacts/w9c-8",
+                "size_bytes": 107399,
+                "sha256": "sha256:767e3fc4448b6d5855dfe57ec90635470c6a79feded4a91adee73c377b60fd3f"
+              },
+              {
+                "id": "w9c-9",
+                "relative_path": "artifacts/w9c-9",
+                "size_bytes": 454652,
+                "sha256": "sha256:041aa94d22c7dc35cf4e8112ec4c5a98e15fd9a8f67ad734b3c7db7428909e14"
+              }
+            ],
+            "check_logs": [
+              {
+                "check_id": "img2-w8",
+                "stdout": {
+                  "relative_path": "logs/img2-w8/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/img2-w8/stderr",
+                  "size_bytes": 120,
+                  "sha256": "sha256:f422eef3a7569bd166c58bb23364f198aff4c43228b5e2c5af53dbbb07065ebf",
+                  "truncated": false,
+                  "secret": true
+                }
+              },
+              {
+                "check_id": "img2-w9",
+                "stdout": {
+                  "relative_path": "logs/img2-w9/stdout",
+                  "size_bytes": 0,
+                  "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                  "truncated": false,
+                  "secret": true
+                },
+                "stderr": {
+                  "relative_path": "logs/img2-w9/stderr",
+                  "size_bytes": 118,
+                  "sha256": "sha256:856b6ed62a9179635a56f4aa84db1430105831540500ec93c317164709f8c3b2",
+                  "truncated": false,
+                  "secret": true
+                }
+              }
+            ]
+          }
+        }
+      },
+      "stderr": ""
+    }
+  }
+}

@@ -1,0 +1,297 @@
+{
+  "schema_version": 1,
+  "control": {
+    "ok": true,
+    "progressive_verified": 2,
+    "malformed": 2,
+    "control": 1,
+    "decoder_legs": 10,
+    "source_identity_verified": true,
+    "closure_eligible": true
+  },
+  "mutations": [
+    {
+      "number": 1,
+      "mutation": "sof2_to_sof0",
+      "ok": false,
+      "reason": "frame_variant_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 2,
+      "mutation": "scan_count_forged",
+      "ok": false,
+      "reason": "structure_recomputation_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 3,
+      "mutation": "sos_selector_changed",
+      "ok": false,
+      "reason": "structure_recomputation_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 4,
+      "mutation": "spectral_selection_changed",
+      "ok": false,
+      "reason": "structure_recomputation_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 5,
+      "mutation": "successive_approximation_changed",
+      "ok": false,
+      "reason": "structure_recomputation_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 6,
+      "mutation": "scan_order_changed",
+      "ok": false,
+      "reason": "structure_recomputation_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 7,
+      "mutation": "entropy_truncated",
+      "ok": false,
+      "reason": "structure_recomputation_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 8,
+      "mutation": "eoi_removed",
+      "ok": false,
+      "reason": "structure_recomputation_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 9,
+      "mutation": "segment_length_invalid",
+      "ok": false,
+      "reason": "structure_recomputation_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 10,
+      "mutation": "fixture_sha_changed",
+      "ok": false,
+      "reason": "fixture_regeneration_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 11,
+      "mutation": "source_width_changed",
+      "ok": false,
+      "reason": "fixture_geometry_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 12,
+      "mutation": "source_height_changed",
+      "ok": false,
+      "reason": "fixture_geometry_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 13,
+      "mutation": "precision_changed",
+      "ok": false,
+      "reason": "structure_recomputation_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 14,
+      "mutation": "sampling_changed",
+      "ok": false,
+      "reason": "structure_recomputation_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 15,
+      "mutation": "encoded_as_decoded",
+      "ok": false,
+      "reason": "wic_requirement_mismatch:decoded_bytes_required",
+      "error": "ValueError"
+    },
+    {
+      "number": 16,
+      "mutation": "decoded_requirement_understated",
+      "ok": false,
+      "reason": "wic_requirement_mismatch:decoded_bytes_required",
+      "error": "ValueError"
+    },
+    {
+      "number": 17,
+      "mutation": "admission_forged",
+      "ok": false,
+      "reason": "wic_admission_forged",
+      "error": "ValueError"
+    },
+    {
+      "number": 18,
+      "mutation": "candidate_changed",
+      "ok": false,
+      "reason": "wic_leg_identity_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 19,
+      "mutation": "decoder_identity_changed",
+      "ok": false,
+      "reason": "gdiplus_identity_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 20,
+      "mutation": "case_id_changed",
+      "ok": false,
+      "reason": "wic_leg_identity_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 21,
+      "mutation": "worker_outcome_changed",
+      "ok": false,
+      "reason": "wic_decode_outcome_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 22,
+      "mutation": "probe_outcome_changed",
+      "ok": false,
+      "reason": "gdiplus_identity_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 23,
+      "mutation": "terminal_outcome_changed",
+      "ok": false,
+      "reason": "wic_terminal_outcome_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 24,
+      "mutation": "publication_forged",
+      "ok": false,
+      "reason": "wic_publication_inconsistent",
+      "error": "ValueError"
+    },
+    {
+      "number": 25,
+      "mutation": "output_bytes_changed",
+      "ok": false,
+      "reason": "wic_output_digest_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 26,
+      "mutation": "output_sha_changed",
+      "ok": false,
+      "reason": "gdiplus_output_digest_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 27,
+      "mutation": "rgba_digest_changed",
+      "ok": false,
+      "reason": "differential_statistics_mismatch:pixels",
+      "error": "ValueError"
+    },
+    {
+      "number": 28,
+      "mutation": "differing_pixels_forged",
+      "ok": false,
+      "reason": "differential_statistics_mismatch:differing_pixels",
+      "error": "ValueError"
+    },
+    {
+      "number": 29,
+      "mutation": "first_mismatch_forged",
+      "ok": false,
+      "reason": "differential_statistics_mismatch:first_difference",
+      "error": "ValueError"
+    },
+    {
+      "number": 30,
+      "mutation": "differential_promoted_to_absolute",
+      "ok": false,
+      "reason": "reference_class_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 31,
+      "mutation": "malformed_promoted_to_content",
+      "ok": false,
+      "reason": "malformed_classification_invalid:malformed_scan_truncated",
+      "error": "ValueError"
+    },
+    {
+      "number": 32,
+      "mutation": "malformed_leg_removed",
+      "ok": false,
+      "reason": "malformed_legs_missing:malformed_spectral_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 33,
+      "mutation": "malformed_outcome_key_removed",
+      "ok": false,
+      "reason": "malformed_worker_outcome_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 34,
+      "mutation": "malformed_output_digest_forged",
+      "ok": false,
+      "reason": "malformed_decoded_leg_inconsistent",
+      "error": "ValueError"
+    },
+    {
+      "number": 35,
+      "mutation": "malformed_trace_tail",
+      "ok": false,
+      "reason": "malformed_complete_trace_has_partial_tail",
+      "error": "ValueError"
+    },
+    {
+      "number": 36,
+      "mutation": "trace_sha_mismatch",
+      "ok": false,
+      "reason": "trace_digest_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 37,
+      "mutation": "incomplete_capture_as_complete",
+      "ok": false,
+      "reason": "wic_process_sample_missing",
+      "error": "ValueError"
+    },
+    {
+      "number": 38,
+      "mutation": "process_identity_swapped",
+      "ok": false,
+      "reason": "stage_identity_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 39,
+      "mutation": "old_source_commit",
+      "ok": false,
+      "reason": "source_blob_missing:apps/desktop/devtools/img2/w9_progressive_fixtures.py",
+      "error": "ValueError"
+    },
+    {
+      "number": 40,
+      "mutation": "stop_classification_forged",
+      "ok": false,
+      "reason": "wic_decode_outcome_invalid",
+      "error": "ValueError"
+    }
+  ],
+  "required_classes": 40,
+  "shipped_classes": 40,
+  "all_rejected": true
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "gate_id": "dca1dc7e-7f40-4871-badc-74f2d1915b4a",
+  "status": {
+    "state": "SUCCEEDED",
+    "owner_alive": false,
+    "recovery_required": false
+  },
+  "inspect": {
+    "candidate_sha256": "sha256:86c6bf49b22d5d1b7f9830fda6f3458e5c329b02a250adbe126ca3b44f7c6b34",
+    "verification": [
+      "w9-native-verify:pass"
+    ],
+    "artifacts": 33,
+    "cleanup": "complete"
+  },
+  "verify": {
+    "state": "SUCCEEDED",
+    "artifacts": 33
+  },
+  "exits": {
+    "status": 0,
+    "inspect": 0,
+    "verify": 0
+  }
+}

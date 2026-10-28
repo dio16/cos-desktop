@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "fixtures": [
+    {
+      "bytes": 9827,
+      "case_id": "progressive_gray_256",
+      "height": 256,
+      "kind": "progressive",
+      "path": "progressive_gray_256.jpg",
+      "reference": "DIFFERENTIAL",
+      "sha256": "sha256:ed48e1cd434b9bfce397a6c2724af36b21916466ba5f5cefaf1a96b667859bab",
+      "width": 256
+    },
+    {
+      "bytes": 152411,
+      "case_id": "progressive_gray_1024",
+      "height": 1024,
+      "kind": "progressive",
+      "path": "progressive_gray_1024.jpg",
+      "reference": "DIFFERENTIAL",
+      "sha256": "sha256:fe658f3d9d8f38381c3d8d9b04472b998d743fc9341d6c90c5595da2248b25ef",
+      "width": 1024
+    },
+    {
+      "bytes": 4216,
+      "case_id": "malformed_scan_truncated",
+      "height": 256,
+      "kind": "malformed",
+      "path": "malformed_scan_truncated.jpg",
+      "reference": "NOT_VERIFIED",
+      "sha256": "sha256:e49bdde1a5e7ae5232fa72efa75ddaa7d39a034a53692d56c5ad572e3c758f65",
+      "width": 256
+    },
+    {
+      "bytes": 9827,
+      "case_id": "malformed_spectral_invalid",
+      "height": 256,
+      "kind": "malformed",
+      "path": "malformed_spectral_invalid.jpg",
+      "reference": "NOT_VERIFIED",
+      "sha256": "sha256:ee7db59128788cb8d2cf8cae8c73efe157e3ae4796cb8921fb3db574043cc5ca",
+      "width": 256
+    },
+    {
+      "bytes": 7111,
+      "case_id": "baseline_control_420_256",
+      "height": 256,
+      "kind": "control",
+      "path": "baseline_control_420_256.jpg",
+      "reference": "CONTROL",
+      "sha256": "sha256:ecf0819225e599bb42be96258268ceeaf0370da1a7ade67f0248f3dbc61c956d",
+      "width": 256
+    }
+  ],
+  "reproduction": "w9_progressive_fixtures.write_fixture: minimal in-repo SOF2 encoder with one DC and one AC scan",
+  "regeneration": "the verifier recomputes every digest and the marker structure from the generator"
+}

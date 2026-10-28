@@ -1,0 +1,232 @@
+{
+  "protocol": 1,
+  "op": "prepare",
+  "args": {
+    "draft": {
+      "draft_version": 1,
+      "plan_id": "cos-desktop-img2-w9",
+      "revision": 1,
+      "goal": "Verify bounded real-Windows progressive JPEG decode capability for WIC/GDI+ using independently validated multi-scan fixtures, canonical differential comparison and fail-closed malformed classification, without authorizing decoder adoption, absolute correctness for all JPEGs, or product policy changes.",
+      "invariants": [],
+      "milestones": [],
+      "tasks": [
+        {
+          "task_id": "img2-w9",
+          "goal": "Implement and measure the W9 progressive JPEG matrix under DC-MP-IMG2 without changing product decode policy.",
+          "inputs": [
+            {
+              "id": "directive",
+              "description": "Full caller-selected W9 directive: docs/development/evidence-published/img2-w9-latest/tern-next-directive.txt (verbatim 1615 lines). All constraints and acceptance below are projections of it.",
+              "context_ids": []
+            },
+            {
+              "id": "canon",
+              "description": "MP-IMG1/MP-SEC3 completion; MP ss19.55-.61; DC-MP-IMG2 and media admission; BUILD_AND_RUN 4.23-4.28; TESTING; ADR-0009/0012. W8 limited completion does not satisfy MP-IMG3.",
+              "context_ids": []
+            },
+            {
+              "id": "existing",
+              "description": "Reuse the W8 JPEG fixtures/parser/matrix/verifier, wic_probe.ps1, gdiplus_probe.ps1, W2 worker and W6 sampler. No probe, product decoder, dependency or Runtime change.",
+              "context_ids": []
+            }
+          ],
+          "constraints": [
+            {
+              "id": "scope",
+              "level": "MUST",
+              "text": "Use DC-MP-IMG2 under ADR-0009/0012 only. Start 870cd2749c5e6b76b370ab48049f29854b4f6af8 on dev. Preserve W1-W8 source, native, Gate and review bytes; no push, main or release."
+            },
+            {
+              "id": "fixtures",
+              "level": "MUST",
+              "text": "Five fixed sources: progressive grayscale 256 and 1024 with non-uniform content, two derived malformed progressives and one accepted W8 baseline control. At most ten decoder legs."
+            },
+            {
+              "id": "encoder",
+              "level": "MUST",
+              "text": "Emit a real SOF2 multi-scan stream from a minimal in-repo encoder: one initial DC scan and one initial AC scan with valid spectral selection and byte stuffing. Do not claim refinement-scan support."
+            },
+            {
+              "id": "structure",
+              "level": "MUST",
+              "text": "Validate SOF2, scan count, SOS selectors, Ss/Se, Ah/Al, entropy bounds, stuffing, EOI and trailing bytes from the encoded bytes; a SOF2 marker alone is not validity, and entropy content stays NOT_VERIFIED."
+            },
+            {
+              "id": "classification",
+              "level": "MUST",
+              "text": "Keep differential and absolute verification separate; malformed decoder success is never promoted to content verification; progressive differential is never absolute correctness."
+            },
+            {
+              "id": "budget",
+              "level": "MUST",
+              "text": "W9 experimental limits: dimension 2048, 4,194,304 pixels, 8 bits per channel, 16 MiB decoded/scratch/encoded, 32 MiB output, 256 MiB work root, 8 MiB report, 128 records/128 KiB trace, 64 KiB capture, 45 s worker, 300 s batch, one worker, 5 sources, 10 legs."
+            },
+            {
+              "id": "negative",
+              "level": "MUST",
+              "text": "Ship a fail-closed verifier and exercise all 40 required mutation classes through verify(); structural replay keeps source_identity_verified=false and closure_eligible=false."
+            },
+            {
+              "id": "authority",
+              "level": "MUST",
+              "text": "Stop and record DESIGN_BLOCKED, AUTHORITY_BLOCKED, DEPENDENCY_BLOCKED, SAFETY_BLOCKED, NOT_RUN, NOT_MEASURED or NOT_VERIFIED instead of inventing an unapproved design, tolerance or decoder adoption."
+            }
+          ],
+          "outputs": [
+            {
+              "id": "tooling",
+              "description": "Deterministic W6 fixtures, repeated process sampler/matrix, independent fail-closed verifier and focused tests.",
+              "media_type": "text/plain"
+            },
+            {
+              "id": "native",
+              "description": "Bounded Windows matrix, raw sample series, source/executable identities, cohort comparisons, arithmetic, independent raster proof and explicit measurement limitations.",
+              "media_type": "application/json"
+            },
+            {
+              "id": "closure",
+              "description": "Local quality and historical regression outcomes; pinned same-candidate Quality/Build receipts, artifact bytes, retention, complete Tern review and limited disposition.",
+              "media_type": "application/json"
+            }
+          ],
+          "acceptance": [
+            {
+              "id": "a01",
+              "statement": "New W9 SOURCE and Taskern packet are fixed before Native execution.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a02",
+              "statement": "Progressive fixtures regenerate deterministically and expose valid multi-scan SOF2 structure with DC and AC scans.",
+              "output_ids": [
+                "tooling"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a03",
+              "statement": "WIC and GDI+ both decode the progressive sources and their canonical RGBA is compared on every pixel.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a04",
+              "statement": "Differential agreement is never reported as absolute correctness.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a05",
+              "statement": "Malformed progressive inputs never reach content verification in either candidate.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a06",
+              "statement": "Full-frame admission, output publication and the stop contract are preserved.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a07",
+              "statement": "All 40 negative mutation classes are rejected by the real verifier.",
+              "output_ids": [
+                "tooling"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a08",
+              "statement": "W8 JPEG regressions and W1-W7 historical replays pass unchanged.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "a09",
+              "statement": "New workspace, IMG2 replay, W9 quality and build Gates succeed on the same candidate with matching artifacts and raw receipts.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "a10",
+              "statement": "A complete Tern review returns 0/0/0 while entropy, refinement, allocation and product boundaries stay unmeasured.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            }
+          ],
+          "evaluation": [
+            {
+              "id": "behavior",
+              "kind": "automated",
+              "requirement": "Actual bounded Windows WIC and GDI+ progressive execution plus independent marker, multi-scan, canonical differential and mutation verification that preserves every missing or failing fact.",
+              "metric": []
+            },
+            {
+              "id": "workflow",
+              "kind": "automated",
+              "requirement": "Actual Taskern prepare, unchanged local/feature/R0/W1-W8 checks, new same-candidate Gates with raw receipts, privacy-reviewed Tern packages and complete 0/0/0.",
+              "metric": []
+            }
+          ],
+          "dependencies": [],
+          "context": [],
+          "annotations": []
+        }
+      ]
+    },
+    "handoff": [
+      {
+        "task_id": "img2-w9",
+        "context": {
+          "schema_version": 1,
+          "items": []
+        },
+        "budget": {
+          "schema_version": 1,
+          "window_tokens": 32000,
+          "reserved_output_tokens": 4000,
+          "tool_reserve_tokens": 4000,
+          "max_input_bytes": 24000
+        }
+      }
+    ],
+    "emit": "both"
+  }
+}

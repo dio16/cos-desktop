@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "legs": [
+    {
+      "case_id": "progressive_gray_256",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "progressive_gray_256",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "progressive_gray_1024",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "progressive_gray_1024",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "classification": "DECODED_DIFFERENTIAL_ONLY"
+    },
+    {
+      "case_id": "malformed_scan_truncated",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "classification": "DECODED_TAMPER_NOT_VERIFIED"
+    },
+    {
+      "case_id": "malformed_scan_truncated",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "classification": "DECODED_TAMPER_NOT_VERIFIED"
+    },
+    {
+      "case_id": "malformed_spectral_invalid",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "corrupt",
+      "classification": "CORRUPT_REFUSED"
+    },
+    {
+      "case_id": "malformed_spectral_invalid",
+      "candidate": "gdiplus",
+      "decoder": null,
+      "outcome": "error",
+      "classification": "TAMPER_NOT_VERIFIED"
+    },
+    {
+      "case_id": "baseline_control_420_256",
+      "candidate": "wic",
+      "decoder": "JpegBitmapDecoder",
+      "outcome": "decoded",
+      "classification": "CONTROL_DECODED"
+    },
+    {
+      "case_id": "baseline_control_420_256",
+      "candidate": "gdiplus",
+      "decoder": "Built-in JPEG Codec",
+      "outcome": "decoded",
+      "classification": "CONTROL_DECODED"
+    }
+  ],
+  "progressive_capability": "OBSERVED",
+  "absolute_correctness": "NOT_CLAIMED"
+}

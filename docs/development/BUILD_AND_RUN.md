@@ -1015,6 +1015,37 @@ is not credited as applied, GDI+ lifetime/memory/stages stay `NOT_MEASURED`, and
 W8 is not decoder adoption, product tolerance, full Decode Exit or Upload
 acceptance.
 
+### 4.29 MP-IMG2-W9 progressive JPEG evidence (2026-10-28)
+
+W9 uses the unchanged probes and the W8 leg runners. Its fixtures come from a
+minimal in-repo SOF2 encoder: one initial DC scan and one initial AC scan, both
+with `Ah=Al=0`, so a valid multi-scan stream exists without an external encoder.
+Refinement scans are not emitted and never claimed.
+
+```powershell
+python -B apps/desktop/devtools/img2/w9_progressive_matrix.py run `
+  --work-root <absolute-absent-owned-directory> --out <absolute-absent-report.json> `
+  --pwsh <absolute-qualified-pwsh.exe> `
+  --harness <absolute-repository>/target/debug/examples/decode_compare.exe
+python -B apps/desktop/devtools/img2/w9_progressive_matrix.py verify `
+  --report docs/development/evidence-published/img2-w9-latest/native-decoder-matrix.json `
+  --source-root <repository>
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_w9*.py"
+```
+
+Limits stay experimental: dimension 2048, 4,194,304 pixels, 8 bits per channel,
+16 MiB encoded/decoded/scratch, 32 MiB output, 256 MiB work root, 8 MiB report,
+128 records/128 KiB trace, 64 KiB capture, 45 s worker, 300 s batch, one worker,
+five sources and ten legs.
+
+The multi-scan parser validates SOF2, scan order, spectral selection, successive
+approximation, entropy bounds, stuffing and EOI; a SOF2 marker alone is not
+validity, and entropy content is only bounded, never decoded. Progressive cases
+are compared differentially and never promoted to absolute correctness. Malformed
+progressives stay `DECODED_TAMPER_NOT_VERIFIED` or refused; a decoder success is
+never content verification. GDI+ keeps its missing admission/trace/lifetime as
+`NOT_MEASURED`.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |

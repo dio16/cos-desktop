@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "case_id": "progressive_gray_256",
+      "sof2": true,
+      "dc_scans": 1,
+      "ac_scans": 1,
+      "refinement_scans": 0,
+      "structure": "VALID_PROGRESSIVE_STRUCTURE",
+      "entropy_verified": "NOT_VERIFIED"
+    },
+    {
+      "case_id": "progressive_gray_1024",
+      "sof2": true,
+      "dc_scans": 1,
+      "ac_scans": 1,
+      "refinement_scans": 0,
+      "structure": "VALID_PROGRESSIVE_STRUCTURE",
+      "entropy_verified": "NOT_VERIFIED"
+    },
+    {
+      "case_id": "malformed_scan_truncated",
+      "sof2": false,
+      "dc_scans": null,
+      "ac_scans": null,
+      "refinement_scans": null,
+      "structure": "STRUCTURE_INVALID",
+      "entropy_verified": "NOT_VERIFIED"
+    },
+    {
+      "case_id": "malformed_spectral_invalid",
+      "sof2": false,
+      "dc_scans": null,
+      "ac_scans": null,
+      "refinement_scans": null,
+      "structure": "STRUCTURE_INVALID",
+      "entropy_verified": "NOT_VERIFIED"
+    },
+    {
+      "case_id": "baseline_control_420_256",
+      "sof2": false,
+      "dc_scans": 0,
+      "ac_scans": 0,
+      "refinement_scans": 0,
+      "structure": "BASELINE_CONTROL",
+      "entropy_verified": "NOT_VERIFIED"
+    }
+  ],
+  "note": "Structure is verified from the encoded bytes; entropy values are parsed for bounds only and stay NOT_VERIFIED."
+}

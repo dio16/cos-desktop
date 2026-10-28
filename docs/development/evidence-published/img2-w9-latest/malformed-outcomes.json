@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "legs": [
+    {
+      "case_id": "malformed_scan_truncated",
+      "candidate": "wic",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": true,
+      "output_bytes": 3304,
+      "output_sha256": "sha256:f7af7800bbcef5a5b96d2d0e2d9facda469b0dc1023e64f1c06e1806c589289f",
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "malformed_scan_truncated",
+      "candidate": "gdiplus",
+      "outcome": "decoded",
+      "exit_code": 0,
+      "published": null,
+      "output_bytes": 11236,
+      "output_sha256": "sha256:633a269c0ccc70a1ba6a3de646916bb378ef0878e0836e9262f4efab7cc913a2",
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    },
+    {
+      "case_id": "malformed_spectral_invalid",
+      "candidate": "wic",
+      "outcome": "corrupt",
+      "exit_code": 3,
+      "published": false,
+      "output_bytes": 0,
+      "output_sha256": null,
+      "trace_complete": true,
+      "lifetime": "MEASURED_BY_TRACE"
+    },
+    {
+      "case_id": "malformed_spectral_invalid",
+      "candidate": "gdiplus",
+      "outcome": "error",
+      "exit_code": 1,
+      "published": null,
+      "output_bytes": 0,
+      "output_sha256": null,
+      "trace_complete": false,
+      "lifetime": "NOT_MEASURED"
+    }
+  ],
+  "note": "A malformed decoder success stays DECODED_TAMPER_NOT_VERIFIED."
+}

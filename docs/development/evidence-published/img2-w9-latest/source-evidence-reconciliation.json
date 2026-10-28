@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "native_source": "47c7e375937b5ca8e672cd9112c9c82da3f860a0",
+  "computed_against": "a8423ab696e6079ee17694ced4983b29280e3dbd",
+  "source_files": 22,
+  "all_source_files_pinned": true,
+  "candidate_equals_native_source": true,
+  "changed_paths_after_native_source": [
+    "apps/desktop/devtools/img2/tests/test_w9_progressive_fixtures.py",
+    "docs/development/BUILD_AND_RUN.md",
+    "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+    "docs/development/TESTING.md",
+    "docs/development/evidence-published/img2-w9-latest/admission-boundary.json",
+    "docs/development/evidence-published/img2-w9-latest/decoder-capability-table.json",
+    "docs/development/evidence-published/img2-w9-latest/differential-pixel-comparison.json",
+    "docs/development/evidence-published/img2-w9-latest/environment.json",
+    "docs/development/evidence-published/img2-w9-latest/execution-manifest.json",
+    "docs/development/evidence-published/img2-w9-latest/fixture-manifest.json",
+    "docs/development/evidence-published/img2-w9-latest/historical-regressions.json",
+    "docs/development/evidence-published/img2-w9-latest/malformed-outcomes.json",
+    "docs/development/evidence-published/img2-w9-latest/memory-observations.json",
+    "docs/development/evidence-published/img2-w9-latest/multi-scan-integrity.json",
+    "docs/development/evidence-published/img2-w9-latest/native-decoder-matrix.json",
+    "docs/development/evidence-published/img2-w9-latest/negative-tests.json",
+    "docs/development/evidence-published/img2-w9-latest/progressive-marker-analysis.json",
+    "docs/development/evidence-published/img2-w9-latest/quality.json",
+    "docs/development/evidence-published/img2-w9-latest/reference-classification.json",
+    "docs/development/evidence-published/img2-w9-latest/source-identity.json",
+    "docs/development/evidence-published/img2-w9-latest/taskern-diagnostic.json",
+    "docs/development/evidence-published/img2-w9-latest/taskern-request.json",
+    "docs/development/evidence-published/img2-w9-latest/taskern-response.json",
+    "docs/development/evidence-published/img2-w9-latest/tern-next-directive.txt",
+    "docs/development/evidence-published/img2-w9-latest/unmeasured.json",
+    "docs/development/evidence-published/img2-w9-latest/verifier-results.json"
+  ],
+  "all_after_changes_docs_only": false,
+  "self_note": "This file is the only difference between computed_against and the amended candidate that contains it.",
+  "rows": [
+    {
+      "path": "apps/desktop/devtools/img2/w9_progressive_fixtures.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w9_progressive_reference.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w9_progressive_matrix.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w9_progressive_verify.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w8_jpeg_fixtures.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w8_jpeg_reference.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w8_jpeg_matrix.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w8_jpeg_verify.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w7_large_oracle.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w6_memory_sample.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_resource_matrix.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/devtools/img2/w2_resource_verify.py",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/wic_probe.ps1",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/gdiplus_probe.ps1",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/wic_admission.ps1",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare.rs",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/harness.rs",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/inspect.rs",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "apps/desktop/examples/decode_compare/pixels.rs",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "crates/media/src/decode.rs",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "Cargo.lock",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    },
+    {
+      "path": "rust-toolchain.toml",
+      "matches_recorded_git_blob": true,
+      "candidate_equals_native_source": true
+    }
+  ]
+}

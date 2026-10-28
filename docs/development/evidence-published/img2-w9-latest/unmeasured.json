@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "unmeasured": [
+    "progressive entropy content",
+    "progressive refinement scans",
+    "all progressive JPEGs",
+    "absolute raster correctness for arbitrary JPEGs",
+    "WIC internal scratch peak",
+    "actual allocator reservations",
+    "true concurrent allocation peak",
+    "in-decoder cooperative cancellation",
+    "GDI+ process lifetime and memory",
+    "progressive scan-level partial materialization",
+    "product decoder adoption",
+    "product JPEG tolerance",
+    "full MP-IMG2 Decode Exit"
+  ],
+  "not_closed": [
+    "full MP-IMG2 Decode Exit",
+    "MP-IMG3 Upload prerequisite",
+    "Runtime RC-*",
+    "measured R0",
+    "product UX/video",
+    "main/release"
+  ]
+}

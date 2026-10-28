@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "wic": [
+    {
+      "case_id": "progressive_gray_256",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "progressive_gray_256_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 149625491200800,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 491,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"progressive_gray_256_wic\",\"pid\":57260,\"start_utc_ticks\":639287717235550147,\"identity_after_ticks\":639287717235550147,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":113991680,\"private_bytes\":40525824,\"peak_working_set_bytes\":113991680,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1496254000753,\"qpc_end\":1496254094241}],\"errors\":[],\"qpc_start\":1496253749251,\"qpc_end\":1496254148939,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1496254148939,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1496253749251,
+        "request_identities": [
+          {
+            "case_id": "progressive_gray_256_wic",
+            "pid": 57260,
+            "start_utc_ticks": 639287717235550147
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "progressive_gray_256_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287717235550147,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 113991680,
+            "pid": 57260,
+            "private_bytes": 40525824,
+            "qpc_end": 1496254094241,
+            "qpc_start": 1496254000753,
+            "start_utc_ticks": 639287717235550147,
+            "working_set_bytes": 113991680
+          }
+        ],
+        "start_ns": 149624935077600,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 40525824,
+          "working_set_bytes": 113991680
+        }
+      }
+    },
+    {
+      "case_id": "progressive_gray_1024",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "progressive_gray_1024_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 149627601284000,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 492,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"progressive_gray_1024_wic\",\"pid\":55764,\"start_utc_ticks\":639287717257060915,\"identity_after_ticks\":639287717257060915,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":116174848,\"private_bytes\":41865216,\"peak_working_set_bytes\":116178944,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1496275132444,\"qpc_end\":1496275225756}],\"errors\":[],\"qpc_start\":1496274874299,\"qpc_end\":1496275280037,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1496275280037,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1496274874299,
+        "request_identities": [
+          {
+            "case_id": "progressive_gray_1024_wic",
+            "pid": 55764,
+            "start_utc_ticks": 639287717257060915
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "progressive_gray_1024_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287717257060915,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 116178944,
+            "pid": 55764,
+            "private_bytes": 41865216,
+            "qpc_end": 1496275225756,
+            "qpc_start": 1496275132444,
+            "start_utc_ticks": 639287717257060915,
+            "working_set_bytes": 116174848
+          }
+        ],
+        "start_ns": 149627060732300,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 41865216,
+          "working_set_bytes": 116174848
+        }
+      }
+    },
+    {
+      "case_id": "malformed_scan_truncated",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "malformed_scan_truncated_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 149630470797000,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 495,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"malformed_scan_truncated_wic\",\"pid\":45312,\"start_utc_ticks\":639287717285668579,\"identity_after_ticks\":639287717285668579,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":115552256,\"private_bytes\":40771584,\"peak_working_set_bytes\":115564544,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1496303795988,\"qpc_end\":1496303887206}],\"errors\":[],\"qpc_start\":1496303560298,\"qpc_end\":1496303941778,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1496303941778,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1496303560298,
+        "request_identities": [
+          {
+            "case_id": "malformed_scan_truncated_wic",
+            "pid": 45312,
+            "start_utc_ticks": 639287717285668579
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "malformed_scan_truncated_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287717285668579,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 115564544,
+            "pid": 45312,
+            "private_bytes": 40771584,
+            "qpc_end": 1496303887206,
+            "qpc_start": 1496303795988,
+            "start_utc_ticks": 639287717285668579,
+            "working_set_bytes": 115552256
+          }
+        ],
+        "start_ns": 149629915747300,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 40771584,
+          "working_set_bytes": 115552256
+        }
+      }
+    },
+    {
+      "case_id": "baseline_control_420_256",
+      "sample": {
+        "aggregation": "same_collection_window",
+        "atomic_snapshot": false,
+        "case_ids": [
+          "baseline_control_420_256_wic"
+        ],
+        "classification": "DERIVED_WINDOW_SUM",
+        "clock_domain": "python_monotonic_ns",
+        "complete": true,
+        "end_ns": 149634041247300,
+        "failure": null,
+        "gap_ns": null,
+        "index": 0,
+        "observer": {
+          "capture_complete": true,
+          "exe_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+          "exit_code": 0,
+          "script_sha256": "sha256:49523a0c8ec6c6b51ffa006ac62fc9d85648b20b8f9fded867603530577df62b",
+          "stderr_bytes": 0,
+          "stderr_utf8": "",
+          "stdout_bytes": 495,
+          "stdout_utf8": "{\"samples\":[{\"case_id\":\"baseline_control_420_256_wic\",\"pid\":62232,\"start_utc_ticks\":639287717321026427,\"identity_after_ticks\":639287717321026427,\"exe_verified\":true,\"alive_before\":true,\"alive_after\":true,\"working_set_bytes\":115531776,\"private_bytes\":41082880,\"peak_working_set_bytes\":115531776,\"peak_status\":\"MEASURED_PROCESS_LIFETIME_COUNTER\",\"order\":0,\"qpc_start\":1496339389579,\"qpc_end\":1496339563885}],\"errors\":[],\"qpc_start\":1496339221081,\"qpc_end\":1496339619037,\"qpc_frequency\":10000000}\r\n",
+          "timeout": false
+        },
+        "qpc_end": 1496339619037,
+        "qpc_frequency": 10000000,
+        "qpc_start": 1496339221081,
+        "request_identities": [
+          {
+            "case_id": "baseline_control_420_256_wic",
+            "pid": 62232,
+            "start_utc_ticks": 639287717321026427
+          }
+        ],
+        "samples": [
+          {
+            "alive_after": true,
+            "alive_before": true,
+            "case_id": "baseline_control_420_256_wic",
+            "exe_verified": true,
+            "identity_after_ticks": 639287717321026427,
+            "order": 0,
+            "peak_status": "MEASURED_PROCESS_LIFETIME_COUNTER",
+            "peak_working_set_bytes": 115531776,
+            "pid": 62232,
+            "private_bytes": 41082880,
+            "qpc_end": 1496339563885,
+            "qpc_start": 1496339389579,
+            "start_utc_ticks": 639287717321026427,
+            "working_set_bytes": 115531776
+          }
+        ],
+        "start_ns": 149633492320200,
+        "status": "complete",
+        "totals": {
+          "private_bytes": 41082880,
+          "working_set_bytes": 115531776
+        }
+      }
+    }
+  ],
+  "gdiplus": "NOT_MEASURED (no trace or boundary hold)",
+  "scope": "whole-process counters under an artificial hold; scan-level residency stays NOT_MEASURED"
+}

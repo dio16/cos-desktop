@@ -204,6 +204,24 @@ Publication exclusively writes, flushes, syncs and closes all three artifacts pl
 
 [R0A-S1 admission](evidence/README.md#historical-records) bounds this slice to the versioned manifest contract (rendering §10.1), a bounded loader, the §11.2 result contract, structural validation and an offline CLI in `apps/desktop/devtools/r0` (Python standard library only). [Validation](evidence/README.md#historical-records) records eleven unittest cases and CLI outcomes: valid manifests and results validate; missing fields, wrong types and unsupported versions fail; oversize, duplicate-key, malformed and non-finite JSON fail closed before publication; unmeasured endpoints and metrics stay `NOT_MEASURED` with explicit reasons and null percentiles; `NOT_IMPLEMENTED` cannot become observed; failed/censored/excluded counts stay separate from observed; result identity must match the manifest; error output reflects only stable codes and JSON paths, never input text or paths. The tool launches nothing, fetches nothing, executes no input value and performs no measurement; R0A-S2/S3 drivers, R0B baselines, R0C attribution, R0D ratification and any numeric claim remain NOT_RUN.
 
+## 20. MP-IMG2-W9 progressive JPEG
+
+`test_w9_progressive_fixtures.py` and `test_w9_progressive_negative.py` cover the
+W9 slice. Fixture tests prove the five-source set, byte-identical regeneration and
+the encoded-size bound; marker tests require SOF2, at least a DC and an AC scan,
+valid constraints, no trailing bytes and EOI, prove a high AC band is legal while
+a DC scan with `Se≠0` or `Ss>Se` is not, and prove both malformed streams fail the
+independent parser. The negative suite mutates the retained record in 40 classes —
+SOF2/scan/selector/spectral/approximation/order forgeries, truncated entropy,
+missing EOI, segment and digest changes, geometry/precision/sampling, encoded-as-
+decoded, admission, candidate/decoder/case identity, worker/probe/terminal
+outcome, publication, output bytes/SHA, comparison statistics, differential-to-
+absolute promotion, malformed promotion/leg removal/missing outcome, coherent
+trace tails and digest mismatch, incomplete capture, swapped process identity, an
+old source commit and a forged stop classification — and requires `verify()` to
+reject each one. Structural replay keeps `source_identity_verified=false` and
+`closure_eligible=false`.
+
 ## 19. MP-IMG2-W8 JPEG raster evidence
 
 `test_w8_fixtures.py` and `test_w8_negative.py` cover the W8 slice with the

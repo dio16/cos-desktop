@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "native": {
+    "files": {
+      "Cargo.lock": {
+        "bytes": 165475,
+        "git_blob_sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b",
+        "lf_sha256": "sha256:6aa19290c876ed022143392ba75811f51f22314508390f2aaed905ad617dee7b",
+        "raw_sha256": "sha256:60d328dd9be8c160bbf96c341c21f71762f729b9631ba350e0922f29082d7a49",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w2_resource_matrix.py": {
+        "bytes": 29498,
+        "git_blob_sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941",
+        "lf_sha256": "sha256:ef69efab1ad2ae256dfa5ef5dcded8fde54f79249d9e9641c8bf23c478121941",
+        "raw_sha256": "sha256:18224967ecd367d9eb584e45c35b63cebef5ba800760e192891096ba02e90816",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w2_resource_verify.py": {
+        "bytes": 26365,
+        "git_blob_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
+        "lf_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
+        "raw_sha256": "sha256:c25ed841075eab39e4ef868a8ff817f71bc5238efe74cf6f9d437f36d88901c7",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w6_memory_sample.py": {
+        "bytes": 19017,
+        "git_blob_sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
+        "lf_sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
+        "raw_sha256": "sha256:391894914d20d1f783f5532f746efee2fb8dc3f9e5cc1aa9851efa127dbc38f5",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w7_large_oracle.py": {
+        "bytes": 12588,
+        "git_blob_sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6",
+        "lf_sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6",
+        "raw_sha256": "sha256:2ff11119c6322c2be1fabd63bf004135c77d4492366ed08c7e260d71bdcdfce6",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w8_jpeg_fixtures.py": {
+        "bytes": 15609,
+        "git_blob_sha256": "sha256:033389d5b1c700b1da09516f42b1bc4a0cc2a861fb307e9da1efbd068c843925",
+        "lf_sha256": "sha256:033389d5b1c700b1da09516f42b1bc4a0cc2a861fb307e9da1efbd068c843925",
+        "raw_sha256": "sha256:033389d5b1c700b1da09516f42b1bc4a0cc2a861fb307e9da1efbd068c843925",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w8_jpeg_matrix.py": {
+        "bytes": 16749,
+        "git_blob_sha256": "sha256:339801987159e229c0f7691f3f42b54313133b34b167bd31289fd6ea13662085",
+        "lf_sha256": "sha256:339801987159e229c0f7691f3f42b54313133b34b167bd31289fd6ea13662085",
+        "raw_sha256": "sha256:339801987159e229c0f7691f3f42b54313133b34b167bd31289fd6ea13662085",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w8_jpeg_reference.py": {
+        "bytes": 11157,
+        "git_blob_sha256": "sha256:99b719b6997c4ff0a0a492c1b631910606afc5d29236ce686f37688ddfdc9f57",
+        "lf_sha256": "sha256:99b719b6997c4ff0a0a492c1b631910606afc5d29236ce686f37688ddfdc9f57",
+        "raw_sha256": "sha256:99b719b6997c4ff0a0a492c1b631910606afc5d29236ce686f37688ddfdc9f57",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w8_jpeg_verify.py": {
+        "bytes": 27864,
+        "git_blob_sha256": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30",
+        "lf_sha256": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30",
+        "raw_sha256": "sha256:268e4d25a8c264bd6bd905ba90afaf5dd008649136ddb5aecd920debf9224b30",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w9_progressive_fixtures.py": {
+        "bytes": 8736,
+        "git_blob_sha256": "sha256:3c4e8da7c82ba9aeef890ec10feebc570b34caae3ba2138ec465990754cea86e",
+        "lf_sha256": "sha256:3c4e8da7c82ba9aeef890ec10feebc570b34caae3ba2138ec465990754cea86e",
+        "raw_sha256": "sha256:3c4e8da7c82ba9aeef890ec10feebc570b34caae3ba2138ec465990754cea86e",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w9_progressive_matrix.py": {
+        "bytes": 10902,
+        "git_blob_sha256": "sha256:3309e58c7a8bc43eb1d20ad1749c76419e0f28f403ca036ed07ae1698ac0a21a",
+        "lf_sha256": "sha256:3309e58c7a8bc43eb1d20ad1749c76419e0f28f403ca036ed07ae1698ac0a21a",
+        "raw_sha256": "sha256:3309e58c7a8bc43eb1d20ad1749c76419e0f28f403ca036ed07ae1698ac0a21a",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w9_progressive_reference.py": {
+        "bytes": 7875,
+        "git_blob_sha256": "sha256:85d813ae25d6512beadeb2be106519fc5a992d9c4613b1d89998b709c135e0fd",
+        "lf_sha256": "sha256:85d813ae25d6512beadeb2be106519fc5a992d9c4613b1d89998b709c135e0fd",
+        "raw_sha256": "sha256:85d813ae25d6512beadeb2be106519fc5a992d9c4613b1d89998b709c135e0fd",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/devtools/img2/w9_progressive_verify.py": {
+        "bytes": 22194,
+        "git_blob_sha256": "sha256:a99f105d12433637a8a5245e2adc0680944a00cde7c5a2727d824da3ebbf9aa1",
+        "lf_sha256": "sha256:a99f105d12433637a8a5245e2adc0680944a00cde7c5a2727d824da3ebbf9aa1",
+        "raw_sha256": "sha256:a99f105d12433637a8a5245e2adc0680944a00cde7c5a2727d824da3ebbf9aa1",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare.rs": {
+        "bytes": 1063,
+        "git_blob_sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e",
+        "lf_sha256": "sha256:ca824cc2fd5cc4c6193f6832257c97f0ab4fedc5814855a90334f5c2a2db768e",
+        "raw_sha256": "sha256:1cbc230a7ce870c5a68e7837ea0750876498944a9e3e4c5a8cb9854e94f8feea",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare/gdiplus_probe.ps1": {
+        "bytes": 16191,
+        "git_blob_sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef",
+        "lf_sha256": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef",
+        "raw_sha256": "sha256:4c9e8e2afaf051536afffe8f7778b51965438e03b7a458d5dbd07bb1318e8f7a",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare/harness.rs": {
+        "bytes": 163269,
+        "git_blob_sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896",
+        "lf_sha256": "sha256:e19970fb14b0029b22659ffdff9407b93c4cbdbb3bc2e94787c69727f3cbe896",
+        "raw_sha256": "sha256:ed6b0b45437a036aa8b6ae274829d0001e6b53c0e8301c4a39c4548cd1b2cacf",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare/inspect.rs": {
+        "bytes": 25173,
+        "git_blob_sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558",
+        "lf_sha256": "sha256:1118e2b0a6a6aa330b4402b04e712f90abf9bb2876b7f0d9496eec2c5e328558",
+        "raw_sha256": "sha256:8edd645b943e3821d546494871a915df64aa17c14d4fbd43a8de02ea5f1ca1bc",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare/pixels.rs": {
+        "bytes": 28621,
+        "git_blob_sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136",
+        "lf_sha256": "sha256:947b8d980e7ce7e28ff896e62c9a0b119758d1d4f489f76c0271cfd78b031136",
+        "raw_sha256": "sha256:55fb88e8f81dfc63836c89f3a82c5ad27b3a05441fdfae890765c578173abe73",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare/wic_admission.ps1": {
+        "bytes": 6399,
+        "git_blob_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
+        "lf_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
+        "raw_sha256": "sha256:d3c2ed38d88445afd65095d1f9be6692579f38daa025edcb8ffc666ef08aebe5",
+        "unchanged_after_run": true
+      },
+      "apps/desktop/examples/decode_compare/wic_probe.ps1": {
+        "bytes": 52168,
+        "git_blob_sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c",
+        "lf_sha256": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c",
+        "raw_sha256": "sha256:32666558c588ae93be5fc929f54307398aeddadf4458c5bdb80780e8e7bf9741",
+        "unchanged_after_run": true
+      },
+      "crates/media/src/decode.rs": {
+        "bytes": 11964,
+        "git_blob_sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf",
+        "lf_sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf",
+        "raw_sha256": "sha256:7feb3c178e47167258de2ba69677f472864ff938f487f4ffbde779b708f02bdf",
+        "unchanged_after_run": true
+      },
+      "rust-toolchain.toml": {
+        "bytes": 152,
+        "git_blob_sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8",
+        "lf_sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8",
+        "raw_sha256": "sha256:03a90a23d68c265233e555ec6be280b4c02aff1dd5819f6a7673a574b911f9e8",
+        "unchanged_after_run": true
+      }
+    },
+    "harness_sha256": "sha256:411fb75d730562651d43a223c225e3292b7b59d6382ab236726ce0873bd683ac",
+    "normalization": "Raw Native hashes plus explicitly declared LF-normalized Git correspondence",
+    "probes": {
+      "gdiplus": "sha256:4c9e8e2afaf051536afffe8f7778b51965438e03b7a458d5dbd07bb1318e8f7a",
+      "wic": "sha256:32666558c588ae93be5fc929f54307398aeddadf4458c5bdb80780e8e7bf9741"
+    },
+    "probes_lf": {
+      "gdiplus": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef",
+      "wic": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c"
+    },
+    "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
+    "source_commit": "47c7e375937b5ca8e672cd9112c9c82da3f860a0"
+  },
+  "experimental_source": "47c7e375937b5ca8e672cd9112c9c82da3f860a0",
+  "taskern_packet_sha256": "sha256:b05828a2d7f4ea3271279a49156414ca66f46f0377701c36c6e3519004394233"
+}
