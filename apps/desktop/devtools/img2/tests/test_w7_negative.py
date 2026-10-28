@@ -27,6 +27,9 @@ NEGATIVE_NAMES = (
     "oracle_expected_digest_altered", "decoded_trace_has_tail", "missing_output_as_success",
     "timeout_as_confirmed_cancel", "private_as_wic_scratch", "refusal_as_16k_capability",
     "preview_promoted", "incomplete_capture_as_complete", "bounds_exceeded",
+    "probe_decoded_bytes_zero", "probe_pixel_format_swapped", "probe_width_shrunk",
+    "refusal_scratch_zero", "corrupt_outcome_swapped", "corrupt_publication_flipped",
+    "corrupt_output_digest_forged", "corrupt_oracle_promoted",
 )
 
 
@@ -126,6 +129,27 @@ def mutation(record, number):
         window["failure"] = "observer_capture_incomplete"
     elif number == 24:
         record["duration_ns"] = (BOUNDS["max_total_seconds"] + 1) * 1_000_000_000
+    elif number == 25:
+        _case(record, "png_4096")["worker"]["probe_result"]["decoded_bytes_required"] = 0
+    elif number == 26:
+        _case(record, "png_2048")["worker"]["probe_result"]["pixel_format"] = "Bgr565"
+    elif number == 27:
+        _case(record, "png_2048")["worker"]["probe_result"]["width"] = 32
+    elif number == 28:
+        _case(record, "png_16384")["worker"]["probe_result"]["scratch_bytes_required"] = 0
+    elif number == 29:
+        worker = _case(record, "corrupt_4096_dimension")["worker"]
+        worker["outcome"] = "oversize"
+    elif number == 30:
+        _case(record, "corrupt_4096_dimension")["worker"]["published_success"] = False
+    elif number == 31:
+        _case(record, "corrupt_4096_truncated")["worker"]["output_sha256"] = "sha256:" + "2" * 64
+    elif number == 32:
+        worker = _case(record, "corrupt_4096_truncated")["worker"]
+        worker["oracle"] = dict(worker["oracle"] or {"compared_pixels": 0, "first_mismatch": None,
+                                                    "expected_rgba_sha256": "sha256:" + "3" * 64,
+                                                    "actual_rgba_sha256": "sha256:" + "4" * 64})
+        worker["oracle"]["ok"] = True
     else:
         raise ValueError("unknown negative class")
 
@@ -139,7 +163,7 @@ class NativeNegativeTests(unittest.TestCase):
             raise AssertionError("Real W7 control record is not eligible: " + str(result))
         cls.control = result
 
-    def test_all24_mutation_classes_are_rejected(self):
+    def test_all_required_mutation_classes_are_rejected(self):
         for number, name in enumerate(NEGATIVE_NAMES, 1):
             with self.subTest(number=number, mutation=name):
                 record = copy.deepcopy(self.native)

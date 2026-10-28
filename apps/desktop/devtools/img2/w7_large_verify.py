@@ -72,6 +72,7 @@ REASON_BY_CODE = {
     "max_scratch_bytes_exceeded": "scratch_bytes",
 }
 DECODERS = {"png": "PngBitmapDecoder", "bmp24": "BmpBitmapDecoder", "bgr565": "BmpBitmapDecoder"}
+FORMATS = {"png": "Bgr24", "bmp24": "Bgr24", "bgr565": "Bgr565"}
 UNMEASURED = (
     "WIC internal scratch peak", "actual allocator reservations",
     "true concurrent allocation peak", "WIC-only allocation delta",
@@ -315,6 +316,13 @@ def _decode_case(worker: dict, case: dict, stages: list, expected_rgba: dict, fi
          "decode_not_materialized:" + case["id"])
     need(result.get("decoder") == DECODERS[case["codec"]],
          "decoder_identity_mismatch:" + case["id"])
+    need(result.get("pixel_format") == FORMATS[case["codec"]],
+         "probe_pixel_format_mismatch:" + case["id"])
+    for key in ("width", "height", "bits_per_channel", "bits_per_pixel", "row_bytes",
+                "decoded_bytes_required", "bgra32_bytes_required", "scratch_bytes_required",
+                "declared_scratch_bytes"):
+        need(result.get(key) == values[key], "probe_requirement_mismatch:" + case["id"] + ":" + key)
+    need(result.get("input_bytes") == fixture_bytes, "probe_input_bytes_mismatch:" + case["id"])
     terminal = stages[-1]
     need(terminal.get("stage") == "probe_exit" and terminal.get("complete") is True
          and terminal.get("outcome") == "decoded" and terminal.get("materialization") == "completed",
@@ -349,7 +357,8 @@ def _decode_case(worker: dict, case: dict, stages: list, expected_rgba: dict, fi
              "decode_output_pixels_not_reproducible:" + case["id"])
 
 
-def _refusal_case(worker: dict, case: dict, stages: list, expected_reason: str):
+def _refusal_case(worker: dict, case: dict, stages: list, expected_reason: str, fixture_bytes: int):
+    values = requirements(case)
     result = worker.get("probe_result")
     need(isinstance(result, dict), "probe_result_missing")
     need(worker.get("outcome") == "oversize" and worker.get("exit_code") == 4,
@@ -364,6 +373,19 @@ def _refusal_case(worker: dict, case: dict, stages: list, expected_reason: str):
     need(result.get("reason_code") == expected_reason, "refusal_reason_mismatch:" + case["id"])
     need(result.get("decoder") == DECODERS[case["codec"]],
          "refusal_decoder_identity_mismatch:" + case["id"])
+    need(result.get("pixel_format") == FORMATS[case["codec"]],
+         "refusal_pixel_format_mismatch:" + case["id"])
+    for key in ("width", "height", "bits_per_channel", "bits_per_pixel"):
+        need(result.get(key) == values[key], "refusal_requirement_mismatch:" + case["id"] + ":" + key)
+    # A dimension refusal reports only the values the probe actually computed;
+    # any declared conversion figure that contradicts the source is still refused.
+    for key in ("row_bytes", "decoded_bytes_required", "bgra32_bytes_required",
+                "scratch_bytes_required", "declared_scratch_bytes", "input_bytes"):
+        observed = result.get(key)
+        if observed is None:
+            continue
+        expected = fixture_bytes if key == "input_bytes" else values[key]
+        need(observed == expected, "refusal_requirement_contradiction:" + case["id"] + ":" + key)
     terminal = stages[-1]
     need(terminal.get("stage") == "probe_exit" and terminal.get("complete") is True
          and terminal.get("outcome") == "oversize", "refusal_terminal_stage_mismatch:" + case["id"])
@@ -372,7 +394,6 @@ def _refusal_case(worker: dict, case: dict, stages: list, expected_reason: str):
          "refusal_published_output:" + case["id"])
     need(worker.get("output_bytes") == 0 and worker.get("output_hex") is None,
          "refusal_output_payload:" + case["id"])
-    values = requirements(case)
     if case["role"] == "roi_refusal":
         need(result.get("roi_requested") is True and result.get("roi_output") == "not_produced",
              "roi_state_invalid:" + case["id"])
@@ -457,12 +478,43 @@ def verify(record: dict, source_root=None) -> dict:
             elif case["role"] in ("refusal", "roi_refusal"):
                 need(classification == "REFUSED_FULL_FRAME", "refusal_classification_invalid:" + case["id"])
                 need(expected_reason is not None, "refusal_case_should_exceed_budget:" + case["id"])
-                _refusal_case(worker, case, stages, expected_reason)
+                _refusal_case(worker, case, stages, expected_reason, fixtures[case["id"]]["bytes"])
                 refused += 1
             else:
                 need(classification == "TAMPER_NOT_VERIFIED",
                      "corrupt_case_cannot_claim_success:" + case["id"])
                 need(classification != "DECODED_AND_VERIFIED", "corrupt_case_promoted")
+                result = worker.get("probe_result")
+                need(isinstance(result, dict), "corrupt_probe_result_missing:" + case["id"])
+                terminal = stages[-1]
+                need(terminal.get("stage") == "probe_exit" and terminal.get("complete") is True
+                     and terminal.get("outcome") == worker.get("outcome"),
+                     "corrupt_terminal_stage_mismatch:" + case["id"])
+                if worker.get("outcome") == "decoded":
+                    need(worker.get("exit_code") == 0 and worker.get("trace_complete") is True
+                         and worker.get("trace_partial_bytes") == 0,
+                         "corrupt_decode_trace_incomplete:" + case["id"])
+                    need(worker.get("published_success") is True and worker.get("output_present") is True,
+                         "corrupt_decode_publication_inconsistent:" + case["id"])
+                    hexed = worker.get("output_hex")
+                    need(isinstance(hexed, str) and hexed, "corrupt_decode_output_missing:" + case["id"])
+                    data = bytes.fromhex(hexed)
+                    need(worker.get("output_bytes") == len(data) <= BOUNDS["max_output_bytes"]
+                         and worker.get("output_sha256") == sha(data),
+                         "corrupt_output_payload_inconsistent:" + case["id"])
+                    oracle = worker.get("oracle")
+                    need(oracle is None or (isinstance(oracle, dict) and oracle.get("ok") is False),
+                         "corrupt_oracle_promoted:" + case["id"])
+                    need(worker.get("oracle_error") is not None or oracle is None,
+                         "corrupt_verification_claim_invalid:" + case["id"])
+                else:
+                    need(worker.get("exit_code") not in (0, None)
+                         and worker.get("output_present") is False
+                         and worker.get("published_success") is False
+                         and worker.get("output_hex") is None and worker.get("output_bytes") == 0,
+                         "corrupt_refusal_inconsistent:" + case["id"])
+                    need(not any(stage["stage"] == "onload_entered" for stage in stages),
+                         "corrupt_refusal_reached_onload:" + case["id"])
                 tamper += 1
         need(verified == 6 and refused == 4 and tamper == 2, "classification_totals_invalid")
         return {"ok": True, "cases": len(cases), "decoded_verified": verified,
