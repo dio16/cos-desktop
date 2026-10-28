@@ -53,7 +53,9 @@ def source_identity(pwsh, harness):
     return {"source_commit": commit, "files": files, "pwsh_sha256": file_sha(pwsh),
             "harness_sha256": file_sha(harness),
             "normalization": "Raw Native hashes plus explicitly declared LF-normalized Git correspondence",
-            "probes": {"wic": file_sha(WIC), "gdiplus": file_sha(GDI)}}
+            "probes": {"wic": file_sha(WIC), "gdiplus": file_sha(GDI)},
+            "probes_lf": {"wic": sha(WIC.read_bytes().replace(b"\r\n", b"\n")),
+                          "gdiplus": sha(GDI.read_bytes().replace(b"\r\n", b"\n"))}}
 
 
 def _work_bytes(work):

@@ -177,9 +177,16 @@ def _source_identity(record, source_root) -> bool:
         need(item.get("unchanged_after_run") is True, "source_changed_during_run:" + path)
     probes = identity.get("probes")
     need(isinstance(probes, dict) and set(probes) == {"wic", "gdiplus"}, "probe_identity_missing")
+    lf_probes = identity.get("probes_lf")
+    need(isinstance(lf_probes, dict) and set(lf_probes) == {"wic", "gdiplus"}, "probe_lf_identity_missing")
     for name, relative in (("wic", "apps/desktop/examples/decode_compare/wic_probe.ps1"),
                            ("gdiplus", "apps/desktop/examples/decode_compare/gdiplus_probe.ps1")):
-        need(probes[name] == sha((ROOT / relative).read_bytes()), "probe_digest_mismatch:" + name)
+        data = (ROOT / relative).read_bytes()
+        # Raw bytes when the checkout matches, else the declared LF normalization;
+        # a genuinely different file fails both.
+        need(probes[name] == sha(data)
+             or lf_probes[name] == sha(data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")),
+             "probe_digest_mismatch:" + name)
     if source_root is None:
         return False
     root = Path(source_root)
