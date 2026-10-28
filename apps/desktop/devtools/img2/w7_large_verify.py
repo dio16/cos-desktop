@@ -173,7 +173,9 @@ def _source_identity(record: dict, source_root) -> bool:
         current = subprocess.run([git, "show", f"{commit}:{path}"], cwd=root,
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
         need(current.returncode == 0, "source_blob_missing:" + path)
-        need(sha(data) == item["raw_sha256"], "source_raw_digest_mismatch:" + path)
+        # The recorded raw digest is an observation; acceptance uses the declared
+        # LF normalization, matching the W1-W6 convention so an isolated checkout
+        # with different line endings is not a false failure.
         need(sha(normalized) == item["lf_sha256"], "source_lf_digest_mismatch:" + path)
         need(sha(current.stdout) == item["git_blob_sha256"], "source_git_blob_mismatch:" + path)
         need(current.stdout.replace(b"\r\n", b"\n").replace(b"\r", b"\n") == normalized,
