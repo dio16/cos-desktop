@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "status": "STARTUP_SCOPE_VERIFIED",
+  "caller_authorization": "人間承認・Runtime認可",
+  "authorization_scope": "Native startup smoke and qualification of real Runtime integration under existing contracts; no Runtime source/config/DB changes, credential issuance or decode-design decision.",
+  "live_control": {"acquired": true, "released": true, "final_state": "active=false"},
+  "starting_head": "27bb32581e77e5c1dbbb01e97cabbabe51a35ef1",
+  "binary_candidate": "23a6dce30ed9a88136379fdbcc762789de20dfef",
+  "build_gate": "7d0b2747-308d-4d86-9699-0114a73dc4d9",
+  "candidate_digest": "sha256:d9726be1a4c1b3fc33f7b88b87965f0ee654b341315233c67ce0c8280e2bdbeb",
+  "executable_bytes": 32275456,
+  "executable_sha256": "sha256:cf6f1705c733d515268fc3460725ae4a2c94d14f3a32993aab386f4aac7c6b9d",
+  "retained_executable": "C:/dev/cos-desktop-verification/w13/native-app/cos-desktop.exe",
+  "build_gate_observed": {"state": "SUCCEEDED", "cleanup": "complete", "integrity": "verified after successful workspace disposal"},
+  "product_source_changes_since_candidate": [],
+  "fixture_path": "crates/cos-client/fixtures/task-184.json",
+  "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52",
+  "fixture_lf_equal_candidate": true,
+  "isolation": "Child-only LOCALAPPDATA under the owned native evidence profile; explicit --fixture-file overrides the removed Gate checkout's compile-time default.",
+  "completed_at_utc": "2026-10-28T22:05:08.442Z",
+  "results": {
+    "fixture": {"pid": 69896, "exit_code": 0, "fixture_label_visible": true, "candidate_b_selected_via_accessibility": true, "flow_lists_visible": true, "observation_shutdown": "confirmed", "preferences_save": "confirmed"},
+    "duplicate_fixture": {"pid": 65780, "exit_code": 3, "incumbent_survived": true, "diagnostic": "COS Desktop is already running; second launch refused"},
+    "disconnected": {"pid": 41736, "exit_code": 0, "no_source_data_withheld": true, "stop_disabled": true, "no_fixture_fallback": true, "observation_shutdown": "not applicable (no observation driver)", "preferences_save": "confirmed"},
+    "endpoint_configured": {"pid": 75328, "exit_code": 0, "endpoint": "http://127.0.0.1:8000", "no_source_data_withheld": true, "stop_disabled": true, "no_fixture_fallback": true, "observation_shutdown": "not applicable (no observation driver)", "preferences_save": "confirmed"}
+  },
+  "owned_processes_closed": true,
+  "owned_windows_remaining": 0,
+  "input_limitations": [
+    "A background Ctrl+3 call did not visibly switch surfaces. Accessible Flow activation subsequently succeeded; shortcut operation is not claimed.",
+    "Typing Goal into the custom-drawn Flow search field caused tool takeover, but text was not visible and the accessibility value was unavailable. Text-input success is not claimed; tool delivery and application behavior are not conflated.",
+    "The first disconnected observation probe expected the literal Disconnected; inspection instead showed the correct authorization-withheld surface. That probe expectation was corrected without changing product code."
+  ],
+  "not_claimed": ["real Runtime success", "full MP-IMG2 Decode Exit", "MP-IMG3", "Golden Workflow", "keyboard shortcut/text-input acceptance", "popup/IME/DPI/multi-monitor certification", "product acceptance"],
+  "historical_gate_artifacts": "Unchanged. Original W13 NOT_RUN statements remain historical; this separately pinned native record adds actual application startup evidence without rewriting receipts or decoder observations.",
+  "skills": {
+    "taskern": {"loaded": true, "invoked": false, "reason": "No new implementation plan or handoff"},
+    "refine": {"loaded": true, "invoked": ["gate status", "gate inspect", "gate verify"], "new_gate": false},
+    "tern_chatgpt_review": {"loaded": true, "invoked": false, "status": "evidence review pending"}
+  },
+  "profile_cleanup": {"removed": true, "scope": "Only the newly created child LOCALAPPDATA profile", "owned_files": ["cos-desktop/desktop.instance", "cos-desktop/preferences.json"], "original_user_profile_touched": false},
+  "final_saved_presentation": {"surface": "flow", "viewed_candidate": "fixture:candidate/b", "dpr": 1},
+  "runtime_final_worktree": {"branch": "dev", "head": "f9867478fdd7080137a9dadabc55c2be2f18adf7", "status": "clean; unchanged from initial observation"}
+}

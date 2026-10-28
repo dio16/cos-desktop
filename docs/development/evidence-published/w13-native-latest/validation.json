@@ -1,0 +1,134 @@
+{
+  "cards": 62,
+  "contracts": 62,
+  "single_contract_issues": [],
+  "hard_edges": 41,
+  "graph_nodes": 62,
+  "dag_acyclic": true,
+  "changed_scope_links_missing": [],
+  "previous_plan_and_gates_unchanged": true,
+  "full_decode_prerequisite": "MP-IMG2 -> MP-IMG3",
+  "native_scope": "startup/candidate selection/accessible Flow/single-instance/normal close only",
+  "runtime_live_integration": "NOT_RUN; documented readiness refused; producer and trusted adapter absent from the observed path",
+  "credential_pattern_hits": [],
+  "window_images": [
+    {
+      "path": "disconnected-startup.png",
+      "width": 1275,
+      "height": 832
+    },
+    {
+      "path": "endpoint-configured.png",
+      "width": 1275,
+      "height": 832
+    },
+    {
+      "path": "fixture-before-close.png",
+      "width": 1275,
+      "height": 832
+    },
+    {
+      "path": "fixture-flow.png",
+      "width": 1275,
+      "height": 832
+    },
+    {
+      "path": "fixture-search.png",
+      "width": 1275,
+      "height": 832
+    },
+    {
+      "path": "fixture-startup.png",
+      "width": 1275,
+      "height": 832
+    }
+  ],
+  "files": [
+    {
+      "path": "disconnected-exit.stderr",
+      "bytes": 87,
+      "sha256": "sha256:ffdb06cb4e1d1471647455aa0e6cbb48a430ce8c403f0d38607ee57e3a3560ab"
+    },
+    {
+      "path": "disconnected-startup.ax.txt",
+      "bytes": 2438,
+      "sha256": "sha256:f7a7bf313b9c5148b407f2255650ce78a90f26127ed83c4e2b21dbf9bf541ee8"
+    },
+    {
+      "path": "disconnected-startup.png",
+      "bytes": 146845,
+      "sha256": "sha256:7b4d56546f7317787798ef8609264eba105444b06090565d0da678bbbd470ea9"
+    },
+    {
+      "path": "endpoint-configured-exit.stderr",
+      "bytes": 87,
+      "sha256": "sha256:ffdb06cb4e1d1471647455aa0e6cbb48a430ce8c403f0d38607ee57e3a3560ab"
+    },
+    {
+      "path": "endpoint-configured.ax.txt",
+      "bytes": 2475,
+      "sha256": "sha256:7e81f71aaf60a3e45ec74242c9f66be3e8def3b3295553719d74dc28cbb162ae"
+    },
+    {
+      "path": "endpoint-configured.png",
+      "bytes": 146738,
+      "sha256": "sha256:d202a9491ada24347688ab0accf70b1caf2e42b725d8dcfb4e4836d120bacdba"
+    },
+    {
+      "path": "fixture-before-close.ax.txt",
+      "bytes": 3819,
+      "sha256": "sha256:2ccc5a2d282145ebf5170631f834ca7e823b77dd9e4252c0718c43f84a892e00"
+    },
+    {
+      "path": "fixture-before-close.png",
+      "bytes": 165097,
+      "sha256": "sha256:2eefdb1d9b53f013f169046ce53807549af1732f32a83548b1352c6cc8f663bb"
+    },
+    {
+      "path": "fixture-exit.stderr",
+      "bytes": 58,
+      "sha256": "sha256:668f5657b56dc28bfe7c63c69b0e103f0f3df694c6daefaef784b7a0fa32595c"
+    },
+    {
+      "path": "fixture-flow.ax.txt",
+      "bytes": 3819,
+      "sha256": "sha256:66abb355b1c9dc8e3cc0c24d0e4914ec9423be3010cf23c29086771668a3a363"
+    },
+    {
+      "path": "fixture-flow.png",
+      "bytes": 168005,
+      "sha256": "sha256:8c4ca0747bd55330941102d57a383421bffb1dfd13c91f384a02b18918cfd2f6"
+    },
+    {
+      "path": "fixture-search.ax.txt",
+      "bytes": 3819,
+      "sha256": "sha256:2ccc5a2d282145ebf5170631f834ca7e823b77dd9e4252c0718c43f84a892e00"
+    },
+    {
+      "path": "fixture-search.png",
+      "bytes": 165097,
+      "sha256": "sha256:2eefdb1d9b53f013f169046ce53807549af1732f32a83548b1352c6cc8f663bb"
+    },
+    {
+      "path": "fixture-startup.ax.txt",
+      "bytes": 2978,
+      "sha256": "sha256:c93124849815f836d69023f1cfd5f40c685598d4516173ee49d4ca8158be2155"
+    },
+    {
+      "path": "fixture-startup.png",
+      "bytes": 137441,
+      "sha256": "sha256:f6d99d70dd5073c83f6b56636c6235ba61278b5783a2736b1a51cb771a021694"
+    },
+    {
+      "path": "runtime-readiness.json",
+      "bytes": 3487,
+      "sha256": "sha256:31f521c2a56671cbb8298e8a0c7aec79eab60ec2c965087d792de717f5741f69"
+    },
+    {
+      "path": "session.json",
+      "bytes": 4384,
+      "sha256": "sha256:7fb537af7f1980b5d01180ca5d3991a3f5a57f54c8518abedf1fdbeb276974a0"
+    }
+  ],
+  "limitations": "Keyboard shortcut and text input unconfirmed; no popup/IME/DPI/multi-monitor or real Runtime acceptance"
+}

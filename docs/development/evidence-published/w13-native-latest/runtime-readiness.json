@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "caller_authorization": "人間承認・Runtime認可",
+  "permission": "Caller approval for existing-contract Runtime integration verification received; not credential issuance, a server implementation, or a separately scoped Runtime source-mutation task.",
+  "status": "BLOCKED_ON_IMPLEMENTATION_AND_SERVICE",
+  "runtime_checkout": "C:/AI",
+  "runtime_subdirectory": "orchestrator",
+  "runtime_branch": "dev",
+  "runtime_head": "f9867478fdd7080137a9dadabc55c2be2f18adf7",
+  "runtime_initial_worktree": "clean",
+  "readiness_probe": {
+    "method": "GET",
+    "url": "http://127.0.0.1:8000/api/ready",
+    "result": "ECONNREFUSED",
+    "scope": "Only the documented default local endpoint was checked. No statement about other endpoints or deployed releases.",
+    "safe_handler": "orchestrator/orchestrator_app/api.py:752-755 returns a static readiness object without reading Runtime data"
+  },
+  "observed_gaps": [
+    {"contract": "DC-MP-RT2 / RC-01/02/03/16", "owner": "Runtime server/issuer and Desktop trusted transport owners", "evidence": "apps/desktop/src/main.rs:70-76 creates AppCore::disconnected even when the endpoint is configured; crates/cos-client/src/transport.rs:21-43 requires a separately authenticated adapter; the inspected concrete transport implementation is MockTransport", "missing": "Runtime-owned compatible producer/discovery and secure principal issuance plus Desktop adapter wiring. Endpoint configuration is reduced to a boolean, not a connection."},
+    {"contract": "DC-MP-RT6 / RC-13 + RC-03", "owner": "Runtime descriptor and read-authorization owner; Desktop RT6 consumer", "evidence": "At the pinned Runtime HEAD, cos_frontend_models.py:280-295 and cos_frontend_media.py:295-309 provide schema_version/artifact identity/media metadata/original_url/thumbnail_url, but not descriptor_id, current principal audience or expiry. api.py:2993-3019 emits legacy URLs. Desktop MediaDescriptor requires distinct descriptor identity and carries issuer/audience/expiry fields (crates/desktop-protocol/src/projections.rs:512-553).", "missing": "Compatible authorized descriptor issue/reauthorization/expiry/audience enforcement. Static source inspection is not a live authorization test."},
+    {"contract": "DC-MP-IMG6", "owner": "Desktop media acquisition, after RT2 and RT6", "evidence": "IMPLEMENTATION_MASTER_PLAN.md:480-485 retains IMG1, RT2 and RT6 prerequisites; current media crate excludes network/authorization", "missing": "Authorized external byte-transfer implementation and real producer acceptance; fixture startup is not a substitute."}
+  ],
+  "not_executed": ["Runtime launch", "legacy catalog/media/thumbnail fetch", "credential issuance or security-policy changes", "Task creation/Stop/retry", "Runtime build/test/install", "Runtime DB/artifact/config access", "Runtime source mutation"],
+  "no_runtime_launch_reason": "Runtime README.md:292-303,348-350 describes bootstrap and automatic dispatch of ASSIGNED tasks. Launching that path could mutate Runtime state or start compute. This authorization did not name tasks or approve those side effects.",
+  "next_prerequisite": "A separately bounded Runtime-owner contract/server implementation task and compatible credential/discovery delivery, followed by Desktop adapter integration and real read-only compatibility verification. Product Decode Exit design decisions remain separate.",
+  "full_mp_img2_decode_exit": "HOLD unchanged",
+  "mp_img3": "not started"
+}
