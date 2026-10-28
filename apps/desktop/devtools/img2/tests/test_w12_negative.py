@@ -208,10 +208,18 @@ class W12SemanticTests(unittest.TestCase):
                 raise ValueError("native_control_over_cap:" + path.name)
         cls.first = json.loads(first.read_bytes())
         cls.second = json.loads(second.read_bytes())
+        cls.root = Path(__file__).resolve().parents[5]
         for name, record in (("first", cls.first), ("repeat", cls.second)):
             result = verify(record)
             if not result["ok"]:
                 raise ValueError("native_control_invalid:" + name + ":" + result.get("reason", "?"))
+        # The unmodified control must pass the *source-bound* verification before any
+        # source-bound mutation can be counted. Without this premise a repository
+        # without the pinned Git objects would fail every mutant for an unrelated
+        # reason and the suite would report 39 successes it never earned.
+        source = verify(cls.first, cls.root)
+        if not (source["ok"] and source["closure_eligible"] and source["source_identity_verified"]):
+            raise ValueError("source_bound_control_invalid:" + str(source.get("reason", source)))
 
     def test_portable_replay_cannot_grant_source_closure(self):
         result = verify(self.first)
@@ -223,6 +231,13 @@ class W12SemanticTests(unittest.TestCase):
         self.assertEqual(result["memory_comparison"], "OBSERVED_WHOLE_PROCESS_DIFFERENTIAL")
         self.assertEqual(result["codec_memory_advantage"], "NOT_CLAIMED")
 
+    def test_source_bound_control_is_verified_before_mutations(self):
+        source = verify(self.first, self.root)
+        self.assertEqual((source["ok"], source["closure_eligible"],
+                          source["source_identity_verified"]), (True, True, True))
+        repeat = verify(self.second, self.root)
+        self.assertEqual((repeat["ok"], repeat["closure_eligible"]), (True, True))
+
     def test_repeat_comparison_keeps_counters_unforced(self):
         report = compare_repeats(self.first, self.second)
         self.assertTrue(report["source_identity_equal"] and report["fixtures_equal"])
@@ -230,14 +245,25 @@ class W12SemanticTests(unittest.TestCase):
         self.assertTrue(report["counters_not_forced_equal"])
 
     def test_semantic_mutations_fail_closed(self):
-        root = Path(__file__).resolve().parents[5]
+        # Portable verification must reject every mutant except the one that only a
+        # real Git lookup can contradict; that single case is asserted explicitly so
+        # the distinction is proven rather than hidden inside a shared failure.
+        git_only = {"source_commit"}
         for name, mutate in MUTATIONS:
-            with self.subTest(name=name):
+            with self.subTest(mode="portable", name=name):
                 record = copy.deepcopy(self.first)
                 mutate(record)
-                # Mutations run against the real repository so that a forged source
-                # commit or blob digest is actually re-checkable, not merely unproven.
-                result = verify(record, root)
+                result = verify(record)
+                if name in git_only:
+                    self.assertEqual((result["ok"], result["closure_eligible"]), (True, False),
+                                     msg=name)
+                else:
+                    self.assertEqual((result["ok"], result["closure_eligible"]), (False, False),
+                                     msg=name)
+            with self.subTest(mode="source-bound", name=name):
+                record = copy.deepcopy(self.first)
+                mutate(record)
+                result = verify(record, self.root)
                 self.assertEqual((result["ok"], result["closure_eligible"]), (False, False),
                                  msg=name)
 
