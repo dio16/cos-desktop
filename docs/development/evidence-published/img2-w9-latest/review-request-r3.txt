@@ -1,0 +1,46 @@
+MP-IMG2-W9 Round 3 の修正確認を依頼します。対象は Windows WIC と GDI+ による progressive JPEG の実decode、multi-scan構造検証、canonical differential比較、malformedのfail-closed分類だけです。前回PASSや前候補Gateを今回の成功として流用しないでください。
+
+Repository: dio16/cos-desktop / branch dev / 未push。
+Native SOURCE: 2142ebae822e509c63c4877dd3a81415d4923f3f。
+製品・5 Gate候補: 86cc666b2debc95cb470c456b0b24a986bb9b702。
+candidate digest: sha256:e8676e2d064ce54ccbc7a6e28666e314b26d1859021799f5b8aebcda4e1fd846（5 Gate共通）。
+Evidence HEAD: c27df0fbf4239994e6dc0af48fe46e26b297b4d7。
+
+添付:
+- w9-r3-review-source.zip: 候補86cc666…のGit archive、826 entry、sha256:784e62d14c204f1b53d34fe3396ea0165c341688b876cdd91bef0e5fe6180c03。全entryを候補Git blobとrawまたはLF一致で照合済み。
+- w9-r3-review-evidence.zip: Evidence HEAD c27df0f…のGit archive、46 file、sha256:7d3800e4185060d64160fdd710b2523458b8efec3f47af0a7eba579d52efbb2e。内部に source-entry-manifest.json（826 entry、source zip sha256一致を実測）を含みます。review-package.json は evidence_head の子コミットで、自身のarchiveには入りません。
+- review-package.json(別添・日時付き改名)。
+
+前回A-W9-R2-01への対応（malformed legの入出力・公開状態）:
+- input_bytesを必須化し実fixture長と照合（任意フィールドを廃止）。
+- decoded legは output.bytes、probe_result.output_bytes、emit実長の三者一致を必須化。
+- WIC decoded legは published_success=true かつ output_present=true、WIC failure legは両方falseかつoutput_bytes未宣言を必須化。
+- DECODED_TAMPER_NOT_VERIFIED は維持。製品probe、crates/media、Runtimeは未変更。
+- 負例 class 44–51を追加し、44:input_bytes欠落、45:output.bytes=0、46:published_success=false、47:output_present=false、48:probe_result.output_bytes欠落、49/50:refused公開成功・出力存在、51:refusedでoutput_bytes>0。51 class全てが実verify()で拒否され、class 39のみGit SOURCE-bound検証がNOT_RUN。
+
+前回A-W9-R2-02への対応:
+- source-evidence-reconciliation.jsonを現Native SOURCE 2142eba…と現候補86cc666…で再計算。22/22 SOURCEファイルが記録Git blobと一致、候補側も同一、Native SOURCE以後の差分はdocsのみ。commit SHA相違の理由を別フィールドに分離し、Round 1比較はhistorical参照としてのみ保持。
+
+その他の実測:
+- 12 test passed、43→51 mutation class。
+- Native: 5 sources、10 legs、progressive 2/2がWIC/GDI+双方decode、differential exact、malformed 2件はDECODED_TAMPER_NOT_VERIFIEDとCORRUPT_REFUSED/TAMPER_NOT_VERIFIED、control decode。16.9秒、work root 444,320 bytes。
+- 5 Gate: workspace ee2acb40(7/7)、image replay d98dfeaf(9/9)、JPEG replay 4046304f(2/2)、W9 8a35342a(1/1)、Build 7b129b5e(1/1)。同一候補・同一digest・33/33一致、生status/inspect/verify receipt保存。
+- 先行combined image Gate f992c83b は隔離checkoutにoracle出力ディレクトリが無くFAILED、転送していません。r1/r2のGate setは履歴。
+- IMG2 206 PASS、W1～W8 replay、R0 340/12、Rust 535/539、feature clippy/build、WIC admission selftestは不変。
+- Build executableは NOT_CAPTURED。成功5 Gateのwork/repoとcheck環境targets 3件のみ削除（今回 13,240 files / 4,243,075,863 logical bytes、累計3回）。削除後も5 Gate verifyはSUCCEEDED。
+
+重点確認:
+- 前回列挙8条件（input_bytes欠落、output.bytes=0、published_success/output_present偽装、probe_result.output_bytes欠落、refused公開成功・出力存在、refused宣言bytes）が現行verify()で再現しないか。
+- malformed WIC/GDI+のidentity・入力・出力・公開状態の結合が実バイトと一致するか。
+- SOF2/multi-scan構造が実encoded bytesから検証され、WIC/GDI+の実decodeとcanonical differentialが再計算可能か。
+- 5 Gateの同一candidate digestと33 artifact対応が生receiptから成立するか。
+- reconciliationが現Native SOURCE/現候補を指し、旧比較と分離されているか。
+- storage前後integrity、W1～W8回帰、legacy CLI不変性。
+- product decoder採用、tolerance、full Decode Exit、MP-IMG3、Runtimeへ権限拡大がないこと。
+
+実行可能範囲:
+添付だけではprivate Git objects、Windows decoder、Refine stateは使えません。fixture再生成、marker再解析、differential再計算、51 mutation replay、receipt照合は可能です。固定Git source-bound検証・Windows実行・Refine再実行・GUIはNOT_RUNと明記してください。Gitやテストを偽装してPASSにしないでください。
+
+今回は全JPEG/全progressive対応、refinement scan全種、製品decoder選定/adoption、製品tolerance、ICC/EXIF policy、16K full decode、true partial/sequential/tiled decode、scan単位partial materialization、内部scratch、実予約、true concurrent peak、cooperative cancellation、product SLO、full MP-IMG2 Decode Exit、MP-IMG3、Runtime、measured R0、UX/video、main/releaseを完了しません。未測定のまま保持できた場合にだけW9 LIMITED TECHNICAL COMPLETIONの可否を判断してください。
+
+BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVEの件数とPASS/HOLDを明記し、指摘はファイル・条件・再現・最小修正まで示してください。添付読取が未完なら未完と明示してください。最後に独立行で REVIEW COMPLETE、その次の最終行に verdict/countsを記してください。
