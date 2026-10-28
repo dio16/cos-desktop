@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source": "01049a27f2714c28d1dce99a748bd2410dde92b2",
+  "source": "85efc5c50a2e16e44d392b274bd41eda22766291",
   "platform": {
     "dotnet": ".NET 10.0.13",
     "os": "Microsoft Windows NT 10.0.26300.0",
@@ -33,7 +33,7 @@
     "max_pixels": 4194304,
     "max_scratch_bytes": 16777216
   },
-  "duration_ns": 49594790400,
+  "duration_ns": 49268321600,
   "work_bytes": 1041305,
   "total_sources": 12,
   "cases": [

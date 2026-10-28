@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source": "01049a27f2714c28d1dce99a748bd2410dde92b2",
+  "source": "85efc5c50a2e16e44d392b274bd41eda22766291",
   "platform": {
     "dotnet": ".NET 10.0.13",
     "os": "Microsoft Windows NT 10.0.26300.0",
@@ -11,6 +11,10 @@
   "probes": {
     "gdiplus": "sha256:4c9e8e2afaf051536afffe8f7778b51965438e03b7a458d5dbd07bb1318e8f7a",
     "wic": "sha256:32666558c588ae93be5fc929f54307398aeddadf4458c5bdb80780e8e7bf9741"
+  },
+  "probes_lf": {
+    "gdiplus": "sha256:49a83ef8cba585491ad183bc9badcc5ca11fe92df09721e87eee7dab27e951ef",
+    "wic": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c"
   },
   "python": "3.13.14",
   "os": "Windows-11-10.0.26300-SP0"
