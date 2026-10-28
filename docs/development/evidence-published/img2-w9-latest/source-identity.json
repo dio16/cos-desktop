@@ -87,10 +87,10 @@
         "unchanged_after_run": true
       },
       "apps/desktop/devtools/img2/w9_progressive_verify.py": {
-        "bytes": 22194,
-        "git_blob_sha256": "sha256:a99f105d12433637a8a5245e2adc0680944a00cde7c5a2727d824da3ebbf9aa1",
-        "lf_sha256": "sha256:a99f105d12433637a8a5245e2adc0680944a00cde7c5a2727d824da3ebbf9aa1",
-        "raw_sha256": "sha256:a99f105d12433637a8a5245e2adc0680944a00cde7c5a2727d824da3ebbf9aa1",
+        "bytes": 23298,
+        "git_blob_sha256": "sha256:1e0efc03c2f4ceea0b1bb148321722a93177922481961ad85db35159c772936f",
+        "lf_sha256": "sha256:1e0efc03c2f4ceea0b1bb148321722a93177922481961ad85db35159c772936f",
+        "raw_sha256": "sha256:1e0efc03c2f4ceea0b1bb148321722a93177922481961ad85db35159c772936f",
         "unchanged_after_run": true
       },
       "apps/desktop/examples/decode_compare.rs": {
@@ -157,7 +157,7 @@
         "unchanged_after_run": true
       }
     },
-    "harness_sha256": "sha256:411fb75d730562651d43a223c225e3292b7b59d6382ab236726ce0873bd683ac",
+    "harness_sha256": "sha256:4058ecabef5f2839cb675960625892c2d55d315083ad50f8a428773fcc825c83",
     "normalization": "Raw Native hashes plus explicitly declared LF-normalized Git correspondence",
     "probes": {
       "gdiplus": "sha256:4c9e8e2afaf051536afffe8f7778b51965438e03b7a458d5dbd07bb1318e8f7a",
@@ -168,8 +168,8 @@
       "wic": "sha256:794a8e757d76c8145917e3898025c78a87155af1ae4e7aea46d59e78db184f1c"
     },
     "pwsh_sha256": "sha256:fa2c8bb1e35cdd62ad15cd06a1d8f2c5961e9725a9bfa1e7cfd2c322f49e9619",
-    "source_commit": "47c7e375937b5ca8e672cd9112c9c82da3f860a0"
+    "source_commit": "90182cefb6f6af1d69f7818d5a873927dd3dd534"
   },
-  "experimental_source": "47c7e375937b5ca8e672cd9112c9c82da3f860a0",
+  "experimental_source": "90182cefb6f6af1d69f7818d5a873927dd3dd534",
   "taskern_packet_sha256": "sha256:b05828a2d7f4ea3271279a49156414ca66f46f0377701c36c6e3519004394233"
 }

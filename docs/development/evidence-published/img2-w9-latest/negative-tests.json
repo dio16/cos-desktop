@@ -289,9 +289,30 @@
       "ok": false,
       "reason": "wic_decode_outcome_invalid",
       "error": "ValueError"
+    },
+    {
+      "number": 41,
+      "mutation": "progressive_output_bytes_forged",
+      "ok": false,
+      "reason": "wic_declared_output_bytes_mismatch",
+      "error": "ValueError"
+    },
+    {
+      "number": 42,
+      "mutation": "worker_fixture_id_forged",
+      "ok": false,
+      "reason": "wic_worker_fixture_binding_invalid",
+      "error": "ValueError"
+    },
+    {
+      "number": 43,
+      "mutation": "malformed_leg_identity_forged",
+      "ok": false,
+      "reason": "malformed_leg_identity_invalid",
+      "error": "ValueError"
     }
   ],
   "required_classes": 40,
-  "shipped_classes": 40,
+  "shipped_classes": 43,
   "all_rejected": true
 }
