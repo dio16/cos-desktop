@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "native_source": "85efc5c50a2e16e44d392b274bd41eda22766291",
+  "native_source": "60f3aecc99802d865190a03071c20204a344fad7",
   "checks": {
     "quality.ps1": true,
     "feature-clippy": true,
@@ -44,7 +44,7 @@
     "passed": 194,
     "failed": 0,
     "w8_tests": 14,
-    "negative_classes": 32
+    "negative_classes": 36
   },
   "r0": {
     "total": 352,

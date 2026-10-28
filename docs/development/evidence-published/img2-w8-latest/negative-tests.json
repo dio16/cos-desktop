@@ -231,11 +231,39 @@
       "number": 32,
       "mutation": "timeout_as_confirmed_cancel",
       "ok": false,
-      "reason": "wic_outcome_disagrees_with_probe",
+      "reason": "wic_decode_outcome_invalid:jpeg_420_256",
+      "error": "ValueError"
+    },
+    {
+      "number": 33,
+      "mutation": "wic_outcome_flipped_corrupt",
+      "ok": false,
+      "reason": "wic_decode_outcome_invalid:dc_gray_8x8",
+      "error": "ValueError"
+    },
+    {
+      "number": 34,
+      "mutation": "gdiplus_outcome_flipped_error",
+      "ok": false,
+      "reason": "gdiplus_decode_outcome_invalid:dc_gray_16x16",
+      "error": "ValueError"
+    },
+    {
+      "number": 35,
+      "mutation": "malformed_legs_removed",
+      "ok": false,
+      "reason": "malformed_legs_missing:malformed_truncated",
+      "error": "ValueError"
+    },
+    {
+      "number": 36,
+      "mutation": "malformed_output_forged",
+      "ok": false,
+      "reason": "malformed_decoded_leg_inconsistent:malformed_truncated",
       "error": "ValueError"
     }
   ],
   "required_classes": 32,
-  "shipped_classes": 32,
+  "shipped_classes": 36,
   "all_rejected": true
 }
