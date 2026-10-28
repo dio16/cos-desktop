@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 import sys
 import unittest
@@ -12,6 +13,8 @@ from w12_png_fixture import fixture_bytes as png_bytes
 from w12_png_oracle import compare_all_pixels, compare_roi, verify_png
 from w11_jpeg_fixtures import fixture_bytes as jpeg_bytes
 from w11_jpeg_oracle import verify_fixture as verify_jpeg
+
+EVIDENCE = Path(__file__).resolve().parents[5] / "docs/development/evidence-published/w12-latest"
 
 
 class W12MatchedRasterTests(unittest.TestCase):
@@ -43,17 +46,28 @@ class W12MatchedRasterTests(unittest.TestCase):
         self.assertEqual(equality["jpeg_sha256"], "sha256:" + hashlib.sha256(self.jpeg).hexdigest())
 
     def test_roi_comparison_covers_both_fixed_rectangles(self):
-        for roi in ([17, 23, 1, 1], [117, 93, 256, 256]):
-            with self.subTest(roi=roi):
-                result = compare_roi(self.png, roi)
+        control = EVIDENCE / "native-matched-matrix.json"
+        if not control.is_file():
+            raise ValueError("native_control_missing")
+        record = json.loads(control.read_bytes())
+        cases = {row["case_id"]: row for row in record["cases"]}
+        for case_id in ("S01", "S03"):
+            roi = cases[case_id]["roi"]
+            with self.subTest(case_id=case_id, roi=roi):
+                output = bytes.fromhex(cases[case_id]["workers"][0]["output_hex"])
+                # The oracle is defined on bounded decoder ROI output, never on the
+                # 4096-square source raster.
+                result = compare_roi(output, roi)
                 self.assertTrue(result["ok"])
                 self.assertEqual(result["compared_pixels"], roi[2] * roi[3])
 
     def test_roi_bounds_are_enforced(self):
+        control = json.loads((EVIDENCE / "native-matched-matrix.json").read_bytes())
+        output = bytes.fromhex(control["cases"][2]["workers"][0]["output_hex"])
         for roi in ([0, 0, 257, 1], [-1, 0, 1, 1], [4095, 0, 2, 1], [0, 0, 0, 4]):
             with self.subTest(roi=roi):
                 with self.assertRaises(ValueError):
-                    compare_roi(self.png, roi)
+                    compare_roi(output, roi)
 
 
 if __name__ == "__main__":

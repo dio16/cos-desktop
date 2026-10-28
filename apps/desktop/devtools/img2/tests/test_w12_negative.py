@@ -230,11 +230,14 @@ class W12SemanticTests(unittest.TestCase):
         self.assertTrue(report["counters_not_forced_equal"])
 
     def test_semantic_mutations_fail_closed(self):
+        root = Path(__file__).resolve().parents[5]
         for name, mutate in MUTATIONS:
             with self.subTest(name=name):
                 record = copy.deepcopy(self.first)
                 mutate(record)
-                result = verify(record)
+                # Mutations run against the real repository so that a forged source
+                # commit or blob digest is actually re-checkable, not merely unproven.
+                result = verify(record, root)
                 self.assertEqual((result["ok"], result["closure_eligible"]), (False, False),
                                  msg=name)
 
