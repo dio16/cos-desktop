@@ -1,0 +1,24 @@
+MP-IMG2-W7 は PASS 0 / 0 / 0 で LIMITED TECHNICAL COMPLETION 承認まで到達しました。次のMPタスク指示を、そのまま実装に渡せるverbatim形式でください。
+
+現在の状態:
+- Repository: dio16/cos-desktop / branch dev / 未push。
+- 直近HEAD: 06ee0e03ace5ffa007e3181b5996e2d207502837(docs-onlyのclosure記録)。
+- 製品・3 Gate候補: c78982d0ee9ccafb8c9882260c20962134aac79e。
+- Native実行SOURCE: f080f4c5987b9c5745ad42bfa2a8975e4747e5ed。
+- 独立Gate: Quality core bd39ae77-ca11-4b8b-baa5-e268f2f02252 (16/16)、W7 Quality de37d098-8177-4e71-9875-ca6e9ff3b566 (4/4)、Build 021de65f-5ca4-470f-960a-6b294a247d69 (1/1)。成功3 Gateのworkspaceは保持手順に従い削除済み、receipt/log/sourceは保持。
+- W7 review: round 1 HOLD 1/3/0 → round 2 HOLD 1/1/0 → round 3 PASS 0/0/0。
+- W7で成立: 2K/4K bounded materialization(6/6全画素一致)、8K/16K full-frame refusal(4/4、OnLoad前)、1×1 ROI非迂回、破損入力のfail-closed分類。
+
+未測定・未承認のまま(次の指示でも権限がない限り維持):
+16K full decode、全codec/JPEG absolute raster、true partial/region/sequential/tiled decode、WIC内部scratch、実予約、true concurrent allocation peak、cooperative in-decoder cancellation、ICC fidelity、product numeric memory SLO、decoder採用、full MP-IMG2 Decode Exit、MP-IMG3 prerequisite(GPUI Upload)、Runtime RC-*、measured R0、UX/video、main/release。
+
+次の指示に含めてほしい項目:
+1. 対象MPタスクIDとOwner contract。DC-MP-IMG2の範囲を超える場合は必要な新規authorityを明記。
+2. 開始点とhard prerequisites、既存の受け入れ済み証拠、触れてはいけない範囲。
+3. 実装スコープ、不変条件、明示的な非対象。
+4. 受け入れ条件(観測可能な挙動、測定区分、NOT_MEASUREDの扱い)。
+5. 独立Gateで実行すべきcheckと出力、Native実行の要否(600秒のoperator上限を超える場合はGate分割の可否)。
+6. 今回の指示で許可されない操作(設計変更、Runtime、他repo、push、release等)。
+7. 停止条件と、停止時の記録区分。
+
+回答は先頭に `# COS Desktop — 次タスク指示` を置き、repository/branch/開始SHA/対象ID/スコープ/受入条件/停止条件を含むコードブロック1つで返してください。コードブロック外の前置きは不要です。最後に `NEXT DIRECTIVE` の独立行を置いてください。
