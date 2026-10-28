@@ -261,9 +261,37 @@
       "ok": false,
       "reason": "malformed_decoded_leg_inconsistent:malformed_truncated",
       "error": "ValueError"
+    },
+    {
+      "number": 37,
+      "mutation": "malformed_worker_outcome_mismatch",
+      "ok": false,
+      "reason": "malformed_worker_outcome_mismatch:malformed_truncated",
+      "error": "ValueError"
+    },
+    {
+      "number": 38,
+      "mutation": "gdiplus_width_forged",
+      "ok": false,
+      "reason": "gdiplus_geometry_mismatch:dc_gray_8x8",
+      "error": "ValueError"
+    },
+    {
+      "number": 39,
+      "mutation": "gdiplus_input_bytes_forged",
+      "ok": false,
+      "reason": "gdiplus_input_bytes_mismatch:dc_gray_16x16",
+      "error": "ValueError"
+    },
+    {
+      "number": 40,
+      "mutation": "gdiplus_output_bytes_forged",
+      "ok": false,
+      "reason": "gdiplus_declared_output_bytes_mismatch:jpeg_420_256",
+      "error": "ValueError"
     }
   ],
   "required_classes": 32,
-  "shipped_classes": 36,
+  "shipped_classes": 40,
   "all_rejected": true
 }

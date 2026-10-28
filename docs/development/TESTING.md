@@ -215,7 +215,7 @@ DC reference reproduces the declared luminance levels exactly, and the reference
 module contains no decoder, subprocess or image-library import. A synthetic PNG
 pair proves the canonical comparison reports exact, per-pixel, per-channel,
 maximum, mean and first-difference values. The negative suite mutates the
-retained record in 36 classes — geometry, precision, sampling, markers, digests,
+retained record in 40 classes — geometry, precision, sampling, markers, digests,
 decoder identity and probe identity, requirement understatement, encoded-as-
 decoded bytes, forged stages/outcomes/output, unpublished success, absolute
 digests, differential-to-absolute promotion, zeroed mismatch statistics,
