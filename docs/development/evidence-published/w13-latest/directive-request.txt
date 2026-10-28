@@ -1,0 +1,18 @@
+W12 is stopped at its completion boundary. Your Round3 review returned PASS 0/0/0 / REVIEW COMPLETE with A-R1-01 and A-R2-01 both CLOSED, and the docs-only disposition recording your exact response is committed and pushed. Normal dev:dev push succeeded, and `git ls-remote origin refs/heads/dev` returned 1b0af00e0805ccac7c8077d412cdbf69a7831f08 immediately before this message.
+
+Pins: Gate/source candidate 2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b (digest sha256:0a472db1…); reviewed evidence commit ded128977c29b4ecb780a9b0796a6fd6356f5ae9; Native SOURCE 2f20080e843bc02d356e14b9bf99218cb48dfd71; eight Gates on that candidate, 25/25 checks, 560 artifact captures.
+
+Retain PUSH BEFORE EVERY TERN EVALUATION: commit source, run new finite Gates, docs-only Gate evidence commit, normal explicit dev:dev push, confirm exact remote SHA, only then request evaluation. No unpushed attachment fallback, no main/release/private refs/mirror/force. Also retain the newest constraints discovered here:
+- The installed Refine operator schema rejects timeout_ms above 600000, so any Gate's checks must fit that ceiling; the unchanged W8 JPEG suite alone takes ~280–300 s and W9 ~260–280 s, so they cannot share one Gate with anything else heavy.
+- Gate-declared outputs are hashed into the candidate: changing any evidence file that a Gate declares requires re-pinning the candidate and re-running the Gates. Aggregate summaries must be derived before the Gate, not patched afterwards.
+- Native SOURCE_FILES includes the W12 test files, so a later test edit makes an old Native record non-closable (`source_lf_mismatch`); plan a re-run rather than rewriting the record.
+
+Please give the next-task decision and a VERBATIM COPY-READY directive in one fenced code block under the existing continuous MP implementation/review/next-directive grant. This request starts nothing and grants no new design, policy, environment or GUI authority.
+
+Planning facts you may rely on:
+- Reusable machinery: W2 single-boundary worker, W4 rectangle output, W6 process-counter sampler, W7 large-dimension admission/PNG helpers, W8/W9/W10 JPEG fixtures+verifiers with their strict suites, W11 streamed DC-only 4K/16K JPEG with a DC/block-coordinate oracle, W12 streamed 4K grayscale PNG plus a matched-raster all-pixel oracle.
+- Still unmeasured by any slice: WIC internal scratch, allocator reservations, true concurrent allocation peak, cooperative in-decoder cancellation, product memory SLO, 16K full-decode memory, true partial/region/sequential/tiled decode.
+- Application-window GUI startup is NOT_RUN because live control approval was unanswered; the retained Gate-built 32,275,456-byte executable (digest sha256:d80632f0b04ca6ec0fcb27aef7d8d5fb955dd725679ec38ff3f3dcbd51ac320b) exists for a later human-approved smoke. Do not waive that route, claim human approval, or fabricate unavailable native measurements.
+- If no further bounded observation adds real information without new design/dependency/unsafe/native authority, say so and specify what Caller decision or prerequisite is genuinely required instead of inventing another slice.
+
+If a slice is eligible, specify: the single owning DC contract; exact allowed change scope; inputs and fixture identity method; invariants and hard bounds; independently testable acceptance; real Windows scenarios plus repeat; failure/stop conditions including explicit HOLD triggers; the Gate composition that fits the 600 s producer ceiling with its declared outputs decided up front; source/evidence pins; successful-only disposal; and the push/remote-SHA-before-evaluation requirement. Separate what you authorize now from what still needs a Caller decision.

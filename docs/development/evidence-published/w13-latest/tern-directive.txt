@@ -1,0 +1,866 @@
+次タスク決定：MP-IMG2-W13 — 4K JPEG/PNG全フレーム出力の独立検証。
+
+W12で証明した入力ラスターの同一性を利用し、既存W7の全フレーム出力経路で、WICが生成する4096×4096の全画素を比較します。W12のROI検証では未確認だった画素領域を検証できるため、追加する技術的価値があります。新しいdecoderや製品policyは必要ありません。
+
+プレーンテキスト
+# COS Desktop — 次タスク実装指示
+# MP-IMG2-W13
+# 4K Matched-Raster JPEG/PNG Full-Frame WIC Output Verification
+#
+# Repository: dio16/cos-desktop
+# Branch: dev
+# Sole owning contract: DC-MP-IMG2
+#
+# 既存のcontinuous MP implementation/review/next-directive grantを適用する。
+# 新しい設計・製品policy・環境・GUI権限は付与しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. NEXT-TASK DECISION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+次タスクはMP-IMG2-W13とする。
+
+目的：
+W12で入力の全16,777,216画素が一致すると証明した
+4K grayscale JPEGとPNGを、既存Windows WIC probeで
+ROI指定なしに全フレームdecode・出力する。
+
+出力された全画素を独立oracleで再構成し、
+入力の固定DC/block-coordinate画素式と照合する。
+
+さらに、JPEGとPNGの全フレーム出力を比較する。
+
+W12では1×1および256×256のROI出力しか検証していない。
+W13は未観測だった残りの出力画素について、
+実際のWIC decode/output fidelityを検証する。
+
+これは新しい能力観測である。
+
+W13で証明できること：
+- 4K JPEGのWIC full-frame output correctness
+- 4K PNGのWIC full-frame output correctness
+- 同一入力ラスターに対する両codecの全画素出力一致
+- 既存OnLoad/admission/publish経路の有界実行
+
+証明しないこと：
+- true partial/region/sequential/tiled decode
+- WIC内部scratch/allocation
+- decoder性能優位性
+- product decoder adoption
+- product memory SLO
+- 16K decode capability
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. 固定開始状態
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Repository:
+dio16/cos-desktop
+
+Branch:
+dev
+
+Expected pushed start HEAD:
+1b0af00e0805ccac7c8077d412cdbf69a7831f08
+
+W12 final Gate/source candidate:
+2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b
+
+W12 candidate digest:
+sha256:0a472db14247de27c002e253f3e64f991eb885000a6ca3bbaf039d5a4a142b50
+
+W12 reviewed evidence:
+ded128977c29b4ecb780a9b0796a6fd6356f5ae9
+
+W12 Native SOURCE:
+2f20080e843bc02d356e14b9bf99218cb48dfd71
+
+W12 status:
+LIMITED TECHNICAL COMPLETION
+PASS 0/0/0
+REVIEW COMPLETE
+A-R1-01 CLOSED
+A-R2-01 CLOSED
+
+開始時にlocal/remote HEAD、tree clean、
+W12 disposition、DC-MP-IMG2を照合する。
+
+不一致があればHOLDし、勝手に補完しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. 許可変更範囲
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+新規追加可能：
+
+- apps/desktop/devtools/img2/w13_*.py
+- apps/desktop/devtools/img2/tests/test_w13_*.py
+- docs/development/evidence-published/w13-latest/
+
+必要最小限の文書更新：
+
+- IMPLEMENTATION_MASTER_PLAN.md
+- BUILD_AND_RUN.md
+- TESTING.md
+
+既存コードは読み取り・再利用を基本とする。
+
+使用する既存machinery：
+
+- W2 Worker / boundary hold / cleanup
+- W6 Process sampler
+- W7 full-frame WIC output
+- W7 bounded PNG streaming reader
+- W11 4K DC-only grayscale JPEG
+- W11 DC/block-coordinate oracle
+- W12 streamed grayscale PNG
+- W12 matched-raster all-pixel oracle
+
+既存WIC probeを変更しない。
+
+新しいdependency、decoder、FFI、COM、
+unsafe、GPU、Runtime、product APIを追加しない。
+
+既存probeの仕様変更が必要になったらHOLDする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. FIXTURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2種類の固定入力：
+
+J:
+W11 jpeg_gray_4k
+4096×4096
+8-bit grayscale
+DC-only JPEG
+589,275 encoded bytes
+
+P:
+W12 streamed 4K grayscale PNG
+4096×4096
+8-bit grayscale
+259,602 encoded bytes
+
+各fixtureは既存generatorから再生成する。
+
+既存W11/W12 fixture-manifestの
+encoded SHA-256と完全一致すること。
+
+ファイルを再生成するときはfresh/exclusive createを使用。
+
+producerは全フレームRGBAを保持しない。
+
+独立oracleは以下を再検証する。
+
+- JPEG SOI/SOF/DQT/DHT/SOS/DC/EOB/padding/EOI
+- PNG signature/IHDR/IDAT/IEND/CRC
+- bounded inflation
+- dimension/bit depth
+- 固定絶対座標の画素式
+- JPEG/PNG入力全画素一致
+- encoded digest一致
+
+producerのSHA自己申告のみでは受入不可。
+
+既存の画素式：
+
+level(bx, by) =
+48 + 20 * ((3*bx + 5*by + (bx XOR by)) mod 9)
+
+bx = x // 8
+by = y // 8
+
+期待RGBA：
+(level, level, level, 255)
+
+decoderの出力を期待値生成に使用しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. REAL WINDOWS MATRIX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+固定4シナリオ。
+
+S01:
+JPEG 4096×4096
+ROI指定なし
+max_dimension=4096
+期待：full-frame decode成功
+
+S02:
+PNG 4096×4096
+ROI指定なし
+max_dimension=4096
+期待：full-frame decode成功
+
+S03:
+JPEG 4096×4096
+ROI指定なし
+max_dimension=4095
+期待：OnLoad前admission拒否
+
+S04:
+PNG 4096×4096
+ROI指定なし
+max_dimension=4095
+期待：OnLoad前admission拒否
+
+全workerはserial。
+
+同時decodeは禁止。
+
+S01/S02：
+after_onload boundary holdでprocess identityと
+whole-process countersを観測し、releaseして
+全フレーム出力のpublishまで完了させる。
+
+S03/S04：
+before_admission holdで観測し、
+release後に予算拒否を確認する。
+
+各ケースで以下を保存：
+
+- input SHA-256
+- observed decoder identity
+- actual pixel format
+- admission fields
+- source dimensions
+- declared full-frame charges
+- stage trace
+- process PID/start identity
+- executable digest
+- process sample
+- output classification
+- output digest/size
+- exit and cleanup lifecycle
+
+期待decoder：
+JPEG: JpegBitmapDecoder
+PNG: PngBitmapDecoder
+
+ただし名称は推測ではなく実観測から検証する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. REPEAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+fresh work rootで独立2回。
+
+1回：
+4 serial worker executions
+
+合計：
+8 worker executions
+
+2回で以下が一致すること。
+
+- fixture digests
+- source dimensions
+- decoder/source-format classification
+- admission/refusal outcome
+- full-frame output geometry
+- all-pixel oracle result
+- canonical RGBA digest
+- cleanup status
+
+PNG encoded outputのbyte identityは記録するが、
+必須の正しさ判定はdecoded RGBA全画素一致とする。
+
+PNG encoderの合法的な圧縮表現差だけを理由に
+画素不一致と判定しない。
+
+出力形式が既存のbounded oracleで検証できなければ、
+推測変換せずHOLDする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. HARD BOUNDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+実験上限：
+
+max_dimension = 4096
+max_pixels = 16,777,216
+max_bit_depth = 8
+max_decoded_bytes = 67,108,864
+max_scratch_bytes = 67,108,864
+
+max_encoded_input_bytes = 16 MiB per fixture
+max_output_file_bytes = 8 MiB per output
+max_report_bytes = 32 MiB
+max_work_root_bytes = 128 MiB
+
+max_workers = 1
+max_cases = 4
+max_worker_runs = 4 per repeat
+max_worker_seconds = 45
+max_total_seconds = 300 per repeat
+
+max_trace_records = 128 per worker
+max_trace_bytes = 128 KiB per worker
+max_capture_bytes = 64 KiB per worker
+max_observed_private_bytes = 768 MiB
+
+上記は実験停止上限であり、製品memory SLOではない。
+
+既存WIC full-frame admission arithmeticを変更しない。
+
+ROI未指定のため、ROI出力上限で
+64 MiB相当の全フレーム処理を代替しない。
+
+WIC出力PNGは圧縮済みファイルサイズと、
+展開後のRGBAサイズを別々に検証する。
+
+展開後の期待RGBAは正確に
+4096×4096×4 = 67,108,864 bytes。
+
+PNG inflaterは行数・行幅・filter・channel・
+総展開byte数を検証し、超過を拒否する。
+
+8 MiBのencoded output上限を超えた場合、
+上限を自動増加させずHOLDする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. FULL-FRAME INDEPENDENT ORACLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W7のstreaming output readerを再利用し、
+W13専用の固定座標oracleと接続する。
+
+必要な追加実装はdevtool verifierだけに限定する。
+
+全出力を一括RGBA配列へ展開しない。
+行単位で展開・照合・hash更新する。
+
+各decoded outputについて：
+
+1. PNG構造を検証
+2. CRCとchunk境界を検証
+3. bounded inflate
+4. 4096行を順次復元
+5. 1行4096画素を期待座標式と照合
+6. RGBA digestを更新
+7. 全16,777,216画素を検証
+8. trailing/truncated dataを拒否
+9. canonical RGBA SHA-256を保存
+
+JPEG出力とPNG出力を比較する。
+
+必要な一致条件：
+
+- geometry
+- pixel count
+- expected coordinate pixels
+- canonical RGBA SHA-256
+- actual RGBA values
+
+各repeatで2出力。
+全体で4つのfull-frame outputsを検証する。
+
+合計：
+67,108,864 output pixels
+
+失敗時にfirst mismatch coordinateを保存する。
+単純なdigest一致だけでは全画素正しさを主張しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. MEMORY OBSERVATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+既存W6 samplerを使用する。
+
+観測対象：
+
+- working_set_bytes
+- private_bytes
+- process identity
+- observation clock/window
+- sampling completeness
+- after_onload hold identity
+
+すべてwhole-process counters。
+
+別worker lifetime間の比較と明記する。
+
+禁止する主張：
+
+- same-process allocation delta
+- WIC-only memory
+- actual decoder scratch peak
+- true concurrent allocation peak
+- allocator reservation
+- causal JPEG/PNG memory advantage
+- codec latency benchmark
+- product memory SLO
+
+出力全画素検証はメモリ性能証明ではない。
+
+境界holdは人工instrumentationであり、
+decoder内部で費やした時間ではない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. ACCEPTANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+A01:
+両入力fixtureの再生成byte identity。
+
+A02:
+JPEG/PNG入力16,777,216画素の独立同一性。
+
+A03:
+WICが両4K入力を全フレームadmitする。
+
+A04:
+S01/S02のOnLoadからpublishまでstageが整合。
+
+A05:
+両full-frame PNGの構造とinflationが有界。
+
+A06:
+両出力の16,777,216画素がすべて期待式と一致。
+
+A07:
+JPEG/PNGのcanonical RGBAが全画素一致。
+
+A08:
+S03/S04がOnLoad前に拒否される。
+
+A09:
+拒否ケースにvalid outputが存在しない。
+
+A10:
+全workerのidentity/trace/exit/reapingが整合。
+
+A11:
+process countersの意味がwhole-processに限定される。
+
+A12:
+2回のNative repeatでsource/output/oracleが整合。
+
+A13:
+source identityとGit blobが一致。
+
+A14:
+portable replayがsource closureを偽装しない。
+
+A15:
+W1～W12のstrict regressionsが維持される。
+
+A16:
+既存WIC/probe/product挙動に変更がない。
+
+A17:
+Gate candidateと全declared artifactsが一致。
+
+A18:
+未測定事項のstatusが不正に昇格していない。
+
+Negative testsでは最低限：
+
+- encoded fixture mismatch
+- JPEG entropy/DC mutation
+- PNG CRC/chunk/inflate mutation
+- output pixel mutation
+- coherent digest rewrite
+- output truncated/trailing bytes
+- wrong geometry
+- row count mismatch
+- source identity mismatch
+- decoder identity mismatch
+- admission contradiction
+- stage reordering
+- forbidden output publication
+- incomplete sample
+- missing cleanup/reap
+- repeat mismatch
+- false true_partial claim
+- false internal scratch/peak claim
+
+をfail-closedで検査する。
+
+Source-bound mutation testsはW12修正を継承し、
+無改変controlのsource-bound closure成功を前提とする。
+
+Git objectsが欠ける環境ではmutation成功を主張しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. TASKERN / IMPLEMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Taskern 0.2.0で本W13を単一task packetにcompileする。
+
+CodingAgentはpacketに従い実装・テストする。
+
+実装はYAGNI。
+
+新たなfixture generatorを作らない。
+
+W11/W12の同じ入力を再利用する。
+
+新たなdecoder adapter、共通framework、
+product abstractionを作らない。
+
+必要であればW13の小さなstreaming output verifierのみ追加する。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. NATIVE SOURCE PIN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W13のSOURCE_FILESには以下を含める。
+
+- 使用する既存probe
+- W2 Worker
+- W6 sampler
+- W7 full-frame oracle/helper
+- W11 JPEG fixture/oracle
+- W12 PNG fixture/matched oracle
+- W13 runner
+- W13 verifier
+- W13 tests
+- 必要なsource/dependency lock files
+
+Windows実験前にsourceをcommitし、
+Native SOURCE SHAを固定する。
+
+Native2回は同じ固定SOURCE_FILESを使用する。
+
+その後SOURCE_FILES内のtest等を変更した場合、
+旧Native記録はsource-bound closure不能になる。
+
+その際は旧記録をSUPERSEDED_PINとし、
+新SOURCEでNative2回を取得し直す。
+
+旧記録のsource SHAを編集して使い回さない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. REFINE 0.3.1 GATE COMPOSITION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Refine operator timeout_msは1..600000。
+
+600000を超える指定は禁止。
+
+W8とW9は重い独立suiteとして維持し、
+互いにも他の重いsuiteにも結合しない。
+
+今回の固定構成は9 Gates。
+
+G1:
+Workspace
+7 existing checks
+
+G2:
+W1～W7 images
+9 existing checks
+
+G3:
+W8
+1 unchanged check
+
+G4:
+W9
+1 unchanged check
+
+G5:
+W10
+1 unchanged check
+
+G6:
+W11
+2 unchanged checks
+
+G7:
+W12
+2 unchanged checks
+
+G8:
+W13
+2 checks:
+- w13-fixed-tests
+- w13-source-verifier
+
+G9:
+Fresh build
+2 unchanged checks
+
+Expected total:
+27 checks
+
+各Gateは単独で600秒以内に完了する構成にする。
+
+既存check定義・引数・期待値を変更しない。
+
+W13単独Gateで600秒を超える見込みまたは実績なら、
+testを省略・緩和して通さずHOLDする。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. GATE-DECLARED OUTPUT FREEZE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+W12で判明したdigest contractを厳守する。
+
+Gateに宣言するすべての出力ファイルとその内容を
+Gate candidate確定前に決める。
+
+候補確定前に作成するもの：
+
+- fixture/source manifests
+- Native records/repeat
+- oracle results
+- negative-test evidence
+- quality/test-count summaries
+- execution manifest
+- declared artifact inventory
+- unmeasured status
+
+Aggregate test countsは実テスト出力から生成し、
+Gate candidateに含める。
+
+countを推測・手入力・旧runから転記しない。
+
+Gate実行後はdeclared outputを変更しない。
+
+Gate ID/receipt/verify結果など
+実行後にしか存在しない情報は、
+あらかじめ非declaredのdocs-only証拠として分離する。
+
+Gate-declared outputを1byteでも変更する場合：
+
+1. 新candidate SHAを固定
+2. 新candidate digestを取得
+3. 必要なNative source closureを再確認
+4. 全9 Gatesを新候補で再実行
+
+旧Gate successの流用は禁止。
+
+各Gateで以下を保持：
+
+- exact request
+- candidate SHA/digest
+- terminal state
+- check results
+- artifact tuples
+- inspect/verify
+- cleanup status
+- failed history
+
+全9 Gateは同一full candidateを参照する。
+
+Declared artifact集合の個数は事前固定し、
+実際の個数×9 Gatesの全captureを照合する。
+
+Preflight aggregateをUNKNOWNから
+根拠なくPASSに変更しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. EVIDENCE / STORAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+証拠保存先：
+
+docs/development/evidence-published/w13-latest/
+
+ADR-0013を遵守する。
+
+保持するもの：
+
+- exact Native report 2本
+- output bytesとhash
+- full-frame oracle results
+- canonical RGBA digests
+- fixture identity
+- source/Git identity
+- memory observations
+- negative-test results
+- quality/count records
+- nine independent Gate receipts
+- artifact correspondence
+- history of failures/superseded attempts
+- execution manifest
+- storage/disposal record
+- unmeasured list
+- external review package
+
+独立レビューで出力全画素を再検証できるよう、
+実際のPNG output bytesを有界に保持する。
+
+hashしか残っていない出力について
+全画素独立検証を主張しない。
+
+32 MiB report上限内で必要な実バイトを
+保持できなければHOLDする。
+
+巨大な実行ログやtoolchainの複製は禁止。
+
+Successful-only disposal：
+
+削除可能：
+- SUCCEEDED Gate checkout
+- 承認されたowned target
+- 完全なreceipt/artifact保存後
+- native integrity再検証成功後
+
+削除禁止：
+- FAILED/interrupted Gate workspace
+- ownership不明root
+- 過去のretained state roots
+- 唯一の証拠コピー
+- 未検証のbuild artifact
+
+削除前後のGate verifyを照合する。
+
+保持するGate-built executableはdigest/sizeを記録し、
+必要なコピーを一度だけdisposable target外へ移す。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. PUSH BEFORE EVERY TERN EVALUATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+必須順序：
+
+1. W13 implementation
+2. Local/hermetic tests
+3. Source commit
+4. Native SOURCE pin
+5. Windows Native run + independent repeat
+6. Source-bound evidence verification
+7. Gate-declared outputをすべて確定
+8. Product/Gate candidate commit
+9. 全9件の新規finite Refine Gates
+10. Gate receipts/outputs correspondence確認
+11. 非declared Gate evidenceをdocs-only commit
+12. Normal explicit dev:dev push
+13. git ls-remote origin refs/heads/dev
+14. Remote SHAと提出HEADの完全一致を確認
+15. Tern independent evaluationを依頼
+
+Tern評価前に必ずpushする。
+
+禁止：
+
+- unpushed-source attachment fallback
+- main/release push
+- private refs
+- mirror
+- force push
+- old Gate receipt reuse
+- unpushed local SHAをremoteと称すること
+
+再評価roundでも同じ順序を守る。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. EXPLICIT HOLD CONDITIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+以下の場合はHOLDする。
+
+- 既存WIC probeでfull-frame出力できない
+- 新decoder/API/unsafe/FFIが必要
+- fixture identitiesが一致しない
+- JPEG/PNG入力全画素同一性が壊れる
+- 出力PNGの有界独立検証ができない
+- actual decoded RGBAが期待画素と一致しない
+- output/report/work/memory/time capを超える
+- Workerのtrace/sample/cleanupが不完全
+- 2回のNative repeatが成立しない
+- source-bound identityを検証できない
+- 600秒以内にGateを構成できない
+- Gate-declared outputの後変更が必要
+- 全Gateを新candidateで再実行できない
+- evidenceをrepositoryに保持できない
+- push/remote SHA確認に失敗
+- 新しいCaller設計/環境/GUI決定が必要
+
+結果不一致を自動補正しない。
+
+decoderの不正出力は観測結果として保持し、
+正常decodeへ分類し直さない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. AUTHORITY BOUNDARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+今回認可される範囲：
+
+- 既存WIC full-frame outputの有界観測
+- JPEG/PNG全画素output differential
+- 既存process counter観測
+- W13 devtool/tests/evidence実装
+- 有限Refine Gates
+- 必須dev push
+- Tern independent review
+- clean review後のlimited disposition
+
+今回認可されない範囲：
+
+- WIC/GDI+/FFmpegの製品採用
+- decoder toleranceの決定
+- ICC/EXIF製品policy
+- 16K decode adoption
+- true partial/sequential/tiled decode実装
+- decoder scratch/allocator測定方式の新設計
+- cooperative in-decoder cancellation実装
+- product memory SLO批准
+- Runtime/GPU/Upload
+- measured R0
+- full MP-IMG2 Decode Exit
+- MP-IMG3開始
+- main/release
+
+Application-window GUI startupはNOT_RUN。
+
+既存live control approvalはunanswered。
+
+保持済み実行ファイル：
+
+32,275,456 bytes
+sha256:d80632f0b04ca6ec0fcb27aef7d8d5fb955dd725679ec38ff3f3dcbd51ac320b
+
+これを人間承認やGUI起動成功の証拠に使用しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. COMPLETION / NEXT DECISION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ternの結果形式：
+
+BLOCKING
+ACTIONABLE NON-BLOCKING
+EXCESSIVE
+
+PASS 0/0/0
+または
+HOLD with counts
+
+HOLD時は必要箇所だけ修正し、
+新たなfixed candidate/Gate/pushで再評価する。
+
+PASS 0/0/0 / REVIEW COMPLETEの場合に限り、
+次の限定的完了を記録する。
+
+MP-IMG2-W13
+LIMITED TECHNICAL COMPLETION
+
+承認対象：
+4K JPEG/PNG full-frame WIC output fidelity
+およびbounded independent differentialのみ。
+
+MP-IMG2全体は完了としない。
+
+W13完了後、W1～W13の観測範囲を踏まえ、
+残るDecode Exitの要件が
+既存machineryのみで測定可能かを改めて判断する。
+
+新しい能力実験を機械的に増やさない。
+
+残余要件に実decoder経路、内部メモリ計測、
+cancellation設計、dependency/licence判断、
+製品採用基準またはGUI操作承認が必要なら、
+その時点で正確な不足前提を示してHOLDする。
+
+PASS後のdispositionをdocs-only commitし、
+normal dev:dev push・remote SHA確認を行って停止する。
+
+次タスクを自動開始せず、
+この会話へ次の単一タスク判断を依頼する。

@@ -1,0 +1,16 @@
+{
+  "start_head": "1b0af00e0805ccac7c8077d412cdbf69a7831f08",
+  "remote_dev": "1b0af00e0805ccac7c8077d412cdbf69a7831f08",
+  "tree_clean": true,
+  "tree": "c4ddbf96e68ff859220baa6e02426691ea907abb",
+  "directive_sha256": "sha256:9d97723d8acbdc98e103b0f77f271cea7e4ea7a4028c1e4f82e6b985f22fc793",
+  "w12_disposition": {
+    "status": "LIMITED_TECHNICAL_COMPLETION",
+    "candidate": "2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b",
+    "digest": "sha256:0a472db14247de27c002e253f3e64f991eb885000a6ca3bbaf039d5a4a142b50",
+    "evidence": "ded128977c29b4ecb780a9b0796a6fd6356f5ae9",
+    "native_source": "2f20080e843bc02d356e14b9bf99218cb48dfd71",
+    "verdict": "PASS 0 / 0 / 0"
+  },
+  "authority": "Existing Caller continuous MP grant only; no new design, dependency, unsafe/COM, product policy, Runtime, GUI, main or release authority."
+}

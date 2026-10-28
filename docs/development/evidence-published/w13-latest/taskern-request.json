@@ -1,0 +1,192 @@
+{
+  "protocol": 1,
+  "op": "prepare",
+  "args": {
+    "draft": {
+      "draft_version": 1,
+      "plan_id": "cos-desktop-img2-w13",
+      "revision": 1,
+      "goal": "Bounded 4K JPEG/PNG full-frame WIC output verification with an independent streaming oracle under DC-MP-IMG2; no capability or memory promotion.",
+      "invariants": [],
+      "milestones": [],
+      "tasks": [
+        {
+          "task_id": "img2-w13",
+          "goal": "Decode both 4K matched-raster inputs full-frame (no ROI), verify all 16,777,216 output pixels per output against the fixed coordinate formula, compare JPEG/PNG canonical RGBA, and refuse the 4095 bound before OnLoad, twice on one pinned source.",
+          "inputs": [
+            {
+              "id": "directive",
+              "description": "Verbatim W13 directive at docs/development/evidence-published/w13-latest/tern-directive.txt; start head 1b0af00e is the pushed W12 disposition.",
+              "context_ids": []
+            },
+            {
+              "id": "canon",
+              "description": "DC-MP-IMG2 plus existing W2 worker, W6 sampler, W7 full-frame output/streaming PNG reader, W11 JPEG fixtures/oracle and W12 PNG fixture/matched oracle.",
+              "context_ids": []
+            }
+          ],
+          "constraints": [
+            {
+              "id": "scope",
+              "level": "MUST",
+              "text": "Only new w13_* runner/verifier/tests and w13-latest evidence plus minimal plan/BUILD_AND_RUN/TESTING updates. No WIC probe change, no new fixture generator, no dependency/unsafe/FFI/COM/GPU/Runtime/product API, no accepted-file rewrite."
+            },
+            {
+              "id": "raster",
+              "level": "MUST",
+              "text": "Reuse the W11 4K DC-only JPEG and W12 streamed PNG byte-for-byte with their recorded digests. Verify every output pixel row-by-row against level(bx,by)=48+20*((3*bx+5*by+(bx^by)) mod 9); expected RGBA (level,level,level,255). Never use decoder output as expectation and never hold a full RGBA array."
+            },
+            {
+              "id": "bounds",
+              "level": "MUST",
+              "text": "4096 dimension, 16777216 pixels, 8 depth, 67108864 decoded/scratch; 16MiB input, 8MiB output, 32MiB report, 128MiB work, four workers per repeat, 45s worker/300s batch, 64KiB capture, 128KiB/128-record trace, 768MiB observed private. Refuse rather than raise a cap; a cap overrun is HOLD."
+            },
+            {
+              "id": "memory",
+              "level": "MUST",
+              "text": "Reuse the W6 sampler at the same after_onload boundary. Whole-process counters from independent lifetimes only; no same-process delta, WIC-only memory, scratch peak, reservation, concurrent peak, codec advantage, latency benchmark or product SLO."
+            },
+            {
+              "id": "workflow",
+              "level": "MUST",
+              "text": "Taskern packet; pinned Native source and two fresh repeats; all Gate-declared outputs fixed before the candidate; nine finite Gates within the 600s producer ceiling on one candidate digest; failed Gates retained; successful-only disposal with before/after native verify; commit, explicit dev:dev push and exact remote SHA before Tern; PASS0/0/0 then docs-only limited disposition."
+            }
+          ],
+          "outputs": [
+            {
+              "id": "tooling",
+              "description": "W13 full-frame streaming oracle/verifier, four-case matrix and hermetic/semantic negative tests.",
+              "media_type": "text/plain"
+            },
+            {
+              "id": "native",
+              "description": "Two fresh four-case/ eight-lifetime real Windows records with retained full-frame PNG bytes, canonical RGBA digests, admission stages and whole-process windows.",
+              "media_type": "application/json"
+            },
+            {
+              "id": "closure",
+              "description": "Quality/regressions, nine committed-candidate Gates, artifact correspondence, successful-only disposal integrity, pushed Tern review and limited disposition.",
+              "media_type": "application/json"
+            }
+          ],
+          "acceptance": [
+            {
+              "id": "a1",
+              "statement": "A01/A02: both fixtures regenerate byte-identically and all 16,777,216 input pixels of each are independently equal to the fixed coordinate formula.",
+              "output_ids": [
+                "tooling"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a2",
+              "statement": "A03/A04/A05: both 4K inputs pass full-frame admission and a complete OnLoad-to-publish stage sequence; each output PNG structure and inflation is bounded.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a3",
+              "statement": "A06/A07: every pixel of both outputs matches the expected expression and the JPEG/PNG canonical RGBA agree on all pixels, with first-mismatch coordinates retained on failure.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a4",
+              "statement": "A08/A09/A10: S03/S04 refuse before OnLoad with no valid output, and every worker keeps consistent identity, trace, exit and reaping.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a5",
+              "statement": "A11/A18: memory stays whole-process observation only and no unmeasured capability is promoted.",
+              "output_ids": [
+                "native"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a6",
+              "statement": "A12/A14: two repeats agree on sources, outputs and oracle results, and portable replay never claims Git source closure.",
+              "output_ids": [
+                "tooling"
+              ],
+              "evaluation_ids": [
+                "behavior"
+              ]
+            },
+            {
+              "id": "a7",
+              "statement": "A15/A16/A17: strict W1-W12 regression is preserved, no probe/product behaviour changed, and every declared Gate artifact matches the committed candidate.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            },
+            {
+              "id": "a8",
+              "statement": "Nine finite Gates share one candidate digest, failed attempts are retained, disposal preserves integrity, and commit plus explicit dev push with exact remote-SHA confirmation precede the bounded Tern verdict.",
+              "output_ids": [
+                "closure"
+              ],
+              "evaluation_ids": [
+                "workflow"
+              ]
+            }
+          ],
+          "evaluation": [
+            {
+              "id": "behavior",
+              "kind": "automated",
+              "requirement": "Hermetic/negative tests plus two real Windows matrices; streaming all-pixel oracle, PNG structural bounds, admission stages and whole-process windows.",
+              "metric": []
+            },
+            {
+              "id": "workflow",
+              "kind": "automated",
+              "requirement": "Installed Taskern prepare, unchanged quality/regressions, nine Gates within producer limits, frozen declared outputs, integrity-bounded disposal, explicit push and remote SHA before a clean Tern verdict.",
+              "metric": []
+            }
+          ],
+          "dependencies": [],
+          "context": [],
+          "annotations": []
+        }
+      ]
+    },
+    "handoff": [
+      {
+        "task_id": "img2-w13",
+        "context": {
+          "schema_version": 1,
+          "items": []
+        },
+        "budget": {
+          "schema_version": 1,
+          "window_tokens": 32000,
+          "reserved_output_tokens": 4000,
+          "tool_reserve_tokens": 4000,
+          "max_input_bytes": 24000
+        }
+      }
+    ],
+    "emit": "both"
+  }
+}
