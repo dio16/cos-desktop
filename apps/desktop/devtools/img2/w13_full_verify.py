@@ -333,6 +333,8 @@ def verify(record, source_root=None):
              and record["unmeasured"] == list(UNMEASURED), "false_measurement_claim")
         need(record["cleanup"] == {"complete": True, "live_direct_children": []}
              and record["work_root_disposable"] is True, "cleanup_incomplete")
+        need(len(json.dumps(record, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+             <= BOUNDS["max_report_bytes"], "record_size_over_bound")
         need(integer(record["duration_ns"])
              and record["duration_ns"] <= BOUNDS["max_total_seconds"] * 1_000_000_000
              and integer(record["work_bytes"])

@@ -83,7 +83,7 @@ def coherent_pixel_mutation(record):
 
 
 def trailing_bytes(record):
-    rewrite_output(record, 2, lambda data: data.extend(b"\x00\x00"))
+    rewrite_output(record, 0, lambda data: data.extend(b"\x00\x00"))
 
 
 def sample_outside_hold(record):
@@ -156,7 +156,9 @@ MUTATIONS = (
         exited_ns=worker(r, 0)["started_ns"] + 46_000_000_000)),
     ("run_deadline", lambda r: r.update(duration_ns=301_000_000_000)),
     ("work_cap", lambda r: r.update(work_bytes=BOUNDS["max_work_bytes"] + 1)),
-    ("report_cap", lambda r: r.update(work_bytes=BOUNDS["max_work_bytes"])),
+    ("oracle_digest", lambda r: worker(r, 0)["oracle"].update(
+        canonical_rgba_sha256="sha256:" + "0" * 64)),
+    ("record_size", lambda r: r["limitations"].append("x" * (BOUNDS["max_report_bytes"] + 1))),
     ("classification", lambda r: r["cases"][2].update(classification="FULL_FRAME_OUTPUT_VERIFIED")),
 )
 
