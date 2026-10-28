@@ -1,12 +1,10 @@
 {
   "schema_version": 1,
-  "candidate": "e4ff23cf10d7db1218f577877ae85c713a19c24a",
-  "build_gate": "33f33f7d-8c34-4749-a53f-2807ee578d66",
-  "bytes": 32275456,
-  "sha256": "sha256:32b94b1728b12f171ef0ea05aee78613be9d82d9a5d68d06ebf4805bfb1c9c7c",
-  "measured_at": "2026-10-28T03:05:00Z",
-  "scope": "Actual isolated Build Gate Cargo output hashed before approved scratch disposal.",
-  "target_dir_note": "The operated Build check environment inherits CARGO_TARGET_DIR from the previous slice; this run recreated that directory and the bytes above are its real output.",
+  "candidate": "a7ecc9f67327e08812336ca6d8a145b915834ddf",
+  "build_gate": "1587b7e0-ee28-4041-8132-86275bcc9692",
+  "status": "NOT_CAPTURED",
+  "reason": "The isolated build output was disposed by the approved scratch step before its bytes were hashed, so no digest exists for this candidate.",
+  "prior_capture_not_transferred": "The 32,275,456-byte / sha256:32b94b17\u2026 capture belongs to the earlier W8 candidate and is not transferred here.",
   "declared_immutable_artifact": false,
   "retention": "The executable is disposable; source, receipt and logs are retained."
 }

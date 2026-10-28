@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "gate_id": "4da3f2a0-f117-45bc-84df-72c69521acdb",
+  "gate_id": "e374ec63-74a0-4271-bc2e-0b2d0b6df93d",
   "status": {
     "state": "SUCCEEDED",
     "owner_alive": false,
     "recovery_required": false
   },
   "inspect": {
-    "candidate_sha256": "sha256:d463597e091e0f5c379ca5c1f17f97fc115f92ea2e93c4a3ba08f3952af7b48e",
+    "candidate_sha256": "sha256:f4970ab68bd5a7cf715ab37e1065367bb3545842e242e3023daaed8405da121b",
     "verification": [
       "fmt:pass",
       "metadata:pass",
@@ -15,16 +15,7 @@
       "dependency-rules:pass",
       "clippy:pass",
       "tests:pass",
-      "r0-python:pass",
-      "img2-python:pass",
-      "w2-probe-selftest:pass",
-      "w2-oracle:pass",
-      "w3-retained-native-replay:pass",
-      "wic-admission-selftest:pass",
-      "w1-runner-selftest:pass",
-      "w4-native-replay:pass",
-      "w5-native-replay:pass",
-      "w6-native-replay:pass"
+      "r0-python:pass"
     ],
     "artifacts": 32,
     "cleanup": "complete"

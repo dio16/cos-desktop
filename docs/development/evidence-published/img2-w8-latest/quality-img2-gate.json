@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "gate_id": "1c2ce2fa-ee6b-4bee-b19a-b7921e7513da",
+  "status": {
+    "state": "SUCCEEDED",
+    "owner_alive": false,
+    "recovery_required": false
+  },
+  "inspect": {
+    "candidate_sha256": "sha256:f4970ab68bd5a7cf715ab37e1065367bb3545842e242e3023daaed8405da121b",
+    "verification": [
+      "img2-python:pass",
+      "w2-probe-selftest:pass",
+      "w2-oracle:pass",
+      "w3-retained-native-replay:pass",
+      "wic-admission-selftest:pass",
+      "w1-runner-selftest:pass",
+      "w4-native-replay:pass",
+      "w5-native-replay:pass",
+      "w6-native-replay:pass"
+    ],
+    "artifacts": 32,
+    "cleanup": "complete"
+  },
+  "verify": {
+    "state": "SUCCEEDED",
+    "artifacts": 32
+  },
+  "exits": {
+    "status": 0,
+    "inspect": 0,
+    "verify": 0
+  }
+}

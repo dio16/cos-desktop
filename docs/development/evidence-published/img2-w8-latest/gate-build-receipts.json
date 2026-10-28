@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "gate": "build",
-  "gate_id": "33f33f7d-8c34-4749-a53f-2807ee578d66",
+  "gate_id": "1587b7e0-ee28-4041-8132-86275bcc9692",
   "operations": {
     "status": {
       "exit_code": 0,
@@ -12,10 +12,10 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "33f33f7d-8c34-4749-a53f-2807ee578d66",
-            "gate_label": "mp-img2-w8-r2-build",
+            "gate_id": "1587b7e0-ee28-4041-8132-86275bcc9692",
+            "gate_label": "mp-img2-w8-r4-build",
             "state": "SUCCEEDED",
-            "updated_at": "2026-10-28T04:06:53.185349100Z",
+            "updated_at": "2026-10-28T05:02:55.899894200Z",
             "owner_alive": false,
             "recovery_required": false
           }
@@ -32,10 +32,10 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "33f33f7d-8c34-4749-a53f-2807ee578d66",
-            "gate_label": "mp-img2-w8-r2-build",
-            "request_sha256": "sha256:3ae0bcb352c63d627ffeb043eead75e9f7c59c9d441aeb98084723983125da05",
-            "terminal_state_sha256": "sha256:b22bcbf1858e7591cf8627251474ebf2c68fa8557c152228679a5e72d4e0fe4d",
+            "gate_id": "1587b7e0-ee28-4041-8132-86275bcc9692",
+            "gate_label": "mp-img2-w8-r4-build",
+            "request_sha256": "sha256:2d0111e8551d32135960053ee42fc2317fb8bd81f163b1dca310bcd374bd65ca",
+            "terminal_state_sha256": "sha256:9311e1c865150448d35629841b82eb4eaeae1cd1ef1960e6ede9cf3e0b06999f",
             "runtime": {
               "refine_version": "0.3.1",
               "os": "windows",
@@ -44,10 +44,10 @@
             },
             "repository": {
               "location": "C:/dev/cos-desktop",
-              "requested_revision": "e4ff23cf10d7db1218f577877ae85c713a19c24a",
-              "resolved_base_commit": "e4ff23cf10d7db1218f577877ae85c713a19c24a",
+              "requested_revision": "a7ecc9f67327e08812336ca6d8a145b915834ddf",
+              "resolved_base_commit": "a7ecc9f67327e08812336ca6d8a145b915834ddf",
               "object_format": "sha1",
-              "final_head": "e4ff23cf10d7db1218f577877ae85c713a19c24a"
+              "final_head": "a7ecc9f67327e08812336ca6d8a145b915834ddf"
             },
             "limits": {
               "timeout_ms": 600000,
@@ -55,17 +55,17 @@
               "max_output_bytes": 16777216,
               "max_artifact_bytes": 16777216
             },
-            "accepted_at": "2026-10-28T04:04:16.784086600Z",
-            "ended_at": "2026-10-28T04:06:53.185349100Z",
-            "candidate_sha256": "sha256:d463597e091e0f5c379ca5c1f17f97fc115f92ea2e93c4a3ba08f3952af7b48e",
+            "accepted_at": "2026-10-28T05:00:16.607188700Z",
+            "ended_at": "2026-10-28T05:02:55.899894200Z",
+            "candidate_sha256": "sha256:f4970ab68bd5a7cf715ab37e1065367bb3545842e242e3023daaed8405da121b",
             "verification": [
               {
                 "id": "build",
                 "kind": "command",
                 "outcome": "pass",
-                "duration_ms": 123698,
+                "duration_ms": 126046,
                 "observed_exit": 0,
-                "candidate_binding": "sha256:d463597e091e0f5c379ca5c1f17f97fc115f92ea2e93c4a3ba08f3952af7b48e"
+                "candidate_binding": "sha256:f4970ab68bd5a7cf715ab37e1065367bb3545842e242e3023daaed8405da121b"
               }
             ],
             "check_logs": [
@@ -81,7 +81,7 @@
                 "stderr": {
                   "relative_path": "logs/build/stderr",
                   "size_bytes": 12705,
-                  "sha256": "sha256:f0c6a87823f658093d3a8221ce3e9af5ca4160728d792c15f3e6eb4c52f361f4",
+                  "sha256": "sha256:17f676c58ed78f428a9ba1582c55895f618e67719774af6ea7bcc8582b3c2ba0",
                   "truncated": false,
                   "secret": true
                 }
@@ -97,14 +97,14 @@
               {
                 "id": "w8-1",
                 "relative_path": "artifacts/w8-1",
-                "size_bytes": 8427,
-                "sha256": "sha256:c61a79b5077c26c77cea4553caba384d3cfb713fa98548cb3e3557bd309018ad"
+                "size_bytes": 9072,
+                "sha256": "sha256:023e21aff47494e347d7d47ac1fd4508ecbe97f53f2ca1a17133d33da66ca98f"
               },
               {
                 "id": "w8-10",
                 "relative_path": "artifacts/w8-10",
                 "size_bytes": 51703,
-                "sha256": "sha256:d01edf304663ea0d6a257e21677f5bfedec6a8960a356be95d01133c11fc377a"
+                "sha256": "sha256:6ad817281cf554538f2b3ebd18da3e6efe0003d25e39f69af39a2c387ce56166"
               },
               {
                 "id": "w8-11",
@@ -134,13 +134,13 @@
                 "id": "w8-15",
                 "relative_path": "artifacts/w8-15",
                 "size_bytes": 770,
-                "sha256": "sha256:3c5028102c6f3c1ac676648b5290e7a6768c487bcb96ee1910547812e89ddb56"
+                "sha256": "sha256:59ed16a3dc2a355d2294a609f95e3d1ae811667034b303e024e64fc37570cc55"
               },
               {
                 "id": "w8-16",
                 "relative_path": "artifacts/w8-16",
                 "size_bytes": 2830,
-                "sha256": "sha256:b977d128b9e2257a2f6f6fe68ce686984c94e0fbd548e1d029288a78a96d61c6"
+                "sha256": "sha256:199586058140d4a17e9d7d5135440454801e9703ce16ad4f906cbd2104a09de7"
               },
               {
                 "id": "w8-17",
@@ -175,14 +175,14 @@
               {
                 "id": "w8-21",
                 "relative_path": "artifacts/w8-21",
-                "size_bytes": 1448204,
-                "sha256": "sha256:2705d5ad82cce8fc1ad8b4a748d8e2f0bfe3ae163c5c455e39f8748a2ab249ee"
+                "size_bytes": 1448203,
+                "sha256": "sha256:53b7e79bf3927bb0a0633063e51f4c0f22b6ca33140cc075de09d10e3cea9936"
               },
               {
                 "id": "w8-22",
                 "relative_path": "artifacts/w8-22",
-                "size_bytes": 6101,
-                "sha256": "sha256:95faeca7106c063b2bc32c929090f8895f86675e6a2b11a66ac791dc61bb1e89"
+                "size_bytes": 6875,
+                "sha256": "sha256:c0e727acf203204336b42882c5533f1ca3140672667fe4763ec4e5d01c07df42"
               },
               {
                 "id": "w8-23",
@@ -194,13 +194,13 @@
                 "id": "w8-24",
                 "relative_path": "artifacts/w8-24",
                 "size_bytes": 1436,
-                "sha256": "sha256:7ba52e6451234e038c14df1a89204195da7f8985dd70c75881751e23c0f83784"
+                "sha256": "sha256:b163eb2d1ae2b79c9eedd54d941eb442c9feed92cf45c1422f7fd003cb4f33c0"
               },
               {
                 "id": "w8-25",
                 "relative_path": "artifacts/w8-25",
                 "size_bytes": 8525,
-                "sha256": "sha256:64439497898780ae6330130b0931e9addac78980e3375ddbbfc0415e3f8f99b2"
+                "sha256": "sha256:7201b18cfba6277b76d624e1e804d8bc638ffbabf2ec9178c88ffe6009c3f064"
               },
               {
                 "id": "w8-26",
@@ -253,8 +253,8 @@
               {
                 "id": "w8-5",
                 "relative_path": "artifacts/w8-5",
-                "size_bytes": 24104,
-                "sha256": "sha256:2923c26bcf037e7353a4c49c840d349661e710d4c0ebbf0022d931583191895e"
+                "size_bytes": 26074,
+                "sha256": "sha256:64435b4812becd304c5eb5514a9c28854790feb1498c6e4f36b28f78aff0e973"
               },
               {
                 "id": "w8-6",
@@ -277,20 +277,20 @@
               {
                 "id": "w8-9",
                 "relative_path": "artifacts/w8-9",
-                "size_bytes": 449277,
-                "sha256": "sha256:a6693b1348449b71dbb0f0012875aca4b0e255f1c35764e5625206ca8d84d774"
+                "size_bytes": 450295,
+                "sha256": "sha256:9b9723bbe656bd337bf17813a912a163086c1931e111ce2b2bae24c2c75536d9"
               }
             ],
             "absent_outputs": [],
             "cleanup": "complete",
             "timings": {
-              "preparation_ms": 22635,
+              "preparation_ms": 23000,
               "execution_ms": 0,
-              "verification_ms": 131149,
-              "collection_ms": 2569,
-              "finalization_ms": 2
+              "verification_ms": 133709,
+              "collection_ms": 2492,
+              "finalization_ms": 7
             },
-            "duration_ms": 156395
+            "duration_ms": 159287
           }
         }
       },
@@ -305,12 +305,12 @@
           "schema_version": 1,
           "result": {
             "schema_version": 1,
-            "gate_id": "33f33f7d-8c34-4749-a53f-2807ee578d66",
+            "gate_id": "1587b7e0-ee28-4041-8132-86275bcc9692",
             "state": "SUCCEEDED",
-            "request_sha256": "sha256:3ae0bcb352c63d627ffeb043eead75e9f7c59c9d441aeb98084723983125da05",
-            "terminal_state_sha256": "sha256:b22bcbf1858e7591cf8627251474ebf2c68fa8557c152228679a5e72d4e0fe4d",
-            "observations_sha256": "sha256:162ddfa1caad87c3aa447e271819e39782fa0754f4dbd35e9dcb4bbbf624ec5f",
-            "candidate_sha256": "sha256:d463597e091e0f5c379ca5c1f17f97fc115f92ea2e93c4a3ba08f3952af7b48e",
+            "request_sha256": "sha256:2d0111e8551d32135960053ee42fc2317fb8bd81f163b1dca310bcd374bd65ca",
+            "terminal_state_sha256": "sha256:9311e1c865150448d35629841b82eb4eaeae1cd1ef1960e6ede9cf3e0b06999f",
+            "observations_sha256": "sha256:1dd87003ffccd5caa563190679cab20d5d8d47da5b5b9dfba394de7eeab4645f",
+            "candidate_sha256": "sha256:f4970ab68bd5a7cf715ab37e1065367bb3545842e242e3023daaed8405da121b",
             "artifacts": [
               {
                 "id": "w8-0",
@@ -321,14 +321,14 @@
               {
                 "id": "w8-1",
                 "relative_path": "artifacts/w8-1",
-                "size_bytes": 8427,
-                "sha256": "sha256:c61a79b5077c26c77cea4553caba384d3cfb713fa98548cb3e3557bd309018ad"
+                "size_bytes": 9072,
+                "sha256": "sha256:023e21aff47494e347d7d47ac1fd4508ecbe97f53f2ca1a17133d33da66ca98f"
               },
               {
                 "id": "w8-10",
                 "relative_path": "artifacts/w8-10",
                 "size_bytes": 51703,
-                "sha256": "sha256:d01edf304663ea0d6a257e21677f5bfedec6a8960a356be95d01133c11fc377a"
+                "sha256": "sha256:6ad817281cf554538f2b3ebd18da3e6efe0003d25e39f69af39a2c387ce56166"
               },
               {
                 "id": "w8-11",
@@ -358,13 +358,13 @@
                 "id": "w8-15",
                 "relative_path": "artifacts/w8-15",
                 "size_bytes": 770,
-                "sha256": "sha256:3c5028102c6f3c1ac676648b5290e7a6768c487bcb96ee1910547812e89ddb56"
+                "sha256": "sha256:59ed16a3dc2a355d2294a609f95e3d1ae811667034b303e024e64fc37570cc55"
               },
               {
                 "id": "w8-16",
                 "relative_path": "artifacts/w8-16",
                 "size_bytes": 2830,
-                "sha256": "sha256:b977d128b9e2257a2f6f6fe68ce686984c94e0fbd548e1d029288a78a96d61c6"
+                "sha256": "sha256:199586058140d4a17e9d7d5135440454801e9703ce16ad4f906cbd2104a09de7"
               },
               {
                 "id": "w8-17",
@@ -399,14 +399,14 @@
               {
                 "id": "w8-21",
                 "relative_path": "artifacts/w8-21",
-                "size_bytes": 1448204,
-                "sha256": "sha256:2705d5ad82cce8fc1ad8b4a748d8e2f0bfe3ae163c5c455e39f8748a2ab249ee"
+                "size_bytes": 1448203,
+                "sha256": "sha256:53b7e79bf3927bb0a0633063e51f4c0f22b6ca33140cc075de09d10e3cea9936"
               },
               {
                 "id": "w8-22",
                 "relative_path": "artifacts/w8-22",
-                "size_bytes": 6101,
-                "sha256": "sha256:95faeca7106c063b2bc32c929090f8895f86675e6a2b11a66ac791dc61bb1e89"
+                "size_bytes": 6875,
+                "sha256": "sha256:c0e727acf203204336b42882c5533f1ca3140672667fe4763ec4e5d01c07df42"
               },
               {
                 "id": "w8-23",
@@ -418,13 +418,13 @@
                 "id": "w8-24",
                 "relative_path": "artifacts/w8-24",
                 "size_bytes": 1436,
-                "sha256": "sha256:7ba52e6451234e038c14df1a89204195da7f8985dd70c75881751e23c0f83784"
+                "sha256": "sha256:b163eb2d1ae2b79c9eedd54d941eb442c9feed92cf45c1422f7fd003cb4f33c0"
               },
               {
                 "id": "w8-25",
                 "relative_path": "artifacts/w8-25",
                 "size_bytes": 8525,
-                "sha256": "sha256:64439497898780ae6330130b0931e9addac78980e3375ddbbfc0415e3f8f99b2"
+                "sha256": "sha256:7201b18cfba6277b76d624e1e804d8bc638ffbabf2ec9178c88ffe6009c3f064"
               },
               {
                 "id": "w8-26",
@@ -477,8 +477,8 @@
               {
                 "id": "w8-5",
                 "relative_path": "artifacts/w8-5",
-                "size_bytes": 24104,
-                "sha256": "sha256:2923c26bcf037e7353a4c49c840d349661e710d4c0ebbf0022d931583191895e"
+                "size_bytes": 26074,
+                "sha256": "sha256:64435b4812becd304c5eb5514a9c28854790feb1498c6e4f36b28f78aff0e973"
               },
               {
                 "id": "w8-6",
@@ -501,8 +501,8 @@
               {
                 "id": "w8-9",
                 "relative_path": "artifacts/w8-9",
-                "size_bytes": 449277,
-                "sha256": "sha256:a6693b1348449b71dbb0f0012875aca4b0e255f1c35764e5625206ca8d84d774"
+                "size_bytes": 450295,
+                "sha256": "sha256:9b9723bbe656bd337bf17813a912a163086c1931e111ce2b2bae24c2c75536d9"
               }
             ],
             "check_logs": [
@@ -518,7 +518,7 @@
                 "stderr": {
                   "relative_path": "logs/build/stderr",
                   "size_bytes": 12705,
-                  "sha256": "sha256:f0c6a87823f658093d3a8221ce3e9af5ca4160728d792c15f3e6eb4c52f361f4",
+                  "sha256": "sha256:17f676c58ed78f428a9ba1582c55895f618e67719774af6ea7bcc8582b3c2ba0",
                   "truncated": false,
                   "secret": true
                 }
