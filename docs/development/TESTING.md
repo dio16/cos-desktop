@@ -204,6 +204,27 @@ Publication exclusively writes, flushes, syncs and closes all three artifacts pl
 
 [R0A-S1 admission](evidence/README.md#historical-records) bounds this slice to the versioned manifest contract (rendering §10.1), a bounded loader, the §11.2 result contract, structural validation and an offline CLI in `apps/desktop/devtools/r0` (Python standard library only). [Validation](evidence/README.md#historical-records) records eleven unittest cases and CLI outcomes: valid manifests and results validate; missing fields, wrong types and unsupported versions fail; oversize, duplicate-key, malformed and non-finite JSON fail closed before publication; unmeasured endpoints and metrics stay `NOT_MEASURED` with explicit reasons and null percentiles; `NOT_IMPLEMENTED` cannot become observed; failed/censored/excluded counts stay separate from observed; result identity must match the manifest; error output reflects only stable codes and JSON paths, never input text or paths. The tool launches nothing, fetches nothing, executes no input value and performs no measurement; R0A-S2/S3 drivers, R0B baselines, R0C attribution, R0D ratification and any numeric claim remain NOT_RUN.
 
+## 19. MP-IMG2-W8 JPEG raster evidence
+
+`test_w8_fixtures.py` and `test_w8_negative.py` cover the W8 slice with the
+standard library. Fixture tests prove the twelve-source set is fixed, every
+runnable source regenerates byte-identically, encoded sizes stay under 16 MiB,
+malformed derivations differ from their source and fail the independent parser,
+markers expose variant/precision/geometry/sampling/tables for each encoding, the
+DC reference reproduces the declared luminance levels exactly, and the reference
+module contains no decoder, subprocess or image-library import. A synthetic PNG
+pair proves the canonical comparison reports exact, per-pixel, per-channel,
+maximum, mean and first-difference values. The negative suite mutates the
+retained record in 32 classes — geometry, precision, sampling, markers, digests,
+decoder identity and probe identity, requirement understatement, encoded-as-
+decoded bytes, forged stages/outcomes/output, unpublished success, absolute
+digests, differential-to-absolute promotion, zeroed mismatch statistics,
+normalization and ICC/orientation claims, malformed promotion, unsupported
+reclassification, coherent trace tails, incomplete captures, swapped process
+identity, an old source commit and timeout-as-cancellation — and requires the
+real `verify()` to reject each one. Structural replay must keep
+`source_identity_verified=false` and `closure_eligible=false`.
+
 ## 18. MP-IMG2-W7 large-dimension admission
 
 `test_w7_fixtures.py`, `test_w7_admission.py` and `test_w7_negative.py` cover the

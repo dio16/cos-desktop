@@ -977,6 +977,44 @@ WIC-only deltas, partial residency, 16K full decode and preview fallback remain
 `NOT_MEASURED`/`NOT_PROVEN`. A refused 16K source is not 16K decode capability,
 and W7 is not full Decode Exit or Upload acceptance.
 
+### 4.28 MP-IMG2-W8 JPEG decoder raster evidence (2026-10-28)
+
+W8 reuses the unchanged probes: `wic_probe.ps1` keeps pre-materialization budget
+admission and the stage trace, and `gdiplus_probe.ps1` keeps its documented
+limitation that GDI+ has no header-only load, so only `-MaxPixels` is enforced
+after the frame is already allocated. Its experimental limits are dimension
+2048, 4,194,304 pixels, 8 bits per channel, 16 MiB decoded, 16 MiB scratch,
+16 MiB encoded input, 32 MiB output, 256 MiB work root, 8 MiB report, 128
+records/128 KiB trace, 64 KiB capture, 45 s per worker, 300 s per batch, one
+worker, 12 sources and 24 legs.
+
+```powershell
+cargo build --locked -p cos-desktop --example decode_compare
+python -B apps/desktop/devtools/img2/w8_jpeg_matrix.py run `
+  --work-root <absolute-absent-owned-directory> --out <absolute-absent-report.json> `
+  --pwsh <absolute-qualified-pwsh.exe> `
+  --harness <absolute-repository>/target/debug/examples/decode_compare.exe
+python -B apps/desktop/devtools/img2/w8_jpeg_matrix.py verify `
+  --report docs/development/evidence-published/img2-w8-latest/native-decoder-matrix.json `
+  --source-root <repository>
+python -B -m unittest discover -s apps/desktop/devtools/img2/tests -p "test_w8*.py"
+```
+
+Three DC-only baseline grayscale sources carry an absolute reference derived
+from the parsed quantization table, Huffman-decoded DC coefficients and the
+level shift; both decoders must match it on every pixel. Five non-uniform
+baseline sources (4:4:4 and 4:2:0 at 256²/1024², plus a low-quality variant) are
+compared only differentially through canonical PNG rows. Progressive JPEG has no
+approved encoder here and stays `NOT_RUN`; a truncated stream that both decoders
+silently accept stays `TAMPER_NOT_VERIFIED`.
+
+Differential agreement is never absolute correctness: both WIC and GDI+ call the
+installed Windows JPEG codec, so a shared defect would not appear in a
+comparison. No colour or orientation transform is applied, ICC and EXIF presence
+is not credited as applied, GDI+ lifetime/memory/stages stay `NOT_MEASURED`, and
+W8 is not decoder adoption, product tolerance, full Decode Exit or Upload
+acceptance.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |
