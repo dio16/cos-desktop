@@ -1,5 +1,5 @@
 {
-  "gate": "940570a1-67e3-4bde-986e-a7d608f780b0",
+  "gate": "b104a5ff-49e6-4ce2-ae63-ebe2b2b82add",
   "workspace_rust": {
     "passed": 535,
     "failed": 0,
@@ -29,5 +29,5 @@
     "negative_classes": 39
   },
   "feature_route": "NOT_RUN for W12; no Rust feature-code change and no older result transferred.",
-  "basis": "Counts come from the eight independent Gates on candidate 018b574 (digest 9311fb7a) plus the retained W12 suite run; skipped R0 cases are not promoted."
+  "basis": "Counts come from the eight independent Gates on the repaired candidate 9b60d16 (digest ef831f8b) plus the retained W12 suite run; skipped R0 cases are not promoted."
 }

@@ -1,13 +1,13 @@
 {
-  "gate_candidate": "018b574370ae5b11b8314820c0eac1174ae67982",
-  "candidate_digest": "sha256:9311fb7abe80289f0a6b92fe2270acd118ce073f23c911bb5f7057ec2abf7e5f",
-  "artifacts_per_gate": 53,
-  "captured_artifacts_verified": 424,
-  "raw_git_blob_matches": 53,
+  "gate_candidate": "9b60d1684d55d4dbbca348159f1637f597771ed4",
+  "candidate_digest": "sha256:ef831f8b66bbf2917cf7522a72a5ccbcd200bf7e99cf3c5c3c02eb589a28bc22",
+  "artifacts_per_gate": 67,
+  "captured_artifacts_verified": 536,
+  "raw_git_blob_matches": 67,
   "artifact_sets_identical": true,
   "gates": {
     "workspace": {
-      "gate_id": "940570a1-67e3-4bde-986e-a7d608f780b0",
+      "gate_id": "b104a5ff-49e6-4ce2-ae63-ebe2b2b82add",
       "state": "SUCCEEDED",
       "checks": [
         [
@@ -18,169 +18,183 @@
         [
           "metadata",
           "pass",
-          134
+          142
         ],
         [
           "dependency-self-test",
           "pass",
-          533
+          550
         ],
         [
           "dependency-rules",
           "pass",
-          218
+          240
         ],
         [
           "clippy",
           "pass",
-          103941
+          94751
         ],
         [
           "tests",
           "pass",
-          120251
+          117342
         ],
         [
           "r0-python",
           "pass",
-          13373
+          13277
         ]
       ]
     },
     "images": {
-      "gate_id": "a8c7163b-7771-4175-958c-5f0d7d4f5b2d",
+      "gate_id": "6d47ec31-b8bc-4998-bd4a-135f8fadbd3e",
       "state": "SUCCEEDED",
       "checks": [
         [
           "img2-w1-w7",
           "pass",
-          147517
+          147783
         ],
         [
           "w8-native-replay",
           "pass",
-          28822
+          28591
         ],
         [
           "w7-native-replay",
           "pass",
-          35417
+          35379
         ],
         [
           "w6-native-replay",
           "pass",
-          10727
+          10796
         ],
         [
           "w5-native-replay",
           "pass",
-          190
+          225
         ],
         [
           "w4-native-replay",
           "pass",
-          943
+          952
         ],
         [
           "w3-retained-native-replay",
           "pass",
-          958
+          963
         ],
         [
           "w1-runner-selftest",
           "pass",
-          149
+          162
         ],
         [
           "w2-oracle",
           "pass",
-          13226
+          13285
         ]
       ]
     },
     "w8": {
-      "gate_id": "75aeb6ab-462f-48a8-86bf-5e66e5bf160a",
+      "gate_id": "101c6b38-f9fb-4d86-9e19-751a6c15f720",
       "state": "SUCCEEDED",
       "checks": [
         [
           "img2-w8",
           "pass",
-          278337
+          277769
         ]
       ]
     },
     "w9": {
-      "gate_id": "354fdf3c-901f-48c3-bfe6-fed512037c1e",
+      "gate_id": "bd924c86-f2c6-4bcf-b1de-6fa3d05b60ae",
       "state": "SUCCEEDED",
       "checks": [
         [
           "img2-w9",
           "pass",
-          257925
+          257815
         ]
       ]
     },
     "w10": {
-      "gate_id": "c4167364-9dfa-4c47-9efd-c7cab30c850d",
+      "gate_id": "34ec0664-9190-44d9-abaa-30a53f57bb5b",
       "state": "SUCCEEDED",
       "checks": [
         [
           "img2-w10",
           "pass",
-          71953
+          73807
         ]
       ]
     },
     "w11": {
-      "gate_id": "9055c8ee-dfd3-4288-bc82-59c1bfd9a66f",
+      "gate_id": "0d3b7c5e-7c8b-483b-9c88-901a98ebba55",
       "state": "SUCCEEDED",
       "checks": [
         [
           "w11-fixed-tests",
           "pass",
-          25499
+          26248
         ],
         [
           "w11-source-verifier",
           "pass",
-          24482
+          25174
         ]
       ]
     },
     "w12": {
-      "gate_id": "2c43972f-b190-418a-a760-e379a7f97b2e",
+      "gate_id": "843f52ae-79d5-48ce-b22f-1d427d2594fa",
       "state": "SUCCEEDED",
       "checks": [
         [
           "w12-fixed-tests",
           "pass",
-          41839
+          47325
         ],
         [
           "w12-source-verifier",
           "pass",
-          3310
+          3307
         ]
       ]
     },
     "build": {
-      "gate_id": "12628a1a-a092-4d3f-a251-b543173f5322",
+      "gate_id": "f460f593-56c5-491c-900b-b93954cdff92",
       "state": "SUCCEEDED",
       "checks": [
         [
           "build",
           "pass",
-          123299
+          121313
         ],
         [
           "built-binary-digest",
           "pass",
-          161
+          203
         ]
       ]
     }
   },
   "failed_gates": {},
+  "superseded_gate_set": {
+    "candidate": "018b574370ae5b11b8314820c0eac1174ae67982",
+    "gates": {
+      "workspace": "940570a1-67e3-4bde-986e-a7d608f780b0",
+      "images": "a8c7163b-7771-4175-958c-5f0d7d4f5b2d",
+      "w8": "75aeb6ab-462f-48a8-86bf-5e66e5bf160a",
+      "w9": "354fdf3c-901f-48c3-bfe6-fed512037c1e",
+      "w10": "c4167364-9dfa-4c47-9efd-c7cab30c850d",
+      "w11": "9055c8ee-dfd3-4288-bc82-59c1bfd9a66f",
+      "w12": "2c43972f-b190-418a-a760-e379a7f97b2e",
+      "build": "12628a1a-a092-4d3f-a251-b543173f5322"
+    },
+    "reason": "A-R1-01 review repair changed the candidate; those receipts and their immutable records remain historical and were not reused as current evidence."
+  },
   "native_preflight": "UNKNOWN aggregate; admission diagnostics pass; runtime/output/authorization unknown",
-  "notes": "Eight directed Gates ran as eight finite Gates on one committed candidate; G3/G4 reuse the unchanged W8 and W9 checks as independent Gates. No check was removed, relaxed or auto-retried."
+  "notes": "Eight directed Gates on the repaired candidate; G3/G4 run the unchanged W8 and W9 checks separately because the installed producer caps every Gate at 600 s."
 }

@@ -1,15 +1,15 @@
 {
   "bytes": 32275456,
-  "sha256": "sha256:634d4ec8a46830f0dac0976b5c412cab52a4a4e1094532e4e6719349155fdbc7",
-  "candidate": "018b574370ae5b11b8314820c0eac1174ae67982",
-  "candidate_digest": "sha256:9311fb7abe80289f0a6b92fe2270acd118ce073f23c911bb5f7057ec2abf7e5f",
-  "build_gate": "12628a1a-a092-4d3f-a251-b543173f5322",
+  "sha256": "sha256:d25030d02bc53995b506e9f009f2d33d6b8ccf14aa2b0ef587f94a3bd23b01c4",
+  "candidate": "9b60d1684d55d4dbbca348159f1637f597771ed4",
+  "candidate_digest": "sha256:ef831f8b66bbf2917cf7522a72a5ccbcd200bf7e99cf3c5c3c02eb589a28bc22",
+  "build_gate": "f460f593-56c5-491c-900b-b93954cdff92",
   "native_application_surface": "NOT_RUN: live desktop confirmation unanswered",
   "retention": "Retain the only Gate-built executable outside disposable build intermediates for a later human-approved startup smoke.",
   "retention_move": {
     "old": "C:/dev/cos-desktop-verification/w12/targets/r1/build/debug/cos-desktop.exe",
     "retained": "C:/dev/cos-desktop-verification/w12/native-app/cos-desktop.exe",
-    "sha256": "sha256:634d4ec8a46830f0dac0976b5c412cab52a4a4e1094532e4e6719349155fdbc7",
+    "sha256": "sha256:d25030d02bc53995b506e9f009f2d33d6b8ccf14aa2b0ef587f94a3bd23b01c4",
     "single_move": true,
     "old_absent": true,
     "native_application_surface": "NOT_RUN"

@@ -11,5 +11,6 @@
   "native_application_surface": {
     "status": "NOT_RUN",
     "reason": "Live computer approval unanswered; no GUI startup claim."
-  }
+  },
+  "review_round1_linked": true
 }

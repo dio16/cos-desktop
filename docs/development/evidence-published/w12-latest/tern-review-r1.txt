@@ -1,0 +1,196 @@
+MP-IMG2-W12 — 独立評価 Round 1
+HOLD
+
+BLOCKING 0 / ACTIONABLE NON-BLOCKING 1 / EXCESSIVE 0
+
+W12の実decode結果、全画素検証、Gate・証拠対応は整合しています。ただし、semantic mutationテストに偽陽性を許す条件を1件確認しました。
+
+1. 独立検証結果
+
+評価対象
+
+	
+
+結果
+
+
+
+
+添付ZIP・外部manifestのSHA-256
+
+	
+
+PASS
+
+
+
+
+ソース33件と候補Git blobs
+
+	
+
+33/33一致
+
+
+
+
+証拠37件とGitHub evidence Git blobs
+
+	
+
+37/37一致
+
+
+
+
+dev SHA・コミット祖先関係
+
+	
+
+PASS
+
+
+
+
+JPEG/PNG入力ラスターの独立復元
+
+	
+
+PASS
+
+
+
+
+2回のNative記録・ROI全画素照合
+
+	
+
+PASS
+
+
+
+
+W12テスト
+
+	
+
+21/21 PASS
+
+
+
+
+Semantic mutationsのテスト設計
+
+	
+
+ACTIONABLE 1
+
+
+
+
+Refine Gate受領書
+
+	
+
+8 Gate / 25 check PASS
+
+
+
+
+Gate artifact対応
+
+	
+
+53 × 8 = 424件一致
+
+
+
+
+Storage・削除後verify
+
+	
+
+PASS
+
+
+
+
+未測定・未承認範囲の区別
+
+	
+
+PASS
+
+2. 入力と出力の実バイト検証
+
+添付RAW fixture生成コードからJPEGとPNGを再生成し、Pillowによる別実装で復元しました。
+
+JPEG：589,275 bytes
+
+PNG：259,602 bytes
+
+4096×4096、各16,777,216画素
+
+JPEG・PNGとも全画素が固定DC/block-coordinate式と一致
+
+復元した入力ラスターSHA-256も一致
+
+Native記録2本から保持された出力PNGを独立に復元し、計262,148画素を座標式と照合しました。全画素が一致し、両repeatともJPEG/PNGのROI出力2組はバイト単位で一致しました。
+
+S05/S06も、max_dimension_exceededによるOnLoad前拒否・出力未公開がtraceと整合しています。
+
+3. 指摘事項
+
+A-R1-01 — ACTIONABLE NON-BLOCKING
+
+対象：apps/desktop/devtools/img2/tests/test_w12_negative.py:201–214, 232–242
+
+問題：semantic mutationテストが、正常controlのsource-bound検証に失敗する環境でも成功します。
+
+setUpClass()はverify(record)によるポータブル構造検証だけを要求しています。一方、39件のmutationループはverify(record, root)が失敗することだけを確認します。
+
+添付ZIPを統合したGit object databaseのない環境で、以下を再現しました。
+
+無改変controlのverify(record)：成功、closure_eligible=false
+
+無改変controlのverify(record, root)：Git object不在により失敗
+
+その状態でもtest_semantic_mutations_fail_closed：成功
+
+さらに無改変controlをmutationとして渡しても拒否扱いになる
+
+つまり、テストが実際のsemantic mutationを検査せず、共通のGit取得失敗だけで全件成功する可能性があります。
+
+独立にverify(record)でmutationを再実行すると、39件中38件は構造上の理由で拒否されました。残るsource_commit改変はGit実体が必要であり、ポータブル検証では拒否されません。この区別自体は正しい設計です。
+
+修正条件： source-bound mutationテストを開始する前に、無改変controlについてverify(control, root)がok=trueかつclosure_eligible=trueであることを必須にしてください。Git実体がない場合は、39件のsource-bound mutation成功を主張しないよう、ポータブル検証とsource-bound検証を明確に分けてください。
+
+これはW12のNative結果を否定するBLOCKINGではなく、回帰テストの検証力に関する修正です。
+
+4. 残りの指定評価
+
+履歴：適切。 native-r1の失敗、r2/r3の旧source pin、r4/r5の採用が区別されています。source_lf_mismatchも旧記録を成功へ書き換えていません。
+
+Gate分割：適切。 W8/W9を分離した8件すべてが600秒上限内で成功しています。25 checkが保持され、全Gateは候補018b574370ae5b11b8314820c0eac1174ae67982を参照します。
+
+Storage：適切。 削除された9パスの15,501ファイル・3,977,947,546論理バイトはinventoryの合計と一致します。8件の削除後verifyも受領書のrequest・terminal digestと一致しました。
+
+能力境界：適切。 process-memory値は別worker lifetimeのwhole-process観測として保持されています。TRUE_PARTIAL_DECODE_VERIFIED、内部scratch、allocator reservation、codec優位性への昇格はありません。
+
+GUI startupは引き続きNOT_RUNです。今回の判定はこれを免除せず、full MP-IMG2 / MP-IMG3の開始も承認しません。
+
+5. 再レビュー条件
+
+A-R1-01のみを修正し、正常controlのsource-bound成立がmutation検証の前提条件であることをテストで証明してください。既存のW12 Native実測や画像処理ロジックを変更する必要はありません。
+
+修正候補を固定し、影響するテストと必要な新規Gateを実行してください。source・Gate証拠のcommit後、通常のdev:dev pushとremote SHA一致確認を済ませてから再評価を依頼してください。
+
+最終判定
+
+BLOCKING：0
+ACTIONABLE NON-BLOCKING：1
+EXCESSIVE：0
+
+HOLD — 0 / 1 / 0
+
+REVIEW COMPLETE

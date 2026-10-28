@@ -1,0 +1,45 @@
+MP-IMG2-W12 independent evaluation, round 1. Inspect the actual attached source and evidence; do not rely on my summary.
+
+PUSH-BEFORE-EVALUATION satisfied: normal explicit dev:dev push succeeded and `git ls-remote origin refs/heads/dev` returned 772a954abbb66b2ca6deeca076cc8bd14876af57 immediately before this submission.
+
+Repository https://github.com/dio16/cos-desktop, branch dev.
+Gate/source candidate: 018b574370ae5b11b8314820c0eac1174ae67982, candidate digest sha256:9311fb7abe80289f0a6b92fe2270acd118ce073f23c911bb5f7057ec2abf7e5f.
+Confirmed remote dev / evidence commit: 772a954abbb66b2ca6deeca076cc8bd14876af57 (five commits on top of the pushed W11 disposition 8cc44ad9; the candidate is an ancestor).
+Native SOURCE: 23f6e6c3af6ac5f8e6dc5e507249751bf7533b1c (product source for both retained Windows runs; later commits are W12 docs/evidence and Gate receipts).
+Fixed tree: https://github.com/dio16/cos-desktop/tree/772a954abbb66b2ca6deeca076cc8bd14876af57
+Evidence: docs/development/evidence-published/w12-latest/ ; plan §19.64, BUILD_AND_RUN §4.32, TESTING §23. Sole owning contract DC-MP-IMG2. Full IMG2 and IMG3 stay open.
+
+Attachments (exact raw Git blobs; both archives built with command-local core.autocrlf=false and every member verified byte-equal to `git show`):
+1. w12-review-source-r1.zip — 33 files at 018b574, SHA256 11958b45990b85fb9038cea1235818f72f86726db9da7222b91e1886d1ffb4f4.
+2. w12-review-evidence-r1.zip — 37 files at 772a954, SHA256 fa9a624792c2f951acae911db56a03423094a6d7a0becc68e73c0f79a87b8523.
+3. w12-review-package-r1.json outside both archives: pins, member manifests, digests, push audit.
+
+What W12 did: the same 4096² eight-bit grayscale raster is encoded twice — the unchanged W11 DC-only JPEG (589,275 B) and a new streamed PNG (259,602 B) — and both are decoded through the unchanged managed WIC probe.
+- Both producers write rows, never a full-frame raster. Independent parsers validate JPEG framing/DC/EOB/padding/EOI and PNG chunks/CRC/IHDR/bounded inflation, and prove all 16,777,216 input pixels of each fixture equal the fixed DC/block-coordinate raster. A producer hash alone is never treated as fixture approval.
+- Six scenarios, six serial lifetimes: S01 JPEG and S02 PNG decode a 1×1 ROI at (17,23); S03/S04 decode 256² at (117,93); S05 JPEG and S06 PNG request a 1×1 ROI with max_dimension 4095 and refuse before OnLoad. Decode workers hold at after_onload; refusal workers hold at before_admission.
+- All four ROI outputs match every independently expected pixel, and both JPEG/PNG pairs are byte-identical. Decoder and format are the observed values: JpegBitmapDecoder/PngBitmapDecoder with Gray8 — not assumed.
+- Memory: six whole-process windows, classified OBSERVED_WHOLE_PROCESS_DIFFERENTIAL. Repeat values differ and are kept; no same-process delta, WIC-internal scratch, reservation, concurrent peak, codec advantage or product SLO is claimed.
+
+Independent Refine 0.3.1 Gates, all eight on the same candidate digest:
+workspace 940570a1-67e3-4bde-986e-a7d608f780b0 7/7;
+images a8c7163b-7771-4175-958c-5f0d7d4f5b2d 9/9;
+w8 75aeb6ab-462f-48a8-86bf-5e66e5bf160a 1/1;
+w9 354fdf3c-901f-48c3-bfe6-fed512037c1e 1/1;
+w10 c4167364-9dfa-4c47-9efd-c7cab30c850d 1/1;
+w11 9055c8ee-dfd3-4288-bc82-59c1bfd9a66f 2/2;
+w12 2c43972f-b190-418a-a760-e379a7f97b2e 2/2;
+build 12628a1a-a092-4d3f-a251-b543173f5322 2/2.
+53 declared artifacts × 8 Gates = 424 captures match receipts and raw blobs. Fresh workspace: 535 Rust passes / 1 ignored, R0 316 passes / 36 skipped. Native preflight aggregate stays UNKNOWN.
+
+Please judge independently:
+1. Whether the matched-raster proof is genuinely independent: two producers, two parsers, one fixed coordinate oracle, and no decoder output used as an expectation.
+2. Whether the JPEG/PNG byte-identical ROI pairs, the four all-pixel ROI verifications and the two pre-OnLoad refusals are established by the retained bytes rather than by producer self-reports.
+3. Whether the memory comparison stays honest: six windows, one hold each, whole-process counters from separate lifetimes, no codec-advantage or internal-memory reading.
+4. Whether the history is truthful: one aborted run (decoder observation read from the wrong object), two complete runs superseded because a later test repair changed the source set, and a source-bound replay that refused them with `source_lf_mismatch` instead of claiming closure. Only the two repaired-pin runs feed the retained evidence.
+5. Whether the eight-Gate composition is acceptable given the installed producer's 600 s ceiling (W8 and W9 run as separate Gates instead of one combined JPEG Gate), with no check removed, relaxed or auto-retried.
+6. Storage: eight successful checkouts plus one approved target root removed — 15,501 files / 3,977,947,546 logical bytes — with all eight native integrity results unchanged afterwards; the Gate-built 32,275,456-byte executable was moved once out of the target with digest sha256:634d4ec8a46830f0dac0976b5c412cab52a4a4e1094532e4e6719349155fdbc7.
+7. Whether ROI_OUTPUT_VERIFIED stays distinct from TRUE_PARTIAL_DECODE_VERIFIED and whether any claim overstates measured facts. Application-window GUI startup is NOT_RUN because live control approval was unanswered.
+
+Caller authority: implementation, repair and limited technically-completed-slice disposition under the existing ADR-0009/0013 rules, plus explicit dev push. NOT authorized: new design, product decoder adoption/tolerance, ICC/EXIF policy, 16K adoption, full IMG2/IMG3, Runtime changes, measured R0, UX/video, main merge or release.
+
+Return findings classified BLOCKING / ACTIONABLE NON-BLOCKING / EXCESSIVE with explicit counts, and finish with an explicit bounded verdict PASS 0 / 0 / 0 or HOLD with counts plus a separate line REVIEW COMPLETE. Do not provide a next-task directive in this round.
