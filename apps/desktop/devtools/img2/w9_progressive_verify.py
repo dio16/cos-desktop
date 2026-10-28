@@ -331,8 +331,7 @@ def verify(record: dict, source_root=None) -> dict:
                     expected_probe = ("wic-gdiplus-v1" if leg.get("candidate") == "wic"
                                       else "system-drawing-gdiplus-v1")
                     need(result.get("probe") == expected_probe, "malformed_probe_identity_invalid")
-                    if result.get("input_bytes") is not None:
-                        need(result["input_bytes"] == len(fixture), "malformed_input_bytes_mismatch")
+                    need(result.get("input_bytes") == len(fixture), "malformed_input_bytes_mismatch")
                     if leg.get("candidate") == "wic":
                         need(record_leg.get("fixture_id") == case["id"]
                              and record_leg.get("input_sha256") == sha(fixture),
@@ -350,6 +349,8 @@ def verify(record: dict, source_root=None) -> dict:
                              and str(record_leg.get("trace_utf8")).endswith("\n"),
                              "malformed_complete_trace_has_partial_tail")
                     output = record_leg.get("output") or {}
+                    published = record_leg.get("published_success")
+                    present = record_leg.get("output_present")
                     if observed == "decoded":
                         need(leg.get("classification") == "DECODED_TAMPER_NOT_VERIFIED",
                              "malformed_decoded_leg_promoted")
@@ -357,12 +358,24 @@ def verify(record: dict, source_root=None) -> dict:
                              and isinstance(output.get("hex"), str)
                              and output.get("sha256") == sha(bytes.fromhex(output["hex"])),
                              "malformed_decoded_leg_inconsistent")
+                        length = len(bytes.fromhex(output["hex"]))
+                        need(output.get("bytes") == length, "malformed_decoded_output_bytes_mismatch")
+                        need(result.get("output_bytes") == length,
+                             "malformed_decoded_declared_output_bytes_mismatch")
+                        if leg.get("candidate") == "wic":
+                            need(published is True and present is True,
+                                 "malformed_decoded_publication_missing")
                     else:
                         need(leg.get("classification") in ("CORRUPT_REFUSED", "UNSUPPORTED", "OVERSIZE",
                                                            "TAMPER_NOT_VERIFIED"),
                              "malformed_failure_leg_classification_invalid")
                         need(record_leg.get("exit_code") not in (0, None)
                              and output.get("present") is False, "malformed_failure_leg_inconsistent")
+                        if leg.get("candidate") == "wic":
+                            need(published is False and present is False,
+                                 "malformed_failure_publication_forged")
+                        need(result.get("output_bytes") in (None, 0),
+                             "malformed_failure_declares_output")
                     legs += 1
                 malformed += 1
         need(progressive == 2 and malformed == 2 and control == 1, "case_totals_invalid")

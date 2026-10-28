@@ -27,7 +27,9 @@ NEGATIVE_NAMES = (
     "malformed_output_digest_forged", "malformed_trace_tail", "trace_sha_mismatch",
     "incomplete_capture_as_complete", "process_identity_swapped", "old_source_commit",
     "stop_classification_forged", "progressive_output_bytes_forged", "worker_fixture_id_forged",
-    "malformed_leg_identity_forged",
+    "malformed_leg_identity_forged", "malformed_input_bytes_missing", "malformed_output_bytes_forged",
+    "malformed_publication_forged", "malformed_output_presence_forged",
+    "malformed_declared_output_bytes_missing", "refused_publication_forged",
 )
 
 
@@ -147,6 +149,22 @@ def mutation(record, number):
         _leg(record, "progressive_gray_1024", "wic")["leg"]["fixture_id"] = "other"
     elif number == 43:
         _leg(record, "malformed_scan_truncated", "gdiplus")["case_id"] = "other"
+    elif number == 44:
+        _leg(record, "malformed_scan_truncated", "gdiplus")["leg"]["probe_result"].pop("input_bytes")
+    elif number == 45:
+        _leg(record, "malformed_scan_truncated", "wic")["leg"]["output"]["bytes"] = 0
+    elif number == 46:
+        _leg(record, "malformed_scan_truncated", "wic")["leg"]["published_success"] = False
+    elif number == 47:
+        _leg(record, "malformed_scan_truncated", "wic")["leg"]["output_present"] = False
+    elif number == 48:
+        _leg(record, "malformed_scan_truncated", "wic")["leg"]["probe_result"].pop("output_bytes")
+    elif number == 49:
+        _leg(record, "malformed_spectral_invalid", "wic")["leg"]["published_success"] = True
+    elif number == 50:
+        _leg(record, "malformed_spectral_invalid", "wic")["leg"]["output_present"] = True
+    elif number == 51:
+        _leg(record, "malformed_spectral_invalid", "wic")["leg"]["probe_result"]["output_bytes"] = 0
     else:
         raise ValueError("unknown negative class")
 
