@@ -115,7 +115,8 @@ def requirements(case):
     bgra = width * height * 4
     scratch = bgra + DECLARED_SCRATCH
     return {"width": width, "height": height,
-            "bits_per_channel": 8, "bits_per_pixel": 24 if case["codec"] != "bgr565" else 16,
+            "bits_per_channel": 6 if case["codec"] == "bgr565" else 8,
+            "bits_per_pixel": 24 if case["codec"] != "bgr565" else 16,
             "row_bytes": row, "decoded_bytes_required": decoded,
             "bgra32_bytes_required": bgra, "scratch_bytes_required": scratch,
             "declared_scratch_bytes": DECLARED_SCRATCH}
