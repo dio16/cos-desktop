@@ -26,6 +26,8 @@ NEGATIVE_NAMES = (
     "orientation_as_applied", "malformed_as_verified", "unsupported_as_decoded",
     "trace_tail_unparsed", "incomplete_capture_as_complete", "process_identity_swapped",
     "old_source_commit", "timeout_as_confirmed_cancel",
+    "wic_outcome_flipped_corrupt", "gdiplus_outcome_flipped_error",
+    "malformed_legs_removed", "malformed_output_forged",
 )
 
 
@@ -133,6 +135,17 @@ def mutation(record, number):
         worker = _leg(record, "jpeg_420_256", "wic")["leg"]
         worker["outcome"] = "cancelled"
         worker["cancellation"] = dict(worker.get("cancellation") or {}, state="stop_confirmed")
+    elif number == 33:
+        worker = _leg(record, "dc_gray_8x8", "wic")["leg"]
+        worker["outcome"] = "corrupt"
+        worker["probe_result"]["outcome"] = "corrupt"
+    elif number == 34:
+        _leg(record, "dc_gray_16x16", "gdiplus")["leg"]["probe_result"]["outcome"] = "error"
+    elif number == 35:
+        _case(record, "malformed_truncated")["legs"] = []
+    elif number == 36:
+        leg = _leg(record, "malformed_truncated", "wic")["leg"]
+        leg["output"]["sha256"] = "sha256:" + "5" * 64
     else:
         raise ValueError("unknown negative class")
 
@@ -146,7 +159,7 @@ class NativeNegativeTests(unittest.TestCase):
             raise AssertionError("Real W8 control record is not eligible: " + str(result))
         cls.control = result
 
-    def test_all32_mutation_classes_are_rejected(self):
+    def test_all_required_mutation_classes_are_rejected(self):
         for number, name in enumerate(NEGATIVE_NAMES, 1):
             with self.subTest(number=number, mutation=name):
                 record = copy.deepcopy(self.native)

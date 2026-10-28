@@ -229,10 +229,15 @@ def _content(case_id: str) -> bytes:
 
 
 def _wic_leg(case, leg, fixture_bytes, expected_absolute):
+    need(leg.get("candidate") == "wic" and leg.get("case_id") == case["id"],
+         "wic_leg_identity_invalid:" + case["id"])
     record = leg.get("leg")
     need(isinstance(record, dict), "wic_leg_missing:" + case["id"])
     result = record.get("probe_result")
     need(isinstance(result, dict), "wic_probe_result_missing")
+    need(result.get("probe") == "wic-gdiplus-v1", "wic_probe_identity_invalid")
+    need(result.get("outcome") == "decoded" and record.get("outcome") == "decoded"
+         and record.get("exit_code") == 0, "wic_decode_outcome_invalid:" + case["id"])
     need(result.get("decoder") == "JpegBitmapDecoder", "wic_decoder_identity_invalid")
     need(record.get("limits") == LIMITS, "wic_limits_changed")
     need(result.get("admission_status") == "admitted", "wic_admission_not_recorded")
@@ -242,8 +247,10 @@ def _wic_leg(case, leg, fixture_bytes, expected_absolute):
                 "declared_scratch_bytes"):
         need(result.get(key) == values[key], "wic_requirement_mismatch:" + key)
     need(result.get("input_bytes") == len(fixture_bytes), "wic_input_bytes_mismatch")
-    need(record.get("outcome") == result.get("outcome"), "wic_outcome_disagrees_with_probe")
     stages, _ = _trace(record)
+    terminal = stages[-1] if stages else {}
+    need(terminal.get("stage") == "probe_exit" and terminal.get("outcome") == "decoded"
+         and terminal.get("complete") is True, "wic_terminal_outcome_invalid:" + case["id"])
     need([stage["stage"] for stage in stages] == list(WIC_STAGES), "wic_stage_sequence_invalid")
     need(record.get("trace_complete") is True and record.get("trace_partial_bytes") == 0,
          "wic_trace_incomplete")
@@ -262,14 +269,19 @@ def _wic_leg(case, leg, fixture_bytes, expected_absolute):
 
 
 def _gdi_leg(case, leg):
+    need(leg.get("candidate") == "gdiplus" and leg.get("case_id") == case["id"],
+         "gdiplus_leg_identity_invalid:" + case["id"])
     record = leg.get("leg")
     need(isinstance(record, dict), "gdiplus_leg_missing:" + case["id"])
+    need(record.get("exit_code") == 0, "gdiplus_exit_invalid:" + case["id"])
     need(record.get("lifetime") == "NOT_MEASURED", "gdiplus_lifetime_must_stay_unmeasured")
     need(record.get("trace_utf8") is None and record.get("stages") == [],
          "gdiplus_must_not_fabricate_stages")
     result = record.get("probe_result")
     need(isinstance(result, dict), "gdiplus_probe_result_missing")
     need(result.get("decoder") == "Built-in JPEG Codec", "gdiplus_decoder_identity_invalid")
+    need(result.get("probe") == "system-drawing-gdiplus-v1", "gdiplus_probe_identity_invalid")
+    need(result.get("outcome") == "decoded", "gdiplus_decode_outcome_invalid:" + case["id"])
     output = record.get("output") or {}
     need(output.get("present") is True and output.get("hex"), "gdiplus_output_missing")
     data = bytes.fromhex(output["hex"])
@@ -411,7 +423,11 @@ def verify(record: dict, source_root=None) -> dict:
             else:
                 need(row.get("classification") == "TAMPER_NOT_VERIFIED",
                      "malformed_case_cannot_claim_content:" + case["id"])
-                for leg in row.get("legs") or []:
+                malformed_legs = row.get("legs")
+                need(isinstance(malformed_legs, list) and len(malformed_legs) == 2
+                     and [leg.get("candidate") for leg in malformed_legs] == ["wic", "gdiplus"],
+                     "malformed_legs_missing:" + case["id"])
+                for leg in malformed_legs:
                     need(leg.get("classification") not in ("DECODED_CONTENT_VERIFIED",),
                          "malformed_leg_promoted:" + case["id"])
                     observed = ((leg.get("leg") or {}).get("probe_result") or {}).get("outcome")
@@ -420,6 +436,16 @@ def verify(record: dict, source_root=None) -> dict:
                                       "oversize": "OVERSIZE"}.get(observed)
                     need(expected_class is not None and leg.get("classification") == expected_class,
                          "malformed_leg_classification_inconsistent:" + case["id"])
+                    record = leg.get("leg") or {}
+                    output = record.get("output") or {}
+                    if observed == "decoded":
+                        need(record.get("exit_code") == 0 and output.get("present") is True
+                             and isinstance(output.get("hex"), str) and output["hex"]
+                             and output.get("sha256") == sha(bytes.fromhex(output["hex"])),
+                             "malformed_decoded_leg_inconsistent:" + case["id"])
+                    elif observed in ("corrupt", "error", "unsupported", "oversize"):
+                        need(record.get("exit_code") not in (0, None)
+                             and output.get("present") is False, "malformed_failure_leg_inconsistent:" + case["id"])
                 not_verified += 1
         need(integer(absolute_verified) and absolute_verified == 3, "absolute_reference_case_count_invalid")
         need(differential == 5, "differential_case_count_invalid")
