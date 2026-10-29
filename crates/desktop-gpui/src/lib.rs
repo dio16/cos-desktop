@@ -25,6 +25,7 @@ mod dock;
 mod flow;
 mod inspector;
 mod intervention;
+mod palette;
 #[cfg(feature = "r0-s2b-instrumentation")]
 pub mod r0_probe;
 mod shell_style;
@@ -70,7 +71,19 @@ actions!(
         FlowDelete,
         FlowLeft,
         FlowRight,
-        FlowSelectAll
+        FlowSelectAll,
+        PaletteToggle,
+        PaletteClose,
+        PaletteEnter,
+        PaletteUp,
+        PaletteDown,
+        PaletteNext,
+        PalettePrevious,
+        PaletteBackspace,
+        PaletteDelete,
+        PaletteLeft,
+        PaletteRight,
+        PaletteSelectAll
     ]
 );
 
@@ -116,6 +129,18 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("left", FlowLeft, Some("FlowSearchInput")),
         KeyBinding::new("right", FlowRight, Some("FlowSearchInput")),
         KeyBinding::new("ctrl-a", FlowSelectAll, Some("FlowSearchInput")),
+        KeyBinding::new("ctrl-k", PaletteToggle, None),
+        KeyBinding::new("escape", PaletteClose, Some("CommandPalette")),
+        KeyBinding::new("enter", PaletteEnter, Some("CommandPalette")),
+        KeyBinding::new("up", PaletteUp, Some("CommandPalette")),
+        KeyBinding::new("down", PaletteDown, Some("CommandPalette")),
+        KeyBinding::new("tab", PaletteNext, Some("CommandPalette")),
+        KeyBinding::new("shift-tab", PalettePrevious, Some("CommandPalette")),
+        KeyBinding::new("backspace", PaletteBackspace, Some("CommandPalette")),
+        KeyBinding::new("delete", PaletteDelete, Some("CommandPalette")),
+        KeyBinding::new("left", PaletteLeft, Some("CommandPalette")),
+        KeyBinding::new("right", PaletteRight, Some("CommandPalette")),
+        KeyBinding::new("ctrl-a", PaletteSelectAll, Some("CommandPalette")),
     ]);
 }
 
@@ -182,6 +207,16 @@ pub struct Shell {
     surface_focus: [FocusHandle; 3],
     stop_focus: FocusHandle,
     reconcile_focus: FocusHandle,
+    /// Command palette state (DC-MP-NAV5): the overlay, its bounded query, the
+    /// active result row and the focus handle restored on dismiss.
+    palette_open: bool,
+    palette_focus: FocusHandle,
+    palette_restore_focus: Option<FocusHandle>,
+    palette_query: String,
+    palette_input_selection: Range<usize>,
+    palette_marked_range: Option<Range<usize>>,
+    palette_active: Option<usize>,
+    palette_hit_len: usize,
     stop_intent: StopTracker,
     /// One dock-level focus handle with an active-descendant row: focus identity
     /// stays stable while the mounted window moves, and no per-candidate handle
@@ -342,6 +377,14 @@ impl Shell {
             surface_focus,
             stop_focus,
             reconcile_focus,
+            palette_open: false,
+            palette_focus: cx.focus_handle().tab_stop(true),
+            palette_restore_focus: None,
+            palette_query: String::new(),
+            palette_input_selection: 0..0,
+            palette_marked_range: None,
+            palette_active: None,
+            palette_hit_len: 0,
             stop_intent: StopTracker::default(),
             dock_focus: cx.focus_handle().tab_stop(true),
             dock_active: None,
@@ -786,6 +829,83 @@ impl Shell {
         if let Some(command) = released {
             handle.release_command(command);
         }
+    }
+
+    /// The current authorized display text, when this window holds one.
+    fn authorized_text(&self) -> Option<&ui_model::WorkbenchText> {
+        let handle = self.handle.as_ref()?;
+        self.cache
+            .is_authorized(Self::current_notice(handle))
+            .then(|| self.cache.text())
+    }
+
+    fn stop_retryable_admission(&self) -> bool {
+        self.stop_intent
+            .active
+            .as_ref()
+            .is_some_and(|active| active.retryable_admission && active.command_id.is_none())
+    }
+
+    /// Stop and receipt availability. The palette and the visible controls read
+    /// this one predicate set, so neither can drift from the other.
+    fn action_availability(
+        &self,
+        authorized_text: bool,
+        text: &ui_model::WorkbenchText,
+    ) -> (palette::ActionFacts, palette::ActionFacts) {
+        let retryable_admission = self.stop_retryable_admission();
+        let stop_enabled = authorized_text
+            && !self.rail_selection_pending
+            && text.stop_enabled
+            && self.stop_intent.can_begin();
+        let stop_reason: Arc<str> = if !authorized_text {
+            "Stop is disabled until this window has a current authorized observation view.".into()
+        } else if self.rail_selection_pending {
+            "Stop is disabled while the newly selected Task context is being derived.".into()
+        } else if !text.stop_enabled {
+            Arc::clone(&text.stop_reason)
+        } else if retryable_admission {
+            "The previous Stop was refused before admission by bounded capacity. Clicking again submits a new explicit intent; no old command identity is reused."
+                .into()
+        } else if self.stop_intent.active.is_some() {
+            "A Stop intent is already recorded in this window; automatic resend and replacement are disabled."
+                .into()
+        } else if !self.stop_intent.can_begin() {
+            "Stop action identity space is exhausted; no new intent can be created in this window."
+                .into()
+        } else {
+            Arc::clone(&text.stop_reason)
+        };
+        let local_stop = self.stop_intent.active.as_ref().filter(|active| {
+            stop_scope_matches(active, authorized_text, self.rail_selection_pending, text)
+        });
+        let feedback = local_stop
+            .map(|active| active.receipt_feedback())
+            .unwrap_or(ReceiptFeedback::Idle);
+        let reconcile_enabled =
+            authorized_text && local_stop.is_some() && self.stop_intent.can_read();
+        let reconcile_reason: Arc<str> = if !authorized_text {
+            "Receipt check is disabled until this window has a current authorized display.".into()
+        } else if feedback == ReceiptFeedback::Checking {
+            "An explicit receipt check is already in progress.".into()
+        } else if local_stop.is_none() && self.stop_intent.active.is_some() {
+            "Receipt check is disabled because the current observation/task context does not match this window's Stop intent."
+                .into()
+        } else if local_stop.is_none_or(|active| active.command_id.is_none()) {
+            "No Stop command identity is available for an explicit receipt check.".into()
+        } else {
+            "An explicit receipt check is already in progress.".into()
+        };
+        (
+            palette::ActionFacts {
+                enabled: stop_enabled,
+                reason: stop_reason,
+            },
+            palette::ActionFacts {
+                enabled: reconcile_enabled,
+                reason: reconcile_reason,
+            },
+        )
     }
 
     fn start_stop(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -1598,6 +1718,20 @@ impl Element for FlowInputRegistration {
 /// so a marked or replacement range must be converted through the same
 /// conversion the caret uses. A `None` range falls back to the marked range and
 /// then to the current selection, which is exactly the composition contract.
+/// Whether a recorded Stop intent belongs to the task/session this window is
+/// currently authorized to display. One predicate for the control and palette.
+fn stop_scope_matches(
+    active: &stop::ActiveStop,
+    authorized_text: bool,
+    rail_selection_pending: bool,
+    text: &ui_model::WorkbenchText,
+) -> bool {
+    authorized_text
+        && !rail_selection_pending
+        && active.session_generation == text.session_generation
+        && text.task.as_ref() == Some(&active.task)
+}
+
 fn ime_byte_range(
     current: &str,
     utf16_range: Option<Range<usize>>,
@@ -1650,7 +1784,9 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<String> {
-        let text = if self.flow_input_focus.is_focused(window) {
+        let text = if self.palette_focus.is_focused(window) {
+            self.palette_query.clone()
+        } else if self.flow_input_focus.is_focused(window) {
             self.flow_query.clone()
         } else {
             self.rail_state.query().to_owned()
@@ -1667,7 +1803,12 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<UTF16Selection> {
-        let (text, selection) = if self.flow_input_focus.is_focused(window) {
+        let (text, selection) = if self.palette_focus.is_focused(window) {
+            (
+                self.palette_query.clone(),
+                self.palette_input_selection.clone(),
+            )
+        } else if self.flow_input_focus.is_focused(window) {
             (self.flow_query.clone(), self.flow_input_selection.clone())
         } else {
             (
@@ -1686,7 +1827,10 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<Range<usize>> {
-        let (text, range) = if self.flow_input_focus.is_focused(window) {
+        let (text, range) = if self.palette_focus.is_focused(window) {
+            let range = self.palette_marked_range.as_ref()?;
+            (self.palette_query.as_str(), range)
+        } else if self.flow_input_focus.is_focused(window) {
             let range = self.flow_marked_range.as_ref()?;
             (self.flow_query.as_str(), range)
         } else {
@@ -1697,7 +1841,9 @@ impl EntityInputHandler for Shell {
     }
 
     fn unmark_text(&mut self, window: &mut Window, _cx: &mut Context<Self>) {
-        if self.flow_input_focus.is_focused(window) {
+        if self.palette_focus.is_focused(window) {
+            self.palette_marked_range = None;
+        } else if self.flow_input_focus.is_focused(window) {
             self.flow_marked_range = None;
         } else {
             self.rail_marked_range = None;
@@ -1711,6 +1857,20 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.palette_focus.is_focused(window) {
+            let current = self.palette_query.clone();
+            let range = ime_byte_range(
+                &current,
+                range_utf16,
+                self.palette_marked_range.clone(),
+                &self.palette_input_selection,
+            );
+            let (replacement, cursor) = ime_splice(&current, &range, new_text);
+            self.palette_set_query(&replacement, cx);
+            self.palette_input_selection = cursor..cursor;
+            self.palette_marked_range = None;
+            return;
+        }
         if self.flow_input_focus.is_focused(window) {
             let current = self.flow_query.clone();
             let range = ime_byte_range(
@@ -1746,8 +1906,15 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        let palette = self.palette_focus.is_focused(window);
         let flow = self.flow_input_focus.is_focused(window);
-        let (current, marked, selection) = if flow {
+        let (current, marked, selection) = if palette {
+            (
+                self.palette_query.clone(),
+                self.palette_marked_range.clone(),
+                self.palette_input_selection.clone(),
+            )
+        } else if flow {
             (
                 self.flow_query.clone(),
                 self.flow_marked_range.clone(),
@@ -1771,7 +1938,11 @@ impl EntityInputHandler for Shell {
                 range.start + start..range.start + end
             })
             .unwrap_or_else(|| caret..caret);
-        if flow {
+        if palette {
+            self.palette_set_query(&replacement, cx);
+            self.palette_marked_range = new_marked;
+            self.palette_input_selection = new_selection;
+        } else if flow {
             self.set_flow_query(&replacement, cx);
             self.flow_marked_range = new_marked;
             self.flow_input_selection = new_selection;
@@ -1871,41 +2042,16 @@ impl Render for Shell {
             }
         }
         let local_stop = self.stop_intent.active.as_ref().filter(|active| {
-            authorized_text
-                && !self.rail_selection_pending
-                && active.session_generation == text.session_generation
-                && text.task.as_ref() == Some(&active.task)
+            stop_scope_matches(active, authorized_text, self.rail_selection_pending, text)
         });
         let command_view = local_stop
             .and_then(|active| active.command_id.as_ref())
             .and_then(|command_id| text.command_views.get(command_id));
-        let retryable_admission = self
-            .stop_intent
-            .active
-            .as_ref()
-            .is_some_and(|active| active.retryable_admission && active.command_id.is_none());
-        let stop_enabled = authorized_text
-            && !self.rail_selection_pending
-            && text.stop_enabled
-            && self.stop_intent.can_begin();
-        let stop_disabled_reason: Arc<str> = if !authorized_text {
-            "Stop is disabled until this window has a current authorized observation view.".into()
-        } else if self.rail_selection_pending {
-            "Stop is disabled while the newly selected Task context is being derived.".into()
-        } else if !text.stop_enabled {
-            Arc::clone(&text.stop_reason)
-        } else if retryable_admission {
-            "The previous Stop was refused before admission by bounded capacity. Clicking again submits a new explicit intent; no old command identity is reused."
-                .into()
-        } else if self.stop_intent.active.is_some() {
-            "A Stop intent is already recorded in this window; automatic resend and replacement are disabled."
-                .into()
-        } else if !self.stop_intent.can_begin() {
-            "Stop action identity space is exhausted; no new intent can be created in this window."
-                .into()
-        } else {
-            Arc::clone(&text.stop_reason)
-        };
+        let retryable_admission = self.stop_retryable_admission();
+        let (stop_availability, receipt_availability) =
+            self.action_availability(authorized_text, text);
+        let stop_enabled = stop_availability.enabled;
+        let stop_disabled_reason: Arc<str> = stop_availability.reason;
         let feedback = local_stop
             .map(|active| active.receipt_feedback())
             .unwrap_or(ReceiptFeedback::Idle);
@@ -1994,20 +2140,11 @@ impl Render for Shell {
                         .into(),
                 )
         };
-        let reconcile_enabled =
-            authorized_text && local_stop.is_some() && self.stop_intent.can_read();
-        let reconcile_disabled_reason: Arc<str> = if !authorized_text {
-            "Receipt check is disabled until this window has a current authorized display.".into()
-        } else if feedback == ReceiptFeedback::Checking {
-            "An explicit receipt check is already in progress.".into()
-        } else if local_stop.is_none() && self.stop_intent.active.is_some() {
-            "Receipt check is disabled because the current observation/task context does not match this window's Stop intent."
-                .into()
-        } else if local_stop.is_none_or(|active| active.command_id.is_none()) {
-            "No Stop command identity is available for an explicit receipt check.".into()
-        } else {
-            "An explicit receipt check is already in progress.".into()
-        };
+        let reconcile_enabled = receipt_availability.enabled;
+        let reconcile_disabled_reason: Arc<str> = receipt_availability.reason;
+        // Availability is derived once, before later mutable borrows, and the
+        // overlay reads only this owned snapshot.
+        let palette_facts = self.palette_facts(authorized_text, text);
         let title = SharedString::from(text.title.clone());
         let graph = text.graph.clone();
         let mut flow_rows = None;
@@ -3122,7 +3259,7 @@ impl Render for Shell {
             window,
             cx,
         );
-        let query_text = self.rail_state.query();
+        let query_text = self.rail_state.query().to_owned();
         let query_display =
             if self.rail_input_focus.is_focused(window) && self.rail_input_selection.is_empty() {
                 format!(
@@ -3290,11 +3427,17 @@ impl Render for Shell {
             },
         );
 
+        let palette_overlay = self.palette_overlay(&palette_facts, cx);
+
         div()
             .id("cos-shell")
             .role(Role::Application)
             .aria_label("COS Desktop Workbench")
             .track_focus(&self.focus)
+            .relative()
+            .on_action(cx.listener(|this, _: &PaletteToggle, window, cx| {
+                this.palette_toggle(window, cx);
+            }))
             .on_action(
                 cx.listener(|this, _: &Artifact, _, cx| this.navigate(Surface::Artifact, cx)),
             )
@@ -3671,6 +3814,7 @@ impl Render for Shell {
                             })
                     })),
             )
+            .child(palette_overlay)
     }
 }
 

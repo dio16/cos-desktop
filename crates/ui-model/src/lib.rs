@@ -3,6 +3,7 @@
 
 pub mod inspector;
 pub mod intervention;
+pub mod palette;
 mod simple_casefold;
 pub mod task_rail;
 pub mod presentation {
