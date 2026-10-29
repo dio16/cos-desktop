@@ -2,7 +2,7 @@
   "schema_version": 1,
   "task": "MP-AX2",
   "contract": "DC-MP-AX2",
-  "status": "LIMITED_NATIVE_KEYBOARD_VERIFICATION_OBSERVED_REVIEW_PENDING",
+  "status": "LIMITED_NATIVE_KEYBOARD_VERIFICATION_REPAIRED_AFTER_REVIEW_ROUND_1",
   "authority": "Tern next-task directive after the clean MP-NAV5 review; ADR-0014 scoped resumption; DC-MP-AX2.",
   "baseline": {
     "reviewed_commit": "1b97fd39f7b4c796fcbc20c7e56e7838215d12de",
@@ -26,25 +26,25 @@
       "id": 1,
       "operation": "Ctrl+K opens and closes the Command Palette",
       "result": "PASS",
-      "evidence": "palette-open.png; the second Ctrl+K closed it and a third reopened it (palette-cursor.png)"
+      "evidence": "startup-current.png at launch; palette-open.png; the second Ctrl+K closed it and a third reopened it (palette-cursor.png)"
     },
     {
       "id": 2,
       "operation": "Keyboard search input",
       "result": "PASS",
-      "evidence": "palette-filtered.png (query 'flow'); rail and Flow search fields also accepted typed text"
+      "evidence": "palette-filtered-evidence.png (query 'evidence'); the rail and Flow search fields also accepted typed text"
     },
     {
       "id": 3,
       "operation": "Up/Down, Tab, Shift+Tab movement",
       "result": "PASS",
-      "evidence": "palette-cursor.png shows the third row selected after two Down presses; Tab and Shift+Tab were delivered in the CommandPalette context"
+      "evidence": "palette-cursor.png (third row after two Down presses); palette-tab-row3.png → palette-tab-after-tab.png (highlight moved to Next Surface) → palette-tab-after-shift-tab.png (highlight returned to Show Flow)"
     },
     {
       "id": 4,
       "operation": "Enter executes an enabled command",
       "result": "PASS",
-      "evidence": "palette-flow-invoked.png (Show Flow), earlier Open Active Task selection"
+      "evidence": "palette-diagnostics-invoked.png (Toggle Diagnostics executed); s1-flow-after-enter.ax.txt records the earlier Show Flow invocation"
     },
     {
       "id": 5,
@@ -103,7 +103,7 @@
   },
   "ax_observations": {
     "palette": "TextInput 'Command search' with value, List 'Commands', ListItem names, disabled rows with their reasons (palette.ax.txt in the NAV5 evidence and s1/s2 AX excerpts)",
-    "static_shell_text": "Static shell text remains absent from the accessibility tree, consistent with the recorded DC-MP-AX1 observation; those values are verified from screenshots",
+    "static_shell_text": "This build's AX output does include statictext nodes such as 'Task Status: ACTIVE', 'Inner Phase: REFINE' and 'Formal Outcome: Unknown — no formal outcome projection'; the older MP-AX1 record's absence observation does not apply to this run. Real screen-reader announcement quality remains NOT_MEASURED.",
     "focus": "GPUI focus handles are not separately exposed through the native focused-element query; focus restoration was verified behaviourally as recorded in matrix item 7"
   },
   "not_measured": [
@@ -119,5 +119,36 @@
     "gate": "no new Gate: no product bytes changed on this branch",
     "repository_checks": "the MP-NAV5 candidate and its repair Gate already cover the identical product source; this task adds docs/evidence only"
   },
-  "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.73"
+  "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.73",
+  "evidence_provenance": {
+    "reference_directory": "reference/",
+    "byte_identical_to_nav5_old_candidate": [
+      {
+        "file": "reference/startup.png",
+        "same_as": "nav5-palette-latest/palette-dismissed.png"
+      },
+      {
+        "file": "reference/palette-filtered.png",
+        "same_as": "nav5-palette-latest/palette-filtered.png"
+      },
+      {
+        "file": "reference/palette-flow-invoked.png",
+        "same_as": "nav5-palette-latest/invoked-show-flow.png"
+      }
+    ],
+    "note": "Those three files belong to the earlier candidate 9211b34d (exe sha256:57be43f3…). Identical pixels cannot prove which run produced them, so they are kept only as historical reference and are NOT used as proof for the current executable. Current-exe proof uses startup-current.png, palette-filtered-evidence.png, palette-diagnostics-invoked.png, the tab-movement images, the other unique images and the AX excerpts."
+  },
+  "review_rounds": [
+    {
+      "round": 1,
+      "reviewed_head": "21b3b63ec0fe29b4e78eb384fd28ff651e55640d",
+      "verdict": "HOLD 0 BLOCKING / 3 ACTIONABLE / 0 EXCESSIVE",
+      "findings": [
+        "three images were byte-identical to NAV5 old-candidate evidence without disclosure",
+        "the plan said all PASS while the matrix had one PARTIAL, and the Tab/Shift+Tab movement was not proven",
+        "the AX description contradicted this run's statictext output"
+      ],
+      "repair": "duplicates moved to reference/ and excluded from current-exe proof; plan corrected to 11 PASS / 1 PARTIAL; Tab/Shift+Tab movement captured; AX wording corrected to the actual output"
+    }
+  ]
 }
