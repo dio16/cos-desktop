@@ -1,0 +1,24 @@
+- window "COS Desktop" [ref=e2] app=C:\dev\cos-desktop\target\debug\cos-desktop.exe
+      - group "Stop command controls and current authorized status" [ref=e19]
+        - button "Check Stop receipt (disabled)" [ref=e21] (disabled)
+        - statictext "No Stop issued in this window" [ref=e22]
+        - statictext "Request Stop sends one explicit owner-routed intent; task outcome remains indepe…" [ref=e23]
+      - textfield "Search tasks" [ref=e25]
+        - listitem "Task-184 — 新製品キービジュアル" [ref=e27]
+    - group "Inspector" [ref=e29]
+      - group "Inspector sections" [ref=e30]
+    - window "Command Palette" [ref=e49]
+      - textfield "Command search" [ref=e50]: "Type a command…"
+      - list "Commands" [ref=e51]
+        - listitem "Show Artifact — Navigate" [ref=e52]
+        - listitem "Show Compare — Navigate" [ref=e53]
+        - listitem "Show Flow — Navigate" [ref=e54]
+        - listitem "Next Surface — Navigate" [ref=e55]
+        - listitem "Open Active Task — Task" [ref=e56]
+        - listitem "Open Active Candidate — Candidate" [ref=e57]
+        - listitem "Toggle Inspector — Inspector — unavailable: No candidate is viewed; the inspecto…" [ref=e58] (disabled)
+        - listitem "Show Evaluation — Inspector — unavailable: Evaluation is not available for the v…" [ref=e59] (disabled)
+        - listitem "Show Evidence — Inspector — unavailable: Evidence is not available for the viewe…" [ref=e60] (disabled)
+        - listitem "Toggle Diagnostics — Diagnostics" [ref=e61]
+        - listitem "Stop Task — Task" [ref=e62]
+        - listitem "Check Stop Receipt — Task — unavailable: No Stop command identity is available f…" [ref=e63] (disabled)

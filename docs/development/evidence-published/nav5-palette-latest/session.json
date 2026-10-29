@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "status": "IMPLEMENTED_NATIVE_SMOKE_OBSERVED_INDEPENDENT_GATE_SUCCEEDED",
+  "task": "MP-NAV5",
+  "contract": "DC-MP-NAV5",
+  "caller_authority": "Direct resumption instruction 2026-10-30 (implement, review, next task, repeat); ADR-0014 scoped resumption; DC-MP-NAV5 frozen behavior.",
+  "candidate_source_commit": "9211b34d0bad3acfa85714c36c41c40fa9195ec4",
+  "candidate_branch": "feature/mp-nav5-command-palette",
+  "worktree_at_candidate": "clean",
+  "binary": {
+    "path": "target/debug/cos-desktop.exe",
+    "sha256": "sha256:57be43f30f1986b5d2f0b25c7ccf900280d58f18c6ec62946936479338d24fbe",
+    "built_from_candidate_commit": true
+  },
+  "fixture": {
+    "path": "crates/cos-client/fixtures/task-184.json",
+    "sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52"
+  },
+  "implementation": {
+    "ui_model": [
+      "closed 12-command inventory of existing approved surface actions only",
+      "simple case folding (Unicode 16.0.0 C+S) over stable id, title and category",
+      "frozen rank order: exact id, title prefix, title/id substring, category; ties keep inventory order",
+      "MAX_RESULTS bound of 64 and distinct NoMatch / NoAvailable empty states",
+      "cursor stepping clamps without wrapping"
+    ],
+    "desktop_gpui": [
+      "Ctrl+K toggles the palette; Ctrl+K, query editing (backspace/delete/left/right/ctrl-a and IME composition), up/down/tab, Enter, Escape and outside-click dismissal",
+      "focus handle restored on dismiss; no partial action survives dismissal",
+      "AX TextInput value, List/ListItem names, disabled state and the honest unavailable reason per row",
+      "dispatch reuses navigate / select_rail_task / activate_dock_active / inspector disclosure / start_stop / start_receipt_check / diagnostics paths; no direct Runtime call",
+      "one Stop/receipt availability predicate set now feeds both the visible controls and the palette"
+    ],
+    "not_implemented": [
+      "drag/drop and clipboard native payloads (DC-MP-NAV5 crosswalk rows 1-2; payload/action semantics still open)",
+      "palette recents ordering (preferences field stays bounded but unused; the frozen rank order forbids recency reordering)",
+      "any new command beyond the existing approved inventory"
+    ]
+  },
+  "native_observations": {
+    "mode": "explicit --fixture with the retained fixture file",
+    "input_limitation": "Background key events do not reach GPUI (same limitation recorded in section 19.66); palette open/query/keys used takeover input.",
+    "results": {
+      "open_with_ctrl_k": "palette rendered with 12 rows and the honest unavailable reasons",
+      "filter_exact": "query 'flow' reduced the list to Show Flow; query 'receipt' reduced it to Check Stop Receipt",
+      "cursor": "down-arrow moved the highlight and Enter activated the highlighted row",
+      "invoke_available": "Enter on Show Flow switched to the Flow surface with the graph lists; Enter on Open Active Task performed the rail selection",
+      "refuse_unavailable": "Enter on the unavailable Check Stop Receipt closed the palette and showed 'No Stop command identity is available for an explicit receipt check.' without performing the action",
+      "escape": "Escape dismissed the palette and left the surface unchanged",
+      "outside_click": "a click outside the palette dismissed it"
+    },
+    "not_claimed": [
+      "IME/DPI/multi-monitor/popup certification",
+      "screen-reader announcement testing",
+      "product/UX acceptance",
+      "fixture success as real Runtime success"
+    ]
+  },
+  "independent_gate": {
+    "gate_id": "74c2928c-cd8b-42fa-b0b0-c03a0df79595",
+    "gate_label": "cos-desktop-nav5-quality-9211b34d",
+    "state": "SUCCEEDED",
+    "candidate_sha256": "sha256:43fc1b691ee459a193ab9802df7bf5e4b6f11a94280bbdff6dc9118172559118",
+    "request_sha256": "sha256:a46bb9948595c7c805d9a076660d00f1adc621e921eb0fab8af34de5fc5108f5",
+    "terminal_state_sha256": "sha256:43917d67b1aa0f04a130135332417373072dacc3fb37615d36a4576208f9d35c",
+    "checks": {
+      "fmt": "pass",
+      "metadata": "pass",
+      "dependency-self-test": "pass",
+      "dependency-rules": "pass",
+      "clippy": "pass",
+      "tests": "pass"
+    },
+    "cleanup": "complete",
+    "state_dir": "C:/dev/cos-desktop-verification/nav5-2026-10-30/state",
+    "disposition": "successful Gate workspace retained until the documented storage step is executed by its owning procedure; no blanket cleanup performed here"
+  },
+  "quality": {
+    "fmt": "cargo fmt --all -- --check",
+    "metadata": "cargo metadata --locked --no-deps --format-version 1",
+    "dependency_rules": "python -B scripts/check_dependency_rules.py --self-test && python -B scripts/check_dependency_rules.py",
+    "clippy": "cargo clippy --locked --workspace --all-targets -- -D warnings",
+    "tests": "cargo test --locked --workspace",
+    "build": "cargo build --locked --workspace"
+  }
+}
