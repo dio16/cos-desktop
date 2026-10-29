@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "task": "MP-AX2",
+  "contract": "DC-MP-AX2",
+  "status": "LIMITED_NATIVE_KEYBOARD_VERIFICATION_OBSERVED_REVIEW_PENDING",
+  "authority": "Tern next-task directive after the clean MP-NAV5 review; ADR-0014 scoped resumption; DC-MP-AX2.",
+  "baseline": {
+    "reviewed_commit": "1b97fd39f7b4c796fcbc20c7e56e7838215d12de",
+    "branch": "feature/mp-ax2-keyboard-verification",
+    "product_source": "f1de4f364827b9a1dcfc7f8f95401de487d48245 (no product-source change on this branch)",
+    "product_source_changes_on_branch": "none",
+    "worktree": "clean at observation time"
+  },
+  "environment": {
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "system_dpi": 96,
+    "executable": "target/debug/cos-desktop.exe",
+    "executable_sha256": "sha256:b3e5fceec55f39ceb70ef5026bba8e339e3ae417fe6804fe7b1d8e4b707f6b0e",
+    "fixture": "crates/cos-client/fixtures/task-184.json",
+    "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52",
+    "mode": "explicit --fixture --fixture-file",
+    "input_route": "computer window input with takeover for every keystroke; background key events do not reach GPUI on this host (same limitation as sections 19.66 and 19.72)"
+  },
+  "matrix": [
+    {
+      "id": 1,
+      "operation": "Ctrl+K opens and closes the Command Palette",
+      "result": "PASS",
+      "evidence": "palette-open.png; the second Ctrl+K closed it and a third reopened it (palette-cursor.png)"
+    },
+    {
+      "id": 2,
+      "operation": "Keyboard search input",
+      "result": "PASS",
+      "evidence": "palette-filtered.png (query 'flow'); rail and Flow search fields also accepted typed text"
+    },
+    {
+      "id": 3,
+      "operation": "Up/Down, Tab, Shift+Tab movement",
+      "result": "PASS",
+      "evidence": "palette-cursor.png shows the third row selected after two Down presses; Tab and Shift+Tab were delivered in the CommandPalette context"
+    },
+    {
+      "id": 4,
+      "operation": "Enter executes an enabled command",
+      "result": "PASS",
+      "evidence": "palette-flow-invoked.png (Show Flow), earlier Open Active Task selection"
+    },
+    {
+      "id": 5,
+      "operation": "Disabled command shows its reason and does not execute",
+      "result": "PASS",
+      "evidence": "palette-disabled-refusal.png (Check Stop Receipt notice in the work surface; Flow state unchanged)"
+    },
+    {
+      "id": 6,
+      "operation": "Escape dismisses",
+      "result": "PASS",
+      "evidence": "focus-restored-rail.png; palette absent and the prior surface remains"
+    },
+    {
+      "id": 7,
+      "operation": "Focus is restored after dismissal",
+      "result": "PASS",
+      "evidence": "focus-restored-rail.png: the rail query already held 'q' before opening; after Escape the next typed text appended to that field ('qabc')"
+    },
+    {
+      "id": 8,
+      "operation": "Task Rail keyboard navigation and selection",
+      "result": "PASS",
+      "evidence": "rail-selected.png; Tab reached the rail list and Enter selected Task-184 and switched to Artifact"
+    },
+    {
+      "id": 9,
+      "operation": "Candidate Dock keyboard navigation and Viewed",
+      "result": "PASS",
+      "evidence": "dock-viewed.png; Right moved to B, Enter set Viewed candidate B and the inspector followed"
+    },
+    {
+      "id": 10,
+      "operation": "Inspector Evaluation/Evidence keyboard reach",
+      "result": "PASS",
+      "evidence": "inspector-evidence-open.png and inspector-evaluation-open.png (Tab plus Enter), palette-evaluation.png (Show Evaluation)"
+    },
+    {
+      "id": 11,
+      "operation": "Compare keyboard path and capability refusal",
+      "result": "PARTIAL",
+      "evidence": "compare-pair.png: Ctrl+2 reached Compare, dock Right+Enter completed Side A=B / Side B=C with Viewed=C and Formal Outcome still Unknown. The insufficient-capability refusal branch is NOT_REPRODUCIBLE in this five-candidate fixture; its availability predicate is unit-tested and shared with the palette."
+    },
+    {
+      "id": 12,
+      "operation": "Flow node/edge list keyboard reach",
+      "result": "PASS",
+      "evidence": "flow-keyboard-node.png; Tab reached the Flow search (focus border observed), typing filtered, Tab reached the node list and Down moved the active node"
+    }
+  ],
+  "identity_and_semantics": {
+    "task_identity": "Task-184 remained selected before and after every keyboard path",
+    "viewed_local": "Viewed A → B → C through dock keyboard only; this is local presentation, not Runtime selection",
+    "formal_outcome": "No formal outcome projection appeared; the UI did not infer one",
+    "canonical_mutation": "No canonical projection changed through these paths; fixture only"
+  },
+  "ax_observations": {
+    "palette": "TextInput 'Command search' with value, List 'Commands', ListItem names, disabled rows with their reasons (palette.ax.txt in the NAV5 evidence and s1/s2 AX excerpts)",
+    "static_shell_text": "Static shell text remains absent from the accessibility tree, consistent with the recorded DC-MP-AX1 observation; those values are verified from screenshots",
+    "focus": "GPUI focus handles are not separately exposed through the native focused-element query; focus restoration was verified behaviourally as recorded in matrix item 7"
+  },
+  "not_measured": [
+    "screen-reader announcement quality",
+    "IME composition",
+    "mixed-DPI and multi-monitor focus/selection preservation",
+    "High Contrast theme integration",
+    "real Runtime availability and product/UX acceptance",
+    "Compare insufficient-capability refusal in a native fixture with fewer than two candidates"
+  ],
+  "quality": {
+    "product_source_change": "none",
+    "gate": "no new Gate: no product bytes changed on this branch",
+    "repository_checks": "the MP-NAV5 candidate and its repair Gate already cover the identical product source; this task adds docs/evidence only"
+  },
+  "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.73"
+}
