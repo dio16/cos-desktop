@@ -27,8 +27,6 @@ pub enum Command {
     OpenActiveTask,
     /// Open (view) the active candidate.
     OpenActiveCandidate,
-    /// Toggle the inspector.
-    ToggleInspector,
     /// Show the inspector's Evaluation section.
     ShowEvaluation,
     /// Show the inspector's Evidence section.
@@ -101,12 +99,6 @@ pub const INVENTORY: &[Descriptor] = &[
         id: "candidate.open-active",
         title: "Open Active Candidate",
         category: "Candidate",
-    },
-    Descriptor {
-        command: Command::ToggleInspector,
-        id: "inspector.toggle",
-        title: "Toggle Inspector",
-        category: "Inspector",
     },
     Descriptor {
         command: Command::ShowEvaluation,
@@ -322,14 +314,7 @@ mod tests {
         let hits = commands(search("evidence", &entries), &entries);
         assert_eq!(hits, vec![Command::ShowEvidence]);
         let hits = commands(search("inspector", &entries), &entries);
-        assert_eq!(
-            hits,
-            vec![
-                Command::ToggleInspector,
-                Command::ShowEvaluation,
-                Command::ShowEvidence,
-            ]
-        );
+        assert_eq!(hits, vec![Command::ShowEvaluation, Command::ShowEvidence]);
     }
 
     #[test]

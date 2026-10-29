@@ -328,6 +328,21 @@ impl TaskRailState {
         true
     }
 
+    /// Whether the rail could currently activate this identity: the derived
+    /// search results and the collection they index must both be present and
+    /// the identity must appear in those results. This is the same admission
+    /// the rail's Enter path uses, exposed for callers that gate a command.
+    pub fn selectable(&self, identity: &TaskId) -> bool {
+        let (Some(results), Some(collection)) = (self.results.as_ref(), self.collection.as_ref())
+        else {
+            return false;
+        };
+        results
+            .indices
+            .iter()
+            .any(|index| collection.rows[*index].identity == *identity)
+    }
+
     pub fn collection(&self) -> Option<&Arc<TaskRailCollection>> {
         self.collection.as_ref()
     }
@@ -704,6 +719,43 @@ mod tests {
             .iter()
             .map(|index| collection.rows[*index].identity.clone())
             .collect()
+    }
+
+    #[test]
+    fn selectable_follows_the_installed_search_results_only() {
+        let publication = publication(
+            vec![
+                task("alpha", "A", "alpha", TaskStatus::Active, Some(1)),
+                task("beta", "B", "beta", TaskStatus::Active, Some(1)),
+            ],
+            3,
+            1,
+            "epoch/1",
+        );
+        let collection = derive(&mut TaskRailCache::default(), &publication);
+        let alpha = TaskId::fixture("task/alpha");
+        let beta = TaskId::fixture("task/beta");
+        let live = notice(3, 1);
+        let mut state = TaskRailState::default();
+        assert!(state.set_query("alpha"));
+        let search = collection
+            .search("alpha", || false)
+            .expect("search completes");
+        assert!(state.install(live, 1, Arc::clone(&collection), search, Some(live)));
+        assert!(state.selectable(&alpha));
+        assert!(!state.selectable(&beta));
+
+        // An edited query hides the previous results before a new derivation lands.
+        assert!(state.set_query("beta"));
+        assert!(!state.selectable(&alpha));
+        assert!(!state.selectable(&beta));
+
+        let search = collection
+            .search("beta", || false)
+            .expect("search completes");
+        assert!(state.install(live, 2, Arc::clone(&collection), search, Some(live)));
+        assert!(state.selectable(&beta));
+        assert!(!state.selectable(&alpha));
     }
 
     #[test]

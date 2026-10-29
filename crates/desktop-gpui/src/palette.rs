@@ -30,9 +30,9 @@ pub(super) struct Facts {
     pub stop: ActionFacts,
     pub reconcile: ActionFacts,
     pub compare_reason: Option<Arc<str>>,
-    pub active_task: bool,
+    /// `None` when the rail could activate its active row; the honest reason otherwise.
+    pub active_task_reason: Option<&'static str>,
     pub active_candidate: bool,
-    pub inspector_target: bool,
     pub evaluation_available: bool,
     pub evidence_available: bool,
 }
@@ -55,18 +55,13 @@ impl Facts {
             }
             Command::OpenActiveTask => require(
                 self.authorized,
-                self.active_task,
-                "No active Task is selected in the rail.",
+                self.active_task_reason.is_none(),
+                self.active_task_reason.unwrap_or(""),
             ),
             Command::OpenActiveCandidate => require(
                 self.authorized,
                 self.active_candidate,
                 "No candidate is active in the dock.",
-            ),
-            Command::ToggleInspector => require(
-                self.authorized,
-                self.inspector_target,
-                "No candidate is viewed; the inspector has no target.",
             ),
             Command::ShowEvaluation => require(
                 self.authorized,
@@ -196,12 +191,11 @@ impl Shell {
             stop,
             reconcile,
             compare_reason: dock::compare_unavailable_reason(text.artifacts.len()).map(Arc::from),
-            active_task: self.rail_active.is_some() || self.rail_state.selected().is_some(),
+            active_task_reason: self.rail_selection().err(),
             active_candidate: self
                 .dock_active
                 .as_ref()
                 .is_some_and(|identity| text.artifacts.iter().any(|row| row.identity == *identity)),
-            inspector_target: view.candidate.is_some(),
             evaluation_available: section_available(ui_model::inspector::Section::Evaluation),
             evidence_available: section_available(ui_model::inspector::Section::Evidence),
         }
@@ -425,16 +419,12 @@ impl Shell {
             Command::ShowFlow => self.navigate(app_core::navigation::Surface::Flow, cx),
             Command::NextSurface => self.advance_surface(cx),
             Command::OpenActiveTask => {
-                let task = self
-                    .rail_active
-                    .clone()
-                    .or_else(|| self.rail_state.selected().cloned());
-                if let Some(task) = task {
+                if let Ok(task) = self.rail_selection() {
+                    let task = task.clone();
                     self.select_rail_task(&task, window, cx);
                 }
             }
             Command::OpenActiveCandidate => self.activate_dock_active(window, cx),
-            Command::ToggleInspector => self.toggle_inspector_all(cx),
             Command::ShowEvaluation => {
                 self.show_inspector_section(ui_model::inspector::Section::Evaluation, window, cx)
             }
@@ -464,17 +454,6 @@ impl Shell {
                 .inspector
                 .view(viewed.map(|viewed| &viewed.0)),
         )
-    }
-
-    fn toggle_inspector_all(&mut self, cx: &mut Context<Self>) {
-        let Some(view) = self.current_inspector_view() else {
-            return;
-        };
-        for section in view.sections.iter() {
-            self.inspector_disclosure
-                .toggle(section.id, &section.revision);
-        }
-        cx.notify();
     }
 
     fn show_inspector_section(
@@ -734,9 +713,8 @@ mod tests {
             stop: action(true, "stop available"),
             reconcile: action(true, "receipt available"),
             compare_reason: None,
-            active_task: true,
+            active_task_reason: None,
             active_candidate: true,
-            inspector_target: true,
             evaluation_available: true,
             evidence_available: true,
         }
@@ -768,7 +746,6 @@ mod tests {
             Command::ShowCompare,
             Command::OpenActiveTask,
             Command::OpenActiveCandidate,
-            Command::ToggleInspector,
             Command::ShowEvaluation,
             Command::ShowEvidence,
             Command::StopTask,
@@ -797,9 +774,9 @@ mod tests {
     #[test]
     fn missing_context_carries_its_own_reason_and_never_invents_availability() {
         let mut facts = facts();
-        facts.active_task = false;
+        facts.active_task_reason =
+            Some("The active Task is not in the current Task search results.");
         facts.active_candidate = false;
-        facts.inspector_target = false;
         facts.evaluation_available = false;
         facts.evidence_available = false;
         facts.compare_reason = Some(Arc::from("two candidates are required"));
@@ -811,7 +788,6 @@ mod tests {
         let entries = entries(&facts);
         assert!(reason_of(&entries, Command::OpenActiveTask).is_some());
         assert!(reason_of(&entries, Command::OpenActiveCandidate).is_some());
-        assert!(reason_of(&entries, Command::ToggleInspector).is_some());
         assert!(reason_of(&entries, Command::ShowEvaluation).is_some());
         assert!(reason_of(&entries, Command::ShowEvidence).is_some());
         assert_eq!(

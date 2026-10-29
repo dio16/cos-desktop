@@ -1214,6 +1214,20 @@ impl Shell {
         cx.notify();
     }
 
+    /// The rail row its Enter path could activate right now, or the honest
+    /// reason there is none. The palette uses this exact admission, so it never
+    /// enables a command whose dispatch would silently no-op.
+    fn rail_selection(&self) -> Result<&TaskId, &'static str> {
+        let Some(active) = self.rail_active.as_ref() else {
+            return Err("No Task is active in the rail.");
+        };
+        if self.rail_state.selectable(active) {
+            Ok(active)
+        } else {
+            Err("The active Task is not in the current Task search results.")
+        }
+    }
+
     fn select_rail_task(&mut self, task: &TaskId, window: &mut Window, cx: &mut Context<Self>) {
         self.pending_restore_task = None;
         let live = self.handle.as_ref().and_then(Self::current_notice);
