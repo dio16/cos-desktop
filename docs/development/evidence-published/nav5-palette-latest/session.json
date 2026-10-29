@@ -54,17 +54,19 @@
       "invoke_available": "Enter on Show Flow switched to the Flow surface with the graph lists; Enter on Open Active Task performed the rail selection",
       "refuse_unavailable": "Enter on the unavailable Check Stop Receipt closed the palette and showed 'No Stop command identity is available for an explicit receipt check.' without performing the action",
       "escape": "Escape dismissed the palette and left the surface unchanged",
-      "outside_click": "a click outside the palette dismissed it"
-    },
-    "results_repaired_candidate": {
-      "inventory": "eleven rows; no bulk inspector toggle",
-      "rail_filtered": "rail query 'zzz' removed the active Task from the results; Open Active Task was disabled with 'No Task is active in the rail.' and no action was performed",
+      "outside_click": "a click outside the palette dismissed it",
       "screenshots": [
         "palette-open.png",
         "palette-filtered.png",
         "palette-dismissed.png",
         "refusal-notice.png",
-        "invoked-show-flow.png",
+        "invoked-show-flow.png"
+      ]
+    },
+    "results_repaired_candidate": {
+      "inventory": "eleven rows; no bulk inspector toggle",
+      "rail_filtered": "rail query 'zzz' removed the active Task from the results; Open Active Task was disabled with 'No Task is active in the rail.' and no action was performed",
+      "screenshots": [
         "palette-rail-filtered.png"
       ]
     },
