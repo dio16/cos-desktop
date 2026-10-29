@@ -2,7 +2,7 @@
   "schema_version": 1,
   "task": "MP-AX2",
   "contract": "DC-MP-AX2",
-  "status": "LIMITED_NATIVE_KEYBOARD_VERIFICATION_REPAIRED_AFTER_REVIEW_ROUND_1",
+  "status": "LIMITED_NATIVE_KEYBOARD_VERIFICATION_REPAIRED_AFTER_REVIEW_ROUND_2",
   "authority": "Tern next-task directive after the clean MP-NAV5 review; ADR-0014 scoped resumption; DC-MP-AX2.",
   "baseline": {
     "reviewed_commit": "1b97fd39f7b4c796fcbc20c7e56e7838215d12de",
@@ -32,7 +32,7 @@
       "id": 2,
       "operation": "Keyboard search input",
       "result": "PASS",
-      "evidence": "palette-filtered-evidence.png (query 'evidence'); the rail and Flow search fields also accepted typed text"
+      "evidence": "s1-palette-filtered.ax.txt (query 'flow' reduced the list to Show Flow); the rail and Flow search fields also accepted typed text"
     },
     {
       "id": 3,
@@ -44,7 +44,7 @@
       "id": 4,
       "operation": "Enter executes an enabled command",
       "result": "PASS",
-      "evidence": "palette-diagnostics-invoked.png (Toggle Diagnostics executed); s1-flow-after-enter.ax.txt records the earlier Show Flow invocation"
+      "evidence": "s1-flow-after-enter.ax.txt records the Show Flow invocation and the resulting Flow lists; palette-cursor.png shows the cursor state"
     },
     {
       "id": 5,
@@ -136,7 +136,17 @@
         "same_as": "nav5-palette-latest/invoked-show-flow.png"
       }
     ],
-    "note": "Those three files belong to the earlier candidate 9211b34d (exe sha256:57be43f3…). Identical pixels cannot prove which run produced them, so they are kept only as historical reference and are NOT used as proof for the current executable. Current-exe proof uses startup-current.png, palette-filtered-evidence.png, palette-diagnostics-invoked.png, the tab-movement images, the other unique images and the AX excerpts."
+    "note": "Those three files belong to the earlier candidate 9211b34d (exe sha256:57be43f3…). Identical pixels cannot prove which run produced them, so they are kept only as historical reference and are NOT used as proof for the current executable. Current-exe proof uses startup-current.png, the tab-movement images, the other unique images and the AX excerpts; the two indistinguishable captures are excluded and no Diagnostics claim is made.",
+    "indistinguishable_records": [
+      {
+        "file": "reference/indistinguishable/palette-filtered-evidence.png",
+        "note": "identical to the startup screen; not used as evidence for search"
+      },
+      {
+        "file": "reference/indistinguishable/palette-diagnostics-invoked.png",
+        "note": "identical to the startup screen; no Diagnostics claim is made"
+      }
+    ]
   },
   "review_rounds": [
     {
@@ -149,6 +159,15 @@
         "the AX description contradicted this run's statictext output"
       ],
       "repair": "duplicates moved to reference/ and excluded from current-exe proof; plan corrected to 11 PASS / 1 PARTIAL; Tab/Shift+Tab movement captured; AX wording corrected to the actual output"
+    },
+    {
+      "round": 2,
+      "reviewed_head": "aff8ce3aedea0d3ee711fe0be8a15d2cd40c449d",
+      "verdict": "HOLD 0 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE",
+      "findings": [
+        "the two new captures were pixel-identical to the startup screen, so they did not prove the search or Diagnostics operation they were attached to"
+      ],
+      "repair": "both captures moved to reference/indistinguishable/; matrix item 2 is bound to s1-palette-filtered.ax.txt and item 4 to s1-flow-after-enter.ax.txt; the Diagnostics claim is dropped"
     }
   ]
 }
