@@ -49,3 +49,9 @@ This reconciliation is documentation-only. No product source, test, script, lock
 ## 5. Consequences and reversal
 
 Update owning Product/Design/Rendering documents first, then the audit's current authority and plan task/readiness projections. Record permissions as received while retaining all unsatisfied non-permission conditions. The global state becomes **IMPLEMENTATION_AUTHORIZED — SCOPED RESUMPTION**; individual deferred or evidence-blocked tasks remain deferred or blocked for their named reasons. A future pause or scope revision requires its own explicit decision and does not rewrite this approval or historical evidence.
+
+## 6. Evaluation-budget amendment
+
+The Caller subsequently wrote: **「評価予算上限を解除。」** This removes the audit's evaluation-budget ceiling, including the former maximum of three review rounds, and authorizes continuing the **documentation review/correction loop** with the designated OMP slow reviewer until a clean result or a genuine non-budget blocker. It does not authorize new product experiments, Refine Gates, source changes, Runtime-repository mutation, main/release publication, configuration/credential changes or reactivation of deferred work. Existing candidate-specific product execution grants and safety requirements are unchanged.
+
+The actual Round 3 HOLD and its repaired-but-not-re-evaluated disposition remain historical facts. [The audit's current review record](../development/IMPLEMENTATION_STATUS_AUDIT.md#11-evaluation-limit-removal-and-renewed-review) supersedes only their former review-budget blocker; no earlier verdict is rewritten or transferred to a different SHA.

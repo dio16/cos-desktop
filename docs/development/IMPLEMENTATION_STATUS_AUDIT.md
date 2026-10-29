@@ -430,3 +430,9 @@ Apply this overlay instead of the historical PAUSED axis in §4; Implementation/
 
 
 **Observed repaired-document smoke:** 62 cards / 62 sole DCs / 62 baseline rows with unchanged I/V evidence and exact Hard prerequisites; 62 nodes / 41 edges acyclic; 1,145 relative file/Markdown-heading/source-line links resolve; twelve adopted decisions; current authority partition 47 AUTHORIZED + 15 EXTERNAL_DEPENDENCY with zero Caller-permission waits. Prior plan §19.1–§19.69 and audit §8 review bytes match `e50325f` after LF normalization; Product's original headings remain intact. No structural/link errors or non-document changes. This deterministic documentation smoke is not a fourth independent review or a product verification PASS.
+
+## 11. Evaluation-limit removal and renewed review
+
+**Latest Caller authority:** 「評価予算上限を解除。」 [ADR-0014 §6](../decisions/ADR-0014-YAGNI-SCOPE-AND-RESUMPTION.md#6-evaluation-budget-amendment) removes the former audit evaluation-budget/three-round ceiling. OMP slow remains the designated independent reviewer. Continue the docs-only review/correction loop without that ceiling; no product implementation, experiment, Native/Runtime execution or Refine Gate is added to this evaluation.
+
+**Current review status: PENDING renewed independent evaluation.** Repair baseline `8bbc332abe07e6ea31886b40bad77c3489bdcf18` is clean and matched live remote dev before this budget-amendment record. Round 3's exact HOLD and the applied fixed-path retention/conditional-FLOW3 corrections in §10 stay unchanged history. The next review must bind the newly pushed candidate, verify actual model execution and independently check both repairs plus cross-document authority, accepted scope and essential guarantees. No automatic PASS, rewritten receipt or Caller-approval wait is introduced.

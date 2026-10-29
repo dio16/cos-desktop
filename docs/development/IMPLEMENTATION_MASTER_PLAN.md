@@ -1881,3 +1881,8 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Final Round 3:** [actual review and repairs](IMPLEMENTATION_STATUS_AUDIT.md#10-final-round-3-review-and-documentation-corrections) records OMP slow/Astra-high/no-fallback review of pushed `f2d5a7f`: authority B0/A2/E0 and technical B0/A1/E1, HOLD on two unique inconsistencies. Fixed-path eviction evidence is mandatory again; advanced FLOW3 acceptance is conditional on justified implemented stages, while actual accessible Flow evidence remains mandatory. Both minimal corrections are applied. No fourth review is run, so the independent verdict stays HOLD, not PASS; the direct Caller permission and global pause release remain effective and no repeated authorization is requested.
 
 
+
+### 19.71 Evaluation-budget ceiling removed
+
+- **Direct Caller amendment:** 「評価予算上限を解除。」 [ADR-0014 §6](../decisions/ADR-0014-YAGNI-SCOPE-AND-RESUMPTION.md#6-evaluation-budget-amendment) removes the former maximum-three-round/audit evaluation-budget ceiling. [Audit §11](IMPLEMENTATION_STATUS_AUDIT.md#11-evaluation-limit-removal-and-renewed-review) owns renewed OMP slow evaluation and candidate-bound correction results.
+- **Preserved boundaries:** §19.70's scope adoption, Caller permissions and implementation-pause release remain effective. Round 3's HOLD and applied repairs remain historical; only the review-budget blocker is removed. This docs-only review authorization grants no new product experiment/Gate, Runtime mutation, main/release, credentials/configuration/dependency/pin change or deferred-feature resumption.
