@@ -1,12 +1,12 @@
 # COS Desktop implementation status and YAGNI audit
 
-**Status: IMPLEMENTATION_PAUSED — OMP slow Round 2 independent review returned scoped PASS 0/0/0 on candidate `084f62d8a9ac06afb75df8b6119b70ea6f0f753f` (§8.4). The historical Tern/Astra-identity HOLD is preserved in §8.2; a review PASS is not Caller adoption and does not resume implementation.**
+**Current status: IMPLEMENTATION_AUTHORIZED — SCOPED RESUMPTION (2026-10-30).** The Caller adopted all Y01–Y12 proposals, granted the remaining Caller permissions and released the global pause under [ADR-0014](../decisions/ADR-0014-YAGNI-SCOPE-AND-RESUMPTION.md). [§9](#9-caller-adoption-and-current-authority-2026-10-30) owns the current authority overlay. Implementation/verification below retain their fixed-source evidence; historical Tern HOLD and OMP slow Round 2 PASS remain candidate-bound, not new product results.
 
 ## 1. Fixed baseline, scope and evidence method
 
 - Audit date: 2026-10-29. Repository: dio16/cos-desktop, branch dev. Initial local HEAD and live remote dev both **82b46e580e505f310a6e8b6b596ad611bd148e75**; initial worktree clean. The Caller reference c05fff720f19af1e35ce6e19d8e37067dbf818e8 is its parent: the intervening commit changes only the plan and four w13-native next-decision documents, not implementation.
-- Current direct Caller instruction pauses new features, MP slices, experiments, Gates, Runtime work and automatic next-task selection. It supersedes execution-loop authority in master-plan §19.6 and ADR-0009 **without revoking historical completion, acceptance or design decisions**. This audit authorizes no resumption, even after a clean review.
-- Only this report and append-only current-status notes in [the master plan](IMPLEMENTATION_MASTER_PLAN.md#1967-implementation-paused-full-status-and-yagni-audit-2026-10-29) are changed. No code, test, script, dependency, lockfile, credential, GPUI pin, DC, ADR, Runtime repository, main or release mutation; no existing test deletion.
+- The 2026-10-29 audit instruction paused new work and overrode the execution loop without revoking historical completion or design. The **later 2026-10-30 direct Caller decision** adopts the proposals and releases that global pause within the owning profiles in §9; it does not reopen rejected work or erase technical prerequisites.
+- The original audit changed only this report and current-status notes in the master plan. The subsequent approval reconciliation amends the owning Product/Design/Rendering documents and records ADR-0014 before deriving the updated plan. No product code, test, script, dependency, lockfile, credential, GPUI pin, Runtime repository, main or release mutation is made; no test is deleted.
 - Investigation/draft authors: three read-only scout slices, **openai-codex/gpt-6-luna**, confirmed from session model-change metadata (no fallback). Scope: 30 foundation/presentation cards, 32 integration/security/release cards, and a crosscutting five-category YAGNI investigation. Integration corrects their initial stale-card classifications; their self-review is not independent Astra approval.
 - Authority order applied: current Caller > approved ADR and sole owning DC > Product/UX Canon > fixed-source/evidence/review > current task card > historical counts. [Design Canon](../architecture/DESKTOP_DESIGN_CANON.md), [62 sole contracts](../architecture/DESKTOP_DESIGN_CONTRACTS.md), [Product Canon](../architecture/COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md), [rendering architecture](../architecture/RENDERING_PERFORMANCE_VISUAL_ARCHITECTURE.md), [ADR-0008](../decisions/ADR-0008-OWNER-RATIFICATION.md), [ADR-0009](../decisions/ADR-0009-CALLER-BLANKET-ACCEPTANCE.md), [ADR-0013](../decisions/ADR-0013-EVIDENCE-RETENTION.md), and [Taskern/Refine boundary](../integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md) retain their ownership.
 - Required plan sections read across the investigation: §2, all §7 cards, §8 R0–R10, §9 RC-01–17, §15 readiness and §19 through §19.66. Later ADR-0010/0011/0012 were also inspected where they resolve older cards. Source/tests and recorded Gate/Native/review/disposition were inspected; **no product build, test, decoder run, Native interaction, Runtime probe or Refine Gate was executed by this audit**.
@@ -14,7 +14,7 @@
 
 ## 2. Classification rules and fresh totals
 
-The axes below are independent. Implementation describes the owning task's achieved scope; Verification describes evidence for that scope and remaining task exits. Authority is **PAUSED for all 62 today**, while each row preserves earlier grants/decisions and external dependencies. No label is permission.
+The axes below are independent. Implementation and Verification describe the owning task's achieved scope and evidence. The 62-row table is the **reviewed 2026-10-29 baseline**, including its historical PAUSED authority cells; **current authority is the explicit §9 overlay**, not those old cells. Earlier grants and unsatisfied external/technical conditions remain separate. No verification label grants permission or changes merely because permission is received.
 
 - **COMPLETE:** the task's recorded accepted technical scope is closed (not full product acceptance). COR1/COR2/PUB1/PUB2/PUB3 need no repeat implementation. PUB1's accepted Desktop seam does not include A19.
 - **LIMITED_COMPLETE:** a specified local, exploratory, declared-policy or A/B part is implemented, but the full task retains explicit remaining scope/evidence. This is not a claim that every partial task has passed an independent review; the review and acceptance columns govern that separately.
@@ -54,13 +54,13 @@ UNKNOWN still appears in individual review/original-byte fields; a primary HOLD 
 | STOP_PROPOSED as primary MP label | 0 |
 | Total | 62 |
 
-Simplification/stopping proposals apply to **subwork/processes** in §6, not a silent cancellation of whole frozen MPs. Five tasks are COMPLETED_NO_ACTION, 23 KEEP their existing work/remaining obligations, and 34 DEFER further work. All 62 remain paused regardless of recommendation.
+Simplification/stopping decisions apply to **subwork/processes**, not cancellation of whole MPs. The adopted baseline disposition has five COMPLETED_NO_ACTION, 23 KEEP and 34 DEFER. DEFER queues mandatory work behind its actual prerequisites; only the features explicitly excluded by Product §68.1 are outside the initial release. All-PAUSED was the audit baseline, not the current state after §9.
 
 ### 2.1 External dependency and actionable-work counts
 
 - **15 tasks have missing Runtime-owned producer/contract/integration as a direct remaining delivery blocker:** NAV2, NAV3, IMG6, INS2, RT1–RT8, SEC1, ACC1, ACC2. These are explicit membership counts, not the old single-primary-label Runtime bucket. RT8 already has a completed local lock/close part. Other tasks have conditional Runtime/product acceptance in their rows; that does not make their local implementation absent.
 - **Measurement/native gaps are itemized per task**, not equated with missing permission. R0A/B/C and measured replacement of R0D, typography/AX matrices, IMG2 full Decode, later Upload/Eviction/Compare/graph/resource exits are not measured by ratifying budgets. Count of wholly NOT_MEASURED primary verification labels is 3; many PARTIAL/HOLD rows also contain named unmeasured endpoints.
-- **Actually authorized additional implementation now: 0.** No automatic eligible-task list is produced. Removing the pause later would not clear Runtime, UX, measurement, signing or video-route prerequisites; the Caller must define resumption scope. Minimal residuals below distinguish code from a decision, review or measurement: they are an inventory, not a dispatch plan.
+- **Current authorization:** the blanket pause is released and Caller permission is RECEIVED for the adopted Desktop scope; §9 distinguishes 47 AUTHORIZED task authorities from 15 EXTERNAL_DEPENDENCY delivery authorities. These are not counts of immediately runnable tasks: accepted deferrals, hard prerequisites and named evidence still control eligibility. No unknown capability, certificate or producer is supplied by an approval, and no new task or Gate is dispatched by this document update.
 
 ## 3. Current usability and discrepancies
 
@@ -93,7 +93,7 @@ Not delivered: real task creation/Start/advance/history, authorized evidence bod
 
 ## 4. Complete 62-task census
 
-Column conventions: **I / V / A / D** = Implementation / Verification / current Authority / recommended Disposition. Q, N and R are separately labelled quality/Gate, Native and independent review, not a combined pass. Caller is historical scoped approval. Runtime and UX are separate dependencies. **Hard** lists only exact incoming §7 DAG prerequisites; other conditions remain conditions. MP/DC identity is one-to-one. Source paths and abbreviated historical pins are recorded references, not claims of fresh execution.
+Column conventions for this **reviewed baseline snapshot**: **I / V / A / D** = Implementation / Verification / then-current Authority / recommended Disposition. Current Caller authority and accepted disposition are applied by §9 and ADR-0014; historical PAUSED and question-list fields below are not fresh approval requests. Q, N and R remain separately labelled quality/Gate, Native and review. **Hard** lists exact incoming §7 DAG prerequisites; other conditions remain conditions. MP/DC identity is one-to-one; pins are recorded references, not fresh execution claims.
 
 ### Foundation, measurement and decisions
 
@@ -201,7 +201,7 @@ Full Decode Exit remains **HOLD**; **MP-IMG3 is NOT_STARTED** with that hard pre
 
 ## 6. YAGNI candidates and risk/authority assessment
 
-Candidate counts are **12 assessed items: P0 2, P1 4, P2 2, P3 1, P4 3**. Ten are simplification/deferral/stop/decision candidates; two explicitly retain essential controls. A proposed reduction is not authorization to edit code, delete tests or change a canon. The report finds **one concrete overlapping test pair**, not an evidence-backed license to delete an entire mutation/regression suite. All incidence probabilities and monetary/hour savings are UNKNOWN unless explicitly observed below; confidence describes evidence strength, not probability.
+The **adopted** assessment has 12 items: P0 2, P1 4, P2 2, P3 1, P4 3. The following paragraphs preserve the investigated facts and original recommendation/approval predicates; **all Caller predicates are now RECEIVED under ADR-0014**, with selected owner profiles in §9. P4 no longer means permission is missing; implementation details and actual evidence may still be missing. This docs-only reconciliation executes no code/test deletion. One exact overlapping test pair supports consolidation, not removal of an entire suite. Incidence probabilities and monetary/hour savings remain UNKNOWN; confidence denotes evidence strength, not probability.
 
 ### Y01 — P0 MUST KEEP: scoped authorization and atomic canonical publication
 
@@ -328,9 +328,9 @@ Candidate counts are **12 assessed items: P0 2, P1 4, P2 2, P3 1, P4 3**. Ten ar
 - **Maintenance / added cost:** each unused override carries validation and tests; no measured maintenance time. **Simplification proposal / lost guarantee:** defer new leaves/options; a later exact API reduction could remove unused token knobs but loses their configuration contract. Existing ratified budget configurability must stay unless ADR owner changes it.
 - **Recommendation:** no deletion or public API change now; distinguish option declaration from enforced cap. **Caller decision:** owner-authorized API/ADR scope and caller migration before any removal; reference analysis would be required for that later code task. **Evidence:** §19.28/§19.33 and cited source; no guessed consumer or cost claims.
 
-## 7. Execution principles after any separately authorized resumption
+## 7. Adopted execution principles
 
-These are the Caller-requested execution principles, not amendments to Product/DC/ADR requirements:
+These are the Caller-adopted principles under ADR-0014. Product scope is amended only by Product §68.1 and behavior by the owning DC; no plan-only waiver is allowed:
 
 1. **YAGNI:** no implementation for a presently absent need/consumer.
 2. **KISS:** smallest implementation that satisfies the owning contract's required guarantees.
@@ -345,7 +345,7 @@ These are the Caller-requested execution principles, not amendments to Product/D
 11. UNKNOWN alone is not a reason for another experiment. Decide whether the missing fact matters to a real acceptance claim; if unobservable, keep its claim blocked rather than inventing data.
 12. Prioritize delivered workflow, reachability and maintenance cost. Deleting a frozen requirement remains a clearly labelled owner proposal.
 
-**Immediate stops:** new W14/IMG3 work, advanced renderer/adaptive/representation adoption, new product test/mutation families, new Gates/builds/experiments, duplicate planner/Gate framework, Runtime implementation, automatic task selection and ADR-0009 loop resumption. Existing bounded artifacts/tests/history remain intact. No exact list of tests to delete is executed; Y03 is the only concrete consolidation candidate here.
+**Accepted stops/deferrals after pause release:** no speculative W14, duplicate planner/Gate/decoder/resource framework, quota-driven regression families, or optional representation/adaptive/advanced-renderer adoption without a real consumer/need. Product §68.1 names initial-release deferrals. Prerequisite-ready retained work and its required change-based tests/builds/Gates are authorized under the existing workflow; unchanged product bytes are not mechanically re-Gated. Runtime-repository mutation, main/release and credential/pin changes remain excluded. Existing useful tools/history remain; Y03 consolidation is approved but not executed here.
 
 **Cost statement:** existing bytes support a 28-line overlapping test-body candidate, repeated eight-name source-scan overlap, one recorded stale-path failed Gate, and historical W13 nine-Gate/27-check/621-tuple scope. They do **not** support a measured runtime saving, labor estimate, failure probability or percentage reduction. This audit performs zero product test/Gate/build reruns and creates no permanent review source archive. Historical source-changing Gate reruns remain valid and are not retroactively called waste.
 
@@ -389,8 +389,26 @@ This direct instruction supersedes the earlier Tern-only evaluation route for th
 - **Review limits:** no fresh execution; ignored historical originals were reachable only through published pins and the existing disclosure, so their bytes are not re-asserted as public Git objects; Gate artifact tuples were checked by digest/correspondence rather than full rehash; VID1 raw temporary bytes and N07 binaries remain UNKNOWN/NOT_RUN under ADR-0013.
 - **Boundary:** one prior Tern round plus this Round 2 uses two of the maximum three review rounds. No finding requires a new candidate, so Round 3 remains available but unused. `IMPLEMENTATION_PAUSED` persists; plan adoption, individual stop/defer proposals, product acceptance, main integration, release and any bounded resumption remain Caller decisions.
 
-## 9. Caller decisions retained; final stopping state
+## 9. Caller adoption and current authority (2026-10-30)
 
-After review, the Caller decides whether to adopt this status projection, which specific defer/stop/de-scope proposals to approve and whether to resume any bounded implementation. Missing decisions are the genuine full Decode capability/acceptance definition, unresolved UX questions, actual Runtime producer task, video route and signing/distribution scope—not approvals already received. Full product quality requirements remain unchanged unless their owner explicitly amends them.
+The Caller wrote: **「すべての提案を承認し、コーラー承認待ちも承認する。そのうえで実装停止を解除」**. [ADR-0014](../decisions/ADR-0014-YAGNI-SCOPE-AND-RESUMPTION.md) records adoption of all twelve assessed items, the status projection and execution principles. **Outstanding Caller approval waits for this adopted Desktop scope: 0.** Previously completed slices keep their acceptance; remaining implementation, independent closure and product evidence are not fabricated.
 
-**IMPLEMENTATION_PAUSED remains effective after this report, regardless of review verdict. No next MP, new experiment, Gate, Runtime launch/mutation, main integration or release is started.**
+### 9.1 Current authority applied to all 62 rows
+
+Apply this overlay instead of the historical PAUSED axis in §4; Implementation/Verification evidence counts are unchanged by a docs-only decision:
+
+| Current Authority | Count | Exact membership / condition |
+|---|---:|---|
+| EXTERNAL_DEPENDENCY | 15 | MP-NAV2, MP-NAV3, MP-IMG6, MP-INS2, MP-RT1, MP-RT2, MP-RT3, MP-RT4, MP-RT5, MP-RT6, MP-RT7, MP-RT8, MP-SEC1, MP-ACC1, MP-ACC2: Caller permission received; Runtime producer/contract/integration remains a direct delivery prerequisite. Existing local slices remain usable. |
+| AUTHORIZED | 47 | Every other MP in the 62-row census: Caller permission received within the adopted profile. Completed tasks need no reimplementation; accepted DEFER/STOP decisions and actual hard/technical prerequisites still prevent inappropriate dispatch. |
+| PAUSED / DECISION_REQUIRED for Caller permission | 0 | The global pause and presented Caller waits are closed, not converted to technical PASS. |
+
+### 9.2 Adopted minimal scope and remaining work
+
+- **Y01–Y09:** adopted exactly as [ADR-0014's register](../decisions/ADR-0014-YAGNI-SCOPE-AND-RESUMPTION.md#2-adopted-proposal-register). Preserve critical guards; authorize only the exact Y03 consolidation; use existing docs verification; avoid repeated approvals/mirrors; defer PUB4 and optional adaptive/advanced graph stages; stop speculative W14 and duplicate frameworks.
+- **Y10:** [DC-MP-IMG2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img2) owns `BOUNDED_IMAGE_DECODE`: support only actually admitted classes with a verifiable conservative all-concurrent resource bound and an explicit bounded cancellation/worker lifecycle. Unsupported classes get a proven bounded preview or unavailable state. Ratified configurable ceilings stay; 16K/full-detail/partial/cooperative claims are not assumed. Historical full-target Decode HOLD remains, but its all-class closure is not the initial profile's gate. Actual admitted-profile evidence is still required before IMG3 uses that path.
+- **Y11:** [Product §68.1](../architecture/COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md#681-image-first-initial-release) selects the image-first initial release. Video, named advanced OS integrations and automatic updater delivery are deferred. Real Task/Brief/Start/iteration, images/Compare/Evaluation/Evidence/Flow/Outcome/History, basic native quality, signed installer/portable delivery and security remain required. No fixture-only product acceptance.
+- **Y12:** unused option/API consolidation is authorized after reference analysis and complete caller migration, without deleting required budget configurability. This update changes no API or test.
+- **Still missing, not approval waits:** exact unrecorded UX parameters, applicable operational certificate/publisher/channel inputs, producer/issuer/trusted transport/descriptors and source-bound physical evidence. Do not ask for identical authorization again, invent a value/capability, or start a new study solely to replace UNKNOWN.
+
+**IMPLEMENTATION_PAUSED is released after canonical reconciliation. IMPLEMENTATION_AUTHORIZED — SCOPED RESUMPTION applies.** The retained Desktop workflow may continue only within this adopted scope and real prerequisites; no deferred/stopped feature is automatically reactivated. This authority update itself starts no product implementation, Native/Runtime process or Gate and grants no main/release publication.

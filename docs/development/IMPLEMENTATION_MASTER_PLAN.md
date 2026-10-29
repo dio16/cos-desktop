@@ -2,7 +2,7 @@
 
 Status: **Execution projection of the Desktop Design Canon and canonical component contracts.** Historical freeze-reviewed source: `f3ea37eaba8ed36551b2cfa3d8b370cd01956d70`; this plan update is a documentation-only reconciliation, not covered by that review. The plan owns priority, DAG/milestones, readiness, prerequisites, approval/evidence reporting, and crosswalk—not design contracts. No implementation/UX/Runtime/R0/video approval is granted here.
 
-**Current Caller override (2026-10-29): IMPLEMENTATION_PAUSED.** New implementation, MP slices, experiments, Gates, Runtime work and automatic next-task selection are paused, including the continuous loop recorded in §19.6/ADR-0009. Historical completion, scoped acceptance and design decisions are preserved. The current 62-task census and YAGNI proposals are in [IMPLEMENTATION_STATUS_AUDIT.md](IMPLEMENTATION_STATUS_AUDIT.md); [§19.67](#1967-implementation-paused-full-status-and-yagni-audit-2026-10-29) records the docs-only audit and the explicit no-resumption boundary.
+**Current Caller decision (2026-10-30): IMPLEMENTATION_AUTHORIZED — SCOPED RESUMPTION.** All audited proposals and remaining Caller permissions are adopted under [ADR-0014](../decisions/ADR-0014-YAGNI-SCOPE-AND-RESUMPTION.md); the global pause is released after canonical reconciliation. [Product §68.1](../architecture/COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md#681-image-first-initial-release) and [DC-MP-IMG2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img2) own the initial-release profiles. The [current 62-task authority](IMPLEMENTATION_STATUS_AUDIT.md#9-caller-adoption-and-current-authority-2026-10-30) supersedes old PAUSED/approval-pending fields; [§19.70](#1970-caller-adoption-and-scoped-implementation-resumption-2026-10-30) records this decision. Real technical/external prerequisites remain.
 
 It does **not** own and does not restate:
 
@@ -16,7 +16,7 @@ It does **not** own and does not restate:
 - Wire contract → [DESKTOP_PROTOCOL.md](../architecture/DESKTOP_PROTOCOL.md), [PROTOCOL_OWNERSHIP.md](../integration/PROTOCOL_OWNERSHIP.md).
 - Runtime change requests → [COS_RUNTIME_REQUIRED_CHANGES.md](../integration/COS_RUNTIME_REQUIRED_CHANGES.md) (RC-01–RC-17, still **Proposed** requests, not an approved Runtime plan).
 
-**The document itself grants no implementation authority.** Current direct-user execution, dev-integration and task-branch-cleanup authority is recorded in [§19.6](#196-current-user-authority-and-continuous-execution). It supersedes the older per-task start-authorization restrictions without waiving canonical design, Runtime, UX, measurement or security decisions.
+**The document itself grants no implementation authority.** ADR-0014 releases the later pause and restores the existing Desktop execution authority in §19.6/ADR-0009 within adopted scope and real prerequisites. No repeated Caller acceptance wait, resurrection of deferred/stopped work, fabricated evidence, Runtime-repository mutation, main integration or release publication.
 
 Evidence vocabulary (unchanged from repository policy): **Observed** = directly inspected/executed with recorded evidence; **Accepted** = decided policy, not implemented behavior; **Proposed** = candidate needing validation; **Deferred** = triggered re-entry stated.
 
@@ -149,6 +149,8 @@ Except the scoped MP-PUB1 owner ratification above, previously pending DD/RC/UX/
 
 ## 7. Milestones, dependency DAG and task contracts
 
+**Current execution overlay:** goals, sole DCs and hard DAG remain. The adopted audit governs current I/V evidence, ADR-0014 governs permission, and Product §68.1 qualifies full-target milestones. Old preparation/evidence statements are historical, not new approval requests or current measurements. Named deferrals remain later-release obligations, not PASS.
+
 ### 7.1 Milestones
 
 | Milestone | Goal | Exit (observable) |
@@ -237,9 +239,9 @@ flowchart TD
 
 This graph contains **62 task nodes and 41 hard implementation edges**. An edge means the dependent implementation cannot start without the upstream task result. The forward-ordered edges are acyclic. Decision/authorization, measurement readiness, conditional Runtime functionality and downstream product acceptance are separate gates, not hard task dependencies. MP-IMG1 local/fixture inputs do not depend on MP-IMG6; MP-IMG5 local/fixture full-view feasibility does not depend on MP-IMG6; MP-NAV4 fixture/local axes and native interaction do not depend on MP-RT4. External-media decode requires the MP-IMG6/MP-SEC3 admission and authorization gates; MP-IMG6 also requires MP-RT2 descriptor transport and MP-RT6 authorization. Production full-detail acceptance requires MP-IMG6; NAV4 real receipt reflection and Runtime acceptance require MP-RT4. Desktop-local REC3 restoration is not blocked by RT3/RT8; task-survival/product acceptance remains conditional on real Runtime evidence. VID1→VID2→VID3→VID4 is an authorization/acceptance sequence, not an implementation dependency chain.
 
-**Non-DAG gate crosswalk:** R0A→R0B/R0C→R0D is the R0 evidence sequence; R0 authorization and R0D gate measurement-based experiments/adoption, not independently implementable work. UX-01/DD-03 gates Compare semantics; DD-04a/04b gate typography implementation/adoption; DD-05 gates the Palette inventory; DD-06/DD-25 and RC-01/09 gate real task creation; DD-01 `SPEC_APPROVED` plus separate `IMPLEMENTATION_AUTHORIZED` gates PUB1; RT4 gates NAV4's Runtime receipt reflection. IMG6/RT6/RC-13 gate production media; IMG1–5 local feasibility is not Runtime-blocked. Video stays MVP-required and NOT_AUTHORIZED: VID1 probe authorization precedes VID2 authorization decision; VID3 implementation is permitted only if VID2 authorizes it; VID4 acceptance follows the selected path, with any scope exception governed by Product-owner acceptance, not a hard DAG edge.
+**Non-DAG gate crosswalk:** R0A→R0B/R0C→R0D is the evidence sequence, not a new permission wait; ADR-0008 ratifies declared configurable defaults, not attainment. UX details, typography/AX evidence, Brief/command contracts and actual Runtime capabilities remain conditional gates. DD-01 and Desktop PUB1 permission are already approved. IMG6/RT6/RC-13 gate production media; local IMG1–5 work is not inherently Runtime-blocked. Product §68.1 defers video; route/capability evidence remains necessary on re-entry. No hard DAG edge changes.
 
-MP-ACC1 remains a **conditional product gate** over required evidence from MP-NAV2, MP-IMG5/6, MP-CMP1, MP-INS1/2, MP-FLOW1, MP-NAV3, MP-RT3/4/5/7, MP-REC3 and MP-REL1; DD-25 Start/Next Iteration remains required before those steps pass. MP-ACC2 remains a **release gate** over MP-ACC1, MP-FLOW3, MP-REL2, MP-REC2, MP-NAV5, MP-PL1, MP-AX2, MP-PUB3, DD-04b typography adoption, and VID4 unless the Product owner records an explicit scope exception. These acceptance conditions remain in the owning contracts; they are not hard DAG ancestors.
+MP-ACC1 retains the complete real-integrated image workflow and failure evidence, including NAV2, IMG5/6, CMP1, INS1/2, FLOW1, NAV3, RT3/4/5/7, REC3 and REL1; actual DD-25 command semantics remain necessary. MP-ACC2 retains the owning contract's supported-image/AX/security/packaging evidence. Product §68.1 is the explicit exception for VID4, REL2 and named deferred OS subpaths: not initial-release exit prerequisites or PASS. Full-target conditions remain in their sole DCs, not hard DAG ancestors.
 
 ### 7.3 Parallel lanes (reconstructed from the corrected DAG)
 
@@ -255,8 +257,8 @@ The table groups related work; it does not add dependencies. Only the §7.2 edge
 | **L-Media** | MP-IMG1..6, MP-SEC3, MP-CMP1, MP-REC1/2 | Local-input feasibility is independent of Runtime; IMG6/RT6 gates production inputs, IMG6 also gates production full-detail. |
 | **L-Graph** | MP-FLOW1..3 | Fixture/list work is independently startable; COR2 gates scaled graph-ingestion claims; R0/experiment gates apply to measured stages. |
 | **L-Runtime** | MP-RT1..8, MP-SEC1, MP-INS2 | Runtime-owner contract approvals gate Runtime-dependent slices; MP-RT8 local native single-instance/shutdown work is independently implementable. |
-| **L-Release** | MP-SEC2, MP-REL1..3 | SEC2/REL1 design work can start within their task gates; report-content and signing/updater decisions remain gated. |
-| **L-Video** | MP-VID1..4 | Separate explicit authorization sequence; NOT_AUTHORIZED. |
+| **L-Release** | MP-SEC2, MP-REL1..3 | Caller permission received; retained diagnostics/signed packages need actual contract details, certificate/operator inputs and evidence. Automatic updater delivery deferred by Product §68.1. |
+| **L-Video** | MP-VID1..4 | Existing probe source/evidence retained; video is DEFERRED_INITIAL_RELEASE, not waiting for the same Caller permission or requiring a new image-release probe. |
 
 Integration ownership and file-conflict policy are assigned per shared file by the coordinating Caller/integration owner before merging parallel work; conflicting changes are not silently ordered. Testing ownership and impact routes are defined in [TESTING.md §1](TESTING.md#1-quality-gates-and-impact-routes).
 
@@ -284,9 +286,9 @@ Plan governance: §7.2 is canonical for hard edges; §6 reflects decision status
 
 #### MP-COR2 — Graph validation scaling (PERF-01)
 - **Hard prereqs:** none.
-- **Priority:** P0 · **Status:** IMPLEMENTED_BUT_INCOMPLETE (technical checks, STEP 4 Tern review and dev integration complete; separate Caller acceptance pending) · **Owner:** `crates/cos-client` (`projection.rs`)
+- **Priority:** P0 · **Status:** COMPLETED_ACCEPTED for recorded client scaling scope (Gate/review and dev integration complete; Caller acceptance ADR-0009/0014) · **Owner:** `crates/cos-client` (`projection.rs`)
 - **Prereqs:** none (independent of the delta-integrity task; either may land first). **Inputs:** rendering §10 graph workloads; §4.2 measurement separation (validation vs publication vs layout).
-- **Evidence:** [implementation/public regressions, same-session 10k/50k parity/timing/traversal, local quality and native startup](evidence/README.md#historical-records), [fixed candidate/Gate/review closure and interruption](evidence/README.md#historical-records), [independent assessment](evidence/README.md#historical-records). Numeric performance targets remain unratified; no R0, real-Runtime or Caller acceptance is inferred. Zero-intervention end-to-end delivery was not achieved.
+- **Evidence:** [implementation/public regressions, same-session 10k/50k parity/timing/traversal, quality/native startup](evidence/README.md#historical-records), [fixed candidate/Gate/review closure](evidence/README.md#historical-records), [independent assessment](evidence/README.md#historical-records). Product numeric attainment and real Runtime are not established by this client fix. Declared configurable targets are ratified by ADR-0008; zero-intervention delivery was not achieved.
 - **Unresolved:** none. **Stop/escalation:** if any pre-existing valid fixture graph is rejected, stop (behavior drift).
 - **Consumers:** MP-PUB4, MP-FLOW1/2, R6 experiments.
 - **Design source / acceptance:** [DC-MP-COR2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-cor2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
@@ -304,7 +306,7 @@ Plan governance: §7.2 is canonical for hard edges; §6 reflects decision status
 
 #### MP-PUB2 — Incremental window refresh and derived-view policy
 - **Hard prereqs:** MP-PUB1.
-- **Priority:** P0 · **Status:** IMPLEMENTED_BUT_INCOMPLETE ([implementation and technical review complete](evidence/README.md#historical-records): local quality/changed-path Native, independent Gate R3 and remote Tern R2 0/0/0 PASS; separate Caller final acceptance pending) · **Owner:** `crates/ui-model`, `crates/desktop-gpui`; app-core only exposes the existing snapshot-handle type through the allowed boundary.
+- **Priority:** P0 · **Status:** COMPLETED_ACCEPTED revision-scoped derivation ([technical review](evidence/README.md#historical-records): quality/changed-path Native, Gate R3 and Tern R2 0/0/0; Caller acceptance ADR-0009/0014). Real Runtime/full product acceptance separate · **Owner:** `crates/ui-model`, `crates/desktop-gpui`; app-core exposes only the allowed existing snapshot handle.
 - **Evidence:** [direct MP-PUB2/MP-PUB3 Caller authority](evidence/README.md#historical-records), [Taskern revision1 packet](evidence/README.md#historical-records), [quality](evidence/README.md#historical-records), [normal-binary Native evidence](evidence/README.md#historical-records), [observable pixel comparison](evidence/README.md#historical-records). No private-helper count is an acceptance oracle; A19 and full product UX remain outside this slice.
 - **Gate history:** [R1](evidence/README.md#historical-records) preserves the no-PATH checker failure; [the corrected existing launcher](evidence/README.md#historical-records) passed. [R2](evidence/README.md#historical-records) preserves seven successful command checks/176 tests, followed by the correctly rejected old HEAD predicate. Both failed Gates retain complete cleanup and separate stored-integrity outcomes. [R3](evidence/README.md#historical-records) SUCCEEDED on `f28a2055f88ae73fe9d9afd9fc56233a45e82293`: all seven commands, HEAD and clean-worktree predicates passed; 176 tests passed, all eight outputs collected, cleanup complete. Static preflight UNKNOWN and later documentation closure are not attributed to that Gate.
 - **Unresolved:** cache/reuse representation → MP-PUB4.
@@ -313,12 +315,12 @@ Plan governance: §7.2 is canonical for hard edges; §6 reflects decision status
 
 #### MP-PUB3 — Multi-window, generation and stale-result conformance tests
 - **Hard prereqs:** MP-PUB1.
-- **Priority:** P1 · **Status:** IMPLEMENTED_BUT_INCOMPLETE ([implementation and technical review complete](evidence/README.md#historical-records): eight-invariant crosswalk, local quality/179 workspace tests, actual native startup smoke, independent Gate R2 and remote Tern R3 0/0/0 PASS; separate Caller final acceptance pending) · **Owner:** `crates/app-core` tests, `crates/desktop-gpui` tests
+- **Priority:** P1 · **Status:** COMPLETED_ACCEPTED recorded Desktop multi-consumer invariants ([technical review](evidence/README.md#historical-records): quality/179 historical tests, native startup, Gate R2 and Tern R3 0/0/0; Caller acceptance ADR-0009/0014). Full product windows/Runtime separate · **Owner:** `crates/app-core` tests, `crates/desktop-gpui` tests
 - **Authorization:** [2026-10-18 direct Caller instruction](evidence/README.md#historical-records) authorizes this MP after MP-PUB2 completes implementation/verification and clean remote Tern review; [MP-PUB2 remote R2](evidence/README.md#historical-records) is 0/0/0 PASS, so this task proceeded. It grants no unrelated task or integration.
 - **Gate history:** [R1](evidence/README.md#historical-records) SUCCEEDED on `60cf860a52090989a28b7bd05b75067d53755ae0`: all seven quality commands plus the HEAD and clean-worktree predicates passed, 179 workspace tests passed across 22 targets, all nine declared outputs were collected, cleanup complete. Static preflight UNKNOWN was not relabelled PASS; no candidate was mutated during checks.
 - **Gate history (continued):** [R2](evidence/README.md#historical-records) SUCCEEDED on the repaired candidate `2df45bd337ed65546c8d48074daf2e48cb525126`: all seven quality commands plus the HEAD and clean-worktree predicates passed, 179 workspace tests passed across 22 targets, all ten declared outputs were collected, cleanup complete. R1 remains stored and immutable as superseded evidence.
 - **Remote review history:** [R1](evidence/README.md#historical-records) returned 0 BLOCKING / 2 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE (HOLD) on `f1ad65c82d638650a1275b005b4120cf2ad31162`: A-NB-1 required a per-identity re-dispatch oracle instead of a total frame count, A-NB-2 required honest native-evidence run identifiers and span. Both were repaired in this session: the fixture provider records received command dispatches and both reconnect tests compare that ordered record before and after recovery, and the native evidence now states the two recorded identities and the corrected 78.23 s span.
-- **Remote review history (continued):** [R2](evidence/README.md#historical-records) confirmed A-NB-1 CLOSED on `483e5d8e17325de0f23ec1834ceac3ab84668f54` and found the one remaining stale native note; [R3](evidence/README.md#historical-records) is 0/0/0 PASS on `ae4bd713884ba941c3b4ba95d8d5f29761af2a3c` with A-NB-2 CLOSED. [Technical completion](evidence/README.md#historical-records) records the closed technical review; Caller acceptance remains separate and pending.
+- **Remote review history (continued):** [R2](evidence/README.md#historical-records) confirmed A-NB-1 CLOSED on `483e5d8e17325de0f23ec1834ceac3ab84668f54` and found the one remaining stale native note; [R3](evidence/README.md#historical-records) is 0/0/0 PASS on `ae4bd713884ba941c3b4ba95d8d5f29761af2a3c` with A-NB-2 CLOSED. [Technical completion](evidence/README.md#historical-records) records the closed technical review; the original pending field is historical; Caller acceptance is received under ADR-0009/0014.
 - **Evidence:** [Taskern revision 1 packet](evidence/README.md#historical-records), [eight-invariant crosswalk](evidence/README.md#historical-records), [test admission](evidence/README.md#historical-records), [quality](evidence/README.md#historical-records), [invariant-removal probes](evidence/README.md#historical-records), [native startup smoke](evidence/README.md#historical-records).
 - **Observed repair:** the inherited DC-MP-PUB1 diagnostic bound (at most 1,024 events with explicit `event_gap`) had no implementation at the owner seam: `ObservationSessionOwner::step` discarded `PumpReport::events`. `crates/app-core/src/diagnostics.rs` now retains category-only events with a monotone non-reusing sequence and an explicit bound/gap; no identity, receipt, grant, cursor or remote text is retained and diagnostics never drive publication or command truth.
 - **Consumers:** MP-RT3, MP-ACC1.
@@ -326,8 +328,8 @@ Plan governance: §7.2 is canonical for hard edges; §6 reflects decision status
 
 #### MP-PUB4 — R2 representation experiment (COW / index / cache / sharing)
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** EXPERIMENT_READY · **Owner:** `crates/cos-client` + `crates/app-core` under the R2 experiment contract
-- **Prereq/gate:** MP-R0A/B/D (harness + baseline + ratified thresholds) and DD-02a `EXPERIMENT_AUTHORIZED` to run the comparison; adoption additionally requires DD-02b `DESIGN_SELECTED` after `EXPERIMENT_COMPLETED`. Running the experiment and choosing a design are separate gates.
+- **Priority:** P1 · **Status:** LIMITED_COMPLETE exploratory experiment; production adoption/further variants DEFERRED under ADR-0014 · **Owner:** `crates/cos-client` + `crates/app-core`
+- **Prereq/gate:** keep the current Arc baseline and §19.17 experiment. Re-entry requires a concrete real-workload deficit and applicable evidence before DD-02b selection; no compulsory comparison or repeated approval merely to fill UNKNOWN.
 - **Consumers:** MP-PUB2, MP-NAV1, MP-DOCK1, R3 workload results.
 - **Design source / acceptance:** [DC-MP-PUB4](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-pub4). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -335,7 +337,7 @@ Plan governance: §7.2 is canonical for hard edges; §6 reflects decision status
 
 ### 7.6 M2 — Measurement foundation (R0)
 
-All R0 tasks are **NOT_AUTHORIZED** until an explicit R0 implementation authorization exists (ADR-0007 §15, rendering §13). They are technically **EXPERIMENT_READY**: the workload manifest fields, endpoint definitions, result contract and calibration protocol are already specified in rendering §10.1/§11.1/§11.2.
+R0 Caller authorization is received; ADR-0008 ratifies declared configurable gates, not measured attainment. R0A remains IN_PROGRESS and R0B/C limited evidence does not close full baseline/noise/stall acceptance. Use the existing harness for a concrete retained-path acceptance need; no speculative endpoint framework or repeated approval cycle.
 
 #### MP-R0A — R0 harness implementation
 - **Hard prereqs:** none.
@@ -349,19 +351,19 @@ All R0 tasks are **NOT_AUTHORIZED** until an explicit R0 implementation authoriz
 
 #### MP-R0B — Baseline capture, noise and endpoint availability
 - **Hard prereqs:** MP-R0A.
-- **Priority:** P1 · **Status:** AUTHORIZED by [Caller approval](evidence/README.md#historical-records) for measurement execution; numeric thresholds remain unratified · **Owner:** R0 harness owner (`apps/desktop`), with rendering owner for endpoint/evidence review
+- **Priority:** P1 · **Status:** LIMITED_COMPLETE source endpoints; full baseline/noise NOT_MEASURED; permission RECEIVED. ADR-0008 declared thresholds ratified, not attained · **Owner:** R0 harness owner (`apps/desktop`) + rendering evidence owner
 - **Consumers:** MP-R0D, MP-PUB4, MP-TYP1, MP-IMG*.
 - **Design source / acceptance:** [DC-MP-R0B](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0b). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
 #### MP-R0C — Windows scheduling and stall attribution
 - **Hard prereqs:** MP-R0A.
-- **Priority:** P1 · **Status:** NOT_AUTHORIZED (EXPERIMENT_READY) · **Owner:** Desktop/Windows performance owner
+- **Priority:** P1 · **Status:** LIMITED_COMPLETE R15 source qualification; full visible-stall/physical evidence PARTIAL; permission RECEIVED under ADR-0014 · **Owner:** Desktop/Windows performance owner
 - **Consumers:** MP-R0D, ADR-0007 pin decision record (only if evidence demands).
 - **Design source / acceptance:** [DC-MP-R0C](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0c). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
 #### MP-R0D — R0 ratification record
 - **Hard prereqs:** MP-R0B, MP-R0C.
-- **Priority:** P1 · **Status:** NOT_AUTHORIZED (EXPERIMENT_READY) · **Owner:** Desktop architect + rendering owner (ratification record; evidence producers remain R0A/B/C)
+- **Priority:** P1 · **Status:** RATIFIED_DECLARED_BASIS_NOT_MEASURED under ADR-0008; no repeated ratification request; measured replacement requires actual evidence · **Owner:** Desktop architect + rendering owner
 - **Consumers:** every experiment/phase exit below.
 - **Design source / acceptance:** [DC-MP-R0D](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0d). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -488,8 +490,8 @@ All R0 tasks are **NOT_AUTHORIZED** until an explicit R0 implementation authoriz
 
 #### MP-IMG2 — Decode admission gate (R4 "Decode")
 - **Hard prereqs:** MP-IMG1, MP-SEC3.
-- **Priority:** P1 · **Status:** EXPERIMENT_AUTHORIZED by [Caller approval](evidence/README.md#historical-records); decoder-agnostic preflight slice A/B TECHNICALLY COMPLETE (independent review 0/0/0 on `cd9e5d3`); **MP-IMG2-W1 real-WIC pre-materialization admission LIMITED TECHNICAL COMPLETION** ([§19.54](#1954-mp-img2-w1-wic-decode-admission-before-materialization-2026-10-26), attachment-bound PASS 0/0/0 on product `faa3a7e9`); full MP-IMG2 decoder comparison/adoption and R0 ratification remain incomplete · **Owner:** `crates/media` (decode side; no GPU handles)
-- **Current slice:** MP-IMG2-W13 **LIMITED TECHNICAL COMPLETION** with [Tern Round 2 `PASS 0/0/0`](evidence-published/w13-latest/tern-review-r2.txt) and [bounded disposition](evidence-published/w13-latest/disposition.json) on pushed candidate `23a6dce30ed9a88136379fdbcc762789de20dfef` / evidence `069d66c352199a95fa2f622cf0ed673c6b10c500`; round 1 (HOLD 2/0/0) is historical. MP-IMG2-W12 has under the [verbatim directive](evidence-published/w13-latest/tern-directive.txt) and [Taskern packet](evidence-published/w13-latest/taskern-response.json); see [§19.65](#1965-mp-img2-w13-4k-matched-raster-full-frame-wic-output-verification-2026-10-29). MP-IMG2-W12 has **LIMITED TECHNICAL COMPLETION** with [Tern Round 3 `PASS 0/0/0`](evidence-published/w12-latest/tern-review-r3.txt) and [bounded disposition](evidence-published/w12-latest/disposition.json) on pushed candidate `2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b` / evidence `ded128977c29b4ecb780a9b0796a6fd6356f5ae9`; earlier W12 rounds 1–2 are historical. MP-IMG2-W11 has under the [verbatim directive](evidence-published/w12-latest/tern-directive.txt) and [Taskern packet](evidence-published/w12-latest/taskern-response.json); see [§19.64](#1964-mp-img2-w12-matched-raster-jpegpng-decode-differential-2026-10-29). MP-IMG2-W11 has **LIMITED TECHNICAL COMPLETION** with [Tern Round 1 `PASS 0/0/0`](evidence-published/w11-latest/tern-review-r1.txt) and [bounded disposition](evidence-published/w11-latest/disposition.json) on pushed candidate `d182ee9eeb2d587eb69c28188dc66675c4a9b7dc` / evidence `0937aaa336856e1f9048f07c424ae29de7b2fc6f`; see [§19.63](#1963-mp-img2-w11-4k16k-jpeg-admission-roi-and-memory-boundary-2026-10-28). W10 has [LIMITED TECHNICAL COMPLETION](evidence-published/w10-latest/disposition.json) with external `PASS 0/0/0` in [§19.62](#1962-mp-img2-w10-jpeg-metadata-interpretation-differential-2026-10-28); earlier dispositions remain historical. Full MP-IMG2 and the Decode exit remain open; MP-IMG3 still depends on full MP-IMG2.
+- **Priority:** P1 · **Status:** W1–W13 LIMITED TECHNICAL COMPLETION; historical full-target Decode HOLD. Initial `BOUNDED_IMAGE_DECODE` and Caller implementation permission adopted under ADR-0014; WIC adoption/configurable ceilings remain ADR-0008 decisions, not a production admitted class · **Owner:** `crates/media` (decode; no GPU handles)
+- **Current slice:** MP-IMG2-W13 **LIMITED TECHNICAL COMPLETION** with [Tern Round 2 `PASS 0/0/0`](evidence-published/w13-latest/tern-review-r2.txt) and [bounded disposition](evidence-published/w13-latest/disposition.json) on pushed candidate `23a6dce30ed9a88136379fdbcc762789de20dfef` / evidence `069d66c352199a95fa2f622cf0ed673c6b10c500`; round 1 (HOLD 2/0/0) is historical. MP-IMG2-W12 has under the [verbatim directive](evidence-published/w13-latest/tern-directive.txt) and [Taskern packet](evidence-published/w13-latest/taskern-response.json); see [§19.65](#1965-mp-img2-w13-4k-matched-raster-full-frame-wic-output-verification-2026-10-29). MP-IMG2-W12 has **LIMITED TECHNICAL COMPLETION** with [Tern Round 3 `PASS 0/0/0`](evidence-published/w12-latest/tern-review-r3.txt) and [bounded disposition](evidence-published/w12-latest/disposition.json) on pushed candidate `2eafa7d1ccc428ec6bdf76b643cb4402ffe8677b` / evidence `ded128977c29b4ecb780a9b0796a6fd6356f5ae9`; earlier W12 rounds 1–2 are historical. MP-IMG2-W11 has under the [verbatim directive](evidence-published/w12-latest/tern-directive.txt) and [Taskern packet](evidence-published/w12-latest/taskern-response.json); see [§19.64](#1964-mp-img2-w12-matched-raster-jpegpng-decode-differential-2026-10-29). MP-IMG2-W11 has **LIMITED TECHNICAL COMPLETION** with [Tern Round 1 `PASS 0/0/0`](evidence-published/w11-latest/tern-review-r1.txt) and [bounded disposition](evidence-published/w11-latest/disposition.json) on pushed candidate `d182ee9eeb2d587eb69c28188dc66675c4a9b7dc` / evidence `0937aaa336856e1f9048f07c424ae29de7b2fc6f`; see [§19.63](#1963-mp-img2-w11-4k16k-jpeg-admission-roi-and-memory-boundary-2026-10-28). W10 has [LIMITED TECHNICAL COMPLETION](evidence-published/w10-latest/disposition.json) with external `PASS 0/0/0` in [§19.62](#1962-mp-img2-w10-jpeg-metadata-interpretation-differential-2026-10-28); earlier dispositions remain historical. Historical full-target MP-IMG2/Decode remains HOLD. The current initial profile is governed by DC-MP-IMG2; IMG3 requires actual admitted-class bound/worker/output evidence, not old all-class closure or permission alone. No speculative W14 selected.
 - **Evidence:** per-case peak concurrent bytes, cancellation latencies, format admission table.
 - **Consumers:** MP-IMG3.
 - **Design source / acceptance:** [DC-MP-IMG2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
@@ -501,7 +503,7 @@ All R0 tasks are **NOT_AUTHORIZED** until an explicit R0 implementation authoriz
 
 #### MP-IMG3 — Upload gate (R4 "Upload")
 - **Hard prereqs:** MP-IMG2.
-- **Priority:** P1 · **Status:** EXPERIMENT_READY (hard prerequisite MP-IMG2; MP-R0D and explicit experiment authorization gate measured Upload claims) · **Owner:** `desktop-gpui` (GPU side) + media boundary (CPU side)
+- **Priority:** P1 · **Status:** NOT_STARTED; permission RECEIVED, evidence-blocked until an actual `BOUNDED_IMAGE_DECODE` class satisfies DC-MP-IMG2. MP-R0D declared ceilings are ratified, not Upload attainment · **Owner:** `desktop-gpui` (GPU) + media (CPU)
 - **Consumers:** MP-IMG4, MP-CMP1, MP-REC1.
 - **Design source / acceptance:** [DC-MP-IMG3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -565,7 +567,7 @@ All R0 tasks are **NOT_AUTHORIZED** until an explicit R0 implementation authoriz
 
 #### MP-FLOW3 — LOD/batching and the custom-element decision (R6 stages D–F)
 - **Hard prereqs:** MP-FLOW2.
-- **Priority:** P2 · **Status:** EXPERIMENT_READY for D/E; **NOT_AUTHORIZED** for F (narrow custom element/renderer path) · **Owner:** `desktop-gpui`
+- **Priority:** P2 · **Status:** optional advanced D/E/F stages DEFERRED absent attributable need under ADR-0014; required accessible inspection and simplest passing path retained · **Owner:** `desktop-gpui`
 - **Consumers:** MP-ACC2.
 - **Design source / acceptance:** [DC-MP-FLOW3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-flow3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -636,7 +638,7 @@ MP-RT1–7 are **RUNTIME_BLOCKED**: Runtime-dependent work may only begin once t
 
 #### MP-SEC2 — Redaction, diagnostics and logging policy
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** IMPLEMENTED_BUT_INCOMPLETE (source/public-seam PASS through Gate R13 and remote R9; Native row12 crash diagnostics HOLD; DD-22 PENDING) · **Owner:** `app-core` (diagnostics facade) + `apps/desktop`
+- **Priority:** P1 · **Status:** LIMITED_COMPLETE source/public seam through Gate R13/R9; Native row12 HOLD. DD-22 permission RECEIVED; actual report/retention details and physical evidence remain technical obligations · **Owner:** `app-core` + `apps/desktop`
 - **Consumers:** MP-RT2, MP-REL3, MP-ACC1.
 - **Design source / acceptance:** [DC-MP-SEC2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-sec2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 - **Current evidence:** [A–H / S01–S08 admission](evidence/README.md#historical-records); [quality](evidence/README.md#historical-records): 241 Rust tests, 14 dependency regressions, zero warnings; [actual startup error capture](evidence/README.md#historical-records) and [repaired-source fixture trace capture](evidence/README.md#historical-records): 15 bounded lines, max 299 bytes including newline, no raw query field, healthy fixture JSONL. [Remote R9](evidence/README.md#historical-records) independently reviewed exact candidate `976d3b7…` and returned 0 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE; B-06 is CLOSED and the [source closure record](evidence/README.md#historical-records) is preserved. Gate R13 is valid; Windows row12 and DD-22 remain HOLD/PENDING.
@@ -668,33 +670,33 @@ MP-RT1–7 are **RUNTIME_BLOCKED**: Runtime-dependent work may only begin once t
 
 #### MP-REC3 — Crash / restart / reopen recovery behaviour
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** A/B TECHNICALLY COMPLETE for the Desktop-local slice (R4 0/0/0; Runtime Task survival `RUNTIME_BLOCKED`, DD-23 `PENDING`; C/D not run) · **Owner:** `apps/desktop` + `app-core`
+- **Priority:** P1 · **Status:** A/B TECHNICALLY COMPLETE Desktop-local slice (R4 0/0/0); Runtime Task survival RUNTIME_BLOCKED, DD-23 permission RECEIVED but matrix evidence incomplete; C/D not run · **Owner:** `apps/desktop` + `app-core`
 - **Consumers:** MP-ACC1.
 - **Design source / acceptance:** [DC-MP-REC3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rec3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 - **Current evidence:** [REC-01–REC-17 admission](evidence/README.md#historical-records); [native observation](evidence/README.md#historical-records): normal save/restart restored Flow, Task-184 and Viewed B; corrupt file restored defaults with a bounded notice; off-screen geometry clamped to the present display; missing Viewed/Task identities produced explicit unavailable notices. [Preferences snapshot](evidence/README.md#historical-records) contains only the closed fields. [Remote review R1](evidence/README.md#historical-records) returned 2 BLOCKING: actual-I/O bounds and oversized-window dimensions. Both are remediated: load reads through the opened handle at MAX+1, save uses a bounded writer, and saved width/height clamp to the selected present display. [Independent Gate R2](evidence/README.md#historical-records) `fbf7676f-aba4-4e9c-af55-ed2d969e0c3b` SUCCEEDED on exact `2ab589d…` (9/9 checks, 27 outputs, zero absent output, cleanup complete). [Remote review R2](evidence/README.md#historical-records) then returned 1 BLOCKING (clone before borrowed bounds validation) and 1 ACTIONABLE (Native build identity). save_atomic now validates the borrowed schema before cloning; [build identity](evidence/README.md#historical-records) binds source `6ccef79` to executable `2f4420…`, and fresh r4 native save/restore/oversized-file/oversized-window runs used that binary. [Independent Gate R3](evidence/README.md#historical-records) `c5223e39-116d-444e-819a-bee6a6b5ea36` SUCCEEDED on exact `638aa5d…` (9/9 checks, 34 outputs, zero absent output, cleanup complete). [Remote review R3](evidence/README.md#historical-records) then found the complete borrowed document (including fixture IDs) was still cloned before the 64 KiB decision and the quit path cloned first. save_atomic now admits the complete borrowed document through the bounded writer before cloning, and quit saves the locked borrowed value. [Independent Gate R4](evidence/README.md#historical-records) `612a60c0-a35a-4452-a821-f800b4abd184` SUCCEEDED on exact `bc81b33…`: 9/9 checks, 39 outputs, zero absent output, cleanup complete, 262 Rust and 14 dependency tests. [Remote review R4](evidence/README.md#historical-records) returned 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE on exact Gate R4 candidate `bc81b33…`; the [Desktop-local technical completion](evidence/README.md#historical-records) records the closed slice. Runtime Task survival (MP-RT8/RC-16), DD-23 topology/mixed-DPI, crash-before-quit, live revoke/regrant and native Compare restore remain `NOT_MEASURED`/`RUNTIME_BLOCKED`; Product/main/release are unapproved.
 
 #### MP-VID1 — Video capability/interop probe
 - **Hard prereqs:** none.
-- **Priority:** P1 (MVP-required, gated) · **Status:** **NOT_AUTHORIZED** (explicit probe authorization required) · **Owner:** rendering owner (probe), `desktop-gpui` (later)
-- **Gate:** no probe until separately authorized; VID1 outcome informs but does not itself authorize implementation or close the MVP video requirement.
+- **Priority:** later release · **Status:** IMPLEMENTED probe / HOLD missing route closure; further investigation DEFERRED_INITIAL_RELEASE under Product §68.1 · **Owner:** rendering owner, `desktop-gpui`
+- **Gate:** preserve existing probe/UNEXAMINED evidence. No new VID1 investigation solely for initial images; later video need still requires actual capability/route, not repeated Caller permission.
 - **Consumers:** MP-VID2.
 - **Design source / acceptance:** [DC-MP-VID1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-vid1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
 #### MP-VID2 — Video authorization decision package
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** **NOT_AUTHORIZED** (requires MP-VID1 capability evidence and an explicit owner decision) · **Owner:** Product/architecture owners (DD-11)
+- **Priority:** later release · **Status:** DEFERRED_INITIAL_RELEASE; permission received, actual supported-route selection absent · **Owner:** Product/architecture owners (DD-11)
 - **Consumers:** MP-VID3/4, MP-ACC2.
 - **Design source / acceptance:** [DC-MP-VID2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-vid2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
 #### MP-VID3 — Video implementation
 - **Hard prereqs:** none.
-- **Priority:** P1 (MVP) · **Status:** **NOT_AUTHORIZED** (implementation only if VID2 explicitly authorizes a route, with separate implementation authorization) · **Owner:** `desktop-gpui` + media boundary
+- **Priority:** later release · **Status:** DEFERRED_INITIAL_RELEASE; re-entry needs actual VID2 route/capability, not repeated blanket approval · **Owner:** `desktop-gpui` + media
 - **Consumers:** MP-VID4, MP-ACC2.
 - **Design source / acceptance:** [DC-MP-VID3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-vid3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
 #### MP-VID4 — Video acceptance
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** **NOT_AUTHORIZED** (acceptance is conditional on VID3 and selected route; prerequisite authorization sequence is VID1 probe → VID2 explicit decision) · **Owner:** Product owner + rendering owner
+- **Priority:** later release · **Status:** DEFERRED_INITIAL_RELEASE; Caller permission supplies no video implementation/acceptance evidence · **Owner:** Product + rendering owners
 - **Consumers:** MP-ACC2.
 - **Design source / acceptance:** [DC-MP-VID4](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-vid4). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -723,19 +725,19 @@ MP-RT1–7 are **RUNTIME_BLOCKED**: Runtime-dependent work may only begin once t
 
 #### MP-REL1 — Packaging (installer + portable archive)
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** DESIGN_GATE_REQUIRED (DD-21) · **Owner:** release owner + `apps/desktop`
+- **Priority:** P1 · **Status:** AUTHORIZED retained initial-release work; actual DD-21 certificate/publisher/operator inputs and signing/install evidence remain external/technical prerequisites, not permission waits · **Owner:** release owner + `apps/desktop`
 - **Consumers:** MP-REL2, MP-ACC2.
 - **Design source / acceptance:** [DC-MP-REL1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rel1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
 #### MP-REL2 — Updater
 - **Hard prereqs:** MP-REL1.
-- **Priority:** P2 · **Status:** DESIGN_GATE_REQUIRED · **Owner:** release owner + `apps/desktop`
+- **Priority:** later release · **Status:** DEFERRED_INITIAL_RELEASE under Product §68.1; full-target verified updater/rollback contract retained · **Owner:** release owner + `apps/desktop`
 - **Consumers:** MP-ACC2.
 - **Design source / acceptance:** [DC-MP-REL2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rel2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
 #### MP-REL3 — Diagnostics and support report
 - **Hard prereqs:** MP-SEC2.
-- **Priority:** P2 · **Status:** DESIGN_GATE_REQUIRED (DD-22 `SPEC_APPROVED` for report contents/retention); the minimal redacted report (versions, connection state, projection revision, redaction invariants) may be implemented once MP-SEC2 lands · **Owner:** `app-core` diagnostics facade + `apps/desktop`
+- **Priority:** P2 · **Status:** AUTHORIZED bounded/redacted diagnostics scope; DD-22 exact report/retention details and MP-SEC2 prerequisite evidence still apply, not repeated Caller approval · **Owner:** `app-core` + `apps/desktop`
 - **Consumers:** MP-ACC1.
 - **Design source / acceptance:** [DC-MP-REL3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rel3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -750,7 +752,7 @@ MP-RT1–7 are **RUNTIME_BLOCKED**: Runtime-dependent work may only begin once t
 #### MP-ACC2 — Product acceptance matrix (canon §63–66)
 - **Hard prereqs:** none.
 - **Priority:** P0 (product) · **Status:** RUNTIME_BLOCKED · **Owner:** Product owner
-- **Release gate:** requires MP-ACC1, MP-FLOW3, MP-REL2, MP-REC2, MP-NAV5, MP-PL1, MP-AX2, MP-PUB3, DD-04b typography adoption and MP-VID4 unless an explicit Product-owner scope exception is recorded. See §7.2 and DC-MP-ACC2.
+- **Release gate:** apply DC-MP-ACC2 to Product §68.1: retain ACC1, required Flow inspection, REC2, NAV5, PL1, AX2, PUB3, typography and signed-package evidence. VID4, REL2 and named OS subpaths are DEFERRED_INITIAL_RELEASE, not PASS. Hard DAG unchanged; real Runtime acceptance unmet.
 - **Consumers:** release.
 - **Design source / acceptance:** [DC-MP-ACC2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-acc2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -762,12 +764,12 @@ MP-RT1–7 are **RUNTIME_BLOCKED**: Runtime-dependent work may only begin once t
 |---|---|---|---|---|
 | R0 Measurement | MP-R0A/B/C/D | implemented shell only; absent surfaces stay NOT_IMPLEMENTED/NOT_MEASURED | rendering §10.1/§11.1/§11.2, §13 R0 | disable faulty instrumentation; keep honest baseline |
 | R1 Tokens/typography | MP-TYP1 → DD-04b adoption (+MP-AX1 start) | surfaces as they appear; image fidelity from MP-IMG5 | §9/§11.3 native matrix | revert token/font without dropping information |
-| R2 State/invalidation | MP-PUB1..4, MP-COR1/2 | rail/dock/inspector consumers | §4.2/§13 R2 A/B + ratified gates | bounded atomic full refresh via MP-PUB1 |
+| R2 State/invalidation | MP-PUB1..4, MP-COR1/2 | rail/dock/inspector; PUB4 production adoption deferred | §4.2/§13 R2 applicable evidence; no optional comparison absent need | bounded atomic refresh via MP-PUB1 |
 | R3 Virtualization | MP-NAV1, MP-DOCK1, MP-FLOW1, MP-NAV3, MP-INS1, MP-INS2 | task/candidate/history/evaluation/evidence surfaces | §5 tables + §13 R3 | bounded accessible viewport (not eager collection) |
-| R4 Image decode/upload/eviction | MP-IMG1..4, MP-IMG5, MP-IMG6, MP-SEC3 | artifact surface | §6/§6.1/§6.2 per-codec gates | disable failing detail path; proven preview/unavailable only |
+| R4 Image decode/upload/eviction | MP-IMG1..4, MP-IMG5, MP-IMG6, MP-SEC3 | Product §68.1 admitted image paths | DC-MP-IMG2 initial profile → actual Upload → Eviction; full-target HOLD separate | disable failing detail; proven bounded preview/unavailable |
 | R5 Compare | MP-CMP1 (+MP-UX2) | compare surface | §4.1/§13 R5 | independent bounded previews; preserve identities |
-| R6 Graph | MP-FLOW1..3 | flow surface | §8.1 stages A→F + §13 R6 | last passing stage / inspection list |
-| R7 Video | MP-VID1..4 | MVP video | §7/§13 R7 (**requires separate authorization**) | explicit video-unavailable mode |
+| R6 Graph | MP-FLOW1..3 | retained accessible inspection; optional advanced stages deferred | §8.1 simplest evidenced path; advanced comparison only for attributable need | last passing bounded stage / inspection list |
+| R7 Video | MP-VID1..4 | DEFERRED_INITIAL_RELEASE by Product §68.1 | existing evidence retained; later need/capability gates, no new image-release probe | explicit video-unavailable |
 | R8 Hardening | MP-REC1/2, MP-RT3, MP-RT8, MP-REC3, MP-SEC3 | all implemented paths | §13 R8 saturation/pressure/device/reconnect | disable failing path only |
 | R9 Polish | MP-PL1, MP-TYP2 | all surfaces | §13 R9 | remove costly nonessential effect |
 | R10 AX/DPI/IME/device-loss | MP-AX1/2 (continuous), MP-REC1 | every surface | §11.3 + §13 R10 | block failing surface; honest limitation |
@@ -820,6 +822,8 @@ Hard/conditional/optional/advisory/release gate classes remain those of §7.4; R
 ### 9.6 Bounded execution and correction loop
 
 Standard sequence: Canon → derived Taskern planning/context → authorized existing-Agent implementation/test → candidate commit → native preflight and explicit Caller resolution of FAIL/UNKNOWN → Refine 0.3 independent Gate/integrity → Tern review/corrections in the same conversation → explicit Caller acceptance → separately authorized Git/integration → Caller observations for Taskern next/revise/feedback. Repairs stay in the same Agent session and each changed candidate gets a new commit/Gate; no second implementation agent, dummy executor or automatic redispatch. Use the [bounded correction policy](../integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md#cos-development-task-mapping); a finite prior grant avoids new per-attempt DD approvals but does not silently authorize new candidates. Each user-gated step stops after its required checks and Tern **0 / 0 / 0**; no next step, product acceptance or integration is inferred.
+
+**Current Caller reconciliation:** ADR-0014 releases the global pause within adopted scope. Existing finite candidate-specific execution/evidence grants stay bounded; completed work does not wait for repeated Caller acceptance under ADR-0009. No Runtime-repository mutation, unsafe retry, rejected/deferred addition, main integration or release follows.
 
 The [identified Runtime intervention/attention gap](../integration/COS_RUNTIME_REQUIRED_CHANGES.md#identified-gap--runtime-interventionattention-projection) is owned by the Runtime request register. MP-NAV1/MP-INS3's local scope and blocked Runtime exit are defined by their DC contracts; this plan neither defines a new issue DTO nor treats local attention as product completion.
 
@@ -882,7 +886,7 @@ Each task was judged against: (A) specification sufficiency, (B) no room left fo
 
 ### 15.2 Readiness distribution (single primary label; not permission)
 
-Readiness is a planning classification only. It is distinct from the independent `IMPLEMENTATION_AUTHORIZED`, `EXPERIMENT_AUTHORIZED`, real-Runtime acceptance, Product/UX approval and release decisions. No count below grants any authorization.
+**Historical distribution, not current readiness or permission:** the table/old borderline notes below retain their planning-time classification. The adopted [62-task audit](IMPLEMENTATION_STATUS_AUDIT.md) owns current achieved scope/verification; its [authority overlay](IMPLEMENTATION_STATUS_AUDIT.md#91-current-authority-applied-to-all-62-rows) records 47 AUTHORIZED / 15 EXTERNAL_DEPENDENCY and zero outstanding Caller permission waits. ADR-0014/Product §68.1 govern scope; old NOT_AUTHORIZED/PENDING cells are not fresh requests and unmeasured endpoints are not PASS.
 
 | Verdict | Tasks |
 |---|---|
@@ -944,9 +948,9 @@ Notes on borderline verdicts (explicit, not silent):
 | Risk | Impact | Mitigation / trigger |
 |---|---|---|
 | Runtime contract work stalls (RC-01/05/13) | MP-RT*, MP-ACC* remain blocked; MVP cannot close | Desktop-only lanes continue (fixture-mode surfaces, correctness, measurement); escalate to Runtime owner with MP-RT1's frozen field list |
-| Video route unavailable at the pin | MVP image/video requirement cannot be satisfied as specified | MP-VID1 authorized probe → MP-VID2 decision; honest capability restriction recorded, MVP acceptance stays open (never silently drop) |
-| UX-01 unanswered | Compare/fit/1:1 cannot be implemented without inventing product behaviour | Keep Compare DISABLED with reason; escalate to UX owner with the frozen question list |
-| R0 authorization absent | No ratified gates → numeric phase-exit claims remain unqualified | Request MP-R0A harness/experiment authorization first; capture R0B/C evidence, then MP-R0D ratification. Independently implementable contract work continues without inventing a numeric gate |
+| Video route unavailable at the pin | Full-target video undelivered; initial images do not depend on it | Product §68.1 explicitly defers video; no new VID1 probe solely for initial images; honest unavailable |
+| UX detail/evidence absent | Approval received, unspecified behavior/unverified claims cannot be invented | Complete owning-contract details/evidence within approved scope; no identical permission re-request |
+| R0 physical evidence absent | Declared budgets ratified, attainment unmeasured | Existing R0 tools only for real retained-path acceptance need; no repeat permission or speculative framework |
 | Snapshot-handle retention (COW) unnoticed | O(state) copy per delta under load | MP-PUB4 instrumentation before changing the boundary; MP-PUB2 must drop handles promptly |
 | Fixture success mistaken for integration | False product claims | Non-negotiable: fixture mode labelled, unreachable commands explicit, MP-ACC1 requires real projections |
 | Graph scale cost | Ingestion/validation dominates | MP-COR2 index + R6 staged choice |
@@ -1864,4 +1868,15 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Identity evidence:** reviewer subagent session metadata records `openai-codex/gpt-6-astra`, `high`, `resolvedModelIsFallback = false`; no configuration or credential changed. This is execution-metadata evidence for the §19.68 route, not a promotion of the §8.2 Tern HOLD.
 - **What was not done:** no product test, Cargo build, Native/Runtime run, decoder execution, Refine Gate, code/test/DC/ADR/dependency edit, test deletion, main integration or release. Ignored historical originals were inspected only through published pins; unmeasured limits stay UNKNOWN.
 - **Terminal state: IMPLEMENTATION_PAUSED.** Two of three review rounds are used with no finding requiring a new candidate. Adoption of this status projection, the individual stop/defer/decision proposals, product acceptance and any bounded resumption remain Caller decisions; no next MP or experiment is selected.
+
+
+### 19.70 Caller adoption and scoped implementation resumption (2026-10-30)
+
+- **Direct authority:** 「すべての提案を承認し、コーラー承認待ちも承認する。そのうえで実装停止を解除」. [ADR-0014](../decisions/ADR-0014-YAGNI-SCOPE-AND-RESUMPTION.md) adopts Y01–Y12 and the audit, records remaining Caller permissions RECEIVED, and supersedes the global pause after canonical reconciliation. No repeated per-slice acceptance wait under ADR-0009; historical §19.1–§19.69, failed/HOLD results and reviews remain unchanged.
+- **Owners amended first:** [Product §68.1](../architecture/COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md#681-image-first-initial-release) selects initial release; [DC-MP-IMG2/IMG3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img2) own admitted Decode and profile-specific Upload prerequisites. Design Canon owns permission/technical separation and consumer-driven API consolidation; rendering keeps fixed bounds and need-driven optional stages. This plan derives, not invents, scope.
+- **Actual plan changes:** COR2/PUB2/PUB3 accepted technical work is not reimplemented; PUB4 production adoption and optional graph/adaptive work deferred; full-target Decode HOLD preserved, not substituted for the actual initial-profile gate; IMG3 remains NOT_STARTED pending admitted-class evidence; video/updater/named OS subpaths deferred from initial acceptance. Real Task/History/Evidence/Compare, image workflow, native quality, signed package and security remain required.
+- **Permission versus delivery:** [current audit authority](IMPLEMENTATION_STATUS_AUDIT.md#9-caller-adoption-and-current-authority-2026-10-30) has zero outstanding Caller permission waits, 47 AUTHORIZED task authorities and 15 EXTERNAL_DEPENDENCY authorities, not 47 runnable tasks. I/V counts unchanged; Runtime producer/issuer/transport, UX details, certificate/operator inputs and physical evidence are not manufactured or renamed as approval waits.
+- **Execution state: IMPLEMENTATION_AUTHORIZED — SCOPED RESUMPTION.** Existing Desktop continuation authority applies only to adopted prerequisite-ready bounded work; stopped/deferred additions cannot be automatically selected. This docs-only update dispatches no new Gate or Runtime process and grants no Runtime-repository mutation, main/release publication, credential/dependency/pin change.
+- **Observed docs-only smoke:** 62 cards = 62 sole DCs = 62 audit rows, exact hard prerequisites, 62 nodes / 41 edges acyclic; 1,144 relative Markdown/source-line links resolve; twelve proposal decisions covered; Product's original headings retained without duplicates/patch markers. I/V evidence and complete §19.1–§19.69 plus audit §8 review records are unchanged from `e50325f` after LF normalization. Only documentation changes. The preceding OMP slow PASS stays bound to `084f62d`, not these canonical amendments; no product tests/builds/Native/Runtime/Refine Gate claimed here.
+
 

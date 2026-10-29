@@ -75,6 +75,7 @@ All companion documents use:
 ## Development and decisions
 
 - [Implementation master plan](docs/development/IMPLEMENTATION_MASTER_PLAN.md) — **derived execution plan** with 62 contract pointers, milestones, dependency DAG, R0–R10 and RC-01–17 crosswalks, readiness audit
+- [Adopted implementation audit](docs/development/IMPLEMENTATION_STATUS_AUDIT.md) and [ADR-0014 scope/resumption decision](docs/decisions/ADR-0014-YAGNI-SCOPE-AND-RESUMPTION.md) — current Caller permissions, image-first initial-release scope, bounded Decode and retained deferrals; historical verification is not upgraded by approval
 - [Design canon normalization review](docs/development/DESIGN_CANON_NORMALIZATION_REVIEW.md) — docs-only migration verification, reviewer limitations, contract/DAG/gate preservation
 - [Planned build/run procedure](docs/development/BUILD_AND_RUN.md)
 - [Testing/quality/CI acceptance](docs/development/TESTING.md)

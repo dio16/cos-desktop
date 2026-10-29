@@ -2,6 +2,8 @@
 ## Product / UX / Conceptual Architecture / Technical Architecture Design
 
 **Status:** Target Design  
+
+**Current initial-release scope (Accepted 2026-10-30):** [§68.1](#681-image-first-initial-release) defines the Caller-approved image-first exception to the full target below, including §§33, 52, 61, 64–66 and 68. The remaining product semantics and security requirements are unchanged; scope approval is not implementation or product-acceptance evidence. Authority: [ADR-0014](../decisions/ADR-0014-YAGNI-SCOPE-AND-RESUMPTION.md).
 **Version:** 1.0  
 **Target Platform:** Desktop  
 **UI Framework:** GPUI  
@@ -1657,7 +1659,7 @@ GPUI componentの独自実装時もAccessibilityを設計対象とする。
 
 # 52. Desktop Integration
 
-Desktop製品として次を第一級機能とする。
+Desktop製品として次を第一級機能とする。初期リリースでの適用範囲は[§68.1](#681-image-first-initial-release)を参照する。
 
 ```text
 Drag & Drop
@@ -2021,6 +2023,8 @@ reconnect
 
 # 68. MVP Scope
 
+The list below remains the full product target. The current initial release applies the explicit inclusion/deferral boundary in [§68.1](#681-image-first-initial-release), not an implicit removal of other listed workflows.
+
 MVPに含める。
 
 ```text
@@ -2054,6 +2058,18 @@ large distributed runtime scheduler
 3D editor
 full video editor
 ```
+
+## 68.1 Image-first initial release
+
+**Accepted profile: `IMAGE_FIRST_INITIAL_RELEASE`.** The Caller adopted the audited scope-reduction proposals and released the implementation pause on 2026-10-30 ([ADR-0014](../decisions/ADR-0014-YAGNI-SCOPE-AND-RESUMPTION.md)). This profile qualifies the full-target requirements above for the first release only; it does not declare that release implemented, validated, accepted or published.
+
+- **Retained workflow:** the complete §64 workflow on supported images: real Task creation, Brief, Start, Candidate/Artifact, Evaluation, next Iteration, Compare, Evidence, read-only Flow/DMLG inspection, Formal Outcome and internal History/reopen. Runtime remains authoritative; fixture operation is not production acceptance. The six failure/recovery cases and §65 operable-prototype/UX checks remain.
+- **Retained Desktop quality:** Task Rail, Dock, Inspector, Command Palette and Stop semantics; drag/drop, clipboard and native picker on supported paths; fullscreen, IME, keyboard/accessibility, mixed-DPI/multiple-monitor usability, local window restoration, single-instance ownership/shutdown and bounded redacted diagnostics. Supported-matrix evidence is still required; approval is not proof of it.
+- **Retained distribution/security:** signed installer plus portable archive, honest version/protocol compatibility, secure credential boundaries and safe manual verified installation/upgrade. No unsigned delivery, unverified replacement, silent fixture fallback or permission bypass is permitted. Missing certificate/publisher/operator inputs remain external delivery prerequisites.
+- **Deferred from this initial release:** video presentation and synchronized-video comparison (MP-VID2–VID4), native notifications, external OS deep-link registration, conditional file associations, detached Artifact/Compare/Flow windows, and automatic update/stage/restart/rollback delivery (MP-REL2). No new MP-VID1 probe is required merely to ship supported images. Deferring external deep links does not defer internal History/reopen. The full-target behavior in §§52–53 and 61 remains owed for a later release, not marked complete.
+- **Admitted image scope:** only codec/dimension/representation classes actually admitted under [DC-MP-IMG2](DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img2)'s `BOUNDED_IMAGE_DECODE` profile. Unsupported classes must expose an independently bounded supported preview or explicit unavailable state. No unconditional 16K/full-detail/region/tiled/colour-fidelity promise is made for this release; unverified behaviour cannot be hidden behind a successful preview. True physical-pixel 1:1 remains required when full detail is offered; previews must not claim original detail.
+- **Acceptance applicability:** §§64–66 remain required for retained, supported paths. Video playback/synchronization and automatic-updater evidence are labelled `DEFERRED_INITIAL_RELEASE`, not PASS; high-resolution image claims are limited to admitted classes. Resource, memory-growth, frame/input, recovery, real-Runtime and accessibility evidence for supported image workflows remain mandatory. MP-ACC1/ACC2 must name this profile and its limits; a disconnected image demonstration cannot satisfy the Golden Workflow.
+- **Re-entry:** deferred features require a concrete consumer/release need and their existing capability, trust and behavioral contracts before implementation. Optional representation/adaptive/custom-rendering alternatives are not obligations of the initial release. Do not add a framework or experiment merely to replace an UNKNOWN label.
 
 ---
 
