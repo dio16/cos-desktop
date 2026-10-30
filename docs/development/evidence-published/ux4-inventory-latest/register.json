@@ -134,7 +134,7 @@
       "keys": "Ctrl+D",
       "action": "Diagnostics toggle",
       "status": "APPROVED_IMPLEMENTED",
-      "native": "SEC2 native diagnostics observed"
+      "native": "SEC2 pressed Ctrl+D natively and the bounded diagnostics line appeared; this proves the shortcut path, not a general diagnostics quality claim"
     },
     {
       "keys": "Tab / Shift+Tab",
@@ -214,6 +214,18 @@
       "action": "palette cursor, activate, dismiss, move",
       "status": "APPROVED_IMPLEMENTED",
       "native": "AX2 observed"
+    },
+    {
+      "keys": "Up/Down in Flow node list",
+      "action": "move the active node",
+      "status": "APPROVED_IMPLEMENTED",
+      "native": "AX2 native Down movement observed on the node list"
+    },
+    {
+      "keys": "Up/Down in Flow edge list",
+      "action": "move the active edge",
+      "status": "APPROVED_IMPLEMENTED",
+      "native": "source binding only; no native edge-list movement was observed"
     }
   ],
   "native_limits": [
@@ -222,7 +234,7 @@
   ],
   "product_change": "none; docs/evidence only",
   "gate": "no Refine Gate: no product source changed (Y04); candidate 89d52642 is covered by Gate e1f4bf7a-…",
-  "native_vs_source": "source-key-binding presence and native observation are recorded separately on each row; absence of a native note is not a native failure claim.",
+  "native_vs_source": "source-key-binding presence and native observation are recorded separately on each row; a row without a native note means source-only evidence, not a native failure.",
   "product_21_mapping": [
     {
       "product_example": "New creative task",
@@ -276,13 +288,19 @@
     },
     {
       "product_example": "Toggle inspector",
-      "status": "APPROVED_IMPLEMENTED",
-      "maps_to": "per-section disclosure only; no bulk toggle (rejected in NAV5 round 1)"
+      "status": "PARTIAL_IMPLEMENTED",
+      "maps_to": "per-section disclosure works; a unified inspector toggle does not exist (the NAV5 bulk toggle was rejected), so the §21 example is only partially covered"
     },
     {
       "product_example": "Fullscreen artifact",
       "status": "OPEN",
       "maps_to": "not implemented; the artifact viewer/media presentation is pending"
     }
-  ]
+  ],
+  "product_21_counts": {
+    "APPROVED_IMPLEMENTED": 7,
+    "PARTIAL_IMPLEMENTED": 1,
+    "OPEN": 4,
+    "total": 12
+  }
 }
