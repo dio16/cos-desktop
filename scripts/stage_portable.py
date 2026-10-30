@@ -51,6 +51,9 @@ def regular_file(path: Path, *, single_link: bool = True) -> bool:
 
 
 def run(command: list[str], cwd: Path) -> str:
+    # Independent checks may have no PATH; keep tool paths out of the manifest.
+    if command[0] in ("cargo", "git"):
+        command = [os.environ.get(command[0].upper()) or command[0], *command[1:]]
     try:
         result = subprocess.run(command, cwd=cwd, check=False, capture_output=True, text=True, encoding="utf-8", errors="replace")
     except OSError as exc:
