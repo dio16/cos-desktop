@@ -134,7 +134,7 @@
       "keys": "Ctrl+D",
       "action": "Diagnostics toggle",
       "status": "APPROVED_IMPLEMENTED",
-      "native": "SEC2 pressed Ctrl+D natively and the bounded diagnostics line appeared; this proves the shortcut path, not a general diagnostics quality claim"
+      "native": "source binding exists; the SEC2 run observed the diagnostics panel content and screenshot, but the Ctrl+D press path itself is NOT_RECORDED in the durable session record"
     },
     {
       "keys": "Tab / Shift+Tab",
@@ -229,8 +229,9 @@
     }
   ],
   "native_limits": [
-    "the AX2 run is the only keyboard evidence; full matrix, IME, DPI and screen-reader quality remain NOT_MEASURED",
-    "no new command or shortcut was added by this task"
+    "AX2 is the keyboard-operation evidence used for the palette, rail, dock and Flow keyboard paths; DOCK2/INS3 observed their pointer and dismissal paths",
+    "the SEC2 diagnostics display is not treated as proof of the Ctrl+D key path; that press path is NOT_RECORDED",
+    "full matrix, IME, DPI and screen-reader quality remain NOT_MEASURED"
   ],
   "product_change": "none; docs/evidence only",
   "gate": "no Refine Gate: no product source changed (Y04); candidate 89d52642 is covered by Gate e1f4bf7a-…",
