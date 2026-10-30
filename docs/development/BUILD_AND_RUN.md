@@ -8,7 +8,7 @@
 
 - **[Observed]** The workspace, `Cargo.lock`, pinned toolchain `1.98.1` and GPUI pin `395def7a…` exist; §1 below records the pre-workspace 2026-09-21 environment and §3 the planned shape — both are **historical**, not today's state.
 - **[Observed]** The commands in §4 are current (`cos-desktop` selector, `--locked` gates, explicit `--fixture`). Full gate results and startup evidence: [BOOTSTRAP_REPORT.md](BOOTSTRAP_REPORT.md) §5.
-- **Real Runtime connectivity, media pipeline, packaging/update:** still **Deferred**; the Runtime path always starts disconnected (`apps/desktop/src/main.rs`).
+- **Real Runtime connectivity, media pipeline, signed distribution/update:** still **Deferred**; the Runtime path always starts disconnected (`apps/desktop/src/main.rs`). Internal unsigned directory staging is now exercised separately in [§4.34](#434-mp-rel1-internal-portable-staging-2026-10-30), not a release package.
 - **Implementation planning:** [IMPLEMENTATION_MASTER_PLAN.md](IMPLEMENTATION_MASTER_PLAN.md).
 
 ## Status vocabulary
@@ -1188,6 +1188,54 @@ read as a memory or latency result. Note that the probe omits its ROI-only field
 `true_partial_decode`) when no rectangle is requested; the verifier treats an
 absent value as the honest observation and still refuses any positive claim.
 
+### 4.34 MP-REL1 internal Portable staging (2026-10-30)
+
+This is an internal verification directory, **not** the signed installer or portable
+distribution required by [DC-MP-REL1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rel1).
+DD-21 still owns certificate, publisher, installer, channel and uninstall decisions.
+No archive format, installer dependency, OS registration or release action is introduced.
+
+Run from a clean committed Desktop checkout; replace the absolute output path below
+with a new directory outside that checkout. Use the qualified Python/toolchain from
+[§4.11](#411-fixed-interpreter-and-environment-rules-2026-10-24).
+
+```powershell
+python -B scripts/stage_portable.py stage --output "<absolute-verification-root>/internal stage"
+python -B scripts/stage_portable.py verify "<absolute-verification-root>/internal stage"
+python -B scripts/tests/test_stage_portable.py
+
+# Expected nonzero exit: signing/distribution verification is not implemented.
+python -B scripts/stage_portable.py verify "<absolute-verification-root>/internal stage" --require-signed
+```
+
+`stage` runs the locked ordinary **dev** Cargo build and takes the executable from
+its `compiler-artifact` event, not a guessed pre-existing filename. It records the
+clean source commit/tree before building and checks them again before publication.
+It copies only `cos-desktop.exe`, `LICENSE` and `NOTICE`, writes `manifest.json`,
+verifies the temporary sibling directory and renames it to the new output.
+Existing outputs are never replaced. `CARGO` and `GIT` may select qualified
+executables in a PATH-free check; `RUSTC` selects the compiler version probe.
+Tool paths stay outside the package manifest.
+
+`verify` independently checks the fixed four-file inventory, regular/non-linked
+payloads, payload hashes, PE architecture/direct imports and internal-only claims.
+It is **self-consistency verification, not authentication**: a coherently replaced
+unsigned payload and manifest need an external trusted identity to detect.
+The allowlist excludes extra credentials/logs/fixtures/configuration; this is not
+a general secret scanner or sanitization of embedded dev/debug paths. Root
+LICENSE/NOTICE inclusion is not complete third-party notice/legal closure.
+Delay/dynamic/transitive DLL closure and redistributable supply remain unverified.
+Desktop version comes from Cargo metadata; protocol/schema stay unnegotiated.
+
+For Native smoke, use the staged executable with an independent working directory
+and child-only fresh `LOCALAPPDATA`. Fixture data is **not** bundled: pass an
+explicit approved external `--fixture-file` with `--fixture`; the compiled default
+fixture path is a development convenience, not a portable input guarantee.
+Without fixture flags, require honest unavailable state and no fallback.
+Observe both windows and native close/exit; an isolated directory under the same
+Windows account is not a clean-user session. Results and remaining release gaps:
+[REL1 evidence](evidence-published/rel1-packaging-latest/session.json).
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |
@@ -1201,7 +1249,7 @@ absent value as the honest observation and still refuses any positive claim.
 
 ## 7. Out of scope for this document (Deferred)
 
-- Installers, code signing, updater, packaging, and distribution checks.
+- Public installer/archive formats, code signing, updater and distribution certification remain out of scope; internal unsigned staging/preflight is documented in §4.34.
 - Real runtime connectivity, media pipeline, and any runtime-side changes (owned elsewhere; see `docs/architecture/DESKTOP_PROTOCOL.md` and the integration documents).
 - CI configuration. The proposed pipeline lives in [TESTING.md](TESTING.md); no workflow files are created by this delivery.
 - Performance measurement execution and results; canon §37–38 targets are design targets and are **not measured**. §4.12 records only R0B/R0C readiness, preconditions and labels.

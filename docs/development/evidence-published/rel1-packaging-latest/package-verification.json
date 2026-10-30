@@ -1,0 +1,73 @@
+{
+  "source_commit": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
+  "binary_sha256": "985cbba8e7a69efe5f2a0cbf2ae6f097861af2941f1db42eadc7d96ab4b2ffbd",
+  "independent_inventory_and_sha256": "MATCH",
+  "cases": [
+    {
+      "case": "unicode_independent_verify_seed_1",
+      "observed_exit": 0,
+      "expected_exit": 0
+    },
+    {
+      "case": "unicode_independent_verify_seed_2",
+      "observed_exit": 0,
+      "expected_exit": 0
+    },
+    {
+      "case": "unicode_independent_verify_seed_3",
+      "observed_exit": 0,
+      "expected_exit": 0
+    },
+    {
+      "case": "unicode_independent_verify_seed_4",
+      "observed_exit": 0,
+      "expected_exit": 0
+    },
+    {
+      "case": "missing_binary",
+      "observed_exit": 1,
+      "expected_exit": 1
+    },
+    {
+      "case": "unexpected_file",
+      "observed_exit": 1,
+      "expected_exit": 1
+    },
+    {
+      "case": "manifest_digest_mismatch",
+      "observed_exit": 1,
+      "expected_exit": 1
+    },
+    {
+      "case": "missing_LICENSE",
+      "observed_exit": 1,
+      "expected_exit": 1
+    },
+    {
+      "case": "missing_NOTICE",
+      "observed_exit": 1,
+      "expected_exit": 1
+    },
+    {
+      "case": "synthetic_secret_extra_file",
+      "observed_exit": 1,
+      "expected_exit": 1
+    },
+    {
+      "case": "unsigned_distribution_refusal",
+      "observed_exit": 1,
+      "expected_exit": 1
+    },
+    {
+      "case": "existing_output_preserved",
+      "observed_exit": 1,
+      "expected_exit": 1
+    },
+    {
+      "case": "unsigned_stage_refusal",
+      "observed_exit": 1,
+      "expected_exit": 1
+    }
+  ],
+  "scope": "real staged package; integrity/self-consistency only, not authentication/signing or arbitrary secret scanning"
+}

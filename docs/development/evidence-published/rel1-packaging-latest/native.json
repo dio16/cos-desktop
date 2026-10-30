@@ -1,0 +1,53 @@
+{
+  "source_commit": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
+  "stage_manifest_sha256": "3d22a07019b7007321ee8247d6244e7ccb6b843535d3e67b5e60586aba70f3ef",
+  "runs": [
+    {
+      "mode": "fixture",
+      "source_commit": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
+      "binary_sha256": "985cbba8e7a69efe5f2a0cbf2ae6f097861af2941f1db42eadc7d96ab4b2ffbd",
+      "pid": 20444,
+      "window_id": "3475532",
+      "exe": "<internal-stage>/cos-desktop.exe",
+      "cwd": "<verification>/native-cwd-r1",
+      "profile": "<verification>/native-profile-fixture-r2",
+      "args": [
+        "--fixture",
+        "--fixture-file",
+        "<verification>/inputs/task-184.json"
+      ],
+      "exit": 0,
+      "stderr": "observation shutdown confirmed\npreferences save confirmed\n",
+      "screenshot": "native-fixture-r2.png",
+      "screenshot_sha256": "82c5738487792b8ebb7eb01a479b3dcaee86d0e61ec779d26c05d31fc817e12c",
+      "observation": "FIXTURE / simulated data; Viewed D; Task ACTIVE; Formal Outcome Unknown",
+      "close": "native close button; observed window disappearance and process exit",
+      "os": "10.0.26300"
+    },
+    {
+      "mode": "normal",
+      "source_commit": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
+      "binary_sha256": "985cbba8e7a69efe5f2a0cbf2ae6f097861af2941f1db42eadc7d96ab4b2ffbd",
+      "pid": 36096,
+      "window_id": "3541068",
+      "exe": "<internal-stage>/cos-desktop.exe",
+      "cwd": "<verification>/native-cwd-r1",
+      "profile": "<verification>/native-profile-normal-r2",
+      "args": [],
+      "exit": 0,
+      "stderr": "observation shutdown not applicable (no observation driver)\npreferences save confirmed\n",
+      "screenshot": "../ins3-native-latest/s2-disconnected-strip.png",
+      "screenshot_sha256": "b21a1ab9d14896af3de305e6b9911ace339edc27d357453787c2e6c85c04078e",
+      "observation": "NO SOURCE / data withheld; no fixture indicator; no Task projection",
+      "close": "native close button; observed window disappearance and process exit",
+      "os": "10.0.26300",
+      "image_provenance": "Current run captured the same deterministic pixels; the public bitmap is reused by hash, not unique new build evidence. Fresh PID/window/AX/binary binding is recorded separately."
+    }
+  ],
+  "limitations": [
+    "same existing Windows user, not clean-user session",
+    "No signature/install/uninstall/upgrade/release or Runtime integration claim",
+    "Only current display/default scale; no full AX/IME/DPI matrix",
+    "No control takeover or security/registry change requested"
+  ]
+}

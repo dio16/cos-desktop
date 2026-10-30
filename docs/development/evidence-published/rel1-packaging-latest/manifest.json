@@ -1,0 +1,105 @@
+{
+  "architecture": "x86_64",
+  "binary": {
+    "path": "cos-desktop.exe",
+    "sha256": "985cbba8e7a69efe5f2a0cbf2ae6f097861af2941f1db42eadc7d96ab4b2ffbd"
+  },
+  "build": {
+    "cargo_version": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
+    "command": "cargo build --locked --package cos-desktop --bin cos-desktop --message-format=json-render-diagnostics",
+    "profile": "dev",
+    "rustc_version": "rustc 1.98.1 (48a229cea 2026-09-01)"
+  },
+  "desktop_version": "0.1.0",
+  "distribution_ready": false,
+  "external_runtime_dependencies": {
+    "delay_load_imports": "NOT_INSPECTED",
+    "dependency_classification": "NOT_CLASSIFIED_SYSTEM_VS_REDISTRIBUTABLE",
+    "observed_direct_pe_imports": [
+      "advapi32.dll",
+      "api-ms-win-core-synch-l1-2-0.dll",
+      "api-ms-win-core-winrt-error-l1-1-0.dll",
+      "api-ms-win-core-winrt-l1-1-0.dll",
+      "api-ms-win-crt-heap-l1-1-0.dll",
+      "api-ms-win-crt-locale-l1-1-0.dll",
+      "api-ms-win-crt-math-l1-1-0.dll",
+      "api-ms-win-crt-runtime-l1-1-0.dll",
+      "api-ms-win-crt-stdio-l1-1-0.dll",
+      "api-ms-win-crt-string-l1-1-0.dll",
+      "api-ms-win-shcore-scaling-l1-1-1.dll",
+      "bcryptprimitives.dll",
+      "combase.dll",
+      "comctl32.dll",
+      "d3d11.dll",
+      "d3dcompiler_47.dll",
+      "dcomp.dll",
+      "dwmapi.dll",
+      "dwrite.dll",
+      "dxgi.dll",
+      "gdi32.dll",
+      "icuuc.dll",
+      "imm32.dll",
+      "KERNEL32.dll",
+      "kernel32.dll",
+      "ntdll.dll",
+      "ole32.dll",
+      "oleaut32.dll",
+      "shell32.dll",
+      "uiautomationcore.dll",
+      "user32.dll",
+      "USERENV.dll",
+      "VCRUNTIME140.dll",
+      "winmm.dll"
+    ],
+    "redistributable_supply_policy": "UNRESOLVED_DD21",
+    "transitive_runtime_dependencies": "UNKNOWN_NOT_INFERRED"
+  },
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "NOTICE",
+      "sha256": "efd5a4700799e249e1c5947fdacc5dcbdf1b54572c43c2519fea5140f60a6874"
+    },
+    {
+      "path": "cos-desktop.exe",
+      "sha256": "985cbba8e7a69efe5f2a0cbf2ae6f097861af2941f1db42eadc7d96ab4b2ffbd"
+    }
+  ],
+  "format": "cos-desktop-internal-portable-v1",
+  "licenses": {
+    "LICENSE": "INCLUDED",
+    "NOTICE": "INCLUDED"
+  },
+  "limitations": [
+    "UNSIGNED",
+    "INSTALLER_NOT_SELECTED",
+    "PUBLISHER_NOT_SELECTED",
+    "DISTRIBUTION_CHANNEL_NOT_SELECTED",
+    "UNINSTALL_POLICY_UNRESOLVED",
+    "CLEAN_USER_NOT_MEASURED",
+    "TRANSITIVE_DLL_CLOSURE_UNKNOWN",
+    "THIRD_PARTY_LICENSE_CLOSURE_UNASSESSED",
+    "DELAY_LOAD_IMPORTS_NOT_INSPECTED",
+    "DYNAMIC_LOAD_DEPENDENCIES_NOT_ENUMERATED"
+  ],
+  "packaging_status": "UNSIGNED_INTERNAL_STAGING",
+  "platform": "windows",
+  "protocol_version": {
+    "status": "UNKNOWN_NOT_NEGOTIATED",
+    "version": null
+  },
+  "schema_version": {
+    "status": "UNKNOWN_NOT_NEGOTIATED",
+    "version": null
+  },
+  "signing_status": "UNSIGNED_INTERNAL_STAGING",
+  "source": {
+    "commit": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
+    "tree": "2c339315b12e90ba10908efc43eb967d711f829e",
+    "worktree": "CLEAN"
+  },
+  "verification_status": "VERIFIED_INTERNAL_ONLY"
+}

@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "task": "MP-REL1",
+  "contract": "DC-MP-REL1",
+  "status": "INTERNAL_PORTABLE_STAGING_IMPLEMENTED_INDEPENDENT_GATE_SUCCEEDED_REVIEW_PENDING",
+  "authority": "Caller implementation/review/next-task loop; ADR-0014 scoped resumption; current direct-dev policy; no main/release authority",
+  "baseline_review": "f9008149e518b3eedcfbd3c71b7feb5c66be5079",
+  "source_candidate": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
+  "source_tree": "2c339315b12e90ba10908efc43eb967d711f829e",
+  "binary_sha256": "985cbba8e7a69efe5f2a0cbf2ae6f097861af2941f1db42eadc7d96ab4b2ffbd",
+  "stage_manifest": "manifest.json",
+  "stage_manifest_sha256": "3d22a07019b7007321ee8247d6244e7ccb6b843535d3e67b5e60586aba70f3ef",
+  "package_scope": "Unsigned internal directory only: cos-desktop.exe/LICENSE/NOTICE/manifest.json. No product binary, fixture input or user configuration is published in this evidence directory.",
+  "implementation": {
+    "files": [
+      "scripts/stage_portable.py",
+      "scripts/tests/test_stage_portable.py"
+    ],
+    "third_party_dependencies_added": false,
+    "rust_cargo_gpui_protocol_source_changed": false,
+    "verification_boundary": "Fixed allowlist/content self-consistency, not cryptographic authenticity, binary secret scanning or completed signing/distribution."
+  },
+  "verification": {
+    "local_quality": {
+      "command": "pwsh -NoProfile -File scripts/quality.ps1",
+      "outcome": "PASS",
+      "scope": "Observed before final Python-only parent repairs; Rust/Cargo inputs unchanged. Final pinned candidate is independently checked by its Gate, not inferred from this run."
+    },
+    "python_contract": {
+      "command": "python -B scripts/tests/test_stage_portable.py",
+      "collected": 14,
+      "passed": 13,
+      "skipped": 1,
+      "skip_reason": "Windows symbolic-link creation privilege absent; junction and hard-link refusal executed.",
+      "exit": 0
+    },
+    "package": "package-verification.json",
+    "binary_survey": "binary-survey.json",
+    "dependency_declarations": "dependency-inventory.json",
+    "native": "native.json",
+    "documentation": {
+      "mp_cards": 62,
+      "owning_contracts": 62,
+      "sole_contract_links": "MATCH",
+      "hard_prerequisites": "UNCHANGED",
+      "dag_edges": 41,
+      "dag": "UNCHANGED_ACYCLIC",
+      "decision_crosswalks": "UNCHANGED",
+      "added_relative_links_and_anchors": 9,
+      "native_bitmap_refs": "RESOLVE",
+      "acceptance_rows": 18,
+      "dag_nodes": 62
+    }
+  },
+  "acceptance": {
+    "AC01": "OBSERVED: real clean-source locked Cargo compiler-artifact stage",
+    "AC02": "OBSERVED: independent exact file inventory and SHA-256 match",
+    "AC03": "OBSERVED: root LICENSE/NOTICE included and hashed; third-party notice/legal closure unassessed",
+    "AC04": "LIMITED: fixed allowlist rejects extra synthetic secrets/logs/config/fixtures; manifest contains no host paths. No arbitrary binary/license secret scan or sanitized public binary claim.",
+    "AC05": "OBSERVED: Cargo Desktop0.1.0 distinct from UNKNOWN_NOT_NEGOTIATED protocol/schema; no wire change",
+    "AC06": "OBSERVED: missing/digest refusal and earlier failed stage left no final package",
+    "AC07": "OBSERVED: unsigned stage/verify require-signed paths refuse; distribution_ready=false",
+    "AC08": "OBSERVED_LIMITED: staged process launched from independent cwd, with external approved fixture input; no Runtime checkout/binary configured or bundled. Not a clean-user proof.",
+    "AC09": "OBSERVED: normal startup shows NO SOURCE/data withheld, no fixture fallback",
+    "AC10": "SOURCE_SCOPE: no installer/OS registration introduced or requested",
+    "AC11": "SOURCE_SCOPE: no credential/security/global-profile change requested; only child-local test profiles and normal local preferences",
+    "AC12": "OBSERVED: both staged Windows modes and native closes exit0",
+    "AC13": "EXPLICIT_GAPS: signature NotSigned; installer/install/upgrade/uninstall NOT_RUN",
+    "AC14": "UNCHANGED: no Rust canonical semantics or wire source edits",
+    "AC15": "UNCHANGED: no Cargo dependency/pin or unsafe/FFI addition; scripts use standard library",
+    "AC16": "OBSERVED_BINDINGS: source/tree/build/binary/manifest/file/hash/Native records retained; Gate/review results remain separate",
+    "AC17": "OBSERVED: independently pinned Gate SUCCEEDED10/10; full unchanged workspace tests serialized without weaker assertions/timeouts. Parent actual package/Native smoke is separately source/binary-bound.",
+    "AC18": "NO_RELEASE_CLAIM: internal stage is not full MP-REL1, signed distribution or product acceptance"
+  },
+  "gate": {
+    "id": "6cd8b075-8364-4e92-ab57-a295c334bd72",
+    "candidate": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
+    "label": "cos-desktop-rel1-serial-tests-04ccb7d9",
+    "status": "SUCCEEDED",
+    "preflight": "UNKNOWN; admission/executable checks passed, not aggregate PASS",
+    "request_file_sha256": "d94415ac43b91e9a98e2dc71f38d9a46cac5b8de8818ae3b0c5060d73cb819d9",
+    "budget_ms": 600000,
+    "checks": [
+      {
+        "id": "fmt",
+        "outcome": "pass",
+        "duration_ms": 20947
+      },
+      {
+        "id": "metadata",
+        "outcome": "pass",
+        "duration_ms": 134
+      },
+      {
+        "id": "dependency-self-test",
+        "outcome": "pass",
+        "duration_ms": 592
+      },
+      {
+        "id": "dependency-rules",
+        "outcome": "pass",
+        "duration_ms": 261
+      },
+      {
+        "id": "portable-contract",
+        "outcome": "pass",
+        "duration_ms": 2502
+      },
+      {
+        "id": "clippy",
+        "outcome": "pass",
+        "duration_ms": 95688
+      },
+      {
+        "id": "tests",
+        "outcome": "pass",
+        "duration_ms": 152348
+      },
+      {
+        "id": "build",
+        "outcome": "pass",
+        "duration_ms": 1455
+      },
+      {
+        "id": "portable-stage",
+        "outcome": "pass",
+        "duration_ms": 2929
+      },
+      {
+        "id": "portable-verify",
+        "outcome": "pass",
+        "duration_ms": 237
+      }
+    ],
+    "execution_adjustment": "Whole unchanged workspace suite serialized with RUST_TEST_THREADS=1; no filtered tests, changed assertions or timeout relaxation. Concurrency cause remains unconfirmed.",
+    "storage": {
+      "status": "COMPLETE",
+      "removed_exact_successful_paths": 2,
+      "logical_bytes_removed": 2237015881,
+      "native_integrity_before_after": "IDENTICAL_SUCCEEDED",
+      "source_retained_by": "dev ancestry",
+      "private_evidence_retained": true,
+      "staged_binaries_retained": true,
+      "failed_predecessor_workspace_and_target": "RETAINED"
+    },
+    "cleanup": "complete",
+    "request_sha256": "sha256:0802f4260d7f0c1728b0f294d824ef5448d973467bd68ae6ebd3e637075ec737",
+    "terminal_state_sha256": "sha256:bb334f950719e998e476d40fd5b44a9a4b804c9f40c1e270255b2c83361b2d63",
+    "candidate_sha256": "sha256:1714cff93a047535b4354c271adfab55e03ed4f13722e696a09af69e9181d8a4",
+    "staged_binary_sha256": "3b6829c96f0b2d53e753700b0799f0276c66cf1a2c82feb3bcbf0a976944c705",
+    "staged_binary_matches_parent_native": false,
+    "native_boundary": "Same pinned source, different independently built bytes. Native startup was exercised on the parent local stage only; not transferred to the Gate executable."
+  },
+  "review": {
+    "status": "NOT_RUN"
+  },
+  "remaining": {
+    "DD21": [
+      "certificate/signing identity",
+      "publisher",
+      "installer format",
+      "distribution channel",
+      "redistributable supply",
+      "uninstall user-data retention policy"
+    ],
+    "NOT_RUN": [
+      "signed installer",
+      "manual verified install/upgrade",
+      "uninstall/reinstall",
+      "public archive/release"
+    ],
+    "NOT_MEASURED": [
+      "true clean-user Windows session",
+      "dynamic/transitive DLL closure",
+      "complete linked-binary third-party notice/legal closure",
+      "arbitrary embedded dev/debug/private-path/secret sanitization",
+      "full AX/IME/DPI matrix"
+    ],
+    "external_runtime": "NOT_RUN; no Runtime repository mutation or real integration claim"
+  },
+  "evidence_provenance": "Manifest and Native records bind the real candidate and binary. Deterministic normal pixels are reused by hash from INS3, explicitly not unique new build evidence; current PID/window/AX and launcher binding are separate. Raw logs/config/Gate records remain private.",
+  "skills": {
+    "taskern": {
+      "loaded": true,
+      "invoked": "prepare native CLI fallback after mounted MCP schema reference failure",
+      "execution": "packet_compiled",
+      "packet_sha256": "sha256:e9a241b4f11375c000d20f2e279b99a1dfbed3d5b82da3f28626ec75d0a5151a"
+    },
+    "refine": {
+      "loaded": true,
+      "version": "0.3.1",
+      "invoked": [
+        "describe",
+        "gate preflight",
+        "gate"
+      ],
+      "execution": "First accepted Gate FAILED at unchanged decoder-harness tests and retained. Separately scoped serial whole-suite Gate SUCCEEDED10/10; native inspect/verify and exact successful workspace/target disposal completed."
+    },
+    "tern_chatgpt_review": {
+      "loaded": true,
+      "invoked": [
+        "status"
+      ],
+      "execution": "actual existing target composer=true streaming=false loggedOut=false; no review submitted yet"
+    }
+  },
+  "historical_gates": [
+    {
+      "id": "9c65d4f0-f335-4355-af26-1d71a6651b21",
+      "candidate": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
+      "state": "FAILED",
+      "request_sha256": "sha256:b3519558510416635c9036328e1f4a6e175d32585a731422005d4f16edd878ed",
+      "terminal_state_sha256": "sha256:502ce3369beabaa4beb3da800593ea3a4cc78a294ff7b25fb2ea4d0cc3e3c11c",
+      "checks": [
+        {
+          "id": "fmt",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "metadata",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "dependency-self-test",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "dependency-rules",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "portable-contract",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "clippy",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "tests",
+          "outcome": "fail",
+          "detail": "check_failed"
+        },
+        {
+          "id": "build",
+          "outcome": "not_run",
+          "detail": "check_failed"
+        },
+        {
+          "id": "portable-stage",
+          "outcome": "not_run",
+          "detail": "check_failed"
+        },
+        {
+          "id": "portable-verify",
+          "outcome": "not_run",
+          "detail": "check_failed"
+        }
+      ],
+      "cleanup": "complete",
+      "integrity": "Native gate verify succeeded; FAILED state unchanged.",
+      "retention": "Failed workspace and target retained",
+      "observed_failures": [
+        "deadline_holds_when_a_descendant_inherits_the_capture_handles:2537ms against <1500ms",
+        "hanging_sampler_hits_the_sample_timeout:no_sample instead of sample_timeout"
+      ]
+    }
+  ]
+}
