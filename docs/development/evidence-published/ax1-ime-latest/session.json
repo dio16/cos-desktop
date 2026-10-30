@@ -133,7 +133,17 @@
     "quality_full": "pwsh -NoProfile -File scripts/quality.ps1 -> all quality gates passed (fmt, metadata, dependency rules, clippy -D warnings, tests, build)",
     "independent_gate": "FAILED/BLOCKED: two Gate attempts and the retained-checkout qualification are recorded above; no Gate success is claimed",
     "documentation": "PASS: json.tool; 62 task cards with exactly one owning DC each; unchanged acyclic 41-edge DAG; new relative links resolve; recorded numbers match the retained records; host-path/private-key scan; git diff --check.",
-    "review": "PENDING candidate-specific linked Tern review",
+    "review": {
+      "candidate_sha": "753e1fac384cd2b19a2f03d9d6fbb280be852f70",
+      "result": "CLEAN 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
+      "rounds": {
+        "round_1": "candidate 6cd0895 raised one ACTIONABLE item: the accessibility effect was stated beyond what was measured (screen-reader reading and preedit exposure were not observed).",
+        "round_2": "candidate 753e1fa limited the claim to the measured UIA value property, marked screen-reader announcement and preedit exposure NOT_MEASURED, and set the documentation status; clean."
+      },
+      "independently_checked": "GitHub commit and origin/dev, the source registration paths, the missing UIA value before the fix and the exposed values after it, the NOT_MEASURED list, both FAILED Gate records and the PARTIAL/BLOCKED AC09, 62 contracts, the acyclic 41-edge DAG and public-JSON privacy",
+      "not_independently_reexecuted": "Windows Native session, private UIA/raw logs, retained executable digest, the 86/71 test runs, and the Refine environment or its failure logs",
+      "scope": "Bounded observation plus one documented minimal fix; the product candidate 58900630342b1b6871b4c518e3d5de2cb0f8661a still has no independent Gate, and this review is not product or technical completion acceptance."
+    },
     "independent_gate_attempts": [
       {
         "attempt": 1,
