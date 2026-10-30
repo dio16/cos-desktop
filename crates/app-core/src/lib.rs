@@ -6,6 +6,7 @@ pub mod navigation;
 pub mod observation;
 pub mod preferences;
 pub mod redaction;
+pub mod support_report;
 
 pub use cos_client::SnapshotHandle;
 pub use diagnostics::{DiagnosticBatch, DiagnosticEvent, DiagnosticKind, EventGap};
@@ -21,6 +22,10 @@ pub use observation::{
 };
 pub use redaction::{
     MAX_DIAGNOSTIC_LINE_BYTES, REDACTED, redact_diagnostic_text, redact_diagnostic_text_within,
+};
+pub use support_report::{
+    DiagnosticsSummary, MAX_REPORT_LINES, MAX_SUPPORT_REPORT_BYTES, ReportLimits, ReportValue,
+    SupportReport,
 };
 
 /// Application ownership is separate from each window's local presentation state.
