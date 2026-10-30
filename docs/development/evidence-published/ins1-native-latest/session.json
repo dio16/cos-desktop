@@ -22,19 +22,64 @@
     "input_route": "computer window input; dock selection by click, keyboard Tab/Enter for section disclosure"
   },
   "results": {
-    "progressive_disclosure": {"result": "PASS", "observed": "all five sections start collapsed; each header states available/absent and a summary; opening shows the projected entries.", "evidence": ["s0-initial.png", "s1-evaluation-b.png"]},
-    "projected_values": {"result": "PASS", "observed": "Evaluation shows Decision FAIL / Authority HARNESS / Confidence 0.62 / visual_quality 66 score_0_100 for candidate B, and Decision ABSTAIN for candidate C; Refinement states 'reason not projected'; no local score, best-candidate or failure interpretation is added.", "evidence": ["s1-evaluation-b.png", "s3-refinement-open.png"]},
-    "absent_outcome": {"result": "PASS", "observed": "Outcome is an explicitly unavailable section ('No formal outcome is projected for this task.') and is focusable and openable by keyboard; it is never rendered as failure or as a zero.", "evidence": ["s3-outcome-absent-open.ax.txt", "s4-outcome-absent.png"]},
-    "identity_change_clears_disclosure": {"result": "PASS", "observed": "after opening Evaluation for B, selecting C cleared that disclosure (Evaluation returned to its collapsed summary); only sections explicitly reopened afterwards (Refinement, Outcome) were open.", "evidence": ["s2-identity-change-clears.png", "s2-identity-change-clears.ax.txt"]},
-    "keyboard_reach": {"result": "PASS", "observed": "Tab reaches section headers in order and Enter toggles them, including the unavailable Outcome section; the AX tree reports the focused header and its details group.", "evidence": ["s3-outcome-absent-open.ax.txt"]},
-    "identity_binding_and_reorder": {"result": "NOT_REPRODUCIBLE", "observed": "the fixture order cannot be reversed natively; the complete-identity binding and the reversed-order test remain model evidence."},
-    "observation_gap_invalidation": {"result": "NOT_REPRODUCIBLE", "observed": "no authorized-observation gap can be produced with the static fixture; the Disclosure::invalidate behaviour remains model evidence."},
-    "same_identity_update": {"result": "NOT_REPRODUCIBLE", "observed": "no in-place projection revision can be injected natively; the revision-keyed disclosure behaviour remains model evidence."}
+    "progressive_disclosure": {
+      "result": "PASS",
+      "observed": "all five sections start collapsed; each header states available/absent and a summary; opening shows the projected entries.",
+      "evidence": [
+        "s1-evaluation-b.png"
+      ]
+    },
+    "projected_values": {
+      "result": "PASS",
+      "observed": "Evaluation shows Decision FAIL / Authority HARNESS / Confidence 0.62 / visual_quality 66 score_0_100 for candidate B, and Decision ABSTAIN for candidate C; Refinement states 'reason not projected'; no local score, best-candidate or failure interpretation is added.",
+      "evidence": [
+        "s1-evaluation-b.png",
+        "s3-refinement-open.png"
+      ]
+    },
+    "absent_outcome": {
+      "result": "PASS",
+      "observed": "Outcome is an explicitly unavailable section ('No formal outcome is projected for this task.') and is focusable and openable by keyboard; it is never rendered as failure or as a zero.",
+      "evidence": [
+        "s3-outcome-absent-open.ax.txt",
+        "s4-outcome-absent.png"
+      ]
+    },
+    "identity_change_clears_disclosure": {
+      "result": "PASS",
+      "observed": "after opening Evaluation for B, selecting C cleared that disclosure (Evaluation returned to its collapsed summary); only sections explicitly reopened afterwards (Refinement, Outcome) were open.",
+      "evidence": [
+        "s2-identity-change-clears.png",
+        "s2-identity-change-clears.ax.txt"
+      ]
+    },
+    "keyboard_reach": {
+      "result": "PASS",
+      "observed": "Tab reaches section headers in order and Enter toggles them, including the unavailable Outcome section; the AX tree reports the focused header and its details group.",
+      "evidence": [
+        "s3-outcome-absent-open.ax.txt"
+      ]
+    },
+    "identity_binding_and_reorder": {
+      "result": "NOT_REPRODUCIBLE",
+      "observed": "the fixture order cannot be reversed natively; the complete-identity binding and the reversed-order test remain model evidence."
+    },
+    "observation_gap_invalidation": {
+      "result": "NOT_REPRODUCIBLE",
+      "observed": "no authorized-observation gap can be produced with the static fixture; the Disclosure::invalidate behaviour remains model evidence."
+    },
+    "same_identity_update": {
+      "result": "NOT_REPRODUCIBLE",
+      "observed": "no in-place projection revision can be injected natively; the revision-keyed disclosure behaviour remains model evidence."
+    }
   },
   "tests": {
     "ui_model_inspector": "8 passed",
     "desktop_gpui_inspector": "2 passed",
-    "commands": ["cargo test -p ui-model inspector", "cargo test -p desktop-gpui inspector"]
+    "commands": [
+      "cargo test -p ui-model inspector",
+      "cargo test -p desktop-gpui inspector"
+    ]
   },
   "review_boundary": {
     "previous": "last recorded independent review was HOLD 0 BLOCKING / 2 ACTIONABLE / 0 EXCESSIVE; both (observation-gap invalidation and evaluation-identity revision keys) were repaired at b7a6fb3 with quality Gate 3e948491-… and build Gate 8f9b7b9a-…, but no clean re-review of the repaired source was recorded.",
@@ -49,5 +94,17 @@
   ],
   "product_change": "none; no reproduced DC-MP-INS1 violation required a code fix",
   "gate": "no new Refine Gate: no product bytes changed on this branch; identical source is covered by NAV5 Gate 5e116b30-… and the historical INS1 Gates",
-  "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.76"
+  "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.76",
+  "evidence_provenance": {
+    "byte_identical_to_older_evidence": [
+      {
+        "file": "s0-initial.png",
+        "same_as": [
+          "ax2-keyboard-latest/startup-current.png",
+          "w13-native-latest/fixture-startup.png"
+        ],
+        "note": "the default startup screen is deterministic; this capture is not unique proof for this run and is not used as such. All other PNGs in this directory have no byte-identical copy in the published evidence directories checked here."
+      }
+    ]
+  }
 }
