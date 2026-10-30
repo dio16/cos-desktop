@@ -1227,7 +1227,11 @@ bounded before parsing: 128 MiB for the executable, 1 MiB for the manifest, whic
 admits the current 32 MB-class binary and refuses larger input by size alone.
 A failed verification after the final rename withdraws only the directory this run
 created: ownership is re-proved after the move, and a directory that is not ours is
-put back at its own path instead of being deleted or cleaned up.
+put back at its own path. The tool never deletes a directory: a recursive delete by
+path cannot be proven to hit this run's directory rather than a replacement, so a
+failed stage keeps its staging directory, reports its name, and the operator clears
+it. A successful stage renames its directory to the requested output, so nothing is
+left behind on that path.
 It is **self-consistency verification, not authentication**: a coherently replaced
 unsigned payload and manifest need an external trusted identity to detect.
 The allowlist excludes extra credentials/logs/fixtures/configuration; this is not

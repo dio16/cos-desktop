@@ -402,7 +402,10 @@ case: hashing and PE inspection must describe the same stable bytes as the admit
 path, so a payload hard-linked away or a manifest replaced by identical bytes
 mid-verification is refused; a file added after inventory, or an in-place write
 during hashing, is refused; and a failed post-rename verification withdraws only
-the directory this run created, never a foreign replacement. Inputs are bounded
+the directory this run created, never a foreign replacement. Case
+`test_stage_removes_nothing_so_a_replacement_can_never_be_deleted` pins the stronger
+rule that the tool performs no directory deletion at all, so a failing stage retains
+its staging directory and any bystander path is untouched. Inputs are bounded
 before parsing (`MAX_PE_BYTES` 128 MiB, `MAX_MANIFEST_BYTES` 1 MiB): the exact
 limit is admitted and one byte over is refused, and the 32 MB-class Native
 executable stays admitted. The `stage` transaction cases isolate the filesystem

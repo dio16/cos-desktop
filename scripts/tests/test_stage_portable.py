@@ -4,7 +4,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import shutil
 import struct
 import subprocess
 import sys
@@ -347,7 +346,9 @@ class StagePortableCliTests(unittest.TestCase):
 
         output = self.stage_with_final_change(corrupt)
         self.assertFalse(output.exists())
-        self.assertEqual([], list(output.parent.glob(".published.staging-*")))
+        # The tool never deletes a directory by path: the withdrawn package is
+        # retained under its staging name instead of being removed.
+        self.assertEqual(1, len(list(output.parent.glob(".published.staging-*"))))
 
     def test_post_rename_failure_does_not_remove_a_foreign_replacement(self):
         saved = Path(self.temporary.name) / "moved-owned-package"
@@ -361,34 +362,20 @@ class StagePortableCliTests(unittest.TestCase):
         self.assertEqual("preserve me", (output / "user-data.txt").read_text(encoding="utf-8"))
         self.assertEqual(b"COS Desktop notice\n", (saved / "NOTICE").read_bytes())
 
-    def test_replacement_between_cleanup_check_and_delete_is_preserved(self):
-        target = Path(self.temporary.name) / "cleanup-target"
-        real_rename = os.rename
+    def test_stage_removes_nothing_so_a_replacement_can_never_be_deleted(self):
+        # No cleanup deletion exists to race with: a failing stage leaves both its
+        # own staging directory and whatever else sits in the parent untouched.
+        bystander = Path(self.temporary.name) / "bystander"
+        bystander.mkdir()
+        (bystander / "user-data.txt").write_text("preserve me", encoding="utf-8")
 
-        def racing_rename(source, destination):
-            # Swap the path between the ownership check and the acquisition rename.
-            if Path(source) == target and not Path(self.temporary.name, "parked-owned").exists():
-                real_rename(target, Path(self.temporary.name) / "parked-owned")
-                target.mkdir()
-                (target / "user-data.txt").write_text("preserve me", encoding="utf-8")
-            return real_rename(source, destination)
+        def corrupt(output):
+            (output / "NOTICE").write_text("modified after rename", encoding="utf-8")
 
-        shutil.copytree(self.package, target)
-        identity = stage_portable.file_stamp(target.stat(follow_symlinks=False))[:2]
-        with patch.object(stage_portable.os, "rename", side_effect=racing_rename):
-            with self.assertRaises(stage_portable.StageError):
-                stage_portable.discard_owned(target, identity)
-        self.assertEqual("preserve me", (target / "user-data.txt").read_text(encoding="utf-8"))
-        self.assertTrue((Path(self.temporary.name) / "parked-owned").exists())
-
-    def test_cleanup_refuses_a_directory_it_does_not_own(self):
-        target = Path(self.temporary.name) / "not-ours"
-        target.mkdir()
-        (target / "user-data.txt").write_text("preserve me", encoding="utf-8")
-        foreign = stage_portable.file_stamp(Path(self.temporary.name).stat(follow_symlinks=False))[:2]
-        with self.assertRaises(stage_portable.StageError):
-            stage_portable.discard_owned(target, foreign)
-        self.assertEqual("preserve me", (target / "user-data.txt").read_text(encoding="utf-8"))
+        output = self.stage_with_final_change(corrupt)
+        self.assertFalse(output.exists())
+        self.assertEqual("preserve me", (bystander / "user-data.txt").read_text(encoding="utf-8"))
+        self.assertEqual(1, len(list(output.parent.glob(".published.staging-*"))))
 
     def test_replacement_between_ownership_check_and_withdrawal_is_preserved(self):
         saved = Path(self.temporary.name) / "moved-owned-package"
