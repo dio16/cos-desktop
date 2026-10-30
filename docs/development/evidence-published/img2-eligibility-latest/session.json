@@ -1,0 +1,47 @@
+{
+  "task": "MP-IMG2",
+  "contract": "DC-MP-IMG2",
+  "slice": "BOUNDED_IMAGE_DECODE initial-profile eligibility",
+  "status": "HOLD_PRODUCT_DECODER_ABSENT",
+  "baseline_review_head": "791f9d6ec7a5e4b607d0a297fa178464467baf19",
+  "hold_reason": "No product image decoder exists, and adding one needs either a new crate dependency or Windows Imaging Component FFI with unsafe. Both are outside the authorized scope, so no decode class can be admitted on the product path.",
+  "what_exists": [
+    {"item": "crates/media/src/decode.rs", "fact": "decode preflight arithmetic only: DecodeLimits/DecodeBudget/DecodeRequest/DecodeAdmission/admit_decode with checked arithmetic, MAX_SUPPORTED_BIT_DEPTH 16 and MAX_SUPPORTED_CHANNELS 4; the module states it selects no decoder, decodes nothing and owns no GPU object"},
+    {"item": "crates/media/Cargo.toml", "fact": "dependencies are desktop-protocol and sha2 only; no image codec, no windows crate, no FFI"},
+    {"item": "crates/media/src/cache.rs + key.rs", "fact": "bounded encoded-media cache, digest verification, representation identity and orientation types; no decode call"},
+    {"item": "apps/desktop/devtools/img2 + examples/decode_compare", "fact": "development-only WIC comparison/probe tooling driven through PowerShell; evidence tooling, not a product path"}
+  ],
+  "product_path_evidence": {
+    "imports_of_media_in_product_crates": "none — apps/desktop, crates/desktop-gpui, crates/ui-model and crates/app-core have no `media` import",
+    "windows_bindings_in_media": "none — no wic/windows:: usage in crates/media/src",
+    "desktop_windows_usage": "instance.rs and r0_s2b.rs use std::os::windows::fs only (file identity), unrelated to decoding"
+  },
+  "routes_and_why_each_is_blocked": [
+    {"route": "add a decoder crate dependency (for example `image`)", "blocker": "new dependency requires separate approval; DC-MP-IMG1/IMG2 and AGENTS.md forbid unreviewed dependencies"},
+    {"route": "call Windows Imaging Component directly", "blocker": "requires unsafe/FFI, and unsafe_code is forbidden by workspace lints; a narrow exception needs explicit architecture review before use"},
+    {"route": "shell out to a decoder process", "blocker": "no approved product transport or trust boundary; the existing probe tooling is development-only and its success is not product decode evidence"},
+    {"route": "declare an admitted class from probe results alone", "blocker": "DC-MP-IMG2 requires the class to be admitted on the product path; a probe success is explicitly not that, and the directive forbids treating it as such"}
+  ],
+  "acceptance_assessment": {
+    "AC01_class_named": "NOT_MET — no admitted class can be named without a product decoder",
+    "AC02_admission_before_materialization": "PARTIAL — the arithmetic seam enforces order, but nothing materializes",
+    "AC03_conservative_concurrent_bound": "NOT_MET — WIC internal scratch is unmeasured and must not be assumed zero",
+    "AC04_bounded_worker_lifetime": "NOT_MET — no product worker exists",
+    "AC05_no_partial_or_stale_publication": "NOT_APPLICABLE — nothing is decoded or published",
+    "AC06_oversize_corrupt_unsupported_refused": "PARTIAL — preflight refusals exist and are tested; no decoder consumes them",
+    "AC07_unproven_classes_not_admitted": "MET — no class is admitted",
+    "AC08_existing_budgets_preserved": "MET — decode preflight is untouched",
+    "AC09_probe_evidence_not_claimed_as_product": "MET — this record keeps them separate",
+    "AC10_tests_and_gate": "NOT_RUN for product change — no product source changed, so no Gate applies (ADR-0014 Y04); the existing media tests were not modified"
+  },
+  "decision_required": {
+    "owner": "Desktop architect + Caller",
+    "options": [
+      "authorize one decoder dependency with a pinned version, licence review and a bounded integration that uses the existing admission arithmetic",
+      "authorize a narrow, documented WIC FFI boundary (architecture review plus safety proof) instead of a dependency"
+    ],
+    "consequence_of_no_decision": "MP-IMG2 stays at preflight-only, and MP-IMG3 (GPU upload) remains blocked because there is no admitted decoded class to upload"
+  },
+  "mp_img3_readiness": "NOT_READY — the prerequisite admitted decode class does not exist",
+  "scope_note": "This record adds no code, no dependency, no FFI and no contract change. It stops at the first stop condition (new dependency or unsafe/FFI) instead of inventing a decoder or promoting probe evidence."
+}
