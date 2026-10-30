@@ -2,7 +2,7 @@
   "task": "MP-REL3",
   "contract": "DC-MP-REL3",
   "decision": "DD-22",
-  "status": "DESKTOP_LOCAL_BOUNDED_REPORT_IMPLEMENTED_EXPORT_OPEN",
+  "status": "DESKTOP_LOCAL_BOUNDED_REPORT_COMPLETE_REVIEW_CLEAN_EXPORT_OPEN",
   "scope_implemented": [
     "app-core::support_report: SupportReport built only from the observation publication a window already reads and from the bounded diagnostic ring",
     "bounded render (fixed field set, per-line cap 512 bytes, report ceiling MAX_REPORT_LINES * MAX_DIAGNOSTIC_LINE_BYTES)",
@@ -224,6 +224,16 @@
           "A-R2-01 missing version assertion",
           "A-R2-02 stale test count"
         ]
+      },
+      {
+        "round": 3,
+        "sha": "edbf2377aac8512be4c607e103d70e619d48d279",
+        "verdict": "0 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE",
+        "verdict_line": "PASS 0 / 0 / 0",
+        "closed": [
+          "A-R2-01 version assertion",
+          "A-R2-02 recorded counts"
+        ]
       }
     ],
     "closed": [
@@ -231,6 +241,7 @@
       "A-R1-01 Desktop version ownership",
       "A-R1-02 plan section structure"
     ],
-    "re_review": "PENDING (round 3 on this candidate)"
+    "re_review": "CLEAN 0/0/0",
+    "scope_note": "Clean review covers the Desktop-local bounded/redacted report only. DD-22 export format, destination, retention, consent, Runtime/Provider log collection, a delivered exporter and its artifact secret scan, product acceptance and Native verification remain OPEN/NOT_RUN."
   }
 }
