@@ -19,9 +19,11 @@
     "binary": {
       "sha256": "sha256:5838f0d16ba620ad21cabae67dc5a88ac95de1ae8cd9932f85daab6e1a9a1f97",
       "built_from": "cargo build --locked -p cos-desktop --bin cos-desktop at the baseline commit",
-      "note": "the earlier recorded binary digest no longer matched because an independent Gate had rebuilt the development target from the same source; this observation therefore pins its own freshly built bytes"
+      "note": "the previously recorded digest no longer matched. Cause: gate 91a15539 (attempt 3) declared the repository development target as its checks' CARGO_TARGET_DIR, so that Gate's build rewrote the development binary. The configuration is recorded; the individual file write was not logged, so the attribution rests on that recorded configuration rather than on a per-write observation. This slice therefore pins its own freshly built bytes instead of reusing any earlier digest."
     },
-    "launch": ["--fixture"]
+    "launch": [
+      "--fixture"
+    ]
   },
   "source_review": {
     "marked_range_lifecycle": "each surface keeps its own marked range; replace_and_mark_text_in_range sets it to the spliced range, replace_text_in_range and unmark_text clear it, and every query setter clears it",
@@ -85,7 +87,7 @@
     "baseline_checks": "git status clean, HEAD and origin/dev both the baseline, git diff --check clean",
     "product_change": "none, so no new candidate, Gate or build identity is claimed",
     "quality_gates": "not rerun because no source or configuration changed in this slice",
-    "documentation": "PENDING json/link/62-contract/41-edge DAG/privacy/diff smoke",
+    "documentation": "PASS (recorded here after the checks were run): json.tool parsed this file; 62 task cards each name exactly one owning DC; the mermaid DAG remains the same acyclic 41-edge graph; the new relative link resolves; the recorded values equal the accessibility reads taken during the session; a host-path/private-key scan found no credentials or absolute host paths; git diff --check passed.",
     "review": "PENDING candidate-specific linked Tern review"
   },
   "acceptance": {
