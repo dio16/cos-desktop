@@ -140,7 +140,13 @@
     "new_refine_gate": "NOT_RUN: docs/evidence-only disposition, unchanged product/measurement/verification code; ADR-0014 Y04",
     "full_quality": "NOT_RUN for this docs/evidence-only slice; owned R0 regression failure remains FAILED",
     "documentation": "PASS: json.tool, exact public/private input digest correlations, five NOT_MEASURED endpoints and null estimators, new relative links, 62 task cards with exactly one owning DC each, unchanged acyclic 41-edge DAG, host-path/private-key scan and git diff --check. Only plan/evidence JSON changed; failed R0 suite is not converted to PASS.",
-    "review": "PENDING candidate-specific linked Tern review"
+    "review": {
+      "candidate_sha": "cd67e101568402170ae484b792411b6b65faf33c",
+      "result": "CLEAN 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
+      "independently_checked": "GitHub fixed commit and origin/dev, approved metadata, source tree, live rejection implementation, manifest/scope conditions, failed-test disclosure, null statistics, docs-only diff and ADR-0014 Y04 boundary",
+      "not_independently_reexecuted": "Retained executable inventory, actual helper/fixture hashes, live consumer digest, private raw logs, Windows binding and 352 tests, subprocess exit",
+      "scope": "Bounded HOLD evidence review only; not performance/test PASS, complete R0A/R0B delivery, SLO attainment, R0D ratification, FLOW2 authorization or product/release acceptance. This result record is a later publication, not a new reviewed candidate."
+    }
   },
   "acceptance": {
     "AC01": "HOLD: no approved executable/helper pair is admitted",
