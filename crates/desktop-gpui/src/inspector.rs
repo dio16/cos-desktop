@@ -53,6 +53,7 @@ impl Shell {
         view: View,
         viewed_label: SharedString,
         viewed_available: bool,
+        task: Option<&TaskId>,
         withheld: Option<&'static str>,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -83,8 +84,11 @@ impl Shell {
                 )
                 .into_any_element();
         }
-        // Identity + availability drive the disclosure scope: an identity change or a
-        // disappearance clears it, so a returning identity starts collapsed.
+        // The Task binds first: a switch that completed without an intermediate
+        // withheld frame must not carry the previous Task's open set into a
+        // same-revision section. Identity + availability then clear on a change or
+        // disappearance, so a returning identity starts collapsed.
+        self.inspector_disclosure.sync_task(task);
         self.inspector_disclosure
             .sync(view.candidate.as_ref(), viewed_available);
         let current: Vec<(Section, Arc<str>)> = view

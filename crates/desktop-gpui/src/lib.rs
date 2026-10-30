@@ -2240,6 +2240,7 @@ impl Render for Shell {
             .and_then(|w| w.presentation.viewed())
             .map(|v| v.0.clone());
         let inspector_view = text.inspector.view(viewed.as_ref());
+        let inspector_task = text.task.clone();
         // The cached display can still describe the previous Task while its
         // replacement is derived, or after the selected identity changed; the
         // inspector withholds and invalidates disclosure in both cases.
@@ -3278,6 +3279,7 @@ impl Render for Shell {
             inspector_view,
             viewed_label.clone(),
             viewed_row.is_some(),
+            inspector_task.as_ref(),
             inspector_withheld,
             window,
             cx,

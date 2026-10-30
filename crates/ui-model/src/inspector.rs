@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use app_core::SnapshotHandle;
 use desktop_protocol::{
-    CandidateRef, CandidateSnapshot, Counter, EvaluationSnapshot, EvidenceRef, TaskSnapshot,
+    CandidateRef, CandidateSnapshot, Counter, EvaluationSnapshot, EvidenceRef, TaskId, TaskSnapshot,
 };
 
 /// The five inspector sections in display order.
@@ -224,12 +224,27 @@ impl Index {
 /// open set, so a returning identity never resumes stale disclosure as if current.
 #[derive(Debug, Default)]
 pub struct Disclosure {
+    task: Option<TaskId>,
     bound: Option<CandidateRef>,
     present: bool,
     open: std::collections::BTreeSet<(Section, Arc<str>)>,
 }
 
 impl Disclosure {
+    /// Rebind the owning Task before any view sync.
+    ///
+    /// A Task change clears every open record synchronously, so a switch that
+    /// completes without an intermediate withheld frame cannot carry the previous
+    /// Task's disclosure into a same-revision section of the next Task.
+    pub fn sync_task(&mut self, task: Option<&TaskId>) -> bool {
+        let changed = self.task.as_ref() != task;
+        if changed {
+            self.invalidate();
+            self.task = task.cloned();
+        }
+        changed
+    }
+
     /// Rebind after a projection/viewed update.
     ///
     /// Returns true when the previous open set was discarded (identity change or a
@@ -266,6 +281,7 @@ impl Disclosure {
     /// Used when observation is blocked: a later re-observation must start collapsed
     /// even when the identity and revision are unchanged (A1).
     pub fn invalidate(&mut self) {
+        self.task = None;
         self.bound = None;
         self.present = false;
         self.open.clear();
@@ -536,6 +552,27 @@ mod tests {
             artifact_ref: ArtifactId::new(format!("fixture:artifact/{label}"))
                 .expect("valid artifact"),
         }
+    }
+
+    #[test]
+    fn a_task_change_clears_disclosure_without_an_intermediate_frame() {
+        let first = TaskId::fixture("task/first");
+        let second = TaskId::fixture("task/second");
+        let mut state = Disclosure::default();
+        assert!(state.sync_task(Some(&first)));
+        state.sync(None, false);
+        assert!(state.toggle(Section::Outcome, "absent"));
+        assert_eq!(state.open_count(), 1);
+
+        // The switch completes before any withheld frame renders: the direct
+        // A→B task change alone must clear the open set.
+        assert!(state.sync_task(Some(&second)));
+        assert_eq!(state.open_count(), 0);
+        assert!(!state.is_open(Section::Outcome, "absent"));
+
+        assert!(state.toggle(Section::Outcome, "absent"));
+        assert!(!state.sync_task(Some(&second)));
+        assert_eq!(state.open_count(), 1);
     }
 
     #[test]
