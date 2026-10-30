@@ -373,7 +373,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-UX1 — Operable prototype of the Golden Workflow surfaces
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** LIMITED PROTOTYPE COMPLETE (eight scenarios with developer reachability 7 PASS / 1 PARTIAL; participant comprehension NOT_RUN; Tern review pending) · **Owner:** Desktop UI (prototype scope), UX owner (validation)
+- **Priority:** P1 · **Status:** LIMITED PROTOTYPE + DEVELOPER REACHABILITY COMPLETE (eight scenarios, 7 PASS / 1 PARTIAL; Tern CLEAN 0/0/0 on `d41ca23c`; participant comprehension and product/UX acceptance remain NOT_RUN) · **Owner:** Desktop UI (prototype scope), UX owner (validation)
 - **Gate / inputs:** UX-owner authorization to run prototype work; the frozen [compare/viewing question list](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux2) is the prototype input, not another task-acceptance contract. No code dependency (prototype may use fixture data, explicitly labelled); it runs in parallel with the §7 lanes.
 - **Evidence:** prototype build/run log + validation notes; screenshots where safe.
 - **Consumers:** MP-UX2/3/4, MP-NAV*, MP-DOCK*, MP-CMP1, MP-INS*.
@@ -1958,4 +1958,5 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Eight checks (developer reachability only):** UX01 task status is visible at startup; UX02 the artifact surface is the centre but media presentation is still a labelled placeholder (**PARTIAL**); UX03 the dock shows the authoritative It 1/It 2/It 3 loop; UX04 Viewed B and the absent Runtime-owned Formal Outcome stay independent; UX05 Evaluation → Evidence opens through the inspector; UX06 Compare is reachable; UX07 Flow is an on-demand surface; UX08 a disconnected window shows exactly one Desktop-local intervention row with a safe Reconnect. Seven reachability checks PASS and UX02 is PARTIAL for the placeholder.
 - **Participant validation: NOT_RUN.** No participant sessions were conducted; the neutral-prompt protocol is recorded in `validation-plan.md`. Reachability is not comprehension, and no model or developer judgement is reported as participant evidence.
 - **Not measured:** comprehension timing, real media/evidence bodies, Runtime data, OS notifications, product/UX acceptance. The prototype is not a shipping UI, and no improvement candidate is promoted to product specification.
+- **Review closure:** round 3 returned **PASS 0 / 0 / 0, VERDICT CLEAN** on pushed `d41ca23c…`; developer reachability is independently reviewed. Participant comprehension remains **NOT_RUN**, and the prototype is not a shipping UI or product acceptance.
 - **No product change:** docs/evidence only, so no Refine Gate is run (Y04); the current product candidate `89d52642` remains covered by Gate `e1f4bf7a-…`. Evidence: [ux1-prototype-latest](evidence-published/ux1-prototype-latest/scenarios.json).
