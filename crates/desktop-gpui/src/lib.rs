@@ -3064,6 +3064,11 @@ impl Render for Shell {
         }
         let dock_active = self.dock_active.clone();
         let dock_focused = self.dock_focus.is_focused(window);
+        // Keyboard focus is one indicator: the approved outline on the focusable
+        // Dock container. Row borders stay structural at one physical pixel.
+        let (dock_focus_width, dock_focus_color) =
+            shell_style::dock_focus_ring(&self.tokens, dock_focused);
+        let row_border = shell_style::dock_row_border(&self.tokens, window.scale_factor()).ok();
         // Every row carries its authoritative iteration label; the first row of
         // a group is additionally marked as a group boundary, so a bounded window
         // deep inside a long iteration still shows which iteration it belongs to.
@@ -3169,14 +3174,8 @@ impl Render for Shell {
                     .items_center()
                     .px_2()
                     .py_2()
-                    .border_1()
-                    .border_color(rgb(if active && dock_focused {
-                        0xe6c278
-                    } else if selected {
-                        0xaeccec
-                    } else {
-                        0x626870
-                    }))
+                    .when_some(row_border, |element, width| element.border(width))
+                    .border_color(rgb(shell_style::dock_row_color(selected)))
                     .cursor_pointer()
                     .child(
                         div()
@@ -3773,8 +3772,8 @@ impl Render for Shell {
                             .aria_label("Candidate Dock")
                             .key_context("CandidateDock")
                             .track_focus(&self.dock_focus)
-                            .border_1()
-                            .border_color(rgb(if dock_focused { 0xe6c278 } else { 0x626870 }))
+                            .border(dock_focus_width)
+                            .border_color(rgb(dock_focus_color))
                             .overflow_x_scroll()
                             .track_scroll(&self.candidate_scroll)
                             .flex()

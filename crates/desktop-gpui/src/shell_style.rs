@@ -107,6 +107,43 @@ pub(crate) fn focus_outline(tokens: &DesignTokens) -> Pixels {
     px(tokens.geometry.focus_outline_dip)
 }
 
+/// Focus ring colour for a focused container in the Dock.
+pub(crate) const DOCK_FOCUS_COLOR: u32 = 0xe6c278;
+/// Structural border colour when the Dock holds no keyboard focus.
+pub(crate) const DOCK_STRUCTURE_COLOR: u32 = 0x626870;
+/// Selection colour of one dock row; independent of keyboard focus.
+pub(crate) const DOCK_SELECTED_COLOR: u32 = 0xaeccec;
+
+/// The single keyboard-focus ring of the Dock: the approved focus-outline width
+/// always, so acquiring focus changes colour only and never layout.
+pub(crate) fn dock_focus_ring(tokens: &DesignTokens, focused: bool) -> (Pixels, u32) {
+    (
+        focus_outline(tokens),
+        if focused {
+            DOCK_FOCUS_COLOR
+        } else {
+            DOCK_STRUCTURE_COLOR
+        },
+    )
+}
+
+/// Structural border of one dock row: one physical pixel, never the focus width.
+pub(crate) fn dock_row_border(
+    tokens: &DesignTokens,
+    scale_factor: f32,
+) -> Result<Pixels, TokenError> {
+    separator(tokens, scale_factor)
+}
+
+/// Row colour: selection only. Keyboard focus is drawn by [`dock_focus_ring`].
+pub(crate) fn dock_row_color(selected: bool) -> u32 {
+    if selected {
+        DOCK_SELECTED_COLOR
+    } else {
+        DOCK_STRUCTURE_COLOR
+    }
+}
+
 /// One physical pixel of structural separator at `scale_factor`, in DIP.
 ///
 /// Fails closed: an unusable platform scale factor (zero, negative,
@@ -132,6 +169,68 @@ mod tests {
         assert_eq!(separator(&tokens, 1.25), Ok(px(0.8)));
         assert_eq!(separator(&tokens, 1.5), Ok(px(1.0 / 1.5)));
         assert_eq!(separator(&tokens, 2.0), Ok(px(0.5)));
+    }
+
+    #[test]
+    fn the_dock_focus_ring_uses_the_approved_token_and_never_moves_layout() {
+        let tokens = DesignTokens::accepted();
+        let (focused_width, focused_color) = dock_focus_ring(&tokens, true);
+        let (unfocused_width, unfocused_color) = dock_focus_ring(&tokens, false);
+        assert_eq!(focused_width, focus_outline(&tokens));
+        assert_eq!(focused_width, px(2.0));
+        assert_eq!(
+            focused_width, unfocused_width,
+            "acquiring focus must change colour only, never layout width"
+        );
+        assert_ne!(focused_color, unfocused_color);
+        assert_eq!(unfocused_color, DOCK_STRUCTURE_COLOR);
+    }
+
+    #[test]
+    fn a_focus_outline_override_reaches_the_dock_ring() {
+        let tokens = DesignTokensOverride {
+            focus_outline_dip: Some(3.0),
+            ..DesignTokensOverride::default()
+        }
+        .resolve_accepted()
+        .expect("a valid override resolves");
+        assert_eq!(dock_focus_ring(&tokens, true).0, px(3.0));
+        assert_eq!(dock_focus_ring(&tokens, false).0, px(3.0));
+    }
+
+    #[test]
+    fn dock_rows_keep_a_one_physical_pixel_structural_border() {
+        let tokens = DesignTokens::accepted();
+        for scale in [1.0, 1.25, 1.5, 2.0] {
+            let width = dock_row_border(&tokens, scale).expect("a usable scale factor");
+            assert_eq!(
+                width * scale,
+                px(1.0),
+                "a structural row border is one physical pixel at {scale}x"
+            );
+            assert_ne!(
+                width,
+                focus_outline(&tokens),
+                "a row border is structural, not the focus indicator"
+            );
+        }
+    }
+
+    #[test]
+    fn a_disabled_scale_factor_draws_no_row_border() {
+        let tokens = DesignTokens::accepted();
+        assert!(dock_row_border(&tokens, 0.0).is_err());
+    }
+
+    #[test]
+    fn row_colour_expresses_selection_and_never_focus() {
+        assert_eq!(dock_row_color(true), DOCK_SELECTED_COLOR);
+        assert_eq!(dock_row_color(false), DOCK_STRUCTURE_COLOR);
+        assert_ne!(
+            dock_row_color(true),
+            DOCK_FOCUS_COLOR,
+            "selection and focus are distinct"
+        );
     }
 
     #[test]
