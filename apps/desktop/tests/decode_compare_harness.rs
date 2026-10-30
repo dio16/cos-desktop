@@ -3770,7 +3770,9 @@ fn injected_sampler_valid_row_is_measured() {
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     inject_sampler(&mut config, "fake_sampler_valid_helper");
     config.sample_interval_ms = 10;
-    config.cancel_after_ms = Some(2_000);
+    // Same margin as the other sampling cases: host creation cost must not be able
+    // to consume the window before the first row is observed.
+    config.cancel_after_ms = Some(8_000);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
