@@ -3,7 +3,7 @@
   "contract": "DC-MP-REL1",
   "decision": "DD-21",
   "slice": "Windows dependency graph, third-party licence/NOTICE consistency, runtime dependency survey",
-  "status": "LIMITED_DLL_OBSERVATION_COMPLETE_REVIEW_PENDING_DISTRIBUTION_OPEN",
+  "status": "LIMITED_DLL_OBSERVATION_COMPLETE_REVIEW_CLEAN_DISTRIBUTION_OPEN",
   "baseline": "39713bf9644d0d8ae0b455d814f7a3a7466a0ca2",
   "product_source": "87922dd567187bec88186944247d1f5644ba2a1b (unchanged by this slice: no product, verification code or NOTICE change was needed)",
   "a_windows_dependency_graph": {
@@ -1217,7 +1217,7 @@
     "task": "MP-REL1",
     "contract": "DC-MP-REL1",
     "slice": "Bounded Windows direct/transitive imports and loaded-module observation",
-    "status": "LIMITED_OBSERVATION_COMPLETE_REVIEW_PENDING",
+    "status": "LIMITED_OBSERVATION_COMPLETE_REVIEW_CLEAN",
     "directive_baseline": "e5ef1148b63fd8fc6dfb747073f7debd7f0a2bc5",
     "execution_baseline": "bba46a161edbf9cdd54d7a75ef8690f08167b10b",
     "taskern_packet_sha256": "sha256:4607a01bdc871e1c787793a86afb29b59963e910a71b393545e7cba4cb57f037",
@@ -2086,7 +2086,7 @@
       "native": "Both displayed modes and exact-PID module samples observed, then semantic close and exit 0.",
       "new_refine_gate": "NOT_RUN: observation/docs only; no product/verification/dependency/config change (ADR-0014 Y04).",
       "documentation": "PASS: 34 direct labels/33 case-insensitive names, two PID/time/OS/exe-correlated 82-module samples, nine bounded transitive files and both screenshot hashes match retained observations; JSON tool and git diff --check pass. The 62 task cards, owning contract mappings, decision gates and 41-edge DAG are unchanged from the verified baseline; new screenshot/evidence links resolve. Product/verification code, LICENSE/NOTICE, lock and contracts unchanged; no host drive path or private-key marker in public JSON.",
-      "review": "PENDING candidate-specific linked Tern review"
+      "review": "Round 1 on 79cedc3f88c3b3239c0b6844ac95d307bb732e44 returned CLEAN 0/0/0. GitHub review independently checked source ancestry/tree, direct-label/classification/transitive/module counts, both screenshot bytes and SHA256, scope and unchanged implementation boundary. It did not independently repeat private process-module capture hashes, binary/DLL hashes or versions, PID identity, exits, Windows PE/load observations or package tests. CLEAN is limited evidence review, not complete closure, clean-user compatibility, legal redistribution, DD-21, distribution or product/release acceptance."
     }
   }
 }
