@@ -2240,6 +2240,15 @@ impl Render for Shell {
             .and_then(|w| w.presentation.viewed())
             .map(|v| v.0.clone());
         let inspector_view = text.inspector.view(viewed.as_ref());
+        // The cached display can still describe the previous Task while its
+        // replacement is derived, or after the selected identity changed; the
+        // inspector withholds and invalidates disclosure in both cases.
+        let inspector_withheld = inspector::scope(
+            authorized_text,
+            self.rail_selection_pending,
+            text.task.as_ref(),
+            self.rail_state.selected(),
+        );
         // Rows derived for another task are never shown, actionable or focusable: the in-flight
         // window after a switch still holds the previous task's text.
         let intervention_strip = intervention::scoped_strip(
@@ -3269,7 +3278,7 @@ impl Render for Shell {
             inspector_view,
             viewed_label.clone(),
             viewed_row.is_some(),
-            authorized_text,
+            inspector_withheld,
             window,
             cx,
         );

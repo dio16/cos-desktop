@@ -7,12 +7,41 @@
 
 use std::sync::Arc;
 
+use desktop_protocol::TaskId;
 use gpui::{AnyElement, Context, IntoElement, Role, SharedString, Window, div, prelude::*, rgb};
 use ui_model::inspector::{Section, View};
 
 use crate::shell_style::TextSpec;
 use crate::tokens::TextStyle;
 use crate::{InspectorToggle, Shell};
+
+/// Why the inspector must withhold the current projection, if it must.
+///
+/// The cached display is authorized for the last installed publication. While a
+/// Task switch is being derived, or after the selected identity changed, that
+/// cache can still describe the previous Task, so neither its values nor its
+/// disclosure state may be presented as the new Task's.
+pub(super) fn scope(
+    authorized: bool,
+    selection_pending: bool,
+    cached_task: Option<&TaskId>,
+    selected_task: Option<&TaskId>,
+) -> Option<&'static str> {
+    if !authorized {
+        return Some("Unavailable — no current authorized observation");
+    }
+    if selection_pending {
+        return Some("Withheld — the selected Task projection is still being derived");
+    }
+    // With no explicit local selection the installed publication's task is the
+    // authoritative target; with one, the cache must already describe it.
+    if let Some(selected) = selected_task
+        && cached_task != Some(selected)
+    {
+        return Some("Withheld — the cached projection belongs to another Task");
+    }
+    None
+}
 
 impl Shell {
     /// Build the inspector for the selected task and viewed candidate.
@@ -24,7 +53,7 @@ impl Shell {
         view: View,
         viewed_label: SharedString,
         viewed_available: bool,
-        authorized: bool,
+        withheld: Option<&'static str>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
@@ -37,17 +66,20 @@ impl Shell {
             .flex()
             .flex_col()
             .gap_2();
-        if !authorized {
-            // A blocked observation invalidates disclosure state instead of merely
-            // skipping the sync, so re-observation starts collapsed (A1).
+        if let Some(reason) = withheld {
+            // A blocked or out-of-scope projection invalidates disclosure state
+            // instead of merely skipping the sync, so the next in-scope Task or
+            // re-observation starts collapsed (A1).
             self.inspector_disclosure.invalidate();
+            let message = SharedString::from(reason);
             return panel
                 .child(
                     div()
                         .id("inspector-unavailable")
                         .role(Role::Label)
-                        .aria_label("Inspector unavailable — no current authorized observation")
-                        .child("Unavailable — no current authorized observation"),
+                        .aria_label(message.clone())
+                        .aria_value(message.clone())
+                        .child(message),
                 )
                 .into_any_element();
         }
@@ -216,13 +248,45 @@ impl Shell {
 
 #[cfg(test)]
 mod tests {
+    use super::scope;
+    use desktop_protocol::TaskId;
+
+    fn task(name: &str) -> TaskId {
+        TaskId::fixture(format!("task/{name}"))
+    }
+
+    #[test]
+    fn the_scope_gate_withholds_a_pending_or_foreign_task_projection() {
+        let first = task("first");
+        let second = task("second");
+        assert_eq!(scope(true, false, Some(&first), Some(&first)), None);
+        assert_eq!(scope(true, false, None, None), None);
+        assert_eq!(
+            scope(true, true, Some(&first), Some(&second)),
+            Some("Withheld — the selected Task projection is still being derived")
+        );
+        assert_eq!(
+            scope(true, false, Some(&first), Some(&second)),
+            Some("Withheld — the cached projection belongs to another Task")
+        );
+        assert_eq!(scope(true, false, Some(&first), None), None);
+        assert_eq!(
+            scope(true, false, None, Some(&first)),
+            Some("Withheld — the cached projection belongs to another Task")
+        );
+        assert_eq!(
+            scope(false, true, Some(&first), Some(&second)),
+            Some("Unavailable — no current authorized observation")
+        );
+    }
+
     /// A blocked observation must invalidate disclosure before the early return, so a
     /// later re-observation starts collapsed (A1).
     #[test]
     fn a_blocked_observation_invalidates_disclosure_before_the_early_return() {
         let panel = include_str!("inspector.rs");
         let unauthorized = panel
-            .find("if !authorized")
+            .find("if let Some(reason) = withheld")
             .expect("unauthorized branch exists");
         let rest = &panel[unauthorized..];
         let invalidate = rest
