@@ -13,9 +13,9 @@ impl Surface {
 
     pub const fn label(self) -> &'static str {
         match self {
-            Self::Artifact => "Artifact",
-            Self::Compare => "Compare",
-            Self::Flow => "Flow",
+            Self::Artifact => "成果物",
+            Self::Compare => "候補を比較",
+            Self::Flow => "処理の流れ",
         }
     }
 }

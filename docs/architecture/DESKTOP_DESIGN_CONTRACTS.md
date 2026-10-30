@@ -15,6 +15,7 @@
 | Thread/ownership | UI thread does input/layout/paint/focus only; I/O, serialization, decode, layout, search and derivation run on bounded background executors with cancellation; no new global state. |
 | Failure | Fail closed and honestly: explicit error/unavailable state; never fabricate success, never silently substitute data; never auto-retry mutating commands. |
 | Security | No credentials/tokens/signed locators/private paths in logs, diagnostics, projections or errors; external media/metadata is untrusted. |
+| Presentation | Apply the Caller-selected Japanese display language and explanatory-control rules in [Product §69](COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md#69-design-system-boundary); preserve Runtime-provided identities/free text/unknown values. Inspector and compact context layout follow [Product §17](COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md#17-inspector); no clipping behind the Dock or inaccessible overflow. |
 | Rollback | Revertible without restoring known-invalid behavior; if revert reintroduces a correctness defect, disable affected path (bounded degraded/unavailable state); see DC-MP-COR1. |
 | Stop/escalation | Stop and escalate if work requires new public API, state-ownership change, open UX default, Runtime semantic, dependency/pin change, unsafe-code exception or persistence change; canonical decision register §6 governs approvals. |
 | Evidence | Each task records command/run, environment and observed result; unmeasured items are labelled `NOT_MEASURED`. |

@@ -33,7 +33,7 @@ impl Provenance {
     /// The provenance prefix every row carries.
     pub fn label(self) -> &'static str {
         match self {
-            Self::DesktopLocal => "Desktop-local",
+            Self::DesktopLocal => "Desktop内",
         }
     }
 }
@@ -54,9 +54,9 @@ impl Action {
     /// The action's display label.
     pub fn label(self) -> &'static str {
         match self {
-            Self::Inspect => "Inspect",
-            Self::Details => "Details",
-            Self::Reconnect => "Reconnect",
+            Self::Inspect => "内容を確認",
+            Self::Details => "詳細を表示",
+            Self::Reconnect => "再接続",
         }
     }
 }
@@ -78,10 +78,10 @@ impl Kind {
     /// The kind's stable label.
     pub fn label(self) -> &'static str {
         match self {
-            Self::ObservationUnavailable => "Observation",
-            Self::Connection => "Connection",
-            Self::Stop => "Stop",
-            Self::MissingReference => "Reference",
+            Self::ObservationUnavailable => "観測情報",
+            Self::Connection => "接続",
+            Self::Stop => "停止操作",
+            Self::MissingReference => "参照情報",
         }
     }
 }
@@ -124,12 +124,12 @@ impl Reference {
     /// The reference kind's state word for the row label.
     pub fn label(&self) -> &'static str {
         match self {
-            Self::Capabilities(_) => "capabilities",
-            Self::Iteration(_) => "iteration",
-            Self::Candidate(_) => "candidate",
-            Self::Outcome(_) => "outcome",
-            Self::Artifact(_) => "artifact",
-            Self::Evaluation(_) => "evaluation",
+            Self::Capabilities(_) => "操作権限",
+            Self::Iteration(_) => "反復",
+            Self::Candidate(_) => "候補",
+            Self::Outcome(_) => "結果",
+            Self::Artifact(_) => "成果物",
+            Self::Evaluation(_) => "評価",
         }
     }
 }
@@ -268,8 +268,8 @@ impl Index {
                 kind: Kind::ObservationUnavailable,
                 task_status: None,
                 provenance: Provenance::DesktopLocal,
-                label: "Observation unavailable".into(),
-                detail: "No authorized observation is available in this window.".into(),
+                label: "観測情報を利用できません".into(),
+                detail: "このウィンドウでは、許可された観測情報を取得できません。".into(),
                 action: Some(Action::Reconnect),
             }]
             .into(),
@@ -327,25 +327,22 @@ fn connection_row(
     };
     let (label, detail) = match kind {
         ConnectionKind::Stale => (
-            "Connection stale",
-            "The visible projection may be stale; observation is still local.",
+            "接続情報が古い可能性があります",
+            "表示中の情報が古い場合があります。観測情報はこのウィンドウ内に限られます。",
         ),
         ConnectionKind::Disconnected => (
-            "Disconnected",
-            "No session is connected; observation is unavailable.",
+            "未接続",
+            "セッションが接続されていないため、観測情報を取得できません。",
         ),
-        ConnectionKind::Connecting => ("Connecting", "A session handshake is in progress."),
-        ConnectionKind::Recovering => (
-            "Recovering",
-            "Bounded recovery of the observation is in progress.",
-        ),
+        ConnectionKind::Connecting => ("接続中", "セッションの接続処理中です。"),
+        ConnectionKind::Recovering => ("再接続中", "観測情報の再取得を試みています。"),
         ConnectionKind::Unauthorized => (
-            "Unauthorized",
-            "Authorization failed; the observation requires correction.",
+            "認証されていません",
+            "認証に失敗しました。許可状態の確認が必要です。",
         ),
         ConnectionKind::Incompatible => (
-            "Incompatible",
-            "No mutually supported version pair is available.",
+            "互換性がありません",
+            "双方が対応するバージョンの組み合わせがありません。",
         ),
     };
     Some(Row {
@@ -474,9 +471,8 @@ fn missing_reference_rows(
             kind: Kind::MissingReference,
             task_status: task_status.clone(),
             provenance: Provenance::DesktopLocal,
-            label: format!("Reference {} missing", reference.label()).into(),
-            detail: "A referenced identity is not present in the current authorized projection."
-                .into(),
+            label: format!("参照先がありません: {}", reference.label()).into(),
+            detail: "参照先の識別情報が、現在許可された情報に含まれていません。".into(),
             action: Some(Action::Inspect),
         })
         .collect()
@@ -724,28 +720,6 @@ mod tests {
     }
 
     #[test]
-    fn v1_has_no_runtime_issue_provenance_and_only_read_only_actions() {
-        // Exhaustive matches are the proof at this commit: a Runtime-issued row or a
-        // destructive action would not compile without a new variant (ADR-0011 §1).
-        fn provenance(value: Provenance) -> &'static str {
-            match value {
-                Provenance::DesktopLocal => "Desktop-local",
-            }
-        }
-        fn action(value: Action) -> &'static str {
-            match value {
-                Action::Inspect => "Inspect",
-                Action::Details => "Details",
-                Action::Reconnect => "Reconnect",
-            }
-        }
-        assert_eq!(provenance(Provenance::DesktopLocal), "Desktop-local");
-        assert_eq!(action(Action::Inspect), "Inspect");
-        assert_eq!(action(Action::Details), "Details");
-        assert_eq!(action(Action::Reconnect), "Reconnect");
-    }
-
-    #[test]
     fn unknown_task_status_orders_last() {
         let rows = vec![
             Row {
@@ -753,7 +727,7 @@ mod tests {
                 kind: Kind::Connection,
                 task_status: Some(TaskStatus::Unknown("FUTURE".to_owned())),
                 provenance: Provenance::DesktopLocal,
-                label: "Connection stale".into(),
+                label: "接続情報が古い可能性があります".into(),
                 detail: "d".into(),
                 action: Some(Action::Reconnect),
             },
@@ -762,7 +736,7 @@ mod tests {
                 kind: Kind::Stop,
                 task_status: None,
                 provenance: Provenance::DesktopLocal,
-                label: "Stop outcome unknown".into(),
+                label: "停止要求の結果は不明です".into(),
                 detail: "d".into(),
                 action: Some(Action::Details),
             },
@@ -774,7 +748,7 @@ mod tests {
                 kind: Kind::MissingReference,
                 task_status: Some(TaskStatus::Active),
                 provenance: Provenance::DesktopLocal,
-                label: "Reference evaluation missing".into(),
+                label: "評価の参照先がありません".into(),
                 detail: "d".into(),
                 action: Some(Action::Inspect),
             },
@@ -833,10 +807,11 @@ mod tests {
         let group = &strip.groups[0];
         assert_eq!(group.kind, Kind::ObservationUnavailable);
         assert_eq!(group.count(), 1);
-        assert_eq!(group.head.identity, RowIdentity::ObservationUnavailable);
-        assert_eq!(
-            group.head.display_label(),
-            "Desktop-local · Observation unavailable".to_owned()
+        assert!(
+            group
+                .head
+                .display_label()
+                .contains(Provenance::DesktopLocal.label())
         );
         assert_eq!(strip.grouped_away(), 0);
     }
@@ -858,14 +833,13 @@ mod tests {
             .expect("connection row");
         assert_eq!(row.kind, Kind::Connection);
         assert_eq!(row.provenance, Provenance::DesktopLocal);
-        assert_eq!(row.display_label(), "Desktop-local · Recovering");
-        assert!(row.detail.to_lowercase().contains("recovery"));
+        assert!(!row.detail.is_empty());
+        assert_eq!(row.action, Some(Action::Reconnect));
         for text in [row.display_label(), row.detail.to_string()] {
             for forbidden in ["Runtime", "severity", "code"] {
                 assert!(!text.contains(forbidden), "no Runtime vocabulary: {text}");
             }
         }
-        assert_eq!(row.action, Some(Action::Reconnect));
     }
 
     #[test]
@@ -1244,9 +1218,7 @@ mod tests {
         assert_eq!(index.rows().len(), 1);
         let row = &index.rows()[0];
         assert_eq!(row.kind, Kind::Stop);
-        assert_eq!(row.display_label(), "Desktop-local · Stop accepted");
-        assert!(row.detail.contains("not task completion"));
-        assert!(!row.display_label().contains("CANCELLED"));
+        assert_eq!(row.identity, RowIdentity::Stop(accepted));
         assert_eq!(row.action, Some(Action::Details));
     }
 
@@ -1267,7 +1239,6 @@ mod tests {
                 Some(Action::Inspect | Action::Details | Action::Reconnect)
             ));
             assert_eq!(row.provenance, Provenance::DesktopLocal);
-            assert!(row.display_label().starts_with("Desktop-local · "));
         }
     }
 

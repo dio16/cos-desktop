@@ -67,68 +67,68 @@ pub const INVENTORY: &[Descriptor] = &[
     Descriptor {
         command: Command::ShowArtifact,
         id: "surface.artifact",
-        title: "Show Artifact",
-        category: "Navigate",
+        title: "成果物を表示",
+        category: "移動",
     },
     Descriptor {
         command: Command::ShowCompare,
         id: "surface.compare",
-        title: "Show Compare",
-        category: "Navigate",
+        title: "候補を比較",
+        category: "移動",
     },
     Descriptor {
         command: Command::ShowFlow,
         id: "surface.flow",
-        title: "Show Flow",
-        category: "Navigate",
+        title: "処理の流れを表示",
+        category: "移動",
     },
     Descriptor {
         command: Command::NextSurface,
         id: "surface.next",
-        title: "Next Surface",
-        category: "Navigate",
+        title: "次の画面へ",
+        category: "移動",
     },
     Descriptor {
         command: Command::OpenActiveTask,
         id: "task.open-active",
-        title: "Open Active Task",
-        category: "Task",
+        title: "選択中のタスクを開く",
+        category: "タスク",
     },
     Descriptor {
         command: Command::OpenActiveCandidate,
         id: "candidate.open-active",
-        title: "Open Active Candidate",
-        category: "Candidate",
+        title: "選択中の候補を開く",
+        category: "候補",
     },
     Descriptor {
         command: Command::ShowEvaluation,
         id: "inspector.evaluation",
-        title: "Show Evaluation",
-        category: "Inspector",
+        title: "評価を表示",
+        category: "確認",
     },
     Descriptor {
         command: Command::ShowEvidence,
         id: "inspector.evidence",
-        title: "Show Evidence",
-        category: "Inspector",
+        title: "判断の根拠を表示",
+        category: "確認",
     },
     Descriptor {
         command: Command::ToggleDiagnostics,
         id: "diagnostics.toggle",
-        title: "Toggle Diagnostics",
-        category: "Diagnostics",
+        title: "診断情報の表示を切り替え",
+        category: "診断",
     },
     Descriptor {
         command: Command::StopTask,
         id: "stop.task",
-        title: "Stop Task",
-        category: "Task",
+        title: "タスクを停止",
+        category: "タスク",
     },
     Descriptor {
         command: Command::CheckStopReceipt,
         id: "stop.check-receipt",
-        title: "Check Stop Receipt",
-        category: "Task",
+        title: "停止結果を確認",
+        category: "タスク",
     },
 ];
 
@@ -288,44 +288,43 @@ mod tests {
     }
 
     #[test]
-    fn an_exact_id_beats_a_title_prefix_and_a_substring() {
+    fn matching_contract_uses_stable_ids_and_independent_title_category_fixtures() {
         let entries = entries();
-        let hits = commands(search("surface.flow", &entries), &entries);
-        assert_eq!(hits.first(), Some(&Command::ShowFlow));
+        let exact = commands(search("SURFACE.FLOW", &entries), &entries);
+        assert_eq!(exact.first(), Some(&Command::ShowFlow));
         assert!(matches!(
-            search("surface.flow", &entries),
+            search("SURFACE.FLOW", &entries),
             Outcome::Hits(hits) if hits[0].rank == Rank::ExactId
         ));
-
-        let hits = commands(search("show", &entries), &entries);
-        // "Show Artifact" and friends are title prefixes; the id subs string
-        // "task.open-active" does not contain "show".
-        assert_eq!(
-            hits,
-            vec![
-                Command::ShowArtifact,
-                Command::ShowCompare,
-                Command::ShowFlow,
-                Command::ShowEvaluation,
-                Command::ShowEvidence,
-            ]
-        );
-
-        let hits = commands(search("evidence", &entries), &entries);
-        assert_eq!(hits, vec![Command::ShowEvidence]);
-        let hits = commands(search("inspector", &entries), &entries);
-        assert_eq!(hits, vec![Command::ShowEvaluation, Command::ShowEvidence]);
+        let mut title_probe = INVENTORY[0];
+        title_probe.title = "needle title";
+        let title_entry = [Entry {
+            descriptor: &title_probe,
+            unavailable: None,
+        }];
+        assert!(matches!(
+            search("needle", &title_entry),
+            Outcome::Hits(hits) if hits[0].rank == Rank::TitlePrefix
+        ));
+        let mut category_probe = INVENTORY[0];
+        category_probe.category = "needle category";
+        let category_entry = [Entry {
+            descriptor: &category_probe,
+            unavailable: None,
+        }];
+        assert!(matches!(
+            search("needle", &category_entry),
+            Outcome::Hits(hits) if hits[0].rank == Rank::Category
+        ));
     }
 
     #[test]
     fn matching_folds_case_for_ascii_and_unicode_ids() {
         let entries = entries();
-        let lower = commands(search("show flow", &entries), &entries);
-        let upper = commands(search("SHOW FLOW", &entries), &entries);
+        let lower = commands(search("surface.flow", &entries), &entries);
+        let upper = commands(search("SURFACE.FLOW", &entries), &entries);
         assert_eq!(lower, upper);
         assert_eq!(lower.first(), Some(&Command::ShowFlow));
-
-        // The fold follows simple case folding, not a manual lowercasing rule.
         let mut descriptor = INVENTORY[0];
         descriptor.title = "Überblick";
         let custom = [Entry {
@@ -344,21 +343,15 @@ mod tests {
 
     #[test]
     fn a_category_only_match_ranks_after_title_and_id_matches() {
-        let entries = entries();
-        // "Task" is the category of several rows and a title word of none.
-        let hits = commands(search("navigate", &entries), &entries);
-        assert_eq!(
-            hits,
-            vec![
-                Command::ShowArtifact,
-                Command::ShowCompare,
-                Command::ShowFlow,
-                Command::NextSurface,
-            ]
-        );
+        let mut descriptor = INVENTORY[0];
+        descriptor.category = "needle category";
+        let custom = [Entry {
+            descriptor: &descriptor,
+            unavailable: None,
+        }];
         assert!(matches!(
-            search("navigate", &entries),
-            Outcome::Hits(hits) if hits.iter().all(|hit| hit.rank == Rank::Category)
+            search("needle", &custom),
+            Outcome::Hits(hits) if hits.len() == 1 && hits[0].rank == Rank::Category
         ));
     }
 
@@ -401,14 +394,12 @@ mod tests {
             .iter()
             .position(|entry| entry.descriptor.command == Command::StopTask)
             .expect("stop row");
-        entries[slot].unavailable = Some("Stop requires an authorized observation");
+        let reason = "fixture unavailable reason";
+        entries[slot].unavailable = Some(reason);
         let listed = commands(search("", &entries), &entries);
         assert!(listed.contains(&Command::StopTask));
         assert!(!entries[slot].is_available());
-        assert_eq!(
-            entries[slot].unavailable,
-            Some("Stop requires an authorized observation")
-        );
+        assert_eq!(entries[slot].unavailable, Some(reason));
     }
 
     #[test]

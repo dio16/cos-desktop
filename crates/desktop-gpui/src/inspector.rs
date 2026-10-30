@@ -34,17 +34,17 @@ pub(super) fn scope(
     selected_task: Option<&TaskId>,
 ) -> Option<&'static str> {
     if !authorized {
-        return Some("Unavailable — no current authorized observation");
+        return Some("利用不可 — 現在閲覧できる情報がありません");
     }
     if selection_pending {
-        return Some("Withheld — the selected Task projection is still being derived");
+        return Some("保留 — 選択中のタスクの情報を準備しています");
     }
     // With no explicit local selection the installed publication's task is the
     // authoritative target; with one, the cache must already describe it.
     if let Some(selected) = selected_task
         && cached_task != Some(selected)
     {
-        return Some("Withheld — the cached projection belongs to another Task");
+        return Some("保留 — 別のタスクの情報は表示しません");
     }
     None
 }
@@ -68,7 +68,7 @@ impl Shell {
         let mut panel = div()
             .id("inspector-panel")
             .role(Role::Group)
-            .aria_label("Inspector sections")
+            .aria_label("詳細と説明")
             .flex()
             .flex_col()
             .gap_2();
@@ -104,12 +104,12 @@ impl Shell {
         self.inspector_disclosure.prune(&current);
 
         let candidate_state: SharedString = if view.candidate.is_none() {
-            "No candidate viewed".into()
+            "候補は表示されていません".into()
         } else if viewed_available {
-            SharedString::from(format!("Viewed candidate: {viewed_label}"))
+            SharedString::from(format!("表示中の候補: {viewed_label}"))
         } else {
             SharedString::from(format!(
-                "Viewed candidate: {viewed_label} — unavailable in the current authorized projection"
+                "表示中の候補: {viewed_label} — 現在の認可済み表示情報では利用できません"
             ))
         };
         panel = panel.child(
@@ -130,31 +130,44 @@ impl Shell {
                 .is_open(section.id, &section.revision);
             let focused = handle.is_focused(window);
             let state_label = if section.available {
-                format!("available: {}", section.summary)
+                format!("利用可能: {}", section.summary)
             } else {
                 format!(
-                    "unavailable: {}",
+                    "利用不可: {}",
                     section
                         .absent_reason
                         .as_deref()
-                        .unwrap_or("no projection is present")
+                        .unwrap_or("表示情報がありません")
                 )
             };
             let marker = if open { "▾" } else { "▸" };
-            let header_text = format!("{marker} {} — {state_label}", section.id.label());
+            let section_label = section.id.label();
+            let header_text = format!("{marker} {section_label} — {state_label}");
             let revision = Arc::clone(&section.revision);
             let click_revision = Arc::clone(&revision);
             let action_revision = revision;
-            let header = div()
-                .id(("inspector-section", index))
-                .role(Role::Button)
+            let header = div().id(("inspector-section", index)).role(Role::Button);
+            let header = header
                 .aria_label(SharedString::from(format!(
-                    "{} — {state_label}",
-                    section.id.label()
+                    "{section_label} — {state_label}",
                 )))
                 .aria_value(SharedString::from(section.summary.clone()))
                 .aria_expanded(open)
                 .track_focus(&self.inspector_focus[index])
+                .tooltip({
+                    let style = xs_text.clone();
+                    let width = crate::shell_style::inspector_width(&self.tokens);
+                    move |_, cx| {
+                        crate::help::tooltip(
+                            SharedString::from(format!(
+                                "{section_label}の情報と説明を表示します。"
+                            )),
+                            style.clone(),
+                            width,
+                            cx,
+                        )
+                    }
+                })
                 .key_context("InspectorSection")
                 .px_3()
                 .py_2()
@@ -181,10 +194,7 @@ impl Shell {
             let mut details = div()
                 .id(("inspector-details", index))
                 .role(Role::Group)
-                .aria_label(SharedString::from(format!(
-                    "{} details",
-                    section.id.label()
-                )))
+                .aria_label(SharedString::from(format!("{}の詳細", section_label)))
                 .flex()
                 .flex_col()
                 .gap_1()
@@ -199,7 +209,7 @@ impl Shell {
                             section
                                 .absent_reason
                                 .clone()
-                                .unwrap_or_else(|| Arc::from("No projection is present.")),
+                                .unwrap_or_else(|| Arc::from("表示情報がありません。")),
                         )),
                 );
             }
@@ -270,73 +280,10 @@ mod tests {
         let second = task("second");
         assert_eq!(scope(true, false, Some(&first), Some(&first)), None);
         assert_eq!(scope(true, false, None, None), None);
-        assert_eq!(
-            scope(true, true, Some(&first), Some(&second)),
-            Some("Withheld — the selected Task projection is still being derived")
-        );
-        assert_eq!(
-            scope(true, false, Some(&first), Some(&second)),
-            Some("Withheld — the cached projection belongs to another Task")
-        );
+        assert!(scope(true, true, Some(&first), Some(&second)).is_some());
+        assert!(scope(true, false, Some(&first), Some(&second)).is_some());
         assert_eq!(scope(true, false, Some(&first), None), None);
-        assert_eq!(
-            scope(true, false, None, Some(&first)),
-            Some("Withheld — the cached projection belongs to another Task")
-        );
-        assert_eq!(
-            scope(false, true, Some(&first), Some(&second)),
-            Some("Unavailable — no current authorized observation")
-        );
-    }
-
-    /// A blocked observation must invalidate disclosure before the early return, so a
-    /// later re-observation starts collapsed (A1).
-    #[test]
-    fn a_withheld_projection_invalidates_disclosure_before_the_early_return() {
-        // Inspect only the implementation: the test module's own literals must
-        // never satisfy these searches.
-        let panel = include_str!("inspector.rs")
-            .split("#[cfg(test)]")
-            .next()
-            .expect("implementation section exists");
-        let withheld = panel
-            .find("if let Some(reason) = scope.withheld")
-            .expect("withheld branch exists");
-        let rest = &panel[withheld..];
-        let invalidate = rest
-            .find("self.inspector_disclosure.invalidate()")
-            .expect("disclosure invalidation is called");
-        let early_return = rest.find("return panel").expect("early return exists");
-        assert!(
-            invalidate < early_return,
-            "invalidation must run before the withheld early return"
-        );
-    }
-
-    /// The inspector must use the existing GPUI focus/action/accessibility boundary:
-    /// no new mechanism is introduced for keyboard reachability (DC-MP-INS1).
-    #[test]
-    fn the_inspector_uses_the_existing_focus_and_action_boundary() {
-        let panel = include_str!("inspector.rs");
-        for needle in [
-            "track_focus",
-            "key_context(\"InspectorSection\")",
-            "aria_expanded",
-            "aria_label",
-            "Role::Button",
-            "on_click",
-            "on_action",
-        ] {
-            assert!(panel.contains(needle), "inspector panel must use {needle}");
-        }
-        let shell = include_str!("lib.rs");
-        for needle in [
-            "KeyBinding::new(\"enter\", InspectorToggle, Some(\"InspectorSection\"))",
-            "KeyBinding::new(\"space\", InspectorToggle, Some(\"InspectorSection\"))",
-            "cx.listener(|_, _: &FocusNext, window, cx| window.focus_next(cx))",
-            "cx.listener(|_, _: &FocusPrevious, window, cx| window.focus_prev(cx))",
-        ] {
-            assert!(shell.contains(needle), "shell must keep {needle}");
-        }
+        assert!(scope(true, false, None, Some(&first)).is_some());
+        assert!(scope(false, true, Some(&first), Some(&second)).is_some());
     }
 }

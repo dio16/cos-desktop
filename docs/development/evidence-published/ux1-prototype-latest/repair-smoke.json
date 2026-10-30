@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "task": "MP-UX1",
+  "contract": "DC-MP-UX1",
+  "slice": "participant P01 session and presentation repair",
+  "status": "PARTICIPANT_RECORDED_REPAIRED_AND_SMOKED_COMPREHENSION_EXIT_NOT_MET",
+  "directive_source": "plan-scoped next-task directive after the CLEAN 19.97 review on c789821836f0bea77b52666a405c3830d010a87d",
+  "taskern": {
+    "operation": "prepare",
+    "plan_id": "cos-desktop-ux1-participant-20261031",
+    "task_id": "MP-UX1",
+    "packet_sha256": "sha256:07169f235a83490c71654c6fa085121497f03626db5f51d81023cde7625712c2"
+  },
+  "execution_baseline": "d3db6dde7413cbabe7e1ff71529d8084255dac07",
+  "branch": "dev",
+  "participant": {
+    "record": "participant-p01.json",
+    "participant": "P01",
+    "recruitment": "Caller explicitly selected one actual participant; not a representative sample.",
+    "results": {"pass": 0, "partial": 3, "fail": 5},
+    "timing": "NOT_MEASURED",
+    "prior_exposure": "NOT_CONTROLLED",
+    "comprehension_exit": "NOT_MET",
+    "reported_issues": [
+      "English and unfamiliar terminology were the primary comprehension obstacle.",
+      "Control meanings were unclear; hover explanations were suggested.",
+      "No artifact was visible in the centre, so the judgement target was unidentified.",
+      "The right pane could not be scrolled and its content overlapped the lower pane.",
+      "The top pane occupied too much space."
+    ],
+    "treatment": "Recorded as observations and not rewritten after the repair; no post-repair participant result exists."
+  },
+  "repair": {
+    "scope": "Presentation only: ui-model display text/labels, desktop-gpui shell/inspector/intervention/palette/stop/dock/flow, app-core surface labels, plus the help module. No new dependency, public protocol type, unsafe/FFI, Runtime semantic, media implementation or persistence change.",
+    "changes": [
+      "User-facing headings, axis labels, button names, surface names, notices and unavailable reasons use Japanese; closed protocol statuses carry a Japanese gloss plus the canonical token, while Runtime identities, free text, artifact/evidence summaries and unknown values stay verbatim.",
+      "Every explained control keeps its accessible name/description and gains a lazy hover explanation rendered only when hovered (help module).",
+      "The inspector is its own scroll container with hidden overflow, so expanded sections stay reachable and never overlap the Candidate Dock; the work surface contains its text instead of overflowing horizontally.",
+      "The header keeps the same six state axes but no longer repeats multi-line explanations, reducing its height; the Stop row states its own condition inline.",
+      "The Artifact surface states that the current version cannot display artifact images and that only candidate explanation text is shown; no placeholder image or simulated success is used.",
+      "Dock iteration gutters show the full 反復 N label and the group-start marker moved to the candidate label, so the iteration axis stays legible in a narrow card.",
+      "Withheld/unavailable publications discard the per-consumer derivation cache again, keeping the documented invalidation invariant.",
+      "Removed source-text tests only; the weakened evidence/refinement/dock assertions were restored as field-level and reason-level checks."
+    ]
+  },
+  "verification": {
+    "commands_run": [
+      "cargo fmt --all -- --check (via quality.ps1)",
+      "python -B scripts/check_dependency_rules.py (via quality.ps1)",
+      "cargo clippy --locked --workspace --all-targets -- -D warnings (via quality.ps1)",
+      "cargo test --locked --workspace (via quality.ps1)",
+      "cargo build --locked --workspace (via quality.ps1)",
+      "cargo test --locked -p ui-model --lib",
+      "cargo test --locked -p desktop-gpui --lib",
+      "cargo build --locked -p cos-desktop --bin cos-desktop"
+    ],
+    "results": {
+      "quality": "all quality gates passed (native smoke is separate)",
+      "ui_model_tests": "98 passed",
+      "desktop_gpui_tests": "81 passed",
+      "binary_sha256": "sha256:656e757db6d38b2a59f68e9f598838c2304f1addf80237c58eaa614764e533b2",
+      "build_command": "cargo build --locked -p cos-desktop --bin cos-desktop"
+    }
+  },
+  "native_observation": {
+    "fixture": "crates/cos-client/fixtures/task-184.json",
+    "window": "1296x839 at 96 DPI, fixture label テストデータ / 模擬表示 visible",
+    "header": "six axes present; タスクの状態 実行中（ACTIVE）, 処理段階 REFINE, 反復回数 第3回, 成果物の利用状態 取得可能（AVAILABLE）（5件）, 接続・情報の鮮度 情報を受信中, 正式な結果 不明",
+    "inspector": "candidate B viewed; all five sections expanded; the pane scrolled down independently while the header and the Candidate Dock stayed fixed; the last section and 診断情報 Ctrl+D entry remained above the pane edge",
+    "surfaces": "成果物, 候補を比較 and 処理の流れ each switched by pointer and keyboard; Compare showed 比較するA側/B側 with 未選択 and the three controls; Flow showed the node and edge rows with グラフ改訂 header",
+    "help": "hovering the 成果物 surface button showed its explanation; hovering a palette row showed 成果物を表示（移動）を実行します。 after the deferred-format change",
+    "compare_help": "with no pair, the A/B change buttons report FullDescription 比較するA側はまだ選ばれていません… and 比較するB側はまだ選ばれていません。…; both are non-focusable",
+    "dock": "iteration gutters read 反復 1 / 反復 2 / 反復 3 in full with the group-start marker before the candidate label",
+    "disconnected": "a separate window without fixture arguments showed タスク情報はありません, 情報源なし / データ非公開, per-axis 利用できません — 許可情報を取得できません, 停止の操作 disabled, inspector 利用不可 — 現在閲覧できる情報がありません, and one Desktop-local Reconnect row",
+    "processes": "every owned process exited 0 through the semantic close control with observation shutdown and preference save confirmed"
+  },
+  "not_measured": [
+    "Post-repair participant comprehension and the five-second first-exposure condition",
+    "Real artifact media, evidence bodies and Runtime projections",
+    "Accessibility-tree announcement of the non-interactive work-surface region label (the visible centred statement is not exposed as a region; pre-existing and unchanged)",
+    "Receipt-note rendering with a real Stop receipt (the fixture carries no receipt note)",
+    "DPI ladder, High Contrast and screen-reader acceptance"
+  ],
+  "boundaries": {
+    "ux1_completion": "NOT_COMPLETE",
+    "comprehension_exit": "NOT_MET",
+    "product_acceptance": "NOT_CLAIMED",
+    "gate": "independent Gate required for the product-candidate commit before external review",
+    "unrelated_holds": "MP-TYP1 125 % capture HOLD and the MP-R0B HOLD with its 352-case failed suite are untouched."
+  }
+}

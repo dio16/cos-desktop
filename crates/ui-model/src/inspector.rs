@@ -41,11 +41,11 @@ impl Section {
     /// Stable display label.
     pub fn label(self) -> &'static str {
         match self {
-            Self::Goal => "Goal",
-            Self::Evaluation => "Evaluation",
-            Self::Evidence => "Evidence",
-            Self::Refinement => "Refinement",
-            Self::Outcome => "Outcome",
+            Self::Goal => "目的",
+            Self::Evaluation => "評価",
+            Self::Evidence => "判断の根拠",
+            Self::Refinement => "改善",
+            Self::Outcome => "結果",
         }
     }
 }
@@ -178,10 +178,7 @@ impl Index {
     pub fn view(&self, viewed: Option<&CandidateRef>) -> View {
         let mut sections = Vec::with_capacity(Section::ALL.len());
         sections.push(self.goal.clone().unwrap_or_else(|| {
-            SectionView::absent(
-                Section::Goal,
-                "No Task projection is present in this observation.",
-            )
+            SectionView::absent(Section::Goal, "この情報にはタスクの情報がありません。")
         }));
         match viewed.and_then(|candidate| self.candidates.get(candidate)) {
             Some(candidate) => {
@@ -191,10 +188,9 @@ impl Index {
             }
             None => {
                 let reason: Arc<str> = if viewed.is_some() {
-                    "The viewed candidate is not present in the current authorized projection."
-                        .into()
+                    "表示中の候補は、現在許可された情報に含まれていません。".into()
                 } else {
-                    "No candidate is viewed.".into()
+                    "候補は選択されていません。".into()
                 };
                 sections.push(SectionView::absent(
                     Section::Evaluation,
@@ -207,7 +203,7 @@ impl Index {
         sections.push(self.outcome.clone().unwrap_or_else(|| {
             SectionView::absent(
                 Section::Outcome,
-                "No formal outcome is projected for this task.",
+                "このタスクの正式な結果は、受信した情報に含まれていません。",
             )
         }));
         View {
@@ -304,15 +300,15 @@ impl Disclosure {
 
 fn goal_section(task: &TaskSnapshot) -> SectionView {
     let iteration = task.iteration_index.map_or_else(
-        || Arc::<str>::from("not reported"),
+        || Arc::<str>::from("報告されていません"),
         |index| Arc::<str>::from(index.to_string()),
     );
     let entries = vec![Entry {
         heading: None,
         fields: vec![
-            Field::new("Task", task.display_id.clone()),
-            Field::new("Title", task.title.clone()),
-            Field::new("Iteration", iteration),
+            Field::new("タスク", task.display_id.clone()),
+            Field::new("タイトル", task.title.clone()),
+            Field::new("反復", iteration),
         ]
         .into(),
     }];
@@ -329,28 +325,28 @@ fn outcome_section(snapshot: &SnapshotHandle, task: &TaskSnapshot) -> Option<Sec
     let Some(outcome) = snapshot.outcomes.get(outcome_ref) else {
         return Some(SectionView::absent(
             Section::Outcome,
-            "The formal outcome reference in this task is not present in this observation.",
+            "このタスクが参照する正式な結果は、この観測に含まれていません。",
         ));
     };
     let stop_reason = outcome.stop_reason.as_ref().map_or_else(
-        || "not reported".to_owned(),
+        || "報告されていません".to_owned(),
         |label| label.as_str().to_owned(),
     );
     let entries = vec![Entry {
         heading: None,
         fields: vec![
-            Field::new("Formal status", outcome.formal_status.as_str()),
-            Field::new("Stop reason", stop_reason),
+            Field::new("正式状態", outcome.formal_status.as_str()),
+            Field::new("停止理由", stop_reason),
             Field::new(
-                "Formal selection records",
-                format!("{} projected", outcome.selected_refs.len()),
+                "正式選択の記録",
+                format!("{}件を表示", outcome.selected_refs.len()),
             ),
         ]
         .into(),
     }];
     Some(SectionView::available(
         Section::Outcome,
-        format!("Formal status: {}", outcome.formal_status.as_str()),
+        format!("正式状態: {}", outcome.formal_status.as_str()),
         revision_key(outcome.projection_revision.clone()),
         entries,
     ))
@@ -384,7 +380,15 @@ fn candidate_sections(
             evaluation.evaluation_ref.as_str(),
             evaluation.projection_revision.as_str()
         ));
-        decisions.push(evaluation.decision.as_str().to_owned());
+        decisions.push(match &evaluation.decision {
+            desktop_protocol::EvaluationDecision::Pass => "合格（PASS）".to_owned(),
+            desktop_protocol::EvaluationDecision::Fail => "不合格（FAIL）".to_owned(),
+            desktop_protocol::EvaluationDecision::Abstain => "判断保留（ABSTAIN）".to_owned(),
+            desktop_protocol::EvaluationDecision::Inconclusive => {
+                "結論に至らず（INCONCLUSIVE）".to_owned()
+            }
+            desktop_protocol::EvaluationDecision::Unknown(raw) => raw.clone(),
+        });
         evaluation_entries.push(evaluation_entry(evaluation, evaluation_entries.len()));
         for evidence in &evaluation.evidence_refs {
             evidence_entries.push(evidence_entry(evidence));
@@ -393,11 +397,11 @@ fn candidate_sections(
 
     let evaluation = if evaluation_entries.is_empty() {
         let reason: Arc<str> = if missing_evaluations > 0 {
-            "The referenced evaluation records are not present in this observation.".into()
+            "参照先の評価記録が、受信した情報に含まれていません。".into()
         } else if mismatched_evaluations > 0 {
-            "The projected evaluation does not match the viewed candidate identity.".into()
+            "表示された評価は、選択中の候補と一致しません。".into()
         } else {
-            "No evaluation is projected for the viewed candidate.".into()
+            "選択中の候補に評価記録はありません。".into()
         };
         SectionView::absent(Section::Evaluation, reason)
     } else {
@@ -405,8 +409,8 @@ fn candidate_sections(
             evaluation_entries.push(Entry {
                 heading: None,
                 fields: vec![Field::new(
-                    "Evaluation records not present",
-                    format!("{missing_evaluations}"),
+                    "見つからない評価記録",
+                    format!("{missing_evaluations}件"),
                 )]
                 .into(),
             });
@@ -415,33 +419,29 @@ fn candidate_sections(
             evaluation_entries.push(Entry {
                 heading: None,
                 fields: vec![Field::new(
-                    "Evaluation identity mismatch",
-                    format!("{mismatched_evaluations} projection(s) not displayed"),
+                    "候補と一致しない評価記録",
+                    format!("{}件は表示していません", mismatched_evaluations),
                 )]
                 .into(),
             });
         }
-        let decision_summary = decisions.join(", ");
         SectionView::available(
             Section::Evaluation,
-            format!(
-                "{} evaluation(s) · decision {decision_summary}",
-                decisions.len()
-            ),
+            {
+                let decision_summary = decisions.join(", ");
+                format!("{}件の評価 · 判断: {decision_summary}", decisions.len())
+            },
             format!("evaluation:{}", revisions.join(",")),
             evaluation_entries,
         )
     };
 
     let evidence = if evidence_entries.is_empty() {
-        SectionView::absent(
-            Section::Evidence,
-            "No evidence summary is projected for the viewed candidate.",
-        )
+        SectionView::absent(Section::Evidence, "選択中の候補に判断の根拠はありません。")
     } else {
         SectionView::available(
             Section::Evidence,
-            format!("{} evidence record(s) projected", evidence_entries.len()),
+            format!("判断の根拠 {}件を表示", evidence_entries.len()),
             format!("evidence:{}", revisions.join(",")),
             evidence_entries,
         )
@@ -453,12 +453,12 @@ fn candidate_sections(
                 heading: None,
                 fields: vec![
                     Field::new(
-                        "Refinement records",
-                        format!("{} projected", iteration.refinement_refs.len()),
+                        "改善記録",
+                        format!("{}件を表示", iteration.refinement_refs.len()),
                     ),
                     Field::new(
-                        "Reason",
-                        "Not projected by this observation — only refinement references are projected.",
+                        "理由",
+                        "この観測では改善内容は提供されず、参照情報のみが含まれています。",
                     ),
                 ]
                 .into(),
@@ -466,20 +466,17 @@ fn candidate_sections(
             SectionView::available(
                 Section::Refinement,
                 format!(
-                    "{} refinement record(s) · reason not projected",
+                    "改善記録 {}件 · 理由は未提供",
                     iteration.refinement_refs.len()
                 ),
                 revision_key(iteration.projection_revision.clone()),
                 entries,
             )
         }
-        Some(_) => SectionView::absent(
-            Section::Refinement,
-            "No refinement is projected for this iteration.",
-        ),
+        Some(_) => SectionView::absent(Section::Refinement, "この反復には改善記録がありません。"),
         None => SectionView::absent(
             Section::Refinement,
-            "The candidate's iteration is not present in this observation.",
+            "候補の反復情報がこの観測にありません。",
         ),
     };
 
@@ -491,29 +488,41 @@ fn candidate_sections(
 }
 
 fn evaluation_entry(evaluation: &EvaluationSnapshot, index: usize) -> Entry {
-    let confidence = evaluation
-        .confidence
-        .map_or_else(|| "not reported".to_owned(), |value| value.to_string());
+    let confidence = evaluation.confidence.map_or_else(
+        || "報告されていません".to_owned(),
+        |value| value.to_string(),
+    );
     let mut fields = vec![
-        Field::new("Decision", evaluation.decision.as_str()),
-        Field::new("Authority", evaluation.authority.as_str()),
-        Field::new("Confidence", confidence),
+        Field::new(
+            "判断",
+            match &evaluation.decision {
+                desktop_protocol::EvaluationDecision::Pass => "合格（PASS）",
+                desktop_protocol::EvaluationDecision::Fail => "不合格（FAIL）",
+                desktop_protocol::EvaluationDecision::Abstain => "判断保留（ABSTAIN）",
+                desktop_protocol::EvaluationDecision::Inconclusive => {
+                    "結論に至らず（INCONCLUSIVE）"
+                }
+                desktop_protocol::EvaluationDecision::Unknown(raw) => raw.as_str(),
+            },
+        ),
+        Field::new("評価主体", evaluation.authority.as_str()),
+        Field::new("確信度", confidence),
     ];
     if evaluation.axes.is_empty() {
-        fields.push(Field::new("Axes", "None projected"));
+        fields.push(Field::new("評価軸", "評価軸の情報はありません"));
     }
     for axis in &evaluation.axes {
         let unit = axis.unit.as_deref();
         let value = match (axis.value, unit) {
             (Some(value), Some(unit)) => format!("{value} {unit}"),
-            (Some(value), None) => format!("{value} (unit not reported)"),
-            (None, Some(unit)) => format!("not reported (unit {unit})"),
-            (None, None) => "not reported".to_owned(),
+            (Some(value), None) => format!("{value}（単位は報告されていません）"),
+            (None, Some(unit)) => format!("報告されていません（単位: {unit}）"),
+            (None, None) => "報告されていません".to_owned(),
         };
         fields.push(Field::new(axis.name.clone(), value));
     }
     Entry {
-        heading: (index > 0).then(|| Arc::<str>::from(format!("Evaluation {}", index + 1))),
+        heading: (index > 0).then(|| Arc::<str>::from(format!("評価 {}", index + 1))),
         fields: fields.into(),
     }
 }
@@ -522,12 +531,12 @@ fn evidence_entry(evidence: &EvidenceRef) -> Entry {
     let summary = evidence
         .summary
         .clone()
-        .unwrap_or_else(|| "not projected".to_owned());
+        .unwrap_or_else(|| "概要の情報はありません".to_owned());
     Entry {
         heading: None,
         fields: vec![
-            Field::new("Summary", summary),
-            Field::new("Availability", evidence.status.as_str()),
+            Field::new("概要", summary),
+            Field::new("利用可否", evidence.status.as_str()),
         ]
         .into(),
     }

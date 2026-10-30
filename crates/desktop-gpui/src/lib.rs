@@ -23,6 +23,7 @@ mod accessibility;
 pub mod budget;
 mod dock;
 mod flow;
+mod help;
 mod inspector;
 mod intervention;
 mod palette;
@@ -89,6 +90,17 @@ actions!(
 
 /// Width of the iteration gutter inside each row; the row stride is unchanged.
 const DOCK_GROUP_GUTTER_PX: f32 = 56.0;
+
+fn task_status_label(status: &desktop_protocol::TaskStatus) -> &str {
+    use desktop_protocol::TaskStatus;
+    match status {
+        TaskStatus::Assigned => "割り当て済み（ASSIGNED）",
+        TaskStatus::Active => "実行中（ACTIVE）",
+        TaskStatus::Completed => "完了（COMPLETED）",
+        TaskStatus::Cancelled => "中止（CANCELLED）",
+        TaskStatus::Unknown(raw) => raw,
+    }
+}
 
 pub fn bind_keys(cx: &mut App) {
     cx.bind_keys([
@@ -859,20 +871,19 @@ impl Shell {
             && text.stop_enabled
             && self.stop_intent.can_begin();
         let stop_reason: Arc<str> = if !authorized_text {
-            "Stop is disabled until this window has a current authorized observation view.".into()
+            "閲覧が認可された最新の情報を受信するまで、停止は操作できません。".into()
         } else if self.rail_selection_pending {
-            "Stop is disabled while the newly selected Task context is being derived.".into()
+            "選択したタスクの表示を更新中のため、停止は操作できません。".into()
         } else if !text.stop_enabled {
             Arc::clone(&text.stop_reason)
         } else if retryable_admission {
-            "The previous Stop was refused before admission by bounded capacity. Clicking again submits a new explicit intent; no old command identity is reused."
+            "前の停止要求は受付前に容量制限で拒否されました。もう一度押すと新しい要求を送ります。前の要求は再送しません。"
                 .into()
         } else if self.stop_intent.active.is_some() {
-            "A Stop intent is already recorded in this window; automatic resend and replacement are disabled."
+            "この画面からの停止要求は記録済みです。自動で再送したり別の要求に置き換えたりしません。"
                 .into()
         } else if !self.stop_intent.can_begin() {
-            "Stop action identity space is exhausted; no new intent can be created in this window."
-                .into()
+            "この画面で停止要求を識別できる上限に達したため、新しい要求は送れません。".into()
         } else {
             Arc::clone(&text.stop_reason)
         };
@@ -885,16 +896,15 @@ impl Shell {
         let reconcile_enabled =
             authorized_text && local_stop.is_some() && self.stop_intent.can_read();
         let reconcile_reason: Arc<str> = if !authorized_text {
-            "Receipt check is disabled until this window has a current authorized display.".into()
+            "閲覧が認可された最新の情報を受信するまで、受付状況は確認できません。".into()
         } else if feedback == ReceiptFeedback::Checking {
-            "An explicit receipt check is already in progress.".into()
+            "停止要求の受付状況を確認中です。".into()
         } else if local_stop.is_none() && self.stop_intent.active.is_some() {
-            "Receipt check is disabled because the current observation/task context does not match this window's Stop intent."
-                .into()
+            "表示中のタスクと停止要求の対象が一致しないため、受付状況は確認できません。".into()
         } else if local_stop.is_none_or(|active| active.command_id.is_none()) {
-            "No Stop command identity is available for an explicit receipt check.".into()
+            "受付状況を確認できる停止要求はありません。".into()
         } else {
-            "An explicit receipt check is already in progress.".into()
+            "停止要求の受付状況を確認中です。".into()
         };
         (
             palette::ActionFacts {
@@ -1179,9 +1189,8 @@ impl Shell {
             // change like any other switch.
             self.invalidate_strip_for_task_scope(Some(task.clone()));
         } else {
-            self.restore_notice = Some(
-                "Remembered Task is unavailable in the current authorized observation.".to_owned(),
-            );
+            self.restore_notice =
+                Some("前回のタスクは、現在閲覧できる情報に含まれていません。".to_owned());
         }
     }
 
@@ -1219,12 +1228,12 @@ impl Shell {
     /// enables a command whose dispatch would silently no-op.
     fn rail_selection(&self) -> Result<&TaskId, &'static str> {
         let Some(active) = self.rail_active.as_ref() else {
-            return Err("No Task is active in the rail.");
+            return Err("タスク一覧で操作対象が選ばれていません。");
         };
         if self.rail_state.selectable(active) {
             Ok(active)
         } else {
-            Err("The active Task is not in the current Task search results.")
+            Err("操作対象のタスクは、現在の検索結果に含まれていません。")
         }
     }
 
@@ -2108,17 +2117,17 @@ impl Render for Shell {
         } else if let Some(active) = local_stop {
             match &active.progress {
                     StopProgress::Dispatching => (
-                        "Stop request awaiting owner reply".into(),
-                        "Possibly dispatched; do not resend. Task completion is independently observed."
+                        "停止要求への応答を待っています".into(),
+                        "送信済みの可能性があるため再送しません。タスクの終了は別に通知されます。"
                             .into(),
                     ),
                     StopProgress::Retaining => (
-                        "Stop admitted; retaining receipt identity".into(),
-                        "Receipt view is pending; acceptance is not task completion.".into(),
+                        "停止要求を受け付けました。確認用の情報を保持中です".into(),
+                        "受付状況の表示を待っています。受け付けたことは、タスクが終了したことを意味しません。".into(),
                     ),
                     StopProgress::Retained => (
-                        "Stop admitted".into(),
-                        "Waiting for the current authorized command view; no completion is inferred."
+                        "停止要求を受け付けました".into(),
+                        "閲覧が認可された最新の受付状況を待っています。終了したとは判断しません。"
                             .into(),
                     ),
                     StopProgress::AdmissionError(display)
@@ -2129,30 +2138,28 @@ impl Render for Shell {
                 }
         } else if !authorized_text {
             (
-                "Stop state unavailable".into(),
-                "No current authorized display is available; previous command data is withheld."
-                    .into(),
+                "停止要求の状況を確認できません".into(),
+                "現在表示できる情報がないため、以前の要求の状況は表示しません。".into(),
             )
         } else if let Some(active) = self.stop_intent.active.as_ref() {
             if active.command_id.is_none() && active.retryable_admission {
                 (
-                        "Stop not admitted".into(),
-                        "Bounded-capacity refusal created no command identity; a new intent requires an explicit action."
+                        "停止要求は受け付けられていません".into(),
+                        "容量制限により受付前に拒否されました。新しい停止要求を送るには、もう一度操作してください。"
                             .into(),
                     )
             } else {
                 (
-                        "Stop state withheld".into(),
-                        "The intent belongs to another observation or task context and may have executed; manual intervention may be required."
+                        "この停止要求の状況は表示できません".into(),
+                        "別のタスクまたは接続で送った要求で、実行済みの可能性があります。状況の確認が必要です。"
                             .into(),
                     )
             }
         } else {
             (
-                    "No Stop issued in this window".into(),
-                    "Request Stop sends one explicit owner-routed intent; task outcome remains independent."
-                        .into(),
-                )
+                "この画面から停止要求は送っていません".into(),
+                "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。".into(),
+            )
         };
         let reconcile_enabled = receipt_availability.enabled;
         let reconcile_disabled_reason: Arc<str> = receipt_availability.reason;
@@ -2280,32 +2287,32 @@ impl Render for Shell {
         // never silently replaced by another candidate.
         let viewed_missing = viewed.is_some() && viewed_row.is_none();
         let viewed_label: SharedString = if viewed_missing {
-            "Viewed candidate unavailable — it is no longer in the authorized observation. Choose another candidate."
+            "閲覧中の候補は、現在閲覧できる情報に含まれていません。別の候補を選んでください。"
                 .into()
         } else {
             viewed_row
                 .map(|candidate| SharedString::from(candidate.label.clone()))
-                .unwrap_or_else(|| "Choose a candidate below".into())
+                .unwrap_or_else(|| "下の候補一覧から、表示する候補を選んでください".into())
         };
         let side_a_exists = compare_pair.is_some() || pending_side_a.is_some();
         let side_b_exists = compare_pair.is_some();
         let compare_summary: SharedString = if let Some(side) = changing_side {
             format!(
-                "Changing compare side {}: select a candidate in the dock.",
+                "比較する{}側を変更します。下の一覧から候補を選んでください。",
                 side.label()
             )
             .into()
         } else if compare_pair.is_some() {
-            "Compare selection is local; Formal Selected stays Runtime-owned.".into()
+            "比較対象はこの画面での選択です。正式な採用結果は実行基盤から通知されます。".into()
         } else if pending_side_a.is_some() {
-            "Side A is selected. Select a second candidate in the dock to start Compare.".into()
+            "A側の候補を選択済みです。下の一覧から別の候補を選ぶと比較対象がそろいます。".into()
         } else {
-            "No compare selection. Select two candidates in the dock.".into()
+            "比較対象が未選択です。下の一覧から候補を2つ選んでください。".into()
         };
         let compare_panel = div()
             .id("compare-selection")
             .role(Role::Group)
-            .aria_label("Compare selection — local, not Formal Selected")
+            .aria_label("この画面での比較対象。正式な採用結果ではありません")
             .w_full()
             .flex()
             .flex_col()
@@ -2330,10 +2337,10 @@ impl Render for Shell {
                 });
                 let available = reference.is_none() || row.is_some();
                 let label: SharedString = match (reference, row) {
-                    (None, _) => "Not selected".into(),
+                    (None, _) => "未選択".into(),
                     (Some(_), Some(row)) => SharedString::from(row.label.clone()),
                     (Some(_), None) => {
-                        "Unavailable — this candidate is no longer in the authorized projection."
+                        "この候補は、現在閲覧できる情報に含まれていません。"
                             .into()
                     }
                 };
@@ -2344,7 +2351,7 @@ impl Render for Shell {
                     .id(("compare-side", index))
                     .role(Role::Group)
                     .aria_label(SharedString::from(format!(
-                        "Compare side {}: {}",
+                        "比較する{}側：{}",
                         side.label(),
                         label
                     )))
@@ -2358,58 +2365,83 @@ impl Render for Shell {
                     .flex()
                     .flex_col()
                     .gap_2()
-                    .child(SharedString::from(format!("SIDE {}", side.label())))
+                    .child(SharedString::from(format!("比較する{}側", side.label())))
                     .child(label)
             })))
             .child(
                 div()
                     .flex()
                     .gap_3()
-                    .child(
+                    .child({
+                        let help = if side_a_exists {
+                            "押したあとに候補一覧から選ぶと、比較するA側だけを置き換えます。閲覧中の候補は変わりません。"
+                        } else {
+                            "比較するA側はまだ選ばれていません。下の一覧から候補を選ぶと、この操作が使えます。"
+                        };
                         div()
                             .id("compare-change-a")
                             .role(Role::Button)
-                            .aria_label("Change compare side A")
+                            .aria_label("比較するA側の候補を変更")
+                            .aria_description(help)
+                            .tooltip({
+                                let style = xs_text.clone();
+                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, cx)
+                            })
                             .px_4()
                             .py_2()
                             .border_1()
                             .border_color(rgb(if side_a_exists { 0x626870 } else { 0x343940 }))
                             .when(side_a_exists, |element| element.cursor_pointer())
-                            .child("Change A")
+                            .child("A側を変更")
                             .when(side_a_exists, |element| {
                                 element.on_click(cx.listener(|this, _, _, cx| {
                                     this.change_compare_side(CompareSide::A, cx);
                                 }))
-                            }),
-                    )
-                    .child(
+                            })
+                    })
+                    .child({
+                        let help = if side_b_exists {
+                            "押したあとに候補一覧から選ぶと、比較するB側だけを置き換えます。閲覧中の候補は変わりません。"
+                        } else {
+                            "比較するB側はまだ選ばれていません。A側とB側の候補がそろうと、この操作が使えます。"
+                        };
                         div()
                             .id("compare-change-b")
                             .role(Role::Button)
-                            .aria_label("Change compare side B")
+                            .aria_label("比較するB側の候補を変更")
+                            .aria_description(help)
+                            .tooltip({
+                                let style = xs_text.clone();
+                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, cx)
+                            })
                             .px_4()
                             .py_2()
                             .border_1()
                             .border_color(rgb(if side_b_exists { 0x626870 } else { 0x343940 }))
                             .when(side_b_exists, |element| element.cursor_pointer())
-                            .child("Change B")
+                            .child("B側を変更")
                             .when(side_b_exists, |element| {
                                 element.on_click(cx.listener(|this, _, _, cx| {
                                     this.change_compare_side(CompareSide::B, cx);
                                 }))
-                            }),
-                    )
+                            })
+                    })
                     .child(
                         div()
                             .id("compare-close")
                             .role(Role::Button)
-                            .aria_label("Close Compare and return to the viewed candidate")
+                            .aria_label("比較を閉じて閲覧中の候補に戻る")
+                            .aria_description("比較画面を閉じ、閲覧中の候補の画面に戻ります。正式な採用結果は変更しません。")
+                            .tooltip({
+                                let style = xs_text.clone();
+                                move |_, cx| help::tooltip("比較画面を閉じ、閲覧中の候補の画面に戻ります。正式な採用結果は変更しません。".into(), style.clone(), inspector_width, cx)
+                            })
                             .px_4()
                             .py_2()
                             .border_1()
                             .border_color(rgb(0x626870))
                             .cursor_pointer()
-                            .child("Close Compare")
+                            .child("比較を閉じる")
                             .on_click(cx.listener(|this, _, _, cx| {
                                 this.close_compare(cx);
                             })),
@@ -2424,21 +2456,46 @@ impl Render for Shell {
         let mode = self.error.clone().unwrap_or_else(|| text.mode.clone());
         let axis_cell = |id: &'static str, label: &'static str, value: &Arc<str>| {
             let value = if self.rail_selection_pending && id != "state-axis-connection" {
-                SharedString::from("Updating selected Task")
+                SharedString::from("選択したタスクを更新中")
             } else {
                 SharedString::new(Arc::clone(value))
             };
             let accessible = SharedString::from(format!("{label}: {}", value.as_ref()));
+            let description = match id {
+                "state-axis-task-status" => {
+                    "タスク全体の状態です。処理段階や成果物の利用状態とは別に通知されます。"
+                }
+                "state-axis-inner-phase" => {
+                    "実行元が通知した処理段階の表記です。未知の表記を、この画面で別の意味に置き換えることはありません。"
+                }
+                "state-axis-iteration" => {
+                    "実行元が通知した現在の反復回数です。候補を閲覧しても変わりません。"
+                }
+                "state-axis-artifact-availability" => {
+                    "成果物が利用できるかどうかの通知です。画像表示機能の実装状況や品質の確認結果とは異なります。"
+                }
+                "state-axis-connection" => {
+                    "実行元との接続と情報の鮮度です。接続が切れても、タスクの失敗とは判断しません。"
+                }
+                _ => "実行元が通知した正式な結果です。この画面で閲覧中・比較中の候補とは別です。",
+            };
             div()
                 .flex_1()
                 .min_w_0()
                 .flex()
-                .flex_col()
-                .gap_1()
+                .items_center()
+                .gap_2()
                 .id(id)
                 .role(Role::Label)
                 .aria_label(accessible.clone())
                 .aria_value(accessible)
+                .aria_description(description)
+                .tooltip({
+                    let style = xs_text.clone();
+                    move |_, cx| {
+                        help::tooltip(description.into(), style.clone(), inspector_width, cx)
+                    }
+                })
                 .child(
                     xs_text
                         .clone()
@@ -2453,17 +2510,17 @@ impl Render for Shell {
             .gap_4()
             .child(axis_cell(
                 "state-axis-task-status",
-                "Task Status",
+                "タスクの状態",
                 &text.axes.task_status,
             ))
             .child(axis_cell(
                 "state-axis-inner-phase",
-                "Inner Phase",
+                "処理段階",
                 &text.axes.inner_phase,
             ))
             .child(axis_cell(
                 "state-axis-iteration",
-                "Iteration",
+                "反復回数",
                 &text.axes.iteration,
             ));
         let axis_row_two = div()
@@ -2471,26 +2528,26 @@ impl Render for Shell {
             .gap_4()
             .child(axis_cell(
                 "state-axis-artifact-availability",
-                "Artifact Availability",
+                "成果物の利用状態",
                 &text.axes.artifact_availability,
             ))
             .child(axis_cell(
                 "state-axis-connection",
-                "Connection / Freshness",
+                "接続・情報の鮮度",
                 &text.axes.connection,
             ))
             .child(axis_cell(
                 "state-axis-formal-outcome",
-                "Formal Outcome",
+                "正式な結果",
                 &text.axes.formal_outcome,
             ));
         let surface_content = match surface {
             Surface::Artifact => {
-                "Artifact — media viewer not implemented. Synthetic metadata only; no artifact verification claimed."
+                "現在の版では、成果物の画像を表示できません。候補の説明情報のみを表示しています。"
             }
             Surface::Compare => "",
             Surface::Flow => {
-                "Flow — fixture graph inspection. No canvas and no Runtime graph claim."
+                "テスト用データの処理構造を一覧表示します。実際の実行基盤への接続や図による表示は未実装です。"
             }
         };
         let flow_graph_empty = graph.is_empty();
@@ -2509,7 +2566,7 @@ impl Render for Shell {
         let flow_edge_active = self.flow_edge_active.clone();
         let flow_search_focused = self.flow_input_focus.is_focused(window);
         let flow_search_display = if self.flow_query.is_empty() && !flow_search_focused {
-            "Search nodes and edges…".to_owned()
+            "処理と接続関係を検索…".to_owned()
         } else {
             self.flow_query.clone()
         };
@@ -2530,7 +2587,7 @@ impl Render for Shell {
                             .gap_1()
                             .child(SharedString::from(flow::revision_label(graph)))
                             .child(SharedString::from(format!(
-                                "Projection revision {} (independent of the canonical GraphRevision)",
+                                "表示情報の版 {}（処理構造そのものの版とは別です）",
                                 graph.source_revision.as_str()
                             )))
                     })
@@ -2549,9 +2606,9 @@ impl Render for Shell {
                 let graph = Arc::clone(&row.graph);
                 let key = row.key();
                 let is_active = active.as_ref() == Some(&key);
-                let layer = node.layer.as_deref().unwrap_or("layer not provided");
+                let layer = node.layer.as_deref().unwrap_or("階層情報なし");
                 let aria = format!(
-                    "Node {}. Layer {}. {}. NodeId {}.",
+                    "処理：{}。階層：{}。{}。ノードID：{}。",
                     node.label,
                     layer,
                     flow::revision_label(&graph),
@@ -2607,9 +2664,9 @@ impl Render for Shell {
                 let graph = Arc::clone(&row.graph);
                 let key = row.key();
                 let is_active = active.as_ref() == Some(&key);
-                let kind = edge.kind.as_deref().unwrap_or("kind not provided");
+                let kind = edge.kind.as_deref().unwrap_or("種類の情報なし");
                 let aria = format!(
-                    "Edge {}. From {} to {}. {}. EdgeId {}. From NodeId {}. To NodeId {}.",
+                    "接続：{}。{}から{}へ。{}。接続ID：{}。接続元ノードID：{}。接続先ノードID：{}。",
                     kind,
                     edge.from_label,
                     edge.to_label,
@@ -2660,31 +2717,31 @@ impl Render for Shell {
             .size_full()
         });
         let flow_node_empty_message = if !authorized_text {
-            "Graph data withheld — no current authorized observation."
+            "現在閲覧できる情報がないため、処理構造を表示できません。"
         } else if flow_updating {
-            "Deriving graph inspection…"
+            "処理構造の表示を更新中…"
         } else if flow_graph_empty {
-            "No graph in the current authorized observation."
+            "現在閲覧できる情報に、処理構造は含まれていません。"
         } else if self.flow_query.trim().is_empty() {
-            "This graph revision has no nodes."
+            "この版には処理の項目がありません。"
         } else {
-            "No matching graph nodes for this search."
+            "検索条件に一致する処理はありません。"
         };
         let flow_edge_empty_message = if !authorized_text {
-            "Graph data withheld — no current authorized observation."
+            "現在閲覧できる情報がないため、処理構造を表示できません。"
         } else if flow_updating {
-            "Deriving graph inspection…"
+            "処理構造の表示を更新中…"
         } else if flow_graph_empty {
-            "No graph in the current authorized observation."
+            "現在閲覧できる情報に、処理構造は含まれていません。"
         } else if self.flow_query.trim().is_empty() {
-            "This graph revision has no edges."
+            "この版には接続関係がありません。"
         } else {
-            "No matching graph edges for this search."
+            "検索条件に一致する接続関係はありません。"
         };
         let flow_panel = div()
             .id("flow-inspection")
             .role(Role::Region)
-            .aria_label("Flow graph inspection list")
+            .aria_label("処理の流れと接続関係")
             .flex_1()
             .min_h_0()
             .flex()
@@ -2694,7 +2751,7 @@ impl Render for Shell {
                 div()
                     .id("flow-search")
                     .role(Role::TextInput)
-                    .aria_label("Search graph nodes and edges")
+                    .aria_label("処理と接続関係を検索")
                     .aria_value(SharedString::from(self.flow_query.clone()))
                     .key_context("FlowSearchInput")
                     .track_focus(&self.flow_input_focus)
@@ -2750,14 +2807,14 @@ impl Render for Shell {
                             .flex_col()
                             .gap_2()
                             .child(SharedString::from(format!(
-                                "Nodes ({})",
+                                "処理（{}件）",
                                 flow_node_rows.len()
                             )))
                             .child(
                                 div()
                                     .id("flow-node-list")
                                     .role(Role::List)
-                                    .aria_label("Graph nodes")
+                                    .aria_label("処理の一覧")
                                     .key_context("FlowNodeList")
                                     .track_focus(&self.flow_node_focus)
                                     .flex_1()
@@ -2790,14 +2847,14 @@ impl Render for Shell {
                             .flex_col()
                             .gap_2()
                             .child(SharedString::from(format!(
-                                "Edges ({})",
+                                "接続関係（{}件）",
                                 flow_edge_rows.len()
                             )))
                             .child(
                                 div()
                                     .id("flow-edge-list")
                                     .role(Role::List)
-                                    .aria_label("Graph edges")
+                                    .aria_label("接続関係の一覧")
                                     .key_context("FlowEdgeList")
                                     .track_focus(&self.flow_edge_focus)
                                     .flex_1()
@@ -2823,24 +2880,30 @@ impl Render for Shell {
                     ),
             );
         let stop_focused = self.stop_focus.is_focused(window);
+        let stop_description: SharedString = if stop_enabled && !retryable_admission {
+            "現在操作が認められているタスクへ、停止要求を1回送ります。受付と終了は別に確認します。"
+                .into()
+        } else {
+            SharedString::new(Arc::clone(&stop_disabled_reason))
+        };
         let stop_button = div()
             .id("stop-request")
             .role(Role::Button)
             .aria_label(if stop_enabled && retryable_admission {
-                "Request Stop again after capacity refusal"
+                "受付前の容量制限による拒否後に、新しい停止要求を送る"
             } else if stop_enabled {
-                "Request Stop"
+                "タスクを停止"
             } else {
-                "Request Stop (disabled)"
+                "タスクを停止（現在は操作できません）"
             })
             .aria_keyshortcuts("Enter Space")
-            .aria_description(SharedString::from(if stop_enabled && retryable_admission {
-                stop_disabled_reason.as_ref()
-            } else if stop_enabled {
-                "Explicitly send one Stop intent for the currently authorized task."
-            } else {
-                stop_disabled_reason.as_ref()
-            }))
+            .aria_description(stop_description.clone())
+            .tooltip({
+                let style = xs_text.clone();
+                move |_, cx| {
+                    help::tooltip(stop_description.clone(), style.clone(), inspector_width, cx)
+                }
+            })
             .track_focus(&self.stop_focus)
             .px_4()
             .py_2()
@@ -2855,9 +2918,9 @@ impl Render for Shell {
             .bg(rgb(if stop_enabled { 0x5b2a2f } else { 0x313438 }))
             .text_color(rgb(if stop_enabled { 0xf4dfe0 } else { 0x9da3aa }))
             .child(if stop_enabled && retryable_admission {
-                "Request Stop again"
+                "新しい停止要求を送る"
             } else {
-                "Request Stop"
+                "タスクを停止"
             });
         let stop_button = if stop_enabled {
             stop_button
@@ -2873,8 +2936,7 @@ impl Render for Shell {
         };
         let reconcile_focused = self.reconcile_focus.is_focused(window);
         let reconcile_description: Arc<str> = if reconcile_enabled {
-            "Explicit authorized receipt read only; this control never sends or retries Stop."
-                .into()
+            "停止要求の受付状況だけを確認します。停止要求の送信や再送は行いません。".into()
         } else {
             Arc::clone(&reconcile_disabled_reason)
         };
@@ -2882,12 +2944,17 @@ impl Render for Shell {
             .id("stop-reconcile")
             .role(Role::Button)
             .aria_label(if reconcile_enabled {
-                "Check Stop receipt"
+                "停止要求の受付状況を確認"
             } else {
-                "Check Stop receipt (disabled)"
+                "停止要求の受付状況を確認（現在は操作できません）"
             })
             .aria_keyshortcuts("Enter Space")
-            .aria_description(SharedString::from(reconcile_description.as_ref()))
+            .aria_description(SharedString::new(Arc::clone(&reconcile_description)))
+            .tooltip({
+                let text = SharedString::new(Arc::clone(&reconcile_description));
+                let style = xs_text.clone();
+                move |_, cx| help::tooltip(text.clone(), style.clone(), inspector_width, cx)
+            })
             .track_focus(&self.reconcile_focus)
             .px_4()
             .py_2()
@@ -2909,7 +2976,7 @@ impl Render for Shell {
             } else {
                 0x9da3aa
             }))
-            .child("Check receipt");
+            .child("停止の受付状況");
         let reconcile_button = if reconcile_enabled {
             reconcile_button
                 .cursor_pointer()
@@ -2925,13 +2992,14 @@ impl Render for Shell {
         let stop_controls = div()
             .id("stop-controls")
             .role(Role::Group)
-            .aria_label("Stop command controls and current authorized status")
+            .aria_label("停止の操作と現在の受付状況")
             .flex()
-            .flex_col()
-            .gap_2()
+            .items_start()
+            .gap_3()
             .child(
                 div()
                     .flex()
+                    .flex_none()
                     .gap_2()
                     .child(accessibility::DisabledState {
                         inner: stop_button,
@@ -2944,57 +3012,68 @@ impl Render for Shell {
             )
             .child(
                 div()
-                    .id("stop-status")
-                    .role(Role::Label)
-                    .aria_label(stop_label.clone())
-                    .aria_value(stop_label.clone())
-                    .text_color(rgb(0xe6c278))
-                    .child(stop_label),
-            )
-            .child(
-                div()
-                    .id("stop-detail")
-                    .role(Role::Label)
-                    .aria_label(stop_detail.clone())
-                    .aria_value(stop_detail.clone())
-                    .child(stop_detail),
-            )
-            .children(retention_warning.map(|display| {
-                div()
-                    .text_color(rgb(0xe6c278))
-                    .child(SharedString::from(display.label.clone()))
-                    .child(SharedString::from(display.detail.clone()))
-            }))
-            .children(receipt_note.map(|(label, detail)| {
-                xs_text
-                    .clone()
-                    .apply(div())
-                    .text_color(rgb(0xbcc6d0))
-                    .child(SharedString::from(label))
-                    .child(SharedString::from(detail))
-            }))
-            .child(
-                xs_text
-                    .clone()
-                    .apply(div())
-                    .text_color(rgb(0xbcc6d0))
-                    .child(SharedString::from(if stop_enabled {
-                        "Explicit action only. Automatic resend and replacement are disabled."
-                    } else {
-                        stop_disabled_reason.as_ref()
+                    .flex_1()
+                    .min_w_0()
+                    .flex()
+                    .flex_col()
+                    .gap_1()
+                    .child(
+                        xs_text
+                            .clone()
+                            .apply(div())
+                            .id("stop-status")
+                            .role(Role::Label)
+                            .aria_label(stop_label.clone())
+                            .aria_value(stop_label.clone())
+                            .aria_description(stop_detail.clone())
+                            .tooltip({
+                                let text = stop_detail.clone();
+                                let style = xs_text.clone();
+                                move |_, cx| {
+                                    help::tooltip(text.clone(), style.clone(), inspector_width, cx)
+                                }
+                            })
+                            .text_color(rgb(0xe6c278))
+                            .child(stop_label),
+                    )
+                    .when(manual_intervention_required, |element| {
+                        element
+                            .child(
+                                xs_text
+                                    .clone()
+                                    .apply(div())
+                                    .id("stop-detail")
+                                    .role(Role::Label)
+                                    .aria_label(stop_detail.clone())
+                                    .aria_value(stop_detail.clone())
+                                    .child(stop_detail),
+                            )
+                            .child("自動で停止を再送しません。状況の確認が必要です。")
+                    })
+                    .children(retention_warning.map(|display| {
+                        div()
+                            .text_color(rgb(0xe6c278))
+                            .child(SharedString::from(display.label.clone()))
+                            .child(SharedString::from(display.detail.clone()))
+                    }))
+                    .children(receipt_note.map(|(label, detail)| {
+                        xs_text
+                            .clone()
+                            .apply(div())
+                            .id("stop-receipt-note")
+                            .role(Role::Label)
+                            .aria_label(SharedString::from(label))
+                            .aria_description(detail)
+                            .tooltip({
+                                let style = xs_text.clone();
+                                move |_, cx| {
+                                    help::tooltip(detail.into(), style.clone(), inspector_width, cx)
+                                }
+                            })
+                            .text_color(rgb(0xbcc6d0))
+                            .child(SharedString::from(label))
+                            .child(SharedString::from(detail))
                     })),
-            )
-            .children(manual_intervention_required.then(|| {
-                div()
-                    .text_color(rgb(0xe6c278))
-                    .child("Manual intervention may be required; do not resend Stop.")
-            }))
-            .child(
-                xs_text
-                    .clone()
-                    .apply(div())
-                    .text_color(rgb(0x9da7b1))
-                    .child(SharedString::from(reconcile_description.as_ref())),
             );
         self.dock_frame = self.dock_frame.saturating_add(1);
         let dock_frame = self.dock_frame;
@@ -3087,7 +3166,24 @@ impl Render for Shell {
                         index == group.start,
                     )
                 })
-                .unwrap_or_else(|| ("Iteration unavailable".into(), "It ?".into(), false))
+                .unwrap_or_else(|| ("反復情報なし".into(), "反復 ?".into(), false))
+        };
+        let candidate_help = match changing_side {
+            Some(CompareSide::A) => {
+                "この候補で比較するA側を置き換えます。閲覧中の候補は変わりません。"
+            }
+            Some(CompareSide::B) => {
+                "この候補で比較するB側を置き換えます。閲覧中の候補は変わりません。"
+            }
+            None if compare_pair.is_some() => {
+                "この候補を閲覧します。比較対象と正式な採用結果は変わりません。"
+            }
+            None if pending_side_a.is_some() => {
+                "1つ目と異なる候補を選ぶと比較対象がそろいます。正式な採用ではありません。"
+            }
+            None => {
+                "この候補を閲覧し、比較する1つ目の候補にします。別の候補を選ぶと比較対象がそろいます。"
+            }
         };
         let candidate_rows = artifacts
             .iter()
@@ -3105,13 +3201,13 @@ impl Render for Shell {
                     .iter()
                     .any(|reference| reference == &identity);
                 let state_label = match (selected, compared, active) {
-                    (true, true, true) => "Viewed · Compare · Active",
-                    (true, true, false) => "Viewed · Compare",
-                    (true, false, true) => "Viewed · Active",
-                    (false, true, true) => "Compare · Active",
-                    (true, false, false) => "Viewed",
-                    (false, true, false) => "Compare",
-                    (false, false, true) => "Active",
+                    (true, true, true) => "閲覧中・比較対象・キーボード操作対象",
+                    (true, true, false) => "閲覧中・比較対象",
+                    (true, false, true) => "閲覧中・キーボード操作対象",
+                    (false, true, true) => "比較対象・キーボード操作対象",
+                    (true, false, false) => "閲覧中",
+                    (false, true, false) => "比較対象",
+                    (false, false, true) => "キーボード操作対象",
                     (false, false, false) => "",
                 };
                 let mounted = dock_mounts.fetch_add(1, Ordering::Relaxed) + 1;
@@ -3162,11 +3258,18 @@ impl Render for Shell {
                         label,
                         state_label,
                         if formal {
-                            " Formal Selected (Runtime projection)"
+                            " 正式採用（実行基盤から通知）"
                         } else {
                             ""
                         }
                     )))
+                    .aria_description(candidate_help)
+                    .tooltip({
+                        let style = xs_text.clone();
+                        move |_, cx| {
+                            help::tooltip(candidate_help.into(), style.clone(), inspector_width, cx)
+                        }
+                    })
                     .when(active && dock_focused, |element| {
                         element.aria_active_descendant()
                     })
@@ -3188,11 +3291,7 @@ impl Render for Shell {
                             .border_color(rgb(if group_start { 0xaeccec } else { 0x3c4046 }))
                             .px_1()
                             .truncate()
-                            .child(SharedString::from(format!(
-                                "{}{}",
-                                if group_start { "▸ " } else { "" },
-                                group_short
-                            ))),
+                            .child(SharedString::from(group_short)),
                     )
                     .child(
                         div()
@@ -3201,7 +3300,11 @@ impl Render for Shell {
                             .px_1()
                             .flex()
                             .flex_col()
-                            .child(div().truncate().child(SharedString::from(label.clone())))
+                            .child(div().truncate().child(SharedString::from(format!(
+                                "{}{}",
+                                if group_start { "▸ " } else { "" },
+                                label
+                            ))))
                             .child(xs_text.clone().apply(div()).truncate().child(state_label))
                             .when(formal, |element| {
                                 element.child(
@@ -3210,9 +3313,7 @@ impl Render for Shell {
                                         .apply(div())
                                         .text_color(rgb(0xe6c278))
                                         .truncate()
-                                        .child(SharedString::from(
-                                            "Formal Selected (Runtime projection)",
-                                        )),
+                                        .child(SharedString::from("正式採用（実行基盤から通知）")),
                                 )
                             }),
                     )
@@ -3352,11 +3453,11 @@ impl Render for Shell {
                     .children(
                         [
                             selected.then_some((
-                                "Selected",
+                                "選択中",
                                 format!("task-row-marker-selected-{}", task.as_str()),
                             )),
                             active.then_some((
-                                "Active (keyboard)",
+                                "キーボード操作対象",
                                 format!("task-row-marker-active-{}", task.as_str()),
                             )),
                         ]
@@ -3385,16 +3486,16 @@ impl Render for Shell {
                     .child(SharedString::new(Arc::clone(&row.display_id)))
                     .child(SharedString::new(Arc::clone(&row.title)))
                     .child(SharedString::from(format!(
-                        "{} · {} · iteration {}",
-                        row.task_status.as_str(),
+                        "{}・処理段階 {}・反復 {}",
+                        task_status_label(&row.task_status),
                         row.inner_phase,
-                        row.iteration_index.map_or("not provided".to_owned(), |value| value.to_string())
+                        row.iteration_index.map_or("情報なし".to_owned(), |value| value.to_string())
                     )))
                     .children(
                         [
-                            row.attention.stale_connection.then_some("Connection stale"),
-                            row.attention.unsettled_command.then_some("Command unsettled"),
-                            row.attention.unavailable_reference.then_some("Reference unavailable"),
+                            row.attention.stale_connection.then_some("接続情報が古い状態です"),
+                            row.attention.unsettled_command.then_some("操作の結果が未確定です"),
+                            row.attention.unavailable_reference.then_some("参照先を利用できません"),
                         ]
                         .into_iter()
                         .flatten()
@@ -3402,7 +3503,7 @@ impl Render for Shell {
                             xs_text
                                 .clone()
                                 .apply(div())
-                                .child(format!("Desktop-local: {label}"))
+                                .child(format!("この画面からの案内：{label}"))
                         }),
                     )
                     .on_click({
@@ -3461,7 +3562,7 @@ impl Render for Shell {
         div()
             .id("cos-shell")
             .role(Role::Application)
-            .aria_label("COS Desktop Workbench")
+            .aria_label("COS Desktop 作業画面")
             .track_focus(&self.focus)
             .relative()
             .on_action(cx.listener(|this, _: &PaletteToggle, window, cx| {
@@ -3501,12 +3602,12 @@ impl Render for Shell {
                 div()
                     .id("context-bar")
                     .role(Role::Region)
-                    .aria_label("Context Bar")
+                    .aria_label("現在のタスクと状態")
                     .flex()
                     .flex_col()
                     .gap_1()
                     .px_5()
-                    .py_3()
+                    .py_2()
                     .bg(rgb(0x24272c))
                     .child(
                         div()
@@ -3519,12 +3620,12 @@ impl Render for Shell {
                                     .id("context-title")
                                     .role(Role::Label)
                                     .aria_label(if self.rail_selection_pending {
-                                        SharedString::from("Updating selected Task…")
+                                        SharedString::from("選択したタスクを更新中…")
                                     } else {
                                         title.clone()
                                     })
                                     .aria_value(if self.rail_selection_pending {
-                                        SharedString::from("Updating selected Task…")
+                                        SharedString::from("選択したタスクを更新中…")
                                     } else {
                                         title.clone()
                                     })
@@ -3532,7 +3633,7 @@ impl Render for Shell {
                                     .min_w_0()
                                     .truncate()
                                     .child(if self.rail_selection_pending {
-                                        "Updating selected Task…".into()
+                                        "選択したタスクを更新中…".into()
                                     } else {
                                         title.clone()
                                     }),
@@ -3563,11 +3664,12 @@ impl Render for Shell {
                     .flex()
                     .flex_1()
                     .min_h_0()
+                    .overflow_hidden()
                     .child(
                         div()
                             .id("task-rail")
                             .role(Role::Region)
-                            .aria_label("Task Rail")
+                            .aria_label("タスク一覧")
                             .w(rail_width)
                             .flex_none()
                             .p_4()
@@ -3575,13 +3677,13 @@ impl Render for Shell {
                             .flex_col()
                             .gap_3()
                             .bg(rgb(0x202328))
-                            .child("TASK RAIL")
+                            .child("タスク一覧")
                             .child(
                                 div()
                                     .id("task-search")
                                     .role(Role::TextInput)
                                     .accessibility_id("task-search")
-                                    .aria_label("Search tasks")
+                                    .aria_label("タスクを検索")
                                     .aria_value(SharedString::from(query_text.clone()))
                                     .key_context("TaskRailInput")
                                     .track_focus(&self.rail_input_focus)
@@ -3596,7 +3698,7 @@ impl Render for Shell {
                                     .child(SharedString::from(if query_text.is_empty()
                                         && !self.rail_input_focus.is_focused(window)
                                     {
-                                        "Search tasks…".to_owned()
+                                        "タスクを検索…".to_owned()
                                     } else {
                                         query_display
                                     }))
@@ -3643,35 +3745,37 @@ impl Render for Shell {
                                     .on_action(cx.listener(|_, _: &Activate, _, _| {}))
                             )
                             .when(rail_search.is_some() && rail_count == 0 && !self.rail_state.query().trim().is_empty(), |element| {
-                                element.child(SharedString::from(format!("No matching task: “{}”.", self.rail_state.query())))
+                                element.child(SharedString::from(format!("「{}」に一致するタスクはありません。", self.rail_state.query())))
                             })
                             .when(rail_collection.is_some() && rail_search.is_none(), |element| {
-                                element.child("Updating task search…")
+                                element.child("タスクの検索結果を更新中…")
                             })
                             .when(rail_collection.as_ref().is_some_and(|collection| collection.rows.is_empty()) && self.rail_state.query().trim().is_empty(), |element| {
-                                element.child("No tasks observed")
+                                element.child("受信したタスクはありません")
                             })
                             .when(self.rail_state.collection().is_some_and(|collection| collection.scope_has_unsettled_commands), |element| {
-                                element.child("Desktop-local: a scope-level command is unsettled; no Task is inferred.")
+                                element.child("この画面からの案内：結果が未確定の操作があります。対象のタスクは推測しません。")
                             })
                             .when(rail_collection.is_none(), |element| {
-                                element.child("Data withheld — no current authorized Task list")
+                                element.child("現在閲覧できるタスク一覧がないため、情報を表示していません")
                             }),
                     )
                     .child(
                         div()
                             .id("work-surface")
                             .aria_label(SharedString::from(format!(
-                                "Work Surface {}",
+                                "作業領域：{}",
                                 surface.label()
                             )))
                             .flex_1()
                             .min_w_0()
+                            .min_h_0()
+                            .overflow_hidden()
                             .p_6()
                             .flex()
                             .flex_col()
                             .gap_5()
-                            .child("WORK SURFACE")
+                            .child("作業領域")
                             .child(intervention_strip)
                             .when_some(surface_notice.clone(), |element, notice| {
                                 element.child(
@@ -3701,11 +3805,13 @@ impl Render for Shell {
                                         |element| {
                                             element.child(
                                                 div()
+                                                    .w_full()
+                                                    .min_w_0()
                                                     .flex_1()
                                                     .flex()
                                                     .items_center()
                                                     .justify_center()
-                                                    .child(surface_content),
+                                                    .child(div().w_full().min_w_0().child(surface_content)),
                                             )
                                         },
                                     ),
@@ -3718,38 +3824,54 @@ impl Render for Shell {
                         div()
                             .id("inspector")
                             .role(Role::Region)
-                            .aria_label("Inspector")
+                            .aria_label("候補の詳細")
                             .w(inspector_width)
                             .flex_none()
+                            .h_full()
+                            .min_h_0()
+                            .overflow_hidden()
                             .p_4()
                             .flex()
                             .flex_col()
                             .gap_3()
                             .bg(rgb(0x202328))
-                            .child("INSPECTOR")
-                            .when_some(self.restore_notice.clone(), |element, notice| {
-                                element.child(
-                                    div()
-                                        .id("restore-notice")
-                                        .role(Role::Label)
-                                        .aria_label(SharedString::from(notice.clone()))
-                                        .aria_value(SharedString::from(notice.clone()))
-                                        .child(SharedString::from(notice)),
-                                )
-                            })
-                            .child(inspector_panel)
-                            .child(if diagnostics_open {
-                                diagnostic_text
-                            } else {
-                                "Diagnostics: Ctrl+D".into()
-                            }),
+                            .child(div().flex_none().child("候補の詳細"))
+                            .child(
+                                div()
+                                    .id("inspector-scroll")
+                                    .flex_1()
+                                    .min_h_0()
+                                    .overflow_y_scroll()
+                                    .child(
+                                        div()
+                                            .flex()
+                                            .flex_col()
+                                            .gap_3()
+                                            .when_some(self.restore_notice.clone(), |element, notice| {
+                                                element.child(
+                                                    div()
+                                                        .id("restore-notice")
+                                                        .role(Role::Label)
+                                                        .aria_label(SharedString::from(notice.clone()))
+                                                        .aria_value(SharedString::from(notice.clone()))
+                                                        .child(SharedString::from(notice)),
+                                                )
+                                            })
+                                            .child(inspector_panel)
+                                            .child(if diagnostics_open {
+                                                diagnostic_text
+                                            } else {
+                                                "診断情報：Ctrl+D".into()
+                                            }),
+                                    ),
+                            ),
                     ),
             )
             .child(
                 div()
                     .id("loop-dock")
                     .role(Role::Region)
-                    .aria_label("Creative Loop Dock")
+                    .aria_label("反復ごとの候補一覧")
                     .p_4()
                     .bg(rgb(0x272b30))
                     .flex()
@@ -3760,20 +3882,20 @@ impl Render for Shell {
                             .id("dock-ownership")
                             .role(Role::Label)
                             .aria_label(
-                                "Creative Loop Dock — Viewed is local; Formal Selected is Runtime-owned",
+                                "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
                             )
                             .aria_value(
-                                "Creative Loop Dock — Viewed is local; Formal Selected is Runtime-owned",
+                                "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
                             )
                             .child(
-                                "CREATIVE LOOP DOCK — Viewed is local; Formal Selected is Runtime-owned",
+                                "反復ごとの候補 — 閲覧中・比較対象はこの画面での選択です。正式採用とは異なります。",
                             ),
                     )
                     .child(
                         div()
                             .id("candidate-rail")
                             .role(Role::Group)
-                            .aria_label("Candidate Dock")
+                            .aria_label("候補一覧")
                             .key_context("CandidateDock")
                             .track_focus(&self.dock_focus)
                             .border(dock_focus_width)
@@ -3792,9 +3914,9 @@ impl Render for Shell {
                             }))
                             .children((dock_count == 0).then(|| {
                                 let message = if dock_admitted {
-                                    "No candidates in the current authorized observation"
+                                    "現在閲覧できる情報に候補はありません"
                                 } else {
-                                    "Candidate data withheld — waiting for a current authorized observation"
+                                    "閲覧が認可された最新の情報を待っているため、候補を表示していません"
                                 };
                                 div().id("candidate-dock-availability").role(Role::Label)
                                     .aria_label(message).aria_value(message).p_2().child(message)
@@ -3808,7 +3930,7 @@ impl Render for Shell {
                 div()
                     .id("surface-switcher")
                     .role(Role::Group)
-                    .aria_label("Surface Switcher")
+                    .aria_label("作業画面の切り替え")
                     .p_3()
                     .flex()
                     .gap_3()
@@ -3817,14 +3939,27 @@ impl Render for Shell {
                         let compare_unavailable = item == Surface::Compare
                             && dock::compare_unavailable_reason(artifacts.len()).is_some();
                         let label = if compare_unavailable {
-                            format!("{} — two candidates are required", item.label())
+                            format!("{} — 候補を2つ選ぶ必要があります", item.label())
                         } else {
                             format!("{}  Ctrl+{}", item.label(), index + 1)
+                        };
+                        let description = match item {
+                            Surface::Artifact => "閲覧中の候補を扱う画面に切り替えます。",
+                            Surface::Compare if compare_unavailable => {
+                                "2つの候補を比較する画面です。現在は候補が2つに満たないため開けません。"
+                            }
+                            Surface::Compare => "2つの候補を比較する画面に切り替えます。比較対象は正式な採用結果とは異なります。",
+                            Surface::Flow => "処理のつながりを必要なときだけ確認する画面に切り替えます。",
                         };
                         div()
                             .id(("surface", index))
                             .role(Role::Button)
                             .aria_label(SharedString::from(label.clone()))
+                            .aria_description(description)
+                            .tooltip({
+                                let style = xs_text.clone();
+                                move |_, cx| help::tooltip(description.into(), style.clone(), inspector_width, cx)
+                            })
                             .track_focus(&self.surface_focus[index])
                             .px_5()
                             .py_2()

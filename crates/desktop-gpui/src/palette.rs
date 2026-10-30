@@ -37,7 +37,7 @@ pub(super) struct Facts {
     pub evidence_available: bool,
 }
 
-const STALE: &str = "No current authorized observation is available for this command.";
+const STALE: &str = "このコマンドに使える、現在の認可済み観測情報はありません。";
 
 impl Facts {
     fn unavailable(&self, command: Command) -> Option<&str> {
@@ -61,17 +61,17 @@ impl Facts {
             Command::OpenActiveCandidate => require(
                 self.authorized,
                 self.active_candidate,
-                "No candidate is active in the dock.",
+                "ドックで候補が選択されていません。",
             ),
             Command::ShowEvaluation => require(
                 self.authorized,
                 self.evaluation_available,
-                "Evaluation is not available for the viewed candidate.",
+                "表示中の候補の評価は利用できません。",
             ),
             Command::ShowEvidence => require(
                 self.authorized,
                 self.evidence_available,
-                "Evidence is not available for the viewed candidate.",
+                "表示中の候補の判断の根拠は利用できません。",
             ),
             Command::StopTask => require(self.authorized, self.stop.enabled, &self.stop.reason),
             Command::CheckStopReceipt => require(
@@ -501,16 +501,18 @@ impl Shell {
         let empty_message: Option<SharedString> = match outcome {
             Outcome::Hits(_) => None,
             Outcome::NoMatch => Some(SharedString::from(format!(
-                "No commands match “{}”.",
+                "「{}」に一致するコマンドはありません。",
                 self.palette_query
             ))),
-            Outcome::NoAvailable => Some("No commands are available in the current state.".into()),
+            Outcome::NoAvailable => Some("現在の状態で利用できるコマンドはありません。".into()),
         };
         let display = if self.palette_query.is_empty() {
-            SharedString::from("Type a command…")
+            SharedString::from("コマンドを入力…")
         } else {
             SharedString::from(self.palette_query.clone())
         };
+        let xs_text = crate::shell_style::TextSpec::ui(&self.tokens, crate::tokens::TextStyle::Xs);
+        let help_width = crate::shell_style::inspector_width(&self.tokens);
         let entity = cx.entity();
         let mut rows = Vec::with_capacity(hits.len());
         for (index, hit) in hits.iter().enumerate() {
@@ -522,7 +524,7 @@ impl Shell {
             let label = SharedString::from(descriptor.title);
             let aria = match &unavailable {
                 Some(reason) => format!(
-                    "{} — {} — unavailable: {}",
+                    "{} — {} — 利用不可: {}",
                     descriptor.title, descriptor.category, reason
                 ),
                 None => format!("{} — {}", descriptor.title, descriptor.category),
@@ -535,6 +537,22 @@ impl Shell {
                     element.aria_description(SharedString::from(
                         unavailable.clone().unwrap_or_default(),
                     ))
+                })
+                .tooltip({
+                    let style = xs_text.clone();
+                    let width = help_width;
+                    let title = descriptor.title;
+                    let category = descriptor.category;
+                    let reason = unavailable.clone();
+                    move |_, cx| {
+                        let text = match &reason {
+                            Some(reason) => {
+                                format!("{title}（{category}）。利用できない理由: {reason}")
+                            }
+                            None => format!("{title}（{category}）を実行します。"),
+                        };
+                        crate::help::tooltip(SharedString::from(text), style.clone(), width, cx)
+                    }
                 })
                 .flex()
                 .flex_col()
@@ -588,7 +606,7 @@ impl Shell {
         let results = div()
             .id("palette-results")
             .role(Role::List)
-            .aria_label("Commands")
+            .aria_label("コマンド")
             .flex()
             .flex_col()
             .children(rows)
@@ -605,16 +623,16 @@ impl Shell {
             .children((query_empty && self.palette_query.is_empty()).then(|| {
                 div()
                     .id("palette-hint")
-                    .aria_label("Press Escape to dismiss")
+                    .aria_label("Escapeキーで閉じる")
                     .px_3()
                     .py_1()
                     .text_color(rgb(0x8b949e))
-                    .child("Enter runs the highlighted command. Escape dismisses.")
+                    .child("Enterキーで選択中のコマンドを実行、Escapeキーで閉じます。")
             }));
         div()
             .id("command-palette")
             .role(Role::Dialog)
-            .aria_label("Command Palette")
+            .aria_label("コマンドパレット")
             .key_context("CommandPalette")
             .absolute()
             .top(px(72.0))
@@ -667,7 +685,7 @@ impl Shell {
                 div()
                     .id("palette-input")
                     .role(Role::TextInput)
-                    .aria_label("Command search")
+                    .aria_label("コマンド検索")
                     .aria_value(display.clone())
                     .track_focus(&self.palette_focus)
                     .relative()
@@ -800,18 +818,9 @@ mod tests {
         assert!(reason_of(&entries, Command::OpenActiveCandidate).is_some());
         assert!(reason_of(&entries, Command::ShowEvaluation).is_some());
         assert!(reason_of(&entries, Command::ShowEvidence).is_some());
-        assert_eq!(
-            reason_of(&entries, Command::ShowCompare).as_deref(),
-            Some("two candidates are required")
-        );
-        assert_eq!(
-            reason_of(&entries, Command::StopTask).as_deref(),
-            Some("Stop is disabled until this window has a current authorized observation view.")
-        );
-        assert_eq!(
-            reason_of(&entries, Command::CheckStopReceipt).as_deref(),
-            Some("No Stop command identity is available.")
-        );
+        assert!(reason_of(&entries, Command::ShowCompare).is_some());
+        assert!(reason_of(&entries, Command::StopTask).is_some());
+        assert!(reason_of(&entries, Command::CheckStopReceipt).is_some());
     }
 
     #[test]

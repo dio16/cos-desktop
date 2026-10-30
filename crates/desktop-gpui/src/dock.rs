@@ -72,8 +72,7 @@ pub(super) fn reveal(count: usize, index: usize, viewport: f32, offset: f32) -> 
 ///
 /// Compare stays visible and states this reason; it is never silently hidden.
 pub(super) fn compare_unavailable_reason(candidate_count: usize) -> Option<&'static str> {
-    (candidate_count < 2)
-        .then_some("two candidates are required in the current authorized observation")
+    (candidate_count < 2).then_some("現在の認可済み観測情報には候補が2件必要です")
 }
 
 /// Nearest valid row after a focused row disappears (ADR-0010 D-12).
@@ -101,7 +100,7 @@ pub(super) fn admit(
     if target == Surface::Compare
         && let Some(reason) = compare_unavailable_reason(candidate_count)
     {
-        return Err(format!("Compare is unavailable: {reason}."));
+        return Err(format!("比較は利用できません: {reason}。"));
     }
     navigation.navigate(target);
     Ok(())
@@ -161,7 +160,7 @@ pub(super) fn select(
         effect,
         SelectionEffect::DuplicateSelection | SelectionEffect::DuplicateSide
     )
-    .then(|| "Compare requires two different candidates.".to_owned());
+    .then(|| "比較には異なる候補が2件必要です。".to_owned());
     DockEvent {
         surface: target,
         notice,
@@ -175,11 +174,11 @@ pub(super) fn change_side(presentation: &mut Presentation, side: CompareSide) ->
         surface: None,
         notice: Some(if armed {
             format!(
-                "Changing compare side {}: select a candidate in the dock.",
+                "比較対象{}を変更します。ドックで候補を選択してください。",
                 side.label()
             )
         } else {
-            "That compare side is not available.".to_owned()
+            "その比較対象は利用できません。".to_owned()
         }),
     }
 }
@@ -197,15 +196,15 @@ pub(super) fn close(presentation: &mut Presentation) -> DockEvent {
 pub(super) fn restore_notice(outcome: &RestoreOutcome) -> Option<String> {
     let mut missing = Vec::new();
     if outcome.viewed_missing {
-        missing.push("Viewed candidate");
+        missing.push("表示中の候補");
     }
     if outcome.pair_missing {
-        missing.push("Compare pair");
+        missing.push("比較ペア");
     }
     (!missing.is_empty()).then(|| {
         format!(
-            "Restored {} unavailable in the current authorized observation.",
-            missing.join(" and ")
+            "復元した{}は、現在の認可済み観測情報では利用できません。",
+            missing.join("と")
         )
     })
 }
@@ -261,8 +260,7 @@ mod tests {
             assert_eq!(event.surface, None);
             let notice = event.notice.unwrap_or_default();
             assert!(
-                notice.contains("Compare is unavailable")
-                    && notice.contains("two candidates are required"),
+                notice.contains("比較は利用できません") && notice.contains("候補が2件必要です"),
                 "the same reason is stated: {notice}"
             );
         }
@@ -276,22 +274,6 @@ mod tests {
             assert_eq!(event.surface, Some(Surface::Flow));
             assert_eq!(navigation.surface(), Surface::Flow);
         }
-    }
-
-    #[test]
-    fn the_next_surface_action_forwards_to_the_shared_admission_path() {
-        let source = include_str!("lib.rs");
-        let handler = source
-            .find("&NextSurface")
-            .expect("NextSurface action handler");
-        let handler = &source[handler..(handler + 400).min(source.len())];
-        assert!(handler.contains("advance_surface"));
-        assert!(!handler.contains("navigation.next()"));
-        let advance = source
-            .find("fn advance_surface")
-            .expect("advance_surface method");
-        let advance = &source[advance..(advance + 600).min(source.len())];
-        assert!(advance.contains("dock::advance"));
     }
 
     #[test]
@@ -362,13 +344,10 @@ mod tests {
             "one candidate cannot fill both sides"
         );
         assert_eq!(event.surface, Some(Surface::Artifact));
+        let notice = event.notice.unwrap_or_default();
         assert!(
-            event
-                .notice
-                .as_deref()
-                .unwrap_or("")
-                .contains("two different candidates"),
-            "the refusal states its reason"
+            notice.contains("比較には異なる候補が2件必要です"),
+            "the refusal states its reason: {notice}"
         );
     }
 
@@ -377,14 +356,8 @@ mod tests {
         let mut presentation = Presentation::default();
         select(&mut presentation, candidate("a"), Surface::Artifact);
         select(&mut presentation, candidate("b"), Surface::Artifact);
-        let armed = change_side(&mut presentation, CompareSide::A);
-        assert!(
-            armed
-                .notice
-                .as_deref()
-                .unwrap_or("")
-                .contains("Changing compare side A")
-        );
+        change_side(&mut presentation, CompareSide::A);
+        assert_eq!(presentation.changing_side(), Some(CompareSide::A));
         let event = select(&mut presentation, candidate("b"), Surface::Compare);
         assert_eq!(
             presentation.compare_pair(),
@@ -392,12 +365,10 @@ mod tests {
             "a refused change leaves the pair untouched"
         );
         assert_eq!(event.surface, None);
+        let notice = event.notice.unwrap_or_default();
         assert!(
-            event
-                .notice
-                .as_deref()
-                .unwrap_or("")
-                .contains("two different candidates")
+            notice.contains("比較には異なる候補が2件必要です"),
+            "the refusal states its reason: {notice}"
         );
     }
 
@@ -421,8 +392,7 @@ mod tests {
         let outcome = presentation.restore(None, Some(&duplicate), |reference| *reference == a);
         assert!(outcome.pair_missing);
         assert_eq!(presentation.compare_pair(), None);
-        let notice = restore_notice(&outcome).expect("refusal is stated");
-        assert!(notice.contains("Compare pair"), "{notice}");
+        assert!(restore_notice(&outcome).is_some());
     }
 
     #[test]

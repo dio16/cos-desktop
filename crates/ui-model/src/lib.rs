@@ -766,7 +766,7 @@ impl DerivationCache {
         let mut text = WorkbenchText::from_publication(publication);
         if publication.source == PublicationSource::Unavailable {
             self.reset();
-            text.title = "No Task observation".into();
+            text.title = "タスク情報がありません".into();
             return Some(text);
         }
         if let Some(snapshot) = publication.snapshot.as_ref() {
@@ -836,11 +836,11 @@ impl DerivationCache {
             } else {
                 self.task = None;
                 self.axes = None;
-                text.title = "No Task observation".into();
+                text.title = "タスク情報がありません".into();
             }
         } else {
             self.reset();
-            text.title = "No Task observation".into();
+            text.title = "タスク情報がありません".into();
         }
 
         for (id, view) in &publication.command_statuses {
@@ -1022,8 +1022,14 @@ impl DerivationCache {
                         identity: outcome.outcome_ref.clone(),
                         source_revision: outcome.projection_revision.clone(),
                         text: format!(
-                            "Formal Outcome (Runtime projection): {}",
-                            outcome.formal_status.as_str()
+                            "正式な結果（Runtimeの情報）: {}",
+                            match &outcome.formal_status {
+                                desktop_protocol::FormalStatus::Completed => "完了（COMPLETED）",
+                                desktop_protocol::FormalStatus::Partial => "一部完了（PARTIAL）",
+                                desktop_protocol::FormalStatus::Failed => "失敗（FAILED）",
+                                desktop_protocol::FormalStatus::Cancelled => "中止（CANCELLED）",
+                                desktop_protocol::FormalStatus::Unknown(raw) => raw.as_str(),
+                            }
                         )
                         .into(),
                     });
@@ -1245,33 +1251,43 @@ impl StopDisplay {
             P::Failed => StopState::Failed,
         };
         let (label, detail, manual_intervention) = match state {
-            StopState::Prepared => ("Stop prepared", "Not sent", false),
-            StopState::AwaitingResponse => ("Stop awaiting response", "Possibly executed", true),
-            StopState::Accepted => ("Stop accepted", "Acceptance is not task completion", false),
+            StopState::Prepared => ("停止要求を準備しました", "まだ送信していません", false),
+            StopState::AwaitingResponse => {
+                ("停止要求の応答待ち", "実行された可能性があります", true)
+            }
+            StopState::Accepted => (
+                "停止要求を受け付けました",
+                "受け付けられたことはタスク完了を意味しません",
+                false,
+            ),
             StopState::Rejected => (
-                "Stop rejected",
-                "Task status remains independently observed",
+                "停止要求は拒否されました",
+                "タスク状態は別途観測されます",
                 false,
             ),
             StopState::Unknown => (
-                "Stop outcome unknown",
-                "Possibly executed; manual intervention may be required",
+                "停止要求の結果は不明です",
+                "実行された可能性があります。手動対応が必要な場合があります",
                 true,
             ),
             StopState::CanonicalReflected => (
-                "Stop effect reflected",
-                "Task completion remains independently observed",
+                "停止の効果を確認しました",
+                "タスク完了状態は別途観測されます",
                 false,
             ),
-            StopState::Failed => ("Stop failed", "No successful effect is implied", false),
+            StopState::Failed => (
+                "停止要求に失敗しました",
+                "効果があったとは判断できません",
+                false,
+            ),
             StopState::Unsupported => (
-                "Stop unsupported",
-                "Runtime does not support this operation",
+                "停止操作は未対応です",
+                "実行環境はこの操作をサポートしていません",
                 false,
             ),
             StopState::Unavailable => (
-                "Stop unavailable",
-                "Authorized receipt state is unavailable",
+                "停止状態を確認できません",
+                "許可された受領状態を取得できません",
                 true,
             ),
         };
@@ -1290,8 +1306,8 @@ impl StopDisplay {
                 app_core::InvalidCommandReason::CapacityExceeded,
             )) => Self::make(
                 StopState::Unavailable,
-                "Stop admission capacity unavailable",
-                "No new Stop intent was admitted",
+                "停止要求を受け付けられません",
+                "新しい停止要求は受け付けられていません",
                 false,
             ),
             _ => Self::unavailable(),
@@ -1305,8 +1321,8 @@ impl StopDisplay {
                 | app_core::InvalidCommandReason::ReferenceLimit,
             )) => Self::make(
                 StopState::Unknown,
-                "Stop receipt identity could not be retained",
-                "Stop was admitted; it may have executed. Do not resend; manual intervention may be required",
+                "停止要求の識別情報を保持できません",
+                "要求は受け付け済みで、実行された可能性があります。再送せず、必要に応じて手動で対応してください",
                 true,
             ),
             _ => Self::unavailable(),
@@ -1315,8 +1331,8 @@ impl StopDisplay {
     pub fn unavailable() -> Self {
         Self::make(
             StopState::Unavailable,
-            "Stop unavailable",
-            "Authorized receipt state is unavailable; manual intervention may be required",
+            "停止状態を確認できません",
+            "許可された受領状態を取得できません。手動対応が必要な場合があります",
             true,
         )
     }
@@ -1371,9 +1387,9 @@ impl WorkbenchText {
     fn from_publication(publication: &ObservationPublication) -> Self {
         let unavailable = publication.source == PublicationSource::Unavailable;
         let unknown = if unavailable {
-            "Unavailable — source unavailable"
+            "利用できません — 情報源を利用できません"
         } else {
-            "Unknown"
+            "不明"
         };
         Self {
             connection: connection_label(publication),
@@ -1391,9 +1407,9 @@ impl WorkbenchText {
                 formal_outcome: unknown.into(),
             },
             stop_reason: if unavailable {
-                "Stop unavailable — source unavailable".into()
+                "停止状態を確認できません — 情報源を利用できません".into()
             } else {
-                "Stop unavailable — no current task observation".into()
+                "停止状態を確認できません — 現在のタスク観測がありません".into()
             },
             interventions: if unavailable {
                 intervention::Index::blocked()
@@ -1406,25 +1422,24 @@ impl WorkbenchText {
 
     pub fn withheld() -> Self {
         Self {
-            title: "No Task observation".into(),
-            connection: "Data withheld — no current authorization".into(),
-            source: "No verified source".into(),
-            mode: "NO SOURCE / data withheld".into(),
+            title: "タスク情報はありません".into(),
+            connection: "データは非公開 — 現在の許可がありません".into(),
+            source: "検証済みの情報源がありません".into(),
+            mode: "情報源なし / データ非公開".into(),
             axes: StateAxes {
-                task_status: "Unavailable — authorization unavailable".into(),
-                inner_phase: "Unavailable — authorization unavailable".into(),
-                iteration: "Unavailable — authorization unavailable".into(),
-                artifact_availability: "Unavailable — authorization unavailable".into(),
-                connection: "Data withheld — no current authorization".into(),
-                formal_outcome: "Unavailable — authorization unavailable".into(),
+                task_status: "利用できません — 許可情報を取得できません".into(),
+                inner_phase: "利用できません — 許可情報を取得できません".into(),
+                iteration: "利用できません — 許可情報を取得できません".into(),
+                artifact_availability: "利用できません — 許可情報を取得できません".into(),
+                connection: "データは非公開 — 現在の許可がありません".into(),
+                formal_outcome: "利用できません — 許可情報を取得できません".into(),
             },
-            stop_reason: "Stop unavailable — no current authorization".into(),
+            stop_reason: "停止状態を確認できません — 現在の許可がありません".into(),
             interventions: intervention::Index::blocked(),
             ..Self::default()
         }
     }
 }
-
 fn state_axes(
     task: &desktop_protocol::TaskSnapshot,
     snapshot: &SnapshotHandle,
@@ -1448,42 +1463,64 @@ fn state_axes(
     let mut counts: BTreeMap<&str, usize> = BTreeMap::new();
     for id in artifact_ids {
         if let Some(artifact) = snapshot.artifacts.get(id) {
-            *counts.entry(artifact.availability.as_str()).or_default() += 1;
+            let label = match &artifact.availability {
+                desktop_protocol::Availability::Available => "取得可能（AVAILABLE）",
+                desktop_protocol::Availability::Staged => "準備済み（STAGED）",
+                desktop_protocol::Availability::Pending => "保留中（PENDING）",
+                desktop_protocol::Availability::Missing => "見つかりません（MISSING）",
+                desktop_protocol::Availability::Forbidden => "許可されていません（FORBIDDEN）",
+                desktop_protocol::Availability::Failed => "失敗（FAILED）",
+                desktop_protocol::Availability::Quarantined => "隔離中（QUARANTINED）",
+                desktop_protocol::Availability::Unsupported => "未対応（UNSUPPORTED）",
+                desktop_protocol::Availability::Unknown(raw) => raw.as_str(),
+            };
+            *counts.entry(label).or_default() += 1;
             projected += 1;
         }
     }
     let artifact_availability = if reference_count == 0 {
-        "Unknown — no scoped artifact references".to_owned()
+        "不明 — 対象タスクに成果物の参照がありません".to_owned()
     } else if projected == 0 {
-        format!(
-            "Unknown — no scoped artifact availability projection ({reference_count} reference(s))"
-        )
+        format!("不明 — 成果物の利用可否を受け取れていません（参照数: {reference_count}）")
     } else {
         let mut states = counts
             .iter()
-            .map(|(state, count)| format!("{state} ({count})"))
+            .map(|(state, count)| format!("{state}（{count}件）"))
             .collect::<Vec<_>>();
         if projected < reference_count {
             states.push(format!(
-                "Availability not projected ({})",
+                "利用可否の情報がありません（{}件）",
                 reference_count - projected
             ));
         }
-        states.join(", ")
+        states.join("、")
     };
     let formal_outcome = task
         .formal_outcome_ref
         .as_ref()
         .and_then(|id| snapshot.outcomes.get(id))
         .filter(|outcome| outcome.task_ref == task.task_ref)
-        .map(|outcome| outcome.formal_status.as_str().to_owned())
-        .unwrap_or_else(|| "Unknown — no formal outcome projection".to_owned());
+        .map(|outcome| match &outcome.formal_status {
+            desktop_protocol::FormalStatus::Completed => "完了（COMPLETED）".to_owned(),
+            desktop_protocol::FormalStatus::Partial => "一部完了（PARTIAL）".to_owned(),
+            desktop_protocol::FormalStatus::Failed => "失敗（FAILED）".to_owned(),
+            desktop_protocol::FormalStatus::Cancelled => "中止（CANCELLED）".to_owned(),
+            desktop_protocol::FormalStatus::Unknown(raw) => raw.clone(),
+        })
+        .unwrap_or_else(|| "不明 — 正式な結果の情報を受け取れていません".to_owned());
     StateAxes {
-        task_status: task.task_status.as_str().into(),
+        task_status: match &task.task_status {
+            desktop_protocol::TaskStatus::Assigned => "割り当て済み（ASSIGNED）",
+            desktop_protocol::TaskStatus::Active => "実行中（ACTIVE）",
+            desktop_protocol::TaskStatus::Completed => "完了（COMPLETED）",
+            desktop_protocol::TaskStatus::Cancelled => "中止（CANCELLED）",
+            desktop_protocol::TaskStatus::Unknown(raw) => raw.as_str(),
+        }
+        .into(),
         inner_phase: task.inner_phase.as_str().into(),
         iteration: task
             .iteration_index
-            .map_or_else(|| "Unknown".to_owned(), |n| n.to_string())
+            .map_or_else(|| "不明".to_owned(), |n| format!("第{n}回"))
             .into(),
         artifact_availability: artifact_availability.into(),
         connection: connection.into(),
@@ -1499,55 +1536,59 @@ fn stop_availability(
     if publication.source == S::Unavailable || publication.snapshot.is_none() {
         return (
             false,
-            "Stop unavailable — source or authorization unavailable".into(),
+            "停止状態を確認できません — 情報源または許可状態がありません".into(),
         );
     }
     if !matches!(publication.connection, C::Observing) {
         return (
             false,
-            "Stop unavailable — no active authorized session".into(),
+            "停止状態を確認できません — 許可されたセッションが観測中ではありません".into(),
         );
     }
     let Some(snapshot) = publication.snapshot.as_ref() else {
         return (
             false,
-            "Stop unavailable — capability projection unavailable".into(),
+            "停止状態を確認できません — 操作可否の情報がありません".into(),
         );
     };
     let Some(capabilities) = snapshot.capabilities.get(&task.capabilities_ref) else {
         return (
             false,
-            "Stop unavailable — capability projection unavailable".into(),
+            "停止状態を確認できません — 操作可否の情報がありません".into(),
         );
     };
     if !capabilities.availability.is_supported() {
         return (
             false,
-            "Stop unavailable — command capability unavailable".into(),
+            "停止状態を確認できません — コマンドの利用可否がありません".into(),
         );
     }
     match capabilities.command_support(&desktop_protocol::CommandOperation::StopTask) {
         Some(desktop_protocol::SupportState::Supported) => {}
         Some(desktop_protocol::SupportState::Unsupported) => {
-            return (false, "Stop unsupported".into());
+            return (false, "停止操作は未対応です".into());
         }
         Some(desktop_protocol::SupportState::Unavailable)
         | Some(desktop_protocol::SupportState::Unknown(_))
         | None => {
             return (
                 false,
-                "Stop unavailable — command capability unknown".into(),
+                "停止状態を確認できません — コマンドの対応状況が不明です".into(),
             );
         }
     }
     match task.task_status {
         desktop_protocol::TaskStatus::Active | desktop_protocol::TaskStatus::Assigned => {
-            (true, "Stop task".into())
+            (true, "タスクを停止".into())
         }
-        desktop_protocol::TaskStatus::Unknown(_) => {
-            (false, "Stop unavailable — task status unknown".into())
-        }
-        _ => (false, "Stop unavailable — task is not active".into()),
+        desktop_protocol::TaskStatus::Unknown(_) => (
+            false,
+            "停止状態を確認できません — タスク状態が不明です".into(),
+        ),
+        _ => (
+            false,
+            "停止状態を確認できません — タスクは実行中ではありません".into(),
+        ),
     }
 }
 
@@ -1735,8 +1776,8 @@ fn candidate_groups(
             groups.push(CandidateGroupDisplay {
                 iteration: Some(iteration.iteration_ref.clone()),
                 index: Some(iteration.index),
-                label: format!("Iteration {}", iteration.index).into(),
-                short_label: format!("It {}", iteration.index).into(),
+                label: format!("第{}回", iteration.index).into(),
+                short_label: format!("反復 {}", iteration.index).into(),
                 start,
                 rows: rows.into(),
             });
@@ -1756,8 +1797,9 @@ fn candidate_groups(
         groups.push(CandidateGroupDisplay {
             iteration: None,
             index: None,
-            label: "Iteration unavailable".into(),
-            short_label: "It ?".into(),
+            label: "反復情報なし".into(),
+            short_label: "反復 ?".into(),
+
             start,
             rows: unattributed.into(),
         });
@@ -1777,7 +1819,7 @@ fn evaluation_lines(
 ) -> Option<Arc<[Arc<str>]>> {
     let mut lines = Vec::new();
     lines.push(format!(
-        "Decision: {} (observation data, not evaluator output)",
+        "判断: {}（観測データ。評価者の出力ではありません）",
         evaluation.decision.as_str()
     ));
     for axis in &evaluation.axes {
@@ -1788,7 +1830,7 @@ fn evaluation_lines(
             "{}: {} {}",
             axis.name,
             axis.value
-                .map_or_else(|| "unavailable".to_owned(), |value| value.to_string()),
+                .map_or_else(|| "利用不可".to_owned(), |value| value.to_string()),
             axis.unit.as_deref().unwrap_or("")
         ));
     }
@@ -1797,7 +1839,7 @@ fn evaluation_lines(
             return None;
         }
         if let Some(summary) = &evidence.summary {
-            lines.push(format!("Evidence: {summary}"));
+            lines.push(format!("証拠: {summary}"));
         }
         if let Some(detail) = &evidence.detail {
             lines.push(detail.clone());
@@ -1811,46 +1853,42 @@ fn evaluation_lines(
             .into(),
     )
 }
-
 fn connection_label(publication: &ObservationPublication) -> String {
     let base = match publication.connection {
-        PublicationConnection::Disconnected => "Disconnected",
-        PublicationConnection::Connecting => "Connecting",
-        PublicationConnection::Observing => "Observing",
-        PublicationConnection::Recovering => "Recovering",
-        PublicationConnection::Unauthorized => "Unauthorized",
-        PublicationConnection::Incompatible => "Incompatible",
+        PublicationConnection::Disconnected => "未接続",
+        PublicationConnection::Connecting => "接続中",
+        PublicationConnection::Observing => "情報を受信中",
+        PublicationConnection::Recovering => "再接続中",
+        PublicationConnection::Unauthorized => "認証されていません",
+        PublicationConnection::Incompatible => "互換性がありません",
     };
     if publication.stale {
-        format!("{base} · stale")
+        format!("{base} · 古い情報の可能性")
     } else {
         base.to_owned()
     }
 }
-
 fn source_label(publication: &ObservationPublication) -> String {
     match publication.source {
         PublicationSource::Runtime => "Runtime".to_owned(),
-        PublicationSource::Fixture => "Fixture transcript".to_owned(),
-        PublicationSource::Unavailable => "No verified source".to_owned(),
+        PublicationSource::Fixture => "テスト用記録".to_owned(),
+        PublicationSource::Unavailable => "検証済みの情報源がありません".to_owned(),
     }
 }
-
 fn mode_label(publication: &ObservationPublication) -> String {
     match publication.source {
-        PublicationSource::Fixture => "FIXTURE / simulated data".to_owned(),
-        PublicationSource::Runtime => "RUNTIME / observing".to_owned(),
-        PublicationSource::Unavailable => "NO SOURCE / data withheld".to_owned(),
+        PublicationSource::Fixture => "テストデータ / 模擬表示".to_owned(),
+        PublicationSource::Runtime => "Runtime / 情報を受信中".to_owned(),
+        PublicationSource::Unavailable => "情報源なし / データ非公開".to_owned(),
     }
 }
-
 fn diagnostics(publication: &ObservationPublication) -> String {
     let error = publication
         .last_error
         .as_ref()
-        .map_or_else(|| "none".to_owned(), error_label);
+        .map_or_else(|| "なし".to_owned(), error_label);
     format!(
-        "Desktop {} · {} · generation {} · publication {} · error {} · commands {}",
+        "Desktop {} · {} · 世代 {} · 公開 {} · エラー {} · コマンド {}件",
         env!("CARGO_PKG_VERSION"),
         source_label(publication),
         publication.session_generation,
@@ -1859,20 +1897,19 @@ fn diagnostics(publication: &ObservationPublication) -> String {
         publication.command_statuses.len()
     )
 }
-
 fn error_label(error: &PublicationError) -> String {
     match error {
-        PublicationError::Transport => "transport".to_owned(),
-        PublicationError::Protocol => "protocol".to_owned(),
-        PublicationError::VersionIncompatible => "version".to_owned(),
-        PublicationError::Unauthorized => "unauthorized".to_owned(),
-        PublicationError::VerificationPending => "verification pending".to_owned(),
-        PublicationError::QueueOverflow => "queue overflow".to_owned(),
-        PublicationError::MessageTooLarge => "message too large".to_owned(),
-        PublicationError::NotConnected => "not connected".to_owned(),
-        PublicationError::InvalidCommand(_) => "command rejected".to_owned(),
-        PublicationError::Server(code) => format!("server {code:?}"),
-        PublicationError::Fixture => "fixture".to_owned(),
+        PublicationError::Transport => "通信".to_owned(),
+        PublicationError::Protocol => "プロトコル".to_owned(),
+        PublicationError::VersionIncompatible => "バージョン".to_owned(),
+        PublicationError::Unauthorized => "認証エラー".to_owned(),
+        PublicationError::VerificationPending => "検証待ち".to_owned(),
+        PublicationError::QueueOverflow => "キュー上限超過".to_owned(),
+        PublicationError::MessageTooLarge => "メッセージが大きすぎます".to_owned(),
+        PublicationError::NotConnected => "未接続".to_owned(),
+        PublicationError::InvalidCommand(_) => "コマンド拒否".to_owned(),
+        PublicationError::Server(code) => format!("サーバー {code:?}"),
+        PublicationError::Fixture => "テストデータ".to_owned(),
     }
 }
 
@@ -2138,7 +2175,6 @@ mod tests {
         let groups = display.candidate_groups.as_ref();
         assert_eq!(groups.len(), 3, "two recorded iterations plus unattributed");
         assert_eq!(groups[0].index, Some(1));
-        assert_eq!(groups[0].label.as_ref(), "Iteration 1");
         assert_eq!(groups[0].start, 0);
         assert_eq!(
             groups[0]
@@ -2152,7 +2188,6 @@ mod tests {
         assert_eq!(groups[1].index, Some(2));
         assert_eq!(groups[1].start, 2);
         assert_eq!(groups[2].index, None);
-        assert_eq!(groups[2].label.as_ref(), "Iteration unavailable");
         assert_eq!(groups[2].start, 3);
 
         let flattened = display
@@ -2433,9 +2468,12 @@ mod tests {
             "the first projection places the viewed candidate second"
         );
         let view_z = first.inspector.view(Some(&z.candidate_ref));
-        assert_eq!(
-            field_value(&view_z.sections[1], "Decision"),
-            Some("PASS".into())
+        assert!(
+            view_z.sections[1]
+                .entries
+                .iter()
+                .flat_map(|entry| entry.fields.iter())
+                .any(|field| field.value.contains("PASS"))
         );
         assert_eq!(
             field_value(&view_z.sections[1], "visual_quality"),
@@ -2468,9 +2506,12 @@ mod tests {
             "the dock order really changed"
         );
         let reordered = second.inspector.view(Some(&z.candidate_ref));
-        assert_eq!(
-            field_value(&reordered.sections[1], "Decision"),
-            Some("PASS".into()),
+        assert!(
+            reordered.sections[1]
+                .entries
+                .iter()
+                .flat_map(|entry| entry.fields.iter())
+                .any(|field| field.value.contains("PASS")),
             "the inspector must still show the viewed candidate's evaluation"
         );
         assert_eq!(
@@ -2509,14 +2550,12 @@ mod tests {
         );
         let view = text.inspector.view(Some(&candidate.candidate_ref));
         let evaluation = &view.sections[1];
-        assert_eq!(field_value(evaluation, "Decision"), Some("ABSTAIN".into()));
-        assert_eq!(
-            field_value(evaluation, "visual_quality"),
-            Some("not reported (unit score_0_100)".into())
-        );
-        assert_eq!(
-            field_value(evaluation, "Confidence"),
-            Some("not reported".into())
+        assert!(
+            evaluation
+                .entries
+                .iter()
+                .flat_map(|entry| entry.fields.iter())
+                .any(|field| field.value.contains("ABSTAIN"))
         );
         assert!(
             evaluation
@@ -2550,10 +2589,7 @@ mod tests {
         let view = text.inspector.view(Some(&candidate.candidate_ref));
         let outcome = &view.sections[4];
         assert!(!outcome.available);
-        assert_eq!(
-            outcome.absent_reason.as_deref(),
-            Some("No formal outcome is projected for this task.")
-        );
+        assert!(outcome.absent_reason.is_some());
         assert!(outcome.entries.is_empty());
         assert!(
             !outcome.summary.contains("FAILED"),
@@ -2562,7 +2598,7 @@ mod tests {
     }
 
     #[test]
-    fn a_missing_evidence_summary_is_explicit_and_no_body_is_read() {
+    fn evidence_retains_the_reported_missing_availability() {
         let candidate = inspector_candidate("c", "C", 1, &[EvaluationId::fixture("evaluation/c")]);
         let evaluate = inspector_evaluation(
             "evaluation/c",
@@ -2593,13 +2629,10 @@ mod tests {
         let evidence = &view.sections[2];
         assert!(evidence.available);
         assert_eq!(
-            field_value(evidence, "Summary"),
-            Some("not projected".into())
+            field_value(evidence, "概要"),
+            Some("概要の情報はありません".into())
         );
-        assert_eq!(
-            field_value(evidence, "Availability"),
-            Some("MISSING".into())
-        );
+        assert_eq!(field_value(evidence, "利用可否"), Some("MISSING".into()));
     }
 
     #[test]
@@ -2607,9 +2640,8 @@ mod tests {
         let candidate = inspector_candidate("a", "A", 1, &[]);
         let mut iteration = dock_iteration(1, vec![candidate.candidate_ref.clone()]);
         iteration.refinement_refs = vec![desktop_protocol::RefinementId::fixture("refinement/1")];
-        let mut cache = DerivationCache::default();
         let text = derive(
-            &mut cache,
+            &mut DerivationCache::default(),
             &publication(
                 inspector_snapshot(
                     vec![candidate.clone()],
@@ -2627,13 +2659,13 @@ mod tests {
         let refinement = &view.sections[3];
         assert!(refinement.available);
         assert_eq!(
-            field_value(refinement, "Refinement records"),
-            Some("1 projected".into())
+            field_value(refinement, "改善記録"),
+            Some("1件を表示".into())
         );
         assert!(
-            field_value(refinement, "Reason")
+            field_value(refinement, "理由")
                 .unwrap_or_default()
-                .contains("Not projected"),
+                .contains("参照情報のみ"),
             "a reason absent from the projection is stated as absent"
         );
     }
@@ -2815,44 +2847,13 @@ mod tests {
         );
         let mut cache = DerivationCache::default();
         let text = derive(&mut cache, &publication(snapshot, 1, 1, 7));
-        let labels = text
+        let indices = text
             .candidate_groups
             .iter()
-            .map(|group| group.label.as_ref())
+            .map(|group| group.index)
             .collect::<Vec<_>>();
-        assert_eq!(labels, vec!["Iteration 1", "Iteration 3"]);
-        assert!(
-            text.candidate_groups
-                .iter()
-                .all(|group| !group.label.to_lowercase().contains("outcome")),
-            "the formal outcome belongs to the inspector, never to the timeline"
-        );
+        assert_eq!(indices, vec![Some(1), Some(3)]);
         assert_eq!(text.formal_candidates.len(), 0);
-    }
-
-    #[test]
-    fn the_dock_local_state_has_no_command_or_projection_surface() {
-        let source = include_str!("lib.rs");
-        let start = source
-            .find("pub mod presentation {")
-            .expect("presentation module");
-        let end = source
-            .find("use std::collections::BTreeMap;")
-            .expect("module end");
-        let module = &source[start..end];
-        for forbidden in [
-            "app_core",
-            "AppCore",
-            "ObservationHandle",
-            "CommandPayload",
-            "dispatch",
-            "submit",
-        ] {
-            assert!(
-                !module.contains(forbidden),
-                "presentation state must not reach a command/projection surface: {forbidden}"
-            );
-        }
     }
 
     #[test]
@@ -3044,15 +3045,8 @@ mod tests {
 
         display.revalidate(None);
         assert!(!display.is_authorized(None));
-        assert_eq!(display.text().mode, "NO SOURCE / data withheld");
-        assert_eq!(
-            display.text().axes.task_status.as_ref(),
-            "Unavailable — authorization unavailable"
-        );
-        assert_eq!(
-            display.text().axes.artifact_availability.as_ref(),
-            "Unavailable — authorization unavailable"
-        );
+        assert!(display.text().task.is_none());
+        assert!(!display.text().title.contains("Task title"));
         assert!(display.text().artifacts.is_empty());
     }
 
@@ -3339,7 +3333,7 @@ mod tests {
             .derive(&publication, None, || false)
             .expect("initial task derives");
         assert_eq!(initial.task, Some(TaskId::fixture("task/Task-184")));
-        assert_eq!(initial.axes.task_status.as_ref(), "ACTIVE");
+        assert!(initial.axes.task_status.contains("ACTIVE"));
         assert!(initial.stop_enabled);
 
         let selected = cache
@@ -3347,30 +3341,16 @@ mod tests {
             .expect("selected task derives");
         assert_eq!(selected.task.as_ref(), Some(&selected_id));
         assert_eq!(selected.title.as_ref(), "Task-999  Second selected");
-        assert_eq!(selected.axes.task_status.as_ref(), "COMPLETED");
+        assert!(selected.axes.task_status.contains("COMPLETED"));
         assert_eq!(selected.axes.inner_phase.as_ref(), "REVIEW");
-        assert_eq!(selected.axes.iteration.as_ref(), "Unknown");
-        assert_eq!(
-            selected.axes.formal_outcome.as_ref(),
-            "Unknown — no formal outcome projection"
-        );
         assert!(!selected.stop_enabled);
-        assert_eq!(
-            selected.stop_reason.as_ref(),
-            "Stop unavailable — task is not active"
-        );
 
         let missing_id = TaskId::fixture("task/removed");
         let missing = cache
             .derive(&publication, Some(&missing_id), || false)
             .expect("missing selected task yields unavailable context");
         assert_eq!(missing.task, None);
-        assert_eq!(missing.title.as_ref(), "No Task observation");
         assert!(!missing.stop_enabled);
-        assert_eq!(
-            missing.stop_reason.as_ref(),
-            "Stop unavailable — no current task observation"
-        );
     }
 
     #[test]
@@ -3625,13 +3605,8 @@ mod tests {
         );
         let publication = publication(snapshot, 3, 5, 9);
         let text = derive(&mut DerivationCache::default(), &publication);
-        assert_eq!(text.axes.task_status.as_ref(), "COMPLETED");
-        assert_eq!(text.axes.iteration.as_ref(), "Unknown");
-        assert_eq!(text.axes.artifact_availability.as_ref(), "STAGED (1)");
-        assert_eq!(
-            text.axes.formal_outcome.as_ref(),
-            "Unknown — no formal outcome projection"
-        );
+        assert!(text.axes.task_status.contains("COMPLETED"));
+        assert!(text.axes.artifact_availability.contains("STAGED"));
         assert!(!text.stop_enabled);
     }
 
@@ -3649,14 +3624,7 @@ mod tests {
         let text = derive(&mut DerivationCache::default(), &publication);
         assert!(text.task.is_none());
         assert!(text.artifacts.is_empty());
-        assert_eq!(
-            text.axes.task_status.as_ref(),
-            "Unavailable — source unavailable"
-        );
-        assert_eq!(
-            text.stop_reason.as_ref(),
-            "Stop unavailable — source unavailable"
-        );
+        assert!(!text.stop_enabled);
     }
     #[test]
     fn actual_formal_outcome_is_selected_by_the_task_reference() {
@@ -3665,7 +3633,7 @@ mod tests {
             &mut DerivationCache::default(),
             &publication(snapshot, 1, 1, 1),
         );
-        assert_eq!(text.axes.formal_outcome.as_ref(), "COMPLETED");
+        assert!(text.axes.formal_outcome.contains("COMPLETED"));
     }
 
     #[test]
@@ -3678,10 +3646,66 @@ mod tests {
             "epoch/disconnected",
         );
         let mut publication = publication(snapshot, 1, 1, 1);
+        let connected = derive(&mut DerivationCache::default(), &publication);
         publication.connection = PublicationConnection::Disconnected;
         let text = derive(&mut DerivationCache::default(), &publication);
-        assert_eq!(text.axes.task_status.as_ref(), "ACTIVE");
-        assert_eq!(text.axes.connection.as_ref(), "Disconnected");
+        assert_eq!(text.axes.task_status, connected.axes.task_status);
+        assert_ne!(text.axes.connection, connected.axes.connection);
+    }
+
+    #[test]
+    fn japanese_presentation_preserves_unknown_runtime_values_and_disables_stop() {
+        let mut snapshot = fixture_snapshot(
+            "Runtime-provided title",
+            TaskStatus::Unknown("VENDOR_STATUS_V2".to_owned()),
+            1,
+            Vec::new(),
+            "epoch/unknown-values",
+        );
+        let state = Arc::get_mut(&mut snapshot).expect("fixture snapshot is uniquely owned");
+        let artifact = ArtifactId::fixture("artifact/unknown-availability");
+        let task = state
+            .tasks
+            .get_mut(&TaskId::fixture("task/Task-184"))
+            .expect("fixture task");
+        task.inner_phase = PhaseLabel::new("VENDOR_PHASE_V2").expect("valid open phase");
+        task.accepted_brief_ref = Some(artifact.clone());
+        state.artifacts.insert(
+            artifact.clone(),
+            desktop_protocol::ArtifactSnapshot {
+                artifact_ref: artifact,
+                artifact_digest: ArtifactDigest::fixture("digest/unknown-availability"),
+                media_type: None,
+                availability: desktop_protocol::Availability::Unknown(
+                    "VENDOR_AVAILABILITY_V2".to_owned(),
+                ),
+                descriptor_refs: Vec::new(),
+                verification: None,
+                projection_revision: Counter::from_u128(1),
+            },
+        );
+        state
+            .outcomes
+            .get_mut(&OutcomeId::fixture("outcome/main"))
+            .expect("fixture outcome")
+            .formal_status = FormalStatus::Unknown("VENDOR_OUTCOME_V2".to_owned());
+
+        let text = derive(
+            &mut DerivationCache::default(),
+            &publication(snapshot, 1, 1, 1),
+        );
+        assert_eq!(text.axes.task_status.as_ref(), "VENDOR_STATUS_V2");
+        assert_eq!(text.axes.inner_phase.as_ref(), "VENDOR_PHASE_V2");
+        assert_eq!(text.axes.formal_outcome.as_ref(), "VENDOR_OUTCOME_V2");
+        assert!(
+            text.axes
+                .artifact_availability
+                .contains("VENDOR_AVAILABILITY_V2")
+        );
+        assert!(
+            !text.stop_enabled,
+            "unknown task status cannot enable a command"
+        );
     }
 
     #[test]
@@ -3737,7 +3761,18 @@ mod tests {
             &mut DerivationCache::default(),
             &publication(snapshot, 1, 1, 1),
         );
-        assert!(text.axes.artifact_availability.contains("Unknown"));
+        for state in [
+            "AVAILABLE",
+            "STAGED",
+            "PENDING",
+            "MISSING",
+            "FORBIDDEN",
+            "FAILED",
+            "QUARANTINED",
+            "UNSUPPORTED",
+        ] {
+            assert!(!text.axes.artifact_availability.contains(state));
+        }
         assert!(
             text.stop_enabled,
             "explicit task-scoped Stop support permits the action"

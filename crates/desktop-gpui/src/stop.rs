@@ -53,32 +53,32 @@ impl ReceiptFeedback {
     }
 
     pub fn note(self) -> Option<(&'static str, &'static str)> {
-        let local = "Local attempt history only; current receipt and authorization are not verified. The command may have executed; do not resend.";
+        let local = "このウィンドウでの試行履歴のみです。現在の受領記録と認可状態は確認されていません。コマンドが実行済みの可能性があります。再送しないでください。";
         Some(match self {
             Self::Idle => return None,
             Self::Checking => (
-                "Receipt check in progress",
-                "Explicit read only; no Stop is sent or retried.",
+                "受領記録を確認中",
+                "明示的な読み取りのみです。Stopは送信も再試行もされません。",
             ),
             Self::Found => (
-                "Receipt check found a current record",
-                "The current command state comes only from the authorized publication.",
+                "現在の受領記録が見つかりました",
+                "現在のコマンド状態は、認可済みの公開情報だけに基づきます。",
             ),
             Self::NotRetained => (
-                "Receipt not retained in the checked view",
-                "Absence is not proof of non-execution; manual intervention may be required.",
+                "確認した表示情報に受領記録がありません",
+                "見つからないことは未実行の証拠ではありません。手動対応が必要な場合があります。",
             ),
             Self::PreviousFailure(ReadFailure::Capacity) => {
-                ("Previous receipt-check attempt: capacity blocked", local)
+                ("前回の受領記録確認: 容量不足で停止", local)
             }
             Self::PreviousFailure(ReadFailure::Denied) => {
-                ("Previous receipt-check attempt: read denied", local)
+                ("前回の受領記録確認: 読み取りが拒否されました", local)
             }
             Self::PreviousFailure(ReadFailure::Unavailable) => {
-                ("Previous receipt-check attempt: unavailable", local)
+                ("前回の受領記録確認: 利用できませんでした", local)
             }
             Self::PreviousFailure(ReadFailure::Superseded) => {
-                ("Previous receipt-check result is no longer current", local)
+                ("前回の受領記録確認の結果は最新ではありません", local)
             }
         })
     }

@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "task": "MP-UX1",
+  "contract": "DC-MP-UX1",
+  "status": "PARTICIPANT_OBSERVATIONS_RECORDED_REQUIRED_COMPREHENSION_NOT_MET",
+  "source": {
+    "branch": "dev",
+    "baseline_sha": "d3db6dde7413cbabe7e1ff71529d8084255dac07",
+    "product_source_agreement_sha": "0801224ace3e2a90edcc9c87b8db3ecc346291ad",
+    "build_command": "cargo build --locked -p cos-desktop --bin cos-desktop",
+    "build_result": "PASS",
+    "executable_sha256": "sha256:625d4d5ef67d24b63970ebe5c5016f293e2e8daf9c2605d2ba197a3108a364ab",
+    "fixture": "crates/cos-client/fixtures/task-184.json",
+    "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52"
+  },
+  "method": {
+    "participant": "P01",
+    "recruitment": "Caller explicitly selected actual participation; one self-selected participant, not a representative sample.",
+    "prior_project_exposure": "NOT_CONTROLLED",
+    "response_collection": "Interactive ask questions, with inability/partial/screen-unavailable choices and an automatically supplied free-text option. All successful comprehension claims would require substantive participant answers and actual observation; none is inferred.",
+    "neutral_prompts": "Japanese translations of the existing validation-plan.md prompts. No correct answer or corrective guidance was supplied during UX01–UX08. The examiner selected fixture candidate B before UX02–UX04 as scenario setup, not as a participant action.",
+    "capture_scope": "Fresh read-only native accessibility and window captures retained privately at each relevant endpoint. Final states are not a full action trace. No image is claimed unique or sufficient by itself to prove a new execution.",
+    "timing": "First-view onset and comprehension latency were not independently measured. The participant selected 時間は不明. No five-second PASS or five-second FAIL is claimed.",
+    "environment": "Windows native prototype; no display/contrast/permission setting changed and no full DPI, assistive-technology or product matrix claimed."
+  },
+  "checks": [
+    {
+      "id": "UX01",
+      "prompt": "このタスクは、いま何をしていますか？画面から理解した内容を自由入力で教えてください。",
+      "response": "分からない",
+      "comprehension": "FAIL",
+      "timing_response": "時間は不明",
+      "five_second_condition": "NOT_MEASURED"
+    },
+    {
+      "id": "UX02",
+      "prompt": "この画面で、作業中の成果物はどこにありますか？場所や見えているものを自由入力で教えてください。",
+      "response": "分からない",
+      "comprehension": "FAIL",
+      "actual_media_dominance": "NOT_MEASURED: the prototype has no actual media renderer."
+    },
+    {
+      "id": "UX03",
+      "prompt": "候補（Candidate）とIterationは、どのような関係だと理解しましたか？自由入力で教えてください。",
+      "response": "分からない",
+      "comprehension": "FAIL"
+    },
+    {
+      "id": "UX04",
+      "prompt": "現在選ばれている候補はどれで、それは最終選択ですか？理解した内容を自由入力で教えてください。",
+      "response": "分からない",
+      "comprehension": "FAIL"
+    },
+    {
+      "id": "UX05",
+      "prompt": "この候補がこのように評価された理由と、その裏付けを画面で示してください。操作後、たどった場所と分かった内容を自由入力で教えてください。",
+      "response": "途中までできた",
+      "comprehension": "PARTIAL",
+      "observation": "The endpoint accessibility tree has Evidence details open for viewed B. The participant supplied no detailed route or interpretation; neither is invented."
+    },
+    {
+      "id": "UX06",
+      "prompt": "2つの候補を比較してください。操作後、どこまででき、何が表示されたかを自由入力で教えてください。",
+      "response": "途中までできた",
+      "comprehension": "PARTIAL",
+      "observation": "The retained endpoint image shows the Compare surface, with neither side selected. No completed two-side comparison or actual image presentation is claimed."
+    },
+    {
+      "id": "UX07",
+      "prompt": "どのようなときにFlowを見て、どのようなときには見ないと思いますか？必要なら画面を操作し、理解した内容を自由入力で教えてください。",
+      "response": "分からない",
+      "comprehension": "FAIL"
+    },
+    {
+      "id": "UX08",
+      "prompt": "問題が起きています。何が起きていて、何ができると思いますか？必要なら画面を操作し、理解した内容を自由入力で教えてください。",
+      "response": "一部だけ分かった",
+      "comprehension": "PARTIAL",
+      "follow_up": "両方とも一部ずつ",
+      "observation": "A separate fresh process without fixture arguments or a Runtime endpoint was used, as the existing protocol requires. The participant partially understood both situation and possible action; no unspoken causal explanation is inferred."
+    }
+  ],
+  "post_session_feedback": {
+    "source": "Actual participant free-text answer, after all eight core responses.",
+    "reported_issues": [
+      "English and unfamiliar terminology are the primary comprehension obstacle; ordinary user-facing wording should be Japanese.",
+      "Button meanings are unclear; icons and mouse-over explanations were suggested.",
+      "No artifact is displayed in the centre, so the participant cannot identify what should guide the current judgement.",
+      "The right pane lacks accessible scrolling and content overlaps the lower pane, preventing full viewing.",
+      "The top pane occupies too much space."
+    ],
+    "treatment": "User-reported layout/visibility faults are accepted as observations, not rerun merely to confirm them. Existing feedback is not rewritten after a repair."
+  },
+  "results": {
+    "pass": 0,
+    "partial": 3,
+    "fail": 5,
+    "timing": "NOT_MEASURED",
+    "whole_contract_completion": "NOT_MET",
+    "product_acceptance": "NOT_CLAIMED"
+  },
+  "boundaries": {
+    "developer_reachability": "The historical seven-PASS/one-PARTIAL developer record remains separate and unchanged.",
+    "canonical_fixture_state": "Later captures show CANCELLED/STOPPED and a reflected Stop receipt. The complete participant input sequence was not observed, so no particular action or intent is attributed from those endpoint states.",
+    "media": "No production Decode/Upload/Artifact viewer, evidence-body acquisition or Runtime integration is supplied by UX1.",
+    "repair_evidence": "Any Japanese-presentation or layout repair requires separate candidate verification and native evidence. No post-repair participant result exists in this record.",
+    "processes": "Both owned participant windows were closed through their semantic close controls and both processes exited 0."
+  }
+}

@@ -192,7 +192,7 @@ pub fn revision_key(graphs: &[Arc<GraphDisplay>]) -> RevisionKey {
 
 pub fn revision_label(graph: &GraphDisplay) -> String {
     format!(
-        "GraphRevision {} · version {} · {}",
+        "グラフ改訂 {} · バージョン {} · {}",
         graph.graph_ref.graph_id.as_str(),
         graph.graph_ref.version,
         graph.graph_ref.digest.as_str()
