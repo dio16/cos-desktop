@@ -3,7 +3,7 @@
   "contract": "DC-MP-REL1",
   "decision": "DD-21",
   "slice": "Windows dependency graph, third-party licence/NOTICE consistency, runtime dependency survey",
-  "status": "LIMITED_PROVENANCE_COMPLETE_REVIEW_PENDING_DISTRIBUTION_OPEN",
+  "status": "LIMITED_PROVENANCE_COMPLETE_REVIEW_CLEAN_DISTRIBUTION_OPEN",
   "baseline": "39713bf9644d0d8ae0b455d814f7a3a7466a0ca2",
   "product_source": "87922dd567187bec88186944247d1f5644ba2a1b (unchanged by this slice: no product, verification code or NOTICE change was needed)",
   "a_windows_dependency_graph": {
@@ -194,7 +194,7 @@
       "claim": "packet_compiled",
       "packet_sha256": "sha256:bc8f08e1534c749d1cd6a15d9203e96789d8d622ec41ef479fdac66519be8960"
     },
-    "status": "RESEARCH_COMPLETE_REVIEW_PENDING_DISTRIBUTION_OPEN",
+    "status": "RESEARCH_COMPLETE_REVIEW_CLEAN_DISTRIBUTION_OPEN",
     "method": [
       "Scope is the sixteen names in packages_without_local_text_list plus cfg_aliases only; no 369-package recount.",
       "Every cached .crate SHA256 equals Cargo.lock checksum. Archived .cargo_vcs_info.json provides the exact revision; every archived Cargo.toml.orig matches bytes from that revision and confirms name/version. This is a reproducible correspondence chain, not a maintainer signature or legal authentication.",
@@ -1210,7 +1210,7 @@
       "documentation_smoke": "PASS: sixteen exact rows, fourteen acquisitions/two NOT_VERIFIED; 47 manifest/text references now have matching original-byte SHA256 and lengths: seventeen upstream manifests and thirty original-text references, counting shared files once per evidence reference rather than once per unique URL/digest. The initial 46-reference checker covered sixteen package manifests, twenty-eight package text references and two cfg_aliases texts; the cfg_aliases manifest had separate archive/upstream correspondence and is now explicitly checked for cached-byte digest and size too. Historical population/histogram 369 preserved; 62 task cards each retain one owning DC link; 41 DAG edges unchanged/acyclic; new relative evidence link resolves; JSON tool and git diff --check pass. Only plan/evidence JSON changed; canonical Git content of LICENSE/NOTICE/Cargo.lock/manifests/design owners unchanged. Public evidence has no host-drive path or private-key marker.",
       "new_refine_gate": "NOT_RUN: no product/verification source, dependency, contract or configuration changed; ADR-0014 Y04.",
       "native": "NOT_RUN: no native/UI change.",
-      "review": "Round 1 on 42dc63bbeda85a5e5a3733c1e897adfbe668d014 returned 0 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE (A-R1-01, clarify 46 versus 47 digest references). The one omitted explicit cfg_aliases manifest digest/size check now passes and the reference count is reconciled; candidate-specific re-review PENDING. Historical survey CLEAN is not transferred."
+      "review": "Round 1 on 42dc63bbeda85a5e5a3733c1e897adfbe668d014 returned 0 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE (A-R1-01, clarify 46 versus 47 digest references). The additional explicit cfg_aliases manifest digest/size check passes. Round 2 on e5ef1148b63fd8fc6dfb747073f7debd7f0a2bc5 returned CLEAN 0/0/0, closed A-R1-01, independently reconciled the 47 references and checked that manifest's size/SHA256. The reviewer did not independently rerun the remaining 46 private byte checks, crate archives, Windows dependency graph or package suite. CLEAN covers bounded source-provenance evidence only, not legal compliance, binary inclusion, DD-21 or distribution/product acceptance."
     }
   }
 }
