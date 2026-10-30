@@ -405,7 +405,11 @@ during hashing, is refused; and a failed post-rename verification withdraws only
 the directory this run created, never a foreign replacement. Case
 `test_stage_removes_nothing_so_a_replacement_can_never_be_deleted` pins the stronger
 rule that the tool performs no directory deletion at all, so a failing stage retains
-its staging directory and any bystander path is untouched. Inputs are bounded
+its staging directory and any bystander path is untouched.
+`test_retained_staging_directory_is_named_in_the_printed_error` proves the retained
+path is inside the message text rather than a `add_note` addition that `str(exc)`
+would hide. A CLI-level failing `stage` would need a full locked Cargo build inside
+the suite, so that end-to-end case stays in the real staging smoke instead. Inputs are bounded
 before parsing (`MAX_PE_BYTES` 128 MiB, `MAX_MANIFEST_BYTES` 1 MiB): the exact
 limit is admitted and one byte over is refused, and the 32 MB-class Native
 executable stays admitted. The `stage` transaction cases isolate the filesystem

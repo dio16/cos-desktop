@@ -1229,8 +1229,8 @@ A failed verification after the final rename withdraws only the directory this r
 created: ownership is re-proved after the move, and a directory that is not ours is
 put back at its own path. The tool never deletes a directory: a recursive delete by
 path cannot be proven to hit this run's directory rather than a replacement, so a
-failed stage keeps its staging directory, reports its name, and the operator clears
-it. A successful stage renames its directory to the requested output, so nothing is
+failed stage keeps its staging directory and prints its full path in the
+`preflight error:` message the CLI writes to stderr; the operator clears it. A successful stage renames its directory to the requested output, so nothing is
 left behind on that path.
 It is **self-consistency verification, not authentication**: a coherently replaced
 unsigned payload and manifest need an external trusted identity to detect.

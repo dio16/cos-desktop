@@ -428,11 +428,10 @@ def stage(root: Path, output: Path) -> dict:
     except BaseException as error:
         # This tool never deletes a staging directory. A path-based recursive delete
         # cannot be proven to hit the directory this run created rather than a
-        # replacement, so the directory is left in place and named in the failure.
-        if temporary.exists() and not isinstance(error, StageError):
-            raise StageError(f"{error} (retained staging directory: {temporary.name})") from error
+        # replacement, so the directory is left in place and its path is part of the
+        # message the CLI prints (notes are not shown by str(exc)).
         if temporary.exists():
-            error.add_note(f"retained staging directory: {temporary}")
+            raise StageError(f"{error} (retained staging directory: {temporary})") from error
         raise
 
 

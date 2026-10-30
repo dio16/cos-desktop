@@ -314,7 +314,13 @@ class StagePortableCliTests(unittest.TestCase):
             with self.assertRaises(stage_portable.StageError):
                 stage_portable.verify_directory(self.package)
 
-    def stage_with_final_change(self, change):
+    def stage_failure(self, change):
+        """Run the patched stage() and return the StageError it raises."""
+        with self.assertRaises(stage_portable.StageError) as raised:
+            self.stage_with_final_change(change, expect_failure=False)
+        return raised.exception
+
+    def stage_with_final_change(self, change, expect_failure=True):
         root = Path(self.temporary.name) / "source"
         root.mkdir()
         for name in ("LICENSE", "NOTICE"):
@@ -336,7 +342,10 @@ class StagePortableCliTests(unittest.TestCase):
                 "cargo build --locked --package cos-desktop --bin cos-desktop --message-format=json-render-diagnostics")),
             patch.object(stage_portable, "verify_directory", side_effect=change_before_final_verification),
         ):
-            with self.assertRaises(stage_portable.StageError):
+            if expect_failure:
+                with self.assertRaises(stage_portable.StageError):
+                    stage_portable.stage(root, output)
+            else:
                 stage_portable.stage(root, output)
         return output
 
@@ -361,6 +370,25 @@ class StagePortableCliTests(unittest.TestCase):
         output = self.stage_with_final_change(replace)
         self.assertEqual("preserve me", (output / "user-data.txt").read_text(encoding="utf-8"))
         self.assertEqual(b"COS Desktop notice\n", (saved / "NOTICE").read_bytes())
+
+    def test_retained_staging_directory_is_named_in_the_printed_error(self):
+        def corrupt(output):
+            (output / "NOTICE").write_text("modified after rename", encoding="utf-8")
+
+        output = Path(self.temporary.name) / "published"
+        message = str(self.stage_failure(corrupt))
+        self.assertIn("retained staging directory", message)
+        # The name in the message is the directory that actually survives, and it is
+        # part of the message text the CLI prints, not a note only repr() shows.
+        retained = message.split("retained staging directory: ", 1)[1].rstrip(")")
+        self.assertTrue(Path(retained).is_dir())
+        self.assertEqual(1, len(list(output.parent.glob(".published.staging-*"))))
+
+    def test_cli_prints_the_error_message_it_reports(self):
+        result = self.invoke("verify", Path(self.temporary.name) / "absent-package")
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("preflight error", result.stderr)
+        self.assertIn("real directory", result.stderr)
 
     def test_stage_removes_nothing_so_a_replacement_can_never_be_deleted(self):
         # No cleanup deletion exists to race with: a failing stage leaves both its
