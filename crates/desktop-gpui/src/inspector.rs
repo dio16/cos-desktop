@@ -292,19 +292,24 @@ mod tests {
     /// A blocked observation must invalidate disclosure before the early return, so a
     /// later re-observation starts collapsed (A1).
     #[test]
-    fn a_blocked_observation_invalidates_disclosure_before_the_early_return() {
-        let panel = include_str!("inspector.rs");
-        let unauthorized = panel
-            .find("if let Some(reason) = withheld")
-            .expect("unauthorized branch exists");
-        let rest = &panel[unauthorized..];
+    fn a_withheld_projection_invalidates_disclosure_before_the_early_return() {
+        // Inspect only the implementation: the test module's own literals must
+        // never satisfy these searches.
+        let panel = include_str!("inspector.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .expect("implementation section exists");
+        let withheld = panel
+            .find("if let Some(reason) = scope.withheld")
+            .expect("withheld branch exists");
+        let rest = &panel[withheld..];
         let invalidate = rest
-            .find("invalidate()")
+            .find("self.inspector_disclosure.invalidate()")
             .expect("disclosure invalidation is called");
         let early_return = rest.find("return panel").expect("early return exists");
         assert!(
             invalidate < early_return,
-            "invalidation must run before the unauthorized early return"
+            "invalidation must run before the withheld early return"
         );
     }
 
