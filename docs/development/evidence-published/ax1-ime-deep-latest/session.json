@@ -88,7 +88,18 @@
     "product_change": "none, so no new candidate, Gate or build identity is claimed",
     "quality_gates": "not rerun because no source or configuration changed in this slice",
     "documentation": "PASS (recorded here after the checks were run): json.tool parsed this file; 62 task cards each name exactly one owning DC; the mermaid DAG remains the same acyclic 41-edge graph; the new relative link resolves; the recorded values equal the accessibility reads taken during the session; a host-path/private-key scan found no credentials or absolute host paths; git diff --check passed.",
-    "review": "PENDING candidate-specific linked Tern review"
+    "review": {
+      "candidate_sha": "6187037ce49007e2c254f85825f1e088d47f253b",
+      "result": "CLEAN 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
+      "rounds": {
+        "round_1": "candidate 53ee442: the documentation field still said PENDING after the checks were run, and the binary-digest cause was stated as certain (A-R1-01, A-R1-02).",
+        "round_2": "candidate 2de0b82: documentation recorded; the digest attribution still asserted that the Gate rewrote the file (A-R2-01).",
+        "round_3": "candidate 6187037: the attribution is a presumption from the recorded Gate configuration with no per-write evidence; clean."
+      },
+      "independently_checked": "GitHub commit and origin/dev, the five Native records and their limits, the distinction between expectation and observation, the synthetic-Escape failure record, the decision not to add tests, the NOT_MEASURED list, 62 contracts, the acyclic 41-edge DAG and public-JSON privacy",
+      "not_independently_reexecuted": "Windows Native session, the executable hash on disk, private Gate originals, the documentation commands and any write history for the binary",
+      "scope": "Observation-only slice; no product code, candidate or Gate result is claimed, and MP-AX1, DD-23, screen-reader acceptance and product/release acceptance stay incomplete."
+    }
   },
   "acceptance": {
     "AC01_registration_and_routing": "SOURCE_VERIFIED at the baseline; unchanged by this slice",
