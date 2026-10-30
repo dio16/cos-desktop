@@ -2,13 +2,13 @@
   "schema_version": 1,
   "task": "MP-INS1",
   "contract": "DC-MP-INS1",
-  "status": "LIMITED_NATIVE_INSPECTOR_VERIFICATION_REPAIRED_AFTER_REVIEW_ROUND_2",
+  "status": "LIMITED_NATIVE_INSPECTOR_VERIFICATION_REPAIRED_AFTER_REVIEW_ROUND_3",
   "authority": "Tern next-task directive after the clean MP-DOCK2 review; ADR-0014 scoped resumption; DC-MP-INS1.",
   "baseline": {
     "reviewed_commit": "261650148c036a0ed653f0be74926c0198eafff1",
     "branch": "feature/mp-ins1-native-closure",
-    "product_source": "ff7a785e3bf0c2f538792071e75230bb07afa70e",
-    "product_source_changes_on_branch": "inspector task-scope gate (inspector::scope + Disclosure task binding) and the PanelScope argument grouping",
+    "product_source": "89d526427c26a300f0700614abb51e4c842a29f7",
+    "product_source_changes_on_branch": "inspector task-scope gate + Disclosure task binding + PanelScope grouping + implementation-scoped regression test",
     "worktree": "clean at observation time"
   },
   "environment": {
@@ -92,7 +92,7 @@
   },
   "review_boundary": {
     "previous": "last recorded independent review was HOLD 0 BLOCKING / 2 ACTIONABLE / 0 EXCESSIVE; both (observation-gap invalidation and evaluation-identity revision keys) were repaired at b7a6fb3 with quality Gate 3e948491-… and build Gate 8f9b7b9a-…, but no clean re-review of the repaired source was recorded.",
-    "this_run": "the repaired source is the current product source; this branch adds evidence only and submits it for a fresh independent review."
+    "this_run": "this branch adds evidence and, after review, the minimal Inspector scope/Task-binding repair plus the implementation-scoped regression test; the current product candidate is 89d52642 with the representative Gate e1f4bf7a"
   },
   "not_measured": [
     "native pixel/DPI acceptance of the inspector chrome",
@@ -102,7 +102,7 @@
     "product/UX acceptance"
   ],
   "product_change": "yes: inspector::scope gate, Disclosure task binding and PanelScope grouping",
-  "gate": "final Gate 302aac9d-… SUCCEEDED; the earlier failed Gate 0ab84441-… is retained as FAILED",
+  "gate": "current Gate e1f4bf7a-… SUCCEEDED; 0ab84441-… and 95c13f87-… remain FAILED; b56260df-… and 302aac9d-… are superseded SUCCEEDED history",
   "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.76",
   "evidence_provenance": {
     "byte_identical_to_older_evidence": [
@@ -184,6 +184,16 @@
         "the completion record kept old no-change/no-gate values"
       ],
       "repair": "Disclosure now binds the Task and sync_task clears synchronously; the final binary is rebuilt and re-observed; the record now states the product change, the failed gate, the final gate and the updated test counts"
+    },
+    {
+      "round": 3,
+      "reviewed_head": "5be1626d305cf318d83e2f3f70691976e020047b",
+      "verdict": "PASS 0 BLOCKING / 2 ACTIONABLE / 0 EXCESSIVE",
+      "findings": [
+        "the regression test could satisfy itself by matching its own literals",
+        "the review-boundary text still said evidence-only and the representative Gate was ambiguous"
+      ],
+      "repair": "the test now reads only the implementation section and checks the current condition/order; this record states the product change and the current representative Gate"
     }
   ],
   "independent_gate": {
@@ -221,6 +231,35 @@
       "terminal_state_sha256": "sha256:2567d189516d0712eef4e99bb118b51271b124b889453e44b3ffab13f689d492",
       "checks": "fmt, metadata, dependency-self-test, dependency-rules, clippy, tests: all pass",
       "cleanup": "complete"
+    },
+    {
+      "gate_id": "95c13f87-48c1-4dbd-a5d5-604d17f2a9c1",
+      "gate_label": "cos-desktop-ins1-repair4-89d52642",
+      "state": "FAILED",
+      "candidate": "89d52642",
+      "check_failure": "tests check exceeded its 300-second timeout after completing the suite output; retained FAILED",
+      "cleanup": "complete",
+      "note": "not reused; the retry is a distinct request with a larger per-check timeout within the 600-second policy"
+    },
+    {
+      "gate_id": "e1f4bf7a-39c9-4ed3-bfcd-2d9a86b9d94b",
+      "gate_label": "cos-desktop-ins1-repair4c-89d52642",
+      "state": "SUCCEEDED",
+      "candidate_sha256": "sha256:005cc278b173c40b5ef40366697c6add78e8ea5a6708524207c757f77e26b9b7",
+      "checks": "fmt, metadata, dependency-self-test, dependency-rules, clippy, tests: all pass",
+      "cleanup": "complete",
+      "note": "current representative Gate"
     }
-  ]
+  ],
+  "current_gate": {
+    "gate_id": "e1f4bf7a-39c9-4ed3-bfcd-2d9a86b9d94b",
+    "gate_label": "cos-desktop-ins1-repair4c-89d52642",
+    "state": "SUCCEEDED",
+    "candidate_sha256": "sha256:005cc278b173c40b5ef40366697c6add78e8ea5a6708524207c757f77e26b9b7",
+    "request_sha256": "sha256:3bd1f9a91323618a991a3d9e6f05bc967db33f1bc4bdaae441329a47ca851db3",
+    "terminal_state_sha256": "sha256:224b600372b56a0374c2cda23f9275f63353940f2db3a8983ca46bf31dc1a9da",
+    "checks": "fmt, metadata, dependency-self-test, dependency-rules, clippy, tests: all pass",
+    "cleanup": "complete",
+    "note": "the earlier Gate 95c13f87 FAILED on the identical candidate only by the 300-second test-check timeout; the retry used the same checks with the bounded 590-second check timeout and 600-second policy"
+  }
 }
