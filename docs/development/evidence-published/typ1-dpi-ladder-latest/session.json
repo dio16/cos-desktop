@@ -28,7 +28,7 @@
         }
       ],
       "colour": "rgb(98,104,112) = 0x626870, the structural ring colour (the capture was taken while the Dock held no keyboard focus)",
-      "reading": "the ring is 2 physical pixels at two sampled columns and 3 at two others; the approved width is 2 DIP and this capture is at scale 1.0, so the 2-pixel samples agree and the 3-pixel samples do not. The anomaly is recorded, not averaged away or explained without evidence."
+      "reading": "Historical same-colour run observations: 2 pixels at two columns and 3 at two others. The ring_followup now distinguishes the two-pixel container ring from an abutting one-pixel row boundary; the measured runs are preserved, but the earlier interpretation as possible ring-width variation is superseded."
     },
     "row_border": {
       "samples": [
@@ -60,8 +60,8 @@
       "reason": "needs interactive dragging between differently scaled monitors"
     },
     {
-      "item": "focus_ring_while_focused_pixels",
-      "reason": "the identity-proven capture has no keyboard focus in the Dock; the focused state is only recorded in the earlier computer-use screenshots, which are not identity-proven captures"
+      "item": "focus_ring_pixels_at_other_dpi_steps",
+      "reason": "The new ring_followup proves the focused ring at the current 96 DPI only. Other DPI steps remain NOT_MEASURED; the earlier unfocused-only limitation is historical."
     },
     {
       "item": "glyph_tofu_clipping_baseline_line_height",
@@ -87,13 +87,14 @@
   "defects": [
     {
       "id": "TYP1-RING-WIDTH-ANOMALY",
-      "status": "OBSERVED_NOT_DIAGNOSED",
+      "status": "DIAGNOSED_MEASUREMENT_ARTIFACT_LIMITED_96_DPI",
+      "previous_status": "OBSERVED_NOT_DIAGNOSED (original reviewed record; new diagnosis in ring_followup)",
       "observation": "in one identity-proven 96 DPI capture the dock ring measures 2 physical pixels at x=1200 and x=200 but 3 at x=300 and x=700",
-      "why_not_fixed": "the sample cannot distinguish a rendering anomaly from a scanline artefact (for example a row border coinciding with the ring); fixing it without that distinction would be a guess, and no contract-approved width other than 2 DIP exists",
-      "next_step": "re-measure with a focused-state identity-proven capture and a second column sweep before any product change"
+      "why_not_fixed": "Three identity-proven focus states and multiple edge scans distinguish the two-pixel ring from an abutting one-pixel row separator. No implementation defect is demonstrated; no product patch is warranted. The earlier uncertainty is historical, not rewritten as prior knowledge.",
+      "next_step": "This bounded anomaly investigation is complete; full typography/DPI acceptance and DD-04b adoption remain OPEN outside this slice."
     }
   ],
-  "scope_note": "No product code, harness or contract changed. The ladder is HOLD, the pixel readings are recorded with their anomaly, and MP-TYP1 overall remains incomplete.",
+  "scope_note": "No product code, existing harness or contract changed. The DPI ladder remains HOLD; the original pixel observations are preserved and the ring_followup records the new diagnosis and three identity-proven focus states. MP-TYP1 overall remains incomplete.",
   "review": {
     "rounds": [
       {
@@ -105,5 +106,227 @@
       }
     ],
     "re_review": "CLEAN 0/0/0"
+  },
+  "ring_followup": {
+    "task": "MP-TYP1",
+    "contract": "DC-MP-TYP1",
+    "issue": "TYP1-RING-WIDTH-ANOMALY",
+    "status": "DIAGNOSED_MEASUREMENT_ARTIFACT_LIMITED_96_DPI",
+    "directive_baseline": "79cedc3f88c3b3239c0b6844ac95d307bb732e44",
+    "execution_baseline": "f375144a7e3bcd2a6af6a5c47d96520e4fa93853",
+    "taskern_packet_sha256": "sha256:d872795564dd1ad7d5aa20d31ad7e5c0be6884155ac8d2a1e2500d0b08d884d0",
+    "product_source_commit": "f375144a7e3bcd2a6af6a5c47d96520e4fa93853",
+    "product_source_tree": "011d5236d809ec65429961d2e17a1744d2a867c7",
+    "executable_sha256": "020506d3de34468d7f12d5a1ac8e7e4022dcae11e9fb3146b8842c6d4b29bcd2",
+    "executable_bytes": 32424960,
+    "source_note": "cargo build --locked -p cos-desktop --bin cos-desktop --message-format=json-render-diagnostics succeeded at this clean pinned source and supplied the executable path. Bytes equal the earlier 020506d3 capture binary; new HWND/PID/focus/PNG evidence is recorded separately, never borrowed.",
+    "historical_reproduction": {
+      "image": "screenshot.png",
+      "image_sha256": "0d44945af8ca05766320609a15bf9eeb9faf7a45e272d2ae34bc2e276aca4414",
+      "script": "measure_runs.py",
+      "script_sha256": "c19d19bc7bd5bc53604603d476604374c4b3cda10bf99d6adf429f7ce6d42b40",
+      "original_columns": [
+        200,
+        300,
+        700,
+        1200
+      ],
+      "same_colour_runs_px": [
+        2,
+        3,
+        3,
+        2
+      ],
+      "ring_top_rows": [
+        1262,
+        1263
+      ],
+      "adjacent_row_top_y": 1264,
+      "adjacent_row_bottom_y": 1317,
+      "ring_bottom_rows": [
+        1318,
+        1319
+      ],
+      "explanation": "At x=300/700 the gray row boundary abuts the gray two-pixel ring. At x=200 the viewed row uses a distinct selection color; x=1200 is beyond the rows. Equal-color run length combined two distinct boundaries."
+    },
+    "native_captures": [
+      {
+        "state": "unfocused",
+        "record": "ring-unfocused.json",
+        "image": "ring-unfocused.png",
+        "image_sha256": "sha256:456a7cb1d3dd34fc83a6c7ffc692d7cab7c961a7dcc1639b295fbc8dcb7445ca",
+        "pid": 11712,
+        "hwnd": 2884486,
+        "capture_utc": "2026-10-30T10:56:36Z",
+        "dpi": 96,
+        "scale": 1,
+        "focused": {
+          "automation_id": "",
+          "control_type": "ControlType.Pane",
+          "name": "COS Desktop Workbench"
+        },
+        "hwnd_identity": "OBSERVED",
+        "foreground_cross_check": "49/49"
+      },
+      {
+        "state": "focused",
+        "record": "ring-focused.json",
+        "image": "ring-focused.png",
+        "image_sha256": "sha256:8f960a2fff47e6356bf46bb129d57fd7129d1e88fa9d132c816d6bc46c438d77",
+        "pid": 11712,
+        "hwnd": 2884486,
+        "capture_utc": "2026-10-30T10:56:55Z",
+        "dpi": 96,
+        "scale": 1,
+        "focused": {
+          "automation_id": "candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a",
+          "control_type": "ControlType.Button",
+          "name": "fixture:task/Task-184 — Iteration 1 — A Active"
+        },
+        "hwnd_identity": "OBSERVED",
+        "foreground_cross_check": "49/49"
+      },
+      {
+        "state": "blurred",
+        "record": "ring-blurred.json",
+        "image": "ring-blurred.png",
+        "image_sha256": "sha256:e4f741dd5fbc21da77d1d5cf89fc9a508ee27e611aa82fd030e470bb768e338e",
+        "pid": 11712,
+        "hwnd": 2884486,
+        "capture_utc": "2026-10-30T10:57:13Z",
+        "dpi": 96,
+        "scale": 1,
+        "focused": {
+          "automation_id": "",
+          "control_type": "ControlType.Button",
+          "name": "Artifact  Ctrl+1"
+        },
+        "hwnd_identity": "OBSERVED",
+        "foreground_cross_check": "49/49"
+      }
+    ],
+    "operator_boundary": {
+      "first_attempt": "NOT_MEASURED: FOREGROUND_WAIT_EXPIRED / WINDOW_OCCLUDED. Rejected image was removed by unchanged harness.",
+      "continuation": "Caller selected 前面に表示したので続行 after being asked to foreground the existing COS Desktop window. Only then were accepted captures made. Tab-only keyboard navigation moved into the actual candidate-A row and then out to the Artifact button; no candidate activation or canonical command.",
+      "automation": "No explicit raise, foreground grant, desktop display/contrast configuration, or window move command. The application created its own window. Its desktop rectangle changed between unfocused and focused captures; cause is not inferred. All image/HWND rectangles were independently revalidated, and local geometry was normalized separately. This is not mixed-monitor validation."
+    },
+    "analysis": {
+      "classification": "CONTIGUOUS_SAME_COLOUR_ADJACENT_BOUNDARIES_NOT_A_THREE_PIXEL_RING",
+      "cause": "The container ring is two pixels and an abutting row separator is one pixel. Unfocused/blurred both use rgb(98,104,112), so a vertical run over a row measures three; gaps and empty interior measure two. Focus colors only the container rgb(230,194,120), revealing a two-pixel ring then a distinct one-pixel gray row border.",
+      "column_order": [
+        200,
+        250,
+        300,
+        480,
+        700,
+        950,
+        1200
+      ],
+      "samples_per_state": {
+        "top": 7,
+        "bottom": 7,
+        "left": 3,
+        "right": 3
+      },
+      "focused_all_20_ring_samples_px": 2,
+      "focused_rgb": [
+        230,
+        194,
+        120
+      ],
+      "unfocused_rgb": [
+        98,
+        104,
+        112
+      ],
+      "focused_top_x300_inward_runs": [
+        [
+          [
+            230,
+            194,
+            120
+          ],
+          2
+        ],
+        [
+          [
+            98,
+            104,
+            112
+          ],
+          1
+        ],
+        [
+          [
+            39,
+            43,
+            48
+          ],
+          3
+        ]
+      ],
+      "focused_bottom_x300_inward_runs": [
+        [
+          [
+            230,
+            194,
+            120
+          ],
+          2
+        ],
+        [
+          [
+            98,
+            104,
+            112
+          ],
+          1
+        ],
+        [
+          [
+            39,
+            43,
+            48
+          ],
+          3
+        ]
+      ],
+      "normalized_dock_rect": {
+        "x": 24,
+        "y": 693,
+        "width": 1248,
+        "height": 58
+      },
+      "normalized_dock_and_row_geometry_equal": true,
+      "interior_pixels_equal": true,
+      "interior_hash_definition": "SHA256 of all decoded channels strictly inside the outer two pixels on all four sides, compared at identical image-local coordinates.",
+      "interior_sha256": "6c333d1c9d02fc65b49e762a986ae653a9910f74150c901629aab097f494c9b9",
+      "selection_and_viewport": "All three UIA snapshots say No candidate viewed; candidate A remains Active, all five candidate row bounds match, and every interior pixel is identical. This verifies the observed viewport, not unexposed scroll internals or all possible selection states.",
+      "historical_selected_border": "Historical viewed candidate A uses the distinct rgb(174,204,236) one-pixel border; new observations deliberately do not activate a candidate.",
+      "product_change": "NONE: no implementation defect demonstrated. No token, width, color, layout, focus/selection logic or other surface changed."
+    },
+    "reproduction": {
+      "script": "measure_ring.py",
+      "command": "python -B measure_ring.py",
+      "reuses": "measure_runs.decode and measure_runs.runs; standard library only; no image dependency or generic analyzer.",
+      "script_sha256": "58499df6a7c694c165313743006d1786af76e4649474bb947135da44ba6d6e87",
+      "measurement_output_encoding": "SHA256 of UTF-8 stdout with LF newlines (not the Windows CRLF serialization of the private saved text file).",
+      "measurement_output_sha256": "ef918ecf0c12d2bb5a14aa97f4c4c8ca6e6cad21d59ead65b3089845dd3a5050"
+    },
+    "verification": {
+      "harness_regressions": "python -B -m unittest discover -s apps/desktop/devtools/typography/tests -p \"test_*.py\": 71 tests OK.",
+      "native_close": {
+        "windowAbsent": true,
+        "pid": 11712,
+        "exit": 0,
+        "stderr": "observation shutdown confirmed\npreferences save confirmed\n",
+        "exe_sha256": "020506d3de34468d7f12d5a1ac8e7e4022dcae11e9fb3146b8842c6d4b29bcd2",
+        "ended_utc": "2026-10-30T10:57:35.883Z"
+      },
+      "new_refine_gate": "NOT_RUN: no product or existing harness/Gate verification code changed. The small evidence-only measurement script reuses the retained PNG decoder; ADR-0014 Y04 observation/documentation route.",
+      "documentation": "PASS: exact script/output and three PNG hashes, raw/public PID/HWND/exe/source/tree/DPI/focus identities match; normalized six-element geometry and all interior pixels match. All 62 cards retain exactly one owning DC; 41 DAG edges and task/gate definitions unchanged and acyclic; new relative links resolve; public JSON has no host-drive path or private-key marker; git diff --check passes. Product, tokens, existing harness/probe, manifests/lock and design owners have unchanged Git content. Throwaway checker mistakes (LF versus CRLF and bare versus prefixed digest) were corrected without altering observations. Final measurement script has no LSP diagnostics.",
+      "review": "PENDING candidate-specific Tern review"
+    },
+    "remaining": "Full DPI ladder and mixed-monitor, High Contrast, shaping/tofu/clipping/baseline, resolved fonts, screen reader/AX matrix, IME/frame cost and DD-04b final adoption remain OPEN/NOT_MEASURED. No MP-TYP1 or product/release completion."
   }
 }

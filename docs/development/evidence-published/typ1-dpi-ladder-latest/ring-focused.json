@@ -1,0 +1,152 @@
+{
+  "state": "focused",
+  "observed_utc": "2026-10-30T10:56:55Z",
+  "capture_started_utc": "2026-10-30T10:56:55.072635+00:00",
+  "source_commit": "f375144a7e3bcd2a6af6a5c47d96520e4fa93853",
+  "source_tree": "011d5236d809ec65429961d2e17a1744d2a867c7",
+  "executable_sha256": "020506d3de34468d7f12d5a1ac8e7e4022dcae11e9fb3146b8842c6d4b29bcd2",
+  "os_version": "10.0.26300",
+  "window": {
+    "handle": 2884486,
+    "height": 839,
+    "left": 1224,
+    "pid": 11712,
+    "status": "OBSERVED",
+    "title": "COS Desktop",
+    "top": 291,
+    "width": 1296
+  },
+  "scale": {
+    "controlled_ladder_step": false,
+    "dpi": 96,
+    "method": "GetDpiForWindow",
+    "scale": 1,
+    "status": "OBSERVED"
+  },
+  "screenshot": {
+    "bytes": 58296,
+    "digest": "sha256:8f960a2fff47e6356bf46bb129d57fd7129d1e88fa9d132c816d6bc46c438d77",
+    "identity": {
+      "content_cross_check": {
+        "distinct_sampled_colors": 5,
+        "matched": 49,
+        "method": "bound capture versus display over the on-screen region",
+        "non_black_samples": 49,
+        "samples": 49,
+        "status": "OBSERVED",
+        "tolerance": 24,
+        "visible_region": {
+          "height": 839,
+          "left": 1224,
+          "top": 291,
+          "width": 1296
+        }
+      },
+      "desktop_state_changed": false,
+      "foreground_at_capture": true,
+      "handle": 2884486,
+      "live_reverification": "IsWindow, GetWindowThreadProcessId, GetWindowTextW and GetWindowRect agreed with the capture before the application was stopped",
+      "method": "PrintWindow(PW_RENDERFULLCONTENT)",
+      "pid": 11712,
+      "rect": {
+        "height": 839,
+        "left": 1224,
+        "top": 291,
+        "width": 1296
+      },
+      "screen_copy_used_for_capture": false,
+      "still_current": true,
+      "title": "COS Desktop"
+    },
+    "ihdr": {
+      "height": 839,
+      "width": 1296
+    },
+    "method": "PrintWindow(PW_RENDERFULLCONTENT)",
+    "path": "ring-focused.png",
+    "status": "OBSERVED"
+  },
+  "foreground_wait": {
+    "elapsed_s": 0,
+    "handle": 2884486,
+    "mode": "read-only observation of GetForegroundWindow",
+    "outcome": "FOREGROUNDED",
+    "polls": 1,
+    "requested_s": 0
+  },
+  "focused_element": {
+    "automation_id": "candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a",
+    "control_type": "ControlType.Button",
+    "name": "fixture:task/Task-184 — Iteration 1 — A Active"
+  },
+  "target_focused_elements": [
+    {
+      "automation_id": "candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a",
+      "control_type": "ControlType.Button",
+      "depth": 4,
+      "focused": true,
+      "height": 54,
+      "left": 1250,
+      "name": "fixture:task/Task-184 — Iteration 1 — A Active",
+      "top": 986,
+      "width": 220
+    }
+  ],
+  "layout": [
+    {
+      "name": "Candidate Dock",
+      "automation_id": "",
+      "x": 24,
+      "y": 693,
+      "width": 1248,
+      "height": 58,
+      "focused": false
+    },
+    {
+      "name": "fixture:task/Task-184 — Iteration 1 — A Active",
+      "automation_id": "candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a",
+      "x": 26,
+      "y": 695,
+      "width": 220,
+      "height": 54,
+      "focused": true
+    },
+    {
+      "name": "fixture:task/Task-184 — Iteration 1 — B ",
+      "automation_id": "candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/b18:fixture:artifact/b",
+      "x": 258,
+      "y": 695,
+      "width": 220,
+      "height": 54,
+      "focused": false
+    },
+    {
+      "name": "fixture:task/Task-184 — Iteration 2 — C ",
+      "automation_id": "candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/c18:fixture:artifact/c",
+      "x": 490,
+      "y": 695,
+      "width": 220,
+      "height": 54,
+      "focused": false
+    },
+    {
+      "name": "fixture:task/Task-184 — Iteration 2 — D ",
+      "automation_id": "candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/d18:fixture:artifact/d",
+      "x": 722,
+      "y": 695,
+      "width": 220,
+      "height": 54,
+      "focused": false
+    },
+    {
+      "name": "fixture:task/Task-184 — Iteration 3 — E ",
+      "automation_id": "candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:319:fixture:candidate/e18:fixture:artifact/e",
+      "x": 954,
+      "y": 695,
+      "width": 220,
+      "height": 54,
+      "focused": false
+    }
+  ],
+  "no_candidate_viewed": true
+}
