@@ -2632,7 +2632,10 @@ mod tests {
             field_value(evidence, "概要"),
             Some("概要の情報はありません".into())
         );
-        assert_eq!(field_value(evidence, "利用可否"), Some("MISSING".into()));
+        assert_eq!(
+            field_value(evidence, "利用可否"),
+            Some("見つかりません（MISSING）".into())
+        );
     }
 
     #[test]
@@ -3729,6 +3732,12 @@ mod tests {
         let accepted = super::StopDisplay::from_command(&view(receipt.clone()));
         assert_eq!(accepted.state, super::StopState::Accepted);
         assert!(!accepted.label.contains("untrusted remote text"));
+        assert!(
+            accepted.detail.contains("タスク完了を意味しません"),
+            "an accepted receipt states that acceptance is not task completion: {}",
+            accepted.detail
+        );
+        assert!(!accepted.manual_intervention);
         let expired = super::StopDisplay::from_command(&app_core::CommandReadView {
             presentation: app_core::CommandPresentation::OutcomeUnconfirmed,
             receipt: Some(receipt.clone()),

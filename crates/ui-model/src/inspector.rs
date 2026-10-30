@@ -335,7 +335,7 @@ fn outcome_section(snapshot: &SnapshotHandle, task: &TaskSnapshot) -> Option<Sec
     let entries = vec![Entry {
         heading: None,
         fields: vec![
-            Field::new("正式状態", outcome.formal_status.as_str()),
+            Field::new("正式状態", formal_status_label(&outcome.formal_status)),
             Field::new("停止理由", stop_reason),
             Field::new(
                 "正式選択の記録",
@@ -346,10 +346,37 @@ fn outcome_section(snapshot: &SnapshotHandle, task: &TaskSnapshot) -> Option<Sec
     }];
     Some(SectionView::available(
         Section::Outcome,
-        format!("正式状態: {}", outcome.formal_status.as_str()),
+        format!("正式状態: {}", formal_status_label(&outcome.formal_status)),
         revision_key(outcome.projection_revision.clone()),
         entries,
     ))
+}
+
+/// Japanese gloss plus the canonical token for a closed outcome vocabulary;
+/// unrecognized values stay verbatim.
+fn formal_status_label(status: &desktop_protocol::FormalStatus) -> String {
+    use desktop_protocol::FormalStatus;
+    match status {
+        FormalStatus::Completed => "完了（COMPLETED）",
+        FormalStatus::Partial => "一部完了（PARTIAL）",
+        FormalStatus::Failed => "失敗（FAILED）",
+        FormalStatus::Cancelled => "中止（CANCELLED）",
+        FormalStatus::Unknown(raw) => raw.as_str(),
+    }
+    .to_owned()
+}
+
+/// Japanese gloss plus the canonical token for a closed evidence vocabulary;
+/// unrecognized values stay verbatim.
+fn evidence_status_label(status: &desktop_protocol::EvidenceStatus) -> String {
+    use desktop_protocol::EvidenceStatus;
+    match status {
+        EvidenceStatus::Available => "取得可能（AVAILABLE）",
+        EvidenceStatus::Missing => "見つかりません（MISSING）",
+        EvidenceStatus::Forbidden => "許可されていません（FORBIDDEN）",
+        EvidenceStatus::Unknown(raw) => raw.as_str(),
+    }
+    .to_owned()
 }
 
 fn candidate_sections(
@@ -536,7 +563,7 @@ fn evidence_entry(evidence: &EvidenceRef) -> Entry {
         heading: None,
         fields: vec![
             Field::new("概要", summary),
-            Field::new("利用可否", evidence.status.as_str()),
+            Field::new("利用可否", evidence_status_label(&evidence.status)),
         ]
         .into(),
     }

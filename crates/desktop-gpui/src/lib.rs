@@ -3036,20 +3036,22 @@ impl Render for Shell {
                             .text_color(rgb(0xe6c278))
                             .child(stop_label),
                     )
-                    .when(manual_intervention_required, |element| {
-                        element
-                            .child(
-                                xs_text
-                                    .clone()
-                                    .apply(div())
-                                    .id("stop-detail")
-                                    .role(Role::Label)
-                                    .aria_label(stop_detail.clone())
-                                    .aria_value(stop_detail.clone())
-                                    .child(stop_detail),
-                            )
+                    .child(
+                        xs_text
+                            .clone()
+                            .apply(div())
+                            .id("stop-detail")
+                            .role(Role::Label)
+                            .aria_label(stop_detail.clone())
+                            .aria_value(stop_detail.clone())
+                            .child(stop_detail),
+                    )
+                    .children(manual_intervention_required.then(|| {
+                        xs_text
+                            .clone()
+                            .apply(div())
                             .child("自動で停止を再送しません。状況の確認が必要です。")
-                    })
+                    }))
                     .children(retention_warning.map(|display| {
                         div()
                             .text_color(rgb(0xe6c278))

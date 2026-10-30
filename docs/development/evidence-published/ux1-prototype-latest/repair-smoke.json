@@ -62,9 +62,9 @@
       "quality": "all quality gates passed (native smoke is separate)",
       "ui_model_tests": "98 passed",
       "desktop_gpui_tests": "81 passed",
-      "binary_sha256": "sha256:e9571822e02d3d5d131d031fcb0cea734ff57441dea5b36ad155bfda71b7e7d1",
+      "binary_sha256": "sha256:c9fef8360fc26f4121d278c5a6595a5665ec4250ba3d13464b551ccba2777b50",
       "build_command": "cargo build --locked -p cos-desktop --bin cos-desktop",
-      "binary_provenance": "the previous -p cos-desktop build (sha256:656e757d…) was replaced by the workspace build from the committed tree; the recorded digest is the committed-tree binary that was launched and inspected after commit cedb57d"
+      "binary_provenance": "rebuilt after the round-1 fixes; this binary was launched and inspected for the visible stop detail and the inspector evidence gloss"
     }
   },
   "native_observation": {
@@ -77,7 +77,9 @@
     "compare_help": "with no pair, the A/B change buttons report FullDescription 比較するA側はまだ選ばれていません… and 比較するB側はまだ選ばれていません。…; both are non-focusable",
     "dock": "iteration gutters read 反復 1 / 反復 2 / 反復 3 in full with the group-start marker before the candidate label",
     "disconnected": "a separate window without fixture arguments showed タスク情報はありません, 情報源なし / データ非公開, per-axis 利用できません — 許可情報を取得できません, 停止の操作 disabled, inspector 利用不可 — 現在閲覧できる情報がありません, and one Desktop-local Reconnect row",
-    "processes": "every owned process exited 0 through the semantic close control with observation shutdown and preference save confirmed"
+    "processes": "every owned process exited 0 through the semantic close control with observation shutdown and preference save confirmed",
+    "stop_detail": "the prepared state shows 停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。 below the status line (previously the detail was hidden outside manual intervention)",
+    "evidence_gloss": "the expanded 判断の根拠 section shows 概要 product silhouette reads as flat (Runtime free text unchanged) and 利用可否 取得可能（AVAILABLE）"
   },
   "not_measured": [
     "Post-repair participant comprehension and the five-second first-exposure condition",
@@ -111,5 +113,16 @@
     "cleanup": "complete",
     "first_attempt": "the initial dispatch used a relative --state-dir and was rejected at intake (INPUT_INVALID, malformed_path) before any Gate ID or workspace existed; it is not counted as a Gate",
     "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned identical state, candidate, observations, request, terminal-state and check-log digests"
-  }
+  },
+  "review_rounds": [
+    {
+      "round": 1,
+      "candidate": "4a1b66092df0030274c256747124c856fe522f16",
+      "verdict": "PASS 0 / 2 / 0, VERDICT: FINDINGS REMAIN",
+      "findings": [
+        "A-R1-01: the Accepted stop receipt no longer showed the acceptance-versus-completion distinction in the normal display because stop-detail had been gated behind manual intervention; the detail is rendered unconditionally again and the Accepted caveat is asserted in the model test.",
+        "A-R1-02: the inspector printed formal_status and evidence status tokens without a Japanese gloss; both now use a gloss plus canonical token, and unknown values stay verbatim."
+      ]
+    }
+  ]
 }
