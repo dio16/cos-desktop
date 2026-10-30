@@ -1,0 +1,46 @@
+{
+  "task": "MP-TYP1",
+  "contract": "DC-MP-TYP1",
+  "slice": "Native DPI / mixed-script acceptance remainder",
+  "status": "HOLD_OPERATOR_DISPLAY_CONTROL_REQUIRED_WITH_PARTIAL_PIXEL_MEASUREMENT",
+  "baseline": "306822d38b87abe6388c3c2e524fd9f3700c9b81",
+  "hold_reason": "The 100/125/150/175/200 % ladder and the mixed-monitor move require an operator to change Windows display settings and to drag a live window between monitors. Those changes are outside this session's authority, so the ladder stays NOT_MEASURED rather than being simulated, and no step is recorded as PASS.",
+  "measured_this_round": {
+    "capture": "the identity-proven 96 DPI capture already published at evidence-published/typ1e-host-observe-latest/screenshot.png (sha256 0d44945a…), decoded independently for this record",
+    "method": "PNG decoded with the standard library only (IHDR/IDAT, all five scanline filters), colour run lengths read along fixed columns and rows of the 3456x1408 image",
+    "dock_ring": {
+      "samples": [
+        {"at": "x=1200, vertical scan", "run_px": 2},
+        {"at": "x=200, vertical scan", "run_px": 2},
+        {"at": "x=300, vertical scan", "run_px": 3},
+        {"at": "x=700, vertical scan", "run_px": 3}
+      ],
+      "colour": "rgb(98,104,112) = 0x626870, the structural ring colour (the capture was taken while the Dock held no keyboard focus)",
+      "reading": "the ring is 2 physical pixels at two sampled columns and 3 at two others; the approved width is 2 DIP and this capture is at scale 1.0, so the 2-pixel samples agree and the 3-pixel samples do not. The anomaly is recorded, not averaged away or explained without evidence."
+    },
+    "row_border": {
+      "samples": [{"at": "x=200, adjacent to the ring", "run_px": 1, "colour": "rgb(174,204,236) = 0xaeccec, the selection colour"}],
+      "reading": "one sampled row border is 1 physical pixel, matching the separator contract at scale 1.0"
+    }
+  },
+  "not_measured": [
+    {"item": "100_125_150_175_200_scale_ladder", "reason": "needs operator display-setting changes"},
+    {"item": "mixed_monitor_move", "reason": "needs interactive dragging between differently scaled monitors"},
+    {"item": "focus_ring_while_focused_pixels", "reason": "the identity-proven capture has no keyboard focus in the Dock; the focused state is only recorded in the earlier computer-use screenshots, which are not identity-proven captures"},
+    {"item": "glyph_tofu_clipping_baseline_line_height", "reason": "needs native visual inspection at each scale; AX label presence is already recorded and is not a substitute"},
+    {"item": "resolved_font_family", "reason": "DirectWrite selection is not exposed to the harness"},
+    {"item": "high_contrast", "reason": "needs an operator High Contrast session"},
+    {"item": "ax_geometry_matrix", "reason": "needs the DPI ladder to compare geometries"},
+    {"item": "frame_cost", "reason": "no approved measurement route in this session"}
+  ],
+  "defects": [
+    {
+      "id": "TYP1-RING-WIDTH-ANOMALY",
+      "status": "OBSERVED_NOT_DIAGNOSED",
+      "observation": "in one identity-proven 96 DPI capture the dock ring measures 2 physical pixels at x=1200 and x=200 but 3 at x=300 and x=700",
+      "why_not_fixed": "the sample cannot distinguish a rendering anomaly from a scanline artefact (for example a row border coinciding with the ring); fixing it without that distinction would be a guess, and no contract-approved width other than 2 DIP exists",
+      "next_step": "re-measure with a focused-state identity-proven capture and a second column sweep before any product change"
+    }
+  ],
+  "scope_note": "No product code, harness or contract changed. The ladder is HOLD, the pixel readings are recorded with their anomaly, and MP-TYP1 overall remains incomplete."
+}
