@@ -134,15 +134,20 @@
     "independent_gate": "SUCCEEDED (policy-compliant): gate e102ee79-aa47-431f-8430-67e82eff0189 verified pinned candidate 58900630342b1b6871b4c518e3d5de2cb0f8661a with fmt, dependency-rules, clippy and tests all passing in 350.8 s, complete cleanup, and a successful verify before and after disposal. Its checks used a fresh Gate-owned external target, not the development target, and the compiler cache was disabled rather than shared.",
     "documentation": "PASS: json.tool; 62 task cards with exactly one owning DC each; unchanged acyclic 41-edge DAG; new relative links resolve; recorded numbers match the retained records; host-path/private-key scan; git diff --check.",
     "review": {
-      "candidate_sha": "753e1fac384cd2b19a2f03d9d6fbb280be852f70",
+      "candidate_sha": "c7cf5b96b20a87ec17694baec49de8b79e57a5dd",
       "result": "CLEAN 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
       "rounds": {
-        "round_1": "candidate 6cd0895 raised one ACTIONABLE item: the accessibility effect was stated beyond what was measured (screen-reader reading and preedit exposure were not observed).",
-        "round_2": "candidate 753e1fa limited the claim to the measured UIA value property, marked screen-reader announcement and preedit exposure NOT_MEASURED, and set the documentation status; clean."
+        "round_1": "candidate 6cd0895: accessibility effect stated beyond the measured UIA value (A-R1-01).",
+        "round_2": "candidate 753e1fa: claim limited to the UIA value; clean.",
+        "round_3": "candidate f8c49e0: Gate success recorded, but the Gate had used the development target (B-R1-01) and some old environment text remained (A-R1-01 of that round).",
+        "round_4": "candidate 1ebca44: compliant Gate e102ee79 recorded, development-target gate held; per-check build area not yet shown (B-R2-01) plus scope/disposal gaps.",
+        "round_5": "candidate 265902e: per-check build area, gate scope and disposal authority recorded; build-area item closed, disposal record still contradictory.",
+        "round_6": "candidate 3a34ee7: removed/retained/failed-to-remove separated and the cold-build claim removed; one stale field remained (A-R4-01).",
+        "round_7": "candidate c7cf5b96: stale kept field deleted; clean."
       },
-      "independently_checked": "GitHub commit and origin/dev, the source registration paths, the missing UIA value before the fix and the exposed values after it, the NOT_MEASURED list, both FAILED Gate records and the PARTIAL/BLOCKED AC09, 62 contracts, the acyclic 41-edge DAG and public-JSON privacy",
-      "not_independently_reexecuted": "Windows Native session, private UIA/raw logs, retained executable digest, the 86/71 test runs, and the Refine environment or its failure logs",
-      "scope": "Bounded observation plus one documented minimal fix; the product candidate 58900630342b1b6871b4c518e3d5de2cb0f8661a still has no independent Gate, and this review is not product or technical completion acceptance."
+      "independently_checked": "GitHub commit and origin/dev, per-check build-area mapping, the compliant Gate record and held non-compliant Gate, the three FAILED Gates, the independent-Gate scope (four checks, no independent cargo build), the disposal split, 62 contracts, the acyclic 41-edge DAG and public-JSON privacy",
+      "not_independently_reexecuted": "private Gate request/receipt/log originals, the actual target placement, Windows Gate execution, the deletion operations and the before/after verify originals",
+      "scope": "Bounded AX1 observation, one documented minimal fix and its Gate record; not MP-AX1 completion, DD-23, screen-reader acceptance or product/release acceptance."
     },
     "independent_gate_attempts": [
       {
