@@ -3582,6 +3582,7 @@ impl Render for Shell {
                                     .role(Role::TextInput)
                                     .accessibility_id("task-search")
                                     .aria_label("Search tasks")
+                                    .aria_value(SharedString::from(query_text.clone()))
                                     .key_context("TaskRailInput")
                                     .track_focus(&self.rail_input_focus)
                                     .flex()
