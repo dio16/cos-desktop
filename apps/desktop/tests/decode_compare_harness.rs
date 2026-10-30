@@ -3789,7 +3789,8 @@ fn injected_sampler_foreign_pid_is_sample_parse_failed() {
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     inject_sampler(&mut config, "fake_sampler_foreign_helper");
     config.sample_interval_ms = 10;
-    config.cancel_after_ms = Some(1_500);
+    // Same margin: the sampler row must be observed before the candidate ends.
+    config.cancel_after_ms = Some(8_000);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -3832,7 +3833,10 @@ fn hanging_sampler_hits_the_sample_timeout() {
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     inject_sampler(&mut config, "fake_sampler_hang_helper");
     config.sample_interval_ms = 10;
-    config.cancel_after_ms = Some(3_000);
+    // The window must outlast host process-creation cost (measured up to 2.0 s)
+    // plus the product's own 2 s per-sample timeout, or the sample is still in
+    // flight when the candidate ends and the reason becomes `no_sample`.
+    config.cancel_after_ms = Some(8_000);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -4649,8 +4653,11 @@ fn fake_candidate(support: ProbeSupport) {
             std::thread::sleep(std::time::Duration::from_secs(5));
             0
         }
+        // Long enough that host process-creation cost cannot consume a sampling
+        // window: the first child creation of a freshly built binary costs up to
+        // 2.0 s on this host (measured), which used to outlive a 5 s candidate.
         "sleep-long" => {
-            std::thread::sleep(std::time::Duration::from_secs(5));
+            std::thread::sleep(std::time::Duration::from_secs(8));
             0
         }
         "png-rgb-a" => {
