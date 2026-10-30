@@ -68,5 +68,27 @@
     "source": "ADR-0008 §2",
     "decision": "Windows Imaging Component (WIC) through the existing managed WIC/WPF probe boundary is the ratified product decode path; it is not an open choice between unrelated decoders",
     "what_is_not_decided": "how that probe boundary becomes a product process boundary: its process/trust model, safety proof, failure handling and packaging are not ratified by ADR-0008"
+  },
+  "review": {
+    "rounds": [
+      {
+        "round": 1,
+        "sha": "8886c4d59ab3685fd4a6b37e6e475ed57c25d473",
+        "verdict": "0 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE"
+      },
+      {
+        "round": 2,
+        "sha": "94b2d520b14d282e484bcff3d8b7f52db4ded1c0",
+        "verdict": "0 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE"
+      },
+      {
+        "round": 3,
+        "sha": "306822d38b87abe6388c3c2e524fd9f3700c9b81",
+        "verdict": "0 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE",
+        "verdict_line": "PASS 0 / 0 / 0"
+      }
+    ],
+    "re_review": "CLEAN 0/0/0",
+    "scope_note": "Clean review confirms the HOLD record only; MP-IMG2 is not implemented, no decode class is admitted and MP-IMG3 is NOT_READY."
   }
 }
