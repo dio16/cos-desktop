@@ -2,13 +2,13 @@
   "schema_version": 1,
   "task": "MP-INS1",
   "contract": "DC-MP-INS1",
-  "status": "LIMITED_NATIVE_INSPECTOR_VERIFICATION_OBSERVED_REVIEW_PENDING",
+  "status": "LIMITED_NATIVE_INSPECTOR_VERIFICATION_REPAIRED_AFTER_REVIEW_ROUND_1",
   "authority": "Tern next-task directive after the clean MP-DOCK2 review; ADR-0014 scoped resumption; DC-MP-INS1.",
   "baseline": {
     "reviewed_commit": "261650148c036a0ed653f0be74926c0198eafff1",
     "branch": "feature/mp-ins1-native-closure",
-    "product_source": "f1de4f364827b9a1dcfc7f8f95401de487d48245 (no product-source change on this branch)",
-    "product_source_changes_on_branch": "none",
+    "product_source": "ea8d419bd2d3bf3708428fa51da06ea3e66d3d1f",
+    "product_source_changes_on_branch": "crates/desktop-gpui/src/inspector.rs and src/lib.rs: the inspector task-scope gate (review round 1 BLOCKING repair)",
     "worktree": "clean at observation time"
   },
   "environment": {
@@ -71,11 +71,21 @@
     "same_identity_update": {
       "result": "NOT_REPRODUCIBLE",
       "observed": "no in-place projection revision can be injected natively; the revision-keyed disclosure behaviour remains model evidence."
+    },
+    "task_scope_gate": {
+      "result": "FIXED_AND_UNIT_VERIFIED",
+      "observed": "scope(authorization, rail_selection_pending, cached task, local selection) withholds a pending or foreign-Task projection with an explicit reason and invalidates disclosure before the early return; the installed publication's task remains authoritative when no local selection exists. Native re-observation shows the normal inspector again (s5) and the reselect path leaves the same-Task disclosure intact (s6); an A→B switch is NOT_REPRODUCIBLE with the single-Task fixture.",
+      "evidence": [
+        "s5-fixed-evaluation-b.png",
+        "s5-fixed-evaluation-b.ax.txt",
+        "s6-after-reselect.png",
+        "s6-after-reselect.ax.txt"
+      ]
     }
   },
   "tests": {
     "ui_model_inspector": "8 passed",
-    "desktop_gpui_inspector": "2 passed",
+    "desktop_gpui_inspector": "3 passed (scope gate added)",
     "commands": [
       "cargo test -p ui-model inspector",
       "cargo test -p desktop-gpui inspector"
@@ -93,7 +103,7 @@
     "product/UX acceptance"
   ],
   "product_change": "none; no reproduced DC-MP-INS1 violation required a code fix",
-  "gate": "no new Refine Gate: no product bytes changed on this branch; identical source is covered by NAV5 Gate 5e116b30-… and the historical INS1 Gates",
+  "gate": "Gate b56260df-… SUCCEEDED on the repaired candidate ea8d419b with six checks; no workspace disposal performed here",
   "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.76",
   "evidence_provenance": {
     "byte_identical_to_older_evidence": [
@@ -106,5 +116,26 @@
         "note": "the default startup screen is deterministic; this capture is not unique proof for this run and is not used as such. All other PNGs in this directory have no byte-identical copy in the published evidence directories checked here."
       }
     ]
+  },
+  "review_rounds": [
+    {
+      "round": 1,
+      "reviewed_head": "e9cf61074eb6dd72036268d32707afa927866783",
+      "verdict": "HOLD 1 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE",
+      "findings": [
+        "during a Task switch the inspector could render the previous Task's still-authorized cache, and with no viewed candidate a same-revision section could inherit its open state"
+      ],
+      "repair": "single inspector::scope gate plus disclosure invalidation before the early return; new unit test and native re-observation"
+    }
+  ],
+  "independent_gate": {
+    "gate_id": "b56260df-a87f-41e7-834e-f8f6e8471151",
+    "gate_label": "cos-desktop-ins1-repair-ea8d419b",
+    "state": "SUCCEEDED",
+    "candidate_sha256": "sha256:0ccc0430f0ae819dfb523a9dd04024305744fe52ea10de2d9b2d33ff0f3a55c1",
+    "request_sha256": "sha256:0023849f02db33d90a340fdfa4379b8dd788a51e474a1d7b733a3e9e747084b0",
+    "terminal_state_sha256": "sha256:bf5a0e46a37a359691f0d60b72b386fe7fab40782fc6a61fce123fb7146aac35",
+    "checks": "fmt, metadata, dependency-self-test, dependency-rules, clippy, tests: all pass",
+    "cleanup": "complete"
   }
 }
