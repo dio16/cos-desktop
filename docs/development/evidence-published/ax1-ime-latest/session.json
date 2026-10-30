@@ -131,7 +131,7 @@
     "cargo_tests_crate": "cargo test --locked -p desktop-gpui -> 86 passed, 0 failed",
     "quality_check_only": "pwsh -NoProfile -File scripts/quality.ps1 -CheckOnly -> local checks passed (fmt, metadata, dependency rules, check)",
     "quality_full": "pwsh -NoProfile -File scripts/quality.ps1 -> all quality gates passed (fmt, metadata, dependency rules, clippy -D warnings, tests, build)",
-    "independent_gate": "FAILED/BLOCKED: two Gate attempts and the retained-checkout qualification are recorded above; no Gate success is claimed",
+    "independent_gate": "SUCCEEDED: gate 91a15539-af6a-4076-ba0c-588716cc407c verified the pinned candidate 58900630342b1b6871b4c518e3d5de2cb0f8661a with all five checks passing and complete cleanup; gate verify succeeded before and after the workspace disposal",
     "documentation": "PASS: json.tool; 62 task cards with exactly one owning DC each; unchanged acyclic 41-edge DAG; new relative links resolve; recorded numbers match the retained records; host-path/private-key scan; git diff --check.",
     "review": {
       "candidate_sha": "753e1fac384cd2b19a2f03d9d6fbb280be852f70",
@@ -162,10 +162,42 @@
         "failure": "VERIFICATION_FAILED/check_failed at clippy (exit 101)",
         "cause": "the operator's cargo config routes rustc through sccache, and sccache panics (\"Unable to get config directory\") in the private-HOME child environment; dependency-rules passed with the CARGO fix",
         "candidate": "unchanged"
+      },
+      {
+        "attempt": 3,
+        "gate_id": "91a15539-af6a-4076-ba0c-588716cc407c",
+        "gate_label": "ax1-rail-aria-value-20261030-r3",
+        "result": "SUCCEEDED",
+        "candidate": "58900630342b1b6871b4c518e3d5de2cb0f8661a",
+        "duration_ms": 140571,
+        "checks": [
+          [
+            "fmt",
+            "pass"
+          ],
+          [
+            "dependency-rules",
+            "pass"
+          ],
+          [
+            "clippy",
+            "pass"
+          ],
+          [
+            "tests",
+            "pass"
+          ],
+          [
+            "build",
+            "pass"
+          ]
+        ],
+        "cleanup": "complete",
+        "verify": "SUCCEEDED before and after disposal with identical candidate and log digests"
       }
     ],
     "gate_environment_qualification": {
-      "status": "BLOCKED: the independent Gate cannot execute this project's linking/build checks on this host",
+      "status": "RESOLVED by an explicit check environment; the two earlier failures remain recorded and are not rewritten",
       "retained_checkout_experiments": [
         "with RUSTC_WRAPPER empty and a shared CARGO_TARGET_DIR/CARGO_HOME/RUSTUP_HOME, cargo clippy --workspace --all-targets -D warnings completed in 8.4 s with exit 0",
         "cargo test -p ui-model --no-run failed with \"linker link.exe not found\": the host's MSVC link.exe lives in a Visual Studio 2019 BuildTools tree and is reachable only through the ambient PATH, which Refine reserves and does not pass",
@@ -174,7 +206,31 @@
         "the bundled rust-lld alternative cannot link either: rust-lld reports 'could not open msvcrt.lib', and no msvcrt.lib copy exists outside the MSVC BuildTools lib directory"
       ],
       "conclusion": "Refine's contract allows operator-named ambient values and request env literals but reserves PATH, and this host's MSVC C/C++ environment depends on PATH-provided developer-environment variables and DLL search. Compile-only checks work; any check that links or compiles C/C++ cannot. No threshold was changed, no check was dropped to manufacture a PASS, and the Gate is reported FAILED/blocked rather than reinterpreted.",
-      "decision_needed": "Either qualify a Gate environment that supplies the Visual Studio developer environment without PATH (or authorize an operator-side mechanism), or authorize a Gate check set that this environment can actually execute. Until then the product fix has local quality gates and Native evidence but no independent Gate."
+      "decision_needed": "Either qualify a Gate environment that supplies the Visual Studio developer environment without PATH (or authorize an operator-side mechanism), or authorize a Gate check set that this environment can actually execute. Until then the product fix has local quality gates and Native evidence but no independent Gate.",
+      "resolution": [
+        "the operator's cargo configuration routes rustc through a compiler cache whose Windows configuration lookup fails under Refine's private HOME; the checks therefore set RUSTC_WRAPPER empty and CARGO_ENCODED_RUSTFLAGS empty so the cached per-target -fuse-ld flag is not passed to a linker that does not support it",
+        "the checks name the operator CARGO_HOME and RUSTUP_HOME so the pinned toolchain is reused, and a repository-local CARGO_TARGET_DIR so independent checks reuse built dependencies instead of rebuilding them",
+        "the MSVC linker is named explicitly through the target linker variable, with LIB pointing at the VS 2019 BuildTools 14.29.30133 x64 libraries plus Windows Kits 10.0.19041.0 ucrt/um",
+        "the C/C++ toolchain for build scripts is supplied with target-specific CC/CXX/AR variables and INCLUDE pointing at the MSVC include tree plus Windows Kits 10.0.19041.0 ucrt/shared/um include trees; the earlier failure was an INCLUDE set built from Lib instead of Include paths",
+        "PATH is still not passed; every tool is reached through an absolute configured path or an explicit variable"
+      ],
+      "measured_cost": {
+        "clippy_seconds": 64.3,
+        "tests_seconds": 107.6,
+        "build_seconds": 29.6,
+        "gate_duration_ms": 140571,
+        "gate_deadline_ms": 600000
+      }
+    },
+    "gate_workspace_disposal": {
+      "gate_id": "91a15539-af6a-4076-ba0c-588716cc407c",
+      "candidate_commit": "58900630342b1b6871b4c518e3d5de2cb0f8661a",
+      "procedure": "status/inspect SUCCEEDED with no live owner and complete cleanup; gate verify retained before disposal; only the Gate's work/repo removed; gate verify repeated afterwards",
+      "removed": "the successful Gate's work/repo (about 53 MiB)",
+      "kept": "Gate authority, request, receipt, state, private logs and the private home directory; the two failed Gates' workspaces are retained because failed, cancelled or cleanup-incomplete material is not disposable",
+      "integrity_before_after": "candidate sha256 and every check-log digest identical; state SUCCEEDED in both reports",
+      "candidate_source_retention": "the candidate commit stays reachable in the repository and on origin/dev, so the pinned source is independent of the removed workspace",
+      "observed_residue": "each Gate's private home still contains a toolchain copy of about 730 MiB despite CARGO_HOME/RUSTUP_HOME being supplied; private-tree disposal is not authorized by the documented procedure and was not attempted"
     }
   },
   "acceptance": {
@@ -185,8 +241,8 @@
     "AC05_preedit_committed_caret_focus": "PARTIAL: committed text and focus are observed; the preedit/marked state and the caret during composition are NOT_MEASURED.",
     "AC06_mixed_and_surrogate": "MET for mixed text (ax1-n3, ax1-n5) and for surrogate handling by the owned tests; an astral character was not composed through the IME.",
     "AC07_cross_surface_isolation": "SOURCE_VERIFIED: per-surface query, selection and marked-range fields with focus-routed handlers; no Native surface-switch composition was observed, so the Native half is NOT_MEASURED.",
-    "AC08_minimal_fix_only_on_demonstrated_defect": "MET: the only product change addresses the measured missing accessible value.",
-    "AC09_fix_needs_new_pinned_candidate_tests_gate_native": "PARTIAL and BLOCKED on the Gate: the fix is in pinned candidate 58900630342b1b6871b4c518e3d5de2cb0f8661a with 86/86 crate tests, full local quality gates and Native before/after evidence, but the independent Refine Gate cannot execute this project's linking/build checks in its minimal child environment on this host (two FAILED gates and the exact causes are recorded). The Gate is not reported as passed.",
+    "AC08_minimal_fix_only_on_demonstrated_defect": "MET: the only product change addresses the measured missing UIA value",
+    "AC09_fix_needs_new_pinned_candidate_tests_gate_native": "MET: pinned candidate 58900630342b1b6871b4c518e3d5de2cb0f8661a, 86/86 crate tests, full local quality gates, Native before/after observation, and independent Gate 91a15539 SUCCEEDED on all five checks with complete cleanup",
     "AC10_no_overclaim": "MET: no screen-reader acceptance, TSF internals, DPI pixel quality, MP-AX1 completion or product acceptance is claimed."
   },
   "not_measured": [
