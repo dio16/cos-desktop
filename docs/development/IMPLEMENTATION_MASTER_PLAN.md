@@ -2021,7 +2021,7 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Runtime:** the published survey's 34 direct import labels separate system DLLs and API sets from the MSVC runtime (`VCRUNTIME140`, `api-ms-win-crt-*`), whose redistribution terms are undecided; delay-load is `NOT_INSPECTED` and transitive/dynamic closure is `NOT_MEASURED`.
 - **NOTICE:** unchanged. Adding attributions without the missing licence texts, or implying compliance, would be worse than stating the gap. Two questions stay OPEN: the 16 missing texts and the `cfg_aliases` notice. Satisfying them may fit inside the existing LICENSE/NOTICE files or may need a wider package set; which one applies is a distribution decision, not something this survey establishes.
 - **Verification and Gate:** the package suite still reports 28 collected / 27 passed / 1 skipped and the four-file allowlist plus unsigned refusal are unchanged; no product or verification code changed, so no Gate was dispatched (ADR-0014 Y04).
-- **Remaining exits:** the OPEN licence obligations, MSVC redistribution terms, transitive/dynamic closure, and every DD-21 item. Staging, signing, licence compliance and distribution acceptance stay separately labelled. Evidence: [REL1 dependency survey](evidence-published/rel1-dependency-survey-latest/session.json).
+- **Remaining exits:** the OPEN licence obligations, MSVC redistribution terms, transitive/dynamic closure, and every DD-21 item. Staging, signing, licence compliance and distribution acceptance stay separately labelled. Review returned CLEAN `0 / 0 / 0`. Evidence: [REL1 dependency survey](evidence-published/rel1-dependency-survey-latest/session.json).
 
 ### 19.86 MP-TYP1 Native DPI acceptance remainder (2026-10-30)
 

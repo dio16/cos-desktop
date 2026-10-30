@@ -3,7 +3,7 @@
   "contract": "DC-MP-REL1",
   "decision": "DD-21",
   "slice": "Windows dependency graph, third-party licence/NOTICE consistency, runtime dependency survey",
-  "status": "LIMITED_COMPLETE_WITH_OPEN_LICENCE_OBLIGATIONS",
+  "status": "LIMITED_SURVEY_COMPLETE_LICENCE_OBLIGATIONS_OPEN",
   "baseline": "39713bf9644d0d8ae0b455d814f7a3a7466a0ca2",
   "product_source": "87922dd567187bec88186944247d1f5644ba2a1b (unchanged by this slice: no product, verification code or NOTICE change was needed)",
   "a_windows_dependency_graph": {
@@ -160,5 +160,27 @@
     "how the obligations are satisfied (existing files or a wider package set) — a distribution decision",
     "DD-21 signing, publisher, installer, channel and uninstall policy"
   ],
-  "scope_note": "Inner staging, signing, licence compliance and distribution acceptance are reported separately: staging is limited-complete, signing/installer remain DD-21 OPEN, licence obligations remain OPEN as listed, and no product acceptance is claimed."
+  "scope_note": "Inner staging, signing, licence compliance and distribution acceptance are reported separately: staging is limited-complete, signing/installer remain DD-21 OPEN, licence obligations remain OPEN as listed, and no product acceptance is claimed.",
+  "review": {
+    "rounds": [
+      {
+        "round": 1,
+        "sha": "6b4db4ad9bc5e4a8ce03d044c273c5a7689a6576",
+        "verdict": "1 BLOCKING / 2 ACTIONABLE / 0 EXCESSIVE"
+      },
+      {
+        "round": 2,
+        "sha": "5025a874b53faa9dd5d8621f882c4c13dcf01555",
+        "verdict": "1 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE"
+      },
+      {
+        "round": 3,
+        "sha": "7982a5e359f3378b080b51a94a8a1b0532fef35c",
+        "verdict": "0 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE",
+        "verdict_line": "PASS 0 / 0 / 0"
+      }
+    ],
+    "re_review": "CLEAN 0/0/0",
+    "scope_note": "Clean review covers this survey record only. Licence obligations, MSVC redistribution, transitive DLL closure, DD-21 and distribution acceptance remain OPEN and are not implied."
+  }
 }
