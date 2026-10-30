@@ -10,28 +10,78 @@
     "method": "PNG decoded with the standard library only (IHDR/IDAT, all five scanline filters), colour run lengths read along fixed columns and rows of the 3456x1408 image",
     "dock_ring": {
       "samples": [
-        {"at": "x=1200, vertical scan", "run_px": 2},
-        {"at": "x=200, vertical scan", "run_px": 2},
-        {"at": "x=300, vertical scan", "run_px": 3},
-        {"at": "x=700, vertical scan", "run_px": 3}
+        {
+          "at": "x=1200, vertical scan",
+          "run_px": 2
+        },
+        {
+          "at": "x=200, vertical scan",
+          "run_px": 2
+        },
+        {
+          "at": "x=300, vertical scan",
+          "run_px": 3
+        },
+        {
+          "at": "x=700, vertical scan",
+          "run_px": 3
+        }
       ],
       "colour": "rgb(98,104,112) = 0x626870, the structural ring colour (the capture was taken while the Dock held no keyboard focus)",
       "reading": "the ring is 2 physical pixels at two sampled columns and 3 at two others; the approved width is 2 DIP and this capture is at scale 1.0, so the 2-pixel samples agree and the 3-pixel samples do not. The anomaly is recorded, not averaged away or explained without evidence."
     },
     "row_border": {
-      "samples": [{"at": "x=200, adjacent to the ring", "run_px": 1, "colour": "rgb(174,204,236) = 0xaeccec, the selection colour"}],
+      "samples": [
+        {
+          "at": "x=200, adjacent to the ring",
+          "run_px": 1,
+          "colour": "rgb(174,204,236) = 0xaeccec, the selection colour"
+        }
+      ],
       "reading": "one sampled row border is 1 physical pixel, matching the separator contract at scale 1.0"
+    },
+    "reproduction": {
+      "script": "measure_runs.py",
+      "script_sha256": "27059b43b274826d36c4ec4b1e43e4d6c0847d59258ccf2f989af2ca41b6b12f",
+      "capture_copy": "screenshot.png",
+      "capture_sha256": "0d44945af8ca05766320609a15bf9eeb9faf7a45e272d2ae34bc2e276aca4414",
+      "command": "python -B measure_runs.py screenshot.png",
+      "note": "the capture is a byte-identical copy of the identity-proven one so the run is reproducible from this directory alone"
     }
   },
   "not_measured": [
-    {"item": "100_125_150_175_200_scale_ladder", "reason": "needs operator display-setting changes"},
-    {"item": "mixed_monitor_move", "reason": "needs interactive dragging between differently scaled monitors"},
-    {"item": "focus_ring_while_focused_pixels", "reason": "the identity-proven capture has no keyboard focus in the Dock; the focused state is only recorded in the earlier computer-use screenshots, which are not identity-proven captures"},
-    {"item": "glyph_tofu_clipping_baseline_line_height", "reason": "needs native visual inspection at each scale; AX label presence is already recorded and is not a substitute"},
-    {"item": "resolved_font_family", "reason": "DirectWrite selection is not exposed to the harness"},
-    {"item": "high_contrast", "reason": "needs an operator High Contrast session"},
-    {"item": "ax_geometry_matrix", "reason": "needs the DPI ladder to compare geometries"},
-    {"item": "frame_cost", "reason": "no approved measurement route in this session"}
+    {
+      "item": "100_125_150_175_200_scale_ladder",
+      "reason": "needs operator display-setting changes"
+    },
+    {
+      "item": "mixed_monitor_move",
+      "reason": "needs interactive dragging between differently scaled monitors"
+    },
+    {
+      "item": "focus_ring_while_focused_pixels",
+      "reason": "the identity-proven capture has no keyboard focus in the Dock; the focused state is only recorded in the earlier computer-use screenshots, which are not identity-proven captures"
+    },
+    {
+      "item": "glyph_tofu_clipping_baseline_line_height",
+      "reason": "needs native visual inspection at each scale; AX label presence is already recorded and is not a substitute"
+    },
+    {
+      "item": "resolved_font_family",
+      "reason": "DirectWrite selection is not exposed to the harness"
+    },
+    {
+      "item": "high_contrast",
+      "reason": "needs an operator High Contrast session"
+    },
+    {
+      "item": "ax_geometry_matrix",
+      "reason": "needs the DPI ladder to compare geometries"
+    },
+    {
+      "item": "frame_cost",
+      "reason": "no approved measurement route in this session"
+    }
   ],
   "defects": [
     {
