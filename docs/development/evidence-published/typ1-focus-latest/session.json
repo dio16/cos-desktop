@@ -5,7 +5,7 @@
     "DD-04a",
     "DD-04b"
   ],
-  "status": "APPROVED_FOCUS_OUTLINE_WIRED_IN_DOCK_LIMITED_COMPLETE",
+  "status": "APPROVED_FOCUS_OUTLINE_WIRED_IN_DOCK_REVIEW_CLEAN",
   "scope": "Wire the already approved 2-DIP keyboard focus outline into the Candidate Dock; no new design values, colours, shortcuts or semantics.",
   "source_candidate": "87922dd567187bec88186944247d1f5644ba2a1b",
   "predecessor_candidate": "316776357ae413b16f098f45329eb9e4f17e30d5",
@@ -196,8 +196,18 @@
         "opened": [
           "A-R1-01 N03 claimed a selected-row native observation that did not occur"
         ]
+      },
+      {
+        "round": 2,
+        "sha": "9ee35f32e10c80a1c68cf227d3cb57a29e985a01",
+        "verdict": "0 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE",
+        "verdict_line": "PASS 0 / 0 / 0",
+        "closed": [
+          "A-R1-01 native selection over-claim"
+        ]
       }
     ],
-    "re_review": "PENDING"
+    "re_review": "CLEAN 0/0/0",
+    "scope_note": "Clean review covers the approved focus-outline wiring in the Candidate Dock only. MP-TYP1 as a whole, the DPI matrix, Japanese mixed-script line-height, High Contrast, screen reader, IME, frame cost and DD-04b adoption remain OPEN/NOT_MEASURED."
   }
 }
