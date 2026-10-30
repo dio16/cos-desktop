@@ -2,7 +2,7 @@
   "task": "MP-TYP1",
   "contract": "DC-MP-TYP1",
   "slice": "Diagnosis of the refused 125 % identity-bound capture path",
-  "status": "HOLD_CAUSE_CLASSIFIED_DPI_COORDINATE_SPACE_FIX_NEEDS_NEW_AUTHORITY",
+  "status": "HOLD_COORDINATE_SPACE_DIVERGENCE_SUPPORTED_REFUSAL_NOT_DIAGNOSED",
   "reviewed_directive_sha": "9f3bb003ef7473d95d690e575f527a7a23ee7ebd",
   "execution_baseline": "9f3bb003ef7473d95d690e575f527a7a23ee7ebd",
   "branch": "dev",
