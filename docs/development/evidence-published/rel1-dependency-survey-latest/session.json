@@ -9,33 +9,82 @@
   "a_windows_dependency_graph": {
     "command": "cargo metadata --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc, then a normal+build traversal from the cos-desktop binary",
     "reachable_packages": 368,
-    "edge_kinds_separated": {"normal_and_build": 368, "dev_only": "excluded by construction — the traversal follows normal and build edges only"},
-    "sources": ["registry+https://github.com/rust-lang/crates.io-index", "git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942", "workspace path crates"],
+    "edge_kinds_separated": {
+      "normal_and_build": 368,
+      "dev_only": "excluded by construction — the traversal follows normal and build edges only"
+    },
+    "sources": [
+      "registry+https://github.com/rust-lang/crates.io-index",
+      "git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942",
+      "workspace path crates"
+    ],
     "pinned": "Cargo.lock and the GPUI git revision are unchanged",
-    "duplicate_versions_present": ["bitflags", "getrandom", "hashbrown", "miniz_oxide", "png", "pollster", "spin", "syn", "thiserror", "thiserror-impl"],
+    "duplicate_versions_present": [
+      "bitflags",
+      "getrandom",
+      "hashbrown",
+      "miniz_oxide",
+      "png",
+      "pollster",
+      "spin",
+      "syn",
+      "thiserror",
+      "thiserror-impl"
+    ],
     "note": "this is the build-time dependency closure, not a proof of what is linked into the executable"
   },
   "b_third_party_licences": {
     "declared_expression_histogram": {
-      "MIT OR Apache-2.0": 167, "MIT": 64, "Apache-2.0 OR MIT": 40, "Apache-2.0": 22,
-      "Unicode-3.0": 18, "MIT/Apache-2.0": 14, "BSD-3-Clause": 8, "Apache-2.0/MIT": 5,
-      "Unlicense OR MIT": 4, "BSD-2-Clause": 4, "MIT OR Apache-2.0 OR Zlib": 4, "Zlib OR Apache-2.0 OR MIT": 3
+      "MIT OR Apache-2.0": 167,
+      "MIT": 64,
+      "Apache-2.0 OR MIT": 40,
+      "Apache-2.0": 22,
+      "Unicode-3.0": 18,
+      "MIT/Apache-2.0": 14,
+      "BSD-3-Clause": 8,
+      "Apache-2.0/MIT": 5,
+      "Unlicense OR MIT": 4,
+      "BSD-2-Clause": 4,
+      "MIT OR Apache-2.0 OR Zlib": 4,
+      "Zlib OR Apache-2.0 OR MIT": 3
     },
     "packages_without_a_licence_declaration": 0,
     "packages_with_a_local_licence_text": 330,
     "packages_without_a_local_licence_text": 16,
     "packages_without_local_text_list": [
-      "accesskit 0.24.1", "accesskit_consumer 0.38.0", "accesskit_windows 0.34.0",
-      "lyon 1.0.19", "lyon_algorithms 1.0.21", "lyon_geom 1.0.19", "lyon_path 1.0.19", "lyon_tessellation 1.0.22",
-      "profiling 1.0.18", "profiling-procmacros 1.0.18", "pulp-wasm-simd-flag 0.1.1", "seahash 4.1.0",
-      "simd_helpers 0.1.0", "svg_fmt 0.4.5", "taffy 0.13.0"
+      "accesskit 0.24.1",
+      "accesskit_consumer 0.38.0",
+      "accesskit_windows 0.34.0",
+      "lyon 1.0.19",
+      "lyon_algorithms 1.0.21",
+      "lyon_geom 1.0.19",
+      "lyon_path 1.0.19",
+      "lyon_tessellation 1.0.22",
+      "profiling 1.0.18",
+      "profiling-procmacros 1.0.18",
+      "pulp-wasm-simd-flag 0.1.1",
+      "seahash 4.1.0",
+      "simd_helpers 0.1.0",
+      "svg_fmt 0.4.5",
+      "taffy 0.13.0"
     ],
     "why_the_16_matter": "a declared SPDX expression is not the licence text, and Apache-2.0 §4(a) requires supplying a copy of the licence with a distribution; their text has to be collected before any package leaves the internal stage",
     "notice_files_found_in_fetched_sources": [
-      {"package": "cfg_aliases 0.2.2", "file": "NOTICES.md", "content": "carries an MIT permission notice for code derived from tectonic_cfg_support::target_cfg!"}
+      {
+        "package": "cfg_aliases 0.2.2",
+        "file": "NOTICES.md",
+        "content": "carries an MIT permission notice for code derived from tectonic_cfg_support::target_cfg!"
+      }
     ],
-    "zed_gpui": {"licence_file_in_checkout": "LICENSE-APACHE", "revision": "395def7a067b32ed598fcb3f048969ada9b54942"},
-    "unicode": {"expression": "Unicode-3.0", "packages": 18, "existing_notice_entry": "the repository NOTICE already names Unicode 16.0.0 simple case-folding data and points at the generated file"},
+    "zed_gpui": {
+      "licence_file_in_checkout": "LICENSE-APACHE",
+      "revision": "395def7a067b32ed598fcb3f048969ada9b54942"
+    },
+    "unicode": {
+      "expression": "Unicode-3.0",
+      "packages": 18,
+      "existing_notice_entry": "the repository NOTICE already names Unicode 16.0.0 simple case-folding data and points at the generated file"
+    },
     "not_a_legal_conclusion": "this record lists declared expressions and the presence of text files. It does not decide whether every obligation is met."
   },
   "c_runtime_dependencies": {
@@ -46,7 +95,11 @@
       "delay_load": "NOT_INSPECTED — the delay-import directory is zero in the observed image",
       "transitive_or_dynamic": "NOT_MEASURED — a direct-import list cannot prove closure"
     },
-    "claims_not_made": ["no complete DLL closure", "no redistributable supply policy", "no permissive claim for the MSVC runtime"]
+    "claims_not_made": [
+      "no complete DLL closure",
+      "no redistributable supply policy",
+      "no permissive claim for the MSVC runtime"
+    ]
   },
   "d_notice_consistency": {
     "current_notice": "names Apache-2.0 for COS Desktop and the Unicode data entry only",
@@ -61,7 +114,7 @@
       "python -B scripts/tests/test_stage_portable.py",
       "source scan of ~/.cargo/registry/src for licence and NOTICE files among the 368 packages"
     ],
-    "package_suite": "27 tests collected, 26 passed, 1 skipped (Windows denies symbolic-link creation); the four-file allowlist and unsigned refusal are unchanged",
+    "package_suite": "28 tests collected, 27 passed, 1 skipped (Windows denies symbolic-link creation); the four-file allowlist and unsigned refusal are unchanged",
     "gate": "none — no product or verification code changed (ADR-0014 Y04)"
   },
   "open_items": [
