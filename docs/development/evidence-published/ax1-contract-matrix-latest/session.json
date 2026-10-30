@@ -1,0 +1,144 @@
+{
+  "task": "MP-AX1",
+  "contract": "DC-MP-AX1",
+  "slice": "Whole-contract gap matrix, one implemented correctness guard and its verification",
+  "baseline_sha": "5b3357b90706067090acefa7992ad3a04c079a46",
+  "branch": "dev",
+  "product_candidate_sha": "466b72ffff5b1933d27c6d65961cbaf36eb94291",
+  "product_change": {
+    "file": "crates/desktop-gpui/src/palette.rs",
+    "change": "PaletteEnter now returns early while the query has a marked (uncommitted) IME composition, and a private predicate composition_in_progress records that rule",
+    "why": "the palette bound Enter unconditionally to PaletteActivate, so an Enter arriving during a composition would execute whatever command was highlighted for a half-typed query",
+    "risk": "a command triggered from uncommitted text; the guard only suppresses activation while a marked range exists, and does not alter key handling for committed text",
+    "safety": "no new API, dependency, unsafe/FFI, TSF work, token or contract change"
+  },
+  "gap_matrix": {
+    "AX01_accessibility": {
+      "contract_requirement": "screen-reader names/roles; accessible identity of virtualized rows; keyboard reachability; active descendant and focus consistency",
+      "existing_implementation": "role/aria_label/aria_value on the three text inputs (the rail value added in §19.95), roles and labels on rail rows, dock cards, inspector sections and surfaces",
+      "existing_tests": "crate tests cover the input routing and command facts; no accessibility-tree assertions in the crate",
+      "existing_native_evidence": "UIA dumps show 41 named elements, the four Latin labels, the Japanese label and three mixed-script names; DC-MP-AX1 records that static shell text is absent from the tree",
+      "remaining_gap": "static shell text (state-axis values, some surface labels) is still absent from the accessibility tree; an active-descendant relation is not implemented; no assistive-technology session has been run",
+      "required_change": "exposing static status text and an active descendant needs an accessibility design decision and a broader surface change, not a one-line fix",
+      "verification": "accessibility-tree dump per surface plus a screen-reader session",
+      "authority": "design decision (static-text exposure) and an assistive-technology session",
+      "status": "PARTIAL"
+    },
+    "AX02_ime": {
+      "contract_requirement": "composition start/update/commit/cancel; preedit; caret/selection during composition; per-surface isolation; behaviour across focus moves and popups; no command dispatch from a partial composition; candidate window and TSF observability",
+      "existing_implementation": "EntityInputHandler with per-surface marked ranges; commit and cancel splice only the marked range; this slice adds the palette activation guard",
+      "existing_tests": "ime_tests (5 cases) plus the new composition_in_progress case; 87 crate tests pass",
+      "existing_native_evidence": "§19.95 commits and mixed input; §19.96 preedit, operator cancel, commit and rail-to-flow switch; this slice: a partial composition plus Enter left the palette open and executed no command",
+      "remaining_gap": "which layer suppressed that Enter (IME consumption or the new guard) is not separated; caret/selection geometry during composition, candidate window and TSF internals are unobservable here",
+      "required_change": "none identified for commit/cancel/isolation; TSF introspection would need a new capability",
+      "verification": "per-step Native observation with the operator; unit tests for the splice rules",
+      "authority": "none for what is implemented; TSF instrumentation would need a design decision",
+      "status": "PARTIAL"
+    },
+    "AX03_focus": {
+      "contract_requirement": "palette/dialog focus restoration on close; keyboard traversal; focus and selection across virtualized inserts/removals; focus preserved across surface switches",
+      "existing_implementation": "palette_open stores the focused element and the close path restores it; surface navigation keeps per-surface focus handles",
+      "existing_tests": "crate tests cover navigation facts; restoration itself is not unit-tested",
+      "existing_native_evidence": "no recorded restoration observation; §19.96's attempt was inconclusive because the OS focus was outside the application",
+      "remaining_gap": "restoration after close, popup close and surface switching is unobserved; the 125 % capture HOLD blocks pixel-level confirmation",
+      "required_change": "none demonstrated",
+      "verification": "Native: open the palette, type, close, then read the focused element",
+      "authority": "none",
+      "status": "NOT_MEASURED"
+    },
+    "AX04_high_contrast_motion": {
+      "contract_requirement": "High Contrast selection and focus distinguishable, no colour-only signalling, readable text, motion audit, Reduced Motion honoured",
+      "existing_implementation": "non-colour cues exist (labels, focus outlines); a motion audit was recorded; High Contrast theme integration is not implemented",
+      "existing_tests": "none for High Contrast",
+      "existing_native_evidence": "non-color cue run (historical); no High Contrast run",
+      "remaining_gap": "High Contrast integration is NOT_IMPLEMENTED; Reduced Motion is applicable-by-audit only",
+      "required_change": "design decision for the High Contrast theme and OS setting changes performed by the operator",
+      "verification": "operator-driven High Contrast and Reduced Motion sessions",
+      "authority": "design decision plus operator OS changes",
+      "status": "NOT_IMPLEMENTED"
+    },
+    "AX05_dpi_monitor": {
+      "contract_requirement": "100/125/150/175/200 % matrix, real DPI and coordinate systems, fractional-DPI hit targets, popup geometry, clipping, focus/selection/scroll anchor, mixed-DPI movement, resize/reopen, unsupported combinations",
+      "existing_implementation": "token-derived separator and focus outline; per-monitor scale read at render",
+      "existing_tests": "token and geometry unit tests",
+      "existing_native_evidence": "96 DPI observations (§19.90, §19.92); 120 DPI scale confirmed at §19.93 but the identity-bound capture is refused at 43/49",
+      "remaining_gap": "no accepted 125 % image, no 150/175/200 %, no mixed-monitor run; §19.94's two remedies both need authority",
+      "required_change": "the capture-path decision recorded in §19.94; the rest needs operator display changes",
+      "verification": "one accepted image per scale plus a mixed-monitor move",
+      "authority": "the §19.94 decision and operator display changes",
+      "status": "HOLD"
+    },
+    "AX06_contract_release": {
+      "contract_requirement": "Windows crosswalk rows 6-7, DD-04b dependency, DD-23 support matrix, screen-reader acceptance, MP-ACC2 product acceptance",
+      "existing_implementation": "crosswalk rows recorded; DD-23 pending",
+      "existing_tests": "n/a",
+      "existing_native_evidence": "as above",
+      "remaining_gap": "DD-23 support-matrix selection, screen-reader acceptance and product acceptance are owner decisions",
+      "required_change": "owner decisions",
+      "verification": "owner review",
+      "authority": "Caller/owner",
+      "status": "HOLD"
+    }
+  },
+  "acceptance": {
+    "AC01_virtualized_identity": "PARTIAL: row identity is exposed per row; an active-descendant relation and a screen-reader session are missing",
+    "AC02_ime_does_not_break_entry": "MET for the implemented paths: five owned tests, committed/cancelled/mixed Native runs and the new composition guard",
+    "AC03_focus_after_popup_close": "NOT_MEASURED: no recorded restoration observation",
+    "AC04_high_contrast_selection": "NOT_IMPLEMENTED: High Contrast theme integration is absent",
+    "AC05_dpi_move_keeps_anchor": "HOLD: no accepted fractional-scale image or mixed-monitor run",
+    "AC06_keyboard_only_main_flow": "PARTIAL: keyboard bindings exist and were exercised historically; a full keyboard-only pass is not recorded in this slice",
+    "AC07_accessible_names_roles_values": "PARTIAL: interactive controls and the three text inputs carry names and values; static status text is still absent",
+    "AC08_japanese_commit_cancel_and_partial_dispatch": "MET: commit/cancel observed natively and a partial composition no longer executes a palette command",
+    "AC09_focus_selection_anchor_across_surfaces": "PARTIAL: per-surface state is separate by construction and the rail-to-flow switch leaked nothing; anchor preservation across DPI/monitor changes is HOLD",
+    "AC10_high_contrast_reduced_motion": "NOT_IMPLEMENTED / NOT_MEASURED as above",
+    "AC11_matrix_states_distinguished": "MET: every item above carries PASS/PARTIAL/HOLD/NOT_MEASURED/NOT_IMPLEMENTED explicitly",
+    "AC12_r10_critical_conditions": "PARTIAL: IME and identity conditions hold for the implemented paths; readability under High Contrast and DPI migration are open",
+    "AC13_no_quality_regression_for_apparent_pass": "MET: no threshold, colour, size or contrast value was changed to obtain a result",
+    "AC14_mp_dc_dag_gate_privacy": "MET: 62 owning contracts, the same acyclic 41-edge DAG, earlier Gate records untouched, no host paths or secrets in this record",
+    "AC15_existing_holds_untouched": "MET: the MP-TYP1 125 % capture HOLD and the MP-R0B HOLD with its 352-case failed suite are unchanged",
+    "AC16_no_unapproved_completion": "MET: DD-23, screen-reader acceptance, MP-ACC2 and release remain incomplete"
+  },
+  "verification": {
+    "crate_tests": "cargo test --locked -p desktop-gpui -> 87 passed (86 plus the composition-guard case)",
+    "quality_gates": "cargo fmt --all -- --check clean after formatting the new code; pwsh scripts/quality.ps1 passed all gates (fmt, metadata, dependency rules, clippy -D warnings, tests, build)",
+    "native": {
+      "binary": "sha256:629af0db707c6c94f0a8463293b630f956d92ed6bf4bc220ea05ef931ec3ee6e built from the candidate",
+      "steps": [
+        "launched the fixture window and opened the Command Palette",
+        "the Operator entered にほ without confirming and pressed Enter",
+        "the Command Palette stayed open with the query showing にほ and no command executed",
+        "Escape then dismissed the palette"
+      ],
+      "limit": "the observation shows the end-to-end behaviour; whether the platform IME or the new guard suppressed the activation is NOT_MEASURED, and the guard itself is covered by the unit test"
+    },
+    "independent_gate": {
+      "gate_id": "f8ed77ed-2254-49dd-9b8f-0652b689704e",
+      "candidate": "466b72ffff5b1933d27c6d65961cbaf36eb94291",
+      "result": "SUCCEEDED",
+      "checks": ["fmt", "dependency-rules", "clippy", "tests"],
+      "duration_ms": 301456,
+      "isolation": "fresh Gate-owned external target; compiler cache disabled through an explicit cargo --config override",
+      "cleanup": "complete",
+      "verify": "SUCCEEDED before and after disposal with identical candidate and log digests",
+      "earlier_failure": "gate adae3907 failed at the tests check because the operator's compiler cache stayed active through the config file and its server error aborted compilation; the next request disabled the wrapper explicitly"
+    },
+    "workspace_disposal": {
+      "removed": ["the successful Gate's work/repo (about 53 MiB)", "its Gate-owned target gate-targets/ax1-guard2 (about 2.5 GiB)", "the failed Gate's target gate-targets/ax1-guard"],
+      "retained": "all Gate records, receipts, logs and private homes; the failed Gate's workspace",
+      "integrity": "candidate and every check-log digest identical before and after"
+    },
+    "documentation": "PASS: json.tool; 62 owning contracts; unchanged acyclic 41-edge DAG; links resolve; recorded values match the run outputs; privacy scan; git diff --check.",
+    "review": "PENDING candidate-specific linked Tern review"
+  },
+  "not_measured_or_open": [
+    "Screen-reader announcement quality and static-status-text exposure",
+    "Active-descendant relation",
+    "Caret/selection geometry during composition, candidate window and TSF internals",
+    "Palette focus restoration after close and across surface switches",
+    "High Contrast theme integration and Reduced Motion enforcement",
+    "125/150/175/200 % DPI, mixed-monitor movement and fractional-DPI geometry",
+    "Which layer suppressed Enter during the partial composition",
+    "DD-23 support-matrix selection, screen-reader acceptance, MP-ACC2 product acceptance and release"
+  ],
+  "continuation_boundary": "One correctness guard was implemented and verified; the rest of the contract is classified as PARTIAL, HOLD, NOT_MEASURED or NOT_IMPLEMENTED with the authority each needs. MP-AX1 as a whole is not complete, and no product, release or DD-23 acceptance is claimed."
+}
