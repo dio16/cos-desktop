@@ -49,5 +49,50 @@
     "No signature/install/uninstall/upgrade/release or Runtime integration claim",
     "Only current display/default scale; no full AX/IME/DPI matrix",
     "No control takeover or security/registry change requested"
-  ]
+  ],
+  "repair_candidate": "13a09c475eab970625397dc0f2ea95b70c6f3911",
+  "repair_stage_manifest_sha256": "f772c15881b62512a26c35fa6d915396f27db8010c9e0a1c83a417552f760020",
+  "repair_runs": [
+    {
+      "mode": "fixture",
+      "source_commit": "13a09c475eab970625397dc0f2ea95b70c6f3911",
+      "binary_sha256": "c57500ff7bc302b3361cc1cde919614ef8b488db1a194065123c6efbecf5d633",
+      "pid": 45244,
+      "window_id": "1773068",
+      "exe": "<internal-stage>/cos-desktop.exe",
+      "cwd": "<verification>/native-cwd-r1",
+      "profile": "<verification>/native-profile-fixture-r5",
+      "args": [
+        "--fixture",
+        "--fixture-file",
+        "<verification>/inputs/task-184.json"
+      ],
+      "exit": 0,
+      "stderr": "observation shutdown confirmed\npreferences save NOT confirmed within the exit budget\n",
+      "screenshot": "native-fixture-r5.png",
+      "screenshot_sha256": "1c84abce10a0ba82550b7ec15e35fd32fca8c8107ffcf7c022aefb3c2d5e1ae3",
+      "observation": "FIXTURE / simulated data; candidate E selected and Viewed E; Task ACTIVE; Formal Outcome Unknown",
+      "close": "native close button; observed window disappearance and process exit",
+      "os": "10.0.26300"
+    },
+    {
+      "mode": "normal",
+      "source_commit": "13a09c475eab970625397dc0f2ea95b70c6f3911",
+      "binary_sha256": "c57500ff7bc302b3361cc1cde919614ef8b488db1a194065123c6efbecf5d633",
+      "pid": 45416,
+      "window_id": "1773068",
+      "exe": "<internal-stage>/cos-desktop.exe",
+      "cwd": "<verification>/native-cwd-r1",
+      "profile": "<verification>/native-profile-normal-r5",
+      "args": [],
+      "exit": 0,
+      "stderr": "observation shutdown not applicable (no observation driver)\npreferences save confirmed\n",
+      "screenshot": "native-normal-r5.png",
+      "screenshot_sha256": "b21a1ab9d14896af3de305e6b9911ace339edc27d357453787c2e6c85c04078e",
+      "observation": "NO SOURCE / data withheld; no fixture indicator; no Task projection",
+      "close": "native close button; observed window disappearance and process exit",
+      "os": "10.0.26300"
+    }
+  ],
+  "repair_note": "The repaired staging run produced new bytes; these runs bind that binary. The fixture run reported that preferences were not confirmed within the exit budget while exiting 0, recorded as observed and not treated as a confirmed save."
 }

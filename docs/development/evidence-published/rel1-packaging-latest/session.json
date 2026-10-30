@@ -2,7 +2,7 @@
   "schema_version": 1,
   "task": "MP-REL1",
   "contract": "DC-MP-REL1",
-  "status": "INTERNAL_PORTABLE_STAGING_IMPLEMENTED_INDEPENDENT_GATE_SUCCEEDED_REVIEW_PENDING",
+  "status": "INTERNAL_PORTABLE_STAGING_REPAIRED_REVIEW_PENDING",
   "authority": "Caller implementation/review/next-task loop; ADR-0014 scoped resumption; current direct-dev policy; no main/release authority",
   "baseline_review": "f9008149e518b3eedcfbd3c71b7feb5c66be5079",
   "source_candidate": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
@@ -28,8 +28,8 @@
     },
     "python_contract": {
       "command": "python -B scripts/tests/test_stage_portable.py",
-      "collected": 14,
-      "passed": 13,
+      "collected": 24,
+      "passed": 23,
       "skipped": 1,
       "skip_reason": "Windows symbolic-link creation privilege absent; junction and hard-link refusal executed.",
       "exit": 0
@@ -50,6 +50,11 @@
       "native_bitmap_refs": "RESOLVE",
       "acceptance_rows": 18,
       "dag_nodes": 62
+    },
+    "actual_native_package_after_repair": {
+      "verifier": "repaired scripts/stage_portable.py verify on the retained local stage",
+      "exit": 0,
+      "binary_bytes": 32422400
     }
   },
   "acceptance": {
@@ -76,7 +81,7 @@
     "id": "6cd8b075-8364-4e92-ab57-a295c334bd72",
     "candidate": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
     "label": "cos-desktop-rel1-serial-tests-04ccb7d9",
-    "status": "SUCCEEDED",
+    "status": "REPAIR_CANDIDATE_GATE_FAILED_ON_UNRELATED_PREEXISTING_TEST",
     "preflight": "UNKNOWN; admission/executable checks passed, not aggregate PASS",
     "request_file_sha256": "d94415ac43b91e9a98e2dc71f38d9a46cac5b8de8818ae3b0c5060d73cb819d9",
     "budget_ms": 600000,
@@ -141,7 +146,8 @@
       "source_retained_by": "dev ancestry",
       "private_evidence_retained": true,
       "staged_binaries_retained": true,
-      "failed_predecessor_workspace_and_target": "RETAINED"
+      "failed_predecessor_workspace_and_target": "RETAINED",
+      "repair_gate": "Failed; workspace and target retained. No disposal."
     },
     "cleanup": "complete",
     "request_sha256": "sha256:0802f4260d7f0c1728b0f294d824ef5448d973467bd68ae6ebd3e637075ec737",
@@ -149,10 +155,17 @@
     "candidate_sha256": "sha256:1714cff93a047535b4354c271adfab55e03ed4f13722e696a09af69e9181d8a4",
     "staged_binary_sha256": "3b6829c96f0b2d53e753700b0799f0276c66cf1a2c82feb3bcbf0a976944c705",
     "staged_binary_matches_parent_native": false,
-    "native_boundary": "Same pinned source, different independently built bytes. Native startup was exercised on the parent local stage only; not transferred to the Gate executable."
+    "native_boundary": "Same pinned source, different independently built bytes. Native startup was exercised on the parent local stage only; not transferred to the Gate executable.",
+    "latest_gate": "1765c20d-21b3-4f81-be71-9aeff898f300"
   },
   "review": {
-    "status": "NOT_RUN"
+    "round": 1,
+    "sha": "a9cf3ef4352f603e2a58d8571d521c4189ace537",
+    "verdict": "BLOCKING 1 / ACTIONABLE 1 / EXCESSIVE 0",
+    "blocking": "B-R1-01 substitution during verification and retained failed publication",
+    "actionable": "A-R1-01 unbounded PE/manifest inputs",
+    "repair": "13a09c475eab970625397dc0f2ea95b70c6f3911",
+    "re_review": "PENDING"
   },
   "remaining": {
     "DD21": [
@@ -270,6 +283,72 @@
         "deadline_holds_when_a_descendant_inherits_the_capture_handles:2537ms against <1500ms",
         "hanging_sampler_hits_the_sample_timeout:no_sample instead of sample_timeout"
       ]
+    },
+    {
+      "id": "1765c20d-21b3-4f81-be71-9aeff898f300",
+      "candidate": "13a09c475eab970625397dc0f2ea95b70c6f3911",
+      "label": "cos-desktop-rel1-snapshot-13a09c47",
+      "state": "FAILED",
+      "request_sha256": "sha256:1e5e5244da41184d5c46abc836871886f6967d3e1cb43e51ea4f4b1afb29a6ff",
+      "terminal_state_sha256": "sha256:9dd03009633adc8b6e19e1cf20ef763f38cffc75a4dac3e26d91a9d323fcb31d",
+      "checks": [
+        {
+          "id": "fmt",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "metadata",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "dependency-self-test",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "dependency-rules",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "portable-contract",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "clippy",
+          "outcome": "pass",
+          "detail": null
+        },
+        {
+          "id": "tests",
+          "outcome": "fail",
+          "detail": "check_failed"
+        },
+        {
+          "id": "build",
+          "outcome": "not_run",
+          "detail": "check_failed"
+        },
+        {
+          "id": "portable-stage",
+          "outcome": "not_run",
+          "detail": "check_failed"
+        },
+        {
+          "id": "portable-verify",
+          "outcome": "not_run",
+          "detail": "check_failed"
+        }
+      ],
+      "cleanup": "complete",
+      "integrity": "Native gate verify succeeded; FAILED state unchanged.",
+      "retention": "Failed workspace and gate-target-r5 retained",
+      "observed_failure": "deadline_holds_when_a_descendant_inherits_the_capture_handles: 1777 ms / 1603 ms vs <1500 ms; 2537 ms in the earlier Gate",
+      "diagnosis": "Python-only change cannot affect the Rust decoder harness. Same commit passes locally; Gate 6cd8b075 passed the same suite on the pre-repair source. 5 of 10 direct runs of the Gate-built harness failed while the locally built harness passed 4 of 4. Observed latency stays below the 2.5 s descendant, so pipe/handle blocking is not demonstrated. Cause remains unconfirmed."
     }
-  ]
+  ],
+  "source_repair_candidate": "13a09c475eab970625397dc0f2ea95b70c6f3911"
 }

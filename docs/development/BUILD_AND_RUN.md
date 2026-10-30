@@ -1219,6 +1219,14 @@ Tool paths stay outside the package manifest.
 
 `verify` independently checks the fixed four-file inventory, regular/non-linked
 payloads, payload hashes, PE architecture/direct imports and internal-only claims.
+Each payload is read once through an open handle whose identity, size, link count
+and timestamps must match the admitted path before, during and after the read; the
+hash and the PE fields come from those same bytes, so a concurrent replacement or
+in-place write is refused rather than described. Payload and manifest inputs are
+bounded before parsing: 128 MiB for the executable, 1 MiB for the manifest, which
+admits the current 32 MB-class binary and refuses larger input by size alone.
+A failed verification after the final rename withdraws only the directory this run
+created and re-raises; a foreign replacement at that path is preserved.
 It is **self-consistency verification, not authentication**: a coherently replaced
 unsigned payload and manifest need an external trusted identity to detect.
 The allowlist excludes extra credentials/logs/fixtures/configuration; this is not

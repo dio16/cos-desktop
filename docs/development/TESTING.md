@@ -397,6 +397,18 @@ hash seeds for mixed-case DLL imports; identical content must keep verifying.
 The symbolic-link case reports SKIP when Windows denies link creation, never PASS.
 Synthetic PE fixtures exercise preflight structure, not executable startup.
 
+Review round R1 required three further properties, each covered by a deterministic
+case: hashing and PE inspection must describe the same stable bytes as the admitted
+path, so a payload hard-linked away or a manifest replaced by identical bytes
+mid-verification is refused; a file added after inventory, or an in-place write
+during hashing, is refused; and a failed post-rename verification withdraws only
+the directory this run created, never a foreign replacement. Inputs are bounded
+before parsing (`MAX_PE_BYTES` 128 MiB, `MAX_MANIFEST_BYTES` 1 MiB): the exact
+limit is admitted and one byte over is refused, and the 32 MB-class Native
+executable stays admitted. The `stage` transaction cases isolate the filesystem
+behavior with patched build inputs; they are not a substitute for the real
+staging run.
+
 In addition to the unchanged repository quality route and an independent pinned
 Gate, exercise `stage` on the real clean candidate, verify its manifest and hashes
 with an independent oracle, and run the staged executable in explicit fixture and
