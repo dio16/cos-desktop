@@ -3279,8 +3279,10 @@ impl Render for Shell {
             inspector_view,
             viewed_label.clone(),
             viewed_row.is_some(),
-            inspector_task.as_ref(),
-            inspector_withheld,
+            inspector::PanelScope {
+                task: inspector_task.as_ref(),
+                withheld: inspector_withheld,
+            },
             window,
             cx,
         );

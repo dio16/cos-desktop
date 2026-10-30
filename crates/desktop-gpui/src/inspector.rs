@@ -15,6 +15,12 @@ use crate::shell_style::TextSpec;
 use crate::tokens::TextStyle;
 use crate::{InspectorToggle, Shell};
 
+/// The Task and withholding decision for one inspector render.
+pub(super) struct PanelScope<'a> {
+    pub task: Option<&'a TaskId>,
+    pub withheld: Option<&'static str>,
+}
+
 /// Why the inspector must withhold the current projection, if it must.
 ///
 /// The cached display is authorized for the last installed publication. While a
@@ -53,8 +59,7 @@ impl Shell {
         view: View,
         viewed_label: SharedString,
         viewed_available: bool,
-        task: Option<&TaskId>,
-        withheld: Option<&'static str>,
+        scope: PanelScope<'_>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
@@ -67,7 +72,7 @@ impl Shell {
             .flex()
             .flex_col()
             .gap_2();
-        if let Some(reason) = withheld {
+        if let Some(reason) = scope.withheld {
             // A blocked or out-of-scope projection invalidates disclosure state
             // instead of merely skipping the sync, so the next in-scope Task or
             // re-observation starts collapsed (A1).
@@ -88,7 +93,7 @@ impl Shell {
         // withheld frame must not carry the previous Task's open set into a
         // same-revision section. Identity + availability then clear on a change or
         // disappearance, so a returning identity starts collapsed.
-        self.inspector_disclosure.sync_task(task);
+        self.inspector_disclosure.sync_task(scope.task);
         self.inspector_disclosure
             .sync(view.candidate.as_ref(), viewed_available);
         let current: Vec<(Section, Arc<str>)> = view
