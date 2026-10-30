@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "task": "MP-INS3",
+  "contract": "DC-MP-INS3",
+  "status": "LIMITED_NATIVE_INTERVENTION_VERIFICATION_OBSERVED_REVIEW_PENDING",
+  "authority": "Tern next-task directive after the clean MP-INS1 review; ADR-0011 DD-26, ADR-0014 scoped resumption, DC-MP-INS3.",
+  "baseline": {
+    "reviewed_commit": "051c6b13bb9a1284d06e43825777ba201d479a32",
+    "branch": "feature/mp-ins3-native-closure",
+    "product_source": "89d526427c26a300f0700614abb51e4c842a29f7 (no product-source change on this branch)",
+    "product_source_changes_on_branch": "none",
+    "worktree": "clean at observation time"
+  },
+  "environment": {
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "system_dpi": 96,
+    "executable": "target/debug/cos-desktop.exe",
+    "executable_sha256": "sha256:e9c61950aa8c105d47e1b5c879cf5e4da3596d9bee49b0b1be4f5f707305b1e1",
+    "isolation": "child-only LOCALAPPDATA under C:/dev/cos-desktop-verification/sec2-2026-10-30/ins3-profile",
+    "fixture": "crates/cos-client/fixtures/task-184.json",
+    "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52",
+    "input_route": "computer window input; AX press for the strip action"
+  },
+  "results": {
+    "empty_strip": {"result": "PASS", "observed": "a healthy fixture observation renders no strip rows (zero intervention nodes in the AX tree).", "evidence": ["s1-fixture-empty.ax.txt"]},
+    "blocked_observation_row": {"result": "PASS", "observed": "an unconfigured disconnected window renders exactly one Desktop-local row, 'Observation unavailable — Reconnect', with no Runtime issue/severity vocabulary and no destructive action.", "evidence": ["s2-disconnected-strip.png", "s2-disconnected-strip.ax.txt"]},
+    "reconnect_action": {"result": "PASS", "observed": "activating Reconnect produces the honest local result 'Reconnect requested — this window has no authorized observation to subscribe to.'; the condition remains unresolved and no canonical state is touched.", "evidence": ["s4-reconnect.png", "s4-reconnect.ax.txt"]},
+    "settled_stop_is_not_a_row": {"result": "PASS", "observed": "after an explicit Request Stop the fixture reaches CANCELED/STOPPED; the strip shows no row for the settled stop state, matching the recorded rule that settled states are not rows.", "evidence": ["s3-stop-settled.png"]},
+    "ordering_dedupe_task_scope": {"result": "NOT_REPRODUCIBLE", "observed": "the fixture offers no Runtime severity, no multi-kind condition set and only one Task, so ordering, dedupe/grouping and A→B scope cannot be produced natively; the 20 ui-model and 14 desktop-gpui intervention tests carry that evidence."},
+    "unavailable_reference_rows": {"result": "NOT_REPRODUCIBLE", "observed": "a static fixture never removes a viewed or compare reference, so the unavailable/missing-reference rows cannot be created natively."},
+    "attention_stop_rows": {"result": "NOT_REPRODUCIBLE", "observed": "the fixture settles the stop within the observation window, so an awaiting-receipt or unknown-stop attention row did not persist long enough to observe."}
+  },
+  "tests": {
+    "ui_model_intervention": "20 passed",
+    "desktop_gpui_intervention": "14 passed",
+    "commands": ["cargo test -p ui-model intervention", "cargo test -p desktop-gpui intervention"]
+  },
+  "review_boundary": {
+    "previous": "three external repair rounds were recorded with Gates on 9aa5ab6, 65ee502 and 5653dc3 (grouping/reconnect, two-stage task scope, stop attribution); a clean re-review of the repaired source is still missing.",
+    "this_run": "the repaired 5653dc3-lineage source is the current product source; this branch adds evidence only."
+  },
+  "not_measured": [
+    "Runtime-issued interventions (Runtime contract gap)",
+    "OS notification delivery (crosswalk row 8, deferred)",
+    "attention stop rows, unavailable-reference rows and multi-kind ordering natively",
+    "native pixels/DPI and screen-reader quality",
+    "product/UX acceptance"
+  ],
+  "product_change": "none; no reproduced DC-MP-INS3 violation required a code fix",
+  "gate": "no new Refine Gate: no product bytes changed on this branch; the identical source is covered by the historical INS3 Gates and NAV5 Gate 5e116b30-…",
+  "evidence_provenance": {
+    "byte_identical_to_older_evidence": [
+      {"file": "s1-fixture-empty.png", "same_as": ["ax2-keyboard-latest/startup-current.png", "w13-native-latest/fixture-startup.png"], "note": "the deterministic startup screen; not used as unique proof. The empty strip is proven by the zero intervention nodes in s1-fixture-empty.ax.txt."}
+    ],
+    "unique_images": "s2, s3 and s4 have no byte-identical copy in the published evidence directories checked here."
+  },
+  "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.77"
+}
