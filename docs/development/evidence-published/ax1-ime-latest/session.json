@@ -272,7 +272,7 @@
         "clippy": "<verification-root>/gate-targets/ax1-r5",
         "tests": "<verification-root>/gate-targets/ax1-r5",
         "development_target_used": false,
-        "interpretation": "The two cargo-bearing checks of one Gate share that Gate's own target. The storage boundary forbids sharing a mutable target between independent checks and between Refine checks and the development workspace; the checks of a single Gate are one ordered verification sequence inside one prepared checkout (the producer contract runs them in request order and stops at the first failure), so one Gate-owned target is the arrangement the request declares. The request/env mapping above is the evidence for that; a per-check cold target would require four cold workspace builds inside the same 600 s cap."
+        "interpretation": "The two cargo-bearing checks of one Gate share that Gate's own target. The storage boundary forbids sharing a mutable target between independent checks and between Refine checks and the development workspace; the checks of a single Gate are one ordered verification sequence inside one prepared checkout (the producer contract runs them in request order and stops at the first failure), so one Gate-owned target is the arrangement the request declares. The request/env mapping above is the evidence for that; per-check cold targets would add further cold builds and disk use inside the same 600 s cap and are not what this request declares."
       }
     },
     "gate_workspace_disposal": {
@@ -284,7 +284,7 @@
           "path": "refine-state/gates/e102ee79-aa47-431f-8430-67e82eff0189/work/repo",
           "owner": "Refine Gate e102ee79",
           "size": "about 53 MiB",
-          "authority": "successful-Gate workspace disposal procedure step 4"
+          "authority": "successful-Gate workspace disposal step 4"
         },
         {
           "path": "gate-targets/ax1-r5",
@@ -293,23 +293,32 @@
           "authority": "the same Gate's declared scratch target"
         },
         {
-          "path": "gate-targets/probe-r4, gate-targets/probe-sccache, sccache, probe-home, probe-home2",
-          "owner": "this session's environment-qualification probes (not Gate records)",
-          "size": "about 3 GiB combined for the targets",
-          "authority": "session-owned scratch created by this session for measurement; no Gate record depended on it"
+          "path": "refine-state/gates/91a15539-af6a-4076-ba0c-588716cc407c/work/repo",
+          "owner": "Gate 91a15539",
+          "size": "about 53 MiB",
+          "authority": "removed before that Gate was found non-compliant; its receipts, logs and record are unchanged and the deletion is not reclassified as a compliant disposal"
         },
         {
-          "path": "gate-targets/probe-home/AppData/Local/Microsoft/Windows/INetCache/Content.IE5",
-          "owner": "operating-system cache created inside a probe home",
-          "size": "small",
-          "authority": "not removed: the OS denied deletion; recorded as residue"
+          "path": "gate-targets/probe-r4, gate-targets/probe-sccache, sccache, probe-home, probe-home2",
+          "owner": "this session's environment-qualification probes, not Gate records",
+          "size": "about 3 GiB combined for the targets",
+          "authority": "session-owned scratch created for measurement; no Gate record depended on it"
         }
       ],
       "kept": "Gate authority, requests, receipts, state, private logs and private home directories for all five Gates; the three failed Gates (191c71f8, 13fb06aa, 3707b0a6) and the held Gate's (91a15539) workspaces are retained because only a policy-compliant successful Gate's workspace is disposable",
       "integrity_before_after": "candidate sha256 and every check-log digest identical; state SUCCEEDED in both reports",
       "candidate_source_retention": "the candidate commit stays reachable locally and on origin/dev",
       "observed_residue": "each Gate's private home still holds a toolchain copy of about 730 MiB; the documented procedure does not authorize deleting private trees and no attempt was made",
-      "earlier_disposal_note": "gate 91a15539's workspace was also disposed under the same procedure before its build-area non-compliance was identified; its record and receipts are unchanged"
+      "earlier_disposal_note": "gate 91a15539's workspace was also disposed under the same procedure before its build-area non-compliance was identified; its record and receipts are unchanged",
+      "retained": "Gate authority, requests, receipts, state, private logs and private home directories for all five Gates; the workspaces of the three FAILED Gates (191c71f8, 13fb06aa, 3707b0a6) remain in place and untouched",
+      "failed_to_remove": [
+        {
+          "path": "gate-targets/probe-home/AppData/Local/Microsoft/Windows/INetCache/Content.IE5",
+          "owner": "operating-system cache created inside a probe home",
+          "reason": "the OS denied deletion",
+          "status": "residue; recorded, not claimed as removed"
+        }
+      ]
     },
     "independent_gate_scope": "the independent Gate covers fmt, dependency-rules, clippy and tests. It does NOT independently verify `cargo build`: `cargo test --workspace` builds the test targets, which is not the same verification as `cargo build --workspace`. The build step was executed by the local quality gate on the same source and is recorded as local evidence, not as independent Gate evidence."
   },
