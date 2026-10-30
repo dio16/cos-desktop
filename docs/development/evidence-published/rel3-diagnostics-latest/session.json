@@ -121,7 +121,7 @@
     "Runtime/Provider versions stay UNKNOWN until a projection supplies them",
     "no Desktop call site builds a report yet, so the version parameter is currently exercised by tests only; the binary must pass its own CARGO_PKG_VERSION when it does"
   ],
-  "source_candidate": "f71a7ee99628837918218795842809af8e652d37",
+  "source_candidate": "a7b4ce0c46bd026d05529b9efb32799b938751bc",
   "changed_files": [
     "crates/app-core/src/lib.rs",
     "crates/app-core/src/support_report.rs",
@@ -139,12 +139,12 @@
     }
   },
   "gate": {
-    "id": "b440495b-c28b-44aa-8337-0d212379565b",
-    "candidate": "f71a7ee99628837918218795842809af8e652d37",
+    "id": "70b249da-848b-456a-814e-ecc901955016",
+    "candidate": "a7b4ce0c46bd026d05529b9efb32799b938751bc",
     "status": "SUCCEEDED",
     "cleanup": "complete",
-    "request_sha256": "sha256:d26bb79edb5313ac67c0558ce1cb9c861e6c2ea317285441afc484feaf3b1e04",
-    "terminal_state_sha256": "sha256:88f4de6485ff22e0fd70174e2d714b164cdc45105ce04bf25628b220bcd4797a",
+    "request_sha256": "sha256:ca0e7616918f5017051118c2c2f00ea6653c96fd4443b73689defed737c4ef65",
+    "terminal_state_sha256": "sha256:66166056be5368e9a4f730625107e91b0095774205b6ece589dcab4d648e513c",
     "checks": [
       {
         "id": "fmt",
@@ -190,14 +190,31 @@
     "storage": {
       "outcome": "COMPLETE",
       "removed_exact_successful_paths": 2,
-      "logical_bytes_removed": 2242490504,
+      "logical_bytes_removed": 2242560440,
       "native_integrity_before_after": "IDENTICAL_SUCCEEDED",
       "source_retained_by": "dev ancestry"
+    },
+    "superseded": {
+      "id": "b440495b-c28b-44aa-8337-0d212379565b",
+      "candidate": "f71a7ee99628837918218795842809af8e652d37",
+      "state": "SUCCEEDED",
+      "note": "covered the pre-repair candidate; the review then required two fixes"
     }
   },
   "native": "NOT_RUN — no diagnostic UI/CLI or startup path was changed; the report is an app-core public seam. No window, AX or pixel claim is made for MP-REL3.",
   "review": {
-    "sha": "PENDING",
-    "status": "NOT_SUBMITTED"
+    "rounds": [
+      {
+        "round": 1,
+        "sha": "b3c876db388a037f2f85e8205e87a82ee19c3190",
+        "verdict": "1 BLOCKING / 2 ACTIONABLE / 0 EXCESSIVE"
+      }
+    ],
+    "closed": [
+      "B-R1-01 unread diagnostics fabricated as zero",
+      "A-R1-01 Desktop version ownership",
+      "A-R1-02 plan section structure"
+    ],
+    "re_review": "PENDING"
   }
 }
