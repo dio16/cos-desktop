@@ -89,7 +89,7 @@
     "AC05_dpi_move_keeps_anchor": "HOLD: no accepted fractional-scale image or mixed-monitor run",
     "AC06_keyboard_only_main_flow": "PARTIAL: keyboard bindings exist and were exercised historically; a full keyboard-only pass is not recorded in this slice",
     "AC07_accessible_names_roles_values": "PARTIAL: interactive controls and the three text inputs carry names and values; static status text is still absent",
-    "AC08_japanese_commit_cancel_and_partial_dispatch": "MET on both activation routes: commit and cancel are observed natively, and the keyboard and pointer routes share one guard so a partial composition dispatches no command. The Enter route was also observed natively (palette stayed open, no command ran); the pointer route is SOURCE_VERIFIED plus unit-tested, and the pointer Native attempt was inconclusive because the composed query matched no command and therefore had nothing to dispatch.",
+    "AC08_japanese_commit_cancel_and_partial_dispatch": "PARTIAL, not MET: commit and cancel are Native-observed; the keyboard activation route was observed natively to run no command during a composition, while which layer suppressed it (platform IME or the guard) is NOT_MEASURED; the pointer route is SOURCE_VERIFIED through the same boundary and is not Native-observed; no execution-path regression test exists, only a test of the shared predicate.",
     "AC09_focus_selection_anchor_across_surfaces": "PARTIAL: per-surface state is separate by construction and the rail-to-flow switch leaked nothing; anchor preservation across DPI/monitor changes is HOLD",
     "AC10_high_contrast_reduced_motion": "NOT_IMPLEMENTED / NOT_MEASURED as above",
     "AC11_matrix_states_distinguished": "MET: every item above carries PASS/PARTIAL/HOLD/NOT_MEASURED/NOT_IMPLEMENTED explicitly",
@@ -108,9 +108,9 @@
         "launched the fixture window",
         "the Operator opened the Command Palette, entered にほ without confirming and pressed Enter",
         "the palette stayed open with the query showing にほ and no command ran; Escape dismissed it",
-        "a second Operator pass entered にほ and clicked a result row; the palette closed, but the composed text matched no command, so that attempt cannot separate the guard from an empty result set"
+        "a second Operator pass entered にほ and then clicked inside the palette; the palette closed. The clicked target is not identified: with no matching command a search can render no clickable result rows, so this could have been an empty area, an outer element or a stale row. It is recorded only as \"the palette closed after a click\" and is not used as evidence for the pointer guard."
       ],
-      "limit": "the keyboard observation shows the end-to-end behaviour and whether the platform IME or the guard suppressed it is NOT_MEASURED; the pointer route is covered by the shared boundary and its unit test, not by an unambiguous Native observation"
+      "limit": "the keyboard observation shows the end-to-end behaviour and does not separate the platform IME from the guard; the pointer route is not Native-verified and rests on the shared boundary and its predicate test"
     },
     "independent_gate": {
       "gate_id": "c92f52df-47a2-4eff-b4d6-4e66511c8c89",
@@ -151,7 +151,8 @@
       "integrity": "candidate and every check-log digest identical before and after"
     },
     "documentation": "PASS: json.tool; 62 owning contracts; unchanged acyclic 41-edge DAG; links resolve; recorded values match the run outputs; privacy scan; git diff --check.",
-    "review": "PENDING candidate-specific linked Tern review"
+    "review": "PENDING candidate-specific linked Tern review",
+    "test_guarantee_scope": "The unit test covers the shared predicate palette_dispatch_allowed(open, marked) only. It does not execute palette_activate or palette_invoke_slot, because both need a GPUI Window and Context that the crate's test harness does not provide; a source-text assertion that the two functions call the predicate would be the forbidden kind of test, so none was added. What guarantees the call sites is the single-boundary structure plus code review, not a test."
   },
   "not_measured_or_open": [
     "Screen-reader announcement quality and static-status-text exposure",
