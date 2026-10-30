@@ -309,9 +309,17 @@ fn hard_deadline_cancels_without_a_reported_exit_code() {
 }
 
 /// A2: capture must not depend on a pipe. A descendant of the candidate inherits
-/// the redirected handles and outlives the direct child by seconds; with pipe
-/// capture the parent would block until that descendant closed them, so the
-/// assertion is on return latency (2.5 s descendant against a 1.5 s bound).
+/// the redirected handles and outlives the direct child; with pipe capture the
+/// parent would block until that descendant closed them, so the assertion is on
+/// return latency.
+///
+/// The margin has to clear host process-creation cost, not just scheduling. On
+/// this Windows host the first child creation of a freshly built binary costs
+/// 0.4-2.0 s (measured with a standalone probe, per creating process, while an
+/// already-known binary costs 5-8 ms), and that cost lands inside the candidate's
+/// lifetime. A 2.5 s descendant against 1.5 s therefore measured the host, not
+/// the capture design. A 6 s descendant keeps a wide band: blocking would return
+/// at 6 s or later, while host creation noise stays under 2.5 s.
 #[test]
 fn deadline_holds_when_a_descendant_inherits_the_capture_handles() {
     let fixture = Fixture::new();
@@ -326,7 +334,7 @@ fn deadline_holds_when_a_descendant_inherits_the_capture_handles() {
     assert!(!observation.timeout_fired);
     let wall_ms = observation.wall_ms.unwrap();
     assert!(
-        wall_ms < 1_500,
+        wall_ms < 4_000,
         "the parent must not wait for an inherited capture handle ({wall_ms} ms)"
     );
 }
@@ -4462,7 +4470,7 @@ fn fake_sleeper_helper() {
     if std::env::var_os(SLEEP_ENV).is_none() {
         return;
     }
-    std::thread::sleep(std::time::Duration::from_millis(2_500));
+    std::thread::sleep(std::time::Duration::from_millis(6_000));
 }
 
 #[derive(Clone, Copy)]

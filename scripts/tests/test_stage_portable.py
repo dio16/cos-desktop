@@ -360,6 +360,50 @@ class StagePortableCliTests(unittest.TestCase):
         self.assertEqual("preserve me", (output / "user-data.txt").read_text(encoding="utf-8"))
         self.assertEqual(b"COS Desktop notice\n", (saved / "NOTICE").read_bytes())
 
+    def test_replacement_between_ownership_check_and_withdrawal_is_preserved(self):
+        saved = Path(self.temporary.name) / "moved-owned-package"
+        output = Path(self.temporary.name) / "published"
+        real_rename = os.rename
+
+        def racing_rename(source, target):
+            # Inject the replacement in the window after the ownership check and
+            # before the withdrawal rename runs.
+            if Path(source) == output and not saved.exists():
+                real_rename(output, saved)
+                output.mkdir()
+                (output / "user-data.txt").write_text("preserve me", encoding="utf-8")
+            return real_rename(source, target)
+
+        def corrupt(directory):
+            (directory / "NOTICE").write_text("modified after rename", encoding="utf-8")
+
+        root = Path(self.temporary.name) / "source"
+        root.mkdir()
+        for name in ("LICENSE", "NOTICE"):
+            (root / name).write_bytes((self.package / name).read_bytes())
+        real_verify = stage_portable.verify_directory
+
+        def corrupt_published(directory):
+            if directory == output:
+                corrupt(directory)
+            return real_verify(directory)
+
+        with (
+            patch.object(stage_portable, "read_source_identity", return_value=("a" * 40, "b" * 40)),
+            patch.object(stage_portable, "cargo_package", return_value=({"version": "0.1.0"}, "fixture-package")),
+            patch.object(stage_portable, "build_executable", return_value=(
+                self.package / "cos-desktop.exe", "cargo fixture", "rustc fixture",
+                "cargo build --locked --package cos-desktop --bin cos-desktop --message-format=json-render-diagnostics")),
+            patch.object(stage_portable, "verify_directory", side_effect=corrupt_published),
+            patch.object(stage_portable.os, "rename", side_effect=racing_rename),
+        ):
+            with self.assertRaises(stage_portable.StageError):
+                stage_portable.stage(root, output)
+        self.assertEqual("preserve me", (output / "user-data.txt").read_text(encoding="utf-8"))
+        # The foreign replacement is back at its path; this run's own package is
+        # still parked where the race moved it, never deleted.
+        self.assertTrue((saved / "NOTICE").exists())
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

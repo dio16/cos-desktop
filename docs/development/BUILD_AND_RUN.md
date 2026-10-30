@@ -1226,7 +1226,8 @@ in-place write is refused rather than described. Payload and manifest inputs are
 bounded before parsing: 128 MiB for the executable, 1 MiB for the manifest, which
 admits the current 32 MB-class binary and refuses larger input by size alone.
 A failed verification after the final rename withdraws only the directory this run
-created and re-raises; a foreign replacement at that path is preserved.
+created: ownership is re-proved after the move, and a directory that is not ours is
+put back at its own path instead of being deleted or cleaned up.
 It is **self-consistency verification, not authentication**: a coherently replaced
 unsigned payload and manifest need an external trusted identity to detect.
 The allowlist excludes extra credentials/logs/fixtures/configuration; this is not

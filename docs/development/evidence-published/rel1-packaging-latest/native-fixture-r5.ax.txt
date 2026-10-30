@@ -1,4 +1,4 @@
-- window "COS Desktop" [ref=e1247] app=C:\dev\cos-desktop-verification\rel1-2026-10-30\内部 検証\local-stage-r5\cos-desktop.exe (focused)
+- window "COS Desktop" [ref=e1247] app=<internal-stage>\cos-desktop.exe (focused)
   - titlebar [ref=e1248]: "COS Desktop"
     - menubar "システム" [ref=e1249]
       - menuitem "システム" [ref=e1250]

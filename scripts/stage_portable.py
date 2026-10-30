@@ -40,6 +40,13 @@ def file_stamp(info: os.stat_result) -> tuple:
             info.st_nlink, stat.S_IFMT(info.st_mode), info.st_file_attributes if os.name == "nt" else 0)
 
 
+def is_owned(path: Path, identity: tuple) -> bool:
+    try:
+        return file_stamp(path.stat(follow_symlinks=False))[:2] == identity
+    except OSError:
+        return False
+
+
 def read_snapshot(path: Path, limit: int) -> tuple[bytes, str, tuple]:
     before = path.stat(follow_symlinks=False)
     stamp = file_stamp(before)
@@ -409,12 +416,17 @@ def stage(root: Path, output: Path) -> dict:
         try:
             return verify_directory(output)
         except BaseException:
-            # Withdraw only our renamed directory, never a replacement owned by someone else.
-            if output.exists() and file_stamp(output.stat(follow_symlinks=False))[:2] == owned_identity:
+            # Withdraw only a directory this run provably created. A replacement that
+            # appeared between the identity check and the rename is moved back to its
+            # own path instead of being deleted.
+            if is_owned(output, owned_identity):
                 os.rename(output, temporary)
+                if not is_owned(temporary, owned_identity):
+                    os.rename(temporary, output)
+                    raise
             raise
     finally:
-        if temporary.exists():
+        if is_owned(temporary, owned_identity):
             shutil.rmtree(temporary)
 
 
