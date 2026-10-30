@@ -183,7 +183,7 @@
   "product_change": "none; this branch records the visual-direction state only",
   "gate": "no Refine Gate: no product source changed (Y04); current candidate 89d52642 remains covered by Gate e1f4bf7a-…",
   "evidence_provenance": {
-    "unique_images": "focus-ring.png and overlay-and-controls.png have no byte-identical copy in the published evidence directories checked here."
+    "unique_images": "focus-ring.png and overlay-and-controls.png had no byte-identical copy in the seven evidence directories listed under evidence_capture.uniqueness; no broader claim is made."
   },
   "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.80",
   "evidence_capture": {
@@ -203,6 +203,6 @@
       }
     ],
     "ax": "focus-ring.ax.txt belongs to the same run as focus-ring.png; executable and fixture identities are in environment",
-    "uniqueness": "checked against the evidence-published directories listed in this record at capture time; no exhaustive comparison was performed"
+    "uniqueness": "compared against these evidence-published directory sets at capture time: nav5-palette-latest, ax2-keyboard-latest, sec2-native-latest, dock2-native-latest, ins1-native-latest, ins3-native-latest, ux1-prototype-latest. The comparison is limited to those directories and is not an exhaustive repository check."
   }
 }
