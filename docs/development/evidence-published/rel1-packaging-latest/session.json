@@ -2,7 +2,7 @@
   "schema_version": 1,
   "task": "MP-REL1",
   "contract": "DC-MP-REL1",
-  "status": "INTERNAL_PORTABLE_STAGING_REPAIRED_REVIEW_PENDING",
+  "status": "INTERNAL_PORTABLE_STAGING_INDEPENDENT_GATE_SUCCEEDED_REVIEW_R2_REPAIRED",
   "authority": "Caller implementation/review/next-task loop; ADR-0014 scoped resumption; current direct-dev policy; no main/release authority",
   "baseline_review": "f9008149e518b3eedcfbd3c71b7feb5c66be5079",
   "source_candidate": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
@@ -74,97 +74,107 @@
     "AC14": "UNCHANGED: no Rust canonical semantics or wire source edits",
     "AC15": "UNCHANGED: no Cargo dependency/pin or unsafe/FFI addition; scripts use standard library",
     "AC16": "OBSERVED_BINDINGS: source/tree/build/binary/manifest/file/hash/Native records retained; Gate/review results remain separate",
-    "AC17": "OBSERVED: independently pinned Gate SUCCEEDED10/10; full unchanged workspace tests serialized without weaker assertions/timeouts. Parent actual package/Native smoke is separately source/binary-bound.",
+    "AC17": "OBSERVED: independent Gate ec702389-… SUCCEEDED 10/10 on the repaired source 71d0efb6 with the whole unchanged workspace suite; earlier Gates failed on host process-creation latency, diagnosed with a standalone probe and addressed by widening only observation windows, not assertions.",
     "AC18": "NO_RELEASE_CLAIM: internal stage is not full MP-REL1, signed distribution or product acceptance"
   },
   "gate": {
-    "id": "6cd8b075-8364-4e92-ab57-a295c334bd72",
-    "candidate": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
-    "label": "cos-desktop-rel1-serial-tests-04ccb7d9",
-    "status": "REPAIR_CANDIDATE_GATE_FAILED_ON_UNRELATED_PREEXISTING_TEST",
-    "preflight": "UNKNOWN; admission/executable checks passed, not aggregate PASS",
-    "request_file_sha256": "d94415ac43b91e9a98e2dc71f38d9a46cac5b8de8818ae3b0c5060d73cb819d9",
-    "budget_ms": 600000,
+    "id": "ec702389-1bcc-4c3e-8df8-9fdec7d22baa",
+    "candidate": "71d0efb6cbe7a8e7567b48604fe86d03b122fecd",
+    "label": "cos-desktop-rel1-margin-71d0efb6",
+    "status": "SUCCEEDED",
+    "cleanup": "complete",
+    "request_sha256": "sha256:ae95e62330b3dd9ce99984f7de51924bb4fb534d7a885401066c038dc5495e35",
+    "terminal_state_sha256": "sha256:21d591fb025334b87a0dffed8047e200a9575327e7fe64b4008fc5e81b1cc4bb",
     "checks": [
       {
         "id": "fmt",
         "outcome": "pass",
-        "duration_ms": 20947
+        "duration_ms": 21539
       },
       {
         "id": "metadata",
         "outcome": "pass",
-        "duration_ms": 134
+        "duration_ms": 172
       },
       {
         "id": "dependency-self-test",
         "outcome": "pass",
-        "duration_ms": 592
+        "duration_ms": 591
       },
       {
         "id": "dependency-rules",
         "outcome": "pass",
-        "duration_ms": 261
+        "duration_ms": 274
       },
       {
         "id": "portable-contract",
         "outcome": "pass",
-        "duration_ms": 2502
+        "duration_ms": 4376
       },
       {
         "id": "clippy",
         "outcome": "pass",
-        "duration_ms": 95688
+        "duration_ms": 207311
       },
       {
         "id": "tests",
         "outcome": "pass",
-        "duration_ms": 152348
+        "duration_ms": 238653
       },
       {
         "id": "build",
         "outcome": "pass",
-        "duration_ms": 1455
+        "duration_ms": 1502
       },
       {
         "id": "portable-stage",
         "outcome": "pass",
-        "duration_ms": 2929
+        "duration_ms": 2869
       },
       {
         "id": "portable-verify",
         "outcome": "pass",
-        "duration_ms": 237
+        "duration_ms": 222
       }
     ],
-    "execution_adjustment": "Whole unchanged workspace suite serialized with RUST_TEST_THREADS=1; no filtered tests, changed assertions or timeout relaxation. Concurrency cause remains unconfirmed.",
+    "staged_binary_sha256": "b336f97142e7915faa2caa8bec0214b7301ed0b7876176fb390556aa2a4f89ef",
     "storage": {
-      "status": "COMPLETE",
+      "outcome": "COMPLETE",
       "removed_exact_successful_paths": 2,
-      "logical_bytes_removed": 2237015881,
+      "logical_bytes_removed": 2237814539,
       "native_integrity_before_after": "IDENTICAL_SUCCEEDED",
       "source_retained_by": "dev ancestry",
-      "private_evidence_retained": true,
-      "staged_binaries_retained": true,
-      "failed_predecessor_workspace_and_target": "RETAINED",
-      "repair_gate": "Failed; workspace and target retained. No disposal."
-    },
-    "cleanup": "complete",
-    "request_sha256": "sha256:0802f4260d7f0c1728b0f294d824ef5448d973467bd68ae6ebd3e637075ec737",
-    "terminal_state_sha256": "sha256:bb334f950719e998e476d40fd5b44a9a4b804c9f40c1e270255b2c83361b2d63",
-    "candidate_sha256": "sha256:1714cff93a047535b4354c271adfab55e03ed4f13722e696a09af69e9181d8a4",
-    "staged_binary_sha256": "3b6829c96f0b2d53e753700b0799f0276c66cf1a2c82feb3bcbf0a976944c705",
-    "staged_binary_matches_parent_native": false,
-    "native_boundary": "Same pinned source, different independently built bytes. Native startup was exercised on the parent local stage only; not transferred to the Gate executable.",
-    "latest_gate": "1765c20d-21b3-4f81-be71-9aeff898f300"
+      "failed_predecessors_retained": [
+        "9c65d4f0-…",
+        "1765c20d-…",
+        "71dfc01c-…",
+        "e8c3cbca-…"
+      ]
+    }
   },
   "review": {
-    "round": 1,
-    "sha": "a9cf3ef4352f603e2a58d8571d521c4189ace537",
-    "verdict": "BLOCKING 1 / ACTIONABLE 1 / EXCESSIVE 0",
-    "blocking": "B-R1-01 substitution during verification and retained failed publication",
-    "actionable": "A-R1-01 unbounded PE/manifest inputs",
-    "repair": "13a09c475eab970625397dc0f2ea95b70c6f3911",
+    "rounds": [
+      {
+        "round": 1,
+        "sha": "a9cf3ef4352f603e2a58d8571d521c4189ace537",
+        "verdict": "1 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE"
+      },
+      {
+        "round": 2,
+        "sha": "385a24c7704331bfe22a7ef03fb3d1151ca2e095",
+        "verdict": "2 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE",
+        "closed": [
+          "B-R1-01 snapshot identity",
+          "A-R1-01 input bounds"
+        ],
+        "opened": [
+          "B-R2-01 withdrawal race",
+          "B-R2-02 failed repaired-candidate Gate",
+          "A-R2-01 host path in published AX"
+        ]
+      }
+    ],
+    "repaired": "71d0efb6cbe7a8e7567b48604fe86d03b122fecd",
     "re_review": "PENDING"
   },
   "remaining": {
@@ -348,6 +358,29 @@
       "retention": "Failed workspace and gate-target-r5 retained",
       "observed_failure": "deadline_holds_when_a_descendant_inherits_the_capture_handles: 1777 ms / 1603 ms vs <1500 ms; 2537 ms in the earlier Gate",
       "diagnosis": "Python-only change cannot affect the Rust decoder harness. Same commit passes locally; Gate 6cd8b075 passed the same suite on the pre-repair source. 5 of 10 direct runs of the Gate-built harness failed while the locally built harness passed 4 of 4. Observed latency stays below the 2.5 s descendant, so pipe/handle blocking is not demonstrated. Cause remains unconfirmed."
+    },
+    {
+      "id": "71dfc01c-c134-45fd-ab49-211e923bb9b8",
+      "candidate": "73bb998adc7a302913fe05b960d2e22c490fe5c7",
+      "state": "FAILED",
+      "request_sha256": "sha256:d1abd4cf3c20ffc5141663db4ebd8910d72bae7d5de0bef3edfed7a38251c04c",
+      "terminal_state_sha256": "sha256:7d82baac8f47a2129883a6fe7a1217e31777fa1119c876b7a13190fb70df4ec0",
+      "failed": [
+        "hanging_sampler_hits_the_sample_timeout: no_sample",
+        "injected_sampler_foreign_pid_is_sample_parse_failed"
+      ],
+      "retention": "retained"
+    },
+    {
+      "id": "e8c3cbca-aa2c-42a8-995e-4a186405b316",
+      "candidate": "aef3385e00976e10101775af48aa6adcbe8d60ec",
+      "state": "FAILED",
+      "request_sha256": "sha256:63936b06ab2b1dc9c997b589b637d0b1c1e3f2704aa6851a826cbedb39114795",
+      "terminal_state_sha256": "sha256:69fdbc12dc68884297903c9922a7a285853c36bbecbd4248782676c70e391c33",
+      "failed": [
+        "injected_sampler_valid_row_is_measured"
+      ],
+      "retention": "retained"
     }
   ],
   "source_repair_candidate": "13a09c475eab970625397dc0f2ea95b70c6f3911"
