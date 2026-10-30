@@ -10,7 +10,7 @@
     "command": "cargo metadata --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc, then a normal+build traversal from the cos-desktop binary",
     "reachable_packages": 369,
     "edge_kinds_separated": {
-      "normal_and_build": 368,
+      "normal_and_build": 369,
       "dev_only": "excluded by construction — the traversal follows normal and build edges only"
     },
     "sources": [
@@ -81,7 +81,8 @@
       "seahash 4.1.0",
       "simd_helpers 0.1.0",
       "svg_fmt 0.4.5",
-      "taffy 0.13.0"
+      "taffy 0.13.0",
+      "zune-inflate 0.2.54"
     ],
     "why_the_16_matter": "a declared SPDX expression is not the licence text; whether a distribution must carry each text depends on the licence and on what the package ships, so their text has to be collected and assessed before any package leaves the internal stage",
     "notice_files_found_in_fetched_sources": [
@@ -117,7 +118,9 @@
       "workspace": "6 local crates, covered by the repository LICENSE/NOTICE",
       "sum_check": "330 + 16 + 17 + 6 = 369"
     },
-    "packages_without_local_text_count": 16
+    "packages_without_local_text_count": 16,
+    "declared_expression_wording": "all 369 declare a licence string in Cargo metadata. Nineteen of those strings (MIT/Apache-2.0 x14, Apache-2.0/MIT x5) are not well-formed SPDX expressions; they are recorded verbatim rather than rewritten, and they are counted as licence strings, not as SPDX expressions.",
+    "non_spdx_notation_count": 19
   },
   "c_runtime_dependencies": {
     "starting_point": "the published binary-survey.json for the staged executable (34 direct import labels, x86_64, unsigned, delay-import directory zero)",
@@ -144,7 +147,7 @@
       "cargo metadata --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc",
       "cargo tree --locked -p cos-desktop --target x86_64-pc-windows-msvc -e normal,build",
       "python -B scripts/tests/test_stage_portable.py",
-      "source scan of ~/.cargo/registry/src for licence and NOTICE files among the 368 packages"
+      "source scan of ~/.cargo/registry/src for licence and NOTICE files among the 346 registry packages"
     ],
     "package_suite": "28 tests collected, 27 passed, 1 skipped (Windows denies symbolic-link creation); the four-file allowlist and unsigned refusal are unchanged",
     "gate": "none — no product or verification code changed (ADR-0014 Y04)"
