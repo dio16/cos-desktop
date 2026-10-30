@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "scope": "successful-Gate workspace disposal for the 2026-10-30 scoped-resumption Gates",
+  "state_dir": "C:/dev/cos-desktop-verification/nav5-2026-10-30/state",
+  "rule": "Only successful Gate workspaces and this session's own scratch cargo target directories were removed. Failed Gate workspaces, receipts, logs, artifacts, private state and the pinned Git source were retained. No blanket cleanup and no receipt rewrite.",
+  "before_bytes": 20119937603,
+  "after_state_bytes": 5456975023,
+  "disposed_successful_gate_workspaces": [
+    {"gate_id": "74c2928c-cd8b-42fa-b0b0-c03a0df79595", "label": "cos-desktop-nav5-quality-9211b34d", "removed": "work/"},
+    {"gate_id": "5e116b30-972d-4ea1-a4ce-b10465eafb29", "label": "cos-desktop-nav5-quality-repair2-f1de4f36", "removed": "work/"},
+    {"gate_id": "b56260df-a87f-41e7-834e-f8f6e8471151", "label": "cos-desktop-ins1-repair-ea8d419b", "removed": "work/"},
+    {"gate_id": "302aac9d-03e7-48e5-beab-5b856b24fc0e", "label": "cos-desktop-ins1-repair3-ff7a785e", "removed": "work/"},
+    {"gate_id": "e1f4bf7a-39c9-4ed3-bfcd-2d9a86b9d94b", "label": "cos-desktop-ins1-repair4c-89d52642", "removed": "work/"}
+  ],
+  "retained_failed_gate_workspaces": [
+    {"gate_id": "0ab84441-7b0d-4a07-b0f0-7a4341f57a7f", "label": "cos-desktop-ins1-repair2-f506267d", "failure": "clippy too_many_arguments"},
+    {"gate_id": "95c13f87-48c1-4dbd-a5d5-604d17f2a9c1", "label": "cos-desktop-ins1-repair4-89d52642", "failure": "tests check timeout"}
+  ],
+  "removed_scratch_targets": ["targets", "targets2", "targets3", "targets4", "targets5", "targets6", "targets8"],
+  "integrity_after_disposal": {
+    "verified": 5,
+    "states": {
+      "74c2928c-cd8b-42fa-b0b0-c03a0df79595": "SUCCEEDED",
+      "5e116b30-972d-4ea1-a4ce-b10465eafb29": "SUCCEEDED",
+      "b56260df-a87f-41e7-834e-f8f6e8471151": "SUCCEEDED",
+      "302aac9d-03e7-48e5-beab-5b856b24fc0e": "SUCCEEDED",
+      "e1f4bf7a-39c9-4ed3-bfcd-2d9a86b9d94b": "SUCCEEDED"
+    }
+  },
+  "note": "Verification rehashed the persisted receipts after the workspace removal and reported the same SUCCEEDED states; no check was re-run and no failed Gate was deleted, relabelled or reused."
+}
