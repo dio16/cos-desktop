@@ -532,7 +532,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-INS1 — Inspector (why is this artifact here?)
 - **Hard prereqs:** MP-DOCK2.
-- **Priority:** P1 · **Status:** IMPLEMENTATION_READY (needs MP-DOCK2) · **Owner:** `ui-model` + `desktop-gpui`
+- **Priority:** P1 · **Status:** LIMITED NATIVE CLOSURE COMPLETE (projected values, absent outcome, keyboard disclosure, identity-change clearing and the repaired Task-scope gate observed; Tern CLEAN 0/0/0 on `051c6b13`; real Runtime projections, native A→B switching, pixels/DPI and product acceptance remain open) · **Owner:** `ui-model` + `desktop-gpui`
 - **Consumers:** MP-INS2/3, MP-ACC1.
 - **Design source / acceptance:** [DC-MP-INS1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ins1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -1941,4 +1941,5 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Round 3 ACTIONABLE and repairs:** the source-string regression test could satisfy itself by matching its own literals, so it now reads only the implementation section and asserts the current condition, invalidate and early-return order. The record also states the actual product change and names the current representative Gate instead of the earlier evidence-only wording.
 - **Honest gaps:** identity reorder, an authorized-observation gap and an in-place projection update are `NOT_REPRODUCIBLE` with the static fixture and remain model-test evidence; native pixels/DPI, real Runtime projections/evidence bodies (MP-INS2), screen-reader quality and product acceptance are not claimed.
 - **Evidence provenance:** `s0-initial.png` is byte-identical to the deterministic startup captures already published under W13/AX2, so it is disclosed and not used as unique proof; the view-specific captures are unique in the checked evidence tree.
+- **Review closure:** round 5 returned **PASS 0 / 0 / 0, VERDICT CLEAN** on pushed `051c6b13…`; the repaired Inspector source and its evidence are independently reviewed. Runtime projections/evidence bodies (MP-INS2), native A→B switching, pixels/DPI, screen-reader quality and product acceptance remain open.
 - **Tests:** `cargo test -p ui-model inspector` 9 passed (no-intermediate-frame Task test); `cargo test -p desktop-gpui inspector` 3 passed. The current product candidate is `89d52642` and its representative Gate is `e1f4bf7a-…`; the earlier Gate `302aac9d-…` on `ff7a785e` is superseded history, and no further Gate is claimed for the docs-only follow-ups. Evidence: [ins1-native-latest](evidence-published/ins1-native-latest/session.json).
