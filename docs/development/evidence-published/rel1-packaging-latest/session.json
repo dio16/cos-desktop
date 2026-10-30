@@ -2,7 +2,7 @@
   "schema_version": 1,
   "task": "MP-REL1",
   "contract": "DC-MP-REL1",
-  "status": "INTERNAL_PORTABLE_STAGING_INDEPENDENT_GATE_SUCCEEDED_REVIEW_R2_REPAIRED",
+  "status": "INTERNAL_STAGING_LIMITED_COMPLETE_REVIEW_CLEAN",
   "authority": "Caller implementation/review/next-task loop; ADR-0014 scoped resumption; current direct-dev policy; no main/release authority",
   "baseline_review": "f9008149e518b3eedcfbd3c71b7feb5c66be5079",
   "source_candidate": "04ccb7d9ad364e0575073d15a04418d7cc56d223",
@@ -194,10 +194,20 @@
         "opened": [
           "A-R5-01 retained path hidden in add_note, not printed by the CLI"
         ]
+      },
+      {
+        "round": 6,
+        "sha": "01bfd3b81c8104e4020c93f1a7de8c623e101a5d",
+        "verdict": "0 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE",
+        "verdict_line": "PASS 0 / 0 / 0",
+        "closed": [
+          "A-R5-01 printed retained path"
+        ]
       }
     ],
     "repaired": "96a0bdf3b46d800b82866ec34667a3559617dbb7",
-    "re_review": "PENDING"
+    "re_review": "CLEAN 0/0/0",
+    "scope_note": "Clean review covers the internal Portable staging/preflight slice only. MP-REL1 as a whole, a signed installer, install/upgrade/uninstall, clean-user behaviour, runtime-dependency/notice closure and product/release acceptance are not complete and were not reviewed as delivered."
   },
   "remaining": {
     "DD21": [

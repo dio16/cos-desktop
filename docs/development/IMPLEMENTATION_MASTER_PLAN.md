@@ -727,7 +727,7 @@ MP-RT1–7 are **RUNTIME_BLOCKED**: Runtime-dependent work may only begin once t
 
 #### MP-REL1 — Packaging (installer + portable archive)
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** INTERNAL PORTABLE STAGING IMPLEMENTED — real staging/preflight and same-user Native smoke observed; independent Gate 10/10 SUCCEEDED, Tern review pending (§19.82). Signed distribution, actual DD-21 certificate/publisher/operator inputs, complete dependency/notice closure and signing/install/uninstall evidence remain external/technical prerequisites, not permission waits · **Owner:** release owner + `apps/desktop`
+- **Priority:** P1 · **Status:** INTERNAL PORTABLE STAGING COMPLETE within its limited scope — real staging/preflight, same-user Native smoke and five independent Gates observed; external review CLEAN 0/0/0 on `01bfd3b8` (§19.82). Signed distribution, installer, upgrade/uninstall, clean-user, transitive-dependency/licence closure and product/release acceptance remain OPEN and are not implied by this line. Signed distribution, actual DD-21 certificate/publisher/operator inputs, complete dependency/notice closure and signing/install/uninstall evidence remain external/technical prerequisites, not permission waits · **Owner:** release owner + `apps/desktop`
 - **Consumers:** MP-REL2, MP-ACC2.
 - **Design source / acceptance:** [DC-MP-REL1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rel1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
