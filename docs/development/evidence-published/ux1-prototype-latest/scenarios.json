@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "task": "MP-UX1",
+  "contract": "DC-MP-UX1",
+  "status": "OPERABLE_PROTOTYPE_DEVELOPER_REACHABILITY_OBSERVED_PARTICIPANT_VALIDATION_NOT_RUN",
+  "authority": "Tern next-task directive after the clean MP-INS3 review; ADR-0014 scoped resumption; DC-MP-UX1; Product §65/§67 steps 4–7.",
+  "baseline": {
+    "reviewed_commit": "67ec5b69995c43da531609101104b1f3020122ab",
+    "branch": "feature/mp-ux1-operable-prototype",
+    "product_source": "89d526427c26a300f0700614abb51e4c842a29f7 (no product-source change on this branch)",
+    "prototype": "the existing fixture shell reused as the throwaway prototype; no second UI or prototype-only product surface was added"
+  },
+  "environment": {
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "system_dpi": 96,
+    "executable": "target/debug/cos-desktop.exe",
+    "executable_sha256": "sha256:e9c61950aa8c105d47e1b5c879cf5e4da3596d9bee49b0b1be4f5f707305b1e1",
+    "fixture": "crates/cos-client/fixtures/task-184.json",
+    "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52",
+    "isolation": "child-only LOCALAPPDATA under C:/dev/cos-desktop-verification/sec2-2026-10-30/ux1-profile"
+  },
+  "checks": [
+    {
+      "id": "UX01",
+      "question": "Can a person understand the Task state within 5 seconds?",
+      "scenario": "Launch the explicit fixture shell and read the persistent top status and rail without interaction.",
+      "expected": "Identify Task status, inner phase, iteration and connection at a glance.",
+      "route": "startup",
+      "reachability": "PASS",
+      "participant": "NOT_RUN",
+      "observations": "Task Status ACTIVE, Inner Phase REFINE, Iteration 3, Connection Observing and Formal Outcome Unknown are all visible at startup.",
+      "limitations": "the 5-second comprehension timing needs a participant; the developer check only proves the fields are present.",
+      "improvement_candidates": [],
+      "evidence": ["ux01-task-status.ax.txt"]
+    },
+    {
+      "id": "UX02",
+      "question": "Is the artifact naturally recognised as the protagonist?",
+      "scenario": "Select candidate B in the dock and look at the work surface.",
+      "expected": "The artifact surface is the main area and the selected candidate is named there.",
+      "route": "dock click on B",
+      "reachability": "PARTIAL",
+      "participant": "NOT_RUN",
+      "observations": "the artifact surface occupies the centre and names the viewed candidate B, but the media viewer is not implemented, so only synthetic metadata/placeholder text is shown.",
+      "limitations": "artifact dominance cannot be fully validated until real media presentation exists; the placeholder is labelled as not verified.",
+      "improvement_candidates": ["Product/UX decision needed on the minimum artifact placeholder vs. real media presentation before comprehension tests."],
+      "evidence": ["ux02-artifact-viewed-b.png", "ux02-artifact-viewed-b.ax.txt"]
+    },
+    {
+      "id": "UX03",
+      "question": "Can the candidate loop be understood?",
+      "scenario": "Read the Creative Loop Dock with its iteration groups and candidate rows.",
+      "expected": "Understand that candidates belong to iterations and the dock is local viewed state.",
+      "route": "read the dock after selection",
+      "reachability": "PASS",
+      "participant": "NOT_RUN",
+      "observations": "the dock shows It 1 (A,B), It 2 (C,D), It 3 (E) with the explicit 'Viewed is local; Formal Selected is Runtime-owned' label.",
+      "limitations": "loop comprehension needs a participant.",
+      "improvement_candidates": [],
+      "evidence": ["ux02-artifact-viewed-b.png", "ux03-candidate-loop.ax.txt"]
+    },
+    {
+      "id": "UX04",
+      "question": "Are Viewed and Formal Selection distinguished?",
+      "scenario": "View candidate B while the formal outcome is absent, then read the dock and inspector.",
+      "expected": "State that viewed is local while formal selection is Runtime-owned and currently unknown.",
+      "route": "dock click plus inspector/outcome read",
+      "reachability": "PASS",
+      "participant": "NOT_RUN",
+      "observations": "'Viewed candidate: B' appears in the inspector, 'Formal Outcome: Unknown — no formal outcome projection' remains independent, and no formal marker is shown.",
+      "limitations": "the silent-misinterpretation check needs participants.",
+      "improvement_candidates": [],
+      "evidence": ["ux02-artifact-viewed-b.png", "ux04-viewed-vs-formal.ax.txt"]
+    },
+    {
+      "id": "UX05",
+      "question": "Can a person move from Evaluation to Evidence naturally?",
+      "scenario": "Open Evaluation for the viewed candidate, then move focus to Evidence and open it.",
+      "expected": "Evaluation values and their Evidence summary are adjacent and reachable without leaving the inspector.",
+      "route": "palette Show Evaluation, Tab, Enter",
+      "reachability": "PASS",
+      "participant": "NOT_RUN",
+      "observations": "Evaluation details open (decision FAIL, authority HARNESS, confidence 0.62, visual_quality 66 score_0_100) and Evidence details open on the next section.",
+      "limitations": "naturalness of the transition needs a participant; evidence bodies remain MP-INS2.",
+      "improvement_candidates": [],
+      "evidence": ["ux05-evaluation.ax.txt", "ux05-evidence.ax.txt", "ux05-evidence.png"]
+    },
+    {
+      "id": "UX06",
+      "question": "Is Compare reachable without confusion?",
+      "scenario": "Reach the Compare surface from the fixture shell.",
+      "expected": "The Compare surface is reachable and states what is still needed to compare.",
+      "route": "Ctrl+2 and palette Show Compare",
+      "reachability": "PASS",
+      "participant": "NOT_RUN",
+      "observations": "Ctrl+2 reaches Compare; with five candidates it is admitted through the shared admission path and the panel states the local selection state.",
+      "limitations": "the less-than-two-candidate refusal and the perceived clarity need participants/fixtures with fewer candidates.",
+      "improvement_candidates": [],
+      "evidence": ["ux06-compare.png", "ux06-compare.ax.txt"]
+    },
+    {
+      "id": "UX07",
+      "question": "Can Flow be used only when needed?",
+      "scenario": "Reach the Flow surface on demand and inspect nodes/edges.",
+      "expected": "Flow is a separate on-demand surface, not a permanent distraction.",
+      "route": "Ctrl+3 and palette Show Flow",
+      "reachability": "PASS",
+      "participant": "NOT_RUN",
+      "observations": "Flow shows the graph inspection lists and is reached only by an explicit surface choice; the artifact/compare surfaces stay unaffected.",
+      "limitations": "the 'only when needed' judgement needs participants.",
+      "improvement_candidates": [],
+      "evidence": ["ux07-flow.png", "ux07-flow.ax.txt"]
+    },
+    {
+      "id": "UX08",
+      "question": "Can a person understand how to intervene when a problem occurs?",
+      "scenario": "Launch the unconfigured disconnected window and read the intervention strip.",
+      "expected": "One honest Desktop-local condition names the problem and offers a safe local next step.",
+      "route": "startup without a fixture; read the strip and the Reconnect action",
+      "reachability": "PASS",
+      "participant": "NOT_RUN",
+      "observations": "exactly one row 'Desktop-local · Observation unavailable — Reconnect' appears with no Runtime issue vocabulary and no destructive action; Reconnect states the honest local result.",
+      "limitations": "intervention comprehension needs participants; OS notifications remain deferred.",
+      "improvement_candidates": [],
+      "evidence": ["ux08-intervention.png", "ux08-intervention.ax.txt"]
+    }
+  ],
+  "participant_validation": {
+    "result": "NOT_RUN",
+    "reason": "no participant sessions were conducted; no model or developer judgement is reported as participant evidence",
+    "protocol": "validation-plan.md"
+  },
+  "not_measured": [
+    "participant comprehension and 5-second timing",
+    "real Runtime data, real media and evidence bodies",
+    "OS notification delivery",
+    "product/UX acceptance and any shipping adoption"
+  ],
+  "product_change": "none; the existing fixture shell is the disposable prototype",
+  "gate": "no Refine Gate: no product source changed; docs/evidence only (Y04)",
+  "evidence_provenance": {
+    "byte_identical_to_older_evidence": [
+      {"file": "ux01-task-status.png", "same_as": ["ax2-keyboard-latest/startup-current.png", "w13-native-latest/fixture-startup.png"], "note": "deterministic startup screen; the fields are proven by the AX record, not by this unique capture."},
+      {"file": "ux05-evaluation.png", "same_as": ["ins1-native-latest/s1-evaluation-b.png"], "note": "the same deterministic viewed-B/Evaluation state; retained as a scenario reference, not as a unique capture."},
+      {"file": "ux08-intervention.png", "same_as": ["ins3-native-latest/s2-disconnected-strip.png"], "note": "the same deterministic disconnected strip state; retained as a scenario reference."}
+    ],
+    "shared_state_capture": "UX02, UX03 and UX04 are answered from the same viewed-B screen, so one capture (ux02-artifact-viewed-b.png) is kept and referenced by all three; UX03/UX04 PNG duplicates were removed.",
+    "unique_images": "ux02, ux05-evidence, ux06 and ux07 have no byte-identical copy in the published evidence directories checked here."
+  },
+  "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.78"
+}
