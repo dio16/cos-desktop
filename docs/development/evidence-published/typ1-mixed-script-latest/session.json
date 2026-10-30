@@ -17,7 +17,9 @@
     "sha256": "sha256:020506d3de34468d7f12d5a1ac8e7e4022dcae11e9fb3146b8842c6d4b29bcd2",
     "build_source_commit": "f375144a7e3bcd2a6af6a5c47d96520e4fa93853",
     "build_source_tree": "011d5236d809ec65429961d2e17a1744d2a867c7",
-    "arguments": ["--fixture"],
+    "arguments": [
+      "--fixture"
+    ],
     "source_agreement": "apps/desktop, crates, Cargo.toml and Cargo.lock are byte-identical between that build source and the execution baseline; only documentation advanced. This is source agreement for the retained bytes, not a rebuild or a new build identity.",
     "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52",
     "profile_scope": "Fresh child-only LOCALAPPDATA; COS_ environment overrides removed for the child only; the absolute profile path stays private."
@@ -26,23 +28,55 @@
     "record": "native.json",
     "observed_utc": "2026-10-30T11:50:07Z",
     "os_version": "10.0.26300",
-    "scale": {"dpi": 96, "scale": 1.0, "method": "GetDpiForWindow", "controlled_ladder_step": false},
-    "window": {"handle": 4392180, "pid": 43276, "title": "COS Desktop", "width": 1296, "height": 839},
+    "scale": {
+      "dpi": 96,
+      "scale": 1.0,
+      "method": "GetDpiForWindow",
+      "controlled_ladder_step": false
+    },
+    "window": {
+      "handle": 4392180,
+      "pid": 43276,
+      "title": "COS Desktop",
+      "width": 1296,
+      "height": 839
+    },
     "image": {
       "file": "screenshot.png",
       "digest": "sha256:a776699bf8a82c15d12fc56c55d924ca7b21555f9b5dfe590ede023bf2eb0afd",
       "bytes": 58522,
-      "dimensions": {"width": 1296, "height": 839}
+      "dimensions": {
+        "width": 1296,
+        "height": 839
+      }
     },
     "binding": "PrintWindow(PW_RENDERFULLCONTENT) on that HWND only; 49/49 display samples agreed within 24 RGB levels; live HWND/PID/title/rect re-verification passed before the owned process was stopped; no screen copy, no desktop state change.",
     "foreground": "The application-created window was already foreground; the harness observed that with 4 read-only GetForegroundWindow polls in 0.752 s. No raise, focus request, z-order change, foreground grant or keyboard automation was performed, and no Operator action was required.",
-    "uia": {"status": "OBSERVED", "elements_visited": 41, "element_count": 41, "named_element_count": 40, "truncated": false, "depth_limited": false},
+    "uia": {
+      "status": "OBSERVED",
+      "elements_visited": 41,
+      "element_count": 41,
+      "named_element_count": 40,
+      "truncated": false,
+      "depth_limited": false
+    },
     "labels": {
-      "found_latin": ["Task Rail", "Inspector", "Context Bar", "Candidate Dock"],
+      "found_latin": [
+        "Task Rail",
+        "Inspector",
+        "Context Bar",
+        "Candidate Dock"
+      ],
       "missing_latin": [],
-      "found_japanese": ["新製品キービジュアル"],
+      "found_japanese": [
+        "新製品キービジュアル"
+      ],
       "missing_japanese": [],
-      "mixed_script_examples": ["Task-184  新製品キービジュアル", "Task-184 — 新製品キービジュアル", "Goal — available: Task-184 — 新製品キービジュアル"]
+      "mixed_script_examples": [
+        "Task-184  新製品キービジュアル",
+        "Task-184 — 新製品キービジュアル",
+        "Goal — available: Task-184 — 新製品キービジュアル"
+      ]
     },
     "harness_result": "PASS",
     "harness_scope": "Six checks only (window observed, bound capture, AX tree, four Latin labels, the Japanese label, mixed-script presence in AX). UIA presence and an identity-bound image are not a pixel-quality PASS.",
@@ -52,18 +86,284 @@
     "script": "measure_text.py",
     "reused_reader": "../typ1-dpi-ladder-latest/measure_runs.py",
     "method": "min(R,G,B) >= 160 inside each UIA rectangle mapped to image coordinates; rows separated by at least four empty rows form a band",
-    "deterministic": "two consecutive runs produced byte-identical stdout (sha256 f4c8c63d4bfe3518516942e67542e131e1991b9095c009da93530b0f9be7c99b)",
+    "deterministic": "two consecutive runs produced byte-identical stdout (sha256 40608c1fa9a18ca137f796bd5eb918c107da81b3c77c03b70c11b751d00afe62)",
     "targets": {
-      "context_title": {"rect": [67, 43, 1033, 20], "ink_bbox": [68, 46, 244, 60], "y_bands": [[46, 60]]},
-      "context_latin_ink_sample": {"rect": [67, 43, 58, 20], "ink_bbox": [68, 49, 122, 59], "y_bands": [[49, 59]]},
-      "context_japanese_ink_sample": {"rect": [130, 43, 118, 20], "ink_bbox": [131, 46, 244, 60], "y_bands": [[46, 60]]},
-      "task_rail_item": {"rect": [24, 403, 208, 106], "ink_bbox": [34, 416, 204, 496], "y_bands": [[416, 428], [438, 448], [459, 473], [486, 496]]},
-      "inspector_goal": {"rect": [984, 389, 288, 50], "ink_bbox": [998, 401, 1250, 428], "y_bands": [[401, 412], [418, 428]]},
-      "task_status": {"rect": [28, 67, 403, 40], "ink_bbox": [29, 93, 72, 103], "y_bands": [[93, 103]]},
-      "iteration": {"rect": [865, 67, 403, 40], "ink_bbox": [867, 93, 871, 103], "y_bands": [[93, 103]]},
-      "artifact_availability": {"rect": [28, 115, 403, 40], "ink_bbox": [29, 141, 113, 153], "y_bands": [[141, 153]]},
-      "dock_candidate_a": {"rect": [26, 695, 220, 54], "ink_bbox": [43, 710, 127, 737], "y_bands": [[710, 737]]},
-      "dock_candidate_b": {"rect": [258, 695, 220, 54], "ink_bbox": [275, 710, 334, 728], "y_bands": [[710, 728]]}
+      "context_title": {
+        "rect": [
+          67,
+          43,
+          1033,
+          20
+        ],
+        "ink_bbox": [
+          68,
+          46,
+          244,
+          60
+        ],
+        "y_bands": [
+          [
+            46,
+            60
+          ]
+        ],
+        "inset": {
+          "top": 3,
+          "bottom": 3,
+          "left": 1,
+          "right": 856
+        }
+      },
+      "context_latin_ink_sample": {
+        "rect": [
+          67,
+          43,
+          58,
+          20
+        ],
+        "ink_bbox": [
+          68,
+          49,
+          122,
+          59
+        ],
+        "y_bands": [
+          [
+            49,
+            59
+          ]
+        ],
+        "inset": {
+          "top": 6,
+          "bottom": 4,
+          "left": 1,
+          "right": 3
+        }
+      },
+      "context_japanese_ink_sample": {
+        "rect": [
+          130,
+          43,
+          118,
+          20
+        ],
+        "ink_bbox": [
+          131,
+          46,
+          244,
+          60
+        ],
+        "y_bands": [
+          [
+            46,
+            60
+          ]
+        ],
+        "inset": {
+          "top": 3,
+          "bottom": 3,
+          "left": 1,
+          "right": 4
+        }
+      },
+      "task_rail_item": {
+        "rect": [
+          24,
+          403,
+          208,
+          106
+        ],
+        "ink_bbox": [
+          34,
+          416,
+          204,
+          496
+        ],
+        "y_bands": [
+          [
+            416,
+            428
+          ],
+          [
+            438,
+            448
+          ],
+          [
+            459,
+            473
+          ],
+          [
+            486,
+            496
+          ]
+        ],
+        "inset": {
+          "top": 13,
+          "bottom": 13,
+          "left": 10,
+          "right": 28
+        }
+      },
+      "inspector_goal": {
+        "rect": [
+          984,
+          389,
+          288,
+          50
+        ],
+        "ink_bbox": [
+          998,
+          401,
+          1250,
+          428
+        ],
+        "y_bands": [
+          [
+            401,
+            412
+          ],
+          [
+            418,
+            428
+          ]
+        ],
+        "inset": {
+          "top": 12,
+          "bottom": 11,
+          "left": 14,
+          "right": 22
+        }
+      },
+      "task_status": {
+        "rect": [
+          28,
+          67,
+          403,
+          40
+        ],
+        "ink_bbox": [
+          29,
+          93,
+          72,
+          103
+        ],
+        "y_bands": [
+          [
+            93,
+            103
+          ]
+        ],
+        "inset": {
+          "top": 26,
+          "bottom": 4,
+          "left": 1,
+          "right": 359
+        }
+      },
+      "iteration": {
+        "rect": [
+          865,
+          67,
+          403,
+          40
+        ],
+        "ink_bbox": [
+          867,
+          93,
+          871,
+          103
+        ],
+        "y_bands": [
+          [
+            93,
+            103
+          ]
+        ],
+        "inset": {
+          "top": 26,
+          "bottom": 4,
+          "left": 2,
+          "right": 397
+        }
+      },
+      "artifact_availability": {
+        "rect": [
+          28,
+          115,
+          403,
+          40
+        ],
+        "ink_bbox": [
+          29,
+          141,
+          113,
+          153
+        ],
+        "y_bands": [
+          [
+            141,
+            153
+          ]
+        ],
+        "inset": {
+          "top": 26,
+          "bottom": 2,
+          "left": 1,
+          "right": 318
+        }
+      },
+      "dock_candidate_a": {
+        "rect": [
+          26,
+          695,
+          220,
+          54
+        ],
+        "ink_bbox": [
+          43,
+          710,
+          127,
+          737
+        ],
+        "y_bands": [
+          [
+            710,
+            737
+          ]
+        ],
+        "inset": {
+          "top": 15,
+          "bottom": 12,
+          "left": 17,
+          "right": 119
+        }
+      },
+      "dock_candidate_b": {
+        "rect": [
+          258,
+          695,
+          220,
+          54
+        ],
+        "ink_bbox": [
+          275,
+          710,
+          334,
+          728
+        ],
+        "y_bands": [
+          [
+            710,
+            728
+          ]
+        ],
+        "inset": {
+          "top": 15,
+          "bottom": 21,
+          "left": 17,
+          "right": 144
+        }
+      }
     },
     "crops": {
       "context-title.png": "sha256:41e8065ea0b5e315b1db394d1a4d901024a44b7fdd937c8517d4efd106ada01b",
@@ -78,7 +378,7 @@
     "AC03_text_versus_pixels": "Each measured region has both a UIA string and bright ink inside its own rectangle, so presence in the accessibility tree alone is not being called rendering. Which ink band belongs to which substring is NOT_MEASURED without OCR; the observed band order is consistent with the UIA text order.",
     "AC04_glyphs_clipping_lines_baseline": {
       "missing_glyphs_tofu": "OBSERVED on the retained crops (context-title.png, task-rail-item.png, inspector-goal.png): the Japanese strings are drawn as recognisable glyphs; no hollow missing-glyph box was seen. Limit: visual inspection of three crops at 96 DPI, not glyph-coverage or OCR proof.",
-      "clipping": "OBSERVED: every measured ink bbox keeps an interior margin — the context title keeps 3 rows above and 3 below its 20 px box; the rail row keeps 13 above and 12 below its 106 px box; the wrapped inspector label keeps 12 above and 10 below its 50 px box. No ink reaches a rectangle edge.",
+      "clipping": "OBSERVED: every measured ink bbox keeps an interior margin on the half-open rectangles — the context title keeps 3 rows above and 3 below its rows 43–62; the rail item keeps 13 above and 13 below its rows 403–508; the wrapped inspector label keeps 12 above and 11 below its rows 389–438. No ink reaches a rectangle edge. Each inset is emitted by measure_text.py, not copied by hand.",
       "line_bands": "OBSERVED: the rail row separates into four ink bands (12, 10, 14 and 10 rows tall) with starts 22, 21 and 27 px apart; the Japanese-sized band is 14 rows tall against 10–12 for the Latin bands. The taller band and the wider gaps are geometry, not an attributed cause: element padding, per-style line heights and fallback metrics are not separated here.",
       "baseline": "OBSERVED within the context title: the Latin sample's ink bottom is row 58 and the Japanese sample's is row 59 — a one-row ink-bottom difference with the same 46–59 band. Neither run is clipped and the lines do not overlap. A per-run baseline metric from the shaping layer is NOT_MEASURED, and face resolution is not inferred from appearance.",
       "wrapping": "OBSERVED on inspector-goal.png: the Goal label wraps '新製品キビジュ' / 'アル' inside the button, leaving a two-character second line. The full value is present in UIA and no ellipsis or truncation appears, so this is recorded as OBSERVED_NOT_DIAGNOSED, not as a demonstrated contract violation.",

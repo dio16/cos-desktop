@@ -66,11 +66,18 @@ def main() -> int:
                 bands.append([py, py + 1])
             else:
                 bands[-1][1] = py + 1
+        bbox = [min(px for px, _ in pixels), min(py for _, py in pixels),
+                max(px for px, _ in pixels) + 1, max(py for _, py in pixels) + 1]
         result["targets"][name] = {
             "rect": rect,
-            "bright_ink_bbox": [min(px for px, _ in pixels), min(py for _, py in pixels),
-                                max(px for px, _ in pixels) + 1, max(py for _, py in pixels) + 1],
-            "bright_ink_y_bands": bands,
+            "ink_bbox": bbox,
+            "y_bands": bands,
+            "inset": {
+                "top": bbox[1] - y,
+                "bottom": y + h - bbox[3],
+                "left": bbox[0] - x,
+                "right": x + w - bbox[2],
+            },
         }
     write_crop(rows, channels, (67, 40, 190, 26), BASE / "context-title.png")
     write_crop(rows, channels, (24, 403, 208, 106), BASE / "task-rail-item.png")
