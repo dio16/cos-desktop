@@ -352,6 +352,13 @@ impl Shell {
         if !self.palette_open {
             return;
         }
+        // An active IME composition means the query is still being composed: its text is
+        // marked, not committed, so Enter must not execute whatever happens to be
+        // highlighted for a half-typed query. The composition has to be committed or
+        // cancelled first.
+        if composition_in_progress(&self.palette_marked_range) {
+            return;
+        }
         let authorized = self.authorized_text().is_some();
         let selection = {
             let facts = self.palette_facts(authorized, self.cache.text());
@@ -694,9 +701,17 @@ impl Shell {
     }
 }
 
+/// True while an IME composition owns part of the query.
+///
+/// A marked range is the platform's record of uncommitted composition text, so a
+/// command triggered from that state would act on a half-typed query.
+fn composition_in_progress(marked: &Option<std::ops::Range<usize>>) -> bool {
+    marked.is_some()
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{ActionFacts, Facts, entries, require};
+    use super::{ActionFacts, Facts, composition_in_progress, entries, require};
     use std::sync::Arc;
     use ui_model::palette::{Command, Entry};
 
@@ -822,5 +837,12 @@ mod tests {
         assert_eq!(require(false, false, "reason"), Some(super::STALE));
         assert_eq!(require(true, true, "reason"), None);
         assert_eq!(require(true, false, "reason"), Some("reason"));
+    }
+
+    #[test]
+    fn a_marked_composition_blocks_command_activation() {
+        assert!(!composition_in_progress(&None));
+        assert!(composition_in_progress(&Some(3..9)));
+        assert!(composition_in_progress(&Some(0..0)));
     }
 }
