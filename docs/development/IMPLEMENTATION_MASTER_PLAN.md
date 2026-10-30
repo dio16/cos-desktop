@@ -373,7 +373,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-UX1 — Operable prototype of the Golden Workflow surfaces
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** LIMITED PROTOTYPE COMPLETE (eight scenarios with developer reachability 7 PASS / 1 PARTIAL; participant comprehension NOT_RUN; Tern review pending) · **Owner:** Desktop UI (prototype scope), UX owner (validation)
+- **Priority:** P1 · **Status:** LIMITED PROTOTYPE + DEVELOPER REACHABILITY COMPLETE (eight scenarios, 7 PASS / 1 PARTIAL; Tern CLEAN 0/0/0 on `d41ca23c`; participant comprehension and product/UX acceptance remain NOT_RUN) · **Owner:** Desktop UI (prototype scope), UX owner (validation)
 - **Gate / inputs:** UX-owner authorization to run prototype work; the frozen [compare/viewing question list](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux2) is the prototype input, not another task-acceptance contract. No code dependency (prototype may use fixture data, explicitly labelled); it runs in parallel with the §7 lanes.
 - **Evidence:** prototype build/run log + validation notes; screenshots where safe.
 - **Consumers:** MP-UX2/3/4, MP-NAV*, MP-DOCK*, MP-CMP1, MP-INS*.
@@ -387,7 +387,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-UX3 — Visual direction and token validation plan
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** VISUAL DIRECTION RECONCILED (accepted typography/geometry recorded; semantic palette stays Proposed and not applied; native observation at 96 DPI only; Tern review pending) · **Owner:** Product/UX + rendering owner
+- **Priority:** P1 · **Status:** VISUAL DIRECTION RECONCILED (accepted typography/geometry recorded; semantic palette stays Proposed and not applied; Tern CLEAN 0/0/0 on `2b25643`; DPI/contrast/mixed-script and product acceptance remain NOT_MEASURED) · **Owner:** Product/UX + rendering owner
 - **Consumers:** MP-TYP1/2, MP-PL1.
 - **Design source / acceptance:** [DC-MP-UX3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -448,9 +448,9 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-NAV5 — Command Palette (implementation)
 - **Hard prereqs:** MP-PUB2.
-- **Priority:** P1 (canon §21/§68 MVP) · **Status:** DESIGN_GATE_REQUIRED (needs MP-UX4 inventory/keymap) · **Owner:** `ui-model` (command model) + `desktop-gpui` (palette surface)
+- **Priority:** P1 (canon §21/§68 MVP) · **Status:** IMPLEMENTED — LIMITED to the existing approved inventory (fixture/local availability; independent Gate SUCCEEDED; Tern review CLEAN 0/0/0 on `1b97fd3`; real-Runtime availability, the AX2 matrix, crosswalk rows 1–2 and product/UX acceptance remain open) · **Owner:** `ui-model` (command model) + `desktop-gpui` (palette surface)
 - **Prereqs/gates:** MP-UX4 `SPEC_APPROVED` inventory + keymap; MP-PUB2 for live command availability.
-- **Evidence:** tests over descriptors/availability + native keyboard run (MP-AX2).
+- **Evidence:** [§19.72](#1972-mp-nav5-command-palette-implementation-2026-10-30) with descriptors/availability/rank tests and a native keyboard run; full MP-AX2 certification is not claimed.
 - **Consumers:** MP-AX2, MP-ACC1.
 - **Design source / acceptance:** [DC-MP-NAV5](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-nav5). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -463,7 +463,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-DOCK2 — Iteration/history timeline, viewed/compare persistence, unavailable policy
 - **Hard prereqs:** MP-DOCK1.
-- **Priority:** P1 · **Status:** DESIGN_GATE_REQUIRED (UX-01 subset) · **Owner:** `ui-model`
+- **Priority:** P1 · **Status:** LIMITED NATIVE CLOSURE COMPLETE (D-1/D-3/D-7/D-8/D-10/D-13 + Ctrl+Tab admission observed; Tern CLEAN 0/0/0 on `26165014`; product acceptance and the non-reproducible branches remain open) · **Owner:** `ui-model`
 - **Consumers:** MP-INS1, MP-ACC1.
 - **Design source / acceptance:** [DC-MP-DOCK2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-dock2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -532,7 +532,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-INS1 — Inspector (why is this artifact here?)
 - **Hard prereqs:** MP-DOCK2.
-- **Priority:** P1 · **Status:** IMPLEMENTATION_READY (needs MP-DOCK2) · **Owner:** `ui-model` + `desktop-gpui`
+- **Priority:** P1 · **Status:** LIMITED NATIVE CLOSURE COMPLETE (projected values, absent outcome, keyboard disclosure, identity-change clearing and the repaired Task-scope gate observed; Tern CLEAN 0/0/0 on `051c6b13`; real Runtime projections, native A→B switching, pixels/DPI and product acceptance remain open) · **Owner:** `ui-model` + `desktop-gpui`
 - **Consumers:** MP-INS2/3, MP-ACC1.
 - **Design source / acceptance:** [DC-MP-INS1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ins1). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -544,7 +544,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-INS3 — Intervention strip
 - **Hard prereqs:** MP-INS1.
-- **Priority:** P2 · **Status:** DESIGN_GATE_REQUIRED (DD-26 = intervention priority policy; the strip may not invent ordering) · **Owner:** `ui-model` + `desktop-gpui`
+- **Priority:** P2 · **Status:** LIMITED NATIVE CLOSURE COMPLETE (empty strip, one Desktop-local blocked row, honest Reconnect and settled-stop-not-a-row observed; Tern CLEAN 0/0/0 on `67ec5b69`; Runtime issues, OS notifications, non-reproducible branches and product acceptance remain open) · **Owner:** `ui-model` + `desktop-gpui`
 - **Consumers:** MP-ACC1.
 - **Design source / acceptance:** [DC-MP-INS3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ins3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -638,7 +638,7 @@ MP-RT1–7 are **RUNTIME_BLOCKED**: Runtime-dependent work may only begin once t
 
 #### MP-SEC2 — Redaction, diagnostics and logging policy
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** LIMITED_COMPLETE source/public seam through Gate R13/R9; Native row12 HOLD. DD-22 permission RECEIVED; actual report/retention details and physical evidence remain technical obligations · **Owner:** `app-core` + `apps/desktop`
+- **Priority:** P1 · **Status:** LIMITED_COMPLETE source/public seam through Gate R13/R9; limited Native diagnostics/redaction verification PASS (Tern CLEAN 0/0/0 on `07fdc4a1`) — native crash/WER content remains NOT_RUN. DD-22 permission RECEIVED; actual report/retention details and physical evidence remain technical obligations · **Owner:** `app-core` + `apps/desktop`
 - **Consumers:** MP-RT2, MP-REL3, MP-ACC1.
 - **Design source / acceptance:** [DC-MP-SEC2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-sec2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 - **Current evidence:** [A–H / S01–S08 admission](evidence/README.md#historical-records); [quality](evidence/README.md#historical-records): 241 Rust tests, 14 dependency regressions, zero warnings; [actual startup error capture](evidence/README.md#historical-records) and [repaired-source fixture trace capture](evidence/README.md#historical-records): 15 bounded lines, max 299 bytes including newline, no raw query field, healthy fixture JSONL. [Remote R9](evidence/README.md#historical-records) independently reviewed exact candidate `976d3b7…` and returned 0 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE; B-06 is CLOSED and the [source closure record](evidence/README.md#historical-records) is preserved. Gate R13 is valid; Windows row12 and DD-22 remain HOLD/PENDING.
@@ -709,7 +709,7 @@ MP-RT1–7 are **RUNTIME_BLOCKED**: Runtime-dependent work may only begin once t
 
 #### MP-AX2 — Usability and keyboard verification runs
 - **Hard prereqs:** MP-AX1.
-- **Priority:** P2 · **Status:** DESIGN_GATE_REQUIRED (DD-23) · **Owner:** Product/UX + Desktop
+- **Priority:** P2 · **Status:** LIMITED NATIVE VERIFICATION COMPLETE (12-operation keyboard matrix with 11 PASS / 1 PARTIAL; Tern review CLEAN 0/0/0 on `84f842a3`; product acceptance, screen-reader quality, IME, DPI and Runtime evidence remain NOT_RUN) · **Owner:** Product/UX + Desktop
 - **Consumers:** MP-ACC2.
 - **Design source / acceptance:** [DC-MP-AX2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ax2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -1896,6 +1896,7 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Independent Gates:** Gate `74c2928c-cd8b-42fa-b0b0-c03a0df79595` (`cos-desktop-nav5-quality-9211b34d`) is **SUCCEEDED** on the first candidate with six checks PASS (fmt, metadata, dependency self-test, dependency rules, clippy, tests), observed candidate digest `sha256:43fc1b69…`, cleanup complete. After the round-1 repairs, Gate `5e116b30-972d-4ea1-a4ce-b10465eafb29` (`cos-desktop-nav5-quality-repair2-f1de4f36`) is **SUCCEEDED** on the repaired candidate with the same six checks, observed candidate digest `sha256:b82d4134…`, request digest `sha256:d1b7c20c…`, terminal-state digest `sha256:9a3958f9…`, cleanup complete. A successful Gate is not acceptance, merge or release permission.
 - **Tern review round 1 (HOLD 2 / 0 / 0, unparsed footer reconciled manually):** (1) the palette's `ToggleInspector` performed a new bulk open/close that no existing surface operation has, so it was a palette-only capability; it is removed, leaving eleven commands and only the existing per-section disclosure path for Show Evaluation/Show Evidence. (2) `Open Active Task` was enabled from the retained local selection even when the Task was absent from the current rail results, so dispatch could silently no-op; availability now uses the exact rail Enter admission (`TaskRailState::selectable`, requiring current results plus collection membership) with the honest reason, and is re-derived at invocation. The repaired candidate is re-pinned and re-gated; the round-1 verdict is bound to the previous commit and is not transferred.
 - **Observed native smoke (candidate binary `sha256:57be43f3…`, pre-repair):** the explicit fixture application opened the palette with Ctrl+K, filtered by exact query, moved the cursor and invoked Show Flow and Open Active Task, refused the unavailable Check Stop Receipt with its honest reason and no action, and dismissed by Escape and by an outside click. Background key events do not reach GPUI on this host (the §19.66 limitation), so the key steps used takeover input. IME/DPI/multi-monitor/screen-reader certification and product acceptance are **NOT_CLAIMED**.
+- **Tern review closure:** Round 2 returned `0 / 2 / 0` and both docs-only findings (implementation-line SHA and native-image attribution) were corrected in `1b97fd3`; round 3 returned **PASS 0 / 0 / 0, VERDICT CLEAN** on that pushed commit with no product-source change, so no new Gate was run for it. The clean review is not Runtime or product acceptance.
 - **Evidence:** [nav5-palette-latest](evidence-published/nav5-palette-latest/session.json) records the binding, screenshots and the AX excerpt. Still open: real-Runtime availability, the AX2 full matrix, the DC-MP-NAV5 crosswalk rows 1–2, and any product/UX acceptance. The palette recents preference stays bounded but unused because the frozen rank order forbids recency reordering.
 
 ### 19.73 MP-AX2 limited keyboard and accessibility verification (2026-10-30)
@@ -1906,6 +1907,7 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Honest gaps:** the Compare insufficient-capability refusal branch is `NOT_REPRODUCIBLE` in a five-candidate fixture (the shared predicate is unit-tested); screen-reader quality, IME, mixed-DPI/multi-monitor and High Contrast remain `NOT_MEASURED`. This build's AX output does contain statictext nodes for Task Status, Inner Phase and Formal Outcome, unlike the older MP-AX1 observation; announcement quality is still unmeasured. Focus handles are not exposed through the native focused-element query, so restoration is behavioural.
 - **Evidence provenance correction:** three images copied from the earlier NAV5 evidence are byte-identical duplicates of old-candidate captures, so they were moved to `reference/` and are not used as proof for the current executable; current-exe proof uses the newly captured images and AX excerpts recorded in the evidence file.
 - **Identity:** Task-184 stayed selected across paths; Viewed A→B→C is local presentation only; Formal Outcome remained Unknown and no canonical projection changed.
+- **Review closure:** after the round-2 repair, round 3 returned **PASS 0 / 0 / 0, VERDICT CLEAN** on pushed `84f842a3…`; the limited Native keyboard verification is independently reviewed, while MP-AX2 product acceptance, screen-reader quality, IME, DPI and Runtime evidence remain open.
 - **Tern review round 2:** `0 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE`: two new captures were pixel-identical to the startup screen and could not prove the search or Diagnostics operation attached to them. Both moved to `reference/indistinguishable/`; matrix item 2 is bound to the `flow` search AX record and item 4 to the Show Flow AX record, and the Diagnostics claim is dropped.
 - **Tern review round 1:** `0 BLOCKING / 3 ACTIONABLE / 0 EXCESSIVE`. The three docs/evidence findings were repaired: the three byte-identical old-candidate images moved to `reference/` and are excluded from current-exe proof; the plan now states 11 PASS / 1 PARTIAL and records the Tab/Shift+Tab movement captures; the AX wording now matches this run's statictext output. The repaired evidence is re-pinned and re-reviewed; the round-1 verdict is bound to the previous commit.
 - **No product change:** no defect requiring a code fix was reproduced, so this branch adds only the evidence record and this plan entry; no new Refine Gate is run for unchanged product bytes (Y04). Evidence: [ax2-keyboard-latest](evidence-published/ax2-keyboard-latest/session.json).
@@ -1918,6 +1920,7 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Observed B:** the diagnostics panel renders one closed-field line (`Desktop 0.1.0 · Fixture transcript · generation 1 · publication 2 · error none · commands 0`); no path, URL, credential or payload is present. At the restored window size the inspector footer can be clipped, so the line was observed after maximizing; that is a presentation observation, not a leak claim.
 - **Observed D/E:** six diagnostic-publication tests (including the explicit bounded loss test) and seven redaction tests pass; the debug trace had 262 lines with a 314-byte maximum and contained only fixture ids, counters and booleans — no secret, URL, drive/UNC path or signed locator. Because the trace carries no user free text, the redaction fallback's secret forms remain unit evidence rather than a native secret injection.
 - **Trace route correction:** `COS_FIXTURE_TRACE` names a file path, not a flag; setting it to `1` enabled the shell stderr trace and made the fixture client write its bounded JSONL journal to the repository root. The 708-byte/3-event journal is retained as `fixture-trace.jsonl` (no secret, path or URL), and the stray file was removed in a follow-up commit rather than by rewriting pushed history.
+- **Review closure:** Tern returned **PASS 0 / 0 / 0, VERDICT CLEAN** on pushed `07fdc4a1…`; the limited native diagnostics/redaction verification is independently reviewed, while native crash/WER content, DD-22 export details, Runtime error paths and product acceptance remain open.
 - **Honest gaps:** native crash/WER report content is **NOT_RUN** — no safe isolated crash path exists in this build and WER/registry/security changes are forbidden, so startup/error paths are not substituted for crash evidence. DD-22 retention/export details, screen-reader quality, IME, DPI, real-Runtime error paths and product acceptance remain open.
 - **No product change:** no reproduced DC-MP-SEC2 violation required a fix, so no new Refine Gate is run for unchanged product bytes (Y04). Evidence: [sec2-native-latest](evidence-published/sec2-native-latest/session.json).
 
@@ -1928,6 +1931,7 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Observed (isolated child-only LOCALAPPDATA, fixture `sha256:2e33ed06…`, exe `sha256:b3e5fcee…`, Windows 10.0.26300, DPI 96):** D-1 explicit empty with the authoritative It 1/It 2/It 3 timeline; D-3 first selection A → viewed A, second B → pair A/B with the surface switching to Compare, a later plain C → viewed only with A/B kept, Change B + D → side B replaced while viewed stays C; D-7 Close Compare returns to Artifact with viewed C; D-8 a normal close and relaunch restores Compare with side A=A, side B=B and viewed B; Ctrl+1 then Ctrl+Tab reaches Compare through the shared admission with the held pair intact; D-13 shows no formal marker because the fixture projects no outcome.
 - **Honest gaps:** D-2 (0/1 candidates), D-4/D-5/D-6 (identity disappearance and reappearance), D-9 (a second Task) and D-12 (native focus disappearance) are `NOT_REPRODUCIBLE` with this single-task five-candidate fixture and remain model-test evidence; D-11 is `NOT_APPLICABLE` (NAV3/DD-07). Native pixels/DPI, real Runtime history and product acceptance are not claimed.
 - **Tern review round 1:** `0 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE`; the Ctrl+Tab repair is CLOSED. The one finding was evidence attribution: `s1-fresh.png` is byte-identical to the earlier W13/AX2 startup captures, so it is disclosed as such and excluded from unique new-execution proof; D-1 now rests on this run's AX record plus model tests and D-10 on later unique images. The repaired evidence is re-pinned and re-reviewed.
+- **Review closure:** after the attribution repair, round 2 returned **PASS 0 / 0 / 0, VERDICT CLEAN** on pushed `26165014…`; the repaired Dock source and this native closure are independently reviewed. Native pixel/DPI acceptance, the non-reproducible branches, real Runtime history and product acceptance remain open.
 - **Tests:** `cargo test -p ui-model presentation` 15 passed; `cargo test -p desktop-gpui dock` 17 passed. No product byte changed, so no new Refine Gate is run (Y04); the identical source is covered by Gate `5e116b30-…` and the historical DOCK2 Gates. Evidence: [dock2-native-latest](evidence-published/dock2-native-latest/session.json).
 
 ### 19.76 MP-INS1 limited native Inspector verification (2026-10-30)
@@ -1941,6 +1945,7 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Round 3 ACTIONABLE and repairs:** the source-string regression test could satisfy itself by matching its own literals, so it now reads only the implementation section and asserts the current condition, invalidate and early-return order. The record also states the actual product change and names the current representative Gate instead of the earlier evidence-only wording.
 - **Honest gaps:** identity reorder, an authorized-observation gap and an in-place projection update are `NOT_REPRODUCIBLE` with the static fixture and remain model-test evidence; native pixels/DPI, real Runtime projections/evidence bodies (MP-INS2), screen-reader quality and product acceptance are not claimed.
 - **Evidence provenance:** `s0-initial.png` is byte-identical to the deterministic startup captures already published under W13/AX2, so it is disclosed and not used as unique proof; the view-specific captures are unique in the checked evidence tree.
+- **Review closure:** round 5 returned **PASS 0 / 0 / 0, VERDICT CLEAN** on pushed `051c6b13…`; the repaired Inspector source and its evidence are independently reviewed. Runtime projections/evidence bodies (MP-INS2), native A→B switching, pixels/DPI, screen-reader quality and product acceptance remain open.
 - **Tests:** `cargo test -p ui-model inspector` 9 passed (no-intermediate-frame Task test); `cargo test -p desktop-gpui inspector` 3 passed. The current product candidate is `89d52642` and its representative Gate is `e1f4bf7a-…`; the earlier Gate `302aac9d-…` on `ff7a785e` is superseded history, and no further Gate is claimed for the docs-only follow-ups. Evidence: [ins1-native-latest](evidence-published/ins1-native-latest/session.json).
 
 ### 19.77 MP-INS3 limited native intervention verification (2026-10-30)
@@ -1950,6 +1955,7 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Observed (isolated child-only LOCALAPPDATA, fixture `sha256:2e33ed06…`, exe `sha256:e9c61950…`, Windows 10.0.26300, DPI 96):** a healthy fixture renders no strip rows; an unconfigured disconnected window renders exactly one Desktop-local row `Observation unavailable — Reconnect` with no Runtime issue vocabulary and no destructive action; activating Reconnect states the honest local result and changes no canonical state; an explicit Stop settles to CANCELED/STOPPED and leaves no row.
 - **Honest gaps:** attention stop rows, unavailable/missing-reference rows, multi-kind ordering/dedupe and an A→B task-scope switch are `NOT_REPRODUCIBLE` with this static single-task fixture and remain model evidence (20 ui-model and 14 desktop-gpui intervention tests). Runtime-issued interventions, OS notifications (crosswalk row 8, deferred), native pixels/DPI, screen-reader quality and product acceptance are not claimed.
 - **Evidence provenance:** `s1-fixture-empty.png` is byte-identical to the deterministic startup captures already published, so it is disclosed and not used as unique proof; the empty strip rests on its AX record. The other three captures are unique in the checked evidence tree.
+- **Review closure:** round 2 returned **PASS 0 / 0 / 0, VERDICT CLEAN** on pushed `67ec5b69…`; the repaired strip source and its evidence are independently reviewed within the fixture/local scope. Runtime-issued interventions, OS notifications, the non-reproducible branches, native pixels/DPI and product acceptance remain open.
 - **No product change:** no reproduced DC-MP-INS3 violation required a fix, so this branch runs no new Refine Gate (Y04). The current repository product candidate `89d52642` is covered by Gate `e1f4bf7a-…` (SUCCEEDED); the older INS3 Gates cover their own earlier candidates, and the NAV5 candidate `f1de4f36` is not claimed for this source. Evidence: [ins3-native-latest](evidence-published/ins3-native-latest/session.json).
 
 ### 19.78 MP-UX1 operable prototype and developer reachability (2026-10-30)
@@ -1958,6 +1964,7 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Eight checks (developer reachability only):** UX01 task status is visible at startup; UX02 the artifact surface is the centre but media presentation is still a labelled placeholder (**PARTIAL**); UX03 the dock shows the authoritative It 1/It 2/It 3 loop; UX04 Viewed B and the absent Runtime-owned Formal Outcome stay independent; UX05 Evaluation → Evidence opens through the inspector; UX06 Compare is reachable; UX07 Flow is an on-demand surface; UX08 a disconnected window shows exactly one Desktop-local intervention row with a safe Reconnect. Seven reachability checks PASS and UX02 is PARTIAL for the placeholder.
 - **Participant validation: NOT_RUN.** No participant sessions were conducted; the neutral-prompt protocol is recorded in `validation-plan.md`. Reachability is not comprehension, and no model or developer judgement is reported as participant evidence.
 - **Not measured:** comprehension timing, real media/evidence bodies, Runtime data, OS notifications, product/UX acceptance. The prototype is not a shipping UI, and no improvement candidate is promoted to product specification.
+- **Review closure:** round 3 returned **PASS 0 / 0 / 0, VERDICT CLEAN** on pushed `d41ca23c…`; developer reachability is independently reviewed. Participant comprehension remains **NOT_RUN**, and the prototype is not a shipping UI or product acceptance.
 - **No product change:** docs/evidence only, so no Refine Gate is run (Y04); the current product candidate `89d52642` remains covered by Gate `e1f4bf7a-…`. Evidence: [ux1-prototype-latest](evidence-published/ux1-prototype-latest/scenarios.json).
 
 ### 19.79 MP-UX2 UX-01 decision register classification (2026-10-30)
@@ -1973,6 +1980,7 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Accepted, declared and applied are distinct:** ADR-0008 accepts the documented §9.1/§9.2 direction. Verified consumers: rail 240 / inspector 320 and the physical-pixel separator (`APPLIED`), with typography and the focus-outline token only partially wired (`APPLIED_PARTIAL`). Row heights 32/40, the 40-DIP title bar, the full spacing scale and radii are `DECLARED` constants without complete consumers (`NOT_APPLIED` end-to-end); tabular numerals were wired by the TYP1 repair. The dock focus ring visible at 96 DPI is drawn by `border_1()`, not the 2-DIP token, so the 2-DIP native evidence is `NOT_RECORDED`.
 - **Proposed, not accepted:** rendering §9.3's semantic colour palette is explicitly a proposal; the shell still uses literal RGB values at state call sites (for example the focus colour differs from the proposed `#FFD166`). No colour is adopted here; TYP2/PL1 own that adoption, and the "no per-widget magic RGB" direction is therefore **NOT_APPLIED** in current code.
 - **NOT_MEASURED:** native contrast/High Contrast, the 125–200 % DPI ladder and monitor migration, mixed-script baseline/line-height, pixel geometry, motion (none observed; reduced-motion audit stands) and product/UX acceptance. The Japanese fallback 1.5× line height remains Proposed and not applied.
+- **Review closure:** round 3 returned **PASS 0 / 0 / 0, VERDICT CLEAN** on pushed `2b25643…`; the token classification and the limited 96-DPI observation are independently reviewed. All NOT_MEASURED items and product/UX acceptance remain open.
 - **Evidence attribution:** each capture carries its SHA-256 and stated content; the window PID/HWND were not recorded and are marked `NOT_RECORDED`, the capture method is the window screenshot/AX route, and the uniqueness check covers only the listed evidence directories.
 - **No product change:** docs/evidence only; no Refine Gate (Y04). Evidence: [ux3-visual-latest](evidence-published/ux3-visual-latest/validation.json); both captures are unique only against the seven evidence directories named in that record, not repository-wide.
 
