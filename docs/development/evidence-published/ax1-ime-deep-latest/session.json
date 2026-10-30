@@ -19,7 +19,7 @@
     "binary": {
       "sha256": "sha256:5838f0d16ba620ad21cabae67dc5a88ac95de1ae8cd9932f85daab6e1a9a1f97",
       "built_from": "cargo build --locked -p cos-desktop --bin cos-desktop at the baseline commit",
-      "note": "the previously recorded digest no longer matched. Cause: gate 91a15539 (attempt 3) declared the repository development target as its checks' CARGO_TARGET_DIR, so that Gate's build rewrote the development binary. The configuration is recorded; the individual file write was not logged, so the attribution rests on that recorded configuration rather than on a per-write observation. This slice therefore pins its own freshly built bytes instead of reusing any earlier digest."
+      "note": "the previously recorded digest no longer matched. Gate 91a15539 (attempt 3) declared the repository development target as its checks' CARGO_TARGET_DIR, and its build is the presumed cause of the new bytes there; no per-write evidence exists for that file, so the attribution is a presumption from the recorded configuration and is not confirmed. This slice therefore pins its own freshly built bytes instead of reusing any earlier digest."
     },
     "launch": [
       "--fixture"
