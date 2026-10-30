@@ -387,7 +387,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-UX3 — Visual direction and token validation plan
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** DESIGN_GATE_REQUIRED · **Owner:** Product/UX + rendering owner
+- **Priority:** P1 · **Status:** VISUAL DIRECTION RECONCILED (accepted typography/geometry recorded; semantic palette stays Proposed and not applied; native observation at 96 DPI only; Tern review pending) · **Owner:** Product/UX + rendering owner
 - **Consumers:** MP-TYP1/2, MP-PL1.
 - **Design source / acceptance:** [DC-MP-UX3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -1966,3 +1966,11 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Classified A/B (approved, existing):** initial empty view, second-selection Compare entry, zero/one-candidate behaviour and pair semantics (ADR-0010 D-1…D-3); close Compare returning to Artifact with the Viewed candidate and its own framing, discarding compare transforms (D-7); the model-independent independent clamping and no-feedback invariants; link/unlink preservation (rendering §4.1); focus-preservation principles; bounded-preview/unavailable honesty (DC-MP-IMG5); the fixed same-key reuse protocol (DC-MP-CMP1).
 - **Open, owner decision required (E):** the linked-transform model and its default (rendering §4.1 presents relative-fit and physical 1:1 as candidates and leaves the toggle/default to UX), fit/1:1 switching, swap semantics and pair-replacement link state. The anchor-mapping formula and unlink-restore detail follow the Q5 choice; exact pane keyboard/focus transfer, per-representation unavailable copy and reuse visibility remain open details. Each blocks only its own behaviour; Compare stays `DESIGN_READY_NOT_IMPLEMENTED` until they are answered.
 - **No implementation or measurement claim:** no product source changed on this branch and no new Gate applies (Y04). The register counts A=5 / B=5 / E=4 (total 14) and lists Q7/Q8/Q13/Q14 separately as measurement-pending; [decision-register.json](evidence-published/ux2-decision-latest/decision-register.json); participant validation remains separate.
+
+### 19.80 MP-UX3 visual-direction reconciliation and limited native observation (2026-10-30)
+
+- **Authority and baseline:** the Tern next-task directive after the clean MP-UX2 review, on `feature/mp-ux3-token-validation` from `54aa52814a20feb68606c81e75828ef4092c3bc6`. ADR-0008 §5 adopts the documented §9.1 typography and §9.2 geometry tokens; DC-MP-UX3 owns the visual-direction decision. This slice records the state and adds no token value or product code.
+- **Accepted and applied:** the documented typography stack/scale, geometry defaults (4-DIP spacing, 240 rail, 320 inspector, 40 title bar), physical-pixel hairline, 2-DIP focus outline and radii are accepted by ADR-0008 and present in `tokens.rs`/`shell_style`; tabular numerals were wired by the TYP1 repair. The 96-DPI native run shows text, the focus outline and the dock selection states.
+- **Proposed, not accepted:** rendering §9.3's semantic colour palette is explicitly a proposal; the shell still uses literal RGB values at state call sites (for example the focus colour differs from the proposed `#FFD166`). No colour is adopted here; TYP2/PL1 own that adoption, and the "no per-widget magic RGB" direction is therefore **NOT_APPLIED** in current code.
+- **NOT_MEASURED:** native contrast/High Contrast, the 125–200 % DPI ladder and monitor migration, mixed-script baseline/line-height, pixel geometry, motion (none observed; reduced-motion audit stands) and product/UX acceptance. The Japanese fallback 1.5× line height remains Proposed and not applied.
+- **No product change:** docs/evidence only; no Refine Gate (Y04). Evidence: [ux3-visual-latest](evidence-published/ux3-visual-latest/validation.json) with two unique native captures.
