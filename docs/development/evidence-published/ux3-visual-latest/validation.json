@@ -19,29 +19,158 @@
   },
   "classes": {
     "ACCEPTED": "owner-ratified token direction",
-    "APPLIED": "present in product source (tokens.rs / shell)",
+    "DECLARED": "declared in tokens.rs without a verified consumer",
+    "APPLIED": "present and verified in a product consumer",
+    "APPLIED_PARTIAL": "some consumers only",
     "NATIVE_OBSERVED": "visible on this 96-DPI native run",
-    "PROPOSED_NOT_ACCEPTED": "documented only as a proposal; no adoption claimed",
-    "NOT_APPLIED": "no product token layer for this item",
+    "PROPOSED_NOT_ACCEPTED": "documented only as a proposal",
+    "NOT_APPLIED": "no product token layer or no complete wiring",
     "NOT_MEASURED": "no measurement performed"
   },
   "items": [
-    {"item": "typography stack (Segoe UI Variable / Japanese fallback)", "status": ["ACCEPTED", "APPLIED", "NATIVE_OBSERVED"], "evidence": "rendering §9.1; tokens.rs; text renders on the fixture screen", "limit": "mixed-script metrics and fallback-line-height compliance remain NOT_MEASURED"},
-    {"item": "type scale xs/sm/body/body-strong/control/title/display", "status": ["ACCEPTED", "APPLIED"], "evidence": "rendering §9.1 table; tokens.rs; used by shell styles", "limit": "exact DIP sizes are code-level, not pixel-measured"},
-    {"item": "Japanese fallback 1.5x line height", "status": ["PROPOSED_NOT_ACCEPTED", "NOT_APPLIED"], "evidence": "rendering §9.1 marks it Proposed; MP-TYP1 recorded the fallback line-height wiring limitation", "limit": "not applied; mixed-script clipping not measured"},
-    {"item": "tabular numerals", "status": ["APPLIED"], "evidence": "MP-TYP1 repair applied the OpenType tnum tag when the token is set", "limit": "font availability and alignment not measured on this run"},
-    {"item": "4-DIP spacing scale and geometry defaults (row 32/40, title 40, rail 240, inspector 320)", "status": ["ACCEPTED", "APPLIED"], "evidence": "rendering §9.2; tokens.rs geometry; the rail/inspector are visibly present", "limit": "pixel/DPI verification NOT_MEASURED"},
-    {"item": "physical-pixel hairline and border snapping", "status": ["ACCEPTED", "APPLIED"], "evidence": "shell_style separator uses 1/scale_factor with a fail-closed scale factor", "limit": "fractional DPI NOT_MEASURED (96 only)"},
-    {"item": "2-DIP focus outline distinct from the hairline", "status": ["ACCEPTED", "APPLIED", "NATIVE_OBSERVED"], "evidence": "focus-ring.png shows the focus outline around the dock row", "limit": "contrast and High Contrast state NOT_MEASURED"},
-    {"item": "radii 0/4/8", "status": ["ACCEPTED", "APPLIED"], "evidence": "rendering §9.2; tokens.rs", "limit": "not measured"},
-    {"item": "semantic colour palette (surface/text/focus/selection/status tokens)", "status": ["PROPOSED_NOT_ACCEPTED", "NOT_APPLIED"], "evidence": "rendering §9.3 explicitly says the palette is Proposed and not accepted; the shell currently uses literal RGB values at call sites (e.g. focus 0xe6c278, panel 0x202328) rather than the proposed semantic tokens", "limit": "TYP2/PL1 adoption is the owning follow-up; no colour value is adopted here"},
-    {"item": "selection fill must never mean formal selection", "status": ["ACCEPTED", "APPLIED", "NATIVE_OBSERVED"], "evidence": "ADR-0010/D-1…D-3 and the dock label 'Viewed is local; Formal Selected is Runtime-owned'; the native dock shows local Viewed/Compare separately", "limit": "colour semantics of the proposed palette not adopted"},
-    {"item": "status positive/warning/negative with explicit text/icon", "status": ["APPLIED", "NATIVE_OBSERVED"], "evidence": "Stop controls and unavailable/notice text carry explicit words; no hue-only status is used", "limit": "proposed status colours are not the adopted tokens"},
-    {"item": "disabled / focused / error / stale states independently visible", "status": ["NATIVE_OBSERVED"], "evidence": "Check receipt disabled state and focus ring are both visible in focus-ring.png; notices state unavailable/withheld explicitly", "limit": "High Contrast and stale-connection native states NOT_MEASURED"},
-    {"item": "motion policy / no idle animation", "status": ["ACCEPTED", "APPLIED"], "evidence": "MP-TYP1 motion audit recorded no application-defined animation; reduced motion NOT_APPLICABLE; no idle motion observed on this run", "limit": "animated transitions are not measured because none exist"},
-    {"item": "contrast ratios (text/focus/boundary)", "status": ["NOT_MEASURED"], "evidence": "rendering §9.3 carries only observed arithmetic for five pairs; no native contrast audit was performed", "limit": "no threshold is adopted here"},
-    {"item": "DPI ladder 100/125/150/175/200 and mixed DPI", "status": ["NOT_MEASURED"], "evidence": "only 96 DPI (100%) was used", "limit": "all other scales and monitor migration remain open"},
-    {"item": "per-widget colour prohibition", "status": ["NOT_APPLIED"], "evidence": "the shell uses literal rgb(...) state colours at call sites; there is no semantic colour token layer for these states", "limit": "TYP2/PL1 own the token adoption; this record does not prescribe values"}
+    {
+      "item": "typography stack (Segoe UI Variable / Japanese fallback)",
+      "status": [
+        "ACCEPTED",
+        "APPLIED_PARTIAL",
+        "NATIVE_OBSERVED"
+      ],
+      "evidence": "rendering §9.1; tokens.rs; the fixture screen renders text",
+      "limit": "only some consumers use the resolved typography tokens; mixed-script metrics NOT_MEASURED"
+    },
+    {
+      "item": "type scale xs/sm/body/body-strong/control/title/display",
+      "status": [
+        "ACCEPTED",
+        "APPLIED_PARTIAL"
+      ],
+      "evidence": "rendering §9.1 table; tokens.rs; used by some shell styles",
+      "limit": "not every surface consumes the scale; exact DIP sizes are code-level"
+    },
+    {
+      "item": "Japanese fallback 1.5x line height",
+      "status": [
+        "PROPOSED_NOT_ACCEPTED",
+        "NOT_APPLIED"
+      ],
+      "evidence": "rendering §9.1 marks it Proposed; MP-TYP1 recorded the fallback line-height wiring limitation",
+      "limit": "not applied; mixed-script clipping not measured"
+    },
+    {
+      "item": "tabular numerals",
+      "status": [
+        "APPLIED"
+      ],
+      "evidence": "MP-TYP1 repair applied the OpenType tnum tag when the token is set",
+      "limit": "font availability and alignment not measured on this run"
+    },
+    {
+      "item": "4-DIP spacing scale and geometry defaults (row 32/40, title 40, rail 240, inspector 320)",
+      "status": [
+        "ACCEPTED",
+        "DECLARED",
+        "APPLIED_PARTIAL"
+      ],
+      "evidence": "rendering §9.2 tokens are declared in tokens.rs; rail 240 and inspector 320 are wired and visible; row heights 32/40, title bar 40 and the full spacing scale are declared constants without complete consumers (GPUI padding helpers remain)",
+      "limit": "row heights/title/spacing wiring is NOT_APPLIED end-to-end"
+    },
+    {
+      "item": "physical-pixel hairline and border snapping",
+      "status": [
+        "ACCEPTED",
+        "APPLIED"
+      ],
+      "evidence": "shell_style separator uses 1/scale_factor with a fail-closed scale factor",
+      "limit": "fractional DPI NOT_MEASURED (96 only)"
+    },
+    {
+      "item": "2-DIP focus outline distinct from the hairline",
+      "status": [
+        "ACCEPTED",
+        "DECLARED",
+        "APPLIED_PARTIAL"
+      ],
+      "evidence": "the 2-DIP focus-outline token is wired on the Surface Switcher; the dock row focus in focus-ring.png is drawn with border_1(), so that image proves a visible focus indicator, not the 2-DIP token. No dedicated 2-DIP native capture was taken.",
+      "limit": "native evidence for the 2-DIP token itself is NOT_RECORDED"
+    },
+    {
+      "item": "radii 0/4/8",
+      "status": [
+        "ACCEPTED",
+        "DECLARED"
+      ],
+      "evidence": "rendering §9.2 tokens are declared in tokens.rs; no consumer was verified",
+      "limit": "NOT_APPLIED end-to-end"
+    },
+    {
+      "item": "semantic colour palette (surface/text/focus/selection/status tokens)",
+      "status": [
+        "PROPOSED_NOT_ACCEPTED",
+        "NOT_APPLIED"
+      ],
+      "evidence": "rendering §9.3 explicitly says the palette is Proposed and not accepted; the shell currently uses literal RGB values at call sites (e.g. focus 0xe6c278, panel 0x202328) rather than the proposed semantic tokens",
+      "limit": "TYP2/PL1 adoption is the owning follow-up; no colour value is adopted here"
+    },
+    {
+      "item": "selection fill must never mean formal selection",
+      "status": [
+        "ACCEPTED",
+        "APPLIED",
+        "NATIVE_OBSERVED"
+      ],
+      "evidence": "ADR-0010/D-1…D-3 and the dock label 'Viewed is local; Formal Selected is Runtime-owned'; the native dock shows local Viewed/Compare separately",
+      "limit": "colour semantics of the proposed palette not adopted"
+    },
+    {
+      "item": "status positive/warning/negative with explicit text/icon",
+      "status": [
+        "APPLIED",
+        "NATIVE_OBSERVED"
+      ],
+      "evidence": "Stop controls and unavailable/notice text carry explicit words; no hue-only status is used",
+      "limit": "proposed status colours are not the adopted tokens"
+    },
+    {
+      "item": "disabled / focused / error / stale states independently visible",
+      "status": [
+        "NATIVE_OBSERVED"
+      ],
+      "evidence": "Check receipt disabled state and focus ring are both visible in focus-ring.png; notices state unavailable/withheld explicitly",
+      "limit": "High Contrast and stale-connection native states NOT_MEASURED"
+    },
+    {
+      "item": "motion policy / no idle animation",
+      "status": [
+        "ACCEPTED",
+        "APPLIED"
+      ],
+      "evidence": "MP-TYP1 motion audit recorded no application-defined animation; reduced motion NOT_APPLICABLE; no idle motion observed on this run",
+      "limit": "animated transitions are not measured because none exist"
+    },
+    {
+      "item": "contrast ratios (text/focus/boundary)",
+      "status": [
+        "NOT_MEASURED"
+      ],
+      "evidence": "rendering §9.3 carries only observed arithmetic for five pairs; no native contrast audit was performed",
+      "limit": "no threshold is adopted here"
+    },
+    {
+      "item": "DPI ladder 100/125/150/175/200 and mixed DPI",
+      "status": [
+        "NOT_MEASURED"
+      ],
+      "evidence": "only 96 DPI (100%) was used",
+      "limit": "all other scales and monitor migration remain open"
+    },
+    {
+      "item": "per-widget colour prohibition",
+      "status": [
+        "NOT_APPLIED"
+      ],
+      "evidence": "the shell uses literal rgb(...) state colours at call sites; there is no semantic colour token layer for these states",
+      "limit": "TYP2/PL1 own the token adoption; this record does not prescribe values"
+    }
   ],
   "not_measured": [
     "native contrast audit and High Contrast theme",
@@ -56,5 +185,24 @@
   "evidence_provenance": {
     "unique_images": "focus-ring.png and overlay-and-controls.png have no byte-identical copy in the published evidence directories checked here."
   },
-  "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.80"
+  "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.80",
+  "evidence_capture": {
+    "method": "OMP computer window screenshot (full client area) and AX tree capture",
+    "window_pid": "NOT_RECORDED",
+    "window_hwnd": "NOT_RECORDED",
+    "images": [
+      {
+        "file": "focus-ring.png",
+        "sha256": "sha256:8d2f9f8b9a85a9fd63d383773a8444d808185910674b7f17c9f8a1606466adcf",
+        "what_it_shows": "dock row focus indicator after selecting B; dock uses border_1(), not the 2-DIP token"
+      },
+      {
+        "file": "overlay-and-controls.png",
+        "sha256": "sha256:3d46588ddf9edb765a22b3e9a50ff4394b6415f3a6f066a474ca4914d8ee08ea",
+        "what_it_shows": "command palette overlay with the diagnostics query"
+      }
+    ],
+    "ax": "focus-ring.ax.txt belongs to the same run as focus-ring.png; executable and fixture identities are in environment",
+    "uniqueness": "checked against the evidence-published directories listed in this record at capture time; no exhaustive comparison was performed"
+  }
 }
