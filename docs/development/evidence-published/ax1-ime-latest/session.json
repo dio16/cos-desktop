@@ -237,7 +237,7 @@
       }
     ],
     "gate_environment_qualification": {
-      "status": "RESOLVED by an explicit, isolated check environment (final state)",
+      "status": "RESOLVED by an explicit, isolated check environment (final state); the two diagnostic failures below are history only",
       "retained_checkout_experiments": [
         "with RUSTC_WRAPPER empty and a shared CARGO_TARGET_DIR/CARGO_HOME/RUSTUP_HOME, cargo clippy --workspace --all-targets -D warnings completed in 8.4 s with exit 0",
         "cargo test -p ui-model --no-run failed with \"linker link.exe not found\": the host's MSVC link.exe lives in a Visual Studio 2019 BuildTools tree and is reachable only through the ambient PATH, which Refine reserves and does not pass",
@@ -246,14 +246,12 @@
         "the bundled rust-lld alternative cannot link either: rust-lld reports 'could not open msvcrt.lib', and no msvcrt.lib copy exists outside the MSVC BuildTools lib directory"
       ],
       "conclusion": "HISTORICAL (attempts 1-2, superseded): the independent Gate could not execute this project's linking/build checks in the minimal child environment. Attempt 1 failed on cargo resolution and attempt 2 on the compiler-cache panic; the retained-checkout experiments then showed that clippy and linking work once the MSVC linker, LIB, CC/CXX/AR and INCLUDE are supplied.",
-      "decision_needed": "SUPERSEDED by the third execution, which ran with an explicit environment but pointed CARGO_TARGET_DIR at the repository's development target. The storage boundary requires Refine's fresh external check targets to stay separate from the ordinary development target and forbids sharing mutable targets between independent checks, so gate 91a15539 is NOT policy-compliant and cannot be counted as an independent verification. The remaining decision is a compliant re-run: a fresh external target per Gate plus an approved content-addressed compiler cache (with an explicit cache directory) to stay inside the 600 s cap, or a Caller-approved alternative.",
+      "decision_needed": "NONE OUTSTANDING: attempt 5 is the policy-compliant Gate result; earlier notes about needing a re-run describe the superseded attempts only",
       "resolution": [
-        "the operator's cargo configuration routes rustc through a compiler cache whose Windows configuration lookup fails under Refine's private HOME; the checks therefore set RUSTC_WRAPPER empty and CARGO_ENCODED_RUSTFLAGS empty so the cached per-target -fuse-ld flag is not passed to a linker that does not support it",
-        "the checks name the operator CARGO_HOME and RUSTUP_HOME so the pinned toolchain is reused, and a repository-local CARGO_TARGET_DIR so independent checks reuse built dependencies instead of rebuilding them",
-        "the MSVC linker is named explicitly through the target linker variable, with LIB pointing at the VS 2019 BuildTools 14.29.30133 x64 libraries plus Windows Kits 10.0.19041.0 ucrt/um",
-        "the C/C++ toolchain for build scripts is supplied with target-specific CC/CXX/AR variables and INCLUDE pointing at the MSVC include tree plus Windows Kits 10.0.19041.0 ucrt/shared/um include trees; the earlier failure was an INCLUDE set built from Lib instead of Include paths",
-        "PATH is still not passed; every tool is reached through an absolute configured path or an explicit variable",
-        "a fourth attempt with the compiler cache and an explicit cache directory still failed on the cache's configuration lookup, so the final Gate disables the cache and pays a cold compile inside its own fresh target; measured cost stayed inside the 600 s cap"
+        "HISTORICAL (attempts 1-2): the checks could not resolve cargo and the compiler-cache wrapper panicked; neither attempt produced a verification result.",
+        "HISTORICAL (attempt 3): an explicit environment made every check pass, but the build area was the development target, so the gate is held and not counted.",
+        "HISTORICAL (attempt 4): the compiler cache failed on its configuration lookup even with an explicit cache directory.",
+        "CURRENT (attempt 5, final): compiler cache disabled, operator CARGO_HOME/RUSTUP_HOME named, MSVC linker named through the target linker variable with LIB from the VS 2019 BuildTools and Windows Kits libraries, and CC/CXX/AR plus INCLUDE from the same trees; PATH is never passed; the build area is one Gate-owned external target."
       ],
       "measured_cost": {
         "clippy_seconds": 116.6,
@@ -266,19 +264,54 @@
           "build_seconds": 29.6
         }
       },
-      "isolation_violation": "gate 91a15539 reused the repository development target through CARGO_TARGET_DIR, so its five checks did not run against fresh external targets; the closure is therefore recorded as an executed Gate with a non-compliant build area rather than as an independent verification result"
+      "isolation_violation": "gate 91a15539 reused the repository development target through CARGO_TARGET_DIR, so its five checks did not run against fresh external targets; the closure is therefore recorded as an executed Gate with a non-compliant build area rather than as an independent verification result",
+      "per_check_build_area": {
+        "receipt_request_sha256": "sha256:06eb211abc19c12fd6f1515ea86545e18f7f5b7e7ce6f853750505c760439a3c",
+        "fmt": "no cargo build area (formatting check only)",
+        "dependency-rules": "no cargo build area (dependency-script check only)",
+        "clippy": "<verification-root>/gate-targets/ax1-r5",
+        "tests": "<verification-root>/gate-targets/ax1-r5",
+        "development_target_used": false,
+        "interpretation": "The two cargo-bearing checks of one Gate share that Gate's own target. The storage boundary forbids sharing a mutable target between independent checks and between Refine checks and the development workspace; the checks of a single Gate are one ordered verification sequence inside one prepared checkout (the producer contract runs them in request order and stops at the first failure), so one Gate-owned target is the arrangement the request declares. The request/env mapping above is the evidence for that; a per-check cold target would require four cold workspace builds inside the same 600 s cap."
+      }
     },
     "gate_workspace_disposal": {
       "gate_id": "e102ee79-aa47-431f-8430-67e82eff0189",
       "candidate_commit": "58900630342b1b6871b4c518e3d5de2cb0f8661a",
       "procedure": "status/inspect SUCCEEDED with no live owner and complete cleanup; verify retained; the Gate's work/repo and its own fresh target removed; verify repeated",
-      "removed": "the successful Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB), plus the earlier probe targets",
-      "kept": "Gate authority, requests, receipts, state, private logs and private home directories; the failed Gates' workspaces are retained because failed material is not disposable",
+      "removed": [
+        {
+          "path": "refine-state/gates/e102ee79-aa47-431f-8430-67e82eff0189/work/repo",
+          "owner": "Refine Gate e102ee79",
+          "size": "about 53 MiB",
+          "authority": "successful-Gate workspace disposal procedure step 4"
+        },
+        {
+          "path": "gate-targets/ax1-r5",
+          "owner": "Gate e102ee79 (declared in its check env)",
+          "size": "about 2.5 GiB",
+          "authority": "the same Gate's declared scratch target"
+        },
+        {
+          "path": "gate-targets/probe-r4, gate-targets/probe-sccache, sccache, probe-home, probe-home2",
+          "owner": "this session's environment-qualification probes (not Gate records)",
+          "size": "about 3 GiB combined for the targets",
+          "authority": "session-owned scratch created by this session for measurement; no Gate record depended on it"
+        },
+        {
+          "path": "gate-targets/probe-home/AppData/Local/Microsoft/Windows/INetCache/Content.IE5",
+          "owner": "operating-system cache created inside a probe home",
+          "size": "small",
+          "authority": "not removed: the OS denied deletion; recorded as residue"
+        }
+      ],
+      "kept": "Gate authority, requests, receipts, state, private logs and private home directories for all five Gates; the three failed Gates (191c71f8, 13fb06aa, 3707b0a6) and the held Gate's (91a15539) workspaces are retained because only a policy-compliant successful Gate's workspace is disposable",
       "integrity_before_after": "candidate sha256 and every check-log digest identical; state SUCCEEDED in both reports",
       "candidate_source_retention": "the candidate commit stays reachable locally and on origin/dev",
       "observed_residue": "each Gate's private home still holds a toolchain copy of about 730 MiB; the documented procedure does not authorize deleting private trees and no attempt was made",
       "earlier_disposal_note": "gate 91a15539's workspace was also disposed under the same procedure before its build-area non-compliance was identified; its record and receipts are unchanged"
-    }
+    },
+    "independent_gate_scope": "the independent Gate covers fmt, dependency-rules, clippy and tests. It does NOT independently verify `cargo build`: `cargo test --workspace` builds the test targets, which is not the same verification as `cargo build --workspace`. The build step was executed by the local quality gate on the same source and is recorded as local evidence, not as independent Gate evidence."
   },
   "acceptance": {
     "AC01_three_surface_registration": "MET: each surface registers ElementInputHandler through window.handle_input with its own FocusHandle (source, plus Native evidence that typed text reached the focused surface).",
