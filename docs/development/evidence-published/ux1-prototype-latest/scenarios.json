@@ -142,13 +142,13 @@
       "route": "startup without a fixture; read the strip and the Reconnect action",
       "reachability": "PASS",
       "participant": "NOT_RUN",
-      "observations": "exactly one row 'Desktop-local · Observation unavailable — Reconnect' appears with no Runtime issue vocabulary and no destructive action; Reconnect states the honest local result. The post-action result is recorded in the existing INS3 evidence (ins3-native-latest/s4-reconnect.ax.txt): 'Reconnect requested — this window has no authorized observation to subscribe to.'; this UX1 record does not re-run it.",
+      "observations": "exactly one row 'Desktop-local · Observation unavailable — Reconnect' appears with no Runtime issue vocabulary and no destructive action; Reconnect states the honest local result. The post-action result is recorded in the existing INS3 evidence (../ins3-native-latest/s4-reconnect.ax.txt): 'Reconnect requested — this window has no authorized observation to subscribe to.'; this UX1 record does not re-run it.",
       "limitations": "intervention comprehension needs participants; OS notifications remain deferred.",
       "improvement_candidates": [],
       "evidence": [
         "ux08-intervention.png",
         "ux08-intervention.ax.txt",
-        "ins3-native-latest/s4-reconnect.ax.txt"
+        "../ins3-native-latest/s4-reconnect.ax.txt"
       ]
     }
   ],
