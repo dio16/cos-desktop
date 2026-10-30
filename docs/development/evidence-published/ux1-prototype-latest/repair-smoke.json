@@ -17,7 +17,11 @@
     "record": "participant-p01.json",
     "participant": "P01",
     "recruitment": "Caller explicitly selected one actual participant; not a representative sample.",
-    "results": {"pass": 0, "partial": 3, "fail": 5},
+    "results": {
+      "pass": 0,
+      "partial": 3,
+      "fail": 5
+    },
     "timing": "NOT_MEASURED",
     "prior_exposure": "NOT_CONTROLLED",
     "comprehension_exit": "NOT_MET",
@@ -58,8 +62,9 @@
       "quality": "all quality gates passed (native smoke is separate)",
       "ui_model_tests": "98 passed",
       "desktop_gpui_tests": "81 passed",
-      "binary_sha256": "sha256:656e757db6d38b2a59f68e9f598838c2304f1addf80237c58eaa614764e533b2",
-      "build_command": "cargo build --locked -p cos-desktop --bin cos-desktop"
+      "binary_sha256": "sha256:e9571822e02d3d5d131d031fcb0cea734ff57441dea5b36ad155bfda71b7e7d1",
+      "build_command": "cargo build --locked -p cos-desktop --bin cos-desktop",
+      "binary_provenance": "the previous -p cos-desktop build (sha256:656e757d…) was replaced by the workspace build from the committed tree; the recorded digest is the committed-tree binary that was launched and inspected after commit cedb57d"
     }
   },
   "native_observation": {
