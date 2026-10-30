@@ -148,8 +148,8 @@ pub struct SupportReport {
     pub publication_version: Option<u64>,
     /// Safe error category of the last failure.
     pub last_error: Option<PublicationError>,
-    /// Bounded diagnostic summary.
-    pub diagnostics: DiagnosticsSummary,
+    /// Bounded diagnostic summary, or `Unknown` when the ring was never read.
+    pub diagnostics: ReportValue<DiagnosticsSummary>,
     /// Referenced command views; a count only, never the identities.
     pub command_views: Option<usize>,
     /// Why observation is unavailable, when it is.
@@ -161,12 +161,16 @@ pub struct SupportReport {
 impl SupportReport {
     /// Build the report from the publication and diagnostic batch a reader
     /// already holds. Nothing else is read.
+    ///
+    /// `desktop_version` is supplied by the binary that owns the Desktop package
+    /// version; app-core must not report its own crate version as the Desktop's.
     pub fn from_publication(
         publication: &ObservationPublication,
         diagnostics: &DiagnosticBatch,
+        desktop_version: &'static str,
     ) -> Self {
         Self {
-            desktop_version: env!("CARGO_PKG_VERSION"),
+            desktop_version,
             runtime_version: ReportValue::Unknown(
                 "Runtime version is not exposed through observation",
             ),
@@ -181,7 +185,7 @@ impl SupportReport {
             session_generation: Some(publication.session_generation),
             publication_version: Some(publication.publication_version),
             last_error: publication.last_error.clone(),
-            diagnostics: DiagnosticsSummary::from_batch(diagnostics),
+            diagnostics: ReportValue::Available(DiagnosticsSummary::from_batch(diagnostics)),
             command_views: Some(publication.command_statuses.len()),
             unavailable: None,
             limits: ReportLimits::default(),
@@ -189,9 +193,9 @@ impl SupportReport {
     }
 
     /// Report for a Desktop with no observation handle at all.
-    pub fn unavailable(reason: &'static str) -> Self {
+    pub fn unavailable(reason: &'static str, desktop_version: &'static str) -> Self {
         Self {
-            desktop_version: env!("CARGO_PKG_VERSION"),
+            desktop_version,
             runtime_version: ReportValue::Unknown("no observation session exists"),
             protocol_version: ReportValue::Unknown("no observation session exists"),
             connection: ReportValue::Available(PublicationConnection::Disconnected),
@@ -201,12 +205,7 @@ impl SupportReport {
             session_generation: None,
             publication_version: None,
             last_error: None,
-            diagnostics: DiagnosticsSummary::from_batch(&DiagnosticBatch {
-                events: Vec::new(),
-                event_gap: None,
-                latest_sequence: 0,
-                exhausted: false,
-            }),
+            diagnostics: ReportValue::Unknown("no diagnostic ring was read"),
             command_views: None,
             unavailable: Some(reason),
             limits: ReportLimits::default(),
@@ -257,7 +256,29 @@ impl SupportReport {
             "Unavailable: {}",
             self.unavailable.unwrap_or("none")
         ));
-        let summary = &self.diagnostics;
+        let summary = match &self.diagnostics {
+            ReportValue::Available(summary) => summary,
+            ReportValue::Unknown(reason) => {
+                for label in [
+                    "Retained events",
+                    "Latest sequence",
+                    "Oldest retained",
+                    "Event gap",
+                    "Sequence exhausted",
+                    "Event counts",
+                ] {
+                    lines.push(format!("{label}: unknown ({reason})"));
+                }
+                lines.push(format!(
+                    "Limits: events {} / line {} bytes / report {} bytes / {} lines",
+                    self.limits.max_diagnostic_events,
+                    self.limits.max_line_bytes,
+                    self.limits.max_report_bytes,
+                    self.limits.max_report_lines
+                ));
+                return self.finish(lines);
+            }
+        };
         lines.push(format!("Retained events: {}", summary.retained_events));
         lines.push(format!("Latest sequence: {}", summary.latest_sequence));
         lines.push(format!(
@@ -286,7 +307,10 @@ impl SupportReport {
             self.limits.max_report_bytes,
             self.limits.max_report_lines
         ));
+        self.finish(lines)
+    }
 
+    fn finish(&self, lines: Vec<String>) -> String {
         let mut out = String::with_capacity(MAX_SUPPORT_REPORT_BYTES);
         for (index, line) in lines.iter().take(MAX_REPORT_LINES).enumerate() {
             if index > 0 {

@@ -17,7 +17,7 @@
   "report_fields": [
     {
       "field": "desktop_version",
-      "authority": "CARGO_PKG_VERSION of app-core",
+      "authority": "supplied by the calling binary (apps/desktop owns its package version)",
       "state": "AVAILABLE"
     },
     {
@@ -103,21 +103,23 @@
     ]
   },
   "verification": {
-    "tests": "crates/app-core/tests/support_report.rs (6 cases)",
+    "tests": "crates/app-core/tests/support_report.rs (7 cases)",
     "covered": [
       "versions are never filled from the Desktop package",
       "disconnected publication reports not connected and no fabricated revision",
       "diagnostic gap, per-kind counts and exhaustion preserved",
       "render stays inside per-line and total bounds with an oversized field",
       "synthetic token, signed locator and private path never render",
-      "an unavailable Desktop explains itself and states no measurement"
+      "an unavailable Desktop explains itself and states no measurement",
+      "a read-but-empty ring reports zero while an unread ring reports unknown"
     ],
     "native": "NOT_RUN — no diagnostic UI/CLI or startup path changed; the report is an app-core seam only"
   },
   "residual_risks": [
     "no exporter exists yet, so no third-party artifact can be produced or scanned end to end",
     "the report shows only what observation already exposes; cache/subscription counters beyond the command-view count are not available",
-    "Runtime/Provider versions stay UNKNOWN until a projection supplies them"
+    "Runtime/Provider versions stay UNKNOWN until a projection supplies them",
+    "no Desktop call site builds a report yet, so the version parameter is currently exercised by tests only; the binary must pass its own CARGO_PKG_VERSION when it does"
   ],
   "source_candidate": "f71a7ee99628837918218795842809af8e652d37",
   "changed_files": [

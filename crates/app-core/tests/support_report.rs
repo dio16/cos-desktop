@@ -9,6 +9,8 @@ use app_core::support_report::{MAX_REPORT_LINES, MAX_SUPPORT_REPORT_BYTES, Suppo
 use app_core::{MAX_DIAGNOSTIC_LINE_BYTES, ReportValue};
 use desktop_protocol::ids::Counter;
 
+const DESKTOP: &str = "9.9.9-desktop-owner";
+
 fn observing(revision: Option<&str>) -> ObservationPublication {
     ObservationPublication {
         snapshot: None,
@@ -38,7 +40,8 @@ fn event(sequence: u64, kind: DiagnosticKind) -> DiagnosticEvent {
 
 #[test]
 fn versions_are_never_filled_from_the_desktop_package() {
-    let report = SupportReport::from_publication(&observing(Some("42")), &batch(Vec::new(), None));
+    let report =
+        SupportReport::from_publication(&observing(Some("42")), &batch(Vec::new(), None), DESKTOP);
     let rendered = report.render();
     assert_eq!(
         report.runtime_version,
@@ -65,7 +68,7 @@ fn a_disconnected_publication_reports_not_connected_and_no_revision() {
     let mut publication = observing(None);
     publication.connection = PublicationConnection::Disconnected;
     publication.source = PublicationSource::Unavailable;
-    let report = SupportReport::from_publication(&publication, &batch(Vec::new(), None));
+    let report = SupportReport::from_publication(&publication, &batch(Vec::new(), None), DESKTOP);
     let rendered = report.render();
     assert!(rendered.contains("Connection: not connected"), "{rendered}");
     assert!(
@@ -99,7 +102,7 @@ fn diagnostic_summary_preserves_the_gap_counts_and_exhaustion() {
     assert_eq!(summary.counts.connection, 1);
     assert_eq!(summary.counts.error, 1);
     assert_eq!(summary.counts.resync, 1);
-    let rendered = SupportReport::from_publication(&observing(None), &batch).render();
+    let rendered = SupportReport::from_publication(&observing(None), &batch, DESKTOP).render();
     assert!(rendered.contains("Event gap: 3-8"), "{rendered}");
 }
 
@@ -107,7 +110,8 @@ fn diagnostic_summary_preserves_the_gap_counts_and_exhaustion() {
 fn render_stays_inside_the_line_and_report_bounds() {
     let mut publication = observing(Some("42"));
     publication.last_error = Some(PublicationError::QueueOverflow);
-    let mut report = SupportReport::from_publication(&publication, &batch(Vec::new(), None));
+    let mut report =
+        SupportReport::from_publication(&publication, &batch(Vec::new(), None), DESKTOP);
     report.runtime_version = ReportValue::Available("x".repeat(8_000));
     let rendered = report.render();
     assert!(
@@ -134,7 +138,8 @@ fn render_stays_inside_the_line_and_report_bounds() {
 #[test]
 fn synthetic_credentials_locators_and_private_paths_never_render() {
     let publication = observing(Some("42"));
-    let mut report = SupportReport::from_publication(&publication, &batch(Vec::new(), None));
+    let mut report =
+        SupportReport::from_publication(&publication, &batch(Vec::new(), None), DESKTOP);
     report.runtime_version = ReportValue::Available("access_token=super-secret-value".to_owned());
     report.protocol_version =
         ReportValue::Available("https://objects.example/a?X-Amz-Signature=deadbeefcafe".to_owned());
@@ -151,13 +156,43 @@ fn synthetic_credentials_locators_and_private_paths_never_render() {
 
 #[test]
 fn an_unavailable_desktop_explains_itself_and_states_no_measurement() {
-    let report = SupportReport::unavailable("Disconnected — Runtime not configured");
+    let report = SupportReport::unavailable("Disconnected — Runtime not configured", DESKTOP);
     let rendered = report.render();
     assert!(rendered.contains("Unavailable: Disconnected — Runtime not configured"));
-    assert!(rendered.contains("Retained events: 0"));
-    assert!(rendered.contains("Latest sequence: 0"));
+    assert!(
+        rendered.contains("Retained events: unknown (no diagnostic ring was read)"),
+        "an unread ring is never reported as zero events:\n{rendered}"
+    );
+    assert!(rendered.contains("Latest sequence: unknown (no diagnostic ring was read)"));
+    assert!(rendered.contains("Event counts: unknown (no diagnostic ring was read)"));
     assert!(
         rendered.contains("Runtime version: unknown (no observation session exists)"),
         "{rendered}"
+    );
+}
+
+#[test]
+fn a_read_empty_ring_is_zero_while_an_unread_ring_is_unknown() {
+    let read_empty =
+        SupportReport::from_publication(&observing(None), &batch(Vec::new(), None), DESKTOP);
+    let read_rendered = read_empty.render();
+    assert!(
+        read_rendered.contains("Retained events: 0"),
+        "{read_rendered}"
+    );
+    assert!(
+        read_rendered.contains("Latest sequence: 0"),
+        "{read_rendered}"
+    );
+    assert!(
+        read_rendered.contains("Sequence exhausted: false"),
+        "{read_rendered}"
+    );
+
+    let unread = SupportReport::unavailable("no observation session", DESKTOP);
+    let unread_rendered = unread.render();
+    assert!(
+        !unread_rendered.contains("Retained events: 0"),
+        "an unobserved Desktop must not look like a measured empty ring:\n{unread_rendered}"
     );
 }
