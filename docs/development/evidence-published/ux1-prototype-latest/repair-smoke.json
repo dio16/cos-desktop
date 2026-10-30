@@ -92,27 +92,8 @@
     "ux1_completion": "NOT_COMPLETE",
     "comprehension_exit": "NOT_MET",
     "product_acceptance": "NOT_CLAIMED",
-    "gate": "independent Gate 93aa1f13… SUCCEEDED on 271f7a4 over fmt, dependency-rules, clippy and tests; Gate success is not product acceptance or merge permission",
+    "gate": "independent Gate f2210b32… SUCCEEDED on 91fdf61 over fmt, dependency-rules, clippy and tests; Gate success is not product acceptance or merge permission",
     "unrelated_holds": "MP-TYP1 125 % capture HOLD and the MP-R0B HOLD with its 352-case failed suite are untouched."
-  },
-  "gate": {
-    "gate_id": "93aa1f13-d365-4a75-b9ad-6658f1a3db5e",
-    "gate_label": "ux1-participant-repair-20261031",
-    "revision": "271f7a4bd95110701e22e6478ecba84b813035a6",
-    "state": "SUCCEEDED",
-    "checks": {
-      "fmt": "pass",
-      "dependency-rules": "pass",
-      "clippy": "pass",
-      "tests": "pass"
-    },
-    "duration_ms": 275161,
-    "candidate_sha256": "sha256:efcb0c38a6e1f883c41acf1acc660d8aa45726b2ed49988362baabc28ef83c5e",
-    "observations_sha256": "sha256:b8029252deb0b111cef1b4bef74f45b59789d394188135e295fb062850fa2416",
-    "outputs": "none declared; absent_outputs empty",
-    "cleanup": "complete",
-    "first_attempt": "the initial dispatch used a relative --state-dir and was rejected at intake (INPUT_INVALID, malformed_path) before any Gate ID or workspace existed; it is not counted as a Gate",
-    "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned identical state, candidate, observations, request, terminal-state and check-log digests"
   },
   "review_rounds": [
     {
@@ -124,5 +105,63 @@
         "A-R1-02: the inspector printed formal_status and evidence status tokens without a Japanese gloss; both now use a gloss plus canonical token, and unknown values stay verbatim."
       ]
     }
-  ]
+  ],
+  "gates": [
+    {
+      "gate_id": "93aa1f13-d365-4a75-b9ad-6658f1a3db5e",
+      "gate_label": "ux1-participant-repair-20261031",
+      "revision": "271f7a4bd95110701e22e6478ecba84b813035a6",
+      "state": "SUCCEEDED",
+      "checks": {
+        "fmt": "pass",
+        "dependency-rules": "pass",
+        "clippy": "pass",
+        "tests": "pass"
+      },
+      "duration_ms": 275161,
+      "candidate_sha256": "sha256:efcb0c38a6e1f883c41acf1acc660d8aa45726b2ed49988362baabc28ef83c5e",
+      "observations_sha256": "sha256:b8029252deb0b111cef1b4bef74f45b59789d394188135e295fb062850fa2416",
+      "outputs": "none declared; absent_outputs empty",
+      "cleanup": "complete",
+      "superseded": "the round-1 review then required two display fixes, so this Gate is not reused for the fixed candidate",
+      "first_attempt": "the initial dispatch used a relative --state-dir and was rejected at intake (INPUT_INVALID, malformed_path) before any Gate ID or workspace existed; it is not counted as a Gate",
+      "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned identical state, candidate, observations, request, terminal-state and check-log digests"
+    },
+    {
+      "gate_id": "f2210b32-1c38-42c5-a440-65c5dd3699c7",
+      "gate_label": "ux1-participant-repair-20261031-r2",
+      "revision": "91fdf61d95e3e7b11a80ff80e9c6c68666432c7e",
+      "state": "SUCCEEDED",
+      "checks": {
+        "fmt": "pass",
+        "dependency-rules": "pass",
+        "clippy": "pass",
+        "tests": "pass"
+      },
+      "duration_ms": 272654,
+      "candidate_sha256": "sha256:568a57ead7f38dff86cb923d2f1c99416113216f6401c98ff89ec76e0954555e",
+      "outputs": "none declared; absent_outputs empty",
+      "cleanup": "complete",
+      "supersedes": "93aa1f13-d365-4a75-b9ad-6658f1a3db5e covered 271f7a4 before the round-1 review fixes and is not reused for the fixed candidate",
+      "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned identical state, candidate, observations, request, terminal-state and check-log digests"
+    }
+  ],
+  "gate": {
+    "gate_id": "f2210b32-1c38-42c5-a440-65c5dd3699c7",
+    "gate_label": "ux1-participant-repair-20261031-r2",
+    "revision": "91fdf61d95e3e7b11a80ff80e9c6c68666432c7e",
+    "state": "SUCCEEDED",
+    "checks": {
+      "fmt": "pass",
+      "dependency-rules": "pass",
+      "clippy": "pass",
+      "tests": "pass"
+    },
+    "duration_ms": 272654,
+    "candidate_sha256": "sha256:568a57ead7f38dff86cb923d2f1c99416113216f6401c98ff89ec76e0954555e",
+    "outputs": "none declared; absent_outputs empty",
+    "cleanup": "complete",
+    "supersedes": "93aa1f13-d365-4a75-b9ad-6658f1a3db5e covered 271f7a4 before the round-1 review fixes and is not reused for the fixed candidate",
+    "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned identical state, candidate, observations, request, terminal-state and check-log digests"
+  }
 }
