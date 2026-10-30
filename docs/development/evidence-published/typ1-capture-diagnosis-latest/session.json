@@ -1,0 +1,102 @@
+{
+  "task": "MP-TYP1",
+  "contract": "DC-MP-TYP1",
+  "slice": "Diagnosis of the refused 125 % identity-bound capture path",
+  "status": "HOLD_CAUSE_CLASSIFIED_DPI_COORDINATE_SPACE_FIX_NEEDS_NEW_AUTHORITY",
+  "reviewed_directive_sha": "9f3bb003ef7473d95d690e575f527a7a23ee7ebd",
+  "execution_baseline": "9f3bb003ef7473d95d690e575f527a7a23ee7ebd",
+  "branch": "dev",
+  "product_and_harness_changed": false,
+  "scope_note": "Diagnosis only. No product, token, probe, harness, dependency or contract change; the stop conditions were reached before any code edit.",
+  "inputs_read": [
+    "apps/desktop/devtools/r0/n03_probe.ps1",
+    "apps/desktop/devtools/r0/tests/test_n03_observe.py",
+    "apps/desktop/devtools/typography/host_observe.py",
+    "apps/desktop/devtools/typography/tests/test_host_observe.py",
+    "docs/development/evidence-published/typ1-scale125-latest/session.json",
+    "docs/development/evidence-published/typ1-mixed-script-latest/session.json",
+    "docs/development/BUILD_AND_RUN.md section 4.18"
+  ],
+  "existing_api_inventory": {
+    "probe_declared": ["EnumWindows", "GetWindowTextLength", "GetWindowText", "IsWindowVisible", "GetWindowThreadProcessId", "GetWindowRect", "PrintWindow", "IsWindow", "GetForegroundWindow", "GetSystemMetrics"],
+    "harness_declared": ["GetDpiForWindow", "IsWindow", "GetWindowThreadProcessId", "GetWindowTextW", "GetWindowRect"],
+    "capture_method": "bitmap sized from GetWindowRect, PrintWindow(PW_RENDERFULLCONTENT) into that DC, then a 7x7 comparison against CopyFromScreen over the same rectangle intersected with the virtual screen (GetSystemMetrics 76-79)",
+    "consequence": "the captured bitmap is forced to the GetWindowRect size, so an image/rect size check can pass while the underlying coordinate space still differs from the display"
+  },
+  "measurements": {
+    "same_host_dpi_marker": {
+      "command": "powershell-family host: [System.Drawing.Graphics]::FromHwnd([IntPtr]::Zero).DpiX",
+      "observed": 96,
+      "meaning": "the probe-host process reports a 96 DPI desktop while the target window's own GetDpiForWindow is 120, i.e. the host does not follow the 125 % scale for this query",
+      "method_is_existing": "System.Drawing/.NET only; no new Win32 declaration"
+    },
+    "host_screen_views": {
+      "primary_bounds": "3440x1440 at (0,0)",
+      "virtual_screen": "3820x2520 at (0,-1080)",
+      "note": "a second display is present above/right of the primary; Screen.Bounds still reports physical size for this host, so it is not by itself an awareness proof and is recorded only as environment"
+    },
+    "probe_geometry_by_scale": {
+      "at_100_percent": {"window": "1296x839 at (1072,277)", "dpi": 96},
+      "at_125_percent": {"window": "1294x838 at (729,134)", "dpi": 120},
+      "delta": "width -2, height -1: the probe-reported window did not grow with the scale"
+    },
+    "physical_window_by_scale": {
+      "at_100_percent": "1282x832 from an independent desktop query",
+      "at_125_percent": "1602x1039 from the same independent query",
+      "delta": "width +320, height +207, i.e. roughly the 1.25 factor"
+    },
+    "discrepancy_magnitude": {
+      "at_125_percent": "probe 1294x838 versus physical 1602x1039: 308x201 pixels",
+      "frame_accounting_at_100_percent": "the two tools differ by about 14x7 pixels, which is the order of window-frame and shadow accounting",
+      "conclusion": "frame accounting cannot explain a 308x201 gap, so the probe geometry is in a different (DPI-scaled) space rather than merely a differently framed physical rectangle"
+    },
+    "shell_independence": "the harness's documented --powershell option pointed at PowerShell 7 returned the same 1294x838 geometry and the same 43/49 refusal as Windows PowerShell, so the result is not a shell-version artefact"
+  },
+  "classification": {
+    "A_dpi_coordinate_space_mismatch": "SUPPORTED by evidence: the probe host reports a 96 DPI desktop marker at 125 %, its window geometry does not follow the 1.25 physical growth, and the resulting gap is far beyond frame accounting.",
+    "B_window_frame_accounting": "EXCLUDED as the primary cause: the observed 308x201 gap is an order of magnitude beyond the ~14x7 frame difference measured at 100 %.",
+    "C_sample_position_calculation": "NOT ISOLATED: the 7x7 positions are computed from the same rectangle on both sides, so a space mismatch alone would explain the disagreement without a separate arithmetic fault; no independent arithmetic error was found by inspection.",
+    "D_actual_occlusion": "NOT SUPPORTED: three attempts with a focused, unobstructed window produced the identical 43/49 result; a real overlay would not repeat exactly.",
+    "E_printwindow_resampling_difference": "POSSIBLE CONTRIBUTOR, NOT ISOLATED: 43 of 49 samples still agree, so most sampled content is aligned; the 6 disagreements are consistent with edge/text resampling under a scale mismatch but were not separated from a residual offset.",
+    "F_other": "none identified",
+    "G_insufficient_evidence": "applies only to the exact mechanism: the probe record carries no compared rectangles, no per-sample deltas and no probe-side screen-metric snapshot, so the remaining 6 samples are not attributed."
+  },
+  "acceptance": {
+    "AC01_cause_classified_with_evidence": "MET for the primary cause (A) with B/D excluded by magnitude and repeatability; C/E remain not isolated.",
+    "AC02_coordinate_space_and_awareness_proof": "PARTIAL: the host's 96 DPI marker and the geometry divergence are observed; the API-level awareness flag itself was not queried because doing so needs a new Win32 call in the probe.",
+    "AC03_minimal_fix_when_cause_proven": "NOT APPLIED: the fix needs new authority (below), so no code was edited.",
+    "AC04_96_dpi_identity_preserved": "UNCHANGED: nothing in the probe or harness was modified.",
+    "AC05_125_rejections_preserved": "UNCHANGED: thresholds, 45/49 requirement, tolerance 24, identity checks and blank/PNG refusals are untouched.",
+    "AC06_120_dpi_image_accepted": "NOT ACHIEVED: no accepted 120 DPI image exists.",
+    "AC07_before_after_comparison": "DONE for geometry: 100 % probe 1296x839 against 125 % 1294x838, and 100 % physical 1282x832 against 125 % 1602x1039.",
+    "AC08_owned_and_shared_regressions": "RECORDED: n03 observe suite 19 tests OK (1 skipped) and typography suite 71 tests OK, both unchanged this slice; the shared R0 suite keeps its known HOLD result from section 19.91 (352 cases, 1 failure, 11 errors, 12 skipped) and was not re-run or rewritten.",
+    "AC09_gate_for_verification_code": "NOT APPLICABLE: no verification code changed, so no Gate is claimed and none is transferred.",
+    "AC10_hold_when_unresolved": "MET: the fix is held; the pixel acceptance stays NOT_MEASURED."
+  },
+  "blocking_decision": {
+    "what_is_needed": "The probe must operate in the same coordinate space as the display when the scale is fractional. Two minimal options were identified and neither is authorized by this slice.",
+    "option_1": "Make the probe host per-monitor DPI aware (an explicit awareness call or a manifest change). This adds a new Win32 declaration or an OS-facing process change, which the directive's stop conditions name explicitly.",
+    "option_2": "Pass the already measured scale factor from the harness into the shared R0 probe and have it compute the physical rectangle. This changes the shared R0 probe's argument contract, which is also a named stop condition, and it would need an R0A/R0B/R0C impact review.",
+    "not_authorized": "Lowering 45/49, replacing PrintWindow with a screen copy, weakening 96 DPI identity proof, changing Windows DPI awareness system settings, or adding dependencies.",
+    "requested_judgement": "Whether to authorize option 1 or option 2 (with the shared-probe impact review) as its own bounded slice, or to keep 120 DPI pixel acceptance deferred."
+  },
+  "verification": {
+    "shared_probe_tests": "python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p test_n03_observe.py -> Ran 19 tests, OK (skipped=1)",
+    "typography_tests": "python -B -m unittest discover -s apps/desktop/devtools/typography/tests -p test_*.py -> Ran 71 tests, OK",
+    "product_quality_gates": "NOT_RUN: no code changed (ADR-0014 Y04)",
+    "documentation": "PENDING json/link/62-contract/41-edge DAG/privacy/diff smoke",
+    "review": "PENDING candidate-specific linked Tern review"
+  },
+  "not_measured": [
+    "The probe-side screen-metric snapshot and per-sample deltas that would isolate the remaining 6 disagreements",
+    "Any accepted 120 DPI image, separator, focus-outline, clipping, line-height or wrap result",
+    "96 DPI re-capture after a scale restore (no code changed, so none was required)",
+    "150/175/200 %, mixed-monitor movement, High Contrast, IME, resolved family, frame cost",
+    "MP-R0B idle baseline/noise (separate HOLD)"
+  ],
+  "environment_state": {
+    "display_scale": "125 % as set by the Operator for this slice; this session changed no display setting and did not restore it, because automatic display-setting changes are prohibited",
+    "restore": "restoring 100 % is the Operator's action"
+  },
+  "continuation_boundary": "Diagnosis only. No authority is inferred for a new Win32 call, a manifest change, a shared-probe contract change, a Gate, or any product acceptance. MP-TYP1 remains incomplete and the 120 DPI pixel acceptance stays NOT_MEASURED."
+}
