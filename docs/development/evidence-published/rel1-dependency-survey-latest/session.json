@@ -3,7 +3,7 @@
   "contract": "DC-MP-REL1",
   "decision": "DD-21",
   "slice": "Windows dependency graph, third-party licence/NOTICE consistency, runtime dependency survey",
-  "status": "LIMITED_SURVEY_COMPLETE_LICENCE_OBLIGATIONS_OPEN",
+  "status": "LIMITED_PROVENANCE_COMPLETE_REVIEW_PENDING_DISTRIBUTION_OPEN",
   "baseline": "39713bf9644d0d8ae0b455d814f7a3a7466a0ca2",
   "product_source": "87922dd567187bec88186944247d1f5644ba2a1b (unchanged by this slice: no product, verification code or NOTICE change was needed)",
   "a_windows_dependency_graph": {
@@ -31,7 +31,7 @@
       "thiserror",
       "thiserror-impl"
     ],
-    "note": "369 is the exact population of this traversal (the earlier 368 dropped one package). It is the build-time dependency closure, not a proof of what is linked into the executable; dev-only edges are excluded by construction.",
+    "note": "369 is the retained population of the historical normal/build metadata traversal, not a count certified for the active binary build or linked executable. The targeted follow-up finds cfg_aliases only behind a borsh build edge in metadata and absent from the active Windows cargo tree; no 369-package recount was performed. Dev-only edges were excluded by the recorded traversal.",
     "by_source": {
       "registry": 346,
       "pinned_zed_git": 17,
@@ -138,7 +138,7 @@
   },
   "d_notice_consistency": {
     "current_notice": "names Apache-2.0 for COS Desktop and the Unicode data entry only",
-    "finding": "every declared dependency uses a permissive family expression. Two questions stay OPEN: the licence texts of the 16 registry packages that ship none in their fetched source, and whether the cfg_aliases MIT notice must be propagated. Neither is decided here, and the repository NOTICE is unchanged.",
+    "finding": "The historical archive survey found sixteen packages without included licence files. The follow-up retrieves at least one original branch text for fourteen at their archived revisions; seahash and simd_helpers originals remain NOT_VERIFIED. Licence branch/scope, cfg_aliases notice applicability and distribution compliance remain OPEN. NOTICE is unchanged.",
     "change_made": "none — adding attributions without the licence texts, or shipping a NOTICE that implies compliance, would be worse than stating the gap",
     "decision_needed": "before any distribution, collect and assess the missing texts and decide how obligations are satisfied. That can be done inside the existing LICENSE/NOTICE files or may need more files; which one is a distribution decision, not something this survey establishes."
   },
@@ -153,7 +153,7 @@
     "gate": "none — no product or verification code changed (ADR-0014 Y04)"
   },
   "open_items": [
-    "licence texts for the 16 registry packages that ship none in their fetched source",
+    "original licence texts for seahash 4.1.0 and simd_helpers 0.1.0; remaining alternative/subcomponent scope and licence choices in licence_provenance_followup",
     "whether the cfg_aliases MIT notice must accompany the distribution",
     "MSVC runtime redistribution terms and whether the package must supply it",
     "transitive and dynamically loaded DLL closure",
@@ -181,6 +181,1036 @@
       }
     ],
     "re_review": "CLEAN 0/0/0",
-    "scope_note": "Clean review covers this survey record only. Licence obligations, MSVC redistribution, transitive DLL closure, DD-21 and distribution acceptance remain OPEN and are not implied."
+    "scope_note": "This historical CLEAN is bound only to survey SHA 7982a5e359f3378b080b51a94a8a1b0532fef35c. It is not a review of licence_provenance_followup or a legal/distribution acceptance."
+  },
+  "licence_provenance_followup": {
+    "task": "MP-REL1",
+    "contract": "DC-MP-REL1",
+    "slice": "Original licence provenance for sixteen exact registry versions plus cfg_aliases 0.2.2",
+    "reviewed_directive_baseline": "7982a5e359f3378b080b51a94a8a1b0532fef35c",
+    "execution_baseline": "be565d6a6eb14c23c8630f09386f0b72b88984d2",
+    "taskern": {
+      "operation": "prepare",
+      "claim": "packet_compiled",
+      "packet_sha256": "sha256:bc8f08e1534c749d1cd6a15d9203e96789d8d622ec41ef479fdac66519be8960"
+    },
+    "status": "RESEARCH_COMPLETE_REVIEW_PENDING_DISTRIBUTION_OPEN",
+    "method": [
+      "Scope is the sixteen names in packages_without_local_text_list plus cfg_aliases only; no 369-package recount.",
+      "Every cached .crate SHA256 equals Cargo.lock checksum. Archived .cargo_vcs_info.json provides the exact revision; every archived Cargo.toml.orig matches bytes from that revision and confirms name/version. This is a reproducible correspondence chain, not a maintainer signature or legal authentication.",
+      "SHA256 and byte lengths are of original HTTP response bytes, not reader-formatted text or Git blob IDs. Raw bytes retained privately; no third-party original text added to repository.",
+      "Archive absence remains an archive fact: finding a text upstream does not change the existing 330/16/17/6 categories. Metadata traversal is not active-build or binary inclusion proof."
+    ],
+    "summary": {
+      "exact_package_records": 16,
+      "archive_checksums_and_pinned_manifest_versions_verified": 16,
+      "packages_with_at_least_one_original_licence_branch_text": 14,
+      "original_text_not_verified": 2,
+      "not_verified_packages": [
+        "seahash 4.1.0",
+        "simd_helpers 0.1.0"
+      ],
+      "all_declared_alternatives_or_subcomponent_coverage_verified": false,
+      "existing_metadata_population_preserved": 369
+    },
+    "records": [
+      {
+        "name": "accesskit",
+        "version": "0.24.1",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "d3b7f7f85a7e5f68090000ed7622545829afd484d210358702ae4cb97dd0c320"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/accesskit/accesskit-0.24.1.crate",
+          "sha256": "d3b7f7f85a7e5f68090000ed7622545829afd484d210358702ae4cb97dd0c320",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT OR Apache-2.0"
+        },
+        "upstream": {
+          "repository": "https://github.com/AccessKit/accesskit",
+          "revision": "a55d3e1a18bb9ef0e4bccc9083fb13c3e0ad8969",
+          "path_in_vcs": "common",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/a55d3e1a18bb9ef0e4bccc9083fb13c3e0ad8969/common/Cargo.toml",
+            "status": 200,
+            "sha256": "02750928b55d11d2110957ae426010243e5bd4a93e6453e2b0ebde1df1d87994",
+            "bytes": 955
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/a55d3e1a18bb9ef0e4bccc9083fb13c3e0ad8969/LICENSE-MIT",
+            "status": 200,
+            "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+            "bytes": 1023,
+            "file": "LICENSE-MIT"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/a55d3e1a18bb9ef0e4bccc9083fb13c3e0ad8969/LICENSE-APACHE",
+            "status": 200,
+            "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+            "bytes": 9723,
+            "file": "LICENSE-APACHE"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/a55d3e1a18bb9ef0e4bccc9083fb13c3e0ad8969/LICENSE.chromium",
+            "status": 200,
+            "sha256": "845022e0c1db1abb41a6ba4cd3c4b674ec290f3359d9d3c78ae558d4c0ed9308",
+            "bytes": 1559,
+            "file": "LICENSE.chromium"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_OR_APACHE_OPTION",
+          "CHROMIUM_SCOPE_OPEN"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Pinned crate inherits MIT OR Apache-2.0 from the pinned root workspace; inherited declaration checked. Root LICENSE.chromium adds BSD-style conditions for Chromium-derived portions; applicability to this exact crate and shipped bytes is NOT_VERIFIED."
+        ]
+      },
+      {
+        "name": "accesskit_consumer",
+        "version": "0.38.0",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "5d10a236f96f87d70732e44520046785431ef01d5bcd6b041317bfadd2f88245"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/accesskit_consumer/accesskit_consumer-0.38.0.crate",
+          "sha256": "5d10a236f96f87d70732e44520046785431ef01d5bcd6b041317bfadd2f88245",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT OR Apache-2.0"
+        },
+        "upstream": {
+          "repository": "https://github.com/AccessKit/accesskit",
+          "revision": "c88605b96d04431f9c3c792464a0f2f253480e94",
+          "path_in_vcs": "consumer",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/c88605b96d04431f9c3c792464a0f2f253480e94/consumer/Cargo.toml",
+            "status": 200,
+            "sha256": "4b531b28c87e4e0b463da36f5163318163a240611ca92c5f8d96aa74f6ce8646",
+            "bytes": 434
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/c88605b96d04431f9c3c792464a0f2f253480e94/LICENSE-MIT",
+            "status": 200,
+            "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+            "bytes": 1023,
+            "file": "LICENSE-MIT"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/c88605b96d04431f9c3c792464a0f2f253480e94/LICENSE-APACHE",
+            "status": 200,
+            "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+            "bytes": 9723,
+            "file": "LICENSE-APACHE"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/c88605b96d04431f9c3c792464a0f2f253480e94/LICENSE.chromium",
+            "status": 200,
+            "sha256": "845022e0c1db1abb41a6ba4cd3c4b674ec290f3359d9d3c78ae558d4c0ed9308",
+            "bytes": 1559,
+            "file": "LICENSE.chromium"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_OR_APACHE_OPTION",
+          "CHROMIUM_SCOPE_OPEN"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Pinned crate inherits MIT OR Apache-2.0 from the pinned root workspace; inherited declaration checked. Root LICENSE.chromium adds BSD-style conditions for Chromium-derived portions; applicability to this exact crate and shipped bytes is NOT_VERIFIED."
+        ]
+      },
+      {
+        "name": "accesskit_windows",
+        "version": "0.34.0",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "106c2b961215864d1c2e703ee63269c25c4e80a577ffb2c1017b9c17dcdf83a1"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/accesskit_windows/accesskit_windows-0.34.0.crate",
+          "sha256": "106c2b961215864d1c2e703ee63269c25c4e80a577ffb2c1017b9c17dcdf83a1",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT OR Apache-2.0"
+        },
+        "upstream": {
+          "repository": "https://github.com/AccessKit/accesskit",
+          "revision": "c88605b96d04431f9c3c792464a0f2f253480e94",
+          "path_in_vcs": "platforms/windows",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/c88605b96d04431f9c3c792464a0f2f253480e94/platforms/windows/Cargo.toml",
+            "status": 200,
+            "sha256": "71d45e050aab4e968e634c93e161f7fd3609d8b783374ca07e52e3f4b619bd97",
+            "bytes": 1110
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/c88605b96d04431f9c3c792464a0f2f253480e94/LICENSE-MIT",
+            "status": 200,
+            "sha256": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
+            "bytes": 1023,
+            "file": "LICENSE-MIT"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/c88605b96d04431f9c3c792464a0f2f253480e94/LICENSE-APACHE",
+            "status": 200,
+            "sha256": "62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a",
+            "bytes": 9723,
+            "file": "LICENSE-APACHE"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/AccessKit/accesskit/c88605b96d04431f9c3c792464a0f2f253480e94/LICENSE.chromium",
+            "status": 200,
+            "sha256": "845022e0c1db1abb41a6ba4cd3c4b674ec290f3359d9d3c78ae558d4c0ed9308",
+            "bytes": 1559,
+            "file": "LICENSE.chromium"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_OR_APACHE_OPTION",
+          "CHROMIUM_SCOPE_OPEN"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Pinned crate inherits MIT OR Apache-2.0 from the pinned root workspace; inherited declaration checked. Root LICENSE.chromium adds BSD-style conditions for Chromium-derived portions; applicability to this exact crate and shipped bytes is NOT_VERIFIED."
+        ]
+      },
+      {
+        "name": "lyon",
+        "version": "1.0.19",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "bd0578bdecb7d6d88987b8b2b1e3a4e2f81df9d0ece1078623324a567904e7b7"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/lyon/lyon-1.0.19.crate",
+          "sha256": "bd0578bdecb7d6d88987b8b2b1e3a4e2f81df9d0ece1078623324a567904e7b7",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT OR Apache-2.0"
+        },
+        "upstream": {
+          "repository": "https://github.com/nical/lyon",
+          "revision": "56219c95c658d4f39de7b190d98e57d5773ba241",
+          "path_in_vcs": "crates/lyon",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/nical/lyon/56219c95c658d4f39de7b190d98e57d5773ba241/crates/lyon/Cargo.toml",
+            "status": 200,
+            "sha256": "f0c70099d53a8e32cda8739e977576060b7e3852478a6081d27949d2f0013375",
+            "bytes": 801
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/nical/lyon/56219c95c658d4f39de7b190d98e57d5773ba241/LICENSE-MIT",
+            "status": 200,
+            "sha256": "80f275e90d799911ed3830a7f242a2ef5a4ade2092fe0aa07bfb2d2cf2f2b95e",
+            "bytes": 1080,
+            "file": "LICENSE-MIT"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/nical/lyon/56219c95c658d4f39de7b190d98e57d5773ba241/LICENSE-APACHE",
+            "status": 200,
+            "sha256": "216486f29671a4262efe32af6d84a75bef398127f8c5f369b5c8305983887a06",
+            "bytes": 554,
+            "file": "LICENSE-APACHE"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_OR_APACHE_OPTION"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Root LICENSE-MIT is a full MIT notice. LICENSE-APACHE is a 554-byte Apache attribution/grant notice with a licence URL, not the complete Apache terms. The pinned README also lists MPL-2.0 while the crate metadata lists MIT OR Apache-2.0; licence choice and applicability remain OPEN."
+        ]
+      },
+      {
+        "name": "lyon_algorithms",
+        "version": "1.0.21",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "cdfa8785f95e57914ddb35e3b59994aeba6f5e79e9cfd03da1c269f010f36009"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/lyon_algorithms/lyon_algorithms-1.0.21.crate",
+          "sha256": "cdfa8785f95e57914ddb35e3b59994aeba6f5e79e9cfd03da1c269f010f36009",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT OR Apache-2.0"
+        },
+        "upstream": {
+          "repository": "https://github.com/nical/lyon",
+          "revision": "994526f2766c7e9bc5bb16687232fd7e8999dbdf",
+          "path_in_vcs": "crates/algorithms",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/nical/lyon/994526f2766c7e9bc5bb16687232fd7e8999dbdf/crates/algorithms/Cargo.toml",
+            "status": 200,
+            "sha256": "1ef8e331d2200ab7a3b7a180f2c2de475f8f55411fccf0145dfa5c66d65cec09",
+            "bytes": 845
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/nical/lyon/994526f2766c7e9bc5bb16687232fd7e8999dbdf/LICENSE-MIT",
+            "status": 200,
+            "sha256": "80f275e90d799911ed3830a7f242a2ef5a4ade2092fe0aa07bfb2d2cf2f2b95e",
+            "bytes": 1080,
+            "file": "LICENSE-MIT"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/nical/lyon/994526f2766c7e9bc5bb16687232fd7e8999dbdf/LICENSE-APACHE",
+            "status": 200,
+            "sha256": "216486f29671a4262efe32af6d84a75bef398127f8c5f369b5c8305983887a06",
+            "bytes": 554,
+            "file": "LICENSE-APACHE"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_OR_APACHE_OPTION"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Root LICENSE-MIT is a full MIT notice. LICENSE-APACHE is a 554-byte Apache attribution/grant notice with a licence URL, not the complete Apache terms. The pinned README also lists MPL-2.0 while the crate metadata lists MIT OR Apache-2.0; licence choice and applicability remain OPEN."
+        ]
+      },
+      {
+        "name": "lyon_geom",
+        "version": "1.0.19",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "4336502e29e32af93cf2dad2214ed6003c17ceb5bd499df77b1de663b9042b92"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/lyon_geom/lyon_geom-1.0.19.crate",
+          "sha256": "4336502e29e32af93cf2dad2214ed6003c17ceb5bd499df77b1de663b9042b92",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT OR Apache-2.0"
+        },
+        "upstream": {
+          "repository": "https://github.com/nical/lyon",
+          "revision": "56219c95c658d4f39de7b190d98e57d5773ba241",
+          "path_in_vcs": "crates/geom",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/nical/lyon/56219c95c658d4f39de7b190d98e57d5773ba241/crates/geom/Cargo.toml",
+            "status": 200,
+            "sha256": "54b1545d4de812d5fe669890b5a2bec17e65c42b9ade5c7e6a41ffbff0314c5c",
+            "bytes": 862
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/nical/lyon/56219c95c658d4f39de7b190d98e57d5773ba241/LICENSE-MIT",
+            "status": 200,
+            "sha256": "80f275e90d799911ed3830a7f242a2ef5a4ade2092fe0aa07bfb2d2cf2f2b95e",
+            "bytes": 1080,
+            "file": "LICENSE-MIT"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/nical/lyon/56219c95c658d4f39de7b190d98e57d5773ba241/LICENSE-APACHE",
+            "status": 200,
+            "sha256": "216486f29671a4262efe32af6d84a75bef398127f8c5f369b5c8305983887a06",
+            "bytes": 554,
+            "file": "LICENSE-APACHE"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_OR_APACHE_OPTION"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Root LICENSE-MIT is a full MIT notice. LICENSE-APACHE is a 554-byte Apache attribution/grant notice with a licence URL, not the complete Apache terms. The pinned README also lists MPL-2.0 while the crate metadata lists MIT OR Apache-2.0; licence choice and applicability remain OPEN."
+        ]
+      },
+      {
+        "name": "lyon_path",
+        "version": "1.0.19",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "5c463f9c428b7fc5ec885dcd39ce4aa61e29111d0e33483f6f98c74e89d8621e"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/lyon_path/lyon_path-1.0.19.crate",
+          "sha256": "5c463f9c428b7fc5ec885dcd39ce4aa61e29111d0e33483f6f98c74e89d8621e",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT OR Apache-2.0"
+        },
+        "upstream": {
+          "repository": "https://github.com/nical/lyon",
+          "revision": "56219c95c658d4f39de7b190d98e57d5773ba241",
+          "path_in_vcs": "crates/path",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/nical/lyon/56219c95c658d4f39de7b190d98e57d5773ba241/crates/path/Cargo.toml",
+            "status": 200,
+            "sha256": "f32c18792650c570d5751f9a7b4748931aafa96b88c08565a9a5c23fa3bd73c5",
+            "bytes": 766
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/nical/lyon/56219c95c658d4f39de7b190d98e57d5773ba241/LICENSE-MIT",
+            "status": 200,
+            "sha256": "80f275e90d799911ed3830a7f242a2ef5a4ade2092fe0aa07bfb2d2cf2f2b95e",
+            "bytes": 1080,
+            "file": "LICENSE-MIT"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/nical/lyon/56219c95c658d4f39de7b190d98e57d5773ba241/LICENSE-APACHE",
+            "status": 200,
+            "sha256": "216486f29671a4262efe32af6d84a75bef398127f8c5f369b5c8305983887a06",
+            "bytes": 554,
+            "file": "LICENSE-APACHE"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_OR_APACHE_OPTION"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Root LICENSE-MIT is a full MIT notice. LICENSE-APACHE is a 554-byte Apache attribution/grant notice with a licence URL, not the complete Apache terms. The pinned README also lists MPL-2.0 while the crate metadata lists MIT OR Apache-2.0; licence choice and applicability remain OPEN."
+        ]
+      },
+      {
+        "name": "lyon_tessellation",
+        "version": "1.0.22",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "43b8dcf906637ecef61b3c0740c7a4e7f27caeb31257cfac0cc579ce15be6005"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/lyon_tessellation/lyon_tessellation-1.0.22.crate",
+          "sha256": "43b8dcf906637ecef61b3c0740c7a4e7f27caeb31257cfac0cc579ce15be6005",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT OR Apache-2.0"
+        },
+        "upstream": {
+          "repository": "https://github.com/nical/lyon",
+          "revision": "b456b143215a1942a617c4672776b68b9a30feee",
+          "path_in_vcs": "crates/tessellation",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/nical/lyon/b456b143215a1942a617c4672776b68b9a30feee/crates/tessellation/Cargo.toml",
+            "status": 200,
+            "sha256": "fc167a6fcf79441de483fdcb5e12f23baa311cbe5d9075d01fc70e2d1112a896",
+            "bytes": 939
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/nical/lyon/b456b143215a1942a617c4672776b68b9a30feee/LICENSE-MIT",
+            "status": 200,
+            "sha256": "80f275e90d799911ed3830a7f242a2ef5a4ade2092fe0aa07bfb2d2cf2f2b95e",
+            "bytes": 1080,
+            "file": "LICENSE-MIT"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/nical/lyon/b456b143215a1942a617c4672776b68b9a30feee/LICENSE-APACHE",
+            "status": 200,
+            "sha256": "216486f29671a4262efe32af6d84a75bef398127f8c5f369b5c8305983887a06",
+            "bytes": 554,
+            "file": "LICENSE-APACHE"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_OR_APACHE_OPTION"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Root LICENSE-MIT is a full MIT notice. LICENSE-APACHE is a 554-byte Apache attribution/grant notice with a licence URL, not the complete Apache terms. The pinned README also lists MPL-2.0 while the crate metadata lists MIT OR Apache-2.0; licence choice and applicability remain OPEN."
+        ]
+      },
+      {
+        "name": "profiling",
+        "version": "1.0.18",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "3d595e54a326bc53c1c197b32d295e14b169e3cfeaa8dc82b529f947fba6bcf5"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/profiling/profiling-1.0.18.crate",
+          "sha256": "3d595e54a326bc53c1c197b32d295e14b169e3cfeaa8dc82b529f947fba6bcf5",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT OR Apache-2.0"
+        },
+        "upstream": {
+          "repository": "https://github.com/aclysma/profiling",
+          "revision": "8271551172eb6fa4cba47369aedd93790c623df9",
+          "path_in_vcs": "profiling",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/aclysma/profiling/8271551172eb6fa4cba47369aedd93790c623df9/profiling/Cargo.toml",
+            "status": 200,
+            "sha256": "5c2cc51af406c9e636730400d7fd1293c3cc3ef294421113c6af826bb2d47c1b",
+            "bytes": 1582
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/aclysma/profiling/8271551172eb6fa4cba47369aedd93790c623df9/LICENSE-MIT",
+            "status": 200,
+            "sha256": "c8167fdeeed46d3f244d3f85c5bf998ce889343691c32be2c61a8bc4b5c08333",
+            "bytes": 1093,
+            "file": "LICENSE-MIT"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/aclysma/profiling/8271551172eb6fa4cba47369aedd93790c623df9/LICENSE-APACHE",
+            "status": 200,
+            "sha256": "10d30a673cd5e9349bdc02aeb48f14b3386d27d0da32df8f0a555d4aa16aa551",
+            "bytes": 10818,
+            "file": "LICENSE-APACHE"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_OR_APACHE_OPTION"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Pinned metadata and root MIT and Apache texts are consistent. Text availability does not select a distribution licence."
+        ]
+      },
+      {
+        "name": "profiling-procmacros",
+        "version": "1.0.18",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "4488a4a36b9a4ba6b9334a32a39971f77c1436ec82c38707bce707699cc3bbcb"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/profiling-procmacros/profiling-procmacros-1.0.18.crate",
+          "sha256": "4488a4a36b9a4ba6b9334a32a39971f77c1436ec82c38707bce707699cc3bbcb",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT OR Apache-2.0"
+        },
+        "upstream": {
+          "repository": "https://github.com/aclysma/profiling",
+          "revision": "8271551172eb6fa4cba47369aedd93790c623df9",
+          "path_in_vcs": "profiling-procmacros",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/aclysma/profiling/8271551172eb6fa4cba47369aedd93790c623df9/profiling-procmacros/Cargo.toml",
+            "status": 200,
+            "sha256": "5e3aa7f36a75631b8bcb63c9344fd838993700de1f4099666619c2fa18d32aeb",
+            "bytes": 760
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/aclysma/profiling/8271551172eb6fa4cba47369aedd93790c623df9/LICENSE-MIT",
+            "status": 200,
+            "sha256": "c8167fdeeed46d3f244d3f85c5bf998ce889343691c32be2c61a8bc4b5c08333",
+            "bytes": 1093,
+            "file": "LICENSE-MIT"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/aclysma/profiling/8271551172eb6fa4cba47369aedd93790c623df9/LICENSE-APACHE",
+            "status": 200,
+            "sha256": "10d30a673cd5e9349bdc02aeb48f14b3386d27d0da32df8f0a555d4aa16aa551",
+            "bytes": 10818,
+            "file": "LICENSE-APACHE"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_OR_APACHE_OPTION"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Pinned metadata and root MIT and Apache texts are consistent. Text availability does not select a distribution licence."
+        ]
+      },
+      {
+        "name": "pulp-wasm-simd-flag",
+        "version": "0.1.1",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "1d8f70e07b9c3962945a74e59ca1c511bba65b6419468acc217c457d93f3c740"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/pulp-wasm-simd-flag/pulp-wasm-simd-flag-0.1.1.crate",
+          "sha256": "1d8f70e07b9c3962945a74e59ca1c511bba65b6419468acc217c457d93f3c740",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT"
+        },
+        "upstream": {
+          "repository": "https://github.com/sarah-quinones/pulp/",
+          "revision": "5eb07fd7b68edf0a5e19f71737d315f72a510295",
+          "path_in_vcs": "pulp-wasm-simd-flag",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/sarah-quinones/pulp/5eb07fd7b68edf0a5e19f71737d315f72a510295/pulp-wasm-simd-flag/Cargo.toml",
+            "status": 200,
+            "sha256": "5bb7f9eea7eef386b8ff1516876bc62c8a9f2ab122ac20a4600528042f5463fb",
+            "bytes": 344
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/sarah-quinones/pulp/5eb07fd7b68edf0a5e19f71737d315f72a510295/LICENSE",
+            "status": 200,
+            "sha256": "d64f878c89bd5f1e5ada7e4aad57690b122727cf5229b7b87ea1980c188da1d9",
+            "bytes": 1062,
+            "file": "LICENSE"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_TEXT"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Pinned root MIT text is consistent with the exact package declaration."
+        ]
+      },
+      {
+        "name": "seahash",
+        "version": "4.1.0",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "1c107b6f4780854c8b126e228ea8869f4d7b71260f962fefb57b996b8959ba6b"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/seahash/seahash-4.1.0.crate",
+          "sha256": "1c107b6f4780854c8b126e228ea8869f4d7b71260f962fefb57b996b8959ba6b",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT"
+        },
+        "upstream": {
+          "repository": "https://gitlab.redox-os.org/redox-os/seahash",
+          "revision": "94b632aeac099031c373599313d5b5f0acbbaec0",
+          "path_in_vcs": "",
+          "manifest": {
+            "url": "https://gitlab.redox-os.org/redox-os/seahash/-/raw/94b632aeac099031c373599313d5b5f0acbbaec0/Cargo.toml",
+            "status": 200,
+            "sha256": "dd213de338ca98b7ef7a2562bcf4e4214d215d1a8277750a6a72b4e809c8d0dd",
+            "bytes": 585
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "NOT_VERIFIED",
+        "original_texts": [],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "ORIGINAL_TEXT_OPEN"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Checksum-verified crate and pinned manifest declare MIT, but no original licence file was found in the inspected complete pinned tree; no generic MIT text is substituted for a missing copyright/permission grant."
+        ],
+        "unavailable_evidence": [
+          {
+            "url": "https://gitlab.redox-os.org/api/v4/projects/redox-os%2Fseahash/repository/tree?ref=94b632aeac099031c373599313d5b5f0acbbaec0&recursive=true&per_page=100",
+            "status": 200,
+            "sha256": "cfbb13c0a4cbd61b9acef27f6b84841cdec2156eed0332d5e8c355d105487d15",
+            "bytes": 2055,
+            "entries": 17,
+            "next_page": "",
+            "truncated": null,
+            "licence_paths": []
+          },
+          {
+            "url": "https://gitlab.redox-os.org/redox-os/seahash/-/raw/94b632aeac099031c373599313d5b5f0acbbaec0/LICENSE",
+            "status": 404,
+            "sha256": "5a96a6fcd9cdd2eae908f161dcce615b261521754df6bd2f9e5215f84f0b4e5e",
+            "bytes": 3727
+          }
+        ]
+      },
+      {
+        "name": "simd_helpers",
+        "version": "0.1.0",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "95890f873bec569a0362c235787f3aca6e1e887302ba4840839bcc6459c42da6"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/simd_helpers/simd_helpers-0.1.0.crate",
+          "sha256": "95890f873bec569a0362c235787f3aca6e1e887302ba4840839bcc6459c42da6",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT"
+        },
+        "upstream": {
+          "repository": "https://github.com/lu-zero/simd_helpers",
+          "revision": "ca1a2f84aa386d758e98f8a609d990263932fb85",
+          "path_in_vcs": "",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/lu-zero/simd_helpers/ca1a2f84aa386d758e98f8a609d990263932fb85/Cargo.toml",
+            "status": 200,
+            "sha256": "b41497677a5498040f2eb3fc089e3c2c38c413dca64f41dc57a115e26480461d",
+            "bytes": 367
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "NOT_VERIFIED",
+        "original_texts": [],
+        "active_windows_tree_contains_package": false,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "ORIGINAL_TEXT_OPEN"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Checksum-verified crate and pinned manifest declare MIT, but no original licence file was found in the inspected complete pinned tree; no generic MIT text is substituted for a missing copyright/permission grant."
+        ],
+        "unavailable_evidence": [
+          {
+            "url": "https://api.github.com/repos/lu-zero/simd_helpers/git/trees/ca1a2f84aa386d758e98f8a609d990263932fb85?recursive=1",
+            "status": 200,
+            "sha256": "fe5b840ac06a764a770fe88eacebeaaa7584e6db2a27a893df70bed55d03d26a",
+            "bytes": 1704,
+            "entries": 7,
+            "next_page": null,
+            "truncated": false,
+            "licence_paths": []
+          },
+          {
+            "url": "https://raw.githubusercontent.com/lu-zero/simd_helpers/ca1a2f84aa386d758e98f8a609d990263932fb85/LICENSE",
+            "status": 404,
+            "sha256": "d5558cd419c8d46bdc958064cb97f963d1ea793866414c025906ec15033512ed",
+            "bytes": 14
+          }
+        ]
+      },
+      {
+        "name": "svg_fmt",
+        "version": "0.4.5",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "0193cc4331cfd2f3d2011ef287590868599a2f33c3e69bc22c1a3d3acf9e02fb"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/svg_fmt/svg_fmt-0.4.5.crate",
+          "sha256": "0193cc4331cfd2f3d2011ef287590868599a2f33c3e69bc22c1a3d3acf9e02fb",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT/Apache-2.0"
+        },
+        "upstream": {
+          "repository": "https://github.com/nical/rust_debug",
+          "revision": "93f414cd572b5c2781df93dbdc068ed13443d05a",
+          "path_in_vcs": "svg_fmt",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/nical/rust_debug/93f414cd572b5c2781df93dbdc068ed13443d05a/svg_fmt/Cargo.toml",
+            "status": 200,
+            "sha256": "1ec9c98196c4e873d78f2e07c0803679266835efb6ecd223f0bc67a4ae39ed29",
+            "bytes": 363
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/nical/rust_debug/93f414cd572b5c2781df93dbdc068ed13443d05a/LICENSE",
+            "status": 200,
+            "sha256": "7e98bed7f100747aaae7d82ab94fbe6b76fd6b84b09a3aaa413bff8196d0fbb1",
+            "bytes": 1070,
+            "file": "LICENSE"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_TEXT",
+          "SLASH_DECLARATION_OPEN"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Raw MIT/Apache-2.0 is not a strict SPDX OR expression; pinned root LICENSE is MIT only. The absent Apache text and the intended meaning of the slash declaration are not silently resolved."
+        ]
+      },
+      {
+        "name": "taffy",
+        "version": "0.13.0",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "c034e05f6ee85a12daa63863c2245797715075c70649947aa0da54f3f2ab1d0f"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/taffy/taffy-0.13.0.crate",
+          "sha256": "c034e05f6ee85a12daa63863c2245797715075c70649947aa0da54f3f2ab1d0f",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT"
+        },
+        "upstream": {
+          "repository": "https://github.com/DioxusLabs/taffy",
+          "revision": "45a56299d366ddb383e593a1f0372158d00e8530",
+          "path_in_vcs": "",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/DioxusLabs/taffy/45a56299d366ddb383e593a1f0372158d00e8530/Cargo.toml",
+            "status": 200,
+            "sha256": "6667885273cac487dad455074aa4251f963ea348c73f083566babd691126b9da",
+            "bytes": 4002
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/DioxusLabs/taffy/45a56299d366ddb383e593a1f0372158d00e8530/LICENSE",
+            "status": 200,
+            "sha256": "f97daf1a0124413dccf399a4e6626b4b74acd05282f80b6d64ac82225650b77a",
+            "bytes": 1100,
+            "file": "LICENSE"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "MIT_TEXT"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Pinned root MIT text is consistent with the exact package declaration."
+        ]
+      },
+      {
+        "name": "zune-inflate",
+        "version": "0.2.54",
+        "lock": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "checksum_sha256": "73ab332fe2f6680068f3582b16a24f90ad7096d5d39b974d1c0aff0125116f02"
+        },
+        "crate_archive": {
+          "url": "https://static.crates.io/crates/zune-inflate/zune-inflate-0.2.54.crate",
+          "sha256": "73ab332fe2f6680068f3582b16a24f90ad7096d5d39b974d1c0aff0125116f02",
+          "matches_lock": true,
+          "licence_files": []
+        },
+        "cargo_metadata": {
+          "source": "registry+https://github.com/rust-lang/crates.io-index",
+          "license": "MIT OR Apache-2.0 OR Zlib"
+        },
+        "upstream": {
+          "repository": "https://github.com/etemesi254/zune-image",
+          "revision": "69502ce83fdfecdd0beefd677e2abb3781b29d98",
+          "path_in_vcs": "zune-inflate",
+          "manifest": {
+            "url": "https://raw.githubusercontent.com/etemesi254/zune-image/69502ce83fdfecdd0beefd677e2abb3781b29d98/zune-inflate/Cargo.toml",
+            "status": 200,
+            "sha256": "a7e3d8fd82218e7f9f2172d41a048e4879abc81228589539e1ec750d72811f90",
+            "bytes": 654
+          },
+          "manifest_original_bytes_match": true,
+          "name_and_version_match": true
+        },
+        "original_text_status": "RETRIEVED_AT_PINNED_REVISION",
+        "original_texts": [
+          {
+            "url": "https://raw.githubusercontent.com/etemesi254/zune-image/69502ce83fdfecdd0beefd677e2abb3781b29d98/LICENSE.md",
+            "status": 200,
+            "sha256": "e870d7fd7819a9f0453c62798cb52ae95d148a8c91dc2de1d983f997143c72de",
+            "bytes": 384,
+            "file": "LICENSE.md"
+          },
+          {
+            "url": "https://raw.githubusercontent.com/etemesi254/zune-image/69502ce83fdfecdd0beefd677e2abb3781b29d98/LICENSE-ZLIB",
+            "status": 200,
+            "sha256": "7fa429541e55b1509909e058f2d21a37467e4958ec713b357f6e0cf9dc4ee352",
+            "bytes": 818,
+            "file": "LICENSE-ZLIB"
+          }
+        ],
+        "active_windows_tree_contains_package": true,
+        "binary_inclusion": "NOT_VERIFIED",
+        "requirements_refs": [
+          "ZLIB_OPTION",
+          "MIT_APACHE_TEXT_OPEN"
+        ],
+        "distribution_decision": "OPEN",
+        "notes": [
+          "Repository identification is supported by the homepage in the checksum-verified crate original manifest and its identical pinned upstream manifest; registry repository is null. Root LICENSE.md is a 384-byte Apache/MIT grant notice, not full terms. Root LICENSE-ZLIB provides full Zlib terms; full MIT/Apache texts are NOT_VERIFIED. Scope and licence branch choice remain OPEN."
+        ]
+      }
+    ],
+    "cfg_aliases": {
+      "name": "cfg_aliases",
+      "version": "0.2.2",
+      "lock_checksum_sha256": "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527",
+      "archive_url": "https://static.crates.io/crates/cfg_aliases/cfg_aliases-0.2.2.crate",
+      "archive_checksum_matches": true,
+      "cargo_license": "MIT",
+      "upstream_revision": "e069ce61e00fee423ac1dbe6a897f228f1774716",
+      "upstream_manifest": {
+        "url": "https://raw.githubusercontent.com/katharostech/cfg_aliases/e069ce61e00fee423ac1dbe6a897f228f1774716/Cargo.toml",
+        "status": 200,
+        "sha256": "114563306270ee28a85beb4ee12f438649e21c91595308a18d1977b68c3b75e5",
+        "bytes": 694
+      },
+      "archive_manifest_original_bytes_match": true,
+      "original_texts": [
+        {
+          "url": "https://raw.githubusercontent.com/katharostech/cfg_aliases/e069ce61e00fee423ac1dbe6a897f228f1774716/LICENSE",
+          "status": 200,
+          "sha256": "31b94860253d8ec7b4529f51901044d3b459d6292d996504a36b1bae3a36a812",
+          "bytes": 1076
+        },
+        {
+          "url": "https://raw.githubusercontent.com/katharostech/cfg_aliases/e069ce61e00fee423ac1dbe6a897f228f1774716/NOTICES.md",
+          "status": 200,
+          "sha256": "1e2b7ade3fb228130408b9990cae6a7618eb314c75aa0b164bfe485d9d9756ee",
+          "bytes": 1472
+        }
+      ],
+      "archived_text_digests_match_upstream": true,
+      "copyright": "Copyright (c) 2020 Katharos Technology",
+      "notice": "NOTICES.md states cfg_aliases macro uses substantial code from tectonic_cfg_support::target_cfg! and includes MIT permission and disclaimer text.",
+      "tectonic_source": "https://github.com/tectonic-typesetting/tectonic/blob/f2439b936470ad27bdf92882064bc4702ee01899/cfg_support/src/lib.rs#L166",
+      "tectonic_copyright": "Pinned linked source begins Copyright 2019 the Tectonic Project; Licensed under the MIT License. NOTICES.md itself has no explicit Tectonic copyright line.",
+      "resolved_graph_incoming": [
+        {
+          "parent": "borsh 1.8.1",
+          "kind": "build",
+          "declared_requirement": "0.2.1",
+          "resolved_version": "0.2.2",
+          "source_evidence": "borsh 1.8.1 Cargo.toml [build-dependencies.cfg_aliases] and build.rs use cfg_aliases!"
+        }
+      ],
+      "active_windows_binary_tree": "NOT_PRESENT: cargo tree --locked -p cos-desktop --target x86_64-pc-windows-msvc -e normal,build prints no cfg_aliases; inverse query -i cfg_aliases@0.2.2 exits 0 with warning: nothing to print.",
+      "binary_inclusion": "NOT_VERIFIED; neither build-edge metadata nor absence from one active dependency tree is a final binary-content or copied-code proof.",
+      "mit_condition": "Include the above copyright and permission notice in copies or substantial portions of the Software; final application depends on what is distributed. No Apache-2.0 section 4(d) claim.",
+      "current_notice": "Generic third-party sentence and Unicode entry do not reproduce these MIT texts. If applicable, grouped text/attributions could fit in the existing NOTICE; no additional filename is proven necessary. No file is changed.",
+      "legal_and_distribution_disposition": "OPEN"
+    },
+    "requirements_by_reference": {
+      "MIT_TEXT": "Retrieved MIT text requires inclusion of its copyright and permission notice in copies or substantial portions; preserve actual upstream copyright, not a generic replacement.",
+      "MIT_OR_APACHE_OPTION": "Metadata offers alternatives. Distribution owner must select an applicable licence; MIT condition as above, or Apache-2.0 section 4 conditions including a licence copy, modified-file notices and applicable attribution preservation. Both alternatives are not automatically cumulative. Root copyright notices are not always full licence terms.",
+      "CHROMIUM_SCOPE_OPEN": "If Chromium-derived portions are distributed, the retrieved BSD-style notice requires source retention and reproduction of copyright, conditions and disclaimer in binary documentation/materials; no endorsement. Exact package/binary coverage is NOT_VERIFIED.",
+      "ZLIB_OPTION": "Retrieved Zlib terms prohibit misrepresenting origin, require plainly marking altered source versions, and forbid removing/altering the notice from source distributions. Product acknowledgement is appreciated but not required. Choice and scope remain with distribution owner.",
+      "MIT_APACHE_TEXT_OPEN": "A pinned dual-licence grant notice exists but full MIT/Apache texts were not located there; do not call that a complete-text acquisition for both alternatives.",
+      "SLASH_DECLARATION_OPEN": "Keep raw non-SPDX slash notation. MIT text acquired; Apache alternative and exact dual-licensing intent not independently established.",
+      "ORIGINAL_TEXT_OPEN": "No exact-version original copyright/permission text acquired. Resolve with upstream or the distribution responsibility owner; do not invent it."
+    },
+    "distribution_open_items": [
+      "Resolve seahash 4.1.0 and simd_helpers 0.1.0 original copyright/permission texts.",
+      "Choose applicable licence branches and assess the svg_fmt slash declaration, Lyon README MPL mention, Zune alternatives and AccessKit Chromium-derived notice scope.",
+      "Determine what code/text is actually distributed, including proc macros/build tooling and copied code; this task performs no link map/binary inclusion certification.",
+      "Decide cfg_aliases/Tectonic notice applicability and copyright completeness.",
+      "Choose whether existing NOTICE/LICENSE contents can satisfy actual obligations or a wider file set is needed; this survey changes neither content nor file set.",
+      "MSVC redistribution terms, dynamic/transitive DLL closure, DD-21 certificate/publisher/signing/installer/channel/uninstall policy and product/release acceptance stay OPEN."
+    ],
+    "verification": {
+      "source_checks": "All sixteen crate archive digests match lock and all sixteen original manifests match pinned upstream bytes; cfg_aliases equivalent checks also pass.",
+      "package_suite": "python -B scripts/tests/test_stage_portable.py: exit 0; 28 collected, 27 passed, 1 skipped (Windows symbolic-link privilege unavailable).",
+      "documentation_smoke": "PASS: sixteen exact rows, fourteen acquisitions/two NOT_VERIFIED; 46 recorded manifest/text byte digests and lengths match private raw captures; historical population/histogram 369 preserved; 62 task cards each retain one owning DC link; 41 DAG edges unchanged/acyclic; new relative evidence link resolves; JSON tool and git diff --check pass. Only plan/evidence JSON changed; canonical Git content of LICENSE/NOTICE/Cargo.lock/manifests/design owners unchanged. Public evidence has no host-drive path or private-key marker.",
+      "new_refine_gate": "NOT_RUN: no product/verification source, dependency, contract or configuration changed; ADR-0014 Y04.",
+      "native": "NOT_RUN: no native/UI change.",
+      "review": "PENDING new candidate-specific Tern review; previous CLEAN applies only to previous survey SHA."
+    }
   }
 }
