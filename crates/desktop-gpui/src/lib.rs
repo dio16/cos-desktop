@@ -3063,7 +3063,10 @@ impl Render for Shell {
             });
         }
         let dock_active = self.dock_active.clone();
-        let dock_focused = self.dock_focus.is_focused(window);
+        // A dock row takes keyboard focus, so the container owns the ring: it is
+        // lit while focus is anywhere inside the Dock, not only on the container.
+        let dock_focused =
+            self.dock_focus.is_focused(window) || self.dock_focus.contains_focused(window, cx);
         // Keyboard focus is one indicator: the approved outline on the focusable
         // Dock container. Row borders stay structural at one physical pixel.
         let (dock_focus_width, dock_focus_color) =
