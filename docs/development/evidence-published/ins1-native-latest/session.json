@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "task": "MP-INS1",
+  "contract": "DC-MP-INS1",
+  "status": "LIMITED_NATIVE_INSPECTOR_VERIFICATION_OBSERVED_REVIEW_PENDING",
+  "authority": "Tern next-task directive after the clean MP-DOCK2 review; ADR-0014 scoped resumption; DC-MP-INS1.",
+  "baseline": {
+    "reviewed_commit": "261650148c036a0ed653f0be74926c0198eafff1",
+    "branch": "feature/mp-ins1-native-closure",
+    "product_source": "f1de4f364827b9a1dcfc7f8f95401de487d48245 (no product-source change on this branch)",
+    "product_source_changes_on_branch": "none",
+    "worktree": "clean at observation time"
+  },
+  "environment": {
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "system_dpi": 96,
+    "executable": "target/debug/cos-desktop.exe",
+    "executable_sha256": "sha256:b3e5fceec55f39ceb70ef5026bba8e339e3ae417fe6804fe7b1d8e4b707f6b0e",
+    "fixture": "crates/cos-client/fixtures/task-184.json",
+    "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52",
+    "isolation": "child-only LOCALAPPDATA under C:/dev/cos-desktop-verification/sec2-2026-10-30/ins1-profile",
+    "input_route": "computer window input; dock selection by click, keyboard Tab/Enter for section disclosure"
+  },
+  "results": {
+    "progressive_disclosure": {"result": "PASS", "observed": "all five sections start collapsed; each header states available/absent and a summary; opening shows the projected entries.", "evidence": ["s0-initial.png", "s1-evaluation-b.png"]},
+    "projected_values": {"result": "PASS", "observed": "Evaluation shows Decision FAIL / Authority HARNESS / Confidence 0.62 / visual_quality 66 score_0_100 for candidate B, and Decision ABSTAIN for candidate C; Refinement states 'reason not projected'; no local score, best-candidate or failure interpretation is added.", "evidence": ["s1-evaluation-b.png", "s3-refinement-open.png"]},
+    "absent_outcome": {"result": "PASS", "observed": "Outcome is an explicitly unavailable section ('No formal outcome is projected for this task.') and is focusable and openable by keyboard; it is never rendered as failure or as a zero.", "evidence": ["s3-outcome-absent-open.ax.txt", "s4-outcome-absent.png"]},
+    "identity_change_clears_disclosure": {"result": "PASS", "observed": "after opening Evaluation for B, selecting C cleared that disclosure (Evaluation returned to its collapsed summary); only sections explicitly reopened afterwards (Refinement, Outcome) were open.", "evidence": ["s2-identity-change-clears.png", "s2-identity-change-clears.ax.txt"]},
+    "keyboard_reach": {"result": "PASS", "observed": "Tab reaches section headers in order and Enter toggles them, including the unavailable Outcome section; the AX tree reports the focused header and its details group.", "evidence": ["s3-outcome-absent-open.ax.txt"]},
+    "identity_binding_and_reorder": {"result": "NOT_REPRODUCIBLE", "observed": "the fixture order cannot be reversed natively; the complete-identity binding and the reversed-order test remain model evidence."},
+    "observation_gap_invalidation": {"result": "NOT_REPRODUCIBLE", "observed": "no authorized-observation gap can be produced with the static fixture; the Disclosure::invalidate behaviour remains model evidence."},
+    "same_identity_update": {"result": "NOT_REPRODUCIBLE", "observed": "no in-place projection revision can be injected natively; the revision-keyed disclosure behaviour remains model evidence."}
+  },
+  "tests": {
+    "ui_model_inspector": "8 passed",
+    "desktop_gpui_inspector": "2 passed",
+    "commands": ["cargo test -p ui-model inspector", "cargo test -p desktop-gpui inspector"]
+  },
+  "review_boundary": {
+    "previous": "last recorded independent review was HOLD 0 BLOCKING / 2 ACTIONABLE / 0 EXCESSIVE; both (observation-gap invalidation and evaluation-identity revision keys) were repaired at b7a6fb3 with quality Gate 3e948491-… and build Gate 8f9b7b9a-…, but no clean re-review of the repaired source was recorded.",
+    "this_run": "the repaired source is the current product source; this branch adds evidence only and submits it for a fresh independent review."
+  },
+  "not_measured": [
+    "native pixel/DPI acceptance of the inspector chrome",
+    "identity reorder, observation-gap and same-identity-update branches natively",
+    "real Runtime projections and evidence bodies (MP-INS2)",
+    "screen-reader announcement quality",
+    "product/UX acceptance"
+  ],
+  "product_change": "none; no reproduced DC-MP-INS1 violation required a code fix",
+  "gate": "no new Refine Gate: no product bytes changed on this branch; identical source is covered by NAV5 Gate 5e116b30-… and the historical INS1 Gates",
+  "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.76"
+}
