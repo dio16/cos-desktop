@@ -381,7 +381,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-UX2 — UX-01 decision register closure (compare & viewing)
 - **Hard prereqs:** none.
-- **Priority:** P0 (decision) · **Status:** DESIGN_GATE_REQUIRED · **Owner:** Product/UX owner
+- **Priority:** P0 (decision) · **Status:** REGISTER CLASSIFIED (A/B approved values recorded, E open items named; no new UX value adopted; Tern review pending) · **Owner:** Product/UX owner
 - **Consumers:** MP-CMP1, MP-IMG5, MP-DOCK2, MP-INS1.
 - **Design source / acceptance:** [DC-MP-UX2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux2). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -1959,3 +1959,10 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Participant validation: NOT_RUN.** No participant sessions were conducted; the neutral-prompt protocol is recorded in `validation-plan.md`. Reachability is not comprehension, and no model or developer judgement is reported as participant evidence.
 - **Not measured:** comprehension timing, real media/evidence bodies, Runtime data, OS notifications, product/UX acceptance. The prototype is not a shipping UI, and no improvement candidate is promoted to product specification.
 - **No product change:** docs/evidence only, so no Refine Gate is run (Y04); the current product candidate `89d52642` remains covered by Gate `e1f4bf7a-…`. Evidence: [ux1-prototype-latest](evidence-published/ux1-prototype-latest/scenarios.json).
+
+### 19.79 MP-UX2 UX-01 decision register classification (2026-10-30)
+
+- **Authority and baseline:** the Tern next-task directive after the clean MP-UX1 review, on `feature/mp-ux2-decision-closure` from `d41ca23c3b60afa4537ee6dd2700c204e01be097`. This is a design-record task: it classifies the frozen DC-MP-UX2 question list against the explicit ADR-0010 ratifications, ADR-0008's "documented values only" adoption and the rendering/Compare/IMG5 documents. It adds no UX value, API, behaviour or implementation.
+- **Classified A/B (approved, existing):** initial empty view, second-selection Compare entry, zero/one-candidate behaviour and pair semantics (ADR-0010 D-1…D-3); independent per-pane clamping and link/unlink preservation (rendering §4.1); focus-preservation principles; bounded-preview/unavailable honesty (DC-MP-IMG5); the fixed same-key reuse protocol (DC-MP-CMP1).
+- **Open, owner decision required (E):** the linked-transform model and its default (rendering §4.1 presents relative-fit and physical 1:1 as candidates and leaves the toggle/default to UX), fit/1:1 switching, swap semantics, pair-replacement link state, "restore previous view", and the exact pane keyboard/focus transfer plus per-representation unavailable copy and reuse visibility. Each blocks only its own behaviour; Compare stays `DESIGN_READY_NOT_IMPLEMENTED` until they are answered.
+- **No implementation or measurement claim:** no product source changed on this branch and no new Gate applies (Y04). The register is [decision-register.json](evidence-published/ux2-decision-latest/decision-register.json); Q7/Q8/Q13/Q14 measurement and participant validation remain separate.
