@@ -305,7 +305,6 @@
           "authority": "session-owned scratch created for measurement; no Gate record depended on it"
         }
       ],
-      "kept": "Gate authority, requests, receipts, state, private logs and private home directories for all five Gates; the three failed Gates (191c71f8, 13fb06aa, 3707b0a6) and the held Gate's (91a15539) workspaces are retained because only a policy-compliant successful Gate's workspace is disposable",
       "integrity_before_after": "candidate sha256 and every check-log digest identical; state SUCCEEDED in both reports",
       "candidate_source_retention": "the candidate commit stays reachable locally and on origin/dev",
       "observed_residue": "each Gate's private home still holds a toolchain copy of about 730 MiB; the documented procedure does not authorize deleting private trees and no attempt was made",
