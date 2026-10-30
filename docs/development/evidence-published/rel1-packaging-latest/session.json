@@ -28,8 +28,8 @@
     },
     "python_contract": {
       "command": "python -B scripts/tests/test_stage_portable.py",
-      "collected": 24,
-      "passed": 23,
+      "collected": 27,
+      "passed": 26,
       "skipped": 1,
       "skip_reason": "Windows symbolic-link creation privilege absent; junction and hard-link refusal executed.",
       "exit": 0
@@ -78,78 +78,63 @@
     "AC18": "NO_RELEASE_CLAIM: internal stage is not full MP-REL1, signed distribution or product acceptance"
   },
   "gate": {
-    "id": "ec702389-1bcc-4c3e-8df8-9fdec7d22baa",
-    "candidate": "71d0efb6cbe7a8e7567b48604fe86d03b122fecd",
-    "label": "cos-desktop-rel1-margin-71d0efb6",
+    "id": "045a0299-abf3-4174-b54b-5752c9221e55",
+    "candidate": "ec29b6593e5ba9c4c8bbf7a655dc660a109a4035",
+    "label": "cos-desktop-rel1-cleanup-ec29b659",
     "status": "SUCCEEDED",
     "cleanup": "complete",
-    "request_sha256": "sha256:ae95e62330b3dd9ce99984f7de51924bb4fb534d7a885401066c038dc5495e35",
-    "terminal_state_sha256": "sha256:21d591fb025334b87a0dffed8047e200a9575327e7fe64b4008fc5e81b1cc4bb",
+    "request_sha256": "sha256:cc54c5ddefda572b59cd30e413e0c93020edfd03e37a0dda191965307fe26375",
+    "terminal_state_sha256": "sha256:232c9536b75e49828146baec029b3bf9fee8a49628a368a8891ee4764259569f",
     "checks": [
       {
         "id": "fmt",
-        "outcome": "pass",
-        "duration_ms": 21539
+        "outcome": "pass"
       },
       {
         "id": "metadata",
-        "outcome": "pass",
-        "duration_ms": 172
+        "outcome": "pass"
       },
       {
         "id": "dependency-self-test",
-        "outcome": "pass",
-        "duration_ms": 591
+        "outcome": "pass"
       },
       {
         "id": "dependency-rules",
-        "outcome": "pass",
-        "duration_ms": 274
+        "outcome": "pass"
       },
       {
         "id": "portable-contract",
-        "outcome": "pass",
-        "duration_ms": 4376
+        "outcome": "pass"
       },
       {
         "id": "clippy",
-        "outcome": "pass",
-        "duration_ms": 207311
+        "outcome": "pass"
       },
       {
         "id": "tests",
-        "outcome": "pass",
-        "duration_ms": 238653
+        "outcome": "pass"
       },
       {
         "id": "build",
-        "outcome": "pass",
-        "duration_ms": 1502
+        "outcome": "pass"
       },
       {
         "id": "portable-stage",
-        "outcome": "pass",
-        "duration_ms": 2869
+        "outcome": "pass"
       },
       {
         "id": "portable-verify",
-        "outcome": "pass",
-        "duration_ms": 222
+        "outcome": "pass"
       }
     ],
-    "staged_binary_sha256": "b336f97142e7915faa2caa8bec0214b7301ed0b7876176fb390556aa2a4f89ef",
+    "staged_binary_sha256": "8c73eb3434f8cef094edd616a3b55e1d2650beac3025a20f0af788f3328b5e74",
     "storage": {
       "outcome": "COMPLETE",
       "removed_exact_successful_paths": 2,
-      "logical_bytes_removed": 2237814539,
+      "logical_bytes_removed": 2237845925,
       "native_integrity_before_after": "IDENTICAL_SUCCEEDED",
       "source_retained_by": "dev ancestry",
-      "failed_predecessors_retained": [
-        "9c65d4f0-…",
-        "1765c20d-…",
-        "71dfc01c-…",
-        "e8c3cbca-…"
-      ]
+      "failed_predecessors_retained": true
     }
   },
   "review": {
@@ -172,9 +157,22 @@
           "B-R2-02 failed repaired-candidate Gate",
           "A-R2-01 host path in published AX"
         ]
+      },
+      {
+        "round": 3,
+        "sha": "4a520f24a6a99e60fc596d38400e4573b9aca093",
+        "verdict": "1 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE",
+        "closed": [
+          "B-R2-02 green Gate",
+          "A-R2-01 AX anonymization"
+        ],
+        "opened": [
+          "B-R3-01 cleanup acquisition race",
+          "A-R3-01 inaccurate assertion wording"
+        ]
       }
     ],
-    "repaired": "71d0efb6cbe7a8e7567b48604fe86d03b122fecd",
+    "repaired": "ec29b6593e5ba9c4c8bbf7a655dc660a109a4035",
     "re_review": "PENDING"
   },
   "remaining": {
