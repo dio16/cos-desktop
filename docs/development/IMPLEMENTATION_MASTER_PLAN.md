@@ -387,7 +387,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-UX3 — Visual direction and token validation plan
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** VISUAL DIRECTION RECONCILED (accepted typography/geometry recorded; semantic palette stays Proposed and not applied; native observation at 96 DPI only; Tern review pending) · **Owner:** Product/UX + rendering owner
+- **Priority:** P1 · **Status:** VISUAL DIRECTION RECONCILED (accepted typography/geometry recorded; semantic palette stays Proposed and not applied; Tern CLEAN 0/0/0 on `2b25643`; DPI/contrast/mixed-script and product acceptance remain NOT_MEASURED) · **Owner:** Product/UX + rendering owner
 - **Consumers:** MP-TYP1/2, MP-PL1.
 - **Design source / acceptance:** [DC-MP-UX3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux3). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -1973,5 +1973,6 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Accepted, declared and applied are distinct:** ADR-0008 accepts the documented §9.1/§9.2 direction. Verified consumers: rail 240 / inspector 320 and the physical-pixel separator (`APPLIED`), with typography and the focus-outline token only partially wired (`APPLIED_PARTIAL`). Row heights 32/40, the 40-DIP title bar, the full spacing scale and radii are `DECLARED` constants without complete consumers (`NOT_APPLIED` end-to-end); tabular numerals were wired by the TYP1 repair. The dock focus ring visible at 96 DPI is drawn by `border_1()`, not the 2-DIP token, so the 2-DIP native evidence is `NOT_RECORDED`.
 - **Proposed, not accepted:** rendering §9.3's semantic colour palette is explicitly a proposal; the shell still uses literal RGB values at state call sites (for example the focus colour differs from the proposed `#FFD166`). No colour is adopted here; TYP2/PL1 own that adoption, and the "no per-widget magic RGB" direction is therefore **NOT_APPLIED** in current code.
 - **NOT_MEASURED:** native contrast/High Contrast, the 125–200 % DPI ladder and monitor migration, mixed-script baseline/line-height, pixel geometry, motion (none observed; reduced-motion audit stands) and product/UX acceptance. The Japanese fallback 1.5× line height remains Proposed and not applied.
+- **Review closure:** round 3 returned **PASS 0 / 0 / 0, VERDICT CLEAN** on pushed `2b25643…`; the token classification and the limited 96-DPI observation are independently reviewed. All NOT_MEASURED items and product/UX acceptance remain open.
 - **Evidence attribution:** each capture carries its SHA-256 and stated content; the window PID/HWND were not recorded and are marked `NOT_RECORDED`, the capture method is the window screenshot/AX route, and the uniqueness check covers only the listed evidence directories.
 - **No product change:** docs/evidence only; no Refine Gate (Y04). Evidence: [ux3-visual-latest](evidence-published/ux3-visual-latest/validation.json); both captures are unique only against the seven evidence directories named in that record, not repository-wide.
