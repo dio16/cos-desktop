@@ -76,7 +76,7 @@
       "action": "real key events typed \"ab\" into the focused rail search",
       "observed": "the field rendered \"ab\" with a caret, but the accessibility node reported only textfield \"Search tasks\" with no value",
       "classification": "NATIVE_OBSERVED",
-      "interpretation": "the text-input path works, while the rail query was invisible to assistive technology"
+      "interpretation": "the text-input path works, while the rail query was absent from the UIA value property (screen-reader announcement is NOT_MEASURED)"
     },
     {
       "id": "ax1-n2",
@@ -85,7 +85,7 @@
       "action": "Operator typed にほんご with the Japanese IME, converted and committed",
       "observed": "the rail search rendered 日本語 and the rail reported \"No matching task: 日本語\"; the accessibility node still carried no value",
       "classification": "NATIVE_OBSERVED",
-      "interpretation": "IME commit reached the rail query exactly once and the filter consumed it; the accessible value was still missing"
+      "interpretation": "IME commit reached the rail query exactly once and the filter consumed it; the UIA value property was still absent (preedit exposure is NOT_MEASURED)"
     },
     {
       "id": "ax1-n3",
@@ -103,7 +103,7 @@
       "action": "ASCII \"ab\" typed after the fix",
       "observed": "accessibility value became \"ab\" (the same node exposed no value before the fix)",
       "classification": "NATIVE_OBSERVED",
-      "interpretation": "the rail query is now reachable through accessibility, matching palette and flow"
+      "interpretation": "the rail query is now present in the UIA value property, matching palette and flow (screen-reader announcement is NOT_MEASURED)"
     },
     {
       "id": "ax1-n5",
@@ -120,8 +120,8 @@
     "The Operator reported no duplicate insertion in any step; duplicate absence is independently supported only by ax1-n2, ax1-n3 and ax1-n5's observed values."
   ],
   "defect_and_fix": {
-    "defect": "The Task Rail search input exposed no accessible value, so a screen reader could not read the query, the composed text, or the committed text, while the palette and flow inputs already exposed theirs.",
-    "evidence": "ax1-n1 and ax1-n2 (no value) against the same surface's AX node, and the flow surface's exposed value in ax1-n3",
+    "defect": "The Task Rail search UIA TextInput node exposed no value property, while the palette and flow inputs exposed theirs, so the rail query could not be read from the accessibility tree. Whether a screen reader announces the field correctly, and whether IME preedit (unconfirmed) text would be exposed once a value exists, are NOT_MEASURED.",
+    "evidence": "ax1-n1 and ax1-n2 (the rail node carried no value before the fix) against the flow surface's exposed value in ax1-n3, and the post-fix rail values in ax1-n4 and ax1-n5",
     "fix": "crates/desktop-gpui/src/lib.rs: added .aria_value(SharedString::from(query_text.clone())) to the task-search element, using the raw query rather than the caret-decorated display string",
     "scope": "one attribute on one element; no new API, dependency, unsafe/FFI, TSF/COM work, token or contract change",
     "regression_coverage": "no unit test was added: the observable is produced by the accessibility bridge, and a source-text assertion would be tautological. The independent reproduction is the Native before/after pair ax1-n1/ax1-n4 and ax1-n2/ax1-n5.",
@@ -132,7 +132,7 @@
     "quality_check_only": "pwsh -NoProfile -File scripts/quality.ps1 -CheckOnly -> local checks passed (fmt, metadata, dependency rules, check)",
     "quality_full": "pwsh -NoProfile -File scripts/quality.ps1 -> all quality gates passed (fmt, metadata, dependency rules, clippy -D warnings, tests, build)",
     "independent_gate": "FAILED/BLOCKED: two Gate attempts and the retained-checkout qualification are recorded above; no Gate success is claimed",
-    "documentation": "PENDING json/link/62-contract/41-edge DAG/privacy/diff smoke",
+    "documentation": "PASS: json.tool; 62 task cards with exactly one owning DC each; unchanged acyclic 41-edge DAG; new relative links resolve; recorded numbers match the retained records; host-path/private-key scan; git diff --check.",
     "review": "PENDING candidate-specific linked Tern review",
     "independent_gate_attempts": [
       {
@@ -180,6 +180,8 @@
     "AC10_no_overclaim": "MET: no screen-reader acceptance, TSF internals, DPI pixel quality, MP-AX1 completion or product acceptance is claimed."
   },
   "not_measured": [
+    "Screen-reader announcement of any text input (no assistive-technology session was run)",
+    "Whether IME preedit text is exposed through accessibility once a value property exists",
     "Preedit (marked/未確定) rendering and its text/underline",
     "Caret and selection during composition",
     "Escape cancellation observed independently",
