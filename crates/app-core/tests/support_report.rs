@@ -52,6 +52,11 @@ fn versions_are_never_filled_from_the_desktop_package() {
         report.protocol_version,
         ReportValue::Unknown("no protocol version pair was negotiated")
     );
+    assert_eq!(report.desktop_version, DESKTOP);
+    assert!(
+        rendered.contains(&format!("Desktop version: {DESKTOP}")),
+        "the report renders the version its caller supplied:\n{rendered}"
+    );
     let runtime_line = rendered
         .lines()
         .find(|line| line.starts_with("Runtime version: "))

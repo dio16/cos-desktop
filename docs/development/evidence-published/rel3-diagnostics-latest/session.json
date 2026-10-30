@@ -111,7 +111,8 @@
       "render stays inside per-line and total bounds with an oversized field",
       "synthetic token, signed locator and private path never render",
       "an unavailable Desktop explains itself and states no measurement",
-      "a read-but-empty ring reports zero while an unread ring reports unknown"
+      "a read-but-empty ring reports zero while an unread ring reports unknown",
+      "the report stores and renders the Desktop version its caller supplied"
     ],
     "native": "NOT_RUN — no diagnostic UI/CLI or startup path changed; the report is an app-core seam only"
   },
@@ -135,7 +136,7 @@
     "app_core_tests": {
       "unit": 31,
       "observation_publication": 68,
-      "support_report": 6
+      "support_report": 7
     }
   },
   "gate": {
@@ -208,6 +209,20 @@
         "round": 1,
         "sha": "b3c876db388a037f2f85e8205e87a82ee19c3190",
         "verdict": "1 BLOCKING / 2 ACTIONABLE / 0 EXCESSIVE"
+      },
+      {
+        "round": 2,
+        "sha": "d80ee98edb7fe2db97f155cb6177c5b0d899efcd",
+        "verdict": "0 BLOCKING / 2 ACTIONABLE / 0 EXCESSIVE",
+        "closed": [
+          "B-R1-01",
+          "A-R1-01",
+          "A-R1-02"
+        ],
+        "opened": [
+          "A-R2-01 missing version assertion",
+          "A-R2-02 stale test count"
+        ]
       }
     ],
     "closed": [
