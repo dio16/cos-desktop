@@ -404,7 +404,17 @@
     "product_quality_gates": "NOT_RUN: no product code, build input or dependency changed; this is an observation/docs slice under ADR-0014 Y04",
     "new_refine_gate": "NOT_RUN by the same Y04 rule; no historical Gate is transferred to these bytes",
     "documentation": "PASS: json.tool, crop/image digest correlation, recorded measurements equal to a fresh script run, two-run byte-identical output, new relative links, 62 task cards with exactly one owning DC each, unchanged acyclic 41-edge DAG, host-path/private-key scan and git diff --check; only the plan and this evidence directory changed.",
-    "review": "PENDING candidate-specific linked Tern review"
+    "review": {
+      "candidate_sha": "d7cdd796b4c34abdaea2e1ccbd2f694e28e17ea6",
+      "result": "CLEAN 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
+      "rounds": {
+        "round_1": "candidate 8eef1e6a raised one ACTIONABLE item: bottom ink insets stated 12 and 10 instead of 13 and 11 under the half-open rectangles.",
+        "round_2": "candidate d7cdd796 derived every inset inside measure_text.py, replaced the hand-copied targets with that output, and the reviewer re-derived all forty values; clean."
+      },
+      "independently_checked": "GitHub commit and origin/dev, inset arithmetic for all ten regions, script derivation, plan/evidence consistency, unchanged bbox/bands, identical capture and crop blobs, unchanged native.json and MP-R0B record, docs-only change and ADR-0014 Y04 boundary",
+      "not_independently_reexecuted": "Windows Native capture, private raw logs, retained executable digest, typography 71-test run, MP↔DC and DAG full re-verification",
+      "scope": "Bounded 96 DPI mixed-script observation and evidence correction only; not MP-TYP1 completion, DD-04b adoption, R1 exit or product/release acceptance. This result record is a later publication, not a new reviewed candidate."
+    }
   },
   "not_measured": [
     "DPI 125/150/175/200 % and mixed-monitor movement",
