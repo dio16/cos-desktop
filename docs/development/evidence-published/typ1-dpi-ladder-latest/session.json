@@ -42,11 +42,12 @@
     },
     "reproduction": {
       "script": "measure_runs.py",
-      "script_sha256": "27059b43b274826d36c4ec4b1e43e4d6c0847d59258ccf2f989af2ca41b6b12f",
+      "script_sha256": "c19d19bc7bd5bc53604603d476604374c4b3cda10bf99d6adf429f7ce6d42b40",
       "capture_copy": "screenshot.png",
       "capture_sha256": "0d44945af8ca05766320609a15bf9eeb9faf7a45e272d2ae34bc2e276aca4414",
       "command": "python -B measure_runs.py screenshot.png",
-      "note": "the capture is a byte-identical copy of the identity-proven one so the run is reproducible from this directory alone"
+      "note": "the capture is a byte-identical copy of the identity-proven one so the run is reproducible from this directory alone",
+      "verified_run": "script ran from this directory against the copied capture and reproduced the 2/2/3/3 px and 1 px readings"
     }
   },
   "not_measured": [
@@ -92,5 +93,17 @@
       "next_step": "re-measure with a focused-state identity-proven capture and a second column sweep before any product change"
     }
   ],
-  "scope_note": "No product code, harness or contract changed. The ladder is HOLD, the pixel readings are recorded with their anomaly, and MP-TYP1 overall remains incomplete."
+  "scope_note": "No product code, harness or contract changed. The ladder is HOLD, the pixel readings are recorded with their anomaly, and MP-TYP1 overall remains incomplete.",
+  "review": {
+    "rounds": [
+      {
+        "round": 1,
+        "sha": "39713bf9644d0d8ae0b455d814f7a3a7466a0ca2",
+        "verdict": "0 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE",
+        "verdict_line": "PASS 0 / 0 / 0",
+        "note": "the reviewer confirmed the HOLD, reproduced the pixel readings independently, and noted the measurement script was not preserved; this commit preserves it and records the verified re-run"
+      }
+    ],
+    "re_review": "CLEAN 0/0/0"
+  }
 }

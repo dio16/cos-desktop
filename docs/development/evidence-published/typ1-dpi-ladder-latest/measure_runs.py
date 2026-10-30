@@ -69,7 +69,7 @@ def decode(path: pathlib.Path) -> tuple[int, int, list[bytes]]:
 
 def runs(pixels: list[tuple[int, int, int]]) -> list[tuple[tuple[int, int, int], int]]:
     out: list[tuple[tuple[int, int, int], int]] = []
-    last = None
+    last: tuple[int, int, int] | None = None
     count = 0
     for value in pixels:
         if value == last:
@@ -79,11 +79,14 @@ def runs(pixels: list[tuple[int, int, int]]) -> list[tuple[tuple[int, int, int],
                 out.append((last, count))
             last = value
             count = 1
-    out.append((last, count))
+    if last is not None:
+        out.append((last, count))
     return out
 
 
 def main() -> int:
+    # The console encoding on this host cannot print every sampled colour label.
+    sys.stdout.reconfigure(errors="backslashreplace")
     path = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "screenshot.png")
     width, height, rows = decode(path)
     channels = len(rows[0]) // width
