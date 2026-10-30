@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "task": "MP-DOCK2",
+  "contract": "DC-MP-DOCK2",
+  "status": "LIMITED_NATIVE_DOCK2_VERIFICATION_OBSERVED_REVIEW_PENDING",
+  "authority": "Tern next-task directive after the clean MP-SEC2 review; ADR-0014 scoped resumption; ADR-0010 D-1…D-13; DC-MP-DOCK2.",
+  "baseline": {
+    "reviewed_commit": "07fdc4a15461cfb6172173455113cc1b863fe873",
+    "branch": "feature/mp-dock2-native-closure",
+    "product_source": "f1de4f364827b9a1dcfc7f8f95401de487d48245 (no product-source change on this branch)",
+    "product_source_changes_on_branch": "none",
+    "worktree": "clean at observation time"
+  },
+  "environment": {
+    "os": "Microsoft Windows NT 10.0.26300.0",
+    "system_dpi": 96,
+    "executable": "target/debug/cos-desktop.exe",
+    "executable_sha256": "sha256:b3e5fceec55f39ceb70ef5026bba8e339e3ae417fe6804fe7b1d8e4b707f6b0e",
+    "fixture": "crates/cos-client/fixtures/task-184.json",
+    "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52",
+    "isolation": "child-only LOCALAPPDATA under C:/dev/cos-desktop-verification/sec2-2026-10-30/dock2-profile",
+    "input_route": "computer window input; key steps used takeover, dock/compare controls were clicked at observed coordinates"
+  },
+  "results": {
+    "D-1": {"result": "PASS", "observed": "fresh isolated profile shows 'No candidate viewed' and no auto-selection; dock shows It 1 (A,B), It 2 (C,D), It 3 (E) in authoritative order.", "evidence": ["s1-fresh.png", "s1-fresh.ax.txt"]},
+    "D-2": {"result": "NOT_REPRODUCIBLE", "observed": "the fixture carries five candidates, so zero/one-candidate cardinality and its stated Compare reason cannot be produced natively; covered by dock model tests and the switcher condition."},
+    "D-3": {"result": "PASS", "observed": "click A → viewed A; click B → pair A/B, surface switches to Compare, dock marks A Compare and B Viewed·Compare·Active; with Compare active a plain click on C moves viewed to C and keeps A/B; Change B then D sets side B=D while viewed stays C.", "evidence": ["s2-viewed-a.png", "s3-compare-ab.png", "s3-compare-ab.ax.txt", "s4-viewed-c-keeps-pair.png", "s5-change-side-b.png", "s5-change-side-b.ax.txt"]},
+    "D-4": {"result": "NOT_REPRODUCIBLE", "observed": "identities never disappear from the static fixture; the kept-reference and explicit-unavailable behaviour is covered by ui-model presentation tests."},
+    "D-5": {"result": "NOT_REPRODUCIBLE", "observed": "no compare side can disappear from the static fixture; covered by the same model tests."},
+    "D-6": {"result": "NOT_REPRODUCIBLE", "observed": "reappearance after disappearance cannot be produced natively; covered by model tests."},
+    "D-7": {"result": "PASS", "observed": "Close Compare returns to the Artifact surface with the viewed candidate C and the dock markers reset; no other history is replayed.", "evidence": ["s6-close-compare.png", "s6-close-compare.ax.txt"]},
+    "D-8": {"result": "PASS", "observed": "after a normal close with pair A/B and viewed B, relaunching the same isolated profile restores the Compare surface with side A=A, side B=B and viewed B; no substitution occurs.", "evidence": ["s7-restored.png", "s7-restored.ax.txt"]},
+    "D-9": {"result": "NOT_REPRODUCIBLE", "observed": "the fixture has one Task, so a native task switch cannot be observed; the clearing behaviour is covered by the presentation model tests."},
+    "D-10": {"result": "PASS", "observed": "the timeline shows only the authoritative It 1/It 2/It 3 groups with their candidate rows; no synthesised node or locally inferred current iteration appears.", "evidence": ["s1-fresh.png", "s1-fresh.ax.txt"]},
+    "D-11": {"result": "NOT_APPLICABLE", "observed": "application-level history belongs to DC-MP-NAV3/DD-07 and is not implemented here."},
+    "D-12": {"result": "UNIT_ONLY", "observed": "focus reconciliation functions and tests exist; a native disappearance of a focused row is not reproducible in this fixture."},
+    "D-13": {"result": "PASS_BY_ABSENCE", "observed": "the fixture projects no formal outcome, so no marker is shown; the protocol exhaustive test proves no formal-selection command exists."}
+  },
+  "compare_admission": {
+    "observed": "Ctrl+1 → Artifact, Ctrl+Tab → Compare with five candidates and the held pair intact through the shared admission path. The sub-two-candidate refusal branch is NOT_REPRODUCIBLE natively; desktop-gpui tests cover 0/1/2/3 candidates and the NextSurface forwarding.",
+    "evidence": ["s8-ctrl1-artifact.png", "s8-ctrl-tab-compare.png", "s8-ctrl-tab.ax.txt"]
+  },
+  "tests": {
+    "ui_model_presentation": "15 passed",
+    "desktop_gpui_dock": "17 passed",
+    "commands": ["cargo test -p ui-model presentation", "cargo test -p desktop-gpui dock"]
+  },
+  "review_boundary": {
+    "previous": "last recorded independent review was HOLD 0 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE; the Ctrl+Tab admission bypass was repaired on 6bef9b6 with quality Gate 61662d4c-… and build Gate d9fc39d3-…, but no clean re-review of the repaired source was recorded.",
+    "this_run": "the repaired source is the current product source; this branch adds evidence only and submits the repaired source for a fresh independent review."
+  },
+  "not_measured": [
+    "native pixel/DPI acceptance of the dock chrome",
+    "0/1-candidate cardinality, identity disappearance and task-switch branches natively",
+    "real Runtime history/projections",
+    "product/UX acceptance"
+  ],
+  "product_change": "none; no reproduced DC-MP-DOCK2 violation required a code fix",
+  "gate": "no new Refine Gate: no product bytes changed on this branch; identical source is covered by NAV5 Gate 5e116b30-… and the historical DOCK2 Gates",
+  "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.75"
+}
