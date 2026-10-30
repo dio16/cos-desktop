@@ -106,5 +106,22 @@
   ],
   "defects": [],
   "scope_note": "PARTIAL: one host-scale observation with an identity-proven capture and AX label evidence. the source candidate is unchanged; no product code, harness or contract was modified, so no Refine Gate applies (ADR-0014 Y04). MP-TYP1 as a whole stays incomplete.",
-  "harness_note": "The harness writes a static list of NOT_MEASURED reasons before it knows whether a capture will succeed, so observation.json still contains \"no identity-proven screenshot exists\" entries even though this run DID obtain one. The capture is OBSERVED and verified (HWND identity, 49/49 foreground cross-check, PNG sha256 recorded). What remains unmeasured is pixel-level evaluation of that capture: the hairline and focus-outline stroke widths and the glyph quality questions listed below. The original observation.json is preserved unmodified."
+  "harness_note": "The harness writes a static list of NOT_MEASURED reasons before it knows whether a capture will succeed, so observation.json still contains \"no identity-proven screenshot exists\" entries even though this run DID obtain one. The capture is OBSERVED and verified (HWND identity, 49/49 foreground cross-check, PNG sha256 recorded). What remains unmeasured is pixel-level evaluation of that capture: the hairline and focus-outline stroke widths and the glyph quality questions listed below. The original observation.json is preserved unmodified.",
+  "review": {
+    "rounds": [
+      {
+        "round": 1,
+        "sha": "864bd7597d70d7d304941fd3a9925b97b388e62e",
+        "verdict": "0 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE"
+      },
+      {
+        "round": 2,
+        "sha": "791f9d6ec7a5e4b607d0a297fa178464467baf19",
+        "verdict": "0 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE",
+        "verdict_line": "PASS 0 / 0 / 0"
+      }
+    ],
+    "re_review": "CLEAN 0/0/0",
+    "scope_note": "Clean review covers this single host-scale observation only; the DPI ladder, pixel stroke widths, glyph quality, High Contrast, AX geometry and frame cost remain NOT_MEASURED and MP-TYP1 is not complete."
+  }
 }
