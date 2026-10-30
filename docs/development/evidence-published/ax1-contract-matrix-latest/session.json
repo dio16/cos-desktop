@@ -151,7 +151,18 @@
       "integrity": "candidate and every check-log digest identical before and after"
     },
     "documentation": "PASS: json.tool; 62 owning contracts; unchanged acyclic 41-edge DAG; links resolve; recorded values match the run outputs; privacy scan; git diff --check.",
-    "review": "PENDING candidate-specific linked Tern review",
+    "review": {
+      "candidate_sha": "c789821836f0bea77b52666a405c3830d010a87d",
+      "result": "CLEAN 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
+      "rounds": {
+        "round_1": "candidate 7e90395 (product 466b72f): the pointer route bypassed the guard (B-R1-01) and the new test only exercised the predicate (A-R1-01).",
+        "round_2": "candidate d7282df (product 0801224): both routes share one boundary; the test-scope qualification and the pointer observation attribution remained (A-R2-01, A-R2-02).",
+        "round_3": "candidate c789821: test guarantee scope stated, AC08 reduced to PARTIAL, pointer attempt recorded only as \"the palette closed after a click\"; clean."
+      },
+      "independently_checked": "GitHub commits and origin/dev, both palette activation routes and the shared predicate, the Gate records (c92f52df SUCCEEDED, adae3907 FAILED, f8ed77ed superseded), the disposal record, the AX01-AX06 matrix, 62 owning contracts, the acyclic 41-edge DAG and public-JSON privacy",
+      "not_independently_reexecuted": "Windows Native session, the executable hash on disk, private Gate originals, the crate tests and the workspace deletion",
+      "scope": "This review covers the composition guard and the contract matrix only. MP-AX1 as a whole, DD-23, screen-reader acceptance, MP-ACC2 and release remain incomplete."
+    },
     "test_guarantee_scope": "The unit test covers the shared predicate palette_dispatch_allowed(open, marked) only. It does not execute palette_activate or palette_invoke_slot, because both need a GPUI Window and Context that the crate's test harness does not provide; a source-text assertion that the two functions call the predicate would be the forbidden kind of test, so none was added. What guarantees the call sites is the single-boundary structure plus code review, not a test."
   },
   "not_measured_or_open": [
