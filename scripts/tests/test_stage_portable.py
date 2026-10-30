@@ -122,6 +122,11 @@ class StagePortableCliTests(unittest.TestCase):
         (self.package / "private-token.txt").write_text("not for distribution", encoding="utf-8")
         self.assert_rejected()
 
+    def test_hard_link_payload_is_rejected(self):
+        alias = Path(self.temporary.name) / "outside-license-alias"
+        alias.hardlink_to(self.package / "LICENSE")
+        self.assert_rejected()
+
     def test_symbolic_link_payload_is_rejected(self):
         license_path = self.package / "LICENSE"
         license_path.unlink()

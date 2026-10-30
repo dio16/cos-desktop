@@ -40,14 +40,14 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def regular_file(path: Path) -> bool:
+def regular_file(path: Path, *, single_link: bool = True) -> bool:
     try:
         info = path.stat(follow_symlinks=False)
     except OSError:
         return False
     if os.name == "nt" and info.st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
         return False
-    return stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and not path.is_symlink()
+    return stat.S_ISREG(info.st_mode) and (not single_link or info.st_nlink == 1) and not path.is_symlink()
 
 
 def run(command: list[str], cwd: Path) -> str:
@@ -109,7 +109,9 @@ def build_executable(root: Path, package_id: str) -> tuple[Path, str, str, str]:
     if len(artifacts) != 1:
         raise StageError(f"Cargo reported {len(artifacts)} compiler-artifact executables for cos-desktop; expected exactly one")
     executable = artifacts[0]
-    if not regular_file(executable):
+    # Cargo normally hard-links its reported executable to the deps artifact.
+    # Copying creates an independent staged file, whose verifier requires one link.
+    if not regular_file(executable, single_link=False):
         raise StageError("Cargo compiler-artifact executable is not a regular file")
     return executable, cargo_version, rustc_version, " ".join(command)
 
