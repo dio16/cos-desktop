@@ -8,7 +8,7 @@
   "product_source": "87922dd567187bec88186944247d1f5644ba2a1b (unchanged by this slice: no product, verification code or NOTICE change was needed)",
   "a_windows_dependency_graph": {
     "command": "cargo metadata --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc, then a normal+build traversal from the cos-desktop binary",
-    "reachable_packages": 368,
+    "reachable_packages": 369,
     "edge_kinds_separated": {
       "normal_and_build": 368,
       "dev_only": "excluded by construction — the traversal follows normal and build edges only"
@@ -31,22 +31,37 @@
       "thiserror",
       "thiserror-impl"
     ],
-    "note": "this is the build-time dependency closure, not a proof of what is linked into the executable"
+    "note": "369 is the exact population of this traversal (the earlier 368 dropped one package). It is the build-time dependency closure, not a proof of what is linked into the executable; dev-only edges are excluded by construction.",
+    "by_source": {
+      "registry": 346,
+      "pinned_zed_git": 17,
+      "workspace": 6
+    }
   },
   "b_third_party_licences": {
     "declared_expression_histogram": {
-      "MIT OR Apache-2.0": 167,
-      "MIT": 64,
+      "(MIT OR Apache-2.0) AND Unicode-3.0": 1,
+      "0BSD OR MIT OR Apache-2.0": 1,
+      "Apache-2.0": 23,
+      "Apache-2.0 OR BSL-1.0": 1,
       "Apache-2.0 OR MIT": 40,
-      "Apache-2.0": 22,
-      "Unicode-3.0": 18,
-      "MIT/Apache-2.0": 14,
-      "BSD-3-Clause": 8,
       "Apache-2.0/MIT": 5,
-      "Unlicense OR MIT": 4,
       "BSD-2-Clause": 4,
+      "BSD-2-Clause OR Apache-2.0 OR MIT": 2,
+      "BSD-3-Clause": 8,
+      "BSD-3-Clause OR Apache-2.0": 2,
+      "CC0-1.0 OR Apache-2.0": 1,
+      "CC0-1.0 OR MIT-0 OR Apache-2.0": 1,
+      "MIT": 64,
+      "MIT OR Apache-2.0": 167,
       "MIT OR Apache-2.0 OR Zlib": 4,
-      "Zlib OR Apache-2.0 OR MIT": 3
+      "MIT OR Zlib OR Apache-2.0": 2,
+      "MIT/Apache-2.0": 14,
+      "Unicode-3.0": 18,
+      "Unlicense OR MIT": 4,
+      "Zlib": 3,
+      "Zlib OR Apache-2.0 OR MIT": 3,
+      "bzip2-1.0.6": 1
     },
     "packages_without_a_licence_declaration": 0,
     "packages_with_a_local_licence_text": 330,
@@ -68,12 +83,14 @@
       "svg_fmt 0.4.5",
       "taffy 0.13.0"
     ],
-    "why_the_16_matter": "a declared SPDX expression is not the licence text, and Apache-2.0 §4(a) requires supplying a copy of the licence with a distribution; their text has to be collected before any package leaves the internal stage",
+    "why_the_16_matter": "a declared SPDX expression is not the licence text; whether a distribution must carry each text depends on the licence and on what the package ships, so their text has to be collected and assessed before any package leaves the internal stage",
     "notice_files_found_in_fetched_sources": [
       {
         "package": "cfg_aliases 0.2.2",
+        "declared_license": "MIT",
         "file": "NOTICES.md",
-        "content": "carries an MIT permission notice for code derived from tectonic_cfg_support::target_cfg!"
+        "content": "carries an MIT permission notice for code derived from tectonic_cfg_support::target_cfg!, and cfg_aliases declares MIT",
+        "obligation_state": "OPEN — whether that notice must accompany the distribution depends on MIT attribution practice and on whether the crate is linked; it is not an Apache-2.0 §4(d) obligation"
       }
     ],
     "zed_gpui": {
@@ -85,7 +102,22 @@
       "packages": 18,
       "existing_notice_entry": "the repository NOTICE already names Unicode 16.0.0 simple case-folding data and points at the generated file"
     },
-    "not_a_legal_conclusion": "this record lists declared expressions and the presence of text files. It does not decide whether every obligation is met."
+    "not_a_legal_conclusion": "this record lists declared expressions, text presence and one NOTICE file. It does not decide whether any obligation is met, nor which licence applies to a combined work.",
+    "population": {
+      "total": 369,
+      "registry": 346,
+      "pinned_zed_git": 17,
+      "workspace": 6
+    },
+    "declared_expression_histogram_total": 369,
+    "licence_text_by_source": {
+      "registry_with_local_text": 330,
+      "registry_without_local_text": 16,
+      "pinned_zed_git": "17 crates from one pinned revision; the checkout carries LICENSE-APACHE, individual crate texts were not opened",
+      "workspace": "6 local crates, covered by the repository LICENSE/NOTICE",
+      "sum_check": "330 + 16 + 17 + 6 = 369"
+    },
+    "packages_without_local_text_count": 16
   },
   "c_runtime_dependencies": {
     "starting_point": "the published binary-survey.json for the staged executable (34 direct import labels, x86_64, unsigned, delay-import directory zero)",
@@ -103,9 +135,9 @@
   },
   "d_notice_consistency": {
     "current_notice": "names Apache-2.0 for COS Desktop and the Unicode data entry only",
-    "finding": "every declared dependency uses a permissive family expression, but two obligations are not yet satisfied by the four-file internal package: the licence texts of the 16 packages without a local copy, and the cfg_aliases NOTICES.md attribution for Apache-2.0 §4(d)",
+    "finding": "every declared dependency uses a permissive family expression. Two questions stay OPEN: the licence texts of the 16 registry packages that ship none in their fetched source, and whether the cfg_aliases MIT notice must be propagated. Neither is decided here, and the repository NOTICE is unchanged.",
     "change_made": "none — adding attributions without the licence texts, or shipping a NOTICE that implies compliance, would be worse than stating the gap",
-    "decision_needed": "before any distribution, either extend the package file set to carry the required licence texts and notices, or record a Caller-approved distribution decision that changes the four-file rule. Both are outside this slice and outside the current four-file internal contract."
+    "decision_needed": "before any distribution, collect and assess the missing texts and decide how obligations are satisfied. That can be done inside the existing LICENSE/NOTICE files or may need more files; which one is a distribution decision, not something this survey establishes."
   },
   "verification": {
     "commands_run": [
@@ -118,11 +150,11 @@
     "gate": "none — no product or verification code changed (ADR-0014 Y04)"
   },
   "open_items": [
-    "licence texts for the 16 packages that ship none in their fetched source",
-    "cfg_aliases NOTICES.md attribution propagation",
+    "licence texts for the 16 registry packages that ship none in their fetched source",
+    "whether the cfg_aliases MIT notice must accompany the distribution",
     "MSVC runtime redistribution terms and whether the package must supply it",
     "transitive and dynamically loaded DLL closure",
-    "package file-set change or a Caller distribution decision",
+    "how the obligations are satisfied (existing files or a wider package set) — a distribution decision",
     "DD-21 signing, publisher, installer, channel and uninstall policy"
   ],
   "scope_note": "Inner staging, signing, licence compliance and distribution acceptance are reported separately: staging is limited-complete, signing/installer remain DD-21 OPEN, licence obligations remain OPEN as listed, and no product acceptance is claimed."
