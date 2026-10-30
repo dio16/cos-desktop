@@ -79,9 +79,35 @@
   "geometry_observation": {
     "physical_window": "1602x1039 at (919,167) from an independent desktop window query",
     "harness_reported_window": "1294x838 at (729,134) from the harness/probe record",
-    "ratio": "1294 x 1.25 = 1617.5 and 729 x 1.25 = 911.25, i.e. the harness figures are the physical figures divided by the scale factor within frame accounting",
     "inference": "A DPI-unaware harness path receiving virtualized logical geometry while PrintWindow renders physical pixels would explain the mismatch, and the ratio is consistent with that. It is INFERENCE / NOT_DIAGNOSED: the probe record carries no compared rectangles, the residuals (about +15.5 width, +8.5 height, -7.75 x at 1.25) are not separated from frame accounting, and no coordinate transform was independently measured.",
-    "not_occlusion_evidence": "Three consecutive attempts produced the identical 43/49 result with the window focused and unobstructed, which is not the signature of a transient overlay."
+    "not_occlusion_evidence": "Three consecutive attempts produced the identical 43/49 result with the window focused and unobstructed, which is not the signature of a transient overlay.",
+    "comparison": {
+      "harness_reported": {
+        "width": 1294,
+        "height": 838,
+        "x": 729,
+        "y": 134
+      },
+      "harness_times_1_25": {
+        "width": 1617.5,
+        "height": 1047.5,
+        "x": 911.25,
+        "y": 167.5
+      },
+      "independent_physical_query": {
+        "width": 1602,
+        "height": 1039,
+        "x": 919,
+        "y": 167
+      },
+      "residual": {
+        "width": 15.5,
+        "height": 8.5,
+        "x": -7.75,
+        "y": 0.5
+      },
+      "note": "The scaled harness values are close to, but not equal to, the independently measured physical values. Coordinate transform and window-frame accounting were not separated, so no exact division relation is asserted."
+    }
   },
   "evaluation": {
     "AC01_executable_source": "PASS: the retained executable still hashes to 020506d3… and the source scope is unchanged from its build commit.",
