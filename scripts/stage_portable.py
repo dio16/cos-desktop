@@ -426,8 +426,31 @@ def stage(root: Path, output: Path) -> dict:
                     raise
             raise
     finally:
-        if is_owned(temporary, owned_identity):
-            shutil.rmtree(temporary)
+        discard_owned(temporary, owned_identity)
+
+
+def discard_owned(path: Path, identity: tuple) -> None:
+    """Remove a directory only after acquiring it and re-proving ownership.
+
+    ``rmtree(path)`` after a separate ``is_owned(path)`` check would delete a
+    replacement that appears in between. The directory is instead moved into a
+    quarantine this call alone creates, re-checked there, and only then deleted;
+    anything that is not provably ours is moved back and the caller fails.
+    """
+    if not path.exists() and not path.is_symlink():
+        return
+    quarantine = Path(tempfile.mkdtemp(prefix=".discard-", dir=path.parent))
+    moved = quarantine / "acquired"
+    try:
+        if not is_owned(path, identity):
+            raise StageError("cleanup refused: staging directory is no longer this run's")
+        os.rename(path, moved)
+        if not is_owned(moved, identity):
+            os.rename(moved, path)
+            raise StageError("cleanup refused: directory changed while being acquired")
+        shutil.rmtree(moved)
+    finally:
+        shutil.rmtree(quarantine, ignore_errors=True)
 
 
 def parser() -> argparse.ArgumentParser:

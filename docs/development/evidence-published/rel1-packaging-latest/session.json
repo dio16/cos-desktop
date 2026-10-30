@@ -74,7 +74,7 @@
     "AC14": "UNCHANGED: no Rust canonical semantics or wire source edits",
     "AC15": "UNCHANGED: no Cargo dependency/pin or unsafe/FFI addition; scripts use standard library",
     "AC16": "OBSERVED_BINDINGS: source/tree/build/binary/manifest/file/hash/Native records retained; Gate/review results remain separate",
-    "AC17": "OBSERVED: independent Gate ec702389-… SUCCEEDED 10/10 on the repaired source 71d0efb6 with the whole unchanged workspace suite; earlier Gates failed on host process-creation latency, diagnosed with a standalone probe and addressed by widening only observation windows, not assertions.",
+    "AC17": "OBSERVED: independent Gate ec702389-… SUCCEEDED 10/10 on the repaired source 71d0efb6. Earlier Gates failed on host process-creation latency, diagnosed with a standalone probe. Two wall-clock bounds (1.5 s to 4 s with a 6 s descendant) and three synthetic durations/cancel windows were changed so the tests can distinguish blocking from host noise on this machine; the semantic assertions (Decoded, timeout_fired, sample reason tokens, attempt counts, retry prohibition, no fabricated values) are unchanged, and no test is skipped, filtered or removed.",
     "AC18": "NO_RELEASE_CLAIM: internal stage is not full MP-REL1, signed distribution or product acceptance"
   },
   "gate": {
@@ -383,5 +383,43 @@
       "retention": "retained"
     }
   ],
-  "source_repair_candidate": "13a09c475eab970625397dc0f2ea95b70c6f3911"
+  "source_repair_candidate": "13a09c475eab970625397dc0f2ea95b70c6f3911",
+  "test_adjustments": {
+    "why": "Host first-child creation from a fresh parent costs 510-2009 ms for a newly built binary (measured with a standalone spawn probe); the old bounds were below that noise.",
+    "changed": [
+      {
+        "test": "deadline_holds_when_a_descendant_inherits_the_capture_handles",
+        "before": "2.5 s descendant, <1500 ms bound",
+        "after": "6 s descendant, <4000 ms bound"
+      },
+      {
+        "test": "hanging_sampler_hits_the_sample_timeout",
+        "before": "cancel_after 3 s",
+        "after": "cancel_after 8 s"
+      },
+      {
+        "test": "injected_sampler_foreign_pid_is_sample_parse_failed",
+        "before": "cancel_after 1.5 s",
+        "after": "cancel_after 8 s"
+      },
+      {
+        "test": "injected_sampler_valid_row_is_measured",
+        "before": "cancel_after 2 s",
+        "after": "cancel_after 8 s"
+      },
+      {
+        "test": "fake candidate mode sleep-long",
+        "before": "5 s",
+        "after": "8 s"
+      }
+    ],
+    "unchanged": [
+      "Decoded and timeout_fired assertions",
+      "sample_timeout / sample_parse_failed / sample_capped reason tokens",
+      "attempt caps and the no-retry rule",
+      "never-a-fabricated-value checks",
+      "no test skipped, filtered or removed"
+    ],
+    "discrimination": "A blocking implementation returns at or after the 6 s descendant or the 10 s hanging sampler; host creation cost stays under 2.5 s, so the widened bounds still separate the two."
+  }
 }

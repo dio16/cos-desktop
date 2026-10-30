@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import struct
 import subprocess
 import sys
@@ -359,6 +360,35 @@ class StagePortableCliTests(unittest.TestCase):
         output = self.stage_with_final_change(replace)
         self.assertEqual("preserve me", (output / "user-data.txt").read_text(encoding="utf-8"))
         self.assertEqual(b"COS Desktop notice\n", (saved / "NOTICE").read_bytes())
+
+    def test_replacement_between_cleanup_check_and_delete_is_preserved(self):
+        target = Path(self.temporary.name) / "cleanup-target"
+        real_rename = os.rename
+
+        def racing_rename(source, destination):
+            # Swap the path between the ownership check and the acquisition rename.
+            if Path(source) == target and not Path(self.temporary.name, "parked-owned").exists():
+                real_rename(target, Path(self.temporary.name) / "parked-owned")
+                target.mkdir()
+                (target / "user-data.txt").write_text("preserve me", encoding="utf-8")
+            return real_rename(source, destination)
+
+        shutil.copytree(self.package, target)
+        identity = stage_portable.file_stamp(target.stat(follow_symlinks=False))[:2]
+        with patch.object(stage_portable.os, "rename", side_effect=racing_rename):
+            with self.assertRaises(stage_portable.StageError):
+                stage_portable.discard_owned(target, identity)
+        self.assertEqual("preserve me", (target / "user-data.txt").read_text(encoding="utf-8"))
+        self.assertTrue((Path(self.temporary.name) / "parked-owned").exists())
+
+    def test_cleanup_refuses_a_directory_it_does_not_own(self):
+        target = Path(self.temporary.name) / "not-ours"
+        target.mkdir()
+        (target / "user-data.txt").write_text("preserve me", encoding="utf-8")
+        foreign = stage_portable.file_stamp(Path(self.temporary.name).stat(follow_symlinks=False))[:2]
+        with self.assertRaises(stage_portable.StageError):
+            stage_portable.discard_owned(target, foreign)
+        self.assertEqual("preserve me", (target / "user-data.txt").read_text(encoding="utf-8"))
 
     def test_replacement_between_ownership_check_and_withdrawal_is_preserved(self):
         saved = Path(self.temporary.name) / "moved-owned-package"
