@@ -6,10 +6,22 @@
   "baseline_review_head": "791f9d6ec7a5e4b607d0a297fa178464467baf19",
   "hold_reason": "No product image decoder exists, and adding one needs either a new crate dependency or Windows Imaging Component FFI with unsafe. Both are outside the authorized scope, so no decode class can be admitted on the product path.",
   "what_exists": [
-    {"item": "crates/media/src/decode.rs", "fact": "decode preflight arithmetic only: DecodeLimits/DecodeBudget/DecodeRequest/DecodeAdmission/admit_decode with checked arithmetic, MAX_SUPPORTED_BIT_DEPTH 16 and MAX_SUPPORTED_CHANNELS 4; the module states it selects no decoder, decodes nothing and owns no GPU object"},
-    {"item": "crates/media/Cargo.toml", "fact": "dependencies are desktop-protocol and sha2 only; no image codec, no windows crate, no FFI"},
-    {"item": "crates/media/src/cache.rs + key.rs", "fact": "bounded encoded-media cache, digest verification, representation identity and orientation types; no decode call"},
-    {"item": "apps/desktop/devtools/img2 + examples/decode_compare", "fact": "development-only WIC comparison/probe tooling driven through PowerShell; evidence tooling, not a product path"}
+    {
+      "item": "crates/media/src/decode.rs",
+      "fact": "decode preflight arithmetic only: DecodeLimits/DecodeBudget/DecodeRequest/DecodeAdmission/admit_decode with checked arithmetic, MAX_SUPPORTED_BIT_DEPTH 16 and MAX_SUPPORTED_CHANNELS 4; the module states it selects no decoder, decodes nothing and owns no GPU object"
+    },
+    {
+      "item": "crates/media/Cargo.toml",
+      "fact": "dependencies are desktop-protocol and sha2 only; no image codec, no windows crate, no FFI"
+    },
+    {
+      "item": "crates/media/src/cache.rs + key.rs",
+      "fact": "bounded encoded-media cache, digest verification, representation identity and orientation types; no decode call"
+    },
+    {
+      "item": "apps/desktop/devtools/img2 + examples/decode_compare",
+      "fact": "development-only WIC comparison/probe tooling driven through PowerShell; evidence tooling, not a product path"
+    }
   ],
   "product_path_evidence": {
     "imports_of_media_in_product_crates": "none — apps/desktop, crates/desktop-gpui, crates/ui-model and crates/app-core have no `media` import",
@@ -17,10 +29,18 @@
     "desktop_windows_usage": "instance.rs and r0_s2b.rs use std::os::windows::fs only (file identity), unrelated to decoding"
   },
   "routes_and_why_each_is_blocked": [
-    {"route": "add a decoder crate dependency (for example `image`)", "blocker": "new dependency requires separate approval; DC-MP-IMG1/IMG2 and AGENTS.md forbid unreviewed dependencies"},
-    {"route": "call Windows Imaging Component directly", "blocker": "requires unsafe/FFI, and unsafe_code is forbidden by workspace lints; a narrow exception needs explicit architecture review before use"},
-    {"route": "shell out to a decoder process", "blocker": "no approved product transport or trust boundary; the existing probe tooling is development-only and its success is not product decode evidence"},
-    {"route": "declare an admitted class from probe results alone", "blocker": "DC-MP-IMG2 requires the class to be admitted on the product path; a probe success is explicitly not that, and the directive forbids treating it as such"}
+    {
+      "route": "productise the ratified WIC path through the existing managed WIC/WPF boundary",
+      "blocker": "this is the ratified direction, not a new decision; what is missing is the product process boundary and its safety proof, which needs its own architecture approval, and in a Rust-native implementation a Windows API boundary that the workspace unsafe_code = forbid currently excludes"
+    },
+    {
+      "route": "replace WIC with a third-party decoder crate",
+      "blocker": "this would change the ADR-0008 §2 decode-path decision, not merely add a dependency, so it needs a superseding design decision before any licence or dependency approval"
+    },
+    {
+      "route": "declare an admitted class from the development probe results",
+      "blocker": "DC-MP-IMG2 requires admission on the product path; a probe success is explicitly not that"
+    }
   ],
   "acceptance_assessment": {
     "AC01_class_named": "NOT_MET — no admitted class can be named without a product decoder",
@@ -36,12 +56,17 @@
   },
   "decision_required": {
     "owner": "Desktop architect + Caller",
-    "options": [
-      "authorize one decoder dependency with a pinned version, licence review and a bounded integration that uses the existing admission arithmetic",
-      "authorize a narrow, documented WIC FFI boundary (architecture review plus safety proof) instead of a dependency"
+    "questions": [
+      "Approve the product process/trust boundary and safety proof that turns the ratified WIC path into a product decoder (no ADR-0008 change, and no Rust unsafe if the boundary stays out of process).",
+      "Or explicitly supersede ADR-0008 §2 if a third-party decoder is wanted instead; that decision precedes dependency and licence review."
     ],
-    "consequence_of_no_decision": "MP-IMG2 stays at preflight-only, and MP-IMG3 (GPU upload) remains blocked because there is no admitted decoded class to upload"
+    "consequence_of_no_decision": "MP-IMG2 stays at preflight-only and MP-IMG3 remains blocked because no admitted decoded class exists"
   },
   "mp_img3_readiness": "NOT_READY — the prerequisite admitted decode class does not exist",
-  "scope_note": "This record adds no code, no dependency, no FFI and no contract change. It stops at the first stop condition (new dependency or unsafe/FFI) instead of inventing a decoder or promoting probe evidence."
+  "scope_note": "This record adds no code, no dependency, no FFI and no contract change. It stops at the first stop condition (new dependency or unsafe/FFI) instead of inventing a decoder or promoting probe evidence.",
+  "ratified_boundary": {
+    "source": "ADR-0008 §2",
+    "decision": "Windows Imaging Component (WIC) through the existing managed WIC/WPF probe boundary is the ratified product decode path; it is not an open choice between unrelated decoders",
+    "what_is_not_decided": "how that probe boundary becomes a product process boundary: its process/trust model, safety proof, failure handling and packaging are not ratified by ADR-0008"
+  }
 }
