@@ -4,7 +4,7 @@
   "slice": "BOUNDED_IMAGE_DECODE initial-profile eligibility",
   "status": "HOLD_PRODUCT_DECODER_ABSENT",
   "baseline_review_head": "791f9d6ec7a5e4b607d0a297fa178464467baf19",
-  "hold_reason": "No product image decoder exists, and adding one needs either a new crate dependency or Windows Imaging Component FFI with unsafe. Both are outside the authorized scope, so no decode class can be admitted on the product path.",
+  "hold_reason": "The ratified WIC decode path has no product process/trust boundary or safety proof, and no product crate calls the decode preflight, so no decode class can be admitted on the product path. Deriving one from the development probe is forbidden by DC-MP-IMG2.",
   "what_exists": [
     {
       "item": "crates/media/src/decode.rs",
@@ -63,7 +63,7 @@
     "consequence_of_no_decision": "MP-IMG2 stays at preflight-only and MP-IMG3 remains blocked because no admitted decoded class exists"
   },
   "mp_img3_readiness": "NOT_READY — the prerequisite admitted decode class does not exist",
-  "scope_note": "This record adds no code, no dependency, no FFI and no contract change. It stops at the first stop condition (new dependency or unsafe/FFI) instead of inventing a decoder or promoting probe evidence.",
+  "scope_note": "This record adds no code, no dependency, no FFI and no contract change. It stops at the first stop condition — the missing product process boundary and safety proof for the ratified WIC path — instead of inventing a decoder, adopting an unapproved third-party decoder or promoting probe evidence.",
   "ratified_boundary": {
     "source": "ADR-0008 §2",
     "decision": "Windows Imaging Component (WIC) through the existing managed WIC/WPF probe boundary is the ratified product decode path; it is not an open choice between unrelated decoders",
