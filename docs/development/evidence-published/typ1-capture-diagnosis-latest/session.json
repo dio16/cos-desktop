@@ -109,7 +109,18 @@
     "typography_tests": "python -B -m unittest discover -s apps/desktop/devtools/typography/tests -p test_*.py -> Ran 71 tests, OK",
     "product_quality_gates": "NOT_RUN: no code changed (ADR-0014 Y04)",
     "documentation": "PASS: json.tool; 62 task cards with exactly one owning DC each; unchanged acyclic 41-edge DAG; new relative links resolve; recorded geometry values match the retained 100 % and 125 % evidence; host-path/private-key scan; git diff --check.",
-    "review": "PENDING candidate-specific linked Tern review"
+    "review": {
+      "candidate_sha": "dc990b3844758a0d0e491741ef7ea36b50ac8730",
+      "result": "CLEAN 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
+      "rounds": {
+        "round_1": "candidate 704c470 raised A-R1-01: the supported coordinate-space divergence was not separated from the undiagnosed refusal mechanism, and the occlusion exclusion relied on repetition alone.",
+        "round_2": "candidate 7368dc5 separated both and corrected the occlusion wording; one residual definitive heading remained (A-R2-01).",
+        "round_3": "candidate dc990b3 aligned the section heading, its sub-heading and the status name with the undiagnosed mechanism; the reviewer confirmed no definitive-cause phrasing remains."
+      },
+      "independently_checked": "GitHub commit and origin/dev, the SUPPORTED/NOT_DIAGNOSED split, occlusion wording, AC01 status, documentation status, unchanged thresholds/PrintWindow path, docs-only change, 62 contracts and the acyclic 41-edge DAG",
+      "not_independently_reexecuted": "Windows Native, DpiX, probe-side screen metrics, the 49 sample coordinates and RGB deltas, private logs and the 19/71 test runs",
+      "scope": "Bounded diagnosis only; not a 120 DPI pixel acceptance, MP-TYP1 completion, DD-04b adoption, R1 exit or product/release acceptance. This result record is a later publication, not a new reviewed candidate."
+    }
   },
   "not_measured": [
     "The probe-side screen-metric snapshot and per-sample deltas that would isolate the remaining 6 disagreements",
