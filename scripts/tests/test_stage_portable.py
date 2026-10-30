@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import struct
 import subprocess
 import sys
@@ -13,20 +14,24 @@ from pathlib import Path
 SCRIPT = Path(__file__).resolve().parents[1] / "stage_portable.py"
 
 
-def minimal_pe() -> bytes:
-    """A deterministic PE32+ fixture with one direct KERNEL32.dll import."""
-    data = bytearray(0x300)
+def minimal_pe(import_names=("KERNEL32.dll",)) -> bytes:
+    """A deterministic PE32+ fixture with independently encoded DLL descriptors."""
+    data = bytearray(0x400)
     data[:2] = b"MZ"
     struct.pack_into("<I", data, 0x3C, 0x80)
     data[0x80:0x84] = b"PE\0\0"
     struct.pack_into("<HHIIIHH", data, 0x84, 0x8664, 1, 0, 0, 0, 0xF0, 0x22)
     optional = 0x98
     struct.pack_into("<H", data, optional, 0x20B)
-    struct.pack_into("<II", data, optional + 112 + 8, 0x1000, 40)
+    struct.pack_into("<II", data, optional + 112 + 8, 0x1000, (len(import_names) + 1) * 20)
     section = optional + 0xF0
-    struct.pack_into("<IIII", data, section + 8, 0x80, 0x1000, 0x80, 0x200)
-    struct.pack_into("<IIIII", data, 0x200, 0, 0, 0, 0x1028, 0)
-    data[0x228:0x238] = b"KERNEL32.dll\0"
+    struct.pack_into("<IIII", data, section + 8, 0x200, 0x1000, 0x200, 0x200)
+    cursor = 0x280
+    for index, name in enumerate(import_names):
+        encoded = name.encode("ascii") + b"\0"
+        struct.pack_into("<IIIII", data, 0x200 + 20 * index, 0, 0, 0, 0x1000 + cursor - 0x200, 0)
+        data[cursor:cursor + len(encoded)] = encoded
+        cursor += len(encoded)
     return bytes(data)
 
 
@@ -98,6 +103,28 @@ class StagePortableCliTests(unittest.TestCase):
         result = self.invoke("verify", self.package)
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertIn("UNSIGNED_INTERNAL_STAGING", result.stdout)
+
+    def test_case_variant_dll_imports_verify_across_independent_processes(self):
+        binary = minimal_pe(("kernel32.dll", "KERNEL32.dll"))
+        (self.package / "cos-desktop.exe").write_bytes(binary)
+        manifest = self.read_manifest()
+        digest = hashlib.sha256(binary).hexdigest()
+        manifest["binary"]["sha256"] = digest
+        for entry in manifest["files"]:
+            if entry["path"] == "cos-desktop.exe":
+                entry["sha256"] = digest
+        manifest["external_runtime_dependencies"]["observed_direct_pe_imports"] = ["KERNEL32.dll", "kernel32.dll"]
+        self.write_manifest(manifest)
+        for seed in ("1", "2", "3", "4"):
+            with self.subTest(hash_seed=seed):
+                result = subprocess.run(
+                    [sys.executable, "-B", str(SCRIPT), "verify", str(self.package)],
+                    env={**os.environ, "PYTHONHASHSEED": seed},
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
 
     def test_missing_or_modified_binary_is_rejected(self):
         binary = self.package / "cos-desktop.exe"

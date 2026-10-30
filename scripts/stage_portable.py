@@ -195,7 +195,7 @@ def inspect_pe(path: Path) -> tuple[str, list[str]]:
             raise StageError("PE import table exceeds safety bound")
         if cursor + 20 > len(data) or any(struct.unpack_from("<IIIII", data, cursor)):
             raise StageError("PE import table has no terminator")
-    return arch, sorted(imports, key=str.casefold)
+    return arch, sorted(imports, key=lambda name: (name.casefold(), name))
 
 
 def make_manifest(package: dict, commit: str, tree: str, cargo_version: str, rustc_version: str, build_command: str, binary: Path, payload: dict[str, Path]) -> dict:
