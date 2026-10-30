@@ -10,6 +10,10 @@ participant evidence.
   `cargo run --locked -p cos-desktop -- --fixture --fixture-file crates/cos-client/fixtures/task-184.json`.
 - The fixture label `FIXTURE / simulated data` must remain visible; no real Runtime or
   product acceptance is implied.
+- **UX08 exception:** launch a separate unconfigured window without `--fixture` (or with an
+  empty `COS_DESKTOP_RUNTIME_ENDPOINT`); that window must show `NO SOURCE / data withheld`
+  and the single Desktop-local intervention row. This is the only scenario that uses the
+  disconnected launch.
 - One participant per session; do not coach beyond the neutral prompts.
 - Record the participant id (opaque), the prompt, the observed actions, any hesitation,
   any misinterpretation and whether the participant found the answer unaided.
