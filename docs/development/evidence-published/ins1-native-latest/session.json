@@ -2,20 +2,20 @@
   "schema_version": 1,
   "task": "MP-INS1",
   "contract": "DC-MP-INS1",
-  "status": "LIMITED_NATIVE_INSPECTOR_VERIFICATION_REPAIRED_AFTER_REVIEW_ROUND_1",
+  "status": "LIMITED_NATIVE_INSPECTOR_VERIFICATION_REPAIRED_AFTER_REVIEW_ROUND_2",
   "authority": "Tern next-task directive after the clean MP-DOCK2 review; ADR-0014 scoped resumption; DC-MP-INS1.",
   "baseline": {
     "reviewed_commit": "261650148c036a0ed653f0be74926c0198eafff1",
     "branch": "feature/mp-ins1-native-closure",
-    "product_source": "ea8d419bd2d3bf3708428fa51da06ea3e66d3d1f",
-    "product_source_changes_on_branch": "crates/desktop-gpui/src/inspector.rs and src/lib.rs: the inspector task-scope gate (review round 1 BLOCKING repair)",
+    "product_source": "ff7a785e3bf0c2f538792071e75230bb07afa70e",
+    "product_source_changes_on_branch": "inspector task-scope gate (inspector::scope + Disclosure task binding) and the PanelScope argument grouping",
     "worktree": "clean at observation time"
   },
   "environment": {
     "os": "Microsoft Windows NT 10.0.26300.0",
     "system_dpi": 96,
     "executable": "target/debug/cos-desktop.exe",
-    "executable_sha256": "sha256:b3e5fceec55f39ceb70ef5026bba8e339e3ae417fe6804fe7b1d8e4b707f6b0e",
+    "executable_sha256": "sha256:e9c61950aa8c105d47e1b5c879cf5e4da3596d9bee49b0b1be4f5f707305b1e1",
     "fixture": "crates/cos-client/fixtures/task-184.json",
     "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52",
     "isolation": "child-only LOCALAPPDATA under C:/dev/cos-desktop-verification/sec2-2026-10-30/ins1-profile",
@@ -73,19 +73,18 @@
       "observed": "no in-place projection revision can be injected natively; the revision-keyed disclosure behaviour remains model evidence."
     },
     "task_scope_gate": {
-      "result": "FIXED_AND_UNIT_VERIFIED",
-      "observed": "scope(authorization, rail_selection_pending, cached task, local selection) withholds a pending or foreign-Task projection with an explicit reason and invalidates disclosure before the early return; the installed publication's task remains authoritative when no local selection exists. Native re-observation shows the normal inspector again (s5) and the reselect path leaves the same-Task disclosure intact (s6); an A→B switch is NOT_REPRODUCIBLE with the single-Task fixture.",
+      "result": "FIXED_AND_MODEL_VERIFIED",
+      "observed": "Disclosure stores the owning Task; sync_task clears synchronously on a Task change before the view sync, so a switch that completes without an intermediate withheld frame cannot inherit a same-revision open section. The model test covers exactly that no-intermediate-frame path; the final binary re-observes the normal inspector (s9 AX) and a distinguishable viewed-C/Evaluation-ABSTAIN state (s10). An A→B switch is NOT_REPRODUCIBLE natively with the single-Task fixture.",
       "evidence": [
-        "s5-fixed-evaluation-b.png",
-        "s5-fixed-evaluation-b.ax.txt",
-        "s6-after-reselect.png",
-        "s6-after-reselect.ax.txt"
+        "s9-final2-evaluation-b.ax.txt",
+        "s10-final2-evaluation-c.png",
+        "s10-final2-evaluation-c.ax.txt"
       ]
     }
   },
   "tests": {
-    "ui_model_inspector": "8 passed",
-    "desktop_gpui_inspector": "3 passed (scope gate added)",
+    "ui_model_inspector": "9 passed (no-intermediate-frame task test added)",
+    "desktop_gpui_inspector": "3 passed (scope gate)",
     "commands": [
       "cargo test -p ui-model inspector",
       "cargo test -p desktop-gpui inspector"
@@ -102,8 +101,8 @@
     "screen-reader announcement quality",
     "product/UX acceptance"
   ],
-  "product_change": "none; no reproduced DC-MP-INS1 violation required a code fix",
-  "gate": "Gate b56260df-… SUCCEEDED on the repaired candidate ea8d419b with six checks; no workspace disposal performed here",
+  "product_change": "yes: inspector::scope gate, Disclosure task binding and PanelScope grouping",
+  "gate": "final Gate 302aac9d-… SUCCEEDED; the earlier failed Gate 0ab84441-… is retained as FAILED",
   "review_target_commit": "the docs/evidence commit that contains this file; its SHA is recorded in the review receipt and plan section 19.76",
   "evidence_provenance": {
     "byte_identical_to_older_evidence": [
@@ -113,7 +112,55 @@
           "ax2-keyboard-latest/startup-current.png",
           "w13-native-latest/fixture-startup.png"
         ],
-        "note": "the default startup screen is deterministic; this capture is not unique proof for this run and is not used as such. All other PNGs in this directory have no byte-identical copy in the published evidence directories checked here."
+        "note": "deterministic startup screen; not unique proof."
+      }
+    ],
+    "duplicate_within_this_directory": [
+      {
+        "file": "s7-final-evaluation-b.png",
+        "same_as": [
+          "s9-final2-evaluation-b.png (deleted, not committed)"
+        ],
+        "note": "the same deterministic viewed-B/Evaluation state; s9's AX record (final binary) is retained and s7's pixels were captured on the intermediate binary."
+      }
+    ],
+    "candidate_binding": [
+      {
+        "candidate": "e9cf61074eb6dd72036268d32707afa927866783",
+        "binary": "sha256:b3e5fcee…",
+        "files": [
+          "s0-initial.png",
+          "s1-evaluation-b.png",
+          "s1-evaluation-open-b.ax.txt",
+          "s2-identity-change-clears.png",
+          "s2-identity-change-clears.ax.txt",
+          "s3-refinement-open.png",
+          "s3-outcome-absent-open.ax.txt",
+          "s4-outcome-absent.png"
+        ]
+      },
+      {
+        "candidate": "f506267d2690be829a9cc874a42fbc3e0ed98f9d",
+        "binary": "sha256:46ef34c9…",
+        "files": [
+          "s5-fixed-evaluation-b.png",
+          "s5-fixed-evaluation-b.ax.txt",
+          "s6-after-reselect.png",
+          "s6-after-reselect.ax.txt",
+          "s7-final-evaluation-b.png",
+          "s7-final-evaluation-b.ax.txt",
+          "s8-final-after-reselect.png",
+          "s8-final-after-reselect.ax.txt"
+        ]
+      },
+      {
+        "candidate": "ff7a785e3bf0c2f538792071e75230bb07afa70e",
+        "binary": "sha256:e9c61950…",
+        "files": [
+          "s9-final2-evaluation-b.ax.txt",
+          "s10-final2-evaluation-c.png",
+          "s10-final2-evaluation-c.ax.txt"
+        ]
       }
     ]
   },
@@ -123,9 +170,20 @@
       "reviewed_head": "e9cf61074eb6dd72036268d32707afa927866783",
       "verdict": "HOLD 1 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE",
       "findings": [
-        "during a Task switch the inspector could render the previous Task's still-authorized cache, and with no viewed candidate a same-revision section could inherit its open state"
+        "the inspector could render the previous Task's still-authorized cache during a switch"
       ],
-      "repair": "single inspector::scope gate plus disclosure invalidation before the early return; new unit test and native re-observation"
+      "repair": "scope gate + invalidation before the early return"
+    },
+    {
+      "round": 2,
+      "reviewed_head": "a8d21f82c554b8c4034b5eed4823ffa7b0e49495",
+      "verdict": "PASS 2 BLOCKING / 1 ACTIONABLE / 0 EXCESSIVE (footer reconciled manually)",
+      "findings": [
+        "invalidate ran only while the inspector rendered, so a fast switch could inherit open state",
+        "the repaired native capture's executable attribution was stale",
+        "the completion record kept old no-change/no-gate values"
+      ],
+      "repair": "Disclosure now binds the Task and sync_task clears synchronously; the final binary is rebuilt and re-observed; the record now states the product change, the failed gate, the final gate and the updated test counts"
     }
   ],
   "independent_gate": {
@@ -137,5 +195,32 @@
     "terminal_state_sha256": "sha256:bf5a0e46a37a359691f0d60b72b386fe7fab40782fc6a61fce123fb7146aac35",
     "checks": "fmt, metadata, dependency-self-test, dependency-rules, clippy, tests: all pass",
     "cleanup": "complete"
-  }
+  },
+  "independent_gates": [
+    {
+      "gate_id": "b56260df-a87f-41e7-834e-f8f6e8471151",
+      "gate_label": "cos-desktop-ins1-repair-ea8d419b",
+      "state": "SUCCEEDED",
+      "candidate": "ea8d419b",
+      "note": "intermediate candidate before the Task-scope repair; superseded, retained"
+    },
+    {
+      "gate_id": "0ab84441-7b0d-4a07-b0f0-7a4341f57a7f",
+      "gate_label": "cos-desktop-ins1-repair2-f506267d",
+      "state": "FAILED",
+      "candidate": "f506267d",
+      "check_failure": "clippy too_many_arguments after the task parameter; retained FAILED, repair applied",
+      "cleanup": "complete"
+    },
+    {
+      "gate_id": "302aac9d-03e7-48e5-beab-5b856b24fc0e",
+      "gate_label": "cos-desktop-ins1-repair3-ff7a785e",
+      "state": "SUCCEEDED",
+      "candidate_sha256": "sha256:cf044c39c225717f4b45bfdc27bf3247020572a8a4b12032ef6dfdc4ab70937c",
+      "request_sha256": "sha256:3386316d1fc2f5f63ba3e860daf97db103e62fa21d6537d5edd3128f7caac4fe",
+      "terminal_state_sha256": "sha256:2567d189516d0712eef4e99bb118b51271b124b889453e44b3ffab13f689d492",
+      "checks": "fmt, metadata, dependency-self-test, dependency-rules, clippy, tests: all pass",
+      "cleanup": "complete"
+    }
+  ]
 }
