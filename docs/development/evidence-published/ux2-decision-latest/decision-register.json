@@ -25,23 +25,162 @@
     "F": "measurement or participant validation required"
   },
   "questions": [
-    {"id": "Q1", "question": "Initial candidate to view", "class": "A", "decision": "explicit empty state; no auto-selection", "source": "ADR-0010 D-1", "implemented": true, "open_condition": "none for the local rule"},
-    {"id": "Q2", "question": "Does selecting a second candidate enter Compare?", "class": "A", "decision": "yes: first fills side A, second fills side B and switches to Compare", "source": "ADR-0010 D-3", "implemented": true, "open_condition": "none"},
-    {"id": "Q3", "question": "Zero/one candidate behaviour", "class": "A", "decision": "zero gives an empty dock/surface; one allows viewing while Compare states why it is unavailable", "source": "ADR-0010 D-2", "implemented": true, "open_condition": "the native zero/one-candidate run remains NOT_REPRODUCIBLE with the current fixture"},
-    {"id": "Q4", "question": "Pair creation semantics", "class": "A", "decision": "A then B forms the pair; a plain later selection moves Viewed only; a change-side action updates that side without moving Viewed; sides are never silently replaced; a repeated A or identical pair is refused", "source": "ADR-0010 D-3 plus the DOCK2 duplicate-identity repair", "implemented": true, "open_condition": "none"},
-    {"id": "Q5", "question": "Linked-transform model (relative-to-fit vs physical 1:1) and default", "class": "E", "decision": null, "source": "Rendering §4.1 presents both as candidates and says the exact toggle/default remains a UX proposal; ADR-0008 approves only documented values", "implemented": false, "open_condition": "Product/UX owner must choose the model and its default before CMP1/IMG5 linked presentation"},
-    {"id": "Q6", "question": "Fit/1:1 switching", "class": "E", "decision": null, "source": "no documented default or toggle semantics", "implemented": false, "open_condition": "same owner decision as Q5"},
-    {"id": "Q7", "question": "Cursor-anchor mapping and per-pane clamping", "class": "B", "decision": "each pane clamps independently against its own bounds; a clamped pane's anchor is never fed back into the link; shared normalized anchor is the documented model", "source": "Rendering §4.1", "implemented": false, "open_condition": "the exact mapping depends on Q5; the independence/clamping rule is approved and must be kept in any model"},
-    {"id": "Q8", "question": "Link/unlink transitions and what unlink restores", "class": "B", "decision": "link/unlink preserves the viewed pair and local focus and never changes formal selection; independent mode keeps each pane's own transform", "source": "Rendering §4.1", "implemented": false, "open_condition": "the exact transform restored after unlink (relative framing vs previous pane state) is E until Q5"},
-    {"id": "Q9", "question": "Swap semantics (pane transforms vs swap-and-keep)", "class": "E", "decision": null, "source": "not documented", "implemented": false, "open_condition": "Product/UX owner decision"},
-    {"id": "Q10", "question": "Pair replacement retaining link state", "class": "E", "decision": null, "source": "not documented", "implemented": false, "open_condition": "Product/UX owner decision"},
-    {"id": "Q11", "question": "\"Restore previous view\" definition", "class": "E", "decision": null, "source": "ADR-0010 D-6 defines how a held reference becomes available again, not a restore-previous-view command", "implemented": false, "open_condition": "Product/UX owner decision"},
-    {"id": "Q12", "question": "Keyboard/focus transfer into/out of panes and across swap/removal", "class": "B", "decision": "keyboard focus must be preserved deliberately and must not change selection (dock/focus principles)", "source": "ADR-0010 D-12, Rendering §5", "implemented": false, "open_condition": "the exact pane-entry/transfer order is E"},
-    {"id": "Q13", "question": "Unavailable-artifact presentation per representation", "class": "B", "decision": "a bounded supported preview or an explicit unavailable state; preview never claims full detail/1:1", "source": "DC-MP-IMG5, Rendering §6", "implemented": false, "open_condition": "the exact per-representation copy/visual is E"},
-    {"id": "Q14", "question": "Same-key resource reuse visibility", "class": "B", "decision": "same-key panes may share one decode/upload entry; the adoption rule is fixed and the miss must be reported", "source": "DC-MP-CMP1", "implemented": false, "open_condition": "whether/how reuse is surfaced to the user is E; measurement is F"}
+    {
+      "id": "Q1",
+      "question": "Initial candidate to view",
+      "class": "A",
+      "decision": "explicit empty state; no auto-selection",
+      "source": "ADR-0010 D-1",
+      "implemented": true,
+      "open_condition": "none for the local rule"
+    },
+    {
+      "id": "Q2",
+      "question": "Does selecting a second candidate enter Compare?",
+      "class": "A",
+      "decision": "yes: first fills side A, second fills side B and switches to Compare",
+      "source": "ADR-0010 D-3",
+      "implemented": true,
+      "open_condition": "none"
+    },
+    {
+      "id": "Q3",
+      "question": "Zero/one candidate behaviour",
+      "class": "A",
+      "decision": "zero gives an empty dock/surface; one allows viewing while Compare states why it is unavailable",
+      "source": "ADR-0010 D-2",
+      "implemented": true,
+      "open_condition": "the native zero/one-candidate run remains NOT_REPRODUCIBLE with the current fixture"
+    },
+    {
+      "id": "Q4",
+      "question": "Pair creation semantics",
+      "class": "A",
+      "decision": "A then B forms the pair; a plain later selection moves Viewed only; a change-side action updates that side without moving Viewed; sides are never silently replaced; a repeated A or identical pair is refused",
+      "source": "ADR-0010 D-3 plus the DOCK2 duplicate-identity repair",
+      "implemented": true,
+      "open_condition": "none"
+    },
+    {
+      "id": "Q5",
+      "question": "Linked-transform model (relative-to-fit vs physical 1:1) and default",
+      "class": "E",
+      "decision": null,
+      "source": "Rendering §4.1 presents both as candidates and says the exact toggle/default remains a UX proposal; ADR-0008 approves only documented values",
+      "implemented": false,
+      "open_condition": "Product/UX owner must choose the model and its default before CMP1/IMG5 linked presentation"
+    },
+    {
+      "id": "Q6",
+      "question": "Fit/1:1 switching",
+      "class": "E",
+      "decision": null,
+      "source": "no documented default or toggle semantics",
+      "implemented": false,
+      "open_condition": "same owner decision as Q5"
+    },
+    {
+      "id": "Q7",
+      "question": "Cursor-anchor mapping and per-pane clamping",
+      "class": "B",
+      "decision": "each pane clamps independently against its own bounds; a clamped pane's anchor is never fed back into the link; these invariants hold for either candidate model",
+      "source": "Rendering §4.1",
+      "implemented": false,
+      "open_condition": "the shared-anchor mapping formula depends on the Q5 model choice and stays open with Q5; no candidate-specific formula is approved here"
+    },
+    {
+      "id": "Q8",
+      "question": "Link/unlink transitions and what unlink restores",
+      "class": "B",
+      "decision": "link/unlink preserves the viewed pair and local focus and never changes formal selection; independent mode keeps each pane's own transform",
+      "source": "Rendering §4.1",
+      "implemented": false,
+      "open_condition": "the exact transform restored after unlink (relative framing vs previous pane state) is E until Q5"
+    },
+    {
+      "id": "Q9",
+      "question": "Swap semantics (pane transforms vs swap-and-keep)",
+      "class": "E",
+      "decision": null,
+      "source": "not documented",
+      "implemented": false,
+      "open_condition": "Product/UX owner decision"
+    },
+    {
+      "id": "Q10",
+      "question": "Pair replacement retaining link state",
+      "class": "E",
+      "decision": null,
+      "source": "not documented",
+      "implemented": false,
+      "open_condition": "Product/UX owner decision"
+    },
+    {
+      "id": "Q11",
+      "question": "\"Restore previous view\" definition",
+      "class": "A",
+      "decision": "closing Compare returns to the Artifact surface with the current Viewed candidate and that candidate's own view framing; Compare-session pane transforms are discarded and no other history is replayed",
+      "source": "ADR-0010 D-7",
+      "implemented": true,
+      "open_condition": "D-7 covers close/restore-to-viewed. A separate 'restore previous view' command beyond D-7 is not defined and is not invented here."
+    },
+    {
+      "id": "Q12",
+      "question": "Keyboard/focus transfer into/out of panes and across swap/removal",
+      "class": "B",
+      "decision": "keyboard focus must be preserved deliberately and must not change selection (dock/focus principles)",
+      "source": "ADR-0010 D-12, Rendering §5",
+      "implemented": false,
+      "open_condition": "the exact pane-entry/transfer order is E"
+    },
+    {
+      "id": "Q13",
+      "question": "Unavailable-artifact presentation per representation",
+      "class": "B",
+      "decision": "a bounded supported preview or an explicit unavailable state; preview never claims full detail/1:1",
+      "source": "DC-MP-IMG5, Rendering §6",
+      "implemented": false,
+      "open_condition": "the exact per-representation copy/visual is E"
+    },
+    {
+      "id": "Q14",
+      "question": "Same-key resource reuse visibility",
+      "class": "B",
+      "decision": "same-key panes may share one decode/upload entry; the adoption rule is fixed and the miss must be reported",
+      "source": "DC-MP-CMP1",
+      "implemented": false,
+      "open_condition": "whether/how reuse is surfaced to the user is E; measurement is F"
+    }
   ],
-  "counts": {"A": 4, "B": 5, "C": 0, "D": 0, "E": 5, "F": 1, "total": 14},
-  "open_owner_decisions": ["Q5", "Q6", "Q9", "Q10", "Q11", "Q12 (exact transfer)", "Q13 (exact copy)", "Q14 (visibility)"],
-  "measurement": ["Q7/Q8/Q13/Q14 remain unmeasured until CMP1/IMG5 experiments"],
-  "boundary": "This register records classifications only. It adds no UX value, no API and no product behaviour; every E item stays open and blocks only its own behaviour."
+  "counts": {
+    "A": 5,
+    "B": 5,
+    "C": 0,
+    "D": 0,
+    "E": 4,
+    "total": 14
+  },
+  "open_owner_decisions": [
+    "Q5",
+    "Q6",
+    "Q9",
+    "Q10"
+  ],
+  "measurement": [
+    "Q7/Q8/Q13/Q14 remain unmeasured until CMP1/IMG5 experiments"
+  ],
+  "boundary": "This register records classifications only. It adds no UX value, no API and no product behaviour; every E item and every additional open detail blocks only its own behaviour.",
+  "measurement_pending": [
+    "Q7",
+    "Q8",
+    "Q13",
+    "Q14"
+  ],
+  "additional_open_details": [
+    "Q7 anchor mapping follows Q5",
+    "Q8 unlink restore detail follows Q5",
+    "Q12 exact pane keyboard/focus transfer",
+    "Q13 exact per-representation unavailable copy",
+    "Q14 reuse visibility"
+  ]
 }
