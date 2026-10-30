@@ -1,0 +1,101 @@
+{
+  "task": "MP-TYP1",
+  "contract": "DC-MP-TYP1",
+  "decisions": ["DD-04a", "DD-04b"],
+  "status": "APPROVED_FOCUS_OUTLINE_WIRED_IN_DOCK_LIMITED_COMPLETE",
+  "scope": "Wire the already approved 2-DIP keyboard focus outline into the Candidate Dock; no new design values, colours, shortcuts or semantics.",
+  "source_candidate": "87922dd567187bec88186944247d1f5644ba2a1b",
+  "predecessor_candidate": "316776357ae413b16f098f45329eb9e4f17e30d5",
+  "changed_files": [
+    "crates/desktop-gpui/src/lib.rs",
+    "crates/desktop-gpui/src/shell_style.rs"
+  ],
+  "before_mismatch": [
+    "the candidate-rail container drew a 1-DIP border_1 and used its colour to mean keyboard focus",
+    "dock rows drew border_1 and reused the focus colour for the active row while the dock was focused, so focus, selection and the structural separator were the same 1-DIP border",
+    "the container focus handle never receives keyboard focus directly (tab lands on dock rows), so a container-only ring would never light in a real session"
+  ],
+  "implementation": {
+    "focus_indicator": "one ring on the focusable Candidate Dock container at the approved focus_outline width, lit when the dock handle or any descendant row holds keyboard focus",
+    "why_constant_width": "GPUI draws borders inside the box and has no outline primitive; a constant ring width means acquiring focus changes colour only and never layout, hit target or scroll geometry",
+    "structural_separator": "dock row borders use shell_style::separator (exactly one physical pixel at any scale factor) and draw nothing when the scale factor is unusable",
+    "selection": "row colour depends on selection only (DOCK_SELECTED_COLOR) and never on keyboard focus, so the two states stay distinguishable",
+    "token_source": "shell_style::focus_outline -> DesignTokens.geometry.focus_outline_dip (FOCUS_OUTLINE_DIP = 2.0), no new width constant"
+  },
+  "tests": {
+    "crate": "desktop-gpui (86 unit tests passed)",
+    "cases": [
+      "the_dock_focus_ring_uses_the_approved_token_and_never_moves_layout",
+      "a_focus_outline_override_reaches_the_dock_ring",
+      "dock_rows_keep_a_one_physical_pixel_structural_border",
+      "a_disabled_scale_factor_draws_no_row_border",
+      "row_colour_expresses_selection_and_never_focus"
+    ],
+    "coverage_map": {
+      "T01": "ring width equals focus_outline(2.0) and the override value",
+      "T02": "ring colour differs when unfocused; rows never draw the focus colour",
+      "T03": "row colour is selection-only, so a selected unfocused row shows no focus colour",
+      "T04": "selection and focus are separate inputs to separate painters",
+      "T06": "row border is one physical pixel at 1.0/1.25/1.5/2.0",
+      "T07": "DesignTokensOverride.focus_outline_dip reaches the ring"
+    }
+  },
+  "quality": {
+    "route": "pwsh -NoProfile -File scripts/quality.ps1",
+    "result": "all quality gates passed (native smoke separate)",
+    "fmt": "cargo fmt --all -- --check clean"
+  },
+  "gate": {
+    "id": "342474ca-9bad-4c3b-bed2-cad1e68cbe89",
+    "candidate": "87922dd567187bec88186944247d1f5644ba2a1b",
+    "state": "SUCCEEDED",
+    "cleanup": "complete",
+    "request_sha256": "sha256:a170e9ebc8d2d31d30e53971c6b899e29d58c96bc26d273b6e1ac6e313bcac1f",
+    "terminal_state_sha256": "sha256:87efc4d989a21fb468ea8f31074a8ecca1d69974b2ac6052503b76f5a070a7d0",
+    "checks": [
+      {"id": "fmt", "outcome": "pass"}, {"id": "metadata", "outcome": "pass"},
+      {"id": "dependency-self-test", "outcome": "pass"}, {"id": "dependency-rules", "outcome": "pass"},
+      {"id": "portable-contract", "outcome": "pass"}, {"id": "clippy", "outcome": "pass"},
+      {"id": "tests", "outcome": "pass"}, {"id": "build", "outcome": "pass"},
+      {"id": "portable-stage", "outcome": "pass"}, {"id": "portable-verify", "outcome": "pass"}
+    ],
+    "storage": {"outcome": "COMPLETE", "removed_exact_successful_paths": 3, "logical_bytes_removed": 2275074665,
+                "native_integrity_before_after": "IDENTICAL_SUCCEEDED", "source_retained_by": "dev ancestry"},
+    "superseded": [
+      {"id": "8cf1b35d-0946-4a27-bebc-91a00a8ba378", "candidate": "316776357ae413b16f098f45329eb9e4f17e30d5",
+       "state": "FAILED", "cause": "the request reused an existing portable-stage output path, which the tool correctly refused; no product verdict"},
+      {"id": "a2f0ec29-5479-48a8-870b-f3eaf86ff8a0", "candidate": "316776357ae413b16f098f45329eb9e4f17e30d5",
+       "state": "SUCCEEDED", "note": "covered the container-only ring before descendant focus was added; superseded by the final candidate"}
+    ]
+  },
+  "native": {
+    "executable_sha256": "d93ae3075efdff4d22f507a24d545de24498872687cd9f784daf1ea1fc35d07f",
+    "source_binding": "built from the committed candidate 87922dd5 in the ordinary dev target; no binary was copied between candidates",
+    "os": "10.0.26300",
+    "dpi": "96 (run at default scale)",
+    "window": {"title": "COS Desktop", "size": "1282x832", "screenshot": "1275x832 client area"},
+    "steps": [
+      {"id": "N01", "observation": "fixture window started with an explicit external fixture file; FIXTURE / simulated data shown"},
+      {"id": "N02", "observation": "keyboard Tab reaches the node list, then a dock row (AX: button 'fixture:task/Task-184 — Iteration 1 — A Active' focused)"},
+      {"id": "N03", "observation": "focused dock row and selected row are distinct; the row keeps its selection colour and draws no focus colour"},
+      {"id": "N04", "observation": "with a dock row focused the container ring is the focus colour at the approved width (typ1b-dock-focus.png)"},
+      {"id": "N05", "observation": "after Tab to the Surface Switcher the dock ring returns to the structural colour (typ1b-after-blur.png)"},
+      {"id": "N06", "observation": "no candidate was viewed before or after the focus move; the AX text 'No candidate viewed' and 'Viewed candidate' state did not change"},
+      {"id": "N07", "observation": "native close returned exit 0 with 'observation shutdown confirmed' and 'preferences save confirmed'"}
+    ],
+    "screenshots": [
+      {"file": "typ1b-before-focus.png", "sha256": "5fb9fcdc96818efcf37f1e8c9c6a4adce3d02c4ddefad346ad36f61b31d593ce", "state": "dock unfocused (structural ring)"},
+      {"file": "typ1b-dock-focus.png", "sha256": "354b62b27afbae0f5ad4dedf09b360e9cc1ab6f2a53a4194f3bbda83bb3215c1", "state": "dock row focused (focus ring)"},
+      {"file": "typ1b-after-blur.png", "sha256": "d377d0789db6cba19237da1c9c87646ae8d6cb7a50540fabdc886b6720d3eac8", "state": "focus moved to Surface Switcher (ring cleared)"}
+    ],
+    "not_measured": [
+      "pixel-level measurement of the 2-DIP ring width (the width comes from the token path and its unit tests; the screenshots show presence and state, not a measured stroke)",
+      "125/150/175/200% DPI, mixed monitors, High Contrast, screen reader and IME behaviour",
+      "frame-cost or performance evidence"
+    ]
+  },
+  "residual": [
+    "MP-TYP1 remains incomplete: DPI matrix, Japanese mixed-script line-height acceptance, High Contrast and accessibility evidence are NOT_MEASURED",
+    "other border_1() sites (Compare panes, Flow, Inspector, Task Rail rows, popups) are owned by their own contracts and were deliberately not changed"
+  ]
+}
