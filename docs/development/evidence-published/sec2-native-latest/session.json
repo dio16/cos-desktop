@@ -22,36 +22,72 @@
   },
   "results": {
     "A_startup_errors": [
-      {"case":"unknown argument containing a secret-like value","observed":"static usage line only, exit 2, the argument value was not echoed","file":"unknown-arg.stderr"},
-      {"case":"--fixture-file without --fixture","observed":"static requirement line only, exit 2, the path was not echoed","file":"fixture-file-only.stderr"},
-      {"case":"corrupt fixture named with a secret-like token","observed":"'Fixture load failed; no Runtime fallback' plus unobserved shutdown lines, exit 0; no path or fixture content echoed","file":"corrupt-fixture.stderr"},
-      {"case":"missing fixture path containing a secret-like token","observed":"same static failure line, exit 0; no path echoed","file":"missing-fixture.stderr"},
-      {"case":"second instance while the fixture incumbent runs","observed":"static refusal, exit 3, incumbent survived","file":"second-instance.stderr"},
-      {"case":"startup with a credential-bearing endpoint in COS_DESKTOP_RUNTIME_ENDPOINT","observed":"honest unavailable startup; stderr contains only the observation-not-applicable and preferences-saved lines; endpoint, userinfo, token and signed query were not echoed","file":"endpoint.stderr","screenshot":"endpoint-startup.png"}
+      {
+        "case": "unknown argument containing a secret-like value",
+        "observed": "static usage line only, exit 2, the argument value was not echoed",
+        "file": "unknown-arg.stderr"
+      },
+      {
+        "case": "--fixture-file without --fixture",
+        "observed": "static requirement line only, exit 2, the path was not echoed",
+        "file": "fixture-file-only.stderr"
+      },
+      {
+        "case": "corrupt fixture named with a secret-like token",
+        "observed": "'Fixture load failed; no Runtime fallback' plus unobserved shutdown lines, exit 0; no path or fixture content echoed",
+        "file": "corrupt-fixture.stderr"
+      },
+      {
+        "case": "missing fixture path containing a secret-like token",
+        "observed": "same static failure line, exit 0; no path echoed",
+        "file": "missing-fixture.stderr"
+      },
+      {
+        "case": "second instance while the fixture incumbent runs",
+        "observed": "static refusal, exit 3, incumbent survived",
+        "file": "second-instance.stderr"
+      },
+      {
+        "case": "startup with a credential-bearing endpoint in COS_DESKTOP_RUNTIME_ENDPOINT",
+        "observed": "honest unavailable startup; stderr contains only the observation-not-applicable and preferences-saved lines; endpoint, userinfo, token and signed query were not echoed",
+        "file": "endpoint.stderr",
+        "screenshot": "endpoint-startup.png"
+      }
     ],
     "B_bounded_diagnostics": {
-      "observed":"the diagnostics panel renders one line built from closed fields: 'Desktop 0.1.0 · Fixture transcript · generation 1 · publication 2 · error none · commands 0'. No path, URL, credential, payload or free text is present.",
-      "layout_note":"at the restored 1275x832 window the inspector footer can be clipped below the visible client area; maximizing the window made the same bounded line visible. This is a presentation observation, not a leak claim.",
-      "evidence":["diagnostics-open.png","diagnostics-closed.png","diagnostics-text.png"]
+      "observed": "the diagnostics panel renders one line built from closed fields: 'Desktop 0.1.0 · Fixture transcript · generation 1 · publication 2 · error none · commands 0'. No path, URL, credential, payload or free text is present.",
+      "layout_note": "at the restored 1275x832 window the inspector footer can be clipped below the visible client area; maximizing the window made the same bounded line visible. This is a presentation observation, not a leak claim.",
+      "evidence": [
+        "diagnostics-open.png",
+        "diagnostics-closed.png",
+        "diagnostics-text.png"
+      ]
     },
     "C_fixture_mode_errors": {
-      "observed":"fixture parse/load failures end with the static no-fallback line and do not fall back to Runtime or synthesize data; the process exits 0 and reports the unobserved shutdown outcomes explicitly.",
-      "files":["corrupt-fixture.stderr","missing-fixture.stderr"]
+      "observed": "fixture parse/load failures end with the static no-fallback line and do not fall back to Runtime or synthesize data; the process exits 0 and reports the unobserved shutdown outcomes explicitly.",
+      "files": [
+        "corrupt-fixture.stderr",
+        "missing-fixture.stderr"
+      ]
     },
     "D_ring_capacity_sequence_gap": {
-      "observed":"covered by existing bounded tests: the diagnostics ring sequence exhaustion test, and the publication test pub3_diagnostic_loss_is_explicit_bounded_and_independent_of_canonical_state; six diagnostic publication tests and seven redaction tests pass in this branch.",
-      "native_note":"filling the 1,024-event ring from the GUI is not reachable with the current fixture, so capacity/gap behaviour remains unit evidence, not a native observation."
+      "observed": "covered by existing bounded tests: the diagnostics ring sequence exhaustion test, and the publication test pub3_diagnostic_loss_is_explicit_bounded_and_independent_of_canonical_state; six diagnostic publication tests and seven redaction tests pass in this branch.",
+      "native_note": "filling the 1,024-event ring from the GUI is not reachable with the current fixture, so capacity/gap behaviour remains unit evidence, not a native observation."
     },
     "E_secret_and_path_non_exposure": {
-      "observed":"no secret, token, Bearer marker, URL, drive/UNC path or signed locator appeared in any captured stderr or in the debug trace. The trace had 262 COS_FIXTURE_TRACE lines, maximum 314 bytes per line, and contained only fixture ids, counters and booleans.",
-      "limit":"the debug trace does not include user-supplied free text, so the stateful redaction fallback's secret forms are covered by its seven unit tests rather than by a native secret injection.",
-      "files":["trace.stderr","trace-flow.png"]
+      "observed": "no secret, token, Bearer marker, URL, drive/UNC path or signed locator appeared in any captured stderr or in the debug trace. The trace had 262 COS_FIXTURE_TRACE lines, maximum 314 bytes per line, and contained only fixture ids, counters and booleans. The fixture client journal was 708 bytes / 3 events (fixture-trace.jsonl) and contained only ids, counters and lifecycle categories.",
+      "limit": "the debug trace does not include user-supplied free text, so the stateful redaction fallback's secret forms are covered by its seven unit tests rather than by a native secret injection.",
+      "files": [
+        "trace.stderr",
+        "trace-flow.png",
+        "fixture-trace.jsonl"
+      ]
     },
     "F_crash_or_abnormal_exit": {
-      "observed":"NOT_RUN. No safe isolated crash path exists in this build; the directive forbids Windows Error Reporting, registry and security changes, and an intentional crash was not forced. Startup/error paths are not substituted for crash evidence."
+      "observed": "NOT_RUN. No safe isolated crash path exists in this build; the directive forbids Windows Error Reporting, registry and security changes, and an intentional crash was not forced. Startup/error paths are not substituted for crash evidence."
     },
     "G_state_and_exit_after_error": {
-      "observed":"after a fixture failure the application quits without a window and reports unobserved shutdown/preferences outcomes; the second instance leaves the incumbent untouched; the endpoint-configured close confirmed 'observation shutdown not applicable' and 'preferences save confirmed'."
+      "observed": "after a fixture failure the application quits without a window and reports unobserved shutdown/preferences outcomes; the second instance leaves the incumbent untouched; the endpoint-configured close confirmed 'observation shutdown not applicable' and 'preferences save confirmed'."
     }
   },
   "not_measured": [
