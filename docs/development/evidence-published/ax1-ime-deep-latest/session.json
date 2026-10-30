@@ -1,0 +1,114 @@
+{
+  "task": "MP-AX1",
+  "contract": "DC-MP-AX1",
+  "slice": "Native IME composition, cancel, surface switch and focus isolation (bounded)",
+  "baseline_sha": "c1ddd3b63b9d0ee5baa3b6ead362ace96f8fa27c",
+  "branch": "dev",
+  "product_candidate_sha": null,
+  "product_changed": false,
+  "evidence_classes": {
+    "SOURCE_VERIFIED": "read in this repository at the baseline commit",
+    "TEST_VERIFIED": "an owned test was run in this slice",
+    "NATIVE_OBSERVED": "captured from a real Windows IME session on this host",
+    "NOT_MEASURED": "no observation exists"
+  },
+  "environment": {
+    "os_version": "10.0.26300",
+    "window_dpi": 96,
+    "scale": 1.0,
+    "binary": {
+      "sha256": "sha256:5838f0d16ba620ad21cabae67dc5a88ac95de1ae8cd9932f85daab6e1a9a1f97",
+      "built_from": "cargo build --locked -p cos-desktop --bin cos-desktop at the baseline commit",
+      "note": "the earlier recorded binary digest no longer matched because an independent Gate had rebuilt the development target from the same source; this observation therefore pins its own freshly built bytes"
+    },
+    "launch": ["--fixture"]
+  },
+  "source_review": {
+    "marked_range_lifecycle": "each surface keeps its own marked range; replace_and_mark_text_in_range sets it to the spliced range, replace_text_in_range and unmark_text clear it, and every query setter clears it",
+    "cancel_path": "an IME cancel arrives as replace_text_in_range with an empty string over the marked range, which removes only that range",
+    "commit_path": "a commit arrives as replace_text_in_range with the committed text over the marked range, and the caret is placed at range.start + new_text.len()",
+    "focus_change": "the handler routes by FocusHandle; there is no blur handler that clears or finalizes a marked range, so an interrupted composition keeps its text and its marked range on the surface that lost focus",
+    "status": "SOURCE_VERIFIED"
+  },
+  "native_observations": [
+    {
+      "id": "deep-1",
+      "action": "an ASCII probe typed \"pre\" into the Task Rail search",
+      "expected": "the query becomes pre",
+      "observed": "accessibility value \"pre\"",
+      "status": "NATIVE_OBSERVED"
+    },
+    {
+      "id": "deep-2",
+      "action": "the Operator started a Japanese composition and entered にほ without converting",
+      "expected": "the preedit text appears in the field while the composition is unconfirmed",
+      "observed": "accessibility value \"preにほ\" while the composition was still open",
+      "status": "NATIVE_OBSERVED",
+      "limit": "the value shows the preedit text; whether the platform exposes its marked/underlined state through accessibility is NOT_MEASURED"
+    },
+    {
+      "id": "deep-3",
+      "action": "the Operator pressed Escape to cancel the composition",
+      "expected": "only the unconfirmed text is removed; the committed prefix stays",
+      "observed": "accessibility value returned to \"pre\"",
+      "status": "NATIVE_OBSERVED",
+      "note": "a synthetic Escape sent by this session first did not cancel the composition; the operator's own key press did, so the cancel result is attributed to the operator's input"
+    },
+    {
+      "id": "deep-4",
+      "action": "the Operator typed にほんご, converted it and committed with Enter after the existing \"pre\"",
+      "expected": "one insertion at the caret; the prefix survives",
+      "observed": "accessibility value \"pre日本語\"",
+      "status": "NATIVE_OBSERVED"
+    },
+    {
+      "id": "deep-5",
+      "action": "the Operator started a composition in the Task Rail search (かく) and then switched to the Flow surface",
+      "expected": "the interrupted composition must not corrupt either surface",
+      "observed": "the rail value became \"pre日本語かく\" and the Flow query stayed empty; no text leaked into the Flow field",
+      "status": "NATIVE_OBSERVED",
+      "interpretation": "the interrupted composition text and its marked range stay on the rail; the visible outcome is that the unconfirmed text survives the switch rather than being discarded. No cross-surface contamination was observed, and no defect was demonstrated.",
+      "limit": "what TSF does with the still-marked range after the focus move is NOT_MEASURED"
+    }
+  ],
+  "palette_focus_restoration": {
+    "status": "NOT_MEASURED",
+    "reason": "the Operator ran the palette open/type/close sequence, but by the time the state was read the OS focus was outside the application and no palette node was present, so neither the palette interaction nor the restored focus can be attributed"
+  },
+  "tests": {
+    "existing_owned_tests": "crates/desktop-gpui/src/lib.rs mod ime_tests (5 cases) already cover mark-then-commit without duplication, cancel removing only the marked range, multibyte replacement, surrogate-pair safety and offset round-trips",
+    "added_tests": "none",
+    "added_tests_reason": "the slice demonstrated no new failure, and the remaining properties (absence of a blur handler, palette focus restoration) are either a source fact or a Native behaviour; a source-text or handler-absence assertion would be tautological rather than a regression test",
+    "rerun_this_slice": "cargo test --locked -p desktop-gpui was not rerun after the observations because no source changed; its 86/86 result from the immediately preceding slice remains the latest recorded run of the same tree"
+  },
+  "verification": {
+    "baseline_checks": "git status clean, HEAD and origin/dev both the baseline, git diff --check clean",
+    "product_change": "none, so no new candidate, Gate or build identity is claimed",
+    "quality_gates": "not rerun because no source or configuration changed in this slice",
+    "documentation": "PENDING json/link/62-contract/41-edge DAG/privacy/diff smoke",
+    "review": "PENDING candidate-specific linked Tern review"
+  },
+  "acceptance": {
+    "AC01_registration_and_routing": "SOURCE_VERIFIED at the baseline; unchanged by this slice",
+    "AC02_existing_commit_cancel_selection_tests": "the five owned tests remain the latest recorded PASS of this tree; they were not rerun because no source changed",
+    "AC03_added_tests_detect_regressions": "NOT APPLICABLE: no test was added, with the reason recorded",
+    "AC04_native_actions_recorded_individually": "MET: five Native steps are recorded separately with action, expectation, observed value and limit",
+    "AC05_unobserved_internals_not_called_success": "MET: marked-state exposure, TSF internals and palette focus restoration remain NOT_MEASURED",
+    "AC06_fix_matches_reproduction": "NOT APPLICABLE: no defect was reproduced, so no product change was made",
+    "AC07_contracts_dag_gate_history_unchanged": "MET: no contract, DAG edge or Gate record changed; the prior Gate results are untouched",
+    "AC08_no_secrets_or_host_paths": "MET: this record carries no credentials, personal input or absolute host paths",
+    "AC09_new_candidate_gate_for_product_change": "NOT APPLICABLE: no product code changed",
+    "AC10_mp_ax1_completion_boundary": "MET: MP-AX1, DD-23, screen-reader acceptance and product/release acceptance remain incomplete"
+  },
+  "not_measured": [
+    "Whether the platform exposes the IME marked/underlined state through accessibility",
+    "Caret and selection geometry during composition",
+    "TSF internal state and the candidate window",
+    "Palette open/type/close interaction and the restored focus target",
+    "Behaviour of a still-marked range after a focus move as seen by TSF",
+    "Mixed-scale DPI and High Contrast",
+    "Screen-reader announcement quality",
+    "MP-R0B idle baseline/noise (separate HOLD)"
+  ],
+  "continuation_boundary": "Observation-only slice: no product code, no new candidate, no Gate reuse. MP-AX1 stays incomplete, and the MP-TYP1 125 % capture HOLD and the MP-R0B HOLD with its 352-case FAILED suite are untouched."
+}
