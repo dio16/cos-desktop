@@ -1,0 +1,118 @@
+{
+  "task": "MP-TYP1",
+  "contract": "DC-MP-TYP1",
+  "slice": "125 % display scale (120 DPI) Native acceptance",
+  "status": "HOLD_SCALE_CONFIRMED_CAPTURE_REFUSED_BY_HARNESS_DPI_VIRTUALIZATION",
+  "directive_source": "linked next-task directive after the CLEAN 96 DPI mixed-script review on d7cdd796b4c34abdaea2e1ccbd2f694e28e17ea6",
+  "reviewed_directive_sha": "d7cdd796b4c34abdaea2e1ccbd2f694e28e17ea6",
+  "execution_baseline": "8af01316456504cada8e923035c6e96298608605",
+  "branch": "dev",
+  "taskern": {
+    "note": "No new Taskern packet was compiled for this bounded acceptance attempt; the slice reuses the existing MP-TYP1 contract and the linked directive's scope. No packet SHA is claimed."
+  },
+  "executable_provenance": {
+    "sha256": "sha256:020506d3de34468d7f12d5a1ac8e7e4022dcae11e9fb3146b8842c6d4b29bcd2",
+    "matches_previous_record": true,
+    "build_source_commit": "f375144a7e3bcd2a6af6a5c47d96520e4fa93853",
+    "build_source_tree": "011d5236d809ec65429961d2e17a1744d2a867c7",
+    "source_agreement": "apps/desktop, crates, Cargo.toml and Cargo.lock are unchanged between that build source and this baseline",
+    "arguments": ["--fixture"],
+    "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52"
+  },
+  "operator_action": {
+    "requested": "Windows Settings display scale 125 %",
+    "performed_by": "Operator; this session changed no display, power or accessibility setting and ran no registry/PowerShell scale change",
+    "first_attempt_scale": "96 DPI / 1.0 (change not yet in effect; a new observation is not claimed for it)",
+    "confirmed_scale": "120 DPI / 1.25 via GetDpiForWindow on the launched window"
+  },
+  "observed_scale": {
+    "dpi": 120,
+    "scale": 1.25,
+    "method": "GetDpiForWindow",
+    "status": "OBSERVED",
+    "os_version": "10.0.26300",
+    "desktop_bounds": "3440x1440",
+    "pre_change_log_pixels": 96,
+    "pre_change_per_monitor_settings": "absent",
+    "note": "The harness reports scale from the live window, not from the requested setting; the 96 DPI attempt produced a byte-identical image to the previous 100 % capture, which is why no 125 % result was taken from it."
+  },
+  "attempts": [
+    {
+      "id": "scale125-a",
+      "dpi": 96,
+      "scale": 1.0,
+      "result": "PASS",
+      "screenshot": "sha256:a776699bf8a82c15d12fc56c55d924ca7b21555f9b5dfe590ede023bf2eb0afd",
+      "note": "Scale had not taken effect: image is byte-identical to the earlier 100 % capture, so this is a duplicate 96 DPI observation, not 125 % evidence."
+    },
+    {
+      "id": "scale125-b",
+      "dpi": 120,
+      "scale": 1.25,
+      "result": "PASS_WITH_NOT_MEASURED",
+      "refusal": "WINDOW_OCCLUDED",
+      "cross_check_matched": "43/49 (45 required)",
+      "png": "none: a refused capture writes no image by design"
+    },
+    {
+      "id": "scale125-c",
+      "dpi": 120,
+      "scale": 1.25,
+      "result": "PASS_WITH_NOT_MEASURED",
+      "refusal": "WINDOW_OCCLUDED",
+      "cross_check_matched": "43/49 (45 required)",
+      "png": "none"
+    },
+    {
+      "id": "scale125-d",
+      "dpi": 120,
+      "scale": 1.25,
+      "result": "PASS_WITH_NOT_MEASURED",
+      "refusal": "WINDOW_OCCLUDED",
+      "cross_check_matched": "43/49 (45 required)",
+      "png": "none",
+      "variant": "the harness's documented --powershell option pointed at PowerShell 7 produced the same refusal, so the shell is not the variable"
+    }
+  ],
+  "geometry_observation": {
+    "physical_window": "1602x1039 at (919,167) from an independent desktop window query",
+    "harness_reported_window": "1294x838 at (729,134) from the harness/probe record",
+    "ratio": "1294 x 1.25 = 1617.5 and 729 x 1.25 = 911.25, i.e. the harness figures are the physical figures divided by the scale factor within frame accounting",
+    "inference": "The harness/probe path is DPI-unaware for this window, so it receives virtualized logical geometry while PrintWindow renders physical pixels; the 7x7 display cross-check then compares mismatched sample grids and settles at 43/49. This is [INFERENCE] from the observed arithmetic and the deterministic refusal, not a logged proof: the probe record does not carry the compared rectangles.",
+    "not_occlusion_evidence": "Three consecutive attempts produced the identical 43/49 result with the window focused and unobstructed, which is not the signature of a transient overlay."
+  },
+  "evaluation": {
+    "AC01_executable_source": "PASS: the retained executable still hashes to 020506d3… and the source scope is unchanged from its build commit.",
+    "AC02_operator_125_and_120_dpi": "PASS: the Operator changed the scale and the launched window reports GetDpiForWindow 120 / scale 1.25.",
+    "AC03_window_and_image_identity": "HOLD: no identity-bound image exists at 120 DPI; all three capture attempts were refused and refused captures are not acceptance evidence.",
+    "AC04_mixed_script_image": "NOT_MEASURED at 125 %: no image was accepted. UIA at 120 DPI still reports 41 elements, the four Latin labels, the Japanese label and three mixed-script names, but UIA presence is not pixel evidence.",
+    "AC05_separator_one_physical_pixel": "NOT_MEASURED: the 1/1.25 = 0.8 DIP separator claim needs the refused image.",
+    "AC06_focus_outline_2_dip": "NOT_MEASURED: the 2 DIP outline (2.5 physical pixels at 125 %) cannot be evaluated without pixels.",
+    "AC07_clipping_line_height_wrap_state": "NOT_MEASURED at 125 %; the 96 DPI results stay 96 DPI results.",
+    "AC08_script_and_json_agreement": "NOT_APPLICABLE: no 125 % image exists, so no 125 %-specific analysis was added and no coordinates were extrapolated from the 96 DPI scripts.",
+    "AC09_no_speculative_product_change": "PASS: no product, token or layout change; no rendering defect was demonstrated.",
+    "AC10_scope": "No claim for 150/175/200 %, mixed monitors, High Contrast, font resolution, frame cost, DD-04b adoption, R1 exit or product acceptance."
+  },
+  "product_scaling_observation": {
+    "status": "OBSERVED",
+    "detail": "The same fixture window grew from 1296x839 at 100 % to 1602x1039 physical at 125 %, i.e. roughly the expected scaling, and the app kept its 41-element AX tree and all labels. This is window geometry and accessibility presence only; it is not a pixel-quality or clipping result."
+  },
+  "verification": {
+    "typography_owned_tests": "python -B -m unittest discover -s apps/desktop/devtools/typography/tests -p test_*.py -> Ran 71 tests, OK",
+    "refused_captures": "No PNG was written for any refused attempt and none is counted as a success",
+    "product_quality_gates": "NOT_RUN: observation-only slice with no product, harness or dependency change (ADR-0014 Y04)",
+    "new_refine_gate": "NOT_RUN by the same rule; no historical Gate is transferred",
+    "documentation": "PENDING json/link/62-contract/41-edge DAG/privacy/diff smoke",
+    "review": "PENDING candidate-specific linked Tern review"
+  },
+  "not_measured": [
+    "Any 120 DPI pixel, separator, focus-outline, clipping, line-height or wrap result",
+    "150/175/200 % and mixed-monitor movement",
+    "High Contrast and reduced motion",
+    "Screen reader, keyboard-only and IME behaviour at 125 %",
+    "Resolved font family, glyph coverage and text/layout frame cost",
+    "MP-R0B idle baseline/noise (separate HOLD)"
+  ],
+  "blocking_prerequisite": "The identity-bound capture path refuses at 125 % because its window geometry is DPI-virtualized while PrintWindow renders physical pixels. Producing 120 DPI pixel evidence needs a DPI-aware capture path, which is existing verification code outside this slice's authorized change scope; it is not silently modified, and the product is not changed to work around it.",
+  "continuation_boundary": "Display scale remains at the Operator's 125 % setting; this session did not restore it, because automatic display-setting changes are prohibited. Restoring 100 % is the Operator's action. No new authority, harness repair, Gate or product acceptance is inferred from this HOLD."
+}
