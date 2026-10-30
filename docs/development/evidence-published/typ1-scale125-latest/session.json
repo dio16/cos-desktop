@@ -131,7 +131,18 @@
     "product_quality_gates": "NOT_RUN: observation-only slice with no product, harness or dependency change (ADR-0014 Y04)",
     "new_refine_gate": "NOT_RUN by the same rule; no historical Gate is transferred",
     "documentation": "PASS: json.tool; 62 task cards with exactly one owning DC each; unchanged acyclic 41-edge DAG; new relative links resolve; measured attempts, refusal counts and geometry arithmetic match the retained records; host-path/private-key scan; git diff --check.",
-    "review": "PENDING candidate-specific linked Tern review"
+    "review": {
+      "candidate_sha": "9f3bb003ef7473d95d690e575f527a7a23ee7ebd",
+      "result": "CLEAN 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE",
+      "rounds": {
+        "round_1": "candidate ceda082b raised two ACTIONABLE items: the refusal cause was stated as diagnosed (A-R1-01) and the documentation status plus reviewed-range record disagreed with the work (A-R1-02).",
+        "round_2": "candidate 896af30 closed A-R1-02 and left one residual definitive phrase in the geometry ratio (A-R2-01).",
+        "round_3": "candidate 9f3bb003 removed the exact division claim, listed computed, measured and residual values, and kept the cause as INFERENCE / NOT_DIAGNOSED; the reviewer independently re-derived all four residuals and found no further definitive phrasing."
+      },
+      "independently_checked": "GitHub commit and origin/dev, status naming, 43/49 refusal counts and absence of an accepted PNG, non-transfer of the duplicate 96 DPI image, documentation status, residual arithmetic, inference labelling, docs-only change, 62 contracts and the acyclic 41-edge DAG",
+      "not_independently_reexecuted": "Windows Native capture, the Operator display change, private raw logs, retained executable digest, the 43/49 result itself, typography 71-test run and the actual cause of the coordinate mismatch",
+      "scope": "Bounded 125 % HOLD evidence only; not a 120 DPI pixel acceptance, MP-TYP1 completion, DD-04b adoption, R1 exit or product/release acceptance. This result record is a later publication, not a new reviewed candidate."
+    }
   },
   "not_measured": [
     "Any 120 DPI pixel, separator, focus-outline, clipping, line-height or wrap result",
