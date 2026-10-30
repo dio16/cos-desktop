@@ -1,0 +1,109 @@
+{
+  "task": "MP-TYP1",
+  "execution_slice": "MP-TYP1-E Native typography acceptance",
+  "contract": "DC-MP-TYP1",
+  "status": "PARTIAL_PASS_HOST_SCALE_ONLY_LADDER_NOT_MEASURED",
+  "baseline_review_head": "9ee35f32e10c80a1c68cf227d3cb57a29e985a01",
+  "product_source_candidate": "87922dd567187bec88186944247d1f5644ba2a1b",
+  "harness": {
+    "path": "apps/desktop/devtools/typography/host_observe.py",
+    "unchanged": true,
+    "regression_tests": {
+      "command": "python -B -m unittest discover -s apps/desktop/devtools/typography/tests -p \"test_*.py\"",
+      "ran": 71,
+      "result": "OK"
+    },
+    "command": "python -B apps/desktop/devtools/typography/host_observe.py --out <verification>/typ1e-2026-10-30/scale-100 --wait-for-foreground 60",
+    "exit": 0
+  },
+  "observed": {
+    "scale": {
+      "dpi": 96,
+      "scale": 1.0,
+      "method": "GetDpiForWindow",
+      "controlled_ladder_step": false,
+      "note": "this is the host's current scale, not a 100% ladder step selected by an operator"
+    },
+    "window": {
+      "title": "COS Desktop",
+      "rect": "3456x1408 at (-8, -8)",
+      "capture": "PrintWindow(PW_RENDERFULLCONTENT)"
+    },
+    "screenshot": {
+      "file": "screenshot.png",
+      "sha256": "0d44945af8ca05766320609a15bf9eeb9faf7a45e272d2ae34bc2e276aca4414",
+      "status": "OBSERVED",
+      "identity_checks": {
+        "content_cross_check": "49/49 samples",
+        "method": "bound capture versus display over the on-screen region"
+      }
+    },
+    "executable_sha256": "020506d3de34468d7f12d5a1ac8e7e4022dcae11e9fb3146b8842c6d4b29bcd2",
+    "checks": [
+      {
+        "name": "window_observed",
+        "status": "PASS"
+      },
+      {
+        "name": "screenshot_is_the_target_window",
+        "status": "PASS"
+      },
+      {
+        "name": "ax_tree_observed",
+        "status": "PASS",
+        "detail": "64 elements, 63 named"
+      },
+      {
+        "name": "latin_labels_present",
+        "status": "PASS",
+        "detail": "Task Rail, Inspector, Context Bar, Candidate Dock"
+      },
+      {
+        "name": "japanese_label_present",
+        "status": "PASS",
+        "detail": "新製品キービジュアル"
+      },
+      {
+        "name": "mixed_script_presence_in_ax_tree",
+        "status": "PASS",
+        "detail": "3 element names carry both scripts"
+      }
+    ]
+  },
+  "not_measured": [
+    {
+      "item": "display_scale_ladder_125_150_175_200",
+      "reason": "each scale is a human-driven Windows display change; the harness refuses to change it and this session must not change display settings"
+    },
+    {
+      "item": "mixed_monitor_move",
+      "reason": "moving a live window between differently scaled monitors needs interactive input"
+    },
+    {
+      "item": "structural_hairline_physical_pixels",
+      "reason": "a drawn hairline is a pixel fact; the harness records no width claim and this run made none"
+    },
+    {
+      "item": "focus_outline_physical_width",
+      "reason": "the 2 DIP width is proven at the token seam and by the earlier state-change screenshots; no identity-proven capture measured the stroke"
+    },
+    {
+      "item": "glyph_missing_clipping_baseline_line_height",
+      "reason": "tofu, clipping and baseline jitter need native inspection beyond the AX label presence recorded here"
+    },
+    {
+      "item": "resolved_font_family",
+      "reason": "which family DirectWrite selects is a native rasterisation fact not exposed to this harness"
+    },
+    {
+      "item": "high_contrast_focus_and_ax_geometry_matrix",
+      "reason": "requires an operator-driven High Contrast session and the AX/DPI matrix"
+    },
+    {
+      "item": "text_and_layout_frame_cost",
+      "status": "NOT_MEASURED"
+    }
+  ],
+  "defects": [],
+  "scope_note": "PARTIAL: one host-scale observation with an identity-proven capture and AX label evidence. the source candidate is unchanged; no product code, harness or contract was modified, so no Refine Gate applies (ADR-0014 Y04). MP-TYP1 as a whole stays incomplete."
+}
