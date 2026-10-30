@@ -10,8 +10,11 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 SCRIPT = Path(__file__).resolve().parents[1] / "stage_portable.py"
+sys.path.insert(0, str(SCRIPT.parent))
+import stage_portable
 
 
 def minimal_pe(import_names=("KERNEL32.dll",)) -> bytes:
@@ -214,6 +217,148 @@ class StagePortableCliTests(unittest.TestCase):
         result = self.invoke("verify", self.package, "--require-signed")
         self.assertNotEqual(0, result.returncode)
         self.assertIn("unsupported", result.stderr)
+
+    def update_binary_digest(self):
+        with (self.package / "cos-desktop.exe").open("rb") as stream:
+            digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        manifest = self.read_manifest()
+        manifest["binary"]["sha256"] = digest
+        for entry in manifest["files"]:
+            if entry["path"] == "cos-desktop.exe":
+                entry["sha256"] = digest
+        self.write_manifest(manifest)
+
+    def test_pe_exact_size_limit_is_admitted(self):
+        with (self.package / "cos-desktop.exe").open("r+b") as stream:
+            stream.truncate(stage_portable.MAX_PE_BYTES)
+        self.update_binary_digest()
+        result = self.invoke("verify", self.package)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_pe_one_byte_above_size_limit_is_refused(self):
+        with (self.package / "cos-desktop.exe").open("r+b") as stream:
+            stream.truncate(stage_portable.MAX_PE_BYTES + 1)
+        self.update_binary_digest()
+        self.assert_rejected()
+
+    def test_manifest_exact_size_limit_is_admitted(self):
+        manifest = self.package / "manifest.json"
+        content = manifest.read_bytes()
+        manifest.write_bytes(content + b" " * (stage_portable.MAX_MANIFEST_BYTES - len(content)))
+        result = self.invoke("verify", self.package)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_manifest_one_byte_above_size_limit_is_refused(self):
+        manifest = self.package / "manifest.json"
+        content = manifest.read_bytes()
+        manifest.write_bytes(content + b" " * (stage_portable.MAX_MANIFEST_BYTES + 1 - len(content)))
+        self.assert_rejected()
+
+    def test_payload_replaced_with_a_hard_link_during_verification_is_refused(self):
+        license_path = self.package / "LICENSE"
+        outside = Path(self.temporary.name) / "external-license"
+        outside.write_bytes(license_path.read_bytes())
+        real_inspect = stage_portable.inspect_pe
+
+        def replace_after_inspection(data):
+            result = real_inspect(data)
+            license_path.unlink()
+            license_path.hardlink_to(outside)
+            return result
+
+        with patch.object(stage_portable, "inspect_pe", side_effect=replace_after_inspection):
+            with self.assertRaises(stage_portable.StageError):
+                stage_portable.verify_directory(self.package)
+        self.assertEqual(2, outside.stat().st_nlink)
+
+    def test_manifest_replaced_by_identical_bytes_during_verification_is_refused(self):
+        replacement = Path(self.temporary.name) / "replacement-manifest"
+        replacement.write_bytes((self.package / "manifest.json").read_bytes())
+        real_inspect = stage_portable.inspect_pe
+
+        def replace_after_inspection(data):
+            result = real_inspect(data)
+            os.replace(replacement, self.package / "manifest.json")
+            return result
+
+        with patch.object(stage_portable, "inspect_pe", side_effect=replace_after_inspection):
+            with self.assertRaises(stage_portable.StageError):
+                stage_portable.verify_directory(self.package)
+
+    def test_file_added_after_initial_inventory_is_refused(self):
+        real_inspect = stage_portable.inspect_pe
+
+        def add_after_inspection(data):
+            result = real_inspect(data)
+            (self.package / "unexpected.txt").write_text("not approved", encoding="utf-8")
+            return result
+
+        with patch.object(stage_portable, "inspect_pe", side_effect=add_after_inspection):
+            with self.assertRaises(stage_portable.StageError):
+                stage_portable.verify_directory(self.package)
+
+    def test_binary_written_in_place_during_snapshot_hashing_is_refused(self):
+        binary = self.package / "cos-desktop.exe"
+        original = binary.read_bytes()
+        real_sha256 = hashlib.sha256
+
+        def hash_then_change(data=b""):
+            digest = real_sha256(data)
+            if data == original:
+                with binary.open("r+b") as stream:
+                    stream.seek(-1, os.SEEK_END)
+                    stream.write(b"\xff")
+            return digest
+
+        with patch.object(hashlib, "sha256", side_effect=hash_then_change):
+            with self.assertRaises(stage_portable.StageError):
+                stage_portable.verify_directory(self.package)
+
+    def stage_with_final_change(self, change):
+        root = Path(self.temporary.name) / "source"
+        root.mkdir()
+        for name in ("LICENSE", "NOTICE"):
+            (root / name).write_bytes((self.package / name).read_bytes())
+        output = Path(self.temporary.name) / "published"
+        real_verify = stage_portable.verify_directory
+
+        def change_before_final_verification(directory):
+            if directory == output:
+                change(output)
+            return real_verify(directory)
+
+        # Isolate the filesystem transaction; the real Cargo path has separate smoke evidence.
+        with (
+            patch.object(stage_portable, "read_source_identity", return_value=("a" * 40, "b" * 40)),
+            patch.object(stage_portable, "cargo_package", return_value=({"version": "0.1.0"}, "fixture-package")),
+            patch.object(stage_portable, "build_executable", return_value=(
+                self.package / "cos-desktop.exe", "cargo fixture", "rustc fixture",
+                "cargo build --locked --package cos-desktop --bin cos-desktop --message-format=json-render-diagnostics")),
+            patch.object(stage_portable, "verify_directory", side_effect=change_before_final_verification),
+        ):
+            with self.assertRaises(stage_portable.StageError):
+                stage_portable.stage(root, output)
+        return output
+
+    def test_failed_post_rename_verification_withdraws_own_completed_name(self):
+        def corrupt(output):
+            (output / "NOTICE").write_text("modified after rename", encoding="utf-8")
+
+        output = self.stage_with_final_change(corrupt)
+        self.assertFalse(output.exists())
+        self.assertEqual([], list(output.parent.glob(".published.staging-*")))
+
+    def test_post_rename_failure_does_not_remove_a_foreign_replacement(self):
+        saved = Path(self.temporary.name) / "moved-owned-package"
+
+        def replace(output):
+            output.rename(saved)
+            output.mkdir()
+            (output / "user-data.txt").write_text("preserve me", encoding="utf-8")
+
+        output = self.stage_with_final_change(replace)
+        self.assertEqual("preserve me", (output / "user-data.txt").read_text(encoding="utf-8"))
+        self.assertEqual(b"COS Desktop notice\n", (saved / "NOTICE").read_bytes())
 
 
 if __name__ == "__main__":

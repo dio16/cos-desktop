@@ -26,18 +26,37 @@ PAYLOAD_NAMES = (BINARY_NAME, *LICENSE_NAMES)
 MANIFEST_FORMAT = "cos-desktop-internal-portable-v1"
 UNSIGNED_STATUS = "UNSIGNED_INTERNAL_STAGING"
 MACHINE_NAMES = {0x014C: "x86", 0x8664: "x86_64", 0xAA64: "aarch64"}
+MAX_PE_BYTES = 128 * 1024 * 1024
+MAX_MANIFEST_BYTES = 1024 * 1024
 
 
 class StageError(RuntimeError):
     pass
 
 
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
+def file_stamp(info: os.stat_result) -> tuple:
+    # Windows stat/fstat disagree on creation time and suffix-derived executable bits.
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns,
+            info.st_nlink, stat.S_IFMT(info.st_mode), info.st_file_attributes if os.name == "nt" else 0)
+
+
+def read_snapshot(path: Path, limit: int) -> tuple[bytes, str, tuple]:
+    before = path.stat(follow_symlinks=False)
+    stamp = file_stamp(before)
+    if not regular_file(path):
+        raise StageError(f"package contains non-regular file or link: {path.name}")
+    if before.st_size > limit:
+        raise StageError(f"package file exceeds {limit}-byte limit: {path.name}")
     with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+        if file_stamp(os.fstat(stream.fileno())) != stamp:
+            raise StageError(f"package file changed before reading: {path.name}")
+        data = stream.read(before.st_size + 1)
+        digest = hashlib.sha256(data).hexdigest()
+        if len(data) != before.st_size or file_stamp(os.fstat(stream.fileno())) != stamp:
+            raise StageError(f"package file changed while reading: {path.name}")
+    if file_stamp(path.stat(follow_symlinks=False)) != stamp:
+        raise StageError(f"package file changed after reading: {path.name}")
+    return data, digest, stamp
 
 
 def regular_file(path: Path, *, single_link: bool = True) -> bool:
@@ -131,8 +150,7 @@ def _u32(data: bytes, offset: int) -> int:
     return struct.unpack_from("<I", data, offset)[0]
 
 
-def inspect_pe(path: Path) -> tuple[str, list[str]]:
-    data = path.read_bytes()
+def inspect_pe(data: bytes) -> tuple[str, list[str]]:
     if len(data) < 64 or data[:2] != b"MZ":
         raise StageError("binary is not a valid PE image (missing DOS header)")
     pe_offset = _u32(data, 0x3C)
@@ -201,9 +219,12 @@ def inspect_pe(path: Path) -> tuple[str, list[str]]:
     return arch, sorted(imports, key=lambda name: (name.casefold(), name))
 
 
-def make_manifest(package: dict, commit: str, tree: str, cargo_version: str, rustc_version: str, build_command: str, binary: Path, payload: dict[str, Path]) -> dict:
-    arch, imports = inspect_pe(binary)
-    entries = [{"path": name, "sha256": sha256_file(source)} for name, source in sorted(payload.items())]
+def make_manifest(package: dict, commit: str, tree: str, cargo_version: str, rustc_version: str, build_command: str, payload: dict[str, Path]) -> dict:
+    snapshots = {name: read_snapshot(source, MAX_PE_BYTES if name == BINARY_NAME else MAX_MANIFEST_BYTES)
+                 for name, source in sorted(payload.items())}
+    binary_data, binary_digest, _ = snapshots[BINARY_NAME]
+    arch, imports = inspect_pe(binary_data)
+    entries = [{"path": name, "sha256": snapshot[1]} for name, snapshot in snapshots.items()]
     return {
         "format": MANIFEST_FORMAT,
         "desktop_version": package["version"],
@@ -213,7 +234,7 @@ def make_manifest(package: dict, commit: str, tree: str, cargo_version: str, rus
         "architecture": arch,
         "source": {"commit": commit, "tree": tree, "worktree": "CLEAN"},
         "build": {"profile": "dev", "command": build_command, "cargo_version": cargo_version, "rustc_version": rustc_version},
-        "binary": {"path": BINARY_NAME, "sha256": sha256_file(binary)},
+        "binary": {"path": BINARY_NAME, "sha256": binary_digest},
         "files": entries,
         "licenses": {"LICENSE": "INCLUDED", "NOTICE": "INCLUDED"},
         "external_runtime_dependencies": {
@@ -237,6 +258,7 @@ def verify_directory(directory: Path, require_signed: bool = False) -> dict:
     if (not directory.is_dir() or directory.is_symlink()
             or (os.name == "nt" and directory.stat(follow_symlinks=False).st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)):
         raise StageError("package path must be a real directory")
+    directory_stamp = file_stamp(directory.stat(follow_symlinks=False))
     try:
         children = list(directory.iterdir())
     except OSError as exc:
@@ -245,11 +267,10 @@ def verify_directory(directory: Path, require_signed: bool = False) -> dict:
     names = {child.name for child in children}
     if names != expected:
         raise StageError(f"package inventory mismatch (missing={sorted(expected - names)}, extra={sorted(names - expected)})")
-    for child in children:
-        if not regular_file(child):
-            raise StageError(f"package contains non-regular file or link: {child.name}")
+    stamps = {}
     try:
-        manifest = json.loads((directory / MANIFEST_NAME).read_text(encoding="utf-8"))
+        manifest_data, _, stamps[MANIFEST_NAME] = read_snapshot(directory / MANIFEST_NAME, MAX_MANIFEST_BYTES)
+        manifest = json.loads(manifest_data.decode("utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise StageError(f"cannot read package manifest: {exc}") from exc
     if not isinstance(manifest, dict) or manifest.get("format") != MANIFEST_FORMAT:
@@ -308,6 +329,8 @@ def verify_directory(directory: Path, require_signed: bool = False) -> dict:
     binary = manifest.get("binary")
     if not isinstance(binary, dict) or set(binary) != {"path", "sha256"} or binary.get("path") != BINARY_NAME:
         raise StageError("manifest binary identity must use the fixed executable name")
+    snapshots = {name: read_snapshot(directory / name, MAX_PE_BYTES if name == BINARY_NAME else MAX_MANIFEST_BYTES)
+                 for name in PAYLOAD_NAMES}
     actual = {}
     for entry in files:
         if not isinstance(entry, dict) or set(entry) != {"path", "sha256"}:
@@ -319,12 +342,12 @@ def verify_directory(directory: Path, require_signed: bool = False) -> dict:
             int(digest, 16)
         except ValueError as exc:
             raise StageError("manifest contains malformed digest") from exc
-        actual[name] = sha256_file(directory / name)
+        _, actual[name], stamps[name] = snapshots[name]
         if actual[name] != digest:
             raise StageError(f"payload digest mismatch: {name}")
     if manifest.get("binary", {}).get("sha256") != actual[BINARY_NAME]:
         raise StageError("binary digest does not match manifest binary identity")
-    arch, imports = inspect_pe(directory / BINARY_NAME)
+    arch, imports = inspect_pe(snapshots[BINARY_NAME][0])
     if manifest.get("architecture") != arch:
         raise StageError("manifest architecture does not match PE binary")
     runtime = manifest.get("external_runtime_dependencies")
@@ -339,6 +362,12 @@ def verify_directory(directory: Path, require_signed: bool = False) -> dict:
     if (manifest.get("protocol_version") != {"status": "UNKNOWN_NOT_NEGOTIATED", "version": None}
             or manifest.get("schema_version") != {"status": "UNKNOWN_NOT_NEGOTIATED", "version": None}):
         raise StageError("wire protocol/schema must remain unknown until actually negotiated")
+    for name, stamp in stamps.items():
+        if file_stamp((directory / name).stat(follow_symlinks=False)) != stamp:
+            raise StageError(f"package file changed during verification: {name}")
+    if ({child.name for child in directory.iterdir()} != expected
+            or file_stamp(directory.stat(follow_symlinks=False)) != directory_stamp):
+        raise StageError("package directory changed during verification")
     return manifest
 
 
@@ -363,11 +392,12 @@ def stage(root: Path, output: Path) -> dict:
     output.parent.mkdir(parents=True, exist_ok=True)
     # The package is assembled in a sibling temp directory and published with one rename.
     temporary = Path(tempfile.mkdtemp(prefix=f".{output.name}.staging-", dir=output.parent))
+    owned_identity = file_stamp(temporary.stat(follow_symlinks=False))[:2]
     try:
         payload = {BINARY_NAME: binary, "LICENSE": root / "LICENSE", "NOTICE": root / "NOTICE"}
         for name, source in payload.items():
             shutil.copyfile(source, temporary / name)
-        manifest = make_manifest(package, commit, tree, cargo_version, rustc_version, build_command, temporary / BINARY_NAME,
+        manifest = make_manifest(package, commit, tree, cargo_version, rustc_version, build_command,
                                  {name: temporary / name for name in PAYLOAD_NAMES})
         (temporary / MANIFEST_NAME).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         verify_directory(temporary)
@@ -376,7 +406,13 @@ def stage(root: Path, output: Path) -> dict:
         if output.exists() or output.is_symlink():
             raise StageError("output appeared during staging; refusing replacement")
         os.rename(temporary, output)
-        return verify_directory(output)
+        try:
+            return verify_directory(output)
+        except BaseException:
+            # Withdraw only our renamed directory, never a replacement owned by someone else.
+            if output.exists() and file_stamp(output.stat(follow_symlinks=False))[:2] == owned_identity:
+                os.rename(output, temporary)
+            raise
     finally:
         if temporary.exists():
             shutil.rmtree(temporary)
