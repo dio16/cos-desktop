@@ -1,0 +1,195 @@
+{
+  "task": "MP-AX1",
+  "contract": "DC-MP-AX1",
+  "slice": "EntityInputHandler integration and Windows Japanese IME composition (bounded)",
+  "reviewed_directive_sha": "dc990b3844758a0d0e491741ef7ea36b50ac8730",
+  "execution_baseline": "a6a8bb48890ef2b720e018aba666e8a76c8a5157",
+  "branch": "dev",
+  "product_candidate_sha": "58900630342b1b6871b4c518e3d5de2cb0f8661a",
+  "evidence_classes": {
+    "SOURCE_VERIFIED": "implementation and owned tests read and run in this repository",
+    "NATIVE_OBSERVED": "captured from a real Windows input session on this host",
+    "NOT_MEASURED": "no observation exists",
+    "NOT_IMPLEMENTED": "required behaviour is absent from the source"
+  },
+  "environment": {
+    "os_version": "10.0.26300",
+    "window_dpi_before_fix_run": 96,
+    "scale": 1.0,
+    "note": "The Operator restored the display scale to 100 % before this slice's Native session; the MP-TYP1 125 % capture HOLD is unaffected and was not reused as evidence."
+  },
+  "executables": {
+    "before_fix": {
+      "sha256": "sha256:020506d3de34468d7f12d5a1ac8e7e4022dcae11e9fb3146b8842c6d4b29bcd2",
+      "source_commit": "f375144a7e3bcd2a6af6a5c47d96520e4fa93853",
+      "source_agreement": "apps/desktop, crates, Cargo.toml and Cargo.lock were unchanged between that build source and the execution baseline"
+    },
+    "after_fix": {
+      "sha256": "sha256:7f290b9abd82d72be0122c0289c81b06c6d590ca209f27a1625cbda4446db598",
+      "source_commit": "58900630342b1b6871b4c518e3d5de2cb0f8661a",
+      "build": "pwsh scripts/quality.ps1 (full gates) on the candidate commit"
+    },
+    "launch": [
+      "--fixture"
+    ]
+  },
+  "input_surfaces": {
+    "command_palette": {
+      "registration": "crates/desktop-gpui/src/palette.rs PaletteInputRegistration::paint -> window.handle_input(&palette_focus, ElementInputHandler::new(bounds, entity))",
+      "state": "palette_query, palette_input_selection, palette_marked_range",
+      "accessibility": "role TextInput, aria_label \"Command search\", aria_value(display)",
+      "status": "SOURCE_VERIFIED"
+    },
+    "task_rail_search": {
+      "registration": "crates/desktop-gpui/src/lib.rs SearchInputRegistration::paint -> window.handle_input(&rail_input_focus, ElementInputHandler::new(bounds, entity))",
+      "state": "rail_state.query(), rail_input_selection, rail_marked_range",
+      "accessibility_before": "role TextInput, aria_label \"Search tasks\", no aria_value",
+      "accessibility_after": "role TextInput, aria_label \"Search tasks\", aria_value(query)",
+      "status": "SOURCE_VERIFIED"
+    },
+    "flow_search": {
+      "registration": "crates/desktop-gpui/src/lib.rs FlowInputRegistration::paint -> window.handle_input(&flow_input_focus, ElementInputHandler::new(bounds, entity))",
+      "state": "flow_query, flow_input_selection, flow_marked_range",
+      "accessibility": "role TextInput, aria_label \"Search graph nodes and edges\", aria_value(flow_query)",
+      "status": "SOURCE_VERIFIED"
+    },
+    "handler": "Shell implements EntityInputHandler: text_for_range, selected_text_range, marked_text_range, unmark_text, replace_text_in_range, replace_and_mark_text_in_range, bounds_for_range, character_index_for_point; every method routes by FocusHandle to the palette, flow, or rail state."
+  },
+  "utf16_utf8": {
+    "helpers": "ime_byte_range, ime_splice, utf16_offset, byte_offset",
+    "owned_tests": "crates/desktop-gpui/src/lib.rs mod ime_tests (5 cases)",
+    "coverage": [
+      "byte/UTF-16 offsets round-trip for Japanese, astral, ASCII, accented and mixed strings",
+      "a surrogate-pair range never splits a character and the caret stays on a char boundary",
+      "composition marks then commits Japanese text without duplication",
+      "cancelling composition removes only the marked range",
+      "replacement respects UTF-16 ranges after multibyte edits"
+    ],
+    "result": "cargo test --locked -p desktop-gpui ime_tests -> 5 passed, 0 failed",
+    "status": "SOURCE_VERIFIED"
+  },
+  "native_observations": [
+    {
+      "id": "ax1-n1",
+      "executable": "before_fix",
+      "surface": "task_rail_search",
+      "action": "real key events typed \"ab\" into the focused rail search",
+      "observed": "the field rendered \"ab\" with a caret, but the accessibility node reported only textfield \"Search tasks\" with no value",
+      "classification": "NATIVE_OBSERVED",
+      "interpretation": "the text-input path works, while the rail query was invisible to assistive technology"
+    },
+    {
+      "id": "ax1-n2",
+      "executable": "before_fix",
+      "surface": "task_rail_search",
+      "action": "Operator typed にほんご with the Japanese IME, converted and committed",
+      "observed": "the rail search rendered 日本語 and the rail reported \"No matching task: 日本語\"; the accessibility node still carried no value",
+      "classification": "NATIVE_OBSERVED",
+      "interpretation": "IME commit reached the rail query exactly once and the filter consumed it; the accessible value was still missing"
+    },
+    {
+      "id": "ax1-n3",
+      "executable": "before_fix",
+      "surface": "flow_search",
+      "action": "ASCII \"abc\" typed through the same handler, then the Operator typed にほんご and committed without clicking",
+      "observed": "accessibility value became \"abc日本語\"",
+      "classification": "NATIVE_OBSERVED",
+      "interpretation": "mixed Latin/Japanese commit inserted once at the caret on an AX-visible surface; no duplication or replacement of the Latin prefix"
+    },
+    {
+      "id": "ax1-n4",
+      "executable": "after_fix",
+      "surface": "task_rail_search",
+      "action": "ASCII \"ab\" typed after the fix",
+      "observed": "accessibility value became \"ab\" (the same node exposed no value before the fix)",
+      "classification": "NATIVE_OBSERVED",
+      "interpretation": "the rail query is now reachable through accessibility, matching palette and flow"
+    },
+    {
+      "id": "ax1-n5",
+      "executable": "after_fix",
+      "surface": "task_rail_search",
+      "action": "Operator typed にほんご and committed after the existing \"ab\"",
+      "observed": "accessibility value became \"ab日本語\"",
+      "classification": "NATIVE_OBSERVED",
+      "interpretation": "IME commit at the caret after a Latin prefix, single insertion, now observable through accessibility"
+    }
+  ],
+  "operator_reported_not_independently_observed": [
+    "An Escape cancellation and one mixed-input pass were reported as performed on the rail search. The retained end state showed only the committed 日本語, so the intermediate preedit and the cancelled text are not independently observed and are recorded as NOT_MEASURED.",
+    "The Operator reported no duplicate insertion in any step; duplicate absence is independently supported only by ax1-n2, ax1-n3 and ax1-n5's observed values."
+  ],
+  "defect_and_fix": {
+    "defect": "The Task Rail search input exposed no accessible value, so a screen reader could not read the query, the composed text, or the committed text, while the palette and flow inputs already exposed theirs.",
+    "evidence": "ax1-n1 and ax1-n2 (no value) against the same surface's AX node, and the flow surface's exposed value in ax1-n3",
+    "fix": "crates/desktop-gpui/src/lib.rs: added .aria_value(SharedString::from(query_text.clone())) to the task-search element, using the raw query rather than the caret-decorated display string",
+    "scope": "one attribute on one element; no new API, dependency, unsafe/FFI, TSF/COM work, token or contract change",
+    "regression_coverage": "no unit test was added: the observable is produced by the accessibility bridge, and a source-text assertion would be tautological. The independent reproduction is the Native before/after pair ax1-n1/ax1-n4 and ax1-n2/ax1-n5.",
+    "not_claimed": "this is not a screen-reader product acceptance and does not close DC-MP-AX1's screen-reader scope"
+  },
+  "verification": {
+    "cargo_tests_crate": "cargo test --locked -p desktop-gpui -> 86 passed, 0 failed",
+    "quality_check_only": "pwsh -NoProfile -File scripts/quality.ps1 -CheckOnly -> local checks passed (fmt, metadata, dependency rules, check)",
+    "quality_full": "pwsh -NoProfile -File scripts/quality.ps1 -> all quality gates passed (fmt, metadata, dependency rules, clippy -D warnings, tests, build)",
+    "independent_gate": "FAILED/BLOCKED: two Gate attempts and the retained-checkout qualification are recorded above; no Gate success is claimed",
+    "documentation": "PENDING json/link/62-contract/41-edge DAG/privacy/diff smoke",
+    "review": "PENDING candidate-specific linked Tern review",
+    "independent_gate_attempts": [
+      {
+        "attempt": 1,
+        "gate_id": "191c71f8-7189-480a-a77a-a5ecef18677e",
+        "gate_label": "ax1-rail-aria-value-20261030",
+        "result": "FAILED",
+        "failure": "VERIFICATION_FAILED/check_failed at dependency-rules (exit 2)",
+        "cause": "Refine's check child environment does not inherit PATH, so check_dependency_rules.py could not resolve cargo; its own message asks for the CARGO variable",
+        "candidate": "58900630342b1b6871b4c518e3d5de2cb0f8661a unchanged; fmt passed before the failure"
+      },
+      {
+        "attempt": 2,
+        "gate_id": "13fb06aa-2cfd-4ab2-8843-190d0ad33637",
+        "gate_label": "ax1-rail-aria-value-20261030-r2",
+        "result": "FAILED",
+        "failure": "VERIFICATION_FAILED/check_failed at clippy (exit 101)",
+        "cause": "the operator's cargo config routes rustc through sccache, and sccache panics (\"Unable to get config directory\") in the private-HOME child environment; dependency-rules passed with the CARGO fix",
+        "candidate": "unchanged"
+      }
+    ],
+    "gate_environment_qualification": {
+      "status": "BLOCKED: the independent Gate cannot execute this project's linking/build checks on this host",
+      "retained_checkout_experiments": [
+        "with RUSTC_WRAPPER empty and a shared CARGO_TARGET_DIR/CARGO_HOME/RUSTUP_HOME, cargo clippy --workspace --all-targets -D warnings completed in 8.4 s with exit 0",
+        "cargo test -p ui-model --no-run failed with \"linker link.exe not found\": the host's MSVC link.exe lives in a Visual Studio 2019 BuildTools tree and is reachable only through the ambient PATH, which Refine reserves and does not pass",
+        "supplying CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER and LIB (MSVC 14.29.30133 lib/x64 plus Windows Kits 10.0.19041.0 ucrt/um) linked the ui-model test binary successfully in 19.2 s",
+        "with that linker plus MSVC env, clippy then failed inside a cc-rs C++ build script (vswhom-sys ext/vswhom.cpp): cl.exe exists but cannot resolve its dependent DLLs without the Visual Studio developer environment on PATH",
+        "the bundled rust-lld alternative cannot link either: rust-lld reports 'could not open msvcrt.lib', and no msvcrt.lib copy exists outside the MSVC BuildTools lib directory"
+      ],
+      "conclusion": "Refine's contract allows operator-named ambient values and request env literals but reserves PATH, and this host's MSVC C/C++ environment depends on PATH-provided developer-environment variables and DLL search. Compile-only checks work; any check that links or compiles C/C++ cannot. No threshold was changed, no check was dropped to manufacture a PASS, and the Gate is reported FAILED/blocked rather than reinterpreted.",
+      "decision_needed": "Either qualify a Gate environment that supplies the Visual Studio developer environment without PATH (or authorize an operator-side mechanism), or authorize a Gate check set that this environment can actually execute. Until then the product fix has local quality gates and Native evidence but no independent Gate."
+    }
+  },
+  "acceptance": {
+    "AC01_three_surface_registration": "MET: each surface registers ElementInputHandler through window.handle_input with its own FocusHandle (source, plus Native evidence that typed text reached the focused surface).",
+    "AC02_utf16_utf8_and_marked_range": "MET by the five owned tests and the routing code; caret placement after commit is covered by the surrogate/multibyte cases.",
+    "AC03_composition_commit_cancel_tests": "MET for the owned unit tests (commit and cancel).",
+    "AC04_native_japanese_ime": "PARTIAL: two Japanese commits are NATIVE_OBSERVED with exact accessible values; the preedit state, the Escape-cancel step and the candidate window remain NOT_MEASURED.",
+    "AC05_preedit_committed_caret_focus": "PARTIAL: committed text and focus are observed; the preedit/marked state and the caret during composition are NOT_MEASURED.",
+    "AC06_mixed_and_surrogate": "MET for mixed text (ax1-n3, ax1-n5) and for surrogate handling by the owned tests; an astral character was not composed through the IME.",
+    "AC07_cross_surface_isolation": "SOURCE_VERIFIED: per-surface query, selection and marked-range fields with focus-routed handlers; no Native surface-switch composition was observed, so the Native half is NOT_MEASURED.",
+    "AC08_minimal_fix_only_on_demonstrated_defect": "MET: the only product change addresses the measured missing accessible value.",
+    "AC09_fix_needs_new_pinned_candidate_tests_gate_native": "PARTIAL and BLOCKED on the Gate: the fix is in pinned candidate 58900630342b1b6871b4c518e3d5de2cb0f8661a with 86/86 crate tests, full local quality gates and Native before/after evidence, but the independent Refine Gate cannot execute this project's linking/build checks in its minimal child environment on this host (two FAILED gates and the exact causes are recorded). The Gate is not reported as passed.",
+    "AC10_no_overclaim": "MET: no screen-reader acceptance, TSF internals, DPI pixel quality, MP-AX1 completion or product acceptance is claimed."
+  },
+  "not_measured": [
+    "Preedit (marked/未確定) rendering and its text/underline",
+    "Caret and selection during composition",
+    "Escape cancellation observed independently",
+    "Palette and Flow Japanese composition (only flow's mixed commit was observed)",
+    "Surface-switch isolation during an active composition",
+    "Palette focus restoration after close under composition",
+    "TSF internal state, IME candidate window position and OS composition notifications",
+    "Mixed-scale DPI behaviour (MP-TYP1 125 % capture remains HOLD)",
+    "Screen-reader product acceptance and DD-23 support matrix",
+    "High Contrast integration"
+  ],
+  "continuation_boundary": "This slice verifies the input path and one demonstrated accessibility defect. It does not complete MP-AX1, DD-23, screen-reader acceptance or product release, and it does not repair or reinterpret the MP-TYP1 125 % capture HOLD."
+}
