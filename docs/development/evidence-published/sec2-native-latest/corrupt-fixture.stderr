@@ -1,0 +1,3 @@
+Fixture load failed; no Runtime fallback
+observation shutdown not observed (quit callback not observed)
+preferences save not observed (quit callback not observed)

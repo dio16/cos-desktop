@@ -1,0 +1,264 @@
+COS_FIXTURE_TRACE candidate_dock_state frame=1 previous_frame_mount_callbacks=0 logical_count=0 window_start=0 window_end=0 window_top=0 offset_px=0 anchor=none active=none viewed=none admitted=false display_version=0 live_version=2 viewport_px=0 anchor_offset_px=0
+COS_FIXTURE_TRACE task_rail_state frame=1 previous_frame_mount_callbacks=0 logical_count=0 result_count=0 anchor_task=none offset_px=0px selected=none active=none query_generation=0 result_publication=0:0 query_present=false
+COS_FIXTURE_TRACE candidate_dock_mount frame=2 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=false active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=2 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=2 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=2 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=2 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=2 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=2 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=2 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=2 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=2 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=2 previous_frame_mount_callbacks=0 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=none admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=2 previous_frame_mount_callbacks=0 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=2 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=3 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=false active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=3 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=3 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=3 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=3 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=3 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=3 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=3 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=3 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=3 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=3 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=none admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=3 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=3 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=4 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=false active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=4 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=4 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=4 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=4 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=4 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=4 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=4 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=4 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=4 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=4 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=none admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=4 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=4 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=5 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=false active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=5 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=5 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=5 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=5 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=5 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=5 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=5 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=5 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=5 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=5 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=none admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=5 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=5 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=6 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=false active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=6 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=6 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=6 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=6 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=6 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=6 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=6 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=6 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=6 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=6 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=none admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=6 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=6 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=7 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=false active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=7 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=7 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=7 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=7 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=7 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=7 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=7 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=7 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=7 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=7 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=none admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=7 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=7 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=8 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=false active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=8 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=8 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=8 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=8 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=8 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=8 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=8 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=8 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=8 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=8 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=none admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=8 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=8 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=9 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=false active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=9 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=9 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=9 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=9 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=9 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=9 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=9 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=9 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=9 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=9 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=none admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=9 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=9 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=10 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=10 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=10 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=10 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=10 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=10 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=10 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=10 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=10 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=10 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=10 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=10 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=10 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=11 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=11 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=11 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=11 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=11 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=11 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=11 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=11 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=11 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=11 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=11 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=11 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=11 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=12 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=12 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=12 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=12 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=12 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=12 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=12 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=12 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=12 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=12 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=12 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=12 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=12 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=13 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=13 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=13 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=13 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=13 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=13 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=13 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=13 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=13 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=13 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=13 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=13 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=13 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=14 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=14 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=14 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=14 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=14 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=14 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=14 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=14 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=14 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=14 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=14 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=14 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=14 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=15 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=15 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=15 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=15 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=15 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=15 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=15 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=15 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=15 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=15 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=15 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=15 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=15 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=16 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=16 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=16 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=16 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=16 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=16 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=16 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=16 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=16 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=16 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=16 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=16 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=16 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=17 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=17 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=17 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=17 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=17 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=17 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=17 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=17 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=17 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=17 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=17 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=17 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=17 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=18 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=18 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=18 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=18 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=18 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=18 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=18 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=18 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=18 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=18 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=18 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=18 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=18 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=19 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=19 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=19 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=19 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=19 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=19 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=19 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=19 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=19 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=19 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=19 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=19 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=19 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=20 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=20 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=20 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=20 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=20 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=20 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=20 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=20 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=20 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=20 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=20 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=20 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=20 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+COS_FIXTURE_TRACE candidate_dock_mount frame=21 mounted=1 index=0 candidate_id=fixture:candidate/a viewed=true active=true
+COS_FIXTURE_TRACE candidate_dock_group frame=21 index=0 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/a group_start=true group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=21 mounted=2 index=1 candidate_id=fixture:candidate/b viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=21 index=1 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/b group_start=false group=It 1
+COS_FIXTURE_TRACE candidate_dock_mount frame=21 mounted=3 index=2 candidate_id=fixture:candidate/c viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=21 index=2 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/c group_start=true group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=21 mounted=4 index=3 candidate_id=fixture:candidate/d viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=21 index=3 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/d group_start=false group=It 2
+COS_FIXTURE_TRACE candidate_dock_mount frame=21 mounted=5 index=4 candidate_id=fixture:candidate/e viewed=false active=false
+COS_FIXTURE_TRACE candidate_dock_group frame=21 index=4 task_id=fixture:task/Task-184 candidate_id=fixture:candidate/e group_start=true group=It 3
+COS_FIXTURE_TRACE candidate_dock_state frame=21 previous_frame_mount_callbacks=5 logical_count=5 window_start=0 window_end=5 window_top=0 offset_px=0 anchor=fixture:candidate/a active=fixture:candidate/a viewed=fixture:candidate/a admitted=true display_version=2 live_version=2 viewport_px=3408 anchor_offset_px=-0
+COS_FIXTURE_TRACE task_rail_state frame=21 previous_frame_mount_callbacks=1 logical_count=1 result_count=1 anchor_task=fixture:task/Task-184 offset_px=0px selected=fixture:task/Task-184 active=fixture:task/Task-184 query_generation=0 result_publication=1:2 query_present=false
+COS_FIXTURE_TRACE task_rail_mount frame=21 mounted=1 task_id=fixture:task/Task-184 active=true selected=true query_present=false result_index=0
+observation shutdown confirmed
+preferences save confirmed
