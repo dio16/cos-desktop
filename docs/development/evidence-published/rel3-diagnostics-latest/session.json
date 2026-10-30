@@ -15,19 +15,71 @@
     "new UI surface or CLI command (no existing export entry point exists)"
   ],
   "report_fields": [
-    {"field": "desktop_version", "authority": "CARGO_PKG_VERSION of app-core", "state": "AVAILABLE"},
-    {"field": "runtime_version", "authority": "none in observation", "state": "UNKNOWN"},
-    {"field": "protocol_version", "authority": "no negotiated pair exposed", "state": "UNKNOWN"},
-    {"field": "connection", "authority": "ObservationPublication.connection", "state": "AVAILABLE"},
-    {"field": "source", "authority": "ObservationPublication.source", "state": "AVAILABLE"},
-    {"field": "stale", "authority": "ObservationPublication.stale", "state": "AVAILABLE"},
-    {"field": "projection_revision", "authority": "ObservationPublication.revision (owner-local commit counter)", "state": "AVAILABLE_OR_UNKNOWN"},
-    {"field": "session_generation", "authority": "ObservationPublication.session_generation", "state": "AVAILABLE"},
-    {"field": "publication_version", "authority": "ObservationPublication.publication_version", "state": "AVAILABLE"},
-    {"field": "last_error", "authority": "ObservationPublication.last_error (safe category)", "state": "AVAILABLE_OR_NONE"},
-    {"field": "command_views", "authority": "count of ObservationPublication.command_statuses", "state": "AVAILABLE"},
-    {"field": "diagnostics", "authority": "DiagnosticBatch (existing 1024-event ring)", "state": "AVAILABLE"},
-    {"field": "limits", "authority": "existing ratified constants", "state": "AVAILABLE"}
+    {
+      "field": "desktop_version",
+      "authority": "CARGO_PKG_VERSION of app-core",
+      "state": "AVAILABLE"
+    },
+    {
+      "field": "runtime_version",
+      "authority": "none in observation",
+      "state": "UNKNOWN"
+    },
+    {
+      "field": "protocol_version",
+      "authority": "no negotiated pair exposed",
+      "state": "UNKNOWN"
+    },
+    {
+      "field": "connection",
+      "authority": "ObservationPublication.connection",
+      "state": "AVAILABLE"
+    },
+    {
+      "field": "source",
+      "authority": "ObservationPublication.source",
+      "state": "AVAILABLE"
+    },
+    {
+      "field": "stale",
+      "authority": "ObservationPublication.stale",
+      "state": "AVAILABLE"
+    },
+    {
+      "field": "projection_revision",
+      "authority": "ObservationPublication.revision (owner-local commit counter)",
+      "state": "AVAILABLE_OR_UNKNOWN"
+    },
+    {
+      "field": "session_generation",
+      "authority": "ObservationPublication.session_generation",
+      "state": "AVAILABLE"
+    },
+    {
+      "field": "publication_version",
+      "authority": "ObservationPublication.publication_version",
+      "state": "AVAILABLE"
+    },
+    {
+      "field": "last_error",
+      "authority": "ObservationPublication.last_error (safe category)",
+      "state": "AVAILABLE_OR_NONE"
+    },
+    {
+      "field": "command_views",
+      "authority": "count of ObservationPublication.command_statuses",
+      "state": "AVAILABLE"
+    },
+    {
+      "field": "diagnostics",
+      "authority": "DiagnosticBatch (existing 1024-event ring)",
+      "state": "AVAILABLE"
+    },
+    {
+      "field": "limits",
+      "authority": "existing ratified constants",
+      "state": "AVAILABLE"
+    }
   ],
   "sec2_reuse": [
     "app_core::diagnostics::{DiagnosticBatch, DiagnosticKind, EventGap, MAX_DIAGNOSTIC_EVENTS}",
@@ -66,5 +118,84 @@
     "no exporter exists yet, so no third-party artifact can be produced or scanned end to end",
     "the report shows only what observation already exposes; cache/subscription counters beyond the command-view count are not available",
     "Runtime/Provider versions stay UNKNOWN until a projection supplies them"
-  ]
+  ],
+  "source_candidate": "f71a7ee99628837918218795842809af8e652d37",
+  "changed_files": [
+    "crates/app-core/src/lib.rs",
+    "crates/app-core/src/support_report.rs",
+    "crates/app-core/tests/support_report.rs"
+  ],
+  "quality": {
+    "route": "pwsh -NoProfile -File scripts/quality.ps1",
+    "result": "all quality gates passed (native smoke separate)",
+    "dependency_self_test": "18 tests OK",
+    "dependency_rules": "allowlist edges verified for 7 workspace members",
+    "app_core_tests": {
+      "unit": 31,
+      "observation_publication": 68,
+      "support_report": 6
+    }
+  },
+  "gate": {
+    "id": "b440495b-c28b-44aa-8337-0d212379565b",
+    "candidate": "f71a7ee99628837918218795842809af8e652d37",
+    "status": "SUCCEEDED",
+    "cleanup": "complete",
+    "request_sha256": "sha256:d26bb79edb5313ac67c0558ce1cb9c861e6c2ea317285441afc484feaf3b1e04",
+    "terminal_state_sha256": "sha256:88f4de6485ff22e0fd70174e2d714b164cdc45105ce04bf25628b220bcd4797a",
+    "checks": [
+      {
+        "id": "fmt",
+        "outcome": "pass"
+      },
+      {
+        "id": "metadata",
+        "outcome": "pass"
+      },
+      {
+        "id": "dependency-self-test",
+        "outcome": "pass"
+      },
+      {
+        "id": "dependency-rules",
+        "outcome": "pass"
+      },
+      {
+        "id": "portable-contract",
+        "outcome": "pass"
+      },
+      {
+        "id": "clippy",
+        "outcome": "pass"
+      },
+      {
+        "id": "tests",
+        "outcome": "pass"
+      },
+      {
+        "id": "build",
+        "outcome": "pass"
+      },
+      {
+        "id": "portable-stage",
+        "outcome": "pass"
+      },
+      {
+        "id": "portable-verify",
+        "outcome": "pass"
+      }
+    ],
+    "storage": {
+      "outcome": "COMPLETE",
+      "removed_exact_successful_paths": 2,
+      "logical_bytes_removed": 2242490504,
+      "native_integrity_before_after": "IDENTICAL_SUCCEEDED",
+      "source_retained_by": "dev ancestry"
+    }
+  },
+  "native": "NOT_RUN — no diagnostic UI/CLI or startup path was changed; the report is an app-core public seam. No window, AX or pixel claim is made for MP-REL3.",
+  "review": {
+    "sha": "PENDING",
+    "status": "NOT_SUBMITTED"
+  }
 }

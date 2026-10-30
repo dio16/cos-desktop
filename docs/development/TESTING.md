@@ -426,3 +426,15 @@ closure, installer/upgrade/uninstall and release evidence. The commands are in
 [BUILD_AND_RUN §4.34](BUILD_AND_RUN.md#434-mp-rel1-internal-portable-staging-2026-10-30);
 [REL1 evidence](evidence-published/rel1-packaging-latest/session.json) records only
 the exercised scope. No new CI lane or test framework is introduced.
+
+## 26. MP-REL3 bounded redacted support report
+
+Run `cargo test --locked -p app-core --test support_report`. The six cases pin the
+observable guarantees a support reader depends on: a Runtime/protocol version is
+never filled from the Desktop package, a disconnected publication never invents a
+projection revision, the diagnostic gap and per-kind counts survive summarization,
+rendering stays inside the existing per-line and per-report byte bounds with an
+oversized field, a synthetic token / signed locator / private path never renders,
+and an unavailable Desktop states no measurement. No exporter exists under DD-22,
+so there is no artifact to scan end to end and no Native surface changed; Native
+stays `NOT_RUN` for this task.

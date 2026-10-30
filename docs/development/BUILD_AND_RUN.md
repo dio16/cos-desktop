@@ -1249,6 +1249,19 @@ Observe both windows and native close/exit; an isolated directory under the same
 Windows account is not a clean-user session. Results and remaining release gaps:
 [REL1 evidence](evidence-published/rel1-packaging-latest/session.json).
 
+### 4.35 MP-REL3 bounded redacted support report (2026-10-30)
+
+`app-core::support_report` renders a Desktop-local report from the publication and
+diagnostic batch a window already holds. It adds no command, window or file output:
+
+```bash
+cargo test --locked -p app-core --test support_report
+```
+
+Export format, destination, retention and consent are DD-22 OPEN, so nothing is
+written to disk and nothing leaves the process. Runtime and protocol versions stay
+`Unknown` because observation exposes no negotiated pair.
+
 ## 6. Troubleshooting (evidence-anchored)
 
 | Symptom | Cause | Fix |
