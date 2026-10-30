@@ -140,12 +140,12 @@
     }
   },
   "gate": {
-    "id": "70b249da-848b-456a-814e-ecc901955016",
-    "candidate": "a7b4ce0c46bd026d05529b9efb32799b938751bc",
+    "id": "f794bb74-f437-4d42-b5f6-3dc894cf865e",
+    "candidate": "76208af9ce4b5956861ebdc1a2f9bf159aaa9645",
     "status": "SUCCEEDED",
     "cleanup": "complete",
-    "request_sha256": "sha256:ca0e7616918f5017051118c2c2f00ea6653c96fd4443b73689defed737c4ef65",
-    "terminal_state_sha256": "sha256:66166056be5368e9a4f730625107e91b0095774205b6ece589dcab4d648e513c",
+    "request_sha256": "sha256:6ae6ef2793039c2e8b5b81d43c522992fe7ac55c1b59f6742844ff1ea6745c51",
+    "terminal_state_sha256": "sha256:637d7c7fe5437fe1aaa7d8b17bf5885aab346ad56bdfea562b147ded5c596eed",
     "checks": [
       {
         "id": "fmt",
@@ -191,15 +191,16 @@
     "storage": {
       "outcome": "COMPLETE",
       "removed_exact_successful_paths": 2,
-      "logical_bytes_removed": 2242560440,
+      "logical_bytes_removed": 2246420022,
       "native_integrity_before_after": "IDENTICAL_SUCCEEDED",
       "source_retained_by": "dev ancestry"
     },
-    "superseded": {
-      "id": "b440495b-c28b-44aa-8337-0d212379565b",
-      "candidate": "f71a7ee99628837918218795842809af8e652d37",
-      "state": "SUCCEEDED",
-      "note": "covered the pre-repair candidate; the review then required two fixes"
+    "interrupted_predecessor": {
+      "id": "6ce454e3-c68a-40c4-ae7d-8167a7d35e7f",
+      "candidate": "76208af9ce4b5956861ebdc1a2f9bf159aaa9645",
+      "state": "FAILED",
+      "cause": "the calling worker was killed mid-verification; native gate recover finalized it without replaying checks",
+      "request_sha256": "sha256:6ae6ef2793039c2e8b5b81d43c522992fe7ac55c1b59f6742844ff1ea6745c51"
     }
   },
   "native": "NOT_RUN — no diagnostic UI/CLI or startup path was changed; the report is an app-core public seam. No window, AX or pixel claim is made for MP-REL3.",
@@ -230,6 +231,6 @@
       "A-R1-01 Desktop version ownership",
       "A-R1-02 plan section structure"
     ],
-    "re_review": "PENDING"
+    "re_review": "PENDING (round 3 on this candidate)"
   }
 }
