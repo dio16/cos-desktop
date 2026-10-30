@@ -7,7 +7,7 @@ Status: **Accepted** workflow; bootstrap endpoints/modes below are **Observed**,
 | Item | Current |
 |---|---|
 | `<desktop-root>` | Independent Desktop repository: sources/docs, build outputs, committed fixtures/scripts/CI |
-| `dio16/cos-desktop` | Existing remote (created by explicit operator authorization on 2026-09-21); branch policy `feature/*` → `dev` → `main` |
+| `dio16/cos-desktop` | Existing remote (created by explicit operator authorization on 2026-09-21); [develop directly on `dev`](REFINE_TASKERN_EXECUTION_BOUNDARY.md#development-branch), no feature/task/review branches; stable `main` promotion requires separate explicit authority |
 | Historical (2026-09-21) | "Intended remote name only; creation, visibility and push await user decisions" |
 
 No production code/config may contain `<runtime-root>` as a runtime launch/data dependency. Runtime owns storage/worker/server lifecycle. Desktop discovers a protocol endpoint, not a repository. No hardcoded internal Python launch. No direct Runtime DB/artifact DB/config reads, even as a convenient fallback.

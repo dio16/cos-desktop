@@ -22,7 +22,7 @@ COS Domain
 
 Direct dependencies on Runtime internal crates, databases, artifacts or Python entry points are forbidden. Desktop consumes the versioned Desktop Protocol only; no particular local checkout path is required.
 
-Branch policy: `feature/*` → `dev` → `main` (PR into `main`). Stable baseline is `main`; day-to-day development happens on `dev`.
+Branch policy: develop, repair, commit and push directly on `dev`; do not create feature/task/review branches. Follow the [development-branch policy](docs/integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md#development-branch). Stable `main` promotion through a PR and release publication require separate explicit authority; independent Gate checkouts remain detached.
 
 ## Publication and historical evidence
 

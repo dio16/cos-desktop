@@ -4,6 +4,8 @@ Status: **Execution projection of the Desktop Design Canon and canonical compone
 
 **Current Caller decision (2026-10-30): IMPLEMENTATION_AUTHORIZED — SCOPED RESUMPTION.** All audited proposals and remaining Caller permissions are adopted under [ADR-0014](../decisions/ADR-0014-YAGNI-SCOPE-AND-RESUMPTION.md); the global pause is released after canonical reconciliation. [Product §68.1](../architecture/COS_DESKTOP_PRODUCT_UX_ARCHITECTURE.md#681-image-first-initial-release) and [DC-MP-IMG2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img2) own the initial-release profiles. The [current 62-task authority](IMPLEMENTATION_STATUS_AUDIT.md#9-caller-adoption-and-current-authority-2026-10-30) supersedes old PAUSED/approval-pending fields; [§19.70](#1970-caller-adoption-and-scoped-implementation-resumption-2026-10-30) records this decision. Real technical/external prerequisites remain.
 
+**Current Git workflow (Caller decision 2026-10-30):** implement, repair, document, commit and push directly on `dev`; no new feature/task/review branches. The [owning development-branch policy](../integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md#development-branch) supersedes historical branch directives and separate-dev-integration steps. Exact-SHA Tern review, independent detached Gates and separate main/release authority remain unchanged.
+
 It does **not** own and does not restate:
 
 - Desktop architecture, decision ownership and cross-layer invariants → [DESKTOP_DESIGN_CANON.md](../architecture/DESKTOP_DESIGN_CANON.md).

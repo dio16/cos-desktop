@@ -8,7 +8,7 @@
 ## Current status (2026-10-08) — read this before the historical phase tables
 
 - **[Observed]** The workspace exists and builds: `apps/desktop`, `crates/desktop-gpui`, `crates/ui-model`, `crates/app-core`, `crates/cos-client`, `crates/desktop-protocol`, committed `Cargo.lock`, pinned toolchain `1.98.1` and GPUI pin `395def7a…`. Commands and startup evidence: [BUILD_AND_RUN.md](BUILD_AND_RUN.md), [BOOTSTRAP_REPORT.md](BOOTSTRAP_REPORT.md).
-- **[Observed at private creation]** Git remote `origin` = `https://github.com/dio16/cos-desktop.git`; `main` and `dev` were published; branch policy `feature/*` → `dev` → `main`. Current visibility has not been verified by this document.
+- **[Observed at private creation]** Git remote `origin` = `https://github.com/dio16/cos-desktop.git`; `main` and `dev` were published. The historical `feature/*` → `dev` workflow is superseded by the [2026-10-30 direct-on-dev policy](../integration/REFINE_TASKERN_EXECUTION_BOUNDARY.md#development-branch). Current visibility has not been verified by this document.
 - **[Observed]** Quality gates are implemented (`.github/workflows/ci.yml`, `scripts/quality.ps1`, `scripts/check_dependency_rules.py` + self-test); native startup smoke remains a manual gate; remote CI execution is **NOT_VERIFIED** (BOOTSTRAP_REPORT §6).
 - **[Deferred]** Product surfaces remain unimplemented (Artifact/Image, Compare, Flow, Task Rail, Brief, History, media pipeline, real transport, packaging/update).
 - **Implementation planning:** [IMPLEMENTATION_MASTER_PLAN.md](IMPLEMENTATION_MASTER_PLAN.md) owns milestones, task contracts, decision gates and readiness verdicts.

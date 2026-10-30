@@ -36,7 +36,7 @@ The later MP-COR1 E2E **was accepted** on candidate `a5b318d7d474e032393b6c17660
 | Planner / Taskern Skill | Agent drafts a bounded derived Plan/TaskPacket; Taskern deterministically admits, validates and compiles it, with explicit context and Budget | Implementation, execution, context persistence, evidence truth, permission or acceptance |
 | Coding Agent | Explore, implement, test and repair in the same authorized session; choose HOW within the frozen DC | New product/Runtime semantics, scope expansion or approval of unresolved gates |
 | Refine Gate | Prepare the pinned commit in an independent detached checkout; run ordered checks, capture outputs/private logs and immutable evidence | Coding-agent launch, agent context, automatic retry, product acceptance or Git integration |
-| Caller | Authorize scope/candidate/checks/budget, preserve correlation/history, independently review and explicitly accept/reject; authorize integration separately | Treating machine success as Domain truth or bypassing existing owner decisions |
+| Caller | Authorize scope/candidate/checks/budget, preserve correlation/history, independently review and explicitly accept/reject; authorize main integration/release separately | Treating machine success as Domain truth or bypassing existing owner decisions |
 | COS Runtime / Domain | Canonical Task, graph/plan, artifact, evaluation/outcome and stop semantics | Reinterpreting Taskern/Refine IDs as COS projections |
 
 ### Data mapping
@@ -53,15 +53,27 @@ Caller records outside both wire contracts: MP/DC and adopted Plan revision, sou
 
 Caller may authorize a finite same-task correction loop up front, with scope, checks and attempt/time limits. Within that grant, contract-internal HOW fixes need no new DD approval. Each changed candidate still needs an explicitly pinned new commit and new Gate request; no silent redispatch. Exhausted bounds, changed scope/contract/authority or an ungranted consequential operation require the relevant owner. An uncertain accepted Gate is reconciled before another attempt.
 
+### Development branch
+
+**Accepted Caller decision (2026-10-30):** COS Desktop development happens directly on `dev`. This replaces the former `feature/*` → `dev` workflow, including branch-creation or separate-dev-integration instructions in historical task directives. It changes Git workflow only, not product scope, acceptance or execution grants.
+
+- Implement, test, repair, document and commit authorized tasks on `dev`; do not create task, feature, repair, evidence or review branches. A different branch workflow requires a new explicit Caller instruction.
+- Inspect the worktree before switching to `dev`. Fetch `origin` and reconcile `dev` with `origin/dev` without discarding user changes, rewriting history or force-pushing. Divergence is not permission to bypass the policy with another branch.
+- Within an authorized task, commit and push the privacy-reviewed candidate to `origin/dev` before each Tern evaluation, then verify the exact remote SHA. Development commits may precede review; presence on `dev` is not a PASS or product acceptance. Repairs use new commits on `dev`, not a separate branch or a merge step.
+- Taskern handoffs, Tern review requests and next-task directives must carry `dev` as the development branch. Do not execute an obsolete directive that asks for a new branch; obtain a corrected directive without expanding the task.
+- Refine still verifies each pinned commit in its independent detached checkout. That verification workspace is not a development branch; its isolation, finite grant and evidence/storage obligations are unchanged.
+- `main` remains the stable branch. Promotion to `main` through a PR and release publication require separate explicit authority; direct development on `main` is not authorized.
+- Delete an obsolete branch only within Caller-authorized cleanup after proving its local and remote tips are reachable from retained `dev` and no active worktree needs it. Keep commit history, immutable review/Gate records and private evidence; historical branch names remain valid provenance, not instructions to recreate them.
+
 ### Operational loop and owners
 
 1. **PLAN:** select one authorized task from the latest source/DC; Taskern `check → compile` with bounded required context. Eligibility is not permission.
-2. **IMPLEMENT:** the existing Coding Agent implements and tests through its own tools under [TESTING](../development/TESTING.md). Refine does not launch another implementation agent.
+2. **IMPLEMENT:** the existing Coding Agent implements and tests directly on `dev` through its own tools under [TESTING](../development/TESTING.md). Refine does not launch another implementation agent.
 3. **FREEZE:** prepare a Caller-authorized candidate commit and record branch/worktree/diff. Only **PINNED_COMMIT** is supported; dirty/untracked changes are excluded and **FROZEN_WORKTREE remains HOLD**.
 4. **PREFLIGHT:** prepare explicit operator config, environment, checks, outputs and finite limits; invoke native `refine gate preflight`. Exit 0 means the report was produced, not PASS. Resolve each FAIL/UNKNOWN with evidence and Caller decisions; retain UNKNOWN when static assessment cannot establish runtime/SDK/authorization/output behavior.
 5. **GATE / RESULT:** invoke `refine gate --config ABS --request FILE --state-dir ABS --json`. Preserve `REFINE_GATE_ACCEPTED` and `gate_id`; inspect per-check results, logs, outputs and cleanup, then `gate verify`. SUCCEEDED, integrity success and Caller acceptance are separate facts.
 6. **REPAIR:** diagnose the actual failure in the same Coding Agent session, test, pin a new candidate and authorize a new Gate within the grant. Lost response: `gate status`/`gate inspect`; use `gate recover` only for the applicable dead-owner case, without check replay. Never edit immutable Gate state or rerun an uncertain request blindly.
-7. **REVIEW / ACCEPT:** submit the exact SHA/diff/DC constraints and verification evidence to Tern; resolve valid findings in the same conversation to **0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE**, or HOLD. Caller separately judges full acceptance. Review success does not authorize acceptance, dev integration, main merge or the next user-gated step.
+7. **REVIEW / ACCEPT:** push the fixed candidate to `origin/dev`, verify its exact SHA, and submit that SHA/diff/DC constraints and verification evidence to Tern; resolve valid findings in the same conversation with new commits on `dev` to **0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE**, or HOLD. Caller separately judges full acceptance. Review success does not authorize acceptance, main merge, release or the next user-gated step.
 
 Use public CLI/Skill guidance directly; do not make per-task JS/Python orchestration, dummy executors, a second validator or a new framework the standard. An environment helper needs a concrete demonstrated gap and separate scope; `trusted_local` isolation is not hostile-code confinement or OS-enforced network denial.
 
