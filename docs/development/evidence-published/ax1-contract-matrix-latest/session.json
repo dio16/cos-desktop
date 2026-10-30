@@ -4,13 +4,14 @@
   "slice": "Whole-contract gap matrix, one implemented correctness guard and its verification",
   "baseline_sha": "5b3357b90706067090acefa7992ad3a04c079a46",
   "branch": "dev",
-  "product_candidate_sha": "466b72ffff5b1933d27c6d65961cbaf36eb94291",
+  "product_candidate_sha": "0801224ace3e2a90edcc9c87b8db3ecc346291ad",
   "product_change": {
     "file": "crates/desktop-gpui/src/palette.rs",
-    "change": "PaletteEnter now returns early while the query has a marked (uncommitted) IME composition, and a private predicate composition_in_progress records that rule",
-    "why": "the palette bound Enter unconditionally to PaletteActivate, so an Enter arriving during a composition would execute whatever command was highlighted for a half-typed query",
-    "risk": "a command triggered from uncommitted text; the guard only suppresses activation while a marked range exists, and does not alter key handling for committed text",
-    "safety": "no new API, dependency, unsafe/FFI, TSF work, token or contract change"
+    "change": "palette activation and pointer slot invocation now share one boundary, palette_dispatch_allowed(open, marked), which refuses to dispatch while the query still holds an uncommitted IME composition; the predicate is unit-tested",
+    "why": "PaletteEnter was bound unconditionally to activation, and the row click handler called palette_invoke_slot directly; either route could run a command from a half-typed query during a composition",
+    "risk": "a command triggered from uncommitted text on either the keyboard or the pointer route",
+    "safety": "no new API, dependency, unsafe/FFI, TSF work, token or contract change; committed text still dispatches normally",
+    "history": "the first candidate 466b72f guarded only the Enter route and the review identified the pointer bypass; 0801224 unifies both routes at one boundary"
   },
   "gap_matrix": {
     "AX01_accessibility": {
@@ -88,7 +89,7 @@
     "AC05_dpi_move_keeps_anchor": "HOLD: no accepted fractional-scale image or mixed-monitor run",
     "AC06_keyboard_only_main_flow": "PARTIAL: keyboard bindings exist and were exercised historically; a full keyboard-only pass is not recorded in this slice",
     "AC07_accessible_names_roles_values": "PARTIAL: interactive controls and the three text inputs carry names and values; static status text is still absent",
-    "AC08_japanese_commit_cancel_and_partial_dispatch": "MET: commit/cancel observed natively and a partial composition no longer executes a palette command",
+    "AC08_japanese_commit_cancel_and_partial_dispatch": "MET on both activation routes: commit and cancel are observed natively, and the keyboard and pointer routes share one guard so a partial composition dispatches no command. The Enter route was also observed natively (palette stayed open, no command ran); the pointer route is SOURCE_VERIFIED plus unit-tested, and the pointer Native attempt was inconclusive because the composed query matched no command and therefore had nothing to dispatch.",
     "AC09_focus_selection_anchor_across_surfaces": "PARTIAL: per-surface state is separate by construction and the rail-to-flow switch leaked nothing; anchor preservation across DPI/monitor changes is HOLD",
     "AC10_high_contrast_reduced_motion": "NOT_IMPLEMENTED / NOT_MEASURED as above",
     "AC11_matrix_states_distinguished": "MET: every item above carries PASS/PARTIAL/HOLD/NOT_MEASURED/NOT_IMPLEMENTED explicitly",
@@ -102,29 +103,51 @@
     "crate_tests": "cargo test --locked -p desktop-gpui -> 87 passed (86 plus the composition-guard case)",
     "quality_gates": "cargo fmt --all -- --check clean after formatting the new code; pwsh scripts/quality.ps1 passed all gates (fmt, metadata, dependency rules, clippy -D warnings, tests, build)",
     "native": {
-      "binary": "sha256:629af0db707c6c94f0a8463293b630f956d92ed6bf4bc220ea05ef931ec3ee6e built from the candidate",
+      "binary": "sha256:af1559e7b17fcf3e041f43d3d50b120f210a5bd314b84571282f5b4172c1f30e built from 0801224",
       "steps": [
-        "launched the fixture window and opened the Command Palette",
-        "the Operator entered にほ without confirming and pressed Enter",
-        "the Command Palette stayed open with the query showing にほ and no command executed",
-        "Escape then dismissed the palette"
+        "launched the fixture window",
+        "the Operator opened the Command Palette, entered にほ without confirming and pressed Enter",
+        "the palette stayed open with the query showing にほ and no command ran; Escape dismissed it",
+        "a second Operator pass entered にほ and clicked a result row; the palette closed, but the composed text matched no command, so that attempt cannot separate the guard from an empty result set"
       ],
-      "limit": "the observation shows the end-to-end behaviour; whether the platform IME or the new guard suppressed the activation is NOT_MEASURED, and the guard itself is covered by the unit test"
+      "limit": "the keyboard observation shows the end-to-end behaviour and whether the platform IME or the guard suppressed it is NOT_MEASURED; the pointer route is covered by the shared boundary and its unit test, not by an unambiguous Native observation"
     },
     "independent_gate": {
-      "gate_id": "f8ed77ed-2254-49dd-9b8f-0652b689704e",
-      "candidate": "466b72ffff5b1933d27c6d65961cbaf36eb94291",
+      "gate_id": "c92f52df-47a2-4eff-b4d6-4e66511c8c89",
+      "candidate": "0801224ace3e2a90edcc9c87b8db3ecc346291ad",
       "result": "SUCCEEDED",
-      "checks": ["fmt", "dependency-rules", "clippy", "tests"],
-      "duration_ms": 301456,
+      "checks": [
+        "fmt",
+        "dependency-rules",
+        "clippy",
+        "tests"
+      ],
+      "duration_ms": 298683,
       "isolation": "fresh Gate-owned external target; compiler cache disabled through an explicit cargo --config override",
       "cleanup": "complete",
       "verify": "SUCCEEDED before and after disposal with identical candidate and log digests",
-      "earlier_failure": "gate adae3907 failed at the tests check because the operator's compiler cache stayed active through the config file and its server error aborted compilation; the next request disabled the wrapper explicitly"
+      "earlier_gates": [
+        {
+          "gate_id": "adae3907-d844-4f4f-a829-c418987d380f",
+          "result": "FAILED",
+          "cause": "the operator compiler cache stayed active through the config file and its server error aborted compilation"
+        },
+        {
+          "gate_id": "f8ed77ed-2254-49dd-9b8f-0652b689704e",
+          "candidate": "466b72ffff5b1933d27c6d65961cbaf36eb94291",
+          "result": "SUCCEEDED",
+          "note": "the intermediate candidate that guarded only the Enter route; superseded by 0801224, not reused as its verification"
+        }
+      ]
     },
     "workspace_disposal": {
-      "removed": ["the successful Gate's work/repo (about 53 MiB)", "its Gate-owned target gate-targets/ax1-guard2 (about 2.5 GiB)", "the failed Gate's target gate-targets/ax1-guard"],
-      "retained": "all Gate records, receipts, logs and private homes; the failed Gate's workspace",
+      "removed": [
+        "the successful Gate c92f52df work/repo (about 53 MiB)",
+        "its Gate-owned target gate-targets/ax1-dispatch (about 2.5 GiB)",
+        "the earlier successful Gate f8ed77ed work/repo and its target gate-targets/ax1-guard2",
+        "the failed Gate adae3907 target gate-targets/ax1-guard"
+      ],
+      "retained": "all Gate records, receipts, logs and private homes; the failed Gate adae3907 workspace",
       "integrity": "candidate and every check-log digest identical before and after"
     },
     "documentation": "PASS: json.tool; 62 owning contracts; unchanged acyclic 41-edge DAG; links resolve; recorded values match the run outputs; privacy scan; git diff --check.",
