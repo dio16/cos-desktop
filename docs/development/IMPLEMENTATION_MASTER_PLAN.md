@@ -393,7 +393,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-UX4 — Keyboard map and Command Palette inventory
 - **Hard prereqs:** none.
-- **Priority:** P1 · **Status:** DESIGN_GATE_REQUIRED · **Owner:** Product/UX owner
+- **Priority:** P1 · **Status:** INVENTORY RECONCILED (eleven approved palette commands and documented keys recorded; pointer-only Compare controls and undocumented actions stay open; Tern review pending) · **Owner:** Product/UX owner
 - **Consumers:** MP-NAV1/4, MP-DOCK*, MP-INS*, MP-AX2.
 - **Design source / acceptance:** [DC-MP-UX4](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-ux4). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -1975,3 +1975,10 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **NOT_MEASURED:** native contrast/High Contrast, the 125–200 % DPI ladder and monitor migration, mixed-script baseline/line-height, pixel geometry, motion (none observed; reduced-motion audit stands) and product/UX acceptance. The Japanese fallback 1.5× line height remains Proposed and not applied.
 - **Evidence attribution:** each capture carries its SHA-256 and stated content; the window PID/HWND were not recorded and are marked `NOT_RECORDED`, the capture method is the window screenshot/AX route, and the uniqueness check covers only the listed evidence directories.
 - **No product change:** docs/evidence only; no Refine Gate (Y04). Evidence: [ux3-visual-latest](evidence-published/ux3-visual-latest/validation.json); both captures are unique only against the seven evidence directories named in that record, not repository-wide.
+
+### 19.81 MP-UX4 keyboard inventory reconciliation (2026-10-30)
+
+- **Authority and baseline:** the Tern next-task directive after the clean MP-UX3 review, on `feature/mp-ux4-keyboard-inventory` from `2b2564308351afc85ee1f54a43e127d08e4182eb`. ADR-0008 §5 DD-05 approves the documented inventory and leaves undocumented keys open; DC-MP-UX4 owns the map. This task records boundaries only and adds no command or shortcut.
+- **Approved and implemented:** the eleven palette commands (surfaces, Next Surface, rail/dock open-active, Show Evaluation/Evidence, diagnostics, Stop and receipt check) each map to an existing surface operation; the Ctrl+1/2/3, Ctrl+Tab, Ctrl+K, Ctrl+D, Tab/Shift+Tab, list arrows and Enter/Space/Escape paths are documented, implemented and observed in the NAV5/AX2/SEC2/INS3 runs. The rejected bulk-inspector toggle stays rejected.
+- **Implemented without a design decision:** the Compare Change A/B and Close Compare controls are pointer-only; no keymap decision exists for them. Product §21 examples (New creative task, Reuse task) are not inventory entries because no Runtime command or surface exists, and drag/drop/clipboard payload actions remain open.
+- **Not measured:** the AX2 run is the only keyboard evidence; the full matrix, IME, DPI and screen-reader quality remain `NOT_MEASURED`. No product source changed and no Refine Gate applies (Y04); candidate `89d52642` stays covered by Gate `e1f4bf7a-…`. Evidence: [ux4-inventory-latest](evidence-published/ux4-inventory-latest/register.json).

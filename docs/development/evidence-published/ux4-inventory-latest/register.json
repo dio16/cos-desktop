@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "task": "MP-UX4",
+  "contract": "DC-MP-UX4",
+  "status": "INVENTORY_RECONCILED_NO_NEW_COMMAND",
+  "baseline": {
+    "reviewed_commit": "2b2564308351afc85ee1f54a43e127d08e4182eb",
+    "branch": "feature/mp-ux4-keyboard-inventory",
+    "product_source": "89d526427c26a300f0700614abb51e4c842a29f7 (no product-source change on this branch)"
+  },
+  "authority": ["ADR-0008 §5 DD-05 (documented inventory approved; undocumented keys open)", "DC-MP-UX4", "Product §21", "NAV5 implementation and its clean review", "AX2 limited native keyboard results"],
+  "classes": {
+    "APPROVED_IMPLEMENTED": "documented/ratified inventory item with a real surface implementation and an independent review",
+    "IMPLEMENTED_NOT_APPROVED": "implemented but no design ratification of its product semantics",
+    "OPEN": "no approved action or key",
+    "NOT_MEASURED": "reachability known only from the limited AX2 run"
+  },
+  "palette_inventory": [
+    {"id":"surface.artifact","title":"Show Artifact","surface":"surface switcher / Ctrl+1","status":"APPROVED_IMPLEMENTED"},
+    {"id":"surface.compare","title":"Show Compare","surface":"surface switcher / Ctrl+2","status":"APPROVED_IMPLEMENTED"},
+    {"id":"surface.flow","title":"Show Flow","surface":"surface switcher / Ctrl+3","status":"APPROVED_IMPLEMENTED"},
+    {"id":"surface.next","title":"Next Surface","surface":"Ctrl+Tab","status":"APPROVED_IMPLEMENTED"},
+    {"id":"task.open-active","title":"Open Active Task","surface":"Task Rail Enter","status":"APPROVED_IMPLEMENTED"},
+    {"id":"candidate.open-active","title":"Open Active Candidate","surface":"Dock Enter","status":"APPROVED_IMPLEMENTED"},
+    {"id":"inspector.evaluation","title":"Show Evaluation","surface":"Inspector section header","status":"APPROVED_IMPLEMENTED"},
+    {"id":"inspector.evidence","title":"Show Evidence","surface":"Inspector section header","status":"APPROVED_IMPLEMENTED"},
+    {"id":"diagnostics.toggle","title":"Toggle Diagnostics","surface":"Ctrl+D","status":"APPROVED_IMPLEMENTED"},
+    {"id":"stop.task","title":"Stop Task","surface":"Request Stop button","status":"APPROVED_IMPLEMENTED"},
+    {"id":"stop.check-receipt","title":"Check Stop Receipt","surface":"Check receipt button","status":"APPROVED_IMPLEMENTED"}
+  ],
+  "rejected_or_absent": [
+    {"item":"bulk inspector toggle","status":"REJECTED_BY_REVIEW","note":"removed in NAV5 round 1 because no surface owns it"},
+    {"item":"drag/drop and clipboard payload actions","status":"OPEN","note":"DC-MP-NAV5 crosswalk rows 1–2; payload/use semantics have no Product/UX decision"},
+    {"item":"New creative task / Reuse task palette commands","status":"OPEN","note":"Product §21 examples only; no Runtime command or approved surface exists, so they are not inventory entries"},
+    {"item":"palette recents ordering","status":"OPEN","note":"preference exists but the frozen rank order forbids recency reordering"}
+  ],
+  "keyboard_map": [
+    {"keys":"Ctrl+1/2/3","action":"Artifact/Compare/Flow","status":"APPROVED_IMPLEMENTED","native":"AX2 Ctrl+2/Ctrl+3 observed"},
+    {"keys":"Ctrl+Tab","action":"Next Surface through the shared Compare admission","status":"APPROVED_IMPLEMENTED","native":"AX2 positive path observed; sub-two-candidate refusal NOT_REPRODUCIBLE"},
+    {"keys":"Ctrl+K","action":"Command Palette toggle","status":"APPROVED_IMPLEMENTED","native":"NAV5 native smoke open/close/reopen"},
+    {"keys":"Ctrl+D","action":"Diagnostics toggle","status":"APPROVED_IMPLEMENTED","native":"SEC2 native diagnostics observed"},
+    {"keys":"Tab / Shift+Tab","action":"focus traversal","status":"APPROVED_IMPLEMENTED","native":"AX2 focus traversal observed"},
+    {"keys":"Up/Down/Tab/Shift+Tab in palette","action":"palette cursor","status":"APPROVED_IMPLEMENTED","native":"AX2 row movement observed"},
+    {"keys":"Enter/Space on focused control","action":"activate","status":"APPROVED_IMPLEMENTED","native":"observed on sections/buttons"},
+    {"keys":"Escape in palette/intervention","action":"dismiss","status":"APPROVED_IMPLEMENTED","native":"NAV5/INS3 observed"},
+    {"keys":"Compare Change A/B and Close Compare","action":"compare controls","status":"IMPLEMENTED_NOT_APPROVED","native":"DOCK2 observed by pointer; no keyboard shortcut/keymap decision"},
+    {"keys":"Rail/Dock arrow and Home/End","action":"list navigation","status":"APPROVED_IMPLEMENTED","native":"AX2 rail/dock observed (Home/End not implemented)"},
+    {"keys":"zoom/pan, 1:1, swap, link/unlink","action":"future media viewer","status":"OPEN","note":"MP-IMG5/UX-01 decisions Q5/Q6/Q9 are open"}
+  ],
+  "native_limits": ["the AX2 run is the only keyboard evidence; full matrix, IME, DPI and screen-reader quality remain NOT_MEASURED", "no new command or shortcut was added by this task"],
+  "product_change":"none; docs/evidence only",
+  "gate":"no Refine Gate: no product source changed (Y04); candidate 89d52642 is covered by Gate e1f4bf7a-…"
+}
