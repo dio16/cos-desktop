@@ -14,11 +14,13 @@
   "implementation": {
     "files": [
       "scripts/stage_portable.py",
-      "scripts/tests/test_stage_portable.py"
+      "scripts/tests/test_stage_portable.py",
+      "apps/desktop/tests/decode_compare_harness.rs"
     ],
     "third_party_dependencies_added": false,
     "rust_cargo_gpui_protocol_source_changed": false,
-    "verification_boundary": "Fixed allowlist/content self-consistency, not cryptographic authenticity, binary secret scanning or completed signing/distribution."
+    "verification_boundary": "Fixed allowlist/content self-consistency, not cryptographic authenticity, binary secret scanning or completed signing/distribution.",
+    "deletion_rule": "The staging tool performs no directory deletion at all: a failed stage withdraws its own completed name, keeps its staging directory and names it in the failure. Only a successful stage renames the directory to the requested output."
   },
   "verification": {
     "local_quality": {
@@ -28,8 +30,8 @@
     },
     "python_contract": {
       "command": "python -B scripts/tests/test_stage_portable.py",
-      "collected": 27,
-      "passed": 26,
+      "collected": 26,
+      "passed": 25,
       "skipped": 1,
       "skip_reason": "Windows symbolic-link creation privilege absent; junction and hard-link refusal executed.",
       "exit": 0
@@ -78,13 +80,13 @@
     "AC18": "NO_RELEASE_CLAIM: internal stage is not full MP-REL1, signed distribution or product acceptance"
   },
   "gate": {
-    "id": "045a0299-abf3-4174-b54b-5752c9221e55",
-    "candidate": "ec29b6593e5ba9c4c8bbf7a655dc660a109a4035",
-    "label": "cos-desktop-rel1-cleanup-ec29b659",
+    "id": "12482211-a99a-4ad2-8857-90bd11a10832",
+    "candidate": "3263e748916b9b6e4446e429be63752ea9942869",
+    "label": "cos-desktop-rel1-nodelete-3263e748",
     "status": "SUCCEEDED",
     "cleanup": "complete",
-    "request_sha256": "sha256:cc54c5ddefda572b59cd30e413e0c93020edfd03e37a0dda191965307fe26375",
-    "terminal_state_sha256": "sha256:232c9536b75e49828146baec029b3bf9fee8a49628a368a8891ee4764259569f",
+    "request_sha256": "sha256:6b4f6e6290075ff772c2ebdfb7b474fe6e58ff2463565c2dca300257beb72a57",
+    "terminal_state_sha256": "sha256:391aa3c3495651de4a8eb7ebebe8c15bdd3dad9d4e82cc4a348543333593d2e0",
     "checks": [
       {
         "id": "fmt",
@@ -127,11 +129,11 @@
         "outcome": "pass"
       }
     ],
-    "staged_binary_sha256": "8c73eb3434f8cef094edd616a3b55e1d2650beac3025a20f0af788f3328b5e74",
+    "staged_binary_sha256": "f53063fa22139ac4fa8b3caea738612bf0261d302cc741f0b1bdeadd991d7cf5",
     "storage": {
       "outcome": "COMPLETE",
       "removed_exact_successful_paths": 2,
-      "logical_bytes_removed": 2237845925,
+      "logical_bytes_removed": 2237834667,
       "native_integrity_before_after": "IDENTICAL_SUCCEEDED",
       "source_retained_by": "dev ancestry",
       "failed_predecessors_retained": true
@@ -170,9 +172,20 @@
           "B-R3-01 cleanup acquisition race",
           "A-R3-01 inaccurate assertion wording"
         ]
+      },
+      {
+        "round": 4,
+        "sha": "c9ee13b30a3d985e733cefca5e8a7e0141a30dfb",
+        "verdict": "1 BLOCKING / 0 ACTIONABLE / 0 EXCESSIVE",
+        "closed": [
+          "A-R3-01 assertion record"
+        ],
+        "opened": [
+          "B-R4-01 quarantine delete could remove unverified content"
+        ]
       }
     ],
-    "repaired": "ec29b6593e5ba9c4c8bbf7a655dc660a109a4035",
+    "repaired": "3263e748916b9b6e4446e429be63752ea9942869",
     "re_review": "PENDING"
   },
   "remaining": {
