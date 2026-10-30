@@ -1,0 +1,76 @@
+{
+  "task": "MP-REL1",
+  "contract": "DC-MP-REL1",
+  "decision": "DD-21",
+  "slice": "Windows dependency graph, third-party licence/NOTICE consistency, runtime dependency survey",
+  "status": "LIMITED_COMPLETE_WITH_OPEN_LICENCE_OBLIGATIONS",
+  "baseline": "39713bf9644d0d8ae0b455d814f7a3a7466a0ca2",
+  "product_source": "87922dd567187bec88186944247d1f5644ba2a1b (unchanged by this slice: no product, verification code or NOTICE change was needed)",
+  "a_windows_dependency_graph": {
+    "command": "cargo metadata --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc, then a normal+build traversal from the cos-desktop binary",
+    "reachable_packages": 368,
+    "edge_kinds_separated": {"normal_and_build": 368, "dev_only": "excluded by construction — the traversal follows normal and build edges only"},
+    "sources": ["registry+https://github.com/rust-lang/crates.io-index", "git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942", "workspace path crates"],
+    "pinned": "Cargo.lock and the GPUI git revision are unchanged",
+    "duplicate_versions_present": ["bitflags", "getrandom", "hashbrown", "miniz_oxide", "png", "pollster", "spin", "syn", "thiserror", "thiserror-impl"],
+    "note": "this is the build-time dependency closure, not a proof of what is linked into the executable"
+  },
+  "b_third_party_licences": {
+    "declared_expression_histogram": {
+      "MIT OR Apache-2.0": 167, "MIT": 64, "Apache-2.0 OR MIT": 40, "Apache-2.0": 22,
+      "Unicode-3.0": 18, "MIT/Apache-2.0": 14, "BSD-3-Clause": 8, "Apache-2.0/MIT": 5,
+      "Unlicense OR MIT": 4, "BSD-2-Clause": 4, "MIT OR Apache-2.0 OR Zlib": 4, "Zlib OR Apache-2.0 OR MIT": 3
+    },
+    "packages_without_a_licence_declaration": 0,
+    "packages_with_a_local_licence_text": 330,
+    "packages_without_a_local_licence_text": 16,
+    "packages_without_local_text_list": [
+      "accesskit 0.24.1", "accesskit_consumer 0.38.0", "accesskit_windows 0.34.0",
+      "lyon 1.0.19", "lyon_algorithms 1.0.21", "lyon_geom 1.0.19", "lyon_path 1.0.19", "lyon_tessellation 1.0.22",
+      "profiling 1.0.18", "profiling-procmacros 1.0.18", "pulp-wasm-simd-flag 0.1.1", "seahash 4.1.0",
+      "simd_helpers 0.1.0", "svg_fmt 0.4.5", "taffy 0.13.0"
+    ],
+    "why_the_16_matter": "a declared SPDX expression is not the licence text, and Apache-2.0 §4(a) requires supplying a copy of the licence with a distribution; their text has to be collected before any package leaves the internal stage",
+    "notice_files_found_in_fetched_sources": [
+      {"package": "cfg_aliases 0.2.2", "file": "NOTICES.md", "content": "carries an MIT permission notice for code derived from tectonic_cfg_support::target_cfg!"}
+    ],
+    "zed_gpui": {"licence_file_in_checkout": "LICENSE-APACHE", "revision": "395def7a067b32ed598fcb3f048969ada9b54942"},
+    "unicode": {"expression": "Unicode-3.0", "packages": 18, "existing_notice_entry": "the repository NOTICE already names Unicode 16.0.0 simple case-folding data and points at the generated file"},
+    "not_a_legal_conclusion": "this record lists declared expressions and the presence of text files. It does not decide whether every obligation is met."
+  },
+  "c_runtime_dependencies": {
+    "starting_point": "the published binary-survey.json for the staged executable (34 direct import labels, x86_64, unsigned, delay-import directory zero)",
+    "classes_separated": {
+      "system_dlls": "KERNEL32, USER32, GDI32, ntdll, bcryptprimitives, USERENV and the api-ms-win-* API sets observed directly",
+      "redistributable_candidates": "VCRUNTIME140 and the api-ms-win-crt-* set — the MSVC runtime, whose redistribution terms are not decided here",
+      "delay_load": "NOT_INSPECTED — the delay-import directory is zero in the observed image",
+      "transitive_or_dynamic": "NOT_MEASURED — a direct-import list cannot prove closure"
+    },
+    "claims_not_made": ["no complete DLL closure", "no redistributable supply policy", "no permissive claim for the MSVC runtime"]
+  },
+  "d_notice_consistency": {
+    "current_notice": "names Apache-2.0 for COS Desktop and the Unicode data entry only",
+    "finding": "every declared dependency uses a permissive family expression, but two obligations are not yet satisfied by the four-file internal package: the licence texts of the 16 packages without a local copy, and the cfg_aliases NOTICES.md attribution for Apache-2.0 §4(d)",
+    "change_made": "none — adding attributions without the licence texts, or shipping a NOTICE that implies compliance, would be worse than stating the gap",
+    "decision_needed": "before any distribution, either extend the package file set to carry the required licence texts and notices, or record a Caller-approved distribution decision that changes the four-file rule. Both are outside this slice and outside the current four-file internal contract."
+  },
+  "verification": {
+    "commands_run": [
+      "cargo metadata --locked --format-version 1 --filter-platform x86_64-pc-windows-msvc",
+      "cargo tree --locked -p cos-desktop --target x86_64-pc-windows-msvc -e normal,build",
+      "python -B scripts/tests/test_stage_portable.py",
+      "source scan of ~/.cargo/registry/src for licence and NOTICE files among the 368 packages"
+    ],
+    "package_suite": "27 tests collected, 26 passed, 1 skipped (Windows denies symbolic-link creation); the four-file allowlist and unsigned refusal are unchanged",
+    "gate": "none — no product or verification code changed (ADR-0014 Y04)"
+  },
+  "open_items": [
+    "licence texts for the 16 packages that ship none in their fetched source",
+    "cfg_aliases NOTICES.md attribution propagation",
+    "MSVC runtime redistribution terms and whether the package must supply it",
+    "transitive and dynamically loaded DLL closure",
+    "package file-set change or a Caller distribution decision",
+    "DD-21 signing, publisher, installer, channel and uninstall policy"
+  ],
+  "scope_note": "Inner staging, signing, licence compliance and distribution acceptance are reported separately: staging is limited-complete, signing/installer remain DD-21 OPEN, licence obligations remain OPEN as listed, and no product acceptance is claimed."
+}
