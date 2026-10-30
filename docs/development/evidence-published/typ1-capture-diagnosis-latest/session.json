@@ -18,8 +18,25 @@
     "docs/development/BUILD_AND_RUN.md section 4.18"
   ],
   "existing_api_inventory": {
-    "probe_declared": ["EnumWindows", "GetWindowTextLength", "GetWindowText", "IsWindowVisible", "GetWindowThreadProcessId", "GetWindowRect", "PrintWindow", "IsWindow", "GetForegroundWindow", "GetSystemMetrics"],
-    "harness_declared": ["GetDpiForWindow", "IsWindow", "GetWindowThreadProcessId", "GetWindowTextW", "GetWindowRect"],
+    "probe_declared": [
+      "EnumWindows",
+      "GetWindowTextLength",
+      "GetWindowText",
+      "IsWindowVisible",
+      "GetWindowThreadProcessId",
+      "GetWindowRect",
+      "PrintWindow",
+      "IsWindow",
+      "GetForegroundWindow",
+      "GetSystemMetrics"
+    ],
+    "harness_declared": [
+      "GetDpiForWindow",
+      "IsWindow",
+      "GetWindowThreadProcessId",
+      "GetWindowTextW",
+      "GetWindowRect"
+    ],
     "capture_method": "bitmap sized from GetWindowRect, PrintWindow(PW_RENDERFULLCONTENT) into that DC, then a 7x7 comparison against CopyFromScreen over the same rectangle intersected with the virtual screen (GetSystemMetrics 76-79)",
     "consequence": "the captured bitmap is forced to the GetWindowRect size, so an image/rect size check can pass while the underlying coordinate space still differs from the display"
   },
@@ -36,8 +53,14 @@
       "note": "a second display is present above/right of the primary; Screen.Bounds still reports physical size for this host, so it is not by itself an awareness proof and is recorded only as environment"
     },
     "probe_geometry_by_scale": {
-      "at_100_percent": {"window": "1296x839 at (1072,277)", "dpi": 96},
-      "at_125_percent": {"window": "1294x838 at (729,134)", "dpi": 120},
+      "at_100_percent": {
+        "window": "1296x839 at (1072,277)",
+        "dpi": 96
+      },
+      "at_125_percent": {
+        "window": "1294x838 at (729,134)",
+        "dpi": 120
+      },
       "delta": "width -2, height -1: the probe-reported window did not grow with the scale"
     },
     "physical_window_by_scale": {
@@ -53,16 +76,17 @@
     "shell_independence": "the harness's documented --powershell option pointed at PowerShell 7 returned the same 1294x838 geometry and the same 43/49 refusal as Windows PowerShell, so the result is not a shell-version artefact"
   },
   "classification": {
-    "A_dpi_coordinate_space_mismatch": "SUPPORTED by evidence: the probe host reports a 96 DPI desktop marker at 125 %, its window geometry does not follow the 1.25 physical growth, and the resulting gap is far beyond frame accounting.",
+    "A_dpi_coordinate_space_mismatch": "SUPPORTED: the probe host reports a 96 DPI marker at 125 %, its reported window geometry does not follow the 1.25 physical growth, and the resulting gap is far beyond frame accounting. This establishes a coordinate-space divergence only.",
     "B_window_frame_accounting": "EXCLUDED as the primary cause: the observed 308x201 gap is an order of magnitude beyond the ~14x7 frame difference measured at 100 %.",
     "C_sample_position_calculation": "NOT ISOLATED: the 7x7 positions are computed from the same rectangle on both sides, so a space mismatch alone would explain the disagreement without a separate arithmetic fault; no independent arithmetic error was found by inspection.",
-    "D_actual_occlusion": "NOT SUPPORTED: three attempts with a focused, unobstructed window produced the identical 43/49 result; a real overlay would not repeat exactly.",
+    "D_actual_occlusion": "NO POSITIVE EVIDENCE, NOT EXCLUDED: the window was focused and produced an identical 43/49 three times, which argues against a transient overlay, but a static overlay or a static compositing difference on the same pixels would also repeat exactly, so repetition alone cannot exclude occlusion.",
     "E_printwindow_resampling_difference": "POSSIBLE CONTRIBUTOR, NOT ISOLATED: 43 of 49 samples still agree, so most sampled content is aligned; the 6 disagreements are consistent with edge/text resampling under a scale mismatch but were not separated from a residual offset.",
     "F_other": "none identified",
-    "G_insufficient_evidence": "applies only to the exact mechanism: the probe record carries no compared rectangles, no per-sample deltas and no probe-side screen-metric snapshot, so the remaining 6 samples are not attributed."
+    "G_insufficient_evidence": "applies only to the exact mechanism: the probe record carries no compared rectangles, no per-sample deltas and no probe-side screen-metric snapshot, so the remaining 6 samples are not attributed.",
+    "direct_cause_of_the_43_49_refusal": "NOT_DIAGNOSED: the compared 49 sample coordinates and their RGB deltas are not recorded, so it is not established that the coordinate-space divergence produced the 43/49 result, nor that the six disagreeing samples come from that divergence rather than from resampling, an overlay, or a residual offset."
   },
   "acceptance": {
-    "AC01_cause_classified_with_evidence": "MET for the primary cause (A) with B/D excluded by magnitude and repeatability; C/E remain not isolated.",
+    "AC01_cause_classified_with_evidence": "PARTIAL: the coordinate-space divergence is SUPPORTED with evidence; its direct contribution to the 43/49 refusal and the cause of the remaining six samples are NOT_DIAGNOSED. B is excluded as the primary cause by magnitude; D has no positive evidence but is not excluded by repetition alone; C and E remain not isolated.",
     "AC02_coordinate_space_and_awareness_proof": "PARTIAL: the host's 96 DPI marker and the geometry divergence are observed; the API-level awareness flag itself was not queried because doing so needs a new Win32 call in the probe.",
     "AC03_minimal_fix_when_cause_proven": "NOT APPLIED: the fix needs new authority (below), so no code was edited.",
     "AC04_96_dpi_identity_preserved": "UNCHANGED: nothing in the probe or harness was modified.",
@@ -84,7 +108,7 @@
     "shared_probe_tests": "python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p test_n03_observe.py -> Ran 19 tests, OK (skipped=1)",
     "typography_tests": "python -B -m unittest discover -s apps/desktop/devtools/typography/tests -p test_*.py -> Ran 71 tests, OK",
     "product_quality_gates": "NOT_RUN: no code changed (ADR-0014 Y04)",
-    "documentation": "PENDING json/link/62-contract/41-edge DAG/privacy/diff smoke",
+    "documentation": "PASS: json.tool; 62 task cards with exactly one owning DC each; unchanged acyclic 41-edge DAG; new relative links resolve; recorded geometry values match the retained 100 % and 125 % evidence; host-path/private-key scan; git diff --check.",
     "review": "PENDING candidate-specific linked Tern review"
   },
   "not_measured": [
