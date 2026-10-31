@@ -426,5 +426,12 @@
     "diagnosis": "frame size, not recursion: the diagram build shared the already large render frame",
     "fix": "the diagram region is built by a dedicated flow_diagram_region function, keeping render small; the shipped binary reports SizeOfStackReserve 1048576 and starts normally",
     "not_measured": "release-build frame margin and maximum graph sizes beyond the 120-node drawing cap"
+  },
+  "participant_p03": {
+    "record": "participant-p03.json",
+    "result": "8 PASS / 0 PARTIAL / 0 FAIL on executable sha256:792212d9… from product source 4dd011a",
+    "limits": "option-level responses without free text; five-second condition self-timed; exposure not controlled; not a representative sample",
+    "comprehension_exit": "MET_BY_PARTICIPANT_RESPONSE_WITH_LIMITS",
+    "product_acceptance": "NOT_CLAIMED"
   }
 }
