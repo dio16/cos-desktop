@@ -6,10 +6,11 @@ use app_core::{
 };
 use desktop_protocol::{EpochId, TaskId};
 use gpui::{
-    App, Bounds, Context, Element, ElementId, ElementInputHandler, Entity, EntityInputHandler,
-    FocusHandle, GlobalElementId, InspectorElementId, IntoElement, KeyBinding, LayoutId,
-    ListAlignment, ListOffset, ListState, Pixels, Render, Role, ScrollHandle, SharedString, Style,
-    Task, UTF16Selection, Window, actions, div, list, prelude::*, px, relative, rgb,
+    AnyElement, App, Bounds, Context, Element, ElementId, ElementInputHandler, Entity,
+    EntityInputHandler, FocusHandle, GlobalElementId, InspectorElementId, IntoElement, KeyBinding,
+    LayoutId, ListAlignment, ListOffset, ListState, Pixels, Render, Role, ScrollHandle,
+    SharedString, Style, Task, UTF16Selection, Window, actions, div, list, prelude::*, px,
+    relative, rgb,
 };
 use std::collections::BTreeMap;
 use std::ops::Range;
@@ -2610,254 +2611,12 @@ impl Render for Shell {
                     .collect::<Vec<_>>()
             })
             .unwrap_or_default();
-        let flow_matched_nodes: std::collections::BTreeSet<desktop_protocol::NodeId> =
-            flow_node_rows
-                .iter()
-                .map(|row| row.node().identity.clone())
-                .collect();
-        let flow_matched_edges: std::collections::BTreeSet<desktop_protocol::EdgeId> =
-            flow_edge_rows
-                .iter()
-                .map(|row| row.edge().identity.clone())
-                .collect();
-        let flow_diagrams: Vec<(Arc<ui_model::GraphDisplay>, flow::Diagram)> = flow_rows
-            .as_ref()
-            .map(|rows| {
-                rows.graphs
-                    .iter()
-                    .filter_map(|graph| {
-                        let drawn = flow::diagram(graph, &flow_matched_nodes, &flow_matched_edges);
-                        (!drawn.nodes.is_empty()).then(|| (Arc::clone(graph), drawn))
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
-        let flow_diagram_element = {
-            let shell = cx.entity();
-            let active = flow_node_active.clone();
-            let mut diagrams = Vec::with_capacity(flow_diagrams.len());
-            for (graph_index, (graph, drawn)) in flow_diagrams.iter().enumerate() {
-                let width =
-                    drawn.lane_count.max(1) as f32 * (FLOW_CARD_W + FLOW_LANE_GAP) - FLOW_LANE_GAP;
-                let height = drawn.depth_count.max(1) as f32 * (FLOW_CARD_H + FLOW_DEPTH_GAP)
-                    - FLOW_DEPTH_GAP;
-                let center_x =
-                    |lane: usize| lane as f32 * (FLOW_CARD_W + FLOW_LANE_GAP) + FLOW_CARD_W / 2.0;
-                let top_y = |depth: usize| depth as f32 * (FLOW_CARD_H + FLOW_DEPTH_GAP);
-                let mut canvas = div()
-                    .id(("flow-diagram-canvas", graph_index))
-                    .relative()
-                    .w(px(width.max(1.0)))
-                    .h(px(height.max(1.0)));
-                for (edge_index, edge) in drawn.edges.iter().enumerate() {
-                    let (Some(from), Some(to)) = (
-                        drawn.nodes.iter().find(|node| node.node == edge.from),
-                        drawn.nodes.iter().find(|node| node.node == edge.to),
-                    ) else {
-                        continue;
-                    };
-                    let color = if edge.matched { 0x6f9bc6 } else { 0x3c4046 };
-                    let start_x = center_x(from.lane);
-                    let start_y = top_y(from.depth) + FLOW_CARD_H;
-                    let end_x = center_x(to.lane);
-                    let end_y = top_y(to.depth);
-                    let mid_y = (start_y + end_y) / 2.0;
-                    let mut segments = Vec::with_capacity(3);
-                    if (end_y - start_y).abs() > 0.5 {
-                        if (start_x - end_x).abs() < 0.5 {
-                            segments.push((
-                                start_x - FLOW_EDGE_PX / 2.0,
-                                start_y,
-                                FLOW_EDGE_PX,
-                                end_y - start_y,
-                            ));
-                        } else {
-                            segments.push((
-                                start_x - FLOW_EDGE_PX / 2.0,
-                                start_y,
-                                FLOW_EDGE_PX,
-                                mid_y - start_y,
-                            ));
-                            segments.push((
-                                start_x.min(end_x),
-                                mid_y - FLOW_EDGE_PX / 2.0,
-                                (start_x - end_x).abs(),
-                                FLOW_EDGE_PX,
-                            ));
-                            segments.push((
-                                end_x - FLOW_EDGE_PX / 2.0,
-                                mid_y,
-                                FLOW_EDGE_PX,
-                                end_y - mid_y,
-                            ));
-                        }
-                    }
-                    for (segment_index, (left, top, w, h)) in segments.into_iter().enumerate() {
-                        canvas = canvas.child(
-                            div()
-                                .id((
-                                    "flow-diagram-edge",
-                                    graph_index * 4096 + edge_index * 8 + segment_index,
-                                ))
-                                .absolute()
-                                .left(px(left))
-                                .top(px(top))
-                                .w(px(w.max(FLOW_EDGE_PX)))
-                                .h(px(h.max(FLOW_EDGE_PX)))
-                                .bg(rgb(color)),
-                        );
-                    }
-                }
-                for node in drawn.nodes.iter() {
-                    let is_active = active.as_ref().is_some_and(|key| {
-                        key.graph_ref == graph.graph_ref && key.node == node.node
-                    });
-                    let layer = node.layer.as_deref().unwrap_or("階層情報なし");
-                    let aria = format!(
-                        "図の処理：{}。階層：{}。ノードID：{}。同じ処理は下の一覧からもキーボードで選べます。",
-                        node.label,
-                        layer,
-                        node.node.as_str()
-                    );
-                    let key = flow::NodeKey {
-                        graph_ref: graph.graph_ref.clone(),
-                        node: node.node.clone(),
-                    };
-                    let click_shell = shell.clone();
-                    canvas = canvas.child(
-                        div()
-                            .id(SharedString::from(format!(
-                                "flow-diagram-node-{}:{}",
-                                graph.graph_ref.graph_id.as_str(),
-                                node.node.as_str()
-                            )))
-                            .absolute()
-                            .left(px(center_x(node.lane) - FLOW_CARD_W / 2.0))
-                            .top(px(top_y(node.depth)))
-                            .w(px(FLOW_CARD_W))
-                            .h(px(FLOW_CARD_H))
-                            .role(Role::Button)
-                            .aria_label(SharedString::from(aria))
-                            .cursor_pointer()
-                            .p_2()
-                            .border_1()
-                            .border_color(rgb(if is_active {
-                                0xe6c278
-                            } else if node.matched {
-                                0x626870
-                            } else {
-                                0x343940
-                            }))
-                            .bg(rgb(if is_active {
-                                0x3a4048
-                            } else if node.matched {
-                                0x272b31
-                            } else {
-                                0x1e2124
-                            }))
-                            .text_color(rgb(if node.matched { 0xe6e8eb } else { 0x7d848c }))
-                            .flex()
-                            .flex_col()
-                            .justify_center()
-                            .truncate()
-                            .child(SharedString::from(node.label.clone()))
-                            .child(
-                                xs_text
-                                    .clone()
-                                    .apply(div())
-                                    .truncate()
-                                    .text_color(rgb(if node.matched { 0xaeb6bf } else { 0x6b727a }))
-                                    .child(SharedString::from(format!(
-                                        "{layer} · {}",
-                                        node.node.as_str()
-                                    ))),
-                            )
-                            .on_click(move |_, window, app| {
-                                let key = key.clone();
-                                click_shell.update(app, |this, cx| {
-                                    this.select_flow_node(key, window, cx);
-                                });
-                            }),
-                    );
-                }
-                let total = graph.nodes.len();
-                let notes = {
-                    let mut notes = String::new();
-                    if drawn.truncated {
-                        notes.push_str(&format!(
-                            "図は{}件のみ表示しています（全{}件）。残りは下の一覧で確認できます。",
-                            drawn.nodes.len(),
-                            total
-                        ));
-                    }
-                    if drawn.skipped_edges > 0 {
-                        if !notes.is_empty() {
-                            notes.push(' ');
-                        }
-                        notes.push_str(&format!(
-                            "端点がこの図にない接続が{}件あります。下の接続一覧に表示しています。",
-                            drawn.skipped_edges
-                        ));
-                    }
-                    if drawn.cyclic {
-                        if !notes.is_empty() {
-                            notes.push(' ');
-                        }
-                        notes.push_str("接続に循環があるため、上下の位置は目安です。");
-                    }
-                    notes
-                };
-                diagrams.push(
-                    div()
-                        .id(("flow-diagram", graph_index))
-                        .role(Role::Region)
-                        .aria_label("処理の流れの図")
-                        .flex_1()
-                        .min_h_0()
-                        .flex()
-                        .flex_col()
-                        .gap_1()
-                        .child(
-                            xs_text
-                                .clone()
-                                .apply(div())
-                                .text_color(rgb(0xbcc6d0))
-                                .child(SharedString::from(format!(
-                                    "図 · {}件 · {}列（同じ内容は左の一覧でキーボードから参照できます。図の中はスクロールできます）",
-                                    drawn.nodes.len(),
-                                    drawn.depth_count
-                                ))),
-                        )
-                        .children((!notes.is_empty()).then(|| {
-                            xs_text
-                                .clone()
-                                .apply(div())
-                                .text_color(rgb(0xe6c278))
-                                .child(SharedString::from(notes))
-                        }))
-                        .child(
-                            div()
-                                .id(("flow-diagram-scroll", graph_index))
-                                .flex_1()
-                                .min_h_0()
-                                .overflow_scroll()
-                                .child(canvas),
-                        ),
-                );
-            }
-            (!diagrams.is_empty()).then(|| {
-                div()
-                    .id("flow-diagram-region")
-                    .role(Role::Region)
-                    .aria_label("処理の流れの図")
-                    .flex_1()
-                    .min_h_0()
-                    .flex()
-                    .flex_col()
-                    .gap_2()
-                    .children(diagrams)
-            })
-        };
+        let flow_diagram_element = flow_diagram_region(
+            flow_rows.as_deref(),
+            flow_node_active.as_ref(),
+            cx.entity(),
+            xs_text.clone(),
+        );
         let flow_node_list_element = (!flow_node_rows.is_empty()).then(|| {
             let rows = Arc::clone(&flow_node_rows);
             let active = flow_node_active.clone();
@@ -4280,6 +4039,295 @@ impl Render for Shell {
 /// must translate ranges, splice marked text and keep the caret consistent.
 /// These tests call the same helpers the handler uses, so a regression in the
 /// conversion or splice fails here without a window or a real IME.
+/// Build the Flow diagram region in its own frame.
+///
+/// Keeping this out of `render` keeps the debug-build stack frame small; the
+/// diagram is presentation only and never feeds the inspection rows.
+fn flow_diagram_region(
+    rows: Option<&flow::Rows>,
+    active: Option<&flow::NodeKey>,
+    shell: Entity<Shell>,
+    xs_text: TextSpec,
+) -> Option<AnyElement> {
+    let rows = rows?;
+    // Emphasis follows the same exact revision boundary as the list keys, so a
+    // match in one GraphRevision never highlights the same identity in another.
+    let matched_nodes: std::collections::BTreeSet<(
+        desktop_protocol::GraphRef,
+        desktop_protocol::NodeId,
+    )> = rows
+        .nodes
+        .iter()
+        .map(|row| (row.graph.graph_ref.clone(), row.node().identity.clone()))
+        .collect();
+    let matched_edges: std::collections::BTreeSet<(
+        desktop_protocol::GraphRef,
+        desktop_protocol::EdgeId,
+    )> = rows
+        .edges
+        .iter()
+        .map(|row| (row.graph.graph_ref.clone(), row.edge().identity.clone()))
+        .collect();
+    let diagrams: Vec<(Arc<ui_model::GraphDisplay>, flow::Diagram)> = rows
+        .graphs
+        .iter()
+        .filter_map(|graph| {
+            let drawn = flow::diagram(graph, &matched_nodes, &matched_edges);
+            (!drawn.nodes.is_empty()).then(|| (Arc::clone(graph), drawn))
+        })
+        .collect();
+    if diagrams.is_empty() {
+        return None;
+    }
+    let mut blocks = Vec::with_capacity(diagrams.len());
+    for (graph_index, (graph, drawn)) in diagrams.iter().enumerate() {
+        let width = drawn.lane_count.max(1) as f32 * (FLOW_CARD_W + FLOW_LANE_GAP) - FLOW_LANE_GAP;
+        let height =
+            drawn.depth_count.max(1) as f32 * (FLOW_CARD_H + FLOW_DEPTH_GAP) - FLOW_DEPTH_GAP;
+        let center_x =
+            |lane: usize| lane as f32 * (FLOW_CARD_W + FLOW_LANE_GAP) + FLOW_CARD_W / 2.0;
+        let top_y = |depth: usize| depth as f32 * (FLOW_CARD_H + FLOW_DEPTH_GAP);
+        let mut canvas = div()
+            .id(("flow-diagram-canvas", graph_index))
+            .relative()
+            .w(px(width.max(1.0)))
+            .h(px(height.max(1.0)));
+        for (edge_index, edge) in drawn.edges.iter().enumerate() {
+            let (Some(from), Some(to)) = (
+                drawn.nodes.iter().find(|node| node.node == edge.from),
+                drawn.nodes.iter().find(|node| node.node == edge.to),
+            ) else {
+                continue;
+            };
+            let color = if edge.matched { 0x6f9bc6 } else { 0x3c4046 };
+            let start_x = center_x(from.lane);
+            let start_y = top_y(from.depth) + FLOW_CARD_H;
+            let end_x = center_x(to.lane);
+            let end_y = top_y(to.depth);
+            let mid_y = (start_y + end_y) / 2.0;
+            let mut segments = Vec::with_capacity(3);
+            if (end_y - start_y).abs() > 0.5 {
+                if (start_x - end_x).abs() < 0.5 {
+                    segments.push((
+                        start_x - FLOW_EDGE_PX / 2.0,
+                        start_y,
+                        FLOW_EDGE_PX,
+                        end_y - start_y,
+                    ));
+                } else {
+                    segments.push((
+                        start_x - FLOW_EDGE_PX / 2.0,
+                        start_y,
+                        FLOW_EDGE_PX,
+                        mid_y - start_y,
+                    ));
+                    segments.push((
+                        start_x.min(end_x),
+                        mid_y - FLOW_EDGE_PX / 2.0,
+                        (start_x - end_x).abs(),
+                        FLOW_EDGE_PX,
+                    ));
+                    segments.push((
+                        end_x - FLOW_EDGE_PX / 2.0,
+                        mid_y,
+                        FLOW_EDGE_PX,
+                        end_y - mid_y,
+                    ));
+                }
+            }
+            for (segment_index, (left, top, w, h)) in segments.into_iter().enumerate() {
+                canvas = canvas.child(
+                    div()
+                        .id((
+                            "flow-diagram-edge",
+                            graph_index * 4096 + edge_index * 8 + segment_index,
+                        ))
+                        .absolute()
+                        .left(px(left))
+                        .top(px(top))
+                        .w(px(w.max(FLOW_EDGE_PX)))
+                        .h(px(h.max(FLOW_EDGE_PX)))
+                        .bg(rgb(color)),
+                );
+            }
+            // Direction and kind come from the projection; the drawing adds no
+            // meaning of its own. The arrow marks the projected target.
+            canvas = canvas.child(
+                div()
+                    .id(("flow-diagram-arrow", graph_index * 4096 + edge_index))
+                    .absolute()
+                    .left(px(end_x - 5.0))
+                    .top(px(end_y - 11.0))
+                    .w(px(10.0))
+                    .h(px(11.0))
+                    .text_color(rgb(color))
+                    .child(SharedString::from("▼")),
+            );
+            if let Some(kind) = edge.kind.as_deref() {
+                canvas = canvas.child(
+                    div()
+                        .id(("flow-diagram-kind", graph_index * 4096 + edge_index))
+                        .absolute()
+                        .left(px(start_x.min(end_x) + 6.0))
+                        .top(px(mid_y - 8.0))
+                        .px_1()
+                        .bg(rgb(0x17191c))
+                        .text_color(rgb(if edge.matched { 0x9dc0e0 } else { 0x8b949e }))
+                        .child(SharedString::from(kind)),
+                );
+            }
+        }
+        for node in drawn.nodes.iter() {
+            let is_active =
+                active.is_some_and(|key| key.graph_ref == graph.graph_ref && key.node == node.node);
+            let layer = node.layer.as_deref().unwrap_or("階層情報なし");
+            let aria = format!(
+                "図の処理：{}。階層：{}。ノードID：{}。同じ処理は下の一覧からもキーボードで選べます。",
+                node.label,
+                layer,
+                node.node.as_str()
+            );
+            let key = flow::NodeKey {
+                graph_ref: graph.graph_ref.clone(),
+                node: node.node.clone(),
+            };
+            let click_shell = shell.clone();
+            canvas = canvas.child(
+                div()
+                    .id(SharedString::from(format!(
+                        "flow-diagram-node-{}:{}",
+                        graph.graph_ref.graph_id.as_str(),
+                        node.node.as_str()
+                    )))
+                    .absolute()
+                    .left(px(center_x(node.lane) - FLOW_CARD_W / 2.0))
+                    .top(px(top_y(node.depth)))
+                    .w(px(FLOW_CARD_W))
+                    .h(px(FLOW_CARD_H))
+                    .role(Role::Button)
+                    .aria_label(SharedString::from(aria))
+                    .cursor_pointer()
+                    .p_2()
+                    .border_1()
+                    .border_color(rgb(if is_active {
+                        0xe6c278
+                    } else if node.matched {
+                        0x626870
+                    } else {
+                        0x343940
+                    }))
+                    .bg(rgb(if is_active {
+                        0x3a4048
+                    } else if node.matched {
+                        0x272b31
+                    } else {
+                        0x1e2124
+                    }))
+                    .text_color(rgb(if node.matched { 0xe6e8eb } else { 0x7d848c }))
+                    .flex()
+                    .flex_col()
+                    .justify_center()
+                    .truncate()
+                    .child(SharedString::from(node.label.clone()))
+                    .child(
+                        xs_text
+                            .clone()
+                            .apply(div())
+                            .truncate()
+                            .text_color(rgb(if node.matched { 0xaeb6bf } else { 0x6b727a }))
+                            .child(SharedString::from(format!(
+                                "{layer} · {}",
+                                node.node.as_str()
+                            ))),
+                    )
+                    .on_click(move |_, window, app| {
+                        let key = key.clone();
+                        click_shell.update(app, |this, cx| {
+                            this.select_flow_node(key, window, cx);
+                        });
+                    }),
+            );
+        }
+        let total = graph.nodes.len();
+        let notes = {
+            let mut notes = String::new();
+            if drawn.truncated {
+                notes.push_str(&format!(
+                    "図は{}件のみ表示しています（全{}件）。残りは左の一覧で確認できます。",
+                    drawn.nodes.len(),
+                    total
+                ));
+            }
+            if drawn.skipped_edges > 0 {
+                if !notes.is_empty() {
+                    notes.push(' ');
+                }
+                notes.push_str(&format!(
+                    "端点がこの図にない接続が{}件あります。左の接続一覧に表示しています。",
+                    drawn.skipped_edges
+                ));
+            }
+            if drawn.cyclic {
+                if !notes.is_empty() {
+                    notes.push(' ');
+                }
+                notes.push_str("接続に循環があるため、上下の位置は目安です。");
+            }
+            notes
+        };
+        blocks.push(
+            div()
+                .id(("flow-diagram", graph_index))
+                .role(Role::Region)
+                .aria_label("処理の流れの図")
+                .flex_1()
+                .min_h_0()
+                .flex()
+                .flex_col()
+                .gap_1()
+                .child(
+                    xs_text
+                        .clone()
+                        .apply(div())
+                        .text_color(rgb(0xbcc6d0))
+                        .child(SharedString::from(format!(
+                            "図 · {}件 · {}列（同じ内容は左の一覧でキーボードから参照できます。図の中はスクロールできます）",
+                            drawn.nodes.len(),
+                            drawn.depth_count
+                        ))),
+                )
+                .children((!notes.is_empty()).then(|| {
+                    xs_text
+                        .clone()
+                        .apply(div())
+                        .text_color(rgb(0xe6c278))
+                        .child(SharedString::from(notes))
+                }))
+                .child(
+                    div()
+                        .id(("flow-diagram-scroll", graph_index))
+                        .flex_1()
+                        .min_h_0()
+                        .overflow_scroll()
+                        .child(canvas),
+                ),
+        );
+    }
+    Some(
+        div()
+            .id("flow-diagram-region")
+            .role(Role::Region)
+            .aria_label("処理の流れの図")
+            .flex_1()
+            .min_h_0()
+            .flex()
+            .flex_col()
+            .gap_2()
+            .children(blocks)
+            .into_any_element(),
+    )
+}
+
 #[cfg(test)]
 mod ime_tests {
     use super::{byte_offset, ime_byte_range, ime_splice, utf16_offset};

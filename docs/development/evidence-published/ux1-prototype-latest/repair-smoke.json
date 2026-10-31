@@ -65,7 +65,7 @@
       "binary_sha256": "sha256:c9fef8360fc26f4121d278c5a6595a5665ec4250ba3d13464b551ccba2777b50",
       "build_command": "cargo build --locked -p cos-desktop --bin cos-desktop",
       "binary_provenance": "rebuilt after the round-1 fixes; this binary was launched and inspected for the visible stop detail and the inspector evidence gloss",
-      "flow_diagram_binary_sha256": "sha256:45c2e4ee8bc955e55e758f3832e594af72e62b4f60a243d98d1c74bdfbbb3dc7"
+      "flow_diagram_binary_sha256": "sha256:5e3f5af280a4723dbbfa3fe58b8fedc383bb69fc9d6a26cf799b340cae59adb5"
     }
   },
   "native_observation": {
@@ -81,7 +81,7 @@
     "processes": "every owned process exited 0 through the semantic close control with observation shutdown and preference save confirmed",
     "stop_detail": "the prepared state shows 停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。 below the status line (previously the detail was hidden outside manual intervention)",
     "evidence_gloss": "the expanded 判断の根拠 section shows 概要 product silhouette reads as flat (Runtime free text unchanged) and 利用可否 取得可能（AVAILABLE）",
-    "flow_diagram": "fixture Flow shows a 9-node/9-column diagram beside the node and edge lists; searching evaluation highlighted Evaluation and reduced the lists to 1 node and 2 edges; clicking the diagram card selected the node and focused its list row; clearing the query restored 9 nodes and 8 edges; after the list-row compaction six node rows and five edge rows are visible at the default window size",
+    "flow_diagram": "fixture Flow shows a 9-node/9-column diagram with a projected FLOW kind chip and a target arrow on every connector, beside the node and edge lists; searching flow matched 0 nodes and 8 edges and left the drawing in authoritative order; after the list-row compaction six node rows and five edge rows are visible",
     "compare_next_step": "Compare with pending A showed B側の候補がそろうまで… and A側は選ばれています。次に別の候補を選ぶとB側になり、比較が始まります。; selecting C completed the pair and replaced both lines with A側とB側がそろっています。…",
     "viewed_caption": "the Artifact surface and the inspector both state 閲覧中（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。",
     "intervention_next_step": "the disconnected row states 次にすること：再接続する and pressing it reports that this window has no authorized observation target"
@@ -131,6 +131,17 @@
       "candidate": "315d67739b24618a5fc6bbba8676ff9080e59cc2",
       "verdict": "PASS 0 / 0 / 0, VERDICT: CLEAN",
       "result": "both round-3 findings are closed and no new finding was raised; the reviewer accepted that the pending-A state is guaranteed by source and unit test only, and kept MP-UX1 comprehension, product acceptance, MP-TYP1 and MP-R0B unchanged"
+    },
+    {
+      "round": "flow-1",
+      "candidate": "f0265d1553d20516a6a62c9047e4d68bcffd1dce",
+      "verdict": "BLOCKING 2 / ACTIONABLE NON-BLOCKING 2 / EXCESSIVE 0 (unparsed footer, read manually)",
+      "findings": [
+        "B-R1-01: search matches were drawn first, so within-layer order could differ from authoritative order; matching now only decides inclusion under the cap and the drawn set is restored to authoritative order, with a test.",
+        "B-R1-02: the drawing carried neither the projected connection kind nor an explicit direction; each edge now shows its projected kind and an arrow at the projected target, and the kind is carried in DiagramEdge with a test.",
+        "A-R1-01: emphasis ignored the GraphRevision boundary; match sets are now keyed by (GraphRef, identity) with a cross-revision test, matching the list-key boundary.",
+        "A-R1-02: truncation happened before layering, so a drawn node could lose its depth and a cycle through an omitted node went unreported; depth and cycle detection now run over the complete graph before the bounded selection."
+      ]
     }
   ],
   "gates": [
@@ -282,5 +293,11 @@
       "The intervention row states 次にすること with the row's action and keeps the effect sentence (a re-fetch only when a connection target exists; no task start or stop)."
     ],
     "contracts": "Product §19 and DC-MP-FLOW1 record the diagram decision; DC-MP-UX1 records the four approved prototype presentation decisions. Production diagram work stays with DC-MP-FLOW2/FLOW3 stage gates."
+  },
+  "stack_defect": {
+    "observed": "adding per-edge decorations inside the render function made the debug-build main-thread frame exceed the default 1 MiB stack and the process aborted at startup (exit 253, \"has overflowed its stack\"); the same source ran only when linked with /STACK:16777216",
+    "diagnosis": "frame size, not recursion: the diagram build shared the already large render frame",
+    "fix": "the diagram region is built by a dedicated flow_diagram_region function, keeping render small; the shipped binary reports SizeOfStackReserve 1048576 and starts normally",
+    "not_measured": "release-build frame margin and maximum graph sizes beyond the 120-node drawing cap"
   }
 }

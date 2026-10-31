@@ -213,6 +213,8 @@ pub struct DiagramEdge {
     pub edge: EdgeId,
     pub from: NodeId,
     pub to: NodeId,
+    /// Authoritative connection kind, copied from the projection.
+    pub kind: Option<Arc<str>>,
     pub matched: bool,
 }
 
@@ -233,53 +235,34 @@ pub struct Diagram {
 
 /// Lay out one authoritative graph without inventing topology or labels.
 ///
-/// Depth is the longest path over the projected edges, so a node is drawn after
-/// its predecessors. Matching nodes fill the drawing first, then the remaining
-/// nodes in authoritative order. Every label, layer and identity is copied from
-/// the projection; nothing is derived from the drawing position.
+/// Depth is the longest path over the projected edges of the **complete** graph,
+/// so truncating the drawing never moves a drawn node to a wrong layer and a
+/// cycle through an omitted node is still reported. Matching identities only
+/// decide which nodes are drawn first when the cap applies; the drawn set is
+/// then restored to authoritative order, so search emphasis never reorders a
+/// layer. Every label, layer, kind and identity is copied from the projection.
 pub fn diagram(
     graph: &GraphDisplay,
-    matched_nodes: &std::collections::BTreeSet<NodeId>,
-    matched_edges: &std::collections::BTreeSet<EdgeId>,
+    matched_nodes: &std::collections::BTreeSet<(GraphRef, NodeId)>,
+    matched_edges: &std::collections::BTreeSet<(GraphRef, EdgeId)>,
 ) -> Diagram {
-    let truncated = graph.nodes.len() > MAX_DIAGRAM_NODES;
-    let ordered: Vec<usize> = (0..graph.nodes.len())
-        .filter(|index| matched_nodes.contains(&graph.nodes[*index].identity))
-        .chain(
-            (0..graph.nodes.len())
-                .filter(|index| !matched_nodes.contains(&graph.nodes[*index].identity)),
-        )
-        .take(MAX_DIAGRAM_NODES)
-        .collect();
-    let drawn: std::collections::BTreeMap<NodeId, usize> = ordered
+    let index_of: std::collections::BTreeMap<NodeId, usize> = graph
+        .nodes
         .iter()
         .enumerate()
-        .map(|(position, index)| (graph.nodes[*index].identity.clone(), position))
+        .map(|(index, node)| (node.identity.clone(), index))
         .collect();
-
-    let mut successor: Vec<Vec<usize>> = vec![Vec::new(); ordered.len()];
-    let mut depth: Vec<usize> = vec![0; ordered.len()];
-    let mut drawn_edges: Vec<DiagramEdge> = Vec::new();
-    let mut skipped_edges = 0;
+    let mut successors: Vec<Vec<usize>> = vec![Vec::new(); graph.nodes.len()];
     for edge in graph.edges.iter() {
-        let (Some(&from), Some(&to)) = (drawn.get(&edge.from), drawn.get(&edge.to)) else {
-            skipped_edges += 1;
-            continue;
-        };
-        successor[from].push(to);
-        drawn_edges.push(DiagramEdge {
-            edge: edge.identity.clone(),
-            from: edge.from.clone(),
-            to: edge.to.clone(),
-            matched: matched_edges.contains(&edge.identity),
-        });
+        if let (Some(&from), Some(&to)) = (index_of.get(&edge.from), index_of.get(&edge.to)) {
+            successors[from].push(to);
+        }
     }
-
-    let mut cyclic = false;
-    for _ in 0..ordered.len() {
+    let mut depth = vec![0usize; graph.nodes.len()];
+    for _ in 0..graph.nodes.len() {
         let mut changed = false;
-        for from in 0..ordered.len() {
-            for &to in &successor[from] {
+        for from in 0..graph.nodes.len() {
+            for &to in &successors[from] {
                 if depth[to] < depth[from] + 1 {
                     depth[to] = depth[from] + 1;
                     changed = true;
@@ -292,35 +275,67 @@ pub fn diagram(
     }
     // A relaxation that still changes after |V| passes means a cycle; keeping the
     // bounded pass count avoids an infinite loop and reports the ambiguity.
-    if (0..ordered.len()).any(|from| {
-        successor[from]
+    let cyclic = (0..graph.nodes.len()).any(|from| {
+        successors[from]
             .iter()
             .any(|&to| depth[to] < depth[from] + 1)
-    }) {
-        cyclic = true;
-    }
+    });
 
-    let depth_count = depth.iter().copied().max().map_or(0, |value| value + 1);
-    let mut lanes = vec![0usize; depth_count];
-    let nodes = ordered
+    let is_matched_node =
+        |identity: &NodeId| matched_nodes.contains(&(graph.graph_ref.clone(), identity.clone()));
+    let mut selected: Vec<usize> = (0..graph.nodes.len())
+        .filter(|index| is_matched_node(&graph.nodes[*index].identity))
+        .chain(
+            (0..graph.nodes.len()).filter(|index| !is_matched_node(&graph.nodes[*index].identity)),
+        )
+        .take(MAX_DIAGRAM_NODES)
+        .collect();
+    selected.sort_unstable();
+    let truncated = selected.len() < graph.nodes.len();
+    let drawn: std::collections::BTreeMap<NodeId, usize> = selected
         .iter()
         .enumerate()
-        .map(|(position, index)| {
+        .map(|(position, index)| (graph.nodes[*index].identity.clone(), position))
+        .collect();
+
+    let mut drawn_edges = Vec::new();
+    let mut skipped_edges = 0;
+    for edge in graph.edges.iter() {
+        if !drawn.contains_key(&edge.from) || !drawn.contains_key(&edge.to) {
+            skipped_edges += 1;
+            continue;
+        }
+        drawn_edges.push(DiagramEdge {
+            edge: edge.identity.clone(),
+            from: edge.from.clone(),
+            to: edge.to.clone(),
+            kind: edge.kind.clone(),
+            matched: matched_edges.contains(&(graph.graph_ref.clone(), edge.identity.clone())),
+        });
+    }
+
+    let mut lanes: std::collections::BTreeMap<usize, usize> = std::collections::BTreeMap::new();
+    let mut depth_count = 0usize;
+    let nodes = selected
+        .iter()
+        .map(|index| {
             let node = &graph.nodes[*index];
-            let node_depth = depth[position];
-            let lane = lanes[node_depth];
-            lanes[node_depth] += 1;
+            let node_depth = depth[*index];
+            depth_count = depth_count.max(node_depth + 1);
+            let lane = lanes.entry(node_depth).or_insert(0);
+            let assigned = *lane;
+            *lane += 1;
             DiagramNode {
                 node: node.identity.clone(),
                 label: Arc::clone(&node.label),
                 layer: node.layer.clone(),
                 depth: node_depth,
-                lane,
-                matched: matched_nodes.contains(&node.identity),
+                lane: assigned,
+                matched: is_matched_node(&node.identity),
             }
         })
         .collect();
-    let lane_count = lanes.into_iter().max().unwrap_or(0);
+    let lane_count = lanes.values().copied().max().unwrap_or(0);
 
     Diagram {
         nodes,
@@ -403,11 +418,11 @@ mod tests {
     #[test]
     fn the_diagram_layers_predecessors_before_successors() {
         let graph = graph(3, "digest/three", 8);
-        let none: std::collections::BTreeSet<desktop_protocol::NodeId> =
-            std::collections::BTreeSet::new();
-        let no_edges: std::collections::BTreeSet<desktop_protocol::EdgeId> =
-            std::collections::BTreeSet::new();
-        let drawn = diagram(&graph, &none, &no_edges);
+        let drawn = diagram(
+            &graph,
+            &std::collections::BTreeSet::new(),
+            &std::collections::BTreeSet::new(),
+        );
         assert_eq!(drawn.nodes.len(), 3);
         assert_eq!(drawn.edges.len(), 2);
         assert!(!drawn.cyclic);
@@ -423,16 +438,21 @@ mod tests {
         assert!(depth("node/a") < depth("node/m"));
         assert_eq!(drawn.depth_count, 3);
         assert_eq!(drawn.lane_count, 1);
+        assert_eq!(
+            drawn.edges[0].kind.as_deref(),
+            Some("FLOW"),
+            "the projected connection kind is carried into the drawing"
+        );
     }
 
     #[test]
     fn the_diagram_keeps_projection_labels_and_never_invents_one() {
         let graph = graph(3, "digest/three", 8);
-        let none: std::collections::BTreeSet<desktop_protocol::NodeId> =
-            std::collections::BTreeSet::new();
-        let no_edges: std::collections::BTreeSet<desktop_protocol::EdgeId> =
-            std::collections::BTreeSet::new();
-        let drawn = diagram(&graph, &none, &no_edges);
+        let drawn = diagram(
+            &graph,
+            &std::collections::BTreeSet::new(),
+            &std::collections::BTreeSet::new(),
+        );
         let labels: Vec<&str> = drawn.nodes.iter().map(|node| node.label.as_ref()).collect();
         assert_eq!(labels, vec!["Zeta", "Alpha", "Middle"]);
         let layers: Vec<Option<&str>> = drawn
@@ -444,71 +464,52 @@ mod tests {
     }
 
     #[test]
-    fn the_diagram_states_cycles_missing_endpoints_and_truncation() {
+    fn a_search_match_marks_without_reordering_a_layer() {
         let base = graph(3, "digest/three", 8);
-        let mut cyclic = (*base).clone();
-        cyclic.edges = vec![
-            Arc::new(GraphEdgeDisplay {
-                identity: desktop_protocol::EdgeId::fixture("edge/a-z"),
-                from: desktop_protocol::NodeId::fixture("node/a"),
-                to: desktop_protocol::NodeId::fixture("node/z"),
-                from_label: "Alpha".into(),
-                to_label: "Zeta".into(),
-                kind: Some("FLOW".into()),
+        let mut wide = (*base).clone();
+        wide.nodes = vec![
+            Arc::new(GraphNodeDisplay {
+                identity: desktop_protocol::NodeId::fixture("node/first"),
+                label: "First".into(),
+                layer: None,
             }),
-            Arc::new(GraphEdgeDisplay {
-                identity: desktop_protocol::EdgeId::fixture("edge/z-a"),
-                from: desktop_protocol::NodeId::fixture("node/z"),
-                to: desktop_protocol::NodeId::fixture("node/a"),
-                from_label: "Zeta".into(),
-                to_label: "Alpha".into(),
-                kind: Some("FLOW".into()),
-            }),
-            Arc::new(GraphEdgeDisplay {
-                identity: desktop_protocol::EdgeId::fixture("edge/absent"),
-                from: desktop_protocol::NodeId::fixture("node/z"),
-                to: desktop_protocol::NodeId::fixture("node/absent"),
-                from_label: "Zeta".into(),
-                to_label: "Absent".into(),
-                kind: None,
+            Arc::new(GraphNodeDisplay {
+                identity: desktop_protocol::NodeId::fixture("node/second"),
+                label: "Second".into(),
+                layer: None,
             }),
         ]
         .into();
-        let none: std::collections::BTreeSet<desktop_protocol::NodeId> =
+        wide.edges = Arc::from([]);
+        let mut matched: std::collections::BTreeSet<(GraphRef, desktop_protocol::NodeId)> =
             std::collections::BTreeSet::new();
-        let no_edges: std::collections::BTreeSet<desktop_protocol::EdgeId> =
-            std::collections::BTreeSet::new();
-        let drawn = diagram(&cyclic, &none, &no_edges);
-        assert!(drawn.cyclic, "a cycle is reported instead of being hidden");
+        matched.insert((
+            wide.graph_ref.clone(),
+            desktop_protocol::NodeId::fixture("node/second"),
+        ));
+        let drawn = diagram(&wide, &matched, &std::collections::BTreeSet::new());
         assert_eq!(
-            drawn.skipped_edges, 1,
-            "an edge without a drawn endpoint is counted"
+            drawn
+                .nodes
+                .iter()
+                .map(|node| node.node.as_str())
+                .collect::<Vec<_>>(),
+            vec![
+                desktop_protocol::NodeId::fixture("node/first").as_str(),
+                desktop_protocol::NodeId::fixture("node/second").as_str()
+            ],
+            "the layer keeps authoritative order even when the second node matches"
         );
-        assert_eq!(drawn.edges.len(), 2);
-
-        let mut many = (*base).clone();
-        many.nodes = (0..MAX_DIAGRAM_NODES + 5)
-            .map(|index| {
-                Arc::new(GraphNodeDisplay {
-                    identity: desktop_protocol::NodeId::fixture(format!("node/{index}")),
-                    label: format!("Node {index}").into(),
-                    layer: None,
-                })
-            })
-            .collect::<Vec<_>>()
-            .into();
-        many.edges = Arc::from([]);
-        let no_edges: std::collections::BTreeSet<desktop_protocol::EdgeId> =
-            std::collections::BTreeSet::new();
-        let drawn = diagram(&many, &none, &no_edges);
-        assert!(drawn.truncated);
-        assert_eq!(drawn.nodes.len(), MAX_DIAGRAM_NODES);
+        assert!(!drawn.nodes[0].matched);
+        assert!(drawn.nodes[1].matched);
     }
 
     #[test]
-    fn the_diagram_draws_matching_nodes_first() {
-        let mut many = (*graph(3, "digest/three", 8)).clone();
-        many.nodes = (0..MAX_DIAGRAM_NODES + 2)
+    fn truncation_keeps_full_graph_depth_and_cycle_reporting() {
+        let base = graph(3, "digest/three", 8);
+        let mut chain = (*base).clone();
+        let count = MAX_DIAGRAM_NODES + 2;
+        chain.nodes = (0..count)
             .map(|index| {
                 Arc::new(GraphNodeDisplay {
                     identity: desktop_protocol::NodeId::fixture(format!("node/{index}")),
@@ -518,15 +519,119 @@ mod tests {
             })
             .collect::<Vec<_>>()
             .into();
-        many.edges = Arc::from([]);
-        let mut matched = std::collections::BTreeSet::new();
-        matched.insert(desktop_protocol::NodeId::fixture("node/100"));
-        let drawn = diagram(&many, &matched, &std::collections::BTreeSet::new());
+        chain.edges = (1..count)
+            .map(|index| {
+                Arc::new(GraphEdgeDisplay {
+                    identity: desktop_protocol::EdgeId::fixture(format!("edge/{index}")),
+                    from: desktop_protocol::NodeId::fixture(format!("node/{}", index - 1)),
+                    to: desktop_protocol::NodeId::fixture(format!("node/{index}")),
+                    from_label: format!("Node {}", index - 1).into(),
+                    to_label: format!("Node {index}").into(),
+                    kind: Some("FLOW".into()),
+                })
+            })
+            .collect::<Vec<_>>()
+            .into();
+        let mut matched: std::collections::BTreeSet<(GraphRef, desktop_protocol::NodeId)> =
+            std::collections::BTreeSet::new();
+        matched.insert((
+            chain.graph_ref.clone(),
+            desktop_protocol::NodeId::fixture(format!("node/{}", count - 1)),
+        ));
+        let drawn = diagram(&chain, &matched, &std::collections::BTreeSet::new());
+        assert!(drawn.truncated);
+        let last = drawn
+            .nodes
+            .iter()
+            .find(|node| node.matched)
+            .expect("the matched tail is drawn");
         assert_eq!(
-            drawn.nodes[0].node,
-            desktop_protocol::NodeId::fixture("node/100")
+            last.depth,
+            count - 1,
+            "a drawn node keeps the depth computed over the complete chain"
         );
-        assert!(drawn.nodes[0].matched);
+
+        let mut cycle = (*base).clone();
+        cycle.nodes = vec![
+            Arc::new(GraphNodeDisplay {
+                identity: desktop_protocol::NodeId::fixture("node/a"),
+                label: "Alpha".into(),
+                layer: None,
+            }),
+            Arc::new(GraphNodeDisplay {
+                identity: desktop_protocol::NodeId::fixture("node/b"),
+                label: "Beta".into(),
+                layer: None,
+            }),
+        ]
+        .into();
+        cycle.edges = vec![
+            Arc::new(GraphEdgeDisplay {
+                identity: desktop_protocol::EdgeId::fixture("edge/a-b"),
+                from: desktop_protocol::NodeId::fixture("node/a"),
+                to: desktop_protocol::NodeId::fixture("node/b"),
+                from_label: "Alpha".into(),
+                to_label: "Beta".into(),
+                kind: Some("FLOW".into()),
+            }),
+            Arc::new(GraphEdgeDisplay {
+                identity: desktop_protocol::EdgeId::fixture("edge/b-a"),
+                from: desktop_protocol::NodeId::fixture("node/b"),
+                to: desktop_protocol::NodeId::fixture("node/a"),
+                from_label: "Beta".into(),
+                to_label: "Alpha".into(),
+                kind: Some("FLOW".into()),
+            }),
+        ]
+        .into();
+        let drawn = diagram(
+            &cycle,
+            &std::collections::BTreeSet::new(),
+            &std::collections::BTreeSet::new(),
+        );
+        assert!(drawn.cyclic, "a cycle is reported instead of being hidden");
+    }
+
+    #[test]
+    fn emphasis_is_scoped_to_the_exact_graph_revision() {
+        let graph = graph(3, "digest/three", 8);
+        let mut matched: std::collections::BTreeSet<(GraphRef, desktop_protocol::NodeId)> =
+            std::collections::BTreeSet::new();
+        matched.insert((
+            GraphRef {
+                graph_id: GraphId::fixture("graph/other"),
+                version: 3,
+                digest: ArtifactDigest::fixture("digest/three"),
+            },
+            desktop_protocol::NodeId::fixture("node/a"),
+        ));
+        let drawn = diagram(&graph, &matched, &std::collections::BTreeSet::new());
+        assert!(
+            drawn.nodes.iter().all(|node| !node.matched),
+            "a match in another revision never highlights this drawing"
+        );
+    }
+
+    #[test]
+    fn the_diagram_states_missing_endpoints_and_the_cap() {
+        let base = graph(3, "digest/three", 8);
+        let mut missing = (*base).clone();
+        missing.edges = vec![Arc::new(GraphEdgeDisplay {
+            identity: desktop_protocol::EdgeId::fixture("edge/absent"),
+            from: desktop_protocol::NodeId::fixture("node/z"),
+            to: desktop_protocol::NodeId::fixture("node/absent"),
+            from_label: "Zeta".into(),
+            to_label: "Absent".into(),
+            kind: None,
+        })]
+        .into();
+        let drawn = diagram(
+            &missing,
+            &std::collections::BTreeSet::new(),
+            &std::collections::BTreeSet::new(),
+        );
+        assert_eq!(drawn.skipped_edges, 1);
+        assert!(drawn.edges.is_empty());
     }
 
     #[test]
