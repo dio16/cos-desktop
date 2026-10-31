@@ -97,7 +97,7 @@
     "ux1_completion": "NOT_COMPLETE",
     "comprehension_exit": "NOT_MET",
     "product_acceptance": "NOT_CLAIMED",
-    "gate": "independent Gates 6ce9f245… (c7381cf) and c9cb43ed… (e0466c6) SUCCEEDED over fmt, dependency-rules, clippy and tests; the first covered the diagram before the list-row compaction, and only the second covers the final candidate",
+    "gate": "independent Gate 4d038bda… SUCCEEDED on 5ce772a over fmt, dependency-rules, clippy and tests; the earlier flow Gates cover superseded candidates and are not reused",
     "unrelated_holds": "MP-TYP1 125 % capture HOLD and the MP-R0B HOLD with its 352-case failed suite are untouched.",
     "external_review": "Tern round 4 returned CLEAN 0 / 0 / 0 on 315d677; external review is not product acceptance"
   },
@@ -250,12 +250,29 @@
       "outputs": "none declared; absent_outputs empty",
       "cleanup": "complete",
       "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned the same state, candidate and check-log digests"
+    },
+    {
+      "gate_id": "4d038bda-2962-48e3-8a1f-715aa72fec72",
+      "gate_label": "ux1-flow-diagram-20261031-r3",
+      "revision": "5ce772a34fa1f91c10cf2f980078032c874ce43c",
+      "state": "SUCCEEDED",
+      "checks": {
+        "fmt": "pass",
+        "dependency-rules": "pass",
+        "clippy": "pass",
+        "tests": "pass"
+      },
+      "duration_ms": 257389,
+      "candidate_sha256": "sha256:d227f8f16ad232fba1b6e40a45ab1f217e2674333693c55c765932ac425c5f55",
+      "outputs": "none declared; absent_outputs empty",
+      "cleanup": "complete",
+      "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned the same state, candidate and check-log digests"
     }
   ],
   "gate": {
-    "gate_id": "c9cb43ed-fb24-4280-ad15-a4b0e571d6b2",
-    "gate_label": "ux1-flow-diagram-20261031-r2",
-    "revision": "e0466c6ca805bd8c72363fc1c487e705193a52ba",
+    "gate_id": "4d038bda-2962-48e3-8a1f-715aa72fec72",
+    "gate_label": "ux1-flow-diagram-20261031-r3",
+    "revision": "5ce772a34fa1f91c10cf2f980078032c874ce43c",
     "state": "SUCCEEDED",
     "checks": {
       "fmt": "pass",
@@ -263,8 +280,8 @@
       "clippy": "pass",
       "tests": "pass"
     },
-    "duration_ms": 266666,
-    "candidate_sha256": "sha256:625bf1290fddd7e9ff146d1087e7af73f55cac04784b02535c78a0dbbb1631f1",
+    "duration_ms": 257389,
+    "candidate_sha256": "sha256:d227f8f16ad232fba1b6e40a45ab1f217e2674333693c55c765932ac425c5f55",
     "outputs": "none declared; absent_outputs empty",
     "cleanup": "complete",
     "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned the same state, candidate and check-log digests"
