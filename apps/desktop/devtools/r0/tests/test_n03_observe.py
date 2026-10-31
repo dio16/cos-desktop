@@ -87,6 +87,10 @@ class N03Observation(unittest.TestCase):
              "--max-depth", "999"): "ARGS_CAP",
             ("--title", "x", "--out", str(self.record), "--screenshot", str(self.screenshot),
              "--max-screenshot-bytes", "1"): "ARGS_CAP",
+            ("--title", "x", "--out", str(self.record), "--screenshot", str(self.screenshot),
+             "--dpi-scale", "0.4"): "ARGS_SCALE",
+            ("--title", "x", "--out", str(self.record), "--screenshot", str(self.screenshot),
+             "--dpi-scale", "4.1"): "ARGS_SCALE",
         }
         for arguments, code in cases.items():
             result = self.invoke(*arguments)
@@ -306,6 +310,10 @@ class N03Observation(unittest.TestCase):
         self.assertTrue(record["ok"])
         self.assertIn("COS Desktop", record["window"]["title"])
         self.assertEqual(record["screenshot"]["status"], "OBSERVED")
+        geometry = record["screenshot"]["content_cross_check"]["geometry"]
+        self.assertEqual(geometry["dpi_scale"], 1.0)
+        self.assertEqual(geometry["physical_rect"]["width"],
+                         geometry["dip_rect"]["width"])
 
 
 if __name__ == "__main__":

@@ -7,7 +7,10 @@ param(
     [string]$Screenshot,
     [int]$MaxElements = 400,
     [int]$MaxDepth = 12,
-    [int]$MaxScreenshotBytes = 33554432
+    [int]$MaxScreenshotBytes = 33554432,
+    # Explicit display scale for callers whose own DPI awareness makes GetWindowRect
+    # report DIP coordinates while the display is physical. 1.0 keeps the legacy path.
+    [double]$DpiScale = 1.0
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,6 +29,7 @@ function Fail([string]$code) {
 
 if ($MaxElements -lt 1 -or $MaxElements -gt 5000) { Fail "CAP_RANGE" }
 if ($MaxDepth -lt 1 -or $MaxDepth -gt 64) { Fail "CAP_RANGE" }
+if ($DpiScale -lt 0.5 -or $DpiScale -gt 4.0) { Fail "CAP_RANGE" }
 if ([string]::IsNullOrEmpty($Title) -and $ProcessId -le 0) { Fail "TARGET_REQUIRED" }
 if ([string]::IsNullOrEmpty($Screenshot)) { Fail "SCREENSHOT_PATH_REQUIRED" }
 
@@ -175,19 +179,31 @@ try {
         }
         $samples = 0
         $matched = 0
-        if ($sameRect -and $iw -gt 0 -and $ih -gt 0) {
-            $screen = New-Object System.Drawing.Bitmap $iw, $ih
+        # Geometry is kept in the probe's DIP frame and only the screen sample is
+        # mapped through DpiScale, so the DIP-sized PrintWindow bitmap and the physical
+        # display are compared in one frame. At scale 1.0 this reduces to the legacy
+        # one-pixel-per-DIP comparison.
+        $physicalWidth = [int][Math]::Round($iw * $DpiScale)
+        $physicalHeight = [int][Math]::Round($ih * $DpiScale)
+        if ($sameRect -and $iw -gt 0 -and $ih -gt 0 -and $physicalWidth -gt 0 -and $physicalHeight -gt 0) {
+            $screen = New-Object System.Drawing.Bitmap $physicalWidth, $physicalHeight
             $screenGraphics = [System.Drawing.Graphics]::FromImage($screen)
-            $screenGraphics.CopyFromScreen($ix, $iy, 0, 0, $screen.Size)
+            $physicalX = [int][Math]::Round($ix * $DpiScale)
+            $physicalY = [int][Math]::Round($iy * $DpiScale)
+            $screenGraphics.CopyFromScreen($physicalX, $physicalY, 0, 0, $screen.Size)
             $screenGraphics.Dispose()
             for ($gx = 1; $gx -le 7; $gx++) {
                 for ($gy = 1; $gy -le 7; $gy++) {
-                    $sx = [int]([double]$iw * $gx / 8.0)
-                    $sy = [int]([double]$ih * $gy / 8.0)
-                    if ($sx -ge $iw) { $sx = $iw - 1 }
-                    if ($sy -ge $ih) { $sy = $ih - 1 }
-                    $capturedPixel = $bitmap.GetPixel($ix - $rect.Left + $sx, $iy - $rect.Top + $sy)
-                    $screenPixel = $screen.GetPixel($sx, $sy)
+                    $px = [int]([double]$physicalWidth * $gx / 8.0)
+                    $py = [int]([double]$physicalHeight * $gy / 8.0)
+                    if ($px -ge $physicalWidth) { $px = $physicalWidth - 1 }
+                    if ($py -ge $physicalHeight) { $py = $physicalHeight - 1 }
+                    $bx = $ix - $rect.Left + [int][Math]::Round($px / $DpiScale)
+                    $by = $iy - $rect.Top + [int][Math]::Round($py / $DpiScale)
+                    if ($bx -ge $width) { $bx = $width - 1 }
+                    if ($by -ge $height) { $by = $height - 1 }
+                    $capturedPixel = $bitmap.GetPixel($bx, $by)
+                    $screenPixel = $screen.GetPixel($px, $py)
                     $samples++
                     if ([Math]::Abs([int]$capturedPixel.R - [int]$screenPixel.R) -le 24 -and
                         [Math]::Abs([int]$capturedPixel.G - [int]$screenPixel.G) -le 24 -and
@@ -206,6 +222,17 @@ try {
             tolerance = 24
             distinct_sampled_colors = $colors.Count
             non_black_samples = $nonBlack
+            geometry = @{
+                dpi_scale = $DpiScale
+                dip_rect = @{ left = $rect.Left; top = $rect.Top; width = $width; height = $height }
+                physical_rect = @{
+                    left = [int][Math]::Round($rect.Left * $DpiScale)
+                    top = [int][Math]::Round($rect.Top * $DpiScale)
+                    width = [int][Math]::Round($width * $DpiScale)
+                    height = [int][Math]::Round($height * $DpiScale)
+                }
+                physical_visible = @{ left = $physicalX; top = $physicalY; width = $physicalWidth; height = $physicalHeight }
+            }
         }
         if (-not $sameRect) {
             $bitmap.Dispose()

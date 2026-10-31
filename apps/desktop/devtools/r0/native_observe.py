@@ -64,6 +64,7 @@ SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 ERROR_CODES = (
     "ARGS_TARGET",
     "ARGS_CAP",
+    "ARGS_SCALE",
     "PROBE_MISSING",
     "PROBE_FAILED",
     "PROBE_TIMEOUT",
@@ -130,13 +131,14 @@ def validate_target(title: str | None, pid: int | None) -> None:
 
 def probe_command(powershell: str, probe: Path, *, title: str | None, pid: int | None,
                   screenshot: Path, max_elements: int, max_depth: int,
-                  max_screenshot_bytes: int) -> list[str]:
+                  max_screenshot_bytes: int, dpi_scale: float) -> list[str]:
     command = [powershell, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
                "-File", str(probe),
                "-Screenshot", str(screenshot),
                "-MaxElements", str(max_elements),
                "-MaxDepth", str(max_depth),
-               "-MaxScreenshotBytes", str(max_screenshot_bytes)]
+               "-MaxScreenshotBytes", str(max_screenshot_bytes),
+               "-DpiScale", repr(float(dpi_scale))]
     if title is not None:
         command.extend(["-Title", title])
     else:
@@ -350,6 +352,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-elements", default="400")
     parser.add_argument("--max-depth", default="12")
     parser.add_argument("--max-screenshot-bytes", default=str(32 * 1024 * 1024))
+    parser.add_argument("--dpi-scale", default="1.0",
+                        help="display scale the caller's DPI awareness requires (0.5-4.0)")
     parser.add_argument("--powershell", default="powershell")
     # Test seam: the packaged probe is the default, and a test may point the *real* CLI at
     # a fake probe so the fail-closed path is exercised end to end rather than monkeypatched.
@@ -360,6 +364,9 @@ def main(argv: list[str] | None = None) -> int:
         max_elements = bounded_integer(args.max_elements, MAX_ELEMENTS_RANGE)
         max_depth = bounded_integer(args.max_depth, MAX_DEPTH_RANGE)
         max_screenshot = bounded_integer(args.max_screenshot_bytes, MAX_SCREENSHOT_RANGE)
+        dpi_scale = float(args.dpi_scale)
+        if not 0.5 <= dpi_scale <= 4.0:
+            fail("ARGS_SCALE")
         screenshot = Path(args.screenshot)
         caps = {"max_elements": max_elements, "max_depth": max_depth,
                 "max_screenshot_bytes": max_screenshot}
@@ -367,7 +374,8 @@ def main(argv: list[str] | None = None) -> int:
                                 pid=args.pid,
                                 screenshot=screenshot, max_elements=max_elements,
                                 max_depth=max_depth,
-                                max_screenshot_bytes=max_screenshot)
+                                max_screenshot_bytes=max_screenshot,
+                                dpi_scale=dpi_scale)
         document = run_probe(command)
         record = build_record(document, screenshot, caps)
         write_record(record, Path(args.out))

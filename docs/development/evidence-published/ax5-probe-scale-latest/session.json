@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "task": "MP-AX1 AX05 (with MP-TYP1 125% capture path)",
+  "status": "PROBE_SCALE_IMPLEMENTED_AND_125_PERCENT_CAPTURE_OBSERVED",
+  "date": "2026-10-31",
+  "operator_action": {
+    "action": "manual display scale change to 125%",
+    "performed_by": "Operator (Caller), not the agent",
+    "observed_dpi": 120,
+    "auto_change": false
+  },
+  "implementation": {
+    "files": ["apps/desktop/devtools/r0/n03_probe.ps1", "apps/desktop/devtools/r0/native_observe.py"],
+    "probe_argument": "-DpiScale (0.5-4.0; 1.0 keeps the legacy path)",
+    "observer_argument": "--dpi-scale",
+    "geometry": "the probe keeps the DIP rectangle and the DIP virtual-screen intersection, maps only the display sample through the scale, reports geometry.dip_rect, geometry.physical_rect and geometry.physical_visible, and clamps every bitmap index to the captured bitmap",
+    "unchanged_thresholds": {"samples": 49, "required_matches": 45, "rgb_tolerance": 24, "identity_recheck": true, "no_raise_no_focus": true, "blank_and_malformed_refusal": true}
+  },
+  "window": {
+    "dpi": 120,
+    "dip_rect": {"left": 858, "top": 222, "width": 1296, "height": 839},
+    "physical_rect": {"left": 1072, "top": 278, "width": 1620, "height": 1049},
+    "screen_metrics_are_dip_in_the_probe": true
+  },
+  "measurements": {
+    "scale_1_0": {"status": "NOT_MEASURED", "reason": "WINDOW_OCCLUDED", "matched": null, "note": "the pre-fix behaviour; the earlier 125 % HOLD recorded 43/49 and no PNG"},
+    "scale_1_25_raw_probe_runs": [
+      {"run": 1, "status": "OBSERVED", "matched": 46, "samples": 49},
+      {"run": 2, "status": "OBSERVED", "matched": 46, "samples": 49},
+      {"run": 3, "status": "OBSERVED", "matched": 46, "samples": 49},
+      {"run": 4, "status": "OBSERVED", "matched": 46, "samples": 49}
+    ],
+    "scale_1_25_observer_digests": [
+      "sha256:b7ab50023e84e7e6852e94c2ec5ce4050c9b340153ba3f82386df5219cc4e578",
+      "sha256:b7ab50023e84e7e6852e94c2ec5ce4050c9b340153ba3f82386df5219cc4e578",
+      "sha256:b7ab50023e84e7e6852e94c2ec5ce4050c9b340153ba3f82386df5219cc4e578"
+    ],
+    "png_size": {"width": 1296, "height": 839, "bytes": 83566}
+  },
+  "interpretation": "At 125 % the same window, thresholds and identity checks move from a 43/49 refusal to a stable 46/49 observation, and three independent observer runs produce the identical PNG digest. The failure was the probe comparing a DIP-sized capture against physical screen coordinates; the explicit scale maps the sample into one frame.",
+  "not_measured": [
+    "150/175/200 % scales",
+    "mixed-DPI monitor movement",
+    "pointer hit testing, popup/menu placement and focus/scroll anchor preservation under fractional scale",
+    "text scaling and High Contrast",
+    "MP-TYP1 pixel/typography acceptance items (glyph coverage, clipping, baseline, contrast)",
+    "a second window or a second monitor"
+  ],
+  "boundaries": {
+    "typ1": "This closes the 125 % identity-bound capture path only; MP-TYP1 remains incomplete for its remaining evidence and DD-04b adoption",
+    "ax1": "MP-AX1 AX05 remains partial: the wider DPI matrix and pointer/popup/anchor behaviour are not measured",
+    "product": "No product binary changed for this slice; the probe is verification tooling"
+  }
+}
