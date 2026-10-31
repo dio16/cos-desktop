@@ -184,6 +184,18 @@
       "candidate": "da82d3afcd6f448bdd409c48312b1400657ca980",
       "verdict": "PASS 0 / 0 / 0, VERDICT: CLEAN",
       "result": "the self-loop return is closed and no further fix was required for this scope; MP-UX1 comprehension re-validation and product acceptance remain open, and the MP-TYP1 / MP-R0B holds are unchanged"
+    },
+    {
+      "round": "p03-1",
+      "candidate": "a445eed53c06c3ec944211bd1ffe8dfed2500d0d",
+      "verdict": "BLOCKING 1 / ACTIONABLE 0 / EXCESSIVE 0 (unparsed footer, read manually)",
+      "finding": "B-R1-01: the comprehension exit was promoted to MET on self-report alone; the record-acceptance judgement stays but the exit returns to NOT_MET until objective evidence or an explicit Product/UX Owner limited acceptance exists."
+    },
+    {
+      "round": "p03-2",
+      "candidate": "8c22e33ebe8a1b6d30af460315cd5536d86dff59",
+      "verdict": "PASS 0 / 0 / 0, VERDICT: CLEAN",
+      "result": "the blocker is closed; record acceptance is satisfied while the comprehension exit stays NOT_MET, and product acceptance plus the MP-TYP1 / MP-R0B holds are unchanged"
     }
   ],
   "gates": [
