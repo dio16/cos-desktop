@@ -206,5 +206,9 @@
     "owner": "Product/UX owner (Caller)",
     "record": "owner-ratification-20261031.json",
     "adr": "docs/decisions/ADR-0015-UX2-DECISION-CLOSURE.md"
+  },
+  "review": {
+    "round1": "BLOCKING 2 / ACTIONABLE 2 on 1ab5fb5 (reconciled with owner, register text, contract list)",
+    "round2": "PASS 0 / 0 / 0 CLEAN on 9298c91b6d5f6a76979c037fc52fb4b25c0cb1db"
   }
 }
