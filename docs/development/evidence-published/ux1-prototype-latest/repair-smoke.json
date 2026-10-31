@@ -98,7 +98,7 @@
     "ux1_completion": "NOT_COMPLETE",
     "comprehension_exit": "NOT_MET",
     "product_acceptance": "NOT_CLAIMED",
-    "gate": "independent Gate a445b341… SUCCEEDED on 062dd8b over fmt, dependency-rules, clippy and tests; earlier flow Gates cover superseded candidates",
+    "gate": "independent Gate e8360e71… SUCCEEDED on c0de029 over fmt, dependency-rules, clippy and tests",
     "unrelated_holds": "MP-TYP1 125 % capture HOLD and the MP-R0B HOLD with its 352-case failed suite are untouched.",
     "external_review": "Tern round 4 returned CLEAN 0 / 0 / 0 on 315d677; external review is not product acceptance"
   },
@@ -329,12 +329,29 @@
       "outputs": "none declared; absent_outputs empty",
       "cleanup": "complete",
       "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned the same digests"
+    },
+    {
+      "gate_id": "e8360e71-2a73-4729-aa4f-0d0d07281739",
+      "gate_label": "ux1-flow-diagram-20261031-r6",
+      "revision": "c0de0292df133adfdb495d047c16d94c345682bd",
+      "state": "SUCCEEDED",
+      "checks": {
+        "fmt": "pass",
+        "dependency-rules": "pass",
+        "clippy": "pass",
+        "tests": "pass"
+      },
+      "duration_ms": 306522,
+      "candidate_sha256": "sha256:b13ef1d6ba1ee778f6439405a0519de8f134079d572d324b3cc5d07cbec3f773",
+      "outputs": "none declared; absent_outputs empty",
+      "cleanup": "complete",
+      "workspace_disposal": "after a retained verify, only this Gate's work/repo and its Gate-owned external target were removed; a repeated verify returned the same digests"
     }
   ],
   "gate": {
-    "gate_id": "a445b341-61ab-40fb-909d-a835181adb58",
-    "gate_label": "ux1-flow-diagram-20261031-r5",
-    "revision": "062dd8b09ea49427c18a016848124c0924bd0572",
+    "gate_id": "e8360e71-2a73-4729-aa4f-0d0d07281739",
+    "gate_label": "ux1-flow-diagram-20261031-r6",
+    "revision": "c0de0292df133adfdb495d047c16d94c345682bd",
     "state": "SUCCEEDED",
     "checks": {
       "fmt": "pass",
@@ -342,11 +359,11 @@
       "clippy": "pass",
       "tests": "pass"
     },
-    "duration_ms": 247241,
-    "candidate_sha256": "sha256:9df92c4150499307264dfe984c06fbb7753ac8357d7b074075cf062de325f4d8",
+    "duration_ms": 306522,
+    "candidate_sha256": "sha256:b13ef1d6ba1ee778f6439405a0519de8f134079d572d324b3cc5d07cbec3f773",
     "outputs": "none declared; absent_outputs empty",
     "cleanup": "complete",
-    "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned the same digests"
+    "workspace_disposal": "after a retained verify, only this Gate's work/repo and its Gate-owned external target were removed; a repeated verify returned the same digests"
   },
   "post_participant_fixes": {
     "trigger": "participant P02 reported that pressing the inert compare side-change control did nothing and that the disconnected next action was unclear",
