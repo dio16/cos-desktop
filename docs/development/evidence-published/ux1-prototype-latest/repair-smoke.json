@@ -94,7 +94,7 @@
     "product_acceptance": "NOT_CLAIMED",
     "gate": "independent Gate 178f97d5… SUCCEEDED on 282f3a7 over fmt, dependency-rules, clippy and tests; Gate success is not product acceptance or merge permission",
     "unrelated_holds": "MP-TYP1 125 % capture HOLD and the MP-R0B HOLD with its 352-case failed suite are untouched.",
-    "external_review": "Tern round 2 returned CLEAN 0 / 0 / 0 on 0dd204f; external review is not product acceptance"
+    "external_review": "Tern round 4 returned CLEAN 0 / 0 / 0 on 315d677; external review is not product acceptance"
   },
   "review_rounds": [
     {
@@ -120,6 +120,12 @@
         "A-R1-01: the compare hint claimed both side-change controls were unavailable whenever one side was missing, but a pending A side keeps its own change available; the hint is now keyed to the same booleans as the click gating and unit-tested across the three states.",
         "A-R1-02: the reconnect detail promised a re-fetch although a window without a runtime endpoint has no handle and only reports that nothing can be reconnected; the detail now states that the re-fetch happens only when a connection target exists."
       ]
+    },
+    {
+      "round": 4,
+      "candidate": "315d67739b24618a5fc6bbba8676ff9080e59cc2",
+      "verdict": "PASS 0 / 0 / 0, VERDICT: CLEAN",
+      "result": "both round-3 findings are closed and no new finding was raised; the reviewer accepted that the pending-A state is guaranteed by source and unit test only, and kept MP-UX1 comprehension, product acceptance, MP-TYP1 and MP-R0B unchanged"
     }
   ],
   "gates": [
