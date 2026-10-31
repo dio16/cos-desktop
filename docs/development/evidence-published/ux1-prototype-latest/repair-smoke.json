@@ -431,7 +431,7 @@
     "record": "participant-p03.json",
     "result": "8 PASS / 0 PARTIAL / 0 FAIL on executable sha256:792212d9… from product source 4dd011a",
     "limits": "option-level responses without free text; five-second condition self-timed; exposure not controlled; not a representative sample",
-    "comprehension_exit": "MET_BY_PARTICIPANT_RESPONSE_WITH_LIMITS",
+    "comprehension_exit": "NOT_VERIFIED_SELF_REPORT_ONLY",
     "product_acceptance": "NOT_CLAIMED"
   }
 }

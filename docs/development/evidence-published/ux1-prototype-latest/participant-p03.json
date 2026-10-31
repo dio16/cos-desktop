@@ -31,34 +31,93 @@
     "response_detail": "UX01, UX02, UX03, UX04, UX05, UX06, UX07 and UX08 were answered by selecting the comprehension option; UX08 also selected 両方とも分かった. No free-text elaboration was supplied, so no specific interpretation is quoted."
   },
   "checks": [
-    {"id": "UX01", "prompt": "このタスクは、いま何をしていますか？画面から理解した内容を自由入力で教えてください。", "response": "分かった", "comprehension": "PASS", "timing_response": "5秒以内（自己計時）", "five_second_condition": "PARTICIPANT_REPORTED_NOT_INDEPENDENTLY_TIMED"},
-    {"id": "UX02", "prompt": "この画面で、作業中の成果物はどこにありますか？場所や見えているものを自由入力で教えてください。", "response": "分かった", "comprehension": "PASS", "actual_media_dominance": "NOT_MEASURED: the prototype states that no artifact image is displayed; only explanation text exists."},
-    {"id": "UX03", "prompt": "候補（Candidate）とIterationは、どのような関係だと理解しましたか？自由入力で教えてください。", "response": "分かった", "comprehension": "PASS"},
-    {"id": "UX04", "prompt": "現在選ばれている候補はどれで、それは最終選択ですか？理解した内容を自由入力で教えてください。", "response": "分かった", "comprehension": "PASS", "setup": "Viewed B with the local-selection caption visible in both the inspector and the Artifact surface; A held as the compare side."},
-    {"id": "UX05", "prompt": "この候補がこのように評価された理由と、その裏付けを画面で示してください。操作後、たどった場所と分かった内容を自由入力で教えてください。", "response": "できた", "comprehension": "PASS"},
-    {"id": "UX06", "prompt": "2つの候補を比較してください。操作後、どこまででき、何が表示されたかを自由入力で教えてください。", "response": "できた", "comprehension": "PASS"},
-    {"id": "UX07", "prompt": "どのようなときにFlowを見て、どのようなときには見ないと思いますか？必要なら画面を操作し、理解した内容を自由入力で教えてください。", "response": "分かった", "comprehension": "PASS", "observation": "The participant was on the Flow surface when the window was closed; the layered diagram with FLOW kind labels and the node/edge lists were on screen."},
-    {"id": "UX08", "prompt": "問題が起きています。何が起きていて、何ができると思いますか？必要なら画面を操作し、理解した内容を自由入力で教えてください。", "response": "分かった", "follow_up": "両方とも分かった", "comprehension": "PASS"}
+    {
+      "id": "UX01",
+      "prompt": "このタスクは、いま何をしていますか？画面から理解した内容を自由入力で教えてください。",
+      "response": "分かった",
+      "comprehension": "PASS",
+      "timing_response": "5秒以内（自己計時）",
+      "five_second_condition": "PARTICIPANT_REPORTED_NOT_INDEPENDENTLY_TIMED"
+    },
+    {
+      "id": "UX02",
+      "prompt": "この画面で、作業中の成果物はどこにありますか？場所や見えているものを自由入力で教えてください。",
+      "response": "分かった",
+      "comprehension": "PASS",
+      "actual_media_dominance": "NOT_MEASURED: the prototype states that no artifact image is displayed; only explanation text exists."
+    },
+    {
+      "id": "UX03",
+      "prompt": "候補（Candidate）とIterationは、どのような関係だと理解しましたか？自由入力で教えてください。",
+      "response": "分かった",
+      "comprehension": "PASS"
+    },
+    {
+      "id": "UX04",
+      "prompt": "現在選ばれている候補はどれで、それは最終選択ですか？理解した内容を自由入力で教えてください。",
+      "response": "分かった",
+      "comprehension": "PASS",
+      "setup": "Viewed B with the local-selection caption visible in both the inspector and the Artifact surface; A held as the compare side."
+    },
+    {
+      "id": "UX05",
+      "prompt": "この候補がこのように評価された理由と、その裏付けを画面で示してください。操作後、たどった場所と分かった内容を自由入力で教えてください。",
+      "response": "できた",
+      "comprehension": "PASS"
+    },
+    {
+      "id": "UX06",
+      "prompt": "2つの候補を比較してください。操作後、どこまででき、何が表示されたかを自由入力で教えてください。",
+      "response": "できた",
+      "comprehension": "PASS"
+    },
+    {
+      "id": "UX07",
+      "prompt": "どのようなときにFlowを見て、どのようなときには見ないと思いますか？必要なら画面を操作し、理解した内容を自由入力で教えてください。",
+      "response": "分かった",
+      "comprehension": "PASS",
+      "observation": "The participant was on the Flow surface when the window was closed; the layered diagram with FLOW kind labels and the node/edge lists were on screen."
+    },
+    {
+      "id": "UX08",
+      "prompt": "問題が起きています。何が起きていて、何ができると思いますか？必要なら画面を操作し、理解した内容を自由入力で教えてください。",
+      "response": "分かった",
+      "follow_up": "両方とも分かった",
+      "comprehension": "PASS"
+    }
   ],
   "results": {
     "pass": 8,
     "partial": 0,
     "fail": 0,
     "five_second_condition": "PARTICIPANT_REPORTED_NOT_INDEPENDENTLY_MEASURED",
-    "comprehension_exit": "MET_BY_PARTICIPANT_RESPONSE_WITH_LIMITS",
+    "comprehension_exit": "NOT_VERIFIED_SELF_REPORT_ONLY",
     "whole_contract_completion": "RECORD_ACCEPTANCE_SATISFIED",
-    "product_acceptance": "NOT_CLAIMED"
+    "product_acceptance": "NOT_CLAIMED",
+    "comprehension_exit_note": "Eight self-reported understood answers are recorded; independent timing, free-text interpretation and action records are absent, so the exit is not MET until objective evidence or an explicit Product/UX Owner limited acceptance exists."
   },
   "comparison": {
-    "p01": {"pass": 0, "partial": 3, "fail": 5},
-    "p02": {"pass": 3, "partial": 5, "fail": 0},
-    "p03": {"pass": 8, "partial": 0, "fail": 0},
+    "p01": {
+      "pass": 0,
+      "partial": 3,
+      "fail": 5
+    },
+    "p02": {
+      "pass": 3,
+      "partial": 5,
+      "fail": 0
+    },
+    "p03": {
+      "pass": 8,
+      "partial": 0,
+      "fail": 0
+    },
     "not_controlled": "Different sessions, one participant each, no representative sample and no controlled first-exposure condition; this is not a statistical comparison.",
     "observation": "The four items the Caller approved on 2026-10-31 (Flow diagram with lists, Compare next step and pair completion, Viewed versus Runtime-owned formal selection, intervention self-discovery) were all answered as understood."
   },
   "boundaries": {
     "evidence_kind": "Participant self-report; no free text was supplied for most items and the five-second claim is self-timed.",
-    "owner_decisions": "Product/UX acceptance, production promotion and any UX value change remain owner decisions; this record does not adopt a design value.",
+    "owner_decisions": "Product/UX acceptance, any limited acceptance of self-reported evidence, production promotion and UX value adoption remain owner decisions.",
     "media": "No production media renderer, evidence-body acquisition or Runtime integration is supplied by UX1.",
     "processes": "Both owned windows were closed through their semantic close control; each process exited 0."
   }
