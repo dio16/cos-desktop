@@ -4115,19 +4115,36 @@ fn flow_diagram_region(
     }
     let mut blocks = Vec::with_capacity(diagrams.len());
     for (graph_index, (graph, drawn)) in diagrams.iter().enumerate() {
-        // A self loop routes 18 px to the right of its card; reserve that channel.
-        let loop_margin = if drawn.edges.iter().any(|edge| edge.from == edge.to) {
-            24.0
+        // A self loop routes to the right of its card; reserve that channel.
+        let self_loop = flow::has_self_loop(&drawn.edges);
+        let loop_margin = if self_loop { 24.0 } else { 0.0 };
+        // Same-layer and self-loop connectors are routed above the cards, so such a
+        // drawing reserves headroom instead of using negative coordinates.
+        let depth_of = |identity: &desktop_protocol::NodeId| {
+            drawn
+                .nodes
+                .iter()
+                .find(|node| &node.node == identity)
+                .map(|node| node.depth)
+        };
+        let same_layer = drawn.edges.iter().any(|edge| {
+            matches!(
+                (depth_of(&edge.from), depth_of(&edge.to)),
+                (Some(from), Some(to)) if from == to
+            )
+        });
+        let top_margin = if same_layer || self_loop {
+            flow::SAME_LAYER_HEADROOM
         } else {
             0.0
         };
         let width = drawn.lane_count.max(1) as f32 * (FLOW_CARD_W + FLOW_LANE_GAP) - FLOW_LANE_GAP
             + loop_margin;
-        let height =
-            drawn.depth_count.max(1) as f32 * (FLOW_CARD_H + FLOW_DEPTH_GAP) - FLOW_DEPTH_GAP;
+        let height = top_margin + drawn.depth_count.max(1) as f32 * (FLOW_CARD_H + FLOW_DEPTH_GAP)
+            - FLOW_DEPTH_GAP;
         let center_x =
             |lane: usize| lane as f32 * (FLOW_CARD_W + FLOW_LANE_GAP) + FLOW_CARD_W / 2.0;
-        let top_y = |depth: usize| depth as f32 * (FLOW_CARD_H + FLOW_DEPTH_GAP);
+        let top_y = |depth: usize| top_margin + depth as f32 * (FLOW_CARD_H + FLOW_DEPTH_GAP);
         let mut canvas = div()
             .id(("flow-diagram-canvas", graph_index))
             .relative()
@@ -4151,6 +4168,7 @@ fn flow_diagram_region(
                 end_x,
                 top_y(to.depth),
                 from.node == to.node,
+                FLOW_CARD_W / 2.0,
                 FLOW_EDGE_PX,
             );
             let mid_y = (start_y + end_y) / 2.0;

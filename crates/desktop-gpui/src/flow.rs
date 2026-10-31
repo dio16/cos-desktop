@@ -370,6 +370,16 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
     Layers { depth, cyclic }
 }
 
+/// Vertical room reserved above the first card row when a drawing has
+/// same-layer or self-loop connectors, so their lines and markers stay inside
+/// the canvas instead of using negative coordinates.
+pub const SAME_LAYER_HEADROOM: f32 = 26.0;
+
+/// Whether a drawing contains a self loop, which routes to the right of its card.
+pub fn has_self_loop(edges: &[DiagramEdge]) -> bool {
+    edges.iter().any(|edge| edge.from == edge.to)
+}
+
 /// One connector plus the marker that points at the projected target.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Connector {
@@ -390,6 +400,7 @@ pub fn connector(
     to_center_x: f32,
     to_top: f32,
     same_node: bool,
+    card_half_width: f32,
     thickness: f32,
 ) -> Connector {
     let segment = |left: f32, top: f32, width: f32, height: f32| Segment {
@@ -399,7 +410,7 @@ pub fn connector(
         height: height.max(thickness),
     };
     if same_node {
-        let channel_x = from_center_x + 18.0;
+        let channel_x = from_center_x + card_half_width + 12.0;
         let channel_top = from_top - 12.0;
         return Connector {
             segments: vec![
@@ -582,8 +593,8 @@ pub fn revision_label(graph: &GraphDisplay) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        AdmissionKey, MAX_DIAGRAM_NODES, admit, connector, contains_edge, contains_node, diagram,
-        layers, revision_key, rows, rows_cancellable,
+        AdmissionKey, MAX_DIAGRAM_NODES, SAME_LAYER_HEADROOM, admit, connector, contains_edge,
+        contains_node, diagram, layers, revision_key, rows, rows_cancellable,
     };
     use desktop_protocol::{ArtifactDigest, Counter, EpochId, GraphId, GraphRef};
     use std::sync::Arc;
@@ -965,17 +976,18 @@ mod tests {
     #[test]
     fn connectors_stay_valid_and_visible_in_every_direction() {
         let card_top = 100.0;
-        let down = connector(10.0, 0.0, 10.0, card_top, false, 2.0);
+        let half = 68.0;
+        let down = connector(10.0, 0.0, 10.0, card_top, false, half, 2.0);
         assert_eq!(down.glyph, "▼");
         assert_eq!(down.segments.len(), 1);
         assert!(down.segments[0].height > 0.0);
 
-        let up = connector(10.0, 160.0, 10.0, card_top, false, 2.0);
+        let up = connector(10.0, 160.0, 10.0, card_top, false, half, 2.0);
         assert_eq!(up.glyph, "▲");
         assert_eq!(up.segments.len(), 1);
         assert!(up.segments[0].height > 0.0 && up.segments[0].top == card_top);
 
-        let same_layer = connector(10.0, card_top, 90.0, card_top, false, 2.0);
+        let same_layer = connector(10.0, card_top, 90.0, card_top, false, half, 2.0);
         assert_eq!(same_layer.glyph, "▼");
         for segment in &same_layer.segments {
             assert!(
@@ -983,19 +995,48 @@ mod tests {
                 "a same-layer edge stays above the node cards"
             );
         }
-        assert!(same_layer.marker.1 + 11.0 <= card_top);
 
-        let self_loop = connector(10.0, card_top, 10.0, card_top, true, 2.0);
+        let self_loop = connector(10.0, card_top, 10.0, card_top, true, half, 2.0);
         assert_eq!(self_loop.glyph, "▼");
         for segment in &self_loop.segments {
             assert!(segment.top + segment.height <= card_top);
         }
+        let channel = self_loop
+            .segments
+            .iter()
+            .map(|segment| segment.left)
+            .fold(f32::MIN, f32::max);
+        assert!(
+            channel >= 10.0 + half,
+            "the loop channel sits outside the card: {channel}"
+        );
 
-        let bent = connector(10.0, 0.0, 90.0, 60.0, false, 2.0);
+        let bent = connector(10.0, 0.0, 90.0, 60.0, false, half, 2.0);
         assert_eq!(bent.segments.len(), 3);
         for segment in &bent.segments {
             assert!(segment.width > 0.0 && segment.height > 0.0);
         }
+    }
+
+    #[test]
+    fn the_same_layer_route_fits_the_reserved_headroom() {
+        // A depth-0 card sits at the headroom offset, so every part of the
+        // same-layer route must stay at or below zero-free canvas coordinates.
+        let card_top = std::hint::black_box(SAME_LAYER_HEADROOM);
+        let half = 68.0;
+        let route = connector(10.0, card_top, 90.0, card_top, false, half, 2.0);
+        for segment in &route.segments {
+            assert!(segment.top >= 0.0);
+            assert!(segment.top + segment.height <= card_top);
+        }
+        assert!(route.marker.1 >= 0.0 && route.marker.1 + 11.0 <= card_top);
+        assert!(card_top >= 20.0, "the kind label fits too");
+
+        let self_route = connector(10.0, card_top, 10.0, card_top, true, half, 2.0);
+        for segment in &self_route.segments {
+            assert!(segment.top >= 0.0);
+        }
+        assert!(self_route.marker.1 >= 0.0);
     }
 
     #[test]
