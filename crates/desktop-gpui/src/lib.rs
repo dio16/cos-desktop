@@ -3895,7 +3895,23 @@ impl Render for Shell {
                                                     .flex()
                                                     .items_center()
                                                     .justify_center()
-                                                    .child(div().w_full().min_w_0().child(surface_content)),
+                                                    .child(
+                                                        // The owner-approved read-only text exposure:
+                                                        // the central statement is a named value, not
+                                                        // only painted text.
+                                                        div()
+                                                            .id("work-surface-statement")
+                                                            .role(Role::Label)
+                                                            .aria_label(SharedString::from(
+                                                                surface_content,
+                                                            ))
+                                                            .aria_value(SharedString::from(
+                                                                surface_content,
+                                                            ))
+                                                            .w_full()
+                                                            .min_w_0()
+                                                            .child(surface_content),
+                                                    ),
                                             )
                                         },
                                     ),

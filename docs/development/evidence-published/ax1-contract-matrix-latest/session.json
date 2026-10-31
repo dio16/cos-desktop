@@ -175,5 +175,27 @@
     "Which layer suppressed Enter during the partial composition",
     "DD-23 support-matrix selection, screen-reader acceptance, MP-ACC2 product acceptance and release"
   ],
-  "continuation_boundary": "One correctness guard was implemented and verified; the rest of the contract is classified as PARTIAL, HOLD, NOT_MEASURED or NOT_IMPLEMENTED with the authority each needs. MP-AX1 as a whole is not complete, and no product, release or DD-23 acceptance is claimed."
+  "continuation_boundary": "One correctness guard was implemented and verified; the rest of the contract is classified as PARTIAL, HOLD, NOT_MEASURED or NOT_IMPLEMENTED with the authority each needs. MP-AX1 as a whole is not complete, and no product, release or DD-23 acceptance is claimed.",
+  "current_state_20261031": {
+    "owner_decisions": {
+      "static_state_exposure": "read-only text (name, value, description); updates replace the same element value; no new notification mechanism",
+      "active_descendant": "focused row only, never the selected row",
+      "high_contrast": "token-layer value set switched by the OS setting, changed manually by the operator",
+      "dpi_capture_repair": "option B first: scale argument in the shared R0 probe after R0A/R0B/R0C impact review"
+    },
+    "implemented": [
+      "the central work surface is a Region named 作業領域：<surface> and its statement is an exposure-verified static text (work-surface-statement)",
+      "the six state-axis cells keep their Label role with name, value and description",
+      "dock, Flow node/edge lists, task rail and palette rows mark the focused active row as the active descendant"
+    ],
+    "unchanged_history": "the rows above this block are the 2026-10-31 pre-decision observation; they are not current status",
+    "remaining": [
+      "screen-reader announcement quality NOT_MEASURED",
+      "caret/selection geometry, candidate window and TSF internals NOT_MEASURED",
+      "palette-close focus restoration Native proof owed",
+      "High Contrast values decided but not implemented or measured",
+      "DPI 150/175/200 %, mixed-DPI movement and 125 % identity-bound capture HOLD",
+      "release support matrix documentation-only"
+    ]
+  }
 }
