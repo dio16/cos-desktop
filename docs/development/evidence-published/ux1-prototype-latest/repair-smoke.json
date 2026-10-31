@@ -92,7 +92,7 @@
     "ux1_completion": "NOT_COMPLETE",
     "comprehension_exit": "NOT_MET",
     "product_acceptance": "NOT_CLAIMED",
-    "gate": "independent Gate f2210b32… SUCCEEDED on 91fdf61 over fmt, dependency-rules, clippy and tests; Gate success is not product acceptance or merge permission",
+    "gate": "independent Gate 6f2eceb9… SUCCEEDED on 1ec9448 over fmt, dependency-rules, clippy and tests; Gate success is not product acceptance or merge permission",
     "unrelated_holds": "MP-TYP1 125 % capture HOLD and the MP-R0B HOLD with its 352-case failed suite are untouched.",
     "external_review": "Tern round 2 returned CLEAN 0 / 0 / 0 on 0dd204f; external review is not product acceptance"
   },
@@ -151,12 +151,29 @@
       "cleanup": "complete",
       "supersedes": "93aa1f13-d365-4a75-b9ad-6658f1a3db5e covered 271f7a4 before the round-1 review fixes and is not reused for the fixed candidate",
       "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned identical state, candidate, observations, request, terminal-state and check-log digests"
+    },
+    {
+      "gate_id": "6f2eceb9-fd2c-48a8-a094-c0b0af6ad6e6",
+      "gate_label": "ux1-participant-repair-20261031-r3",
+      "revision": "1ec9448d69424867631702af34aaa13d3a547bff",
+      "state": "SUCCEEDED",
+      "checks": {
+        "fmt": "pass",
+        "dependency-rules": "pass",
+        "clippy": "pass",
+        "tests": "pass"
+      },
+      "duration_ms": 288319,
+      "candidate_sha256": "sha256:cb557aeb13b9be8bebb6cf9306d77ca23845be07bc99e85ffb5b1cea66feaa42",
+      "outputs": "none declared; absent_outputs empty",
+      "cleanup": "complete",
+      "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned the same state, candidate and check-log digests"
     }
   ],
   "gate": {
-    "gate_id": "f2210b32-1c38-42c5-a440-65c5dd3699c7",
-    "gate_label": "ux1-participant-repair-20261031-r2",
-    "revision": "91fdf61d95e3e7b11a80ff80e9c6c68666432c7e",
+    "gate_id": "6f2eceb9-fd2c-48a8-a094-c0b0af6ad6e6",
+    "gate_label": "ux1-participant-repair-20261031-r3",
+    "revision": "1ec9448d69424867631702af34aaa13d3a547bff",
     "state": "SUCCEEDED",
     "checks": {
       "fmt": "pass",
@@ -164,12 +181,11 @@
       "clippy": "pass",
       "tests": "pass"
     },
-    "duration_ms": 272654,
-    "candidate_sha256": "sha256:568a57ead7f38dff86cb923d2f1c99416113216f6401c98ff89ec76e0954555e",
+    "duration_ms": 288319,
+    "candidate_sha256": "sha256:cb557aeb13b9be8bebb6cf9306d77ca23845be07bc99e85ffb5b1cea66feaa42",
     "outputs": "none declared; absent_outputs empty",
     "cleanup": "complete",
-    "supersedes": "93aa1f13-d365-4a75-b9ad-6658f1a3db5e covered 271f7a4 before the round-1 review fixes and is not reused for the fixed candidate",
-    "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned identical state, candidate, observations, request, terminal-state and check-log digests"
+    "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned the same state, candidate and check-log digests"
   },
   "post_participant_fixes": {
     "trigger": "participant P02 reported that pressing the inert compare side-change control did nothing and that the disconnected next action was unclear",
