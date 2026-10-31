@@ -4115,7 +4115,14 @@ fn flow_diagram_region(
     }
     let mut blocks = Vec::with_capacity(diagrams.len());
     for (graph_index, (graph, drawn)) in diagrams.iter().enumerate() {
-        let width = drawn.lane_count.max(1) as f32 * (FLOW_CARD_W + FLOW_LANE_GAP) - FLOW_LANE_GAP;
+        // A self loop routes 18 px to the right of its card; reserve that channel.
+        let loop_margin = if drawn.edges.iter().any(|edge| edge.from == edge.to) {
+            24.0
+        } else {
+            0.0
+        };
+        let width = drawn.lane_count.max(1) as f32 * (FLOW_CARD_W + FLOW_LANE_GAP) - FLOW_LANE_GAP
+            + loop_margin;
         let height =
             drawn.depth_count.max(1) as f32 * (FLOW_CARD_H + FLOW_DEPTH_GAP) - FLOW_DEPTH_GAP;
         let center_x =
@@ -4138,10 +4145,16 @@ fn flow_diagram_region(
             let start_y = top_y(from.depth) + FLOW_CARD_H;
             let end_x = center_x(to.lane);
             let end_y = top_y(to.depth);
-            let (segments, target_above) =
-                flow::connector((start_x, start_y), (end_x, end_y), FLOW_EDGE_PX);
+            let connection = flow::connector(
+                start_x,
+                top_y(from.depth),
+                end_x,
+                top_y(to.depth),
+                from.node == to.node,
+                FLOW_EDGE_PX,
+            );
             let mid_y = (start_y + end_y) / 2.0;
-            for (segment_index, segment) in segments.into_iter().enumerate() {
+            for (segment_index, segment) in connection.segments.into_iter().enumerate() {
                 let (left, top, w, h) = (segment.left, segment.top, segment.width, segment.height);
 
                 canvas = canvas.child(
@@ -4160,29 +4173,31 @@ fn flow_diagram_region(
             }
             // Direction and kind come from the projection; the drawing adds no
             // meaning of its own. The arrow marks the projected target.
-            let marker_top = if target_above {
-                end_y + 1.0
-            } else {
-                end_y - 11.0
-            };
             canvas = canvas.child(
                 div()
                     .id(("flow-diagram-arrow", graph_index * 4096 + edge_index))
                     .absolute()
-                    .left(px(end_x - 5.0))
-                    .top(px(marker_top))
+                    .left(px(connection.marker.0))
+                    .top(px(connection.marker.1))
                     .w(px(10.0))
                     .h(px(11.0))
                     .text_color(rgb(color))
-                    .child(SharedString::from(flow::target_marker(target_above))),
+                    .child(SharedString::from(connection.glyph)),
             );
             if let Some(kind) = edge.kind.as_deref() {
+                // Keep the kind label clear of the node boxes: a same-layer or
+                // self-loop edge is routed above the cards, so its label goes there.
+                let kind_top = if from.depth == to.depth {
+                    top_y(from.depth) - 20.0
+                } else {
+                    mid_y - 8.0
+                };
                 canvas = canvas.child(
                     div()
                         .id(("flow-diagram-kind", graph_index * 4096 + edge_index))
                         .absolute()
                         .left(px(start_x.min(end_x) + 6.0))
-                        .top(px(mid_y - 8.0))
+                        .top(px(kind_top))
                         .px_1()
                         .bg(rgb(0x17191c))
                         .text_color(rgb(if edge.matched { 0x9dc0e0 } else { 0x8b949e }))

@@ -255,11 +255,12 @@ pub struct Layers {
 ///
 /// Strongly connected components are condensed iteratively (no recursion), so a
 /// cycle never leaves a node without a layer and the whole pass is `O(V + E)`
-/// regardless of size. Members of one component share a layer, which is the
-/// honest answer for a cyclic region.
+/// using expected-constant lookups and stamp-based edge deduplication.
+/// Members of one component share a layer, which is the honest answer for a
+/// cyclic region.
 pub fn layers(graph: &GraphDisplay) -> Layers {
     let count = graph.nodes.len();
-    let index_of: std::collections::BTreeMap<NodeId, usize> = graph
+    let index_of: std::collections::HashMap<NodeId, usize> = graph
         .nodes
         .iter()
         .enumerate()
@@ -334,13 +335,17 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
 
     // Condense and take the longest path over the component DAG.
     let components = component_sizes.len();
-    let mut component_successors: Vec<std::collections::BTreeSet<usize>> =
-        vec![std::collections::BTreeSet::new(); components];
+    // Parallel condensation edges are skipped with a per-target stamp, so the
+    // whole pass stays O(V + E) with no ordered-set insertion.
+    let mut component_successors: Vec<Vec<usize>> = vec![Vec::new(); components];
+    let mut last_source = vec![0usize; components];
     let mut indegree = vec![0usize; components];
     for from in 0..count {
         for &to in &successors[from] {
             let (a, b) = (component[from], component[to]);
-            if a != b && component_successors[a].insert(b) {
+            if a != b && last_source[b] != a + 1 {
+                last_source[b] = a + 1;
+                component_successors[a].push(b);
                 indegree[b] += 1;
             }
         }
@@ -365,53 +370,123 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
     Layers { depth, cyclic }
 }
 
-/// Orthogonal connector from one node's bottom centre to the target's top centre.
-///
-/// Segments are normalized rectangles, so an upward (cyclic) edge draws a real
-/// connector instead of a negative-height sliver.
-pub fn connector(from: (f32, f32), to: (f32, f32), thickness: f32) -> (Vec<Segment>, bool) {
-    let (from_x, from_y) = from;
-    let (to_x, to_y) = to;
-    let target_above = to_y < from_y;
-    if (from_x - to_x).abs() < 0.5 {
-        let top = from_y.min(to_y);
-        return (
-            vec![Segment {
-                left: from_x - thickness / 2.0,
-                top,
-                width: thickness,
-                height: (to_y - from_y).abs().max(thickness),
-            }],
-            target_above,
-        );
-    }
-    let mid_y = (from_y + to_y) / 2.0;
-    let segments = [
-        Segment {
-            left: from_x - thickness / 2.0,
-            top: from_y.min(mid_y),
-            width: thickness,
-            height: (mid_y - from_y).abs().max(thickness),
-        },
-        Segment {
-            left: from_x.min(to_x),
-            top: mid_y - thickness / 2.0,
-            width: (from_x - to_x).abs().max(thickness),
-            height: thickness,
-        },
-        Segment {
-            left: to_x - thickness / 2.0,
-            top: mid_y.min(to_y),
-            width: thickness,
-            height: (to_y - mid_y).abs().max(thickness),
-        },
-    ];
-    (segments.to_vec(), target_above)
+/// One connector plus the marker that points at the projected target.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Connector {
+    pub segments: Vec<Segment>,
+    /// Marker box top-left.
+    pub marker: (f32, f32),
+    pub glyph: &'static str,
 }
 
-/// The marker that points at the projected target.
-pub fn target_marker(target_above: bool) -> &'static str {
-    if target_above { "▲" } else { "▼" }
+/// Route an orthogonal connector between two node cards.
+///
+/// Downward and upward edges use a vertical channel between the cards. Edges
+/// between cards on the same layer and self loops are routed above the cards, so
+/// the line and its marker are never hidden by a node box.
+pub fn connector(
+    from_center_x: f32,
+    from_top: f32,
+    to_center_x: f32,
+    to_top: f32,
+    same_node: bool,
+    thickness: f32,
+) -> Connector {
+    let segment = |left: f32, top: f32, width: f32, height: f32| Segment {
+        left,
+        top,
+        width: width.max(thickness),
+        height: height.max(thickness),
+    };
+    if same_node {
+        let channel_x = from_center_x + 18.0;
+        let channel_top = from_top - 12.0;
+        return Connector {
+            segments: vec![
+                segment(
+                    from_center_x - thickness / 2.0,
+                    channel_top,
+                    thickness,
+                    12.0,
+                ),
+                segment(
+                    from_center_x,
+                    channel_top,
+                    channel_x - from_center_x,
+                    thickness,
+                ),
+                segment(channel_x - thickness / 2.0, channel_top, thickness, 12.0),
+            ],
+            marker: (channel_x - 5.0, from_top - 11.0),
+            glyph: "▼",
+        };
+    }
+    if (from_top - to_top).abs() < 0.5 {
+        let channel_top = from_top - 12.0;
+        return Connector {
+            segments: vec![
+                segment(
+                    from_center_x - thickness / 2.0,
+                    channel_top,
+                    thickness,
+                    12.0,
+                ),
+                segment(
+                    from_center_x.min(to_center_x),
+                    channel_top,
+                    (from_center_x - to_center_x).abs(),
+                    thickness,
+                ),
+                segment(to_center_x - thickness / 2.0, channel_top, thickness, 12.0),
+            ],
+            marker: (to_center_x - 5.0, to_top - 11.0),
+            glyph: "▼",
+        };
+    }
+    let target_above = to_top < from_top;
+    let (marker, glyph) = if target_above {
+        ((to_center_x - 5.0, to_top + 1.0), "▲")
+    } else {
+        ((to_center_x - 5.0, to_top - 11.0), "▼")
+    };
+    if (from_center_x - to_center_x).abs() < 0.5 {
+        let top = from_top.min(to_top);
+        return Connector {
+            segments: vec![segment(
+                from_center_x - thickness / 2.0,
+                top,
+                thickness,
+                (to_top - from_top).abs(),
+            )],
+            marker,
+            glyph,
+        };
+    }
+    let mid = (from_top + to_top) / 2.0;
+    Connector {
+        segments: vec![
+            segment(
+                from_center_x - thickness / 2.0,
+                from_top.min(mid),
+                thickness,
+                (mid - from_top).abs(),
+            ),
+            segment(
+                from_center_x.min(to_center_x),
+                mid - thickness / 2.0,
+                (from_center_x - to_center_x).abs(),
+                thickness,
+            ),
+            segment(
+                to_center_x - thickness / 2.0,
+                mid.min(to_top),
+                thickness,
+                (to_top - mid).abs(),
+            ),
+        ],
+        marker,
+        glyph,
+    }
 }
 
 /// Lay out one authoritative graph without inventing topology or labels.
@@ -508,7 +583,7 @@ pub fn revision_label(graph: &GraphDisplay) -> String {
 mod tests {
     use super::{
         AdmissionKey, MAX_DIAGRAM_NODES, admit, connector, contains_edge, contains_node, diagram,
-        layers, revision_key, rows, rows_cancellable, target_marker,
+        layers, revision_key, rows, rows_cancellable,
     };
     use desktop_protocol::{ArtifactDigest, Counter, EpochId, GraphId, GraphRef};
     use std::sync::Arc;
@@ -888,27 +963,37 @@ mod tests {
     }
 
     #[test]
-    fn connectors_stay_valid_for_upward_and_downward_edges() {
-        let (down, above) = connector((10.0, 0.0), (10.0, 100.0), 2.0);
-        assert!(!above);
-        assert_eq!(down.len(), 1);
-        assert!(down[0].height > 0.0 && down[0].top == 0.0);
-        assert_eq!(target_marker(above), "▼");
+    fn connectors_stay_valid_and_visible_in_every_direction() {
+        let card_top = 100.0;
+        let down = connector(10.0, 0.0, 10.0, card_top, false, 2.0);
+        assert_eq!(down.glyph, "▼");
+        assert_eq!(down.segments.len(), 1);
+        assert!(down.segments[0].height > 0.0);
 
-        let (up, above) = connector((10.0, 100.0), (10.0, 0.0), 2.0);
-        assert!(above, "an upward edge points at the target above");
-        assert!(up[0].height > 0.0 && up[0].top == 0.0);
-        assert_eq!(target_marker(above), "▲");
+        let up = connector(10.0, 160.0, 10.0, card_top, false, 2.0);
+        assert_eq!(up.glyph, "▲");
+        assert_eq!(up.segments.len(), 1);
+        assert!(up.segments[0].height > 0.0 && up.segments[0].top == card_top);
 
-        let (bent, above) = connector((10.0, 0.0), (90.0, 60.0), 2.0);
-        assert!(!above);
-        assert_eq!(bent.len(), 3);
-        for segment in &bent {
-            assert!(segment.width > 0.0 && segment.height > 0.0);
+        let same_layer = connector(10.0, card_top, 90.0, card_top, false, 2.0);
+        assert_eq!(same_layer.glyph, "▼");
+        for segment in &same_layer.segments {
+            assert!(
+                segment.top + segment.height <= card_top,
+                "a same-layer edge stays above the node cards"
+            );
         }
-        let (bent_up, above) = connector((90.0, 60.0), (10.0, 0.0), 2.0);
-        assert!(above);
-        for segment in &bent_up {
+        assert!(same_layer.marker.1 + 11.0 <= card_top);
+
+        let self_loop = connector(10.0, card_top, 10.0, card_top, true, 2.0);
+        assert_eq!(self_loop.glyph, "▼");
+        for segment in &self_loop.segments {
+            assert!(segment.top + segment.height <= card_top);
+        }
+
+        let bent = connector(10.0, 0.0, 90.0, 60.0, false, 2.0);
+        assert_eq!(bent.segments.len(), 3);
+        for segment in &bent.segments {
             assert!(segment.width > 0.0 && segment.height > 0.0);
         }
     }

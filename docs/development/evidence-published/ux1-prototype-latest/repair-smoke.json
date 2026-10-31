@@ -65,7 +65,7 @@
       "binary_sha256": "sha256:c9fef8360fc26f4121d278c5a6595a5665ec4250ba3d13464b551ccba2777b50",
       "build_command": "cargo build --locked -p cos-desktop --bin cos-desktop",
       "binary_provenance": "rebuilt after the round-1 fixes; this binary was launched and inspected for the visible stop detail and the inspector evidence gloss",
-      "flow_diagram_binary_sha256": "sha256:5e3f5af280a4723dbbfa3fe58b8fedc383bb69fc9d6a26cf799b340cae59adb5"
+      "flow_diagram_binary_sha256": "sha256:79511f66636d93ba939a31c7236d1e2628da28011fbd5a8e8283f608fcbbb8ac"
     }
   },
   "native_observation": {
@@ -84,7 +84,8 @@
     "flow_diagram": "fixture Flow shows a 9-node/9-column diagram with a projected FLOW kind chip and a target arrow on every connector, beside the node and edge lists; searching flow matched 0 nodes and 8 edges and left the drawing in authoritative order; after the list-row compaction six node rows and five edge rows are visible",
     "compare_next_step": "Compare with pending A showed B側の候補がそろうまで… and A側は選ばれています。次に別の候補を選ぶとB側になり、比較が始まります。; selecting C completed the pair and replaced both lines with A側とB側がそろっています。…",
     "viewed_caption": "the Artifact surface and the inspector both state 閲覧中（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。",
-    "intervention_next_step": "the disconnected row states 次にすること：再接続する and pressing it reports that this window has no authorized observation target"
+    "intervention_next_step": "the disconnected row states 次にすること：再接続する and pressing it reports that this window has no authorized observation target",
+    "flow_connectors": "the fixture DAG keeps vertical FLOW connectors with downward target arrows; same-layer and self-loop routing is guaranteed by unit tests because the fixture graph has no cycle"
   },
   "not_measured": [
     "Post-repair participant comprehension and the five-second first-exposure condition",
@@ -150,6 +151,15 @@
       "findings": [
         "B-R2-01: whole-graph layering was O(V*(V+E)) and ran synchronously from render; layers() now condenses strongly connected components iteratively and takes the longest path over the condensation in O(V+E), the result is cached per admitted revision and only computed while the Flow surface is shown, and 10k-chain, two-node-cycle and self-loop tests pin the behavior.",
         "A-R2-01: an upward (cyclic) edge produced negative-height segments that were clamped, so the connector did not reach its target and the arrow always pointed down; connectors are now normalized rectangles with an upward/downward marker, covered by direction tests."
+      ]
+    },
+    {
+      "round": "flow-3",
+      "candidate": "4f67653c63801dcb92069bf177ddcd3bd29dd250",
+      "verdict": "BLOCKING 0 / ACTIONABLE NON-BLOCKING 2 / EXCESSIVE 0 (unparsed footer, read manually)",
+      "findings": [
+        "A-R3-01: cards on one layer share a depth, so a same-layer cycle edge crossed the card boxes and its arrow was hidden; same-layer and self-loop edges now route above the cards with a visible target marker, covered by geometry tests.",
+        "A-R3-02: the O(V+E) claim did not match the ordered-map/set implementation; the node index and condensation deduplication now use expected-constant hash lookup and a per-target stamp, so the pass is O(V+E), and the comment states that."
       ]
     }
   ],
