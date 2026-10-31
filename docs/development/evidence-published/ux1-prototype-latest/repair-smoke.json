@@ -100,7 +100,7 @@
     "product_acceptance": "NOT_CLAIMED",
     "gate": "independent Gate 477e5a6a… SUCCEEDED on 4dd011a over fmt, dependency-rules, clippy and tests",
     "unrelated_holds": "MP-TYP1 125 % capture HOLD and the MP-R0B HOLD with its 352-case failed suite are untouched.",
-    "external_review": "Tern round 4 returned CLEAN 0 / 0 / 0 on 315d677; external review is not product acceptance"
+    "external_review": "flow scope round 6 returned CLEAN 0 / 0 / 0 on da82d3a; external review is not product acceptance"
   },
   "review_rounds": [
     {
@@ -178,6 +178,12 @@
       "findings": [
         "A-R5-01: the self-loop arrow sat on the outside channel instead of marking the same card; the loop now returns over the card just above its top edge and the marker points down at that edge, with tests for the return leg and marker position."
       ]
+    },
+    {
+      "round": "flow-6",
+      "candidate": "da82d3afcd6f448bdd409c48312b1400657ca980",
+      "verdict": "PASS 0 / 0 / 0, VERDICT: CLEAN",
+      "result": "the self-loop return is closed and no further fix was required for this scope; MP-UX1 comprehension re-validation and product acceptance remain open, and the MP-TYP1 / MP-R0B holds are unchanged"
     }
   ],
   "gates": [
