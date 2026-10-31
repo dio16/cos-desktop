@@ -41,6 +41,7 @@ import argparse
 import datetime
 import hashlib
 import json
+import math
 import re
 import struct
 import subprocess
@@ -358,14 +359,19 @@ def main(argv: list[str] | None = None) -> int:
     # Test seam: the packaged probe is the default, and a test may point the *real* CLI at
     # a fake probe so the fail-closed path is exercised end to end rather than monkeypatched.
     parser.add_argument("--probe", default=str(PROBE))
+    parser.add_argument("--probe-record",
+                        help="optional path for the probe's raw JSON, kept for scale/geometry evidence")
     args = parser.parse_args(argv)
     try:
         validate_target(args.title, args.pid)
         max_elements = bounded_integer(args.max_elements, MAX_ELEMENTS_RANGE)
         max_depth = bounded_integer(args.max_depth, MAX_DEPTH_RANGE)
         max_screenshot = bounded_integer(args.max_screenshot_bytes, MAX_SCREENSHOT_RANGE)
-        dpi_scale = float(args.dpi_scale)
-        if not 0.5 <= dpi_scale <= 4.0:
+        try:
+            dpi_scale = float(args.dpi_scale)
+        except (TypeError, ValueError):
+            fail("ARGS_SCALE")
+        if not math.isfinite(dpi_scale) or not 0.5 <= dpi_scale <= 4.0:
             fail("ARGS_SCALE")
         screenshot = Path(args.screenshot)
         caps = {"max_elements": max_elements, "max_depth": max_depth,
@@ -377,6 +383,14 @@ def main(argv: list[str] | None = None) -> int:
                                 max_screenshot_bytes=max_screenshot,
                                 dpi_scale=dpi_scale)
         document = run_probe(command)
+        if args.probe_record:
+            raw = json.dumps(document, sort_keys=True, separators=(",", ":")).encode()
+            if len(raw) > MAX_RECORD_BYTES:
+                fail("RECORD_TOO_LARGE")
+            try:
+                Path(args.probe_record).write_bytes(raw)
+            except OSError:
+                fail("WRITE_FAILED")
         record = build_record(document, screenshot, caps)
         write_record(record, Path(args.out))
         print(json.dumps({

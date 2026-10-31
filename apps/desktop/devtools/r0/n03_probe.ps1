@@ -29,7 +29,7 @@ function Fail([string]$code) {
 
 if ($MaxElements -lt 1 -or $MaxElements -gt 5000) { Fail "CAP_RANGE" }
 if ($MaxDepth -lt 1 -or $MaxDepth -gt 64) { Fail "CAP_RANGE" }
-if ($DpiScale -lt 0.5 -or $DpiScale -gt 4.0) { Fail "CAP_RANGE" }
+if ([double]::IsNaN($DpiScale) -or [double]::IsInfinity($DpiScale) -or $DpiScale -lt 0.5 -or $DpiScale -gt 4.0) { Fail "CAP_RANGE" }
 if ([string]::IsNullOrEmpty($Title) -and $ProcessId -le 0) { Fail "TARGET_REQUIRED" }
 if ([string]::IsNullOrEmpty($Screenshot)) { Fail "SCREENSHOT_PATH_REQUIRED" }
 

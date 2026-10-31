@@ -91,6 +91,10 @@ class N03Observation(unittest.TestCase):
              "--dpi-scale", "0.4"): "ARGS_SCALE",
             ("--title", "x", "--out", str(self.record), "--screenshot", str(self.screenshot),
              "--dpi-scale", "4.1"): "ARGS_SCALE",
+            ("--title", "x", "--out", str(self.record), "--screenshot", str(self.screenshot),
+             "--dpi-scale", "abc"): "ARGS_SCALE",
+            ("--title", "x", "--out", str(self.record), "--screenshot", str(self.screenshot),
+             "--dpi-scale", "nan"): "ARGS_SCALE",
         }
         for arguments, code in cases.items():
             result = self.invoke(*arguments)
