@@ -3,7 +3,7 @@
   "task": "MP-UX2",
   "contract": "DC-MP-UX2",
   "decision": "UX-01 / DD-03 frozen question list",
-  "status": "REGISTER_CLASSIFIED; NO NEW UX VALUE ADOPTED",
+  "status": "CLOSED_FOR_DECISIONS; E=0; OWNER-RATIFIED 2026-10-31 (ADR-0015); measurement items remain NOT_MEASURED",
   "baseline": {
     "reviewed_commit": "d41ca23c3b60afa4537ee6dd2700c204e01be097",
     "branch": "feature/mp-ux2-decision-closure",
@@ -64,20 +64,24 @@
     {
       "id": "Q5",
       "question": "Linked-transform model (relative-to-fit vs physical 1:1) and default",
-      "class": "E",
+      "class": "A",
       "decision": null,
       "source": "Rendering §4.1 presents both as candidates and says the exact toggle/default remains a UX proposal; ADR-0008 approves only documented values",
       "implemented": false,
-      "open_condition": "Product/UX owner must choose the model and its default before CMP1/IMG5 linked presentation"
+      "open_condition": "Product/UX owner must choose the model and its default before CMP1/IMG5 linked presentation",
+      "owner_decision": "relative-to-fit default (shared normalized anchor + multiplier over each pane contain-fit); physical 1:1 as a separate explicit mode",
+      "decision_source": "ADR-0015 (owner-ratified 2026-10-31)"
     },
     {
       "id": "Q6",
       "question": "Fit/1:1 switching",
-      "class": "E",
+      "class": "A",
       "decision": null,
       "source": "no documented default or toggle semantics",
       "implemented": false,
-      "open_condition": "same owner decision as Q5"
+      "open_condition": "same owner decision as Q5",
+      "owner_decision": "default Fit; explicit per-pair control switches to physical 1:1 and preserves the shared anchor",
+      "decision_source": "ADR-0015 (owner-ratified 2026-10-31)"
     },
     {
       "id": "Q7",
@@ -86,7 +90,10 @@
       "decision": "each pane clamps independently against its own bounds; a clamped pane's anchor is never fed back into the link; these invariants hold for either candidate model",
       "source": "Rendering §4.1",
       "implemented": false,
-      "open_condition": "the shared-anchor mapping formula depends on the Q5 model choice and stays open with Q5; no candidate-specific formula is approved here"
+      "open_condition": "the shared-anchor mapping formula depends on the Q5 model choice and stays open with Q5; no candidate-specific formula is approved here",
+      "owner_detail_decision": "mapping derived from Q5: fit_i = min(view_w/image_w, view_h/image_h), display scale fit_i x z; independent clamp, no feedback",
+      "decision_source": "ADR-0015 detail (owner-ratified 2026-10-31)",
+      "measurement_status": "NOT_MEASURED"
     },
     {
       "id": "Q8",
@@ -95,25 +102,31 @@
       "decision": "link/unlink preserves the viewed pair and local focus and never changes formal selection; independent mode keeps each pane's own transform",
       "source": "Rendering §4.1",
       "implemented": false,
-      "open_condition": "the exact transform restored after unlink (relative framing vs previous pane state) is E until Q5"
+      "open_condition": "the exact transform restored after unlink (relative framing vs previous pane state) is E until Q5",
+      "owner_detail_decision": "unlink keeps the current display; no hidden restore or jump",
+      "decision_source": "ADR-0015 detail (owner-ratified 2026-10-31)"
     },
     {
       "id": "Q9",
       "question": "Swap semantics (pane transforms vs swap-and-keep)",
-      "class": "E",
+      "class": "A",
       "decision": null,
       "source": "not documented",
       "implemented": false,
-      "open_condition": "Product/UX owner decision"
+      "open_condition": "Product/UX owner decision",
+      "owner_decision": "swap exchanges candidates only; each pane keeps its transform and re-clamps",
+      "decision_source": "ADR-0015 (owner-ratified 2026-10-31)"
     },
     {
       "id": "Q10",
       "question": "Pair replacement retaining link state",
-      "class": "E",
+      "class": "A",
       "decision": null,
       "source": "not documented",
       "implemented": false,
-      "open_condition": "Product/UX owner decision"
+      "open_condition": "Product/UX owner decision",
+      "owner_decision": "pair replacement keeps the link and resets only the replaced pane to Fit",
+      "decision_source": "ADR-0015 (owner-ratified 2026-10-31)"
     },
     {
       "id": "Q11",
@@ -131,7 +144,9 @@
       "decision": "keyboard focus must be preserved deliberately and must not change selection (dock/focus principles)",
       "source": "ADR-0010 D-12, Rendering §5",
       "implemented": false,
-      "open_condition": "the exact pane-entry/transfer order is E"
+      "open_condition": "the exact pane-entry/transfer order is E",
+      "owner_detail_decision": "Tab order pane A -> pane B -> compare actions -> candidate list; pane focus survives Swap; a missing side returns focus to the list",
+      "decision_source": "ADR-0015 detail (owner-ratified 2026-10-31)"
     },
     {
       "id": "Q13",
@@ -140,7 +155,9 @@
       "decision": "a bounded supported preview or an explicit unavailable state; preview never claims full detail/1:1",
       "source": "DC-MP-IMG5, Rendering §6",
       "implemented": false,
-      "open_condition": "the exact per-representation copy/visual is E"
+      "open_condition": "the exact per-representation copy/visual is E",
+      "owner_detail_decision": "per-state explicit wording: unavailable with reason, bounded preview labelled low-resolution, clipped regions stated; never call a preview full detail",
+      "decision_source": "ADR-0015 detail (owner-ratified 2026-10-31)"
     },
     {
       "id": "Q14",
@@ -149,23 +166,21 @@
       "decision": "same-key panes may share one decode/upload entry; the adoption rule is fixed and the miss must be reported",
       "source": "DC-MP-CMP1",
       "implemented": false,
-      "open_condition": "whether/how reuse is surfaced to the user is E; measurement is F"
+      "open_condition": "whether/how reuse is surfaced to the user is E; measurement is F",
+      "owner_detail_decision": "reuse visibility in diagnostics only; sharing benefit NOT_MEASURED",
+      "decision_source": "ADR-0015 detail (owner-ratified 2026-10-31)",
+      "measurement_status": "NOT_MEASURED"
     }
   ],
   "counts": {
-    "A": 5,
+    "A": 9,
     "B": 5,
     "C": 0,
     "D": 0,
-    "E": 4,
+    "E": 0,
     "total": 14
   },
-  "open_owner_decisions": [
-    "Q5",
-    "Q6",
-    "Q9",
-    "Q10"
-  ],
+  "open_owner_decisions": [],
   "measurement": [
     "Q7/Q8/Q13/Q14 remain unmeasured until CMP1/IMG5 experiments"
   ],
@@ -176,11 +191,11 @@
     "Q13",
     "Q14"
   ],
-  "additional_open_details": [
-    "Q7 anchor mapping follows Q5",
-    "Q8 unlink restore detail follows Q5",
-    "Q12 exact pane keyboard/focus transfer",
-    "Q13 exact per-representation unavailable copy",
-    "Q14 reuse visibility"
-  ]
+  "additional_open_details": [],
+  "owner_ratification": {
+    "date": "2026-10-31",
+    "owner": "Product/UX owner (Caller)",
+    "record": "owner-ratification-20261031.json",
+    "adr": "docs/decisions/ADR-0015-UX2-DECISION-CLOSURE.md"
+  }
 }
