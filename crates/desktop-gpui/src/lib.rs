@@ -3844,6 +3844,9 @@ impl Render for Shell {
                     .child(
                         div()
                             .id("work-surface")
+                            // Exposed as a region so the central statement and surface
+                            // name are reachable in the accessibility tree, not only on screen.
+                            .role(Role::Region)
                             .aria_label(SharedString::from(format!(
                                 "作業領域：{}",
                                 surface.label()
