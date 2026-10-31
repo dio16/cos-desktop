@@ -2862,6 +2862,7 @@ impl Render for Shell {
             let rows = Arc::clone(&flow_node_rows);
             let active = flow_node_active.clone();
             let shell = cx.entity();
+            let xs_text = xs_text.clone();
             list(self.flow_node_list.clone(), move |index, _window, _app| {
                 let Some(row) = rows.get(index).cloned() else {
                     return div().into_any_element();
@@ -2904,8 +2905,19 @@ impl Render for Shell {
                         0x626870
                     }))
                     .bg(rgb(if is_active { 0x343a42 } else { 0x25292e }))
-                    .child(SharedString::from(format!("{} · {}", node.label, layer)))
-                    .child(SharedString::from(node.identity.as_str()))
+                    .min_w_0()
+                    .child(
+                        div()
+                            .truncate()
+                            .child(SharedString::from(format!("{} · {}", node.label, layer))),
+                    )
+                    .child(
+                        xs_text
+                            .clone()
+                            .apply(div())
+                            .truncate()
+                            .child(SharedString::from(node.identity.as_str())),
+                    )
                     .on_click(move |_, window, app| {
                         let key = click_key.clone();
                         click_shell.update(app, |this, cx| {
@@ -2920,6 +2932,7 @@ impl Render for Shell {
             let rows = Arc::clone(&flow_edge_rows);
             let active = flow_edge_active.clone();
             let shell = cx.entity();
+            let xs_text = xs_text.clone();
             list(self.flow_edge_list.clone(), move |index, _window, _app| {
                 let Some(row) = rows.get(index).cloned() else {
                     return div().into_any_element();
@@ -2965,11 +2978,22 @@ impl Render for Shell {
                         0x626870
                     }))
                     .bg(rgb(if is_active { 0x343a42 } else { 0x25292e }))
-                    .child(SharedString::from(format!(
-                        "{} · {} → {}",
-                        kind, edge.from_label, edge.to_label
-                    )))
-                    .child(SharedString::from(edge.identity.as_str()))
+                    .min_w_0()
+                    .child(
+                        div()
+                            .truncate()
+                            .child(SharedString::from(format!(
+                                "{} · {} → {}",
+                                kind, edge.from_label, edge.to_label
+                            ))),
+                    )
+                    .child(
+                        xs_text
+                            .clone()
+                            .apply(div())
+                            .truncate()
+                            .child(SharedString::from(edge.identity.as_str())),
+                    )
                     .on_click(move |_, window, app| {
                         let key = click_key.clone();
                         click_shell.update(app, |this, cx| {
