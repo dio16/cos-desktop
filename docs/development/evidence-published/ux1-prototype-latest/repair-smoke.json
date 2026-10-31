@@ -170,5 +170,19 @@
     "cleanup": "complete",
     "supersedes": "93aa1f13-d365-4a75-b9ad-6658f1a3db5e covered 271f7a4 before the round-1 review fixes and is not reused for the fixed candidate",
     "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned identical state, candidate, observations, request, terminal-state and check-log digests"
+  },
+  "post_participant_fixes": {
+    "trigger": "participant P02 reported that pressing the inert compare side-change control did nothing and that the disconnected next action was unclear",
+    "changes": [
+      "the Compare panel states visibly that A/B change is unavailable until both sides exist",
+      "the disconnected strip action is 再接続する and its detail states that it re-fetches the display and starts or stops no task; a model test asserts the action and both statements"
+    ],
+    "binary_sha256": "sha256:7dad635375e45b2f068ecc5bf3b0b59c2ca25d3103a8a263a0ebf9eebde1ecc2",
+    "native_checks": [
+      "Compare without a pair shows A側とB側の候補がそろうまで、A側・B側を変更する操作は使えません。 above the state summary",
+      "the disconnected window shows Desktop内 · 観測情報を利用できません — 再接続する with the detail 再接続すると表示を取り直します。タスクの開始や停止は行いません。"
+    ],
+    "quality": "quality.ps1 passed (98 ui-model and 81 desktop-gpui library tests plus the workspace build); the run needed the uv CPython directory first on PATH because the WindowsApps python alias failed closed",
+    "participant_recheck": "NOT_RUN"
   }
 }

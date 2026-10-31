@@ -2447,6 +2447,13 @@ impl Render for Shell {
                             })),
                     ),
             )
+            .children((!side_a_exists || !side_b_exists).then(|| {
+                xs_text
+                    .clone()
+                    .apply(div())
+                    .text_color(rgb(0xbcc6d0))
+                    .child("A側とB側の候補がそろうまで、A側・B側を変更する操作は使えません。")
+            }))
             .child(compare_summary);
         let diagnostics_open = self
             .workbench

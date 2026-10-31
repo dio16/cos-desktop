@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "task": "MP-UX1",
+  "contract": "DC-MP-UX1",
+  "status": "PARTICIPANT_OBSERVATIONS_RECORDED_COMPREHENSION_PARTIAL",
+  "source": {
+    "branch": "dev",
+    "baseline_sha": "470198e61260a3fa45fbbceb0471b200b383712d",
+    "product_source_agreement_sha": "91fdf61d95e3e7b11a80ff80e9c6c68666432c7e",
+    "build_command": "cargo build --locked -p cos-desktop --bin cos-desktop",
+    "build_result": "PASS",
+    "executable_sha256": "sha256:c9fef8360fc26f4121d278c5a6595a5665ec4250ba3d13464b551ccba2777b50",
+    "fixture": "crates/cos-client/fixtures/task-184.json",
+    "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52"
+  },
+  "method": {
+    "participant": "P02",
+    "recruitment": "Caller-relayed participant answers to the neutral prompts; one respondent, not a representative sample. Whether this person differs from P01 was not controlled.",
+    "prior_project_exposure": "NOT_CONTROLLED",
+    "response_collection": "Interactive ask questions with 分からない / 一部だけ分かった / 分かった / 画面を確認できない options plus free text; the eight prompts are the unchanged neutral protocol text.",
+    "neutral_prompts": "The same eight prompts as participant-p01.json. No correct answer or corrective guidance was supplied; the examiner selected candidate B before UX04 and opened a separate unconfigured window before UX08.",
+    "setup_actions": [
+      "UX01–UX03: fresh participant profile, fixture window, Artifact surface, no candidate viewed.",
+      "UX04: examiner viewed candidate B in the dock as scenario setup; no other setup.",
+      "UX05–UX07: participant operated freely.",
+      "UX08: the fixture window was closed and a separate window without fixture arguments was opened."
+    ],
+    "timing": "The five-second condition was answered by the participant as 5秒以内 with a self-reported timer; no independent observer timer was attached, so it is recorded as participant-reported, not independently measured.",
+    "capture_scope": "Accessibility-tree and window captures were taken at the UX01 start and at the disconnected state; intermediate action paths were not recorded, so no unspoken action is attributed."
+  },
+  "checks": [
+    {
+      "id": "UX01",
+      "prompt": "このタスクは、いま何をしていますか？画面から理解した内容を自由入力で教えてください。",
+      "response": "一部だけ分かった",
+      "free_text": null,
+      "comprehension": "PARTIAL",
+      "timing_response": "5秒以内（参加者の自己計時、独立計時なし）",
+      "five_second_condition": "PARTICIPANT_REPORTED_NOT_INDEPENDENTLY_TIMED"
+    },
+    {
+      "id": "UX02",
+      "prompt": "この画面で、作業中の成果物はどこにありますか？場所や見えているものを自由入力で教えてください。",
+      "response": "分かった",
+      "free_text": null,
+      "comprehension": "PASS",
+      "actual_media_dominance": "NOT_MEASURED: the prototype still has no media renderer; the surface states that limitation."
+    },
+    {
+      "id": "UX03",
+      "prompt": "候補（Candidate）とIterationは、どのような関係だと理解しましたか？自由入力で教えてください。",
+      "response": "分かった",
+      "free_text": null,
+      "comprehension": "PASS"
+    },
+    {
+      "id": "UX04",
+      "prompt": "現在選ばれている候補はどれで、それは最終選択ですか？理解した内容を自由入力で教えてください。",
+      "response": "Bを選択していることはわかった。Bが最終選択とはわからなかった。候補を比較でB側を変更することができない、「B側を変更」を押せない",
+      "comprehension": "PARTIAL",
+      "observation": "Viewed B was identified; whether B is a final selection was not understood, and the inert B-side change control gave no visible feedback in the Compare surface without a pair."
+    },
+    {
+      "id": "UX05",
+      "prompt": "この候補がこのように評価された理由と、その裏付けを画面で示してください。操作後、たどった場所と分かった内容を自由入力で教えてください。",
+      "response": "できた",
+      "free_text": null,
+      "comprehension": "PASS"
+    },
+    {
+      "id": "UX06",
+      "prompt": "2つの候補を比較してください。操作後、どこまででき、何が表示されたかを自由入力で教えてください。",
+      "response": "途中までできた",
+      "free_text": null,
+      "comprehension": "PARTIAL"
+    },
+    {
+      "id": "UX07",
+      "prompt": "どのようなときにFlowを見て、どのようなときには見ないと思いますか？必要なら画面を操作し、理解した内容を自由入力で教えてください。",
+      "response": "処理の流れを見るための画面だとは思うがグラフィカルではなく、graphのつながりも不明なので実際の流れが分からない",
+      "comprehension": "PARTIAL",
+      "observation": "The surface's purpose was recognised, but the node/edge list does not convey the flow; no diagram is implemented in the prototype."
+    },
+    {
+      "id": "UX08",
+      "prompt": "問題が起きています。何が起きていて、何ができると思いますか？必要なら画面を操作し、理解した内容を自由入力で教えてください。",
+      "response": "どんな問題が起こっているかはわかるが、次に何をすべきかわからない",
+      "follow_up": "状況だけ分かった",
+      "comprehension": "PARTIAL",
+      "observation": "The disconnected condition was clear, but the next action was not."
+    }
+  ],
+  "results": {
+    "pass": 3,
+    "partial": 5,
+    "fail": 0,
+    "five_second_condition": "PARTICIPANT_REPORTED_NOT_INDEPENDENTLY_MEASURED",
+    "whole_contract_completion": "NOT_MET",
+    "product_acceptance": "NOT_CLAIMED"
+  },
+  "comparison_to_p01": {
+    "p01": {"pass": 0, "partial": 3, "fail": 5},
+    "observed_change": "The explicit failures (分からない) are gone; the artifact area, candidate/iteration relation and evaluation→evidence navigation were answered as understood. Viewed-versus-final-selection, compare completion, the flow reading and the intervention action remain partially understood.",
+    "not_controlled": "Different session conditions, one participant each, no representative sample; this is not a controlled comparison."
+  },
+  "post_session_repairs": {
+    "applied": [
+      "Compare without a pair now states visibly that the A-side and B-side change controls are unavailable until both sides exist, so pressing an inert control no longer needs a hover explanation.",
+      "The disconnected strip's action is 再接続する and its detail says it re-fetches the display and starts or stops no task."
+    ],
+    "verification": "Both repairs were checked natively on the rebuilt executable sha256:7dad6353…, in the same states the participant reported; no post-repair participant confirmation exists.",
+    "participant_recheck": "NOT_RUN"
+  },
+  "boundaries": {
+    "ux1_completion": "NOT_COMPLETE — five of eight checks are partial and no check failed.",
+    "owner_decisions": "Flow needs a design decision about whether the prototype must show a graph rather than lists; compare two-side completion and the final-selection wording need UX-owner judgement.",
+    "media": "No production Decode/Upload/Artifact viewer, evidence-body acquisition or Runtime integration is supplied by UX1.",
+    "processes": "Every owned window was closed through its semantic close control; processes exited 0."
+  }
+}

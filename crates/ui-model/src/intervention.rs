@@ -56,7 +56,7 @@ impl Action {
         match self {
             Self::Inspect => "内容を確認",
             Self::Details => "詳細を表示",
-            Self::Reconnect => "再接続",
+            Self::Reconnect => "再接続する",
         }
     }
 }
@@ -269,7 +269,7 @@ impl Index {
                 task_status: None,
                 provenance: Provenance::DesktopLocal,
                 label: "観測情報を利用できません".into(),
-                detail: "このウィンドウでは、許可された観測情報を取得できません。".into(),
+                detail: "このウィンドウでは、許可された観測情報を取得できません。再接続すると表示を取り直します。タスクの開始や停止は行いません。".into(),
                 action: Some(Action::Reconnect),
             }]
             .into(),
@@ -814,6 +814,14 @@ mod tests {
                 .contains(Provenance::DesktopLocal.label())
         );
         assert_eq!(strip.grouped_away(), 0);
+        let head = &group.head;
+        assert_eq!(head.action, Some(Action::Reconnect));
+        assert!(
+            head.detail.contains("再接続すると表示を取り直します")
+                && head.detail.contains("タスクの開始や停止は行いません"),
+            "the only action states its effect and that it mutates nothing: {}",
+            head.detail
+        );
     }
 
     #[test]
