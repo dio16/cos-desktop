@@ -18,10 +18,14 @@
 | Q7 anchor mapping | Derived from Q5: pane `i` maps the shared anchor through its own `fit_i = min(view_width_i / image_width_i, view_height_i / image_height_i)` and display scale `fit_i × z`; each pane clamps independently and a clamped anchor is never fed back into the link. |
 | Q8 unlink | Unlink keeps each pane at its current display; the panes diverge from then on. No hidden restore and no jump. |
 | Q9 swap | Swap exchanges the candidates only; each pane keeps its own transform and re-clamps against the new image. |
-| Q10 pair replacement | Replacing one side keeps the link and resets only the replaced pane to Fit; the other pane keeps its current display. |
-| Q12 keyboard/focus | Tab order is pane A → pane B → compare actions → candidate list. Focus stays on the same pane after Swap and returns to the candidate list when a side disappears. |
+| Q10 pair replacement | Replacing one side keeps the link and resets the pair to Fit (shared multiplier 1, centered anchor). The other pane does not keep its multiplier, because the link shares one multiplier. |
+| Q12 keyboard/focus | Tab order is pane A → pane B → compare actions → candidate list. Focus stays on the same pane after Swap. When a focused target disappears, ADR-0010 D-12 (nearest valid neighbouring target) applies unchanged; no new rule is added. |
 | Q13 unavailable copy | Per-state explicit wording: unavailable with its reason, bounded preview labelled as low-resolution and not full detail, and clipped regions stated. A bounded preview is never described as full detail or 1:1. |
 | Q14 reuse visibility | Same-key decode/upload reuse is shown only in diagnostics; no badge in Compare. Sharing benefit remains `NOT_MEASURED` until measured. |
+
+## 0.1 Reconciliation ruling (owner, 2026-10-31)
+
+The first Q10 selection ("reset only the replaced pane to Fit") cannot coexist with Q5's single shared multiplier: one pane at `z = 2` and one at `z = 1` has no shared value. The owner was asked which rule wins and selected **pair-wide Fit on replacement with the link kept**. The first Q12 wording also carried a "missing side returns focus to the candidate list" clause that the owner had not selected; asked directly, the owner kept **ADR-0010 D-12 unchanged** instead of adding that rule. Both rulings are recorded in the evidence file and replace the earlier wording; nothing else in this ADR changed.
 
 ## 1. Consequences
 

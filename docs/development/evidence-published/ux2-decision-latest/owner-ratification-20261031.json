@@ -8,24 +8,95 @@
   "adr": "docs/decisions/ADR-0015-UX2-DECISION-CLOSURE.md",
   "method": "The eight open questions were presented with options, consequences and a recommended value grounded in rendering §4.1 and ADR-0010; the owner selected one option per question in a direct decision request. No value was inferred from a blanket implementation permission.",
   "selections": [
-    {"id": "Q5", "question": "Linked transform model and default", "selected": "相対フィットを既定にし、等倍1:1を明示モードとして持つ", "ratified_value": "relative-to-fit default (shared normalized anchor + multiplier over each pane contain-fit); physical 1:1 as a separate explicit mode", "class_after": "A"},
-    {"id": "Q6", "question": "Fit/1:1 switching", "selected": "既定Fit、明示操作で1:1、アンカー保持", "ratified_value": "default Fit; explicit per-pair control switches to physical 1:1 and preserves the shared anchor", "class_after": "A"},
-    {"id": "Q9", "question": "Swap semantics", "selected": "候補のみ入替、変形は保持", "ratified_value": "swap exchanges candidates only; each pane keeps its transform and re-clamps", "class_after": "A"},
-    {"id": "Q10", "question": "Link state on pair replacement", "selected": "Link維持、置換側のみFit初期化", "ratified_value": "pair replacement keeps the link and resets only the replaced pane to Fit", "class_after": "A"},
-    {"id": "Q8", "question": "Unlink restore", "selected": "現状の表示を維持", "ratified_value": "unlink keeps the current display; no hidden restore or jump", "class_after": "B (documented default, detail now fixed)"},
-    {"id": "Q12", "question": "Pane keyboard/focus order", "selected": "A→B→操作→一覧、Swapでもペイン固定", "ratified_value": "Tab order pane A -> pane B -> compare actions -> candidate list; pane focus survives Swap; a missing side returns focus to the list", "class_after": "B (documented default, detail now fixed)"},
-    {"id": "Q13", "question": "Unavailable and limited-preview wording", "selected": "状態ごとの明示文言", "ratified_value": "per-state explicit wording: unavailable with reason, bounded preview labelled low-resolution, clipped regions stated; never call a preview full detail", "class_after": "B (documented default, detail now fixed)"},
-    {"id": "Q14", "question": "Same-key reuse visibility", "selected": "診断情報のみ", "ratified_value": "reuse visibility in diagnostics only; sharing benefit NOT_MEASURED", "class_after": "B (documented default, detail now fixed)"}
+    {
+      "id": "Q5",
+      "question": "Linked transform model and default",
+      "selected": "相対フィットを既定にし、等倍1:1を明示モードとして持つ",
+      "ratified_value": "relative-to-fit default (shared normalized anchor + multiplier over each pane contain-fit); physical 1:1 as a separate explicit mode",
+      "class_after": "A"
+    },
+    {
+      "id": "Q6",
+      "question": "Fit/1:1 switching",
+      "selected": "既定Fit、明示操作で1:1、アンカー保持",
+      "ratified_value": "default Fit; explicit per-pair control switches to physical 1:1 and preserves the shared anchor",
+      "class_after": "A"
+    },
+    {
+      "id": "Q9",
+      "question": "Swap semantics",
+      "selected": "候補のみ入替、変形は保持",
+      "ratified_value": "swap exchanges candidates only; each pane keeps its transform and re-clamps",
+      "class_after": "A"
+    },
+    {
+      "id": "Q8",
+      "question": "Unlink restore",
+      "selected": "現状の表示を維持",
+      "ratified_value": "unlink keeps the current display; no hidden restore or jump",
+      "class_after": "B (documented default, detail now fixed)"
+    },
+    {
+      "id": "Q13",
+      "question": "Unavailable and limited-preview wording",
+      "selected": "状態ごとの明示文言",
+      "ratified_value": "per-state explicit wording: unavailable with reason, bounded preview labelled low-resolution, clipped regions stated; never call a preview full detail",
+      "class_after": "B (documented default, detail now fixed)"
+    },
+    {
+      "id": "Q14",
+      "question": "Same-key reuse visibility",
+      "selected": "診断情報のみ",
+      "ratified_value": "reuse visibility in diagnostics only; sharing benefit NOT_MEASURED",
+      "class_after": "B (documented default, detail now fixed)"
+    },
+    {
+      "id": "Q10",
+      "question": "Link state on pair replacement (reconciled with Q5)",
+      "selected": "置換時はペア全体をFitに戻す",
+      "ratified_value": "pair replacement keeps the link and resets the pair to Fit (shared multiplier 1, centered anchor); one shared multiplier cannot express per-pane zoom",
+      "class_after": "A",
+      "note": "first wording 'reset only the replaced pane' was inconsistent with Q5 and was reconciled by the owner"
+    },
+    {
+      "id": "Q12",
+      "question": "Pane keyboard/focus order (reconciled)",
+      "selected": "D-12を維持",
+      "ratified_value": "Tab order pane A -> pane B -> compare actions -> candidate list; pane focus survives Swap; a vanished target follows ADR-0010 D-12 unchanged",
+      "class_after": "B (documented default, detail now fixed)",
+      "note": "the earlier extra 'missing side returns to the candidate list' clause was not part of the owner's selection and was removed"
+    }
   ],
   "derived": {
     "Q7": "The anchor mapping follows the ratified Q5 model: fit_i = min(view_w/image_w, view_h/image_h), display scale fit_i x z, independent per-pane clamp and no clamped-anchor feedback."
   },
-  "counts_after": {"A": 9, "B": 5, "C": 0, "D": 0, "E": 0, "total": 14},
-  "unchanged": ["Q1-Q4 and Q11 keep their ADR-0010 values", "Viewed stays Desktop-local; Formal Selected stays Runtime-owned; Compare stays non-canonical"],
-  "measurement_open": ["unequal dimensions/orientations/aspect ratios/DPI", "cursor-anchored zoom under clamping", "repeated link/unlink", "same-key reuse fairness"],
+  "counts_after": {
+    "A": 9,
+    "B": 5,
+    "C": 0,
+    "D": 0,
+    "E": 0,
+    "total": 14
+  },
+  "unchanged": [
+    "Q1-Q4 and Q11 keep their ADR-0010 values",
+    "Viewed stays Desktop-local; Formal Selected stays Runtime-owned; Compare stays non-canonical"
+  ],
+  "measurement_open": [
+    "unequal dimensions/orientations/aspect ratios/DPI",
+    "cursor-anchored zoom under clamping",
+    "repeated link/unlink",
+    "same-key reuse fairness"
+  ],
   "boundaries": {
     "implementation": "No product source changed for this decision; Compare remains DESIGN_READY_NOT_IMPLEMENTED until MP-CMP1 implements the ratified values.",
     "acceptance": "Owner ratification is a design decision, not implementation, measurement or product acceptance.",
     "gate": "Documentation-only change; no Refine Gate applies (ADR-0014 Y04)."
+  },
+  "reconciliation": {
+    "date": "2026-10-31",
+    "reason": "Q10 as first selected contradicted Q5 shared multiplier; Q12 ratified text carried an unselected clause",
+    "q10": "pair-wide Fit with the link kept",
+    "q12": "ADR-0010 D-12 unchanged, no new rule"
   }
 }
