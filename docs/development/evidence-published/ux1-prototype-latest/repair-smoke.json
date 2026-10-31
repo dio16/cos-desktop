@@ -196,6 +196,12 @@
       "candidate": "8c22e33ebe8a1b6d30af460315cd5536d86dff59",
       "verdict": "PASS 0 / 0 / 0, VERDICT: CLEAN",
       "result": "the blocker is closed; record acceptance is satisfied while the comprehension exit stays NOT_MET, and product acceptance plus the MP-TYP1 / MP-R0B holds are unchanged"
+    },
+    {
+      "round": "limited-1",
+      "candidate": "e33e20c772070226a64c03cfd75aaa1a4ebc3632",
+      "verdict": "PASS 0 / 0 / 0, VERDICT: CLEAN",
+      "result": "owner limited acceptance recorded; objective verification, product acceptance and the MP-TYP1/MP-R0B holds unchanged"
     }
   ],
   "gates": [
