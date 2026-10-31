@@ -98,7 +98,7 @@
     "ux1_completion": "NOT_COMPLETE",
     "comprehension_exit": "NOT_MET",
     "product_acceptance": "NOT_CLAIMED",
-    "gate": "independent Gate e8360e71… SUCCEEDED on c0de029 over fmt, dependency-rules, clippy and tests",
+    "gate": "independent Gate 477e5a6a… SUCCEEDED on 4dd011a over fmt, dependency-rules, clippy and tests",
     "unrelated_holds": "MP-TYP1 125 % capture HOLD and the MP-R0B HOLD with its 352-case failed suite are untouched.",
     "external_review": "Tern round 4 returned CLEAN 0 / 0 / 0 on 315d677; external review is not product acceptance"
   },
@@ -354,12 +354,29 @@
       "outputs": "none declared; absent_outputs empty",
       "cleanup": "complete",
       "workspace_disposal": "after a retained verify, only this Gate's work/repo and its Gate-owned external target were removed; a repeated verify returned the same digests"
+    },
+    {
+      "gate_id": "477e5a6a-14e6-4451-9bb0-f0e0e969a5f9",
+      "gate_label": "ux1-flow-diagram-20261031-r7",
+      "revision": "4dd011aeb7b94fbc5c704a06badb83123d1cc6f4",
+      "state": "SUCCEEDED",
+      "checks": {
+        "fmt": "pass",
+        "dependency-rules": "pass",
+        "clippy": "pass",
+        "tests": "pass"
+      },
+      "duration_ms": 259820,
+      "candidate_sha256": "sha256:7346c329106e62d7eee50d65e8e1d4e9d67dbac578afb51e364b5604e8227948",
+      "outputs": "none declared; absent_outputs empty",
+      "cleanup": "complete",
+      "workspace_disposal": "after a retained verify, only this Gate's work/repo and its Gate-owned external target were removed; a repeated verify returned the same digests"
     }
   ],
   "gate": {
-    "gate_id": "e8360e71-2a73-4729-aa4f-0d0d07281739",
-    "gate_label": "ux1-flow-diagram-20261031-r6",
-    "revision": "c0de0292df133adfdb495d047c16d94c345682bd",
+    "gate_id": "477e5a6a-14e6-4451-9bb0-f0e0e969a5f9",
+    "gate_label": "ux1-flow-diagram-20261031-r7",
+    "revision": "4dd011aeb7b94fbc5c704a06badb83123d1cc6f4",
     "state": "SUCCEEDED",
     "checks": {
       "fmt": "pass",
@@ -367,8 +384,8 @@
       "clippy": "pass",
       "tests": "pass"
     },
-    "duration_ms": 306522,
-    "candidate_sha256": "sha256:b13ef1d6ba1ee778f6439405a0519de8f134079d572d324b3cc5d07cbec3f773",
+    "duration_ms": 259820,
+    "candidate_sha256": "sha256:7346c329106e62d7eee50d65e8e1d4e9d67dbac578afb51e364b5604e8227948",
     "outputs": "none declared; absent_outputs empty",
     "cleanup": "complete",
     "workspace_disposal": "after a retained verify, only this Gate's work/repo and its Gate-owned external target were removed; a repeated verify returned the same digests"
