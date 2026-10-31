@@ -111,6 +111,15 @@
       "candidate": "0dd204fc3aa51ac90a05df07b0337b94c2ff1f85",
       "verdict": "PASS 0 / 0 / 0, VERDICT: CLEAN",
       "result": "both round-1 findings are closed; the reviewer confirmed that no further fix is required and that participant comprehension, the five-second condition and product acceptance stay incomplete"
+    },
+    {
+      "round": 3,
+      "candidate": "6c537d3434992f374bfc264458761706c69aed1e",
+      "verdict": "PASS 0 / 2 / 0, VERDICT: FINDINGS REMAIN",
+      "findings": [
+        "A-R1-01: the compare hint claimed both side-change controls were unavailable whenever one side was missing, but a pending A side keeps its own change available; the hint is now keyed to the same booleans as the click gating and unit-tested across the three states.",
+        "A-R1-02: the reconnect detail promised a re-fetch although a window without a runtime endpoint has no handle and only reports that nothing can be reconnected; the detail now states that the re-fetch happens only when a connection target exists."
+      ]
     }
   ],
   "gates": [
@@ -190,15 +199,16 @@
   "post_participant_fixes": {
     "trigger": "participant P02 reported that pressing the inert compare side-change control did nothing and that the disconnected next action was unclear",
     "changes": [
-      "the Compare panel states visibly that A/B change is unavailable until both sides exist",
-      "the disconnected strip action is 再接続する and its detail states that it re-fetches the display and starts or stops no task; a model test asserts the action and both statements"
+      "the Compare panel states why a side-change control cannot act, keyed to the same availability as the handler: neither side (both unavailable), pending A only (B unavailable), complete pair (no hint); the mapping is unit-tested",
+      "the disconnected strip action is 再接続する and its detail states that a re-fetch happens only when a connection target exists and that no task starts or stops; a model test asserts the action and both statements"
     ],
-    "binary_sha256": "sha256:7dad635375e45b2f068ecc5bf3b0b59c2ca25d3103a8a263a0ebf9eebde1ecc2",
+    "binary_sha256": "sha256:53ecd0a5a4f8a4688978f30167cc4b9eac0e716e403aa50a18f453a248117141",
     "native_checks": [
       "Compare without a pair shows A側とB側の候補がそろうまで、A側・B側を変更する操作は使えません。 above the state summary",
-      "the disconnected window shows Desktop内 · 観測情報を利用できません — 再接続する with the detail 再接続すると表示を取り直します。タスクの開始や停止は行いません。"
+      "the no-endpoint window shows Desktop内 · 観測情報を利用できません — 再接続する with 再接続は、接続先がある場合に限り表示を取り直します。タスクの開始や停止は行いません。 and, after pressing it, 再接続を要求しました — このウィンドウには再接続先となる認可済み観測情報がありません。"
     ],
-    "quality": "quality.ps1 passed (98 ui-model and 81 desktop-gpui library tests plus the workspace build); the run needed the uv CPython directory first on PATH because the WindowsApps python alias failed closed",
-    "participant_recheck": "NOT_RUN"
+    "quality": "quality.ps1 passed with 98 ui-model and 82 desktop-gpui library tests plus the workspace build (uv CPython first on PATH)",
+    "participant_recheck": "NOT_RUN",
+    "binary_provenance": "workspace build from the committed tree after quality.ps1; launched and inspected for the no-endpoint strip detail and the Compare hint"
   }
 }

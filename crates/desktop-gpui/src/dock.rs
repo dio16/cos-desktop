@@ -75,6 +75,16 @@ pub(super) fn compare_unavailable_reason(candidate_count: usize) -> Option<&'sta
     (candidate_count < 2).then_some("現在の認可済み観測情報には候補が2件必要です")
 }
 
+/// Why a Compare side-change control cannot act, keyed to the same availability
+/// the click handler uses, so the visible explanation and the affordance agree.
+pub(super) fn side_change_hint(a_exists: bool, b_exists: bool) -> Option<&'static str> {
+    match (a_exists, b_exists) {
+        (false, _) => Some("A側とB側の候補がそろうまで、A側・B側を変更する操作は使えません。"),
+        (true, false) => Some("B側の候補がそろうまで、B側を変更する操作は使えません。"),
+        (true, true) => None,
+    }
+}
+
 /// Nearest valid row after a focused row disappears (ADR-0010 D-12).
 ///
 /// The cursor keeps its position (clamped to the new length) without moving the
@@ -328,6 +338,20 @@ mod tests {
             presentation.compare_pair(),
             Some(&[viewed("a"), viewed("b")])
         );
+    }
+
+    #[test]
+    fn the_side_change_hint_matches_the_enabled_side() {
+        assert_eq!(
+            side_change_hint(false, false),
+            Some("A側とB側の候補がそろうまで、A側・B側を変更する操作は使えません。")
+        );
+        assert_eq!(
+            side_change_hint(true, false),
+            Some("B側の候補がそろうまで、B側を変更する操作は使えません。"),
+            "a pending A side keeps its own change available, so only B is called unavailable"
+        );
+        assert_eq!(side_change_hint(true, true), None);
     }
 
     #[test]

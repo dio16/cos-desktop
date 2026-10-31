@@ -2447,12 +2447,12 @@ impl Render for Shell {
                             })),
                     ),
             )
-            .children((!side_a_exists || !side_b_exists).then(|| {
+            .children(dock::side_change_hint(side_a_exists, side_b_exists).map(|message| {
                 xs_text
                     .clone()
                     .apply(div())
                     .text_color(rgb(0xbcc6d0))
-                    .child("A側とB側の候補がそろうまで、A側・B側を変更する操作は使えません。")
+                    .child(message)
             }))
             .child(compare_summary);
         let diagnostics_open = self
