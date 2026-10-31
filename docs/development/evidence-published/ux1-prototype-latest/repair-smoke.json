@@ -65,7 +65,7 @@
       "binary_sha256": "sha256:c9fef8360fc26f4121d278c5a6595a5665ec4250ba3d13464b551ccba2777b50",
       "build_command": "cargo build --locked -p cos-desktop --bin cos-desktop",
       "binary_provenance": "rebuilt after the round-1 fixes; this binary was launched and inspected for the visible stop detail and the inspector evidence gloss",
-      "flow_diagram_binary_sha256": "sha256:41f7482cf8426b96f01aca40111dafbee087e2ab7cf7b5f728e22b62d5ec7151"
+      "flow_diagram_binary_sha256": "sha256:792212d9beb27407d2e29ee1193cd6a60aa68c8df31e425638f27a1f863da8b5"
     }
   },
   "native_observation": {
@@ -169,6 +169,14 @@
       "findings": [
         "A-R4-01: a depth-0 same-layer route used negative canvas coordinates; drawings with same-layer or self-loop connectors now reserve a 26 px top margin and the tests assert the route, marker and label offset stay inside the canvas.",
         "A-R4-02: the self-loop channel sat inside the card; the connector now takes the card half-width and routes the loop outside the card, with a test on the channel position."
+      ]
+    },
+    {
+      "round": "flow-5",
+      "candidate": "06dd31b63122cd3f78ed47316744af8851e49846",
+      "verdict": "BLOCKING 0 / ACTIONABLE NON-BLOCKING 1 / EXCESSIVE 0 (unparsed footer, read manually)",
+      "findings": [
+        "A-R5-01: the self-loop arrow sat on the outside channel instead of marking the same card; the loop now returns over the card just above its top edge and the marker points down at that edge, with tests for the return leg and marker position."
       ]
     }
   ],

@@ -410,8 +410,13 @@ pub fn connector(
         height: height.max(thickness),
     };
     if same_node {
+        // Leave the same card, run down the outside channel and return to the card
+        // just above its top edge, so the marker touches the projected target (the
+        // node itself) while the line never crosses the card box.
         let channel_x = from_center_x + card_half_width + 12.0;
         let channel_top = from_top - 12.0;
+        let return_x = from_center_x + 18.0;
+        let return_y = from_top - 2.0;
         return Connector {
             segments: vec![
                 segment(
@@ -426,9 +431,20 @@ pub fn connector(
                     channel_x - from_center_x,
                     thickness,
                 ),
-                segment(channel_x - thickness / 2.0, channel_top, thickness, 12.0),
+                segment(
+                    channel_x - thickness / 2.0,
+                    channel_top,
+                    thickness,
+                    return_y - channel_top,
+                ),
+                segment(
+                    return_x,
+                    return_y - thickness / 2.0,
+                    channel_x - return_x,
+                    thickness,
+                ),
             ],
-            marker: (channel_x - 5.0, from_top - 11.0),
+            marker: (return_x - 5.0, from_top - 11.0),
             glyph: "▼",
         };
     }
@@ -999,7 +1015,10 @@ mod tests {
         let self_loop = connector(10.0, card_top, 10.0, card_top, true, half, 2.0);
         assert_eq!(self_loop.glyph, "▼");
         for segment in &self_loop.segments {
-            assert!(segment.top + segment.height <= card_top);
+            assert!(
+                segment.top + segment.height <= card_top,
+                "the loop never crosses the card box"
+            );
         }
         let channel = self_loop
             .segments
@@ -1010,6 +1029,17 @@ mod tests {
             channel >= 10.0 + half,
             "the loop channel sits outside the card: {channel}"
         );
+        let return_leg = self_loop.segments.last().expect("return leg");
+        assert!(
+            return_leg.left < 10.0 + half && return_leg.left + return_leg.width > 10.0,
+            "the loop returns over the same card"
+        );
+        let marker_center = self_loop.marker.0 + 5.0;
+        assert!(
+            (marker_center - (10.0 + 18.0)).abs() < 0.5,
+            "the marker points at the same card's top edge"
+        );
+        assert!(self_loop.marker.1 + 11.0 <= card_top);
 
         let bent = connector(10.0, 0.0, 90.0, 60.0, false, half, 2.0);
         assert_eq!(bent.segments.len(), 3);
