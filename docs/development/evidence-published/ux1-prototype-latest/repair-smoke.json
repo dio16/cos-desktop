@@ -443,7 +443,8 @@
     "record": "participant-p03.json",
     "result": "8 PASS / 0 PARTIAL / 0 FAIL on executable sha256:792212d9… from product source 4dd011a",
     "limits": "option-level responses without free text; five-second condition self-timed; exposure not controlled; not a representative sample",
-    "comprehension_exit": "NOT_VERIFIED_SELF_REPORT_ONLY",
-    "product_acceptance": "NOT_CLAIMED"
+    "comprehension_exit": "MET_LIMITED_OWNER_ACCEPTANCE",
+    "product_acceptance": "NOT_CLAIMED",
+    "owner_acceptance": "ADR-0016 (2026-10-31) limited acceptance of the self-report; objective verification and product acceptance remain separate"
   }
 }

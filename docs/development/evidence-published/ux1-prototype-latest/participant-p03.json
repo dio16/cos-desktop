@@ -91,10 +91,10 @@
     "partial": 0,
     "fail": 0,
     "five_second_condition": "PARTICIPANT_REPORTED_NOT_INDEPENDENTLY_MEASURED",
-    "comprehension_exit": "NOT_VERIFIED_SELF_REPORT_ONLY",
+    "comprehension_exit": "MET_LIMITED_OWNER_ACCEPTANCE",
     "whole_contract_completion": "RECORD_ACCEPTANCE_SATISFIED",
     "product_acceptance": "NOT_CLAIMED",
-    "comprehension_exit_note": "Eight self-reported understood answers are recorded; independent timing, free-text interpretation and action records are absent, so the exit is not MET until objective evidence or an explicit Product/UX Owner limited acceptance exists."
+    "comprehension_exit_note": "Product/UX owner explicitly accepted the eight self-reported answers as a limited basis on 2026-10-31 (ADR-0016). Independent timing, free text, operation traces, representative sampling and production behaviour remain NOT_MEASURED; this is not objective verification or product acceptance."
   },
   "comparison": {
     "p01": {
@@ -119,6 +119,7 @@
     "evidence_kind": "Participant self-report; no free text was supplied for most items and the five-second claim is self-timed.",
     "owner_decisions": "Product/UX acceptance, any limited acceptance of self-reported evidence, production promotion and UX value adoption remain owner decisions.",
     "media": "No production media renderer, evidence-body acquisition or Runtime integration is supplied by UX1.",
-    "processes": "Both owned windows were closed through their semantic close control; each process exited 0."
+    "processes": "Both owned windows were closed through their semantic close control; each process exited 0.",
+    "owner_acceptance": "ADR-0016 limited comprehension acceptance; the ruling cannot be cited as measured evidence or product/UX acceptance."
   }
 }
