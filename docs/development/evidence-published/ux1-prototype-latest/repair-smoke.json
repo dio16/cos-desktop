@@ -97,7 +97,7 @@
     "ux1_completion": "NOT_COMPLETE",
     "comprehension_exit": "NOT_MET",
     "product_acceptance": "NOT_CLAIMED",
-    "gate": "independent Gate 4d038bda… SUCCEEDED on 5ce772a over fmt, dependency-rules, clippy and tests; the earlier flow Gates cover superseded candidates and are not reused",
+    "gate": "independent Gate cd22e3f5… SUCCEEDED on f6f503f over fmt, dependency-rules, clippy and tests; earlier flow Gates cover superseded candidates",
     "unrelated_holds": "MP-TYP1 125 % capture HOLD and the MP-R0B HOLD with its 352-case failed suite are untouched.",
     "external_review": "Tern round 4 returned CLEAN 0 / 0 / 0 on 315d677; external review is not product acceptance"
   },
@@ -141,6 +141,15 @@
         "B-R1-02: the drawing carried neither the projected connection kind nor an explicit direction; each edge now shows its projected kind and an arrow at the projected target, and the kind is carried in DiagramEdge with a test.",
         "A-R1-01: emphasis ignored the GraphRevision boundary; match sets are now keyed by (GraphRef, identity) with a cross-revision test, matching the list-key boundary.",
         "A-R1-02: truncation happened before layering, so a drawn node could lose its depth and a cycle through an omitted node went unreported; depth and cycle detection now run over the complete graph before the bounded selection."
+      ]
+    },
+    {
+      "round": "flow-2",
+      "candidate": "4eec2136ba4639b6b23af1f7b94498300a631675",
+      "verdict": "BLOCKING 1 / ACTIONABLE NON-BLOCKING 1 / EXCESSIVE 0 (unparsed footer, read manually)",
+      "findings": [
+        "B-R2-01: whole-graph layering was O(V*(V+E)) and ran synchronously from render; layers() now condenses strongly connected components iteratively and takes the longest path over the condensation in O(V+E), the result is cached per admitted revision and only computed while the Flow surface is shown, and 10k-chain, two-node-cycle and self-loop tests pin the behavior.",
+        "A-R2-01: an upward (cyclic) edge produced negative-height segments that were clamped, so the connector did not reach its target and the arrow always pointed down; connectors are now normalized rectangles with an upward/downward marker, covered by direction tests."
       ]
     }
   ],
@@ -267,12 +276,29 @@
       "outputs": "none declared; absent_outputs empty",
       "cleanup": "complete",
       "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned the same state, candidate and check-log digests"
+    },
+    {
+      "gate_id": "cd22e3f5-7531-4209-9828-c06ba0856d27",
+      "gate_label": "ux1-flow-diagram-20261031-r4",
+      "revision": "f6f503fa7963fa137b293f05f9db26be660497cc",
+      "state": "SUCCEEDED",
+      "checks": {
+        "fmt": "pass",
+        "dependency-rules": "pass",
+        "clippy": "pass",
+        "tests": "pass"
+      },
+      "duration_ms": 312142,
+      "candidate_sha256": "sha256:9d12b824e1f37597430a180e281071cdc55cfb66796d5adbcda53066cf6a1aea",
+      "outputs": "none declared; absent_outputs empty",
+      "cleanup": "complete",
+      "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned the same digests"
     }
   ],
   "gate": {
-    "gate_id": "4d038bda-2962-48e3-8a1f-715aa72fec72",
-    "gate_label": "ux1-flow-diagram-20261031-r3",
-    "revision": "5ce772a34fa1f91c10cf2f980078032c874ce43c",
+    "gate_id": "cd22e3f5-7531-4209-9828-c06ba0856d27",
+    "gate_label": "ux1-flow-diagram-20261031-r4",
+    "revision": "f6f503fa7963fa137b293f05f9db26be660497cc",
     "state": "SUCCEEDED",
     "checks": {
       "fmt": "pass",
@@ -280,11 +306,11 @@
       "clippy": "pass",
       "tests": "pass"
     },
-    "duration_ms": 257389,
-    "candidate_sha256": "sha256:d227f8f16ad232fba1b6e40a45ab1f217e2674333693c55c765932ac425c5f55",
+    "duration_ms": 312142,
+    "candidate_sha256": "sha256:9d12b824e1f37597430a180e281071cdc55cfb66796d5adbcda53066cf6a1aea",
     "outputs": "none declared; absent_outputs empty",
     "cleanup": "complete",
-    "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned the same state, candidate and check-log digests"
+    "workspace_disposal": "after a retained verify, only this Gate's work/repo (about 53 MiB) and its Gate-owned external target (about 2.5 GiB) were removed; a repeated verify returned the same digests"
   },
   "post_participant_fixes": {
     "trigger": "participant P02 reported that pressing the inert compare side-change control did nothing and that the disconnected next action was unclear",
