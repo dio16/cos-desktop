@@ -106,10 +106,12 @@ impl Shell {
         let candidate_state: SharedString = if view.candidate.is_none() {
             "候補は表示されていません".into()
         } else if viewed_available {
-            SharedString::from(format!("表示中の候補: {viewed_label}"))
+            SharedString::from(format!(
+                "閲覧中の候補（この画面での選択）: {viewed_label} — 正式採用ではありません。正式採用は実行基盤から通知されます。"
+            ))
         } else {
             SharedString::from(format!(
-                "表示中の候補: {viewed_label} — 現在の認可済み表示情報では利用できません"
+                "閲覧中の候補（この画面での選択）: {viewed_label} — 現在の認可済み表示情報では利用できません"
             ))
         };
         panel = panel.child(

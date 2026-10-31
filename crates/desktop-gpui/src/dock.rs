@@ -75,6 +75,27 @@ pub(super) fn compare_unavailable_reason(candidate_count: usize) -> Option<&'sta
     (candidate_count < 2).then_some("現在の認可済み観測情報には候補が2件必要です")
 }
 
+/// The next step that completes both Compare sides, in the current state.
+pub fn compare_next_step(
+    pair_complete: bool,
+    pending_a: bool,
+    changing_side: Option<&str>,
+) -> &'static str {
+    if let Some(side) = changing_side {
+        return match side {
+            "A" => "比較するA側を変更しています。下の一覧から候補を選ぶとA側が置き換わります。",
+            _ => "比較するB側を変更しています。下の一覧から候補を選ぶとB側が置き換わります。",
+        };
+    }
+    if pair_complete {
+        return "A側とB側がそろっています。入れ替えるときは「A側を変更」「B側を変更」を使います。";
+    }
+    if pending_a {
+        return "A側は選ばれています。次に別の候補を選ぶとB側になり、比較が始まります。";
+    }
+    "次に候補を2つ選ぶと比較が始まります。1つ目がA側、2つ目がB側になります。"
+}
+
 /// Why a Compare side-change control cannot act, keyed to the same availability
 /// the click handler uses, so the visible explanation and the affordance agree.
 pub(super) fn side_change_hint(a_exists: bool, b_exists: bool) -> Option<&'static str> {
@@ -338,6 +359,21 @@ mod tests {
             presentation.compare_pair(),
             Some(&[viewed("a"), viewed("b")])
         );
+    }
+
+    #[test]
+    fn the_compare_next_step_matches_the_actual_state() {
+        assert_eq!(
+            compare_next_step(false, false, None),
+            "次に候補を2つ選ぶと比較が始まります。1つ目がA側、2つ目がB側になります。"
+        );
+        assert_eq!(
+            compare_next_step(false, true, None),
+            "A側は選ばれています。次に別の候補を選ぶとB側になり、比較が始まります。"
+        );
+        assert!(compare_next_step(true, false, None).contains("A側とB側がそろっています"));
+        assert!(compare_next_step(true, false, Some("A")).contains("A側を変更しています"));
+        assert!(compare_next_step(true, false, Some("B")).contains("B側を変更しています"));
     }
 
     #[test]

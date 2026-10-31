@@ -332,6 +332,17 @@ impl Shell {
                     .text_color(rgb(0x9da3aa))
                     .child(SharedString::from(row.detail.to_string())),
             )
+            .child(
+                xs_text
+                    .clone()
+                    .apply(div())
+                    .text_color(rgb(0xbcc6d0))
+                    .child(SharedString::from(format!(
+                        "次にすること：{}",
+                        row.action
+                            .map_or("この行から実行できる操作はありません。", Action::label)
+                    ))),
+            )
             .on_click(cx.listener(move |this, _, window, cx| {
                 if let Some(handle) = this.strip_focus.get(&click_identity).cloned() {
                     handle.focus(window, cx);

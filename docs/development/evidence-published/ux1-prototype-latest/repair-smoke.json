@@ -59,12 +59,13 @@
       "cargo build --locked -p cos-desktop --bin cos-desktop"
     ],
     "results": {
-      "quality": "all quality gates passed (native smoke is separate)",
+      "quality": "quality.ps1 passed with 98 ui-model and 87 desktop-gpui library tests plus the workspace build (uv CPython first on PATH)",
       "ui_model_tests": "98 passed",
       "desktop_gpui_tests": "81 passed",
       "binary_sha256": "sha256:c9fef8360fc26f4121d278c5a6595a5665ec4250ba3d13464b551ccba2777b50",
       "build_command": "cargo build --locked -p cos-desktop --bin cos-desktop",
-      "binary_provenance": "rebuilt after the round-1 fixes; this binary was launched and inspected for the visible stop detail and the inspector evidence gloss"
+      "binary_provenance": "rebuilt after the round-1 fixes; this binary was launched and inspected for the visible stop detail and the inspector evidence gloss",
+      "flow_diagram_binary_sha256": "sha256:0ab59779188685ff1814d4839cd74e0814fae6c3d52160128e5394fcc597102d"
     }
   },
   "native_observation": {
@@ -79,7 +80,11 @@
     "disconnected": "a separate window without fixture arguments showed タスク情報はありません, 情報源なし / データ非公開, per-axis 利用できません — 許可情報を取得できません, 停止の操作 disabled, inspector 利用不可 — 現在閲覧できる情報がありません, and one Desktop-local Reconnect row",
     "processes": "every owned process exited 0 through the semantic close control with observation shutdown and preference save confirmed",
     "stop_detail": "the prepared state shows 停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。 below the status line (previously the detail was hidden outside manual intervention)",
-    "evidence_gloss": "the expanded 判断の根拠 section shows 概要 product silhouette reads as flat (Runtime free text unchanged) and 利用可否 取得可能（AVAILABLE）"
+    "evidence_gloss": "the expanded 判断の根拠 section shows 概要 product silhouette reads as flat (Runtime free text unchanged) and 利用可否 取得可能（AVAILABLE）",
+    "flow_diagram": "fixture Flow shows a 9-node/9-column diagram beside the node and edge lists; searching evaluation highlighted Evaluation and reduced the lists to 1 node and 2 edges; clicking the diagram card selected Evaluation and focused its list row; clearing the query restored 9 nodes and 8 edges",
+    "compare_next_step": "Compare with pending A showed B側の候補がそろうまで… and A側は選ばれています。次に別の候補を選ぶとB側になり、比較が始まります。; selecting C completed the pair and replaced both lines with A側とB側がそろっています。…",
+    "viewed_caption": "the Artifact surface and the inspector both state 閲覧中（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。",
+    "intervention_next_step": "the disconnected row states 次にすること：再接続する and pressing it reports that this window has no authorized observation target"
   },
   "not_measured": [
     "Post-repair participant comprehension and the five-second first-exposure condition",
@@ -233,5 +238,15 @@
     "quality": "quality.ps1 passed with 98 ui-model and 82 desktop-gpui library tests plus the workspace build (uv CPython first on PATH)",
     "participant_recheck": "NOT_RUN",
     "binary_provenance": "workspace build from the committed tree after quality.ps1; launched and inspected for the no-endpoint strip detail and the Compare hint"
+  },
+  "owner_approved_changes": {
+    "approval": "Caller, 2026-10-31: show Flow as a diagram; the other three items are approved in the proposed state",
+    "changes": [
+      "Flow renders the authoritative graph as a layered diagram: depth is the longest path over projected edges, lanes keep authoritative order, labels/layers/identities are copied from the projection, matching search filters highlight and dim nodes, and cycles, endpoints missing from the drawing and the node cap are stated rather than hidden. The searchable node and edge lists stay beside it as the keyboard path.",
+      "Compare states the next step for the current state (none, pending A, complete pair, or an armed side) instead of only the refusal reason.",
+      "The Viewed selection is labelled as a local choice in the inspector and on the Artifact surface, with the Runtime-owned formal selection stated as separate.",
+      "The intervention row states 次にすること with the row's action and keeps the effect sentence (a re-fetch only when a connection target exists; no task start or stop)."
+    ],
+    "contracts": "Product §19 and DC-MP-FLOW1 record the diagram decision; DC-MP-UX1 records the four approved prototype presentation decisions. Production diagram work stays with DC-MP-FLOW2/FLOW3 stage gates."
   }
 }
