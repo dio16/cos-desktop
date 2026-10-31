@@ -233,54 +233,201 @@ pub struct Diagram {
     pub cyclic: bool,
 }
 
-/// Lay out one authoritative graph without inventing topology or labels.
+/// One orthogonal connector segment in drawing coordinates.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Segment {
+    pub left: f32,
+    pub top: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+/// Layer and cycle result for one complete graph revision.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Layers {
+    /// Longest-path depth per node, in authoritative node order.
+    pub depth: Vec<usize>,
+    /// The topology has a cycle; depth stays a hint rather than a rank.
+    pub cyclic: bool,
+}
+
+/// Compute layers for the complete graph in linear time.
 ///
-/// Depth is the longest path over the projected edges of the **complete** graph,
-/// so truncating the drawing never moves a drawn node to a wrong layer and a
-/// cycle through an omitted node is still reported. Matching identities only
-/// decide which nodes are drawn first when the cap applies; the drawn set is
-/// then restored to authoritative order, so search emphasis never reorders a
-/// layer. Every label, layer, kind and identity is copied from the projection.
-pub fn diagram(
-    graph: &GraphDisplay,
-    matched_nodes: &std::collections::BTreeSet<(GraphRef, NodeId)>,
-    matched_edges: &std::collections::BTreeSet<(GraphRef, EdgeId)>,
-) -> Diagram {
+/// Strongly connected components are condensed iteratively (no recursion), so a
+/// cycle never leaves a node without a layer and the whole pass is `O(V + E)`
+/// regardless of size. Members of one component share a layer, which is the
+/// honest answer for a cyclic region.
+pub fn layers(graph: &GraphDisplay) -> Layers {
+    let count = graph.nodes.len();
     let index_of: std::collections::BTreeMap<NodeId, usize> = graph
         .nodes
         .iter()
         .enumerate()
         .map(|(index, node)| (node.identity.clone(), index))
         .collect();
-    let mut successors: Vec<Vec<usize>> = vec![Vec::new(); graph.nodes.len()];
+    let mut successors: Vec<Vec<usize>> = vec![Vec::new(); count];
+    let mut self_loop = false;
     for edge in graph.edges.iter() {
-        if let (Some(&from), Some(&to)) = (index_of.get(&edge.from), index_of.get(&edge.to)) {
-            successors[from].push(to);
+        let (Some(&from), Some(&to)) = (index_of.get(&edge.from), index_of.get(&edge.to)) else {
+            continue;
+        };
+        if from == to {
+            self_loop = true;
         }
+        successors[from].push(to);
     }
-    let mut depth = vec![0usize; graph.nodes.len()];
-    for _ in 0..graph.nodes.len() {
-        let mut changed = false;
-        for from in 0..graph.nodes.len() {
-            for &to in &successors[from] {
-                if depth[to] < depth[from] + 1 {
-                    depth[to] = depth[from] + 1;
-                    changed = true;
+
+    // Iterative Tarjan: one frame per node, no host-stack recursion.
+    const UNVISITED: usize = usize::MAX;
+    let mut index = vec![UNVISITED; count];
+    let mut low = vec![0usize; count];
+    let mut on_stack = vec![false; count];
+    let mut stack: Vec<usize> = Vec::new();
+    let mut component = vec![UNVISITED; count];
+    let mut component_sizes: Vec<usize> = Vec::new();
+    let mut next_index = 0usize;
+    for root in 0..count {
+        if index[root] != UNVISITED {
+            continue;
+        }
+        index[root] = next_index;
+        low[root] = next_index;
+        next_index += 1;
+        stack.push(root);
+        on_stack[root] = true;
+        let mut frames: Vec<(usize, usize)> = vec![(root, 0)];
+        while let Some(&(node, child)) = frames.last() {
+            if child < successors[node].len() {
+                let target = successors[node][child];
+                frames.last_mut().expect("frame").1 += 1;
+                if index[target] == UNVISITED {
+                    index[target] = next_index;
+                    low[target] = next_index;
+                    next_index += 1;
+                    stack.push(target);
+                    on_stack[target] = true;
+                    frames.push((target, 0));
+                } else if on_stack[target] {
+                    low[node] = low[node].min(index[target]);
                 }
+                continue;
+            }
+            frames.pop();
+            if let Some(&(parent, _)) = frames.last() {
+                low[parent] = low[parent].min(low[node]);
+            }
+            if low[node] == index[node] {
+                let id = component_sizes.len();
+                let mut size = 0usize;
+                while let Some(member) = stack.pop() {
+                    on_stack[member] = false;
+                    component[member] = id;
+                    size += 1;
+                    if member == node {
+                        break;
+                    }
+                }
+                component_sizes.push(size);
             }
         }
-        if !changed {
-            break;
+    }
+
+    // Condense and take the longest path over the component DAG.
+    let components = component_sizes.len();
+    let mut component_successors: Vec<std::collections::BTreeSet<usize>> =
+        vec![std::collections::BTreeSet::new(); components];
+    let mut indegree = vec![0usize; components];
+    for from in 0..count {
+        for &to in &successors[from] {
+            let (a, b) = (component[from], component[to]);
+            if a != b && component_successors[a].insert(b) {
+                indegree[b] += 1;
+            }
         }
     }
-    // A relaxation that still changes after |V| passes means a cycle; keeping the
-    // bounded pass count avoids an infinite loop and reports the ambiguity.
-    let cyclic = (0..graph.nodes.len()).any(|from| {
-        successors[from]
-            .iter()
-            .any(|&to| depth[to] < depth[from] + 1)
-    });
+    let mut depth_component = vec![0usize; components];
+    let mut queue: std::collections::VecDeque<usize> =
+        (0..components).filter(|id| indegree[*id] == 0).collect();
+    while let Some(id) = queue.pop_front() {
+        let next_depth = depth_component[id] + 1;
+        for &next in &component_successors[id] {
+            depth_component[next] = depth_component[next].max(next_depth);
+            indegree[next] -= 1;
+            if indegree[next] == 0 {
+                queue.push_back(next);
+            }
+        }
+    }
+    let cyclic = self_loop || component_sizes.iter().any(|size| *size > 1);
+    let depth = (0..count)
+        .map(|node| depth_component[component[node]])
+        .collect();
+    Layers { depth, cyclic }
+}
 
+/// Orthogonal connector from one node's bottom centre to the target's top centre.
+///
+/// Segments are normalized rectangles, so an upward (cyclic) edge draws a real
+/// connector instead of a negative-height sliver.
+pub fn connector(from: (f32, f32), to: (f32, f32), thickness: f32) -> (Vec<Segment>, bool) {
+    let (from_x, from_y) = from;
+    let (to_x, to_y) = to;
+    let target_above = to_y < from_y;
+    if (from_x - to_x).abs() < 0.5 {
+        let top = from_y.min(to_y);
+        return (
+            vec![Segment {
+                left: from_x - thickness / 2.0,
+                top,
+                width: thickness,
+                height: (to_y - from_y).abs().max(thickness),
+            }],
+            target_above,
+        );
+    }
+    let mid_y = (from_y + to_y) / 2.0;
+    let segments = [
+        Segment {
+            left: from_x - thickness / 2.0,
+            top: from_y.min(mid_y),
+            width: thickness,
+            height: (mid_y - from_y).abs().max(thickness),
+        },
+        Segment {
+            left: from_x.min(to_x),
+            top: mid_y - thickness / 2.0,
+            width: (from_x - to_x).abs().max(thickness),
+            height: thickness,
+        },
+        Segment {
+            left: to_x - thickness / 2.0,
+            top: mid_y.min(to_y),
+            width: thickness,
+            height: (to_y - mid_y).abs().max(thickness),
+        },
+    ];
+    (segments.to_vec(), target_above)
+}
+
+/// The marker that points at the projected target.
+pub fn target_marker(target_above: bool) -> &'static str {
+    if target_above { "▲" } else { "▼" }
+}
+
+/// Lay out one authoritative graph without inventing topology or labels.
+///
+/// Depth comes from the complete graph's `layers`, so truncating the drawing
+/// never moves a drawn node to a wrong layer and a cycle through an omitted node
+/// is still reported. Matching identities only decide which nodes are drawn
+/// first when the cap applies; the drawn set is then restored to authoritative
+/// order, so search emphasis never reorders a layer. Every label, layer, kind and
+/// identity is copied from the projection.
+pub fn diagram(
+    graph: &GraphDisplay,
+    layers: &Layers,
+    matched_nodes: &std::collections::BTreeSet<(GraphRef, NodeId)>,
+    matched_edges: &std::collections::BTreeSet<(GraphRef, EdgeId)>,
+) -> Diagram {
     let is_matched_node =
         |identity: &NodeId| matched_nodes.contains(&(graph.graph_ref.clone(), identity.clone()));
     let mut selected: Vec<usize> = (0..graph.nodes.len())
@@ -320,7 +467,7 @@ pub fn diagram(
         .iter()
         .map(|index| {
             let node = &graph.nodes[*index];
-            let node_depth = depth[*index];
+            let node_depth = layers.depth.get(*index).copied().unwrap_or(0);
             depth_count = depth_count.max(node_depth + 1);
             let lane = lanes.entry(node_depth).or_insert(0);
             let assigned = *lane;
@@ -344,7 +491,7 @@ pub fn diagram(
         lane_count,
         truncated,
         skipped_edges,
-        cyclic,
+        cyclic: layers.cyclic,
     }
 }
 
@@ -360,8 +507,8 @@ pub fn revision_label(graph: &GraphDisplay) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        AdmissionKey, MAX_DIAGRAM_NODES, admit, contains_edge, contains_node, diagram,
-        revision_key, rows, rows_cancellable,
+        AdmissionKey, MAX_DIAGRAM_NODES, admit, connector, contains_edge, contains_node, diagram,
+        layers, revision_key, rows, rows_cancellable, target_marker,
     };
     use desktop_protocol::{ArtifactDigest, Counter, EpochId, GraphId, GraphRef};
     use std::sync::Arc;
@@ -420,6 +567,7 @@ mod tests {
         let graph = graph(3, "digest/three", 8);
         let drawn = diagram(
             &graph,
+            &layers(&graph),
             &std::collections::BTreeSet::new(),
             &std::collections::BTreeSet::new(),
         );
@@ -450,6 +598,7 @@ mod tests {
         let graph = graph(3, "digest/three", 8);
         let drawn = diagram(
             &graph,
+            &layers(&graph),
             &std::collections::BTreeSet::new(),
             &std::collections::BTreeSet::new(),
         );
@@ -487,7 +636,12 @@ mod tests {
             wide.graph_ref.clone(),
             desktop_protocol::NodeId::fixture("node/second"),
         ));
-        let drawn = diagram(&wide, &matched, &std::collections::BTreeSet::new());
+        let drawn = diagram(
+            &wide,
+            &layers(&wide),
+            &matched,
+            &std::collections::BTreeSet::new(),
+        );
         assert_eq!(
             drawn
                 .nodes
@@ -538,7 +692,12 @@ mod tests {
             chain.graph_ref.clone(),
             desktop_protocol::NodeId::fixture(format!("node/{}", count - 1)),
         ));
-        let drawn = diagram(&chain, &matched, &std::collections::BTreeSet::new());
+        let drawn = diagram(
+            &chain,
+            &layers(&chain),
+            &matched,
+            &std::collections::BTreeSet::new(),
+        );
         assert!(drawn.truncated);
         let last = drawn
             .nodes
@@ -586,6 +745,7 @@ mod tests {
         .into();
         let drawn = diagram(
             &cycle,
+            &layers(&cycle),
             &std::collections::BTreeSet::new(),
             &std::collections::BTreeSet::new(),
         );
@@ -605,7 +765,12 @@ mod tests {
             },
             desktop_protocol::NodeId::fixture("node/a"),
         ));
-        let drawn = diagram(&graph, &matched, &std::collections::BTreeSet::new());
+        let drawn = diagram(
+            &graph,
+            &layers(&graph),
+            &matched,
+            &std::collections::BTreeSet::new(),
+        );
         assert!(
             drawn.nodes.iter().all(|node| !node.matched),
             "a match in another revision never highlights this drawing"
@@ -627,11 +792,125 @@ mod tests {
         .into();
         let drawn = diagram(
             &missing,
+            &layers(&missing),
             &std::collections::BTreeSet::new(),
             &std::collections::BTreeSet::new(),
         );
         assert_eq!(drawn.skipped_edges, 1);
         assert!(drawn.edges.is_empty());
+    }
+
+    #[test]
+    fn layers_run_in_linear_time_on_a_large_chain() {
+        let base = graph(3, "digest/three", 8);
+        let count = 10_000usize;
+        let mut chain = (*base).clone();
+        chain.nodes = (0..count)
+            .map(|index| {
+                Arc::new(GraphNodeDisplay {
+                    identity: desktop_protocol::NodeId::fixture(format!("node/{index}")),
+                    label: format!("Node {index}").into(),
+                    layer: None,
+                })
+            })
+            .collect::<Vec<_>>()
+            .into();
+        chain.edges = (1..count)
+            .map(|index| {
+                Arc::new(GraphEdgeDisplay {
+                    identity: desktop_protocol::EdgeId::fixture(format!("edge/{index}")),
+                    from: desktop_protocol::NodeId::fixture(format!("node/{}", index - 1)),
+                    to: desktop_protocol::NodeId::fixture(format!("node/{index}")),
+                    from_label: format!("Node {}", index - 1).into(),
+                    to_label: format!("Node {index}").into(),
+                    kind: Some("FLOW".into()),
+                })
+            })
+            .collect::<Vec<_>>()
+            .into();
+        let result = layers(&chain);
+        assert!(!result.cyclic);
+        assert_eq!(result.depth.last().copied(), Some(count - 1));
+        assert_eq!(result.depth[0], 0);
+    }
+
+    #[test]
+    fn layers_give_cycle_members_one_shared_layer() {
+        let base = graph(3, "digest/three", 8);
+        let mut cycle = (*base).clone();
+        cycle.nodes = vec![
+            Arc::new(GraphNodeDisplay {
+                identity: desktop_protocol::NodeId::fixture("node/a"),
+                label: "Alpha".into(),
+                layer: None,
+            }),
+            Arc::new(GraphNodeDisplay {
+                identity: desktop_protocol::NodeId::fixture("node/b"),
+                label: "Beta".into(),
+                layer: None,
+            }),
+        ]
+        .into();
+        cycle.edges = vec![
+            Arc::new(GraphEdgeDisplay {
+                identity: desktop_protocol::EdgeId::fixture("edge/a-b"),
+                from: desktop_protocol::NodeId::fixture("node/a"),
+                to: desktop_protocol::NodeId::fixture("node/b"),
+                from_label: "Alpha".into(),
+                to_label: "Beta".into(),
+                kind: Some("FLOW".into()),
+            }),
+            Arc::new(GraphEdgeDisplay {
+                identity: desktop_protocol::EdgeId::fixture("edge/b-a"),
+                from: desktop_protocol::NodeId::fixture("node/b"),
+                to: desktop_protocol::NodeId::fixture("node/a"),
+                from_label: "Beta".into(),
+                to_label: "Alpha".into(),
+                kind: Some("FLOW".into()),
+            }),
+        ]
+        .into();
+        let result = layers(&cycle);
+        assert!(result.cyclic);
+        assert_eq!(result.depth, vec![0, 0]);
+
+        let mut self_loop = (*base).clone();
+        self_loop.edges = vec![Arc::new(GraphEdgeDisplay {
+            identity: desktop_protocol::EdgeId::fixture("edge/z-z"),
+            from: desktop_protocol::NodeId::fixture("node/z"),
+            to: desktop_protocol::NodeId::fixture("node/z"),
+            from_label: "Zeta".into(),
+            to_label: "Zeta".into(),
+            kind: None,
+        })]
+        .into();
+        assert!(layers(&self_loop).cyclic);
+    }
+
+    #[test]
+    fn connectors_stay_valid_for_upward_and_downward_edges() {
+        let (down, above) = connector((10.0, 0.0), (10.0, 100.0), 2.0);
+        assert!(!above);
+        assert_eq!(down.len(), 1);
+        assert!(down[0].height > 0.0 && down[0].top == 0.0);
+        assert_eq!(target_marker(above), "▼");
+
+        let (up, above) = connector((10.0, 100.0), (10.0, 0.0), 2.0);
+        assert!(above, "an upward edge points at the target above");
+        assert!(up[0].height > 0.0 && up[0].top == 0.0);
+        assert_eq!(target_marker(above), "▲");
+
+        let (bent, above) = connector((10.0, 0.0), (90.0, 60.0), 2.0);
+        assert!(!above);
+        assert_eq!(bent.len(), 3);
+        for segment in &bent {
+            assert!(segment.width > 0.0 && segment.height > 0.0);
+        }
+        let (bent_up, above) = connector((90.0, 60.0), (10.0, 0.0), 2.0);
+        assert!(above);
+        for segment in &bent_up {
+            assert!(segment.width > 0.0 && segment.height > 0.0);
+        }
     }
 
     #[test]

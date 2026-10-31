@@ -270,6 +270,8 @@ pub struct Shell {
     flow_admitted: Option<(flow::AdmissionKey, Arc<flow::Rows>)>,
     flow_pending: Option<flow::AdmissionKey>,
     flow_request_generation: Arc<RailWorkSignal>,
+    /// Layering for the admitted flow revision; recomputed only when it changes.
+    flow_layers: Option<(flow::RevisionKey, Vec<Arc<flow::Layers>>)>,
     flow_jobs: Arc<Mutex<Option<flow::Job>>>,
     _flow_worker: Option<Task<()>>,
     preferences: Arc<Mutex<Preferences>>,
@@ -429,6 +431,7 @@ impl Shell {
             flow_admitted: None,
             flow_pending: None,
             flow_request_generation,
+            flow_layers: None,
             flow_jobs,
             _flow_worker: flow_worker,
             preferences,
@@ -2611,12 +2614,40 @@ impl Render for Shell {
                     .collect::<Vec<_>>()
             })
             .unwrap_or_default();
-        let flow_diagram_element = flow_diagram_region(
-            flow_rows.as_deref(),
-            flow_node_active.as_ref(),
-            cx.entity(),
-            xs_text.clone(),
-        );
+        // Layering runs over the complete graph, so it is computed once per admitted
+        // revision and only while the Flow surface is shown; a revision change, a
+        // revoked publication or another surface never displays a stale drawing.
+        if surface == Surface::Flow
+            && let Some(rows) = flow_rows.as_deref()
+        {
+            let key = flow::revision_key(&rows.graphs);
+            if self
+                .flow_layers
+                .as_ref()
+                .is_none_or(|(cached, _)| cached != &key)
+            {
+                self.flow_layers = Some((
+                    key,
+                    rows.graphs
+                        .iter()
+                        .map(|graph| Arc::new(flow::layers(graph)))
+                        .collect(),
+                ));
+            }
+        }
+        let flow_diagram_element = (surface == Surface::Flow)
+            .then(|| {
+                flow_diagram_region(
+                    flow_rows.as_deref(),
+                    self.flow_layers
+                        .as_ref()
+                        .map(|(_, layers)| layers.as_slice()),
+                    flow_node_active.as_ref(),
+                    cx.entity(),
+                    xs_text.clone(),
+                )
+            })
+            .flatten();
         let flow_node_list_element = (!flow_node_rows.is_empty()).then(|| {
             let rows = Arc::clone(&flow_node_rows);
             let active = flow_node_active.clone();
@@ -4045,11 +4076,13 @@ impl Render for Shell {
 /// diagram is presentation only and never feeds the inspection rows.
 fn flow_diagram_region(
     rows: Option<&flow::Rows>,
+    layers: Option<&[Arc<flow::Layers>]>,
     active: Option<&flow::NodeKey>,
     shell: Entity<Shell>,
     xs_text: TextSpec,
 ) -> Option<AnyElement> {
     let rows = rows?;
+    let layers = layers?;
     // Emphasis follows the same exact revision boundary as the list keys, so a
     // match in one GraphRevision never highlights the same identity in another.
     let matched_nodes: std::collections::BTreeSet<(
@@ -4071,8 +4104,9 @@ fn flow_diagram_region(
     let diagrams: Vec<(Arc<ui_model::GraphDisplay>, flow::Diagram)> = rows
         .graphs
         .iter()
-        .filter_map(|graph| {
-            let drawn = flow::diagram(graph, &matched_nodes, &matched_edges);
+        .zip(layers)
+        .filter_map(|(graph, layer)| {
+            let drawn = flow::diagram(graph, layer, &matched_nodes, &matched_edges);
             (!drawn.nodes.is_empty()).then(|| (Arc::clone(graph), drawn))
         })
         .collect();
@@ -4104,38 +4138,12 @@ fn flow_diagram_region(
             let start_y = top_y(from.depth) + FLOW_CARD_H;
             let end_x = center_x(to.lane);
             let end_y = top_y(to.depth);
+            let (segments, target_above) =
+                flow::connector((start_x, start_y), (end_x, end_y), FLOW_EDGE_PX);
             let mid_y = (start_y + end_y) / 2.0;
-            let mut segments = Vec::with_capacity(3);
-            if (end_y - start_y).abs() > 0.5 {
-                if (start_x - end_x).abs() < 0.5 {
-                    segments.push((
-                        start_x - FLOW_EDGE_PX / 2.0,
-                        start_y,
-                        FLOW_EDGE_PX,
-                        end_y - start_y,
-                    ));
-                } else {
-                    segments.push((
-                        start_x - FLOW_EDGE_PX / 2.0,
-                        start_y,
-                        FLOW_EDGE_PX,
-                        mid_y - start_y,
-                    ));
-                    segments.push((
-                        start_x.min(end_x),
-                        mid_y - FLOW_EDGE_PX / 2.0,
-                        (start_x - end_x).abs(),
-                        FLOW_EDGE_PX,
-                    ));
-                    segments.push((
-                        end_x - FLOW_EDGE_PX / 2.0,
-                        mid_y,
-                        FLOW_EDGE_PX,
-                        end_y - mid_y,
-                    ));
-                }
-            }
-            for (segment_index, (left, top, w, h)) in segments.into_iter().enumerate() {
+            for (segment_index, segment) in segments.into_iter().enumerate() {
+                let (left, top, w, h) = (segment.left, segment.top, segment.width, segment.height);
+
                 canvas = canvas.child(
                     div()
                         .id((
@@ -4152,16 +4160,21 @@ fn flow_diagram_region(
             }
             // Direction and kind come from the projection; the drawing adds no
             // meaning of its own. The arrow marks the projected target.
+            let marker_top = if target_above {
+                end_y + 1.0
+            } else {
+                end_y - 11.0
+            };
             canvas = canvas.child(
                 div()
                     .id(("flow-diagram-arrow", graph_index * 4096 + edge_index))
                     .absolute()
                     .left(px(end_x - 5.0))
-                    .top(px(end_y - 11.0))
+                    .top(px(marker_top))
                     .w(px(10.0))
                     .h(px(11.0))
                     .text_color(rgb(color))
-                    .child(SharedString::from("▼")),
+                    .child(SharedString::from(flow::target_marker(target_above))),
             );
             if let Some(kind) = edge.kind.as_deref() {
                 canvas = canvas.child(
