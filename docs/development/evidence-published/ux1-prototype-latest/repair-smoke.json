@@ -65,7 +65,7 @@
       "binary_sha256": "sha256:c9fef8360fc26f4121d278c5a6595a5665ec4250ba3d13464b551ccba2777b50",
       "build_command": "cargo build --locked -p cos-desktop --bin cos-desktop",
       "binary_provenance": "rebuilt after the round-1 fixes; this binary was launched and inspected for the visible stop detail and the inspector evidence gloss",
-      "flow_diagram_binary_sha256": "sha256:2b1e0e9cb2c1a5c7d0bea1d9f3b56e0b0e0ec2d1e4f4a7d3b1d2c9e5f0a6b3c8"
+      "flow_diagram_binary_sha256": "sha256:41f7482cf8426b96f01aca40111dafbee087e2ab7cf7b5f728e22b62d5ec7151"
     }
   },
   "native_observation": {
