@@ -174,7 +174,7 @@ impl<E: HttpExecutor> RuntimeReader<E> {
         require("epoch", &view.epoch, MAX_REFERENCE_BYTES)?;
         require("task_id", &view.task_id, MAX_REFERENCE_BYTES)?;
         require("title", &view.title, MAX_TITLE_BYTES)?;
-        require_optional("phase", view.phase.as_deref(), MAX_REFERENCE_BYTES)?;
+        require_optional_chars("phase", view.phase.as_deref(), MAX_PHASE_CHARS)?;
         require_optional(
             "capabilities_ref",
             view.capabilities_ref.as_deref(),
@@ -203,6 +203,8 @@ impl<E: HttpExecutor> RuntimeReader<E> {
 const MAX_REFERENCE_BYTES: usize = 512;
 /// Same bound the Runtime projection contract applies to titles.
 const MAX_TITLE_BYTES: usize = 1024;
+/// The Runtime bounds the phase label in characters, not bytes.
+const MAX_PHASE_CHARS: usize = 64;
 
 fn require(what: &'static str, value: &str, limit: usize) -> Result<(), RuntimeReadError> {
     if value.is_empty() {
@@ -212,6 +214,25 @@ fn require(what: &'static str, value: &str, limit: usize) -> Result<(), RuntimeR
         return Err(RuntimeReadError::Malformed);
     }
     Ok(())
+}
+
+fn require_optional_chars(
+    what: &'static str,
+    value: Option<&str>,
+    limit: usize,
+) -> Result<(), RuntimeReadError> {
+    match value {
+        Some(value) => {
+            if value.is_empty() {
+                return Err(RuntimeReadError::Empty(what));
+            }
+            if value.chars().count() > limit || value.chars().any(char::is_control) {
+                return Err(RuntimeReadError::Malformed);
+            }
+            Ok(())
+        }
+        None => Ok(()),
+    }
 }
 
 fn require_optional(
@@ -413,6 +434,28 @@ mod tests {
             reader.read_task("task-184"),
             Err(RuntimeReadError::Malformed)
         );
+    }
+
+    #[test]
+    fn phase_is_bounded_in_characters_like_the_runtime_model() {
+        let exact = TASK.replace("\"Generating\"", &format!("\"{}\"", "p".repeat(64)));
+        let mut reader = RuntimeReader::new(Stub::new(vec![ok(&exact)]));
+        reader.read_task("task-184").expect("64 characters");
+
+        let too_long = TASK.replace("\"Generating\"", &format!("\"{}\"", "p".repeat(65)));
+        let mut reader = RuntimeReader::new(Stub::new(vec![ok(&too_long)]));
+        assert_eq!(
+            reader.read_task("task-184"),
+            Err(RuntimeReadError::Malformed)
+        );
+
+        // 64 multi-byte characters are 128 UTF-8 bytes and are still accepted:
+        // the Runtime bound is characters.
+        let multibyte = TASK.replace("\"Generating\"", &format!("\"{}\"", "表".repeat(64)));
+        let mut reader = RuntimeReader::new(Stub::new(vec![ok(&multibyte)]));
+        reader
+            .read_task("task-184")
+            .expect("64 characters of 2 bytes");
     }
 
     #[test]
