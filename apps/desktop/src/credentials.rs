@@ -258,26 +258,30 @@ mod windows_tests {
 
         let needle = token.as_bytes();
         let mut report = ScanReport::default();
-        let required_scanned = scan_required_roots(&[&root_a, &root_b], needle, &mut report);
+        let required_scanned = scan_required_roots(
+            &[(&root_a, "required-a"), (&root_b, "required-b")],
+            needle,
+            &mut report,
+        );
         // Optional roots never gate the test: app data and the system temp
         // directory are scanned when they exist and recorded when absent, so a
         // missing LOCALAPPDATA/TEMP cannot fail it.
         match app_core::preferences::default_path()
             .and_then(|path| path.parent().map(Path::to_path_buf))
         {
-            Some(app_data) => scan_optional_root(&app_data, needle, &mut report),
+            Some(app_data) => scan_optional_root(&app_data, "app-data", needle, &mut report),
             None => {
                 report.roots_absent += 1;
                 report.optional_roots_skipped += 1;
             }
         }
-        scan_optional_root(&std::env::temp_dir(), needle, &mut report);
+        scan_optional_root(&std::env::temp_dir(), "temp", needle, &mut report);
         drop(cleanup);
 
         for scan in &report.roots {
             eprintln!(
                 "credential plaintext scan root: root={} files_scanned={} oversize_skipped={} capped={} unreadable_entries={}",
-                scan.root.display(),
+                scan.label,
                 scan.files_scanned,
                 scan.oversize_skipped_too_large,
                 scan.capped,
@@ -304,23 +308,20 @@ mod windows_tests {
             report.roots_unreadable, 0,
             "no required root was unreadable"
         );
-        for (root, probes) in [(&root_a, 3usize), (&root_b, 3usize)] {
+        for (label, probes) in [("required-a", 3usize), ("required-b", 3usize)] {
             let scan = report
                 .roots
                 .iter()
-                .find(|scan| &scan.root == root)
-                .unwrap_or_else(|| panic!("no per-root report for {}", root.display()));
-            assert!(!scan.capped, "root {} was walked fully", root.display());
+                .find(|scan| scan.label == label)
+                .unwrap_or_else(|| panic!("no per-root report for {label}"));
+            assert!(!scan.capped, "root {label} was walked fully");
             assert_eq!(
-                scan.unreadable_entries,
-                0,
-                "root {} had no unreadable entry",
-                root.display()
+                scan.unreadable_entries, 0,
+                "root {label} had no unreadable entry"
             );
             assert!(
                 scan.files_scanned >= probes,
-                "root {} scanned its {probes} probe files, got {}",
-                root.display(),
+                "root {label} scanned its {probes} probe files, got {}",
                 scan.files_scanned
             );
         }
@@ -353,8 +354,9 @@ mod windows_tests {
     /// root reports its own coverage instead of sharing one global budget.
     #[derive(Debug, Default)]
     struct RootScan {
-        /// The scanned root.
-        root: std::path::PathBuf,
+        /// Fixed label used in logs and failure messages; the real path is never
+        /// printed (private-path policy, DC-MP-SEC2).
+        label: &'static str,
         /// Files whose bytes were read and compared.
         files_scanned: usize,
         /// Files skipped because they exceed the 4 MiB scan bound.
@@ -404,11 +406,15 @@ mod windows_tests {
     /// Scans the roots the test itself created; returns how many were scanned.
     /// A root that cannot be opened is recorded as unreadable, never counted as
     /// scanned.
-    fn scan_required_roots(roots: &[&Path], needle: &[u8], report: &mut ScanReport) -> usize {
+    fn scan_required_roots(
+        roots: &[(&Path, &'static str)],
+        needle: &[u8],
+        report: &mut ScanReport,
+    ) -> usize {
         let mut scanned = 0;
-        for root in roots {
+        for (root, label) in roots {
             report.roots_attempted += 1;
-            match scan_root(root, needle) {
+            match scan_root(root, label, needle) {
                 Some(scan) => {
                     report.roots_scanned += 1;
                     scanned += 1;
@@ -422,14 +428,19 @@ mod windows_tests {
 
     /// Optional root: scanned when readable, otherwise recorded as skipped. The
     /// test never requires an environment directory to exist.
-    fn scan_optional_root(root: &Path, needle: &[u8], report: &mut ScanReport) {
+    fn scan_optional_root(
+        root: &Path,
+        label: &'static str,
+        needle: &[u8],
+        report: &mut ScanReport,
+    ) {
         if !root.exists() {
             report.roots_absent += 1;
             report.optional_roots_skipped += 1;
             return;
         }
         report.roots_attempted += 1;
-        match scan_root(root, needle) {
+        match scan_root(root, label, needle) {
             Some(scan) => {
                 report.roots_scanned += 1;
                 report.absorb(scan);
@@ -445,13 +456,16 @@ mod windows_tests {
     fn an_absent_or_unreadable_root_is_recorded_and_never_counted_as_scanned() {
         let missing = Path::new("C:/__cos_sec1_no_such_root__/nested");
         let mut required = ScanReport::default();
-        assert_eq!(scan_required_roots(&[missing], b"needle", &mut required), 0);
+        assert_eq!(
+            scan_required_roots(&[(missing, "required-missing")], b"needle", &mut required),
+            0
+        );
         assert_eq!(required.roots_attempted, 1);
         assert_eq!(required.roots_scanned, 0);
         assert_eq!(required.roots_unreadable, 1);
 
         let mut optional = ScanReport::default();
-        scan_optional_root(missing, b"needle", &mut optional);
+        scan_optional_root(missing, "optional-missing", b"needle", &mut optional);
         assert_eq!(optional.roots_scanned, 0);
         assert_eq!(optional.roots_absent, 1);
         assert_eq!(optional.optional_roots_skipped, 1);
@@ -466,10 +480,10 @@ mod windows_tests {
     const MAX_SCANNED_FILE_BYTES: u64 = 4 * 1024 * 1024;
 
     /// Bounded scan of one root; `None` when the root itself cannot be opened.
-    fn scan_root(root: &Path, needle: &[u8]) -> Option<RootScan> {
+    fn scan_root(root: &Path, label: &'static str, needle: &[u8]) -> Option<RootScan> {
         std::fs::read_dir(root).ok()?;
         let mut scan = RootScan {
-            root: root.to_path_buf(),
+            label,
             ..RootScan::default()
         };
         walk(root, needle, &mut scan, 0);
@@ -486,15 +500,22 @@ mod windows_tests {
             scan.unreadable_entries += 1;
             return;
         };
-        let mut entries = entries.flatten();
+        let mut entries = entries;
         let mut taken = 0usize;
         loop {
             if scan.files_scanned >= ROOT_FILE_BUDGET {
                 scan.capped = true;
                 return;
             }
-            let Some(entry) = entries.next() else {
-                return;
+            let entry = match entries.next() {
+                Some(Ok(entry)) => entry,
+                Some(Err(_)) => {
+                    // A directory entry that exists but cannot be enumerated is
+                    // unverified, not clean: count it instead of dropping it.
+                    scan.unreadable_entries += 1;
+                    continue;
+                }
+                None => return,
             };
             if taken >= DIRECTORY_ENTRY_BUDGET {
                 scan.capped = true;
@@ -529,8 +550,8 @@ mod windows_tests {
             let carries_token = bytes.windows(needle.len()).any(|window| window == needle);
             assert!(
                 !carries_token,
-                "a plaintext credential was found in {}",
-                path.display()
+                "a plaintext credential was found while scanning root '{}'",
+                scan.label
             );
         }
     }
