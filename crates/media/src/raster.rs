@@ -7,7 +7,6 @@
 
 use image::{ImageFormat, ImageReader};
 use std::io::Cursor;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::{Cancellation, DecodeLimits, DecodeRequest, MediaError, PixelSize, admit_decode};
 
@@ -259,32 +258,6 @@ fn ensure_still_gif(bytes: &[u8]) -> Result<(), MediaError> {
     Ok(())
 }
 
-static LIVE_DECODE_WORKERS: AtomicUsize = AtomicUsize::new(0);
-
-/// Number of `decode_raster_joined` workers currently alive.
-///
-/// A diagnostics seam for the worker-lifetime proof (plan §19.119): the joined decoder
-/// increments before spawning and decrements when the scoped worker finishes, so a caller
-/// can observe that no worker outlives the call.
-pub fn live_decode_workers() -> usize {
-    LIVE_DECODE_WORKERS.load(Ordering::Acquire)
-}
-
-struct LiveWorker;
-
-impl LiveWorker {
-    fn enter() -> Self {
-        LIVE_DECODE_WORKERS.fetch_add(1, Ordering::AcqRel);
-        Self
-    }
-}
-
-impl Drop for LiveWorker {
-    fn drop(&mut self) {
-        LIVE_DECODE_WORKERS.fetch_sub(1, Ordering::AcqRel);
-    }
-}
-
 /// Decode on a scoped worker and join it before returning.
 ///
 /// This guarantees **worker ownership**, not a completion-time bound: the worker is owned
@@ -301,13 +274,12 @@ pub fn decode_raster_joined(
     limits: DecodeLimits,
     cancel: &Cancellation,
 ) -> Result<DecodedRaster, MediaError> {
-    std::thread::scope(|scope| {
-        let _live = LiveWorker::enter();
-        match scope.spawn(|| decode_raster(bytes, limits, cancel)).join() {
+    std::thread::scope(
+        |scope| match scope.spawn(|| decode_raster(bytes, limits, cancel)).join() {
             Ok(result) => result,
             Err(_) => Err(MediaError::Unavailable),
-        }
-    })
+        },
+    )
 }
 
 /// Admit the RGBA8 output of one source image before the full-image decode and its

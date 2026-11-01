@@ -29,6 +29,7 @@ function Get-WorkingSet([int]$ProcessId) {
     }
 }
 
+$expected_rgba = [int64]$Width * [int64]$Height * 4
 $runs_out = @()
 for ($i = 1; $i -le $Runs; $i++) {
     $run_dir = Join-Path $WorkRoot "run-$i"
@@ -84,6 +85,17 @@ for ($i = 1; $i -le $Runs; $i++) {
     $out_lines = @()
     if (Test-Path -LiteralPath $stdout) { $out_lines = Get-Content -LiteralPath $stdout }
     $done_line = $out_lines | Where-Object { $_ -like 'decode-done*' } | Select-Object -Last 1
+    $rgba_bytes = $null
+    if ($null -ne $done_line -and $done_line -match 'rgba-bytes=([0-9]+)') {
+        $rgba_bytes = [int64]$Matches[1]
+    }
+    # A run only counts when the probe exited normally, reported the complete RGBA8
+    # output, and was sampled often enough during the decode; otherwise the measured
+    # increment is meaningless and the whole verdict is FAIL, never PASS.
+    $valid = ($exit_code -eq 0) -and
+             ($rgba_bytes -eq $expected_rgba) -and
+             ($samples -ge 3) -and
+             ($null -ne $done_line)
 
     $runs_out += [ordered]@{
         run = $i
@@ -95,6 +107,9 @@ for ($i = 1; $i -le $Runs; $i++) {
         ceiling_bytes = $ceiling
         within_ceiling = ($increment -le $ceiling)
         samples = $samples
+        expected_rgba_bytes = $expected_rgba
+        rgba_bytes = $rgba_bytes
+        valid = $valid
         exit_code = $exit_code
         elapsed_ms = $elapsed_ms
         decode_done = $done_line
@@ -103,10 +118,22 @@ for ($i = 1; $i -le $Runs; $i++) {
     Remove-Item -LiteralPath $run_dir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
-$increments = @($runs_out | ForEach-Object { [int64]$_['increment_bytes'] } | Sort-Object)
-$median = $increments[[int][math]::Floor(($increments.Count - 1) / 2)]
-$maximum = $increments[-1]
-$verdict = if ($maximum -le $ceiling) { 'PASS' } else { 'HOLD' }
+$valid_runs = @($runs_out | Where-Object { $_['valid'] -eq $true })
+$invalid_runs = @($runs_out | Where-Object { $_['valid'] -ne $true })
+$increments = @($valid_runs | ForEach-Object { [int64]$_['increment_bytes'] } | Sort-Object)
+$median = $null
+$maximum = $null
+if ($increments.Count -gt 0) {
+    $median = $increments[[int][math]::Floor(($increments.Count - 1) / 2)]
+    $maximum = $increments[-1]
+}
+# PASS requires every run to be valid (normal exit, complete RGBA8 output, >=3 decode
+# samples) and every valid increment to fit the declared ceiling.
+$verdict = if ($invalid_runs.Count -eq 0 -and $null -ne $maximum -and $maximum -le $ceiling) {
+    'PASS'
+} else {
+    'FAIL'
+}
 
 $record = [ordered]@{
     class = "static 8-bit RGB PNG ${Width}x${Height} -> RGBA8"
@@ -114,6 +141,8 @@ $record = [ordered]@{
     exe_sha256 = (Get-FileHash -LiteralPath $Exe -Algorithm SHA256).Hash.ToLowerInvariant()
     ceiling_bytes = $ceiling
     runs = $runs_out
+    valid_runs = $valid_runs.Count
+    invalid_runs = $invalid_runs.Count
     median_increment_bytes = $median
     max_increment_bytes = $maximum
     verdict = $verdict
@@ -127,6 +156,8 @@ $record | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $json_path -Encodin
     "class: $($record.class)",
     "ceiling_bytes: $ceiling",
     "runs: $($runs_out.Count)",
+    "valid_runs: $($valid_runs.Count)",
+    "invalid_runs: $($invalid_runs.Count)",
     "median_increment_bytes: $median",
     "max_increment_bytes: $maximum",
     "verdict: $verdict",

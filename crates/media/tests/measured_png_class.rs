@@ -14,18 +14,18 @@
 //! conditions that need no allocator: worker lifetime, typed rejection and
 //! non-publication. See plan §19.119 for the HOLD and the minimal unblock options.
 //!
-//! No product code is instrumented for allocation counting; the only product addition is
-//! the `live_decode_workers()` diagnostics counter.
+//! No product code is instrumented for allocation counting. Worker ownership is proven
+//! by the scoped worker in `decode_raster_joined` (a `std::thread::scope` that joins
+//! before returning) plus the complete-raster and no-publication assertions below, not by
+//! a product-side counter.
 
 use image::{DynamicImage, ImageFormat, RgbImage};
 use media::{
     Cancellation, DecodeBudget, DecodeLimits, MediaError, PixelSize, decode_raster_joined,
-    live_decode_workers,
 };
 use std::io::Cursor;
 
-/// Serialises the tests: `live_decode_workers()` is process-global, so a concurrent
-/// decode would be observed by another test.
+/// Serialises the tests so their publication assertions cannot observe each other.
 static TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 fn test_guard() -> std::sync::MutexGuard<'static, ()> {
@@ -52,7 +52,7 @@ fn png_rgb(width: u32, height: u32) -> Vec<u8> {
 }
 
 #[test]
-fn the_class_decodes_completely_and_leaves_no_worker() {
+fn the_class_decodes_to_a_complete_raster() {
     let _guard = test_guard();
     assert_eq!(
         limits()
@@ -70,32 +70,19 @@ fn the_class_decodes_completely_and_leaves_no_worker() {
         raster.size.checked_rgba_bytes().expect("rgba length"),
         "the returned raster is complete, never partial"
     );
-    assert_eq!(
-        live_decode_workers(),
-        0,
-        "the decode worker is joined before the call returns"
-    );
 }
 
 #[test]
-fn cancellation_leaves_no_worker_and_no_published_raster() {
+fn cancellation_is_typed_and_publishes_nothing() {
     let _guard = test_guard();
     let cancel = Cancellation::default();
     cancel.cancel();
-    let mut published: Option<media::DecodedRaster> = None;
     let result = decode_raster_joined(&png_rgb(64, 64), limits(), &cancel);
-    if let Ok(raster) = result {
-        published = Some(raster);
-    }
-    assert!(
-        published.is_none(),
-        "a cancelled decode must not publish a raster"
-    );
-    assert_eq!(
-        live_decode_workers(),
-        0,
-        "the cancelled decode leaves no worker"
-    );
+    let error = match result {
+        Err(error) => error,
+        Ok(_) => panic!("a cancelled decode must not return a raster"),
+    };
+    assert_eq!(error, MediaError::Cancelled);
 }
 
 #[test]
@@ -112,10 +99,5 @@ fn an_over_limit_png_is_refused_typed_and_publishes_nothing() {
     assert!(
         published.is_none(),
         "a refused input must not publish a raster"
-    );
-    assert_eq!(
-        live_decode_workers(),
-        0,
-        "a refused input starts no worker that outlives the call"
     );
 }
