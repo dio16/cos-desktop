@@ -1,4 +1,5 @@
 mod app;
+mod contrast_probe;
 mod credentials;
 mod instance;
 #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
@@ -138,6 +139,9 @@ fn main() {
                 (None, AppCore::disconnected(endpoint_configured), None)
             }
         };
+        // Register the read-only High Contrast probe before the shell opens. The probe
+        // never changes an OS setting; the operator toggles High Contrast manually.
+        desktop_gpui::contrast::set_platform_probe(std::sync::Arc::new(contrast_probe::read));
         let opened = window::open(
             cx,
             move |window, cx, preferences| {

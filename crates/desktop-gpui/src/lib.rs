@@ -22,6 +22,7 @@ use ui_model::{DerivationCache, DisplayCache, Workbench, presentation::CompareSi
 
 mod accessibility;
 pub mod budget;
+pub mod contrast;
 mod dock;
 mod flow;
 mod help;
@@ -34,6 +35,7 @@ mod shell_style;
 mod stop;
 pub mod tokens;
 mod trace;
+use contrast::{ContrastState, contrast_probe_worker};
 use shell_style::TextSpec;
 use stop::{ReadCompletion, ReadFailure, ReceiptData, ReceiptFeedback, StopProgress, StopTracker};
 use tokens::{DesignTokens, TextStyle};
@@ -274,6 +276,12 @@ pub struct Shell {
     flow_layers: Option<(flow::RevisionKey, Vec<Arc<flow::Layers>>)>,
     flow_jobs: Arc<Mutex<Option<flow::Job>>>,
     _flow_worker: Option<Task<()>>,
+    /// Colour scheme in force: the approved normal palette or the OS system
+    /// colours when Windows reports High Contrast. Only colours live here; the
+    /// surface, task identity, viewed/compare selection and focus stay in their
+    /// own fields, so a scheme change cannot reset them.
+    contrast: ContrastState,
+    _contrast_worker: Option<Task<()>>,
     preferences: Arc<Mutex<Preferences>>,
     /// The single resolved typography/geometry token set injected by the
     /// composition root. No surface constructs or re-derives a set of its own.
@@ -380,6 +388,8 @@ impl Shell {
         let rail_worker = handle.clone().map(|handle| {
             Self::start_rail_worker(handle, Arc::clone(&rail_request_generation), cx)
         });
+        let contrast_worker =
+            contrast::platform_probe().map(|probe| contrast_probe_worker(probe, cx));
         let flow_worker = handle.clone().map(|handle| {
             Self::start_flow_worker(
                 handle,
@@ -434,6 +444,8 @@ impl Shell {
             flow_layers: None,
             flow_jobs,
             _flow_worker: flow_worker,
+            contrast: ContrastState::default(),
+            _contrast_worker: contrast_worker,
             preferences,
             tokens,
             pending_restore_task: restored.last_task_id,
@@ -476,6 +488,15 @@ impl Shell {
     /// Each derivation job temporarily owns the mutable cache. Its cancellation
     /// predicate observes the exact lease notice, so a closed fence or superseding
     /// publication cannot publish background work into this consumer.
+    /// Apply one platform contrast reading; `true` when the colours changed.
+    fn observe_contrast(
+        &mut self,
+        scheme: contrast::ContrastScheme,
+        system: &contrast::SystemColors,
+    ) -> bool {
+        self.contrast.observe(scheme, system)
+    }
+
     fn subscribe(handle: ObservationHandle, cx: &mut Context<Self>) -> Task<()> {
         cx.spawn(async move |this, cx| {
             let mut subscription = handle.subscribe();
@@ -2034,6 +2055,7 @@ impl Render for Shell {
         // One resolved token set feeds every layout and text input below; a
         // surface reads these adapters instead of a constant, and nothing here
         // resolves a second set.
+        let colors = self.contrast.colors();
         let body_text = TextSpec::ui(&self.tokens, TextStyle::Body);
         let xs_text = TextSpec::ui(&self.tokens, TextStyle::Xs);
         let rail_width = shell_style::rail_width(&self.tokens);
@@ -3230,7 +3252,7 @@ impl Render for Shell {
         // Keyboard focus is one indicator: the approved outline on the focusable
         // Dock container. Row borders stay structural at one physical pixel.
         let (dock_focus_width, dock_focus_color) =
-            shell_style::dock_focus_ring(&self.tokens, dock_focused);
+            shell_style::dock_focus_ring(&self.tokens, dock_focused, &colors);
         let row_border = shell_style::dock_row_border(&self.tokens, window.scale_factor()).ok();
         // Every row carries its authoritative iteration label; the first row of
         // a group is additionally marked as a group boundary, so a bounded window
@@ -3362,14 +3384,18 @@ impl Render for Shell {
                     .px_2()
                     .py_2()
                     .when_some(row_border, |element, width| element.border(width))
-                    .border_color(rgb(shell_style::dock_row_color(selected)))
+                    .border_color(rgb(shell_style::dock_row_color(selected, &colors)))
                     .cursor_pointer()
                     .child(
                         div()
                             .w(px(DOCK_GROUP_GUTTER_PX))
                             .flex_none()
                             .when_some(hairline, |element, width| element.border_r(width))
-                            .border_color(rgb(if group_start { 0xaeccec } else { 0x3c4046 }))
+                            .border_color(rgb(if group_start {
+                                colors.selection
+                            } else {
+                                0x3c4046
+                            }))
                             .px_1()
                             .truncate()
                             .child(SharedString::from(group_short)),
@@ -3673,8 +3699,8 @@ impl Render for Shell {
             .size_full()
             .flex()
             .flex_col()
-            .bg(rgb(0x17191c))
-            .text_color(rgb(0xe6e8eb))
+            .bg(rgb(colors.background))
+            .text_color(rgb(colors.text))
             .text_size(body_text.size)
             .line_height(body_text.line_height)
             .font_weight(body_text.weight)

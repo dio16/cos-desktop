@@ -107,23 +107,19 @@ pub(crate) fn focus_outline(tokens: &DesignTokens) -> Pixels {
     px(tokens.geometry.focus_outline_dip)
 }
 
-/// Focus ring colour for a focused container in the Dock.
-pub(crate) const DOCK_FOCUS_COLOR: u32 = 0xe6c278;
-/// Structural border colour when the Dock holds no keyboard focus.
-pub(crate) const DOCK_STRUCTURE_COLOR: u32 = 0x626870;
-/// Selection colour of one dock row; independent of keyboard focus.
-pub(crate) const DOCK_SELECTED_COLOR: u32 = 0xaeccec;
-
 /// The single keyboard-focus ring of the Dock: the approved focus-outline width
 /// always, so acquiring focus changes colour only and never layout.
-pub(crate) fn dock_focus_ring(tokens: &DesignTokens, focused: bool) -> (Pixels, u32) {
+///
+/// The colour comes from the resolved contrast scheme (normal palette or the OS
+/// system colours under High Contrast), never from a literal here.
+pub(crate) fn dock_focus_ring(
+    tokens: &DesignTokens,
+    focused: bool,
+    colors: &crate::contrast::ShellColors,
+) -> (Pixels, u32) {
     (
         focus_outline(tokens),
-        if focused {
-            DOCK_FOCUS_COLOR
-        } else {
-            DOCK_STRUCTURE_COLOR
-        },
+        if focused { colors.focus } else { colors.border },
     )
 }
 
@@ -136,11 +132,11 @@ pub(crate) fn dock_row_border(
 }
 
 /// Row colour: selection only. Keyboard focus is drawn by [`dock_focus_ring`].
-pub(crate) fn dock_row_color(selected: bool) -> u32 {
+pub(crate) fn dock_row_color(selected: bool, colors: &crate::contrast::ShellColors) -> u32 {
     if selected {
-        DOCK_SELECTED_COLOR
+        colors.selection
     } else {
-        DOCK_STRUCTURE_COLOR
+        colors.border
     }
 }
 
@@ -174,8 +170,9 @@ mod tests {
     #[test]
     fn the_dock_focus_ring_uses_the_approved_token_and_never_moves_layout() {
         let tokens = DesignTokens::accepted();
-        let (focused_width, focused_color) = dock_focus_ring(&tokens, true);
-        let (unfocused_width, unfocused_color) = dock_focus_ring(&tokens, false);
+        let colors = crate::contrast::NORMAL_COLORS;
+        let (focused_width, focused_color) = dock_focus_ring(&tokens, true, &colors);
+        let (unfocused_width, unfocused_color) = dock_focus_ring(&tokens, false, &colors);
         assert_eq!(focused_width, focus_outline(&tokens));
         assert_eq!(focused_width, px(2.0));
         assert_eq!(
@@ -183,7 +180,7 @@ mod tests {
             "acquiring focus must change colour only, never layout width"
         );
         assert_ne!(focused_color, unfocused_color);
-        assert_eq!(unfocused_color, DOCK_STRUCTURE_COLOR);
+        assert_eq!(unfocused_color, colors.border);
     }
 
     #[test]
@@ -194,8 +191,9 @@ mod tests {
         }
         .resolve_accepted()
         .expect("a valid override resolves");
-        assert_eq!(dock_focus_ring(&tokens, true).0, px(3.0));
-        assert_eq!(dock_focus_ring(&tokens, false).0, px(3.0));
+        let colors = crate::contrast::NORMAL_COLORS;
+        assert_eq!(dock_focus_ring(&tokens, true, &colors).0, px(3.0));
+        assert_eq!(dock_focus_ring(&tokens, false, &colors).0, px(3.0));
     }
 
     #[test]
@@ -224,12 +222,25 @@ mod tests {
 
     #[test]
     fn row_colour_expresses_selection_and_never_focus() {
-        assert_eq!(dock_row_color(true), DOCK_SELECTED_COLOR);
-        assert_eq!(dock_row_color(false), DOCK_STRUCTURE_COLOR);
+        let colors = crate::contrast::NORMAL_COLORS;
+        assert_eq!(dock_row_color(true, &colors), colors.selection);
+        assert_eq!(dock_row_color(false, &colors), colors.border);
         assert_ne!(
-            dock_row_color(true),
-            DOCK_FOCUS_COLOR,
-            "selection and focus are distinct"
+            dock_row_color(true, &colors),
+            crate::contrast::colors_for(
+                crate::contrast::ContrastScheme::HighContrast,
+                &crate::contrast::SystemColors {
+                    window: 0,
+                    window_text: 0xffffff,
+                    highlight: 0x1aebff,
+                    highlight_text: 0,
+                    gray_text: 0x8c8c8c,
+                    button_face: 0x202020,
+                    button_text: 0xffff00,
+                }
+            )
+            .focus,
+            "selection and focus are distinct in both schemes"
         );
     }
 
