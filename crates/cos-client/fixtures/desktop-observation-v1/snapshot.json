@@ -2,9 +2,9 @@
   "name": "snapshot",
   "request": {
     "method": "GET",
-    "path": "/api/cos/desktop/snapshot?scope=scope-2e6519231807437690e3cabdd5f94f78",
+    "path": "/api/cos/desktop/snapshot?scope=scope-ac0b2dc283e7415480c7eb56c1a49892",
     "headers": {
-      "X-Cos-Context": "context-c48179e6e3e049fabdc348b939915351"
+      "X-Cos-Context": "context-a81d239793f34b9c9f5eabb90391581e"
     }
   },
   "response": {
@@ -14,11 +14,11 @@
     "schema_version": 1,
     "snapshot": {
       "begin": {
-        "snapshot_id": "snapshot-e55d8df5134b43d6950e4497483e89c8"
+        "snapshot_id": "snapshot-8c141f1ae56f456cb8052c6205b5a489"
       },
       "chunks": [
         {
-          "snapshot_id": "snapshot-e55d8df5134b43d6950e4497483e89c8",
+          "snapshot_id": "snapshot-8c141f1ae56f456cb8052c6205b5a489",
           "part_index": 0,
           "mutations": [
             {
@@ -489,9 +489,9 @@
         }
       ],
       "end": {
-        "snapshot_id": "snapshot-e55d8df5134b43d6950e4497483e89c8",
+        "snapshot_id": "snapshot-8c141f1ae56f456cb8052c6205b5a489",
         "scope": {
-          "scope_id": "scope-2e6519231807437690e3cabdd5f94f78",
+          "scope_id": "scope-ac0b2dc283e7415480c7eb56c1a49892",
           "task_ids": [],
           "filters": [
             {
@@ -508,8 +508,8 @@
             "minor": 0
           }
         },
-        "epoch": "7c00417946944182b11869c0f5034882",
-        "cursor": "cursor-40e28ea15a79426a94a882106690b63f",
+        "epoch": "f8353166b6f745d28c318a80827ff892",
+        "cursor": "cursor-e5b05de4e72a45e8be5613a1edadaaa4",
         "expected": {
           "artifacts": 0,
           "candidates": 0,

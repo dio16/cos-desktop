@@ -4,7 +4,7 @@
     "method": "GET",
     "path": "/api/cos/desktop/deltas?cursor=cursor-does-not-exist",
     "headers": {
-      "X-Cos-Context": "context-c48179e6e3e049fabdc348b939915351"
+      "X-Cos-Context": "context-a81d239793f34b9c9f5eabb90391581e"
     }
   },
   "response": {

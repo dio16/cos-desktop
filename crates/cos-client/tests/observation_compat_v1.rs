@@ -73,39 +73,39 @@ fn recorded_fixture_copies_are_byte_identical_to_the_runtime_recording() {
     let expected = [
         (
             "hello.json",
-            "c935dcea91fea1535ef9e331bf303f145d595c464ab2c2395ea0b6179b1f481f",
+            "b6c9fad7aa136ae24d9cf901f29d89fb9056665dfa93c6043d20756409ec1cc0",
         ),
         (
             "observation-grant.json",
-            "55def72faba7208e7aa7e573b9ca42377a1c00dbce041d2a1810049044b3be29",
+            "01deb64d5e551e37c23e87d610db569001a1eb8cbe404445d93ce3be63a6a91b",
         ),
         (
             "snapshot.json",
-            "626b75eed4863c7f89b2bfdd2440900efa3f4794b0feda3060a41bbbb39810af",
+            "616eba0dd8913877d68dba742c6b79f1d88358f406c8dffc3d7a66e86385b734",
         ),
         (
             "deltas-none.json",
-            "4e2a0ad3da19292cc9120459c14f17523c01c314f38364d93c55f354b8fa1678",
+            "946ae7fdf95ce2c79d8580c82f6678451a1eae70ce4821a134b4004e0f0f34a7",
         ),
         (
             "deltas-changed.json",
-            "1f2676fda6f35d7048c42f935b5742bb586eadf8a2a436a5a0b6abce5e0a81dd",
+            "324f9f7d61a34cd2769ebcb3a4615cd5816b94a6ed639240c3a1a3ac4802976b",
         ),
         (
             "deltas-resync.json",
-            "0754993d13e7d3a768e0dd8916415c28f4c50a5019b05fa82dad5401078736a7",
+            "ff00e0a4edb19754f88b1d7c10b80e57c92c17bdd460f737c6cb0db6a5c3c298",
         ),
         (
             "context-missing.json",
-            "9b2e6c6a2d000b8e54fd9dc5b5625b622a060111fc9916cfff88bb0d7a802b7c",
+            "5b42c018d039cc0cdc7e77a90e5fba5766d3daec3b02c64c1d3e313851d6b8fa",
         ),
         (
             "observation-unauthorized.json",
-            "d254dddbde7d80ab69e530fb023ab48009f462890366ebf06bc51d6992ec78cc",
+            "4ee1e255e4171afb7fb9c8f752908a1804e35de5a5f4b07348c733fe4161c88e",
         ),
         (
             "version-rejected.json",
-            "16fa8f4e8d100ff39d7ab5b1d6e0fbf8d1b34c0c4ee366308d071e62fe3c6f1f",
+            "28c3eb650ee6f6b5587dc81a8c2989162eccb066431a64113db14b4730a953ba",
         ),
     ];
     for (file, digest) in expected {

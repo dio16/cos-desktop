@@ -24,21 +24,21 @@
       },
       "server_identity": "cos-runtime-orchestrator",
       "server_build": "orchestrator-runtime/0.1.0",
-      "epoch": "7c00417946944182b11869c0f5034882",
+      "epoch": "f8353166b6f745d28c318a80827ff892",
       "dedupe_retention_ms": null,
       "limits": null
     },
     "grant": {
       "stamp": {
-        "request_id": "7ee4d342480e49e6bff1316823ea8b2f",
+        "request_id": "b88a202bbf094f90bfb8a0237080a9b0",
         "server_id": "cos-runtime-orchestrator",
-        "epoch": "7c00417946944182b11869c0f5034882",
-        "context_id": "context-c48179e6e3e049fabdc348b939915351",
+        "epoch": "f8353166b6f745d28c318a80827ff892",
+        "context_id": "context-a81d239793f34b9c9f5eabb90391581e",
         "read_revision": "1",
-        "scope_id": "scope-2e6519231807437690e3cabdd5f94f78"
+        "scope_id": "scope-ac0b2dc283e7415480c7eb56c1a49892"
       },
       "scope": {
-        "scope_id": "scope-2e6519231807437690e3cabdd5f94f78",
+        "scope_id": "scope-ac0b2dc283e7415480c7eb56c1a49892",
         "task_ids": [],
         "filters": [
           {
@@ -60,11 +60,11 @@
     },
     "snapshot": {
       "begin": {
-        "snapshot_id": "snapshot-c69f9c2274d34e81913eda4673e42c5e"
+        "snapshot_id": "snapshot-ace73368d46a47758bbde73cc419ba28"
       },
       "chunks": [
         {
-          "snapshot_id": "snapshot-c69f9c2274d34e81913eda4673e42c5e",
+          "snapshot_id": "snapshot-ace73368d46a47758bbde73cc419ba28",
           "part_index": 0,
           "mutations": [
             {
@@ -535,9 +535,9 @@
         }
       ],
       "end": {
-        "snapshot_id": "snapshot-c69f9c2274d34e81913eda4673e42c5e",
+        "snapshot_id": "snapshot-ace73368d46a47758bbde73cc419ba28",
         "scope": {
-          "scope_id": "scope-2e6519231807437690e3cabdd5f94f78",
+          "scope_id": "scope-ac0b2dc283e7415480c7eb56c1a49892",
           "task_ids": [],
           "filters": [
             {
@@ -554,8 +554,8 @@
             "minor": 0
           }
         },
-        "epoch": "7c00417946944182b11869c0f5034882",
-        "cursor": "cursor-7a1dda97f7f445bc84a1f6d885d57f19",
+        "epoch": "f8353166b6f745d28c318a80827ff892",
+        "cursor": "cursor-7b36f4e2806a47789d58230d0c4ea294",
         "expected": {
           "artifacts": 0,
           "candidates": 0,

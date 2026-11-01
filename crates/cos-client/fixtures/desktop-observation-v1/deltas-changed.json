@@ -2,9 +2,9 @@
   "name": "deltas-changed",
   "request": {
     "method": "GET",
-    "path": "/api/cos/desktop/deltas?cursor=cursor-52943da5468b40d6af343b1ca2327136",
+    "path": "/api/cos/desktop/deltas?cursor=cursor-1be73ebf2c244ef98518d30d0e0a8cfd",
     "headers": {
-      "X-Cos-Context": "context-c9cb758d65a343d6a2150b4df7f031b5"
+      "X-Cos-Context": "context-d8f38539ccd648378e2cc085e6f49668"
     }
   },
   "response": {
@@ -13,10 +13,10 @@
   "body": {
     "schema_version": 1,
     "transaction": {
-      "transaction_id": "transaction-232f5dedaabe4cdb9139571f878619d0",
-      "epoch": "6657f4df7e344bf58a0798a4e270a6d2",
-      "cursor": "cursor-4acd9563f8e84a599c383ddd15e0fb63",
-      "predecessor": "cursor-52943da5468b40d6af343b1ca2327136",
+      "transaction_id": "transaction-5db8efa5028449a09d68dc67b208608e",
+      "epoch": "d68f66cd76cf4d5eb744f63f5d988502",
+      "cursor": "cursor-a11ea65f9d67437ba256bb19fbd015b2",
+      "predecessor": "cursor-1be73ebf2c244ef98518d30d0e0a8cfd",
       "mutation_count": 1,
       "integrity_digest": "sha256:c578b186129c9e5d3664b2e41ffd12dfa3734a77336f45c499c2a80ff7011f31",
       "mutations": [
