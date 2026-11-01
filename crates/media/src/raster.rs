@@ -282,7 +282,9 @@ pub fn decode_raster_joined(
     })
 }
 
-/// Admit the RGBA8 output of one source image before any allocation.
+/// Admit the RGBA8 output of one source image before the full-image decode and its
+/// pixel-buffer allocation. Metadata parsing can allocate internally; this admission
+/// does not claim to cover that.
 ///
 /// The source depth is validated separately and the admission always describes
 /// the **output** format (8-bit RGBA), so a 1-, 2- or 4-bit PNG cannot pass a
@@ -368,6 +370,7 @@ mod tests {
 
     #[test]
     fn decodes_each_admitted_container_to_rgba8() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         let cancel = Cancellation::default();
         for (format, expected) in [
             (ImageFormat::Png, AcceptedFormat::Png),
@@ -388,6 +391,7 @@ mod tests {
 
     #[test]
     fn refuses_a_corrupt_payload() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         let mut bytes = encode(ImageFormat::Png);
         let tail = bytes.len() - 8;
         bytes.truncate(tail);
@@ -397,6 +401,7 @@ mod tests {
 
     #[test]
     fn admission_always_uses_the_rgba8_output_size() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         let size = PixelSize::new(4, 3).expect("size");
         let base = limits();
         // 12 px -> 48 bytes of RGBA8. A 1-bit source would estimate 1.5 bytes, so a
@@ -415,6 +420,7 @@ mod tests {
 
     #[test]
     fn a_sixteen_bit_png_is_unavailable_under_an_eight_bit_limit() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         let image = image::ImageBuffer::<image::Rgba<u16>, Vec<u16>>::from_fn(2, 2, |x, y| {
             image::Rgba([x as u16 * 1000, y as u16 * 1000, 3000, u16::MAX])
         });
@@ -432,6 +438,7 @@ mod tests {
 
     #[test]
     fn refuses_an_unadmitted_container() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         // A minimal BMP header: recognised by the sniffer, not admitted by policy.
         let mut bmp = vec![0u8; 54];
         bmp[0] = b'B';
@@ -449,6 +456,7 @@ mod tests {
 
     #[test]
     fn refuses_dimensions_beyond_the_limits_before_decoding() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         let bytes = encode(ImageFormat::Png);
         let narrow = DecodeLimits {
             max_dimension: 2,
@@ -460,6 +468,7 @@ mod tests {
 
     #[test]
     fn refuses_a_cancelled_decode() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         let cancel = Cancellation::default();
         cancel.cancel();
         let error = decode_raster(&encode(ImageFormat::Png), limits(), &cancel);
@@ -468,6 +477,7 @@ mod tests {
 
     #[test]
     fn an_animated_png_is_unavailable() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         // Insert an acTL chunk right after IHDR; the scan must stop there instead of
         // silently decoding the first frame.
         let mut bytes = encode(ImageFormat::Png);
@@ -506,6 +516,7 @@ mod tests {
 
     #[test]
     fn an_animated_gif_is_unavailable() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         let error = decode_raster(&gif_with_images(2), limits(), &Cancellation::default());
         assert_eq!(error.unwrap_err(), crate::MediaError::Unavailable);
         // A single-frame GIF still reaches the decoder and is not misclassified.
@@ -520,6 +531,7 @@ mod tests {
 
     #[test]
     fn a_cancelled_joined_decode_leaves_no_partial_raster() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         let cancel = Cancellation::default();
         cancel.cancel();
         let mut published: Option<super::DecodedRaster> = None;
@@ -536,6 +548,7 @@ mod tests {
 
     #[test]
     fn a_joined_decode_returns_a_complete_worker_result() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         let raster = super::decode_raster_joined(
             &encode(ImageFormat::Png),
             limits(),
@@ -608,6 +621,7 @@ mod tests {
 
     #[test]
     fn an_animated_webp_is_unavailable_and_a_still_webp_is_not() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         // Minimal RIFF/WEBP container with an ANIM chunk; the classification is a pure
         // byte scan, so the payload does not need to be a decodable image.
         let mut animated = Vec::new();

@@ -344,7 +344,8 @@ pub struct DecodeAdmission {
     pub peak_bytes: u64,
 }
 
-/// Admit declared decode work before any allocation or decoder call.
+/// Admit declared decode work before the decoder call and the full-image/pixel-buffer
+/// allocation. Metadata parsing may allocate internally; that is outside this admission.
 ///
 /// Rejects impossible dimensions, unsupported bit depth/channel declarations,
 /// decoded-byte or scratch budgets above the caller ceiling, and cancellation.
@@ -387,7 +388,7 @@ pub fn admit_decode(
         .and_then(|value| value.checked_add(DECODER_BOOKKEEPING_BYTES))
         .ok_or(MediaError::TooLarge)?;
     // The declared peak must fit the two byte ceilings together; the slack is admitted
-    // before any allocation, not discovered afterwards.
+    // before the full-image decode, not discovered afterwards.
     let pool = limits
         .max_decoded_bytes
         .checked_add(limits.max_scratch_bytes)
@@ -460,7 +461,7 @@ mod tests {
         assert_eq!(admitted.peak_bytes, peak);
         assert_eq!(admitted.total_bytes, peak);
 
-        // One byte short of the pooled ceiling is refused before any allocation.
+        // One byte short of the pooled ceiling is refused before the full-image decode.
         let short = DecodeLimits {
             max_decoded_bytes: 16,
             max_scratch_bytes: peak - 17,
