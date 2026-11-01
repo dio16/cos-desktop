@@ -2478,36 +2478,29 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Unresolved R0A/R0B conditions (not hidden):** §19.91's earlier idle attempt remains `HOLD_APPROVED_ARTIFACTS_AND_CAPTURE_CONDITIONS_UNAVAILABLE` (approved instrumented executable/helper/source admission missing; the complete R0 suite ran 352 cases and exited 1 with **1 failure / 11 errors / 12 skipped**, including the live-metadata observer-digest mismatch and eleven R0C `SOURCE_IDENTITY` cases). MP-R0A overall is `IN_PROGRESS`: S2B full-source replay is pending and S3-N1 stays a limited source/retained-journal/evidence completion that does not close DC-MP-R0A (full source-bound replay, independent binary/source verification, Present/displayed/scanout/GPU/input-to-photon, visible-stall attribution, queue/cancellation/restoration and performance distributions outstanding). This slice does not restore those conditions and does not repeat the failed R0 suite.
 - **Not claimed:** this is not an R0-wide completion, not a connected baseline, not a stall measurement and not an MP-R0D numeric-performance PASS.
 
-### 19.121 MP-FLOW2 10,000-node bottleneck and minimal Stage (2026-11-01)
+### 19.121 MP-FLOW2 10,000-node bottleneck and minimal Stage (2026-11-01, product-path corrected)
 
-- **Scope and method:** one deterministic synthetic graph of **10,000 nodes / 19,800 edges** (100 layers × 100 nodes, two edges per node into the next layer) measured with the **existing** `crates/desktop-gpui/src/flow.rs` phases, in an explicit `#[ignore]` test (`ten_thousand_node_flow_phases_stay_within_the_frame_budget`). No new dependency, no `unsafe`, no custom renderer, no product behaviour change. Iterations: **20 measured + 3 warm-up**, median and p95 (p95 = rank ⌈0.95×20⌉), `std::time::Instant` per phase.
-- **Equivalence (no behaviour change):** the construction reference, an **independent Kahn longest-path** computed in the test, and the implementation's `layers()` produce the **same depth vector** (`layer index`); `cyclic == false`; `rows_cancellable()` admits every node/edge in authoritative order; `diagram()` draws the first **120** nodes in authoritative order (cap), every drawn depth equals the reference, and `drawn edges + skipped edges == 19,800`. A deterministic FNV checksum over identity + depth is **`0x1cfce993dc07a7c8`** in both debug and release runs.
-- **Measured, release profile (one machine; two runs agree within noise):**
-
-| Phase | median | p95 | share of total |
-|---|---:|---:|---:|
-| rows admission (`rows_cancellable`) | 476 µs | 513 µs | 5.1 % |
-| layers (`layers`) | 4,102 µs | 4,474 µs | 43.7 % |
-| diagram construction (`diagram`) | 4,787 µs | 4,890 µs | 51.0 % |
-| connector geometry (mirrors the render call site) | 18 µs | 19 µs | 0.2 % |
-| **full baseline total** | **9,383 µs (9.38 ms)** | **9,896 µs (9.90 ms)** | 100 % |
-| **steady state (diagram + geometry; layers cached per revision)** | **4,805 µs (4.81 ms)** | **4,909 µs (4.91 ms)** | — |
-
-- **Debug profile (limits the claim):** rows 1,913 µs, layers 20,303 µs, diagram 10,025 µs, geometry 61 µs, total 32,302 µs. The release numbers are the evidence basis; debug numbers are reported as measured but do not override the release decision.
-- **Bottleneck ranking (release):** `layers` (43.7 %) ≈ `diagram` (51.0 %) > rows (5.1 %) > geometry (0.2 %). Culling cannot address this ranking: the drawn geometry is already negligible and `diagram` scans the full topology to select the capped subset.
-- **Minimal Stage decision: current implementation maintained (Stage A only).** The full recompute fits the ratified **60 Hz 16.67 ms frame** with 7.28 ms headroom, and the actual per-frame path (`diagram` + geometry, with layers cached per revision by the shell) is **4.91 ms p95 CPU**, inside the stricter **8.33 ms UI p95** CPU budget. Stage B (viewport culling) is not justified by the measured data (geometry 0.2 %); Stage C (cached geometry) is not required because the only repeated cost is `diagram` at 4.79 ms, already within the CPU budget, and the layers are already revision-cached. **Stage D–F are not implemented**; no custom renderer, LOD or batching was added.
+- **Scope and method:** one deterministic synthetic graph of **10,000 nodes / 19,800 edges** (100 layers × 100 nodes, two edges per node into the next layer) measured with the **existing** `flow.rs` phases in an explicit `#[ignore]` test. The measurement now mirrors the **product render path**: `flow_diagram_region` rebuilds both match sets from the admitted rows on every render, so the frame measurement builds the populated `BTreeSet<(GraphRef, NodeId)>` (10,000 entries) and `BTreeSet<(GraphRef, EdgeId)>` (19,800 entries) and passes them into `diagram()`. No product-code change, no new dependency, no `unsafe`, no custom renderer. Iterations **20 measured + 3 warm-up**; medians and p95 are computed **from the measured per-iteration totals**, not by adding phase medians.
+- **Equivalence (no behaviour change):** the construction reference, an **independent Kahn longest-path** and the implementation's `layers()` produce the same depth vector; `cyclic == false`; `rows_cancellable()` admits every node/edge in authoritative order; `diagram()` draws the first **120** nodes in authoritative order, every drawn depth equals the reference, and `drawn edges + skipped edges == 19,800`. Deterministic FNV checksum **`0x1cfce993dc07a7c8`** in both debug and release.
+- **Measured, release profile (phase references; two runs agree within noise):** rows 605 µs / p95 730 µs; `layers` 4,658 / 5,235 µs; **match-set build 9,860 / 10,152 µs**; `diagram` 3,043 / 3,254 µs; connector geometry 20 / 22 µs.
+- **Measured per-render totals (decision series):** **frame path (match sets + `diagram`) 12,888 µs median / 13,282 µs p95** (max 16,589 µs); **full recompute baseline (rows + layers + match sets + diagram + geometry) 18,101 µs median / 19,003 µs p95** (max 23,240 µs).
+- **Debug profile (limits the claim):** rows 1,913 µs, layers 20,303 µs, diagram 10,025 µs, geometry 61 µs, total 32,302 µs (earlier run; the release profile is the evidence basis).
+- **Bottleneck ranking (release, frame path):** **match-set construction 9.86 ms (76.5 %)** ≫ `diagram` 3.04 ms (23.6 %) ≫ rows/geometry (revision/negligible). The earlier "4.91 ms steady state" did not represent the product path because it omitted the populated match sets; with them, the per-frame CPU path is **12.89 ms**.
+- **Minimal Stage decision: Stage C is required (not implemented in this slice).** Culling (Stage B) cannot address this ranking — the drawn geometry is 20 µs and the cost is rebuilding the revision-wide match sets and drawing. The minimal stage is a **revision/query-keyed cache of the match sets and the diagram** (Stage C: cached geometry keyed by graph revision/layout version/style), with `layers` already revision-cached. The measured current path exceeds the **8.33 ms UI p95** target, so "current implementation maintained" is **not** justified by the corrected numbers. Stage D–F remain unimplemented (no LOD, batching or custom renderer).
 - **Judgment:**
 
 | Metric | Result |
 |---|---|
-| CPU layout phases at 10,000 nodes (release) | **PASS_LIMITED** (one machine, synthetic graph; p95 reported) |
+| CPU layout phases at 10,000 nodes (release) | **PASS_LIMITED** (one machine, synthetic graph; medians/p95 from totals) |
 | Graph equivalence / determinism | **PASS_LIMITED** (Kahn reference, depth vector, rows order, diagram cap, checksum) |
-| Per-frame steady-state CPU path ≤ 8.33 ms | **PASS_LIMITED** (4.91 ms p95) |
+| Per-frame CPU path ≤ 8.33 ms UI p95 | **HOLD** (13,282 µs p95) |
+| Per-frame CPU path ≤ 60 Hz 16.67 ms | **PASS_LIMITED** (median 12,888 µs; leaves ≈ 3.8 ms for paint/GPU) |
+| Full recompute baseline ≤ 60 Hz | **HOLD** (18,101 µs median) |
 | Paint / submit / GPU / Present / input-to-photon | **NOT_MEASURED** |
-| Full 60 Hz/120 Hz frame target, real hardware matrix | **HOLD** (paint/GPU unmeasured; single machine) |
-| Runtime-bound graph (real projection) | **NOT_MEASURED** (synthetic graph only) |
+| Real hardware matrix, 120 Hz target | **HOLD** (single machine, no GPU) |
+| Runtime-bound graph | **NOT_MEASURED** (synthetic graph only) |
 | MP-FLOW2 overall / Stage D–F | **not claimed / not implemented** |
 
-- **Measurement limits:** release vs debug differ by ~3.4× (reported); single machine; synthetic topology (layering depth 100, two out-edges per node) not a Runtime projection; timer granularity is microsecond-scale but phase attribution excludes GPUI paint/layout, GPU and Present; no 120 Hz or hardware-matrix claim. The measurement is an inherited CPU observation, not an SLO attainment.
-- **No product change:** only the measurement test was added (ignored by default); the render path, contracts and budgets are unchanged.
+- **Measurement limits:** release vs debug differ (~3×, reported); single machine; synthetic topology; timer excludes GPUI paint/layout, GPU and Present; trace-instrumented frame times on target hardware remain the missing endpoint. The judgment is an inherited CPU observation, not an SLO attainment.
+- **No product change:** only the ignored measurement test was edited; the render path, contracts and budgets are unchanged.
 
