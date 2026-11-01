@@ -507,20 +507,24 @@ mod windows_tests {
                 scan.capped = true;
                 return;
             }
+            // Every enumerated result — success or error — consumes one entry of
+            // the directory budget, so a flood of enumeration errors can never
+            // walk past the declared 2,000-entry bound.
+            if taken >= DIRECTORY_ENTRY_BUDGET {
+                scan.capped = true;
+                return;
+            }
             let entry = match entries.next() {
                 Some(Ok(entry)) => entry,
                 Some(Err(_)) => {
                     // A directory entry that exists but cannot be enumerated is
                     // unverified, not clean: count it instead of dropping it.
+                    taken += 1;
                     scan.unreadable_entries += 1;
                     continue;
                 }
                 None => return,
             };
-            if taken >= DIRECTORY_ENTRY_BUDGET {
-                scan.capped = true;
-                return;
-            }
             taken += 1;
             let Ok(file_type) = entry.file_type() else {
                 scan.unreadable_entries += 1;
