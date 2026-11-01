@@ -17,14 +17,14 @@ pub use cache::{
     Usage, Verification,
 };
 pub use decode::{
-    DecodeAdmission, DecodeBudget, DecodeLimits, DecodeLimitsOverride, DecodeRequest,
-    MAX_SUPPORTED_BIT_DEPTH, MAX_SUPPORTED_CHANNELS, admit_decode,
+    DECODER_BOOKKEEPING_BYTES, DecodeAdmission, DecodeBudget, DecodeLimits, DecodeLimitsOverride,
+    DecodeRequest, MAX_SUPPORTED_BIT_DEPTH, MAX_SUPPORTED_CHANNELS, admit_decode,
 };
 pub use key::{
     DecodePolicy, LocalId, LocalProvenance, Orientation, PixelSize, RepresentationKey,
     RepresentationSource,
 };
-pub use raster::{AcceptedFormat, DecodedRaster, decode_raster};
+pub use raster::{AcceptedFormat, DecodedRaster, decode_raster, decode_raster_joined};
 
 /// Safe failure categories; no private paths, descriptor tokens or payload bodies.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

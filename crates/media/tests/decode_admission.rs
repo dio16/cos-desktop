@@ -35,7 +35,8 @@ fn declared_budget_is_computed_with_checked_arithmetic() {
         media::DecodeAdmission {
             decoded_bytes: 4096,
             scratch_bytes: 1024,
-            total_bytes: 5120,
+            total_bytes: 5_120 + media::DECODER_BOOKKEEPING_BYTES,
+            peak_bytes: 5_120 + media::DECODER_BOOKKEEPING_BYTES,
         }
     );
     // 16-bit RGBA uses two bytes per channel with no rounding surprise.

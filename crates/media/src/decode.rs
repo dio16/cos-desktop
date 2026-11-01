@@ -28,6 +28,14 @@ pub const MAX_SUPPORTED_BIT_DEPTH: u8 = 16;
 /// An arithmetic bound, not a decode budget; it is not overridable.
 pub const MAX_SUPPORTED_CHANNELS: u8 = 4;
 
+/// Declared decoder bookkeeping allowance, **not a measurement**.
+///
+/// The decode path admits the RGBA8 output buffer, one same-size conversion buffer and
+/// this declared allowance for decoder-internal bookkeeping. It is a declared constant
+/// (the same "assumed value" status as [`DecodeBudget::ratified_default`]), not an
+/// observed peak: no profiler or native memory measurement backs it.
+pub const DECODER_BOOKKEEPING_BYTES: u64 = 1_048_576;
+
 /// Caller-supplied decode budgets. No numeric SLO is implied; values are configuration,
 /// conventionally resolved from [`DecodeBudget::ratified_default`] through
 /// [`DecodeLimitsOverride`] rather than written inline at a call site.
@@ -41,6 +49,22 @@ pub struct DecodeLimits {
 }
 
 impl DecodeLimits {
+    /// Declared peak bytes for decoding one RGBA8 output of `size`:
+    ///
+    /// ```text
+    /// peak = 2 × (width × height × 4 B)  +  DECODER_BOOKKEEPING_BYTES
+    ///        └ decoded RGBA8 ┘└ one conversion buffer ┘   └ declared slack ┘
+    /// ```
+    ///
+    /// Checked arithmetic: overflow is `TooLarge`, never a wrapped value. The formula is
+    /// an admission bound on declared quantities, not a measured peak.
+    pub fn peak_rgba8_bytes(self, size: PixelSize) -> Result<u64, MediaError> {
+        size.checked_rgba_bytes()?
+            .checked_mul(2)
+            .and_then(|buffers| buffers.checked_add(DECODER_BOOKKEEPING_BYTES))
+            .ok_or(MediaError::TooLarge)
+    }
+
     fn validate(self) -> Result<Self, MediaError> {
         if self.max_dimension == 0
             || self.max_pixels == 0
@@ -247,7 +271,10 @@ pub struct DecodeRequest {
 pub struct DecodeAdmission {
     pub decoded_bytes: u64,
     pub scratch_bytes: u64,
+    /// Declared peak: decoded + scratch + [`DECODER_BOOKKEEPING_BYTES`].
     pub total_bytes: u64,
+    /// The same declared peak, named for the memory bound it proves.
+    pub peak_bytes: u64,
 }
 
 /// Admit declared decode work before any allocation or decoder call.
@@ -290,11 +317,78 @@ pub fn admit_decode(
     }
     let total_bytes = decoded_bytes
         .checked_add(request.declared_scratch_bytes)
+        .and_then(|value| value.checked_add(DECODER_BOOKKEEPING_BYTES))
         .ok_or(MediaError::TooLarge)?;
+    // The declared peak must fit the two byte ceilings together; the slack is admitted
+    // before any allocation, not discovered afterwards.
+    let pool = limits
+        .max_decoded_bytes
+        .checked_add(limits.max_scratch_bytes)
+        .ok_or(MediaError::TooLarge)?;
+    if total_bytes > pool {
+        return Err(MediaError::TooLarge);
+    }
     cancel.check()?;
     Ok(DecodeAdmission {
         decoded_bytes,
         scratch_bytes: request.declared_scratch_bytes,
         total_bytes,
+        peak_bytes: total_bytes,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_peak_formula_is_explicit_and_checked() {
+        let limits = DecodeBudget::ratified_default()
+            .limits()
+            .expect("ratified budget");
+        let size = PixelSize::new(4, 3).expect("size");
+        // peak = 2 × (4 × 3 × 4 B) + declared slack
+        assert_eq!(
+            limits.peak_rgba8_bytes(size),
+            Ok(48 * 2 + DECODER_BOOKKEEPING_BYTES)
+        );
+        // Checked arithmetic: an area whose RGBA byte count overflows is TooLarge.
+        let huge = PixelSize::new(u32::MAX, u32::MAX).expect("non-zero size");
+        assert_eq!(limits.peak_rgba8_bytes(huge), Err(MediaError::TooLarge));
+    }
+
+    #[test]
+    fn the_declared_peak_is_admitted_against_the_combined_byte_ceiling() {
+        let base = DecodeBudget::ratified_default()
+            .limits()
+            .expect("ratified budget");
+        let size = PixelSize::new(2, 2).expect("size");
+        let peak = base.peak_rgba8_bytes(size).expect("peak");
+        let request = DecodeRequest {
+            size,
+            bit_depth: 8,
+            channels: 4,
+            declared_scratch_bytes: 16,
+        };
+        // decoded 16 + scratch 16 + slack == peak, and the pooled ceilings equal peak.
+        let exact = DecodeLimits {
+            max_decoded_bytes: 16,
+            max_scratch_bytes: peak - 16,
+            ..base
+        };
+        let admitted = admit_decode(request, exact, &Cancellation::default()).expect("admitted");
+        assert_eq!(admitted.peak_bytes, peak);
+        assert_eq!(admitted.total_bytes, peak);
+
+        // One byte short of the pooled ceiling is refused before any allocation.
+        let short = DecodeLimits {
+            max_decoded_bytes: 16,
+            max_scratch_bytes: peak - 17,
+            ..base
+        };
+        assert_eq!(
+            admit_decode(request, short, &Cancellation::default()),
+            Err(MediaError::TooLarge)
+        );
+    }
 }

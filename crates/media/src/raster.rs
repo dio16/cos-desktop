@@ -64,6 +64,7 @@ pub fn decode_raster(
         image::ImageReader::with_format(Cursor::new(bytes), format.image_format())
             .into_dimensions()
             .map_err(|_| MediaError::InvalidMetadata)?;
+    ensure_still(bytes, format)?;
     let size = PixelSize::new(width, height)?;
     let source_depth = source_bit_depth(bytes, format)?;
     let admission = admit_raster(size, source_depth, limits, cancel)?;
@@ -84,6 +85,154 @@ pub fn decode_raster(
     Ok(DecodedRaster { size, format, rgba })
 }
 
+/// Refuse input classes this backend cannot render as one still raster.
+///
+/// Animated containers are a capability this backend does not implement, so they are
+/// reported as [`MediaError::Unavailable`] instead of silently decoding the first
+/// frame. The scan is bounded by the input length and stops at the first image data.
+fn ensure_still(bytes: &[u8], format: AcceptedFormat) -> Result<(), MediaError> {
+    match format {
+        AcceptedFormat::Png => ensure_still_png(bytes),
+        AcceptedFormat::WebP => ensure_still_webp(bytes),
+        AcceptedFormat::Gif => ensure_still_gif(bytes),
+        AcceptedFormat::Jpeg => Ok(()),
+    }
+}
+
+fn ensure_still_png(bytes: &[u8]) -> Result<(), MediaError> {
+    let mut offset = 8usize;
+    while offset + 8 <= bytes.len() {
+        let length = u32::from_be_bytes([
+            bytes[offset],
+            bytes[offset + 1],
+            bytes[offset + 2],
+            bytes[offset + 3],
+        ]) as usize;
+        let kind = &bytes[offset + 4..offset + 8];
+        if kind == b"acTL" {
+            return Err(MediaError::Unavailable);
+        }
+        if kind == b"IDAT" || kind == b"IEND" {
+            return Ok(());
+        }
+        offset = offset
+            .checked_add(12)
+            .and_then(|value| value.checked_add(length))
+            .ok_or(MediaError::Unavailable)?;
+    }
+    Ok(())
+}
+
+fn ensure_still_webp(bytes: &[u8]) -> Result<(), MediaError> {
+    if bytes.len() < 12 || &bytes[..4] != b"RIFF" || &bytes[8..12] != b"WEBP" {
+        return Ok(());
+    }
+    let mut offset = 12usize;
+    while offset + 8 <= bytes.len() {
+        let kind = &bytes[offset..offset + 4];
+        let length = u32::from_le_bytes([
+            bytes[offset + 4],
+            bytes[offset + 5],
+            bytes[offset + 6],
+            bytes[offset + 7],
+        ]) as usize;
+        if kind == b"ANIM" || kind == b"ANMF" {
+            return Err(MediaError::Unavailable);
+        }
+        let padded = length
+            .checked_add(length & 1)
+            .ok_or(MediaError::Unavailable)?;
+        offset = offset
+            .checked_add(8)
+            .and_then(|value| value.checked_add(padded))
+            .ok_or(MediaError::Unavailable)?;
+    }
+    Ok(())
+}
+
+fn ensure_still_gif(bytes: &[u8]) -> Result<(), MediaError> {
+    if bytes.len() < 13 || (&bytes[..6] != b"GIF87a" && &bytes[..6] != b"GIF89a") {
+        return Ok(());
+    }
+    let packed = bytes[10];
+    let mut offset = 13usize;
+    if packed & 0x80 != 0 {
+        let table = 3usize.wrapping_shl(u32::from(packed & 0x07) + 1);
+        offset = offset.checked_add(table).ok_or(MediaError::Unavailable)?;
+    }
+    let mut images = 0usize;
+    while offset < bytes.len() {
+        match bytes[offset] {
+            0x3b => break,
+            0x21 => {
+                // Extension: label byte, then size-prefixed sub-blocks.
+                offset = offset.checked_add(2).ok_or(MediaError::Unavailable)?;
+                loop {
+                    let Some(&size) = bytes.get(offset) else {
+                        return Ok(());
+                    };
+                    offset = offset.checked_add(1).ok_or(MediaError::Unavailable)?;
+                    if size == 0 {
+                        break;
+                    }
+                    offset = offset
+                        .checked_add(usize::from(size))
+                        .ok_or(MediaError::Unavailable)?;
+                }
+            }
+            0x2c => {
+                images += 1;
+                if images > 1 {
+                    return Err(MediaError::Unavailable);
+                }
+                let Some(packed) = bytes.get(offset + 9) else {
+                    return Ok(());
+                };
+                offset = offset.checked_add(10).ok_or(MediaError::Unavailable)?;
+                if packed & 0x80 != 0 {
+                    let table = 3usize.wrapping_shl(u32::from(packed & 0x07) + 1);
+                    offset = offset.checked_add(table).ok_or(MediaError::Unavailable)?;
+                }
+                // LZW minimum code size, then size-prefixed sub-blocks.
+                offset = offset.checked_add(1).ok_or(MediaError::Unavailable)?;
+                loop {
+                    let Some(&size) = bytes.get(offset) else {
+                        return Ok(());
+                    };
+                    offset = offset.checked_add(1).ok_or(MediaError::Unavailable)?;
+                    if size == 0 {
+                        break;
+                    }
+                    offset = offset
+                        .checked_add(usize::from(size))
+                        .ok_or(MediaError::Unavailable)?;
+                }
+            }
+            _ => return Ok(()),
+        }
+    }
+    Ok(())
+}
+
+/// Decode on a scoped worker and join it before returning.
+///
+/// The worker is owned by this call and is always joined, so a cancelled or failed
+/// decode cannot leave a decode thread behind. Cancellation is observed at the bounded
+/// checkpoints inside [`decode_raster`]; on `Cancelled` (or any refusal) no raster is
+/// returned, so a caller cannot publish a partial artifact from this path.
+pub fn decode_raster_joined(
+    bytes: &[u8],
+    limits: DecodeLimits,
+    cancel: &Cancellation,
+) -> Result<DecodedRaster, MediaError> {
+    std::thread::scope(|scope| {
+        scope
+            .spawn(|| decode_raster(bytes, limits, cancel))
+            .join()
+            .map_err(|_| MediaError::Unavailable)?
+    })
+}
+
 /// Admit the RGBA8 output of one source image before any allocation.
 ///
 /// The source depth is validated separately and the admission always describes
@@ -97,8 +246,13 @@ fn admit_raster(
     limits: DecodeLimits,
     cancel: &Cancellation,
 ) -> Result<crate::DecodeAdmission, MediaError> {
-    if source_depth == 0 || source_depth > 8 || source_depth > limits.max_bit_depth {
+    if source_depth == 0 || source_depth > crate::MAX_SUPPORTED_BIT_DEPTH {
         return Err(MediaError::InvalidMetadata);
+    }
+    // A depth this backend cannot render (above 8 bits per channel) or one that exceeds
+    // the caller's ceiling is an unavailable class, never silently rounded down.
+    if source_depth > 8 || source_depth > limits.max_bit_depth {
+        return Err(MediaError::Unavailable);
     }
     let out_bytes = size.checked_rgba_bytes()?;
     admit_decode(
@@ -211,7 +365,7 @@ mod tests {
     }
 
     #[test]
-    fn refuses_a_sixteen_bit_png_under_an_eight_bit_limit() {
+    fn a_sixteen_bit_png_is_unavailable_under_an_eight_bit_limit() {
         let image = image::ImageBuffer::<image::Rgba<u16>, Vec<u16>>::from_fn(2, 2, |x, y| {
             image::Rgba([x as u16 * 1000, y as u16 * 1000, 3000, u16::MAX])
         });
@@ -224,7 +378,7 @@ mod tests {
             ..limits()
         };
         let error = decode_raster(&bytes.into_inner(), narrow, &Cancellation::default());
-        assert_eq!(error.unwrap_err(), crate::MediaError::InvalidMetadata);
+        assert_eq!(error.unwrap_err(), crate::MediaError::Unavailable);
     }
 
     #[test]
@@ -261,5 +415,123 @@ mod tests {
         cancel.cancel();
         let error = decode_raster(&encode(ImageFormat::Png), limits(), &cancel);
         assert_eq!(error.unwrap_err(), crate::MediaError::Cancelled);
+    }
+
+    fn encode_sized(width: u32, height: u32) -> Vec<u8> {
+        let image = RgbaImage::from_fn(width, height, |x, y| {
+            image::Rgba([(x % 251) as u8, (y % 241) as u8, 90, 255])
+        });
+        let mut bytes = Cursor::new(Vec::new());
+        DynamicImage::ImageRgba8(image)
+            .write_to(&mut bytes, ImageFormat::Png)
+            .expect("encode");
+        bytes.into_inner()
+    }
+
+    #[test]
+    fn an_animated_png_is_unavailable() {
+        // Insert an acTL chunk right after IHDR; the scan must stop there instead of
+        // silently decoding the first frame.
+        let mut bytes = encode(ImageFormat::Png);
+        let ihdr_end = 8 + 25;
+        let mut actl = Vec::new();
+        actl.extend_from_slice(&8u32.to_be_bytes());
+        actl.extend_from_slice(b"acTL");
+        actl.extend_from_slice(&2u32.to_be_bytes());
+        actl.extend_from_slice(&0u32.to_be_bytes());
+        actl.extend_from_slice(&0u32.to_be_bytes());
+        bytes.splice(ihdr_end..ihdr_end, actl);
+        let error = decode_raster(&bytes, limits(), &Cancellation::default());
+        assert_eq!(error.unwrap_err(), crate::MediaError::Unavailable);
+    }
+
+    fn gif_with_images(images: usize) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"GIF89a");
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.push(0x80); // global colour table, size 0 (2 entries)
+        bytes.push(0);
+        bytes.push(0);
+        bytes.extend_from_slice(&[0, 0, 0, 255, 255, 255]);
+        for _ in 0..images {
+            bytes.push(0x2c); // image descriptor
+            bytes.extend_from_slice(&[0, 0, 0, 0, 1, 0, 1, 0, 0]);
+            bytes.push(2); // LZW minimum code size
+            bytes.push(2);
+            bytes.extend_from_slice(&[0x44, 0x01]);
+            bytes.push(0); // sub-block terminator
+        }
+        bytes.push(0x3b);
+        bytes
+    }
+
+    #[test]
+    fn an_animated_gif_is_unavailable() {
+        let error = decode_raster(&gif_with_images(2), limits(), &Cancellation::default());
+        assert_eq!(error.unwrap_err(), crate::MediaError::Unavailable);
+        // A single-frame GIF still reaches the decoder and is not misclassified.
+        let single =
+            super::decode_raster_joined(&gif_with_images(1), limits(), &Cancellation::default());
+        assert!(
+            single.is_ok(),
+            "a one-image GIF must stay decodable: {:?}",
+            single.err()
+        );
+    }
+
+    #[test]
+    fn a_cancelled_joined_decode_leaves_no_partial_raster() {
+        let cancel = Cancellation::default();
+        cancel.cancel();
+        let mut published: Option<super::DecodedRaster> = None;
+        if let Ok(raster) =
+            super::decode_raster_joined(&encode(ImageFormat::Png), limits(), &cancel)
+        {
+            published = Some(raster);
+        }
+        assert!(
+            published.is_none(),
+            "a cancelled joined decode must not produce a raster"
+        );
+    }
+
+    #[test]
+    fn a_joined_decode_returns_a_complete_worker_result() {
+        let raster = super::decode_raster_joined(
+            &encode(ImageFormat::Png),
+            limits(),
+            &Cancellation::default(),
+        )
+        .expect("decode");
+        assert_eq!(
+            raster.rgba.len() as u64,
+            raster.size.checked_rgba_bytes().expect("rgba length")
+        );
+    }
+
+    #[test]
+    fn a_cancel_during_a_joined_decode_never_publishes_a_partial_raster() {
+        let bytes = encode_sized(1024, 1024);
+        let cancel = Cancellation::default();
+        let mut published: Option<super::DecodedRaster> = None;
+        std::thread::scope(|scope| {
+            let token = cancel.clone();
+            scope.spawn(move || {
+                std::thread::sleep(std::time::Duration::from_millis(1));
+                token.cancel();
+            });
+            if let Ok(raster) = super::decode_raster_joined(&bytes, limits(), &cancel) {
+                published = Some(raster);
+            }
+        });
+        // The scoped worker has been joined; whatever happened, a published raster is
+        // complete (its length is exactly the admitted RGBA8 size), never partial.
+        if let Some(raster) = &published {
+            assert_eq!(
+                raster.rgba.len() as u64,
+                raster.size.checked_rgba_bytes().expect("rgba length")
+            );
+        }
     }
 }

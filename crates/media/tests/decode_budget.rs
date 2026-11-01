@@ -241,7 +241,11 @@ fn budget_limits_pass_the_existing_validation_and_admit_the_declared_ceiling() {
     .unwrap();
     assert_eq!(admitted.decoded_bytes, 268_435_456);
     assert_eq!(admitted.scratch_bytes, 0);
-    assert_eq!(admitted.total_bytes, 268_435_456);
+    assert_eq!(
+        admitted.total_bytes,
+        268_435_456 + media::DECODER_BOOKKEEPING_BYTES
+    );
+    assert_eq!(admitted.peak_bytes, admitted.total_bytes);
 
     // The declared scratch ceiling is inclusive, and one byte over is refused.
     let scratch_exact = admit_decode(
