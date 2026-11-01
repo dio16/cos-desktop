@@ -76,6 +76,20 @@ pub struct ShellColors {
     pub border: u32,
     /// Button/raised surface.
     pub button_face: u32,
+    /// Destructive-action surface (the stop button's face).
+    pub danger_face: u32,
+    /// Text on the destructive-action surface.
+    pub danger_text: u32,
+    /// Destructive-action border.
+    pub danger_border: u32,
+    /// Raised surface (the receipt-check button).
+    pub raised_face: u32,
+    /// Surface of a disabled control.
+    pub disabled_face: u32,
+    /// Muted text (axis labels, secondary information).
+    pub muted_text: u32,
+    /// Border of a disabled control.
+    pub disabled_border: u32,
 }
 
 /// The approved normal-scheme colours (the shell literals this slice reuses).
@@ -88,6 +102,13 @@ pub const NORMAL_COLORS: ShellColors = ShellColors {
     disabled: 0x8b949e,
     border: 0x626870,
     button_face: 0x202328,
+    danger_face: 0x5b2a2f,
+    danger_text: 0xf4dfe0,
+    danger_border: 0x91464a,
+    raised_face: 0x343a42,
+    disabled_face: 0x313438,
+    muted_text: 0x9da3aa,
+    disabled_border: 0x51565d,
 };
 
 /// Resolve the shell colours for one scheme.
@@ -108,6 +129,13 @@ pub fn colors_for(scheme: ContrastScheme, system: &SystemColors) -> ShellColors 
             disabled: system.gray_text,
             border: system.window_text,
             button_face: system.button_face,
+            danger_face: system.highlight,
+            danger_text: system.highlight_text,
+            danger_border: system.button_text,
+            raised_face: system.button_face,
+            disabled_face: system.window,
+            muted_text: system.gray_text,
+            disabled_border: system.gray_text,
         },
     }
 }
@@ -313,6 +341,13 @@ mod tests {
         assert_eq!(colors.disabled, system.gray_text);
         assert_eq!(colors.border, system.window_text);
         assert_eq!(colors.button_face, system.button_face);
+        assert_eq!(colors.danger_face, system.highlight);
+        assert_eq!(colors.danger_text, system.highlight_text);
+        assert_eq!(colors.danger_border, system.button_text);
+        assert_eq!(colors.raised_face, system.button_face);
+        assert_eq!(colors.disabled_face, system.window);
+        assert_eq!(colors.muted_text, system.gray_text);
+        assert_eq!(colors.disabled_border, system.gray_text);
         assert_ne!(
             colors.background, NORMAL_COLORS.background,
             "high contrast must come from the OS, not the designed palette"

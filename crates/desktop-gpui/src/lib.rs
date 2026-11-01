@@ -2985,6 +2985,8 @@ impl Render for Shell {
                     )
                     .children(flow_diagram_element),
             );
+        // LIMITED-CONTRAST-BEGIN stop-controls: the stop/reconcile controls shown inside
+        // the Context Bar resolve every colour through the scheme.
         let stop_focused = self.stop_focus.is_focused(window);
         let stop_description: SharedString = if stop_enabled && !retryable_admission {
             "現在操作が認められているタスクへ、停止要求を1回送ります。受付と終了は別に確認します。"
@@ -3015,14 +3017,22 @@ impl Render for Shell {
             .py_2()
             .border_1()
             .border_color(rgb(if stop_focused {
-                0xe6c278
+                colors.focus
             } else if stop_enabled {
-                0x91464a
+                colors.danger_border
             } else {
-                0x51565d
+                colors.disabled_border
             }))
-            .bg(rgb(if stop_enabled { 0x5b2a2f } else { 0x313438 }))
-            .text_color(rgb(if stop_enabled { 0xf4dfe0 } else { 0x9da3aa }))
+            .bg(rgb(if stop_enabled {
+                colors.danger_face
+            } else {
+                colors.disabled_face
+            }))
+            .text_color(rgb(if stop_enabled {
+                colors.danger_text
+            } else {
+                colors.muted_text
+            }))
             .child(if stop_enabled && retryable_admission {
                 "新しい停止要求を送る"
             } else {
@@ -3066,21 +3076,21 @@ impl Render for Shell {
             .py_2()
             .border_1()
             .border_color(rgb(if reconcile_focused {
-                0xe6c278
+                colors.focus
             } else if reconcile_enabled {
-                0x626870
+                colors.border
             } else {
-                0x51565d
+                colors.disabled_border
             }))
             .bg(rgb(if reconcile_enabled {
-                0x343a42
+                colors.raised_face
             } else {
-                0x313438
+                colors.disabled_face
             }))
             .text_color(rgb(if reconcile_enabled {
-                0xe6e8eb
+                colors.text
             } else {
-                0x9da3aa
+                colors.muted_text
             }))
             .child("停止の受付状況");
         let reconcile_button = if reconcile_enabled {
@@ -3139,7 +3149,7 @@ impl Render for Shell {
                                     help::tooltip(text.clone(), style.clone(), inspector_width, cx)
                                 }
                             })
-                            .text_color(rgb(0xe6c278))
+                            .text_color(rgb(colors.focus))
                             .child(stop_label),
                     )
                     .child(
@@ -3160,7 +3170,7 @@ impl Render for Shell {
                     }))
                     .children(retention_warning.map(|display| {
                         div()
-                            .text_color(rgb(0xe6c278))
+                            .text_color(rgb(colors.focus))
                             .child(SharedString::from(display.label.clone()))
                             .child(SharedString::from(display.detail.clone()))
                     }))
@@ -3178,12 +3188,13 @@ impl Render for Shell {
                                     help::tooltip(detail.into(), style.clone(), inspector_width, cx)
                                 }
                             })
-                            .text_color(rgb(0xbcc6d0))
+                            .text_color(rgb(colors.muted_text))
                             .child(SharedString::from(label))
                             .child(SharedString::from(detail))
                     })),
             );
         self.dock_frame = self.dock_frame.saturating_add(1);
+        // LIMITED-CONTRAST-END stop-controls
         let dock_frame = self.dock_frame;
         let previous_dock_mounts = self.dock_mounts.swap(0, Ordering::Relaxed);
         let dock_mounts = Arc::clone(&self.dock_mounts);
@@ -4011,6 +4022,8 @@ impl Render for Shell {
                     ),
             )
             .child(
+            // LIMITED-CONTRAST-BEGIN dock-container: the Dock container and every child it
+            // renders resolve their colours through the scheme.
                 div()
                     .id("loop-dock")
                     .role(Role::Region)
@@ -4069,6 +4082,7 @@ impl Render for Shell {
                             .child(div().w(dock_right_spacer).flex_none()),
                     ),
             )
+            // LIMITED-CONTRAST-END dock-container
             .child(
                 div()
                     .id("surface-switcher")
@@ -4580,11 +4594,32 @@ mod contrast_scope_tests {
             !axis.contains("rgb(0x"),
             "the state-axis labels must resolve their colours through the scheme"
         );
-        // Split so this test's own literal cannot satisfy the check.
-        let dock_container_literal = concat!(".bg(rgb(0x", "272b30))");
-        assert!(
-            !source.contains(dock_container_literal),
-            "the Dock container surface must follow the contrast scheme"
-        );
+        // The Dock container and the Context Bar's stop controls are separate render
+        // regions as well; both are in the limited scope and must be guarded.
+        for (name, begin_marker, end_marker) in [
+            (
+                "dock-container",
+                "// LIMITED-CONTRAST-BEGIN dock-container:",
+                "// LIMITED-CONTRAST-END dock-container",
+            ),
+            (
+                "stop-controls",
+                "// LIMITED-CONTRAST-BEGIN stop-controls:",
+                "// LIMITED-CONTRAST-END stop-controls",
+            ),
+        ] {
+            let region_begin = source
+                .find(begin_marker)
+                .unwrap_or_else(|| panic!("the {name} marker exists"));
+            let region_end = source
+                .find(end_marker)
+                .unwrap_or_else(|| panic!("the {name} end marker exists"));
+            assert!(region_begin < region_end);
+            let region = &source[region_begin..region_end];
+            assert!(
+                !region.contains("rgb(0x"),
+                "the {name} region must resolve every colour through the contrast scheme"
+            );
+        }
     }
 }
