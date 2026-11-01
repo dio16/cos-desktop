@@ -53,9 +53,14 @@ function Test-EndpointAvailable([string]$Url) {
 }
 
 function Get-Median([double[]]$Values) {
-    if ($Values.Count -eq 0) { return $null }
-    $sorted = $Values | Sort-Object
-    return $sorted[[int][math]::Floor(($sorted.Count - 1) / 2)]
+    if ($null -eq $Values -or $Values.Count -eq 0) { return $null }
+    $sorted = @($Values | Sort-Object)
+    $count = $sorted.Count
+    if ($count % 2 -eq 1) {
+        return [double]$sorted[[int][math]::Floor($count / 2)]
+    }
+    # Even counts: the median is the mean of the two middle values.
+    return ([double]$sorted[$count / 2 - 1] + [double]$sorted[$count / 2]) / 2.0
 }
 
 function Get-Statistics([double[]]$Values) {

@@ -353,7 +353,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 
 #### MP-R0B — Baseline capture, noise and endpoint availability
 - **Hard prereqs:** MP-R0A.
-- **Priority:** P1 · **Status:** LIMITED_COMPLETE historical source endpoints; full baseline/noise NOT_MEASURED; latest idle attempt HOLD before launch (approved artifacts/source admission/duration, §19.91); permission RECEIVED. ADR-0008 declared thresholds ratified, not attained · **Owner:** R0 harness owner (`apps/desktop`) + rendering evidence owner
+- **Priority:** P1 · **Status:** LIMITED_COMPLETE historical source endpoints; **disconnected idle baseline measured (§19.120: 5 runs, 30 s settle + 60 s window; CPU PASS_LIMITED, working set PASS_LIMITED)**; connected-endpoint baseline, stall and full baseline/noise acceptance remain NOT_MEASURED/HOLD; the earlier idle attempt remains HOLD as history (§19.91); permission RECEIVED. ADR-0008 declared thresholds ratified, not attained · **Owner:** R0 harness owner (`apps/desktop`) + rendering evidence owner
 - **Consumers:** MP-R0D, MP-PUB4, MP-TYP1, MP-IMG*.
 - **Design source / acceptance:** [DC-MP-R0B](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-r0b). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
 
@@ -2462,6 +2462,17 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Endpoint availability (recorded):** `http://127.0.0.1:9` is **unavailable (connection refused)**. Every figure below is therefore a **disconnected baseline**; it is not a connected-endpoint baseline and must not be read as one.
 - **Measured (5 valid runs; CPU = fraction of one core, WS = mean working set):** CPU 0.009104 / WS 70,905,044 B; 0.029160 / 70,893,180 B; 0.017303 / 70,976,013 B; 0.004942 / 70,715,674 B; 0.033333 / 70,834,684 B. Observed spans 59.494–59.995 s, samples 116–117 per run.
 - **Aggregates:** CPU — **median 0.017303, mean 0.018768, stddev 0.012317, noise (CV) 65.6 %** (the spread is reported as measured, not smoothed). Working set — **median 70,893,180 B (≈ 67.6 MiB), mean 70,864,919 B, stddev 97,389 B, noise 0.137 %**.
+
+| Metric | Result | Basis |
+|---|---|---|
+| CPU idle baseline, disconnected endpoint | **PASS_LIMITED** | 5 valid runs, CV 65.6 % reported as measured |
+| Working-set idle baseline, disconnected endpoint | **PASS_LIMITED** | 5 valid runs, sampling noise 0.137 % |
+| Connected-endpoint idle baseline | **NOT_MEASURED** | endpoint unreachable by design in this variant |
+| Stall / interaction / input-to-photon, render and GPU timings | **NOT_MEASURED** | out of this slice |
+| MP-R0B full baseline/noise/stall acceptance | **HOLD** | connected baseline and stall conditions unmeasured |
+| MP-R0D numeric SLO | **RATIFIED_DECLARED_BASIS_NOT_MEASURED** | declared values approved; measured attainment NOT_MEASURED |
+| R0 overall | **not claimed** | — |
+
 - **Evidence completeness:** the record stores **every sample series** (582 rows: `at_s`, `cpu_s`, `cpu_delta_s`, `working_set_bytes` per sample) so each run's mean/stddev can be recomputed independently.
 - **Negative paths (measured):** `-Runs 0` / `-SettleSeconds 1` / `-WindowSeconds 30` are **refused with exit 2**; a short observation (`-SimulateEarlyExitSeconds 5`, 11 samples, span ≈ 5.2 s) is **invalid with exit 1**; a run whose executable hash does not match the pinned identity (`-SimulateExeMismatch`) is **HOLD with exit 3**.
 - **Unresolved R0A/R0B conditions (not hidden):** §19.91's earlier idle attempt remains `HOLD_APPROVED_ARTIFACTS_AND_CAPTURE_CONDITIONS_UNAVAILABLE` (approved instrumented executable/helper/source admission missing; the complete R0 suite ran 352 cases and exited 1 with **1 failure / 11 errors / 12 skipped**, including the live-metadata observer-digest mismatch and eleven R0C `SOURCE_IDENTITY` cases). MP-R0A overall is `IN_PROGRESS`: S2B full-source replay is pending and S3-N1 stays a limited source/retained-journal/evidence completion that does not close DC-MP-R0A (full source-bound replay, independent binary/source verification, Present/displayed/scanout/GPU/input-to-photon, visible-stall attribution, queue/cancellation/restoration and performance distributions outstanding). This slice does not restore those conditions and does not repeat the failed R0 suite.
