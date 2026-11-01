@@ -1,9 +1,10 @@
 //! MP-IMG2 measured class attempt: static PNG, 8-bit, 64×64.
 //!
-//! Assigned class (plan §19.119): a **static 8-bit RGB PNG** at 64×64 pixels, decoded to
-//! RGBA8 under the ratified declared budget (`DecodeBudget::ratified_default`). The
-//! declared admission ceiling for that output is
-//! `2 × 64 × 64 × 4 B + DECODER_BOOKKEEPING_BYTES` = **1,081,344 B**.
+//! Assigned measurement class (plan §19.119): a **static 8-bit RGB PNG at 2048×2048**
+//! pixels (RGBA8 output 16 MiB, ceiling 34,603,008 B), measured by
+//! `examples/peak_probe.rs` + `scripts/measure-decode-peak.ps1`. The **64×64** image in
+//! this binary is a **functional case** (decode completeness, typed rejection,
+//! non-publication), not the measurement target.
 //!
 //! **Internal peak memory is NOT measured here and is HOLD.** The slice asked for a
 //! test-only counting global allocator, but implementing `GlobalAlloc` requires an

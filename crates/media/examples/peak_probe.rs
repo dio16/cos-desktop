@@ -6,7 +6,9 @@
 //! measurement binary is self-contained; the encoded bytes stay live during the decode
 //! (the baseline is sampled after generation and includes them).
 //!
-//! Usage: `peak_probe <width> <height> <ready-path> <go-path>`.
+//! Usage: `peak_probe <width> <height> <ready-path> <go-path> [<decode-start> <decode-done>]`.
+//! The optional marker paths bracket the decode call so the harness can count samples
+//! taken while the decode is running.
 
 use image::{DynamicImage, ImageFormat, RgbImage};
 use media::{Cancellation, DecodeBudget, decode_raster};
@@ -19,6 +21,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let height: u32 = args.next().unwrap_or_else(|| "2048".into()).parse()?;
     let ready = PathBuf::from(args.next().ok_or("missing ready path")?);
     let go = PathBuf::from(args.next().ok_or("missing go path")?);
+    let start_marker = args.next().map(PathBuf::from);
+    let done_marker = args.next().map(PathBuf::from);
 
     let image = RgbImage::from_fn(width, height, |x, y| {
         image::Rgb([(x % 251) as u8, (y % 241) as u8, 90])
@@ -40,9 +44,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let limits = DecodeBudget::ratified_default().limits()?;
+    if let Some(marker) = start_marker.as_ref() {
+        std::fs::write(marker, b"start")?;
+    }
     println!("decode-start");
     std::io::stdout().flush()?;
     let raster = decode_raster(&encoded, limits, &Cancellation::default())?;
+    if let Some(marker) = done_marker.as_ref() {
+        std::fs::write(marker, b"done")?;
+    }
     println!("decode-done rgba-bytes={}", raster.rgba.len());
     Ok(())
 }

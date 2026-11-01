@@ -38,10 +38,12 @@ for ($i = 1; $i -le $Runs; $i++) {
     $go = Join-Path $run_dir 'go'
     $stdout = Join-Path $run_dir 'stdout.txt'
     $stderr = Join-Path $run_dir 'stderr.txt'
+    $decode_start_marker = Join-Path $run_dir 'decode-start'
+    $decode_done_marker = Join-Path $run_dir 'decode-done'
 
     $started = Get-Date
     $process = Start-Process -FilePath $Exe `
-        -ArgumentList @($Width, $Height, $ready, $go) `
+        -ArgumentList @($Width, $Height, $ready, $go, $decode_start_marker, $decode_done_marker) `
         -PassThru -NoNewWindow `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr
 
@@ -67,6 +69,7 @@ for ($i = 1; $i -le $Runs; $i++) {
 
     $peak = $baseline
     $samples = 0
+    $decode_samples = 0
     $last = $baseline
     while (-not $process.HasExited) {
         $value = Get-WorkingSet $process.Id
@@ -74,6 +77,10 @@ for ($i = 1; $i -le $Runs; $i++) {
             $samples++
             $last = $value
             if ($value -gt $peak) { $peak = $value }
+            # Count only samples bracketed by the decode markers.
+            if ((Test-Path -LiteralPath $decode_start_marker) -and -not (Test-Path -LiteralPath $decode_done_marker)) {
+                $decode_samples++
+            }
         }
         Start-Sleep -Milliseconds $SampleMs
     }
@@ -94,7 +101,7 @@ for ($i = 1; $i -le $Runs; $i++) {
     # increment is meaningless and the whole verdict is FAIL, never PASS.
     $valid = ($exit_code -eq 0) -and
              ($rgba_bytes -eq $expected_rgba) -and
-             ($samples -ge 3) -and
+             ($decode_samples -ge 3) -and
              ($null -ne $done_line)
 
     $runs_out += [ordered]@{
@@ -107,6 +114,7 @@ for ($i = 1; $i -le $Runs; $i++) {
         ceiling_bytes = $ceiling
         within_ceiling = ($increment -le $ceiling)
         samples = $samples
+        decode_samples = $decode_samples
         expected_rgba_bytes = $expected_rgba
         rgba_bytes = $rgba_bytes
         valid = $valid
@@ -146,7 +154,7 @@ $record = [ordered]@{
     median_increment_bytes = $median
     max_increment_bytes = $maximum
     verdict = $verdict
-    measurement_limit = 'Working Set is process-wide (includes the in-process generated fixture, runtime and mapping pages); it is not an allocation peak. Sampling interval is 10 ms, so a shorter peak can be missed. No OS setting and no credential is touched.'
+    measurement_limit = 'Working Set is process-wide (includes the in-process generated fixture, runtime and mapping pages); it is not an allocation peak. Sampling interval is 10 ms, so a shorter peak can be missed. Decode-phase samples are those observed while the decode-start marker exists and the decode-done marker does not; the boundary is coarse at one sampling interval. No OS setting and no credential is touched.'
     sampled_at_utc = $stamp
 }
 $json_path = Join-Path $EvidenceDir ("decode-peak-$stamp.json")
@@ -167,8 +175,8 @@ $record | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $json_path -Encodin
 Write-Host "record: $json_path"
 Write-Host "summary: $txt_path"
 foreach ($run in $runs_out) {
-    Write-Host ("run {0}: baseline={1} peak={2} increment={3} within_ceiling={4} exit={5} samples={6}" -f `
-        $run['run'], $run['baseline_bytes'], $run['peak_bytes'], $run['increment_bytes'], $run['within_ceiling'], $run['exit_code'], $run['samples'])
+    Write-Host ("run {0}: baseline={1} peak={2} increment={3} within_ceiling={4} exit={5} samples={6} decode_samples={7} valid={8}" -f `
+        $run['run'], $run['baseline_bytes'], $run['peak_bytes'], $run['increment_bytes'], $run['within_ceiling'], $run['exit_code'], $run['samples'], $run['decode_samples'], $run['valid'])
 }
 Write-Host "median_increment_bytes=$median max_increment_bytes=$maximum verdict=$verdict"
 if ($verdict -ne 'PASS') { exit 1 }
