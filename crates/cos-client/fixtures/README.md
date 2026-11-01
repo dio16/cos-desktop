@@ -2,8 +2,9 @@
 
 `runtime-task-view-v1.json` is the exact JSON the Runtime emits for
 `GET /api/cos/tasks/{task_id}`. It is **generated from the Runtime's own model**,
-never hand-written, so a shape drift between the repositories fails the adapter
-tests.
+never hand-written: regenerating it and diffing is how a shape drift between the
+repositories is caught. The saved copy alone does not detect drift (see
+[Limit](#limit)).
 
 ## Regeneration (in the Runtime checkout, `orchestrator/`)
 
@@ -33,11 +34,13 @@ v=TaskViewPayload(
     issues=[],
 )
 print(json.dumps(v.model_dump(), indent=2))
-" > crates/cos-client/fixtures/runtime-task-view-v1.json
+" > C:/dev/cos-desktop/crates/cos-client/fixtures/runtime-task-view-v1.json
 ```
 
-Run it from the Runtime checkout and redirect into this repository, then run
-`cargo test -p cos-client` and record the Runtime commit in the change.
+Run it from the Runtime checkout (`<runtime>/orchestrator/`). The redirect names
+the full path to **this** checkout's fixture, because that directory does not
+exist relative to the Runtime repository. Then run `cargo test -p cos-client`
+and record the Runtime commit in the change.
 
 ## Provenance
 
