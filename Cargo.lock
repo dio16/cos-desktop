@@ -2853,6 +2853,7 @@ name = "media"
 version = "0.1.0"
 dependencies = [
  "desktop-protocol",
+ "image",
  "sha2",
 ]
 

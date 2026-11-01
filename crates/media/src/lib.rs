@@ -7,6 +7,7 @@
 mod cache;
 mod decode;
 mod key;
+mod raster;
 
 pub use cache::{
     Acquisition, Cancellation, EncodedMedia, ExpectedDigest, LocalLimits, MediaCache, Sha256Digest,
@@ -20,6 +21,7 @@ pub use key::{
     DecodePolicy, LocalId, LocalProvenance, Orientation, PixelSize, RepresentationKey,
     RepresentationSource,
 };
+pub use raster::{AcceptedFormat, DecodedRaster, decode_raster};
 
 /// Safe failure categories; no private paths, descriptor tokens or payload bodies.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
