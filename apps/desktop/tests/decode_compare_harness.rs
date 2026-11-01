@@ -3137,12 +3137,14 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     );
     assert_eq!(observation.working_set_max_bytes, Some(12_000 * 1024));
     let wall_ms = observation.wall_ms.expect("the candidate ran");
-    // The harvest wait is the fixed 1.2 s grace, so 1.1 s still discriminates while
-    // tolerating poll scheduling jitter on a loaded gate (a **timing margin**, not a
-    // causal determinisation of the poll).
+    // The post-exit harvest is bounded by the 2 s `SAMPLE_EXIT_GRACE`; the helper itself
+    // exits after 1.2 s, so a correct run normally stays inside that grace. A 1.1 s bound
+    // still discriminates (including the wait would add at least the helper's 1.2 s) while
+    // tolerating poll scheduling jitter on a loaded gate; this is a **timing margin**, not
+    // a causal determinisation of the poll.
     assert!(
         wall_ms < 1_100,
-        "the 1.2 s harvest wait is not part of wall_ms ({wall_ms} ms)"
+        "the harvest grace (2 s; helper sleep 1.2 s) is not part of wall_ms ({wall_ms} ms)"
     );
 }
 
@@ -3169,7 +3171,7 @@ fn overrunning_sample_is_not_counted_after_the_candidate_ends() {
     assert_eq!(observation.working_set_max_bytes, None);
     assert_eq!(observation.working_set_sampling, "not_measured");
     let wall_ms = observation.wall_ms.expect("the candidate ran");
-    // Same margin: below the fixed grace, above ordinary poll scheduling jitter.
+    // Same margin: below the 2 s `SAMPLE_EXIT_GRACE`, above ordinary poll jitter.
     assert!(
         wall_ms < 1_100,
         "the bounded grace is not part of wall_ms ({wall_ms} ms)"
@@ -3223,7 +3225,7 @@ fn cancelled_candidate_does_not_wait_past_the_sample_bound() {
         "a sample inside its bound is harvested after the cancellation"
     );
     let wall_ms = observation.wall_ms.expect("the candidate ran");
-    // Same margin: below the fixed grace, above ordinary poll scheduling jitter.
+    // Same margin: below the 2 s `SAMPLE_EXIT_GRACE`, above ordinary poll jitter.
     assert!(
         wall_ms < 1_100,
         "the cancellation wall time excludes the harvest wait ({wall_ms} ms)"
@@ -3721,11 +3723,13 @@ enum Window {
 ///
 /// * with the pre-spawn comparison, the attempt is refused before any spawn and the
 ///   observation records `working_set_attempts == 0`;
-/// * without it, the sample is spawned and its *post*-spawn comparison also sees the
-///   rewritten file, so it discards the value with `attempts == 1`.
+/// * without it, the sample is spawned and the observation records `attempts == 1`.
 ///
-/// Both paths end `not_measured` / `sample_tool_changed` with no value, so the token alone
-/// does not distinguish the call sites -- only `working_set_attempts == 0` does.
+/// The token alone does not distinguish the call sites (both end `not_measured` /
+/// `sample_tool_changed`), and the post-spawn comparison's own outcome is **not**
+/// predicted here: the mutator restores the tool only after the pre-spawn comparison
+/// signal, so the rewritten bytes are not guaranteed to survive until a post-spawn
+/// comparison. Only `working_set_attempts == 0` discriminates the two call sites.
 ///
 /// Ordering is a **causal handshake**, never a sleep or a fixed deadline:
 /// the harness hashes the tool and spawns the candidate; the candidate's sentinel then
