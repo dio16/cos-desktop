@@ -4,18 +4,31 @@
 #   * launches the current cos-desktop.exe in runtime mode with a SYNTHETIC
 #     observation token against a refused loopback endpoint,
 #   * terminates one run abnormally (hard kill) and one run normally (window close
-#     control),
+#     control, required to be genuine),
 #   * scans the app-managed files it can name (isolated app-data tree, temp tree,
 #     child stdout/stderr) for the synthetic token,
 #   * records Windows Error Reporting user-dump configuration READ-ONLY and reports
 #     it as NOT_RUN (no crash is induced here and no OS setting is changed).
 #
-# It never uses a real credential, never touches the Runtime DB, the frozen
-# fixtures or any OS setting, and never turns on WER. Evidence is written to a
-# private directory outside the repository.
+# PASS is strict: every required root and required file must be present and fully
+# scanned, with zero matches, zero unreadable/oversize/excluded entries and no walk
+# cap. An evidence gap (for example the synthetic credential never reached the OS
+# store) downgrades the result to HOLD, never PASS.
 #
-# Exit codes: 0 = bounded verification completed with zero matches; 1 = a required
-# step failed or a match was found; 2 = precondition failure (exe/instance/OS).
+# Negative-test switches (for regression proof only; a normal run never sets them):
+#   -SimulateMissingArtifact <relative-path>  delete one required artifact before the
+#                                             scan, proving a missing file cannot PASS
+#   -SimulateCredentialLoss                   drop the synthetic entry just before the
+#                                             post-start check, proving a missing store
+#                                             write downgrades to HOLD
+#
+# It never uses a real credential, never touches the Runtime DB, the frozen
+# fixtures or any OS setting, and never turns on WER. Only child processes this
+# script started are stopped; no process is ever killed by name. Evidence is
+# written to a private directory outside the repository.
+#
+# Exit codes: 0 = PASS, 1 = FAIL, 2 = HOLD (evidence gap, no leak proven),
+#             3 = precondition failure (exe/instance/environment).
 [CmdletBinding()]
 param(
     [string]$Exe = "",
@@ -26,15 +39,22 @@ param(
     [int]$MaxFiles = 5000,
     [int]$MaxFileBytes = 4194304,
     [int]$MaxDepth = 16,
+    [string]$SimulateMissingArtifact = "",
+    [switch]$SimulateCredentialLoss,
     [switch]$KeepWork
 )
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 2
 
-$stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssZ')
+$stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssfffZ')
+$runId = [guid]::NewGuid().ToString('N').Substring(0, 8)
 $repo = Split-Path -Parent $PSScriptRoot
 if ([string]::IsNullOrWhiteSpace($Exe)) { $Exe = Join-Path $repo 'target\debug\cos-desktop.exe' }
+
+$script:childProcesses = [System.Collections.Generic.List[System.Diagnostics.Process]]::new()
+$script:credentialTarget = $null
+$script:credentialCleanup = 'not-attempted'
 
 function Write-Section([string]$text) { Write-Host "== $text" }
 
@@ -111,11 +131,16 @@ function Find-Bytes([byte[]]$haystack, [byte[]]$needle) {
 }
 
 function Scan-Tokens([string[]]$roots, [byte[]]$needle, [string]$labelBase) {
-    $state = @{ files = 0; visited = 0; oversize = 0; unreadable = 0; capped = $false; matches = @(); unreadable_paths = @(); oversize_paths = @() }
+    $state = @{
+        files = 0; visited = 0; oversize = 0; unreadable = 0; excluded = 0; capped = $false
+        matches = @(); unreadable_paths = @(); oversize_paths = @(); excluded_paths = @()
+        scanned_relative = @()
+    }
     $reported = @()
+    $missingRoots = @()
     foreach ($root in $roots) {
         $reported += $root
-        if (-not (Test-Path -LiteralPath $root)) { continue }
+        if (-not (Test-Path -LiteralPath $root)) { $missingRoots += $root; continue }
         $stack = [System.Collections.Generic.Stack[object]]::new()
         $stack.Push(@($root, 0))
         while ($stack.Count -gt 0) {
@@ -132,7 +157,11 @@ function Scan-Tokens([string[]]$roots, [byte[]]$needle, [string]$labelBase) {
             foreach ($entry in $entries) {
                 if ($state.files -ge $MaxFiles) { $state.capped = $true; break }
                 $state.visited++
-                if ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) { continue }
+                if ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+                    $state.excluded++
+                    if ($state.excluded_paths.Count -lt 20) { $state.excluded_paths += $entry.Name }
+                    continue
+                }
                 if ($entry.PSIsContainer) { $stack.Push(@($entry.FullName, ($depth + 1))); continue }
                 if ($entry.Length -gt $MaxFileBytes) {
                     $state.oversize++
@@ -141,17 +170,19 @@ function Scan-Tokens([string[]]$roots, [byte[]]$needle, [string]$labelBase) {
                 }
                 try { $bytes = [System.IO.File]::ReadAllBytes($entry.FullName) }
                 catch {
-                $state.unreadable++
-                if ($state.unreadable_paths.Count -lt 20) { $state.unreadable_paths += $directory }
-                continue
-            }
+                    $state.unreadable++
+                    if ($state.unreadable_paths.Count -lt 20) { $state.unreadable_paths += $entry.Name }
+                    continue
+                }
                 $state.files++
+                $relative = $entry.FullName
+                if ($relative.StartsWith($labelBase, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $relative = $relative.Substring($labelBase.Length).TrimStart('\', '/')
+                }
+                $relative = $relative -replace '/', '\'
+                $state.scanned_relative += $relative
                 $index = Find-Bytes $bytes $needle
                 if ($index -ge 0) {
-                    $relative = $entry.FullName
-                    if ($relative.StartsWith($labelBase, [System.StringComparison]::OrdinalIgnoreCase)) {
-                        $relative = $relative.Substring($labelBase.Length).TrimStart('\', '/')
-                    }
                     $state.matches += [ordered]@{ relative_to_work = $relative; offset = $index }
                 }
             }
@@ -159,47 +190,62 @@ function Scan-Tokens([string[]]$roots, [byte[]]$needle, [string]$labelBase) {
     }
     return [ordered]@{
         roots = $reported
+        roots_missing = $missingRoots
         files_scanned = $state.files
         entries_visited = $state.visited
         oversize_skipped = $state.oversize
         oversize_paths = $state.oversize_paths
         unreadable_entries = $state.unreadable
         unreadable_paths = $state.unreadable_paths
+        excluded_entries = $state.excluded
+        excluded_paths = $state.excluded_paths
         walk_capped = $state.capped
+        scanned_relative = $state.scanned_relative
         matches = $state.matches
     }
 }
 
 $report = [ordered]@{
-    schema = 'cos-desktop/mp-sec2-native-verification/1'
+    schema = 'cos-desktop/mp-sec2-native-verification/2'
     generated_at_utc = $stamp
+    run_id = $runId
     limited_verification = $true
     mp_sec2_complete = $false
+    negative_test = $null
     result = 'FAIL'
     exe = $null
     os = $null
+    repo = $null
     runs = [ordered]@{}
     areas = [ordered]@{}
+    checks = [ordered]@{}
     not_run = @()
     notes = @()
 }
 $exitCode = 1
 $work = $null
+$preconditionFailure = $false
+$abn = $null
+$nrm = $null
 
 try {
     Write-Section 'preconditions'
     if (-not (Test-Path -LiteralPath $Exe -PathType Leaf)) {
+        $preconditionFailure = $true
         throw "cos-desktop.exe not found: $Exe (build it first: cargo build --locked -p cos-desktop)"
     }
     $existing = @(Get-Process -Name 'cos-desktop' -ErrorAction SilentlyContinue)
     if ($existing.Count -gt 0) {
-        throw "a cos-desktop process is already running (pid $($existing[0].Id)); stop it first"
+        $preconditionFailure = $true
+        throw "a cos-desktop process is already running (pid $($existing[0].Id)); this script never kills a process it did not start"
     }
     New-Item -ItemType Directory -Force -Path $EvidenceDir | Out-Null
-    $work = Join-Path $EvidenceDir ("work-" + $stamp)
+    $work = Join-Path $EvidenceDir ("work-" + $stamp + "-" + $runId)
+    # Exclusive creation: an existing path is a failure, never reused or removed.
+    $null = New-Item -ItemType Directory -Path $work -ErrorAction Stop
     $appData = Join-Path $work 'appdata'
     $tempDir = Join-Path $work 'temp'
-    New-Item -ItemType Directory -Force -Path $appData, $tempDir | Out-Null
+    $null = New-Item -ItemType Directory -Path $appData, $tempDir -ErrorAction Stop
 
     $exeInfo = Get-Item -LiteralPath $Exe
     $report.exe = [ordered]@{
@@ -209,18 +255,6 @@ try {
         last_write_utc = $exeInfo.LastWriteTimeUtc.ToString('o')
     }
     $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem
-    $gitHead = 'unknown'
-    $gitDirty = -1
-    try {
-        $gitHead = (& git -C $repo rev-parse HEAD 2>$null)
-        if ($null -eq $gitHead) { $gitHead = 'unknown' }
-        $gitDirty = @(& git -C $repo status --porcelain 2>$null).Count
-    } catch { $gitHead = 'unknown' }
-    $report['repo'] = [ordered]@{
-        git_head = ([string]$gitHead).Trim()
-        dirty_entries = $gitDirty
-        note = 'the verification reads the working-tree executable; Runtime DB and frozen fixtures are never referenced'
-    }
     $report.os = [ordered]@{
         caption = $osInfo.Caption
         version = $osInfo.Version
@@ -228,6 +262,19 @@ try {
         architecture = $osInfo.OSArchitecture
         pwsh = $PSVersionTable.PSVersion.ToString()
     }
+    $gitHead = 'unknown'
+    $gitDirty = -1
+    try {
+        $gitHead = (& git -C $repo rev-parse HEAD 2>$null)
+        if ($null -eq $gitHead) { $gitHead = 'unknown' }
+        $gitDirty = @(& git -C $repo status --porcelain 2>$null).Count
+    } catch { $gitHead = 'unknown' }
+    $report.repo = [ordered]@{
+        git_head = ([string]$gitHead).Trim()
+        dirty_entries = $gitDirty
+        note = 'the verification reads the working-tree executable; Runtime DB and frozen fixtures are never referenced'
+    }
+    $report.negative_test = if ($SimulateMissingArtifact -ne '') { "missing-artifact:$SimulateMissingArtifact" } elseif ($SimulateCredentialLoss) { 'credential-loss' } else { $null }
     Write-Host ("exe sha256=" + $report.exe.sha256 + " size=" + $report.exe.size_bytes)
     Write-Host ("os=" + $osInfo.Caption + " build=" + $osInfo.BuildNumber + " pwsh=" + $PSVersionTable.PSVersion)
 
@@ -236,9 +283,8 @@ try {
     $token = 'synthetic-sec2-' + [guid]::NewGuid().ToString('N')
     $tokenBytes = [System.Text.Encoding]::UTF8.GetBytes($token)
     $tokenSha = Get-Sha256Text $token
-    $origin = $endpoint
-    $originHead = (Get-Sha256Text $origin).Substring(0, 32)
-    $credentialTarget = "desktop-observation.cos-desktop/observation/$originHead"
+    $originHead = (Get-Sha256Text $endpoint).Substring(0, 32)
+    $script:credentialTarget = "desktop-observation.cos-desktop/observation/$originHead"
     $report['synthetic_secret'] = [ordered]@{
         token_sha256 = $tokenSha
         note = 'the token itself is never written to any evidence file; only this SHA-256 is recorded'
@@ -247,11 +293,14 @@ try {
         mode = 'runtime'
         endpoint = $endpoint
         token_sha256 = $tokenSha
-        credential_target_sha256 = (Get-Sha256Text $credentialTarget)
+        credential_target_sha256 = (Get-Sha256Text $script:credentialTarget)
         pid = $null
         command_line = $null
         environment = $null
+        started_at_utc = $null
         ready_observed = $false
+        ready_instance_fresh = $false
+        credential_write_observed = $null
         killed = $false
         exit_code = $null
         alive_ms_before_kill = $null
@@ -259,6 +308,8 @@ try {
         stderr_bytes = 0
         stdout_sha256 = $null
         stderr_sha256 = $null
+        preferences_absent_after_kill = $null
+        credential_cleanup_after_run = $null
     }
     $report.runs['normal'] = [ordered]@{
         mode = 'runtime'
@@ -267,7 +318,10 @@ try {
         pid = $null
         command_line = $null
         environment = $null
+        started_at_utc = $null
         ready_observed = $false
+        ready_instance_fresh = $false
+        credential_write_observed = $null
         close_requested = $false
         confirmed = $false
         exit_code = $null
@@ -276,9 +330,13 @@ try {
         stderr_bytes = 0
         stdout_sha256 = $null
         stderr_sha256 = $null
+        preferences_written_after_start = $false
+        preferences_sha256 = $null
+        preferences_mtime_utc = $null
     }
 
     $instancePath = Join-Path $appData 'cos-desktop\desktop.instance'
+    $preferencesPath = Join-Path $appData 'cos-desktop\preferences.json'
 
     function Start-ObservedApp([string]$stdoutPath, [string]$stderrPath) {
         $psi = [System.Diagnostics.ProcessStartInfo]::new()
@@ -294,8 +352,10 @@ try {
         $process = [System.Diagnostics.Process]::new()
         $process.StartInfo = $psi
         $null = $process.Start()
+        $script:childProcesses.Add($process)
         return [ordered]@{
             process = $process
+            started_utc = [DateTime]::UtcNow
             stdout_path = $stdoutPath
             stderr_path = $stderrPath
             stdout_task = $process.StandardOutput.ReadToEndAsync()
@@ -303,14 +363,22 @@ try {
         }
     }
 
-    function Wait-Ready([System.Diagnostics.Process]$process, [int]$timeoutMs) {
+    # Readiness means THIS launch created the instance file: the retained file from a
+    # previous run is removed before every launch and the fresh one must be newer than
+    # the launch time, with the process still alive.
+    function Wait-Ready([System.Diagnostics.Process]$process, [DateTime]$launchedUtc, [int]$timeoutMs) {
         $deadline = [DateTime]::UtcNow.AddMilliseconds($timeoutMs)
         while ([DateTime]::UtcNow -lt $deadline) {
-            if ($process.HasExited) { return $false }
-            if (Test-Path -LiteralPath $instancePath) { return $true }
+            if ($process.HasExited) { return $null }
+            if (Test-Path -LiteralPath $instancePath) {
+                $mtime = (Get-Item -LiteralPath $instancePath).LastWriteTimeUtc
+                if ($mtime -ge $launchedUtc.AddSeconds(-1)) {
+                    return [ordered]@{ fresh = $true; mtime_utc = $mtime.ToString('o') }
+                }
+            }
             Start-Sleep -Milliseconds 100
         }
-        return $false
+        return $null
     }
 
     function Stop-Hard([System.Diagnostics.Process]$process) {
@@ -334,8 +402,11 @@ try {
     }
 
     Write-Section 'abnormal run (runtime mode, hard kill)'
+    Remove-Item -LiteralPath $instancePath -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $preferencesPath -Force -ErrorAction SilentlyContinue
     $abn = Start-ObservedApp (Join-Path $work 'abnormal.stdout') (Join-Path $work 'abnormal.stderr')
     $report.runs.abnormal.pid = $abn.process.Id
+    $report.runs.abnormal.started_at_utc = $abn.started_utc.ToString('o')
     $report.runs.abnormal.command_line = ('"' + $Exe + '" (no arguments; environment-only configuration)')
     $report.runs.abnormal.environment = [ordered]@{
         LOCALAPPDATA = '<isolated app-data root below the private evidence directory>'
@@ -344,20 +415,24 @@ try {
         COS_DESKTOP_RUNTIME_ENDPOINT = $endpoint
         COS_DESKTOP_RUNTIME_TOKEN = ('sha256:' + $tokenSha)
     }
-    $started = [DateTime]::UtcNow
-    $ready = Wait-Ready $abn.process $ReadinessTimeoutMs
-    $report.runs.abnormal.ready_observed = $ready
-    if (-not $ready) {
+    $ready = Wait-Ready $abn.process $abn.started_utc $ReadinessTimeoutMs
+    if ($null -eq $ready) {
         Stop-Hard $abn.process
-        $null = Complete-Streams $abn
-        throw "the abnormal-run process never became ready (no desktop.instance within $ReadinessTimeoutMs ms)"
+        throw "the abnormal-run process never became ready (no fresh desktop.instance within $ReadinessTimeoutMs ms)"
+    }
+    $report.runs.abnormal.ready_observed = $true
+    $report.runs.abnormal.ready_instance_fresh = $ready.fresh
+    if ($SimulateCredentialLoss) { $null = Remove-CredentialSilently $script:credentialTarget }
+    $report.runs.abnormal.credential_write_observed = Test-CredentialExists $script:credentialTarget
+    if (-not $report.runs.abnormal.credential_write_observed) {
+        Write-Host 'WARNING: the synthetic credential did not appear in the OS store (store path not exercised)'
     }
     Start-Sleep -Milliseconds $SettleMs
     if ($abn.process.HasExited) {
         $null = Complete-Streams $abn
         throw "the abnormal-run process exited on its own (exit $($abn.process.ExitCode)); an abnormal kill was not observed"
     }
-    $report.runs.abnormal.alive_ms_before_kill = [int]([DateTime]::UtcNow - $started).TotalMilliseconds
+    $report.runs.abnormal.alive_ms_before_kill = [int]([DateTime]::UtcNow - $abn.started_utc).TotalMilliseconds
     Stop-Hard $abn.process
     $report.runs.abnormal.killed = $abn.process.HasExited
     $report.runs.abnormal.exit_code = $abn.process.ExitCode
@@ -367,59 +442,77 @@ try {
     $report.runs.abnormal.stdout_sha256 = $streams.stdout_sha256
     $report.runs.abnormal.stderr_sha256 = $streams.stderr_sha256
     if (-not $abn.process.HasExited) { throw 'the abnormal-run process did not exit after a hard kill' }
-    Write-Host ("abnormal: killed=true exit_code=" + $report.runs.abnormal.exit_code + " alive_ms=" + $report.runs.abnormal.alive_ms_before_kill + " stdout=" + $streams.stdout_bytes + " stderr=" + $streams.stderr_bytes)
+    $report.runs.abnormal.preferences_absent_after_kill = -not (Test-Path -LiteralPath $preferencesPath)
+    $report.runs.abnormal.credential_cleanup_after_run = Remove-CredentialSilently $script:credentialTarget
+    Write-Host ("abnormal: killed=true exit_code=" + $report.runs.abnormal.exit_code + " alive_ms=" + $report.runs.abnormal.alive_ms_before_kill + " stderr=" + $streams.stderr_bytes + " preferences_absent=" + $report.runs.abnormal.preferences_absent_after_kill + " credential=" + $report.runs.abnormal.credential_write_observed + "/" + $report.runs.abnormal.credential_cleanup_after_run)
 
-    Start-Sleep -Milliseconds 500
-
-    Write-Section 'normal-exit control (runtime mode, window close)'
+    Write-Section 'normal-exit control (runtime mode, window close; required)'
+    Remove-Item -LiteralPath $instancePath -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $preferencesPath -Force -ErrorAction SilentlyContinue
     $nrm = Start-ObservedApp (Join-Path $work 'normal.stdout') (Join-Path $work 'normal.stderr')
     $report.runs.normal.pid = $nrm.process.Id
-    $report.runs.normal.command_line = ('"' + $Exe + '" (no arguments; environment-only configuration)')
+    $report.runs.normal.started_at_utc = $nrm.started_utc.ToString('o')
+    $report.runs.normal.command_line = $report.runs.abnormal.command_line
     $report.runs.normal.environment = $report.runs.abnormal.environment
-    $started = [DateTime]::UtcNow
-    $ready = Wait-Ready $nrm.process $ReadinessTimeoutMs
-    $report.runs.normal.ready_observed = $ready
-    if (-not $ready) {
+    $ready = Wait-Ready $nrm.process $nrm.started_utc $ReadinessTimeoutMs
+    if ($null -eq $ready) {
         Stop-Hard $nrm.process
         $null = Complete-Streams $nrm
-        $report.not_run += 'normal-exit control: the process never became ready'
-    } else {
-        Start-Sleep -Milliseconds 1000
-        $report.runs.normal.close_requested = $nrm.process.CloseMainWindow()
-        if (-not $report.runs.normal.close_requested) { $null = & taskkill.exe /PID $nrm.process.Id 2>$null }
-        $exited = $nrm.process.WaitForExit($CloseTimeoutMs)
-        if (-not $exited) {
-            Stop-Hard $nrm.process
-            $report.not_run += "normal-exit control: the process did not exit within $CloseTimeoutMs ms"
-        }
-        $report.runs.normal.confirmed = $nrm.process.HasExited
-        $report.runs.normal.exit_code = $nrm.process.ExitCode
-        $streams = Complete-Streams $nrm
-        $report.runs.normal.stdout_bytes = $streams.stdout_bytes
-        $report.runs.normal.stderr_bytes = $streams.stderr_bytes
-        $report.runs.normal.stdout_sha256 = $streams.stdout_sha256
-        $report.runs.normal.stderr_sha256 = $streams.stderr_sha256
-        $report.runs.normal.exit_observed_ms = [int]([DateTime]::UtcNow - $started).TotalMilliseconds
-        Write-Host ("normal: confirmed=" + $report.runs.normal.confirmed + " exit_code=" + $report.runs.normal.exit_code + " within_ms=" + $report.runs.normal.exit_observed_ms)
+        throw "the normal-exit control never became ready (no fresh desktop.instance within $ReadinessTimeoutMs ms)"
     }
+    $report.runs.normal.ready_observed = $true
+    $report.runs.normal.ready_instance_fresh = $ready.fresh
+    $report.runs.normal.credential_write_observed = Test-CredentialExists $script:credentialTarget
+    Start-Sleep -Milliseconds 1000
+    $report.runs.normal.close_requested = $nrm.process.CloseMainWindow()
+    if (-not $report.runs.normal.close_requested) { $null = & taskkill.exe /PID $nrm.process.Id 2>$null }
+    $exited = $nrm.process.WaitForExit($CloseTimeoutMs)
+    if (-not $exited) {
+        Stop-Hard $nrm.process
+        throw "the normal-exit control did not exit within $CloseTimeoutMs ms"
+    }
+    $report.runs.normal.confirmed = $true
+    $report.runs.normal.exit_code = $nrm.process.ExitCode
+    $report.runs.normal.exit_observed_ms = [int]([DateTime]::UtcNow - $nrm.started_utc).TotalMilliseconds
+    $streams = Complete-Streams $nrm
+    $report.runs.normal.stdout_bytes = $streams.stdout_bytes
+    $report.runs.normal.stderr_bytes = $streams.stderr_bytes
+    $report.runs.normal.stdout_sha256 = $streams.stdout_sha256
+    $report.runs.normal.stderr_sha256 = $streams.stderr_sha256
+    if (Test-Path -LiteralPath $preferencesPath) {
+        $preferences = Get-Item -LiteralPath $preferencesPath
+        $report.runs.normal.preferences_written_after_start = $preferences.LastWriteTimeUtc -ge $nrm.started_utc.AddSeconds(-1)
+        $report.runs.normal.preferences_mtime_utc = $preferences.LastWriteTimeUtc.ToString('o')
+        $report.runs.normal.preferences_sha256 = (Get-Sha256File $preferences.FullName)
+    }
+    Write-Host ("normal: close_requested=" + $report.runs.normal.close_requested + " exit_code=" + $report.runs.normal.exit_code + " fresh_preferences=" + $report.runs.normal.preferences_written_after_start + " stderr=" + $streams.stderr_bytes)
 
     Write-Section 'scan app-managed files'
-    $scanRoots = @($appData, $tempDir, (Join-Path $work 'abnormal.stdout'), (Join-Path $work 'abnormal.stderr'), (Join-Path $work 'normal.stdout'), (Join-Path $work 'normal.stderr'))
+    if ($SimulateMissingArtifact -ne '') {
+        $simulated = Join-Path $work ($SimulateMissingArtifact -replace '/', '\')
+        if (Test-Path -LiteralPath $simulated) {
+            Remove-Item -LiteralPath $simulated -Force -ErrorAction Stop
+            $report.notes += ("negative test: removed required artifact " + $SimulateMissingArtifact)
+        } else {
+            $report.notes += ("negative test: artifact already missing " + $SimulateMissingArtifact)
+        }
+    }
+    $streamFiles = @('abnormal.stdout', 'abnormal.stderr', 'normal.stdout', 'normal.stderr') | ForEach-Object { Join-Path $work $_ }
+    $scanRoots = @($appData, $tempDir) + $streamFiles
     $scan = Scan-Tokens $scanRoots $tokenBytes $work
-    $scan['status'] = if (($scan.matches.Count -eq 0) -and (-not $scan.walk_capped)) { 'PASS' } else { 'FAIL' }
+    $scan['status'] = 'PASS'
     $scan['pattern'] = ('utf8 synthetic token (sha256:' + $tokenSha + ')')
     $scan['bounds'] = [ordered]@{ max_files = $MaxFiles; max_file_bytes = $MaxFileBytes; max_depth = $MaxDepth }
+    $requiredArtifacts = @(
+        'appdata\cos-desktop\desktop.instance',
+        'appdata\cos-desktop\preferences.json',
+        'abnormal.stdout', 'abnormal.stderr', 'normal.stdout', 'normal.stderr'
+    )
+    $scan['required_artifacts'] = $requiredArtifacts
+    $scan['required_artifacts_missing'] = @($requiredArtifacts | Where-Object { -not ($scan.scanned_relative -contains $_) })
     $report.areas['app_managed_files'] = $scan
-    Write-Host ("app-managed files: scanned=" + $scan.files_scanned + " oversize=" + $scan.oversize_skipped + " unreadable=" + $scan.unreadable_entries + " capped=" + $scan.walk_capped + " matches=" + $scan.matches.Count + " status=" + $scan.status)
-    $instanceRelative = 'cos-desktop\desktop.instance'
-    $preferencesRelative = 'cos-desktop\preferences.json'
-    $artifacts = @()
-    if (Test-Path -LiteralPath (Join-Path $appData $instanceRelative)) { $artifacts += $instanceRelative }
-    if (Test-Path -LiteralPath (Join-Path $appData $preferencesRelative)) { $artifacts += $preferencesRelative }
-    $scan['app_artifacts_present'] = $artifacts
-    $scan['preferences_present'] = $artifacts -contains $preferencesRelative
+    Write-Host ("app-managed files: scanned=" + $scan.files_scanned + " oversize=" + $scan.oversize_skipped + " unreadable=" + $scan.unreadable_entries + " excluded=" + $scan.excluded_entries + " capped=" + $scan.walk_capped + " matches=" + $scan.matches.Count + " missing_required=" + $scan.required_artifacts_missing.Count)
     $report.notes += 'app-managed roots: isolated LOCALAPPDATA tree, isolated TEMP tree, child stdout/stderr capture'
-    if (-not $scan.preferences_present) { $report.not_run += 'preferences.json was not observed after the normal-exit control' }
 
     Write-Section 'support report'
     $report.areas['support_report'] = [ordered]@{
@@ -464,61 +557,114 @@ try {
     $report.not_run += 'WER/user-mode dumps and any OS-managed crash report: configuration only, no dump induced or collected'
     Write-Host ("WER: service=" + $werService + " machine_dumps=" + ($null -ne $machineDumps) + " user_dumps=" + ($null -ne $userDumps) + " status=NOT_RUN")
 
-    Write-Section 'credential store (synthetic entry, OS-managed)'
-    $credentialState = Remove-CredentialSilently $credentialTarget
-    $report.areas['credential_store'] = [ordered]@{
-        status = if ($credentialState -eq 'failed') { 'HOLD' } else { 'PASS' }
-        entry_written_by_design = $true
-        cleanup = $credentialState
-        note = 'the synthetic token is persisted by the MP-SEC1 path in the OS credential store, which is DPAPI-backed and not a plaintext file; the entry is removed here'
-    }
     $report.not_run += 'OS credential store contents beyond existence/deletion: no plaintext read, no ACL claim'
-    Write-Host ("credential store: cleanup=" + $credentialState)
-
-    Start-Sleep -Milliseconds 300
-    $leftover = @(Get-Process -Name 'cos-desktop' -ErrorAction SilentlyContinue)
-    if ($leftover.Count -gt 0) {
-        $report.not_run += ("leftover cos-desktop process(es) killed: " + (($leftover | ForEach-Object { $_.Id }) -join ','))
-        foreach ($process in $leftover) { Stop-Hard $process }
-    }
-
     $report.not_run += 'other user profiles, process memory, shell history and pagefile'
     $report.not_run += 'DD-22 retention/export and a bounded crash-report writer (not implemented in this slice)'
-
-    $failed = ($scan.status -ne 'PASS') -or (-not $report.runs.abnormal.killed) -or ($credentialState -eq 'failed')
-    $report.result = if ($failed) { 'FAIL' } else { 'PASS' }
-    $exitCode = if ($failed) { 1 } else { 0 }
 }
 catch {
-    $report.result = 'FAIL'
     $report.notes += ("error: " + $_.Exception.Message)
     Write-Host ("ERROR: " + $_.Exception.Message) -ForegroundColor Red
-    $exitCode = 1
 }
 finally {
+    # Stop only the processes this script started, and only while they are ours.
+    foreach ($process in $script:childProcesses) {
+        if ($null -ne $process -and -not $process.HasExited) {
+            $report.notes += ("finally: stopping our child pid " + $process.Id)
+            Stop-Hard $process
+        }
+    }
+    # Always remove the synthetic entry, then re-verify its absence.
+    if ($null -ne $script:credentialTarget) {
+        $script:credentialCleanup = Remove-CredentialSilently $script:credentialTarget
+        $credentialAbsent = -not (Test-CredentialExists $script:credentialTarget)
+    } else {
+        $credentialAbsent = $true
+    }
+    $report.areas['credential_store'] = [ordered]@{
+        status = if ($credentialAbsent) { 'PASS' } else { 'FAIL' }
+        entry_written_by_design = $true
+        cleanup = $script:credentialCleanup
+        absent_after_cleanup = $credentialAbsent
+        note = 'the synthetic token is persisted by the MP-SEC1 path in the OS credential store, which is DPAPI-backed and not a plaintext file; the entry is removed here and its absence re-verified'
+    }
+    Write-Host ("credential store: final cleanup=" + $script:credentialCleanup + " absent=" + $credentialAbsent)
+
+    # Strict PASS computation (defensive: a precondition failure may leave the
+    # per-run and per-area blocks absent).
+    $scan = $null
+    if ($report.areas.Contains('app_managed_files')) { $scan = $report.areas['app_managed_files'] }
+    $abnRun = $null
+    if ($report.runs.Contains('abnormal')) { $abnRun = $report.runs['abnormal'] }
+    $nrmRun = $null
+    if ($report.runs.Contains('normal')) { $nrmRun = $report.runs['normal'] }
+    $fail = @()
+    $hold = @()
+    if ($preconditionFailure) { $fail += 'precondition' }
+    if ($null -ne $scan) {
+        if ($scan.matches.Count -gt 0) { $fail += 'token match in an app-managed file' }
+        if ($scan.roots_missing.Count -gt 0) { $fail += 'required scan root missing' }
+        if ($scan.required_artifacts_missing.Count -gt 0) { $fail += 'required artifact not covered by the scan' }
+        if ($scan.unreadable_entries -gt 0) { $hold += 'unreadable files were skipped' }
+        if ($scan.oversize_skipped -gt 0) { $hold += 'oversize files were skipped' }
+        if ($scan.excluded_entries -gt 0) { $hold += 'excluded (reparse) entries were skipped' }
+        if ($scan.walk_capped) { $hold += 'the walk hit its cap' }
+    } else {
+        $fail += 'no scan was completed'
+    }
+    $abnormalKilled = ($null -ne $abnRun) -and $abnRun.killed
+    $abnormalReady = ($null -ne $abnRun) -and $abnRun.ready_observed
+    $normalConfirmed = ($null -ne $nrmRun) -and $nrmRun.confirmed
+    $normalExitZero = ($null -ne $nrmRun) -and ($nrmRun.exit_code -eq 0)
+    $normalPreferences = ($null -ne $nrmRun) -and $nrmRun.preferences_written_after_start
+    $abnormalCredential = ($null -ne $abnRun) -and ($abnRun.credential_write_observed -eq $true)
+    $normalCredential = ($null -ne $nrmRun) -and ($nrmRun.credential_write_observed -eq $true)
+    if (-not $abnormalKilled) { $fail += 'the abnormal run was not killed' }
+    if (-not $abnormalReady) { $fail += 'the abnormal run never became ready' }
+    if (-not $normalConfirmed) { $fail += 'the normal-exit control was not confirmed' }
+    if (-not $normalExitZero) { $fail += 'the normal-exit control did not exit 0' }
+    if (-not $normalPreferences) { $fail += 'preferences.json was not written by the normal-exit control' }
+    if (-not $abnormalCredential) { $hold += 'the synthetic credential was not observed in the OS store (abnormal run)' }
+    if (-not $normalCredential) { $hold += 'the synthetic credential was not observed in the OS store (normal run)' }
+    if (-not $credentialAbsent) { $fail += 'the synthetic credential could not be removed' }
+    $report.checks = [ordered]@{
+        fail = $fail
+        hold = $hold
+        abnormal_run = if ($abnormalKilled -and $abnormalReady) { 'PASS' } else { 'FAIL' }
+        normal_control = if ($normalConfirmed -and $normalExitZero -and $normalPreferences) { 'PASS' } else { 'FAIL' }
+        scan_completeness = if (($null -ne $scan) -and (($scan.unreadable_entries + $scan.oversize_skipped + $scan.excluded_entries) -eq 0) -and -not $scan.walk_capped -and $scan.required_artifacts_missing.Count -eq 0 -and $scan.roots_missing.Count -eq 0) { 'PASS' } else { 'HOLD' }
+        credential = if ($credentialAbsent -and $abnormalCredential -and $normalCredential) { 'PASS' } else { 'HOLD' }
+    }
+    if ($fail.Count -gt 0) {
+        $report.result = 'FAIL'
+        $exitCode = 1
+    } elseif ($hold.Count -gt 0) {
+        $report.result = 'HOLD'
+        $exitCode = 2
+    } else {
+        $report.result = 'PASS'
+        $exitCode = 0
+    }
+    if ($preconditionFailure) { $exitCode = 3 }
+
     $report.finished_at_utc = (Get-Date).ToUniversalTime().ToString('o')
-    $jsonPath = Join-Path $EvidenceDir ("mp-sec2-native-" + $stamp + ".json")
-    $textPath = Join-Path $EvidenceDir ("mp-sec2-native-" + $stamp + ".txt")
+    $jsonPath = Join-Path $EvidenceDir ("mp-sec2-native-" + $stamp + "-" + $runId + ".json")
+    $textPath = Join-Path $EvidenceDir ("mp-sec2-native-" + $stamp + "-" + $runId + ".txt")
     try {
         $report | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $jsonPath -Encoding UTF8
         $lines = @()
         $lines += ("result: " + $report.result)
         $lines += ("exe: " + ($report.exe | ConvertTo-Json -Compress -Depth 4))
         $lines += ("os: " + ($report.os | ConvertTo-Json -Compress -Depth 4))
-        foreach ($runName in $report.runs.Keys) {
-            $lines += ("run.{0}: {1}" -f $runName, ($report.runs[$runName] | ConvertTo-Json -Compress -Depth 4))
-        }
-        foreach ($areaName in $report.areas.Keys) {
-            $area = $report.areas[$areaName]
-            $lines += ("area.{0}: {1}" -f $areaName, ($area | ConvertTo-Json -Compress -Depth 4))
-        }
+        foreach ($runName in $report.runs.Keys) { $lines += ("run.{0}: {1}" -f $runName, ($report.runs[$runName] | ConvertTo-Json -Compress -Depth 4)) }
+        foreach ($areaName in $report.areas.Keys) { $lines += ("area.{0}: {1}" -f $areaName, ($report.areas[$areaName] | ConvertTo-Json -Compress -Depth 4)) }
+        $lines += ("checks: " + ($report.checks | ConvertTo-Json -Compress -Depth 4))
         foreach ($entry in $report.not_run) { $lines += ("NOT_RUN: " + $entry) }
         $lines | Set-Content -LiteralPath $textPath -Encoding UTF8
         Write-Host ("evidence: " + $jsonPath)
         Write-Host ("evidence: " + $textPath)
     } catch {
         Write-Host ("could not write evidence: " + $_.Exception.Message) -ForegroundColor Red
-        $exitCode = 1
+        if ($exitCode -eq 0) { $exitCode = 1 }
     }
     if (-not $KeepWork -and $null -ne $work -and (Test-Path -LiteralPath $work)) {
         $removed = $false
@@ -528,6 +674,6 @@ finally {
         }
         if ($removed) { Write-Host 'isolated work tree removed' } else { Write-Host 'WARNING: isolated work tree could not be removed' }
     }
-    Write-Host ("result: " + $report.result)
+    Write-Host ("result: " + $report.result + " (exit " + $exitCode + ")")
     exit $exitCode
 }
