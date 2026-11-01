@@ -168,6 +168,8 @@ struct Session {
 
 struct ReplayState {
     calls: Vec<String>,
+    /// `(path, presented_credential)` for every replayed exchange.
+    requests: Vec<(String, bool)>,
 }
 
 struct ReplayHttp {
@@ -177,6 +179,10 @@ struct ReplayHttp {
     unauthorized: Recorded,
     version_rejected: Recorded,
     deltas: VecDeque<DeltasReply>,
+    /// The recorded server is principal-bound: a read without the Desktop
+    /// credential is answered with the recorded `401 UNAUTHORIZED_CONTEXT`
+    /// document instead of a delta.
+    require_credential_on_reads: bool,
     session: Option<Session>,
     state: Arc<Mutex<ReplayState>>,
 }
@@ -194,6 +200,7 @@ impl ReplayHttp {
             unauthorized: recorded("observation-unauthorized"),
             version_rejected: recorded("version-rejected"),
             deltas: deltas.into(),
+            require_credential_on_reads: false,
             session: None,
             state,
         }
@@ -206,11 +213,18 @@ impl ProtocolHttp for ReplayHttp {
             HttpMethod::Get => "GET",
             HttpMethod::Post => "POST",
         };
-        self.state
-            .lock()
-            .expect("replay state")
-            .calls
-            .push(format!("{method} {}", request.path));
+        let credential = request
+            .headers
+            .iter()
+            .find(|(name, _)| name == "authorization")
+            .map(|(_, value)| value.clone());
+        {
+            let mut state = self.state.lock().expect("replay state");
+            state.calls.push(format!("{method} {}", request.path));
+            state
+                .requests
+                .push((request.path.clone(), credential.is_some()));
+        }
         match (request.method, request.path.as_str()) {
             (HttpMethod::Get, SERVER_PATH) => Ok(as_response(&self.hello)),
             (HttpMethod::Post, OBSERVATION_PATH) => match self.open_reply {
@@ -236,6 +250,9 @@ impl ProtocolHttp for ReplayHttp {
                 OpenReply::VersionRejected => Ok(as_response(&self.version_rejected)),
             },
             (HttpMethod::Get, path) if path.starts_with(DELTAS_PATH) => {
+                if self.require_credential_on_reads && credential.is_none() {
+                    return Ok(as_response(&recorded("context-missing")));
+                }
                 let reply = if self.deltas.len() > 1 {
                     self.deltas.pop_front().expect("queued delta reply")
                 } else {
@@ -328,17 +345,35 @@ fn scope() -> desktop_protocol::ObservationScopeRequest {
     }
 }
 
+/// The credential every replay presents unless a test deliberately omits it.
+const CREDENTIAL: &str = "recorded-desktop-credential";
+
 fn client(
     open_reply: OpenReply,
     deltas: Vec<DeltasReply>,
     interval: Duration,
 ) -> (CompatClient, Arc<Mutex<ReplayState>>) {
-    let state = Arc::new(Mutex::new(ReplayState { calls: Vec::new() }));
-    let replay = ReplayHttp::new(open_reply, deltas, Arc::clone(&state));
+    client_with(open_reply, deltas, interval, Some(CREDENTIAL), false)
+}
+
+fn client_with(
+    open_reply: OpenReply,
+    deltas: Vec<DeltasReply>,
+    interval: Duration,
+    credential: Option<&str>,
+    require_credential_on_reads: bool,
+) -> (CompatClient, Arc<Mutex<ReplayState>>) {
+    let state = Arc::new(Mutex::new(ReplayState {
+        calls: Vec::new(),
+        requests: Vec::new(),
+    }));
+    let mut replay = ReplayHttp::new(open_reply, deltas, Arc::clone(&state));
+    replay.require_credential_on_reads = require_credential_on_reads;
     let transport = ProtocolTransport::new(
         replay,
         ProtocolTransportConfig {
             delta_poll_interval: interval,
+            bearer_token: credential.map(str::to_owned),
             ..ProtocolTransportConfig::default()
         },
         ProtocolVersions {
@@ -443,7 +478,7 @@ fn calls_matching(state: &Arc<Mutex<ReplayState>>, prefix: &str) -> usize {
 fn recorded_observation_grant_reaches_live_with_the_real_snapshot() {
     let grant = grant_document();
     let expected_tasks = grant.snapshot.end.expected.tasks;
-    let (mut client, _state) = client(
+    let (mut client, state) = client(
         OpenReply::Grant,
         vec![DeltasReply {
             recorded: recorded("deltas-none"),
@@ -525,6 +560,87 @@ fn recorded_observation_grant_reaches_live_with_the_real_snapshot() {
                 && task.capabilities_ref.is_none()
         }),
         "no recorded task declares an optional reference"
+    );
+
+    // RC-03: reads are principal-bound, so the replayed client presents the
+    // credential on the protocol routes and never on the handshake.
+    {
+        let state = state.lock().expect("replay state");
+        assert!(
+            state
+                .requests
+                .iter()
+                .any(|(path, credential)| path == OBSERVATION_PATH && *credential),
+            "the observation open presents the credential"
+        );
+        assert!(
+            state
+                .requests
+                .iter()
+                .any(|(path, credential)| path.starts_with(DELTAS_PATH) && *credential),
+            "the delta read presents the credential"
+        );
+        assert!(
+            state
+                .requests
+                .iter()
+                .filter(|(path, _)| path == SERVER_PATH)
+                .all(|(_, credential)| !credential),
+            "the handshake never presents the credential"
+        );
+    }
+}
+
+/// RC-03: a read that presents no credential is refused; the publication is
+/// withheld and nothing from the read is applied.
+#[test]
+fn reads_without_a_credential_withhold_the_publication() {
+    let (mut client, state) = client_with(
+        OpenReply::Grant,
+        vec![DeltasReply {
+            recorded: recorded("deltas-none"),
+            rebind: false,
+        }],
+        Duration::from_millis(10),
+        None,
+        true,
+    );
+    client.connect(scope(), 0).expect("observation opens");
+    let mut now = 0;
+    let events = wait_for(&mut client, &mut now, |client| {
+        client.last_error().is_some_and(|error| {
+            matches!(error, ClientError::Transport(message) if message.contains("UNAUTHORIZED_CONTEXT"))
+        })
+    });
+    assert!(
+        transport_error_containing(&events, "UNAUTHORIZED_CONTEXT"),
+        "the credential-less read is refused with the recorded code"
+    );
+    assert!(delta_applied(&events).is_empty(), "nothing is applied");
+    match client.publication_access() {
+        PublicationAccess::Withheld { reason } => assert_eq!(
+            reason,
+            ReadUnavailable::AuthorizationUnavailable,
+            "the publication is withheld for authorization"
+        ),
+        PublicationAccess::Validated { .. } => {
+            panic!("a refused read must withhold the publication")
+        }
+    }
+    assert!(!live(&client), "the live session ends on a refused read");
+    assert_eq!(
+        client.snapshot().tasks.len(),
+        39,
+        "the grant was applied before the read was refused; the data is withheld, not published"
+    );
+    assert!(
+        state
+            .lock()
+            .expect("replay state")
+            .requests
+            .iter()
+            .any(|(path, credential)| path.starts_with(DELTAS_PATH) && !credential),
+        "the replayed read really presented no credential"
     );
 }
 

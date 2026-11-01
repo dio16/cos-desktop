@@ -165,7 +165,7 @@ Development v1 serves observation only (no commands, no principal model). The ma
 | Protocol / schema | `2.0` / `2.0` exactly | Advertisement and echo of `2.0`; any other pair is rejected before a snapshot exists |
 | Handshake | `GET /api/cos/desktop/server` → `{"schema_version":1,"server":HelloAccepted}` | Server-issued `server_identity`, `server_build`, `epoch`, dedupe retention and limits |
 | Session open | `POST /api/cos/desktop/observation` with scope `{task_ids:[], filters:[{name:"view",value:"all"}]}` and a client `request_id` | The server echoes the client `request_id` and the requested scope exactly; a mismatch is a protocol error |
-| Authorization | `Authorization: Bearer <token>` on the open only; `X-Cos-Context: <context_id>` on reads | The grant issues the context capability; reads with a missing/unknown context are `401` |
+| Authorization | `Authorization: Bearer <token>` on the observation open, the snapshot read and the delta read; the handshake route carries none. `X-Cos-Context: <context_id>` accompanies the reads | The grant issues the context capability and binds it to the issuing principal: a read without the credential, or with a credential/context from another principal, is denied (`401`) and the client must re-observe |
 | Grant | `ReadGrant` stamp (server_id/epoch/request_id/context_id/read_revision/scope), scope echo, `command_reads: []`, `local_intents_readable: false` | v1 has no principal model, so no command is readable and no local intent is projected |
 | Snapshot | One `begin` + one chunk + `end` for a consistent cut; TASK projections only | Server-issued `snapshot_id`, epoch, cursor, `expected` counts and `integrity_digest` |
 | Optional facts | `display_id`, `inner_phase`, `iteration_ref`/`iteration_index`, `capabilities_ref`, candidate/outcome/brief references may be absent | Absent means "not projected"; the client never substitutes a value. v1 TASK-only snapshots declare no reference, so none can dangle |
@@ -178,7 +178,8 @@ Development v1 serves observation only (no commands, no principal model). The ma
 | Condition | Runtime behaviour | Client consequence |
 | --- | --- | --- |
 | Unsupported protocol/schema pair | `422 {"code":"UNSUPPORTED_PROTOCOL","detail":…}` for the open; the hello advertises the supported pair | Fail closed: no grant, no snapshot, `Incompatible`; never a fixture fallback |
-| Missing or unknown read context | `401 {"code":"UNAUTHORIZED_CONTEXT"}` on snapshot/deltas | Transport failure; the publication is withheld (`AuthorizationUnavailable`) and the client re-observes; nothing is guessed |
+| Missing or unknown read context, or a read without the Desktop credential | `401 {"code":"UNAUTHORIZED_CONTEXT"}` on snapshot/deltas (the context is bound to the issuing principal) | Transport failure; the publication is withheld (`AuthorizationUnavailable`) and the client re-observes; nothing is guessed |
+| Credential or context issued to another principal | Denied (`401`/denial); a context cannot be presented across principals | Transport failure; the publication is withheld, nothing is applied, and the mismatch is never repaired locally — only a fresh observation with the correct credential recovers |
 | Missing/unknown bearer at the open | `401` (authentication dependency) | Fail closed; no data published |
 | Unknown or expired cursor, or a known cursor that can no longer be replayed safely | `409 {"code":"RESYNC_REQUIRED"}` | No frame, no cursor advance and no mutation applied; the client re-opens the observation with the last applied cursor |
 | Epoch change | `409 {"code":"RESYNC_REQUIRED"}`, or a grant stamp that disagrees with the session epoch | Resync; local state is withheld until a verified snapshot arrives |

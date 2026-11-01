@@ -23,9 +23,14 @@
 //!    and `SNAPSHOT_END`. The document's `server` report must equal the accepted
 //!    hello, otherwise nothing is published and the stream fails closed,
 //! 3. after the snapshot, `GET /api/cos/desktop/deltas?cursor=…` is polled at
-//!    the configured interval (with the grant's `X-Cos-Context` header) while
-//!    the stream generation is current. `"transaction": null` publishes
-//!    nothing, and a delta transaction is forwarded as `DELTA_TRANSACTION`.
+//!    the configured interval (with the grant's `X-Cos-Context` header and the
+//!    same `Authorization: Bearer` credential) while the stream generation is
+//!    current. `"transaction": null` publishes nothing, and a delta transaction
+//!    is forwarded as `DELTA_TRANSACTION`.
+//!
+//! The Desktop credential is presented on exactly the three protocol routes
+//! (observation open, snapshot read, delta read) because reads are bound to the
+//! issuing principal; the handshake route and every other path never see it.
 //!
 //! `409 RESYNC_REQUIRED` publishes no frame and fabricates no cursor: the
 //! stream stops and the client's own recovery re-opens the observation. Every
@@ -67,8 +72,33 @@ pub const OBSERVATION_DOCUMENT_SCHEMA_VERSION: u32 = 1;
 pub const SERVER_PATH: &str = "/api/cos/desktop/server";
 /// `POST` route that grants one observation session and its snapshot.
 pub const OBSERVATION_PATH: &str = "/api/cos/desktop/observation";
+/// `GET` route returning a fresh snapshot document for one scope.
+pub const SNAPSHOT_PATH: &str = "/api/cos/desktop/snapshot";
 /// `GET` route that polls one delta transaction after a cursor.
 pub const DELTAS_PATH: &str = "/api/cos/desktop/deltas";
+
+/// Routes that carry the Desktop credential.
+///
+/// Reads are bound to the issuing principal, so the observation open, the
+/// snapshot read and the delta read all present `Authorization: Bearer <token>`.
+/// The handshake route and every non-protocol path must never see it: the
+/// credential exists only for these three exchanges. A query string is ignored,
+/// so `/deltas?cursor=…` is still the delta route and nothing else can smuggle a
+/// credential through a crafted query.
+pub(crate) fn is_protocol_route(path: &str) -> bool {
+    let route = path.split('?').next().unwrap_or(path);
+    matches!(route, OBSERVATION_PATH | SNAPSHOT_PATH | DELTAS_PATH)
+}
+
+/// Append the credential to a protocol request's headers, when one is configured.
+fn authorize(config: &ProtocolTransportConfig, headers: &mut Vec<(String, String)>, path: &str) {
+    if !is_protocol_route(path) {
+        return;
+    }
+    if let Some(token) = &config.bearer_token {
+        headers.push(("authorization".to_owned(), format!("Bearer {token}")));
+    }
+}
 
 /// One bounded HTTP exchange requested by the transport.
 #[derive(Clone, PartialEq, Eq)]
@@ -144,7 +174,8 @@ pub trait ProtocolHttp: Send {
 /// Transport configuration.
 #[derive(Clone)]
 pub struct ProtocolTransportConfig {
-    /// Bearer token for the observation `POST`, when the server requires one.
+    /// Desktop credential presented on the three protocol routes (observation
+    /// open, snapshot read, delta read); never on the handshake or another path.
     pub bearer_token: Option<String>,
     /// Interval between delta polls after the initial snapshot.
     pub delta_poll_interval: Duration,
@@ -786,9 +817,7 @@ fn post_open<E: ProtocolHttp>(
         ("accept".to_owned(), "application/json".to_owned()),
         ("content-type".to_owned(), "application/json".to_owned()),
     ];
-    if let Some(token) = &config.bearer_token {
-        headers.push(("authorization".to_owned(), format!("Bearer {token}")));
-    }
+    authorize(config, &mut headers, OBSERVATION_PATH);
     let response = executor
         .execute(HttpRequest {
             method: HttpMethod::Post,
@@ -823,14 +852,16 @@ fn get_deltas<E: ProtocolHttp>(
         "{DELTAS_PATH}?cursor={}",
         encode_query_value(poll.cursor.as_str())
     );
+    let mut headers = vec![
+        ("accept".to_owned(), "application/json".to_owned()),
+        ("x-cos-context".to_owned(), poll.context.as_str().to_owned()),
+    ];
+    authorize(config, &mut headers, &path);
     let response = executor
         .execute(HttpRequest {
             method: HttpMethod::Get,
             path,
-            headers: vec![
-                ("accept".to_owned(), "application/json".to_owned()),
-                ("x-cos-context".to_owned(), poll.context.as_str().to_owned()),
-            ],
+            headers,
             body: Vec::new(),
         })
         .map_err(|message| TransportError::Io(format!("delta request failed: {message}")))?;
@@ -907,4 +938,64 @@ fn encode_query_value(value: &str) -> String {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod credential_route_tests {
+    //! RC-03: reads are principal-bound, so the credential is presented on the
+    //! three protocol routes and nowhere else.
+
+    use super::{
+        DELTAS_PATH, OBSERVATION_PATH, ProtocolTransportConfig, SERVER_PATH, SNAPSHOT_PATH,
+        authorize, is_protocol_route,
+    };
+
+    #[test]
+    fn the_credential_is_presented_on_exactly_the_three_protocol_routes() {
+        for route in [OBSERVATION_PATH, SNAPSHOT_PATH, DELTAS_PATH] {
+            assert!(is_protocol_route(route), "{route} is a protocol route");
+        }
+        // A query string belongs to the route, not to another path.
+        assert!(is_protocol_route(&format!("{DELTAS_PATH}?cursor=cursor-1")));
+        assert!(is_protocol_route(&format!("{SNAPSHOT_PATH}?scope=scope-1")));
+        for other in [
+            SERVER_PATH,
+            "/api/cos/desktop/other",
+            "/api/cos/desktop/deltas-extra",
+            "/api/cos/desktop/snapshot/extra",
+            "/",
+        ] {
+            assert!(!is_protocol_route(other), "{other} is not a protocol route");
+        }
+
+        let config = ProtocolTransportConfig {
+            bearer_token: Some("local-test-token".to_owned()),
+            ..ProtocolTransportConfig::default()
+        };
+        let mut headers = Vec::new();
+        authorize(
+            &config,
+            &mut headers,
+            &format!("{DELTAS_PATH}?cursor=cursor-1"),
+        );
+        assert_eq!(
+            headers,
+            vec![(
+                "authorization".to_owned(),
+                "Bearer local-test-token".to_owned()
+            )]
+        );
+
+        let mut headers = Vec::new();
+        authorize(&config, &mut headers, SERVER_PATH);
+        assert!(headers.is_empty(), "the handshake never carries it");
+
+        let mut headers = Vec::new();
+        authorize(
+            &ProtocolTransportConfig::default(),
+            &mut headers,
+            OBSERVATION_PATH,
+        );
+        assert!(headers.is_empty(), "no configured token means no header");
+    }
 }

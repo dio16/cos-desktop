@@ -11,12 +11,15 @@
 //! `COS_DESKTOP_RUNTIME_ENDPOINT` names a plain-HTTP **loopback IP-literal**
 //! origin (for example `http://127.0.0.1:8123`; hostnames such as `localhost`
 //! are refused because a resolver answer can change between validation and the
-//! connection). `COS_DESKTOP_RUNTIME_TOKEN`, when set, is the bearer credential for the observation `POST`. The token is read once, moved
-//! into the executor, and never logged, rendered, put in a diagnostic or echoed
-//! in an error message. Redirects and environment proxies are disabled so a
-//! credential can never be replayed to another origin. TLS is not implemented:
-//! `ureq` is built with `default-features = false` and non-HTTP or credential
-//! bearing endpoints are refused at startup.
+//! connection). `COS_DESKTOP_RUNTIME_TOKEN`, when set, is the Desktop credential
+//! bound to the three protocol routes (observation open, snapshot read, delta
+//! read): the protocol transport presents it and the executor never holds or
+//! attaches it itself. The token is read once, moved into the transport, and
+//! never logged, rendered, put in a diagnostic or echoed in an error message.
+//! Redirects and environment proxies are disabled so a credential can never be
+//! replayed to another origin. TLS is not implemented: `ureq` is built with
+//! `default-features = false` and non-HTTP or credential bearing endpoints are
+//! refused at startup.
 
 use std::io::Read;
 use std::net::{Ipv4Addr, Ipv6Addr};
@@ -24,7 +27,7 @@ use std::time::Duration;
 
 use cos_client::{
     ClientConfig, ClientSource, CosClient, DesktopClient, HttpMethod, HttpRequest, HttpResponse,
-    OBSERVATION_PATH, ProtocolHttp, ProtocolTransport, ProtocolTransportConfig,
+    ProtocolHttp, ProtocolTransport, ProtocolTransportConfig,
 };
 use desktop_protocol::{Limits, ObservationScopeRequest, ProtocolVersions, ScopeFilter, Version};
 
@@ -255,10 +258,17 @@ fn non_zero_port(raw: &str) -> Option<u16> {
 pub(crate) fn observation(
     settings: RuntimeSettings,
 ) -> Result<RuntimeObservation, RuntimeUnavailable> {
-    let executor = PlainHttp::new(&settings.endpoint, settings.token.as_deref());
+    let RuntimeSettings { endpoint, token } = settings;
+    let executor = PlainHttp::new(&endpoint);
     let transport = ProtocolTransport::new(
         executor,
-        ProtocolTransportConfig::default(),
+        ProtocolTransportConfig {
+            // The transport owns the credential rule: it presents the token on
+            // the three protocol routes only (open, snapshot, deltas), never on
+            // the handshake or another path.
+            bearer_token: token,
+            ..ProtocolTransportConfig::default()
+        },
         ProtocolVersions {
             protocol: PROTOCOL,
             schema: SCHEMA,
@@ -286,32 +296,32 @@ pub(crate) fn observation(
 
 /// Blocking plain-HTTP executor handed to the protocol transport.
 ///
-/// Owns the origin, the bearer token, the request timeout and the response body
-/// bound. `ureq` is built without TLS or compression features: the only accepted
-/// endpoints are loopback development origins.
+/// Owns the origin, the request timeout and the response body bound. It is
+/// deliberately credential-free: the transport adds `Authorization` to the three
+/// protocol routes only, and this layer forwards the headers it is given
+/// verbatim. `ureq` is built without TLS or compression features: the only
+/// accepted endpoints are loopback development origins.
 struct PlainHttp {
     origin: String,
-    token: Option<String>,
     agent: ureq::Agent,
     max_body_bytes: u64,
 }
 
 impl PlainHttp {
-    fn new(origin: &str, token: Option<&str>) -> Self {
-        Self::with_max_body_bytes(origin, token, MAX_RESPONSE_BYTES)
+    fn new(origin: &str) -> Self {
+        Self::with_max_body_bytes(origin, MAX_RESPONSE_BYTES)
     }
 
-    fn with_max_body_bytes(origin: &str, token: Option<&str>, max_body_bytes: u64) -> Self {
+    fn with_max_body_bytes(origin: &str, max_body_bytes: u64) -> Self {
         let agent = ureq::AgentBuilder::new()
             .timeout(REQUEST_TIMEOUT)
             // Never follow a redirect or an environment proxy: either could
-            // replay the bearer credential to another origin.
+            // replay a credential to another origin.
             .redirects(0)
             .try_proxy_from_env(false)
             .build();
         Self {
             origin: origin.trim_end_matches('/').to_owned(),
-            token: token.map(str::to_owned),
             agent,
             max_body_bytes,
         }
@@ -326,18 +336,11 @@ impl ProtocolHttp for PlainHttp {
             HttpMethod::Post => "POST",
         };
         let mut call = self.agent.request(method, &url);
+        // The transport owns the credential rule; this executor forwards every
+        // header it was given and adds none of its own (it cannot leak the token
+        // to another path or origin because it never sees a token at all).
         for (name, value) in &request.headers {
             call = call.set(name, value);
-        }
-        // The bearer credential authorizes only the observation grant request.
-        // Every subsequent read (`GET /server`, `/snapshot`, `/deltas`) is
-        // authorized by the grant's `X-Cos-Context` capability, so the token is
-        // never attached to a GET.
-        if request.method == HttpMethod::Post
-            && request.path == OBSERVATION_PATH
-            && let Some(token) = &self.token
-        {
-            call = call.set("authorization", &format!("Bearer {token}"));
         }
         let outcome = match request.method {
             HttpMethod::Get => call.call(),
@@ -385,10 +388,10 @@ impl PlainHttp {
 #[cfg(test)]
 mod tests {
     use super::{
-        LaunchPlan, Mode, OBSERVATION_PATH, PlainHttp, RuntimeUnavailable, observation,
-        plain_http_origin, plan, settings,
+        LaunchPlan, Mode, PlainHttp, RuntimeUnavailable, observation, plain_http_origin, plan,
+        settings,
     };
-    use cos_client::{HttpMethod, HttpRequest, ProtocolHttp, SERVER_PATH};
+    use cos_client::{HttpMethod, HttpRequest, OBSERVATION_PATH, ProtocolHttp, SERVER_PATH};
     use std::io::{Read, Write};
     use std::net::TcpListener;
     use std::time::Duration;
@@ -614,56 +617,55 @@ mod tests {
     }
 
     #[test]
-    fn the_executor_sends_the_bearer_only_with_the_grant_post() {
-        // The observation grant POST carries the bearer credential.
+    fn the_executor_forwards_transport_headers_and_adds_none_of_its_own() {
+        // The transport supplies the credential on the protocol routes; the
+        // executor must forward it verbatim (it never decides about credentials).
         let (origin, server) = serve_once("HTTP/1.1 200 OK", "{}");
-        let mut executor = PlainHttp::new(&origin, Some("local-test-token"));
-        let response = executor
-            .execute(post_request(OBSERVATION_PATH))
-            .expect("the grant post succeeds");
+        let mut executor = PlainHttp::new(&origin);
+        let mut request = post_request(OBSERVATION_PATH);
+        request.headers.push((
+            "authorization".to_owned(),
+            "Bearer local-test-token".to_owned(),
+        ));
+        let response = executor.execute(request).expect("the grant post succeeds");
         assert_eq!(response.status, 200);
-        let request = server.join().expect("server finished").to_ascii_lowercase();
+        let seen = server.join().expect("server finished").to_ascii_lowercase();
         assert!(
-            request.contains("authorization: bearer local-test-token"),
-            "{request}"
+            seen.contains("authorization: bearer local-test-token"),
+            "{seen}"
         );
         assert!(
-            request.starts_with("post /api/cos/desktop/observation"),
-            "{request}"
+            seen.starts_with("post /api/cos/desktop/observation"),
+            "{seen}"
         );
 
-        // Reads are authorized by the grant's X-Cos-Context capability: the
-        // bearer token must never be attached to a GET.
-        for path in [
-            SERVER_PATH.to_owned(),
-            "/api/cos/desktop/snapshot?scope=scope-1".to_owned(),
-            "/api/cos/desktop/deltas?cursor=cursor-1".to_owned(),
-        ] {
-            let (origin, server) = serve_once(
-                "HTTP/1.1 401 Unauthorized",
-                r#"{"code":"UNAUTHORIZED_CONTEXT"}"#,
-            );
-            let mut executor = PlainHttp::new(&origin, Some("local-test-token"));
-            let response = executor
-                .execute(get_request(&path))
-                .expect("a 401 is a response, not a transport failure");
-            assert_eq!(response.status, 401);
-            assert_eq!(
-                String::from_utf8_lossy(&response.body),
-                r#"{"code":"UNAUTHORIZED_CONTEXT"}"#
-            );
-            let request = server.join().expect("server finished").to_ascii_lowercase();
-            assert!(
-                !request.contains("authorization"),
-                "GET {path} must not carry the bearer: {request}"
-            );
-        }
+        // A request without a credential stays credential-free: the executor
+        // never invents one, and a non-protocol path (the handshake) is sent
+        // exactly as the transport built it.
+        let (origin, server) = serve_once(
+            "HTTP/1.1 401 Unauthorized",
+            r#"{"code":"UNAUTHORIZED_CONTEXT"}"#,
+        );
+        let mut executor = PlainHttp::new(&origin);
+        let response = executor
+            .execute(get_request(SERVER_PATH))
+            .expect("a 401 is a response, not a transport failure");
+        assert_eq!(response.status, 401);
+        assert_eq!(
+            String::from_utf8_lossy(&response.body),
+            r#"{"code":"UNAUTHORIZED_CONTEXT"}"#
+        );
+        let seen = server.join().expect("server finished").to_ascii_lowercase();
+        assert!(
+            !seen.contains("authorization"),
+            "the handshake never carries a credential: {seen}"
+        );
     }
 
     #[test]
     fn the_executor_bounds_the_response_body() {
         let (origin, server) = serve_once("HTTP/1.1 200 OK", "0123456789abcdef");
-        let mut executor = PlainHttp::with_max_body_bytes(&origin, None, 4);
+        let mut executor = PlainHttp::with_max_body_bytes(&origin, 4);
         let error = executor
             .execute(get_request("/api/cos/desktop/server"))
             .expect_err("an oversized body is refused");
@@ -672,19 +674,23 @@ mod tests {
     }
 
     #[test]
-    fn transport_failures_never_echo_the_token() {
+    fn transport_failures_never_echo_the_request_credential() {
         // Reserve and release a port so the connection is refused.
         let listener = TcpListener::bind("127.0.0.1:0").expect("listener binds");
         let address = listener.local_addr().expect("listener address");
         drop(listener);
-        let mut executor = PlainHttp::new(
-            &format!("http://{address}"),
-            Some("token-that-must-never-leak"),
-        );
+        let mut executor = PlainHttp::new(&format!("http://{address}"));
+        // The executor still receives the transport-built credential header, so
+        // its failure messages must never echo it.
+        let mut request = get_request(SERVER_PATH);
+        request.headers.push((
+            "authorization".to_owned(),
+            "Bearer token-that-must-never-leak".to_owned(),
+        ));
         // Give the OS a moment before the refused connect on a released port.
         std::thread::sleep(Duration::from_millis(10));
         let error = executor
-            .execute(get_request("/api/cos/desktop/server"))
+            .execute(request)
             .expect_err("a refused connection is a transport failure");
         assert!(!error.contains("token-that-must-never-leak"), "{error}");
         assert!(!error.contains(&format!("{address}")), "{error}");

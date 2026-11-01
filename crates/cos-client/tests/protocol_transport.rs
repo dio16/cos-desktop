@@ -679,6 +679,87 @@ fn reset_stream_discards_the_stale_generation() {
     );
 }
 
+/// RC-03: reads are principal-bound, so the Desktop credential is presented on
+/// the observation open and the delta read, and never on the handshake.
+#[test]
+fn the_credential_is_presented_on_the_protocol_reads_only() {
+    let (executor, state) = StubHttp::new();
+    let config = ProtocolTransportConfig {
+        bearer_token: Some("local-test-token".to_owned()),
+        delta_poll_interval: Duration::from_millis(1),
+        ..config()
+    };
+    let mut transport = ProtocolTransport::new(executor, config, versions());
+    transport.send(hello_frame()).expect("hello enqueues");
+    let frame = next_frame(&mut transport);
+    assert_eq!(message_kind(&decoded(&frame)), "HELLO_ACCEPTED");
+    transport
+        .send(open_frame(open_request("request-1")))
+        .expect("open enqueues");
+    let kinds: Vec<String> = std::iter::from_fn(|| Some(next_frame(&mut transport)))
+        .take(4)
+        .map(|frame| message_kind(&decoded(&frame)))
+        .collect();
+    assert_eq!(
+        kinds,
+        [
+            "READ_GRANT",
+            "SNAPSHOT_BEGIN",
+            "SNAPSHOT_CHUNK",
+            "SNAPSHOT_END"
+        ]
+    );
+
+    // Wait until the first delta poll has been issued.
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline {
+        let polled = state
+            .lock()
+            .expect("stub state")
+            .calls
+            .iter()
+            .any(|call| call.path.starts_with(DELTAS_PATH));
+        if polled {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    let calls = state.lock().expect("stub state").calls.clone();
+    let credential = |call: &HttpRequest| -> Option<String> {
+        call.headers
+            .iter()
+            .find(|(name, _)| name == "authorization")
+            .map(|(_, value)| value.clone())
+    };
+    let handshake = calls
+        .iter()
+        .find(|call| call.path == SERVER_PATH)
+        .expect("handshake request");
+    assert_eq!(
+        credential(handshake),
+        None,
+        "the handshake route never carries the credential"
+    );
+    let open = calls
+        .iter()
+        .find(|call| call.path == OBSERVATION_PATH)
+        .expect("observation open request");
+    assert_eq!(
+        credential(open).as_deref(),
+        Some("Bearer local-test-token"),
+        "the observation open presents the credential"
+    );
+    let deltas = calls
+        .iter()
+        .find(|call| call.path.starts_with(DELTAS_PATH))
+        .expect("delta read request");
+    assert_eq!(
+        credential(deltas).as_deref(),
+        Some("Bearer local-test-token"),
+        "the delta read presents the credential"
+    );
+}
+
 /// (i) A non-observation client message is an explicit error, never silence.
 #[test]
 fn unsupported_client_frame_is_an_explicit_error() {
