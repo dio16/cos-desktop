@@ -2427,3 +2427,29 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Unavailable classes (typed, never silently rounded):** animated PNG (`acTL`), animated GIF (more than one image descriptor) and animated WebP (`ANIM`/`ANMF`) return `MediaError::Unavailable`; a source depth above 8 bits per channel or above the caller's `max_bit_depth` is `Unavailable`; an unadmitted container is `UnsupportedContainer`; oversized dimensions/bytes are `TooLarge`; corrupt or truncated payloads are `InvalidMetadata`. The still-image scan is bounded by the input length and stops at the first image data. Tests: `an_animated_png_is_unavailable`, `an_animated_gif_is_unavailable`, `an_animated_webp_is_unavailable_and_a_still_webp_is_not` (pure `ensure_still` scan over a minimal `ANIM` container; a still WebP is not misclassified), `a_sixteen_bit_png_is_unavailable_under_an_eight_bit_limit`, `refuses_a_corrupt_payload`, `refuses_an_unadmitted_container`, `refuses_dimensions_beyond_the_limits_before_decoding`.
 - **NOT MEASURED / NOT VERIFIED (never PASS):** real process peak memory (RSS/allocator) and real decode latency/throughput per input class; decoder-internal peak allocations; bounded cancellation of a running decoder (HOLD); GPU upload, WIC behaviour, progressive JPEG and WebP animated features beyond the `ANIM`/`ANMF` marker; native/OS-level decoder measurement; any performance or memory SLO claim. MP-IMG2 as a whole remains incomplete and no `BOUNDED_IMAGE_DECODE` completion is claimed.
 - **Boundaries:** the declared budgets and the in-flight pool remain owner-ratified assumed values; no Runtime, WIC, observation, transport or frozen-fixture contract is touched.
+
+### 19.119 MP-IMG2 measured class: static 8-bit PNG (2026-11-01, Working Set route added)
+
+- **Measured class:** static **8-bit RGB PNG, 2048 × 2048 px**, decoded to RGBA8 under the ratified declared budget (`DecodeBudget::ratified_default`). Declared admission ceiling `2 × (2048 × 2048 × 4 B) + 1,048,576 B = **34,603,008 B**`. The 64 × 64 case remains a functional case in the same test binary, not the measurement target.
+- **Safe measurement route (no `unsafe`):** `crates/media/examples/peak_probe.rs` generates the class fixture in-process, signals `fixture-ready`, waits for a go file, then decodes once. `scripts/measure-decode-peak.ps1` starts that process, samples `WorkingSet64` every 10 ms, records a pre-decode baseline, the peak and the end value, and writes JSON/TXT evidence outside the repository. No OS setting and no credential is touched.
+- **Measured (5 runs, 2026-11-01):** baseline 4,943,872–7,770,112 B; peak 35,115,008–37,531,648 B; **increment median 30,171,136 B, max 30,175,232 B**; ceiling 34,603,008 B → **Working Set condition PASS** (max increment is 4.43 MiB below the ceiling). Spread is reported as measured, not smoothed.
+- **Measurement limit (recorded, not hidden):** Working Set is **process-wide** and includes the in-process generated fixture, runtime and mapping pages; it is **not an allocation peak**. Sampling is 10 ms, so a shorter-lived peak can be missed, and `Get-Process` overhead bounds the sampling rate. This row must not be read as an allocator measurement.
+- **Allocator row stays HOLD:** the instructed counting global allocator still needs `unsafe impl GlobalAlloc`, and the workspace forbids own-code `unsafe` (`unsafe_code = "forbid"`, not relaxable by `allow`); no existing seam or approved test dependency exists. Unblock options remain (a) a narrow documented exception for a test-only allocator, (b) an approved test-support workspace member, (c) an approved dev-dependency providing a counting allocator (allowlist and checker updated together). The Working Set row is **separate** and is not substituted for it.
+- **Judgment table:**
+
+| Condition | Result | Evidence |
+|---|---|---|
+| Class definition (static 8-bit RGB PNG 2048×2048) | **PASS** | `crates/media/tests/measured_png_class.rs`, `examples/peak_probe.rs` |
+| Declared admission ceiling (34,603,008 B) | **PASS** | formula pinned in the test/plan |
+| **Real memory: Working Set peak increment ≤ ceiling** | **PASS** | 5-run harness: max 30,175,232 B ≤ 34,603,008 B |
+| Real internal peak (allocator measurement) | **HOLD** | `unsafe_code = "forbid"`; options (a)–(c) above |
+| Worker lifetime: joined before return | **PASS** | `live_decode_workers() == 0`; complete raster |
+| Cancellation leaves no worker | **PASS** | pre-cancelled call: `Cancelled`, counter 0, no raster |
+| Rejection typed and no output published | **PASS** | 20,000 px input → `TooLarge`; slot empty |
+| Rejection allocation flatness | **HOLD** | same allocator blocker |
+| Bounded cancellation of a running decoder | **NOT_VERIFIED / HOLD** | decoder call is not interruptible |
+| Other classes (JPEG/WebP/GIF, other depths/sizes) | **NOT_VERIFIED** | out of this slice |
+| MP-IMG2 overall completion | **NOT CLAIMED** | — |
+
+- **`live_decode_workers()` visibility:** it is a **diagnostics-only product API** (documented as such) and is used only by the measurement/integration tests. It cannot be `#[cfg(test)]` because integration tests link the non-test library, so it stays `pub` with the diagnostics intent recorded here. No production caller exists.
+- **MP-IMG3 start decision:** the Working Set condition is now proven **at process scope**, but the internal allocator peak and running-decoder cancellation remain unproven. Under the reviewer's literal rule ("実メモリ・worker 寿命・拒否・出力公開の全条件"), the class is still **HOLD**; a **limited start** is defensible only if the reviewer explicitly accepts the Working Set measurement as the real-memory evidence for this class. This slice does not declare MP-IMG2 complete and does not start MP-IMG3 on its own authority.
