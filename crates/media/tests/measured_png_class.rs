@@ -1,4 +1,4 @@
-//! MP-IMG2 measured class attempt: static PNG, 8-bit, 64×64.
+//! MP-IMG2 measured class (2048×2048) and functional case (64×64): static 8-bit PNG.
 //!
 //! Assigned measurement class (plan §19.119): a **static 8-bit RGB PNG at 2048×2048**
 //! pixels (RGBA8 output 16 MiB, ceiling 34,603,008 B), measured by

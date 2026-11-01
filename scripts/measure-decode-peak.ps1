@@ -4,6 +4,7 @@ param(
     [int]$Width = 2048,
     [int]$Height = 2048,
     [int]$SampleMs = 10,
+    [int]$MinDecodeSamples = 3,
     [int]$ReadyTimeoutSeconds = 120,
     [string]$EvidenceDir = "C:\dev\cos-desktop-verification\rel1-2026-10-30",
     [string]$WorkRoot = ""
@@ -72,13 +73,17 @@ for ($i = 1; $i -le $Runs; $i++) {
     $decode_samples = 0
     $last = $baseline
     while (-not $process.HasExited) {
+        # The decode interval is open when the start marker exists and the done marker does
+        # not. Check it both immediately before and immediately after the sample, so a
+        # decode that starts or ends between the two checks cannot be counted.
+        $before_in_decode = (Test-Path -LiteralPath $decode_start_marker) -and -not (Test-Path -LiteralPath $decode_done_marker)
         $value = Get-WorkingSet $process.Id
+        $after_in_decode = (Test-Path -LiteralPath $decode_start_marker) -and -not (Test-Path -LiteralPath $decode_done_marker)
         if ($null -ne $value) {
             $samples++
             $last = $value
             if ($value -gt $peak) { $peak = $value }
-            # Count only samples bracketed by the decode markers.
-            if ((Test-Path -LiteralPath $decode_start_marker) -and -not (Test-Path -LiteralPath $decode_done_marker)) {
+            if ($before_in_decode -and $after_in_decode) {
                 $decode_samples++
             }
         }
@@ -101,7 +106,7 @@ for ($i = 1; $i -le $Runs; $i++) {
     # increment is meaningless and the whole verdict is FAIL, never PASS.
     $valid = ($exit_code -eq 0) -and
              ($rgba_bytes -eq $expected_rgba) -and
-             ($decode_samples -ge 3) -and
+             ($decode_samples -ge $MinDecodeSamples) -and
              ($null -ne $done_line)
 
     $runs_out += [ordered]@{
@@ -115,6 +120,7 @@ for ($i = 1; $i -le $Runs; $i++) {
         within_ceiling = ($increment -le $ceiling)
         samples = $samples
         decode_samples = $decode_samples
+        min_decode_samples = $MinDecodeSamples
         expected_rgba_bytes = $expected_rgba
         rgba_bytes = $rgba_bytes
         valid = $valid
