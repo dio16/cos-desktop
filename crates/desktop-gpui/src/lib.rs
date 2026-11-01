@@ -2496,6 +2496,8 @@ impl Render for Shell {
             .is_some_and(|w| w.presentation.diagnostics_open);
         let diagnostic_text = text.diagnostics.clone();
         let mode = self.error.clone().unwrap_or_else(|| text.mode.clone());
+        // LIMITED-CONTRAST-BEGIN axis-cell: the Context Bar's state-axis labels resolve
+        // their colours through the scheme; the guard test below covers this region.
         let axis_cell = |id: &'static str, label: &'static str, value: &Arc<str>| {
             let value = if self.rail_selection_pending && id != "state-axis-connection" {
                 SharedString::from("選択したタスクを更新中")
@@ -2542,11 +2544,14 @@ impl Render for Shell {
                     xs_text
                         .clone()
                         .apply(div())
-                        .text_color(rgb(0x9da7b1))
+                        // Muted label role from the scheme: 0x8b949e in the normal
+                        // palette, the OS gray text under High Contrast.
+                        .text_color(rgb(colors.disabled))
                         .child(label),
                 )
                 .child(value)
         };
+        // LIMITED-CONTRAST-END axis-cell
         let axis_row_one = div()
             .flex()
             .gap_4()
@@ -4560,6 +4565,20 @@ mod contrast_scope_tests {
         assert!(
             !bar.contains("rgb(0x"),
             "the Context Bar must resolve every colour through the contrast scheme"
+        );
+        // The Context Bar's state axis is built by the `axis_cell` closure, which sits
+        // outside the bar's own block: it has its own delimited region.
+        let axis_begin = source
+            .find("// LIMITED-CONTRAST-BEGIN axis-cell")
+            .expect("the axis-cell marker exists");
+        let axis_end = source
+            .find("// LIMITED-CONTRAST-END axis-cell")
+            .expect("the axis-cell end marker exists");
+        assert!(axis_begin < axis_end);
+        let axis = &source[axis_begin..axis_end];
+        assert!(
+            !axis.contains("rgb(0x"),
+            "the state-axis labels must resolve their colours through the scheme"
         );
         // Split so this test's own literal cannot satisfy the check.
         let dock_container_literal = concat!(".bg(rgb(0x", "272b30))");
