@@ -27,9 +27,10 @@
 #   * the work directory is GUID-unique and created exclusively; the negative-test
 #     switch is a closed enum whose resolved path is re-validated inside that tree,
 #   * evidence is written to partial files, promoted by rename, and finally sealed by a
-#     completion marker; an artifact without that marker is not official evidence. Any
-#     failure removes every artifact and re-verifies the removal, so a PASS record can
-#     never survive a write failure.
+#     completion marker that is itself written as `.complete.partial` and promoted by
+#     rename; an artifact without that marker is not official evidence. Any failure
+#     removes every artifact (including the marker partial) and re-verifies the removal,
+#     so a PASS record can never survive a write failure.
 #   * any exception captured during the run forces FAIL (and a non-zero exit); no
 #     exception path can leave the verdict at PASS.
 #
@@ -812,8 +813,11 @@ finally {
     $textPartial = $textPath + '.partial'
     # A run's evidence is official only when this marker exists: the JSON and TXT alone
     # are never treated as a PASS record, and a failed promotion removes every artifact.
+    # The marker itself is written as `.complete.partial` and promoted by rename, so a
+    # killed process cannot leave a truncated `.complete` behind.
     $markerPath = $textPath + '.complete'
-    $evidenceArtifacts = @($jsonPartial, $textPartial, $jsonPath, $textPath, $markerPath)
+    $markerPartial = $markerPath + '.partial'
+    $evidenceArtifacts = @($jsonPartial, $textPartial, $jsonPath, $textPath, $markerPath, $markerPartial)
     try {
         $report | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $jsonPartial -Encoding UTF8
         if ($SimulateEvidenceFailure) { throw 'negative test: simulated failure after the first evidence partial' }
@@ -828,14 +832,15 @@ finally {
         $lines | Set-Content -LiteralPath $textPartial -Encoding UTF8
         Move-Item -LiteralPath $jsonPartial -Destination $jsonPath -ErrorAction Stop
         Move-Item -LiteralPath $textPartial -Destination $textPath -ErrorAction Stop
-        if ($SimulateMarkerFailure) { throw 'negative test: simulated failure before the completion marker' }
         $marker = @(
             ("result=" + $report.result),
             ("json_sha256=" + (Get-Sha256File $jsonPath)),
             ("txt_sha256=" + (Get-Sha256File $textPath)),
             ("finished_at_utc=" + $report.finished_at_utc)
         ) -join "`n"
-        Set-Content -LiteralPath $markerPath -Value $marker -Encoding UTF8 -ErrorAction Stop
+        Set-Content -LiteralPath $markerPartial -Value $marker -Encoding UTF8 -ErrorAction Stop
+        if ($SimulateMarkerFailure) { throw 'negative test: simulated failure after the marker partial, before its promotion' }
+        Move-Item -LiteralPath $markerPartial -Destination $markerPath -ErrorAction Stop
         Write-Host ("evidence: " + $jsonPath)
         Write-Host ("evidence: " + $textPath)
         Write-Host ("evidence marker: " + $markerPath)
