@@ -1603,9 +1603,16 @@ mod tests {
 
         let stats = |mut values: Vec<u128>| {
             values.sort_unstable();
-            let median = values[values.len() / 2];
+            let count = values.len();
+            // Even counts: the median is the mean of the two middle values; odd counts use
+            // the single middle value. p95 keeps the nearest-rank definition.
+            let median = if count % 2 == 1 {
+                values[count / 2]
+            } else {
+                (values[count / 2 - 1] + values[count / 2]) / 2
+            };
             let p95 = percentile(&values, 0.95);
-            (median, p95, values[values.len() - 1])
+            (median, p95, values[count - 1])
         };
         // Decision series: the measured per-iteration totals, not a sum of phase medians.
         let (frame_median, frame_p95, frame_max) = stats(frame_us);
