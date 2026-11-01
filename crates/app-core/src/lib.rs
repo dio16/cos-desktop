@@ -1,5 +1,6 @@
 //! GPUI-free application coordination. All client work runs on a background executor.
 
+pub mod crash_report;
 pub mod diagnostics;
 pub mod fence;
 pub mod navigation;
@@ -9,7 +10,13 @@ pub mod redaction;
 pub mod support_report;
 
 pub use cos_client::SnapshotHandle;
-pub use diagnostics::{DiagnosticBatch, DiagnosticEvent, DiagnosticKind, EventGap};
+pub use crash_report::{
+    CRASH_REPORT_DIR, CrashCategory, CrashReportInput, CrashReportMeta, CrashReportStore,
+    CrashStoreError, MAX_CRASH_REPORT_BYTES, MAX_CRASH_REPORTS, REPORT_EXTENSION, REPORT_PREFIX,
+};
+pub use diagnostics::{
+    DiagnosticBatch, DiagnosticCounts, DiagnosticEvent, DiagnosticKind, EventGap,
+};
 pub use fence::{
     AuthorizedCommandRead, ObservationLease, PublicationChange, PublicationSubscription,
     TaggedRead, VisibilityFence,
