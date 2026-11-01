@@ -139,6 +139,32 @@ pub(crate) fn dock_focus_ring(
     Ok((width, color))
 }
 
+/// Focus representation for a pressable control (the Context Bar's stop controls).
+///
+/// Focus is guaranteed to change the border **width** — the approved focus outline
+/// when focused, the structural hairline when not — in addition to the colour. A High
+/// Contrast palette that gives the focus colour and the resting border the same value
+/// therefore still shows keyboard focus, so this reuses the same width rule as the
+/// Dock ring instead of trusting colour alone. Fails closed on an unusable scale
+/// factor: `Err` means no border width rather than a fabricated one.
+pub(crate) fn control_focus(
+    tokens: &DesignTokens,
+    focused: bool,
+    scale_factor: f32,
+    colors: &crate::contrast::ShellColors,
+    resting: u32,
+) -> Result<(Pixels, u32), TokenError> {
+    if focused {
+        let color = match crate::contrast::focus_ring(colors) {
+            crate::contrast::FocusRing::Visible(color) => color,
+            crate::contrast::FocusRing::Invisible => colors.focus,
+        };
+        Ok((focus_outline(tokens), color))
+    } else {
+        Ok((separator(tokens, scale_factor)?, resting))
+    }
+}
+
 /// Structural border of one dock row: one physical pixel, never the focus width.
 pub(crate) fn dock_row_border(
     tokens: &DesignTokens,
@@ -237,6 +263,39 @@ mod tests {
             crate::contrast::focus_ring(&flat),
             crate::contrast::FocusRing::Invisible
         );
+    }
+
+    #[test]
+    fn a_same_colour_high_contrast_control_still_shows_focus_by_width() {
+        // High Contrast palette where the focus colour and the stop button's resting
+        // border are the same OS value (button text), as the review reported.
+        let system = crate::contrast::SystemColors {
+            window: 0x000000,
+            window_text: 0xffffff,
+            highlight: 0x0078d7,
+            highlight_text: 0xffffff,
+            gray_text: 0x6d6d6d,
+            button_face: 0x101010,
+            button_text: 0xffffff,
+        };
+        let colors =
+            crate::contrast::colors_for(crate::contrast::ContrastScheme::HighContrast, &system);
+        let resting = colors.danger_border;
+        assert_eq!(
+            colors.focus, resting,
+            "the review's same-colour focus/resting case"
+        );
+        let tokens = DesignTokens::accepted();
+        let (focused_width, focused_color) =
+            control_focus(&tokens, true, 1.0, &colors, resting).expect("a usable scale");
+        let (resting_width, resting_color) =
+            control_focus(&tokens, false, 1.0, &colors, resting).expect("a usable scale");
+        assert!(
+            focused_width > resting_width,
+            "focus changes the border width even when the colour is identical"
+        );
+        assert_eq!(focused_color, resting_color);
+        assert_eq!(focused_width, focus_outline(&tokens));
     }
 
     #[test]

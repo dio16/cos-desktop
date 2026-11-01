@@ -2988,6 +2988,20 @@ impl Render for Shell {
         // LIMITED-CONTRAST-BEGIN stop-controls: the stop/reconcile controls shown inside
         // the Context Bar resolve every colour through the scheme.
         let stop_focused = self.stop_focus.is_focused(window);
+        let (stop_border_width, stop_border_color) = match shell_style::control_focus(
+            &self.tokens,
+            stop_focused,
+            window.scale_factor(),
+            &colors,
+            if stop_enabled {
+                colors.danger_border
+            } else {
+                colors.disabled_border
+            },
+        ) {
+            Ok(value) => value,
+            Err(_) => (px(0.0), colors.disabled_border),
+        };
         let stop_description: SharedString = if stop_enabled && !retryable_admission {
             "現在操作が認められているタスクへ、停止要求を1回送ります。受付と終了は別に確認します。"
                 .into()
@@ -3015,14 +3029,8 @@ impl Render for Shell {
             .track_focus(&self.stop_focus)
             .px_4()
             .py_2()
-            .border_1()
-            .border_color(rgb(if stop_focused {
-                colors.focus
-            } else if stop_enabled {
-                colors.danger_border
-            } else {
-                colors.disabled_border
-            }))
+            .border(stop_border_width)
+            .border_color(rgb(stop_border_color))
             .bg(rgb(if stop_enabled {
                 colors.danger_face
             } else {
@@ -3051,6 +3059,20 @@ impl Render for Shell {
             stop_button
         };
         let reconcile_focused = self.reconcile_focus.is_focused(window);
+        let (reconcile_border_width, reconcile_border_color) = match shell_style::control_focus(
+            &self.tokens,
+            reconcile_focused,
+            window.scale_factor(),
+            &colors,
+            if reconcile_enabled {
+                colors.border
+            } else {
+                colors.disabled_border
+            },
+        ) {
+            Ok(value) => value,
+            Err(_) => (px(0.0), colors.disabled_border),
+        };
         let reconcile_description: Arc<str> = if reconcile_enabled {
             "停止要求の受付状況だけを確認します。停止要求の送信や再送は行いません。".into()
         } else {
@@ -3074,14 +3096,8 @@ impl Render for Shell {
             .track_focus(&self.reconcile_focus)
             .px_4()
             .py_2()
-            .border_1()
-            .border_color(rgb(if reconcile_focused {
-                colors.focus
-            } else if reconcile_enabled {
-                colors.border
-            } else {
-                colors.disabled_border
-            }))
+            .border(reconcile_border_width)
+            .border_color(rgb(reconcile_border_color))
             .bg(rgb(if reconcile_enabled {
                 colors.raised_face
             } else {
