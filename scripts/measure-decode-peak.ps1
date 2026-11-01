@@ -11,6 +11,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+# The decode-phase sample condition is part of the measurement validity, not a tunable
+# knob: a value below 3 would let a run pass with no observed decode samples.
+if ($MinDecodeSamples -lt 3) {
+    [Console]::Error.WriteLine("-MinDecodeSamples must be at least 3 (got $MinDecodeSamples); a lower value would disable the decode-phase sample condition")
+    exit 2
+}
+
 $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssZ')
 New-Item -ItemType Directory -Force -Path $EvidenceDir | Out-Null
 if ([string]::IsNullOrWhiteSpace($WorkRoot)) {
