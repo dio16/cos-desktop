@@ -2791,8 +2791,8 @@ fn timeout_never_yields_decoded() {
 /// Item 6 / A4: a cancelled run contributes neither a capability nor a resource row.
 /// One run, two cases: a fast verified decode and a slow one that the operator deadline
 /// cancels, both under the same candidate. The slow helper sleeps 8 s, so a 4 s operator
-/// deadline always cancels it; the fast helper has four orders of magnitude of margin
-/// against that deadline, so process-start jitter under a loaded gate cannot cancel it.
+/// deadline is expected to cancel it; the fast helper has a wide margin against that
+/// deadline, so ordinary process-start jitter does not cancel it.
 #[test]
 fn resource_and_capability_rows_exclude_cancelled_runs() {
     let fixture = Fixture::new();
@@ -3137,19 +3137,18 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     );
     assert_eq!(observation.working_set_max_bytes, Some(12_000 * 1024));
     let wall_ms = observation.wall_ms.expect("the candidate ran");
-    // The post-exit harvest is bounded by the 2 s `SAMPLE_EXIT_GRACE`; the helper itself
-    // exits after 1.2 s, so a correct run normally stays inside that grace. A 1.1 s bound
-    // still discriminates (including the wait would add at least the helper's 1.2 s) while
-    // tolerating poll scheduling jitter on a loaded gate; this is a **timing margin**, not
-    // a causal determinisation of the poll.
+    // Timing margin, not a causal guarantee: the post-exit harvest is bounded by the 2 s
+    // `SAMPLE_EXIT_GRACE` and the helper exits after 1.2 s, but no lower bound for an
+    // included wait is claimed (the helper may already be near its exit when the
+    // candidate ends). The test asserts only the recorded value: `wall_ms < 1100`.
     assert!(
         wall_ms < 1_100,
-        "the harvest grace (2 s; helper sleep 1.2 s) is not part of wall_ms ({wall_ms} ms)"
+        "the recorded wall time is below the 1,100 ms timing-margin threshold ({wall_ms} ms)"
     );
 }
 
-/// A sample that passes its own per-sample bound is never a success, even when it exits
-/// during the post-exit grace.
+/// A sample that passes its own per-sample bound is not counted as a success; the test
+/// asserts the observed `working_set_samples == 0` and the recorded wall time.
 #[test]
 fn overrunning_sample_is_not_counted_after_the_candidate_ends() {
     let _guard = sampling_guard();
@@ -3171,10 +3170,10 @@ fn overrunning_sample_is_not_counted_after_the_candidate_ends() {
     assert_eq!(observation.working_set_max_bytes, None);
     assert_eq!(observation.working_set_sampling, "not_measured");
     let wall_ms = observation.wall_ms.expect("the candidate ran");
-    // Same margin: below the 2 s `SAMPLE_EXIT_GRACE`, above ordinary poll jitter.
+    // Timing margin, not a causal guarantee; the test asserts only the recorded value.
     assert!(
         wall_ms < 1_100,
-        "the bounded grace is not part of wall_ms ({wall_ms} ms)"
+        "the recorded wall time is below the 1,100 ms timing-margin threshold ({wall_ms} ms)"
     );
 }
 
@@ -3202,8 +3201,9 @@ fn a_delayed_poll_never_accepts_an_over_deadline_sample() {
     assert_eq!(reason, Some("no_sample"));
 }
 
-/// A cancelled candidate stops the clock at the kill; the post-exit harvest is bounded by
-/// the sample's remaining time and never extends the measurement.
+/// A cancelled candidate's recorded wall time is below the timing-margin threshold; the
+/// test asserts that recorded value and the harvested sample count, not a completion-time
+/// guarantee.
 #[test]
 fn cancelled_candidate_does_not_wait_past_the_sample_bound() {
     let _guard = sampling_guard();
@@ -3225,10 +3225,10 @@ fn cancelled_candidate_does_not_wait_past_the_sample_bound() {
         "a sample inside its bound is harvested after the cancellation"
     );
     let wall_ms = observation.wall_ms.expect("the candidate ran");
-    // Same margin: below the 2 s `SAMPLE_EXIT_GRACE`, above ordinary poll jitter.
+    // Timing margin, not a causal guarantee; the test asserts only the recorded value.
     assert!(
         wall_ms < 1_100,
-        "the cancellation wall time excludes the harvest wait ({wall_ms} ms)"
+        "the recorded wall time is below the 1,100 ms timing-margin threshold ({wall_ms} ms)"
     );
 }
 
@@ -3717,30 +3717,28 @@ enum Window {
     ComparisonTimeout,
 }
 
-/// The pre-spawn digest check has its own proof, and the discriminator is the **attempt
-/// count**, not the value. The sampler is rewritten after the harness hashed it and
-/// restored before the run ends, so:
+/// The pre-spawn digest check is discriminated by the **attempt count**, and by nothing
+/// else. The sampler is rewritten after the harness hashed it and restored before the
+/// test's post-run assertion; the test asserts exactly one observed fact about the
+/// refusal:
 ///
-/// * with the pre-spawn comparison, the attempt is refused before any spawn and the
-///   observation records `working_set_attempts == 0`;
-/// * without it, the sample is spawned and the observation records `attempts == 1`.
+/// * with the pre-spawn comparison present, the attempt is refused before any spawn, so
+///   the observation records `working_set_attempts == 0`.
 ///
-/// The token alone does not distinguish the call sites (both end `not_measured` /
-/// `sample_tool_changed`), and the post-spawn comparison's own outcome is **not**
-/// predicted here: the mutator restores the tool only after the pre-spawn comparison
-/// signal, so the rewritten bytes are not guaranteed to survive until a post-spawn
-/// comparison. Only `working_set_attempts == 0` discriminates the two call sites.
+/// The test does **not** assert or predict the post-spawn path: the rewrite is restored
+/// just after the pre-spawn comparison signal, so the rewritten bytes are not guaranteed
+/// to survive until any post-spawn comparison, and the reason/value of a spawned attempt
+/// is not claimed here. A spawned attempt would be counted, so `attempts == 0` is the
+/// discriminator.
 ///
-/// Ordering is a **causal handshake**, never a sleep or a fixed deadline:
-/// the harness hashes the tool and spawns the candidate; the candidate's sentinel then
-/// releases the rewrite; the mutator writes the **gate file** and the harness's first
-/// sample attempt is held until that gate exists (test-only `sample_gate` seam); the
-/// harness compares the tool bytes and writes the **comparison-done signal** (test-only
+/// The ordering is a file-based causal handshake, not a sleep or a fixed deadline: the
+/// harness hashes the tool and spawns the candidate; the candidate's sentinel releases
+/// the rewrite; the mutator writes the **gate file** and the harness's first sample
+/// attempt is held until that gate exists (test-only `sample_gate` seam); the harness
+/// compares the tool bytes and writes the **comparison-done signal** (test-only
 /// `sample_compare_signal` seam); only after that signal does the mutator restore the
-/// original bytes. A missing signal is a typed `Window::ComparisonTimeout` failure, and
-/// the file ends in its original state for the post-run assertion. A slow candidate or a
-/// loaded gate delays both the rewrite and the attempt together, so no time margin is
-/// assumed anywhere in this proof.
+/// original bytes. A missing signal is a typed `Window::ComparisonTimeout` failure. A
+/// slow candidate or a loaded gate delays both the rewrite and the attempt together.
 #[test]
 fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
     let fixture = Fixture::new();
