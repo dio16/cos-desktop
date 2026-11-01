@@ -235,6 +235,11 @@ impl MatchCache {
         (matched, false)
     }
 
+    /// Drop the cached entry: authorization loss, scope switch or revision discard.
+    pub fn clear(&mut self) {
+        self.entry = None;
+    }
+
     /// Number of cached entries; always 0 or 1.
     #[cfg(test)]
     pub fn len(&self) -> usize {
@@ -1485,6 +1490,31 @@ mod tests {
         assert_eq!(cached_diagram.nodes.len(), fresh_diagram.nodes.len());
         assert_eq!(cached_diagram.depth_count, fresh_diagram.depth_count);
         assert_eq!(cached_diagram.lane_count, fresh_diagram.lane_count);
+    }
+
+    /// Stage C: clearing (authorization loss / scope switch) forces a rebuild even for the
+    /// same key, and the cache refills to one entry.
+    #[test]
+    fn the_match_cache_rebuilds_after_clear() {
+        let source_graph = graph(1, "digest/one", 4);
+        let graphs = [Arc::clone(&source_graph)];
+        let rows = rows(&graphs, "");
+        let key = cache_key(1, 1, None, revision_key(&graphs), "");
+        let mut cache = MatchCache::default();
+        let (_, hit) = cache.get_or_build(&key, || matched_from_rows(&rows));
+        assert!(!hit);
+        let (_, hit) = cache.get_or_build(&key, || panic!("a hit must not rebuild"));
+        assert!(hit);
+        cache.clear();
+        assert_eq!(cache.len(), 0, "clearing drops the retained identities");
+        let builds = std::cell::Cell::new(0usize);
+        let (_, hit) = cache.get_or_build(&key, || {
+            builds.set(builds.get() + 1);
+            matched_from_rows(&rows)
+        });
+        assert!(!hit, "a cleared cache rebuilds for the same key");
+        assert_eq!(builds.get(), 1);
+        assert_eq!(cache.len(), 1);
     }
 
     /// Stage C: boundedness under many distinct keys.

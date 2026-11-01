@@ -2515,19 +2515,19 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 | Path | median | p95 |
 |---|---:|---:|
 | before (uncached frame path: match sets + diagram) | 12,887 µs | 13,258 µs |
-| after (cached steady frame: cache hit + diagram) | **2,693 µs** | **3,304 µs** |
-| first frame after (cache miss: build sets + diagram, single sample) | **17,625 µs** | — |
-| saved per steady frame (median) | **10,194 µs** | — |
+| after (cached steady frame: cache hit + diagram) | **2,622 µs** (earlier run 2,693) | **3,001 µs** (earlier run 3,304) |
+| first frame after (cache miss: build sets + diagram, single sample) | **13,679 µs** (earlier run 17,625) | — |
+| saved per steady frame (median) | **10,064 µs** | — |
 
-- **Budget:** the cached steady frame is **3,304 µs p95 ≤ 8,330 µs** (headroom 5,026 µs) — the 8.33 ms UI p95 CPU target is met for this path. The cold first frame (17.6 ms, one sample) is reported as measured and is a one-off per revision; the full recompute baseline (rows+layers+match sets+diagram) remains 17,978 µs median, exceeding 8.33 ms but inside a 60 Hz frame only as a revision-change path with paint left unmeasured.
+- **Budget:** the cached steady frame is **3,001 µs p95 ≤ 8,330 µs** (headroom 5,329 µs; run-to-run spread 3.0–3.3 ms is reported as measured) — the 8.33 ms UI p95 CPU target is met for this path. A cache **miss occurs on every `AdmissionKey` change** — revision, publication_version, query, epoch or session generation — not only on a graph revision; the first frame after a miss measured 13.7–17.6 ms (two samples) and how often such a change happens in operation is **NOT_MEASURED**. The full recompute baseline (rows+layers+match sets+diagram) remains **17,978 µs median, above the 16.67 ms 60 Hz frame** → **HOLD** (no "inside 60 Hz" claim).
 - **Judgment:**
 
 | Metric | Result |
 |---|---|
 | Match-set cache: hit/miss, per-component invalidation, boundedness | **PASS_LIMITED** (unit tests; single machine) |
 | Diagram equivalence (cached == uncached, checksum) | **PASS_LIMITED** |
-| Steady frame CPU path ≤ 8.33 ms UI p95 | **PASS_LIMITED** (3,304 µs p95) |
-| Cold first frame / revision-change full recompute | **HOLD** (17.6 ms / 18.0 ms; one-off, paint unmeasured) |
+| Steady frame CPU path ≤ 8.33 ms UI p95 | **PASS_LIMITED** (3,001 µs p95) |
+| Cold first frame / full recompute after a miss | **HOLD** (13.7–17.6 ms first frame / 17.98 ms full recompute median; misses follow every AdmissionKey change, frequency NOT_MEASURED) |
 | Paint / submit / GPU / Present / input-to-photon | **NOT_MEASURED** |
 | Real hardware matrix, 120 Hz | **HOLD** |
 | Runtime-bound graph | **NOT_MEASURED** |

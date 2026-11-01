@@ -633,6 +633,7 @@ impl Shell {
                             this.flow_revision_key = None;
                             this.flow_admitted = None;
                             this.flow_pending = None;
+                            this.flow_match_cache.clear();
                             if let Ok(mut job) = this.flow_jobs.lock() {
                                 *job = None;
                             }
@@ -1467,6 +1468,7 @@ impl Shell {
         self.flow_edge_active = None;
         self.flow_admitted = None;
         self.flow_pending = None;
+        self.flow_match_cache.clear();
         if let Ok(mut job) = self.flow_jobs.lock() {
             *job = None;
         }
@@ -2216,6 +2218,7 @@ impl Render for Shell {
                     self.flow_edge_active = None;
                     self.flow_admitted = None;
                     self.flow_pending = None;
+                    self.flow_match_cache.clear();
                     if let Ok(mut job) = self.flow_jobs.lock() {
                         *job = None;
                     }
@@ -2262,6 +2265,7 @@ impl Render for Shell {
                 self.flow_revision_key = None;
                 self.flow_admitted = None;
                 self.flow_pending = None;
+                self.flow_match_cache.clear();
                 if let Ok(mut job) = self.flow_jobs.lock() {
                     *job = None;
                 }
