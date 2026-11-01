@@ -18,11 +18,12 @@
 //! bearing endpoints are refused at startup.
 
 use std::io::Read;
+use std::net::{IpAddr, ToSocketAddrs};
 use std::time::Duration;
 
 use cos_client::{
     ClientConfig, ClientSource, CosClient, DesktopClient, HttpMethod, HttpRequest, HttpResponse,
-    ProtocolHttp, ProtocolTransport, ProtocolTransportConfig,
+    OBSERVATION_PATH, ProtocolHttp, ProtocolTransport, ProtocolTransportConfig,
 };
 use desktop_protocol::{Limits, ObservationScopeRequest, ProtocolVersions, ScopeFilter, Version};
 
@@ -147,7 +148,14 @@ fn is_configured(endpoint: Option<&str>) -> bool {
         .is_some_and(|value| !value.is_empty())
 }
 
-/// Validate a plain-HTTP origin: `http://host[:port][/path]` with no userinfo.
+/// Validate a plain-HTTP **loopback origin**: `http://host[:port]` with no
+/// userinfo, no path, no query and no fragment.
+///
+/// Only an explicit loopback destination is accepted: `127.0.0.1` (or any
+/// `127.0.0.0/8` address), the name `localhost` when every resolved address is
+/// loopback, and `[::1]`. Arbitrary hostnames are refused instead of resolved,
+/// so the trust decision never depends on DNS. The bearer token and the
+/// `X-Cos-Context` capability must never leave the host.
 ///
 /// Returns the normalized origin (no trailing slash).
 fn plain_http_origin(value: &str) -> Option<String> {
@@ -155,22 +163,72 @@ fn plain_http_origin(value: &str) -> Option<String> {
     if rest.is_empty() {
         return None;
     }
-    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
-    if authority.is_empty() {
-        return None;
-    }
     // Embedded credentials are not supported: they would have to be rendered or
     // stored, and this build has no credential model beyond the bearer token.
-    if authority.contains('@') || rest.contains('@') {
+    // Control characters, whitespace and backslashes could smuggle a second
+    // request line or header.
+    if value.chars().any(|character| {
+        character.is_control() || character.is_whitespace() || character == '\\' || character == '@'
+    }) {
         return None;
     }
-    if value
-        .chars()
-        .any(|character| character.is_control() || character.is_whitespace() || character == '\\')
-    {
+    // An origin is authority only: an empty path or a single trailing slash.
+    let authority = match rest.split_once('/') {
+        Some((authority, "")) => authority,
+        Some(_) => return None,
+        None => rest,
+    };
+    if authority.is_empty() || authority.contains('?') || authority.contains('#') {
         return None;
     }
-    Some(value.trim_end_matches('/').to_owned())
+    if !loopback_authority(authority) {
+        return None;
+    }
+    Some(format!("http://{authority}"))
+}
+
+/// Whether an authority names an explicit loopback destination.
+fn loopback_authority(authority: &str) -> bool {
+    let Some((host, port)) = split_authority(authority) else {
+        return false;
+    };
+    if host.is_empty() {
+        return false;
+    }
+    if host.eq_ignore_ascii_case("localhost") {
+        // Accept the name only when every address it resolves to is loopback.
+        let Ok(addresses) = (host, port.unwrap_or(80)).to_socket_addrs() else {
+            return false;
+        };
+        let mut resolved = false;
+        for address in addresses {
+            resolved = true;
+            if !address.ip().is_loopback() {
+                return false;
+            }
+        }
+        return resolved;
+    }
+    host.parse::<IpAddr>()
+        .is_ok_and(|address| address.is_loopback())
+}
+
+/// Split a host/port authority; `None` for a malformed port or an unbracketed
+/// IPv6 literal.
+fn split_authority(authority: &str) -> Option<(&str, Option<u16>)> {
+    if let Some(rest) = authority.strip_prefix('[') {
+        let (address, tail) = rest.split_once(']')?;
+        let port = match tail {
+            "" => None,
+            _ => Some(tail.strip_prefix(':')?.parse::<u16>().ok()?),
+        };
+        return Some((address, port));
+    }
+    match authority.rsplit_once(':') {
+        Some((host, port)) if !host.contains(':') => Some((host, Some(port.parse::<u16>().ok()?))),
+        // A bare (unbracketed) IPv6 literal is not a valid authority here.
+        _ => Some((authority, None)),
+    }
 }
 
 /// Build the observation client over the configured Runtime origin.
@@ -251,7 +309,14 @@ impl ProtocolHttp for PlainHttp {
         for (name, value) in &request.headers {
             call = call.set(name, value);
         }
-        if let Some(token) = &self.token {
+        // The bearer credential authorizes only the observation grant request.
+        // Every subsequent read (`GET /server`, `/snapshot`, `/deltas`) is
+        // authorized by the grant's `X-Cos-Context` capability, so the token is
+        // never attached to a GET.
+        if request.method == HttpMethod::Post
+            && request.path == OBSERVATION_PATH
+            && let Some(token) = &self.token
+        {
             call = call.set("authorization", &format!("Bearer {token}"));
         }
         let outcome = match request.method {
@@ -300,10 +365,10 @@ impl PlainHttp {
 #[cfg(test)]
 mod tests {
     use super::{
-        LaunchPlan, Mode, PlainHttp, RuntimeUnavailable, observation, plain_http_origin, plan,
-        settings,
+        LaunchPlan, Mode, OBSERVATION_PATH, PlainHttp, RuntimeUnavailable, observation,
+        plain_http_origin, plan, settings,
     };
-    use cos_client::{HttpMethod, HttpRequest, ProtocolHttp};
+    use cos_client::{HttpMethod, HttpRequest, ProtocolHttp, SERVER_PATH};
     use std::io::{Read, Write};
     use std::net::TcpListener;
     use std::time::Duration;
@@ -389,8 +454,18 @@ mod tests {
     }
 
     #[test]
-    fn non_plain_http_endpoints_are_refused_without_echoing_them() {
+    fn endpoints_are_loopback_origins_only() {
+        // Refused: remote hosts, lookalike names, non-loopback addresses,
+        // non-origin shapes, userinfo, control characters and non-http schemes.
         for endpoint in [
+            "http://example.com",
+            "http://127.0.0.1.evil.example",
+            "http://10.0.0.5",
+            "http://127.0.0.1:8123/path?x=1",
+            "http://127.0.0.1:8123/snapshot",
+            "http://user@127.0.0.1",
+            "http://::1:8123",
+            "http://127.0.0.1:not-a-port",
             "https://127.0.0.1:8123",
             "ftp://127.0.0.1:8123",
             "127.0.0.1:8123",
@@ -407,10 +482,32 @@ mod tests {
                 Ok(_) => panic!("endpoint {endpoint:?} must be refused"),
             }
         }
-        assert_eq!(
-            plain_http_origin("http://127.0.0.1:8123/").as_deref(),
-            Some("http://127.0.0.1:8123")
+        // The refusal label is static text and never echoes the endpoint.
+        assert!(
+            !RuntimeUnavailable::UnsupportedEndpoint
+                .label()
+                .contains("example.com")
         );
+
+        // Accepted: explicit loopback destinations, with an optional port and a
+        // single trailing slash normalized away.
+        for (endpoint, origin) in [
+            ("http://127.0.0.1:8123", "http://127.0.0.1:8123"),
+            ("http://127.0.0.1:8123/", "http://127.0.0.1:8123"),
+            ("http://127.0.0.1", "http://127.0.0.1"),
+            ("http://localhost:8123", "http://localhost:8123"),
+            ("http://[::1]:8123", "http://[::1]:8123"),
+        ] {
+            assert_eq!(
+                plain_http_origin(endpoint).as_deref(),
+                Some(origin),
+                "endpoint {endpoint:?} must be accepted"
+            );
+            assert!(
+                settings(Some(endpoint), Some("token")).is_ok(),
+                "endpoint {endpoint:?} must yield settings"
+            );
+        }
     }
 
     /// One-shot HTTP/1.1 server: reads the request (headers and Content-Length
@@ -470,28 +567,60 @@ mod tests {
         }
     }
 
+    fn post_request(path: &str) -> HttpRequest {
+        HttpRequest {
+            method: HttpMethod::Post,
+            path: path.to_owned(),
+            headers: vec![("content-type".to_owned(), "application/json".to_owned())],
+            body: br#"{"schema_version":1}"#.to_vec(),
+        }
+    }
+
     #[test]
-    fn the_executor_returns_status_and_body_and_sends_the_bearer_token() {
-        let (origin, server) = serve_once(
-            "HTTP/1.1 401 Unauthorized",
-            r#"{"code":"UNAUTHORIZED_CONTEXT"}"#,
-        );
+    fn the_executor_sends_the_bearer_only_with_the_grant_post() {
+        // The observation grant POST carries the bearer credential.
+        let (origin, server) = serve_once("HTTP/1.1 200 OK", "{}");
         let mut executor = PlainHttp::new(&origin, Some("local-test-token"));
         let response = executor
-            .execute(get_request("/api/cos/desktop/server"))
-            .expect("a 401 is a response, not a transport failure");
-        assert_eq!(response.status, 401);
-        assert_eq!(
-            String::from_utf8_lossy(&response.body),
-            r#"{"code":"UNAUTHORIZED_CONTEXT"}"#
-        );
-        let request = server.join().expect("server finished");
+            .execute(post_request(OBSERVATION_PATH))
+            .expect("the grant post succeeds");
+        assert_eq!(response.status, 200);
+        let request = server.join().expect("server finished").to_ascii_lowercase();
         assert!(
-            request
-                .to_ascii_lowercase()
-                .contains("authorization: bearer local-test-token"),
+            request.contains("authorization: bearer local-test-token"),
             "{request}"
         );
+        assert!(
+            request.starts_with("post /api/cos/desktop/observation"),
+            "{request}"
+        );
+
+        // Reads are authorized by the grant's X-Cos-Context capability: the
+        // bearer token must never be attached to a GET.
+        for path in [
+            SERVER_PATH.to_owned(),
+            "/api/cos/desktop/snapshot?scope=scope-1".to_owned(),
+            "/api/cos/desktop/deltas?cursor=cursor-1".to_owned(),
+        ] {
+            let (origin, server) = serve_once(
+                "HTTP/1.1 401 Unauthorized",
+                r#"{"code":"UNAUTHORIZED_CONTEXT"}"#,
+            );
+            let mut executor = PlainHttp::new(&origin, Some("local-test-token"));
+            let response = executor
+                .execute(get_request(&path))
+                .expect("a 401 is a response, not a transport failure");
+            assert_eq!(response.status, 401);
+            assert_eq!(
+                String::from_utf8_lossy(&response.body),
+                r#"{"code":"UNAUTHORIZED_CONTEXT"}"#
+            );
+            let request = server.join().expect("server finished").to_ascii_lowercase();
+            assert!(
+                !request.contains("authorization"),
+                "GET {path} must not carry the bearer: {request}"
+            );
+        }
     }
 
     #[test]
