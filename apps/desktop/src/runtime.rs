@@ -19,7 +19,7 @@
 //! bearing endpoints are refused at startup.
 
 use std::io::Read;
-use std::net::IpAddr;
+use std::net::{Ipv4Addr, Ipv6Addr};
 use std::time::Duration;
 
 use cos_client::{
@@ -189,6 +189,15 @@ fn plain_http_origin(value: &str) -> Option<String> {
     Some(format!("http://{authority}"))
 }
 
+/// The host form of an authority.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AuthorityHost<'a> {
+    /// A bracketed IPv6 literal (`[::1]`); brackets are never valid for IPv4.
+    Bracketed(&'a str),
+    /// A plain IPv4 literal.
+    Plain(&'a str),
+}
+
 /// Whether an authority names an explicit loopback IP literal.
 ///
 /// No name resolution happens here or at connect time: the validated address is
@@ -197,23 +206,29 @@ fn loopback_authority(authority: &str) -> bool {
     let Some((host, _port)) = split_authority(authority) else {
         return false;
     };
-    if host.is_empty() {
-        return false;
+    match host {
+        // Brackets are IPv6-only URL syntax: `[127.0.0.1]` is not a valid URL.
+        AuthorityHost::Bracketed(address) => address
+            .parse::<Ipv6Addr>()
+            .is_ok_and(|address| address.is_loopback()),
+        // A plain authority accepts only an IPv4 loopback literal; hostnames are
+        // refused because their resolution can change between validation and use.
+        AuthorityHost::Plain(name) => name
+            .parse::<Ipv4Addr>()
+            .is_ok_and(|address| address.is_loopback()),
     }
-    host.parse::<IpAddr>()
-        .is_ok_and(|address| address.is_loopback())
 }
 
 /// Split a host/port authority; `None` for a malformed or zero port, a stray
 /// colon, or an unbracketed IPv6 literal.
-fn split_authority(authority: &str) -> Option<(&str, Option<u16>)> {
+fn split_authority(authority: &str) -> Option<(AuthorityHost<'_>, Option<u16>)> {
     if let Some(rest) = authority.strip_prefix('[') {
         let (address, tail) = rest.split_once(']')?;
         let port = match tail {
             "" => None,
             _ => Some(non_zero_port(tail.strip_prefix(':')?)?),
         };
-        return Some((address, port));
+        return Some((AuthorityHost::Bracketed(address), port));
     }
     // An unbracketed IPv6 literal would carry several colons; an authority is
     // `host[:port]` only.
@@ -221,13 +236,18 @@ fn split_authority(authority: &str) -> Option<(&str, Option<u16>)> {
         return None;
     }
     match authority.rsplit_once(':') {
-        Some((host, port)) => Some((host, Some(non_zero_port(port)?))),
-        None => Some((authority, None)),
+        Some((host, port)) => Some((AuthorityHost::Plain(host), Some(non_zero_port(port)?))),
+        None => Some((AuthorityHost::Plain(authority), None)),
     }
 }
 
-/// A usable TCP port: `1..=65535`.
+/// A usable TCP port: ASCII decimal digits only, `1..=65535`.
 fn non_zero_port(raw: &str) -> Option<u16> {
+    // The Rust integer parser also accepts a leading `+`, which is not valid URL
+    // port syntax, so digits are checked before parsing.
+    if !raw.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
     raw.parse::<u16>().ok().filter(|port| *port != 0)
 }
 
@@ -473,6 +493,9 @@ mod tests {
             "http://::1:8123",
             "http://127.0.0.1:0",
             "http://[::1]:0",
+            "http://127.0.0.1:+80",
+            "http://[127.0.0.1]",
+            "http://[127.0.0.1]:8123",
             "http://127.0.0.1:not-a-port",
             "https://127.0.0.1:8123",
             "ftp://127.0.0.1:8123",
