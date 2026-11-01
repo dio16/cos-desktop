@@ -1335,4 +1335,299 @@ mod tests {
         assert_ne!(all.nodes[0].key(), all.nodes[3].key());
         assert_ne!(all.edges[0].key(), all.edges[2].key());
     }
+    // ---------------------------------------------------------------------------------
+    // MP-FLOW2: 10,000-node measurement (explicit run only).
+    // ---------------------------------------------------------------------------------
+
+    /// Build a deterministic 100-layer × 100-node synthetic DAG: every node has two
+    /// edges into the next layer, so the longest-path depth equals the construction
+    /// layer and the expected reference is known without running the implementation.
+    fn ten_thousand_node_graph(layer_count: usize, width: usize) -> GraphDisplay {
+        let node_count = layer_count * width;
+        let mut nodes = Vec::with_capacity(node_count);
+        for layer in 0..layer_count {
+            for lane in 0..width {
+                let index = layer * width + lane;
+                nodes.push(Arc::new(GraphNodeDisplay {
+                    identity: desktop_protocol::NodeId::fixture(format!("node/{index}")),
+                    label: Arc::from(format!("Node {index}")),
+                    layer: Some(Arc::from(format!("L{layer}"))),
+                }));
+            }
+        }
+        let mut edges = Vec::with_capacity((layer_count - 1) * width * 2);
+        for layer in 0..(layer_count - 1) {
+            for lane in 0..width {
+                let from = layer * width + lane;
+                for step in 0..2 {
+                    let target_lane = (lane * 7 + step * 13 + layer * 3) % width;
+                    let to = (layer + 1) * width + target_lane;
+                    edges.push(Arc::new(GraphEdgeDisplay {
+                        identity: desktop_protocol::EdgeId::fixture(format!("edge/{from}-{to}")),
+                        from: desktop_protocol::NodeId::fixture(format!("node/{from}")),
+                        to: desktop_protocol::NodeId::fixture(format!("node/{to}")),
+                        from_label: Arc::from(format!("Node {from}")),
+                        to_label: Arc::from(format!("Node {to}")),
+                        kind: Some(Arc::from("FLOW")),
+                    }));
+                }
+            }
+        }
+        GraphDisplay {
+            graph_ref: GraphRef {
+                graph_id: GraphId::fixture("graph/flow-bench"),
+                version: 1,
+                digest: ArtifactDigest::fixture("digest/flow-bench"),
+            },
+            source_revision: Counter::from_u128(1),
+            nodes: nodes.into(),
+            edges: edges.into(),
+        }
+    }
+
+    /// Independent longest-path reference (Kahn), used only for the equivalence check.
+    fn reference_depths(graph: &GraphDisplay) -> Vec<usize> {
+        use std::collections::{HashMap, VecDeque};
+        let index_of: HashMap<desktop_protocol::NodeId, usize> = graph
+            .nodes
+            .iter()
+            .enumerate()
+            .map(|(index, node)| (node.identity.clone(), index))
+            .collect();
+        let count = graph.nodes.len();
+        let mut indegree = vec![0usize; count];
+        let mut successors: Vec<Vec<usize>> = vec![Vec::new(); count];
+        for edge in graph.edges.iter() {
+            let (Some(&from), Some(&to)) = (index_of.get(&edge.from), index_of.get(&edge.to))
+            else {
+                continue;
+            };
+            successors[from].push(to);
+            indegree[to] += 1;
+        }
+        let mut depth = vec![0usize; count];
+        let mut queue: VecDeque<usize> = (0..count).filter(|index| indegree[*index] == 0).collect();
+        while let Some(node) = queue.pop_front() {
+            let next_depth = depth[node] + 1;
+            for &next in &successors[node] {
+                if depth[next] < next_depth {
+                    depth[next] = next_depth;
+                }
+                indegree[next] -= 1;
+                if indegree[next] == 0 {
+                    queue.push_back(next);
+                }
+            }
+        }
+        depth
+    }
+
+    fn percentile(sorted: &[u128], percentile: f64) -> u128 {
+        let index = ((sorted.len() as f64 * percentile).ceil() as usize).saturating_sub(1);
+        sorted[index.min(sorted.len() - 1)]
+    }
+
+    /// One connector pass over the drawn subset, mirroring the render call site.
+    fn flow_geometry(drawn: &super::Diagram) -> usize {
+        let center_x = |lane: usize| lane as f32 * 150.0;
+        let top_y = |depth: usize| depth as f32 * 80.0;
+        let mut segments = 0usize;
+        for edge in drawn.edges.iter() {
+            let (Some(from), Some(to)) = (
+                drawn.nodes.iter().find(|node| node.node == edge.from),
+                drawn.nodes.iter().find(|node| node.node == edge.to),
+            ) else {
+                continue;
+            };
+            let connection = connector(
+                center_x(from.lane),
+                top_y(from.depth),
+                center_x(to.lane),
+                top_y(to.depth),
+                from.node == to.node,
+                136.0 / 2.0,
+                2.0,
+            );
+            segments += connection.segments.len();
+        }
+        segments
+    }
+
+    /// MP-FLOW2 bottleneck measurement at 10,000 nodes. Ignored by default so the gate
+    /// suite stays fast; run explicitly:
+    /// `cargo test -p desktop-gpui --lib ten_thousand -- --ignored --nocapture`.
+    ///
+    /// Scope: CPU phases only (row admission, layers, diagram construction, connector
+    /// geometry). Paint/submit/GPU/Present are NOT measured here. Debug build, one
+    /// machine: the numbers are a bounded local observation, not an SLO claim.
+    #[test]
+    #[ignore = "MP-FLOW2 10,000-node measurement; run explicitly for evidence"]
+    fn ten_thousand_node_flow_phases_stay_within_the_frame_budget() {
+        use std::collections::BTreeSet;
+        use std::time::Instant;
+
+        const LAYER_COUNT: usize = 100;
+        const WIDTH: usize = 100;
+        const NODES: usize = LAYER_COUNT * WIDTH;
+        const ITERATIONS: usize = 20;
+        const WARMUP: usize = 3;
+
+        let graph = Arc::new(ten_thousand_node_graph(LAYER_COUNT, WIDTH));
+        assert_eq!(graph.nodes.len(), NODES);
+        assert_eq!(graph.edges.len(), (LAYER_COUNT - 1) * WIDTH * 2);
+
+        // Equivalence: construction depth and the independent Kahn reference agree with
+        // the implementation's layers, and the reference does not read the implementation.
+        let expected: Vec<usize> = (0..NODES).map(|index| index / WIDTH).collect();
+        let reference = reference_depths(&graph);
+        let reference_layers = layers(&graph);
+        assert_eq!(
+            reference, expected,
+            "the construction reference is the known depth"
+        );
+        assert_eq!(
+            reference_layers.depth, expected,
+            "the implementation's layers equal the independent reference"
+        );
+        assert!(!reference_layers.cyclic);
+
+        // Rows equivalence: every node and edge is admitted in authoritative order.
+        let rows_once = rows_cancellable(std::slice::from_ref(&graph), "", || false)
+            .expect("an uncancelled admission returns rows");
+        assert_eq!(rows_once.nodes.len(), NODES);
+        assert_eq!(rows_once.edges.len(), graph.edges.len());
+        for (index, row) in rows_once.nodes.iter().enumerate() {
+            assert_eq!(row.node().identity, graph.nodes[index].identity);
+        }
+        for (index, row) in rows_once.edges.iter().enumerate() {
+            assert_eq!(row.edge().identity, graph.edges[index].identity);
+        }
+
+        // Diagram equivalence: the cap draws the first 120 nodes in authoritative order,
+        // every drawn depth equals the reference and the skipped-edge count accounts for
+        // the full topology.
+        let drawn_once = diagram(
+            &graph,
+            &reference_layers,
+            &BTreeSet::new(),
+            &BTreeSet::new(),
+        );
+        assert_eq!(drawn_once.nodes.len(), MAX_DIAGRAM_NODES);
+        assert!(drawn_once.truncated);
+        for (drawn_index, node) in drawn_once.nodes.iter().enumerate() {
+            assert_eq!(node.node, graph.nodes[drawn_index].identity);
+            assert_eq!(node.depth, expected[drawn_index]);
+        }
+        assert_eq!(
+            drawn_once.edges.len() + drawn_once.skipped_edges,
+            graph.edges.len(),
+            "every edge is either drawn or explicitly skipped"
+        );
+
+        let mut rows_us = Vec::with_capacity(ITERATIONS);
+        let mut layers_us = Vec::with_capacity(ITERATIONS);
+        let mut diagram_us = Vec::with_capacity(ITERATIONS);
+        let mut geometry_us = Vec::with_capacity(ITERATIONS);
+        let mut checksum = 0u64;
+        for iteration in 0..(WARMUP + ITERATIONS) {
+            let started = Instant::now();
+            let rows = rows_cancellable(std::slice::from_ref(&graph), "", || false).expect("rows");
+            let rows_elapsed = started.elapsed().as_micros();
+            let started = Instant::now();
+            let computed = layers(&graph);
+            let layers_elapsed = started.elapsed().as_micros();
+            let started = Instant::now();
+            let drawn = diagram(&graph, &computed, &BTreeSet::new(), &BTreeSet::new());
+            let diagram_elapsed = started.elapsed().as_micros();
+            let started = Instant::now();
+            let segment_count = flow_geometry(&drawn);
+            let geometry_elapsed = started.elapsed().as_micros();
+            assert!(
+                segment_count > 0,
+                "the drawn subset produces connector segments"
+            );
+            assert_eq!(rows.nodes.len(), NODES);
+            assert_eq!(computed.depth, expected);
+            if iteration >= WARMUP {
+                // FNV-1a over the admitted identities and computed depths: a deterministic
+                // checksum evidence for the same input across iterations.
+                for (index, row) in rows.nodes.iter().enumerate() {
+                    for byte in row.node().identity.as_str().bytes() {
+                        checksum ^= u64::from(byte);
+                        checksum = checksum.wrapping_mul(0x100_0000_01b3);
+                    }
+                    checksum ^= computed.depth[index] as u64;
+                    checksum = checksum.wrapping_mul(0x100_0000_01b3);
+                }
+                rows_us.push(rows_elapsed);
+                layers_us.push(layers_elapsed);
+                diagram_us.push(diagram_elapsed);
+                geometry_us.push(geometry_elapsed);
+            }
+        }
+
+        let stats = |mut values: Vec<u128>| {
+            values.sort_unstable();
+            let median = values[values.len() / 2];
+            let p95 = percentile(&values, 0.95);
+            (median, p95, values[values.len() - 1])
+        };
+        let (rows_median, rows_p95, rows_max) = stats(rows_us);
+        let (layers_median, layers_p95, layers_max) = stats(layers_us);
+        let (diagram_median, diagram_p95, diagram_max) = stats(diagram_us);
+        let (geometry_median, geometry_p95, geometry_max) = stats(geometry_us);
+        let total_median = rows_median + layers_median + diagram_median + geometry_median;
+        let total_p95 = rows_p95 + layers_p95 + diagram_p95 + geometry_p95;
+        // Steady state as the shell actually runs it: `layers` is cached per admitted
+        // revision in the render path, so a frame pays the diagram and connector geometry.
+        let steady_median = diagram_median + geometry_median;
+        let steady_p95 = diagram_p95 + geometry_p95;
+
+        println!(
+            "MP-FLOW2 ten_thousand nodes={NODES} edges={} iterations={ITERATIONS} warmup={WARMUP} checksum=0x{checksum:016x}",
+            graph.edges.len()
+        );
+        println!("MP-FLOW2 rows        median={rows_median}us p95={rows_p95}us max={rows_max}us");
+        println!(
+            "MP-FLOW2 layers      median={layers_median}us p95={layers_p95}us max={layers_max}us"
+        );
+        println!(
+            "MP-FLOW2 diagram     median={diagram_median}us p95={diagram_p95}us max={diagram_max}us"
+        );
+        println!(
+            "MP-FLOW2 geometry    median={geometry_median}us p95={geometry_p95}us max={geometry_max}us"
+        );
+        println!(
+            "MP-FLOW2 total       median={total_median}us p95={total_p95}us ({:.3} ms median / {:.3} ms p95)",
+            total_median as f64 / 1000.0,
+            total_p95 as f64 / 1000.0
+        );
+        println!(
+            "MP-FLOW2 steady      median={steady_median}us p95={steady_p95}us (diagram + geometry, layers cached per revision)"
+        );
+        println!(
+            "MP-FLOW2 budget 60Hz=16670us ui_p95_target=8330us within_60hz={} within_ui_p95={} steady_within_ui_p95={}",
+            total_median <= 16_670,
+            total_p95 <= 8_330,
+            steady_p95 <= 8_330
+        );
+
+        if cfg!(debug_assertions) {
+            println!(
+                "MP-FLOW2 note: debug build; the release profile is the evidence run for the budget decision"
+            );
+        } else {
+            // Release: the full recompute must fit the 60 Hz frame, and the steady-state
+            // frame path (layers already cached per revision) must fit the stricter
+            // 8.33 ms UI p95 CPU target. Paint/GPU/Present are NOT measured here.
+            assert!(
+                total_median <= 16_670,
+                "the measured CPU layout path ({total_median}us) must fit the 60 Hz frame budget"
+            );
+            assert!(
+                steady_p95 <= 8_330,
+                "the steady-state CPU path ({steady_p95}us) must fit the 8.33 ms UI p95 budget"
+            );
+        }
+    }
 }
