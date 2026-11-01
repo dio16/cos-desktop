@@ -2453,3 +2453,27 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 
 - **Worker-lifetime evidence:** there is no product-side worker counter (a caller-side increment would measure joined-call concurrency, not live workers, and the scope join already guarantees collection). The evidence is the language-level `std::thread::scope` + `join()` in `decode_raster_joined`, the complete-raster check, and the typed-`Cancelled`/no-publication test.
 - **MP-IMG3 start decision:** the Working Set condition is now proven **at process scope**, but the internal allocator peak and running-decoder cancellation remain unproven. Under the reviewer's literal rule ("実メモリ・worker 寿命・拒否・出力公開の全条件"), the class is still **HOLD**; a **limited start** is defensible only if the reviewer explicitly accepts the Working Set measurement as the real-memory evidence for this class. This slice does not declare MP-IMG2 complete and does not start MP-IMG3 on its own authority.
+
+### 19.120 MP-R0B idle baseline: disconnected variant, five reproducible runs (2026-11-01)
+
+- **Scope and authority:** bounded R0B idle-baseline measurement using the existing launch pattern (`cos-desktop.exe` in runtime mode against an unreachable loopback endpoint), per the §19.106 authorization for a fresh idle baseline. No new dependency or framework; no OS setting, Runtime DB or fixture change.
+- **Harness:** `scripts/measure-r0b-idle.ps1` (PowerShell only). For each run it starts a fresh process with `COS_DESKTOP_RUNTIME_ENDPOINT=http://127.0.0.1:9`, waits for the main window, applies the steady-state condition, samples `TotalProcessorTime` and `WorkingSet64`, then closes the window normally and records exit code, stderr and statistics. Evidence is written outside the repository.
+- **Endpoint availability (recorded):** `http://127.0.0.1:9` is **unavailable (connection refused)**. Every figure below is therefore a **disconnected baseline**; it is not a connected-endpoint baseline and must not be read as one.
+- **Steady-state condition and sampling:** window visible; **30 s settle** with no input and no endpoint traffic; **60 s observation window**; **500 ms sampling interval**; one fresh process per run; **5 runs**, all valid (exit code 0, 117 samples each, the `Runtime observation unavailable` line present).
+- **Measured (per run, fraction of one core / working-set mean):** CPU 0.018615 / 70,926,896 B; 0.021195 / 71,060,034 B; 0.013703 / 70,972,757 B; 0.026115 / 70,908,447 B; 0.023519 / 71,089,861 B.
+- **Aggregates:** CPU fraction of one core — **median 0.021195, mean 0.020629, stddev 0.004764, noise (CV) 23.1 %**. Working-set mean — **median 70,972,757 B (≈ 67.7 MiB), mean 70,991,599 B, stddev 80,303 B, noise 0.113 %**. Run-to-run CPU spread is reported as measured and is not smoothed.
+- **Judgment (per metric, this slice only):**
+
+| Metric | Result | Basis |
+|---|---|---|
+| CPU idle baseline, disconnected endpoint | **PASS_LIMITED** | 5 valid runs, 30 s settle + 60 s window, sampled |
+| Working-set idle baseline, disconnected endpoint | **PASS_LIMITED** | 5 valid runs, sampling noise 0.113 % |
+| Connected-endpoint idle baseline | **NOT_MEASURED** | endpoint unreachable by design in this variant |
+| Stall / interaction / input-to-photon, render and GPU timings | **NOT_MEASURED** | out of this slice |
+| MP-R0B full baseline/noise/stall acceptance | **HOLD** | connected baseline and stall conditions unmeasured |
+| MP-R0D numeric SLO | **HOLD / NOT_RATIFIED** | no SLO attainment claim |
+| R0 overall | **not claimed** | — |
+
+- **Unresolved R0A/R0B conditions (not hidden):** §19.91's earlier idle attempt remains `HOLD_APPROVED_ARTIFACTS_AND_CAPTURE_CONDITIONS_UNAVAILABLE` (approved instrumented executable/helper/source admission missing; the complete R0 suite ran 352 cases and exited 1 with **1 failure / 11 errors / 12 skipped**, including the live-metadata observer-digest mismatch and eleven R0C `SOURCE_IDENTITY` cases). MP-R0A overall is `IN_PROGRESS`: S2B full-source replay is pending and S3-N1 stays a limited source/retained-journal/evidence completion that does not close DC-MP-R0A (full source-bound replay, independent binary/source verification, Present/displayed/scanout/GPU/input-to-photon, visible-stall attribution, queue/cancellation/restoration and performance distributions outstanding). This slice does not restore those conditions and does not repeat the failed R0 suite.
+- **Not claimed:** this is not an R0-wide completion, not a connected baseline, not a stall measurement and not an MP-R0D numeric-performance PASS.
+
