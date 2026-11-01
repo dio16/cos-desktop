@@ -20,6 +20,12 @@ desktop-gpui = { path = "../../crates/desktop-gpui" }
 app-core = { path = "../../crates/app-core" }
 cos-client = { path = "../../crates/cos-client" }
 desktop-protocol = { path = "../../crates/desktop-protocol" }
+# Blocking plain-HTTP executor for the Runtime protocol transport.
+# `default-features = false` keeps TLS (and every other optional feature) out:
+# the only configured endpoint is a loopback development origin, and a real
+# credential/TLS story is not implemented yet (IMPLEMENTATION_MASTER_PLAN
+# §19.112). Enabling TLS here would silently change that boundary.
+ureq = { version = "2.12", default-features = false }
 
 [dev-dependencies]
 media = { path = "../../crates/media" }

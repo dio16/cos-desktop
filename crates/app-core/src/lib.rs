@@ -47,7 +47,7 @@ impl AppCore {
             navigation: navigation::Navigation::default(),
             observation: None,
             unavailable_reason: if endpoint_configured {
-                "Disconnected — production transport not implemented"
+                "Disconnected — Runtime endpoint configured but not reachable or authorized"
             } else {
                 "Disconnected — Runtime not configured"
             },
@@ -94,7 +94,10 @@ mod tests {
         assert!(core.observation().is_none());
         assert_eq!(
             core.unavailable_reason(),
-            "Disconnected — production transport not implemented"
+            "Disconnected — Runtime endpoint configured but not reachable or authorized"
         );
+        // The Runtime transport now exists; the label must stop claiming it does
+        // not, while still stating that the endpoint is not serving this session.
+        assert!(!core.unavailable_reason().contains("not implemented"));
     }
 }

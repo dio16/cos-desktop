@@ -21,6 +21,10 @@ The top-level binary constructs concrete client/provider instances and injects t
 
 Direct desktop-protocol imports are allowed to name projection DTOs and identities. Reading a DTO is not a command/transport call. Do not create trivial re-exports just to pass a type through every layer; do not duplicate same-shaped Domain definitions. UI-specific presentation types have explicit UI meaning and cannot claim canonical authority.
 
+## Reviewed third-party additions
+
+The checker's allowlist covers workspace-member edges only; crates.io dependencies are source-reviewed separately and must stay role-appropriate. Two are load-bearing today: `unicode-normalization` in `desktop-protocol` (pinned to the exact Runtime version so CanonicalV1 NFC tables cannot drift) and `ureq` in `apps/desktop` with `default-features = false` (blocking plain-HTTP executor for the Runtime protocol transport; no TLS, compression, cookie or proxy feature, so no crypto/TLS crate enters the graph). A dependency that would add TLS, a runtime, or a capability the composition root must not own needs its own review and plan decision, not an incidental manifest edit.
+
 ## Prohibitions
 
 - No cycles, including build/dev edges; no Runtime internal crate, checkout path, submodule, DB/CAS/config access.

@@ -2,11 +2,14 @@ mod app;
 mod instance;
 #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
 mod r0_s2b;
+mod runtime;
 mod window;
 #[cfg(all(feature = "r0-s2b-instrumentation", not(windows)))]
 compile_error!("r0-s2b-instrumentation currently supports native Windows only");
 
-use app::{Mode, Startup};
+#[cfg(feature = "r0-s2b-instrumentation")]
+use app::Mode;
+use app::Startup;
 use app_core::AppCore;
 use cos_client::{DesktopClient, MockCosClient};
 use desktop_gpui::Shell;
@@ -18,11 +21,9 @@ fn main() {
         std::sync::Arc::new(std::sync::Mutex::new(window::ExitReport::default()));
     let default_fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../crates/cos-client/fixtures/task-184.json");
-    let startup = match Startup::parse(
-        std::env::args().skip(1),
-        std::env::var("COS_DESKTOP_RUNTIME_ENDPOINT").ok(),
-        default_fixture,
-    ) {
+    let endpoint = std::env::var(runtime::ENDPOINT_ENV).ok();
+    let startup = match Startup::parse(std::env::args().skip(1), endpoint.clone(), default_fixture)
+    {
         Ok(startup) => startup,
         Err(error) => {
             eprintln!("{error}");
@@ -54,6 +55,11 @@ fn main() {
             std::process::exit(2);
         }
     };
+    // The Runtime bearer token is resolved here once and moved into the protocol
+    // executor; it is never rendered, logged or placed in a diagnostic.
+    let runtime_token = std::env::var(runtime::TOKEN_ENV).ok();
+    let launch = runtime::plan(&startup.mode, endpoint.as_deref(), runtime_token.as_deref());
+    drop(runtime_token);
     let outcome = std::sync::Arc::clone(&exit_outcome);
     #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
     let capture = r0_s2b::Report::default();
@@ -67,15 +73,8 @@ fn main() {
             return;
         }
         desktop_gpui::bind_keys(cx);
-        let (handle, core, host) = match startup.mode {
-            Mode::Runtime {
-                endpoint_configured,
-            } => {
-                // No verified adapter exists yet: explicitly unavailable, never a
-                // silent fallback to fixture data.
-                (None, AppCore::disconnected(endpoint_configured), None)
-            }
-            Mode::Fixture { path } => match MockCosClient::from_fixture_file(path) {
+        let (handle, core, host) = match launch {
+            runtime::LaunchPlan::Fixture { path } => match MockCosClient::from_fixture_file(path) {
                 Ok(client) => {
                     let scope = client.client().transport().scenario().observation_request();
                     let client: Box<dyn DesktopClient> = Box::new(client);
@@ -95,6 +94,35 @@ fn main() {
                     return;
                 }
             },
+            runtime::LaunchPlan::Runtime(settings) => match runtime::observation(settings) {
+                Ok(observation) => {
+                    // The same host drives either source; the UI never learns
+                    // which client implementation it is.
+                    let (host, handle) =
+                        window::ObservationHost::start(cx, observation.client, observation.scope);
+                    match handle {
+                        Some(handle) => (
+                            Some(handle.clone()),
+                            AppCore::with_observation(handle),
+                            Some(host),
+                        ),
+                        None => (None, AppCore::disconnected(true), Some(host)),
+                    }
+                }
+                Err(reason) => {
+                    // Explicitly unavailable, never a silent fixture fallback.
+                    eprintln!("Runtime observation unavailable: {}", reason.label());
+                    (None, AppCore::disconnected(true), None)
+                }
+            },
+            runtime::LaunchPlan::RuntimeUnavailable {
+                endpoint_configured,
+                reason,
+            } => {
+                // Explicitly unavailable, never a silent fixture fallback.
+                eprintln!("Runtime observation unavailable: {}", reason.label());
+                (None, AppCore::disconnected(endpoint_configured), None)
+            }
         };
         let opened = window::open(
             cx,

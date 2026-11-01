@@ -18,6 +18,14 @@ never sufficient):
 9. Only crates.io and the pinned Zed repository are reviewed external sources; any other
    source requires a deliberate checker/ADR update, not an incidental manifest edit.
 
+The allowlist below covers workspace-member edges only, so a crates.io dependency is not
+listed by name here. Third-party additions are source-reviewed in DEPENDENCY_RULES.md
+("Reviewed third-party additions") and need a plan/ADR decision when they would add TLS,
+an async runtime or a capability the composition root must not own. Current load-bearing
+ones: `unicode-normalization` (desktop-protocol, pinned to the Runtime version for
+CanonicalV1) and `ureq` with `default-features = false` (apps/desktop, plain-HTTP protocol
+executor; no TLS/crypto crate in the graph).
+
 Metadata cannot prove behavioral prohibitions (direct DB/CAS/config access, main-thread I/O,
 imports without declared dependencies); manifest and source review still apply.
 

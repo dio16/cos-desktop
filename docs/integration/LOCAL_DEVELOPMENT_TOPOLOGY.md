@@ -22,7 +22,8 @@ C. **Protocol:** review in order (1) contract, (2) server, (3) client, (4) compa
 
 ## Implemented settings and modes
 
-- `COS_DESKTOP_RUNTIME_ENDPOINT`: read at startup only for Mode::Runtime; value never printed/logged; if absent or a real transport is attempted, the default startup is disconnected/not configured rather than fixture. Only fixture mode loads bundled/pointed fixture JSON through provider code in background.
+- `COS_DESKTOP_RUNTIME_ENDPOINT`: read at startup only for Mode::Runtime; value never printed/logged. When it names a plain-HTTP origin (`http://…`, no embedded credentials) runtime mode starts a real Runtime observation through `cos-client::ProtocolTransport` + the `ureq` plain-HTTP executor. If absent, non-plain-HTTP, or paired with no `COS_DESKTOP_RUNTIME_TOKEN`, startup stays explicitly disconnected — never fixture. Only fixture mode loads bundled/pointed fixture JSON through provider code in background.
+- `COS_DESKTOP_RUNTIME_TOKEN`: optional bearer credential for the authenticated observation `POST`; read once at startup, never rendered, logged or placed in diagnostics.
 - Explicit `--fixture [--fixture-file PATH]`: only deliberate fixture invocation; UI persistently displays FIXTURE/simulated data. No endpoint setting or installed state can select fixture; any malformed argument exits without launching. Binary package selector: `cargo run --locked -p cos-desktop -- --fixture`.
 - `COS_DESKTOP_LOG`: reserved by documentation only; not implemented as observed logging configuration.
 
