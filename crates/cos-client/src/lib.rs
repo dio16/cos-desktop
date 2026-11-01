@@ -15,6 +15,7 @@ pub mod error;
 pub mod fixture;
 pub mod mock;
 pub mod projection;
+pub mod protocol_transport;
 pub mod read;
 /// Development-only MP-PUB4 representation experiment (off by default; not a
 /// product API and never consulted by product modules).
@@ -37,6 +38,10 @@ pub use fixture::{
 };
 pub use mock::{MockControl, MockCosClient, MockTransport};
 pub use projection::{ProjectionIntegrityError, ProjectionKey, ProjectionState};
+pub use protocol_transport::{
+    DELTAS_PATH, HttpMethod, HttpRequest, HttpResponse, OBSERVATION_DOCUMENT_SCHEMA_VERSION,
+    OBSERVATION_PATH, ProtocolHttp, ProtocolTransport, ProtocolTransportConfig, SERVER_PATH,
+};
 pub use read::{
     CommandLookup, CommandStatus, MAX_READ_EVIDENCE, ObservationControl, PublicationAccess,
     ReadEvidence, ReadUnavailable, ReadableCommands, next_read_request_id, next_receipt_read_id,
