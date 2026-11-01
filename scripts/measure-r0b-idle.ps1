@@ -1,27 +1,45 @@
 param(
     [string]$Exe = "C:\dev\cos-desktop\target\debug\cos-desktop.exe",
-    [int]$Runs = 5,
     [string]$Endpoint = "http://127.0.0.1:9",
-    [int]$SettleSeconds = 10,
-    [int]$WindowSeconds = 30,
+    [int]$Runs = 5,
+    [int]$SettleSeconds = 30,
+    [int]$WindowSeconds = 60,
     [int]$SampleMs = 500,
-    [int]$WindowTimeoutSeconds = 120,
+    [string]$BuildKind = "debug (cargo build --locked)",
     [string]$EvidenceDir = "C:\dev\cos-desktop-verification\rel1-2026-10-30",
-    [string]$WorkRoot = ""
+    [string]$WorkRoot = "",
+    [int]$SimulateEarlyExitSeconds = 0,
+    [switch]$SimulateExeMismatch
 )
 
-# MP-R0B idle baseline, disconnected variant: the app runs in runtime mode against an
-# unreachable loopback endpoint, so every sample describes the **disconnected** UI. This
-# is not a connected-endpoint baseline and does not close MP-R0B.
+# MP-R0B idle baseline, disconnected variant. The approved conditions are mandatory for a
+# limited PASS: exactly five fresh-process runs, a 30 s settle and a 60 s observation window
+# at 500 ms sampling. Any other value is refused instead of quietly producing a weaker
+# measurement. The Simulate* switches exist only to exercise the negative paths.
 $ErrorActionPreference = 'Stop'
-if ($SettleSeconds -lt 0) { [Console]::Error.WriteLine("-SettleSeconds must be >= 0"); exit 2 }
-if ($WindowSeconds -lt 1) { [Console]::Error.WriteLine("-WindowSeconds must be >= 1"); exit 2 }
-if ($SampleMs -lt 50) { [Console]::Error.WriteLine("-SampleMs must be >= 50"); exit 2 }
+if ($Runs -ne 5) { [Console]::Error.WriteLine("-Runs must be exactly 5 for the approved baseline (got $Runs)"); exit 2 }
+if ($SettleSeconds -ne 30) { [Console]::Error.WriteLine("-SettleSeconds must be exactly 30 for the approved baseline (got $SettleSeconds)"); exit 2 }
+if ($WindowSeconds -ne 60) { [Console]::Error.WriteLine("-WindowSeconds must be exactly 60 for the approved baseline (got $WindowSeconds)"); exit 2 }
+if ($SampleMs -ne 500) { [Console]::Error.WriteLine("-SampleMs must be exactly 500 for the approved baseline (got $SampleMs)"); exit 2 }
+if ($SimulateEarlyExitSeconds -lt 0) { [Console]::Error.WriteLine("-SimulateEarlyExitSeconds must be >= 0"); exit 2 }
 
 $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssZ')
 New-Item -ItemType Directory -Force -Path $EvidenceDir | Out-Null
 if ([string]::IsNullOrWhiteSpace($WorkRoot)) { $WorkRoot = Join-Path $env:TEMP "cos-r0b-idle-$stamp" }
 New-Item -ItemType Directory -Force -Path $WorkRoot | Out-Null
+
+function Format-Hex([byte[]]$Bytes) {
+    if ($null -eq $Bytes) { return $null }
+    return ([System.BitConverter]::ToString($Bytes) -replace '-', '').ToLowerInvariant()
+}
+
+function Get-FileHashText([string]$Path) {
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        try { return Format-Hex $sha.ComputeHash($stream) } finally { $sha.Dispose() }
+    } finally { $stream.Dispose() }
+}
 
 function Test-EndpointAvailable([string]$Url) {
     try {
@@ -31,9 +49,7 @@ function Test-EndpointAvailable([string]$Url) {
         $connected = $task.Wait(1000) -and $client.Connected
         $client.Dispose()
         return $connected
-    } catch {
-        return $false
-    }
+    } catch { return $false }
 }
 
 function Get-Median([double[]]$Values) {
@@ -42,170 +58,235 @@ function Get-Median([double[]]$Values) {
     return $sorted[[int][math]::Floor(($sorted.Count - 1) / 2)]
 }
 
-function Get-StdDev([double[]]$Values) {
-    if ($Values.Count -lt 2) { return 0.0 }
+function Get-Statistics([double[]]$Values) {
+    if ($null -eq $Values -or $Values.Count -eq 0) { return $null }
     $mean = ($Values | Measure-Object -Average).Average
     $sum = 0.0
     foreach ($value in $Values) { $sum += ($value - $mean) * ($value - $mean) }
-    return [math]::Sqrt($sum / ($Values.Count - 1))
+    $stddev = if ($Values.Count -ge 2) { [math]::Sqrt($sum / ($Values.Count - 1)) } else { 0.0 }
+    return [ordered]@{
+        count = $Values.Count
+        median = Get-Median $Values
+        mean = $mean
+        stddev = $stddev
+        noise_ratio = if ($mean -gt 0) { $stddev / $mean } else { $null }
+    }
 }
 
+$repo_root = Split-Path -Parent $PSScriptRoot
+$git_head = (& git -C $repo_root rev-parse HEAD 2>$null)
+$git_status = @(& git -C $repo_root status --porcelain 2>$null)
+$git_dirty = $git_status.Count -gt 0
+
+# B-02: pin the executable and source identity BEFORE the first launch, not afterwards.
+$exe_pinned_sha = Get-FileHashText $Exe
 $endpoint_available = Test-EndpointAvailable $Endpoint
+
 $runs_out = @()
+$abort_hold = $false
 for ($i = 1; $i -le $Runs; $i++) {
-    $run_dir = Join-Path $WorkRoot "run-$i"
-    New-Item -ItemType Directory -Force -Path $run_dir | Out-Null
+    # B-03: a unique run directory created exclusively; nothing pre-existing is reused and
+    # only this directory is deleted. The child is reaped in `finally`.
+    $run_dir = Join-Path $WorkRoot ("run-$i-" + [guid]::NewGuid().ToString('N'))
+    if (Test-Path -LiteralPath $run_dir) { throw "run directory $run_dir already exists" }
+    New-Item -ItemType Directory -Path $run_dir | Out-Null
     $stdout = Join-Path $run_dir 'stdout.txt'
     $stderr = Join-Path $run_dir 'stderr.txt'
-
-    $previous_env = $env:COS_DESKTOP_RUNTIME_ENDPOINT
-    $env:COS_DESKTOP_RUNTIME_ENDPOINT = $Endpoint
+    $process = $null
     try {
-        $process = Start-Process -FilePath $Exe -PassThru -NoNewWindow `
-            -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-    } finally {
-        $env:COS_DESKTOP_RUNTIME_ENDPOINT = $previous_env
-    }
-
-    $deadline = (Get-Date).AddSeconds($WindowTimeoutSeconds)
-    while ($process.MainWindowHandle -eq 0) {
-        if ($process.HasExited) { throw "run ${i}: the app exited before a window appeared (code $($process.ExitCode))" }
-        if ((Get-Date) -gt $deadline) { throw "run ${i}: no main window within ${WindowTimeoutSeconds} s" }
-        Start-Sleep -Milliseconds 100
-        $process.Refresh()
-    }
-    $window_ready_ms = [int](((Get-Date) - $process.StartTime).TotalMilliseconds)
-
-    # Steady state: the window exists and the configured settle interval has passed with no
-    # input and no endpoint traffic (the endpoint is unreachable). Only then does the
-    # observation window open.
-    Start-Sleep -Seconds $SettleSeconds
-
-    $samples = @()
-    $window_started = Get-Date
-    $cpu_first = $null
-    $cpu_previous = $null
-    $window_deadline = $window_started.AddSeconds($WindowSeconds)
-    while ((Get-Date) -lt $window_deadline) {
-        $process.Refresh()
-        if ($process.HasExited) { break }
-        $cpu = $process.TotalProcessorTime.TotalSeconds
-        $ws = [int64]$process.WorkingSet64
-        $elapsed = ((Get-Date) - $window_started).TotalSeconds
-        $samples += [ordered]@{
-            at_s = [math]::Round($elapsed, 3)
-            cpu_s = $cpu
-            cpu_delta_s = if ($null -ne $cpu_previous) { $cpu - $cpu_previous } else { $null }
-            working_set_bytes = $ws
+        $pre_run_sha = Get-FileHashText $Exe
+        if ($pre_run_sha -ne $exe_pinned_sha) {
+            $abort_hold = $true
+            $runs_out += [ordered]@{
+                run = $i
+                hold = $true
+                reason = 'exe hash changed before the run started'
+                pinned_exe_sha256 = $exe_pinned_sha
+                observed_exe_sha256 = $pre_run_sha
+            }
+            break
         }
-        if ($null -eq $cpu_first) { $cpu_first = $cpu }
-        $cpu_previous = $cpu
-        Start-Sleep -Milliseconds $SampleMs
+
+        $previous_env = $env:COS_DESKTOP_RUNTIME_ENDPOINT
+        $env:COS_DESKTOP_RUNTIME_ENDPOINT = $Endpoint
+        try {
+            $process = Start-Process -FilePath $Exe -PassThru -NoNewWindow `
+                -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+        } finally {
+            $env:COS_DESKTOP_RUNTIME_ENDPOINT = $previous_env
+        }
+
+        $deadline = (Get-Date).AddSeconds(120)
+        while ($process.MainWindowHandle -eq 0) {
+            if ($process.HasExited) { throw "run ${i}: the app exited before a window appeared (code $($process.ExitCode))" }
+            if ((Get-Date) -gt $deadline) { throw "run ${i}: no main window within 120 s" }
+            Start-Sleep -Milliseconds 100
+            $process.Refresh()
+        }
+        $window_ready_ms = [int](((Get-Date) - $process.StartTime).TotalMilliseconds)
+
+        # Steady state: visible window plus the approved 30 s settle with no input and no
+        # endpoint traffic (the endpoint is unreachable).
+        Start-Sleep -Seconds $SettleSeconds
+
+        $samples = @()
+        $window_started = Get-Date
+        $cpu_first = $null
+        $cpu_previous = $null
+        $window_deadline = $window_started.AddSeconds($WindowSeconds)
+        $early_exit_at = if ($SimulateEarlyExitSeconds -gt 0) { $window_started.AddSeconds($SimulateEarlyExitSeconds) } else { $null }
+        $window_completed = $true
+        while ((Get-Date) -lt $window_deadline) {
+            $process.Refresh()
+            if ($process.HasExited) { $window_completed = $false; break }
+            $cpu = $process.TotalProcessorTime.TotalSeconds
+            $ws = [int64]$process.WorkingSet64
+            $elapsed = ((Get-Date) - $window_started).TotalSeconds
+            $samples += [ordered]@{
+                at_s = [math]::Round($elapsed, 3)
+                cpu_s = $cpu
+                cpu_delta_s = if ($null -ne $cpu_previous) { [math]::Round($cpu - $cpu_previous, 6) } else { $null }
+                working_set_bytes = $ws
+            }
+            if ($null -eq $cpu_first) { $cpu_first = $cpu }
+            $cpu_previous = $cpu
+            if ($null -ne $early_exit_at -and (Get-Date) -ge $early_exit_at) {
+                $process.Kill()
+                $null = $process.WaitForExit(5000)
+                $window_completed = $false
+                break
+            }
+            Start-Sleep -Milliseconds $SampleMs
+        }
+        $window_elapsed = ((Get-Date) - $window_started).TotalSeconds
+        $observed_span = if ($samples.Count -ge 2) { $samples[-1]['at_s'] - $samples[0]['at_s'] } else { 0.0 }
+        $process.Refresh()
+        $cpu_total = if ($null -ne $cpu_first -and $null -ne $cpu_previous) { $cpu_previous - $cpu_first } else { 0.0 }
+        $cpu_fraction = if ($window_elapsed -gt 0) { $cpu_total / $window_elapsed } else { 0.0 }
+
+        $cpu_deltas = [double[]]@($samples | Where-Object { $null -ne $_['cpu_delta_s'] } | ForEach-Object { [double]$_['cpu_delta_s'] })
+        $ws_values = [double[]]@($samples | ForEach-Object { [double]$_['working_set_bytes'] })
+
+        $closed = $process.CloseMainWindow()
+        $exited = $process.WaitForExit(15000)
+        if (-not $exited) { $process.Kill(); $null = $process.WaitForExit(5000) }
+        $exit_code = if ($process.HasExited) { $process.ExitCode } else { $null }
+        $post_run_sha = Get-FileHashText $Exe
+        $hash_stable = ($post_run_sha -eq $exe_pinned_sha)
+        if ($SimulateExeMismatch) { $post_run_sha = 'simulated-mismatch'; $hash_stable = $false }
+
+        $stderr_lines = @()
+        if (Test-Path -LiteralPath $stderr) { $stderr_lines = Get-Content -LiteralPath $stderr }
+        $disconnected_line = $stderr_lines | Where-Object { $_ -like 'Runtime observation unavailable*' } | Select-Object -Last 1
+
+        # B-01: the approved conditions are part of validity, including the observed span,
+        # the sample count and the fact that the process survived the whole window.
+        $expected_samples = [math]::Floor($WindowSeconds * 1000 / $SampleMs) - 5
+        $valid = $hash_stable -and
+                 ($exit_code -eq 0) -and
+                 $window_completed -and
+                 ($samples.Count -ge $expected_samples) -and
+                 ($observed_span -ge ($WindowSeconds - 1.0)) -and
+                 ($null -ne $disconnected_line) -and
+                 (-not $endpoint_available)
+
+        $runs_out += [ordered]@{
+            run = $i
+            valid = $valid
+            hold = (-not $hash_stable)
+            reason = if (-not $hash_stable) { 'exe hash changed during or after the run' } else { $null }
+            pinned_exe_sha256 = $exe_pinned_sha
+            post_run_exe_sha256 = $post_run_sha
+            endpoint = $Endpoint
+            endpoint_available = $endpoint_available
+            disconnected_line = $disconnected_line
+            window_ready_ms = $window_ready_ms
+            settle_seconds = $SettleSeconds
+            window_seconds = $WindowSeconds
+            sample_ms = $SampleMs
+            samples = $samples
+            samples_count = $samples.Count
+            expected_samples = $expected_samples
+            window_elapsed_s = [math]::Round($window_elapsed, 3)
+            observed_span_s = [math]::Round($observed_span, 3)
+            window_completed = $window_completed
+            cpu_total_s = [math]::Round($cpu_total, 6)
+            cpu_fraction_of_one_core = [math]::Round($cpu_fraction, 6)
+            cpu_delta_s = Get-Statistics $cpu_deltas
+            working_set = Get-Statistics $ws_values
+            close_requested = $closed
+            exited = $exited
+            exit_code = $exit_code
+        }
+        if (Test-Path -LiteralPath $stderr) { Copy-Item -LiteralPath $stderr -Destination (Join-Path $EvidenceDir ("r0b-idle-$stamp-run$i.stderr.txt")) -Force }
+    } finally {
+        if ($null -ne $process -and -not $process.HasExited) {
+            $process.Kill()
+            $null = $process.WaitForExit(5000)
+        }
+        # Delete only the exclusively created run directory of this iteration.
+        if (Test-Path -LiteralPath $run_dir) { Remove-Item -LiteralPath $run_dir -Recurse -Force -ErrorAction SilentlyContinue }
     }
-    $window_elapsed = ((Get-Date) - $window_started).TotalSeconds
-    $process.Refresh()
-    $cpu_total = if ($null -ne $cpu_first) { $cpu_previous - $cpu_first } else { 0.0 }
-    $cpu_fraction = if ($window_elapsed -gt 0) { $cpu_total / $window_elapsed } else { 0.0 }
-
-    $cpu_deltas = @($samples | Where-Object { $null -ne $_['cpu_delta_s'] } | ForEach-Object { [double]$_['cpu_delta_s'] })
-    $ws_values = [double[]]@($samples | ForEach-Object { [double]$_['working_set_bytes'] })
-
-    $closed = $process.CloseMainWindow()
-    $exited = $process.WaitForExit(15000)
-    if (-not $exited) { $process.Kill(); $null = $process.WaitForExit(5000) }
-    $exit_code = if ($process.HasExited) { $process.ExitCode } else { $null }
-    $stderr_lines = @()
-    if (Test-Path -LiteralPath $stderr) { $stderr_lines = Get-Content -LiteralPath $stderr }
-    $disconnected_line = $stderr_lines | Where-Object { $_ -like 'Runtime observation unavailable*' } | Select-Object -Last 1
-
-    $ws_mean = if ($ws_values.Count -gt 0) { ($ws_values | Measure-Object -Average).Average } else { $null }
-    $ws_median = Get-Median $ws_values
-    $ws_stddev = Get-StdDev $ws_values
-    $ws_noise = if ($ws_mean -and $ws_mean -gt 0) { $ws_stddev / $ws_mean } else { $null }
-    $cpu_delta_mean = if ($cpu_deltas.Count -gt 0) { ($cpu_deltas | Measure-Object -Average).Average } else { $null }
-    $cpu_delta_stddev = Get-StdDev $cpu_deltas
-    $valid = ($exit_code -eq 0) -and ($samples.Count -ge 45) -and ($null -ne $ws_mean) -and
-             (-not [string]::IsNullOrWhiteSpace($disconnected_line)) -and (-not $endpoint_available)
-
-    $runs_out += [ordered]@{
-        run = $i
-        valid = $valid
-        endpoint = $Endpoint
-        endpoint_available = $endpoint_available
-        disconnected_line = $disconnected_line
-        window_ready_ms = $window_ready_ms
-        settle_seconds = $SettleSeconds
-        window_seconds = $WindowSeconds
-        sample_ms = $SampleMs
-        samples = $samples.Count
-        window_elapsed_s = [math]::Round($window_elapsed, 3)
-        cpu_total_s = [math]::Round($cpu_total, 6)
-        cpu_fraction_of_one_core = [math]::Round($cpu_fraction, 6)
-        cpu_delta_mean_s = $cpu_delta_mean
-        cpu_delta_stddev_s = $cpu_delta_stddev
-        working_set_mean_bytes = $ws_mean
-        working_set_median_bytes = $ws_median
-        working_set_stddev_bytes = $ws_stddev
-        working_set_noise_ratio = $ws_noise
-        close_requested = $closed
-        exited = $exited
-        exit_code = $exit_code
-    }
-    # Keep the run's stderr/stdout next to the evidence, then drop the scratch directory.
-    if (Test-Path -LiteralPath $stderr) { Copy-Item -LiteralPath $stderr -Destination (Join-Path $EvidenceDir ("r0b-idle-$stamp-run$i.stderr.txt")) -Force }
-    Remove-Item -LiteralPath $run_dir -Recurse -Force -ErrorAction SilentlyContinue
+    if ($abort_hold) { break }
 }
 
 $valid_runs = @($runs_out | Where-Object { $_['valid'] -eq $true })
+$hold = $abort_hold -or (@($runs_out | Where-Object { $_['hold'] -eq $true }).Count -gt 0)
 $cpu_metrics = [double[]]@($valid_runs | ForEach-Object { [double]$_['cpu_fraction_of_one_core'] })
-$ws_metrics = [double[]]@($valid_runs | ForEach-Object { [double]$_['working_set_mean_bytes'] })
+$ws_metrics = [double[]]@($valid_runs | ForEach-Object { [double]$_['working_set']['mean'] })
 $summary = [ordered]@{
     class = 'MP-R0B idle baseline, runtime mode against an unreachable loopback endpoint (disconnected UI)'
     exe = $Exe
-    exe_sha256 = (Get-FileHash -LiteralPath $Exe -Algorithm SHA256).Hash.ToLowerInvariant()
+    exe_sha256_pinned_before_launch = $exe_pinned_sha
+    source = [ordered]@{
+        git_head = if ($null -eq $git_head) { $null } else { "$git_head".Trim() }
+        dirty = $git_dirty
+        dirty_entry_count = $git_status.Count
+        build_kind = $BuildKind
+    }
     endpoint = $Endpoint
     endpoint_available = $endpoint_available
     endpoint_label = if ($endpoint_available) { 'available' } else { 'unavailable (connection refused): disconnected baseline' }
-    conditions = "fresh process per run; window visible; ${SettleSeconds} s settle; ${WindowSeconds} s observation window; ${SampleMs} ms sampling; no input; no endpoint traffic"
+    conditions = "fresh process per run; window visible; ${SettleSeconds} s settle; ${WindowSeconds} s observation; ${SampleMs} ms sampling; no input; no endpoint traffic"
+    required = [ordered]@{
+        runs = 5
+        settle_seconds = 30
+        window_seconds = 60
+        sample_ms = 500
+        min_samples = [math]::Floor($WindowSeconds * 1000 / $SampleMs) - 5
+        min_observed_span_s = $WindowSeconds - 1.0
+    }
     runs = $runs_out
     valid_runs = $valid_runs.Count
     invalid_runs = $runs_out.Count - $valid_runs.Count
-    cpu_fraction_of_one_core = [ordered]@{
-        median = Get-Median $cpu_metrics
-        mean = if ($cpu_metrics.Count -gt 0) { ($cpu_metrics | Measure-Object -Average).Average } else { $null }
-        stddev = Get-StdDev $cpu_metrics
-        noise_ratio = if ($cpu_metrics.Count -gt 0 -and (($cpu_metrics | Measure-Object -Average).Average) -gt 0) { (Get-StdDev $cpu_metrics) / (($cpu_metrics | Measure-Object -Average).Average) } else { $null }
-        count = $cpu_metrics.Count
-    }
-    working_set_mean_bytes = [ordered]@{
-        median = Get-Median $ws_metrics
-        mean = if ($ws_metrics.Count -gt 0) { ($ws_metrics | Measure-Object -Average).Average } else { $null }
-        stddev = Get-StdDev $ws_metrics
-        noise_ratio = if ($ws_metrics.Count -gt 0 -and (($ws_metrics | Measure-Object -Average).Average) -gt 0) { (Get-StdDev $ws_metrics) / (($ws_metrics | Measure-Object -Average).Average) } else { $null }
-        count = $ws_metrics.Count
-    }
-    measurement_limit = 'This is the disconnected baseline only: the endpoint was unreachable, so nothing here is a connected-endpoint baseline. CPU is TotalProcessorTime delta divided by the observation window (fraction of one core), not a frame time or an SLO. Working Set is process-wide sampled at the configured interval and does not cover GPU/render timing.'
+    hold = $hold
+    cpu_fraction_of_one_core = Get-Statistics $cpu_metrics
+    working_set_mean_bytes = Get-Statistics $ws_metrics
+    measurement_limit = 'Disconnected baseline only: the endpoint was unreachable, so nothing here is a connected-endpoint baseline. CPU is TotalProcessorTime delta divided by the observation window (fraction of one core), not a frame time or an SLO. Working Set is process-wide and does not cover GPU/render timing. Every sample series is stored in this record so the aggregates can be recomputed.'
     sampled_at_utc = $stamp
 }
 
 $json_path = Join-Path $EvidenceDir ("r0b-idle-$stamp.json")
 $txt_path = Join-Path $EvidenceDir ("r0b-idle-$stamp.txt")
-$summary | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $json_path -Encoding UTF8
+$summary | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $json_path -Encoding UTF8
 @(
     "class: $($summary.class)",
-    "exe_sha256: $($summary.exe_sha256)",
+    "exe_sha256 (pinned before launch): $exe_pinned_sha",
+    "source: HEAD $($summary.source.git_head) dirty=$($summary.source.dirty) entries=$($summary.source.dirty_entry_count) build=$($summary.source.build_kind)",
     "endpoint: $Endpoint ($($summary.endpoint_label))",
-    "runs: $($runs_out.Count) (valid $($summary.valid_runs) / invalid $($summary.invalid_runs))",
+    "runs: $($runs_out.Count) valid=$($summary.valid_runs) invalid=$($summary.invalid_runs) hold=$hold",
     "conditions: $($summary.conditions)",
-    "cpu_fraction_of_one_core: median=$($summary.cpu_fraction_of_one_core.median) mean=$($summary.cpu_fraction_of_one_core.mean) stddev=$($summary.cpu_fraction_of_one_core.stddev) noise=$($summary.cpu_fraction_of_one_core.noise_ratio)",
-    "working_set_mean_bytes: median=$($summary.working_set_mean_bytes.median) mean=$($summary.working_set_mean_bytes.mean) stddev=$($summary.working_set_mean_bytes.stddev) noise=$($summary.working_set_mean_bytes.noise_ratio)"
+    "cpu: median=$($summary.cpu_fraction_of_one_core.median) mean=$($summary.cpu_fraction_of_one_core.mean) stddev=$($summary.cpu_fraction_of_one_core.stddev) noise=$($summary.cpu_fraction_of_one_core.noise_ratio)",
+    "ws: median=$($summary.working_set_mean_bytes.median) mean=$($summary.working_set_mean_bytes.mean) stddev=$($summary.working_set_mean_bytes.stddev) noise=$($summary.working_set_mean_bytes.noise_ratio)"
 ) | Set-Content -LiteralPath $txt_path -Encoding UTF8
 
 Write-Host "record: $json_path"
 foreach ($run in $runs_out) {
-    Write-Host ("run {0}: valid={1} samples={2} cpu_fraction={3} cpu_total_s={4} ws_mean={5} ws_noise={6} exit={7} window_ready_ms={8}" -f `
-        $run['run'], $run['valid'], $run['samples'], $run['cpu_fraction_of_one_core'], $run['cpu_total_s'], $run['working_set_mean_bytes'], $run['working_set_noise_ratio'], $run['exit_code'], $run['window_ready_ms'])
+    if ($run['hold']) { Write-Host ("run {0}: HOLD {1}" -f $run['run'], $run['reason']); continue }
+    Write-Host ("run {0}: valid={1} samples={2} span={3}s cpu_fraction={4} ws_mean={5} ws_noise={6} exit={7}" -f `
+        $run['run'], $run['valid'], $run['samples_count'], $run['observed_span_s'], $run['cpu_fraction_of_one_core'], $run['working_set']['mean'], $run['working_set']['noise_ratio'], $run['exit_code'])
 }
-Write-Host ("cpu: median={0} mean={1} stddev={2} noise={3}" -f $summary.cpu_fraction_of_one_core.median, $summary.cpu_fraction_of_one_core.mean, $summary.cpu_fraction_of_one_core.stddev, $summary.cpu_fraction_of_one_core.noise_ratio)
-Write-Host ("ws: median={0} mean={1} stddev={2} noise={3}" -f $summary.working_set_mean_bytes.median, $summary.working_set_mean_bytes.mean, $summary.working_set_mean_bytes.stddev, $summary.working_set_mean_bytes.noise_ratio)
-if ($summary.invalid_runs -ne 0) { exit 1 }
+if ($hold) { exit 3 }
+if ($summary.invalid_runs -ne 0 -or $summary.valid_runs -ne 5) { exit 1 }
+Write-Host "PASS_LIMITED (disconnected baseline)"
+exit 0
