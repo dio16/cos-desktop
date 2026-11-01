@@ -1,12 +1,14 @@
 //! MP-IMG2 decode preflight arithmetic shared by decoder adapters.
 //!
-//! This admits declared dimensions/bit depth/scratch against caller budgets **before a
-//! decoder allocates**. The admitted peak is an **admission ceiling** over declared input
-//! geometry plus a declared slack: it is not a proof of the process's real memory peak
-//! (decoder-internal allocations, the encoded input and concurrent holders are outside
-//! it). Real RSS/allocator measurement is `NOT_VERIFIED` (plan §19.118). It selects no decoder, decodes nothing, owns no GPU object and
-//! makes no format-support, profile, region or capability claim; those remain the
-//! decoder owner's admission inputs.
+//! This admits declared dimensions/bit depth/scratch against caller budgets **before the
+//! full-image decode and its pixel-buffer allocation** (metadata parsing may allocate
+//! internally and is not claimed to be covered). The admitted peak is an **admission
+//! ceiling** over declared input geometry plus a declared slack: it is not a proof of the
+//! process's real memory peak (decoder-internal allocations, the encoded input and
+//! concurrent holders are outside it). Real RSS/allocator measurement is `NOT_VERIFIED`
+//! (plan §19.118). It selects no decoder, decodes nothing, owns no GPU object and makes no
+//! format-support, profile, region or capability claim; those remain the decoder owner's
+//! admission inputs.
 //!
 //! Budgets are configuration owned by this module, never a numeric literal at a use site.
 //! [`DecodeBudget::ratified_default`] names the owner-ratified **declared provisional**
@@ -340,7 +342,7 @@ pub struct DecodeAdmission {
     pub scratch_bytes: u64,
     /// Declared peak: decoded + scratch + [`DECODER_BOOKKEEPING_BYTES`].
     pub total_bytes: u64,
-    /// The same declared peak, named for the memory bound it proves.
+    /// The same declared peak, named for the admission ceiling it enforces.
     pub peak_bytes: u64,
 }
 
