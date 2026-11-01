@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "name": "big-u64-overflow",
+      "input": {"n":18446744073709551616,"m":-18446744073709551616},
+      "canonical": "{\"m\":-18446744073709551616,\"n\":18446744073709551616}"
+    },
+    {
+      "name": "nfc-boundary",
+      "input": {"s":"A\u030a|\u212b|e\u0301|\u0958"},
+      "canonical": "{\"s\":\"Å|Å|é|क़\"}"
+    },
+    {
+      "name": "supplementary-key-order",
+      "input": {"\ud83d\ude00":1,"\ue000":2},
+      "canonical": "{\"\":2,\"😀\":1}"
+    },
+    {
+      "name": "escape-boundary",
+      "input": {"s":"\"\\\b\f\n\r\t\u001f\u007f\u00e9"},
+      "canonical": "{\"s\":\"\\\"\\\\\\b\\f\\n\\r\\t\\u001fé\"}"
+    },
+    {
+      "name": "null-rules",
+      "input": {"a":null,"b":[null,1],"c":{"d":null,"e":2}},
+      "canonical": "{\"b\":[null,1],\"c\":{\"e\":2}}"
+    },
+    {
+      "name": "nested-mixed",
+      "input": {"z":[1,true,"x",{},[],null],"a":{"b":{"c":{"d":{"e":{"f":{"g":[-1,0,"deep"]}}}}}},"bool":false,"num":9007199254740993},
+      "canonical": "{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":{\"f\":{\"g\":[-1,0,\"deep\"]}}}}}},\"bool\":false,\"num\":9007199254740993,\"z\":[1,true,\"x\",{},[],null]}"
+    },
+    {
+      "name": "nfc-collision-reject",
+      "input": {"e\u0301":1,"\u00e9":2},
+      "rejected": true,
+      "reason_contains": "collide under NFC"
+    },
+    {
+      "name": "float-rejected",
+      "input": {"x":1.5},
+      "rejected": true,
+      "reason_contains": "float is not an allowed canonical type"
+    }
+  ]
+}

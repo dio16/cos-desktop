@@ -54,6 +54,31 @@
 //! fixture and the client recompute it over parsed values, so an authoring
 //! mistake cannot silently pass: a mismatch invalidates the bundle and requests
 //! resync.
+//!
+//! # Migration boundary
+//!
+//! This module used to emit `serde_json::to_vec`, whose declared field order and
+//! escaping differ from CanonicalV1. [`sha256_digest`] and
+//! [`integrity_digest_of`] keep their signatures and stay domainless, but their
+//! **values for a given payload moved** when the encoding changed:
+//!
+//! - command/receipt dedupe digests are issued and verified inside this client
+//!   (the fixture path included), so nothing compares them against a value
+//!   produced by the old encoding; no old digest is persisted or migrated,
+//! - there is no interoperable command digest in the wire contract yet. If the
+//!   Runtime starts verifying one, that needs its own domain-separated spec and
+//!   digest domain; reusing this domainless digest would be unambiguous only by
+//!   accident,
+//! - every digest verified across the language boundary is
+//!   [`projection_bundle_digest`] (domain `desktop-projection`); no command or
+//!   receipt digest is wire-verified today.
+//!
+//! # Integer width
+//!
+//! CanonicalV1 numbers are integers in plain decimal text, and `serde_json` is
+//! built with `arbitrary_precision` (the Runtime enables it too) so a literal
+//! wider than `u64`/`i64` keeps its exact digits instead of failing to parse or
+//! drifting through an `f64`.
 
 use std::fmt;
 
@@ -372,6 +397,48 @@ mod tests {
         assert_eq!(
             canonical_text(&json!({"n": 9007199254740993i64})),
             r#"{"n":9007199254740993}"#
+        );
+    }
+
+    #[test]
+    fn keeps_integers_wider_than_u64_and_i64() {
+        // serde_json `arbitrary_precision` is a parity requirement: the Runtime
+        // enables it, so a literal beyond u64/i64 must keep its exact decimal
+        // text instead of failing to parse or rounding through an f64.
+        let value: serde_json::Value =
+            serde_json::from_str(r#"{"n":18446744073709551616,"m":-9223372036854775809}"#)
+                .expect("arbitrary-precision integers parse");
+        assert_eq!(
+            canonical_text(&value),
+            r#"{"m":-9223372036854775809,"n":18446744073709551616}"#
+        );
+        // Width does not turn a fraction into an integer.
+        let wide_float: serde_json::Value =
+            serde_json::from_str(r#"{"n":18446744073709551616.5}"#).expect("parses");
+        assert!(canonical_json(&wide_float).is_err());
+    }
+
+    #[test]
+    fn nfc_normalises_unicode_boundary_cases() {
+        // U+212B ANGSTROM SIGN composes to U+00C5 under NFC.
+        assert_eq!(canonical_text(&json!({"k": "\u{212b}"})), "{\"k\":\"Å\"}");
+        // U+0958 is a composition exclusion: NFC leaves KA + NUKTA (U+0915 U+093C).
+        assert_eq!(
+            canonical_text(&json!({"k": "\u{958}"})),
+            "{\"k\":\"\u{915}\u{93c}\"}"
+        );
+    }
+
+    #[test]
+    fn non_bmp_keys_sort_by_code_point() {
+        // U+E000 < U+10000 < U+1F600: `String` ordering is UTF-8 byte order,
+        // which is code point order for every scalar value, including non-BMP.
+        let value: serde_json::Value =
+            serde_json::from_str(r#"{"\ud83d\ude00":1,"\ue000":2,"\ud800\udc00":3}"#)
+                .expect("surrogate-pair keys parse");
+        assert_eq!(
+            canonical_text(&value),
+            "{\"\u{e000}\":2,\"\u{10000}\":3,\"\u{1f600}\":1}"
         );
     }
 

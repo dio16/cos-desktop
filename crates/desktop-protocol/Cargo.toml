@@ -8,11 +8,17 @@ description = "Versioned Desktop/COS wire contract: projections, envelopes, nego
 
 [dependencies]
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.151"
+# `arbitrary_precision` is a CanonicalV1 parity requirement, not a preference:
+# the Runtime `contract-core` enables it, so an integer literal wider than
+# u64/i64 must round-trip through `serde_json::Value` with its exact decimal text
+# on both sides. Cargo feature unification applies it to every workspace member
+# that links serde_json.
+serde_json = { version = "1.0.151", features = ["arbitrary_precision"] }
 sha2 = "0.10.9"
 # CanonicalV1 requires NFC-normalised strings/keys (Runtime `contract-core`
-# `canonical_json_v1`). crates.io source, same line the Runtime pins.
-unicode-normalization = "0.1"
+# `canonical_json_v1`). Pinned to the exact Runtime version so both sides use
+# the same Unicode tables.
+unicode-normalization = "=0.1.22"
 
 [lints.rust]
 unsafe_code = "forbid"
