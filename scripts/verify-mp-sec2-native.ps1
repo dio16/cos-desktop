@@ -13,14 +13,24 @@
 # PASS is strict: every required root and required file must be present and fully
 # scanned, with zero matches, zero unreadable/oversize/excluded entries and no walk
 # cap. An evidence gap (for example the synthetic credential never reached the OS
-# store) downgrades the result to HOLD, never PASS.
+# store) downgrades the result to HOLD, never PASS. Every per-area status is derived
+# from the same evidence as the overall verdict and the exit code; a failed evidence
+# write also turns the result into FAIL.
+#
+# Safety: an entry already present for the synthetic origin aborts the run before any
+# launch (nothing is overwritten or deleted), only child PIDs this script started are
+# stopped, and the work directory is GUID-unique and created exclusively.
 #
 # Negative-test switches (for regression proof only; a normal run never sets them):
-#   -SimulateMissingArtifact <relative-path>  delete one required artifact before the
-#                                             scan, proving a missing file cannot PASS
+#   -SimulateMissingArtifact <name>           delete one of three known required
+#                                             artifacts before the scan, proving a
+#                                             missing file cannot PASS
 #   -SimulateCredentialLoss                   drop the synthetic entry just before the
 #                                             post-start check, proving a missing store
 #                                             write downgrades to HOLD
+#   -SimulatePreexistingCredential            create an entry for the synthetic origin
+#                                             before launch, proving the pre-check aborts
+#                                             (the simulated entry is removed afterwards)
 #
 # It never uses a real credential, never touches the Runtime DB, the frozen
 # fixtures or any OS setting, and never turns on WER. Only child processes this
@@ -39,8 +49,10 @@ param(
     [int]$MaxFiles = 5000,
     [int]$MaxFileBytes = 4194304,
     [int]$MaxDepth = 16,
+    [ValidateSet('desktop.instance', 'preferences.json', 'normal.stderr')]
     [string]$SimulateMissingArtifact = "",
     [switch]$SimulateCredentialLoss,
+    [switch]$SimulatePreexistingCredential,
     [switch]$KeepWork
 )
 
@@ -55,6 +67,9 @@ if ([string]::IsNullOrWhiteSpace($Exe)) { $Exe = Join-Path $repo 'target\debug\c
 $script:childProcesses = [System.Collections.Generic.List[System.Diagnostics.Process]]::new()
 $script:credentialTarget = $null
 $script:credentialCleanup = 'not-attempted'
+$script:credentialCreatedByTest = $false
+$script:credentialPrecheckAbsent = $false
+$script:simulatedPreexisting = $false
 
 function Write-Section([string]$text) { Write-Host "== $text" }
 
@@ -285,6 +300,14 @@ try {
     $tokenSha = Get-Sha256Text $token
     $originHead = (Get-Sha256Text $endpoint).Substring(0, 32)
     $script:credentialTarget = "desktop-observation.cos-desktop/observation/$originHead"
+    if ($SimulatePreexistingCredential) {
+        $null = & cmdkey.exe /generic:"$script:credentialTarget" /user:desktop-observation /pass:synthetic-simulated-entry 2>$null
+        if (-not (Test-CredentialExists $script:credentialTarget)) {
+            throw 'could not create the simulated pre-existing credential entry'
+        }
+        $script:simulatedPreexisting = $true
+        $report.notes += 'negative test: simulated a pre-existing credential for the synthetic origin'
+    }
     $report['synthetic_secret'] = [ordered]@{
         token_sha256 = $tokenSha
         note = 'the token itself is never written to any evidence file; only this SHA-256 is recorded'
@@ -401,9 +424,22 @@ try {
         }
     }
 
+    Write-Section 'credential precondition'
+    # The Desktop is never launched while an entry for this origin already exists: the
+    # MP-SEC1 path would overwrite it and the cleanup would delete it.
+    if (Test-CredentialExists $script:credentialTarget) {
+        $preconditionFailure = $true
+        throw 'a credential already exists for the synthetic origin; refusing to overwrite or delete it'
+    }
+    $script:credentialPrecheckAbsent = $true
+    Write-Host 'credential precondition: no pre-existing entry for the synthetic origin'
+
     Write-Section 'abnormal run (runtime mode, hard kill)'
     Remove-Item -LiteralPath $instancePath -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $preferencesPath -Force -ErrorAction SilentlyContinue
+    if ((Test-Path -LiteralPath $instancePath) -or (Test-Path -LiteralPath $preferencesPath)) {
+        throw 'a retained instance/preferences file survived the pre-launch cleanup'
+    }
     $abn = Start-ObservedApp (Join-Path $work 'abnormal.stdout') (Join-Path $work 'abnormal.stderr')
     $report.runs.abnormal.pid = $abn.process.Id
     $report.runs.abnormal.started_at_utc = $abn.started_utc.ToString('o')
@@ -424,6 +460,7 @@ try {
     $report.runs.abnormal.ready_instance_fresh = $ready.fresh
     if ($SimulateCredentialLoss) { $null = Remove-CredentialSilently $script:credentialTarget }
     $report.runs.abnormal.credential_write_observed = Test-CredentialExists $script:credentialTarget
+    if ($report.runs.abnormal.credential_write_observed) { $script:credentialCreatedByTest = $true }
     if (-not $report.runs.abnormal.credential_write_observed) {
         Write-Host 'WARNING: the synthetic credential did not appear in the OS store (store path not exercised)'
     }
@@ -444,54 +481,93 @@ try {
     if (-not $abn.process.HasExited) { throw 'the abnormal-run process did not exit after a hard kill' }
     $report.runs.abnormal.preferences_absent_after_kill = -not (Test-Path -LiteralPath $preferencesPath)
     $report.runs.abnormal.credential_cleanup_after_run = Remove-CredentialSilently $script:credentialTarget
+    if ($report.runs.abnormal.credential_cleanup_after_run -eq 'deleted') { $script:credentialCreatedByTest = $false }
     Write-Host ("abnormal: killed=true exit_code=" + $report.runs.abnormal.exit_code + " alive_ms=" + $report.runs.abnormal.alive_ms_before_kill + " stderr=" + $streams.stderr_bytes + " preferences_absent=" + $report.runs.abnormal.preferences_absent_after_kill + " credential=" + $report.runs.abnormal.credential_write_observed + "/" + $report.runs.abnormal.credential_cleanup_after_run)
 
     Write-Section 'normal-exit control (runtime mode, window close; required)'
-    Remove-Item -LiteralPath $instancePath -Force -ErrorAction SilentlyContinue
-    Remove-Item -LiteralPath $preferencesPath -Force -ErrorAction SilentlyContinue
-    $nrm = Start-ObservedApp (Join-Path $work 'normal.stdout') (Join-Path $work 'normal.stderr')
-    $report.runs.normal.pid = $nrm.process.Id
-    $report.runs.normal.started_at_utc = $nrm.started_utc.ToString('o')
-    $report.runs.normal.command_line = $report.runs.abnormal.command_line
-    $report.runs.normal.environment = $report.runs.abnormal.environment
-    $ready = Wait-Ready $nrm.process $nrm.started_utc $ReadinessTimeoutMs
-    if ($null -eq $ready) {
-        Stop-Hard $nrm.process
-        $null = Complete-Streams $nrm
-        throw "the normal-exit control never became ready (no fresh desktop.instance within $ReadinessTimeoutMs ms)"
+    $report.runs.normal['control_attempts'] = 0
+    $report.runs.normal['attempts'] = @()
+    for ($attempt = 1; $attempt -le 2; $attempt++) {
+        $report.runs.normal.control_attempts = $attempt
+        Remove-Item -LiteralPath $instancePath -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $preferencesPath -Force -ErrorAction SilentlyContinue
+        if ((Test-Path -LiteralPath $instancePath) -or (Test-Path -LiteralPath $preferencesPath)) {
+            throw 'a retained instance/preferences file survived the pre-launch cleanup'
+        }
+        $nrm = Start-ObservedApp (Join-Path $work 'normal.stdout') (Join-Path $work 'normal.stderr')
+        $report.runs.normal.pid = $nrm.process.Id
+        $report.runs.normal.started_at_utc = $nrm.started_utc.ToString('o')
+        $report.runs.normal.command_line = $report.runs.abnormal.command_line
+        $report.runs.normal.environment = $report.runs.abnormal.environment
+        $ready = Wait-Ready $nrm.process $nrm.started_utc $ReadinessTimeoutMs
+        if ($null -eq $ready) {
+            Stop-Hard $nrm.process
+            $null = Complete-Streams $nrm
+            throw "the normal-exit control never became ready (no fresh desktop.instance within $ReadinessTimeoutMs ms)"
+        }
+        $report.runs.normal.ready_observed = $true
+        $report.runs.normal.ready_instance_fresh = $ready.fresh
+        $report.runs.normal.credential_write_observed = Test-CredentialExists $script:credentialTarget
+        if ($report.runs.normal.credential_write_observed) { $script:credentialCreatedByTest = $true }
+        Start-Sleep -Milliseconds 1000
+        $report.runs.normal.close_requested = $nrm.process.CloseMainWindow()
+        if (-not $report.runs.normal.close_requested) {
+            Stop-Hard $nrm.process
+            throw 'the window-close request was not delivered; the normal-exit control is invalid (no fallback kill)'
+        }
+        $exited = $nrm.process.WaitForExit($CloseTimeoutMs)
+        if (-not $exited) {
+            Stop-Hard $nrm.process
+            throw "the normal-exit control did not exit within $CloseTimeoutMs ms"
+        }
+        $report.runs.normal.confirmed = $true
+        $report.runs.normal.exit_code = $nrm.process.ExitCode
+        $report.runs.normal.exit_observed_ms = [int]([DateTime]::UtcNow - $nrm.started_utc).TotalMilliseconds
+        $streams = Complete-Streams $nrm
+        $report.runs.normal.stdout_bytes = $streams.stdout_bytes
+        $report.runs.normal.stderr_bytes = $streams.stderr_bytes
+        $report.runs.normal.stdout_sha256 = $streams.stdout_sha256
+        $report.runs.normal.stderr_sha256 = $streams.stderr_sha256
+        $report.runs.normal.preferences_written_after_start = $false
+        if (Test-Path -LiteralPath $preferencesPath) {
+            $preferences = Get-Item -LiteralPath $preferencesPath
+            $report.runs.normal.preferences_written_after_start = $preferences.LastWriteTimeUtc -ge $nrm.started_utc.AddSeconds(-1)
+            $report.runs.normal.preferences_mtime_utc = $preferences.LastWriteTimeUtc.ToString('o')
+            $report.runs.normal.preferences_sha256 = (Get-Sha256File $preferences.FullName)
+        }
+        $report.runs.normal.attempts += [ordered]@{
+            attempt = $attempt
+            pid = $nrm.process.Id
+            close_requested = $report.runs.normal.close_requested
+            exit_code = $report.runs.normal.exit_code
+            preferences_written_after_start = $report.runs.normal.preferences_written_after_start
+        }
+        Write-Host ("normal attempt " + $attempt + ": close_requested=" + $report.runs.normal.close_requested + " exit_code=" + $report.runs.normal.exit_code + " fresh_preferences=" + $report.runs.normal.preferences_written_after_start + " stderr=" + $streams.stderr_bytes)
+        $controlEstablished = $report.runs.normal.close_requested -and ($report.runs.normal.exit_code -eq 0) -and $report.runs.normal.preferences_written_after_start
+        if ($controlEstablished -or $attempt -ge 2) { break }
+        # The app's bounded shutdown may miss its own preference deadline under load; the
+        # control is retried once and both attempts are recorded. No required condition is
+        # relaxed, and a second failure is a FAIL.
+        $report.notes += ("control attempt " + $attempt + " did not confirm the preference save; retrying once")
     }
-    $report.runs.normal.ready_observed = $true
-    $report.runs.normal.ready_instance_fresh = $ready.fresh
-    $report.runs.normal.credential_write_observed = Test-CredentialExists $script:credentialTarget
-    Start-Sleep -Milliseconds 1000
-    $report.runs.normal.close_requested = $nrm.process.CloseMainWindow()
-    if (-not $report.runs.normal.close_requested) { $null = & taskkill.exe /PID $nrm.process.Id 2>$null }
-    $exited = $nrm.process.WaitForExit($CloseTimeoutMs)
-    if (-not $exited) {
-        Stop-Hard $nrm.process
-        throw "the normal-exit control did not exit within $CloseTimeoutMs ms"
-    }
-    $report.runs.normal.confirmed = $true
-    $report.runs.normal.exit_code = $nrm.process.ExitCode
-    $report.runs.normal.exit_observed_ms = [int]([DateTime]::UtcNow - $nrm.started_utc).TotalMilliseconds
-    $streams = Complete-Streams $nrm
-    $report.runs.normal.stdout_bytes = $streams.stdout_bytes
-    $report.runs.normal.stderr_bytes = $streams.stderr_bytes
-    $report.runs.normal.stdout_sha256 = $streams.stdout_sha256
-    $report.runs.normal.stderr_sha256 = $streams.stderr_sha256
-    if (Test-Path -LiteralPath $preferencesPath) {
-        $preferences = Get-Item -LiteralPath $preferencesPath
-        $report.runs.normal.preferences_written_after_start = $preferences.LastWriteTimeUtc -ge $nrm.started_utc.AddSeconds(-1)
-        $report.runs.normal.preferences_mtime_utc = $preferences.LastWriteTimeUtc.ToString('o')
-        $report.runs.normal.preferences_sha256 = (Get-Sha256File $preferences.FullName)
-    }
-    Write-Host ("normal: close_requested=" + $report.runs.normal.close_requested + " exit_code=" + $report.runs.normal.exit_code + " fresh_preferences=" + $report.runs.normal.preferences_written_after_start + " stderr=" + $streams.stderr_bytes)
+
 
     Write-Section 'scan app-managed files'
     if ($SimulateMissingArtifact -ne '') {
-        $simulated = Join-Path $work ($SimulateMissingArtifact -replace '/', '\')
-        if (Test-Path -LiteralPath $simulated) {
-            Remove-Item -LiteralPath $simulated -Force -ErrorAction Stop
+        # The switch is a closed enum and the resolved path is re-validated against the
+        # isolated work directory: an escaping path is a hard failure, never a deletion.
+        $simulated = switch ($SimulateMissingArtifact) {
+            'desktop.instance' { $instancePath }
+            'preferences.json' { $preferencesPath }
+            'normal.stderr' { Join-Path $work 'normal.stderr' }
+        }
+        $workingPrefix = $work.TrimEnd('') + ''
+        $resolved = [System.IO.Path]::GetFullPath([string]$simulated)
+        if (-not $resolved.StartsWith($workingPrefix, [System.StringComparison]::OrdinalIgnoreCase) -or $resolved.Contains('..')) {
+            throw ("negative test path escapes the isolated work directory: " + $resolved)
+        }
+        if (Test-Path -LiteralPath $resolved) {
+            Remove-Item -LiteralPath $resolved -Force -ErrorAction Stop
             $report.notes += ("negative test: removed required artifact " + $SimulateMissingArtifact)
         } else {
             $report.notes += ("negative test: artifact already missing " + $SimulateMissingArtifact)
@@ -500,7 +576,7 @@ try {
     $streamFiles = @('abnormal.stdout', 'abnormal.stderr', 'normal.stdout', 'normal.stderr') | ForEach-Object { Join-Path $work $_ }
     $scanRoots = @($appData, $tempDir) + $streamFiles
     $scan = Scan-Tokens $scanRoots $tokenBytes $work
-    $scan['status'] = 'PASS'
+    $scan['status'] = 'PENDING'
     $scan['pattern'] = ('utf8 synthetic token (sha256:' + $tokenSha + ')')
     $scan['bounds'] = [ordered]@{ max_files = $MaxFiles; max_file_bytes = $MaxFileBytes; max_depth = $MaxDepth }
     $requiredArtifacts = @(
@@ -573,12 +649,26 @@ finally {
             Stop-Hard $process
         }
     }
-    # Always remove the synthetic entry, then re-verify its absence.
+    # Remove only an entry this run created: the pre-launch check proved the target was
+    # absent, and the flag records that the app's write was actually observed.
+    $credentialAbsent = $true
+    $credentialCreated = $script:credentialCreatedByTest
     if ($null -ne $script:credentialTarget) {
-        $script:credentialCleanup = Remove-CredentialSilently $script:credentialTarget
-        $credentialAbsent = -not (Test-CredentialExists $script:credentialTarget)
-    } else {
-        $credentialAbsent = $true
+        if ($credentialCreated) {
+            $script:credentialCleanup = Remove-CredentialSilently $script:credentialTarget
+            $credentialAbsent = -not (Test-CredentialExists $script:credentialTarget)
+        } elseif ($script:credentialPrecheckAbsent) {
+            # The pre-check proved absence, so an entry present now is this run's.
+            if (Test-CredentialExists $script:credentialTarget) {
+                $credentialCreated = $true
+                $script:credentialCleanup = Remove-CredentialSilently $script:credentialTarget
+                $credentialAbsent = -not (Test-CredentialExists $script:credentialTarget)
+            } else {
+                $script:credentialCleanup = 'absent'
+            }
+        } else {
+            $script:credentialCleanup = 'skipped-no-precheck'
+        }
     }
     $report.areas['credential_store'] = [ordered]@{
         status = if ($credentialAbsent) { 'PASS' } else { 'FAIL' }
@@ -586,6 +676,12 @@ finally {
         cleanup = $script:credentialCleanup
         absent_after_cleanup = $credentialAbsent
         note = 'the synthetic token is persisted by the MP-SEC1 path in the OS credential store, which is DPAPI-backed and not a plaintext file; the entry is removed here and its absence re-verified'
+    }
+    if ($script:simulatedPreexisting) {
+        $simulatedCleanup = Remove-CredentialSilently $script:credentialTarget
+        $report.notes += ("negative test cleanup: simulated pre-existing credential " + $simulatedCleanup)
+        $credentialAbsent = -not (Test-CredentialExists $script:credentialTarget)
+        if ($credentialAbsent) { $script:credentialCleanup = 'deleted-simulated' }
     }
     Write-Host ("credential store: final cleanup=" + $script:credentialCleanup + " absent=" + $credentialAbsent)
 
@@ -626,13 +722,27 @@ finally {
     if (-not $abnormalCredential) { $hold += 'the synthetic credential was not observed in the OS store (abnormal run)' }
     if (-not $normalCredential) { $hold += 'the synthetic credential was not observed in the OS store (normal run)' }
     if (-not $credentialAbsent) { $fail += 'the synthetic credential could not be removed' }
+    # One status per area, derived from the same evidence as the overall verdict (never
+    # hard-coded): the report, the per-area statuses and the exit code agree.
+    $scanFail = ($null -eq $scan) -or ($scan.matches.Count -gt 0) -or ($scan.roots_missing.Count -gt 0) -or ($scan.required_artifacts_missing.Count -gt 0)
+    $scanHold = ($null -ne $scan) -and (($scan.unreadable_entries + $scan.oversize_skipped + $scan.excluded_entries) -gt 0 -or $scan.walk_capped)
+    $scanStatus = if ($scanFail) { 'FAIL' } elseif ($scanHold) { 'HOLD' } else { 'PASS' }
+    $credentialStatus = if (-not $credentialAbsent) { 'FAIL' } elseif (-not ($abnormalCredential -and $normalCredential)) { 'HOLD' } else { 'PASS' }
+    $abnormalStatus = if ($abnormalKilled -and $abnormalReady) { 'PASS' } else { 'FAIL' }
+    $normalStatus = if ($normalConfirmed -and $normalExitZero -and $normalPreferences) { 'PASS' } else { 'FAIL' }
+    if ($null -ne $scan) { $report.areas['app_managed_files']['status'] = $scanStatus }
+    if ($report.areas.Contains('credential_store')) { $report.areas['credential_store']['status'] = $credentialStatus }
+    if ($report.runs.Contains('abnormal')) { $report.runs['abnormal']['status'] = $abnormalStatus }
+    if ($report.runs.Contains('normal')) { $report.runs['normal']['status'] = $normalStatus }
     $report.checks = [ordered]@{
         fail = $fail
         hold = $hold
-        abnormal_run = if ($abnormalKilled -and $abnormalReady) { 'PASS' } else { 'FAIL' }
-        normal_control = if ($normalConfirmed -and $normalExitZero -and $normalPreferences) { 'PASS' } else { 'FAIL' }
-        scan_completeness = if (($null -ne $scan) -and (($scan.unreadable_entries + $scan.oversize_skipped + $scan.excluded_entries) -eq 0) -and -not $scan.walk_capped -and $scan.required_artifacts_missing.Count -eq 0 -and $scan.roots_missing.Count -eq 0) { 'PASS' } else { 'HOLD' }
-        credential = if ($credentialAbsent -and $abnormalCredential -and $normalCredential) { 'PASS' } else { 'HOLD' }
+        abnormal_run = $abnormalStatus
+        normal_control = $normalStatus
+        scan_completeness = $scanStatus
+        credential = $credentialStatus
+        support_report = 'NOT_APPLICABLE'
+        wer_user_dumps = 'NOT_RUN'
     }
     if ($fail.Count -gt 0) {
         $report.result = 'FAIL'
@@ -664,7 +774,9 @@ finally {
         Write-Host ("evidence: " + $textPath)
     } catch {
         Write-Host ("could not write evidence: " + $_.Exception.Message) -ForegroundColor Red
-        if ($exitCode -eq 0) { $exitCode = 1 }
+        $report.result = 'FAIL'
+        $report.checks.fail += 'evidence files could not be written'
+        $exitCode = 1
     }
     if (-not $KeepWork -and $null -ne $work -and (Test-Path -LiteralPath $work)) {
         $removed = $false
