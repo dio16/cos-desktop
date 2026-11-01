@@ -26,7 +26,8 @@ use super::{
 use crate::ProjectionState;
 
 fn task_bytes(snapshot: &TaskSnapshot) -> u64 {
-    (size_of::<TaskSnapshot>() + snapshot.display_id.len() + snapshot.title.len()) as u64
+    let display_bytes = snapshot.display_id.as_deref().map_or(0, str::len);
+    (size_of::<TaskSnapshot>() + display_bytes + snapshot.title.len()) as u64
 }
 
 fn candidate_bytes(snapshot: &CandidateSnapshot) -> u64 {

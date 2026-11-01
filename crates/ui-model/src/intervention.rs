@@ -416,8 +416,11 @@ fn missing_reference_rows(
     task_status: Option<TaskStatus>,
 ) -> Vec<Row> {
     let mut references = Vec::new();
-    if !snapshot.capabilities.contains_key(&task.capabilities_ref) {
-        references.push(Reference::Capabilities(task.capabilities_ref.clone()));
+    // An absent capabilities_ref is "not projected", not a missing reference.
+    if let Some(capabilities_ref) = &task.capabilities_ref
+        && !snapshot.capabilities.contains_key(capabilities_ref)
+    {
+        references.push(Reference::Capabilities(capabilities_ref.clone()));
     }
     if let Some(identity) = task.iteration_ref.as_ref()
         && !matches!(
@@ -522,16 +525,16 @@ mod tests {
     fn task(status: TaskStatus) -> TaskSnapshot {
         TaskSnapshot {
             task_ref: TaskId::fixture("task/Task-184"),
-            display_id: "Task-184".to_owned(),
+            display_id: Some("Task-184".to_owned()),
             title: "Intervention task".to_owned(),
             task_status: status,
-            inner_phase: PhaseLabel::new("REFINE").expect("valid phase"),
+            inner_phase: Some(PhaseLabel::new("REFINE").expect("valid phase")),
             iteration_ref: Some(IterationId::fixture("iteration/Task-184/1")),
             iteration_index: Some(1),
             best_candidate_ref: None,
             formal_outcome_ref: None,
             accepted_brief_ref: None,
-            capabilities_ref: CapabilitiesId::fixture("capabilities/task"),
+            capabilities_ref: Some(CapabilitiesId::fixture("capabilities/task")),
             projection_revision: Counter::from_u128(1),
         }
     }
@@ -541,10 +544,14 @@ mod tests {
         let state = Arc::get_mut(&mut snapshot).expect("snapshot has one owner");
         state.epoch = Some(desktop_protocol::EpochId::fixture("epoch/1"));
         state.tasks.insert(task.task_ref.clone(), task.clone());
+        let capabilities_ref = task
+            .capabilities_ref
+            .clone()
+            .expect("test task projects capabilities");
         state.capabilities.insert(
-            task.capabilities_ref.clone(),
+            capabilities_ref.clone(),
             desktop_protocol::CreativeCapabilities {
-                capabilities_ref: task.capabilities_ref.clone(),
+                capabilities_ref,
                 scope: desktop_protocol::CapabilityScope::Task {
                     task_id: task.task_ref.clone(),
                 },
@@ -663,11 +670,11 @@ mod tests {
     fn other_task(status: TaskStatus) -> TaskSnapshot {
         TaskSnapshot {
             task_ref: TaskId::fixture("task/Task-200"),
-            display_id: "Task-200".to_owned(),
+            display_id: Some("Task-200".to_owned()),
             title: "Other task".to_owned(),
             iteration_ref: None,
             iteration_index: None,
-            capabilities_ref: CapabilitiesId::fixture("capabilities/other"),
+            capabilities_ref: Some(CapabilitiesId::fixture("capabilities/other")),
             ..task(status)
         }
     }
@@ -675,10 +682,14 @@ mod tests {
     fn add_task(snapshot: &mut SnapshotHandle, task: &TaskSnapshot) {
         let state = Arc::get_mut(snapshot).expect("snapshot has one owner");
         state.tasks.insert(task.task_ref.clone(), task.clone());
+        let capabilities_ref = task
+            .capabilities_ref
+            .clone()
+            .expect("test task projects capabilities");
         state.capabilities.insert(
-            task.capabilities_ref.clone(),
+            capabilities_ref.clone(),
             desktop_protocol::CreativeCapabilities {
-                capabilities_ref: task.capabilities_ref.clone(),
+                capabilities_ref,
                 scope: desktop_protocol::CapabilityScope::Task {
                     task_id: task.task_ref.clone(),
                 },

@@ -9,9 +9,13 @@ use desktop_protocol::{EpochId, TaskId, TaskStatus};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TaskRow {
     pub identity: TaskId,
+    /// Display label. When the Runtime projects no display id, this falls back
+    /// to `identity` for display only; commands always target `identity`.
     pub display_id: Arc<str>,
     pub title: Arc<str>,
     pub task_status: TaskStatus,
+    /// Phase label, or [`super::NOT_PROJECTED_FACT`] when the Runtime projected
+    /// no phase for this task (it has no run). Never a fabricated phase.
     pub inner_phase: Arc<str>,
     pub iteration_index: Option<u32>,
     pub attention: LocalAttention,
@@ -148,10 +152,18 @@ impl TaskRailCache {
             } else {
                 let row = Arc::new(TaskRow {
                     identity: task.task_ref.clone(),
-                    display_id: Arc::from(task.display_id.as_str()),
+                    // Display-only fallback to the wire identity; never a
+                    // manufactured label, and never a command target.
+                    display_id: Arc::from(
+                        task.display_id.as_deref().unwrap_or(task.task_ref.as_str()),
+                    ),
                     title: Arc::from(task.title.as_str()),
                     task_status: task.task_status.clone(),
-                    inner_phase: Arc::from(task.inner_phase.as_str()),
+                    inner_phase: Arc::from(
+                        task.inner_phase
+                            .as_ref()
+                            .map_or(super::NOT_PROJECTED_FACT, |phase| phase.as_str()),
+                    ),
                     iteration_index: task.iteration_index,
                     attention,
                 });
@@ -432,7 +444,11 @@ fn has_unavailable_reference(
     task: &desktop_protocol::TaskSnapshot,
     snapshot: &SnapshotHandle,
 ) -> bool {
-    let capabilities_missing = !snapshot.capabilities.contains_key(&task.capabilities_ref);
+    // An absent capabilities_ref is "not projected", not a dangling reference.
+    let capabilities_missing = task
+        .capabilities_ref
+        .as_ref()
+        .is_some_and(|identity| !snapshot.capabilities.contains_key(identity));
     let iteration_missing = task.iteration_ref.as_ref().is_some_and(|identity| {
         !matches!(
             snapshot.iterations.get(identity),
@@ -634,16 +650,16 @@ mod tests {
         let task_ref = TaskId::fixture(format!("task/{identity}"));
         TaskSnapshot {
             task_ref,
-            display_id: display_id.to_owned(),
+            display_id: Some(display_id.to_owned()),
             title: title.to_owned(),
             task_status: status,
-            inner_phase: PhaseLabel::new("BUILD").expect("valid phase"),
+            inner_phase: Some(PhaseLabel::new("BUILD").expect("valid phase")),
             iteration_ref: None,
             iteration_index,
             best_candidate_ref: None,
             formal_outcome_ref: None,
             accepted_brief_ref: None,
-            capabilities_ref: CapabilitiesId::fixture(format!("capabilities/{identity}")),
+            capabilities_ref: Some(CapabilitiesId::fixture(format!("capabilities/{identity}"))),
             projection_revision: Counter::from_u128(1),
         }
     }
@@ -659,27 +675,30 @@ mod tests {
         state.epoch = Some(EpochId::fixture(epoch));
         for task in tasks {
             let task_id = task.task_ref.clone();
-            let capabilities_ref = task.capabilities_ref.clone();
-            state.capabilities.insert(
-                capabilities_ref.clone(),
-                CreativeCapabilities {
-                    capabilities_ref,
-                    scope: CapabilityScope::Task {
-                        task_id: task_id.clone(),
-                    },
-                    commands: vec![CommandCapability {
-                        operation: CommandOperation::StopTask,
-                        support: SupportState::Supported,
+            // Only a projected capabilities reference gets a capabilities
+            // entry; a task without one is a supported (not dangling) state.
+            if let Some(capabilities_ref) = task.capabilities_ref.clone() {
+                state.capabilities.insert(
+                    capabilities_ref.clone(),
+                    CreativeCapabilities {
+                        capabilities_ref,
+                        scope: CapabilityScope::Task {
+                            task_id: task_id.clone(),
+                        },
+                        commands: vec![CommandCapability {
+                            operation: CommandOperation::StopTask,
+                            support: SupportState::Supported,
+                            reason: None,
+                        }],
+                        media: Vec::new(),
+                        features: Vec::new(),
+                        constraints: Vec::new(),
+                        availability: SupportState::Supported,
                         reason: None,
-                    }],
-                    media: Vec::new(),
-                    features: Vec::new(),
-                    constraints: Vec::new(),
-                    availability: SupportState::Supported,
-                    reason: None,
-                    projection_revision: Counter::from_u128(1),
-                },
-            );
+                        projection_revision: Counter::from_u128(1),
+                    },
+                );
+            }
             state.tasks.insert(task_id, task);
         }
         ObservationPublication {
@@ -1009,6 +1028,73 @@ mod tests {
         assert!(row.attention.stale_connection);
         assert!(row.attention.unavailable_reference);
         assert!(!row.attention.unsettled_command);
+    }
+
+    #[test]
+    fn unprojected_display_and_phase_use_explicit_markers_not_defaults() {
+        let mut bare = task(
+            "no-run",
+            "ignored-label",
+            "Raw title",
+            TaskStatus::Assigned,
+            None,
+        );
+        bare.display_id = None;
+        bare.inner_phase = None;
+        // The fixture still projects capabilities, so the task is servable.
+        let collection = derive(
+            &mut TaskRailCache::default(),
+            &publication(vec![bare.clone()], 1, 1, "epoch/1"),
+        );
+        let row = &collection.rows[0];
+        // Display-only fallback to the wire identity, never a fabricated label.
+        assert_eq!(row.display_id.as_ref(), bare.task_ref.as_str());
+        assert_ne!(row.display_id.as_ref(), "ignored-label");
+        // The phase marker is explicit and shared with the workbench axes.
+        assert_eq!(row.inner_phase.as_ref(), crate::NOT_PROJECTED_FACT);
+        assert_eq!(row.inner_phase.as_ref(), "不明");
+        assert!(!row.attention.unavailable_reference);
+    }
+
+    #[test]
+    fn absent_capabilities_reference_is_not_a_dangling_reference() {
+        let mut unprojected = task(
+            "no-capabilities",
+            "Task-nc",
+            "Raw title",
+            TaskStatus::Assigned,
+            None,
+        );
+        unprojected.capabilities_ref = None;
+        let absent = derive(
+            &mut TaskRailCache::default(),
+            &publication(vec![unprojected], 1, 1, "epoch/1"),
+        );
+        assert!(
+            !absent.rows[0].attention.unavailable_reference,
+            "not projected is not a dangling reference"
+        );
+
+        // A declared reference whose projection is absent stays a dangling one.
+        let mut dangling = task(
+            "dangling-capabilities",
+            "Task-d",
+            "Raw title",
+            TaskStatus::Assigned,
+            None,
+        );
+        dangling.capabilities_ref = Some(CapabilitiesId::fixture("capabilities/absent"));
+        let mut dangling_publication = publication(vec![dangling], 1, 1, "epoch/1");
+        let snapshot = dangling_publication
+            .snapshot
+            .as_mut()
+            .expect("fixture snapshot is present");
+        Arc::get_mut(snapshot)
+            .expect("fixture snapshot is uniquely owned")
+            .capabilities
+            .remove(&CapabilitiesId::fixture("capabilities/absent"));
+        let dangling = derive(&mut TaskRailCache::default(), &dangling_publication);
+        assert!(dangling.rows[0].attention.unavailable_reference);
     }
 
     #[test]

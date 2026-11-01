@@ -243,16 +243,16 @@ fn task_shape(task: usize, has_formal_outcome: bool) -> Result<TaskShape, Experi
     };
     let task_snapshot = TaskSnapshot {
         task_ref: task_ref.clone(),
-        display_id: format!("R2-{task}"),
+        display_id: Some(format!("R2-{task}")),
         title: format!("representation entity {task}"),
         task_status: TaskStatus::Active,
-        inner_phase: phase()?,
+        inner_phase: Some(phase()?),
         iteration_ref: Some(iteration_id(task, 0)),
         iteration_index: Some(0),
         best_candidate_ref: Some(candidate_ref(task, 0)),
         formal_outcome_ref: has_formal_outcome.then_some(outcome_ref),
         accepted_brief_ref: None,
-        capabilities_ref: capabilities_id(task),
+        capabilities_ref: Some(capabilities_id(task)),
         projection_revision: counter(1)?,
     };
     let capabilities = CreativeCapabilities {

@@ -587,7 +587,9 @@ fn validate_mutation_ids(mutation: &ProjectionMutation) -> Result<(), FixtureErr
                 if let Some(brief) = &snapshot.accepted_brief_ref {
                     ids.push(brief.as_str().to_owned());
                 }
-                ids.push(snapshot.capabilities_ref.as_str().to_owned());
+                if let Some(capabilities) = &snapshot.capabilities_ref {
+                    ids.push(capabilities.as_str().to_owned());
+                }
             }
             Projection::Candidate(snapshot) => {
                 push_candidate_ids(&mut ids, &snapshot.candidate_ref);

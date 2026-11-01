@@ -16,7 +16,7 @@ The current wire task statuses are ASSIGNED/ACTIVE/COMPLETED/CANCELLED. Current 
 
 | Projection candidate | Required meaning (Draft fields, not Domain definitions) |
 |---|---|
-| TaskSnapshot | task_ref, display_id/title, task_status, inner_phase, iteration_ref/index, best_candidate_ref?, formal_outcome_ref?, accepted_brief_ref?, capabilities_ref, projection_revision |
+| TaskSnapshot | task_ref, display_id?/title, task_status, inner_phase?, iteration_ref/index, best_candidate_ref?, formal_outcome_ref?, accepted_brief_ref?, capabilities_ref?, projection_revision. `display_id`, `inner_phase` and `capabilities_ref` are optional because the Runtime read model cannot project them for a task without a run (no display-id column; phase from `creative_runs.phase`; capabilities from `capability_snapshot_sets`). Absent means **not projected** and is never defaulted or synthesized by the client; an absent `capabilities_ref` is not a dangling reference |
 | CandidateSnapshot | candidate_ref, task_ref, iteration_ref, artifact_refs, evaluation_refs, display_label, projection_revision; no UI-owned Viewed/Compare marker |
 | ArtifactSnapshot | artifact_ref/canonical identity, media_type, availability, descriptor_refs by representation, verification summary, projection_revision |
 | EvaluationSnapshot | evaluation_ref, candidate/artifact refs, decision, named axes and units, evidence refs, authority, optional confidence with documented meaning, projection_revision; missing score is not zero. Named axis values and confidence are Runtime-issued DecimalV1 canonical decimal **strings**; JSON floats are forbidden by CanonicalV1 (see bundle integrity encoding in section 2) |

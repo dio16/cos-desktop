@@ -45,10 +45,15 @@ fn one_pump_drains_initialization_into_authoritative_state() {
 
     let snapshot = mock.snapshot();
     let task = snapshot.task(&task_id()).expect("task projection");
-    assert_eq!(task.display_id, "Task-184");
+    assert_eq!(task.display_id.as_deref(), Some("Task-184"));
     assert_eq!(task.title, "新製品キービジュアル");
     assert_eq!(task.task_status, TaskStatus::Active);
-    assert_eq!(task.inner_phase.as_str(), "REFINE");
+    assert_eq!(
+        task.inner_phase
+            .as_ref()
+            .map(desktop_protocol::PhaseLabel::as_str),
+        Some("REFINE")
+    );
     assert_eq!(task.iteration_index, Some(3));
     assert_eq!(task.projection_revision.as_str(), "8");
     assert_eq!(task.formal_outcome_ref, None);

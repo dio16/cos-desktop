@@ -148,13 +148,22 @@ pub struct TaskSnapshot {
     /// Canonical task identity.
     pub task_ref: TaskId,
     /// Human display id (e.g. `Task-184`); never a wire identifier.
-    pub display_id: String,
+    ///
+    /// Absent when the Runtime did not project one (its task row carries no
+    /// display-id column). The client never invents or defaults a label.
+    #[serde(default)]
+    pub display_id: Option<String>,
     /// Human title.
     pub title: String,
     /// Task status axis.
     pub task_status: TaskStatus,
     /// Inner phase label axis (open vocabulary, presentation only).
-    pub inner_phase: PhaseLabel,
+    ///
+    /// Absent when the task has no run to project a phase from. Not projected
+    /// is not a phase: the client shows an explicit unknown marker and never
+    /// defaults it to a plausible label.
+    #[serde(default)]
+    pub inner_phase: Option<PhaseLabel>,
     /// Current iteration reference, when known.
     #[serde(default)]
     pub iteration_ref: Option<IterationId>,
@@ -171,7 +180,11 @@ pub struct TaskSnapshot {
     #[serde(default)]
     pub accepted_brief_ref: Option<ArtifactId>,
     /// Capabilities projection reference for this task.
-    pub capabilities_ref: CapabilitiesId,
+    ///
+    /// Absent when the task has no run/capability snapshot to reference, so the
+    /// facts are not projected. An absent reference is not a dangling one.
+    #[serde(default)]
+    pub capabilities_ref: Option<CapabilitiesId>,
     /// Projection revision within the runtime epoch.
     pub projection_revision: Counter,
 }

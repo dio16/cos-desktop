@@ -702,10 +702,14 @@ impl<'a> EffectiveState<'a> {
                     task.task_ref, artifact_ref
                 )));
             }
-            if self.capabilities(&task.capabilities_ref).is_none() {
+            // An absent capabilities_ref means the Runtime did not project the
+            // fact; only a declared reference can dangle.
+            if let Some(capabilities_ref) = &task.capabilities_ref
+                && self.capabilities(capabilities_ref).is_none()
+            {
                 return Err(ProjectionIntegrityError::new(format!(
                     "task {} references absent capabilities {}",
-                    task.task_ref, task.capabilities_ref
+                    task.task_ref, capabilities_ref
                 )));
             }
         }

@@ -808,7 +808,15 @@ impl DerivationCache {
                     revision: task.projection_revision.clone(),
                     display: Arc::new(TaskDisplay {
                         identity: task.task_ref.clone(),
-                        title: format!("{}  {}", task.display_id, task.title).into(),
+                        // Display-only fallback: when the Runtime projects no
+                        // display id, show the wire identity. Commands still
+                        // target `identity`, never this label.
+                        title: format!(
+                            "{}  {}",
+                            task.display_id.as_deref().unwrap_or(task.task_ref.as_str()),
+                            task.title
+                        )
+                        .into(),
                     }),
                 });
                 let display = &cached.display;
@@ -1351,6 +1359,13 @@ impl StopDisplay {
     }
 }
 
+/// Explicit display marker for a Runtime fact that was not projected.
+///
+/// A missing fact is never turned into a plausible value: the phase axis and
+/// the task rail show this marker, and dependent commands stay disabled through
+/// the existing availability path.
+pub(crate) const NOT_PROJECTED_FACT: &str = "不明";
+
 /// Display-only data prepared from one complete publication.
 #[derive(Default)]
 pub struct WorkbenchText {
@@ -1389,7 +1404,7 @@ impl WorkbenchText {
         let unknown = if unavailable {
             "利用できません — 情報源を利用できません"
         } else {
-            "不明"
+            NOT_PROJECTED_FACT
         };
         Self {
             connection: connection_label(publication),
@@ -1517,10 +1532,14 @@ fn state_axes(
             desktop_protocol::TaskStatus::Unknown(raw) => raw.as_str(),
         }
         .into(),
-        inner_phase: task.inner_phase.as_str().into(),
+        inner_phase: task
+            .inner_phase
+            .as_ref()
+            .map_or(NOT_PROJECTED_FACT, |phase| phase.as_str())
+            .into(),
         iteration: task
             .iteration_index
-            .map_or_else(|| "不明".to_owned(), |n| format!("第{n}回"))
+            .map_or_else(|| NOT_PROJECTED_FACT.to_owned(), |n| format!("第{n}回"))
             .into(),
         artifact_availability: artifact_availability.into(),
         connection: connection.into(),
@@ -1551,7 +1570,14 @@ fn stop_availability(
             "停止状態を確認できません — 操作可否の情報がありません".into(),
         );
     };
-    let Some(capabilities) = snapshot.capabilities.get(&task.capabilities_ref) else {
+    // An absent capabilities_ref means the Runtime projected no command
+    // availability for this task; that fails closed exactly like a declared
+    // reference whose projection is missing.
+    let Some(capabilities) = task
+        .capabilities_ref
+        .as_ref()
+        .and_then(|identity| snapshot.capabilities.get(identity))
+    else {
         return (
             false,
             "停止状態を確認できません — 操作可否の情報がありません".into(),
@@ -1919,7 +1945,7 @@ mod tests {
     use std::cell::Cell;
     use std::sync::Arc;
 
-    use super::{DerivationCache, DisplayCache, WorkbenchText};
+    use super::{DerivationCache, DisplayCache, NOT_PROJECTED_FACT, WorkbenchText};
     use app_core::{
         ObservationPublication, PublicationConnection, PublicationNotice, PublicationSource,
         SnapshotHandle,
@@ -1973,16 +1999,16 @@ mod tests {
             task_ref.clone(),
             TaskSnapshot {
                 task_ref: task_ref.clone(),
-                display_id: "Task-184".to_owned(),
+                display_id: Some("Task-184".to_owned()),
                 title: title.to_owned(),
                 task_status,
-                inner_phase: PhaseLabel::new("BUILD").expect("valid phase"),
+                inner_phase: Some(PhaseLabel::new("BUILD").expect("valid phase")),
                 iteration_ref: Some(IterationId::fixture("iteration/Task-184/3")),
                 iteration_index: Some(3),
                 best_candidate_ref: Some(candidate_ref("e")),
                 formal_outcome_ref: Some(OutcomeId::fixture("outcome/main")),
                 accepted_brief_ref: None,
-                capabilities_ref: CapabilitiesId::fixture("capabilities/task"),
+                capabilities_ref: Some(CapabilitiesId::fixture("capabilities/task")),
                 projection_revision: Counter::from_u128(task_revision),
             },
         );
@@ -2397,16 +2423,16 @@ mod tests {
             task_ref.clone(),
             TaskSnapshot {
                 task_ref: task_ref.clone(),
-                display_id: "Task-184".to_owned(),
+                display_id: Some("Task-184".to_owned()),
                 title: "Inspector task".to_owned(),
                 task_status: TaskStatus::Active,
-                inner_phase: PhaseLabel::new("REFINE").expect("valid phase"),
+                inner_phase: Some(PhaseLabel::new("REFINE").expect("valid phase")),
                 iteration_ref: Some(IterationId::fixture("iteration/Task-184/1")),
                 iteration_index: Some(1),
                 best_candidate_ref: None,
                 formal_outcome_ref,
                 accepted_brief_ref: None,
-                capabilities_ref: CapabilitiesId::fixture("capabilities/task"),
+                capabilities_ref: Some(CapabilitiesId::fixture("capabilities/task")),
                 projection_revision: Counter::from_u128(1),
             },
         );
@@ -2518,6 +2544,47 @@ mod tests {
         assert_eq!(
             field_value(&reordered.sections[1], "visual_quality"),
             Some("88 score_0_100".into())
+        );
+    }
+
+    #[test]
+    fn unprojected_task_facts_show_explicit_markers_and_fail_closed() {
+        let task_ref = TaskId::fixture("task/no-run");
+        let mut snapshot: SnapshotHandle = Arc::default();
+        let state = Arc::get_mut(&mut snapshot).expect("snapshot has one owner");
+        state.epoch = Some(desktop_protocol::EpochId::fixture("epoch/1"));
+        state.tasks.insert(
+            task_ref.clone(),
+            TaskSnapshot {
+                task_ref: task_ref.clone(),
+                display_id: None,
+                title: "No run yet".to_owned(),
+                task_status: TaskStatus::Assigned,
+                inner_phase: None,
+                iteration_ref: None,
+                iteration_index: None,
+                best_candidate_ref: None,
+                formal_outcome_ref: None,
+                accepted_brief_ref: None,
+                capabilities_ref: None,
+                projection_revision: Counter::from_u128(1),
+            },
+        );
+        let text = derive(
+            &mut DerivationCache::default(),
+            &publication(snapshot, 1, 1, 1),
+        );
+        // Display label falls back to the wire identity for display only.
+        let expected_title = format!("{}  No run yet", task_ref.as_str());
+        assert_eq!(text.title.as_ref(), expected_title.as_str());
+        // Not projected is the explicit unknown marker, never a plausible value.
+        assert_eq!(text.axes.inner_phase.as_ref(), NOT_PROJECTED_FACT);
+        // Absent capability availability fails closed through the existing path.
+        assert!(!text.stop_enabled);
+        assert!(
+            text.stop_reason.contains("操作可否の情報がありません"),
+            "{}",
+            text.stop_reason
         );
     }
 
@@ -3296,16 +3363,16 @@ mod tests {
         let capabilities_ref = CapabilitiesId::fixture("capabilities/second");
         let selected_task = TaskSnapshot {
             task_ref: selected_id.clone(),
-            display_id: "Task-999".to_owned(),
+            display_id: Some("Task-999".to_owned()),
             title: "Second selected".to_owned(),
             task_status: TaskStatus::Completed,
-            inner_phase: PhaseLabel::new("REVIEW").expect("valid phase"),
+            inner_phase: Some(PhaseLabel::new("REVIEW").expect("valid phase")),
             iteration_ref: None,
             iteration_index: None,
             best_candidate_ref: None,
             formal_outcome_ref: None,
             accepted_brief_ref: None,
-            capabilities_ref: capabilities_ref.clone(),
+            capabilities_ref: Some(capabilities_ref.clone()),
             projection_revision: Counter::from_u128(1),
         };
         let state = Arc::get_mut(&mut snapshot).expect("snapshot has one owner");
@@ -3672,7 +3739,7 @@ mod tests {
             .tasks
             .get_mut(&TaskId::fixture("task/Task-184"))
             .expect("fixture task");
-        task.inner_phase = PhaseLabel::new("VENDOR_PHASE_V2").expect("valid open phase");
+        task.inner_phase = Some(PhaseLabel::new("VENDOR_PHASE_V2").expect("valid open phase"));
         task.accepted_brief_ref = Some(artifact.clone());
         state.artifacts.insert(
             artifact.clone(),

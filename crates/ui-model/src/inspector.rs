@@ -303,10 +303,13 @@ fn goal_section(task: &TaskSnapshot) -> SectionView {
         || Arc::<str>::from("報告されていません"),
         |index| Arc::<str>::from(index.to_string()),
     );
+    // Display-only fallback to the wire identity when the Runtime projects no
+    // display id; commands target the identity, never this label.
+    let display = task.display_id.as_deref().unwrap_or(task.task_ref.as_str());
     let entries = vec![Entry {
         heading: None,
         fields: vec![
-            Field::new("タスク", task.display_id.clone()),
+            Field::new("タスク", display.to_owned()),
             Field::new("タイトル", task.title.clone()),
             Field::new("反復", iteration),
         ]
@@ -314,7 +317,7 @@ fn goal_section(task: &TaskSnapshot) -> SectionView {
     }];
     SectionView::available(
         Section::Goal,
-        format!("{} — {}", task.display_id, task.title),
+        format!("{display} — {}", task.title),
         revision_key(task.projection_revision.clone()),
         entries,
     )

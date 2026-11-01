@@ -3,9 +3,9 @@
 use desktop_protocol::{
     CandidateRef, CommandEnvelope, CommandId, CommandPayload, CommandTarget,
     CommandValidationError, Counter, DeltaTransaction, Limits, MAX_CONTROL_FRAME_BYTES,
-    MAX_QUEUE_FRAMES, MAX_STAGED_BUNDLE_BYTES, Projection, ProjectionMutation, ServerMessage,
-    ServerWire, StopTaskCommand, TaskId, TaskSnapshot, TaskStatus, UnknownMessage, Version,
-    canonical_json, projection_bundle_digest,
+    MAX_QUEUE_FRAMES, MAX_STAGED_BUNDLE_BYTES, PhaseLabel, Projection, ProjectionMutation,
+    ServerMessage, ServerWire, StopTaskCommand, TaskId, TaskSnapshot, TaskStatus, UnknownMessage,
+    Version, canonical_json, projection_bundle_digest,
 };
 
 const TASK_JSON: &str = r#"{
@@ -32,19 +32,75 @@ const TASK_JSON: &str = r#"{
 #[test]
 fn task_snapshot_round_trips_and_keeps_axes_independent() {
     let task: TaskSnapshot = serde_json::from_str(TASK_JSON).expect("golden task parses");
-    assert_eq!(task.display_id, "Task-184");
+    assert_eq!(task.display_id.as_deref(), Some("Task-184"));
     assert_eq!(task.title, "新製品キービジュアル");
     assert_eq!(task.task_status, TaskStatus::Active);
-    assert_eq!(task.inner_phase.as_str(), "REFINE");
+    assert_eq!(
+        task.inner_phase.as_ref().map(PhaseLabel::as_str),
+        Some("REFINE")
+    );
     assert_eq!(task.iteration_index, Some(3));
     assert_eq!(task.task_ref.as_str(), "fixture:task/Task-184");
-    assert_ne!(task.task_ref.as_str(), task.display_id);
+    assert_ne!(task.display_id.as_deref(), Some(task.task_ref.as_str()));
     assert!(task.formal_outcome_ref.is_none());
     assert_eq!(task.projection_revision.as_str(), "7");
 
     let encoded = serde_json::to_string(&task).expect("task serializes");
     let reparsed: TaskSnapshot = serde_json::from_str(&encoded).expect("task reparses");
     assert_eq!(reparsed, task);
+}
+
+#[test]
+fn unprojected_task_facts_stay_absent_instead_of_defaulted() {
+    // The Runtime read model cannot project a display id, a phase or a
+    // capabilities reference for a task without a run. Absence on the wire must
+    // stay absence: never `""`, never a plausible phase or reference.
+    let golden: serde_json::Value = serde_json::from_str(TASK_JSON).expect("golden task parses");
+    let absent = ["display_id", "inner_phase", "capabilities_ref"];
+
+    // 1. Fields omitted entirely.
+    let mut omitted = golden.clone();
+    for key in absent {
+        assert!(
+            omitted
+                .as_object_mut()
+                .expect("task object")
+                .remove(key)
+                .is_some(),
+            "golden task carries {key}"
+        );
+    }
+    let task: TaskSnapshot =
+        serde_json::from_value(omitted).expect("a task without the three facts decodes");
+    assert_eq!(task.display_id, None);
+    assert_eq!(task.inner_phase, None);
+    assert_eq!(task.capabilities_ref, None);
+
+    // 2. Fields present as explicit JSON null carry the same meaning.
+    let mut nulled = golden.clone();
+    for key in absent {
+        nulled[key] = serde_json::Value::Null;
+    }
+    let task: TaskSnapshot =
+        serde_json::from_value(nulled).expect("explicit null task facts decode");
+    assert_eq!(task.display_id, None);
+    assert_eq!(task.inner_phase, None);
+    assert_eq!(task.capabilities_ref, None);
+
+    // 3. Re-encoding keeps the absence visible as null and never invents a
+    //    value, so a downstream consumer cannot mistake absence for a default.
+    let encoded = serde_json::to_value(&task).expect("task serializes");
+    for key in absent {
+        assert_eq!(
+            encoded[key],
+            serde_json::Value::Null,
+            "{key} must stay absent"
+        );
+    }
+    assert_eq!(
+        encoded["task_ref"],
+        serde_json::json!("fixture:task/Task-184")
+    );
 }
 
 #[test]
