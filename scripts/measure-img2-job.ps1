@@ -10,7 +10,9 @@ param(
     [string]$EvidenceDir = "C:\dev\cos-desktop-verification\rel1-2026-10-30",
     [string]$WorkRoot = "",
     [switch]$SimulateAssignFailure,
-    [switch]$SimulateResumeFailure
+    [switch]$SimulateResumeFailure,
+    [switch]$SimulateRecoveryUnverified,
+    [switch]$SimulateUnplannedFailure
 )
 
 # MP-IMG2 hard memory bound and cancellation latency, without unsafe Rust:
@@ -41,7 +43,7 @@ public static class Win32Job
     [DllImport("kernel32.dll")]
     private static extern bool SetInformationJobObject(IntPtr job, int infoClass, IntPtr info, uint length);
 
-    [DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
 
     [DllImport("kernel32.dll")]
@@ -145,7 +147,7 @@ public static class Win32Job
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern bool CreateProcess(string application, string commandLine, IntPtr processAttributes, IntPtr threadAttributes, bool inheritHandles, uint creationFlags, IntPtr environment, string currentDirectory, ref STARTUPINFO startupInfo, out PROCESS_INFORMATION processInformation);
 
-    [DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll", SetLastError = true)]
     private static extern uint ResumeThread(IntPtr thread);
 
     [DllImport("kernel32.dll")]
@@ -156,19 +158,25 @@ public static class Win32Job
 
     /// Create the process suspended, assign it to the job, then resume it: the cap applies
     /// from the first instruction, so the boundary is not a start/assign race.
-    [DllImport("kernel32.dll")]
+    [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool TerminateProcess(IntPtr process, uint exitCode);
 
-    /// Terminate and confirm the process is gone before its handle is released: the write
-    /// of TerminateProcess is asynchronous, so waiting is part of the recovery contract.
-    private static void TerminateAndWait(IntPtr process)
+    /// Terminate and confirm the exit. A failure here means recovery cannot be verified;
+    /// the caller surfaces `recovery-unverified:<detail>` and the harness HOLDs.
+    private static void TerminateAndConfirm(IntPtr process)
     {
-        if (!TerminateProcess(process, 1)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        if (!TerminateProcess(process, 1))
+        {
+            throw new InvalidOperationException("recovery-unverified:terminate-failed:" + Marshal.GetLastWin32Error());
+        }
         uint wait = WaitForSingleObject(process, 10000);
-        if (wait != 0) throw new InvalidOperationException("terminate-wait-failed:" + wait);
+        if (wait != 0)
+        {
+            throw new InvalidOperationException("recovery-unverified:wait-failed:" + wait);
+        }
     }
 
-    public static IntPtr StartSuspendedInJob(string commandLine, IntPtr job, out int processId, bool failAssign, bool failResume)
+    public static IntPtr StartSuspendedInJob(string commandLine, IntPtr job, out int processId, bool failAssign, bool failResume, bool failRecovery)
     {
         var startup = new STARTUPINFO();
         startup.cb = Marshal.SizeOf(startup);
@@ -177,48 +185,46 @@ public static class Win32Job
         {
             throw new Win32Exception();
         }
-        int pid = information.dwProcessId;
+        bool handedOff = false;
         try
         {
             if (failAssign)
             {
-                TerminateAndWait(information.hProcess);
-                CloseHandle(information.hThread);
-                CloseHandle(information.hProcess);
+                TerminateAndConfirm(information.hProcess);
                 throw new InvalidOperationException("simulated-assign-failure");
             }
             if (!AssignProcessToJobObject(job, information.hProcess))
             {
                 int error = Marshal.GetLastWin32Error();
-                TerminateAndWait(information.hProcess);
-                CloseHandle(information.hThread);
-                CloseHandle(information.hProcess);
-                throw new Win32Exception(error);
+                TerminateAndConfirm(information.hProcess);
+                throw new InvalidOperationException("assign-failed:" + error);
             }
             if (failResume)
             {
-                TerminateAndWait(information.hProcess);
-                CloseHandle(information.hThread);
-                CloseHandle(information.hProcess);
+                TerminateAndConfirm(information.hProcess);
                 throw new InvalidOperationException("simulated-resume-failure");
             }
             if (ResumeThread(information.hThread) == 0xFFFFFFFF)
             {
                 int error = Marshal.GetLastWin32Error();
-                TerminateAndWait(information.hProcess);
-                CloseHandle(information.hThread);
-                CloseHandle(information.hProcess);
-                throw new Win32Exception(error);
+                TerminateAndConfirm(information.hProcess);
+                throw new InvalidOperationException("resume-failed:" + error);
             }
+            if (failRecovery)
+            {
+                // The process is really terminated and confirmed; the harness reports the
+                // recovery as unverified so the HOLD path is exercised.
+                TerminateAndConfirm(information.hProcess);
+                throw new InvalidOperationException("recovery-unverified:simulated");
+            }
+            handedOff = true;
         }
-        catch (Win32Exception)
+        finally
         {
             CloseHandle(information.hThread);
-            CloseHandle(information.hProcess);
-            throw;
+            if (!handedOff) CloseHandle(information.hProcess);
         }
-        CloseHandle(information.hThread);
-        processId = pid;
+        processId = information.dwProcessId;
         return information.hProcess;
     }
 
@@ -249,6 +255,7 @@ function Get-ProbeOutput([string]$stdout) {
 }
 
 function Invoke-CappedProbe([int64]$capBytes) {
+    if ($SimulateUnplannedFailure) { throw "unplanned-launch-failure" }
     $work = Join-Path $WorkRoot ("cap-" + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $work | Out-Null
     $ready = Join-Path $work 'ready'
@@ -262,7 +269,7 @@ function Invoke-CappedProbe([int64]$capBytes) {
         $quote = { param($value) '"' + $value + '"' }
         $commandLine = (& $quote $Exe) + ' 2048 2048 ' + (& $quote $ready) + ' ' + (& $quote $go) + ' --result-file ' + (& $quote $result)
         $processId = 0
-        $processHandle = [Win32Job]::StartSuspendedInJob($commandLine, $job, [ref]$processId, $SimulateAssignFailure.IsPresent, $SimulateResumeFailure.IsPresent)
+        $processHandle = [Win32Job]::StartSuspendedInJob($commandLine, $job, [ref]$processId, $SimulateAssignFailure.IsPresent, $SimulateResumeFailure.IsPresent, $SimulateRecoveryUnverified.IsPresent)
         $process = [System.Diagnostics.Process]::GetProcessById($processId)
         $deadline = (Get-Date).AddSeconds(60)
         while (-not (Test-Path -LiteralPath $ready)) {
@@ -380,11 +387,11 @@ $record = [ordered]@{
     sampled_at_utc = $stamp
 }
 
-if ($SimulateAssignFailure -or $SimulateResumeFailure) {
+if ($SimulateAssignFailure -or $SimulateResumeFailure -or $SimulateRecoveryUnverified -or $SimulateUnplannedFailure) {
     # Negative path: the launch must fail, the process must be terminated and no probe may
     # survive. The harness reports the failure explicitly instead of a PASS.
     $residual_before = @(Get-Process -Name 'peak_probe' -ErrorAction SilentlyContinue).Count
-    $expected_route = if ($SimulateAssignFailure) { 'simulated-assign-failure' } else { 'simulated-resume-failure' }
+    $expected_route = if ($SimulateAssignFailure) { 'simulated-assign-failure' } elseif ($SimulateResumeFailure) { 'simulated-resume-failure' } else { 'recovery-unverified' }
     $reached_route = $false
     $captured_error = $null
     try {
@@ -395,22 +402,25 @@ if ($SimulateAssignFailure -or $SimulateResumeFailure) {
     }
     Start-Sleep -Milliseconds 200
     $residual_after = @(Get-Process -Name 'peak_probe' -ErrorAction SilentlyContinue).Count
+    $hold = ($captured_error -like '*recovery-unverified*') -or ($reached_route -and $residual_after -gt 0)
+    $verdict = if ($hold) { 'HOLD' } elseif ($reached_route -and $residual_after -eq 0) { 'PASS' } else { 'FAIL' }
     $record.negative = [ordered]@{
         simulated_assign_failure = $SimulateAssignFailure.IsPresent
         simulated_resume_failure = $SimulateResumeFailure.IsPresent
-        failed_as_expected = $failed_as_expected
+        simulated_recovery_unverified = $SimulateRecoveryUnverified.IsPresent
+        expected_route = $expected_route
+        reached_route = $reached_route
+        captured_error = $captured_error
         residual_before = $residual_before
         residual_after = $residual_after
-        expected_route = $expected_route
-        captured_error = $captured_error
-        clean = ($reached_route -and $residual_after -eq 0)
+        verdict = $verdict
+        clean = ($verdict -eq 'PASS')
     }
     $json_path = Join-Path $EvidenceDir ("img2-job-negative-$stamp.json")
     $record | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $json_path -Encoding UTF8
-    Write-Host ("negative: reached_route=$reached_route error=$captured_error residual_after=$residual_after clean=$($record.negative.clean)")
-    if ($record.negative.clean) { exit 0 }
-    # A reached route with survivors is an unverified recovery: HOLD, never PASS.
-    if ($reached_route -and $residual_after -gt 0) { exit 3 }
+    Write-Host ("negative: verdict=$verdict reached_route=$reached_route expected=$expected_route error=$captured_error residual_after=$residual_after")
+    if ($verdict -eq 'PASS') { exit 0 }
+    if ($verdict -eq 'HOLD') { exit 3 }
     exit 1
 }
 
