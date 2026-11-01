@@ -1039,7 +1039,7 @@ fn run_directory_and_captures_are_removed_when_the_run_finishes() {
     assert_eq!(
         report.observations[0].output_bytes,
         Some(FAKE_OUTPUT.len() as u64),
-        "the output is measured inside the run directory before cleanup"
+        "the output is measured in the run directory before cleanup"
     );
     let base = fixture.work();
     assert!(base.is_dir(), "the shared work root stays in place");
@@ -3707,7 +3707,8 @@ fn tool_rewritten_before_the_spawn_records_sample_tool_changed() {
 
 /// How the rewrite window closed, so a failure names the reason instead of a write error.
 enum Window {
-    /// The rewrite and the restore both happened inside the run.
+    /// The rewrite happened during the run; the restore followed the comparison-done
+    /// signal and is confirmed after joining the mutator.
     Opened,
     /// The sampler was already running from the rewritten file.
     SamplerAlreadyRunning,
@@ -3777,7 +3778,8 @@ fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
                 }
                 std::thread::sleep(std::time::Duration::from_millis(5));
             }
-            // Rewrite while the harness is running, then restore before the run ends.
+            // Rewrite while the harness is running; the restore waits for the harness's
+            // comparison-done signal (a causal handshake, never a fixed delay).
             let mut rewritten = original.clone();
             rewritten.extend_from_slice(b"rewritten-during-the-run");
             if std::fs::write(&tool, &rewritten).is_err() {
@@ -3821,8 +3823,9 @@ fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
         ),
     }
 
-    // The file is back to its original bytes, so the run ended in the restored state; the
-    // attempt count below is still what distinguishes the two call sites.
+    // The mutator was joined and the file is back to its original bytes, so the restore is
+    // confirmed before this assertion (not "before the run ended"); the attempt count
+    // below is still what distinguishes the two call sites.
     assert_eq!(
         std::fs::read(&tool).unwrap(),
         original,
