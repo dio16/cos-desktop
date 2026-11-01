@@ -20,6 +20,7 @@ pub mod read;
 /// product API and never consulted by product modules).
 #[doc(hidden)]
 pub mod representation;
+pub mod runtime_http;
 pub mod transport;
 
 pub use client::{

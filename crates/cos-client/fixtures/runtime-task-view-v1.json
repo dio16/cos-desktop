@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "epoch": "epoch-7f3c",
+  "projection_revision": 12,
+  "task_id": "task-184",
+  "title": "Neon alley at dusk",
+  "task_status": "ACTIVE",
+  "phase": "Generating",
+  "iteration": 3,
+  "capabilities_ref": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "stop_pending": false,
+  "watch": true,
+  "accepted_input": {
+    "objective_text": "Neon alley at dusk",
+    "text_prompt": "neon",
+    "recipe_ref": {
+      "recipe_id": "r1",
+      "source_harness_version_id": "hvid_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_harness_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "graph_ref": {
+        "graph_id": "g1",
+        "graph_version": 4,
+        "graph_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "profile_ref": null,
+      "projection_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "reference_artifact_refs": [],
+    "parameters": [],
+    "execution_limits": {},
+    "constraint_summary": ""
+  },
+  "outcome": null,
+  "available_actions": {
+    "stop": {
+      "enabled": true,
+      "reason_code": null
+    }
+  },
+  "issues": []
+}
