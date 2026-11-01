@@ -7,8 +7,12 @@
 #     required window-close control),
 #   * scans the app-managed files it can name (isolated app-data tree, temp tree,
 #     child stdout/stderr) for the synthetic token,
-#   * records Windows Error Reporting user-dump configuration READ-ONLY and reports
-#     it as NOT_RUN (no crash is induced here and no OS setting is changed).
+#   * reads the Windows Error Reporting configuration READ-ONLY (machine/user
+#     LocalDumps, the exe-specific subkeys and WerSvc) and classifies it as
+#     absent/present/unreadable/disabled without changing anything,
+#   * triggers ONE unhandled exception in a disposable child (not the Desktop) and
+#     observes whether WER produced artifacts; a dump is never copied into evidence,
+#     only its attributes and a bounded first/last token scan are recorded.
 #
 # PASS is strict: every required root and required file must be present and fully
 # scanned, with zero matches, zero unreadable/oversize/excluded entries and no walk
@@ -47,6 +51,9 @@
 #                                     partial, proving no PASS evidence is left behind
 #   -SimulateWerFailure               throw inside the WER inspection, proving a captured
 #                                     exception always fails the run
+#   -SimulateWerSecretLeak            force one artifact match, proving the verdict is FAIL
+#   -SimulateWerUnreadable            force one unreadable artifact, proving NOT_VERIFIED
+#   -SkipWerChildCrash                do not run the disposable child (status NOT_RUN)
 #   -SimulateMarkerFailure            fail the final completion marker, proving no
 #                                     unmarked PASS evidence is left behind
 #   -SimulateSimulatedVerifyError     make the simulated-entry verification unreadable,
@@ -69,6 +76,12 @@ param(
     [int]$MaxFiles = 5000,
     [int]$MaxFileBytes = 4194304,
     [int]$MaxDepth = 16,
+    [switch]$SkipWerChildCrash,
+    [switch]$SimulateWerSecretLeak,
+    [switch]$SimulateWerUnreadable,
+    [int]$WerArtifactWaitMs = 5000,
+    [int]$WerScanBytes = 1048576,
+    [int]$WerChildTimeoutMs = 30000,
     [ValidateSet('desktop.instance', 'preferences.json', 'normal-1.stderr')]
     [string]$SimulateMissingArtifact = "",
     [switch]$SimulateCredentialLoss,
@@ -99,8 +112,16 @@ $script:simulatedVerifyError = $false
 $script:simulatedPrecheckAbsent = $false
 $script:caughtException = $null
 $script:lastCredentialError = 0
+$werStatus = 'NOT_RUN'
+$desktopUnchanged = $null
 
 function Write-Section([string]$text) { Write-Host "== $text" }
+
+function Get-Sha256Bytes([byte[]]$bytes) {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try { return ([System.BitConverter]::ToString($sha.ComputeHash($bytes)) -replace '-', '').ToLowerInvariant() }
+    finally { $sha.Dispose() }
+}
 
 function Get-Sha256File([string]$path) {
     $stream = [System.IO.File]::OpenRead($path)
@@ -637,42 +658,213 @@ try {
     }
     Write-Host 'support report: NOT_APPLICABLE (no persistence path; nothing written to disk)'
 
-    Write-Section 'Windows Error Reporting (read-only)'
+    Write-Section 'Windows Error Reporting boundary (read-only configuration, one disposable child crash)'
     if ($SimulateWerFailure) { throw 'negative test: simulated failure during the WER inspection' }
-    function Get-WerLocalDumps([string]$path) {
-        if (-not (Test-Path -LiteralPath $path)) { return $null }
+
+    function Get-WerKeyState([string]$path) {
+        if (-not (Test-Path -LiteralPath $path)) {
+            return [ordered]@{ state = 'absent'; exists = $false }
+        }
         try {
             $key = Get-Item -LiteralPath $path -ErrorAction Stop
             $names = @($key.GetValueNames())
-            $type = $null
-            $count = $null
-            if ($names -contains 'DumpType') { $type = $key.GetValue('DumpType') }
-            if ($names -contains 'DumpCount') { $count = $key.GetValue('DumpCount') }
-            return [ordered]@{
-                exists = $true
-                readable = $true
-                value_names = $names
-                dump_folder_configured = ($names -contains 'DumpFolder')
-                dump_type = $type
-                dump_count = $count
-            }
+            $values = [ordered]@{}
+            foreach ($name in $names) { $values[$name] = $key.GetValue($name) }
+            return [ordered]@{ state = 'present'; exists = $true; values = $values }
         } catch {
-            return [ordered]@{ exists = $true; readable = $false; read_error = $_.Exception.Message }
+            return [ordered]@{ state = 'unreadable'; exists = $true; error = $_.Exception.Message }
         }
     }
-    $machineDumps = Get-WerLocalDumps 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps'
-    $userDumps = Get-WerLocalDumps 'HKCU:\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps'
+
+    function Get-WerSnapshot([string[]]$roots) {
+        $items = @()
+        foreach ($root in $roots) {
+            if (-not (Test-Path -LiteralPath $root)) { continue }
+            try {
+                $entries = @(Get-ChildItem -LiteralPath $root -Force -Recurse -ErrorAction Stop)
+            } catch {
+                $items += [ordered]@{ path = $root; readable = $false; size = 0; last_write = $null; extension = ''; owner = 'unreadable' }
+                continue
+            }
+            foreach ($entry in $entries) {
+                if ($entry.PSIsContainer) { continue }
+                if ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) { continue }
+                $owner = 'unreadable'
+                try { $owner = (Get-Acl -LiteralPath $entry.FullName -ErrorAction Stop).Owner } catch { $owner = 'unreadable' }
+                $items += [ordered]@{
+                    path = $entry.FullName
+                    readable = $true
+                    size = [int64]$entry.Length
+                    last_write = $entry.LastWriteTimeUtc.ToString('o')
+                    extension = $entry.Extension
+                    owner = $owner
+                }
+            }
+        }
+        return $items
+    }
+
+    function Find-TokenInBoundedFile([string]$path, [byte[]]$needle, [int]$capBytes) {
+        $result = [ordered]@{ readable = $false; bytes_scanned = 0; matches = 0; error = $null }
+        try {
+            $stream = [System.IO.File]::Open($path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+            try {
+                $length = [int64]$stream.Length
+                $firstCount = [int][Math]::Min([int64]$capBytes, $length)
+                if ($firstCount -gt 0) {
+                    $first = New-Object byte[] $firstCount
+                    $read = $stream.Read($first, 0, $firstCount)
+                    $result.bytes_scanned += $read
+                    if ((Find-Bytes $first[0..([Math]::Max(0, $read - 1))] $needle) -ge 0) { $result.matches++ }
+                }
+                if ($length -gt $capBytes) {
+                    $offset = [int64]$length - [int64]$capBytes
+                    $null = $stream.Seek($offset, [System.IO.SeekOrigin]::Begin)
+                    $lastCount = [int][Math]::Min([int64]$capBytes, $length - $offset)
+                    $last = New-Object byte[] $lastCount
+                    $read = $stream.Read($last, 0, $lastCount)
+                    $result.bytes_scanned += $read
+                    if ((Find-Bytes $last[0..([Math]::Max(0, $read - 1))] $needle) -ge 0) { $result.matches++ }
+                }
+                $result.readable = $true
+            } finally {
+                $stream.Dispose()
+            }
+        } catch {
+            $result.error = $_.Exception.Message
+        }
+        return $result
+    }
+
+    $token = 'mpsec2-native-' + [guid]::NewGuid().ToString('N')
+    $tokenBytes = [System.Text.Encoding]::UTF8.GetBytes($token)
+    $tokenSha = Get-Sha256Bytes $tokenBytes
+    $machineLocalDumps = Get-WerKeyState 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps'
+    $userLocalDumps = Get-WerKeyState 'HKCU:\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps'
+    $exeName = Split-Path -Leaf $Exe
+    $machineExeDumps = Get-WerKeyState ('HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\' + $exeName)
+    $userExeDumps = Get-WerKeyState ('HKCU:\Software\Microsoft\Windows\Windows Error Reporting\LocalDumps\' + $exeName)
+    $childExeDumps = Get-WerKeyState ('HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\powershell.exe')
+    $werDisabled = 'unreadable'
+    try {
+        $werRoot = Get-Item -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting' -ErrorAction Stop
+        $werDisabled = 'not set'
+        if (@($werRoot.GetValueNames()) -contains 'Disabled') { $werDisabled = [int]$werRoot.GetValue('Disabled') }
+    } catch {
+        $werDisabled = 'unreadable'
+    }
     $werService = 'unknown'
     try { $werService = (Get-Service -Name WerSvc -ErrorAction Stop).Status.ToString() } catch { $werService = 'unknown' }
-    $report.areas['wer_user_dumps'] = [ordered]@{
-        status = 'NOT_RUN'
-        machine_local_dumps = $machineDumps
-        user_local_dumps = $userDumps
-        wer_service = $werService
-        reason = 'read-only check; no OS setting changed; a hard kill (TerminateProcess) does not invoke WER and no dump was collected'
+    $disabledState = if ($werDisabled -eq 1 -or $werService -eq 'Stopped') { 'disabled' } elseif ($werDisabled -eq 0 -or $werService -eq 'Running') { 'enabled' } else { 'unknown' }
+
+    $desktopReportsRoot = Join-Path $env:LOCALAPPDATA 'cos-desktop\crash-reports'
+    $desktopBefore = @()
+    if (Test-Path -LiteralPath $desktopReportsRoot) {
+        $desktopBefore = @(Get-ChildItem -LiteralPath $desktopReportsRoot -Force -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
     }
-    $report.not_run += 'WER/user-mode dumps and any OS-managed crash report: configuration only, no dump induced or collected'
-    Write-Host ("WER: service=" + $werService + " machine_dumps=" + ($null -ne $machineDumps) + " user_dumps=" + ($null -ne $userDumps) + " status=NOT_RUN")
+    $werRoots = @(
+        'C:\ProgramData\Microsoft\Windows\WER\ReportQueue',
+        'C:\ProgramData\Microsoft\Windows\WER\ReportArchive',
+        (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\WER\ReportQueue'),
+        (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\WER\ReportArchive'),
+        (Join-Path $env:LOCALAPPDATA 'CrashDumps')
+    )
+    $beforeCrash = @(Get-WerSnapshot $werRoots)
+
+    $child = [ordered]@{
+        exe = 'powershell.exe (disposable child)' 
+        exit_code = $null
+        duration_ms = $null
+        real_unhandled_exception = $false
+        intentionally_production_desktop = $false
+    }
+    $childError = $null
+    if (-not $SkipWerChildCrash) {
+        $childExe = (Get-Command powershell.exe -ErrorAction Stop).Source
+        $command = "[System.Environment]::FailFast('MP-SEC2 synthetic child crash $token')"
+        $encodedCommand = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($command))
+        $started = Get-Date
+        try {
+            $childProcess = Start-Process -FilePath $childExe -ArgumentList @('-NoProfile', '-NonInteractive', '-EncodedCommand', $encodedCommand) -PassThru -WindowStyle Hidden
+            $script:childProcesses += $childProcess
+            if (-not $childProcess.WaitForExit($WerChildTimeoutMs)) {
+                Stop-Hard $childProcess
+                $childError = 'child did not exit within the timeout and was killed'
+            } else {
+                $child.exit_code = $childProcess.ExitCode
+                $child.duration_ms = [int]((Get-Date) - $started).TotalMilliseconds
+                $child.real_unhandled_exception = $childProcess.ExitCode -ne 0
+            }
+        } catch {
+            $childError = $_.Exception.Message
+        }
+    }
+    Start-Sleep -Milliseconds $WerArtifactWaitMs
+    $afterCrash = @(Get-WerSnapshot $werRoots)
+    $beforeKeys = @{}
+    foreach ($item in $beforeCrash) { $beforeKeys[$item.path] = $item }
+    $newArtifacts = @()
+    foreach ($item in $afterCrash) {
+        if (-not $beforeKeys.ContainsKey($item.path)) { $newArtifacts += $item; continue }
+        if ($beforeKeys[$item.path].size -ne $item.size) { $newArtifacts += $item }
+    }
+    $artifactScans = @()
+    $unreadableArtifacts = 0
+    $secretMatches = 0
+    foreach ($artifact in $newArtifacts) {
+        $scanResult = Find-TokenInBoundedFile $artifact.path $tokenBytes $WerScanBytes
+        if (-not $scanResult.readable) { $unreadableArtifacts++ }
+        $secretMatches += $scanResult.matches
+        $artifactScans += [ordered]@{
+            path = $artifact.path
+            extension = $artifact.extension
+            size = $artifact.size
+            owner = $artifact.owner
+            readable = $scanResult.readable
+            bytes_scanned = $scanResult.bytes_scanned
+            matches = $scanResult.matches
+        }
+    }
+    if ($SimulateWerSecretLeak) { $secretMatches = 1 }
+    if ($SimulateWerUnreadable) { $unreadableArtifacts = 1 }
+    $desktopAfter = @()
+    if (Test-Path -LiteralPath $desktopReportsRoot) {
+        $desktopAfter = @(Get-ChildItem -LiteralPath $desktopReportsRoot -Force -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
+    }
+    $desktopUnchanged = (($desktopBefore | Sort-Object) -join '|') -eq (($desktopAfter | Sort-Object) -join '|')
+    $werStatus = if ($secretMatches -gt 0) { 'FAIL' } elseif ($unreadableArtifacts -gt 0) { 'NOT_VERIFIED' } elseif ($SkipWerChildCrash) { 'NOT_RUN' } elseif ($null -ne $childError) { 'HOLD' } elseif ($newArtifacts.Count -eq 0) { 'HOLD' } else { 'PASS_LIMITED' }
+
+    $report.areas['wer_boundary'] = [ordered]@{
+        status = $werStatus
+        token_sha256 = $tokenSha
+        wer_disabled_value = $werDisabled
+        wer_service = $werService
+        disabled_state = $disabledState
+        machine_local_dumps = $machineLocalDumps
+        user_local_dumps = $userLocalDumps
+        machine_exe_local_dumps = $machineExeDumps
+        user_exe_local_dumps = $userExeDumps
+        machine_child_local_dumps = $childExeDumps
+        child = $child
+        child_error = $childError
+        artifact_dirs = $werRoots
+        new_artifacts = $newArtifacts
+        artifact_scans = $artifactScans
+        secret_matches = $secretMatches
+        unreadable_artifacts = $unreadableArtifacts
+        scan_bounds = [ordered]@{ max_bytes_per_artifact = $WerScanBytes }
+        desktop_crash_reports_dir = $desktopReportsRoot
+        desktop_reports_before = $desktopBefore
+        desktop_reports_after = $desktopAfter
+        desktop_area_unchanged = $desktopUnchanged
+        reason = 'read-only WER configuration plus one disposable child unhandled exception; the Desktop process was never crashed; a missing artifact means dump verification is HOLD, not PASS'
+    }
+    $report.checks_wer_boundary = $werStatus
+
+    $report.not_run += 'Desktop-specific crash: no crash was induced in the production Desktop process'
+    $report.not_run += 'WER dump contents: only a bounded first/last segment was scanned; raw artifacts were never copied into evidence'
+    $report.not_run += 'OS-managed crash area ownership/size beyond the listed attributes and bounded token scan'
+    Write-Host ("WER boundary: status=" + $werStatus + " disabled=" + $disabledState + " service=" + $werService + " child_exit=" + $child.exit_code + " new_artifacts=" + $newArtifacts.Count + " unreadable=" + $unreadableArtifacts + " secret_matches=" + $secretMatches + " desktop_area_unchanged=" + $desktopUnchanged)
 
     $report.not_run += 'OS credential store contents beyond existence/deletion: no plaintext read, no ACL claim'
     $report.not_run += 'other user profiles, process memory, shell history and pagefile'
@@ -744,6 +936,9 @@ finally {
     $fail = @()
     $hold = @()
     if ($preconditionFailure) { $fail += 'precondition' }
+    if ($werStatus -eq 'FAIL') { $fail += 'a synthetic secret was found in a WER artifact' }
+    if ($werStatus -eq 'NOT_VERIFIED') { $hold += 'WER artifacts were observed but not readable (NOT_VERIFIED)' }
+    if ($null -ne $desktopUnchanged -and -not $desktopUnchanged) { $fail += 'the Desktop crash-reports area changed during the child crash' }
     if ($null -ne $script:caughtException) { $fail += ('exception during verification: ' + $script:caughtException) }
     if ($script:simulatedVerifyError) { $fail += 'the simulated pre-existing credential could not be verified' }
     if ($null -ne $scan) {
@@ -792,7 +987,7 @@ finally {
         scan_completeness = $scanStatus
         credential = $credentialStatus
         support_report = 'NOT_APPLICABLE'
-        wer_user_dumps = 'NOT_RUN'
+        wer_boundary = $werStatus
     }
     if ($fail.Count -gt 0) {
         $report.result = 'FAIL'
@@ -800,6 +995,11 @@ finally {
     } elseif ($hold.Count -gt 0) {
         $report.result = 'HOLD'
         $exitCode = 2
+    } elseif ($werStatus -eq 'PASS_LIMITED' -or $werStatus -eq 'HOLD') {
+        # The secret scan and the other controls passed, but the OS dump boundary is
+        # only read/observed: the run is a limited PASS, never a full one.
+        $report.result = 'PASS_LIMITED'
+        $exitCode = 0
     } else {
         $report.result = 'PASS'
         $exitCode = 0

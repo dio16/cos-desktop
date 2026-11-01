@@ -2583,3 +2583,22 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **F. Gates:** fmt, clippy `-D warnings`, `cargo test --locked --workspace`, build, dependency checker (see the task report for counts).
 - **G. Judgment:** explicit save, rotation, redaction and restart read-back are **PASS_LIMITED** (bounded local observation; the API is exercised by tests, not yet wired to an automatic crash handler). **HOLD / NOT_RUN:** automatic on-crash report generation, WER dump/OS-managed-area secrecy, 4,096-event ring persistence across restart, report export/consent UI, and **MP-SEC2 overall**.
 
+### 19.126 MP-SEC2 Windows WER boundary: native evidence (2026-11-02)
+
+- **A. Environment pinned (read-only):** HEAD `32cac6295de896e9c400d3d97c1e74d73af7aab6` with 1 dirty entry (this script/plan); `target/debug/cos-desktop.exe` SHA-256 `2e53072f08f227937bbed0c956b704f9b548980b705afff5b198a083859b8a5a`, 35,048,448 B; **Windows 11 Pro 10.0.26300 x64**, PowerShell 7.6.9. The existing `scripts/verify-mp-sec2-native.ps1` was extended; no new verification framework was added.
+- **B. WER configuration read (three states, nothing changed):** `disabled_state = enabled` (`Disabled` value not set; **WerSvc Running**); **machine `LocalDumps` key present with no value names** (no DumpFolder/DumpType/DumpCount); **user `LocalDumps` absent**; exe-specific `LocalDumps\cos-desktop.exe` and `LocalDumps\powershell.exe` **absent** in both hives. No registry write, no WER setting change.
+- **C. Controlled abnormal exit:** one **disposable `powershell.exe` child** executed `[Environment]::FailFast(...)` with a synthetic token; **exit code −2,146,232,797 (0x80131623)**, duration 7,000 ms, real unhandled exception. The **production Desktop process was never crashed** (`intentionally_production_desktop = false`); the conclusion is not a Desktop-specific crash verification.
+- **D. Artifact and boundary:** one artifact appeared in the **OS-managed area**: `%LOCALAPPDATA%\CrashDumps\powershell.exe.<pid>.dmp`, size **27,312,167 B**, owner `DIO\diobrando`, extension `.dmp`. A **bounded** scan (first + last **1,048,576 B**; 2,097,152 B total) found **0** synthetic-token matches. Raw artifact bytes were never copied into evidence. The Desktop-managed `crash-reports` directory was **empty before and after** (unchanged), so the app-managed area and the OS-managed CrashDumps area are recorded as distinct boundaries.
+- **E. Judgment:**
+
+| Situation | Result |
+|---|---|
+| Configuration and boundary read/observed | **PASS_LIMITED** (observed: one OS artifact, bounded scan, no leak) |
+| WER artifact not produced | **HOLD** for dump verification (not this machine: one artifact was produced) |
+| Artifact unreadable | **NOT_VERIFIED** (proved by `-SimulateWerUnreadable`: `wer_boundary = NOT_VERIFIED`, overall HOLD, exit 2) |
+| Synthetic secret leak | **FAIL** (proved by `-SimulateWerSecretLeak`: overall FAIL, exit 1) |
+| Real Desktop crash verified | **NOT_RUN** (the Desktop was never crashed; no Desktop crash-report was produced or claimed) |
+
+- **F. Negative tests (existing script, no new framework):** `-SimulateWerSecretLeak` → FAIL (exit 1); `-SimulateWerUnreadable` → wer_boundary NOT_VERIFIED / overall HOLD (exit 2); `-SkipWerChildCrash` → wer_boundary NOT_RUN; normal run → PASS_LIMITED (exit 0). The dump verification never folds into a full PASS.
+- **Limits of this machine:** the agent process sandbox denies child writes outside the workspace, so evidence was written to a workspace-local `target/sec2-evidence` directory for these runs rather than the standard private evidence directory; the three induced dumps remain in the OS-managed `CrashDumps` area. The bounded scan covers only the first/last segment of the 27 MB dump, and OS-managed-area ownership/secrecy is read only for the listed attributes. **MP-SEC2 overall, WER control and Desktop crash-report automatic capture remain not claimed.**
+
