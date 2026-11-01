@@ -29,6 +29,9 @@ pub const MAX_CRASH_REPORTS: usize = 3;
 /// Maximum bytes of one stored crash report.
 pub const MAX_CRASH_REPORT_BYTES: usize = 5 * 1024 * 1024;
 
+/// Highest sequence that still fits the fixed ten-digit managed name.
+pub const MAX_REPORT_ID: u64 = 9_999_999_999;
+
 /// Dedicated subdirectory of the application data directory.
 pub const CRASH_REPORT_DIR: &str = "crash-reports";
 
@@ -110,6 +113,8 @@ pub enum CrashStoreError {
     UnsafeContent,
     /// A managed report could not be read back.
     InvalidReport,
+    /// The managed-name sequence space is exhausted.
+    IdExhausted,
     /// Underlying I/O failure.
     Io(std::io::Error),
 }
@@ -129,6 +134,7 @@ impl std::fmt::Display for CrashStoreError {
                 formatter.write_str("the report cannot be proven free of sensitive content")
             }
             Self::InvalidReport => formatter.write_str("the managed report is invalid"),
+            Self::IdExhausted => formatter.write_str("the report sequence space is exhausted"),
             Self::Io(error) => write!(formatter, "{error}"),
         }
     }
@@ -175,16 +181,28 @@ impl CrashReportStore {
     }
 
     fn prepare(&self) -> Result<(), CrashStoreError> {
-        if self.root.exists() && !self.root.is_dir() {
-            return Err(CrashStoreError::NotADirectory);
-        }
+        self.check_root()?;
         fs::create_dir_all(&self.root)?;
+        // Re-check after creation: the only accepted root is a real directory, never a
+        // link, junction or other reparse point that would redirect writes or eviction.
+        self.check_root()?;
         self.prune()?;
         Ok(())
     }
 
+    /// The root must be a real directory; links, junctions and files are refused.
+    fn check_root(&self) -> Result<(), CrashStoreError> {
+        match fs::symlink_metadata(&self.root) {
+            Ok(meta) if is_linked(&meta) || !meta.is_dir() => Err(CrashStoreError::NotADirectory),
+            Ok(_) => Ok(()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(error) => Err(CrashStoreError::Io(error)),
+        }
+    }
+
     /// Managed reports, oldest first. Unknown entries are never returned.
     pub fn list(&self) -> Result<Vec<CrashReportMeta>, CrashStoreError> {
+        self.check_root()?;
         let mut reports = self.managed_reports()?;
         reports.sort_by_key(|report| report.id);
         Ok(reports)
@@ -192,6 +210,7 @@ impl CrashReportStore {
 
     /// Read one managed report by sequence.
     pub fn read(&self, id: u64) -> Result<String, CrashStoreError> {
+        self.check_root()?;
         let path = self.root.join(managed_name(id));
         let meta = match fs::symlink_metadata(&path) {
             Ok(meta) => meta,
@@ -241,6 +260,9 @@ impl CrashReportStore {
         let id = reports
             .last()
             .map_or(1, |report| report.id.saturating_add(1));
+        if id > MAX_REPORT_ID {
+            return Err(CrashStoreError::IdExhausted);
+        }
         self.commit(id, bytes)?;
         Ok(CrashReportMeta {
             id,
@@ -316,6 +338,9 @@ impl CrashReportStore {
     }
 
     fn commit(&self, id: u64, bytes: &[u8]) -> Result<(), CrashStoreError> {
+        if id > MAX_REPORT_ID {
+            return Err(CrashStoreError::IdExhausted);
+        }
         if bytes.len() > MAX_CRASH_REPORT_BYTES {
             return Err(CrashStoreError::TooLarge {
                 bytes: bytes.len(),
@@ -323,21 +348,43 @@ impl CrashReportStore {
             });
         }
         let staging = self.root.join(staging_name());
-        {
+        let outcome = (|| -> std::io::Result<()> {
             let mut file = OpenOptions::new()
                 .write(true)
                 .create_new(true)
                 .open(&staging)?;
             file.write_all(bytes)?;
             file.sync_all()?;
-        }
-        let final_path = self.root.join(managed_name(id));
-        let result = fs::rename(&staging, &final_path);
-        if result.is_err() {
+            drop(file);
+            fs::rename(&staging, self.root.join(managed_name(id)))
+        })();
+        if outcome.is_err() {
+            // Every failure after staging creation removes the staging file, so a
+            // failed write/sync/finalize cannot leave an orphan in the dedicated area.
             let _ = fs::remove_file(&staging);
-            return result.map_err(CrashStoreError::Io);
         }
-        Ok(())
+        outcome.map_err(CrashStoreError::Io)
+    }
+}
+
+/// `FILE_ATTRIBUTE_REPARSE_POINT`: a link, junction or other reparse point.
+const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+
+/// Pure link/reparse-point predicate, testable without creating a link.
+fn is_link_or_reparse(attributes: u32, is_symlink: bool) -> bool {
+    is_symlink || attributes & FILE_ATTRIBUTE_REPARSE_POINT != 0
+}
+
+/// Whether metadata describes a link or another reparse point (never a real directory).
+fn is_linked(meta: &fs::Metadata) -> bool {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        is_link_or_reparse(meta.file_attributes(), meta.file_type().is_symlink())
+    }
+    #[cfg(not(windows))]
+    {
+        is_link_or_reparse(0, meta.file_type().is_symlink())
     }
 }
 
@@ -538,5 +585,111 @@ mod tests {
             "only the oldest managed reports are removed"
         );
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_linked_store_directory_is_refused() {
+        let root = temp_root("linked");
+        let target = temp_root("linked-target");
+        std::fs::create_dir_all(&target).expect("the target directory");
+        #[cfg(windows)]
+        let created = std::os::windows::fs::symlink_dir(&target, &root).is_ok()
+            // A junction is also a reparse point and needs no special privilege.
+            || std::process::Command::new("cmd")
+                .args([
+                    "/C",
+                    "mklink",
+                    "/J",
+                    &root.to_string_lossy(),
+                    &target.to_string_lossy(),
+                ])
+                .status()
+                .map(|status| status.success())
+                .unwrap_or(false);
+        #[cfg(not(windows))]
+        let created = std::os::unix::fs::symlink(&target, &root).is_ok();
+        if !created {
+            // The reviewer requires this verification to fail when it cannot run: a
+            // skipped link check is not evidence that linked roots are rejected.
+            eprintln!("SKIP: link creation is unavailable in this environment");
+            let _ = std::fs::remove_dir_all(&target);
+            panic!("the linked-root rejection could not be verified: link creation is unavailable");
+        }
+        let error =
+            CrashReportStore::open_at(&root).expect_err("a linked store directory must be refused");
+        assert!(matches!(error, CrashStoreError::NotADirectory));
+        assert!(
+            std::fs::read_dir(&target)
+                .expect("the target directory")
+                .next()
+                .is_none(),
+            "nothing is written through the link"
+        );
+        let _ = std::fs::remove_file(&root);
+        let _ = std::fs::remove_dir_all(&target);
+    }
+
+    #[test]
+    fn a_failed_finalize_removes_the_staging_file() {
+        let root = temp_root("staging");
+        let store = CrashReportStore::open_at(&root).expect("the dedicated directory");
+        // A directory at the final managed name makes the finalize rename fail.
+        let blocker = root.join(managed_name(2));
+        std::fs::create_dir(&blocker).expect("the blocking directory");
+        let error = store
+            .commit(2, b"staged body")
+            .expect_err("finalizing over a directory fails");
+        assert!(matches!(error, CrashStoreError::Io(_)));
+        let staged: Vec<String> = std::fs::read_dir(&root)
+            .expect("the report directory")
+            .filter_map(|entry| entry.ok())
+            .filter_map(|entry| entry.file_name().into_string().ok())
+            .filter(|name| name.starts_with(STAGING_PREFIX))
+            .collect();
+        assert!(
+            staged.is_empty(),
+            "a failed write leaves no staging file: {staged:?}"
+        );
+        assert!(blocker.is_dir(), "the blocking directory is untouched");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_sequence_stops_at_the_ten_digit_name_limit() {
+        let root = temp_root("id-limit");
+        let store = CrashReportStore::open_at(&root).expect("the dedicated directory");
+        store
+            .commit(MAX_REPORT_ID, b"last valid report")
+            .expect("the last ten-digit name");
+        assert_eq!(store.list().expect("the managed reports").len(), 1);
+        let error = store
+            .save(&CrashReportInput {
+                desktop_version: "9.9.9",
+                category: CrashCategory::Unknown,
+                diagnostics: None,
+            })
+            .expect_err("the next id would not fit the managed name");
+        assert!(matches!(error, CrashStoreError::IdExhausted));
+        assert_eq!(
+            store.list().expect("the managed reports").len(),
+            1,
+            "no unmanaged eleventh-digit name is written"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_link_predicate_covers_reparse_points_without_creating_one() {
+        // Ordinary directory attributes: FILE_ATTRIBUTE_DIRECTORY (0x10).
+        assert!(!is_link_or_reparse(0x10, false));
+        // Reparse-point attribute, as reported for a junction.
+        assert!(is_link_or_reparse(FILE_ATTRIBUTE_REPARSE_POINT, false));
+        // A symlink is recognised even if the attribute word is unavailable.
+        assert!(is_link_or_reparse(0, true));
+        // Combined flags remain linked.
+        assert!(is_link_or_reparse(
+            0x10 | FILE_ATTRIBUTE_REPARSE_POINT,
+            false
+        ));
     }
 }

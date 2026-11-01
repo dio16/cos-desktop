@@ -142,7 +142,7 @@ fn a_fourth_report_evicts_only_the_oldest_managed_report() {
     std::fs::write(&unknown, b"user notes").expect("an unknown file");
     let unknown_like = root.join("report-abc.txt");
     std::fs::write(&unknown_like, b"not managed").expect("a malformed managed-looking file");
-    let managed_dir = root.join("report-000000000099.txt");
+    let managed_dir = root.join("report-0000000099.txt");
     std::fs::create_dir(&managed_dir).expect("a directory with a managed name");
 
     let ids = save_sequence(&store, 4);
@@ -267,10 +267,10 @@ fn unknown_files_directories_and_links_are_not_destroyed() {
     std::fs::write(&unknown, b"keep").expect("an unknown file");
     let other = root.join("report-2026-11-02.log");
     std::fs::write(&other, b"keep").expect("an unknown report-like file");
-    let subdir = root.join("report-000000000001.txt");
+    let subdir = root.join("report-0000000099.txt");
     std::fs::create_dir(&subdir).expect("a managed-looking directory");
 
-    let link = root.join("report-000000000002.txt");
+    let link = root.join("report-0000000098.txt");
     #[cfg(windows)]
     let symlink_created = std::os::windows::fs::symlink_file(&unknown, &link).is_ok();
     #[cfg(not(windows))]
