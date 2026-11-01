@@ -4309,11 +4309,14 @@ fn fake_sampler_truncating_helper() {
         return;
     }
     println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
-    mark_sampler_done();
     let padding = "x".repeat(1024);
     for _ in 0..16 {
         println!("{padding}");
     }
+    // Announce only after every byte of the oversized capture has been written: the
+    // candidate then ends while this sampler is already exiting, and the supervisor
+    // harvests the completed (truncated) capture instead of racing it.
+    mark_sampler_done();
 }
 
 /// A sampler that replaces its own program file while it runs and still emits a valid

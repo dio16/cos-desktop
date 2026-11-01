@@ -411,6 +411,12 @@ pub const MAX_SAMPLE_INTERVAL_MS: u64 = 60_000;
 const SAMPLE_TOOL_DIGEST_CAP: u64 = 32 * 1024 * 1024;
 /// Per-sample hard timeout for the sampling command.
 const SAMPLE_TIMEOUT: Duration = Duration::from_millis(2_000);
+
+/// How long an exited child's still-in-flight sample may take to be reaped before it
+/// is killed. Bounded like the per-sample timeout, so a genuinely hung sampler still
+/// cannot extend a run, while an already-exited sampler is harvested instead of being
+/// discarded for scheduling reasons.
+const SAMPLE_EXIT_GRACE: Duration = Duration::from_millis(2_000);
 /// Bounded read of one sample's stdout.
 const SAMPLE_OUTPUT_BYTES: u64 = 8 * 1024;
 /// Working-set sampling tokens: observed lower bound, or why there is none.
@@ -3055,12 +3061,49 @@ fn supervise(
         }
         thread::sleep(remaining.min(POLL_INTERVAL));
     };
-    // A sample still in flight when the child ends is killed, reaped and released,
-    // and it is never counted (N5).
+    // A sample still in flight when the child ends is normally killed and never
+    // counted (N5). A sampler that already exited, however, produced complete output:
+    // discarding it would make the recorded reason depend on process scheduling (the
+    // child can win the race to the poll even when the sample is done). Reap it within
+    // a bounded grace and harvest it exactly like a polled sample; anything still
+    // running after the grace is killed and never counted.
     if let Some(mut flight) = in_flight {
-        let _ = flight.child.kill();
-        let _ = flight.child.wait();
-        flight.capture.release();
+        let mut settled = flight.child.try_wait().ok().flatten();
+        let wait_started = Instant::now();
+        while settled.is_none() && wait_started.elapsed() < SAMPLE_EXIT_GRACE {
+            thread::sleep(POLL_INTERVAL);
+            settled = flight.child.try_wait().ok().flatten();
+        }
+        match settled {
+            Some(status) => {
+                // Mirror the polled-sample rules exactly, so a sample whose exit is
+                // observed only after the child ended records the same decisive reason
+                // (failed tool, replaced tool) instead of drifting to `no_sample`.
+                if !status.success() {
+                    flight.capture.release();
+                    sampler.discarded(SAMPLE_TOOL_FAILED);
+                } else if !sample_tool_matches(&flight.tool, &flight.digest) {
+                    flight.capture.release();
+                    sampler.discarded(SAMPLE_TOOL_CHANGED);
+                } else {
+                    match harvest_sample(&mut flight) {
+                        Ok(bytes) => sampler.succeeded(bytes),
+                        Err(reason) => {
+                            if reason == SAMPLE_OUTPUT_TRUNCATED {
+                                sampler.discarded(reason);
+                            } else {
+                                sampler.failed(reason);
+                            }
+                        }
+                    }
+                }
+            }
+            None => {
+                let _ = flight.child.kill();
+                let _ = flight.child.wait();
+                flight.capture.release();
+            }
+        }
     }
     // Peak after exit: an exited child may have written more than one poll observed.
     if let Some(bounds) = bounds.as_ref() {
