@@ -5,7 +5,7 @@
 //! returns RGBA8. It owns no GPU object, performs no acquisition, and never
 //! substitutes a preview or placeholder for a refused input.
 
-use image::{DynamicImage, ImageFormat, ImageReader};
+use image::{ImageFormat, ImageReader};
 use std::io::Cursor;
 
 use crate::{Cancellation, DecodeLimits, DecodeRequest, MediaError, PixelSize, admit_decode};
@@ -65,15 +65,22 @@ pub fn decode_raster(
             .into_dimensions()
             .map_err(|_| MediaError::InvalidMetadata)?;
     let size = PixelSize::new(width, height)?;
-    // RGBA8 is the only output this adapter produces, so the admission uses those
-    // parameters; a caller's narrower bit depth refuses a decode here rather than
-    // silently quantising it.
+    let bit_depth = source_bit_depth(bytes, format)?;
+    // This adapter only produces RGBA8. A source deeper than 8 bits would be
+    // silently quantised, so it is refused rather than advertised as preserved.
+    if bit_depth > 8 || bit_depth > limits.max_bit_depth {
+        return Err(MediaError::InvalidMetadata);
+    }
+    // Conservative all-concurrent residency: the decoder's own buffer plus one
+    // full RGBA8 conversion buffer of the same size. Both are declared before any
+    // allocation, and `max_scratch_bytes` bounds the conversion buffer.
+    let decoded_bytes = size.checked_rgba_bytes()?;
     admit_decode(
         DecodeRequest {
             size,
-            bit_depth: 8,
+            bit_depth,
             channels: 4,
-            declared_scratch_bytes: 0,
+            declared_scratch_bytes: decoded_bytes,
         },
         limits,
         cancel,
@@ -83,11 +90,32 @@ pub fn decode_raster(
     reader.limits(decoder_limits(limits));
     let decoded = reader.decode().map_err(|_| MediaError::InvalidMetadata)?;
     cancel.check()?;
-    let rgba = to_rgba8(decoded);
-    if rgba.len() as u64 > limits.max_decoded_bytes {
+    // `into_rgba8` reuses an already-RGBA8 buffer and converts otherwise; the
+    // result is checked again so a decoder reporting different geometry than its
+    // header cannot exceed the admitted size.
+    let rgba = decoded.into_rgba8().into_raw();
+    if rgba.len() as u64 != decoded_bytes || rgba.len() as u64 > limits.max_decoded_bytes {
         return Err(MediaError::TooLarge);
     }
     Ok(DecodedRaster { size, format, rgba })
+}
+
+/// Bit depth of the admitted source container.
+///
+/// Only PNG can carry more than 8 bits among the admitted containers; JPEG, WebP
+/// and GIF are 8-bit or paletted. The PNG IHDR byte is read directly instead of
+/// trusting the decoder's colour type.
+fn source_bit_depth(bytes: &[u8], format: AcceptedFormat) -> Result<u8, MediaError> {
+    match format {
+        AcceptedFormat::Png => {
+            const PNG_SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
+            if bytes.len() < 25 || bytes[..8] != PNG_SIGNATURE || &bytes[12..16] != b"IHDR" {
+                return Err(MediaError::InvalidMetadata);
+            }
+            Ok(bytes[24])
+        }
+        AcceptedFormat::Jpeg | AcceptedFormat::WebP | AcceptedFormat::Gif => Ok(8),
+    }
 }
 
 fn decoder_limits(limits: DecodeLimits) -> image::Limits {
@@ -96,10 +124,6 @@ fn decoder_limits(limits: DecodeLimits) -> image::Limits {
     decoder.max_image_height = Some(limits.max_dimension);
     decoder.max_alloc = Some(limits.max_decoded_bytes);
     decoder
-}
-
-fn to_rgba8(decoded: DynamicImage) -> Vec<u8> {
-    decoded.to_rgba8().into_raw()
 }
 
 #[cfg(test)]
@@ -132,6 +156,8 @@ mod tests {
         for (format, expected) in [
             (ImageFormat::Png, AcceptedFormat::Png),
             (ImageFormat::Jpeg, AcceptedFormat::Jpeg),
+            (ImageFormat::WebP, AcceptedFormat::WebP),
+            (ImageFormat::Gif, AcceptedFormat::Gif),
         ] {
             let bytes = encode(format);
             let decoded = decode_raster(&bytes, limits(), &cancel).expect("decode");
@@ -142,6 +168,32 @@ mod tests {
                 decoded.size.checked_rgba_bytes().expect("rgba length")
             );
         }
+    }
+
+    #[test]
+    fn refuses_a_corrupt_payload() {
+        let mut bytes = encode(ImageFormat::Png);
+        let tail = bytes.len() - 8;
+        bytes.truncate(tail);
+        let error = decode_raster(&bytes, limits(), &Cancellation::default());
+        assert!(error.is_err(), "a truncated payload must be refused");
+    }
+
+    #[test]
+    fn refuses_a_sixteen_bit_png_under_an_eight_bit_limit() {
+        let image = image::ImageBuffer::<image::Rgba<u16>, Vec<u16>>::from_fn(2, 2, |x, y| {
+            image::Rgba([x as u16 * 1000, y as u16 * 1000, 3000, u16::MAX])
+        });
+        let mut bytes = Cursor::new(Vec::new());
+        DynamicImage::ImageRgba16(image)
+            .write_to(&mut bytes, ImageFormat::Png)
+            .expect("encode 16-bit png");
+        let narrow = DecodeLimits {
+            max_bit_depth: 8,
+            ..limits()
+        };
+        let error = decode_raster(&bytes.into_inner(), narrow, &Cancellation::default());
+        assert_eq!(error.unwrap_err(), crate::MediaError::InvalidMetadata);
     }
 
     #[test]
