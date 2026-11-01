@@ -4598,9 +4598,20 @@ mod contrast_scope_tests {
                 "the button must render the computed border colour ({border_color})"
             );
         }
-        assert!(
-            source.matches("shell_style::control_focus(").count() >= 2,
-            "both controls must derive their border from control_focus"
+        // Count only inside the stop-controls render region: `include_str!` also
+        // contains this test's own strings, so a global count would be self-fulfilling.
+        let region_begin = source
+            .find("// LIMITED-CONTRAST-BEGIN stop-controls:")
+            .expect("the stop-controls marker exists");
+        let region_end = source
+            .find("// LIMITED-CONTRAST-END stop-controls")
+            .expect("the stop-controls end marker exists");
+        assert!(region_begin < region_end);
+        let stop_region = &source[region_begin..region_end];
+        assert_eq!(
+            stop_region.matches("shell_style::control_focus(").count(),
+            2,
+            "both the stop and the reconcile button must call control_focus exactly once"
         );
     }
 
