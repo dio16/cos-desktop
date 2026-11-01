@@ -3244,6 +3244,8 @@ impl Render for Shell {
                 )
             });
         }
+        // LIMITED-CONTRAST-BEGIN dock: every colour inside this region resolves through
+        // the contrast scheme; the unit test below greps this region for literals.
         let dock_active = self.dock_active.clone();
         // A dock row takes keyboard focus, so the container owns the ring: it is
         // lit while focus is anywhere inside the Dock, not only on the container.
@@ -3251,8 +3253,15 @@ impl Render for Shell {
             self.dock_focus.is_focused(window) || self.dock_focus.contains_focused(window, cx);
         // Keyboard focus is one indicator: the approved outline on the focusable
         // Dock container. Row borders stay structural at one physical pixel.
-        let (dock_focus_width, dock_focus_color) =
-            shell_style::dock_focus_ring(&self.tokens, dock_focused, &colors);
+        let (dock_focus_width, dock_focus_color) = match shell_style::dock_focus_ring(
+            &self.tokens,
+            dock_focused,
+            window.scale_factor(),
+            &colors,
+        ) {
+            Ok(ring) => ring,
+            Err(_) => (px(0.0), colors.border),
+        };
         let row_border = shell_style::dock_row_border(&self.tokens, window.scale_factor()).ok();
         // Every row carries its authoritative iteration label; the first row of
         // a group is additionally marked as a group boundary, so a bounded window
@@ -3394,7 +3403,7 @@ impl Render for Shell {
                             .border_color(rgb(if group_start {
                                 colors.selection
                             } else {
-                                0x3c4046
+                                colors.border
                             }))
                             .px_1()
                             .truncate()
@@ -3418,7 +3427,7 @@ impl Render for Shell {
                                     xs_text
                                         .clone()
                                         .apply(div())
-                                        .text_color(rgb(0xe6c278))
+                                        .text_color(rgb(colors.focus))
                                         .truncate()
                                         .child(SharedString::from("正式採用（実行基盤から通知）")),
                                 )
@@ -3429,6 +3438,7 @@ impl Render for Shell {
                     }))
             })
             .collect::<Vec<_>>();
+        // LIMITED-CONTRAST-END dock
         trace::emit(
             dock_trace,
             &dock_trace_lines,
@@ -3715,7 +3725,7 @@ impl Render for Shell {
                     .gap_1()
                     .px_5()
                     .py_2()
-                    .bg(rgb(0x24272c))
+                    .bg(rgb(colors.button_face))
                     .child(
                         div()
                             .flex()
@@ -4511,5 +4521,35 @@ mod ime_tests {
         let (text, caret) = ime_splice(current, &range, "語");
         assert_eq!(text, "a画語");
         assert_eq!(caret, 7);
+    }
+}
+
+#[cfg(test)]
+mod contrast_scope_tests {
+    /// The limited AX04 scope (root + Dock + Context Bar) must not keep fixed
+    /// palette literals: with a monochrome High Contrast palette a fixed colour can
+    /// be unreadable against the OS background. The Dock region is delimited by the
+    /// `LIMITED-CONTRAST` markers; the Context Bar background was a unique literal.
+    #[test]
+    fn the_limited_contrast_scope_contains_no_fixed_colour_literal() {
+        let source = include_str!("lib.rs");
+        let begin = source
+            .find("// LIMITED-CONTRAST-BEGIN dock")
+            .expect("the Dock marker exists");
+        let end = source
+            .find("// LIMITED-CONTRAST-END dock")
+            .expect("the Dock end marker exists");
+        assert!(begin < end);
+        let dock = &source[begin..end];
+        assert!(
+            !dock.contains("rgb(0x"),
+            "the Dock must resolve every colour through the contrast scheme"
+        );
+        // Split so this test's own literal cannot satisfy the check.
+        let context_bar_literal = concat!(".bg(rgb(0x", "24272c))");
+        assert!(
+            !source.contains(context_bar_literal),
+            "the Context Bar background must follow the contrast scheme"
+        );
     }
 }

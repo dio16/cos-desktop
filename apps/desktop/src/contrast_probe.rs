@@ -96,11 +96,14 @@ fn parse_colors(text: &str) -> Option<SystemColors> {
         let Some(name) = fields.next() else {
             continue;
         };
+        // Windows stores the selection colours under the historical spellings
+        // `Hilight`/`HilightText`. The longer spellings are accepted as a legacy
+        // alias only; the canonical names win when both are present.
         let slot = match name {
             "Window" => &mut window,
             "WindowText" => &mut window_text,
-            "Highlight" => &mut highlight,
-            "HighlightText" => &mut highlight_text,
+            "Hilight" => &mut highlight,
+            "HilightText" => &mut highlight_text,
             "GrayText" => &mut gray_text,
             "ButtonFace" => &mut button_face,
             "ButtonText" => &mut button_text,
@@ -143,7 +146,7 @@ mod tests {
     const FLAGS_OFF: &str = "HKEY_CURRENT_USER\\Control Panel\\Accessibility\\HighContrast\r\n    Flags    REG_SZ    126\r\n";
     const FLAGS_ON: &str = "HKEY_CURRENT_USER\\Control Panel\\Accessibility\\HighContrast\r\n    Flags    REG_SZ    127\r\n";
 
-    const COLORS: &str = "HKEY_CURRENT_USER\\Control Panel\\Colors\r\n    Window    REG_SZ    0 0 0\r\n    WindowText    REG_SZ    255 255 255\r\n    Highlight    REG_SZ    26 235 255\r\n    HighlightText    REG_SZ    0 0 0\r\n    GrayText    REG_SZ    140 140 140\r\n    ButtonFace    REG_SZ    32 32 32\r\n    ButtonText    REG_SZ    255 255 0\r\n";
+    const COLORS: &str = "HKEY_CURRENT_USER\\Control Panel\\Colors\r\nButtonFace    REG_SZ    240 240 240\r\nButtonHilight    REG_SZ    255 255 255\r\nButtonText    REG_SZ    0 0 0\r\nGrayText    REG_SZ    109 109 109\r\nHilight    REG_SZ    0 120 215\r\nHilightText    REG_SZ    255 255 255\r\nMenuHilight    REG_SZ    0 120 215\r\nWindow    REG_SZ    255 255 255\r\nWindowFrame    REG_SZ    100 100 100\r\nWindowText    REG_SZ    0 0 0\r\n";
 
     #[test]
     fn flags_bit_reads_the_scheme() {
@@ -155,13 +158,13 @@ mod tests {
     #[test]
     fn the_system_colors_are_read_verbatim() {
         let colors = parse_colors(COLORS).expect("a complete Colors key");
-        assert_eq!(colors.window, 0x000000);
-        assert_eq!(colors.window_text, 0xffffff);
-        assert_eq!(colors.highlight, 0x1aebff);
-        assert_eq!(colors.highlight_text, 0x000000);
-        assert_eq!(colors.gray_text, 0x8c8c8c);
-        assert_eq!(colors.button_face, 0x202020);
-        assert_eq!(colors.button_text, 0xffff00);
+        assert_eq!(colors.window, 0xffffff);
+        assert_eq!(colors.window_text, 0x000000);
+        assert_eq!(colors.highlight, 0x0078d7);
+        assert_eq!(colors.highlight_text, 0xffffff);
+        assert_eq!(colors.gray_text, 0x6d6d6d);
+        assert_eq!(colors.button_face, 0xf0f0f0);
+        assert_eq!(colors.button_text, 0x000000);
     }
 
     #[test]

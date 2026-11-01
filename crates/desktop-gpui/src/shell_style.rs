@@ -107,20 +107,26 @@ pub(crate) fn focus_outline(tokens: &DesignTokens) -> Pixels {
     px(tokens.geometry.focus_outline_dip)
 }
 
-/// The single keyboard-focus ring of the Dock: the approved focus-outline width
-/// always, so acquiring focus changes colour only and never layout.
+/// The single keyboard-focus ring of the Dock.
 ///
-/// The colour comes from the resolved contrast scheme (normal palette or the OS
-/// system colours under High Contrast), never from a literal here.
+/// Focus is never colour-only: a focused Dock draws the approved focus-outline
+/// width and an unfocused one draws the structural hairline, so the two states
+/// stay distinguishable even when the OS gives one colour to every role (a
+/// monochrome High Contrast palette). The colour still comes from the resolved
+/// contrast scheme, never from a literal here. Fails closed on an unusable scale
+/// factor: `Err` means no ring at all rather than a fabricated width.
 pub(crate) fn dock_focus_ring(
     tokens: &DesignTokens,
     focused: bool,
+    scale_factor: f32,
     colors: &crate::contrast::ShellColors,
-) -> (Pixels, u32) {
-    (
-        focus_outline(tokens),
-        if focused { colors.focus } else { colors.border },
-    )
+) -> Result<(Pixels, u32), TokenError> {
+    let width = if focused {
+        focus_outline(tokens)
+    } else {
+        separator(tokens, scale_factor)?
+    };
+    Ok((width, if focused { colors.focus } else { colors.border }))
 }
 
 /// Structural border of one dock row: one physical pixel, never the focus width.
@@ -171,16 +177,38 @@ mod tests {
     fn the_dock_focus_ring_uses_the_approved_token_and_never_moves_layout() {
         let tokens = DesignTokens::accepted();
         let colors = crate::contrast::NORMAL_COLORS;
-        let (focused_width, focused_color) = dock_focus_ring(&tokens, true, &colors);
-        let (unfocused_width, unfocused_color) = dock_focus_ring(&tokens, false, &colors);
+        let (focused_width, focused_color) =
+            dock_focus_ring(&tokens, true, 1.0, &colors).expect("a usable scale");
+        let (unfocused_width, unfocused_color) =
+            dock_focus_ring(&tokens, false, 1.0, &colors).expect("a usable scale");
         assert_eq!(focused_width, focus_outline(&tokens));
         assert_eq!(focused_width, px(2.0));
-        assert_eq!(
-            focused_width, unfocused_width,
-            "acquiring focus must change colour only, never layout width"
+        assert!(
+            focused_width > unfocused_width,
+            "focus must be distinguishable by width even with identical colours"
         );
         assert_ne!(focused_color, unfocused_color);
         assert_eq!(unfocused_color, colors.border);
+        // Monochrome OS palette: every role has one colour, yet the width still
+        // marks focus.
+        let monochrome = crate::contrast::SystemColors {
+            window: 0x000000,
+            window_text: 0x000000,
+            highlight: 0x000000,
+            highlight_text: 0x000000,
+            gray_text: 0x000000,
+            button_face: 0x000000,
+            button_text: 0x000000,
+        };
+        let flat =
+            crate::contrast::colors_for(crate::contrast::ContrastScheme::HighContrast, &monochrome);
+        let (flat_focused, _) = dock_focus_ring(&tokens, true, 1.0, &flat).expect("a usable scale");
+        let (flat_unfocused, _) =
+            dock_focus_ring(&tokens, false, 1.0, &flat).expect("a usable scale");
+        assert!(
+            flat_focused > flat_unfocused,
+            "width marks focus in a monochrome palette"
+        );
     }
 
     #[test]
@@ -192,8 +220,13 @@ mod tests {
         .resolve_accepted()
         .expect("a valid override resolves");
         let colors = crate::contrast::NORMAL_COLORS;
-        assert_eq!(dock_focus_ring(&tokens, true, &colors).0, px(3.0));
-        assert_eq!(dock_focus_ring(&tokens, false, &colors).0, px(3.0));
+        let focused = dock_focus_ring(&tokens, true, 1.0, &colors).expect("a usable scale");
+        let unfocused = dock_focus_ring(&tokens, false, 1.0, &colors).expect("a usable scale");
+        assert_eq!(focused.0, px(3.0));
+        assert!(
+            unfocused.0 < focused.0,
+            "the unfocused ring stays a hairline"
+        );
     }
 
     #[test]

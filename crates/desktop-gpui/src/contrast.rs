@@ -274,38 +274,26 @@ mod tests {
         }
     }
 
+    /// Scope of this test: the **colour state only**. `ContrastState` holds the
+    /// scheme and its resolved colours and nothing else, so a switch cannot address
+    /// task/viewed/compare/focus state — but this unit test does not observe the
+    /// real `Shell`; that separation is structural (`Shell::observe_contrast`
+    /// mutates only its private `contrast` field) and the native HC toggle is
+    /// `NOT_RUN`. No view-state guarantee is claimed from this test.
     #[test]
-    fn a_switch_rebuilds_the_colors_and_preserves_view_state() {
-        // The view state the shell keeps outside the contrast type: a task
-        // identity, the viewed/compare selection and a focus target.
-        #[derive(Clone, Debug, PartialEq)]
-        struct ViewState {
-            task: Option<&'static str>,
-            viewed: Option<&'static str>,
-            compare: Option<&'static str>,
-            focus: &'static str,
-        }
-        let before = ViewState {
-            task: Some("task-1"),
-            viewed: Some("candidate-a"),
-            compare: Some("candidate-b"),
-            focus: "dock",
-        };
-        let kept = before.clone();
-
+    fn a_switch_rebuilds_only_the_colour_state() {
         let mut state = ContrastState::default();
         let normal = state.colors();
         let changed_to_hc = state.observe(ContrastScheme::HighContrast, &system());
         assert!(changed_to_hc, "the scheme really changed");
         assert_eq!(state.scheme(), ContrastScheme::HighContrast);
         assert_ne!(state.colors(), normal, "tokens were rebuilt");
-        assert_eq!(before, kept, "view state is untouched by a scheme change");
 
-        // The same scheme again is a no-op: no repaint and no state churn.
+        // The same scheme again is a no-op: no repaint and no colour churn.
         assert!(!state.observe(ContrastScheme::HighContrast, &system()));
         let changed_back = state.observe(ContrastScheme::Normal, &system());
         assert!(changed_back);
+        assert_eq!(state.scheme(), ContrastScheme::Normal);
         assert_eq!(state.colors(), NORMAL_COLORS);
-        assert_eq!(before, kept, "switching back preserves the same view state");
     }
 }
