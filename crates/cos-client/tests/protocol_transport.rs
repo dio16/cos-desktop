@@ -344,7 +344,7 @@ fn client(transport: ProtocolTransport<StubHttp>) -> CosClient<ProtocolTransport
     )
 }
 
-fn next_frame(transport: &mut ProtocolTransport<StubHttp>) -> Vec<u8> {
+fn next_frame<E: ProtocolHttp>(transport: &mut ProtocolTransport<E>) -> Vec<u8> {
     let deadline = Instant::now() + Duration::from_secs(5);
     while Instant::now() < deadline {
         match transport.poll() {
@@ -691,4 +691,215 @@ fn unsupported_client_frame_is_an_explicit_error() {
         "{error:?}"
     );
     assert!(state.lock().expect("stub state").calls.is_empty());
+}
+
+// --- S2/3-REPAIR regression tests -----------------------------------------
+
+/// Scripted executor: consumes canned responses in order, then repeats the last.
+struct ScriptedHttp {
+    responses: Vec<HttpResponse>,
+}
+
+impl ProtocolHttp for ScriptedHttp {
+    fn execute(&mut self, _request: HttpRequest) -> Result<HttpResponse, String> {
+        if self.responses.len() > 1 {
+            Ok(self.responses.remove(0))
+        } else {
+            Ok(self.responses[0].clone())
+        }
+    }
+}
+
+fn http(status: u16, body: Vec<u8>) -> HttpResponse {
+    HttpResponse { status, body }
+}
+
+fn json_http(value: serde_json::Value) -> HttpResponse {
+    HttpResponse {
+        status: 200,
+        body: serde_json::to_vec(&value).expect("response encodes"),
+    }
+}
+
+/// A 4xx/5xx document far wider than the configured response bound.
+fn oversized_error(status: u16) -> HttpResponse {
+    HttpResponse {
+        status,
+        body: vec![b'{'; 8192],
+    }
+}
+
+fn scripted(responses: Vec<HttpResponse>) -> ProtocolTransport<ScriptedHttp> {
+    let config = ProtocolTransportConfig {
+        delta_poll_interval: Duration::from_millis(1),
+        max_response_bytes: 4096,
+        ..ProtocolTransportConfig::default()
+    };
+    ProtocolTransport::new(ScriptedHttp { responses }, config, versions())
+}
+
+fn next_error<E: ProtocolHttp>(transport: &mut ProtocolTransport<E>) -> TransportError {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline {
+        match transport.poll() {
+            Ok(Some(_)) => {}
+            Ok(None) => std::thread::sleep(Duration::from_millis(1)),
+            Err(error) => return error,
+        }
+    }
+    panic!("timed out waiting for a transport error");
+}
+
+fn open_document_for(request_id: &str) -> serde_json::Value {
+    let mut state = ServerState::new();
+    let body = serde_json::json!({
+        "request_id": request_id,
+        "protocol": {"major": 2, "minor": 0},
+        "schema": {"major": 2, "minor": 0},
+        "scope": {"task_ids": [], "filters": [{"name": "view", "value": "all"}]},
+    });
+    open_document(&mut state, &body)
+}
+
+/// A-01: `{:?}` never prints the bearer token or the authorization value.
+#[test]
+fn debug_output_redacts_transport_credentials() {
+    const TOKEN: &str = "token-that-must-never-leak";
+
+    let config = ProtocolTransportConfig {
+        bearer_token: Some(TOKEN.to_owned()),
+        ..ProtocolTransportConfig::default()
+    };
+    let rendered = format!("{config:?}");
+    assert!(!rendered.contains(TOKEN), "{rendered}");
+    assert!(rendered.contains("redacted"), "{rendered}");
+    assert!(
+        rendered.contains("delta_poll_interval"),
+        "non-secret fields stay visible: {rendered}"
+    );
+
+    let request = HttpRequest {
+        method: HttpMethod::Post,
+        path: "/api/cos/desktop/observation".to_owned(),
+        headers: vec![
+            ("accept".to_owned(), "application/json".to_owned()),
+            ("authorization".to_owned(), format!("Bearer {TOKEN}")),
+        ],
+        body: b"{}".to_vec(),
+    };
+    let rendered = format!("{request:?}");
+    assert!(!rendered.contains(TOKEN), "{rendered}");
+    assert!(rendered.contains("Bearer <redacted>"), "{rendered}");
+    assert!(rendered.contains("application/json"), "{rendered}");
+
+    // A non-bearer authorization value is redacted as well.
+    let basic = HttpRequest {
+        method: HttpMethod::Get,
+        path: "/api/cos/desktop/server".to_owned(),
+        headers: vec![("authorization".to_owned(), format!("Basic {TOKEN}"))],
+        body: Vec::new(),
+    };
+    let rendered = format!("{basic:?}");
+    assert!(!rendered.contains(TOKEN), "{rendered}");
+    assert!(rendered.contains("<redacted>"), "{rendered}");
+}
+
+/// A-02: a reset stream must forget the old stream's verified server identity.
+#[test]
+fn reset_stream_forgets_the_authenticated_server() {
+    let (mut transport, _state) = transport();
+    transport.send(hello_frame()).expect("hello enqueues");
+    let frame = next_frame(&mut transport);
+    assert_eq!(message_kind(&decoded(&frame)), "HELLO_ACCEPTED");
+    assert!(transport.authenticated_server().is_some());
+
+    transport.reset_stream();
+    assert!(
+        transport.authenticated_server().is_none(),
+        "a new stream must re-authenticate before any server statement is trusted"
+    );
+    // The old stream's frames are gone with it.
+    assert!(matches!(transport.poll(), Ok(None)));
+}
+
+/// A-03: the byte bound applies to error documents before any JSON parsing.
+#[test]
+fn oversized_error_documents_are_bounded_before_parsing() {
+    // Handshake path.
+    let mut handshake = scripted(vec![oversized_error(500)]);
+    handshake.send(hello_frame()).expect("hello enqueues");
+    let error = next_error(&mut handshake);
+    assert!(
+        matches!(&error, TransportError::Io(message) if message.contains("bounded")),
+        "{error:?}"
+    );
+
+    // Observation-open path.
+    let hello = server_document(&ServerState::new());
+    let mut open = scripted(vec![json_http(hello), oversized_error(422)]);
+    open.send(hello_frame()).expect("hello enqueues");
+    let frame = next_frame(&mut open);
+    assert_eq!(message_kind(&decoded(&frame)), "HELLO_ACCEPTED");
+    open.send(open_frame(open_request("request-1")))
+        .expect("open enqueues");
+    let error = next_error(&mut open);
+    assert!(
+        matches!(&error, TransportError::Io(message) if message.contains("bounded")),
+        "{error:?}"
+    );
+
+    // Delta-poll path.
+    let hello = server_document(&ServerState::new());
+    let mut deltas = scripted(vec![
+        json_http(hello),
+        json_http(open_document_for("request-1")),
+        oversized_error(500),
+    ]);
+    deltas.send(hello_frame()).expect("hello enqueues");
+    let frame = next_frame(&mut deltas);
+    assert_eq!(message_kind(&decoded(&frame)), "HELLO_ACCEPTED");
+    deltas
+        .send(open_frame(open_request("request-1")))
+        .expect("open enqueues");
+    let kinds: Vec<String> = std::iter::from_fn(|| Some(next_frame(&mut deltas)))
+        .take(4)
+        .map(|frame| message_kind(&decoded(&frame)))
+        .collect();
+    assert_eq!(
+        kinds,
+        vec![
+            "READ_GRANT".to_owned(),
+            "SNAPSHOT_BEGIN".to_owned(),
+            "SNAPSHOT_CHUNK".to_owned(),
+            "SNAPSHOT_END".to_owned(),
+        ]
+    );
+    let error = next_error(&mut deltas);
+    assert!(
+        matches!(&error, TransportError::Io(message) if message.contains("bounded")),
+        "{error:?}"
+    );
+}
+
+/// A-03 control: a small error document still reaches the status classifier.
+#[test]
+fn small_error_documents_still_report_their_status_and_code() {
+    let mut transport = {
+        let config = ProtocolTransportConfig {
+            max_response_bytes: 4096,
+            ..ProtocolTransportConfig::default()
+        };
+        let responses = vec![http(500, br#"{"code":"DIGEST_UNAVAILABLE"}"#.to_vec())];
+        ProtocolTransport::new(ScriptedHttp { responses }, config, versions())
+    };
+    transport.send(hello_frame()).expect("hello enqueues");
+    let error = next_error(&mut transport);
+    assert!(
+        matches!(
+            &error,
+            TransportError::Io(message)
+                if message.contains("HTTP 500") && message.contains("DIGEST_UNAVAILABLE")
+        ),
+        "{error:?}"
+    );
 }

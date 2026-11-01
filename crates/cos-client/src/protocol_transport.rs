@@ -44,6 +44,7 @@
 //! call panics.
 
 use std::collections::VecDeque;
+use std::fmt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
 use std::thread::{self, JoinHandle};
@@ -70,7 +71,7 @@ pub const OBSERVATION_PATH: &str = "/api/cos/desktop/observation";
 pub const DELTAS_PATH: &str = "/api/cos/desktop/deltas";
 
 /// One bounded HTTP exchange requested by the transport.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct HttpRequest {
     /// HTTP method.
     pub method: HttpMethod,
@@ -80,6 +81,36 @@ pub struct HttpRequest {
     pub headers: Vec<(String, String)>,
     /// Request body bytes; empty for `GET`.
     pub body: Vec<u8>,
+}
+
+impl fmt::Debug for HttpRequest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Credentials must never reach a log line, diagnostic or panic message
+        // through `{:?}`: an `Authorization` header value is redacted while the
+        // header name and every other field stay visible.
+        let headers: Vec<(&str, &str)> = self
+            .headers
+            .iter()
+            .map(|(name, value)| (name.as_str(), redacted_header_value(name, value)))
+            .collect();
+        f.debug_struct("HttpRequest")
+            .field("method", &self.method)
+            .field("path", &self.path)
+            .field("headers", &headers)
+            .field("body", &self.body)
+            .finish()
+    }
+}
+
+/// Header value rendered for diagnostics; authorization credentials are hidden.
+fn redacted_header_value<'a>(name: &str, value: &'a str) -> &'a str {
+    if !name.eq_ignore_ascii_case("authorization") {
+        return value;
+    }
+    match value.split_once(' ') {
+        Some((scheme, _rest)) if scheme.eq_ignore_ascii_case("bearer") => "Bearer <redacted>",
+        _ => "<redacted>",
+    }
 }
 
 /// HTTP method of one protocol exchange.
@@ -111,7 +142,7 @@ pub trait ProtocolHttp: Send {
 }
 
 /// Transport configuration.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct ProtocolTransportConfig {
     /// Bearer token for the observation `POST`, when the server requires one.
     pub bearer_token: Option<String>,
@@ -123,6 +154,23 @@ pub struct ProtocolTransportConfig {
     pub max_pending_requests: usize,
     /// Bounded inbound frame queue.
     pub queue_limits: Limits,
+}
+
+impl fmt::Debug for ProtocolTransportConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // The bearer token is a credential: `{:?}` must never print it into a
+        // log line, diagnostic report or panic message.
+        f.debug_struct("ProtocolTransportConfig")
+            .field(
+                "bearer_token",
+                &self.bearer_token.as_ref().map(|_| "<redacted>"),
+            )
+            .field("delta_poll_interval", &self.delta_poll_interval)
+            .field("max_response_bytes", &self.max_response_bytes)
+            .field("max_pending_requests", &self.max_pending_requests)
+            .field("queue_limits", &self.queue_limits)
+            .finish()
+    }
 }
 
 impl Default for ProtocolTransportConfig {
@@ -279,6 +327,11 @@ impl<E: ProtocolHttp> Transport for ProtocolTransport<E> {
             state.pending_error = None;
             state.jobs.clear();
             state.poll = None;
+            // The old stream's verified handshake and server identity belong to
+            // that stream: a new stream must re-authenticate before the client
+            // may treat any server statement as verified.
+            state.hello = None;
+            state.server = None;
         }
         self.shared.1.notify_all();
     }
@@ -695,10 +748,12 @@ fn get_server<E: ProtocolHttp>(
             body: Vec::new(),
         })
         .map_err(|message| TransportError::Io(format!("server handshake failed: {message}")))?;
+    // The byte bound applies to every response, error documents included: an
+    // oversized body must never reach the JSON parser or the error classifier.
+    bound_response(config, &response, "server handshake")?;
     if !is_success(response.status) {
         return Err(http_error("server handshake", &response));
     }
-    bound_response(config, &response, "server handshake")?;
     let document: ServerDocument = serde_json::from_slice(&response.body)
         .map_err(|error| TransportError::Io(format!("malformed server document: {error}")))?;
     if document.schema_version != OBSERVATION_DOCUMENT_SCHEMA_VERSION {
@@ -742,10 +797,12 @@ fn post_open<E: ProtocolHttp>(
             body,
         })
         .map_err(|message| TransportError::Io(format!("observation request failed: {message}")))?;
+    // The byte bound applies to every response, error documents included: an
+    // oversized body must never reach the JSON parser or the error classifier.
+    bound_response(config, &response, "observation open")?;
     if !is_success(response.status) {
         return Err(http_error("observation open", &response));
     }
-    bound_response(config, &response, "observation open")?;
     let document: OpenDocument = serde_json::from_slice(&response.body)
         .map_err(|error| TransportError::Io(format!("malformed observation document: {error}")))?;
     if document.schema_version != OBSERVATION_DOCUMENT_SCHEMA_VERSION {
@@ -777,10 +834,12 @@ fn get_deltas<E: ProtocolHttp>(
             body: Vec::new(),
         })
         .map_err(|message| TransportError::Io(format!("delta request failed: {message}")))?;
+    // The byte bound applies to every response, error documents included: an
+    // oversized body must never reach the JSON parser or the error classifier.
+    bound_response(config, &response, "delta poll")?;
     if !is_success(response.status) {
         return Err(http_error("delta poll", &response));
     }
-    bound_response(config, &response, "delta poll")?;
     let document: DeltasDocument = serde_json::from_slice(&response.body)
         .map_err(|error| TransportError::Io(format!("malformed delta document: {error}")))?;
     if document.schema_version != OBSERVATION_DOCUMENT_SCHEMA_VERSION {
