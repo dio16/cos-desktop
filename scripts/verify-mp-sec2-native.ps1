@@ -21,13 +21,17 @@
 #     entry for the synthetic origin or an unreadable store aborts the run before any
 #     launch (nothing is overwritten or deleted),
 #   * only entries this run created are removed (verified present after launch, or
-#     created by the negative-test switch),
+#     created by the negative-test switch): the simulated-entry attempt is recorded
+#     before cmdkey runs, so a verification failure still deletes it,
 #   * only child PIDs this script started are stopped; no process is killed by name,
 #   * the work directory is GUID-unique and created exclusively; the negative-test
 #     switch is a closed enum whose resolved path is re-validated inside that tree,
-#   * evidence is written to partial files and promoted by rename only after every
-#     output succeeded; a partial failure deletes the partials and any promoted file,
-#     so a PASS record can never survive a write failure.
+#   * evidence is written to partial files, promoted by rename, and finally sealed by a
+#     completion marker; an artifact without that marker is not official evidence. Any
+#     failure removes every artifact and re-verifies the removal, so a PASS record can
+#     never survive a write failure.
+#   * any exception captured during the run forces FAIL (and a non-zero exit); no
+#     exception path can leave the verdict at PASS.
 #
 # Negative-test switches (regression proof only; a normal run never sets them):
 #   -SimulateMissingArtifact <name>   delete one known required artifact before the
@@ -40,6 +44,12 @@
 #                                     that already exists is never overwritten)
 #   -SimulateEvidenceFailure          make the evidence write fail after the first
 #                                     partial, proving no PASS evidence is left behind
+#   -SimulateWerFailure               throw inside the WER inspection, proving a captured
+#                                     exception always fails the run
+#   -SimulateMarkerFailure            fail the final completion marker, proving no
+#                                     unmarked PASS evidence is left behind
+#   -SimulateSimulatedVerifyError     make the simulated-entry verification unreadable,
+#                                     proving the cleanup still removes that entry
 #
 # It never uses a real credential, never touches the Runtime DB, the frozen
 # fixtures or any OS setting, and never turns on WER. Evidence is written to a
@@ -63,6 +73,9 @@ param(
     [switch]$SimulateCredentialLoss,
     [switch]$SimulatePreexistingCredential,
     [switch]$SimulateEvidenceFailure,
+    [switch]$SimulateWerFailure,
+    [switch]$SimulateMarkerFailure,
+    [switch]$SimulateSimulatedVerifyError,
     [switch]$KeepWork
 )
 
@@ -80,6 +93,10 @@ $script:credentialCleanup = 'not-attempted'
 $script:credentialCreatedByTest = $false
 $script:credentialPrecheckAbsent = $false
 $script:simulatedPreexisting = $false
+$script:simulatedWriteAttempted = $false
+$script:simulatedVerifyError = $false
+$script:simulatedPrecheckAbsent = $false
+$script:caughtException = $null
 $script:lastCredentialError = 0
 
 function Write-Section([string]$text) { Write-Host "== $text" }
@@ -332,11 +349,21 @@ try {
             $preconditionFailure = $true
             throw ("refusing to simulate a pre-existing entry: the target is already " + $state + " (win32 " + $script:lastCredentialError + ")")
         }
-        $null = & cmdkey.exe /generic:"$script:credentialTarget" /user:desktop-observation /pass:synthetic-simulated-entry 2>$null
-        if ((Get-CredentialState $script:credentialTarget) -ne 'present') {
-            throw 'could not create the simulated pre-existing credential entry'
-        }
+        # The write attempt is recorded BEFORE cmdkey runs: if verification then fails, the
+        # finally block still removes whatever was written. The pre-check proved absence,
+        # so this can never delete a pre-existing entry.
+        $script:simulatedPrecheckAbsent = $true
+        $script:simulatedWriteAttempted = $true
         $script:simulatedPreexisting = $true
+        $null = & cmdkey.exe /generic:"$script:credentialTarget" /user:desktop-observation /pass:synthetic-simulated-entry 2>$null
+        if ($SimulateSimulatedVerifyError) {
+            $script:simulatedVerifyError = $true
+            throw 'negative test: simulated entry verification is unreadable'
+        }
+        $state = Get-CredentialState $script:credentialTarget
+        if ($state -ne 'present') {
+            throw ("could not verify the simulated pre-existing credential entry: " + $state)
+        }
         $report.notes += 'negative test: simulated a pre-existing credential for the synthetic origin'
     }
     $state = Get-CredentialState $script:credentialTarget
@@ -610,6 +637,7 @@ try {
     Write-Host 'support report: NOT_APPLICABLE (no persistence path; nothing written to disk)'
 
     Write-Section 'Windows Error Reporting (read-only)'
+    if ($SimulateWerFailure) { throw 'negative test: simulated failure during the WER inspection' }
     function Get-WerLocalDumps([string]$path) {
         if (-not (Test-Path -LiteralPath $path)) { return $null }
         try {
@@ -650,6 +678,7 @@ try {
     $report.not_run += 'DD-22 retention/export and a bounded crash-report writer (not implemented in this slice)'
 }
 catch {
+    $script:caughtException = $_.Exception.Message
     $report.notes += ("error: " + $_.Exception.Message)
     Write-Host ("ERROR: " + $_.Exception.Message) -ForegroundColor Red
 }
@@ -687,9 +716,10 @@ finally {
             $script:credentialCleanup = 'skipped-no-precheck'
         }
     }
-    if ($script:simulatedPreexisting) {
+    if ($script:simulatedPreexisting -and $script:simulatedWriteAttempted -and $script:simulatedPrecheckAbsent) {
         $simulatedCleanup = Remove-CredentialSilently $script:credentialTarget
         $report.notes += ("negative test cleanup: simulated pre-existing credential " + $simulatedCleanup)
+        $report.notes += ("negative test cleanup unreadable verification: " + $script:simulatedVerifyError)
         $credentialStateAfterCleanup = Get-CredentialState $script:credentialTarget
         $credentialAbsent = ($credentialStateAfterCleanup -eq 'absent')
         if ($credentialAbsent) { $script:credentialCleanup = 'deleted-simulated' }
@@ -713,6 +743,8 @@ finally {
     $fail = @()
     $hold = @()
     if ($preconditionFailure) { $fail += 'precondition' }
+    if ($null -ne $script:caughtException) { $fail += ('exception during verification: ' + $script:caughtException) }
+    if ($script:simulatedVerifyError) { $fail += 'the simulated pre-existing credential could not be verified' }
     if ($null -ne $scan) {
         if ($scan.matches.Count -gt 0) { $fail += 'token match in an app-managed file' }
         if ($scan.roots_missing.Count -gt 0) { $fail += 'required scan root missing' }
@@ -778,6 +810,10 @@ finally {
     $textPath = Join-Path $EvidenceDir ("mp-sec2-native-" + $stamp + "-" + $runId + ".txt")
     $jsonPartial = $jsonPath + '.partial'
     $textPartial = $textPath + '.partial'
+    # A run's evidence is official only when this marker exists: the JSON and TXT alone
+    # are never treated as a PASS record, and a failed promotion removes every artifact.
+    $markerPath = $textPath + '.complete'
+    $evidenceArtifacts = @($jsonPartial, $textPartial, $jsonPath, $textPath, $markerPath)
     try {
         $report | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $jsonPartial -Encoding UTF8
         if ($SimulateEvidenceFailure) { throw 'negative test: simulated failure after the first evidence partial' }
@@ -790,16 +826,31 @@ finally {
         $lines += ("checks: " + ($report.checks | ConvertTo-Json -Compress -Depth 4))
         foreach ($entry in $report.not_run) { $lines += ("NOT_RUN: " + $entry) }
         $lines | Set-Content -LiteralPath $textPartial -Encoding UTF8
-        # Promote both outputs only after every write succeeded; a failure rolls back so a
-        # PASS record can never survive a partial write.
         Move-Item -LiteralPath $jsonPartial -Destination $jsonPath -ErrorAction Stop
         Move-Item -LiteralPath $textPartial -Destination $textPath -ErrorAction Stop
+        if ($SimulateMarkerFailure) { throw 'negative test: simulated failure before the completion marker' }
+        $marker = @(
+            ("result=" + $report.result),
+            ("json_sha256=" + (Get-Sha256File $jsonPath)),
+            ("txt_sha256=" + (Get-Sha256File $textPath)),
+            ("finished_at_utc=" + $report.finished_at_utc)
+        ) -join "`n"
+        Set-Content -LiteralPath $markerPath -Value $marker -Encoding UTF8 -ErrorAction Stop
         Write-Host ("evidence: " + $jsonPath)
         Write-Host ("evidence: " + $textPath)
+        Write-Host ("evidence marker: " + $markerPath)
     } catch {
         Write-Host ("could not write evidence: " + $_.Exception.Message) -ForegroundColor Red
-        foreach ($leftoverFile in @($jsonPartial, $textPartial, $jsonPath, $textPath)) {
-            Remove-Item -LiteralPath $leftoverFile -Force -ErrorAction SilentlyContinue
+        foreach ($artifact in $evidenceArtifacts) {
+            if (Test-Path -LiteralPath $artifact) {
+                try { Remove-Item -LiteralPath $artifact -Force -ErrorAction Stop }
+                catch { $report.notes += ("could not remove evidence artifact " + $artifact + ": " + $_.Exception.Message) }
+            }
+        }
+        $survivors = @($evidenceArtifacts | Where-Object { Test-Path -LiteralPath $_ })
+        if ($survivors.Count -gt 0) {
+            $report.notes += ("evidence artifacts survived the rollback: " + ($survivors -join '; '))
+            $report.checks.fail += ('evidence rollback left artifacts: ' + ($survivors -join '; '))
         }
         $report.result = 'FAIL'
         $report.checks.fail += 'evidence files could not be written'
