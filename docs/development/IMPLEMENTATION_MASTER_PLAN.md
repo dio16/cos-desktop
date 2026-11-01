@@ -2535,3 +2535,26 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 
 - **Limits:** release profile, single machine, synthetic 100×100 topology, `Instant` phase attribution excludes GPUI paint/layout, GPU and Present; the cached values are a bounded local observation, not an SLO attainment. The cache is per shell and per revision; it does not change graph identity, topology, admission or cancellation behaviour.
 
+### 19.123 MP-IMG2 one-class proof: Job Object hard cap and measured cancellation (2026-11-01)
+
+- **Class:** static **8-bit RGB PNG 2048×2048**, decoded to RGBA8 with the expected complete output **16,777,216 B**, probe `crates/media/examples/peak_probe.rs`, harness `scripts/measure-img2-job.ps1`. No new dependency, no `unsafe`, no GPU upload, no product-code change.
+- **Memory bound by hard constraint (no allocator instrumentation):** the harness creates a Job Object with `JOB_OBJECT_LIMIT_PROCESS_MEMORY`, starts the probe **suspended**, assigns it to the job and only then resumes it (so the cap applies from the first instruction, not after a start/assign race), and binary-searches the smallest cap that still produces `decode-result ok rgba-bytes=16777216`. With a **4 MiB** step: **minimal success cap 33,554,432 B (32 MiB)**, **next failing cap 29,360,128 B (28 MiB)**, both re-measured (success twice, failure once). The process peak commit is therefore in the interval **(28 MiB, 32 MiB]**. A **1 MiB** search was attempted first and is **not stable** at the boundary (29 MiB succeeded on a re-run after failing during the search), so the reported interval uses the stable 4 MiB resolution.
+- **Measurement limit (recorded):** the Job cap limits **whole-process commit**, which includes the in-process generated fixture, the Rust runtime and the decoder working set; it is **not** a decoder-only allocation figure and not an allocator-profile peak. The interval width is the search step.
+- **Cancellation latency and reaping (probe `--cancel-file`):** the parent requests cancellation 50 ms after the go file; the probe's watcher calls `Cancellation::cancel`, the decoder returns typed `Cancelled`, and the parent measures request → process exit. **5/5 runs** returned `decode-result cancelled typed=cancelled`, exit code 0, **residual probe processes 0**. Parent-side latency: 332, 336, 341, 351, 356 ms (**median 341 ms, max 356 ms**); probe-internal delay after cancel 317–339 ms; total decode 391–408 ms. **Honest bound:** the image decoder is not interruptible during the call, so the delay is bounded by the **remaining decode time** (cancel at 50 ms of a ≈ 400 ms debug decode), not a preemption latency.
+- **Judgment:**
+
+| Condition | Result |
+|---|---|
+| Memory hard-cap interval for the class | **PASS_LIMITED** (peak commit ∈ (28 MiB, 32 MiB], whole-process cap) |
+| Output completeness (16,777,216 B) | **PASS_LIMITED** |
+| Cancel returns typed `Cancelled`, no residual worker/process | **PASS_LIMITED** |
+| Cancellation latency | **PASS_LIMITED** (median 341 / max 356 ms, bounded by remaining decode) |
+| Interruptible (preemptible) decoder cancellation | **NOT_VERIFIED / HOLD** |
+| Rejection typed / no partial publication | **PASS** (previous slice) |
+| Allocator-level peak (unsafe instrumentation) | **NOT_MEASURED** (forbidden by `unsafe_code = "forbid"`; the hard-cap interval is the substitute) |
+| Other classes (JPEG/WebP/GIF, other depths/sizes) | **NOT_MEASURED** |
+| Paint/GPU/real hardware/120 Hz | **NOT_MEASURED / HOLD** |
+| MP-IMG2 overall, R4 overall | **not claimed** |
+
+- **MP-IMG3 decision:** a **limited start** is defensible only if the reviewer accepts the **whole-process commit interval** as the memory evidence for this class and the **remaining-decode-time** measurement as the cancellation bound; on the literal "internal memory or running-cancel ceiling proven" rule the class remains **HOLD** because those are process-scope/bounded-by-decode rather than decoder-internal/preemptible proofs. This slice does not start MP-IMG3 on its own authority.
+

@@ -1,22 +1,52 @@
 //! MP-IMG2 measurement probe: one known-size static 8-bit RGB PNG decode.
 //!
-//! `scripts/measure-decode-peak.ps1` starts this binary, waits for the ready file,
-//! samples the process working set (baseline), writes the go file, then samples the
-//! working set until the process exits. The fixture is generated in-process so the
-//! measurement binary is self-contained; the encoded bytes stay live during the decode
-//! (the baseline is sampled after generation and includes them).
+//! `scripts/measure-decode-peak.ps1` starts this binary, waits for the ready file, samples
+//! the process working set, writes the go file and samples until the process exits.
+//! `scripts/measure-img2-job.ps1` runs the same binary inside a Job Object process-memory
+//! cap and in a cancellation mode.
 //!
-//! Usage: `peak_probe <width> <height> <ready-path> <go-path> [<decode-start> <decode-done>]`.
-//! The optional marker paths bracket the decode call so the harness can count samples
-//! taken while the decode is running.
+//! The fixture is generated in-process so the measurement binary is self-contained; the
+//! encoded bytes stay live during the decode.
+//!
+//! Usage: `peak_probe <width> <height> <ready-path> <go-path>
+//!         [<decode-start> <decode-done>] [--cancel-file <path>] [--result-file <path>]`.
+//!
+//! `--result-file` writes the same result lines to a file (the Job-Object harness starts
+//! the process suspended without standard-output redirection); the cancel line is written
+//! to `<result-file>.cancel` so two writers never share a file.
+//!
+//! With `--cancel-file`, a watcher thread cancels the decode when the file appears and
+//! reports `cancel-requested-at-ms` plus, when the decode returns, `decode-result
+//! cancelled typed=cancelled` and `decode-returned-after-cancel-ms`. The image decoder
+//! itself is not interruptible; the delay is bounded by the remaining decode time.
 
 use image::{DynamicImage, ImageFormat, RgbImage};
-use media::{Cancellation, DecodeBudget, decode_raster};
+use media::{Cancellation, DecodeBudget, MediaError, decode_raster};
 use std::io::{Cursor, Write};
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut args = std::env::args().skip(1);
+    let mut raw: Vec<String> = std::env::args().skip(1).collect();
+    let mut cancel_file: Option<PathBuf> = None;
+    if let Some(position) = raw.iter().position(|argument| argument == "--cancel-file") {
+        if position + 1 < raw.len() {
+            cancel_file = Some(PathBuf::from(raw.remove(position + 1)));
+        }
+        raw.remove(position);
+    }
+    let mut result_file: Option<PathBuf> = None;
+    if let Some(position) = raw.iter().position(|argument| argument == "--result-file") {
+        if position + 1 < raw.len() {
+            result_file = Some(PathBuf::from(raw.remove(position + 1)));
+        }
+        raw.remove(position);
+    }
+    let cancel_line_file = result_file
+        .as_ref()
+        .map(|path| PathBuf::from(format!("{}.cancel", path.display())));
+    let mut args = raw.into_iter();
+
     let width: u32 = args.next().unwrap_or_else(|| "2048".into()).parse()?;
     let height: u32 = args.next().unwrap_or_else(|| "2048".into()).parse()?;
     let ready = PathBuf::from(args.next().ok_or("missing ready path")?);
@@ -31,8 +61,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     DynamicImage::ImageRgb8(image).write_to(&mut encoded, ImageFormat::Png)?;
     let encoded = encoded.into_inner();
 
-    println!("fixture-ready bytes={}", encoded.len());
-    std::io::stdout().flush()?;
+    let mut result_lines: Vec<String> = Vec::new();
+    let emit = |lines: &mut Vec<String>, line: String| {
+        println!("{line}");
+        let _ = std::io::stdout().flush();
+        lines.push(line);
+    };
+    emit(
+        &mut result_lines,
+        format!("fixture-ready bytes={}", encoded.len()),
+    );
     std::fs::write(&ready, b"ready")?;
 
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
@@ -47,12 +85,80 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(marker) = start_marker.as_ref() {
         std::fs::write(marker, b"start")?;
     }
-    println!("decode-start");
-    std::io::stdout().flush()?;
-    let raster = decode_raster(&encoded, limits, &Cancellation::default())?;
+    emit(&mut result_lines, "decode-start".to_string());
+
+    let cancel = Cancellation::default();
+    let requested_at: Arc<Mutex<Option<std::time::Instant>>> = Arc::new(Mutex::new(None));
+    let decode_started = std::time::Instant::now();
+    if let Some(path) = cancel_file {
+        let cancel = cancel.clone();
+        let requested_at = Arc::clone(&requested_at);
+        let base = decode_started;
+        let cancel_line_file = cancel_line_file.clone();
+        std::thread::spawn(move || {
+            let deadline = base + std::time::Duration::from_secs(60);
+            while !path.exists() {
+                if std::time::Instant::now() > deadline {
+                    return;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+            let at = base.elapsed();
+            if let Ok(mut slot) = requested_at.lock() {
+                *slot = Some(base + at);
+            }
+            cancel.cancel();
+            let line = format!("cancel-requested-at-ms={}", at.as_millis());
+            println!("{line}");
+            let _ = std::io::stdout().flush();
+            if let Some(path) = cancel_line_file.as_ref() {
+                let _ = std::fs::write(path, line);
+            }
+        });
+    }
+
+    let result = decode_raster(&encoded, limits, &cancel);
+    let decode_ms = decode_started.elapsed().as_millis();
     if let Some(marker) = done_marker.as_ref() {
         std::fs::write(marker, b"done")?;
     }
-    println!("decode-done rgba-bytes={}", raster.rgba.len());
+    let requested = requested_at.lock().ok().and_then(|slot| *slot);
+    match result {
+        Ok(raster) => {
+            emit(
+                &mut result_lines,
+                format!("decode-result ok rgba-bytes={}", raster.rgba.len()),
+            );
+        }
+        Err(MediaError::Cancelled) => {
+            emit(
+                &mut result_lines,
+                "decode-result cancelled typed=cancelled".to_string(),
+            );
+            if let Some(at) = requested {
+                emit(
+                    &mut result_lines,
+                    format!(
+                        "decode-returned-after-cancel-ms={}",
+                        at.elapsed().as_millis()
+                    ),
+                );
+            }
+        }
+        Err(other) => {
+            emit(&mut result_lines, format!("decode-result error {other:?}"));
+            return Err(format!("the decode failed: {other:?}").into());
+        }
+    }
+    emit(&mut result_lines, format!("decode-ms={decode_ms}"));
+    if let Some(path) = result_file.as_ref() {
+        std::fs::write(
+            path,
+            result_lines.join(
+                "
+",
+            ),
+        )?;
+    }
     Ok(())
 }
