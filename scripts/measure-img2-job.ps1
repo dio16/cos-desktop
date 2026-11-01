@@ -8,7 +8,9 @@ param(
     [int]$CancelRuns = 5,
     [int]$CancelDelayMs = 50,
     [string]$EvidenceDir = "C:\dev\cos-desktop-verification\rel1-2026-10-30",
-    [string]$WorkRoot = ""
+    [string]$WorkRoot = "",
+    [switch]$SimulateAssignFailure,
+    [switch]$SimulateResumeFailure
 )
 
 # MP-IMG2 hard memory bound and cancellation latency, without unsafe Rust:
@@ -86,7 +88,7 @@ public static class Win32Job
         IntPtr job = CreateJobObject(IntPtr.Zero, null);
         if (job == IntPtr.Zero) throw new Win32Exception();
         var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
-        info.BasicLimitInformation.LimitFlags = 0x100; // JOB_OBJECT_LIMIT_PROCESS_MEMORY
+        info.BasicLimitInformation.LimitFlags = 0x100 | 0x2000; // PROCESS_MEMORY | KILL_ON_JOB_CLOSE
         info.ProcessMemoryLimit = (UIntPtr)processMemoryLimit;
         int length = Marshal.SizeOf(info);
         IntPtr buffer = Marshal.AllocHGlobal(length);
@@ -154,7 +156,10 @@ public static class Win32Job
 
     /// Create the process suspended, assign it to the job, then resume it: the cap applies
     /// from the first instruction, so the boundary is not a start/assign race.
-    public static IntPtr StartSuspendedInJob(string commandLine, IntPtr job, out int processId)
+    [DllImport("kernel32.dll")]
+    private static extern bool TerminateProcess(IntPtr process, uint exitCode);
+
+    public static IntPtr StartSuspendedInJob(string commandLine, IntPtr job, out int processId, bool failAssign, bool failResume)
     {
         var startup = new STARTUPINFO();
         startup.cb = Marshal.SizeOf(startup);
@@ -165,13 +170,24 @@ public static class Win32Job
         }
         try
         {
-            if (!AssignProcessToJobObject(job, information.hProcess)) throw new Win32Exception();
-            ResumeThread(information.hThread);
+            if (failAssign || !AssignProcessToJobObject(job, information.hProcess))
+            {
+                TerminateProcess(information.hProcess, 1);
+                throw new Win32Exception("simulated or real AssignProcessToJobObject failure");
+            }
+            if (failResume || ResumeThread(information.hThread) == 0xFFFFFFFF)
+            {
+                TerminateProcess(information.hProcess, 1);
+                throw new Win32Exception("simulated or real ResumeThread failure");
+            }
         }
-        finally
+        catch
         {
             CloseHandle(information.hThread);
+            CloseHandle(information.hProcess);
+            throw;
         }
+        CloseHandle(information.hThread);
         processId = information.dwProcessId;
         return information.hProcess;
     }
@@ -215,7 +231,7 @@ function Invoke-CappedProbe([int64]$capBytes) {
     try {
         $commandLine = '"' + $Exe + '" ' + (@(2048, 2048, $ready, $go, '--result-file', $result) -join ' ')
         $processId = 0
-        $processHandle = [Win32Job]::StartSuspendedInJob($commandLine, $job, [ref]$processId)
+        $processHandle = [Win32Job]::StartSuspendedInJob($commandLine, $job, [ref]$processId, $SimulateAssignFailure.IsPresent, $SimulateResumeFailure.IsPresent)
         $process = [System.Diagnostics.Process]::GetProcessById($processId)
         $deadline = (Get-Date).AddSeconds(60)
         while (-not (Test-Path -LiteralPath $ready)) {
@@ -255,46 +271,74 @@ function Invoke-CancelProbe([int]$index) {
     $cancel = Join-Path $work 'cancel'
     $stdout = Join-Path $work 'stdout.txt'
     $stderr = Join-Path $work 'stderr.txt'
-    $process = Start-Process -FilePath $Exe -ArgumentList @(2048, 2048, $ready, $go, '--cancel-file', $cancel) -PassThru -NoNewWindow `
-        -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-    $deadline = (Get-Date).AddSeconds(60)
-    while (-not (Test-Path -LiteralPath $ready)) {
-        if ($process.HasExited) { throw "cancel run ${index}: the probe exited before it was ready" }
-        if ((Get-Date) -gt $deadline) { throw "cancel run ${index}: no ready marker within 60 s" }
-        Start-Sleep -Milliseconds 10
+    $process = $null
+    try {
+        $process = Start-Process -FilePath $Exe -ArgumentList @(2048, 2048, $ready, $go, '--cancel-file', $cancel) -PassThru -NoNewWindow `
+            -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+        $deadline = (Get-Date).AddSeconds(60)
+        while (-not (Test-Path -LiteralPath $ready)) {
+            if ($process.HasExited) { throw "cancel run ${index}: the probe exited before it was ready" }
+            if ((Get-Date) -gt $deadline) { throw "cancel run ${index}: no ready marker within 60 s" }
+            Start-Sleep -Milliseconds 10
+        }
+        Set-Content -LiteralPath $go -Value 'go'
+        Start-Sleep -Milliseconds $CancelDelayMs
+        $requested_at = Get-Date
+        Set-Content -LiteralPath $cancel -Value 'cancel'
+        $finished = $process.WaitForExit(120000)
+        if (-not $finished) { $process.Kill(); $null = $process.WaitForExit(5000) }
+        $latency_ms = [int]((Get-Date) - $requested_at).TotalMilliseconds
+        $lines = Get-ProbeOutput $stdout
+        $joined_text = ($lines -join "`n")
+        $cancelled = $lines -contains 'decode-result cancelled typed=cancelled'
+        $joined_path = $joined_text -match '(?m)^decode-path=joined$'
+        $internal_delay = $null
+        if ($joined_text -match 'decode-returned-after-cancel-ms=([0-9]+)') {
+            $internal_delay = [int]$Matches[1]
+        }
+        $decode_ms = $null
+        if ($joined_text -match '(?m)^decode-ms=([0-9]+)$') { $decode_ms = [int]$Matches[1] }
+        $start_ms = $null
+        $done_ms = $null
+        $cancel_ms = $null
+        if ($joined_text -match '(?m)^decode-start-at-ms=([0-9]+)$') { $start_ms = [int]$Matches[1] }
+        if ($joined_text -match '(?m)^decode-returned-at-ms=([0-9]+)$') { $done_ms = [int]$Matches[1] }
+        if ($joined_text -match '(?m)^cancel-at-ms=([0-9]+)$') { $cancel_ms = [int]$Matches[1] }
+        # The cancel request must have landed between the decode-start and decode-return
+        # markers, and the probe's own flag must agree; otherwise this is not a decode-time
+        # cancellation and the run is not accepted.
+        $cancel_within_decode = ($lines -contains 'cancel-within-decode=true') -and
+            ($null -ne $start_ms) -and ($null -ne $done_ms) -and ($null -ne $cancel_ms) -and
+            ($cancel_ms -ge $start_ms) -and ($cancel_ms -le $done_ms)
+        $residual = @(Get-Process -Name 'peak_probe' -ErrorAction SilentlyContinue).Count
+        $success = $cancelled -and $joined_path -and $cancel_within_decode -and
+            $finished -and ($process.ExitCode -eq 0) -and ($residual -eq 0)
+        $result = [ordered]@{
+            run = $index
+            cancelled = $cancelled
+            typed_cancelled = $cancelled
+            joined_path = $joined_path
+            cancel_within_decode = $cancel_within_decode
+            cancel_at_ms = $cancel_ms
+            decode_start_at_ms = $start_ms
+            decode_returned_at_ms = $done_ms
+            latency_ms = $latency_ms
+            probe_delay_ms = $internal_delay
+            decode_ms = $decode_ms
+            exit_code = if ($process.HasExited) { $process.ExitCode } else { $null }
+            finished = $finished
+            residual_processes = $residual
+            success = $success
+        }
+        if (Test-Path -LiteralPath $stderr) { Copy-Item -LiteralPath $stderr -Destination (Join-Path $EvidenceDir ("img2-cancel-$stamp-run$index.stderr.txt")) -Force }
+        return $result
+    } finally {
+        if ($null -ne $process -and -not $process.HasExited) {
+            $process.Kill()
+            $null = $process.WaitForExit(5000)
+        }
+        Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
     }
-    Set-Content -LiteralPath $go -Value 'go'
-    Start-Sleep -Milliseconds $CancelDelayMs
-    $requested_at = Get-Date
-    Set-Content -LiteralPath $cancel -Value 'cancel'
-    $finished = $process.WaitForExit(120000)
-    if (-not $finished) { $process.Kill(); $null = $process.WaitForExit(5000) }
-    $latency_ms = [int]((Get-Date) - $requested_at).TotalMilliseconds
-    $lines = Get-ProbeOutput $stdout
-    $cancelled = $lines -contains 'decode-result cancelled typed=cancelled'
-    $joined = ($lines -join "`n")
-    $internal_delay = $null
-    if ($joined -match 'decode-returned-after-cancel-ms=([0-9]+)') {
-        $internal_delay = [int]$Matches[1]
-    }
-    $decode_ms = $null
-    if ($joined -match '(?m)^decode-ms=([0-9]+)$') { $decode_ms = [int]$Matches[1] }
-    $residual = @(Get-Process -Name 'peak_probe' -ErrorAction SilentlyContinue).Count
-    $result = [ordered]@{
-        run = $index
-        cancelled = $cancelled
-        typed_cancelled = $cancelled
-        latency_ms = $latency_ms
-        probe_delay_ms = $internal_delay
-        decode_ms = $decode_ms
-        exit_code = if ($process.HasExited) { $process.ExitCode } else { $null }
-        finished = $finished
-        residual_processes = $residual
-        success = ($cancelled -and $finished -and ($process.ExitCode -eq 0) -and ($residual -eq 0))
-    }
-    if (Test-Path -LiteralPath $stderr) { Copy-Item -LiteralPath $stderr -Destination (Join-Path $EvidenceDir ("img2-cancel-$stamp-run$index.stderr.txt")) -Force }
-    Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
-    return $result
 }
 
 $record = [ordered]@{
@@ -303,6 +347,33 @@ $record = [ordered]@{
     exe_sha256 = (Get-FileHash -LiteralPath $Exe -Algorithm SHA256).Hash.ToLowerInvariant()
     mode = $Mode
     sampled_at_utc = $stamp
+}
+
+if ($SimulateAssignFailure -or $SimulateResumeFailure) {
+    # Negative path: the launch must fail, the process must be terminated and no probe may
+    # survive. The harness reports the failure explicitly instead of a PASS.
+    $residual_before = @(Get-Process -Name 'peak_probe' -ErrorAction SilentlyContinue).Count
+    $failed_as_expected = $false
+    try {
+        $null = Invoke-CappedProbe $HighCapBytes
+    } catch {
+        $failed_as_expected = $true
+    }
+    Start-Sleep -Milliseconds 200
+    $residual_after = @(Get-Process -Name 'peak_probe' -ErrorAction SilentlyContinue).Count
+    $record.negative = [ordered]@{
+        simulated_assign_failure = $SimulateAssignFailure.IsPresent
+        simulated_resume_failure = $SimulateResumeFailure.IsPresent
+        failed_as_expected = $failed_as_expected
+        residual_before = $residual_before
+        residual_after = $residual_after
+        clean = ($failed_as_expected -and $residual_after -eq 0)
+    }
+    $json_path = Join-Path $EvidenceDir ("img2-job-negative-$stamp.json")
+    $record | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $json_path -Encoding UTF8
+    Write-Host ("negative: failed_as_expected=$failed_as_expected residual_after=$residual_after clean=$($record.negative.clean)")
+    if ($record.negative.clean) { exit 0 }
+    exit 1
 }
 
 if ($Mode -eq 'cap' -or $Mode -eq 'all') {

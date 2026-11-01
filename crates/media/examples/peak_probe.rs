@@ -21,7 +21,7 @@
 //! itself is not interruptible; the delay is bounded by the remaining decode time.
 
 use image::{DynamicImage, ImageFormat, RgbImage};
-use media::{Cancellation, DecodeBudget, MediaError, decode_raster};
+use media::{Cancellation, DecodeBudget, MediaError, decode_raster_joined};
 use std::io::{Cursor, Write};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -89,7 +89,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cancel = Cancellation::default();
     let requested_at: Arc<Mutex<Option<std::time::Instant>>> = Arc::new(Mutex::new(None));
-    let decode_started = std::time::Instant::now();
+    let base = std::time::Instant::now();
+    let decode_started = base;
     if let Some(path) = cancel_file {
         let cancel = cancel.clone();
         let requested_at = Arc::clone(&requested_at);
@@ -117,12 +118,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
-    let result = decode_raster(&encoded, limits, &cancel);
+    // The product path owns a scoped worker and joins it before returning, so this proves
+    // cancellation and reaping of the joined worker, not of a direct decode call.
+    let result = decode_raster_joined(&encoded, limits, &cancel);
+    let decode_finished = std::time::Instant::now();
     let decode_ms = decode_started.elapsed().as_millis();
     if let Some(marker) = done_marker.as_ref() {
         std::fs::write(marker, b"done")?;
     }
     let requested = requested_at.lock().ok().and_then(|slot| *slot);
+    let start_ms = decode_started.duration_since(base).as_millis();
+    let done_ms = decode_finished.duration_since(base).as_millis();
+    let cancel_ms = requested.map(|at| at.duration_since(base).as_millis());
+    let cancel_within_decode = cancel_ms
+        .map(|c| c >= start_ms && c <= done_ms)
+        .unwrap_or(false);
+    emit(&mut result_lines, "decode-path=joined".to_string());
+    emit(&mut result_lines, format!("decode-start-at-ms={start_ms}"));
+    emit(
+        &mut result_lines,
+        format!("decode-returned-at-ms={done_ms}"),
+    );
+    if let Some(cancel_ms) = cancel_ms {
+        emit(
+            &mut result_lines,
+            format!("cancel-within-decode={cancel_within_decode}"),
+        );
+        emit(&mut result_lines, format!("cancel-at-ms={cancel_ms}"));
+    }
     match result {
         Ok(raster) => {
             emit(
