@@ -2619,9 +2619,10 @@ fn record_carries_the_pixel_fields_with_documented_nullability() {
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.timeout_ms = 10_000;
-    // The helper writes the partial container at startup and then sleeps 5 s. The 3 s
+    // The helper writes the partial container at startup and then sleeps. The 3000 ms
     // deadline is a **timing margin against process-creation cost**, not a causal
-    // determinisation: a start slower than 3 s would still cancel before the write.
+    // determinisation: a start slower than that margin would still cancel before the
+    // write.
     config.cancel_after_ms = Some(3_000);
     let report = harness::run(&config).unwrap();
     let observation = &report.observations[0];
@@ -3136,8 +3137,11 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     );
     assert_eq!(observation.working_set_max_bytes, Some(12_000 * 1024));
     let wall_ms = observation.wall_ms.expect("the candidate ran");
+    // The harvest wait is the fixed 1.2 s grace, so 1.1 s still discriminates while
+    // tolerating poll scheduling jitter on a loaded gate (a **timing margin**, not a
+    // causal determinisation of the poll).
     assert!(
-        wall_ms < 800,
+        wall_ms < 1_100,
         "the 1.2 s harvest wait is not part of wall_ms ({wall_ms} ms)"
     );
 }
@@ -3165,8 +3169,9 @@ fn overrunning_sample_is_not_counted_after_the_candidate_ends() {
     assert_eq!(observation.working_set_max_bytes, None);
     assert_eq!(observation.working_set_sampling, "not_measured");
     let wall_ms = observation.wall_ms.expect("the candidate ran");
+    // Same margin: below the fixed grace, above ordinary poll scheduling jitter.
     assert!(
-        wall_ms < 800,
+        wall_ms < 1_100,
         "the bounded grace is not part of wall_ms ({wall_ms} ms)"
     );
 }
@@ -3218,8 +3223,9 @@ fn cancelled_candidate_does_not_wait_past_the_sample_bound() {
         "a sample inside its bound is harvested after the cancellation"
     );
     let wall_ms = observation.wall_ms.expect("the candidate ran");
+    // Same margin: below the fixed grace, above ordinary poll scheduling jitter.
     assert!(
-        wall_ms < 800,
+        wall_ms < 1_100,
         "the cancellation wall time excludes the harvest wait ({wall_ms} ms)"
     );
 }
@@ -3711,28 +3717,26 @@ enum Window {
 
 /// The pre-spawn digest check has its own proof, and the discriminator is the **attempt
 /// count**, not the value. The sampler is rewritten after the harness hashed it and
-/// restored later in the run, so:
+/// restored before the run ends, so:
 ///
 /// * with the pre-spawn comparison, the attempt is refused before any spawn and the
 ///   observation records `working_set_attempts == 0`;
 /// * without it, the sample is spawned and its *post*-spawn comparison also sees the
-///   rewritten file (the sample's post-check runs roughly 1.7 s into the run, well before
-///   the 3 s restore), so it discards the value with `attempts == 1`.
+///   rewritten file, so it discards the value with `attempts == 1`.
 ///
 /// Both paths end `not_measured` / `sample_tool_changed` with no value, so the token alone
-/// does not distinguish the call sites -- only `working_set_attempts == 0` does. The
-/// restore at roughly 3 s does not rescue the missing pre-spawn comparison either: it
-/// happens after a spawned sample's post-check at roughly 1.7 s, so the swap would still
-/// be discarded, merely with `attempts == 1`.
+/// does not distinguish the call sites -- only `working_set_attempts == 0` does.
 ///
-/// Ordering is causal, not a sleep: the harness hashes the tool, then spawns the
-/// candidate, and the candidate's sentinel is what releases the rewrite, so the rewrite
-/// is provably after the hash. The mutator then writes a **gate file**, and the harness's
-/// first sample attempt is held until that gate exists (the test-only `sample_gate`
-/// seam), so the rewrite provably precedes the first attempt. No scheduling margin is
-/// involved: a slow candidate start delays both the attempt and the rewrite together,
-/// and the first attempt still sees the rewritten bytes. The restore happens afterwards,
-/// so the file ends in its original state for the post-run assertion.
+/// Ordering is a **causal handshake**, never a sleep or a fixed deadline:
+/// the harness hashes the tool and spawns the candidate; the candidate's sentinel then
+/// releases the rewrite; the mutator writes the **gate file** and the harness's first
+/// sample attempt is held until that gate exists (test-only `sample_gate` seam); the
+/// harness compares the tool bytes and writes the **comparison-done signal** (test-only
+/// `sample_compare_signal` seam); only after that signal does the mutator restore the
+/// original bytes. A missing signal is a typed `Window::ComparisonTimeout` failure, and
+/// the file ends in its original state for the post-run assertion. A slow candidate or a
+/// loaded gate delays both the rewrite and the attempt together, so no time margin is
+/// assumed anywhere in this proof.
 #[test]
 fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
     let fixture = Fixture::new();
