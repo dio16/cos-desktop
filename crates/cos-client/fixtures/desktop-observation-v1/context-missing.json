@@ -1,0 +1,14 @@
+{
+  "name": "context-missing",
+  "request": {
+    "method": "GET",
+    "path": "/api/cos/desktop/deltas?cursor=cursor-7a1dda97f7f445bc84a1f6d885d57f19",
+    "headers": {}
+  },
+  "response": {
+    "status": 401
+  },
+  "body": {
+    "code": "UNAUTHORIZED_CONTEXT"
+  }
+}

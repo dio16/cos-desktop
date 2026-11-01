@@ -1,0 +1,39 @@
+{
+  "name": "deltas-changed",
+  "request": {
+    "method": "GET",
+    "path": "/api/cos/desktop/deltas?cursor=cursor-52943da5468b40d6af343b1ca2327136",
+    "headers": {
+      "X-Cos-Context": "context-c9cb758d65a343d6a2150b4df7f031b5"
+    }
+  },
+  "response": {
+    "status": 200
+  },
+  "body": {
+    "schema_version": 1,
+    "transaction": {
+      "transaction_id": "transaction-232f5dedaabe4cdb9139571f878619d0",
+      "epoch": "6657f4df7e344bf58a0798a4e270a6d2",
+      "cursor": "cursor-4acd9563f8e84a599c383ddd15e0fb63",
+      "predecessor": "cursor-52943da5468b40d6af343b1ca2327136",
+      "mutation_count": 1,
+      "integrity_digest": "sha256:c578b186129c9e5d3664b2e41ffd12dfa3734a77336f45c499c2a80ff7011f31",
+      "mutations": [
+        {
+          "op": "UPSERT",
+          "base_revision": "3",
+          "projection": {
+            "projection": "TASK",
+            "task_ref": "task-0b23811426af4a86a3fed9dc67b21947",
+            "title": "production Studio acceptance still image",
+            "task_status": "CANCELLED",
+            "inner_phase": "RUNNING",
+            "iteration_index": 0,
+            "projection_revision": "40"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "observation-unauthorized",
+  "request": {
+    "method": "POST",
+    "path": "/api/cos/desktop/observation",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "response": {
+    "status": 401
+  },
+  "body": {
+    "detail": "Authentication required"
+  }
+}

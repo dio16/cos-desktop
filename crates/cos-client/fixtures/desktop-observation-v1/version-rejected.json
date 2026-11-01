@@ -1,0 +1,18 @@
+{
+  "name": "version-rejected",
+  "request": {
+    "method": "POST",
+    "path": "/api/cos/desktop/observation",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer <redacted>"
+    }
+  },
+  "response": {
+    "status": 422
+  },
+  "body": {
+    "code": "UNSUPPORTED_PROTOCOL",
+    "detail": "unsupported protocol version 1.0; this adapter supports 2.0"
+  }
+}

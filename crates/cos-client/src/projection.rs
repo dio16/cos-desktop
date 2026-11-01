@@ -830,3 +830,86 @@ impl<'a> EffectiveState<'a> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod recorded_observation_v1 {
+    //! MP-RT1: the recorded Runtime grant must pass the same snapshot-entry
+    //! validation a live `SNAPSHOT_END` takes. The fixture is a byte-identical
+    //! copy of the Runtime recording (`fixtures/desktop-observation-v1/`).
+
+    use super::ProjectionState;
+    use desktop_protocol::{
+        HelloAccepted, ProjectionMutation, SnapshotChunk, SnapshotCounts, SnapshotEnd,
+        projection_bundle_digest,
+    };
+    use serde::Deserialize;
+
+    /// One recorded exchange envelope: `{name, request, response, body}`.
+    #[derive(Deserialize)]
+    struct RecordedEnvelope {
+        name: String,
+        response: RecordedResponse,
+        body: GrantDocument,
+    }
+
+    #[derive(Deserialize)]
+    struct RecordedResponse {
+        status: u16,
+    }
+
+    #[derive(Deserialize)]
+    struct GrantDocument {
+        schema_version: u32,
+        server: HelloAccepted,
+        snapshot: SnapshotDocument,
+    }
+
+    #[derive(Deserialize)]
+    struct SnapshotDocument {
+        chunks: Vec<SnapshotChunk>,
+        end: SnapshotEnd,
+    }
+
+    const RECORDED_GRANT: &str =
+        include_str!("../fixtures/desktop-observation-v1/observation-grant.json");
+
+    #[test]
+    fn recorded_grant_snapshot_validates_without_dangling_references() {
+        let envelope: RecordedEnvelope =
+            serde_json::from_str(RECORDED_GRANT).expect("the recorded grant parses");
+        assert_eq!(envelope.name, "observation-grant");
+        assert_eq!(envelope.response.status, 200);
+        let document = envelope.body;
+        assert_eq!(document.schema_version, 1);
+        let mutations: Vec<ProjectionMutation> = document
+            .snapshot
+            .chunks
+            .iter()
+            .flat_map(|chunk| chunk.mutations.clone())
+            .collect();
+        // `from_snapshot` runs the same entry and integrity validation a live
+        // snapshot end takes, including every dangling-reference check.
+        let state = ProjectionState::from_snapshot(&document.server.epoch, &mutations)
+            .expect("the recorded snapshot validates");
+        assert_eq!(
+            state.tasks.len(),
+            document.snapshot.end.expected.tasks as usize
+        );
+        assert_eq!(
+            SnapshotCounts::of(&mutations),
+            document.snapshot.end.expected
+        );
+        assert_eq!(
+            projection_bundle_digest(&mutations).expect("canonical digest"),
+            document.snapshot.end.integrity_digest
+        );
+        assert!(
+            state.tasks.values().all(|task| task.iteration_ref.is_none()
+                && task.best_candidate_ref.is_none()
+                && task.formal_outcome_ref.is_none()
+                && task.accepted_brief_ref.is_none()
+                && task.capabilities_ref.is_none()),
+            "v1 projects TASK only, so no recorded task declares a reference"
+        );
+    }
+}

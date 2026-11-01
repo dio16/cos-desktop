@@ -154,6 +154,40 @@ Overflow cancels the stream, drops unapplied staging, marks visible projection s
 
 Client-local connection states: disconnected → negotiating → synchronizing → live; errors lead to stale/reconnecting or incompatible/unauthorized (manual correction). Last-known Task Status remains unchanged. Backoff/jitter for reconnect is safe; reconnect is not permission to replay commands. Local disconnect cancels observation only, not Task execution.
 
+### Observation v1 compatibility matrix
+
+Development v1 serves observation only (no commands, no principal model). The matrix is evidenced by recorded real exchanges in `crates/cos-client/fixtures/desktop-observation-v1/` (Runtime commit `4b3e377d`, 39 scoped tasks: 37 with run history, 2 without) and by `crates/cos-client/tests/observation_compat_v1.rs`, which replays those documents through the real client and transport. Recorded copies are byte-identical and pinned by sha256.
+
+**Accepted combination (v1)**
+
+| Element | Accepted value | Depends on the Runtime |
+| --- | --- | --- |
+| Protocol / schema | `2.0` / `2.0` exactly | Advertisement and echo of `2.0`; any other pair is rejected before a snapshot exists |
+| Handshake | `GET /api/cos/desktop/server` → `{"schema_version":1,"server":HelloAccepted}` | Server-issued `server_identity`, `server_build`, `epoch`, dedupe retention and limits |
+| Session open | `POST /api/cos/desktop/observation` with scope `{task_ids:[], filters:[{name:"view",value:"all"}]}` and a client `request_id` | The server echoes the client `request_id` and the requested scope exactly; a mismatch is a protocol error |
+| Authorization | `Authorization: Bearer <token>` on the open only; `X-Cos-Context: <context_id>` on reads | The grant issues the context capability; reads with a missing/unknown context are `401` |
+| Grant | `ReadGrant` stamp (server_id/epoch/request_id/context_id/read_revision/scope), scope echo, `command_reads: []`, `local_intents_readable: false` | v1 has no principal model, so no command is readable and no local intent is projected |
+| Snapshot | One `begin` + one chunk + `end` for a consistent cut; TASK projections only | Server-issued `snapshot_id`, epoch, cursor, `expected` counts and `integrity_digest` |
+| Optional facts | `display_id`, `inner_phase`, `iteration_ref`/`iteration_index`, `capabilities_ref`, candidate/outcome/brief references may be absent | Absent means "not projected"; the client never substitutes a value. v1 TASK-only snapshots declare no reference, so none can dangle |
+| Live reads | `GET /api/cos/desktop/deltas?cursor=<server cursor>` with `X-Cos-Context` | `{"transaction": null}` when nothing changed; a committed transaction otherwise |
+| Delta transaction | Recorded transaction id, epoch, predecessor, successor cursor, `mutation_count`, `integrity_digest`, mutations with base/new revision | Server-issued cursor and digest; applied only when the predecessor is the last applied cursor and the epoch matches |
+| Fresh snapshot route | `GET /api/cos/desktop/snapshot?scope=<scope_id>` with `X-Cos-Context` | Exists for an explicit re-read; the v1 client path takes its snapshot from the open response and never races a second call |
+
+**Rejection conditions**
+
+| Condition | Runtime behaviour | Client consequence |
+| --- | --- | --- |
+| Unsupported protocol/schema pair | `422 {"code":"UNSUPPORTED_PROTOCOL","detail":…}` for the open; the hello advertises the supported pair | Fail closed: no grant, no snapshot, `Incompatible`; never a fixture fallback |
+| Missing or unknown read context | `401 {"code":"UNAUTHORIZED_CONTEXT"}` on snapshot/deltas | Transport failure; the publication is withheld (`AuthorizationUnavailable`) and the client re-observes; nothing is guessed |
+| Missing/unknown bearer at the open | `401` (authentication dependency) | Fail closed; no data published |
+| Unknown, expired or non-advancing cursor | `409 {"code":"RESYNC_REQUIRED"}` | No frame, no cursor advance and no mutation applied; the client re-opens the observation with the last applied cursor |
+| Epoch change | `RESYNC_REQUIRED`, or a grant stamp that disagrees with the session epoch | Resync; local state is withheld until a verified snapshot arrives |
+| Digest or counts mismatch | Never sent this way: the Runtime CLI computes both from the same canonical bundle | The client rejects the staged bundle at `SNAPSHOT_END`/transaction validation and resyncs; a partially verified bundle is never published |
+| Dangling or differing reference | v1 serves TASK only and stops projecting `iteration_ref`/`capabilities_ref` until the referenced projections exist | The client rejects the snapshot and resyncs instead of publishing an unresolvable reference |
+| Grant echo mismatch (request_id, scope, server, epoch) | The server contract echoes the request exactly | Protocol error; the session fails closed |
+
+Fail-closed is not "keep the last picture silently": the last fully applied projection may remain in memory, but `publication_access()` reports `Withheld` with its reason and the UI must not present it as live truth.
+
 ## 3. Commands and receipts
 
 Draft command envelope: `command_id` (random globally unique client-generated id, retained across an allowed retry), command kind, typed target reference (or explicit creation scope), optional expected projection revision/epoch, payload, negotiated versions. Security principal is bound by authenticated transport, never trusted from payload. The server binds deduplication to `(principal, command_id)` and the canonical request digest including target/kind/payload/precondition.

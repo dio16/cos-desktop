@@ -1,0 +1,527 @@
+{
+  "name": "snapshot",
+  "request": {
+    "method": "GET",
+    "path": "/api/cos/desktop/snapshot?scope=scope-2e6519231807437690e3cabdd5f94f78",
+    "headers": {
+      "X-Cos-Context": "context-c48179e6e3e049fabdc348b939915351"
+    }
+  },
+  "response": {
+    "status": 200
+  },
+  "body": {
+    "schema_version": 1,
+    "snapshot": {
+      "begin": {
+        "snapshot_id": "snapshot-e55d8df5134b43d6950e4497483e89c8"
+      },
+      "chunks": [
+        {
+          "snapshot_id": "snapshot-e55d8df5134b43d6950e4497483e89c8",
+          "part_index": 0,
+          "mutations": [
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-00eeff7805964e1f835534b81e57065b",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "1"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-019e673007d848018cf3dc7366258d38",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "2"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-0b23811426af4a86a3fed9dc67b21947",
+                "title": "production Studio acceptance still image",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "3"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-0c903dc32f36402bb9f72f676bfc8d8c",
+                "title": "セックス",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "4"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-0ddbe166cef5482495ec675999f0fc9b",
+                "title": "production Studio acceptance still image 2",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "5"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-130479815f4b49c2be5fac0c63fe3e09",
+                "title": "A high school Transgender girl in Scandinavia. She’s completely high on going wild.The entire body, including the face,…",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "6"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-15b14d7e058749a9a772e9e94efa54c2",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "7"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-1fcce881a4934cf78ce822be296b2f58",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "8"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-264f9d92057d418599a9280d7749a94d",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "9"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-27ae5077913941149fb9d42d06a528df",
+                "title": "セックス",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "10"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-29656a296fc24fc3be652ae25067ca07",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "11"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-2ad2b17a3875470882263cc1f54ac2d7",
+                "title": "production Studio acceptance still image",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "12"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-3628af4b831940e4931f241eebae2189",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。カルバンクラインの超micro下着。パンツはフロントがヒモ。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "13"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-3c377c622ed24ea88fde2de10d01960a",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "14"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-3e3ee97c4f7f43489f3fd15aa34072f5",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "15"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-4603bf67f5be4029b390635ff11ca7bf",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "16"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-471e1c63a7604f3e8c80c059d04e5e8b",
+                "title": "A high school girl in Scandinavia is injecting stimulants into her genitals. She’s completely high on stimulants and go…",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "17"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-4dfe136f951147e2b942ae51e7043679",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "18"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-4ece052724204287b6f364e3994f49b5",
+                "title": "A high school Transgender girl in Scandinavia. She’s completely high on going wild.The entire body, including the face,…",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "19"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-5da59dd981414909a19dc9bc07dc7d12",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "20"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-63244683dfb94715b3e8b499ee3f809e",
+                "title": "production automatic dispatch acceptance 1",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "21"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-7a07c1f7480143a2b3f938d63d63c6db",
+                "title": "セックス",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "22"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-80c8632b4bb843bf93189a9cdb79df19",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "23"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-820bf573b58e45e5be7944cc0eb079e5",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "24"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-825c90ea089947629eb16c531412df48",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "25"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-88cf3e16dac94436a9396b364f6d5bd0",
+                "title": "production automatic dispatch acceptance 2",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "26"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-8a4f29f7c7c7456e8579861fa19e5c5b",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "27"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-a0bd6faa9d6247be8024e5b5076d4015",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "28"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-a492231c9e384753bfce0a3978db3d84",
+                "title": "A high school Transgender girl in Scandinavia. She’s completely high on going wild.The entire body, including the face,…",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "29"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-a66b74b9baa44d5db001073f751a646a",
+                "title": "A high school Transgender girl in Scandinavia. She’s completely high on going wild.The entire body, including the face,…",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "30"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-be1ffede988541bdac4470580ca6168f",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "31"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-d493aa7e5c2f4624a2427764f4f9fd5f",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "32"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-d542cdd830504d05a25d4b983bef0738",
+                "title": "A high school Transgender girl in Scandinavia. She’s completely high on going wild.The entire body, including the face,…",
+                "task_status": "CANCELLED",
+                "projection_revision": "33"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-d5a0dd6ddc0d4d00bce6699beeb87305",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "34"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-e4e130f43de641c28f433d0cb1998cd1",
+                "title": "セックス",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "35"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-e70275e23f784dbda3f49eaf9332b442",
+                "title": "A high school Transgender girl in Scandinavia. She’s completely high on going wild.The entire body, including the face,…",
+                "task_status": "CANCELLED",
+                "projection_revision": "36"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-e82db872ccf5486892e920dff26c2aa5",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "37"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-ebd67296c0dd4fb492d0b87b267539dc",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "38"
+              }
+            },
+            {
+              "op": "UPSERT",
+              "projection": {
+                "projection": "TASK",
+                "task_ref": "task-f937e2b5e2cb454cb31b1cb587cb628e",
+                "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+                "task_status": "COMPLETED",
+                "inner_phase": "RUNNING",
+                "iteration_index": 0,
+                "projection_revision": "39"
+              }
+            }
+          ]
+        }
+      ],
+      "end": {
+        "snapshot_id": "snapshot-e55d8df5134b43d6950e4497483e89c8",
+        "scope": {
+          "scope_id": "scope-2e6519231807437690e3cabdd5f94f78",
+          "task_ids": [],
+          "filters": [
+            {
+              "name": "view",
+              "value": "all"
+            }
+          ],
+          "protocol": {
+            "major": 2,
+            "minor": 0
+          },
+          "schema": {
+            "major": 2,
+            "minor": 0
+          }
+        },
+        "epoch": "7c00417946944182b11869c0f5034882",
+        "cursor": "cursor-40e28ea15a79426a94a882106690b63f",
+        "expected": {
+          "artifacts": 0,
+          "candidates": 0,
+          "capabilities": 0,
+          "evaluations": 0,
+          "graphs": 0,
+          "iterations": 0,
+          "outcomes": 0,
+          "tasks": 39
+        },
+        "integrity_digest": "sha256:e8eb30da70079e0e9d6e1938f01cb3916e137876ece4d5af31dc9506f04fdc41"
+      }
+    }
+  }
+}

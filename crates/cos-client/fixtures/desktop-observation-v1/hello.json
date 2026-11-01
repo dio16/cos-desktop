@@ -1,0 +1,29 @@
+{
+  "name": "hello",
+  "request": {
+    "method": "GET",
+    "path": "/api/cos/desktop/server",
+    "headers": {}
+  },
+  "response": {
+    "status": 200
+  },
+  "body": {
+    "schema_version": 1,
+    "server": {
+      "protocol": {
+        "major": 2,
+        "minor": 0
+      },
+      "schema": {
+        "major": 2,
+        "minor": 0
+      },
+      "server_identity": "cos-runtime-orchestrator",
+      "server_build": "orchestrator-runtime/0.1.0",
+      "epoch": "7c00417946944182b11869c0f5034882",
+      "dedupe_retention_ms": null,
+      "limits": null
+    }
+  }
+}

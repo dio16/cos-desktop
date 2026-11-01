@@ -1,0 +1,16 @@
+{
+  "name": "deltas-resync",
+  "request": {
+    "method": "GET",
+    "path": "/api/cos/desktop/deltas?cursor=cursor-does-not-exist",
+    "headers": {
+      "X-Cos-Context": "context-c48179e6e3e049fabdc348b939915351"
+    }
+  },
+  "response": {
+    "status": 409
+  },
+  "body": {
+    "code": "RESYNC_REQUIRED"
+  }
+}
