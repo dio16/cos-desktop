@@ -3,6 +3,7 @@
 //! Rows are pure views over the authoritative graph display. Filtering and
 //! keyboard cursors never add, remove or redirect edges.
 
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use desktop_protocol::{Counter, EdgeId, GraphRef, NodeId};
@@ -195,6 +196,57 @@ pub fn revision_key(graphs: &[Arc<GraphDisplay>]) -> RevisionKey {
 /// A bounded drawing keeps layout and paint cost predictable without ever
 /// changing graph identity, topology or the accessible inspection rows.
 pub const MAX_DIAGRAM_NODES: usize = 120;
+
+/// The revision-wide match sets the diagram uses for emphasis, built from the admitted
+/// inspection rows.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Matched {
+    pub nodes: BTreeSet<(GraphRef, NodeId)>,
+    pub edges: BTreeSet<(GraphRef, EdgeId)>,
+}
+
+/// Bounded (single-entry) cache of the match sets, owned by the shell.
+///
+/// It is keyed by the **complete** [`AdmissionKey`] — session generation, publication
+/// version, epoch, revision and query — so an authorization or session change can never
+/// reuse a stale set. It never grows past one entry; a miss replaces it. The cache holds
+/// only the match sets: the diagram itself is rebuilt from them.
+#[derive(Debug, Default)]
+pub struct MatchCache {
+    entry: Option<(AdmissionKey, Arc<Matched>)>,
+}
+
+impl MatchCache {
+    /// Return the cached sets for `key`, or build them once with `build`.
+    ///
+    /// The returned flag is `true` for a hit. A hit never calls `build`.
+    pub fn get_or_build(
+        &mut self,
+        key: &AdmissionKey,
+        build: impl FnOnce() -> Matched,
+    ) -> (Arc<Matched>, bool) {
+        if let Some((cached, matched)) = self.entry.as_ref()
+            && cached == key
+        {
+            return (Arc::clone(matched), true);
+        }
+        let matched = Arc::new(build());
+        self.entry = Some((key.clone(), Arc::clone(&matched)));
+        (matched, false)
+    }
+
+    /// Number of cached entries; always 0 or 1.
+    #[cfg(test)]
+    pub fn len(&self) -> usize {
+        usize::from(self.entry.is_some())
+    }
+
+    /// Whether the cache holds no entry.
+    #[cfg(test)]
+    pub fn is_empty(&self) -> bool {
+        self.entry.is_none()
+    }
+}
 
 /// One drawn node, positioned by depth in the authoritative topology.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -609,8 +661,9 @@ pub fn revision_label(graph: &GraphDisplay) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        AdmissionKey, MAX_DIAGRAM_NODES, SAME_LAYER_HEADROOM, admit, connector, contains_edge,
-        contains_node, diagram, layers, revision_key, rows, rows_cancellable,
+        AdmissionKey, MAX_DIAGRAM_NODES, MatchCache, Matched, RevisionKey, SAME_LAYER_HEADROOM,
+        admit, connector, contains_edge, contains_node, diagram, layers, revision_key, rows,
+        rows_cancellable,
     };
     use desktop_protocol::{ArtifactDigest, Counter, EpochId, GraphId, GraphRef};
     use std::sync::Arc;
@@ -1335,6 +1388,123 @@ mod tests {
         assert_ne!(all.nodes[0].key(), all.nodes[3].key());
         assert_ne!(all.edges[0].key(), all.edges[2].key());
     }
+    fn matched_from_rows(rows: &super::Rows) -> Matched {
+        Matched {
+            nodes: rows
+                .nodes
+                .iter()
+                .map(|row| (row.graph.graph_ref.clone(), row.node().identity.clone()))
+                .collect(),
+            edges: rows
+                .edges
+                .iter()
+                .map(|row| (row.graph.graph_ref.clone(), row.edge().identity.clone()))
+                .collect(),
+        }
+    }
+
+    fn cache_key(
+        session_generation: u64,
+        publication_version: u64,
+        epoch: Option<EpochId>,
+        revision: RevisionKey,
+        query: &str,
+    ) -> AdmissionKey {
+        AdmissionKey {
+            session_generation,
+            publication_version,
+            epoch,
+            revision,
+            query: query.to_string(),
+        }
+    }
+
+    /// Stage C: the match-set cache must hit only on the complete admission identity,
+    /// and every key component must invalidate it.
+    #[test]
+    fn the_match_cache_invalidates_on_every_admission_key_component() {
+        let source_graph = graph(1, "digest/one", 4);
+        let graphs = [Arc::clone(&source_graph)];
+        let rows = rows(&graphs, "");
+        let base = cache_key(1, 2, None, revision_key(&graphs), "");
+        let builds = std::cell::Cell::new(0usize);
+        let mut cache = MatchCache::default();
+
+        let (first, hit) = cache.get_or_build(&base, || {
+            builds.set(builds.get() + 1);
+            matched_from_rows(&rows)
+        });
+        assert!(!hit, "the first request is a miss");
+        assert_eq!(cache.len(), 1);
+        let (cached, hit) = cache.get_or_build(&base, || panic!("a hit must not rebuild"));
+        assert!(hit);
+        assert_eq!(first, cached);
+        assert_eq!(builds.get(), 1);
+
+        let other_graph = graph(1, "digest/two", 4);
+        let other_revision = revision_key(&[Arc::clone(&other_graph)]);
+        let variants = [
+            cache_key(2, 2, None, base.revision.clone(), ""),
+            cache_key(1, 3, None, base.revision.clone(), ""),
+            cache_key(
+                1,
+                2,
+                Some(EpochId::fixture("epoch/one")),
+                base.revision.clone(),
+                "",
+            ),
+            cache_key(1, 2, None, other_revision, ""),
+            cache_key(1, 2, None, base.revision.clone(), "alpha"),
+        ];
+        for (index, variant) in variants.iter().enumerate() {
+            assert_ne!(variant, &base, "variant {index} must actually differ");
+            let (_, hit) = cache.get_or_build(variant, || {
+                builds.set(builds.get() + 1);
+                matched_from_rows(&rows)
+            });
+            assert!(!hit, "variant {index} must invalidate the cache");
+            assert_eq!(cache.len(), 1, "the cache never grows past one entry");
+        }
+        assert_eq!(builds.get(), 1 + variants.len());
+    }
+
+    /// Stage C: a hit feeds `diagram` exactly the same structure as an uncached build.
+    #[test]
+    fn a_cached_match_set_draws_the_same_diagram_as_an_uncached_build() {
+        let source_graph = graph(1, "digest/one", 4);
+        let graphs = [Arc::clone(&source_graph)];
+        let rows = rows(&graphs, "");
+        let key = cache_key(1, 1, None, revision_key(&graphs), "");
+        let cached_layers = layers(&source_graph);
+        let mut cache = MatchCache::default();
+        let (cached, _) = cache.get_or_build(&key, || matched_from_rows(&rows));
+        let fresh = matched_from_rows(&rows);
+        let cached_diagram = diagram(&source_graph, &cached_layers, &cached.nodes, &cached.edges);
+        let fresh_diagram = diagram(&source_graph, &cached_layers, &fresh.nodes, &fresh.edges);
+        assert_eq!(cached_diagram, fresh_diagram);
+        assert_eq!(cached_diagram.nodes.len(), fresh_diagram.nodes.len());
+        assert_eq!(cached_diagram.depth_count, fresh_diagram.depth_count);
+        assert_eq!(cached_diagram.lane_count, fresh_diagram.lane_count);
+    }
+
+    /// Stage C: boundedness under many distinct keys.
+    #[test]
+    fn the_match_cache_stays_bounded_under_many_keys() {
+        let source_graph = graph(1, "digest/one", 4);
+        let graphs = [Arc::clone(&source_graph)];
+        let rows = rows(&graphs, "");
+        let mut cache = MatchCache::default();
+        assert!(cache.is_empty());
+        for generation in 0..16u64 {
+            cache.get_or_build(
+                &cache_key(generation, 1, None, revision_key(&graphs), ""),
+                || matched_from_rows(&rows),
+            );
+            assert_eq!(cache.len(), 1);
+        }
+        assert!(!cache.is_empty());
+    }
+
     // ---------------------------------------------------------------------------------
     // MP-FLOW2: 10,000-node measurement (explicit run only).
     // ---------------------------------------------------------------------------------
@@ -1651,6 +1821,58 @@ mod tests {
         // The budget verdict is recorded, not asserted: a timing assertion here would make
         // the evidence run depend on machine load. The structural guarantees (equivalence,
         // determinism, complete raster) are asserted above.
+        // Stage C: the first frame builds the match sets (miss); steady frames hit the
+        // bounded single-entry cache keyed by the complete admission identity.
+        let admission = AdmissionKey {
+            session_generation: 1,
+            publication_version: 1,
+            epoch: None,
+            revision: revision_key(std::slice::from_ref(&graph)),
+            query: String::new(),
+        };
+        let mut cache = MatchCache::default();
+        let miss_started = Instant::now();
+        let (matched_miss, miss_hit) =
+            cache.get_or_build(&admission, || matched_from_rows(&rows_once));
+        let drawn_miss = diagram(
+            &graph,
+            &reference_layers,
+            &matched_miss.nodes,
+            &matched_miss.edges,
+        );
+        let miss_us = miss_started.elapsed().as_micros();
+        assert!(!miss_hit, "the first frame is a miss");
+        assert_eq!(cache.len(), 1);
+        assert_eq!(
+            drawn_miss, drawn_once,
+            "the cached path draws the same diagram as the uncached build"
+        );
+        let mut hit_us = Vec::with_capacity(ITERATIONS);
+        for iteration in 0..(WARMUP + ITERATIONS) {
+            let started = Instant::now();
+            let (matched, hit) = cache.get_or_build(&admission, || {
+                panic!("a steady frame must hit the match cache")
+            });
+            let drawn = diagram(&graph, &reference_layers, &matched.nodes, &matched.edges);
+            let elapsed = started.elapsed().as_micros();
+            assert!(hit);
+            assert_eq!(drawn, drawn_miss, "a hit draws the identical diagram");
+            if iteration >= WARMUP {
+                hit_us.push(elapsed);
+            }
+        }
+        assert_eq!(cache.len(), 1, "the cache stays bounded");
+        let (hit_median, hit_p95, hit_max) = stats(hit_us);
+        let delta_median = frame_median as i128 - hit_median as i128;
+        println!(
+            "MP-FLOW2 cache miss_first_frame={miss_us}us hit_steady median={hit_median}us p95={hit_p95}us max={hit_max}us delta_median_vs_uncached={delta_median}us"
+        );
+        println!(
+            "MP-FLOW2 cache hit_within_ui_p95={} hit_within_60hz={} hit_ui_headroom_us={}",
+            hit_p95 <= 8_330,
+            hit_p95 <= 16_670,
+            8_330_i128 - hit_p95 as i128
+        );
         println!(
             "MP-FLOW2 verdict frame_within_ui_p95={} frame_within_60hz={} full_within_60hz={} (paint/GPU NOT_MEASURED)",
             frame_p95 <= 8_330,

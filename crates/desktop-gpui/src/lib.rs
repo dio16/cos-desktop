@@ -271,6 +271,9 @@ pub struct Shell {
     /// may be rendered or inspected.
     flow_admitted: Option<(flow::AdmissionKey, Arc<flow::Rows>)>,
     flow_pending: Option<flow::AdmissionKey>,
+    /// Stage C: bounded single-entry cache of the revision-wide match sets, keyed by the
+    /// complete flow admission identity. Owned by the shell, never a global.
+    flow_match_cache: flow::MatchCache,
     flow_request_generation: Arc<RailWorkSignal>,
     /// Layering for the admitted flow revision; recomputed only when it changes.
     flow_layers: Option<(flow::RevisionKey, Vec<Arc<flow::Layers>>)>,
@@ -440,6 +443,7 @@ impl Shell {
             flow_revision_key: None,
             flow_admitted: None,
             flow_pending: None,
+            flow_match_cache: flow::MatchCache::default(),
             flow_request_generation,
             flow_layers: None,
             flow_jobs,
@@ -2662,6 +2666,7 @@ impl Render for Shell {
                 ));
             }
         }
+        let diagram_key = self.flow_admission_key();
         let flow_diagram_element = (surface == Surface::Flow)
             .then(|| {
                 flow_diagram_region(
@@ -2670,6 +2675,8 @@ impl Render for Shell {
                         .as_ref()
                         .map(|(_, layers)| layers.as_slice()),
                     flow_node_active.as_ref(),
+                    diagram_key.as_ref(),
+                    &mut self.flow_match_cache,
                     cx.entity(),
                     xs_text.clone(),
                 )
@@ -4184,6 +4191,8 @@ fn flow_diagram_region(
     rows: Option<&flow::Rows>,
     layers: Option<&[Arc<flow::Layers>]>,
     active: Option<&flow::NodeKey>,
+    key: Option<&flow::AdmissionKey>,
+    match_cache: &mut flow::MatchCache,
     shell: Entity<Shell>,
     xs_text: TextSpec,
 ) -> Option<AnyElement> {
@@ -4191,28 +4200,33 @@ fn flow_diagram_region(
     let layers = layers?;
     // Emphasis follows the same exact revision boundary as the list keys, so a
     // match in one GraphRevision never highlights the same identity in another.
-    let matched_nodes: std::collections::BTreeSet<(
-        desktop_protocol::GraphRef,
-        desktop_protocol::NodeId,
-    )> = rows
-        .nodes
-        .iter()
-        .map(|row| (row.graph.graph_ref.clone(), row.node().identity.clone()))
-        .collect();
-    let matched_edges: std::collections::BTreeSet<(
-        desktop_protocol::GraphRef,
-        desktop_protocol::EdgeId,
-    )> = rows
-        .edges
-        .iter()
-        .map(|row| (row.graph.graph_ref.clone(), row.edge().identity.clone()))
-        .collect();
+    // Stage C: the revision-wide match sets are cached by the complete admission
+    // identity. A key that is not current (or an absent key) builds transiently and never
+    // touches the cache, so existing behaviour is unchanged outside an admitted revision.
+    let build = || flow::Matched {
+        nodes: rows
+            .nodes
+            .iter()
+            .map(|row| (row.graph.graph_ref.clone(), row.node().identity.clone()))
+            .collect(),
+        edges: rows
+            .edges
+            .iter()
+            .map(|row| (row.graph.graph_ref.clone(), row.edge().identity.clone()))
+            .collect(),
+    };
+    let matched = match key {
+        Some(key) => match_cache.get_or_build(key, build).0,
+        None => Arc::new(build()),
+    };
+    let matched_nodes = &matched.nodes;
+    let matched_edges = &matched.edges;
     let diagrams: Vec<(Arc<ui_model::GraphDisplay>, flow::Diagram)> = rows
         .graphs
         .iter()
         .zip(layers)
         .filter_map(|(graph, layer)| {
-            let drawn = flow::diagram(graph, layer, &matched_nodes, &matched_edges);
+            let drawn = flow::diagram(graph, layer, matched_nodes, matched_edges);
             (!drawn.nodes.is_empty()).then(|| (Arc::clone(graph), drawn))
         })
         .collect();

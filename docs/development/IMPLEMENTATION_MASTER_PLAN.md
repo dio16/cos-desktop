@@ -2504,3 +2504,34 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Measurement limits:** release vs debug differ (~3×, reported); single machine; synthetic topology; timer excludes GPUI paint/layout, GPU and Present; trace-instrumented frame times on target hardware remain the missing endpoint. The judgment is an inherited CPU observation, not an SLO attainment.
 - **No product change:** only the ignored measurement test was edited; the render path, contracts and budgets are unchanged.
 
+### 19.122 MP-FLOW2 Stage C: bounded match-set cache (2026-11-01)
+
+- **Scope (limited):** only the **revision-wide match sets** (`Matched.nodes` / `Matched.edges`) that `flow_diagram_region` rebuilt on every render are cached. The **diagram is not cached** (added only if a follow-up measurement shows it is still needed after this slice). No Stage D–F, no new dependency, no `unsafe`, no custom renderer, no GPUI pin change.
+- **Structure and ownership:** `flow::Matched` + `flow::MatchCache` in `crates/desktop-gpui/src/flow.rs`; the cache is a **single-entry** `Option<(AdmissionKey, Arc<Matched>)>` owned by the existing `Shell` (`flow_match_cache`), never a global. `get_or_build` returns `(Arc<Matched>, hit)`; a miss replaces the one entry, so the cache is bounded by construction. When the admission key is absent (non-current revision) the region builds transiently and never touches the cache, so existing behaviour is unchanged.
+- **Invalidation:** the **complete `flow::AdmissionKey`** — `session_generation`, `publication_version`, `epoch`, `revision`, `query` — is the key. Unit tests prove each component invalidates: `the_match_cache_invalidates_on_every_admission_key_component` (five variants, one per component, each a miss with one entry retained), plus `the_match_cache_stays_bounded_under_many_keys` (16 keys, `len() == 1`) and `a_cached_match_set_draws_the_same_diagram_as_an_uncached_build` (identical `Diagram`).
+- **Equivalence:** the cached diagram is **`==`** to the uncached build (same nodes, depths, lanes, edges, cap and counts; `Diagram` derives `PartialEq`), and the 10,000-node checksum stays **`0x1cfce993dc07a7c8`**. The measurement also asserts the miss diagram equals the pre-cache diagram and every hit draws the identical diagram.
+- **Measured before/after (release, 10,000 nodes, 20 iterations; even-count medians = mean of the two middle values, p95 nearest-rank):**
+
+| Path | median | p95 |
+|---|---:|---:|
+| before (uncached frame path: match sets + diagram) | 12,887 µs | 13,258 µs |
+| after (cached steady frame: cache hit + diagram) | **2,693 µs** | **3,304 µs** |
+| first frame after (cache miss: build sets + diagram, single sample) | **17,625 µs** | — |
+| saved per steady frame (median) | **10,194 µs** | — |
+
+- **Budget:** the cached steady frame is **3,304 µs p95 ≤ 8,330 µs** (headroom 5,026 µs) — the 8.33 ms UI p95 CPU target is met for this path. The cold first frame (17.6 ms, one sample) is reported as measured and is a one-off per revision; the full recompute baseline (rows+layers+match sets+diagram) remains 17,978 µs median, exceeding 8.33 ms but inside a 60 Hz frame only as a revision-change path with paint left unmeasured.
+- **Judgment:**
+
+| Metric | Result |
+|---|---|
+| Match-set cache: hit/miss, per-component invalidation, boundedness | **PASS_LIMITED** (unit tests; single machine) |
+| Diagram equivalence (cached == uncached, checksum) | **PASS_LIMITED** |
+| Steady frame CPU path ≤ 8.33 ms UI p95 | **PASS_LIMITED** (3,304 µs p95) |
+| Cold first frame / revision-change full recompute | **HOLD** (17.6 ms / 18.0 ms; one-off, paint unmeasured) |
+| Paint / submit / GPU / Present / input-to-photon | **NOT_MEASURED** |
+| Real hardware matrix, 120 Hz | **HOLD** |
+| Runtime-bound graph | **NOT_MEASURED** |
+| MP-FLOW2 overall / Stage D–F | **not claimed / not implemented** |
+
+- **Limits:** release profile, single machine, synthetic 100×100 topology, `Instant` phase attribution excludes GPUI paint/layout, GPU and Present; the cached values are a bounded local observation, not an SLO attainment. The cache is per shell and per revision; it does not change graph identity, topology, admission or cancellation behaviour.
+
