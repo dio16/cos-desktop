@@ -2049,6 +2049,16 @@ impl Render for Shell {
         // ordinary publication-version changes but never authorizes stale display.
         self.cache.revalidate(live);
         let authorized_text = self.cache.is_authorized(live);
+        // Authorization/publication loss invalidates the admitted Flow rows and the cached
+        // match sets on **every** surface, not only while Flow is displayed: the cached
+        // sets carry old GraphRef/NodeId/EdgeId identities and must not outlive the
+        // authorization that produced them.
+        if !authorized_text {
+            self.flow_admitted = None;
+            self.flow_pending = None;
+            self.flow_revision_key = None;
+            self.flow_match_cache.clear();
+        }
         if authorized_text {
             self.synchronize_stop_context();
         }

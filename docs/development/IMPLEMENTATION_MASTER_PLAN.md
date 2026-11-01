@@ -2514,20 +2514,20 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 
 | Path | median | p95 |
 |---|---:|---:|
-| before (uncached frame path: match sets + diagram) | 12,887 µs | 13,258 µs |
-| after (cached steady frame: cache hit + diagram) | **2,622 µs** (earlier run 2,693) | **3,001 µs** (earlier run 3,304) |
-| first frame after (cache miss: build sets + diagram, single sample) | **13,679 µs** (earlier run 17,625) | — |
-| saved per steady frame (median) | **10,064 µs** | — |
+| before (uncached frame path: match sets + diagram) | 12,761 µs | 15,125 µs |
+| after (cached steady frame: cache hit + diagram) | **2,586 µs** | **2,975 µs** |
+| first frame after (cache miss: build sets + diagram, single sample) | **13,000 µs** | — |
+| saved per steady frame (median, same run: 12,761 − 2,586) | **10,175 µs** | — |
 
-- **Budget:** the cached steady frame is **3,001 µs p95 ≤ 8,330 µs** (headroom 5,329 µs; run-to-run spread 3.0–3.3 ms is reported as measured) — the 8.33 ms UI p95 CPU target is met for this path. A cache **miss occurs on every `AdmissionKey` change** — revision, publication_version, query, epoch or session generation — not only on a graph revision; the first frame after a miss measured 13.7–17.6 ms (two samples) and how often such a change happens in operation is **NOT_MEASURED**. The full recompute baseline (rows+layers+match sets+diagram) remains **17,978 µs median, above the 16.67 ms 60 Hz frame** → **HOLD** (no "inside 60 Hz" claim).
+- **Budget:** the cached steady frame is **2,975 µs p95 ≤ 8,330 µs** (same-run headroom 5,355 µs; earlier runs measured 3.0–3.3 ms p95, reported as measured spread) — the 8.33 ms UI p95 CPU target is met for this path. A cache **miss occurs on every `AdmissionKey` change** — revision, publication_version, query, epoch or session generation — not only on a graph revision; the first frame after a miss measured 13.0 ms in this run (13.7–17.6 ms in earlier runs) and how often such a change happens in operation is **NOT_MEASURED**. The full recompute baseline (rows+layers+match sets+diagram) measured **18,348 µs median / 22,073 µs p95 in the same run, above the 16.67 ms 60 Hz frame** → **HOLD** (no "inside 60 Hz" claim).
 - **Judgment:**
 
 | Metric | Result |
 |---|---|
 | Match-set cache: hit/miss, per-component invalidation, boundedness | **PASS_LIMITED** (unit tests; single machine) |
 | Diagram equivalence (cached == uncached, checksum) | **PASS_LIMITED** |
-| Steady frame CPU path ≤ 8.33 ms UI p95 | **PASS_LIMITED** (3,001 µs p95) |
-| Cold first frame / full recompute after a miss | **HOLD** (13.7–17.6 ms first frame / 17.98 ms full recompute median; misses follow every AdmissionKey change, frequency NOT_MEASURED) |
+| Steady frame CPU path ≤ 8.33 ms UI p95 | **PASS_LIMITED** (2,975 µs p95) |
+| Cold first frame / full recompute after a miss | **HOLD** (13.0 ms first frame / 18.35 ms full recompute median; misses follow every AdmissionKey change, frequency NOT_MEASURED) |
 | Paint / submit / GPU / Present / input-to-photon | **NOT_MEASURED** |
 | Real hardware matrix, 120 Hz | **HOLD** |
 | Runtime-bound graph | **NOT_MEASURED** |
