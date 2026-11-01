@@ -126,7 +126,17 @@ pub(crate) fn dock_focus_ring(
     } else {
         separator(tokens, scale_factor)?
     };
-    Ok((width, if focused { colors.focus } else { colors.border }))
+    let color = if focused {
+        match crate::contrast::focus_ring(colors) {
+            crate::contrast::FocusRing::Visible(color) => color,
+            // Every role collapses into the surface: the width still marks focus, but
+            // no visible colour is claimed (the token test classifies this case).
+            crate::contrast::FocusRing::Invisible => colors.focus,
+        }
+    } else {
+        colors.border
+    };
+    Ok((width, color))
 }
 
 /// Structural border of one dock row: one physical pixel, never the focus width.
@@ -189,8 +199,29 @@ mod tests {
         );
         assert_ne!(focused_color, unfocused_color);
         assert_eq!(unfocused_color, colors.border);
-        // Monochrome OS palette: every role has one colour, yet the width still
-        // marks focus.
+        // The focus ring must be *visible* on the Dock surface, not merely thicker.
+        assert_eq!(
+            crate::contrast::focus_ring(&crate::contrast::NORMAL_COLORS),
+            crate::contrast::FocusRing::Visible(crate::contrast::NORMAL_COLORS.focus)
+        );
+        // A close-colour palette falls back to the next role that is visible.
+        let mut close = crate::contrast::NORMAL_COLORS;
+        close.focus = close.button_face;
+        close.selection = close.button_face;
+        match crate::contrast::focus_ring(&close) {
+            crate::contrast::FocusRing::Visible(color) => {
+                assert!(
+                    crate::contrast::contrast_ratio(color, close.button_face)
+                        >= crate::contrast::FOCUS_RING_MIN_CONTRAST,
+                    "the fallback role is visible against the surface"
+                );
+            }
+            crate::contrast::FocusRing::Invisible => {
+                panic!("a visible text role exists, the ring must use it")
+            }
+        }
+        // A truly monochrome palette cannot show a colour ring: that case must be
+        // classified as invisible, never claimed as visible by width alone.
         let monochrome = crate::contrast::SystemColors {
             window: 0x000000,
             window_text: 0x000000,
@@ -202,12 +233,9 @@ mod tests {
         };
         let flat =
             crate::contrast::colors_for(crate::contrast::ContrastScheme::HighContrast, &monochrome);
-        let (flat_focused, _) = dock_focus_ring(&tokens, true, 1.0, &flat).expect("a usable scale");
-        let (flat_unfocused, _) =
-            dock_focus_ring(&tokens, false, 1.0, &flat).expect("a usable scale");
-        assert!(
-            flat_focused > flat_unfocused,
-            "width marks focus in a monochrome palette"
+        assert_eq!(
+            crate::contrast::focus_ring(&flat),
+            crate::contrast::FocusRing::Invisible
         );
     }
 

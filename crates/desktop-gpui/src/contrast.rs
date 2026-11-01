@@ -112,6 +112,60 @@ pub fn colors_for(scheme: ContrastScheme, system: &SystemColors) -> ShellColors 
     }
 }
 
+/// The Dock surface colour the focus ring is drawn on.
+pub const FOCUS_SURFACE_ROLE: fn(&ShellColors) -> u32 = |colors| colors.button_face;
+
+/// Relative luminance of an `0xRRGGBB` colour (WCAG 2.x).
+fn relative_luminance(color: u32) -> f32 {
+    let channel = |shift: u32| {
+        let value = ((color >> shift) & 0xff) as f32 / 255.0;
+        if value <= 0.04045 {
+            value / 12.92
+        } else {
+            ((value + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    0.2126 * channel(16) + 0.7152 * channel(8) + 0.0722 * channel(0)
+}
+
+/// WCAG contrast ratio between two `0xRRGGBB` colours (1.0 … 21.0).
+pub fn contrast_ratio(first: u32, second: u32) -> f32 {
+    let a = relative_luminance(first);
+    let b = relative_luminance(second);
+    let (lighter, darker) = if a >= b { (a, b) } else { (b, a) };
+    (lighter + 0.05) / (darker + 0.05)
+}
+
+/// How the focused Dock ring is made visible against its surface.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum FocusRing {
+    /// A role whose contrast against the surface reaches the visible threshold.
+    Visible(u32),
+    /// Every role collapses into the surface colour: colour alone cannot show the
+    /// ring. The caller must not claim a visible focus colour in this case.
+    Invisible,
+}
+
+/// The minimum WCAG contrast ratio accepted for the focus ring.
+pub const FOCUS_RING_MIN_CONTRAST: f32 = 3.0;
+
+/// Pick a focus-ring colour that is actually visible on the Dock surface.
+///
+/// The role order is focus → selection → text: when the OS gives the focus colour
+/// the same (or a near) value as the surface, the next distinct role is used, so a
+/// monochrome-but-partly-distinct palette still gets a visible ring. If every role
+/// collapses into the surface, the result is [`FocusRing::Invisible`] rather than a
+/// ring that cannot be seen.
+pub fn focus_ring(colors: &ShellColors) -> FocusRing {
+    let surface = FOCUS_SURFACE_ROLE(colors);
+    for candidate in [colors.focus, colors.selection, colors.text] {
+        if contrast_ratio(candidate, surface) >= FOCUS_RING_MIN_CONTRAST {
+            return FocusRing::Visible(candidate);
+        }
+    }
+    FocusRing::Invisible
+}
+
 /// Focus, selection and disabled must remain three different indicators.
 pub fn focus_selection_and_disabled_are_distinct(colors: &ShellColors) -> bool {
     colors.focus != colors.selection
@@ -195,11 +249,14 @@ pub(crate) fn contrast_probe_worker(
 ) -> Task<()> {
     cx.spawn(
         async move |this: gpui::WeakEntity<crate::Shell>, cx: &mut gpui::AsyncApp| {
+            let background = cx.background_executor().clone();
             loop {
-                cx.background_executor()
-                    .timer(std::time::Duration::from_secs(2))
-                    .await;
-                let Some((scheme, system)) = probe() else {
+                background.timer(std::time::Duration::from_secs(2)).await;
+                // The OS query is a blocking process call: run it on the background
+                // executor, never on the UI thread, and only apply its result here.
+                let probe = Arc::clone(&probe);
+                let reading = background.spawn(async move { probe() }).await;
+                let Some((scheme, system)) = reading else {
                     continue;
                 };
                 let updated = this.update(cx, move |shell, cx| {

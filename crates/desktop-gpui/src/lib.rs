@@ -3716,6 +3716,7 @@ impl Render for Shell {
             .font_weight(body_text.weight)
             .font(body_text.font.clone())
             .child(
+                // LIMITED-CONTRAST-BEGIN context-bar: colours here resolve through the scheme.
                 div()
                     .id("context-bar")
                     .role(Role::Region)
@@ -3770,12 +3771,13 @@ impl Render for Shell {
                             .flex()
                             .flex_col()
                             .gap_2()
-                            .text_color(rgb(0xbcc6d0))
+                            .text_color(rgb(colors.text))
                             .child(axis_row_one)
                             .child(axis_row_two),
                     )
                     .child(stop_controls),
             )
+            // LIMITED-CONTRAST-END context-bar
             .child(
                 div()
                     .flex()
@@ -4009,7 +4011,7 @@ impl Render for Shell {
                     .role(Role::Region)
                     .aria_label("反復ごとの候補一覧")
                     .p_4()
-                    .bg(rgb(0x272b30))
+                    .bg(rgb(colors.button_face))
                     .flex()
                     .flex_col()
                     .gap_3()
@@ -4543,13 +4545,27 @@ mod contrast_scope_tests {
         let dock = &source[begin..end];
         assert!(
             !dock.contains("rgb(0x"),
-            "the Dock must resolve every colour through the contrast scheme"
+            "the Dock rows must resolve every colour through the contrast scheme"
+        );
+        // The Dock container and the Context Bar are separate render regions; both are
+        // in the limited scope and must be covered by the guard.
+        let bar_begin = source
+            .find("// LIMITED-CONTRAST-BEGIN context-bar")
+            .expect("the Context Bar marker exists");
+        let bar_end = source
+            .find("// LIMITED-CONTRAST-END context-bar")
+            .expect("the Context Bar end marker exists");
+        assert!(bar_begin < bar_end);
+        let bar = &source[bar_begin..bar_end];
+        assert!(
+            !bar.contains("rgb(0x"),
+            "the Context Bar must resolve every colour through the contrast scheme"
         );
         // Split so this test's own literal cannot satisfy the check.
-        let context_bar_literal = concat!(".bg(rgb(0x", "24272c))");
+        let dock_container_literal = concat!(".bg(rgb(0x", "272b30))");
         assert!(
-            !source.contains(context_bar_literal),
-            "the Context Bar background must follow the contrast scheme"
+            !source.contains(dock_container_literal),
+            "the Dock container surface must follow the contrast scheme"
         );
     }
 }

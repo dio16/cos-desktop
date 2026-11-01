@@ -88,6 +88,8 @@ fn parse_colors(text: &str) -> Option<SystemColors> {
     let mut window_text = None;
     let mut highlight = None;
     let mut highlight_text = None;
+    let mut highlight_alias = None;
+    let mut highlight_text_alias = None;
     let mut gray_text = None;
     let mut button_face = None;
     let mut button_text = None;
@@ -104,6 +106,8 @@ fn parse_colors(text: &str) -> Option<SystemColors> {
             "WindowText" => &mut window_text,
             "Hilight" => &mut highlight,
             "HilightText" => &mut highlight_text,
+            "Highlight" => &mut highlight_alias,
+            "HighlightText" => &mut highlight_text_alias,
             "GrayText" => &mut gray_text,
             "ButtonFace" => &mut button_face,
             "ButtonText" => &mut button_text,
@@ -116,8 +120,9 @@ fn parse_colors(text: &str) -> Option<SystemColors> {
     Some(SystemColors {
         window: window?,
         window_text: window_text?,
-        highlight: highlight?,
-        highlight_text: highlight_text?,
+        // Canonical `Hilight`/`HilightText` win; the legacy spellings are the fallback.
+        highlight: highlight.or(highlight_alias)?,
+        highlight_text: highlight_text.or(highlight_text_alias)?,
         gray_text: gray_text?,
         button_face: button_face?,
         button_text: button_text?,
@@ -165,6 +170,19 @@ mod tests {
         assert_eq!(colors.gray_text, 0x6d6d6d);
         assert_eq!(colors.button_face, 0xf0f0f0);
         assert_eq!(colors.button_text, 0x000000);
+    }
+
+    #[test]
+    fn the_legacy_selection_spellings_are_accepted() {
+        let legacy = "\r\nWindow    REG_SZ    255 255 255\r\nWindowText    REG_SZ    0 0 0\r\nHighlight    REG_SZ    10 20 30\r\nHighlightText    REG_SZ    40 50 60\r\nGrayText    REG_SZ    70 80 90\r\nButtonFace    REG_SZ    1 2 3\r\nButtonText    REG_SZ    4 5 6\r\n";
+        let colors = parse_colors(legacy).expect("the legacy spellings parse");
+        assert_eq!(colors.highlight, 0x0a141e);
+        assert_eq!(colors.highlight_text, 0x28323c);
+        // Canonical names win when both spellings are present.
+        let both = "\r\nWindow    REG_SZ    0 0 0\r\nWindowText    REG_SZ    0 0 0\r\nHighlight    REG_SZ    1 1 1\r\nHighlightText    REG_SZ    1 1 1\r\nHilight    REG_SZ    2 2 2\r\nHilightText    REG_SZ    3 3 3\r\nGrayText    REG_SZ    0 0 0\r\nButtonFace    REG_SZ    0 0 0\r\nButtonText    REG_SZ    0 0 0\r\n";
+        let colors = parse_colors(both).expect("both spellings parse");
+        assert_eq!(colors.highlight, 0x020202);
+        assert_eq!(colors.highlight_text, 0x030303);
     }
 
     #[test]
