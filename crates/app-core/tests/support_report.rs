@@ -204,16 +204,32 @@ fn the_report_restates_the_ring_retention_not_the_cursor_window() {
         ],
         event_gap: None,
         retained_events: 4096,
-        oldest_retained_sequence: Some(905),
+        oldest_retained_sequence: Some(906),
         retained_counts: DiagnosticCounts {
-            activity: 4096,
+            activity: 4095,
             connection: 0,
             error: 0,
-            resync: 0,
+            resync: 1,
         },
         latest_sequence: 5001,
         exhausted: false,
     };
+    // The fixture is self-consistent: a contiguous ring 906..=5001 holds 4096
+    // events and the category sum matches the retained count.
+    let latest = batch.latest_sequence;
+    let oldest = batch.oldest_retained_sequence.expect("retained ring");
+    assert_eq!(latest - oldest + 1, batch.retained_events as u64);
+    assert_eq!(
+        batch.retained_counts.activity
+            + batch.retained_counts.connection
+            + batch.retained_counts.error
+            + batch.retained_counts.resync,
+        batch.retained_events
+    );
+    assert!(
+        latest - oldest + 1 > batch.events.len() as u64,
+        "the ring is larger than the cursor window"
+    );
     let summary = app_core::DiagnosticsSummary::from_batch(&batch);
     assert_eq!(summary.retained_events, 4096);
     assert_eq!(batch.retained_events, 4096);
