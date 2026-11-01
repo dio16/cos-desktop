@@ -158,13 +158,21 @@ mod windows_tests {
 
     const TEST_ORIGIN: &str = "http://127.0.0.1:8123";
 
-    fn unique_store() -> WindowsCredentialStore {
+    /// Per-test sequence, so two parallel tests can never share a service name
+    /// even when the clock has coarse granularity.
+    static STORE_SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+    fn unique_store(label: &str) -> WindowsCredentialStore {
+        let sequence = STORE_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         let nanos = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map(|elapsed| elapsed.as_nanos())
             .unwrap_or_default();
         WindowsCredentialStore {
-            service_prefix: format!("cos-desktop-test/{}/{}", std::process::id(), nanos),
+            service_prefix: format!(
+                "cos-desktop-test/{label}/{}/{sequence}/{nanos}",
+                std::process::id()
+            ),
         }
     }
 
@@ -189,7 +197,7 @@ mod windows_tests {
 
     #[test]
     fn round_trips_and_deletes_a_credential() {
-        let store = unique_store();
+        let store = unique_store("roundtrip");
         let _guard = Guard {
             store: &store,
             origin: TEST_ORIGIN,
@@ -205,13 +213,11 @@ mod windows_tests {
     }
 
     /// Bounded evidence: one unique token must not appear in a **limited set**
-    /// of files under the app-data root, a test-created sibling root and (when
-    /// the system temp directory is available) the temp root. This is
-    /// deliberately not a whole-machine claim — see the recorded exclusions and
-    /// the plan §19.115 limits.
+    /// of files under two roots the test creates itself. Deliberately not a
+    /// whole-machine claim — see the per-root report and plan §19.115 limits.
     #[test]
     fn scans_a_bounded_set_of_files_without_a_plaintext_copy() {
-        let store = unique_store();
+        let store = unique_store("scan");
         let _guard = Guard {
             store: &store,
             origin: TEST_ORIGIN,
@@ -224,38 +230,62 @@ mod windows_tests {
             Some(token.as_str())
         );
 
-        // Required roots are created by the test, so the scan never depends on
-        // an environment directory existing: the app-data root and a dedicated
-        // sibling directory that also carries one harmless probe file.
-        let app_data = app_core::preferences::default_path()
-            .and_then(|path| path.parent().map(Path::to_path_buf))
-            .expect("the app-data root is resolvable on this platform");
-        std::fs::create_dir_all(&app_data).expect("the app-data root is creatable");
-        let scan_root = app_data.join(format!(
+        // The two required roots depend on nothing but the test binary's own
+        // directory: two sibling directories that cannot overlap, each holding
+        // known probe files so the walk is verifiable.
+        let binary_dir = std::env::current_exe()
+            .expect("the test binary path")
+            .parent()
+            .expect("a binary directory")
+            .to_path_buf();
+        let base = binary_dir.join(format!(
             "sec1-scan-{}-{}",
             std::process::id(),
             unique_token("dir")
         ));
-        std::fs::create_dir_all(&scan_root).expect("the test scan root is creatable");
-        let cleanup = ScanRootCleanup(scan_root.clone());
-        std::fs::write(
-            scan_root.join("probe.txt"),
-            b"no credential here
-",
-        )
-        .expect("the probe file is writable");
+        let root_a = base.join("a");
+        let root_b = base.join("b");
+        let cleanup = ScanRootCleanup(base.clone());
+        std::fs::create_dir_all(&root_a).expect("scan root a is creatable");
+        std::fs::create_dir_all(&root_b).expect("scan root b is creatable");
+        let probe = b"probe file with no credential copy\n";
+        for root in [&root_a, &root_b] {
+            for index in 0..3 {
+                std::fs::write(root.join(format!("probe-{index}.txt")), probe)
+                    .expect("a probe file is writable");
+            }
+        }
 
         let needle = token.as_bytes();
         let mut report = ScanReport::default();
-        let required_scanned = scan_required_roots(&[&app_data, &scan_root], needle, &mut report);
-        // Optional third root: the system temp directory, scanned only when it
-        // exists and is readable. Its absence is recorded, never hidden and
-        // never required (gate environments do not guarantee it).
+        let required_scanned = scan_required_roots(&[&root_a, &root_b], needle, &mut report);
+        // Optional roots never gate the test: app data and the system temp
+        // directory are scanned when they exist and recorded when absent, so a
+        // missing LOCALAPPDATA/TEMP cannot fail it.
+        match app_core::preferences::default_path()
+            .and_then(|path| path.parent().map(Path::to_path_buf))
+        {
+            Some(app_data) => scan_optional_root(&app_data, needle, &mut report),
+            None => {
+                report.roots_absent += 1;
+                report.optional_roots_skipped += 1;
+            }
+        }
         scan_optional_root(&std::env::temp_dir(), needle, &mut report);
         drop(cleanup);
 
+        for scan in &report.roots {
+            eprintln!(
+                "credential plaintext scan root: root={} files_scanned={} oversize_skipped={} capped={} unreadable_entries={}",
+                scan.root.display(),
+                scan.files_scanned,
+                scan.oversize_skipped_too_large,
+                scan.capped,
+                scan.unreadable_entries
+            );
+        }
         eprintln!(
-            "credential plaintext scan: roots_attempted={} roots_scanned={} roots_absent={} roots_unreadable={} optional_skipped={} files_scanned={} oversize_skipped={} unreadable_entries={} walk_capped={}",
+            "credential plaintext scan summary: roots_attempted={} roots_scanned={} roots_absent={} roots_unreadable={} optional_skipped={} files_scanned={} oversize_skipped={} unreadable_entries={} walk_capped={}",
             report.roots_attempted,
             report.roots_scanned,
             report.roots_absent,
@@ -267,14 +297,36 @@ mod windows_tests {
             report.walk_capped
         );
 
-        // The two required roots were created above and must both be readable;
-        // the walk visited at least the probe file.
+        // Both required roots were walked fully (no cap), with no unreadable
+        // entries, and each really scanned its three probe files.
         assert_eq!(required_scanned, 2, "both required roots were scanned");
-        assert_eq!(report.roots_unreadable, 0, "no passed root was unreadable");
-        assert!(report.files_scanned > 0, "the walk visited files");
+        assert_eq!(
+            report.roots_unreadable, 0,
+            "no required root was unreadable"
+        );
+        for (root, probes) in [(&root_a, 3usize), (&root_b, 3usize)] {
+            let scan = report
+                .roots
+                .iter()
+                .find(|scan| &scan.root == root)
+                .unwrap_or_else(|| panic!("no per-root report for {}", root.display()));
+            assert!(!scan.capped, "root {} was walked fully", root.display());
+            assert_eq!(
+                scan.unreadable_entries,
+                0,
+                "root {} had no unreadable entry",
+                root.display()
+            );
+            assert!(
+                scan.files_scanned >= probes,
+                "root {} scanned its {probes} probe files, got {}",
+                root.display(),
+                scan.files_scanned
+            );
+        }
         assert!(
-            report.files_scanned <= 5000,
-            "the walk stayed within its bound"
+            report.files_scanned >= 6,
+            "both roots' probe files were scanned"
         );
 
         // Diagnostics: a rendered support report is plain text and must not
@@ -287,13 +339,65 @@ mod windows_tests {
         );
     }
 
-    /// Removes the test-created scan root when the test ends, including on
-    /// failure, so no stray probe directory survives in app data.
+    /// Removes the test-created scan tree when the test ends, including on
+    /// failure, so no stray probe directory survives next to the test binary.
     struct ScanRootCleanup(std::path::PathBuf);
 
     impl Drop for ScanRootCleanup {
         fn drop(&mut self) {
             let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    /// Per-root scan accounting: the numbers below are the evidence, so every
+    /// root reports its own coverage instead of sharing one global budget.
+    #[derive(Debug, Default)]
+    struct RootScan {
+        /// The scanned root.
+        root: std::path::PathBuf,
+        /// Files whose bytes were read and compared.
+        files_scanned: usize,
+        /// Files skipped because they exceed the 4 MiB scan bound.
+        oversize_skipped_too_large: usize,
+        /// The walk hit a per-directory/per-root cap before finishing.
+        capped: bool,
+        /// Entries whose metadata or bytes could not be read.
+        unreadable_entries: usize,
+    }
+
+    /// What the bounded scan actually covered; recorded so the evidence cannot
+    /// be read as a whole-machine guarantee.
+    #[derive(Debug, Default)]
+    struct ScanReport {
+        /// Roots the test attempted to scan.
+        roots_attempted: usize,
+        /// Roots whose directory could be opened and walked.
+        roots_scanned: usize,
+        /// Optional roots that do not exist on this machine.
+        roots_absent: usize,
+        /// Required roots that could not be opened.
+        roots_unreadable: usize,
+        /// Optional roots skipped because they are missing or unreadable.
+        optional_roots_skipped: usize,
+        /// Files whose bytes were read and compared (sum over roots).
+        files_scanned: usize,
+        /// Files skipped because they exceed the 4 MiB scan bound (sum).
+        oversize_skipped_too_large: usize,
+        /// Entries whose metadata or bytes could not be read (sum).
+        unreadable_entries: usize,
+        /// At least one root hit its cap.
+        walk_capped: bool,
+        /// Per-root reports, in scan order.
+        roots: Vec<RootScan>,
+    }
+
+    impl ScanReport {
+        fn absorb(&mut self, scan: RootScan) {
+            self.files_scanned += scan.files_scanned;
+            self.oversize_skipped_too_large += scan.oversize_skipped_too_large;
+            self.unreadable_entries += scan.unreadable_entries;
+            self.walk_capped |= scan.capped;
+            self.roots.push(scan);
         }
     }
 
@@ -304,11 +408,13 @@ mod windows_tests {
         let mut scanned = 0;
         for root in roots {
             report.roots_attempted += 1;
-            if scan_tree(root, needle, report) {
-                report.roots_scanned += 1;
-                scanned += 1;
-            } else {
-                report.roots_unreadable += 1;
+            match scan_root(root, needle) {
+                Some(scan) => {
+                    report.roots_scanned += 1;
+                    scanned += 1;
+                    report.absorb(scan);
+                }
+                None => report.roots_unreadable += 1,
             }
         }
         scanned
@@ -323,11 +429,12 @@ mod windows_tests {
             return;
         }
         report.roots_attempted += 1;
-        if scan_tree(root, needle, report) {
-            report.roots_scanned += 1;
-        } else {
-            report.roots_unreadable += 1;
-            report.optional_roots_skipped += 1;
+        match scan_root(root, needle) {
+            Some(scan) => {
+                report.roots_scanned += 1;
+                report.absorb(scan);
+            }
+            None => report.optional_roots_skipped += 1,
         }
     }
 
@@ -351,67 +458,74 @@ mod windows_tests {
         assert_eq!(optional.roots_unreadable, 0);
     }
 
-    /// What one bounded scan actually covered; recorded so the evidence cannot
-    /// be read as a whole-machine guarantee.
-    #[derive(Debug, Default)]
-    struct ScanReport {
-        /// Roots the test attempted to scan.
-        roots_attempted: usize,
-        /// Roots whose directory could be opened and walked.
-        roots_scanned: usize,
-        /// Optional roots that do not exist on this machine.
-        roots_absent: usize,
-        /// Roots passed by the test that could not be opened.
-        roots_unreadable: usize,
-        /// Optional roots skipped because they are missing or unreadable.
-        optional_roots_skipped: usize,
-        /// Files whose bytes were read and compared.
-        files_scanned: usize,
-        /// Files skipped because they exceed the 4 MiB scan bound.
-        oversize_skipped_too_large: usize,
-        /// Entries whose metadata or bytes could not be read.
-        unreadable_entries: usize,
-        /// The walk hit its entry cap before finishing a directory.
-        walk_capped: bool,
+    /// Per-directory entry budget and per-root file budget. Both are checked
+    /// per root, so one large root cannot consume another root's coverage.
+    const DIRECTORY_ENTRY_BUDGET: usize = 2000;
+    const ROOT_FILE_BUDGET: usize = 2000;
+    const MAX_SCAN_DEPTH: usize = 16;
+    const MAX_SCANNED_FILE_BYTES: u64 = 4 * 1024 * 1024;
+
+    /// Bounded scan of one root; `None` when the root itself cannot be opened.
+    fn scan_root(root: &Path, needle: &[u8]) -> Option<RootScan> {
+        std::fs::read_dir(root).ok()?;
+        let mut scan = RootScan {
+            root: root.to_path_buf(),
+            ..RootScan::default()
+        };
+        walk(root, needle, &mut scan, 0);
+        Some(scan)
     }
 
-    /// Bounded recursive scan: skips entries above 4 MiB, records every
-    /// exclusion and caps the walk. Returns `false` when the root itself cannot
-    /// be opened, so the caller counts it as unreadable instead of scanned.
-    fn scan_tree(root: &Path, needle: &[u8], report: &mut ScanReport) -> bool {
-        let Ok(entries) = std::fs::read_dir(root) else {
-            return false;
+    /// Recursive walk with per-root accounting and bounded depth/count.
+    fn walk(directory: &Path, needle: &[u8], scan: &mut RootScan, depth: usize) {
+        if depth >= MAX_SCAN_DEPTH {
+            scan.capped = true;
+            return;
+        }
+        let Ok(entries) = std::fs::read_dir(directory) else {
+            scan.unreadable_entries += 1;
+            return;
         };
-        for entry in entries.flatten().take(2000) {
-            if report.files_scanned >= 5000 {
-                report.walk_capped = true;
-                return true;
+        let mut entries = entries.flatten();
+        let mut taken = 0usize;
+        loop {
+            if scan.files_scanned >= ROOT_FILE_BUDGET {
+                scan.capped = true;
+                return;
             }
+            let Some(entry) = entries.next() else {
+                return;
+            };
+            if taken >= DIRECTORY_ENTRY_BUDGET {
+                scan.capped = true;
+                return;
+            }
+            taken += 1;
             let Ok(file_type) = entry.file_type() else {
-                report.unreadable_entries += 1;
+                scan.unreadable_entries += 1;
                 continue;
             };
             let path = entry.path();
             if file_type.is_dir() {
-                scan_tree(&path, needle, report);
+                walk(&path, needle, scan, depth + 1);
                 continue;
             }
             if !file_type.is_file() {
                 continue;
             }
             let Ok(metadata) = entry.metadata() else {
-                report.unreadable_entries += 1;
+                scan.unreadable_entries += 1;
                 continue;
             };
-            if metadata.len() > 4 * 1024 * 1024 {
-                report.oversize_skipped_too_large += 1;
+            if metadata.len() > MAX_SCANNED_FILE_BYTES {
+                scan.oversize_skipped_too_large += 1;
                 continue;
             }
             let Ok(bytes) = std::fs::read(&path) else {
-                report.unreadable_entries += 1;
+                scan.unreadable_entries += 1;
                 continue;
             };
-            report.files_scanned += 1;
+            scan.files_scanned += 1;
             let carries_token = bytes.windows(needle.len()).any(|window| window == needle);
             assert!(
                 !carries_token,
@@ -419,7 +533,6 @@ mod windows_tests {
                 path.display()
             );
         }
-        true
     }
 
     #[test]
