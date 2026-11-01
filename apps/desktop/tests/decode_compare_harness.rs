@@ -2619,8 +2619,9 @@ fn record_carries_the_pixel_fields_with_documented_nullability() {
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.timeout_ms = 10_000;
-    // The helper writes the partial container at startup and then sleeps 5 s, so a 3 s
-    // deadline lets a loaded gate finish process creation and still cancel it afterwards.
+    // The helper writes the partial container at startup and then sleeps 5 s. The 3 s
+    // deadline is a **timing margin against process-creation cost**, not a causal
+    // determinisation: a start slower than 3 s would still cancel before the write.
     config.cancel_after_ms = Some(3_000);
     let report = harness::run(&config).unwrap();
     let observation = &report.observations[0];
@@ -2711,7 +2712,8 @@ fn cancellation_records_latency_and_a_cancelled_class() {
     config.invocation = helper_invocation(HELPER);
     config.timeout_ms = 10_000;
     // A wider window than the raw 150 ms case keeps this an accurate timer assertion
-    // without making it a scheduling assertion on a loaded gate.
+    // without making it a scheduling assertion on a loaded gate. This is a **timing
+    // margin**, not a causal determinisation.
     config.cancel_after_ms = Some(1_500);
     let report = harness::run(&config).unwrap();
 
@@ -2743,7 +2745,8 @@ fn cancellation_records_latency_and_a_cancelled_class() {
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     // The helper prints its claim at startup and then sleeps 5 s; 2 s leaves a loaded
-    // gate room to start it while still cancelling it well before it would exit.
+    // gate room to start it while still cancelling it well before it would exit. This is
+    // a **timing margin**, not a causal determinisation.
     config.cancel_after_ms = Some(2_000);
     let report = harness::run(&config).unwrap();
     let observation = &report
@@ -3702,6 +3705,8 @@ enum Window {
     SamplerAlreadyRunning,
     /// The candidate never announced its start.
     Timeout,
+    /// The harness never signalled that it performed the pre-spawn comparison.
+    ComparisonTimeout,
 }
 
 /// The pre-spawn digest check has its own proof, and the discriminator is the **attempt
@@ -3736,12 +3741,14 @@ fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
     let original = std::fs::read(&tool).unwrap();
     let sentinel = fixture.base.join("candidate-started");
     let gate = fixture.base.join("tool-rewritten");
+    let compared = fixture.base.join("comparison-done");
     fixture.case("a.png", "announce-sleep");
 
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.sample_tool = Some(tool.clone());
     config.sample_gate = Some(gate.clone());
+    config.sample_compare_signal = Some(compared.clone());
     config.sample_argv_prefix = vec![
         std::ffi::OsString::from("--exact"),
         std::ffi::OsString::from("fake_sampler_valid_helper"),
@@ -3777,7 +3784,18 @@ fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
             if std::fs::write(&gate, b"rewritten").is_err() {
                 return Window::SamplerAlreadyRunning;
             }
-            std::thread::sleep(std::time::Duration::from_millis(3_000));
+            // Restore only after the harness has performed the pre-spawn comparison: the
+            // signal file is that causal handshake. A missing signal is a typed failure,
+            // never a PASS.
+            loop {
+                if compared.exists() {
+                    break;
+                }
+                if std::time::Instant::now() > deadline {
+                    return Window::ComparisonTimeout;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(2));
+            }
             if std::fs::write(&tool, &original).is_err() {
                 return Window::SamplerAlreadyRunning;
             }
@@ -3792,6 +3810,9 @@ fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
              comparison did not refuse the attempt"
         ),
         Window::Timeout => panic!("the candidate never announced its start"),
+        Window::ComparisonTimeout => panic!(
+            "the harness never performed the pre-spawn comparison; the rewrite/restore handshake timed out instead of restoring the tool"
+        ),
     }
 
     // The file is back to its original bytes, so the run ended in the restored state; the

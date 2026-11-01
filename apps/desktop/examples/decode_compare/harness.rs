@@ -706,6 +706,10 @@ pub struct Config {
     /// precedes the attempt. `None` in every operator run (no CLI flag sets it), so the
     /// product path is unchanged.
     pub sample_gate: Option<PathBuf>,
+    /// Test seam: when set, the harness writes this file each time it has performed the
+    /// pre-spawn digest comparison, so a test that rewrote the tool can restore it only
+    /// after the comparison provably ran. `None` in every operator run.
+    pub sample_compare_signal: Option<PathBuf>,
     /// Extra argv placed before the fixed sample argv (tests only).
     pub sample_argv_prefix: Vec<OsString>,
     pub invocation: Invocation,
@@ -1192,6 +1196,7 @@ where
         // environment value can supply or influence it.
         sample_tool,
         sample_gate: None,
+        sample_compare_signal: None,
         sample_argv_prefix: Vec::new(),
         invocation: Invocation {
             argv_prefix: Vec::new(),
@@ -2229,6 +2234,7 @@ fn measure(
                     argv_prefix: config.sample_argv_prefix.clone(),
                     digest: paths.sample_digest.unwrap_or_default().to_owned(),
                     gate: config.sample_gate.clone(),
+                    compare_signal: config.sample_compare_signal.clone(),
                 });
             // The observation-level reason is the resolved token, not a fixed one:
             // opt-out is `sampling_disabled`, an unreadable or oversized operator tool
@@ -2799,6 +2805,8 @@ struct Sampling<'a> {
     digest: String,
     /// Test seam: first-attempt gate file (see `Config::sample_gate`).
     gate: Option<PathBuf>,
+    /// Test seam: comparison-done signal (see `Config::sample_compare_signal`).
+    compare_signal: Option<PathBuf>,
 }
 
 /// Working-set sampling bookkeeping, kept separate from the I/O so every transition is
@@ -3114,7 +3122,13 @@ fn supervise(
                 next_sample = None;
             } else {
                 // A2: never spawn a program whose bytes differ from the pinned digest.
-                if !sample_tool_matches(&config.tool, &config.digest) {
+                let matches = sample_tool_matches(&config.tool, &config.digest);
+                // Test seam: announce that the comparison ran, so a mutating test can
+                // restore the tool causally afterwards.
+                if let Some(signal) = config.compare_signal.as_ref() {
+                    let _ = std::fs::write(signal, b"compared");
+                }
+                if !matches {
                     sampler.discarded(SAMPLE_TOOL_CHANGED);
                     next_sample = None;
                 } else {
