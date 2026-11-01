@@ -3104,6 +3104,92 @@ fn truncated_sample_capture_is_refused() {
     );
 }
 
+/// The post-exit harvest is bookkeeping: `wall_ms` stops when the candidate ends, even
+/// when the sample is only reaped 1.5 s later.
+#[test]
+fn post_exit_harvest_does_not_inflate_wall_ms() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-short");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_slow_exit_helper");
+    config.sample_interval_ms = 10;
+    config.max_samples = 1;
+    config.cancel_after_ms = Some(60_000);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.working_set_attempts, 1);
+    assert_eq!(
+        observation.working_set_samples, 1,
+        "the completed sample is harvested after the candidate ends"
+    );
+    assert_eq!(observation.working_set_max_bytes, Some(12_000 * 1024));
+    let wall_ms = observation.wall_ms.expect("the candidate ran");
+    assert!(
+        wall_ms < 1_000,
+        "the 1.5 s harvest wait is not part of wall_ms ({wall_ms} ms)"
+    );
+}
+
+/// A sample that passes its own per-sample bound is never a success, even when it exits
+/// during the post-exit grace.
+#[test]
+fn overrunning_sample_is_not_counted_after_the_candidate_ends() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-short");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_overrun_helper");
+    config.sample_interval_ms = 10;
+    config.max_samples = 1;
+    config.cancel_after_ms = Some(60_000);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.working_set_attempts, 1);
+    assert_eq!(
+        observation.working_set_samples, 0,
+        "an overrunning sample is not counted"
+    );
+    assert_eq!(observation.working_set_max_bytes, None);
+    assert_eq!(observation.working_set_sampling, "not_measured");
+    let wall_ms = observation.wall_ms.expect("the candidate ran");
+    assert!(
+        wall_ms < 1_000,
+        "the bounded grace is not part of wall_ms ({wall_ms} ms)"
+    );
+}
+
+/// A cancelled candidate stops the clock at the kill; the post-exit harvest is bounded by
+/// the sample's remaining time and never extends the measurement.
+#[test]
+fn cancelled_candidate_does_not_wait_past_the_sample_bound() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_slow_exit_helper");
+    config.sample_interval_ms = 10;
+    config.max_samples = 1;
+    config.timeout_ms = 60_000;
+    config.cancel_after_ms = Some(300);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert!(observation.cancellation_requested_at_ms.is_some());
+    assert_eq!(
+        observation.working_set_samples, 1,
+        "a sample inside its bound is harvested after the cancellation"
+    );
+    let wall_ms = observation.wall_ms.expect("the candidate ran");
+    assert!(
+        wall_ms < 1_000,
+        "the cancellation wall time excludes the harvest wait ({wall_ms} ms)"
+    );
+}
+
 /// Positive control: the same seam, a sampler that exits 0 with a small capture, still
 /// produces the value — the new checks must not reject good samples.
 #[test]
@@ -4319,6 +4405,31 @@ fn fake_sampler_truncating_helper() {
     mark_sampler_done();
 }
 
+/// A sampler that prints one valid row and then exits after a delay, so the candidate
+/// ends while the sample is still in flight but inside the per-sample bound.
+#[test]
+fn fake_sampler_slow_exit_helper() {
+    let pid = sampler_pid();
+    if pid == 0 {
+        return;
+    }
+    println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    std::thread::sleep(std::time::Duration::from_millis(1_500));
+}
+
+/// A sampler whose row is complete but which exits only after its own per-sample bound.
+#[test]
+fn fake_sampler_overrun_helper() {
+    let pid = sampler_pid();
+    if pid == 0 {
+        return;
+    }
+    println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
+    // Exits after its own 2 s per-sample bound but inside the old unconditional 2 s
+    // post-exit grace, so only a deadline-bounded harvest rejects it.
+    std::thread::sleep(std::time::Duration::from_millis(2_200));
+}
+
 /// A sampler that replaces its own program file while it runs and still emits a valid
 /// row, so only the post-spawn digest check can catch it.
 #[test]
@@ -4663,6 +4774,13 @@ fn fake_candidate(support: ProbeSupport) {
         // 2.0 s on this host (measured), which used to outlive a 5 s candidate.
         "sleep-long" => {
             std::thread::sleep(std::time::Duration::from_secs(8));
+            0
+        }
+        "sleep-short" => {
+            // Ends while a sample is still in flight, so the supervisor's post-exit
+            // harvest happens after this candidate is gone.
+            std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(250));
             0
         }
         "png-rgb-a" => {

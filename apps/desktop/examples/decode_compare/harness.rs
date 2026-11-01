@@ -741,7 +741,9 @@ pub struct Observation {
     pub captured_stderr_bytes: usize,
     pub stdout_truncated: bool,
     pub stderr_truncated: bool,
-    /// Observed child wall time; `None` when no child was started.
+    /// Observed child wall time, fixed when supervision ended (the candidate's exit or
+    /// kill); post-exit sampler bookkeeping is excluded. `None` when no child was
+    /// started.
     pub wall_ms: Option<u64>,
     /// Combined capture-file bytes observed when the child was reaped.
     /// Peak capture-file size observed while the child was supervised.
@@ -3061,20 +3063,34 @@ fn supervise(
         }
         thread::sleep(remaining.min(POLL_INTERVAL));
     };
+    // The candidate's wall time stops here: everything below is sampler bookkeeping and
+    // must never be added to a performance figure.
+    let wall_ms = elapsed_millis(started.elapsed());
     // A sample still in flight when the child ends is normally killed and never
     // counted (N5). A sampler that already exited, however, produced complete output:
     // discarding it would make the recorded reason depend on process scheduling (the
     // child can win the race to the poll even when the sample is done). Reap it within
-    // a bounded grace and harvest it exactly like a polled sample; anything still
-    // running after the grace is killed and never counted.
+    // the sample's own remaining per-sample time, so an overrunning sample is never
+    // accepted merely because the child ended, and harvest it exactly like a polled
+    // sample; anything still running when that time is gone is killed and never counts.
     if let Some(mut flight) = in_flight {
+        let remaining = (flight.started + SAMPLE_TIMEOUT)
+            .saturating_duration_since(Instant::now())
+            .min(SAMPLE_EXIT_GRACE);
         let mut settled = flight.child.try_wait().ok().flatten();
-        let wait_started = Instant::now();
-        while settled.is_none() && wait_started.elapsed() < SAMPLE_EXIT_GRACE {
-            thread::sleep(POLL_INTERVAL);
-            settled = flight.child.try_wait().ok().flatten();
+        if settled.is_none() && !remaining.is_zero() {
+            let wait_started = Instant::now();
+            while settled.is_none() && wait_started.elapsed() < remaining {
+                thread::sleep(POLL_INTERVAL.min(remaining));
+                settled = flight.child.try_wait().ok().flatten();
+            }
         }
         match settled {
+            // A sample past its own per-sample bound is never a success, even when it
+            // exited during the grace.
+            Some(_) if flight.started.elapsed() >= SAMPLE_TIMEOUT => {
+                flight.capture.release();
+            }
             Some(status) => {
                 // Mirror the polled-sample rules exactly, so a sample whose exit is
                 // observed only after the child ended records the same decisive reason
@@ -3135,7 +3151,7 @@ fn supervise(
         },
         timeout_fired,
         cancelled,
-        wall_ms: elapsed_millis(started.elapsed()),
+        wall_ms,
         scratch_max_bytes,
         capped,
         working_set_attempts: sampler.attempts,
