@@ -153,8 +153,11 @@ mod windows_tests {
     //! guard removes the entry even when an assertion fails.
 
     use super::{CredentialStore, CredentialStoreError, WindowsCredentialStore};
+    use std::collections::VecDeque;
     use std::path::Path;
-    use std::time::{SystemTime, UNIX_EPOCH};
+    use std::sync::Mutex;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
     const TEST_ORIGIN: &str = "http://127.0.0.1:8123";
 
@@ -195,6 +198,138 @@ mod windows_tests {
         }
     }
 
+    /// Bound for one visibility handshake. The Windows vault write is a direct
+    /// `CredWriteW` call with no client cache, but a read immediately after it can
+    /// still miss under heavy load; the tests wait for the real store state instead of
+    /// assuming instant visibility.
+    const STORE_VISIBILITY_BOUND: Duration = Duration::from_secs(2);
+    const STORE_VISIBILITY_POLL: Duration = Duration::from_millis(10);
+
+    /// Wait until a just-written credential is visible, bounded, without re-writing it.
+    fn expect_visible(store: &dyn CredentialStore, origin: &str, expected: &str) {
+        expect_visible_within(store, origin, expected, STORE_VISIBILITY_BOUND);
+    }
+
+    fn expect_visible_within(
+        store: &dyn CredentialStore,
+        origin: &str,
+        expected: &str,
+        bound: Duration,
+    ) {
+        let deadline = Instant::now() + bound;
+        loop {
+            match store.load(origin) {
+                Ok(Some(value)) if value == expected => return,
+                Ok(_) => {}
+                Err(error) => panic!("credential store read failed: {}", error.label()),
+            }
+            if Instant::now() >= deadline {
+                panic!("the stored credential was not visible within {bound:?}");
+            }
+            std::thread::sleep(STORE_VISIBILITY_POLL.min(bound));
+        }
+    }
+
+    /// Wait until a deleted credential is gone, bounded.
+    fn expect_absent(store: &dyn CredentialStore, origin: &str) {
+        expect_absent_within(store, origin, STORE_VISIBILITY_BOUND);
+    }
+
+    fn expect_absent_within(store: &dyn CredentialStore, origin: &str, bound: Duration) {
+        let deadline = Instant::now() + bound;
+        loop {
+            match store.load(origin) {
+                Ok(None) => return,
+                Ok(Some(_)) => {}
+                Err(error) => panic!("credential store read failed: {}", error.label()),
+            }
+            if Instant::now() >= deadline {
+                panic!("the deleted credential was still visible after {bound:?}");
+            }
+            std::thread::sleep(STORE_VISIBILITY_POLL.min(bound));
+        }
+    }
+
+    /// A store whose reads lag the write/delete, so the visibility handshake can be
+    /// exercised deterministically without the Windows vault.
+    struct ScriptedStore {
+        reads: Mutex<VecDeque<Option<String>>>,
+        loads: AtomicUsize,
+    }
+
+    impl ScriptedStore {
+        fn new(reads: impl IntoIterator<Item = Option<&'static str>>) -> Self {
+            Self {
+                reads: Mutex::new(
+                    reads
+                        .into_iter()
+                        .map(|value| value.map(str::to_owned))
+                        .collect(),
+                ),
+                loads: AtomicUsize::new(0),
+            }
+        }
+
+        fn loads(&self) -> usize {
+            self.loads.load(Ordering::SeqCst)
+        }
+    }
+
+    impl CredentialStore for ScriptedStore {
+        fn load(&self, _origin: &str) -> Result<Option<String>, CredentialStoreError> {
+            self.loads.fetch_add(1, Ordering::SeqCst);
+            let mut reads = self.reads.lock().expect("scripted store");
+            if reads.len() > 1 {
+                Ok(reads.pop_front().unwrap_or(None))
+            } else {
+                Ok(reads.front().cloned().unwrap_or(None))
+            }
+        }
+
+        fn store(&self, _origin: &str, _token: &str) -> Result<(), CredentialStoreError> {
+            Ok(())
+        }
+
+        fn delete(&self, _origin: &str) -> Result<(), CredentialStoreError> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn a_lagging_read_is_waited_for_without_repeating_the_write() {
+        // Two misses, then the value: the handshake waits on the store state only.
+        let lagging = ScriptedStore::new([None, None, Some("token")]);
+        expect_visible_within(&lagging, TEST_ORIGIN, "token", Duration::from_millis(200));
+        assert_eq!(lagging.loads(), 3);
+
+        // A value that never becomes visible fails loudly instead of passing.
+        let missing = ScriptedStore::new([None]);
+        let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            expect_visible_within(&missing, TEST_ORIGIN, "token", Duration::from_millis(50));
+        }));
+        assert!(
+            panicked.is_err(),
+            "a never-visible value must fail the scan"
+        );
+        assert!(
+            missing.loads() >= 2,
+            "the bounded wait polled the real state more than once"
+        );
+    }
+
+    #[test]
+    fn a_still_visible_deleted_entry_is_waited_for() {
+        let deleting = ScriptedStore::new([Some("token"), None]);
+        expect_absent_within(&deleting, TEST_ORIGIN, Duration::from_millis(200));
+        assert_eq!(deleting.loads(), 2);
+
+        let stuck = ScriptedStore::new([Some("token")]);
+        let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            expect_absent_within(&stuck, TEST_ORIGIN, Duration::from_millis(50));
+        }));
+        assert!(panicked.is_err(), "a stuck deletion must fail the test");
+    }
+
     #[test]
     fn round_trips_and_deletes_a_credential() {
         let store = unique_store("roundtrip");
@@ -205,9 +340,9 @@ mod windows_tests {
         assert_eq!(store.load(TEST_ORIGIN).expect("load"), None);
         let token = unique_token("roundtrip");
         store.store(TEST_ORIGIN, &token).expect("store");
-        assert_eq!(store.load(TEST_ORIGIN).expect("load"), Some(token));
+        expect_visible(&store, TEST_ORIGIN, &token);
         store.delete(TEST_ORIGIN).expect("delete");
-        assert_eq!(store.load(TEST_ORIGIN).expect("load"), None);
+        expect_absent(&store, TEST_ORIGIN);
         // Deleting a missing entry is idempotent.
         store.delete(TEST_ORIGIN).expect("delete is idempotent");
     }
@@ -224,11 +359,9 @@ mod windows_tests {
         };
         let token = unique_token("plaintext-probe");
         store.store(TEST_ORIGIN, &token).expect("store");
-        // The credential is readable from the protected store…
-        assert_eq!(
-            store.load(TEST_ORIGIN).expect("load").as_deref(),
-            Some(token.as_str())
-        );
+        // The credential is readable from the protected store (visibility handshake:
+        // a read right after the write can lag under load).
+        expect_visible(&store, TEST_ORIGIN, &token);
 
         // The two required roots depend on nothing but the test binary's own
         // directory: two sibling directories that cannot overlap, each holding
