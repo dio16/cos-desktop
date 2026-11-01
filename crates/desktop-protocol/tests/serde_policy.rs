@@ -5,7 +5,7 @@ use desktop_protocol::{
     CommandValidationError, Counter, DeltaTransaction, Limits, MAX_CONTROL_FRAME_BYTES,
     MAX_QUEUE_FRAMES, MAX_STAGED_BUNDLE_BYTES, Projection, ProjectionMutation, ServerMessage,
     ServerWire, StopTaskCommand, TaskId, TaskSnapshot, TaskStatus, UnknownMessage, Version,
-    canonical_json, integrity_digest_of,
+    canonical_json, projection_bundle_digest,
 };
 
 const TASK_JSON: &str = r#"{
@@ -174,20 +174,23 @@ fn command_envelope_validation_keeps_creation_scoped() {
 }
 
 #[test]
-fn canonical_digest_is_deterministic_over_mutations() {
+fn canonical_bundle_digest_is_deterministic_over_mutations() {
     let task: TaskSnapshot = serde_json::from_str(TASK_JSON).expect("golden task parses");
     let mutation = ProjectionMutation::Upsert {
         base_revision: None,
         projection: Projection::Task(task.clone()),
     };
-    let first = integrity_digest_of(&vec![mutation.clone()]).expect("digest");
-    let second = integrity_digest_of(&vec![mutation.clone()]).expect("digest");
+    // Wire-verified bundles use the domain-separated protocol digest, never the
+    // domainless command/receipt digest.
+    let first = projection_bundle_digest(std::slice::from_ref(&mutation)).expect("digest");
+    let second = projection_bundle_digest(std::slice::from_ref(&mutation)).expect("digest");
     assert_eq!(first, second);
     assert!(first.as_str().starts_with("sha256:"));
+    assert_eq!(first.as_str().len(), 7 + 64);
 
     let mut changed = task;
     changed.title = "different".to_owned();
-    let other = integrity_digest_of(&vec![ProjectionMutation::Upsert {
+    let other = projection_bundle_digest(&[ProjectionMutation::Upsert {
         base_revision: None,
         projection: Projection::Task(changed),
     }])
@@ -233,7 +236,7 @@ fn unknown_server_message_kinds_default_to_state_changing() {
         cursor: desktop_protocol::Cursor::fixture("cursor/1"),
         predecessor: Some(desktop_protocol::Cursor::fixture("cursor/0")),
         mutation_count: 0,
-        integrity_digest: integrity_digest_of(&Vec::<ProjectionMutation>::new()).expect("digest"),
+        integrity_digest: projection_bundle_digest(&[]).expect("digest"),
         mutations: Vec::new(),
     });
     let wire = ServerWire::Frame(desktop_protocol::ServerFrame {

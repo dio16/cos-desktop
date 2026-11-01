@@ -19,7 +19,7 @@ use cos_client::{ClientEvent, ConnectionState, MockCosClient, ProjectionState};
 use desktop_protocol::{
     ArtifactId, CandidateId, CandidateSnapshot, Counter, Cursor, DeltaTransaction, EpochId,
     EvaluationId, IterationId, IterationSnapshot, Projection, ProjectionMutation, RemoveTarget,
-    TaskSnapshot, TransactionId, integrity_digest_of,
+    TaskSnapshot, TransactionId, projection_bundle_digest,
 };
 
 /// Encode a transaction that starts or continues the opaque fixture cursor
@@ -37,7 +37,7 @@ fn transaction(
         cursor: Cursor::fixture(cursor),
         predecessor,
         mutation_count: mutations.len() as u32,
-        integrity_digest: integrity_digest_of(&mutations).expect("transaction digest"),
+        integrity_digest: projection_bundle_digest(&mutations).expect("transaction digest"),
         mutations,
     }
 }

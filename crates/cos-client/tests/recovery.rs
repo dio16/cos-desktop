@@ -10,7 +10,7 @@ use desktop_protocol::{
     EvaluationId, IntegrityDigest, MAX_CONTROL_FRAME_BYTES, ObservationScopeRequest,
     OpenAuthorizedObservation, OpenObservation, Projection, ProjectionMutation, ReadRequestId,
     ResyncReason, SnapshotChunk, SnapshotId, TaskStatus, TransactionId, Version,
-    integrity_digest_of,
+    projection_bundle_digest,
 };
 
 fn transaction(
@@ -26,7 +26,7 @@ fn transaction(
         cursor: Cursor::fixture(cursor),
         predecessor,
         mutation_count: mutations.len() as u32,
-        integrity_digest: integrity_digest_of(&mutations).expect("digest"),
+        integrity_digest: projection_bundle_digest(&mutations).expect("digest"),
         mutations,
     }
 }

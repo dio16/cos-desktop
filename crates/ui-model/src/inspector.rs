@@ -515,10 +515,12 @@ fn candidate_sections(
 }
 
 fn evaluation_entry(evaluation: &EvaluationSnapshot, index: usize) -> Entry {
-    let confidence = evaluation.confidence.map_or_else(
-        || "報告されていません".to_owned(),
-        |value| value.to_string(),
-    );
+    // The Runtime issues DecimalV1 decimal text; the Desktop shows it verbatim
+    // and never parses it into a float.
+    let confidence = evaluation
+        .confidence
+        .clone()
+        .unwrap_or_else(|| "報告されていません".to_owned());
     let mut fields = vec![
         Field::new(
             "判断",
@@ -540,7 +542,7 @@ fn evaluation_entry(evaluation: &EvaluationSnapshot, index: usize) -> Entry {
     }
     for axis in &evaluation.axes {
         let unit = axis.unit.as_deref();
-        let value = match (axis.value, unit) {
+        let value = match (axis.value.as_deref(), unit) {
             (Some(value), Some(unit)) => format!("{value} {unit}"),
             (Some(value), None) => format!("{value}（単位は報告されていません）"),
             (None, Some(unit)) => format!("報告されていません（単位: {unit}）"),

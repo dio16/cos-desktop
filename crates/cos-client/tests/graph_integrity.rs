@@ -11,7 +11,7 @@ use cos_client::{ClientError, ClientEvent, ConnectionState, FixtureScenario, Moc
 use desktop_protocol::{
     ArtifactDigest, Counter, Cursor, DeltaTransaction, EdgeId, EpochId, GraphEdge, GraphId,
     GraphNode, GraphRef, GraphSnapshot, NodeId, Projection, ProjectionMutation, TransactionId,
-    integrity_digest_of,
+    projection_bundle_digest,
 };
 
 fn fixture_scenario() -> FixtureScenario {
@@ -109,7 +109,7 @@ fn graph_upsert_transaction(
         cursor: Cursor::fixture(cursor),
         predecessor: Some(predecessor),
         mutation_count: u32::try_from(mutations.len()).expect("small transaction"),
-        integrity_digest: integrity_digest_of(&mutations).expect("transaction digest"),
+        integrity_digest: projection_bundle_digest(&mutations).expect("transaction digest"),
         mutations,
     }
 }

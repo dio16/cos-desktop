@@ -18,8 +18,8 @@
 //!   dependent operations instead of being coerced.
 //! - Unknown message kinds deserialize to [`ServerMessage::Unknown`]; an
 //!   unknown state-changing event must trigger resync (client policy).
-//! - Staged bundles are verified with [`integrity_digest_of`] before
-//!   application.
+//! - Staged bundles are verified with [`projection_bundle_digest`] before
+//!   application; command/receipt digests use [`integrity_digest_of`].
 //! - Bounds ([`Limits`]) reject oversized declared lengths before allocating.
 
 pub mod bounds;
@@ -34,7 +34,10 @@ pub mod versions;
 pub use bounds::{
     Limits, MAX_CONTROL_FRAME_BYTES, MAX_QUEUE_BYTES, MAX_QUEUE_FRAMES, MAX_STAGED_BUNDLE_BYTES,
 };
-pub use canonical::{CanonicalError, canonical_json, integrity_digest_of, sha256_digest};
+pub use canonical::{
+    CanonicalError, DESKTOP_PROJECTION_DOMAIN, PROJECTION_BUNDLE_SCHEMA_VERSION, canonical_json,
+    domain_digest, integrity_digest_of, projection_bundle_digest, sha256_digest,
+};
 pub use errors::{ErrorCode, FieldError, ProtocolError, RejectReason, ResyncReason};
 pub use ids::{
     ArtifactDigest, ArtifactId, AuthorityLabel, CandidateId, CandidateRef, CapabilitiesId,

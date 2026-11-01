@@ -9,7 +9,7 @@ use desktop_protocol::{
     ArtifactId, Availability, CandidateRef, ClientFrame, ClientMessage, ClientWire,
     CommandOperation, Counter, Cursor, DeltaTransaction, EpochId, EvaluationDecision, EvaluationId,
     EvidenceStatus, IterationId, Projection, ProjectionMutation, SnapshotChunk, SnapshotId,
-    SupportState, TaskStatus, TransactionId, Version, integrity_digest_of,
+    SupportState, TaskStatus, TransactionId, Version, projection_bundle_digest,
 };
 
 #[test]
@@ -72,13 +72,13 @@ fn one_pump_drains_initialization_into_authoritative_state() {
         .expect("evaluation E");
     assert_eq!(evaluation.projection_revision.as_str(), "2");
     assert_eq!(evaluation.decision, EvaluationDecision::Pass);
-    assert_eq!(evaluation.axes[0].value, Some(89.0));
+    assert_eq!(evaluation.axes[0].value.as_deref(), Some("89"));
     assert_eq!(evaluation.axes[0].unit.as_deref(), Some("score_0_100"));
     assert_eq!(
         evaluation.evidence_refs[0].status,
         EvidenceStatus::Available
     );
-    assert_eq!(evaluation.confidence, Some(0.83));
+    assert_eq!(evaluation.confidence.as_deref(), Some("0.83"));
 
     let abstained = snapshot
         .evaluations
@@ -186,11 +186,11 @@ fn authoritative_best_and_outcome_never_follow_local_or_candidate_order() {
         axes: vec![desktop_protocol::NamedScore {
             name: "visual_quality".to_owned(),
             unit: Some("score_0_100".to_owned()),
-            value: Some(99.0),
+            value: Some("99".to_owned()),
         }],
         evidence_refs: Vec::new(),
         authority: desktop_protocol::AuthorityLabel::new("HARNESS").expect("label"),
-        confidence: Some(0.9),
+        confidence: Some("0.9".to_owned()),
         projection_revision: Counter::new("1").expect("counter"),
     });
     let mutations = vec![
@@ -213,7 +213,7 @@ fn authoritative_best_and_outcome_never_follow_local_or_candidate_order() {
         cursor: Cursor::fixture("cursor/50"),
         predecessor: mock.client().last_seen_cursor().cloned(),
         mutation_count: mutations.len() as u32,
-        integrity_digest: integrity_digest_of(&mutations).expect("digest"),
+        integrity_digest: projection_bundle_digest(&mutations).expect("digest"),
         mutations,
     };
     mock.mock_mut().inject_raw(delta_frame(transaction));
@@ -363,7 +363,7 @@ fn a_delta_after_the_initial_pump_marks_the_report_changed() {
         cursor: Cursor::fixture("cursor/after-open"),
         predecessor: mock.client().last_seen_cursor().cloned(),
         mutation_count: mutations.len() as u32,
-        integrity_digest: integrity_digest_of(&mutations).expect("digest"),
+        integrity_digest: projection_bundle_digest(&mutations).expect("digest"),
         mutations,
     };
     let frame = delta_frame(transaction);

@@ -253,9 +253,14 @@ pub struct NamedScore {
     /// Unit label (e.g. `score_0_100`).
     #[serde(default)]
     pub unit: Option<String>,
-    /// Score value; `None` means not reported.
+    /// Score as the Runtime-issued DecimalV1 canonical decimal text.
+    ///
+    /// This is a string, not a JSON float: the Runtime owns the decimal
+    /// encoding, and CanonicalV1 (which the bundle digest requires) forbids
+    /// JSON floats. The Desktop only displays it and never parses it into an
+    /// `f64`, so precision and determinism cannot drift locally.
     #[serde(default)]
-    pub value: Option<f64>,
+    pub value: Option<String>,
 }
 
 /// Evidence reference with explicit availability.
@@ -293,10 +298,11 @@ pub struct EvaluationSnapshot {
     pub evidence_refs: Vec<EvidenceRef>,
     /// Evaluation authority label (open vocabulary).
     pub authority: AuthorityLabel,
-    /// Optional confidence. Meaning is declared by the runtime; absence is not
-    /// low confidence.
+    /// Optional confidence as the Runtime-issued DecimalV1 canonical decimal
+    /// text. Meaning is declared by the runtime; absence is not low confidence.
+    /// Kept as a string for the same reason as [`NamedScore::value`].
     #[serde(default)]
-    pub confidence: Option<f64>,
+    pub confidence: Option<String>,
     /// Projection revision within the runtime epoch.
     pub projection_revision: Counter,
 }

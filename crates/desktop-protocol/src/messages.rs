@@ -845,8 +845,12 @@ pub enum ParameterValue {
     Text(String),
     /// Integer value.
     Integer(i64),
-    /// Decimal value.
-    Decimal(f64),
+    /// Decimal value as the Runtime-issued DecimalV1 canonical decimal text.
+    ///
+    /// The wire carries a string, never a JSON float: the Runtime owns the
+    /// decimal encoding and CanonicalV1 forbids floats. Desktop does not parse
+    /// it into `f64`; only the Runtime validates and interprets it.
+    Decimal(String),
     /// Boolean value.
     Boolean(bool),
     /// Choice value.

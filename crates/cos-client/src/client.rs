@@ -20,7 +20,7 @@ use desktop_protocol::{
     RemoveTarget, ReplayAccepted, ResyncReason, ResyncRequired, ServerFrame, ServerId,
     ServerMessage, ServerWire, SnapshotBegin, SnapshotChunk, SnapshotCounts, SnapshotEnd,
     SnapshotId, StopTaskCommand, TaskId, TransactionId, UnknownMessage, Version,
-    VersionAdvertisement, VersionRange, canonical_json, integrity_digest_of,
+    VersionAdvertisement, VersionRange, canonical_json, projection_bundle_digest,
 };
 
 use crate::error::ClientError;
@@ -1823,7 +1823,7 @@ impl<T: TransportTrait> CosClient<T> {
             );
             return false;
         }
-        let digest = match integrity_digest_of(&staging.mutations) {
+        let digest = match projection_bundle_digest(&staging.mutations) {
             Ok(digest) => digest,
             Err(error) => {
                 self.invalidate(
@@ -1950,7 +1950,7 @@ impl<T: TransportTrait> CosClient<T> {
             );
             return false;
         }
-        let digest = match integrity_digest_of(&transaction.mutations) {
+        let digest = match projection_bundle_digest(&transaction.mutations) {
             Ok(digest) => digest,
             Err(error) => {
                 self.invalidate(

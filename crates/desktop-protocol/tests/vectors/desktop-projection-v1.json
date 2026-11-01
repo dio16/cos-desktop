@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "mutations": [
+    {"op":"UPSERT","projection":{"projection":"TASK","task_ref":"task-ref-1","display_id":"Task-184","title":"Café \"retreat\" \\ path\n日本語","task_status":"ACTIVE","inner_phase":"REFINE","iteration_ref":"iter-3","iteration_index":3,"best_candidate_ref":{"task_id":"task-ref-1","run_id":"run-2","iteration":3,"candidate_id":"cand-5","artifact_ref":"artifact-9"},"capabilities_ref":"cap-9","projection_revision":"42"}},
+    {"op":"REMOVE","base_revision":"42","target":{"kind":"TASK","task_id":"task-ref-1"}}
+  ],
+  "expected": {
+    "canonical": "{\"mutations\":[{\"op\":\"UPSERT\",\"projection\":{\"best_candidate_ref\":{\"artifact_ref\":\"artifact-9\",\"candidate_id\":\"cand-5\",\"iteration\":3,\"run_id\":\"run-2\",\"task_id\":\"task-ref-1\"},\"capabilities_ref\":\"cap-9\",\"display_id\":\"Task-184\",\"inner_phase\":\"REFINE\",\"iteration_index\":3,\"iteration_ref\":\"iter-3\",\"projection\":\"TASK\",\"projection_revision\":\"42\",\"task_ref\":\"task-ref-1\",\"task_status\":\"ACTIVE\",\"title\":\"Café \\\"retreat\\\" \\\\ path\\n日本語\"}},{\"base_revision\":\"42\",\"op\":\"REMOVE\",\"target\":{\"kind\":\"TASK\",\"task_id\":\"task-ref-1\"}}],\"schema_version\":1}",
+    "integrity_digest": "sha256:4e3418ff59f17501c603cbbdeccd533d94d6551b74d203635923634c9d86c601",
+    "counts": {"tasks":1,"candidates":0,"artifacts":0,"evaluations":0,"iterations":0,"outcomes":0,"graphs":0,"capabilities":0}
+  }
+}

@@ -292,7 +292,7 @@
           {
             "name": "visual_quality",
             "unit": "score_0_100",
-            "value": 58.0
+            "value": "58"
           }
         ],
         "evidence_refs": [
@@ -307,7 +307,7 @@
           }
         ],
         "authority": "HARNESS",
-        "confidence": 0.55,
+        "confidence": "0.55",
         "projection_revision": "1"
       },
       {
@@ -327,7 +327,7 @@
           {
             "name": "visual_quality",
             "unit": "score_0_100",
-            "value": 66.0
+            "value": "66"
           }
         ],
         "evidence_refs": [
@@ -342,7 +342,7 @@
           }
         ],
         "authority": "HARNESS",
-        "confidence": 0.62,
+        "confidence": "0.62",
         "projection_revision": "1"
       },
       {
@@ -397,7 +397,7 @@
           {
             "name": "visual_quality",
             "unit": "score_0_100",
-            "value": 81.0
+            "value": "81"
           }
         ],
         "evidence_refs": [
@@ -412,7 +412,7 @@
           }
         ],
         "authority": "HARNESS",
-        "confidence": 0.74,
+        "confidence": "0.74",
         "projection_revision": "1"
       },
       {
@@ -432,7 +432,7 @@
           {
             "name": "visual_quality",
             "unit": "score_0_100",
-            "value": 88.0
+            "value": "88"
           }
         ],
         "evidence_refs": [
@@ -447,7 +447,7 @@
           }
         ],
         "authority": "HARNESS",
-        "confidence": 0.81,
+        "confidence": "0.81",
         "projection_revision": "1"
       }
     ],
@@ -776,7 +776,7 @@
                     {
                       "name": "visual_quality",
                       "unit": "score_0_100",
-                      "value": 89.0
+                      "value": "89"
                     }
                   ],
                   "evidence_refs": [
@@ -791,7 +791,7 @@
                     }
                   ],
                   "authority": "HARNESS",
-                  "confidence": 0.83,
+                  "confidence": "0.83",
                   "projection_revision": "2"
                 }
               }

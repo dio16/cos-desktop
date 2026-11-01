@@ -14,7 +14,7 @@ use desktop_protocol::{
     CommandId, Cursor, EpochId, IntegrityDigest, Limits, Projection, ProjectionMutation,
     ProtocolError, ReadContextId, ReadInvalidationReason, ReadRevision, ReceiptState, RejectReason,
     ResyncReason, ScopeFilter, ScopeId, ServerId, SnapshotCounts, SnapshotId, TaskId,
-    TransactionId, VersionRange, integrity_digest_of,
+    TransactionId, VersionRange, projection_bundle_digest,
 };
 use serde::{Deserialize, Serialize};
 
@@ -837,7 +837,7 @@ impl FixtureRuntime {
     pub fn snapshot_bundle(&mut self) -> Result<SnapshotBundle, FixtureError> {
         let mutations = self.state.snapshot_mutations();
         let counts = SnapshotCounts::of(&mutations);
-        let digest = integrity_digest_of(&mutations)
+        let digest = projection_bundle_digest(&mutations)
             .map_err(|error| FixtureError::Invalid(error.to_string()))?;
         let snapshot_id = SnapshotId::fixture(format!("snapshot/{}", self.snapshot_sequence));
         self.snapshot_sequence += 1;
@@ -878,7 +878,7 @@ impl FixtureRuntime {
             Some(transaction_id) => transaction_id.clone(),
             None => TransactionId::fixture(format!("transaction/{}", self.sequence)),
         };
-        let digest = integrity_digest_of(&delta.mutations)
+        let digest = projection_bundle_digest(&delta.mutations)
             .map_err(|error| FixtureError::Invalid(error.to_string()))?;
         if let Some(existing) = self
             .journal

@@ -1830,7 +1830,8 @@ fn evaluation_lines(
             "{}: {} {}",
             axis.name,
             axis.value
-                .map_or_else(|| "利用不可".to_owned(), |value| value.to_string()),
+                .as_deref()
+                .map_or_else(|| "利用不可".to_owned(), str::to_owned),
             axis.unit.as_deref().unwrap_or("")
         ));
     }
@@ -2329,8 +2330,8 @@ mod tests {
         local: &str,
         candidate: &CandidateRef,
         decision: EvaluationDecision,
-        value: Option<f64>,
-        confidence: Option<f64>,
+        value: Option<String>,
+        confidence: Option<String>,
         evidence: Vec<EvidenceRef>,
         revision: u128,
     ) -> EvaluationSnapshot {
@@ -2429,8 +2430,8 @@ mod tests {
             "evaluation/a",
             &a.candidate_ref,
             EvaluationDecision::Fail,
-            Some(12.0),
-            Some(0.2),
+            Some("12".to_owned()),
+            Some("0.2".to_owned()),
             vec![],
             1,
         );
@@ -2438,8 +2439,8 @@ mod tests {
             "evaluation/z",
             &z.candidate_ref,
             EvaluationDecision::Pass,
-            Some(88.0),
-            Some(0.81),
+            Some("88".to_owned()),
+            Some("0.81".to_owned()),
             vec![],
             1,
         );
@@ -2687,8 +2688,8 @@ mod tests {
                         "evaluation/a",
                         &candidate.candidate_ref,
                         EvaluationDecision::Pass,
-                        Some(50.0),
-                        Some(0.5),
+                        Some("50".to_owned()),
+                        Some("0.5".to_owned()),
                         vec![],
                         1,
                     )],
@@ -2716,8 +2717,8 @@ mod tests {
                         "evaluation/a",
                         &candidate.candidate_ref,
                         EvaluationDecision::Pass,
-                        Some(50.0),
-                        Some(0.5),
+                        Some("50".to_owned()),
+                        Some("0.5".to_owned()),
                         vec![],
                         2,
                     )],
@@ -2752,8 +2753,8 @@ mod tests {
                         "evaluation/a",
                         &candidate.candidate_ref,
                         EvaluationDecision::Pass,
-                        Some(50.0),
-                        Some(0.5),
+                        Some("50".to_owned()),
+                        Some("0.5".to_owned()),
                         vec![evidence(
                             "evidence/a",
                             EvidenceStatus::Available,
@@ -2781,8 +2782,8 @@ mod tests {
                         "evaluation/b",
                         &swapped.candidate_ref,
                         EvaluationDecision::Pass,
-                        Some(50.0),
-                        Some(0.5),
+                        Some("50".to_owned()),
+                        Some("0.5".to_owned()),
                         vec![evidence(
                             "evidence/b",
                             EvidenceStatus::Available,
