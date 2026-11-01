@@ -185,9 +185,20 @@ pub const FOCUS_RING_MIN_CONTRAST: f32 = 3.0;
 /// collapses into the surface, the result is [`FocusRing::Invisible`] rather than a
 /// ring that cannot be seen.
 pub fn focus_ring(colors: &ShellColors) -> FocusRing {
-    let surface = FOCUS_SURFACE_ROLE(colors);
-    for candidate in [colors.focus, colors.selection, colors.text] {
-        if contrast_ratio(candidate, surface) >= FOCUS_RING_MIN_CONTRAST {
+    focus_ring_on(colors, FOCUS_SURFACE_ROLE(colors), &[])
+}
+
+/// Pick a focus-ring colour that is visible against the **actual** surface it is
+/// drawn on.
+///
+/// Callers whose control surface is not `button_face` (the stop button draws on
+/// `danger_face`) must pass that background explicitly, plus any additional role
+/// that is valid on that surface (the stop button's `danger_text`); the contrast is
+/// then evaluated against the real background instead of the Dock surface.
+pub fn focus_ring_on(colors: &ShellColors, background: u32, extra_candidates: &[u32]) -> FocusRing {
+    let candidates = [colors.focus, colors.selection, colors.text];
+    for candidate in candidates.iter().chain(extra_candidates.iter()).copied() {
+        if contrast_ratio(candidate, background) >= FOCUS_RING_MIN_CONTRAST {
             return FocusRing::Visible(candidate);
         }
     }

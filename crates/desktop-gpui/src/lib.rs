@@ -2988,16 +2988,23 @@ impl Render for Shell {
         // LIMITED-CONTRAST-BEGIN stop-controls: the stop/reconcile controls shown inside
         // the Context Bar resolve every colour through the scheme.
         let stop_focused = self.stop_focus.is_focused(window);
+        let stop_background = if stop_enabled {
+            colors.danger_face
+        } else {
+            colors.disabled_face
+        };
         let (stop_border_width, stop_border_color) = match shell_style::control_focus(
             &self.tokens,
             stop_focused,
             window.scale_factor(),
             &colors,
+            stop_background,
             if stop_enabled {
                 colors.danger_border
             } else {
                 colors.disabled_border
             },
+            &[colors.danger_text],
         ) {
             Ok(value) => value,
             Err(_) => (px(0.0), colors.disabled_border),
@@ -3059,16 +3066,23 @@ impl Render for Shell {
             stop_button
         };
         let reconcile_focused = self.reconcile_focus.is_focused(window);
+        let reconcile_background = if reconcile_enabled {
+            colors.raised_face
+        } else {
+            colors.disabled_face
+        };
         let (reconcile_border_width, reconcile_border_color) = match shell_style::control_focus(
             &self.tokens,
             reconcile_focused,
             window.scale_factor(),
             &colors,
+            reconcile_background,
             if reconcile_enabled {
                 colors.border
             } else {
                 colors.disabled_border
             },
+            &[],
         ) {
             Ok(value) => value,
             Err(_) => (px(0.0), colors.disabled_border),
@@ -4563,6 +4577,33 @@ mod ime_tests {
 
 #[cfg(test)]
 mod contrast_scope_tests {
+    /// The stop/reconcile buttons must draw the width and colour computed by
+    /// `control_focus`; a regression back to a fixed border would otherwise pass the
+    /// same-colour unit test because that test only exercises the helper.
+    #[test]
+    fn the_stop_controls_render_the_control_focus_result() {
+        let source = include_str!("lib.rs");
+        for (width, color) in [
+            ("stop_border_width", "stop_border_color"),
+            ("reconcile_border_width", "reconcile_border_color"),
+        ] {
+            let border = format!(".border({width})");
+            let border_color = format!(".border_color(rgb({color}))");
+            assert!(
+                source.contains(&border),
+                "the button must render the computed border width ({border})"
+            );
+            assert!(
+                source.contains(&border_color),
+                "the button must render the computed border colour ({border_color})"
+            );
+        }
+        assert!(
+            source.matches("shell_style::control_focus(").count() >= 2,
+            "both controls must derive their border from control_focus"
+        );
+    }
+
     /// The limited AX04 scope (root + Dock + Context Bar) must not keep fixed
     /// palette literals: with a monochrome High Contrast palette a fixed colour can
     /// be unreadable against the OS background. The Dock region is delimited by the

@@ -152,16 +152,21 @@ pub(crate) fn control_focus(
     focused: bool,
     scale_factor: f32,
     colors: &crate::contrast::ShellColors,
+    background: u32,
     resting: u32,
+    extra_candidates: &[u32],
 ) -> Result<(Pixels, u32), TokenError> {
+    // Validate the scale before branching: an unusable scale factor fails closed for
+    // the focused state too, instead of returning a fabricated outline width.
+    let hairline = separator(tokens, scale_factor)?;
     if focused {
-        let color = match crate::contrast::focus_ring(colors) {
+        let color = match crate::contrast::focus_ring_on(colors, background, extra_candidates) {
             crate::contrast::FocusRing::Visible(color) => color,
             crate::contrast::FocusRing::Invisible => colors.focus,
         };
         Ok((focus_outline(tokens), color))
     } else {
-        Ok((separator(tokens, scale_factor)?, resting))
+        Ok((hairline, resting))
     }
 }
 
@@ -286,16 +291,78 @@ mod tests {
             "the review's same-colour focus/resting case"
         );
         let tokens = DesignTokens::accepted();
-        let (focused_width, focused_color) =
-            control_focus(&tokens, true, 1.0, &colors, resting).expect("a usable scale");
+        // The stop button draws on its own danger face, and danger_text is a valid
+        // candidate on that surface.
+        let background = colors.danger_face;
+        let (focused_width, focused_color) = control_focus(
+            &tokens,
+            true,
+            1.0,
+            &colors,
+            background,
+            resting,
+            &[colors.danger_text],
+        )
+        .expect("a usable scale");
         let (resting_width, resting_color) =
-            control_focus(&tokens, false, 1.0, &colors, resting).expect("a usable scale");
+            control_focus(&tokens, false, 1.0, &colors, background, resting, &[])
+                .expect("a usable scale");
         assert!(
             focused_width > resting_width,
             "focus changes the border width even when the colour is identical"
         );
-        assert_eq!(focused_color, resting_color);
+        assert!(
+            crate::contrast::contrast_ratio(focused_color, background)
+                >= crate::contrast::FOCUS_RING_MIN_CONTRAST,
+            "the focus border is visible against the button's own background"
+        );
+        assert_eq!(resting_color, resting);
         assert_eq!(focused_width, focus_outline(&tokens));
+
+        // The review's palette: button_face black, button_text white and highlight
+        // white, so danger_face is white; the ring must fall back to danger_text.
+        let white_on_white = crate::contrast::SystemColors {
+            window: 0x000000,
+            window_text: 0xffffff,
+            highlight: 0xffffff,
+            highlight_text: 0x000000,
+            gray_text: 0x101010,
+            button_face: 0x000000,
+            button_text: 0xffffff,
+        };
+        let palette = crate::contrast::colors_for(
+            crate::contrast::ContrastScheme::HighContrast,
+            &white_on_white,
+        );
+        let (_, ring_color) = control_focus(
+            &tokens,
+            true,
+            1.0,
+            &palette,
+            palette.danger_face,
+            palette.danger_border,
+            &[palette.danger_text],
+        )
+        .expect("a usable scale");
+        assert!(
+            crate::contrast::contrast_ratio(ring_color, palette.danger_face)
+                >= crate::contrast::FOCUS_RING_MIN_CONTRAST,
+            "a white danger face must not get a white ring"
+        );
+
+        // An unusable scale factor fails closed for the focused state too.
+        assert!(
+            control_focus(
+                &tokens,
+                true,
+                0.0,
+                &palette,
+                palette.danger_face,
+                palette.danger_border,
+                &[]
+            )
+            .is_err()
+        );
     }
 
     #[test]
