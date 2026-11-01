@@ -169,7 +169,7 @@ Development v1 serves observation only (no commands, no principal model). The ma
 | Grant | `ReadGrant` stamp (server_id/epoch/request_id/context_id/read_revision/scope), scope echo, `command_reads: []`, `local_intents_readable: false` | v1 has no principal model, so no command is readable and no local intent is projected |
 | Snapshot | One `begin` + one chunk + `end` for a consistent cut; TASK projections only | Server-issued `snapshot_id`, epoch, cursor, `expected` counts and `integrity_digest` |
 | Optional facts | `display_id`, `inner_phase`, `iteration_ref`/`iteration_index`, `capabilities_ref`, candidate/outcome/brief references may be absent | Absent means "not projected"; the client never substitutes a value. v1 TASK-only snapshots declare no reference, so none can dangle |
-| Live reads | `GET /api/cos/desktop/deltas?cursor=<server cursor>` with `X-Cos-Context` | Re-polling a **known** cursor is always `200`: `{"transaction": null}` when nothing changed, otherwise the transaction for that read revision (a repeated poll may re-issue the same content). The cursor advances only after the whole transaction is applied |
+| Live reads | `GET /api/cos/desktop/deltas?cursor=<server cursor>` with `X-Cos-Context` | Re-polling a **known** cursor is normally `200`: `{"transaction": null}` when nothing changed, otherwise the transaction for that read revision (a repeated poll may re-issue the same content). The cursor advances only after the whole transaction is applied. The Runtime still answers `409 RESYNC_REQUIRED` when it decides a known cursor cannot be replayed safely — see the known-cursor 409 conditions below |
 | Delta transaction | Recorded transaction id, epoch, predecessor, successor cursor, `mutation_count`, `integrity_digest`, mutations with base/new revision | Server-issued cursor and digest; applied only when the predecessor is the last applied cursor and the epoch matches |
 | Fresh snapshot route | `GET /api/cos/desktop/snapshot?scope=<scope_id>` with `X-Cos-Context` | Exists for an explicit re-read; the v1 client path takes its snapshot from the open response and never races a second call |
 
@@ -180,13 +180,23 @@ Development v1 serves observation only (no commands, no principal model). The ma
 | Unsupported protocol/schema pair | `422 {"code":"UNSUPPORTED_PROTOCOL","detail":…}` for the open; the hello advertises the supported pair | Fail closed: no grant, no snapshot, `Incompatible`; never a fixture fallback |
 | Missing or unknown read context | `401 {"code":"UNAUTHORIZED_CONTEXT"}` on snapshot/deltas | Transport failure; the publication is withheld (`AuthorizationUnavailable`) and the client re-observes; nothing is guessed |
 | Missing/unknown bearer at the open | `401` (authentication dependency) | Fail closed; no data published |
-| Unknown or expired cursor | `409 {"code":"RESYNC_REQUIRED"}` (a known cursor, advancing or not, is `200`) | No frame, no cursor advance and no mutation applied; the client re-opens the observation with the last applied cursor |
+| Unknown or expired cursor, or a known cursor that can no longer be replayed safely | `409 {"code":"RESYNC_REQUIRED"}` | No frame, no cursor advance and no mutation applied; the client re-opens the observation with the last applied cursor |
 | Epoch change | `409 {"code":"RESYNC_REQUIRED"}`, or a grant stamp that disagrees with the session epoch | Resync; local state is withheld until a verified snapshot arrives |
 | Digest or counts mismatch | Never sent this way: the Runtime CLI computes both from the same canonical bundle | The client rejects the staged bundle at `SNAPSHOT_END`/transaction validation and resyncs; a partially verified bundle is never published |
 | Dangling or differing reference | v1 serves TASK only and stops projecting `iteration_ref`/`capabilities_ref` until the referenced projections exist | The client rejects the snapshot and resyncs instead of publishing an unresolvable reference |
 | Grant echo mismatch (request_id, scope, server, epoch) | The server contract echoes the request exactly | Protocol error; the session fails closed |
 
 Fail-closed is not "keep the last picture silently": the last fully applied projection may remain in memory, but `publication_access()` reports `Withheld` with its reason and the UI must not present it as live truth.
+
+**Known-cursor 409 conditions (Runtime `read_deltas`).** A known cursor is *not* unconditionally replayable. The Runtime returns `409 {"code":"RESYNC_REQUIRED"}` even for a known cursor when it judges that the read revision cannot be replayed safely:
+
+1. unrepresentable history — the scope's content returned to the revision already issued (A→B→A), so a diff would be empty while the revision moved;
+2. a temporary Task that appeared and disappeared inside the scope (`view=all`: INSERT→DELETE before the next read);
+3. a journal gap — the retained replay window was exceeded, pruned or reset by an epoch initialisation;
+4. a cursor expired by the retention cap (the journal's `MAX_JOURNAL_ROWS` bound evicted it);
+5. an epoch mismatch — the journal/ledger row belongs to another process or was re-initialised by a restart.
+
+The Runtime states "cannot replay" explicitly instead of synthesising a substitute diff. The client's expectation is unchanged: on any 409 it publishes nothing from the response, keeps the last fully applied cursor, withholds the publication and re-observes with that cursor; it never fabricates a cursor, a transaction or a mutation.
 
 ## 3. Commands and receipts
 
