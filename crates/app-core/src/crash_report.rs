@@ -115,6 +115,13 @@ pub enum CrashStoreError {
     InvalidReport,
     /// The managed-name sequence space is exhausted.
     IdExhausted,
+    /// A failed write could not be cleaned up; a staging file may remain.
+    StagingCleanup {
+        /// The original write/sync/finalize error.
+        write: Box<std::io::Error>,
+        /// The error from removing the staging file.
+        cleanup: Box<std::io::Error>,
+    },
     /// Underlying I/O failure.
     Io(std::io::Error),
 }
@@ -135,6 +142,10 @@ impl std::fmt::Display for CrashStoreError {
             }
             Self::InvalidReport => formatter.write_str("the managed report is invalid"),
             Self::IdExhausted => formatter.write_str("the report sequence space is exhausted"),
+            Self::StagingCleanup { write, cleanup } => write!(
+                formatter,
+                "staging cleanup failed ({cleanup}) after a failed write ({write})"
+            ),
             Self::Io(error) => write!(formatter, "{error}"),
         }
     }
@@ -240,11 +251,18 @@ impl CrashReportStore {
                 limit: MAX_CRASH_REPORT_BYTES,
             });
         }
-        // Rotation happens before the write: exactly the oldest managed report is
-        // removed when the retained count has reached the ceiling.
         self.prune()?;
         let mut reports = self.managed_reports()?;
         reports.sort_by_key(|report| report.id);
+        // The next sequence is validated before any eviction: a save that cannot be
+        // written must not destroy an existing report.
+        let id = reports
+            .last()
+            .map_or(1, |report| report.id.saturating_add(1));
+        if id > MAX_REPORT_ID {
+            return Err(CrashStoreError::IdExhausted);
+        }
+        // Rotation happens only after the write is known to be feasible.
         if reports.len() >= MAX_CRASH_REPORTS {
             let excess = reports.len() + 1 - MAX_CRASH_REPORTS;
             for report in reports.iter().take(excess) {
@@ -257,12 +275,6 @@ impl CrashReportStore {
                 }
             }
         }
-        let id = reports
-            .last()
-            .map_or(1, |report| report.id.saturating_add(1));
-        if id > MAX_REPORT_ID {
-            return Err(CrashStoreError::IdExhausted);
-        }
         self.commit(id, bytes)?;
         Ok(CrashReportMeta {
             id,
@@ -273,6 +285,9 @@ impl CrashReportStore {
     /// Remove managed reports beyond the retention ceiling. Unknown files,
     /// directories and symlinks are never touched.
     pub fn prune(&self) -> Result<(), CrashStoreError> {
+        // The root may have been replaced after the store was created; pruning must not
+        // follow a link/junction into another directory.
+        self.check_root()?;
         let mut reports = self.managed_reports()?;
         reports.sort_by_key(|report| report.id);
         if reports.len() > MAX_CRASH_REPORTS {
@@ -338,6 +353,11 @@ impl CrashReportStore {
     }
 
     fn commit(&self, id: u64, bytes: &[u8]) -> Result<(), CrashStoreError> {
+        let staging = self.root.join(staging_name());
+        self.commit_via(id, bytes, &staging)
+    }
+
+    fn commit_via(&self, id: u64, bytes: &[u8], staging: &Path) -> Result<(), CrashStoreError> {
         if id > MAX_REPORT_ID {
             return Err(CrashStoreError::IdExhausted);
         }
@@ -347,23 +367,38 @@ impl CrashReportStore {
                 limit: MAX_CRASH_REPORT_BYTES,
             });
         }
-        let staging = self.root.join(staging_name());
+        // `create_new` refuses an existing name; in that case this call did not create
+        // the file and must never remove it as part of recovery.
+        let mut file = match OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(staging)
+        {
+            Ok(file) => file,
+            Err(error) => return Err(CrashStoreError::Io(error)),
+        };
         let outcome = (|| -> std::io::Result<()> {
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(&staging)?;
             file.write_all(bytes)?;
             file.sync_all()?;
             drop(file);
-            fs::rename(&staging, self.root.join(managed_name(id)))
+            fs::rename(staging, self.root.join(managed_name(id)))
         })();
-        if outcome.is_err() {
-            // Every failure after staging creation removes the staging file, so a
-            // failed write/sync/finalize cannot leave an orphan in the dedicated area.
-            let _ = fs::remove_file(&staging);
+        if let Err(write_error) = outcome {
+            // Only a staging file this call created is cleaned up; a cleanup failure is
+            // reported instead of being silently ignored.
+            match fs::remove_file(staging) {
+                Ok(()) => {}
+                Err(remove_error) if remove_error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(remove_error) => {
+                    return Err(CrashStoreError::StagingCleanup {
+                        write: Box::new(write_error),
+                        cleanup: Box::new(remove_error),
+                    });
+                }
+            }
+            return Err(CrashStoreError::Io(write_error));
         }
-        outcome.map_err(CrashStoreError::Io)
+        Ok(())
     }
 }
 
@@ -691,5 +726,99 @@ mod tests {
             0x10 | FILE_ATTRIBUTE_REPARSE_POINT,
             false
         ));
+    }
+
+    #[test]
+    fn prune_refuses_a_store_directory_replaced_by_a_link() {
+        let root = temp_root("prune-link");
+        let target = temp_root("prune-link-target");
+        std::fs::create_dir_all(&target).expect("the target directory");
+        let target_report = target.join(managed_name(1));
+        std::fs::write(&target_report, b"must survive").expect("a target-side report");
+        let store = CrashReportStore::open_at(&root).expect("the dedicated directory");
+        std::fs::remove_dir_all(&root).expect("the real directory is removed");
+        #[cfg(windows)]
+        let created = std::os::windows::fs::symlink_dir(&target, &root).is_ok()
+            || std::process::Command::new("cmd")
+                .args([
+                    "/C",
+                    "mklink",
+                    "/J",
+                    &root.to_string_lossy(),
+                    &target.to_string_lossy(),
+                ])
+                .status()
+                .map(|status| status.success())
+                .unwrap_or(false);
+        #[cfg(not(windows))]
+        let created = std::os::unix::fs::symlink(&target, &root).is_ok();
+        if !created {
+            eprintln!("SKIP: link creation is unavailable in this environment");
+            let _ = std::fs::remove_dir_all(&target);
+            panic!("the prune rejection could not be verified: link creation is unavailable");
+        }
+        let error = store
+            .prune()
+            .expect_err("pruning through a linked root is refused");
+        assert!(matches!(error, CrashStoreError::NotADirectory));
+        assert!(
+            target_report.exists(),
+            "a target-side managed report is never deleted through the link"
+        );
+        let _ = std::fs::remove_dir(&root);
+        let _ = std::fs::remove_dir_all(&target);
+    }
+
+    #[test]
+    fn id_exhaustion_keeps_all_retained_reports() {
+        let root = temp_root("id-keeps");
+        let store = CrashReportStore::open_at(&root).expect("the dedicated directory");
+        for id in (MAX_REPORT_ID - 2)..=MAX_REPORT_ID {
+            store.commit(id, b"retained").expect("a retained report");
+        }
+        let before = store.list().expect("the managed reports");
+        assert_eq!(before.len(), MAX_CRASH_REPORTS);
+        let error = store
+            .save(&CrashReportInput {
+                desktop_version: "9.9.9",
+                category: CrashCategory::Unknown,
+                diagnostics: None,
+            })
+            .expect_err("the sequence is exhausted");
+        assert!(matches!(error, CrashStoreError::IdExhausted));
+        let after = store.list().expect("the managed reports");
+        assert_eq!(
+            after, before,
+            "a refused save does not evict an existing report"
+        );
+        for report in &after {
+            assert!(
+                root.join(managed_name(report.id)).exists(),
+                "every retained report is still on disk"
+            );
+        }
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_staging_collision_keeps_the_existing_file() {
+        let root = temp_root("staging-collision");
+        let store = CrashReportStore::open_at(&root).expect("the dedicated directory");
+        let staging = root.join(".staged-collision.tmp");
+        std::fs::write(&staging, b"existing staging content").expect("an existing file");
+        let error = store
+            .commit_via(1, b"new body", &staging)
+            .expect_err("create_new refuses the collision");
+        assert!(matches!(error, CrashStoreError::Io(_)));
+        assert_eq!(
+            std::fs::read(&staging).expect("the existing staging file"),
+            b"existing staging content",
+            "a collision never deletes a file this call did not create"
+        );
+        assert!(
+            store.list().expect("the managed reports").is_empty(),
+            "the collision does not publish a report"
+        );
+        let _ = std::fs::remove_dir_all(&root);
     }
 }
