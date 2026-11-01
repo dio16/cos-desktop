@@ -28,6 +28,7 @@ fn observing(revision: Option<&str>) -> ObservationPublication {
 fn batch(events: Vec<DiagnosticEvent>, gap: Option<EventGap>) -> DiagnosticBatch {
     DiagnosticBatch {
         latest_sequence: events.last().map_or(0, |event| event.sequence),
+        retained_events: events.len(),
         events,
         event_gap: gap,
         exhausted: false,
@@ -96,11 +97,13 @@ fn diagnostic_summary_preserves_the_gap_counts_and_exhaustion() {
             event(12, DiagnosticKind::Resync),
         ],
         event_gap: Some(EventGap { from: 3, to: 8 }),
+        retained_events: 4,
         latest_sequence: 12,
         exhausted: false,
     };
     let summary = app_core::DiagnosticsSummary::from_batch(&batch);
     assert_eq!(summary.retained_events, 4);
+    assert_eq!(summary.event_gap_lost, 6);
     assert_eq!(summary.oldest_sequence, Some(9));
     assert_eq!(summary.event_gap, Some(EventGap { from: 3, to: 8 }));
     assert_eq!(summary.counts.activity, 1);
@@ -108,7 +111,10 @@ fn diagnostic_summary_preserves_the_gap_counts_and_exhaustion() {
     assert_eq!(summary.counts.error, 1);
     assert_eq!(summary.counts.resync, 1);
     let rendered = SupportReport::from_publication(&observing(None), &batch, DESKTOP).render();
-    assert!(rendered.contains("Event gap: 3-8"), "{rendered}");
+    assert!(
+        rendered.contains("Event gap: 3-8 (6 lost)"),
+        "the report states the lost count numerically:\n{rendered}"
+    );
 }
 
 #[test]
@@ -156,6 +162,79 @@ fn synthetic_credentials_locators_and_private_paths_never_render() {
             !rendered.contains(secret),
             "the rendered report exposed {secret}:\n{rendered}"
         );
+    }
+}
+
+#[test]
+fn the_report_restates_the_ring_retention_not_the_cursor_window() {
+    // Two events after the cursor, but the ring itself retains 4096: the report
+    // must state the ring's retention, never a count recomputed from the window.
+    let batch = DiagnosticBatch {
+        events: vec![
+            event(5000, DiagnosticKind::Activity),
+            event(5001, DiagnosticKind::Resync),
+        ],
+        event_gap: None,
+        retained_events: 4096,
+        latest_sequence: 5001,
+        exhausted: false,
+    };
+    let summary = app_core::DiagnosticsSummary::from_batch(&batch);
+    assert_eq!(summary.retained_events, 4096);
+    assert_eq!(batch.retained_events, 4096);
+    let rendered =
+        SupportReport::from_publication(&observing(Some("42")), &batch, DESKTOP).render();
+    assert!(
+        rendered.contains("Retained events: 4096"),
+        "the report must restate the ring count:\n{rendered}"
+    );
+    assert!(
+        !rendered.contains("Retained events: 2"),
+        "the cursor window must not be reported as the retention:\n{rendered}"
+    );
+}
+
+#[test]
+fn the_report_states_the_numeric_limits() {
+    let report =
+        SupportReport::from_publication(&observing(None), &batch(Vec::new(), None), DESKTOP);
+    let rendered = report.render();
+    assert_eq!(report.limits.max_diagnostic_events, 4096);
+    assert!(
+        rendered.contains("Limits: events 4096, line 512 bytes, report 12288 bytes, 24 lines"),
+        "the report states its exact numeric limits:\n{rendered}"
+    );
+    assert!(rendered.len() <= MAX_SUPPORT_REPORT_BYTES);
+    assert!(rendered.lines().count() <= MAX_REPORT_LINES);
+    assert!(
+        rendered
+            .lines()
+            .all(|line| line.len() <= MAX_DIAGNOSTIC_LINE_BYTES)
+    );
+}
+
+#[test]
+fn a_boundary_line_is_truncated_without_splitting_a_character_and_redacted() {
+    let long = "😀".repeat(MAX_DIAGNOSTIC_LINE_BYTES);
+    let leaked: &'static str = Box::leak(long.into_boxed_str());
+    let mut report =
+        SupportReport::from_publication(&observing(Some("42")), &batch(Vec::new(), None), DESKTOP);
+    report.desktop_version = leaked;
+    let rendered = report.render();
+    assert!(
+        rendered.len() <= MAX_SUPPORT_REPORT_BYTES,
+        "{}",
+        rendered.len()
+    );
+    for line in rendered.lines() {
+        assert!(
+            line.len() <= MAX_DIAGNOSTIC_LINE_BYTES,
+            "a boundary line exceeded the cap: {} bytes",
+            line.len()
+        );
+        // The rendered text is valid UTF-8 by construction; a split character would
+        // not survive the String boundary.
+        assert!(std::str::from_utf8(line.as_bytes()).is_ok());
     }
 }
 

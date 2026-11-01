@@ -54,7 +54,7 @@ pub struct DiagnosticCounts {
 /// Bounded summary of the retained diagnostic ring for one reader cursor.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DiagnosticsSummary {
-    /// Events retained for this reader after the cursor.
+    /// Events the ring retains, independent of the reader cursor.
     pub retained_events: usize,
     /// Latest sequence ever appended, or zero before the first event.
     pub latest_sequence: u64,
@@ -62,6 +62,8 @@ pub struct DiagnosticsSummary {
     pub oldest_sequence: Option<u64>,
     /// Exact lost interval, when events fell out of the ring.
     pub event_gap: Option<EventGap>,
+    /// Number of sequences in [`Self::event_gap`], zero when there is no gap.
+    pub event_gap_lost: u64,
     /// True once the sequence space is exhausted.
     pub exhausted: bool,
     /// Counts per safe category across the retained events.
@@ -82,13 +84,16 @@ impl DiagnosticsSummary {
             }
         }
         Self {
-            retained_events: batch.events.len().min(MAX_DIAGNOSTIC_EVENTS),
+            retained_events: batch.retained_events,
             latest_sequence: batch.latest_sequence,
             oldest_sequence: batch
                 .events
                 .first()
                 .map(|event: &DiagnosticEvent| event.sequence),
             event_gap: batch.event_gap,
+            event_gap_lost: batch
+                .event_gap
+                .map_or(0, |gap| gap.to.saturating_sub(gap.from) + 1),
             exhausted: batch.exhausted,
             counts,
         }
@@ -270,7 +275,7 @@ impl SupportReport {
                     lines.push(format!("{label}: unknown ({reason})"));
                 }
                 lines.push(format!(
-                    "Limits: events {} / line {} bytes / report {} bytes / {} lines",
+                    "Limits: events {}, line {} bytes, report {} bytes, {} lines",
                     self.limits.max_diagnostic_events,
                     self.limits.max_line_bytes,
                     self.limits.max_report_bytes,
@@ -288,20 +293,20 @@ impl SupportReport {
         lines.push(format!(
             "Event gap: {}",
             match summary.event_gap {
-                Some(gap) => format!("{}-{}", gap.from, gap.to),
+                Some(gap) => format!("{}-{} ({} lost)", gap.from, gap.to, summary.event_gap_lost),
                 None => "none".to_owned(),
             }
         ));
         lines.push(format!("Sequence exhausted: {}", summary.exhausted));
         lines.push(format!(
-            "Event counts: activity {} / connection {} / error {} / resync {}",
+            "Event counts: activity {}, connection {}, error {}, resync {}",
             summary.counts.activity,
             summary.counts.connection,
             summary.counts.error,
             summary.counts.resync
         ));
         lines.push(format!(
-            "Limits: events {} / line {} bytes / report {} bytes / {} lines",
+            "Limits: events {}, line {} bytes, report {} bytes, {} lines",
             self.limits.max_diagnostic_events,
             self.limits.max_line_bytes,
             self.limits.max_report_bytes,

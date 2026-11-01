@@ -3738,23 +3738,33 @@ fn pub3_diagnostic_loss_is_explicit_bounded_and_independent_of_canonical_state()
 
     // One applied transaction is replayed exactly, one bounded owner step at a
     // time. This overflows diagnostic retention, never the transport Rx queue.
-    for _ in 0..1031 {
+    let overflow = app_core::diagnostics::MAX_DIAGNOSTIC_EVENTS as u64 + 100;
+    for _ in 0..overflow {
         live.control.deliver_step("delta-evaluation-e");
         live.step();
         live.step();
     }
     let lagged = live.handle.diagnostics_after(start);
-    assert_eq!(lagged.latest_sequence, start + 1031);
-    assert_eq!(lagged.events.len(), 1024, "the declared retention limit");
+    assert_eq!(lagged.latest_sequence, start + overflow);
+    assert_eq!(
+        lagged.events.len(),
+        app_core::diagnostics::MAX_DIAGNOSTIC_EVENTS,
+        "the declared retention limit"
+    );
+    assert_eq!(
+        lagged.retained_events,
+        app_core::diagnostics::MAX_DIAGNOSTIC_EVENTS,
+        "the ring retains the declared count"
+    );
     assert_eq!(
         lagged.event_gap,
         Some(app_core::EventGap {
             from: start + 1,
-            to: start + 7
+            to: start + 100
         })
     );
     for (index, event) in lagged.events.iter().enumerate() {
-        assert_eq!(event.sequence, start + 8 + index as u64);
+        assert_eq!(event.sequence, start + 101 + index as u64);
         assert_eq!(event.kind, app_core::DiagnosticKind::Activity);
     }
     assert!(!lagged.exhausted);
@@ -3765,7 +3775,7 @@ fn pub3_diagnostic_loss_is_explicit_bounded_and_independent_of_canonical_state()
     );
     let recent = second_reader.diagnostics_after(start + 1021);
     assert_eq!(recent.event_gap, None);
-    assert_eq!(recent.events, lagged.events[1014..]);
+    assert_eq!(recent.events, lagged.events[921..]);
     let future = live.handle.diagnostics_after(u64::MAX);
     assert!(future.events.is_empty());
     assert_eq!(future.event_gap, None, "a future cursor invents no loss");
