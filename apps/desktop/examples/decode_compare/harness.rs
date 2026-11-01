@@ -701,6 +701,11 @@ pub struct Config {
     /// `None` disables sampling entirely: no default, no `SystemRoot` derivation and no
     /// environment lookup exists, so nothing in the environment can select a sampler.
     pub sample_tool: Option<PathBuf>,
+    /// Test seam: when set, the **first** working-set attempt is not considered until
+    /// this file exists, so a rewrite the test performs before writing the gate provably
+    /// precedes the attempt. `None` in every operator run (no CLI flag sets it), so the
+    /// product path is unchanged.
+    pub sample_gate: Option<PathBuf>,
     /// Extra argv placed before the fixed sample argv (tests only).
     pub sample_argv_prefix: Vec<OsString>,
     pub invocation: Invocation,
@@ -1186,6 +1191,7 @@ where
         // Opt-in only: the operator names the sampler with `--sample-tool`, and no
         // environment value can supply or influence it.
         sample_tool,
+        sample_gate: None,
         sample_argv_prefix: Vec::new(),
         invocation: Invocation {
             argv_prefix: Vec::new(),
@@ -2222,6 +2228,7 @@ fn measure(
                     tool: tool.to_path_buf(),
                     argv_prefix: config.sample_argv_prefix.clone(),
                     digest: paths.sample_digest.unwrap_or_default().to_owned(),
+                    gate: config.sample_gate.clone(),
                 });
             // The observation-level reason is the resolved token, not a fixed one:
             // opt-out is `sampling_disabled`, an unreadable or oversized operator tool
@@ -2790,6 +2797,8 @@ struct Sampling<'a> {
     argv_prefix: Vec<OsString>,
     /// Digest of the bytes pinned for this run; every spawn is verified against it.
     digest: String,
+    /// Test seam: first-attempt gate file (see `Config::sample_gate`).
+    gate: Option<PathBuf>,
 }
 
 /// Working-set sampling bookkeeping, kept separate from the I/O so every transition is
@@ -3093,7 +3102,13 @@ fn supervise(
             && elapsed >= due
             && in_flight.is_none()
         {
-            if !sampler.may_attempt() {
+            // Test seam: keep the first attempt pending until the test's gate file exists,
+            // so the causal order (rewrite, gate, attempt) is enforced instead of assumed.
+            let waiting_for_gate =
+                sampler.attempts == 0 && config.gate.as_ref().is_some_and(|gate| !gate.exists());
+            if waiting_for_gate {
+                // The loop keeps polling; the deadline below still bounds the wait.
+            } else if !sampler.may_attempt() {
                 // The attempt cap actually stopped sampling (A2).
                 sampler.capped();
                 next_sample = None;

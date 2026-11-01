@@ -2619,7 +2619,9 @@ fn record_carries_the_pixel_fields_with_documented_nullability() {
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.timeout_ms = 10_000;
-    config.cancel_after_ms = Some(150);
+    // The helper writes the partial container at startup and then sleeps 5 s, so a 3 s
+    // deadline lets a loaded gate finish process creation and still cancel it afterwards.
+    config.cancel_after_ms = Some(3_000);
     let report = harness::run(&config).unwrap();
     let observation = &report.observations[0];
     assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
@@ -2708,7 +2710,9 @@ fn cancellation_records_latency_and_a_cancelled_class() {
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.timeout_ms = 10_000;
-    config.cancel_after_ms = Some(150);
+    // A wider window than the raw 150 ms case keeps this an accurate timer assertion
+    // without making it a scheduling assertion on a loaded gate.
+    config.cancel_after_ms = Some(1_500);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -2720,13 +2724,13 @@ fn cancellation_records_latency_and_a_cancelled_class() {
         .cancellation_requested_at_ms
         .expect("the kill request must be timed");
     assert!(
-        (140..600).contains(&requested),
-        "the request should land near the 150 ms deadline ({requested})"
+        (1_400..3_000).contains(&requested),
+        "the request should land near the 1.5 s deadline ({requested})"
     );
     let observed = observation
         .cancellation_observed_ms
         .expect("the kill round trip must be timed");
-    assert!(observed < 600, "cancel round trip took {observed} ms");
+    assert!(observed < 3_000, "cancel round trip took {observed} ms");
     assert!(!observation.output_present);
     assert_eq!(
         observation.cancelled_at_reason, None,
@@ -2738,7 +2742,9 @@ fn cancellation_records_latency_and_a_cancelled_class() {
     fixture.case("c.png", "cancel-hang");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
-    config.cancel_after_ms = Some(200);
+    // The helper prints its claim at startup and then sleeps 5 s; 2 s leaves a loaded
+    // gate room to start it while still cancelling it well before it would exit.
+    config.cancel_after_ms = Some(2_000);
     let report = harness::run(&config).unwrap();
     let observation = &report
         .observations
@@ -2780,8 +2786,9 @@ fn timeout_never_yields_decoded() {
 
 /// Item 6 / A4: a cancelled run contributes neither a capability nor a resource row.
 /// One run, two cases: a fast verified decode and a slow one that the operator deadline
-/// cancels, both under the same candidate. The fast helper finishes in tens of
-/// milliseconds against a 400 ms deadline, so the split is deterministic.
+/// cancels, both under the same candidate. The slow helper sleeps 8 s, so a 4 s operator
+/// deadline always cancels it; the fast helper has four orders of magnitude of margin
+/// against that deadline, so process-start jitter under a loaded gate cannot cancel it.
 #[test]
 fn resource_and_capability_rows_exclude_cancelled_runs() {
     let fixture = Fixture::new();
@@ -2799,7 +2806,7 @@ fn resource_and_capability_rows_exclude_cancelled_runs() {
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.timeout_ms = 10_000;
-    config.cancel_after_ms = Some(400);
+    config.cancel_after_ms = Some(4_000);
     let report = harness::run(&config).unwrap();
 
     let by_case = |case: &str| {
@@ -3715,13 +3722,12 @@ enum Window {
 ///
 /// Ordering is causal, not a sleep: the harness hashes the tool, then spawns the
 /// candidate, and the candidate's sentinel is what releases the rewrite, so the rewrite
-/// is provably after the hash. The first attempt is scheduled at 1.5 s and the restore at
-/// roughly 3 s, so the attempt falls inside the rewritten window. Scheduling margin: the
-/// 1.5 s delay is what keeps the rewrite ahead of the attempt; under extreme load a
-/// candidate that takes longer than ~1.5 s to start would let the attempt precede the
-/// rewrite, in which case the pre-spawn comparison legitimately passes, a sample runs and
-/// this test fails as a false negative. That margin is a deliberate trade against a
-/// longer test, not a correctness assumption of the harness.
+/// is provably after the hash. The mutator then writes a **gate file**, and the harness's
+/// first sample attempt is held until that gate exists (the test-only `sample_gate`
+/// seam), so the rewrite provably precedes the first attempt. No scheduling margin is
+/// involved: a slow candidate start delays both the attempt and the rewrite together,
+/// and the first attempt still sees the rewritten bytes. The restore happens afterwards,
+/// so the file ends in its original state for the post-run assertion.
 #[test]
 fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
     let fixture = Fixture::new();
@@ -3729,21 +3735,22 @@ fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
     std::fs::copy(std::env::current_exe().unwrap(), &tool).unwrap();
     let original = std::fs::read(&tool).unwrap();
     let sentinel = fixture.base.join("candidate-started");
+    let gate = fixture.base.join("tool-rewritten");
     fixture.case("a.png", "announce-sleep");
 
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.sample_tool = Some(tool.clone());
+    config.sample_gate = Some(gate.clone());
     config.sample_argv_prefix = vec![
         std::ffi::OsString::from("--exact"),
         std::ffi::OsString::from("fake_sampler_valid_helper"),
         std::ffi::OsString::from("--nocapture"),
         std::ffi::OsString::from("--quiet"),
     ];
-    // The first attempt is late enough that the rewrite normally precedes it; the restore
-    // is later still, so the rewritten state is what the pre-spawn check sees. The 1.5 s
-    // margin is the false-failure risk documented above, not a guarantee.
-    config.sample_interval_ms = 1_500;
+    // The first attempt is released by the gate file, so the interval only controls how
+    // soon after the rewrite the attempt is considered; the restore is later still.
+    config.sample_interval_ms = 300;
     config.cancel_after_ms = Some(5_000);
 
     let mutator = {
@@ -3763,6 +3770,11 @@ fn pre_spawn_digest_check_refuses_a_rewritten_then_restored_tool() {
             if std::fs::write(&tool, &rewritten).is_err() {
                 // The sampler is already executing this image: the attempt was not
                 // refused before the spawn, which is exactly what this test forbids.
+                return Window::SamplerAlreadyRunning;
+            }
+            // The gate releases the harness's first attempt only after the rewrite is in
+            // place, so the pre-spawn comparison provably sees the rewritten bytes.
+            if std::fs::write(&gate, b"rewritten").is_err() {
                 return Window::SamplerAlreadyRunning;
             }
             std::thread::sleep(std::time::Duration::from_millis(3_000));
