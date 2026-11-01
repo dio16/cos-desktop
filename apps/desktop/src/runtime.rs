@@ -8,9 +8,10 @@
 //!
 //! # Transport boundary
 //!
-//! `COS_DESKTOP_RUNTIME_ENDPOINT` names a plain-HTTP origin (for example
-//! `http://127.0.0.1:8123`). `COS_DESKTOP_RUNTIME_TOKEN`, when set, is the
-//! bearer credential for the observation `POST`. The token is read once, moved
+//! `COS_DESKTOP_RUNTIME_ENDPOINT` names a plain-HTTP **loopback IP-literal**
+//! origin (for example `http://127.0.0.1:8123`; hostnames such as `localhost`
+//! are refused because a resolver answer can change between validation and the
+//! connection). `COS_DESKTOP_RUNTIME_TOKEN`, when set, is the bearer credential for the observation `POST`. The token is read once, moved
 //! into the executor, and never logged, rendered, put in a diagnostic or echoed
 //! in an error message. Redirects and environment proxies are disabled so a
 //! credential can never be replayed to another origin. TLS is not implemented:
@@ -18,7 +19,7 @@
 //! bearing endpoints are refused at startup.
 
 use std::io::Read;
-use std::net::{IpAddr, ToSocketAddrs};
+use std::net::IpAddr;
 use std::time::Duration;
 
 use cos_client::{
@@ -148,14 +149,15 @@ fn is_configured(endpoint: Option<&str>) -> bool {
         .is_some_and(|value| !value.is_empty())
 }
 
-/// Validate a plain-HTTP **loopback origin**: `http://host[:port]` with no
+/// Validate a plain-HTTP **loopback origin**: `http://address[:port]` with no
 /// userinfo, no path, no query and no fragment.
 ///
-/// Only an explicit loopback destination is accepted: `127.0.0.1` (or any
-/// `127.0.0.0/8` address), the name `localhost` when every resolved address is
-/// loopback, and `[::1]`. Arbitrary hostnames are refused instead of resolved,
-/// so the trust decision never depends on DNS. The bearer token and the
-/// `X-Cos-Context` capability must never leave the host.
+/// Only a loopback **IP literal** is accepted: an IPv4 address in
+/// `127.0.0.0/8`, or the bracketed IPv6 `[::1]`. Hostnames — `localhost`
+/// included — are refused rather than resolved: a resolver answer can differ
+/// between validation and the later connection (TOCTOU), and the bearer token
+/// plus the `X-Cos-Context` capability must never leave the host on a
+/// cleartext channel to an address that was not the one validated.
 ///
 /// Returns the normalized origin (no trailing slash).
 fn plain_http_origin(value: &str) -> Option<String> {
@@ -187,48 +189,46 @@ fn plain_http_origin(value: &str) -> Option<String> {
     Some(format!("http://{authority}"))
 }
 
-/// Whether an authority names an explicit loopback destination.
+/// Whether an authority names an explicit loopback IP literal.
+///
+/// No name resolution happens here or at connect time: the validated address is
+/// the address `ureq` dials, so validation cannot race a second resolution.
 fn loopback_authority(authority: &str) -> bool {
-    let Some((host, port)) = split_authority(authority) else {
+    let Some((host, _port)) = split_authority(authority) else {
         return false;
     };
     if host.is_empty() {
         return false;
     }
-    if host.eq_ignore_ascii_case("localhost") {
-        // Accept the name only when every address it resolves to is loopback.
-        let Ok(addresses) = (host, port.unwrap_or(80)).to_socket_addrs() else {
-            return false;
-        };
-        let mut resolved = false;
-        for address in addresses {
-            resolved = true;
-            if !address.ip().is_loopback() {
-                return false;
-            }
-        }
-        return resolved;
-    }
     host.parse::<IpAddr>()
         .is_ok_and(|address| address.is_loopback())
 }
 
-/// Split a host/port authority; `None` for a malformed port or an unbracketed
-/// IPv6 literal.
+/// Split a host/port authority; `None` for a malformed or zero port, a stray
+/// colon, or an unbracketed IPv6 literal.
 fn split_authority(authority: &str) -> Option<(&str, Option<u16>)> {
     if let Some(rest) = authority.strip_prefix('[') {
         let (address, tail) = rest.split_once(']')?;
         let port = match tail {
             "" => None,
-            _ => Some(tail.strip_prefix(':')?.parse::<u16>().ok()?),
+            _ => Some(non_zero_port(tail.strip_prefix(':')?)?),
         };
         return Some((address, port));
     }
-    match authority.rsplit_once(':') {
-        Some((host, port)) if !host.contains(':') => Some((host, Some(port.parse::<u16>().ok()?))),
-        // A bare (unbracketed) IPv6 literal is not a valid authority here.
-        _ => Some((authority, None)),
+    // An unbracketed IPv6 literal would carry several colons; an authority is
+    // `host[:port]` only.
+    if authority.matches(':').count() > 1 {
+        return None;
     }
+    match authority.rsplit_once(':') {
+        Some((host, port)) => Some((host, Some(non_zero_port(port)?))),
+        None => Some((authority, None)),
+    }
+}
+
+/// A usable TCP port: `1..=65535`.
+fn non_zero_port(raw: &str) -> Option<u16> {
+    raw.parse::<u16>().ok().filter(|port| *port != 0)
 }
 
 /// Build the observation client over the configured Runtime origin.
@@ -455,16 +455,24 @@ mod tests {
 
     #[test]
     fn endpoints_are_loopback_origins_only() {
-        // Refused: remote hosts, lookalike names, non-loopback addresses,
-        // non-origin shapes, userinfo, control characters and non-http schemes.
+        // Refused: hostnames (their resolution can change between validation and
+        // the connection), remote or lookalike addresses, malformed authorities
+        // (unbracketed IPv6, zero port), non-origin shapes, userinfo, control
+        // characters and non-http schemes.
         for endpoint in [
             "http://example.com",
+            "http://localhost",
+            "http://localhost:8123",
+            "http://LOCALHOST",
             "http://127.0.0.1.evil.example",
             "http://10.0.0.5",
             "http://127.0.0.1:8123/path?x=1",
             "http://127.0.0.1:8123/snapshot",
             "http://user@127.0.0.1",
+            "http://::1",
             "http://::1:8123",
+            "http://127.0.0.1:0",
+            "http://[::1]:0",
             "http://127.0.0.1:not-a-port",
             "https://127.0.0.1:8123",
             "ftp://127.0.0.1:8123",
@@ -488,15 +496,21 @@ mod tests {
                 .label()
                 .contains("example.com")
         );
+        assert!(
+            !RuntimeUnavailable::UnsupportedEndpoint
+                .label()
+                .contains("localhost")
+        );
 
-        // Accepted: explicit loopback destinations, with an optional port and a
-        // single trailing slash normalized away.
+        // Accepted: loopback IP literals (127.0.0.0/8 and [::1]), with an
+        // optional non-zero port and a single trailing slash normalized away.
         for (endpoint, origin) in [
             ("http://127.0.0.1:8123", "http://127.0.0.1:8123"),
             ("http://127.0.0.1:8123/", "http://127.0.0.1:8123"),
             ("http://127.0.0.1", "http://127.0.0.1"),
-            ("http://localhost:8123", "http://localhost:8123"),
+            ("http://127.0.0.5:8123", "http://127.0.0.5:8123"),
             ("http://[::1]:8123", "http://[::1]:8123"),
+            ("http://[::1]", "http://[::1]"),
         ] {
             assert_eq!(
                 plain_http_origin(endpoint).as_deref(),
