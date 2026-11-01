@@ -32,6 +32,8 @@ pub enum MediaError {
     InvalidLimits,
     InvalidMetadata,
     TooLarge,
+    /// The process-wide in-flight decode reservation pool would be exceeded.
+    Busy,
     Capacity,
     Allocation,
     Cancelled,

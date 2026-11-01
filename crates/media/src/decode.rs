@@ -1,7 +1,10 @@
 //! MP-IMG2 decode preflight arithmetic shared by decoder adapters.
 //!
-//! This admits declared dimensions/bit depth/scratch against caller budgets before a
-//! decoder allocates. It selects no decoder, decodes nothing, owns no GPU object and
+//! This admits declared dimensions/bit depth/scratch against caller budgets **before a
+//! decoder allocates**. The admitted peak is an **admission ceiling** over declared input
+//! geometry plus a declared slack: it is not a proof of the process's real memory peak
+//! (decoder-internal allocations, the encoded input and concurrent holders are outside
+//! it). Real RSS/allocator measurement is `NOT_VERIFIED` (plan §19.118). It selects no decoder, decodes nothing, owns no GPU object and
 //! makes no format-support, profile, region or capability claim; those remain the
 //! decoder owner's admission inputs.
 //!
@@ -15,6 +18,7 @@
 //! instead of being clamped.
 
 use crate::{Cancellation, MediaError, PixelSize};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Widest per-channel bit depth the preflight arithmetic models.
 ///
@@ -27,6 +31,66 @@ pub const MAX_SUPPORTED_BIT_DEPTH: u8 = 16;
 ///
 /// An arithmetic bound, not a decode budget; it is not overridable.
 pub const MAX_SUPPORTED_CHANNELS: u8 = 4;
+
+/// Process-wide in-flight reservation pool for accepted decode work.
+///
+/// A declared ceiling with the same "assumed value" status as
+/// [`DecodeBudget::ratified_default`]'s byte ceilings; it is **not** a measured process
+/// memory figure. Reservations are non-blocking: a request that would exceed the pool is
+/// refused with [`MediaError::Busy`] instead of waiting.
+pub const IN_FLIGHT_POOL_BYTES: u64 =
+    DecodeBudget::MAX_DECODED_BYTES + DecodeBudget::MAX_SCRATCH_BYTES;
+
+static IN_FLIGHT_BYTES: AtomicU64 = AtomicU64::new(0);
+
+/// One held in-flight reservation; dropping it releases the reserved bytes.
+#[derive(Debug)]
+pub(crate) struct InFlightReservation {
+    bytes: u64,
+}
+
+impl InFlightReservation {
+    #[cfg(test)]
+    pub(crate) fn bytes(&self) -> u64 {
+        self.bytes
+    }
+}
+
+impl Drop for InFlightReservation {
+    fn drop(&mut self) {
+        IN_FLIGHT_BYTES.fetch_sub(self.bytes, Ordering::Release);
+    }
+}
+
+/// Reserve `bytes` of the process-wide in-flight pool without blocking.
+///
+/// The reservation is admission accounting, not an allocation: it bounds the sum of
+/// declared peaks of concurrent decodes. A refusal is [`MediaError::Busy`].
+pub(crate) fn reserve_in_flight(bytes: u64) -> Result<InFlightReservation, MediaError> {
+    let mut current = IN_FLIGHT_BYTES.load(Ordering::Acquire);
+    loop {
+        let Some(next) = current.checked_add(bytes) else {
+            return Err(MediaError::Busy);
+        };
+        if next > IN_FLIGHT_POOL_BYTES {
+            return Err(MediaError::Busy);
+        }
+        match IN_FLIGHT_BYTES.compare_exchange(current, next, Ordering::AcqRel, Ordering::Acquire) {
+            Ok(_) => return Ok(InFlightReservation { bytes }),
+            Err(actual) => current = actual,
+        }
+    }
+}
+
+/// Current declared in-flight total (bounded tests only).
+#[cfg(test)]
+pub(crate) fn in_flight_bytes() -> u64 {
+    IN_FLIGHT_BYTES.load(Ordering::Acquire)
+}
+
+/// Serialises tests that observe or fill the process-wide in-flight pool.
+#[cfg(test)]
+pub(crate) static DECODE_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 /// Declared decoder bookkeeping allowance, **not a measurement**.
 ///
@@ -49,15 +113,18 @@ pub struct DecodeLimits {
 }
 
 impl DecodeLimits {
-    /// Declared peak bytes for decoding one RGBA8 output of `size`:
+    /// Declared **admission ceiling** for decoding one RGBA8 output of `size`:
     ///
     /// ```text
     /// peak = 2 × (width × height × 4 B)  +  DECODER_BOOKKEEPING_BYTES
     ///        └ decoded RGBA8 ┘└ one conversion buffer ┘   └ declared slack ┘
     /// ```
     ///
-    /// Checked arithmetic: overflow is `TooLarge`, never a wrapped value. The formula is
-    /// an admission bound on declared quantities, not a measured peak.
+    /// Checked arithmetic: overflow is `TooLarge`, never a wrapped value. This is an
+    /// admission decision over declared quantities (input geometry plus the declared
+    /// slack) and **not** a proof of the process's real memory peak: decoder-internal
+    /// allocations, the encoded input and other concurrent holders are outside it
+    /// (`NOT_VERIFIED`; see plan §19.118).
     pub fn peak_rgba8_bytes(self, size: PixelSize) -> Result<u64, MediaError> {
         size.checked_rgba_bytes()?
             .checked_mul(2)
@@ -340,6 +407,19 @@ pub fn admit_decode(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn in_flight_reservations_are_bounded_and_released() {
+        let _guard = DECODE_TEST_LOCK.lock().expect("test lock");
+        assert_eq!(in_flight_bytes(), 0);
+        let held = reserve_in_flight(IN_FLIGHT_POOL_BYTES).expect("the whole pool");
+        assert_eq!(held.bytes(), IN_FLIGHT_POOL_BYTES);
+        assert_eq!(reserve_in_flight(1).err(), Some(MediaError::Busy));
+        drop(held);
+        assert_eq!(in_flight_bytes(), 0);
+        let again = reserve_in_flight(1_024).expect("released capacity");
+        assert_eq!(again.bytes(), 1_024);
+    }
 
     #[test]
     fn the_peak_formula_is_explicit_and_checked() {

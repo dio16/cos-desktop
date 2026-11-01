@@ -58,6 +58,41 @@ pub fn decode_raster(
     limits: DecodeLimits,
     cancel: &Cancellation,
 ) -> Result<DecodedRaster, MediaError> {
+    decode_raster_inner(bytes, limits, cancel, None, None)
+}
+
+/// Test seam: run a decode that cancels at a chosen checkpoint, so the cancellation
+/// contract can be exercised without sleeping. Not compiled into production builds.
+#[cfg(test)]
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum HookPhase {
+    /// After admission and before the decoder call.
+    AfterAdmission,
+    /// After RGBA8 conversion and before the final cancellation check.
+    AfterConversion,
+}
+
+#[cfg(test)]
+pub(crate) fn decode_raster_with_hook(
+    bytes: &[u8],
+    limits: DecodeLimits,
+    cancel: &Cancellation,
+    phase: HookPhase,
+    hook: &mut dyn FnMut(),
+) -> Result<DecodedRaster, MediaError> {
+    match phase {
+        HookPhase::AfterAdmission => decode_raster_inner(bytes, limits, cancel, Some(hook), None),
+        HookPhase::AfterConversion => decode_raster_inner(bytes, limits, cancel, None, Some(hook)),
+    }
+}
+
+fn decode_raster_inner(
+    bytes: &[u8],
+    limits: DecodeLimits,
+    cancel: &Cancellation,
+    before_decode: Option<&mut dyn FnMut()>,
+    before_publish: Option<&mut dyn FnMut()>,
+) -> Result<DecodedRaster, MediaError> {
     cancel.check()?;
     let format = AcceptedFormat::from_bytes(bytes)?;
     let (width, height) =
@@ -69,6 +104,12 @@ pub fn decode_raster(
     let source_depth = source_bit_depth(bytes, format)?;
     let admission = admit_raster(size, source_depth, limits, cancel)?;
     let decoded_bytes = admission.decoded_bytes;
+    // Reserve the declared ceiling process-wide for the duration of this decode; the
+    // reservation is released when the guard drops. Refusal is non-blocking (`Busy`).
+    let _reservation = crate::decode::reserve_in_flight(admission.peak_bytes)?;
+    if let Some(hook) = before_decode {
+        hook();
+    }
     cancel.check()?;
     let mut reader = ImageReader::with_format(Cursor::new(bytes), format.image_format());
     reader.limits(decoder_limits(limits));
@@ -78,6 +119,9 @@ pub fn decode_raster(
     // result is checked again so a decoder reporting different geometry than its
     // header cannot exceed the admitted size.
     let rgba = decoded.into_rgba8().into_raw();
+    if let Some(hook) = before_publish {
+        hook();
+    }
     cancel.check()?;
     if rgba.len() as u64 != decoded_bytes || rgba.len() as u64 > limits.max_decoded_bytes {
         return Err(MediaError::TooLarge);
@@ -216,9 +260,14 @@ fn ensure_still_gif(bytes: &[u8]) -> Result<(), MediaError> {
 
 /// Decode on a scoped worker and join it before returning.
 ///
-/// The worker is owned by this call and is always joined, so a cancelled or failed
-/// decode cannot leave a decode thread behind. Cancellation is observed at the bounded
-/// checkpoints inside [`decode_raster`]; on `Cancelled` (or any refusal) no raster is
+/// This guarantees **worker ownership**, not a completion-time bound: the worker is owned
+/// by this call and always joined, so a cancelled or failed decode cannot leave a decode
+/// thread behind. Cancellation is cooperative and is only observed at the bounded
+/// checkpoints inside [`decode_raster`] (before metadata, before the decoder call, after
+/// decode and after RGBA8 conversion); a cancellation arriving inside the decoder itself
+/// is observed at the next checkpoint, and the `join` may wait for that decoder call to
+/// return. Bounded cancellation/interruption of a running decoder is `NOT_VERIFIED`
+/// (plan §19.118) and not claimed here. On `Cancelled` (or any refusal) no raster is
 /// returned, so a caller cannot publish a partial artifact from this path.
 pub fn decode_raster_joined(
     bytes: &[u8],
@@ -417,17 +466,6 @@ mod tests {
         assert_eq!(error.unwrap_err(), crate::MediaError::Cancelled);
     }
 
-    fn encode_sized(width: u32, height: u32) -> Vec<u8> {
-        let image = RgbaImage::from_fn(width, height, |x, y| {
-            image::Rgba([(x % 251) as u8, (y % 241) as u8, 90, 255])
-        });
-        let mut bytes = Cursor::new(Vec::new());
-        DynamicImage::ImageRgba8(image)
-            .write_to(&mut bytes, ImageFormat::Png)
-            .expect("encode");
-        bytes.into_inner()
-    }
-
     #[test]
     fn an_animated_png_is_unavailable() {
         // Insert an acTL chunk right after IHDR; the scan must stop there instead of
@@ -511,27 +549,80 @@ mod tests {
     }
 
     #[test]
-    fn a_cancel_during_a_joined_decode_never_publishes_a_partial_raster() {
-        let bytes = encode_sized(1024, 1024);
+    fn a_cancel_at_the_pre_decode_checkpoint_publishes_no_raster() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
         let cancel = Cancellation::default();
-        let mut published: Option<super::DecodedRaster> = None;
-        std::thread::scope(|scope| {
-            let token = cancel.clone();
-            scope.spawn(move || {
-                std::thread::sleep(std::time::Duration::from_millis(1));
-                token.cancel();
-            });
-            if let Ok(raster) = super::decode_raster_joined(&bytes, limits(), &cancel) {
-                published = Some(raster);
-            }
-        });
-        // The scoped worker has been joined; whatever happened, a published raster is
-        // complete (its length is exactly the admitted RGBA8 size), never partial.
-        if let Some(raster) = &published {
-            assert_eq!(
-                raster.rgba.len() as u64,
-                raster.size.checked_rgba_bytes().expect("rgba length")
-            );
-        }
+        let mut hook = || cancel.cancel();
+        let result = super::decode_raster_with_hook(
+            &encode(ImageFormat::Png),
+            limits(),
+            &cancel,
+            super::HookPhase::AfterAdmission,
+            &mut hook,
+        );
+        let error = match result {
+            Err(error) => error,
+            Ok(_) => panic!("a cancelled decode must not return a raster"),
+        };
+        assert_eq!(error, crate::MediaError::Cancelled);
+    }
+
+    #[test]
+    fn a_cancel_after_conversion_publishes_no_stale_raster() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
+        let cancel = Cancellation::default();
+        let mut hook = || cancel.cancel();
+        let result = super::decode_raster_with_hook(
+            &encode(ImageFormat::Png),
+            limits(),
+            &cancel,
+            super::HookPhase::AfterConversion,
+            &mut hook,
+        );
+        let error = match result {
+            Err(error) => error,
+            Ok(_) => panic!("a cancelled decode must not return a raster"),
+        };
+        assert_eq!(error, crate::MediaError::Cancelled);
+    }
+
+    #[test]
+    fn a_full_in_flight_pool_refuses_a_decode_without_blocking() {
+        let _guard = crate::decode::DECODE_TEST_LOCK.lock().expect("test lock");
+        let held = crate::decode::reserve_in_flight(crate::decode::IN_FLIGHT_POOL_BYTES - 1)
+            .expect("hold all but one byte");
+        let refused = decode_raster(
+            &encode(ImageFormat::Png),
+            limits(),
+            &Cancellation::default(),
+        );
+        assert_eq!(refused.unwrap_err(), crate::MediaError::Busy);
+        drop(held);
+        decode_raster(
+            &encode(ImageFormat::Png),
+            limits(),
+            &Cancellation::default(),
+        )
+        .expect("capacity released");
+    }
+
+    #[test]
+    fn an_animated_webp_is_unavailable_and_a_still_webp_is_not() {
+        // Minimal RIFF/WEBP container with an ANIM chunk; the classification is a pure
+        // byte scan, so the payload does not need to be a decodable image.
+        let mut animated = Vec::new();
+        animated.extend_from_slice(b"RIFF");
+        animated.extend_from_slice(&(4u32 + 8 + 6).to_le_bytes());
+        animated.extend_from_slice(b"WEBP");
+        animated.extend_from_slice(b"ANIM");
+        animated.extend_from_slice(&6u32.to_le_bytes());
+        animated.extend_from_slice(&[0u8; 6]);
+        assert_eq!(
+            super::ensure_still(&animated, AcceptedFormat::WebP).err(),
+            Some(crate::MediaError::Unavailable)
+        );
+        // A still WebP from the encoder is not misclassified.
+        let still = encode(ImageFormat::WebP);
+        assert!(super::ensure_still(&still, AcceptedFormat::WebP).is_ok());
     }
 }
