@@ -1,4 +1,0 @@
-# Recorded protocol fixtures are byte-pinned by tests, so keep their line
-# endings stable across checkouts (core.autocrlf=true would otherwise rewrite
-# them to CRLF and break the pinned sha256 values).
-crates/cos-client/fixtures/desktop-observation-v1/* text eol=lf

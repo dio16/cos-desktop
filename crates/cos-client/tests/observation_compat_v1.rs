@@ -66,8 +66,11 @@ fn recorded(name: &str) -> Recorded {
     }
 }
 
-/// The recorded copies must stay byte-identical to the Runtime recording; the
-/// digests are the ones the Runtime's README publishes.
+/// The recorded copies must stay byte-identical to the Runtime recording. The
+/// pinned digests are the Runtime README's **LF-based** digests, i.e. the bytes
+/// git stores; the comparison hashes the CRLF→LF normalized bytes, so a checkout
+/// with `core.autocrlf=true` (which rewrites storage to CRLF on Windows) still
+/// verifies the same recording instead of failing on line endings.
 #[test]
 fn recorded_fixture_copies_are_byte_identical_to_the_runtime_recording() {
     let expected = [
@@ -115,12 +118,29 @@ fn recorded_fixture_copies_are_byte_identical_to_the_runtime_recording() {
         );
         let bytes = std::fs::read(&path)
             .unwrap_or_else(|error| panic!("recorded fixture {file} is missing: {error}"));
+        let normalized = normalize_line_endings(&bytes);
         assert_eq!(
-            desktop_protocol::sha256_digest(&bytes).as_str(),
+            desktop_protocol::sha256_digest(&normalized).as_str(),
             format!("sha256:{digest}"),
-            "recorded fixture {file} is an unmodified copy"
+            "recorded fixture {file} is an unmodified copy (LF-based pin)"
         );
     }
+}
+
+/// Normalize CRLF to LF; a lone CR is left untouched.
+fn normalize_line_endings(bytes: &[u8]) -> Vec<u8> {
+    let mut normalized = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'\r' && bytes.get(index + 1) == Some(&b'\n') {
+            normalized.push(b'\n');
+            index += 2;
+        } else {
+            normalized.push(bytes[index]);
+            index += 1;
+        }
+    }
+    normalized
 }
 
 // --- replaying executor ----------------------------------------------------
