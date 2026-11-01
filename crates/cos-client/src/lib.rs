@@ -41,7 +41,7 @@ pub use projection::{ProjectionIntegrityError, ProjectionKey, ProjectionState};
 pub use protocol_transport::{
     DELTAS_PATH, HttpMethod, HttpRequest, HttpResponse, OBSERVATION_DOCUMENT_SCHEMA_VERSION,
     OBSERVATION_PATH, ProtocolHttp, ProtocolTransport, ProtocolTransportConfig, SERVER_PATH,
-    SNAPSHOT_PATH,
+    SNAPSHOT_PATH, is_protocol_route,
 };
 pub use read::{
     CommandLookup, CommandStatus, MAX_READ_EVIDENCE, ObservationControl, PublicationAccess,

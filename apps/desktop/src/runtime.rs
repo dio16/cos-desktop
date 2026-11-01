@@ -334,8 +334,13 @@ pub(crate) fn observation(
 }
 
 /// Executor wrapper that clears the stored credential when the Runtime rejects
-/// it, so the next launch requires an explicit re-authorization instead of
-/// retrying a credential that can never succeed.
+/// it on a **credential-bearing route**, so the next launch requires an explicit
+/// re-authorization instead of retrying a credential that can never succeed.
+///
+/// Only a `401` from the observation open, the snapshot read or the delta read
+/// is evidence against the credential. The handshake route sends no credential
+/// at all, so its `401` (for example a misconfigured endpoint in front of the
+/// adapter) must never destroy a valid stored credential.
 struct RevokingHttp<E: ProtocolHttp> {
     inner: E,
     store: Arc<dyn CredentialStore>,
@@ -356,9 +361,13 @@ impl<E: ProtocolHttp> RevokingHttp<E> {
 
 impl<E: ProtocolHttp> ProtocolHttp for RevokingHttp<E> {
     fn execute(&mut self, request: HttpRequest) -> Result<HttpResponse, String> {
+        let credential_route = cos_client::is_protocol_route(&request.path);
         let response = self.inner.execute(request)?;
-        if response.status == 401 && !self.revoked {
+        if response.status == 401 && credential_route && !self.revoked {
             self.revoked = true;
+            // A failed deletion stays fail-closed: the session is still
+            // re-authorization-required and a later launch retries the delete
+            // only if the stale entry is still there.
             match self.store.delete(&self.origin) {
                 Ok(()) => eprintln!("Runtime credential revoked; re-authorization is required"),
                 Err(_) => eprintln!(
@@ -468,7 +477,8 @@ mod tests {
         plain_http_origin, plan, settings,
     };
     use cos_client::{
-        HttpMethod, HttpRequest, HttpResponse, OBSERVATION_PATH, ProtocolHttp, SERVER_PATH,
+        DELTAS_PATH, HttpMethod, HttpRequest, HttpResponse, OBSERVATION_PATH, ProtocolHttp,
+        SERVER_PATH, SNAPSHOT_PATH,
     };
     use std::io::{Read, Write};
     use std::net::TcpListener;
@@ -488,6 +498,7 @@ mod tests {
         deletes: AtomicUsize,
         fail_load: bool,
         fail_store: bool,
+        fail_delete: bool,
     }
 
     impl MemoryStore {
@@ -538,6 +549,9 @@ mod tests {
 
         fn delete(&self, _origin: &str) -> Result<(), CredentialStoreError> {
             self.deletes.fetch_add(1, Ordering::SeqCst);
+            if self.fail_delete {
+                return Err(CredentialStoreError::Failed);
+            }
             *self.entry.lock().expect("memory store") = None;
             Ok(())
         }
@@ -677,7 +691,7 @@ mod tests {
     }
 
     #[test]
-    fn a_401_deletes_the_stored_credential_once() {
+    fn a_401_on_each_credential_route_revokes_the_stored_credential_once() {
         struct FixedResponse(u16);
         impl ProtocolHttp for FixedResponse {
             fn execute(&mut self, _request: HttpRequest) -> Result<HttpResponse, String> {
@@ -688,7 +702,44 @@ mod tests {
             }
         }
 
-        let store = std::sync::Arc::new(MemoryStore::with_token("stale-token"));
+        // Every route that actually carries the credential is evidence against it.
+        for (path, method) in [
+            (OBSERVATION_PATH.to_owned(), HttpMethod::Post),
+            (SNAPSHOT_PATH.to_owned(), HttpMethod::Get),
+            (format!("{DELTAS_PATH}?cursor=cursor-1"), HttpMethod::Get),
+        ] {
+            let store = std::sync::Arc::new(MemoryStore::with_token("stale-token"));
+            let store_for_http: std::sync::Arc<dyn CredentialStore> = store.clone();
+            let mut revoking = RevokingHttp::new(
+                FixedResponse(401),
+                store_for_http,
+                "http://127.0.0.1:8123".to_owned(),
+            );
+            for _ in 0..3 {
+                revoking
+                    .execute(request_for(&path, method))
+                    .expect("a 401 is a response");
+            }
+            assert_eq!(store.delete_calls(), 1, "{path} revokes exactly once");
+            assert_eq!(store.stored(), None, "{path} clears the stored value");
+        }
+    }
+
+    #[test]
+    fn a_401_on_the_handshake_never_revokes_the_stored_credential() {
+        struct FixedResponse(u16);
+        impl ProtocolHttp for FixedResponse {
+            fn execute(&mut self, _request: HttpRequest) -> Result<HttpResponse, String> {
+                Ok(HttpResponse {
+                    status: self.0,
+                    body: b"{}".to_vec(),
+                })
+            }
+        }
+
+        // The handshake sends no credential, so its 401 says nothing about the
+        // stored one: a misconfigured endpoint must not destroy a valid entry.
+        let store = std::sync::Arc::new(MemoryStore::with_token("valid-token"));
         let store_for_http: std::sync::Arc<dyn CredentialStore> = store.clone();
         let mut revoking = RevokingHttp::new(
             FixedResponse(401),
@@ -697,13 +748,25 @@ mod tests {
         );
         for _ in 0..3 {
             revoking
-                .execute(get_request(SERVER_PATH))
+                .execute(request_for(SERVER_PATH, HttpMethod::Get))
                 .expect("a 401 is a response");
         }
-        assert_eq!(store.delete_calls(), 1, "one rejection revokes once");
-        assert_eq!(store.stored(), None);
+        assert_eq!(store.delete_calls(), 0, "the handshake never revokes");
+        assert_eq!(store.stored().as_deref(), Some("valid-token"));
+    }
 
-        // A successful response never revokes.
+    #[test]
+    fn a_successful_response_never_revokes_and_a_failed_delete_stays_explicit() {
+        struct FixedResponse(u16);
+        impl ProtocolHttp for FixedResponse {
+            fn execute(&mut self, _request: HttpRequest) -> Result<HttpResponse, String> {
+                Ok(HttpResponse {
+                    status: self.0,
+                    body: b"{}".to_vec(),
+                })
+            }
+        }
+
         let stable = std::sync::Arc::new(MemoryStore::with_token("fresh-token"));
         let stable_for_http: std::sync::Arc<dyn CredentialStore> = stable.clone();
         let mut healthy = RevokingHttp::new(
@@ -712,10 +775,29 @@ mod tests {
             "http://127.0.0.1:8123".to_owned(),
         );
         healthy
-            .execute(get_request(SERVER_PATH))
+            .execute(request_for(DELTAS_PATH, HttpMethod::Get))
             .expect("a 200 is a response");
         assert_eq!(stable.delete_calls(), 0);
         assert_eq!(stable.stored().as_deref(), Some("fresh-token"));
+
+        // A failed deletion does not turn into a panic or a silent retry loop:
+        // the session still reports re-authorization required.
+        let unwritable = std::sync::Arc::new(MemoryStore {
+            fail_delete: true,
+            ..MemoryStore::with_token("stale-token")
+        });
+        let unwritable_for_http: std::sync::Arc<dyn CredentialStore> = unwritable.clone();
+        let mut failing = RevokingHttp::new(
+            FixedResponse(401),
+            unwritable_for_http,
+            "http://127.0.0.1:8123".to_owned(),
+        );
+        for _ in 0..2 {
+            failing
+                .execute(request_for(OBSERVATION_PATH, HttpMethod::Post))
+                .expect("a 401 is still a response");
+        }
+        assert_eq!(unwritable.delete_calls(), 1, "one attempt per session");
     }
 
     #[test]
@@ -858,6 +940,15 @@ mod tests {
             method: HttpMethod::Get,
             path: path.to_owned(),
             headers: vec![("accept".to_owned(), "application/json".to_owned())],
+            body: Vec::new(),
+        }
+    }
+
+    fn request_for(path: &str, method: HttpMethod) -> HttpRequest {
+        HttpRequest {
+            method,
+            path: path.to_owned(),
+            headers: Vec::new(),
             body: Vec::new(),
         }
     }

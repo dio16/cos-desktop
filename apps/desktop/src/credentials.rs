@@ -204,8 +204,11 @@ mod windows_tests {
         store.delete(TEST_ORIGIN).expect("delete is idempotent");
     }
 
+    /// Bounded evidence: one unique token must not appear in a **limited set**
+    /// of app-data and temp files. This is deliberately not a whole-machine
+    /// claim — see the recorded exclusions and the plan §19.115 limits.
     #[test]
-    fn the_stored_credential_has_no_plaintext_copy_on_disk_or_in_diagnostics() {
+    fn scans_a_bounded_set_of_files_without_a_plaintext_copy() {
         let store = unique_store();
         let _guard = Guard {
             store: &store,
@@ -219,60 +222,117 @@ mod windows_tests {
             Some(token.as_str())
         );
 
-        // …and appears in no app-data or temp file.
+        // …and appears in no file of the two bounded scanned roots.
         let needle = token.as_bytes();
-        let mut files_scanned = 0usize;
-        let mut roots_scanned = 0usize;
-        if let Some(app_data) = app_core::preferences::default_path()
-            .and_then(|path| path.parent().map(Path::to_path_buf))
-        {
-            roots_scanned += 1;
-            scan_tree(&app_data, needle, &mut files_scanned);
+        let mut report = ScanReport::default();
+        let app_data = app_core::preferences::default_path()
+            .and_then(|path| path.parent().map(Path::to_path_buf));
+        match &app_data {
+            Some(directory) => {
+                // Create the app-data root so both roots are actually scanned;
+                // an absent directory would weaken the evidence silently.
+                let _ = std::fs::create_dir_all(directory);
+                report.roots_attempted += 1;
+                scan_tree(directory, needle, &mut report);
+                report.roots_scanned += 1;
+            }
+            None => {
+                report.roots_absent += 1;
+            }
         }
-        roots_scanned += 1;
-        scan_tree(&std::env::temp_dir(), needle, &mut files_scanned);
-        assert!(roots_scanned >= 1, "the scan visited the candidate roots");
+        report.roots_attempted += 1;
+        scan_tree(&std::env::temp_dir(), needle, &mut report);
+        report.roots_scanned += 1;
+        eprintln!(
+            "credential plaintext scan: roots_attempted={} roots_scanned={} roots_absent={} files_scanned={} oversize_skipped={} unreadable={} walk_capped={}",
+            report.roots_attempted,
+            report.roots_scanned,
+            report.roots_absent,
+            report.files_scanned,
+            report.oversize_skipped_too_large,
+            report.unreadable,
+            report.walk_capped
+        );
+
+        // Both roots must be covered and the walk must have visited files; the
+        // exclusions are recorded rather than silently ignored.
+        assert_eq!(report.roots_attempted, 2);
+        assert_eq!(report.roots_scanned, 2, "both roots were scanned");
+        assert_eq!(report.roots_absent, 0, "both roots exist");
+        assert!(report.files_scanned > 0, "the walk visited files");
+        // Recorded, not hidden: the counters above are part of the evidence.
+        assert!(
+            report.files_scanned <= 5000,
+            "the walk stayed within its bound"
+        );
 
         // Diagnostics: a rendered support report is plain text and must not
         // carry the credential either.
-        let report =
+        let rendered =
             app_core::SupportReport::unavailable("no observation session", "0.1.0").render();
         assert!(
-            !report.contains(&token),
+            !rendered.contains(&token),
             "the support report carries no token"
         );
     }
 
-    /// Bounded recursive scan: skips entries above 4 MiB and caps the walk.
-    fn scan_tree(root: &Path, needle: &[u8], files_scanned: &mut usize) {
+    /// What one bounded scan actually covered; recorded so the evidence cannot
+    /// be read as a whole-machine guarantee.
+    #[derive(Debug, Default)]
+    struct ScanReport {
+        /// Roots the test intended to scan.
+        roots_attempted: usize,
+        /// Roots that were actually readable and walked.
+        roots_scanned: usize,
+        /// Intended roots that do not exist.
+        roots_absent: usize,
+        /// Files whose bytes were read and compared.
+        files_scanned: usize,
+        /// Files skipped because they exceed the 4 MiB scan bound.
+        oversize_skipped_too_large: usize,
+        /// Files whose bytes could not be read.
+        unreadable: usize,
+        /// The walk hit its entry cap before finishing a directory.
+        walk_capped: bool,
+    }
+
+    /// Bounded recursive scan: skips entries above 4 MiB, records every
+    /// exclusion and caps the walk.
+    fn scan_tree(root: &Path, needle: &[u8], report: &mut ScanReport) {
         let Ok(entries) = std::fs::read_dir(root) else {
+            report.unreadable += 1;
             return;
         };
         for entry in entries.flatten().take(2000) {
-            if *files_scanned >= 5000 {
+            if report.files_scanned >= 5000 {
+                report.walk_capped = true;
                 return;
             }
             let Ok(file_type) = entry.file_type() else {
+                report.unreadable += 1;
                 continue;
             };
             let path = entry.path();
             if file_type.is_dir() {
-                scan_tree(&path, needle, files_scanned);
+                scan_tree(&path, needle, report);
                 continue;
             }
             if !file_type.is_file() {
                 continue;
             }
             let Ok(metadata) = entry.metadata() else {
+                report.unreadable += 1;
                 continue;
             };
             if metadata.len() > 4 * 1024 * 1024 {
+                report.oversize_skipped_too_large += 1;
                 continue;
             }
             let Ok(bytes) = std::fs::read(&path) else {
+                report.unreadable += 1;
                 continue;
             };
-            *files_scanned += 1;
+            report.files_scanned += 1;
             let carries_token = bytes.windows(needle.len()).any(|window| window == needle);
             assert!(
                 !carries_token,

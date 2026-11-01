@@ -85,7 +85,11 @@ pub const DELTAS_PATH: &str = "/api/cos/desktop/deltas";
 /// credential exists only for these three exchanges. A query string is ignored,
 /// so `/deltas?cursor=…` is still the delta route and nothing else can smuggle a
 /// credential through a crafted query.
-pub(crate) fn is_protocol_route(path: &str) -> bool {
+///
+/// The composition root uses this to decide when a `401` is evidence that the
+/// credential itself was rejected: a `401` from the handshake (which carries no
+/// credential) says nothing about the stored credential and must not revoke it.
+pub fn is_protocol_route(path: &str) -> bool {
     let route = path.split('?').next().unwrap_or(path);
     matches!(route, OBSERVATION_PATH | SNAPSHOT_PATH | DELTAS_PATH)
 }
