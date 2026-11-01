@@ -2896,6 +2896,110 @@ impl Sampler {
     }
 }
 
+/// Settle one sample whose child has exited, against the shared rules.
+///
+/// - a sample past its own per-sample bound is never a success, even when it just
+///   exited: it is discarded like an unfinished sample (the in-flight rule),
+/// - a failed sampler is decisive, a replaced tool is decisive,
+/// - otherwise the bounded capture is harvested and its row is the value.
+///
+/// Both the polling loop and the post-exit reap call this, so the two paths cannot
+/// drift.
+fn settle_finished_sample(
+    flight: &mut SampleInFlight,
+    status: std::process::ExitStatus,
+    sampler: &mut Sampler,
+) -> SettledSample {
+    if flight.started.elapsed() >= SAMPLE_TIMEOUT {
+        // Over-deadline exit: drop the capture without recording a value or reason.
+        flight.capture.release();
+        return SettledSample::Discarded;
+    }
+    if !status.success() {
+        // Decisive: a sampler program that fails invalidates every value it produced
+        // in this observation, including earlier ones (A1).
+        flight.capture.release();
+        sampler.discarded(SAMPLE_TOOL_FAILED);
+        return SettledSample::Discarded;
+    }
+    if !sample_tool_matches(&flight.tool, &flight.digest) {
+        // The bytes must still be the verified ones after the child ran (NIT N2).
+        flight.capture.release();
+        sampler.discarded(SAMPLE_TOOL_CHANGED);
+        return SettledSample::Discarded;
+    }
+    match harvest_sample(flight) {
+        Ok(bytes) => {
+            sampler.succeeded(bytes);
+            SettledSample::Measured
+        }
+        Err(reason) => {
+            // `sample_output_truncated` is a protocol failure of the sampler program and
+            // is decisive like a non-zero exit; a per-sample anomaly
+            // (`sample_timeout`, `sample_parse_failed`) keeps an earlier measured value.
+            if reason == SAMPLE_OUTPUT_TRUNCATED {
+                sampler.discarded(reason);
+            } else {
+                sampler.failed(reason);
+            }
+            SettledSample::Discarded
+        }
+    }
+}
+
+/// Test seam: settle one already-exited sample at a chosen age, exactly as the polling
+/// loop does when it observes the exit. A normal poll settles it inside the deadline; a
+/// delayed poll (as under scheduler pressure) observes the same exit after it. Returns
+/// `(measured, samples, final_reason)`.
+#[cfg(test)]
+pub fn settle_exited_sample_for_tests(
+    captures: &Path,
+    age: Duration,
+) -> (bool, usize, Option<&'static str>) {
+    let mut child = Command::new("cmd.exe")
+        .args(["/C", "exit 0"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("a trivial exited child");
+    let status = child.wait().expect("reap the trivial child");
+    let (capture, _stdout, _stderr) =
+        CaptureFiles::open(captures, "settle-for-tests").expect("capture files");
+    std::fs::write(
+        &capture.stdout,
+        b"\"fake.exe\",\"1\",\"Console\",\"1\",\"12,000 K\"
+",
+    )
+    .expect("synthetic row");
+    let tool = std::env::current_exe().expect("current exe");
+    let digest = read_sample_tool(&tool)
+        .map(|bytes| pixels::hex(&pixels::sha256(&bytes)))
+        .expect("read the tool");
+    let started = Instant::now().checked_sub(age).unwrap_or_else(Instant::now);
+    let mut flight = SampleInFlight {
+        child,
+        capture,
+        started,
+        pid: 1,
+        tool,
+        digest,
+    };
+    let mut sampler = Sampler::for_tests(1);
+    sampler.attempt();
+    let measured =
+        settle_finished_sample(&mut flight, status, &mut sampler) == SettledSample::Measured;
+    sampler.finish();
+    (measured, sampler.samples, sampler.reason)
+}
+
+/// How one exited sample settled: a measured value allows the next interval to be
+/// scheduled, any discard stops scheduling.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SettledSample {
+    Measured,
+    Discarded,
+}
+
 /// Supervise one child: enforce the deadline, watch the caps, sample its working set
 /// and record the cancellation timings.
 ///
@@ -2953,41 +3057,13 @@ fn supervise(
         if let Some(mut flight) = in_flight.take() {
             match flight.child.try_wait() {
                 Ok(Some(status)) => {
-                    // A sampler that failed did not measure anything: a row printed
-                    // before a non-zero exit is not evidence (BLOCKING B-R1-01).
-                    if !status.success() {
-                        // Decisive: a sampler program that fails invalidates every value
-                        // it produced in this observation, including earlier ones, so the
-                        // value is discarded and the token survives (A1). This keeps the
-                        // A3 invariant that a failure token is never reported beside
-                        // `sampled_lower_bound`.
-                        flight.capture.release();
-                        sampler.discarded(SAMPLE_TOOL_FAILED);
+                    // Same rules as the post-exit reap, including the per-sample
+                    // deadline: a late exit is never accepted just because the poll
+                    // observed it (BLOCKING B-R1-01 / A1 / NIT N2 live in the helper).
+                    if settle_finished_sample(&mut flight, status, &mut sampler)
+                        == SettledSample::Discarded
+                    {
                         next_sample = None;
-                    } else if !sample_tool_matches(&flight.tool, &flight.digest) {
-                        // The bytes must still be the verified ones after the child ran;
-                        // a changed program means the value is discarded and the capture
-                        // is released like every other completed sample (NIT N2).
-                        flight.capture.release();
-                        sampler.discarded(SAMPLE_TOOL_CHANGED);
-                        next_sample = None;
-                    } else {
-                        match harvest_sample(&mut flight) {
-                            Ok(bytes) => sampler.succeeded(bytes),
-                            Err(reason) => {
-                                // `sample_output_truncated` is a protocol failure of the
-                                // sampler program and is decisive like a non-zero exit;
-                                // a per-sample anomaly (`sample_timeout`,
-                                // `sample_parse_failed`) keeps an earlier measured value,
-                                // as the earlier A3 round required.
-                                if reason == SAMPLE_OUTPUT_TRUNCATED {
-                                    sampler.discarded(reason);
-                                } else {
-                                    sampler.failed(reason);
-                                }
-                                next_sample = None;
-                            }
-                        }
                     }
                 }
                 Err(_) => {
@@ -3086,33 +3162,8 @@ fn supervise(
             }
         }
         match settled {
-            // A sample past its own per-sample bound is never a success, even when it
-            // exited during the grace.
-            Some(_) if flight.started.elapsed() >= SAMPLE_TIMEOUT => {
-                flight.capture.release();
-            }
             Some(status) => {
-                // Mirror the polled-sample rules exactly, so a sample whose exit is
-                // observed only after the child ended records the same decisive reason
-                // (failed tool, replaced tool) instead of drifting to `no_sample`.
-                if !status.success() {
-                    flight.capture.release();
-                    sampler.discarded(SAMPLE_TOOL_FAILED);
-                } else if !sample_tool_matches(&flight.tool, &flight.digest) {
-                    flight.capture.release();
-                    sampler.discarded(SAMPLE_TOOL_CHANGED);
-                } else {
-                    match harvest_sample(&mut flight) {
-                        Ok(bytes) => sampler.succeeded(bytes),
-                        Err(reason) => {
-                            if reason == SAMPLE_OUTPUT_TRUNCATED {
-                                sampler.discarded(reason);
-                            } else {
-                                sampler.failed(reason);
-                            }
-                        }
-                    }
-                }
+                let _ = settle_finished_sample(&mut flight, status, &mut sampler);
             }
             None => {
                 let _ = flight.child.kill();

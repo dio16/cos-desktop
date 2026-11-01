@@ -2738,7 +2738,7 @@ fn cancellation_records_latency_and_a_cancelled_class() {
     fixture.case("c.png", "cancel-hang");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
-    config.cancel_after_ms = Some(300);
+    config.cancel_after_ms = Some(200);
     let report = harness::run(&config).unwrap();
     let observation = &report
         .observations
@@ -3127,8 +3127,8 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     assert_eq!(observation.working_set_max_bytes, Some(12_000 * 1024));
     let wall_ms = observation.wall_ms.expect("the candidate ran");
     assert!(
-        wall_ms < 1_000,
-        "the 1.5 s harvest wait is not part of wall_ms ({wall_ms} ms)"
+        wall_ms < 800,
+        "the 1.2 s harvest wait is not part of wall_ms ({wall_ms} ms)"
     );
 }
 
@@ -3156,9 +3156,33 @@ fn overrunning_sample_is_not_counted_after_the_candidate_ends() {
     assert_eq!(observation.working_set_sampling, "not_measured");
     let wall_ms = observation.wall_ms.expect("the candidate ran");
     assert!(
-        wall_ms < 1_000,
+        wall_ms < 800,
         "the bounded grace is not part of wall_ms ({wall_ms} ms)"
     );
+}
+
+/// The polling loop applies the same per-sample deadline: a sample whose exit is only
+/// observed after its 2 s bound (a delayed poll) is discarded, never counted.
+#[test]
+fn a_delayed_poll_never_accepts_an_over_deadline_sample() {
+    let fixture = Fixture::new();
+    // Control: the very same settled sample inside the deadline is measured.
+    let (measured, samples, reason) = harness::settle_exited_sample_for_tests(
+        &fixture.base,
+        std::time::Duration::from_millis(100),
+    );
+    assert!(measured, "a prompt poll measures the sample");
+    assert_eq!(samples, 1);
+    assert_eq!(reason, None);
+
+    // Delayed poll: the exit is observed after the 2 s bound, so it is discarded.
+    let (measured, samples, reason) = harness::settle_exited_sample_for_tests(
+        &fixture.base,
+        std::time::Duration::from_millis(2_050),
+    );
+    assert!(!measured, "a delayed poll must not measure the sample");
+    assert_eq!(samples, 0, "an over-deadline sample is never counted");
+    assert_eq!(reason, Some("no_sample"));
 }
 
 /// A cancelled candidate stops the clock at the kill; the post-exit harvest is bounded by
@@ -3185,7 +3209,7 @@ fn cancelled_candidate_does_not_wait_past_the_sample_bound() {
     );
     let wall_ms = observation.wall_ms.expect("the candidate ran");
     assert!(
-        wall_ms < 1_000,
+        wall_ms < 800,
         "the cancellation wall time excludes the harvest wait ({wall_ms} ms)"
     );
 }
@@ -4414,7 +4438,7 @@ fn fake_sampler_slow_exit_helper() {
         return;
     }
     println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
-    std::thread::sleep(std::time::Duration::from_millis(1_500));
+    std::thread::sleep(std::time::Duration::from_millis(1_200));
 }
 
 /// A sampler whose row is complete but which exits only after its own per-sample bound.
@@ -4780,7 +4804,7 @@ fn fake_candidate(support: ProbeSupport) {
             // Ends while a sample is still in flight, so the supervisor's post-exit
             // harvest happens after this candidate is gone.
             std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
-            std::thread::sleep(std::time::Duration::from_millis(250));
+            std::thread::sleep(std::time::Duration::from_millis(50));
             0
         }
         "png-rgb-a" => {
