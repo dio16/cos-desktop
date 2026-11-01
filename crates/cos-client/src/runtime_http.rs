@@ -83,7 +83,6 @@ pub struct RuntimeTaskView {
     #[serde(default)]
     pub capabilities_ref: Option<String>,
     /// Stop requested but not yet confirmed complete.
-    #[serde(default)]
     pub stop_pending: bool,
 }
 
@@ -108,6 +107,9 @@ pub enum RuntimeReadError {
     /// The payload described a different task than the one requested.
     #[error("runtime payload described a different task")]
     TaskMismatch,
+    /// A path segment would change the request path structure.
+    #[error("task id cannot address another path")]
+    InvalidTaskId,
     /// The projection revision moved backwards within one epoch.
     #[error("projection revision regressed from {previous} to {next}")]
     RevisionRegression {
@@ -147,7 +149,8 @@ impl<E: HttpExecutor> RuntimeReader<E> {
 
     /// Read one task and enforce the epoch/revision guards.
     pub fn read_task(&mut self, task_id: &str) -> Result<RuntimeTaskView, RuntimeReadError> {
-        let path = format!("/api/cos/tasks/{}", encode_segment(task_id));
+        let segment = encode_segment(task_id).ok_or(RuntimeReadError::InvalidTaskId)?;
+        let path = format!("/api/cos/tasks/{segment}");
         let response = self
             .executor
             .get(&path)
@@ -168,9 +171,15 @@ impl<E: HttpExecutor> RuntimeReader<E> {
         if view.schema_version != 1 {
             return Err(RuntimeReadError::SchemaVersion(view.schema_version));
         }
-        require("epoch", &view.epoch)?;
-        require("task_id", &view.task_id)?;
-        require("title", &view.title)?;
+        require("epoch", &view.epoch, MAX_REFERENCE_BYTES)?;
+        require("task_id", &view.task_id, MAX_REFERENCE_BYTES)?;
+        require("title", &view.title, MAX_TITLE_BYTES)?;
+        require_optional("phase", view.phase.as_deref(), MAX_REFERENCE_BYTES)?;
+        require_optional(
+            "capabilities_ref",
+            view.capabilities_ref.as_deref(),
+            MAX_REFERENCE_BYTES,
+        )?;
         if view.projection_revision == 0 {
             return Err(RuntimeReadError::Empty("projection_revision"));
         }
@@ -190,15 +199,40 @@ impl<E: HttpExecutor> RuntimeReader<E> {
     }
 }
 
-fn require(what: &'static str, value: &str) -> Result<(), RuntimeReadError> {
+/// Same bounds the Runtime projection contract applies to references.
+const MAX_REFERENCE_BYTES: usize = 512;
+/// Same bound the Runtime projection contract applies to titles.
+const MAX_TITLE_BYTES: usize = 1024;
+
+fn require(what: &'static str, value: &str, limit: usize) -> Result<(), RuntimeReadError> {
     if value.is_empty() {
         return Err(RuntimeReadError::Empty(what));
+    }
+    if value.len() > limit || value.chars().any(char::is_control) {
+        return Err(RuntimeReadError::Malformed);
     }
     Ok(())
 }
 
+fn require_optional(
+    what: &'static str,
+    value: Option<&str>,
+    limit: usize,
+) -> Result<(), RuntimeReadError> {
+    match value {
+        Some(value) => require(what, value, limit),
+        None => Ok(()),
+    }
+}
+
 /// Percent-encode one path segment so a task id cannot add path structure.
-fn encode_segment(raw: &str) -> String {
+///
+/// A segment that is exactly `.` or `..` is refused: common URL resolution would
+/// normalize it away and address a different resource.
+fn encode_segment(raw: &str) -> Option<String> {
+    if raw == "." || raw == ".." {
+        return None;
+    }
     let mut out = String::with_capacity(raw.len());
     for byte in raw.bytes() {
         let unreserved = byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'~');
@@ -209,7 +243,7 @@ fn encode_segment(raw: &str) -> String {
             out.push_str(&format!("{byte:02X}"));
         }
     }
-    out
+    Some(out)
 }
 
 #[cfg(test)]
@@ -350,10 +384,49 @@ mod tests {
     }
 
     #[test]
+    fn refuses_a_missing_stop_pending_and_keeps_the_last_projection() {
+        let mut view = serde_json::from_str::<serde_json::Value>(TASK).expect("json");
+        view.as_object_mut().expect("object").remove("stop_pending");
+        let stripped = view.to_string();
+        let mut reader = RuntimeReader::new(Stub::new(vec![ok(TASK), ok(&stripped)]));
+        reader.read_task("task-184").expect("first");
+        assert_eq!(
+            reader.read_task("task-184"),
+            Err(RuntimeReadError::Malformed)
+        );
+        assert_eq!(reader.revision(), 12);
+        assert_eq!(reader.epoch(), Some("epoch-7f3c"));
+    }
+
+    #[test]
+    fn refuses_reference_bounds_the_runtime_also_refuses() {
+        let long_epoch = TASK.replace("\"epoch-7f3c\"", &format!("\"{}\"", "e".repeat(600)));
+        let mut reader = RuntimeReader::new(Stub::new(vec![ok(&long_epoch)]));
+        assert_eq!(
+            reader.read_task("task-184"),
+            Err(RuntimeReadError::Malformed)
+        );
+
+        let control_title = TASK.replace("Neon alley at dusk", "Neon\\u0000alley");
+        let mut reader = RuntimeReader::new(Stub::new(vec![ok(&control_title)]));
+        assert_eq!(
+            reader.read_task("task-184"),
+            Err(RuntimeReadError::Malformed)
+        );
+    }
+
+    #[test]
     fn path_segments_cannot_add_structure() {
-        assert_eq!(encode_segment("task-1"), "task-1");
-        assert_eq!(encode_segment("../x"), "..%2Fx");
-        assert_eq!(encode_segment("a b"), "a%20b");
+        assert_eq!(encode_segment("task-1").as_deref(), Some("task-1"));
+        assert_eq!(encode_segment("../x").as_deref(), Some("..%2Fx"));
+        assert_eq!(encode_segment("a b").as_deref(), Some("a%20b"));
+        assert_eq!(encode_segment("."), None);
+        assert_eq!(encode_segment(".."), None);
+        let stub = Stub::new(vec![ok(TASK)]);
+        let paths = Arc::clone(&stub.paths);
+        let mut reader = RuntimeReader::new(stub);
+        assert_eq!(reader.read_task(".."), Err(RuntimeReadError::InvalidTaskId));
+        assert!(paths.lock().expect("paths").is_empty());
         let stub = Stub::new(vec![ok(TASK)]);
         let paths = Arc::clone(&stub.paths);
         let mut reader = RuntimeReader::new(stub);
