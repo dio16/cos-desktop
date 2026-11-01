@@ -65,26 +65,9 @@ pub fn decode_raster(
             .into_dimensions()
             .map_err(|_| MediaError::InvalidMetadata)?;
     let size = PixelSize::new(width, height)?;
-    let bit_depth = source_bit_depth(bytes, format)?;
-    // This adapter only produces RGBA8. A source deeper than 8 bits would be
-    // silently quantised, so it is refused rather than advertised as preserved.
-    if bit_depth > 8 || bit_depth > limits.max_bit_depth {
-        return Err(MediaError::InvalidMetadata);
-    }
-    // Conservative all-concurrent residency: the decoder's own buffer plus one
-    // full RGBA8 conversion buffer of the same size. Both are declared before any
-    // allocation, and `max_scratch_bytes` bounds the conversion buffer.
-    let decoded_bytes = size.checked_rgba_bytes()?;
-    admit_decode(
-        DecodeRequest {
-            size,
-            bit_depth,
-            channels: 4,
-            declared_scratch_bytes: decoded_bytes,
-        },
-        limits,
-        cancel,
-    )?;
+    let source_depth = source_bit_depth(bytes, format)?;
+    let admission = admit_raster(size, source_depth, limits, cancel)?;
+    let decoded_bytes = admission.decoded_bytes;
     cancel.check()?;
     let mut reader = ImageReader::with_format(Cursor::new(bytes), format.image_format());
     reader.limits(decoder_limits(limits));
@@ -94,10 +77,40 @@ pub fn decode_raster(
     // result is checked again so a decoder reporting different geometry than its
     // header cannot exceed the admitted size.
     let rgba = decoded.into_rgba8().into_raw();
+    cancel.check()?;
     if rgba.len() as u64 != decoded_bytes || rgba.len() as u64 > limits.max_decoded_bytes {
         return Err(MediaError::TooLarge);
     }
     Ok(DecodedRaster { size, format, rgba })
+}
+
+/// Admit the RGBA8 output of one source image before any allocation.
+///
+/// The source depth is validated separately and the admission always describes
+/// the **output** format (8-bit RGBA), so a 1-, 2- or 4-bit PNG cannot pass a
+/// budget that is smaller than its RGBA8 result. One conversion buffer of the
+/// same size is declared as scratch, so all concurrent residency is admitted
+/// under the caller's ceilings.
+fn admit_raster(
+    size: PixelSize,
+    source_depth: u8,
+    limits: DecodeLimits,
+    cancel: &Cancellation,
+) -> Result<crate::DecodeAdmission, MediaError> {
+    if source_depth == 0 || source_depth > 8 || source_depth > limits.max_bit_depth {
+        return Err(MediaError::InvalidMetadata);
+    }
+    let out_bytes = size.checked_rgba_bytes()?;
+    admit_decode(
+        DecodeRequest {
+            size,
+            bit_depth: 8,
+            channels: 4,
+            declared_scratch_bytes: out_bytes,
+        },
+        limits,
+        cancel,
+    )
 }
 
 /// Bit depth of the admitted source container.
@@ -177,6 +190,24 @@ mod tests {
         bytes.truncate(tail);
         let error = decode_raster(&bytes, limits(), &Cancellation::default());
         assert!(error.is_err(), "a truncated payload must be refused");
+    }
+
+    #[test]
+    fn admission_always_uses_the_rgba8_output_size() {
+        let size = PixelSize::new(4, 3).expect("size");
+        let base = limits();
+        // 12 px -> 48 bytes of RGBA8. A 1-bit source would estimate 1.5 bytes, so a
+        // 24-byte budget only passes when the output format is what is admitted.
+        let tight = DecodeLimits {
+            max_decoded_bytes: 24,
+            ..base
+        };
+        let error = super::admit_raster(size, 1, tight, &Cancellation::default());
+        assert_eq!(error.unwrap_err(), crate::MediaError::TooLarge);
+        let admitted = super::admit_raster(size, 1, base, &Cancellation::default())
+            .expect("output-sized admission");
+        assert_eq!(admitted.decoded_bytes, 48);
+        assert_eq!(admitted.scratch_bytes, 48);
     }
 
     #[test]

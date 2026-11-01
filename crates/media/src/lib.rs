@@ -1,5 +1,8 @@
-//! MP-IMG1: encoded local feasibility only. No network, descriptor authorization,
-//! image decode, GPU object, control-frame media or Product import action.
+//! MP-IMG1: encoded local acquisition and representation identity.
+//!
+//! MP-IMG2/IMG3 add one bounded raster adapter ([`decode_raster`]) for the four
+//! admitted containers under [`DecodeLimits`]; it owns no GPU object, performs no
+//! network or descriptor authorization and no control-frame or import action.
 //!
 //! All synchronous acquisition runs on the caller's background executor. An owned
 //! file/reader is an explicit local capability, never obtained from media metadata.
