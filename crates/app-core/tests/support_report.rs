@@ -243,6 +243,16 @@ fn the_report_restates_the_ring_retention_not_the_cursor_window() {
         !rendered.contains("Retained events: 2"),
         "the cursor window must not be reported as the retention:\n{rendered}"
     );
+    assert!(
+        rendered.contains("Oldest retained: 906"),
+        "the oldest retained sequence is the ring's (906), not the window's (5000):
+{rendered}"
+    );
+    assert!(
+        rendered.contains("Event counts: activity 4095, connection 0, error 0, resync 1"),
+        "the category counts cover the ring, not the window's 1/0/0/1:
+{rendered}"
+    );
 }
 
 #[test]
