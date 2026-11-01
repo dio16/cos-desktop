@@ -12,9 +12,7 @@
 //! retention period and consent flow are **not** decided, so this module renders
 //! a string for an in-process reader and provides no file or network export.
 
-use crate::diagnostics::{
-    DiagnosticBatch, DiagnosticEvent, DiagnosticKind, EventGap, MAX_DIAGNOSTIC_EVENTS,
-};
+use crate::diagnostics::{DiagnosticBatch, EventGap, MAX_DIAGNOSTIC_EVENTS};
 use crate::observation::PublicationSource;
 use crate::observation::{ObservationPublication, PublicationConnection, PublicationError};
 use crate::redaction::{MAX_DIAGNOSTIC_LINE_BYTES, redact_diagnostic_text_within};
@@ -38,18 +36,7 @@ pub enum ReportValue<T> {
     Unknown(&'static str),
 }
 
-/// Per-category event counts. Categories are the existing safe kinds.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct DiagnosticCounts {
-    /// Events without a separate category.
-    pub activity: usize,
-    /// Connection transitions.
-    pub connection: usize,
-    /// Errors reduced to a safe category.
-    pub error: usize,
-    /// Requested resynchronizations.
-    pub resync: usize,
-}
+pub use crate::diagnostics::DiagnosticCounts;
 
 /// Bounded summary of the retained diagnostic ring for one reader cursor.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -58,7 +45,7 @@ pub struct DiagnosticsSummary {
     pub retained_events: usize,
     /// Latest sequence ever appended, or zero before the first event.
     pub latest_sequence: u64,
-    /// Oldest retained sequence, when anything is retained.
+    /// Oldest sequence the ring retains, independent of the reader cursor.
     pub oldest_sequence: Option<u64>,
     /// Exact lost interval, when events fell out of the ring.
     pub event_gap: Option<EventGap>,
@@ -66,7 +53,7 @@ pub struct DiagnosticsSummary {
     pub event_gap_lost: u64,
     /// True once the sequence space is exhausted.
     pub exhausted: bool,
-    /// Counts per safe category across the retained events.
+    /// Counts per safe category across the ring's retained events.
     pub counts: DiagnosticCounts,
 }
 
@@ -74,28 +61,16 @@ impl DiagnosticsSummary {
     /// Summarize one bounded batch. The event vector is already capped by the
     /// ring, so this never grows with input.
     pub fn from_batch(batch: &DiagnosticBatch) -> Self {
-        let mut counts = DiagnosticCounts::default();
-        for event in &batch.events {
-            match event.kind {
-                DiagnosticKind::Activity => counts.activity += 1,
-                DiagnosticKind::Connection(_) => counts.connection += 1,
-                DiagnosticKind::Error(_) => counts.error += 1,
-                DiagnosticKind::Resync => counts.resync += 1,
-            }
-        }
         Self {
             retained_events: batch.retained_events,
             latest_sequence: batch.latest_sequence,
-            oldest_sequence: batch
-                .events
-                .first()
-                .map(|event: &DiagnosticEvent| event.sequence),
+            oldest_sequence: batch.oldest_retained_sequence,
             event_gap: batch.event_gap,
             event_gap_lost: batch
                 .event_gap
                 .map_or(0, |gap| gap.to.saturating_sub(gap.from) + 1),
             exhausted: batch.exhausted,
-            counts,
+            counts: batch.retained_counts,
         }
     }
 }

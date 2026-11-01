@@ -1,7 +1,9 @@
 //! Observable guarantees of the bounded, redacted support report.
 use std::collections::BTreeMap;
 
-use app_core::diagnostics::{DiagnosticBatch, DiagnosticEvent, DiagnosticKind, EventGap};
+use app_core::diagnostics::{
+    DiagnosticBatch, DiagnosticCounts, DiagnosticEvent, DiagnosticKind, EventGap,
+};
 use app_core::observation::{
     ObservationPublication, PublicationConnection, PublicationError, PublicationSource,
 };
@@ -29,6 +31,25 @@ fn batch(events: Vec<DiagnosticEvent>, gap: Option<EventGap>) -> DiagnosticBatch
     DiagnosticBatch {
         latest_sequence: events.last().map_or(0, |event| event.sequence),
         retained_events: events.len(),
+        oldest_retained_sequence: events.first().map(|event| event.sequence),
+        retained_counts: DiagnosticCounts {
+            activity: events
+                .iter()
+                .filter(|event| event.kind == DiagnosticKind::Activity)
+                .count(),
+            connection: events
+                .iter()
+                .filter(|event| matches!(event.kind, DiagnosticKind::Connection(_)))
+                .count(),
+            error: events
+                .iter()
+                .filter(|event| matches!(event.kind, DiagnosticKind::Error(_)))
+                .count(),
+            resync: events
+                .iter()
+                .filter(|event| event.kind == DiagnosticKind::Resync)
+                .count(),
+        },
         events,
         event_gap: gap,
         exhausted: false,
@@ -98,6 +119,13 @@ fn diagnostic_summary_preserves_the_gap_counts_and_exhaustion() {
         ],
         event_gap: Some(EventGap { from: 3, to: 8 }),
         retained_events: 4,
+        oldest_retained_sequence: Some(9),
+        retained_counts: DiagnosticCounts {
+            activity: 1,
+            connection: 1,
+            error: 1,
+            resync: 1,
+        },
         latest_sequence: 12,
         exhausted: false,
     };
@@ -176,6 +204,13 @@ fn the_report_restates_the_ring_retention_not_the_cursor_window() {
         ],
         event_gap: None,
         retained_events: 4096,
+        oldest_retained_sequence: Some(905),
+        retained_counts: DiagnosticCounts {
+            activity: 4096,
+            connection: 0,
+            error: 0,
+            resync: 0,
+        },
         latest_sequence: 5001,
         exhausted: false,
     };

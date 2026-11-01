@@ -23,6 +23,35 @@ pub enum DiagnosticKind {
     Resync,
 }
 
+/// Counts per safe category across the ring's retained events.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct DiagnosticCounts {
+    /// Events without a separate category.
+    pub activity: usize,
+    /// Connection transitions.
+    pub connection: usize,
+    /// Errors reduced to a safe category.
+    pub error: usize,
+    /// Requested resynchronizations.
+    pub resync: usize,
+}
+
+impl DiagnosticCounts {
+    fn tally(&mut self, kind: &DiagnosticKind, add: bool) {
+        let bucket = match kind {
+            DiagnosticKind::Activity => &mut self.activity,
+            DiagnosticKind::Connection(_) => &mut self.connection,
+            DiagnosticKind::Error(_) => &mut self.error,
+            DiagnosticKind::Resync => &mut self.resync,
+        };
+        if add {
+            *bucket += 1;
+        } else {
+            *bucket = bucket.saturating_sub(1);
+        }
+    }
+}
+
 /// One retained event with its process-owner-monotone sequence number.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DiagnosticEvent {
@@ -53,6 +82,10 @@ pub struct DiagnosticBatch {
     /// The support report restates this value instead of recomputing a count from
     /// the cursor window, so ring retention and the report cannot diverge.
     pub retained_events: usize,
+    /// Oldest sequence the ring retains, independent of the reader cursor.
+    pub oldest_retained_sequence: Option<u64>,
+    /// Category counts across the ring's retained events, independent of the cursor.
+    pub retained_counts: DiagnosticCounts,
     /// Latest sequence ever appended, or zero before the first event.
     pub latest_sequence: u64,
     /// True once the sequence space is exhausted; later events are not appended.
@@ -65,6 +98,7 @@ pub struct DiagnosticBatch {
 /// when full. Sequence exhaustion is permanent; the counter is never wrapped.
 pub(crate) struct DiagnosticRing {
     events: VecDeque<DiagnosticEvent>,
+    counts: DiagnosticCounts,
     next_sequence: u64,
     latest_sequence: u64,
     exhausted: bool,
@@ -74,6 +108,7 @@ impl DiagnosticRing {
     pub(crate) fn new() -> Self {
         Self {
             events: VecDeque::with_capacity(MAX_DIAGNOSTIC_EVENTS),
+            counts: DiagnosticCounts::default(),
             next_sequence: 1,
             latest_sequence: 0,
             exhausted: false,
@@ -85,11 +120,14 @@ impl DiagnosticRing {
             return;
         }
 
-        if self.events.len() == MAX_DIAGNOSTIC_EVENTS {
-            self.events.pop_front();
+        if self.events.len() == MAX_DIAGNOSTIC_EVENTS
+            && let Some(evicted) = self.events.pop_front()
+        {
+            self.counts.tally(&evicted.kind, false);
         }
 
         let sequence = self.next_sequence;
+        self.counts.tally(&kind, true);
         self.events.push_back(DiagnosticEvent { sequence, kind });
         self.latest_sequence = sequence;
         if let Some(next_sequence) = sequence.checked_add(1) {
@@ -127,6 +165,8 @@ impl DiagnosticRing {
             events,
             event_gap,
             retained_events: self.events.len(),
+            oldest_retained_sequence: self.events.front().map(|event| event.sequence),
+            retained_counts: self.counts,
             latest_sequence: self.latest_sequence,
             exhausted: self.exhausted,
         }
@@ -181,6 +221,13 @@ mod tests {
                 to: oldest - 1
             }),
             "the evicted prefix is one exact lost interval"
+        );
+        assert_eq!(batch.retained_counts.activity, MAX_DIAGNOSTIC_EVENTS);
+        assert_eq!(batch.retained_counts.connection, 0);
+        assert_eq!(
+            batch.oldest_retained_sequence,
+            Some(oldest),
+            "the ring-wide oldest is independent of the reader cursor"
         );
         assert!(
             batch
