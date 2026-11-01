@@ -23,7 +23,7 @@ Direct desktop-protocol imports are allowed to name projection DTOs and identiti
 
 ## Reviewed third-party additions
 
-The checker's allowlist covers workspace-member edges only; crates.io dependencies are source-reviewed separately and must stay role-appropriate. Two are load-bearing today: `unicode-normalization` in `desktop-protocol` (pinned to the exact Runtime version so CanonicalV1 NFC tables cannot drift) and `ureq` in `apps/desktop` with `default-features = false` (blocking plain-HTTP executor for the Runtime protocol transport; no TLS, compression, cookie or proxy feature, so no crypto/TLS crate enters the graph). A dependency that would add TLS, a runtime, or a capability the composition root must not own needs its own review and plan decision, not an incidental manifest edit.
+The checker's allowlist covers workspace-member edges only; crates.io dependencies are source-reviewed separately and must stay role-appropriate. Three are load-bearing today: `unicode-normalization` in `desktop-protocol` (pinned to the exact Runtime version so CanonicalV1 NFC tables cannot drift), `ureq` in `apps/desktop` with `default-features = false` (blocking plain-HTTP executor for the Runtime protocol transport; no TLS, compression, cookie or proxy feature, so no crypto/TLS crate enters the graph), and `keyring` in `apps/desktop` with `windows-native` only (safe wrapper over the Windows Credential Manager for the Desktop Runtime credential — DPAPI-protected at rest; no Linux/macOS store, no TLS or async backend, and our own code keeps `unsafe` forbidden). A dependency that would add TLS, a runtime, or a capability the composition root must not own needs its own review and plan decision, not an incidental manifest edit.
 
 ## Prohibitions
 

@@ -23,8 +23,10 @@ listed by name here. Third-party additions are source-reviewed in DEPENDENCY_RUL
 ("Reviewed third-party additions") and need a plan/ADR decision when they would add TLS,
 an async runtime or a capability the composition root must not own. Current load-bearing
 ones: `unicode-normalization` (desktop-protocol, pinned to the Runtime version for
-CanonicalV1) and `ureq` with `default-features = false` (apps/desktop, plain-HTTP protocol
-executor; no TLS/crypto crate in the graph).
+CanonicalV1), `ureq` with `default-features = false` (apps/desktop, plain-HTTP protocol
+executor; no TLS/crypto crate in the graph), and `keyring` with only the `windows-native`
+backend (apps/desktop, Windows Credential Manager for the Desktop Runtime credential;
+no Linux/macOS store, no TLS/async, no `unsafe` in our own code).
 
 Metadata cannot prove behavioral prohibitions (direct DB/CAS/config access, main-thread I/O,
 imports without declared dependencies); manifest and source review still apply.

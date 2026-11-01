@@ -1,4 +1,5 @@
 mod app;
+mod credentials;
 mod instance;
 #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
 mod r0_s2b;
@@ -55,11 +56,19 @@ fn main() {
             std::process::exit(2);
         }
     };
-    // The Runtime bearer token is resolved here once and moved into the protocol
-    // executor; it is never rendered, logged or placed in a diagnostic.
+    // The Runtime credential is resolved once: the environment override wins,
+    // then the protected store (MP-SEC1). It is never rendered, logged or placed
+    // in a diagnostic; a 401 on this session deletes the stored entry.
     let runtime_token = std::env::var(runtime::TOKEN_ENV).ok();
-    let launch = runtime::plan(&startup.mode, endpoint.as_deref(), runtime_token.as_deref());
+    let credential_store = credentials::default_store();
+    let launch = runtime::plan(
+        &startup.mode,
+        endpoint.as_deref(),
+        runtime_token.as_deref(),
+        credential_store.as_ref(),
+    );
     drop(runtime_token);
+    let observation_store = std::sync::Arc::clone(&credential_store);
     let outcome = std::sync::Arc::clone(&exit_outcome);
     #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
     let capture = r0_s2b::Report::default();
@@ -94,27 +103,32 @@ fn main() {
                     return;
                 }
             },
-            runtime::LaunchPlan::Runtime(settings) => match runtime::observation(settings) {
-                Ok(observation) => {
-                    // The same host drives either source; the UI never learns
-                    // which client implementation it is.
-                    let (host, handle) =
-                        window::ObservationHost::start(cx, observation.client, observation.scope);
-                    match handle {
-                        Some(handle) => (
-                            Some(handle.clone()),
-                            AppCore::with_observation(handle),
-                            Some(host),
-                        ),
-                        None => (None, AppCore::disconnected(true), Some(host)),
+            runtime::LaunchPlan::Runtime(settings) => {
+                match runtime::observation(settings, std::sync::Arc::clone(&observation_store)) {
+                    Ok(observation) => {
+                        // The same host drives either source; the UI never learns
+                        // which client implementation it is.
+                        let (host, handle) = window::ObservationHost::start(
+                            cx,
+                            observation.client,
+                            observation.scope,
+                        );
+                        match handle {
+                            Some(handle) => (
+                                Some(handle.clone()),
+                                AppCore::with_observation(handle),
+                                Some(host),
+                            ),
+                            None => (None, AppCore::disconnected(true), Some(host)),
+                        }
+                    }
+                    Err(reason) => {
+                        // Explicitly unavailable, never a silent fixture fallback.
+                        eprintln!("Runtime observation unavailable: {}", reason.label());
+                        (None, AppCore::disconnected(true), None)
                     }
                 }
-                Err(reason) => {
-                    // Explicitly unavailable, never a silent fixture fallback.
-                    eprintln!("Runtime observation unavailable: {}", reason.label());
-                    (None, AppCore::disconnected(true), None)
-                }
-            },
+            }
             runtime::LaunchPlan::RuntimeUnavailable {
                 endpoint_configured,
                 reason,

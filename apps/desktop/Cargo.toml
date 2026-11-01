@@ -30,6 +30,14 @@ ureq = { version = "2.12", default-features = false }
 [dev-dependencies]
 media = { path = "../../crates/media" }
 
+[target.'cfg(windows)'.dependencies]
+# Windows Credential Manager (DPAPI-protected at rest) for the Desktop Runtime
+# credential. `keyring` is a safe wrapper over the same Win32 Credential APIs;
+# this crate forbids its own `unsafe`. `default-features = false` selects only
+# the Windows backend (no Linux/macOS store, no TLS or async).
+# See IMPLEMENTATION_MASTER_PLAN §19.115.
+keyring = { version = "3.6", default-features = false, features = ["windows-native"] }
+
 [target.'cfg(windows)'.dev-dependencies]
 filepath = "=0.2.0"
 
