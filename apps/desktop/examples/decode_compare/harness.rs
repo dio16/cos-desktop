@@ -3388,9 +3388,19 @@ fn supervise(
                 let _ = settle_finished_sample(&mut flight, status, &mut sampler);
             }
             None => {
+                // This path really kills a sampler. If it had already exceeded its own
+                // per-sample bound, the reason is the sampler's timeout (a genuine stop
+                // request), never a silent `no_sample`; the candidate's late-observation
+                // path (no stop request) remains a different state with no timestamps.
+                let timed_out = flight.started.elapsed() >= SAMPLE_TIMEOUT;
                 let _ = flight.child.kill();
                 let _ = flight.child.wait();
                 flight.capture.release();
+                if timed_out {
+                    sampler.failed(SAMPLE_TIMEOUT_REASON);
+                } else {
+                    sampler.failed(SAMPLE_PARSE_FAILED);
+                }
             }
         }
     }

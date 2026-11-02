@@ -2681,3 +2681,9 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Measured WER matrix:** `-MaxWerFiles 1` → NOT_VERIFIED/HOLD; `-SkipWerChildCrash` → NOT_RUN/PASS_LIMITED; `-SimulateWerShortRead` → NOT_VERIFIED/HOLD with `utf16_selftest = PASS`. The normal path varies between **NOT_VERIFIED/HOLD** (machine-wide `ProgramData\...\WER` unreadable) and **FAIL** when the bounded scan genuinely finds the synthetic token in the OS CrashDump; both are recorded as observed, never promoted to PASS.
 - **Gates:** harness `--test-threads=8` ×5 green (135 tests each); workspace **722 passed / 0 failed / 2 ignored**; fmt/clippy/build/dependency checker green; WER settings unchanged.
 
+### 19.135 sampler-timeout classification vs late-observation (2026-11-02)
+
+- **Regression fixed:** the Gate failure `hanging_sampler_hits_the_sample_timeout` expected `sample_timeout` but received `no_sample`. The post-exit harvest killed an in-flight sampler without recording why; it now distinguishes the sampler's own per-sample timeout (a **real kill/stop request**, so `sample_timeout` is recorded) from the candidate's late-observation path (no stop request, so `cancellation_requested_at_ms` stays `None` and no `killed` is fabricated).
+- **States kept separate:** candidate late observation → `timeout_fired`/`cancelled`, no cancellation timestamps, no kill; sampler timeout → `sample_timeout` with the real kill; deadline kill → `timeout_fired` with real cancellation timestamps.
+- **Verified:** `hanging_sampler_hits_the_sample_timeout` 3/3; the 50 ms pre-deadline exit (`Decoded`), 350 ms post-deadline negative (non-success, no request time) and 300 ms deadline-kill test all PASS; harness `--test-threads=8` ×5 green (135 each); workspace **722 passed / 0 failed / 2 ignored**; fmt/clippy/build/dependency checker green.
+
