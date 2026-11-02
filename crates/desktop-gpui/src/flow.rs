@@ -2464,7 +2464,7 @@ mod tests {
         );
         assert_eq!(
             reference_matched.nodes.len(),
-            NODES,
+            LAYER_COUNT * WIDTH,
             "the revision match set covers all 10,000 nodes"
         );
         assert_eq!(
