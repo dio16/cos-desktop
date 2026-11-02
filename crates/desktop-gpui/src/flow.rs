@@ -2108,17 +2108,31 @@ mod tests {
                 .cloned()
                 .collect::<std::collections::HashSet<_>>(),
         );
+        // Draw from each implementation's own set: btree-derived, hash-derived and the
+        // cached reference. Three independent diagrams, not two.
+        let hash_drawn = diagram(&graph, &computed, &hash_ref.nodes, &hash_ref.edges);
         assert_eq!(
-            btree_drawn, reference,
-            "btree and hash draw the same diagram"
+            btree_drawn, hash_drawn,
+            "btree and hash sets draw the same diagram"
         );
-        let hash_checksum = diagram_checksum(&reference, &rows, &computed);
+        assert_eq!(
+            hash_drawn, reference,
+            "the A/B hash diagram equals the cached reference diagram"
+        );
         let btree_checksum = diagram_checksum(&btree_drawn, &rows, &computed);
+        let hash_checksum = diagram_checksum(&hash_drawn, &rows, &computed);
+        let reference_checksum = diagram_checksum(&reference, &rows, &computed);
         assert_eq!(
             btree_checksum, hash_checksum,
             "btree and hash diagrams share the deterministic checksum"
         );
-        println!("MP-FLOW2 A/B checksum=0x{hash_checksum:016x}");
+        assert_eq!(
+            hash_checksum, reference_checksum,
+            "the A/B checksum equals the cached reference checksum"
+        );
+        println!(
+            "MP-FLOW2 A/B checksums btree=0x{btree_checksum:016x} hash=0x{hash_checksum:016x} reference=0x{reference_checksum:016x}"
+        );
 
         // Product paths with the product (hash) cache, alternating.
         let mut cache = MatchCache::default();
