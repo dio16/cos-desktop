@@ -3037,6 +3037,8 @@ struct ExitState {
     kill_requested: bool,
     deadline_killed: bool,
     killed_by_request: bool,
+    deadline_kill_requested_at: Option<Instant>,
+    deadline_kill_confirmed_at: Option<Instant>,
 }
 
 impl ExitWatch {
@@ -3050,6 +3052,8 @@ impl ExitWatch {
             kill_requested: false,
             deadline_killed: false,
             killed_by_request: false,
+            deadline_kill_requested_at: None,
+            deadline_kill_confirmed_at: None,
         }));
         let thread_state = std::sync::Arc::clone(&state);
         let deadline_at = Instant::now() + deadline;
@@ -3086,11 +3090,16 @@ impl ExitWatch {
                     }
                 }
                 if !kill && Instant::now() >= deadline_at {
+                    // Record the real request and confirmation instants; never infer them.
+                    let requested_at = Instant::now();
                     let _ = child.kill();
                     let status = child.wait().ok();
+                    let confirmed_at = Instant::now();
                     if let Ok(mut state) = thread_state.lock() {
-                        state.exited = Some((Instant::now(), status));
+                        state.exited = Some((confirmed_at, status));
                         state.deadline_killed = true;
+                        state.deadline_kill_requested_at = Some(requested_at);
+                        state.deadline_kill_confirmed_at = Some(confirmed_at);
                     }
                     return;
                 }
@@ -3133,6 +3142,18 @@ impl ExitWatch {
             .lock()
             .map(|state| state.killed_by_request)
             .unwrap_or(false)
+    }
+
+    fn deadline_kill_times(&self) -> (Option<Instant>, Option<Instant>) {
+        self.state
+            .lock()
+            .map(|state| {
+                (
+                    state.deadline_kill_requested_at,
+                    state.deadline_kill_confirmed_at,
+                )
+            })
+            .unwrap_or((None, None))
     }
 
     fn deadline_killed(&self) -> bool {
@@ -3352,8 +3373,14 @@ fn supervise(
         killed = true;
         cancelled = true;
         timeout_fired = cancel_after.is_none_or(|early| early >= timeout);
-        cancellation_requested_at_ms = Some(elapsed_millis(deadline.min(started.elapsed())));
-        cancellation_observed_ms = Some(0);
+        let (requested_at, confirmed_at) = watch.deadline_kill_times();
+        cancellation_requested_at_ms =
+            requested_at.map(|at| elapsed_millis(at.saturating_duration_since(started)));
+        cancellation_observed_ms = requested_at
+            .zip(confirmed_at)
+            .map(|(requested, confirmed)| {
+                elapsed_millis(confirmed.saturating_duration_since(requested))
+            });
     }
     // The candidate's wall time stops at the exit observation recorded by the watcher:
     // everything below, including the post-exit harvest bounded by SAMPLE_EXIT_GRACE, is

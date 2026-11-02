@@ -84,8 +84,9 @@ param(
     [switch]$SimulateWerEnumerationCap,
     [switch]$SimulateWerConfigUnreadable,
     [switch]$SimulateWerEnumerationFailure,
+    [switch]$SelfTestWerReparseCap,
     [switch]$SimulateUtf16Miss,
-    [int]$MaxWerFiles = 500,
+    [int]$MaxWerFiles = 2000,
     [int]$MaxWerDepth = 4,
     [int]$WerArtifactWaitMs = 5000,
     [int]$WerScanBytes = 1048576,
@@ -714,7 +715,10 @@ try {
                     continue
                 }
                 try { foreach ($entry in $entries) {
-                    if ($items.Count + $stack.Count -ge $maxFiles) { $capped = $true; break }
+                    # Count every enumerated entry, including reparse points and skipped
+                    # links, so many junctions cannot bypass the bound.
+                    $enumerated++
+                    if ($enumerated -gt $maxFiles) { $capped = $true; break }
                     # Never descend into a link/reparse point.
                     if ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) { continue }
                     if ($entry -is [System.IO.DirectoryInfo]) {
@@ -931,6 +935,22 @@ try {
     }
     if ($SimulateWerHold) { $correlatedArtifacts = @() }
     if ($SimulateWerEnumerationCap) { $enumerationCapped = $true }
+    $reparseSelfTest = 'NOT_RUN'
+    if ($SelfTestWerReparseCap) {
+        $reparseRoot = Join-Path $work 'reparse-cap-selftest'
+        $reparseTarget = Join-Path $work 'reparse-cap-target'
+        New-Item -ItemType Directory -Path $reparseRoot, $reparseTarget -Force | Out-Null
+        try {
+            for ($index = 1; $index -le 3; $index++) {
+                $link = Join-Path $reparseRoot ("link-$index")
+                $null = & cmd /c mklink /J "`"$link`"" "`"$reparseTarget`"" 2>&1
+            }
+            $reparseSnapshot = Get-WerSnapshot @($reparseRoot) 1 3
+            $reparseSelfTest = if ($reparseSnapshot.capped) { 'PASS' } else { 'FAIL' }
+        } finally {
+            Remove-Item -LiteralPath $reparseRoot, $reparseTarget -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
     $script:shortReadInjection = [bool]$SimulateWerShortRead
     $artifactScans = @()
     $unreadableArtifacts = 0
@@ -969,7 +989,7 @@ try {
         $desktopAfter = @(Get-ChildItem -LiteralPath $desktopReportsRoot -Force -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
     }
     $desktopUnchanged = (($desktopBefore | Sort-Object) -join '|') -eq (($desktopAfter | Sort-Object) -join '|')
-    $werStatus = if ($secretMatches -gt 0 -or $utf16SelfTest -eq 'FAIL') { 'FAIL' }
+    $werStatus = if ($secretMatches -gt 0 -or $utf16SelfTest -eq 'FAIL' -or $reparseSelfTest -eq 'FAIL') { 'FAIL' }
         elseif ($SkipWerChildCrash) { 'NOT_RUN' }
         elseif ($unreadableArtifacts -gt 0 -or $enumerationCapped -or $enumerationFailures.Count -gt 0 -or -not $configVerified) { 'NOT_VERIFIED' }
         elseif ($null -ne $childError) { 'HOLD' }
@@ -1006,6 +1026,7 @@ try {
         }
         config_read = [ordered]@{ verified = $configVerified; unreadable_keys = $configUnreadable }
         short_reads = @($artifactScans | Where-Object { $_.readable -eq $false }).Count
+        reparse_cap_selftest = $reparseSelfTest
         new_artifacts = $newArtifacts
         correlated_artifacts = $correlatedArtifacts
         unrelated_artifacts = $unrelatedArtifacts
