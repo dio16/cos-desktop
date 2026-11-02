@@ -2332,14 +2332,14 @@ mod tests {
             edges: graph.edges.clone(),
         });
         let layers_first = layers(&graph);
-        let rows_query = rows_cancellable(std::slice::from_ref(&graph), "Node 50", || false)
-            .expect("query rows");
+        let rows_query =
+            rows_cancellable(std::slice::from_ref(&graph), " ", || false).expect("query rows");
         let key_query = AdmissionKey {
             session_generation: 7,
             publication_version: 11,
             epoch: Some(EpochId::fixture("epoch/measure")),
             revision: revision_key(std::slice::from_ref(&graph)),
-            query: "Node 50".to_owned(),
+            query: " ".to_owned(),
         };
         let key_revision = AdmissionKey {
             session_generation: 7,
@@ -2359,6 +2359,48 @@ mod tests {
             &query_matched.edges,
         );
         let query_match_us = query_started.elapsed().as_micros();
+        // Query-only keeps the revision and publication version: only the query text
+        // changes. A whitespace-only query trims to the empty filter, so the admitted
+        // rows and match-set cardinality stay identical.
+        assert_eq!(rows_query.nodes.len(), LAYER_COUNT * WIDTH);
+        assert_eq!(rows_query.edges.len(), (LAYER_COUNT - 1) * WIDTH * 2);
+        assert_eq!(query_matched.nodes.len(), LAYER_COUNT * WIDTH);
+        assert_eq!(query_matched.edges.len(), (LAYER_COUNT - 1) * WIDTH * 2);
+        let checksum = |drawn: &super::Diagram| {
+            let mut value = 0u64;
+            for node in &drawn.nodes {
+                for byte in node.node.as_str().bytes() {
+                    value ^= u64::from(byte);
+                    value = value.wrapping_mul(0x100_0000_01b3);
+                }
+                value ^= node.depth as u64;
+                value = value.wrapping_mul(0x100_0000_01b3);
+            }
+            value ^= drawn.edges.len() as u64;
+            value ^= (drawn.skipped_edges as u64) << 32;
+            value ^= u64::from(drawn.truncated);
+            value
+        };
+        // Revision-reference Diagram from the same topology with the new GraphRef.
+        let rows_revision =
+            rows_cancellable(std::slice::from_ref(&revision), "", || false).expect("revision rows");
+        let layers_revision = layers(&revision);
+        let mut reference_cache = MatchCache::default();
+        let (reference_matched, _) =
+            reference_cache.get_or_build(&key_revision, || matched_from_rows(&rows_revision));
+        let revision_reference = diagram(
+            &revision,
+            &layers_revision,
+            &reference_matched.nodes,
+            &reference_matched.edges,
+        );
+        let revision_checksum = checksum(&revision_reference);
+        assert_eq!(revision_reference.nodes.len(), super::MAX_DIAGRAM_NODES);
+        assert!(revision_reference.truncated);
+        assert_eq!(
+            revision_reference.edges.len() + revision_reference.skipped_edges,
+            (LAYER_COUNT - 1) * WIDTH * 2
+        );
         assert!(!query_hit, "a query change is a cache miss");
 
         let mut query = Vec::new();
@@ -2367,7 +2409,7 @@ mod tests {
             let query_first = iteration % 2 == 0;
             let measure_query = |cache: &mut MatchCache| {
                 let rows_started = Instant::now();
-                let rows = rows_cancellable(std::slice::from_ref(&graph), "Node 50", || false)
+                let rows = rows_cancellable(std::slice::from_ref(&graph), " ", || false)
                     .expect("query rows");
                 let rows_us = rows_started.elapsed().as_micros();
                 let _ = cache.get_or_build(&key_revision, || matched_from_rows(&rows_query));
@@ -2397,10 +2439,16 @@ mod tests {
                 let match_us = match_started.elapsed().as_micros();
                 assert!(!hit, "a revision change is a cache miss");
                 let diagram_started = Instant::now();
-                let _drawn = diagram(&revision, &computed, &matched.nodes, &matched.edges);
+                let drawn = diagram(&revision, &computed, &matched.nodes, &matched.edges);
                 let diagram_us = diagram_started.elapsed().as_micros();
                 assert_eq!(computed.depth, layers_first.depth);
                 assert_eq!(computed.cyclic, layers_first.cyclic);
+                assert_eq!(drawn, revision_reference, "revision diagram is identical");
+                assert_eq!(
+                    checksum(&drawn),
+                    revision_checksum,
+                    "revision checksum is stable"
+                );
                 (rows_us, layers_us, match_us, diagram_us)
             };
             let (q, r) = if query_first {

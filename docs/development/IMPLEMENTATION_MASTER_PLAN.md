@@ -2976,6 +2976,8 @@ sample series=hit iter=20 match_us=0 diagram_us=1830 total_us=1830
 
 ### 19.144 MP-FLOW2 revision change vs query-only: CPU decomposition (2026-11-02)
 
+> Superseded by the corrected-condition re-measurement in §19.145: the query-only series here also changed `publication_version` and the query string, so its difference from the revision series is not attributable to a revision change. The values below stay as a conditional observation only.
+
 - **Contract (unchanged):** `RevisionKey` (`GraphRef + source_revision`) keys the Layers cache; the match cache is keyed by the five-component `AdmissionKey` (revision, epoch, publication version, session generation, query). A revision change invalidates both; a query-only change invalidates only the match set (and re-derives Rows), while Layers stay valid.
 - **Conditions (release, warmup 3, 21 iterations, alternating; same 10,000 nodes / 19,800 edges):** query-only = same `GraphRef` + new `query`; revision = new `GraphRef` version/digest + `source_revision = 2` with unchanged node/edge topology. These are synthetic identifier mutations, not real Runtime updates.
 - **Results (median / p95 / max, µs):**
@@ -3033,5 +3035,65 @@ rev_sample condition=query_only iter=19 rows_us=16165 layers_us=0 match_us=185 d
 rev_sample condition=revision iter=19 rows_us=901 layers_us=6074 match_us=9662 diagram_us=2468
 rev_sample condition=query_only iter=20 rows_us=11737 layers_us=0 match_us=3267 diagram_us=4556
 rev_sample condition=revision iter=20 rows_us=825 layers_us=4895 match_us=8483 diagram_us=2362
+```
+
+### 19.145 MP-FLOW2 revision change: corrected conditions (2026-11-02)
+
+- **Corrections from review:** §19.143's query-only condition also changed `publication_version` and reduced the match-set cardinality; it is retained there only as a **conditional observation** and is not used for decisions. In this section the query-only key keeps the **same revision and publication version** and changes **only `query`** (`""` → whitespace-only, which trims to the empty filter); the revision key fixes `query = ""` and changes **only `GraphRef`/`source_revision` and `publication_version`**.
+- **Terminology (A-01):** all values are `Instant::elapsed()` **sequential elapsed time**, not thread CPU time. Rows and the display-side steps run sequentially inside the test. The display total **excludes paint, GPU submission, Present and drawable element construction**, and is not a frame latency; the comparison with 16.67 ms is a **reference only**, not proof of a frame-budget overrun.
+- **Asserted conditions:** query-only admits the same 10,000 nodes / 19,800 edges and the same match-set cardinality; revision-change Layers depth/cyclic equal; the revision Diagram equals the reference Diagram computed from the new `GraphRef` (node/edge identities, order, depths), `nodes.len() == 120`, `truncated`, `edges + skipped_edges == 19,800`, and a deterministic checksum on every iteration.
+- **Results (release, warmup 3, 21 iterations, alternating; median / p95 / max, µs):**
+
+| condition | rows (background) | layers (display) | match set (display) | diagram (display) | display total |
+|---|---|---|---|---|---|
+| query-only (only `query` changes) | 626 / 924 / 1,309 | 0 (cached) | 12,400 / 14,612 / 16,125 | 2,939 / 3,748 / 3,899 | 15,475 / 17,549 / 20,024 |
+| revision (only `GraphRef`/revision + publication version change) | 716 / 1,138 / 1,303 | 6,369 / 7,336 / 7,520 | 12,382 / 13,646 / 13,962 | 2,990 / 3,970 / 4,001 | 21,900 / 23,426 / 24,224 |
+
+  With the same match-set cardinality, the revision-specific difference is the **Layers recompute (~6.4 ms median)**; match-set rebuild is ~12.4 ms in both conditions. No optimization is implemented in this slice.
+- **Raw samples (21 iterations × 2 conditions, alternating):**
+
+```text
+rev_sample condition=query_only iter=0 rows_us=924 layers_us=0 match_us=11857 diagram_us=3068
+rev_sample condition=revision iter=0 rows_us=756 layers_us=7336 match_us=12395 diagram_us=3265
+rev_sample condition=query_only iter=1 rows_us=694 layers_us=0 match_us=13704 diagram_us=2939
+rev_sample condition=revision iter=1 rows_us=583 layers_us=6369 match_us=12663 diagram_us=2868
+rev_sample condition=query_only iter=2 rows_us=795 layers_us=0 match_us=11304 diagram_us=2939
+rev_sample condition=revision iter=2 rows_us=1138 layers_us=5591 match_us=10774 diagram_us=3654
+rev_sample condition=query_only iter=3 rows_us=574 layers_us=0 match_us=11271 diagram_us=3465
+rev_sample condition=revision iter=3 rows_us=900 layers_us=5413 match_us=13258 diagram_us=2997
+rev_sample condition=query_only iter=4 rows_us=758 layers_us=0 match_us=11594 diagram_us=2833
+rev_sample condition=revision iter=4 rows_us=649 layers_us=6553 match_us=12382 diagram_us=3116
+rev_sample condition=query_only iter=5 rows_us=550 layers_us=0 match_us=11598 diagram_us=3748
+rev_sample condition=revision iter=5 rows_us=588 layers_us=5573 match_us=12272 diagram_us=2894
+rev_sample condition=query_only iter=6 rows_us=676 layers_us=0 match_us=13425 diagram_us=3071
+rev_sample condition=revision iter=6 rows_us=597 layers_us=6844 match_us=11134 diagram_us=2990
+rev_sample condition=query_only iter=7 rows_us=530 layers_us=0 match_us=12560 diagram_us=3314
+rev_sample condition=revision iter=7 rows_us=645 layers_us=6293 match_us=13025 diagram_us=2951
+rev_sample condition=query_only iter=8 rows_us=626 layers_us=0 match_us=12247 diagram_us=2868
+rev_sample condition=revision iter=8 rows_us=1074 layers_us=7520 match_us=11544 diagram_us=3404
+rev_sample condition=query_only iter=9 rows_us=599 layers_us=0 match_us=12400 diagram_us=3458
+rev_sample condition=revision iter=9 rows_us=1059 layers_us=7236 match_us=13302 diagram_us=2888
+rev_sample condition=query_only iter=10 rows_us=609 layers_us=0 match_us=11679 diagram_us=2916
+rev_sample condition=revision iter=10 rows_us=1303 layers_us=6389 match_us=11469 diagram_us=3686
+rev_sample condition=query_only iter=11 rows_us=554 layers_us=0 match_us=13555 diagram_us=2777
+rev_sample condition=revision iter=11 rows_us=563 layers_us=7309 match_us=11703 diagram_us=2800
+rev_sample condition=query_only iter=12 rows_us=649 layers_us=0 match_us=14612 diagram_us=2937
+rev_sample condition=revision iter=12 rows_us=884 layers_us=6261 match_us=13962 diagram_us=4001
+rev_sample condition=query_only iter=13 rows_us=570 layers_us=0 match_us=12663 diagram_us=2765
+rev_sample condition=revision iter=13 rows_us=546 layers_us=6149 match_us=11777 diagram_us=2824
+rev_sample condition=query_only iter=14 rows_us=649 layers_us=0 match_us=12243 diagram_us=2725
+rev_sample condition=revision iter=14 rows_us=716 layers_us=5378 match_us=12045 diagram_us=3027
+rev_sample condition=query_only iter=15 rows_us=1309 layers_us=0 match_us=12941 diagram_us=2764
+rev_sample condition=revision iter=15 rows_us=754 layers_us=6749 match_us=12391 diagram_us=3236
+rev_sample condition=query_only iter=16 rows_us=523 layers_us=0 match_us=12255 diagram_us=3220
+rev_sample condition=revision iter=16 rows_us=609 layers_us=6100 match_us=11840 diagram_us=2835
+rev_sample condition=query_only iter=17 rows_us=614 layers_us=0 match_us=11687 diagram_us=2865
+rev_sample condition=revision iter=17 rows_us=578 layers_us=6401 match_us=11393 diagram_us=2968
+rev_sample condition=query_only iter=18 rows_us=729 layers_us=0 match_us=13841 diagram_us=2996
+rev_sample condition=revision iter=18 rows_us=798 layers_us=6098 match_us=13646 diagram_us=2872
+rev_sample condition=query_only iter=19 rows_us=565 layers_us=0 match_us=13152 diagram_us=3449
+rev_sample condition=revision iter=19 rows_us=611 layers_us=6764 match_us=12640 diagram_us=2732
+rev_sample condition=query_only iter=20 rows_us=714 layers_us=0 match_us=16125 diagram_us=3899
+rev_sample condition=revision iter=20 rows_us=1010 layers_us=5799 match_us=12847 diagram_us=3970
 ```
 
