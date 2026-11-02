@@ -3494,3 +3494,18 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Evidence trail:** only the summary in this section is retained in the repository. The per-keystroke UIA dump and the auxiliary screenshots from that run were **not saved as durable artefacts** and are **not available for independent re-checking**; the PASS classifications above are therefore the implementer's live observation report, corroborated by the reproducible executable and fixture hashes, not a re-verifiable transcript. No live capture, re-run or extra Gate was performed for this note.
 - **Limits:** no screen-reader quality claim, no DPI matrix, no revocation/live-Runtime reproduction; MP-AX2 overall is not claimed complete. No product change was needed, so no new Gate was added.
 
+### 19.158 MP-AX1 Ctrl+D close focus consistency (native, 2026-11-02)
+
+- **Target:** HEAD `b8d70d2e1376944802bee1cb27d8c352dcf3a510`; rebuilt release binary after the fix (SHA-256 `525395a4a3404e83d73efd7f9f2299043f97af868b26fd82e5ef9175b1c67b06`); fixture `crates/cos-client/fixtures/task-184.json` SHA-256 `db1cfc8014ad44d3a512415af22ab90523b639de36d606e83247ac109daec2c0`. Isolated `LOCALAPPDATA=target/ax2-local` (default lock unavailable in this sandbox); no live capture/image/manifest update.
+- **Reproduction (pre-fix, OBSERVED):** Ctrl+D → Tab 5 times (support button focused) → Ctrl+D close: UIA `FocusedElement` fell to `ControlType.Window`; Tab and Shift+Tab no longer moved focus; the next Ctrl+D did not reopen the support button. This is the reproducible defect.
+- **Fix:** inside the existing `Diagnostics` handler only, on close, if `support_focus.is_focused(window)`, focus the existing Shell `focus` handle (`this.focus.focus(window, cx)`). Other focus is untouched; opening does not move focus; no new focus manager.
+- **Post-fix (OBSERVED):**
+  | Case | Result |
+  |---|---|
+  | Support button focused, close | focus moves to `COS Desktop 作業領域` pane; Tab/Shift+Tab move normally; reopen shows the support button |
+  | Other control focused (stop), close | focus unchanged before/after; panel closes; reopen works |
+  | Ctrl+D open with stop button focused | focus remains on the stop button (no forced move) |
+  | Closed tree | diagnostics labels removed (element count 55 → 48); Ctrl+D reopens the button |
+- **Preserved:** Ctrl+D changes display state only; no Runtime command, no publication/task-selection change; report generations/authorization unchanged; support key handling unchanged.
+- **Classification:** pre-fix defect and all post-fix cases **OBSERVED**; handler condition additionally **SOURCE_WIRING_VERIFIED** via a source test. Screen-reader reading and DPI matrix remain NOT_RUN. MP-AX1/AX2 overall remain incomplete.
+

@@ -4017,9 +4017,15 @@ impl Render for Shell {
                     this.navigate(Surface::ALL[index], cx);
                 }
             }))
-            .on_action(cx.listener(|this, _: &Diagnostics, _, cx| {
+            .on_action(cx.listener(|this, _: &Diagnostics, window, cx| {
                 if let Some(w) = &mut this.workbench {
-                    w.presentation.diagnostics_open = !w.presentation.diagnostics_open;
+                    let closing = w.presentation.diagnostics_open;
+                    w.presentation.diagnostics_open = !closing;
+                    // Closing removes the focused support action: move only that focus to
+                    // the existing shell focus. Any other focus is left untouched.
+                    if closing && this.support_focus.is_focused(window) {
+                        this.focus.focus(window, cx);
+                    }
                     cx.notify();
                 }
             }))
@@ -5132,6 +5138,20 @@ mod contrast_scope_tests {
                 !region.contains("rgb(0x"),
                 "the {name} region must resolve every colour through the contrast scheme"
             );
+        }
+    }
+
+    #[test]
+    fn closing_diagnostics_restores_only_the_support_focus() {
+        // SOURCE_WIRING_VERIFIED for the handler condition; the observed behavior is
+        // recorded in plan §19.158 (native run).
+        let source = include_str!("lib.rs");
+        for needle in [
+            "let closing = w.presentation.diagnostics_open;",
+            "if closing && this.support_focus.is_focused(window)",
+            "this.focus.focus(window, cx);",
+        ] {
+            assert!(source.contains(needle), "missing {needle}");
         }
     }
 
