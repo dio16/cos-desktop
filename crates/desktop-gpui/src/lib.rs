@@ -217,10 +217,23 @@ impl RailWorkSignal {
     }
 }
 
+/// Read-only About rows for the Ctrl+D diagnostics area. Only the injected binary
+/// version is known; Runtime/Protocol/Schema stay explicitly unknown.
+fn about_lines(desktop_version: &str) -> [String; 4] {
+    [
+        format!("Desktop {desktop_version}"),
+        "Runtime 未確認".to_owned(),
+        "Protocol 未確認".to_owned(),
+        "Schema 未確認".to_owned(),
+    ]
+}
+
 pub struct Shell {
     #[cfg(feature = "r0-s2b-instrumentation")]
     probe_window: u64,
     handle: Option<ObservationHandle>,
+    /// Desktop version injected by the binary; independent of any publication.
+    desktop_version: Arc<str>,
     workbench: Option<Workbench>,
     /// Derived display text with its publication identity, revalidated on render.
     cache: DisplayCache,
@@ -412,6 +425,7 @@ impl Shell {
             #[cfg(feature = "r0-s2b-instrumentation")]
             probe_window: window.window_handle().window_id().as_u64(),
             handle,
+            desktop_version: Arc::clone(&desktop_version),
             workbench,
             cache: DisplayCache::from_text(ui_model::WorkbenchText::withheld_for_desktop(
                 &desktop_version,
@@ -2528,6 +2542,7 @@ impl Render for Shell {
             .as_ref()
             .is_some_and(|w| w.presentation.diagnostics_open);
         let diagnostic_text = text.diagnostics.clone();
+        let about = about_lines(&self.desktop_version);
         let mode = self.error.clone().unwrap_or_else(|| text.mode.clone());
         // LIMITED-CONTRAST-BEGIN axis-cell: the Context Bar's state-axis labels resolve
         // their colours through the scheme; the guard test below covers this region.
@@ -4079,9 +4094,21 @@ impl Render for Shell {
                                             })
                                             .child(inspector_panel)
                                             .child(if diagnostics_open {
-                                                diagnostic_text
+                                                div()
+                                                    .flex()
+                                                    .flex_col()
+                                                    .gap_1()
+                                                    .child(div().child("このアプリについて"))
+                                                    .child(div().child(about[0].clone()))
+                                                    .child(div().child(about[1].clone()))
+                                                    .child(div().child(about[2].clone()))
+                                                    .child(div().child(about[3].clone()))
+                                                    .child(div().child(diagnostic_text))
+                                                    .into_any_element()
                                             } else {
-                                                "診断情報：Ctrl+D".into()
+                                                div()
+                                                    .child("診断情報：Ctrl+D")
+                                                    .into_any_element()
                                             }),
                                     ),
                             ),
@@ -4526,6 +4553,38 @@ fn flow_diagram_region(
             .children(blocks)
             .into_any_element(),
     )
+}
+
+#[cfg(test)]
+mod about_tests {
+    use super::about_lines;
+
+    #[test]
+    fn about_separates_desktop_from_unknown_runtime_versions() {
+        let lines = about_lines("9.8.7");
+        assert_eq!(lines[0], "Desktop 9.8.7");
+        assert_eq!(lines[1], "Runtime 未確認");
+        assert_eq!(lines[2], "Protocol 未確認");
+        assert_eq!(lines[3], "Schema 未確認");
+        assert!(
+            !lines
+                .iter()
+                .any(|line| line.contains(env!("CARGO_PKG_VERSION")))
+        );
+
+        // handle = None / revoked authorization: the injected version survives, and
+        // no Runtime/Protocol/Schema value is fabricated.
+        let withheld = ui_model::WorkbenchText::withheld_for_desktop("9.8.7");
+        assert!(withheld.diagnostics.contains("Desktop 9.8.7"));
+        assert!(
+            withheld
+                .diagnostics
+                .contains("検証済みの情報源がありません")
+        );
+        for unknown in ["Runtime", "Protocol", "Schema"] {
+            assert!(!withheld.diagnostics.contains(unknown));
+        }
+    }
 }
 
 #[cfg(test)]
