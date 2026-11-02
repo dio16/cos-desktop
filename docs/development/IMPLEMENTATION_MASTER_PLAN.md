@@ -3179,10 +3179,10 @@ rev_sample condition=revision iter=20 rows_us=781 layers_us=5648 match_us=12255 
 | **unattributed (outer − sum)** | **197** | **247** | **280** | 3.4% |
 | **outer_total_us** | **5739** | **6227** | **6836** | 100% |
 
-  The explicit P7 drop accounts for the previously unexplained cost (552 µs median). The residual ~197 µs is the measured boundary between `outer` and the sum (timer calls and unsampled transition work), recorded as unattributed rather than assumed to be overhead. Percentages use the outer median as denominator; they do not sum to 100 because of this residual.
+  The explicit P7 drop accounts for the previously unexplained cost (552 µs median). The residual ~197 µs is the measured boundary between `outer` and the sum (timer calls and unsampled transition work), recorded as unattributed rather than assumed to be overhead. Percentages use the outer median as denominator. They also do not sum to 100 because each phase median is computed independently, so the individual medians need not occur in the same iteration; compare shares as orientation only, and read the per-iteration samples for attribution.
 - **Difference from §19.146:** §19.146 measured un-instrumented `layers()` (median 5,929 µs) in the revision condition; here the phased path with outer total measures 5739 µs median. The ranges overlap; the phased run is not a product-cost claim.
 - **Candidates (hypotheses only, not verified by this measurement; no adoption or implementation):**
-  (1) P2 successors → single-pass CSR (count out-degree, then fill). The 1–2 ms saving is an **unverified hypothesis**; a real CSR needs several passes, and **adjacency order must be preserved** because node/edge order affects deterministic depth/Diagram results. Correctness risk: order and duplicate edges must stay identical.
+  (1) P2 successors → multi-pass CSR (count out-degree, then fill). The 1–2 ms saving is an **unverified hypothesis**; a real CSR needs several passes, and **adjacency order must be preserved** because node/edge order affects deterministic depth/Diagram results. Correctness risk: order and duplicate edges must stay identical.
   (2) P1 index → pre-size HashMap with node count (or a dense identity pass). The 0.2–0.4 ms saving is an **unverified hypothesis**; identity checks and collision behavior must not change.
 - **Limits:** paint/GPU/Present not measured; no Stage A–C experiment, no numeric gate, no optimization implemented. MP-FLOW2 remains incomplete.
 - **Raw samples (21 iterations; outer totals and per-phase values):**
