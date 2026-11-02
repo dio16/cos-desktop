@@ -591,10 +591,14 @@ fn safe_version(value: &str) -> bool {
     let markers = ["[redacted]", "[signed-locator]", "[private-path]"];
     let mut rest = value;
     while let Some((_, tail)) = rest.split_once('=') {
-        if !markers.iter().any(|marker| tail.starts_with(marker)) {
+        // The value must be exactly one marker, so nothing can be appended to it.
+        let Some(after) = markers.iter().find_map(|marker| tail.strip_prefix(marker)) else {
+            return false;
+        };
+        if !after.is_empty() && !after.starts_with(' ') {
             return false;
         }
-        rest = tail;
+        rest = after;
     }
     let lowered = value.to_lowercase();
     !lowered.contains("bearer ") && !lowered.contains("://")

@@ -209,6 +209,14 @@ fn an_injected_credential_in_a_stored_report_is_refused() {
     let error = store.read(meta.id).expect_err("an unknown credential key");
     assert!(matches!(error, CrashStoreError::InvalidReport), "{error:?}");
 
+    // A marker with text appended is not a rendered value either.
+    let appended = tampered.replace("token=secret123", "api_key=[redacted]SuperSecret123");
+    std::fs::write(&path, &appended).expect("the third tampered file");
+    let error = store
+        .read(meta.id)
+        .expect_err("a marker with appended text");
+    assert!(matches!(error, CrashStoreError::InvalidReport), "{error:?}");
+
     // The rendered marker form stays readable: `access_token=[redacted]` is a shape the
     // redactor produces, so rejecting it would break ordinary reports.
     let marked = concat!(
