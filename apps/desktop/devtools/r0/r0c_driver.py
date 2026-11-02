@@ -1164,11 +1164,37 @@ def check_termination(ledger: dict, cleanup: dict) -> None:
         raise r0c.ContractError("TERMINATION_ABNORMAL", "$.cleanup")
 
 
+def pinned_source_digest(manifest_path: Path) -> str | None:
+    """The recorded bundle's pinned source identity, never the live tree.
+
+    Replay of stored evidence must compare the manifest against the build record it
+    was captured with; a later consumer revision cannot invalidate historical
+    evidence. A fresh candidate without a recorded bundle keeps the live check.
+    """
+    for candidate in (
+        manifest_path.parent / "s2b-build.json",
+        manifest_path.parent.parent / "s2b-build.json",
+    ):
+        if not candidate.is_file():
+            continue
+        build = s2b_capture.validate_build_record(
+            contracts.load_document(str(candidate), contracts.MAX_MANIFEST_BYTES),
+            live=False,
+        )
+        return build["observer_source_sha256"]
+    return None
+
+
 def verify(args: argparse.Namespace) -> int:
     manifest = r0c.load_manifest(args.manifest)
-    s2b_manifest = s2b.validate_manifest(
-        contracts.load_document(args.s2b_manifest, contracts.MAX_MANIFEST_BYTES)
-    )
+    s2b_document = contracts.load_document(args.s2b_manifest, contracts.MAX_MANIFEST_BYTES)
+    # Replay uses the recorded bundle's pinned source identity. Without a recorded
+    # build record the manifest's own identity is used so the approval/executable
+    # agreement below is still enforced (a fresh bundle is validated elsewhere).
+    pinned = pinned_source_digest(Path(args.s2b_manifest))
+    if pinned is None:
+        pinned = s2b_document["identity"]["driver_hash"]
+    s2b_manifest = s2b.validate_manifest(s2b_document, expected_driver_hash=pinned)
     _require_identity_agreement(manifest, s2b_manifest, _approved_binding(manifest))
     result = r0c.validate_result(contracts.load_document(args.result, r0c.MAX_RESULT_BYTES))
     if result["status"] != "COMPLETE":

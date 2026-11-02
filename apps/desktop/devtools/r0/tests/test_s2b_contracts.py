@@ -536,6 +536,31 @@ class S2BWireContract(unittest.TestCase):
         self.assertEqual(
             s2b_capture.validate_build_record(build, live=True)["observer_source_sha256"], current)
 
+    def test_replay_uses_the_recorded_build_identity_not_the_live_tree(self):
+        import contracts, json, tempfile, r0c_driver
+        document = contracts.load_document(
+            str(ROOT / "manifests/s2b-feature-a1.json"), contracts.MAX_MANIFEST_BYTES)
+        recorded = document["identity"]["driver_hash"]
+        # The stored bundle was captured from an older consumer revision.
+        self.assertNotEqual(recorded, s2b.source_digest())
+        build = contracts.load_document(str(ROOT / "s2b-build.json"), contracts.MAX_MANIFEST_BYTES)
+        with tempfile.TemporaryDirectory() as work:
+            manifest_path = Path(work) / "s2b-feature-a1.json"
+            manifest_path.write_text(json.dumps(document), encoding="utf-8")
+            (Path(work) / "s2b-build.json").write_text(json.dumps(build), encoding="utf-8")
+            pinned = r0c_driver.pinned_source_digest(manifest_path)
+            self.assertEqual(pinned, recorded)
+            # The recorded pair is accepted although it is not the live source.
+            s2b.validate_manifest(document, expected_driver_hash=pinned)
+            # A tampered recorded identity is refused.
+            build["observer_source_sha256"] = "sha256:" + "0" * 64
+            (Path(work) / "s2b-build.json").write_text(json.dumps(build), encoding="utf-8")
+            with self.assertRaises(s2b.ObservationError) as error:
+                s2b.validate_manifest(
+                    document,
+                    expected_driver_hash=r0c_driver.pinned_source_digest(manifest_path))
+            self.assertEqual(str(error.exception), "SOURCE_IDENTITY")
+
     def test_recorded_build_and_source_identity_must_agree(self):
         import s2b_capture
         recorded = {"observer_source_sha256": "sha256:" + "a" * 64}
