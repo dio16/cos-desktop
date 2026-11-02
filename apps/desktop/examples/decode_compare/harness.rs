@@ -3111,8 +3111,18 @@ impl ExitWatch {
                 while Instant::now() < until {
                     if thread_state.lock().map(|data| data.abort).unwrap_or(true) {
                         // The caller stopped waiting, but the child is still ours: stop it
-                        // before leaving so an abort never strands a running process.
-                        let _ = child.kill();
+                        // before leaving so an abort never strands a running process. A
+                        // failed stop stays unconfirmed rather than looking like cleanup.
+                        let kill_ok = child.kill().is_ok();
+                        if let Ok(mut data) = thread_state.lock() {
+                            data.kill_issued = kill_ok;
+                            data.kill_failed = !kill_ok;
+                            if !kill_ok {
+                                data.state = WatchState::Unconfirmed {
+                                    last_seen: Instant::now(),
+                                };
+                            }
+                        }
                         return;
                     }
                     std::thread::sleep(POLL_INTERVAL);
@@ -3184,8 +3194,18 @@ impl ExitWatch {
             };
             loop {
                 if thread_state.lock().map(|data| data.abort).unwrap_or(true) {
-                    // Same rule as the delay path: an abort still stops the child.
-                    let _ = child.kill();
+                    // Same rule as the delay path: an abort still stops the child, and a
+                    // failed stop stays unconfirmed.
+                    let kill_ok = child.kill().is_ok();
+                    if let Ok(mut data) = thread_state.lock() {
+                        data.kill_issued = kill_ok;
+                        data.kill_failed = !kill_ok;
+                        if !kill_ok {
+                            data.state = WatchState::Unconfirmed {
+                                last_seen: Instant::now(),
+                            };
+                        }
+                    }
                     return;
                 }
                 let kill = thread_state
@@ -3198,10 +3218,13 @@ impl ExitWatch {
                     match child.try_wait() {
                         Ok(Some(status)) => {
                             if let Ok(mut data) = thread_state.lock() {
-                                data.state = WatchState::Exited {
-                                    at: Instant::now(),
-                                    status: Some(status),
-                                };
+                                // A settled Unconfirmed is final on this path too.
+                                if !data.abort {
+                                    data.state = WatchState::Exited {
+                                        at: Instant::now(),
+                                        status: Some(status),
+                                    };
+                                }
                             }
                             return;
                         }
@@ -3264,10 +3287,13 @@ impl ExitWatch {
                     match child.try_wait() {
                         Ok(Some(status)) => {
                             if let Ok(mut data) = thread_state.lock() {
-                                data.state = WatchState::Exited {
-                                    at: Instant::now(),
-                                    status: Some(status),
-                                };
+                                // A settled Unconfirmed is final on this path too.
+                                if !data.abort {
+                                    data.state = WatchState::Exited {
+                                        at: Instant::now(),
+                                        status: Some(status),
+                                    };
+                                }
                             }
                             return;
                         }
