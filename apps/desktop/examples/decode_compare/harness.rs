@@ -3306,6 +3306,14 @@ impl ExitWatch {
             .unwrap_or(false)
     }
 
+    /// The instants recorded for the most recent confirmed stop request.
+    fn stop_times(&self) -> (Option<Instant>, Option<Instant>) {
+        self.state
+            .lock()
+            .map(|data| (data.request_at, data.confirm_at))
+            .unwrap_or((None, None))
+    }
+
     fn deadline_kill_times(&self) -> (Option<Instant>, Option<Instant>) {
         self.state
             .lock()
@@ -3562,10 +3570,20 @@ fn supervise(
     if watch.killed_by_request() && !killed {
         // A request-triggered stop that was confirmed (including the recovery path after a
         // try_wait error) is a stop, not a normal completion: the exit code belongs to the
-        // kill, so it must not be classified as success.
+        // kill, so it must not be classified as success. The timings come from the
+        // instants the watcher recorded, and this is a timeout only when the deadline had
+        // actually passed.
         killed = true;
         cancelled = true;
-        timeout_fired = cancel_after.is_none_or(|early| early >= timeout);
+        if started.elapsed() >= deadline {
+            timeout_fired = true;
+        }
+        let (requested_at, confirmed_at) = watch.stop_times();
+        cancellation_requested_at_ms =
+            requested_at.map(|at| elapsed_millis(at.saturating_duration_since(started)));
+        cancellation_observed_ms = requested_at.zip(confirmed_at).map(|(requested, confirmed)| {
+            elapsed_millis(confirmed.saturating_duration_since(requested))
+        });
     }
     if watch.deadline_killed() {
         // The watcher enforced the hard deadline while a supervision step was blocked.
