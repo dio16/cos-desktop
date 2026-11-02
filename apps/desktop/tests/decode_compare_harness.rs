@@ -3275,8 +3275,13 @@ fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
         "an aborted cancel must return before the delayed watcher wakes (took {elapsed:?})"
     );
     // The aborted stop must have killed the helper: a heartbeat that stops growing proves
-    // the process is gone rather than merely unconfirmed.
+    // the process is gone rather than merely unconfirmed. It must also have been produced,
+    // otherwise the comparison below would pass on two empty reads.
     let first = std::fs::metadata(&heartbeat).map(|m| m.len()).unwrap_or(0);
+    assert!(
+        first > 0,
+        "the heartbeat helper must run before its stop can be observed"
+    );
     std::thread::sleep(std::time::Duration::from_millis(300));
     let second = std::fs::metadata(&heartbeat).map(|m| m.len()).unwrap_or(0);
     assert_eq!(
@@ -5099,10 +5104,9 @@ fn fake_candidate(support: ProbeSupport) {
         return;
     };
     let output = std::env::var_os(harness::ENV_OUTPUT).unwrap();
-    let mut marker = [0_u8; 16];
-    let mut file = std::fs::File::open(&input).unwrap();
-    let read = file.read(&mut marker).unwrap();
-    let marker = String::from_utf8_lossy(&marker[..read]).trim().to_owned();
+    // Read the whole marker: a fixed 16-byte buffer silently truncated longer case names
+    // and fell through to the default branch.
+    let marker = std::fs::read_to_string(&input).unwrap().trim().to_owned();
     let candidate_base = std::path::Path::new(&input)
         .parent()
         .and_then(|cases| cases.parent())
