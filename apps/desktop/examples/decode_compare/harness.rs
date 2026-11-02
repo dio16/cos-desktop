@@ -3328,6 +3328,25 @@ fn supervise(
         }
         thread::sleep(remaining.min(POLL_INTERVAL));
     };
+    // The watcher records when it observed the exit; that observation time is the only
+    // proof we have. An exit first seen at/after the deadline is not deadline-compliant.
+    let observed_late = !killed
+        && status.is_some()
+        && watch
+            .exited()
+            .map(|(observed_at, _)| observed_at.saturating_duration_since(started) >= deadline)
+            .unwrap_or(false)
+        && !watch.deadline_killed()
+        && !watch.killed_by_request();
+    if observed_late {
+        // The exit was first observed after the deadline; without a proven exit instant it
+        // cannot be reported as a deadline-compliant normal exit.
+        timeout_fired = cancel_after.is_none_or(|early| early >= timeout);
+        cancelled = true;
+        killed = true;
+        cancellation_requested_at_ms = Some(elapsed_millis(deadline));
+        cancellation_observed_ms = Some(0);
+    }
     if watch.deadline_killed() {
         // The watcher enforced the hard deadline while a supervision step was blocked.
         killed = true;

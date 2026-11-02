@@ -704,6 +704,7 @@ try {
                 $depth = $item[1]
                 $visited++
                 if ($visited -gt $maxFiles) { $capped = $true; break }
+                $enumerated = 0
                 try {
                     $directoryInfo = [System.IO.DirectoryInfo]::new($directory)
                     $entries = $directoryInfo.EnumerateFileSystemInfos()
@@ -756,7 +757,7 @@ try {
             try {
                 $length = [int64]$stream.Length
                 $firstCount = [int][Math]::Min([int64]$capBytes, $length)
-                if ($SimulateWerShortRead -and $length -ge 2) {
+                if ($script:shortReadInjection -and $length -ge 2) {
                     # Keep the 1 MiB cap: leave one byte less in the stream so the exact
                     # read loop genuinely stops short without allocating past the cap.
                     $null = $stream.Seek($length - ($firstCount - 1), [System.IO.SeekOrigin]::Begin)
@@ -929,15 +930,12 @@ try {
     }
     if ($SimulateWerHold) { $correlatedArtifacts = @() }
     if ($SimulateWerEnumerationCap) { $enumerationCapped = $true }
+    $script:shortReadInjection = [bool]$SimulateWerShortRead
     $artifactScans = @()
     $unreadableArtifacts = 0
     $secretMatches = 0
     foreach ($artifact in $correlatedArtifacts) {
         $scanResult = Find-TokenInBoundedFile $artifact.path $tokenBytes $WerScanBytes $tokenUtf16Bytes
-        if ($SimulateWerShortRead) {
-            $scanResult.readable = $false
-            $scanResult.short_read = $true
-        }
         if (-not $scanResult.readable) { $unreadableArtifacts++ }
         $secretMatches += $scanResult.matches_utf8 + $scanResult.matches_utf16le
         $artifactScans += [ordered]@{
@@ -954,6 +952,7 @@ try {
     }
     # Always-on scanner self-test: a UTF-16LE synthetic token must be detected by the
     # same bounded helper, proving the second encoding is actually searched.
+    $script:shortReadInjection = $false
     $utf16SelfTestPath = Join-Path $work 'utf16-selftest.bin'
     [System.IO.File]::WriteAllBytes($utf16SelfTestPath, $tokenUtf16Bytes)
     $utf16SelfTestScan = Find-TokenInBoundedFile $utf16SelfTestPath $tokenBytes $WerScanBytes $tokenUtf16Bytes

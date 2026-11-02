@@ -3143,6 +3143,28 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     assert_within_candidate_lifetime(wall_ms, start_ms, end_ms, overhead_ms, "post-exit harvest");
 }
 
+/// A candidate that naturally exits AFTER the deadline must not be reported as a
+/// deadline-compliant normal exit when the first observation is late.
+#[test]
+fn a_natural_exit_after_the_deadline_is_not_deadline_compliant() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-mid");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 300;
+    config.cancel_after_ms = None;
+    config.watch_delay = Some(std::time::Duration::from_millis(400));
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert!(
+        observation.timeout_fired,
+        "a 350 ms natural exit with a 300 ms deadline is a deadline overrun"
+    );
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+}
+
 /// A delayed watcher poll must also see the normal exit first: the watcher checks the
 /// child before enforcing its deadline, so a scheduling delay cannot fake a kill.
 #[test]
@@ -3158,12 +3180,13 @@ fn a_late_watcher_poll_does_not_reclassify_a_normal_exit() {
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
-    assert_eq!(
-        observation.observed_outcome,
-        OutcomeClass::Decoded,
-        "a normal exit observed late is still a normal exit"
+    // The exit was first observed after the deadline, so deadline compliance is unproven;
+    // it must not be reported as a deadline-compliant normal exit.
+    assert!(
+        observation.timeout_fired,
+        "a late observation cannot prove deadline compliance"
     );
-    assert!(!observation.timeout_fired);
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
 }
 
 /// A candidate that already exited normally must never be reclassified as killed just
@@ -5085,6 +5108,11 @@ fn fake_candidate(support: ProbeSupport) {
             // Calibration: the candidate ends as soon as it started, so the harness's
             // wall time minus this lifetime is the real spawn/exit/bookkeeping overhead.
             std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
+            0
+        }
+        "sleep-mid" => {
+            std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(350));
             0
         }
         "sleep-short" => {
