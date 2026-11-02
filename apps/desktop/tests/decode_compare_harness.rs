@@ -3127,6 +3127,7 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     config.sample_interval_ms = 10;
     config.max_samples = 1;
     config.cancel_after_ms = Some(60_000);
+    let spawn_ms = now_epoch_millis();
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -3137,14 +3138,8 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     );
     assert_eq!(observation.working_set_max_bytes, Some(12_000 * 1024));
     let wall_ms = observation.wall_ms.expect("the candidate ran");
-    // Timing margin, not a causal guarantee: the post-exit harvest is bounded by the 2 s
-    // `SAMPLE_EXIT_GRACE` and the helper exits after 1.2 s, but no lower bound for an
-    // included wait is claimed (the helper may already be near its exit when the
-    // candidate ends). The test asserts only the recorded value: `wall_ms < 1100`.
-    assert!(
-        wall_ms < 1_100,
-        "the recorded wall time is below the 1,100 ms timing-margin threshold ({wall_ms} ms)"
-    );
+    let end_ms = read_epoch_marker(&fixture.base, "candidate-end-at-ms");
+    assert_within_candidate_lifetime(wall_ms, spawn_ms, end_ms, "post-exit harvest");
 }
 
 /// A sample that passes its own per-sample bound is not counted as a success; the test
@@ -3159,6 +3154,7 @@ fn overrunning_sample_is_not_counted_after_the_candidate_ends() {
     config.sample_interval_ms = 10;
     config.max_samples = 1;
     config.cancel_after_ms = Some(60_000);
+    let spawn_ms = now_epoch_millis();
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -3170,11 +3166,8 @@ fn overrunning_sample_is_not_counted_after_the_candidate_ends() {
     assert_eq!(observation.working_set_max_bytes, None);
     assert_eq!(observation.working_set_sampling, "not_measured");
     let wall_ms = observation.wall_ms.expect("the candidate ran");
-    // Timing margin, not a causal guarantee; the test asserts only the recorded value.
-    assert!(
-        wall_ms < 1_100,
-        "the recorded wall time is below the 1,100 ms timing-margin threshold ({wall_ms} ms)"
-    );
+    let end_ms = read_epoch_marker(&fixture.base, "candidate-end-at-ms");
+    assert_within_candidate_lifetime(wall_ms, spawn_ms, end_ms, "overrunning sample");
 }
 
 /// The polling loop applies the same per-sample deadline: a sample whose exit is only
@@ -3225,10 +3218,20 @@ fn cancelled_candidate_does_not_wait_past_the_sample_bound() {
         "a sample inside its bound is harvested after the cancellation"
     );
     let wall_ms = observation.wall_ms.expect("the candidate ran");
-    // Timing margin, not a causal guarantee; the test asserts only the recorded value.
+    let cancel_requested = observation
+        .cancellation_requested_at_ms
+        .expect("the cancellation request was recorded");
+    // The causal property: cancellation was requested at this observed offset and the
+    // candidate was killed there, so the recorded wall time cannot exceed that request
+    // plus small bookkeeping. A post-exit grace added to the wall time would exceed it.
+    const BOOKKEEPING_DELTA_MS: u64 = 250;
     assert!(
-        wall_ms < 1_100,
-        "the recorded wall time is below the 1,100 ms timing-margin threshold ({wall_ms} ms)"
+        wall_ms <= cancel_requested + BOOKKEEPING_DELTA_MS,
+        "the recorded wall time {wall_ms} ms exceeds the cancellation request {cancel_requested} ms + {BOOKKEEPING_DELTA_MS} ms"
+    );
+    assert!(
+        wall_ms < 10_000,
+        "the recorded wall time {wall_ms} ms exceeded the 10 s sanity limit (not a timing threshold)"
     );
 }
 
@@ -4659,6 +4662,41 @@ fn fake_sleeper_helper() {
     std::thread::sleep(std::time::Duration::from_millis(6_000));
 }
 
+/// Wall-clock milliseconds since the UNIX epoch, comparable across processes.
+fn now_epoch_millis() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_millis())
+        .unwrap_or(0)
+}
+
+/// Read an epoch marker written by the candidate; a missing marker is a test failure,
+/// never a silently skipped assertion.
+fn read_epoch_marker(base: &std::path::Path, name: &str) -> u128 {
+    let text = std::fs::read_to_string(base.join(name))
+        .unwrap_or_else(|error| panic!("the candidate did not write {name}: {error}"));
+    text.trim()
+        .parse()
+        .unwrap_or_else(|error| panic!("the candidate {name} marker is not a number: {error}"))
+}
+
+fn assert_within_candidate_lifetime(wall_ms: u64, spawn_ms: u128, end_ms: u128, label: &str) {
+    // The causal property: the recorded wall time is not longer than the candidate's own
+    // lifetime plus the small spawn/exit bookkeeping delta. A post-exit grace (2 s) added
+    // to the wall time necessarily violates this; no machine-speed threshold is involved.
+    const BOOKKEEPING_DELTA_MS: u128 = 250;
+    const SANITY_LIMIT_MS: u64 = 10_000;
+    assert!(
+        u128::from(wall_ms) <= end_ms.saturating_sub(spawn_ms) + BOOKKEEPING_DELTA_MS,
+        "{label}: wall {wall_ms} ms exceeds the candidate lifetime ({} ms) + {BOOKKEEPING_DELTA_MS} ms",
+        end_ms.saturating_sub(spawn_ms)
+    );
+    assert!(
+        wall_ms < SANITY_LIMIT_MS,
+        "{label}: wall {wall_ms} ms exceeded the 10 s sanity limit (not a timing threshold)"
+    );
+}
+
 #[derive(Clone, Copy)]
 enum ProbeSupport {
     LongFormOnly,
@@ -4690,6 +4728,16 @@ fn fake_candidate(support: ProbeSupport) {
     let mut file = std::fs::File::open(&input).unwrap();
     let read = file.read(&mut marker).unwrap();
     let marker = String::from_utf8_lossy(&marker[..read]).trim().to_owned();
+    let candidate_base = std::path::Path::new(&input)
+        .parent()
+        .and_then(|cases| cases.parent())
+        .map(std::path::Path::to_path_buf);
+    let write_marker = |name: &str, value: u128| {
+        if let Some(base) = candidate_base.as_deref() {
+            let _ = std::fs::write(base.join(name), value.to_string());
+        }
+    };
+    write_marker("candidate-start-at-ms", now_epoch_millis());
     let code = match marker.as_str() {
         "ok" => {
             std::fs::write(&output, FAKE_OUTPUT).unwrap();
@@ -5017,6 +5065,7 @@ fn fake_candidate(support: ProbeSupport) {
         }
         _ => 1,
     };
+    write_marker("candidate-end-at-ms", now_epoch_millis());
     std::process::exit(code);
 }
 
