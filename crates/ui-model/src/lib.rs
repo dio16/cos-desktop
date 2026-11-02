@@ -3918,7 +3918,6 @@ mod tests {
         assert!(super::StopDisplay::retention_error(&reference_capacity).manual_intervention);
     }
     #[test]
-    #[test]
     fn a_shell_without_a_handle_still_shows_the_executable_version() {
         let text = WorkbenchText::withheld_for_desktop("9.8.7");
         assert!(
@@ -3936,6 +3935,7 @@ mod tests {
         assert!(!cache.is_authorized(None));
     }
 
+    #[test]
     fn desktop_version_is_injected_by_the_binary_not_the_ui_crate() {
         let fixture = ObservationPublication {
             source: PublicationSource::Fixture,
