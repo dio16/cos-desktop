@@ -552,56 +552,49 @@ fn validate_report_body(body: &str) -> Result<(), CrashStoreError> {
 /// A safe, bounded version line: ASCII alphanumerics plus `. + - _`, spaces, and the
 /// redactor's fixed markers only. Credentials, URLs and private paths cannot pass.
 fn safe_version(value: &str) -> bool {
+    const MARKERS: [&str; 3] = ["[redacted]", "[signed-locator]", "[private-path]"];
     if value.is_empty() || value.len() > 256 {
         return false;
     }
     // Anything redaction would still rewrite - a key assignment, a path, a locator - is
-    // refused.
+    // refused, so the only text left is what the renderer itself produces.
     if crate::redaction::redact_diagnostic_text(value) != value {
         return false;
     }
-    let bytes = value.as_bytes();
-    let mut index = 0;
-    while index < bytes.len() {
-        let byte = bytes[index];
-        if byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'+' | b'-' | b'_' | b' ' | b'=') {
-            index += 1;
-            continue;
-        }
-        let rest = &value[index..];
-        let marker = "[redacted]".len();
-        if rest.starts_with("[signed-locator]") {
-            index += "[signed-locator]".len();
-            continue;
-        }
-        if rest.starts_with("[redacted]") {
-            index += marker;
-            continue;
-        }
-        let path_marker = "[private-path]".len();
-        if rest.starts_with("[private-path]") {
-            index += path_marker;
-            continue;
-        }
+    let lowered = value.to_lowercase();
+    if lowered.contains("bearer ") || lowered.contains("://") {
         return false;
     }
-    // A rendered report may keep a key name next to a marker (`access_token=[redacted]`),
-    // but any other `key=value` is a raw value redaction did not recognise, so it is
-    // refused regardless of which key the redactor happens to know about.
-    let markers = ["[redacted]", "[signed-locator]", "[private-path]"];
-    let mut rest = value;
-    while let Some((_, tail)) = rest.split_once('=') {
-        // The value must be exactly one marker, so nothing can be appended to it.
-        let Some(after) = markers.iter().find_map(|marker| tail.strip_prefix(marker)) else {
-            return false;
-        };
-        if !after.is_empty() && !after.starts_with(' ') {
+    // Token rules. A plain version word is safe text. A marker stands alone or forms the
+    // value of `name=marker`. Once a marker has appeared nothing but markers may follow,
+    // so no secret can be appended after a redacted value.
+    let plain = |text: &str| {
+        !text.is_empty()
+            && text.bytes().all(|byte| {
+                byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'+' | b'-' | b'_')
+            })
+    };
+    let mut seen_marker = false;
+    for token in value.split(' ') {
+        if token.is_empty() {
             return false;
         }
-        rest = after;
+        if let Some((name, assigned)) = token.split_once('=') {
+            if !plain(name) || !MARKERS.contains(&assigned) {
+                return false;
+            }
+            seen_marker = true;
+            continue;
+        }
+        if MARKERS.contains(&token) {
+            seen_marker = true;
+            continue;
+        }
+        if seen_marker || !plain(token) {
+            return false;
+        }
     }
-    let lowered = value.to_lowercase();
-    !lowered.contains("bearer ") && !lowered.contains("://")
+    true
 }
 
 /// Canonical decimal `u64`: digits only, no sign, no leading zero (except `0`).

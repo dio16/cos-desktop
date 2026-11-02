@@ -217,6 +217,12 @@ fn an_injected_credential_in_a_stored_report_is_refused() {
         .expect_err("a marker with appended text");
     assert!(matches!(error, CrashStoreError::InvalidReport), "{error:?}");
 
+    // A space after the marker does not launder the appended secret either.
+    let spaced = tampered.replace("token=secret123", "api_key=[redacted] SuperSecret123");
+    std::fs::write(&path, &spaced).expect("the fourth tampered file");
+    let error = store.read(meta.id).expect_err("plain text after a marker");
+    assert!(matches!(error, CrashStoreError::InvalidReport), "{error:?}");
+
     // The rendered marker form stays readable: `access_token=[redacted]` is a shape the
     // redactor produces, so rejecting it would break ordinary reports.
     let marked = concat!(
@@ -229,6 +235,18 @@ fn an_injected_credential_in_a_stored_report_is_refused() {
     .to_owned();
     std::fs::write(&path, &marked).expect("the marker file");
     assert_eq!(store.read(meta.id).expect("a marked version"), marked);
+
+    // The form the renderer produces for several redacted secrets stays readable.
+    let multi = concat!(
+        "Desktop version: 9.9.9 access_token=[redacted] [signed-locator] [private-path]",
+        "\n",
+        "Crash category: unknown",
+        "\n",
+        "Retained events: unknown (the diagnostic ring was not read)",
+    )
+    .to_owned();
+    std::fs::write(&path, &multi).expect("the multi-marker file");
+    assert_eq!(store.read(meta.id).expect("a multi-marker version"), multi);
     let _ = std::fs::remove_dir_all(&root);
 }
 
