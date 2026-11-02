@@ -413,7 +413,9 @@ impl Shell {
             probe_window: window.window_handle().window_id().as_u64(),
             handle,
             workbench,
-            cache: DisplayCache::default(),
+            cache: DisplayCache::from_text(ui_model::WorkbenchText::withheld_for_desktop(
+                &desktop_version,
+            )),
             error: None,
             focus,
             surface_focus,

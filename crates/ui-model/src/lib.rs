@@ -1455,6 +1455,17 @@ impl WorkbenchText {
             ..Self::default()
         }
     }
+
+    /// The withheld text for a shell that holds no observation handle: the Desktop
+    /// version comes from the executable, and nothing about the Runtime is invented.
+    pub fn withheld_for_desktop(desktop_version: &str) -> Self {
+        let mut text = Self::withheld();
+        text.diagnostics = format!(
+            "Desktop {desktop_version} · {}",
+            "検証済みの情報源がありません"
+        );
+        text
+    }
 }
 fn state_axes(
     task: &desktop_protocol::TaskSnapshot,
@@ -1631,6 +1642,17 @@ impl Default for DisplayCache {
     fn default() -> Self {
         Self {
             text: WorkbenchText::withheld(),
+            identity: None,
+        }
+    }
+}
+
+impl DisplayCache {
+    /// Start from a caller-supplied text. The identity stays absent, so the cache is
+    /// still unauthorized until an authorized publication installs its own text.
+    pub fn from_text(text: WorkbenchText) -> Self {
+        Self {
+            text,
             identity: None,
         }
     }
@@ -3896,6 +3918,24 @@ mod tests {
         assert!(super::StopDisplay::retention_error(&reference_capacity).manual_intervention);
     }
     #[test]
+    #[test]
+    fn a_shell_without_a_handle_still_shows_the_executable_version() {
+        let text = WorkbenchText::withheld_for_desktop("9.8.7");
+        assert!(
+            text.diagnostics.starts_with("Desktop 9.8.7 · "),
+            "the withheld diagnostics carries the injected version: {}",
+            text.diagnostics
+        );
+        assert!(text.diagnostics.contains("検証済みの情報源がありません"));
+        assert!(!text.diagnostics.contains(env!("CARGO_PKG_VERSION")));
+        assert!(!text.diagnostics.contains("Runtime"));
+        assert!(!text.diagnostics.contains("世代"));
+        assert!(!text.diagnostics.contains("公開 "));
+        // The cache starts unauthorized even though it has text.
+        let cache = DisplayCache::from_text(text);
+        assert!(!cache.is_authorized(None));
+    }
+
     fn desktop_version_is_injected_by_the_binary_not_the_ui_crate() {
         let fixture = ObservationPublication {
             source: PublicationSource::Fixture,
