@@ -3476,3 +3476,19 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Reproduction:** `cargo metadata --locked --offline --format-version 1 --filter-platform x86_64-pc-windows-msvc`; inspect each member `Cargo.toml` `license`/`license_file`; `sha256sum LICENSE NOTICE crates/ui-model/src/simple_casefold.rs`. §19.153–§19.155 aggregates and the registry TSV are unchanged.
 - **Limits:** evidence existence and declaration correspondence only; no legal review, no bundle-content decision, no package/signing/installer change. Dependency evidence collection is closed at 376 packages (Git 17 + registry 354 + workspace 5); MP-REL1 overall remains incomplete.
 
+### 19.157 MP-AX2 support-preview keyboard/accessibility verification (native, 2026-11-02)
+
+- **Target:** HEAD `1caad1a783c79909e67c96912c22add05ee2b240`; `target/release/cos-desktop.exe` SHA-256 `499d2386bfb574f9fd451b7f2123511674d96a25670fc25a9f7f27d578c27bb1`; fixture `crates/cos-client/fixtures/task-184.json` SHA-256 `db1cfc8014ad44d3a512415af22ab90523b639de36d606e83247ac109daec2c0`. Built from the pinned SHA and started with `--fixture --fixture-file`. UIA (`UIAutomationClient`) was used for observation; screenshots were auxiliary only.
+- **Launch note:** the default `%LOCALAPPDATA%` instance lock returned `instance ownership unavailable` in this sandbox, so the live run used an isolated `LOCALAPPDATA=target/ax2-local`; no OS display/scale setting was changed.
+- **C — actual key presses (each item independently PASS):**
+  1. Ctrl+D opened the diagnostics panel (support button appeared; close/reopen also checked).
+  2. Tab reached the button at the **5th** Tab press.
+  3. Focus: UIA `HasKeyboardFocus=True`; the button's focus border was visible.
+  4. Enter (fresh launch, panel opened once) produced the report.
+  5. Space (fresh launch, panel opened once) produced the report.
+  6. Shift+Tab moved focus from the button to the task card (`Task-184 — 新製品キービジュアル`); button `HasKeyboardFocus=False`.
+  7. Ctrl+D closed the panel (button absent) and reopened it (button present).
+- **D — accessibility (PASS):** UIA `ControlType.Button`, accessible name `サポート情報を表示`, enabled and keyboard-focusable; focus target and activation target are the same element. `aria_keyshortcuts` was not treated as proof of real shortcut delivery; the keypresses above were.
+- **E — preview content (PASS, fixture):** report shows `Desktop version: 0.1.0` (binary `CARGO_PKG_VERSION`), `Runtime version: unknown (...)`, `Protocol version: unknown (...)`, `Retained events: 6` (not 0), and the About rows remain. Report generation uses only observation reads (`current`/`read`/`diagnostics_after`); no Runtime command is issued (source review only). Authorization revocation and real Runtime connection were **NOT_RUN** with fixture; not claimed reproduced.
+- **Limits:** no screen-reader quality claim, no DPI matrix, no revocation/live-Runtime reproduction; MP-AX2 overall is not claimed complete. No product change was needed, so no new Gate was added.
+
