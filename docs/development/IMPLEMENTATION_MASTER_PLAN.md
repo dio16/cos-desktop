@@ -2745,23 +2745,18 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Reached / not reached:** ordinary Rust panic capture = REACHED (limited); normal exit = no report REACHED; OS forced termination, `FailFast` and WER exceptions = NOT IMPLEMENTED / NOT CLAIMED; WER settings and diagnostic-ring persistence were not changed. **MP-SEC2 overall remains HOLD.**
 - **Gates:** fmt clean, clippy 0, workspace **733 passed / 0 failed / 2 ignored** (38 binaries), build and dependency checker OK.
 
-### 19.141 MP-FLOW2 Stage C cache-miss first-frame measurement (2026-11-02)
+### 19.141 MP-FLOW2 Stage C cache-miss first frame, re-measured with per-sample evidence (2026-11-02)
 
-- **Baseline (release, this machine):** 10,000 nodes / 19,800 edges (`100 layers × 100 nodes`), single-entry `MatchCache`, five-component `AdmissionKey`, `MAX_DIAGRAM_NODES = 120`; rows 0.51 ms, layers recompute 4.03 ms, geometry 0.02 ms (existing ignored test).
-- **Separate series (warmup 3, 21 iterations, per-iteration totals, release):**
+- **Conditions:** release, rustc/cargo `1.98.1`, Windows x64, 10,000 nodes / 19,800 edges (100 layers x 100 nodes), `MAX_DIAGRAM_NODES = 120`, single-entry `MatchCache`, 3 warmups, **21 measured iterations**, miss and hit **interleaved** (even iterations `replace → hit → clear`, odd `clear → hit → replace`). Timed interval = `get_or_build` + diagram construction only; `clear()` and prefill are outside the timer. median = middle (mean of the two middles for an even count); p95 = nearest-rank `ceil(n*0.95)-1`; max = largest. **Raw samples (63 lines) are printed by the test and were retained in `target/flow2-raw.log`; they are not committed because `target/` is excluded.**
+- **Series (microseconds, n=21):**
 
-| series | median | p95 | max |
-|---|---|---|---|
-| miss total (match build + diagram) | 13,653 µs | 14,080 µs | 14,254 µs |
-| miss match-set build | 10,651 µs | 10,842 µs | 11,118 µs |
-| miss diagram | 3,065 µs | 3,142 µs | 3,285 µs |
-| hit total (cache lookup + diagram) | 2,951 µs | 3,444 µs | 3,513 µs |
-| hit match-set build | 0 µs | 0 µs | 1 µs |
-| hit diagram | 2,950 µs | 3,444 µs | 3,512 µs |
+| series | median | p95 | max | match median/p95 | diagram median/p95 |
+|---|---:|---:|---:|---|---|
+| `miss_clear` (rebuild after `clear()`) | 13,923 | 14,471 | 14,565 | 10,940 / 11,365 | 3,001 / 3,106 |
+| `miss_replace` (existing entry replaced by a new `AdmissionKey`) | 15,130 | 16,573 | 17,438 | 12,063 / 13,545 | 3,083 / 3,222 |
+| `hit` (cache hit) | 2,065 | 2,665 | 2,776 | 0 / 0 | 2,065 / 2,664 |
 
-  The earlier single `miss_first_frame = 12,494 µs` and `hit_steady = 2,207/2,689/2,726 µs` (20 iterations) are recorded as a second run, not as a guarantee. Miss/hit and run-to-run variance is real; the 13 ms single sample is not used as an SLO.
-- **Key invalidation (test identifiers, not Runtime updates):** `session_generation`, `publication_version`, `epoch`, `revision`, `query` each produced `miss_then_hit`; returning to another key misses. These are synthetic identifier changes; actual Runtime projection updates were not exercised.
-- **Equivalence:** miss, hit and uncached-reference diagrams are structurally equal and share checksum `0xd3e2fdd3e8aa45f2`; existing tests also assert `clear()` rebuild, key-component invalidation and bounded single entry. Authorization-loss/scope-switch clearing is covered by the existing `clear()` contract test, not by a new Runtime path.
-- **Judgment (CPU only):** ① Current Stage C can stay for this workload: miss p95 14.08 ms is inside the 60 Hz frame CPU budget (16.67 ms) with ~2.6 ms headroom, but above the 8.33 ms UI target; steady hit p95 3.44 ms is inside both. ② First-frame improvement becomes necessary when the miss path (or the full recompute path, p95 17.88 ms) crosses 16.67 ms — larger graphs/queries, slower hosts, debug builds, or when paint/GPU adds to the unmeasured part; layers recompute (4.03 ms) is the largest avoidable extra on a revision change. ③ Next measurements: GPUI paint/submit/GPU/Present for the first frame (NOT_MEASURED), layers-recompute series on revision change, and real Runtime projection refresh/miss frequency.
-- **Not claimed:** MP-FLOW2 overall completion, real-machine paint/GPU/Present, Runtime real projection graphs. No cache was added or changed; only the ignored measurement test was extended.
-
+- **Correction to the earlier single-block run:** the previous 13.65 ms figure was the post-`clear()` rebuild measured as a block; a **real `AdmissionKey` change costs ~1.2 ms more (p95 +2.1 ms)** because it discards an existing entry inside the timed region. The earlier claim that "Stage C is comfortably maintainable" therefore applies to the `clear` path only.
+- **Judgement (CPU only; paint/GPU/Present NOT_MEASURED):** `hit` fits both the 60 Hz budget and the 8.33 ms UI target. `miss_clear` fits the 60 Hz budget (p95 14.47 ms, ~2.2 ms margin) but not the 8.33 ms target. `miss_replace` reaches **p95 16.57 ms against the 16.67 ms budget** - essentially no margin - so **first-frame improvement is required before real key changes can be claimed safe at 60 Hz**. The stateful `match` set construction (12.06 ms median) remains the dominant cost; the layer recomputation measured earlier at ~4.03 ms is a separate, avoidable cost when only `revision` changes.
+- **Key invalidation and equivalence:** each of `session_generation`, `publication_version`, `epoch`, `revision`, `query` changed alone produces a miss and an unchanged key still hits (5/5). miss/hit/reference diagrams agree structurally and share the deterministic checksum `0xd3e2fdd3e8aa45f2`. Authorization-loss reuse is covered by the existing `clear()` contract test; no new Runtime projection path was exercised.
+- **Not measured / not claimed:** GPUI paint, submit, GPU and Present; the real-world miss frequency; Runtime projected graphs. MP-FLOW2 overall remains incomplete. No new cache was implemented and no production code path was changed by this measurement slice.

@@ -1924,13 +1924,23 @@ mod tests {
     #[test]
     #[ignore = "MP-FLOW2 Stage C cache measurement; run explicitly with --release"]
     fn ten_thousand_cache_miss_and_hit_series() {
-        use std::time::Instant;
-
         const LAYER_COUNT: usize = 100;
         const WIDTH: usize = 100;
         const NODES: usize = LAYER_COUNT * WIDTH;
         const ITERATIONS: usize = 21;
         const WARMUP: usize = 3;
+
+        println!(
+            "MP-FLOW2 conditions release={} warmup={WARMUP} iterations={ITERATIONS} nodes={NODES} edges={}",
+            !cfg!(debug_assertions),
+            (LAYER_COUNT - 1) * WIDTH * 2
+        );
+        println!(
+            "MP-FLOW2 interval miss=clear-or-replace outside timer then get_or_build+build-diagram inside timer; hit=get_or_build(hit)+diagram; clear() and prefill are outside the timed interval"
+        );
+        println!(
+            "MP-FLOW2 aggregation n={ITERATIONS} median=odd:middle/even:mean(two middle) p95=nearest-rank ceil(n*0.95)-1 max=largest"
+        );
 
         let graph = Arc::new(ten_thousand_node_graph(LAYER_COUNT, WIDTH));
         assert_eq!(graph.nodes.len(), NODES);
@@ -1944,6 +1954,10 @@ mod tests {
             epoch: Some(EpochId::fixture("epoch/measure")),
             revision: revision_key(std::slice::from_ref(&graph)),
             query: String::new(),
+        };
+        let other = AdmissionKey {
+            query: "replacement".to_owned(),
+            ..key.clone()
         };
         let reference = {
             let mut cache = MatchCache::default();
@@ -1967,70 +1981,62 @@ mod tests {
         };
         let reference_checksum = checksum(&reference);
 
-        let mut miss = MatchCache::default();
-        let mut miss_total = Vec::with_capacity(ITERATIONS);
-        let mut miss_match = Vec::with_capacity(ITERATIONS);
-        let mut miss_diagram = Vec::with_capacity(ITERATIONS);
-        let mut miss_checksums = Vec::new();
+        let mut cache = MatchCache::default();
+        let mut clear_samples: Vec<(u128, u128, u128)> = Vec::new();
+        let mut replace_samples: Vec<(u128, u128, u128)> = Vec::new();
+        let mut hit_samples: Vec<(u128, u128, u128)> = Vec::new();
         for iteration in 0..(WARMUP + ITERATIONS) {
-            miss.clear();
-            let started = Instant::now();
-            let match_started = Instant::now();
-            let (matched, hit) = miss.get_or_build(&key, || matched_from_rows(&rows));
-            let match_us = match_started.elapsed().as_micros();
-            let diagram_started = Instant::now();
-            let drawn = diagram(&graph, &computed, &matched.nodes, &matched.edges);
-            let diagram_us = diagram_started.elapsed().as_micros();
-            let total_us = started.elapsed().as_micros();
-            assert!(!hit, "a cleared cache is a miss");
-            assert_eq!(drawn, reference, "a miss draws the identical diagram");
+            // Prefill the *other* key outside the timer so replacement is measured as
+            // replacing an existing single-entry cache entry.
+            let _ = cache.get_or_build(&other, || matched_from_rows(&rows));
+            let miss_first = iteration % 2 == 0;
+            if miss_first {
+                replace_samples.push(measure_replace(
+                    &mut cache, &key, &other, &rows, &graph, &computed, &reference,
+                ));
+                hit_samples.push(measure_hit(
+                    &mut cache, &key, &rows, &graph, &computed, &reference,
+                ));
+                clear_samples.push(measure_clear(
+                    &mut cache, &key, &rows, &graph, &computed, &reference,
+                ));
+            } else {
+                clear_samples.push(measure_clear(
+                    &mut cache, &key, &rows, &graph, &computed, &reference,
+                ));
+                hit_samples.push(measure_hit(
+                    &mut cache, &key, &rows, &graph, &computed, &reference,
+                ));
+                replace_samples.push(measure_replace(
+                    &mut cache, &key, &other, &rows, &graph, &computed, &reference,
+                ));
+            }
             if iteration >= WARMUP {
-                miss_match.push(match_us);
-                miss_diagram.push(diagram_us);
-                miss_total.push(total_us);
-                miss_checksums.push(checksum(&drawn));
+                // Raw per-iteration values, indexed from 0 after warmup.
+                let index = iteration - WARMUP;
+                let (match_us, diagram_us, total_us) = replace_samples.last().copied().unwrap();
+                println!(
+                    "sample series=miss_replace iter={index} match_us={match_us} diagram_us={diagram_us} total_us={total_us}"
+                );
+                let (match_us, diagram_us, total_us) = clear_samples.last().copied().unwrap();
+                println!(
+                    "sample series=miss_clear iter={index} match_us={match_us} diagram_us={diagram_us} total_us={total_us}"
+                );
+                let (match_us, diagram_us, total_us) = hit_samples.last().copied().unwrap();
+                println!(
+                    "sample series=hit iter={index} match_us={match_us} diagram_us={diagram_us} total_us={total_us}"
+                );
+                let _ = checksum(&reference);
             }
         }
-
-        let mut hit = MatchCache::default();
-        let _ = hit.get_or_build(&key, || matched_from_rows(&rows));
-        let mut hit_total = Vec::with_capacity(ITERATIONS);
-        let mut hit_match = Vec::with_capacity(ITERATIONS);
-        let mut hit_diagram = Vec::with_capacity(ITERATIONS);
-        let mut hit_checksums = Vec::new();
-        for iteration in 0..(WARMUP + ITERATIONS) {
-            let started = Instant::now();
-            let match_started = Instant::now();
-            let (matched, found) =
-                hit.get_or_build(&key, || panic!("a steady frame must hit the match cache"));
-            let match_us = match_started.elapsed().as_micros();
-            let diagram_started = Instant::now();
-            let drawn = diagram(&graph, &computed, &matched.nodes, &matched.edges);
-            let diagram_us = diagram_started.elapsed().as_micros();
-            let total_us = started.elapsed().as_micros();
-            assert!(found);
-            assert_eq!(drawn, reference, "a hit draws the identical diagram");
-            if iteration >= WARMUP {
-                hit_match.push(match_us);
-                hit_diagram.push(diagram_us);
-                hit_total.push(total_us);
-                hit_checksums.push(checksum(&drawn));
-            }
-        }
-        assert!(
-            miss_checksums
-                .iter()
-                .all(|value| *value == reference_checksum)
-        );
-        assert!(
-            hit_checksums
-                .iter()
-                .all(|value| *value == reference_checksum)
-        );
+        assert_eq!(replace_samples.len(), WARMUP + ITERATIONS);
+        assert_eq!(clear_samples.len(), WARMUP + ITERATIONS);
+        assert_eq!(hit_samples.len(), WARMUP + ITERATIONS);
+        assert_eq!(reference_checksum, checksum(&reference));
 
         // Every admission-key component alone forces a miss; the untouched key hits.
-        let mut cache = MatchCache::default();
-        let _ = cache.get_or_build(&key, || matched_from_rows(&rows));
+        let mut probe = MatchCache::default();
+        let _ = probe.get_or_build(&key, || matched_from_rows(&rows));
         let changes: [(&str, AdmissionKey); 5] = [
             (
                 "session_generation",
@@ -2069,18 +2075,13 @@ mod tests {
             ),
         ];
         for (name, changed) in &changes {
-            let (_, found) = cache.get_or_build(changed, || matched_from_rows(&rows));
+            let (_, found) = probe.get_or_build(changed, || matched_from_rows(&rows));
             assert!(!found, "{name} changes must miss");
             let (_, found_again) =
-                cache.get_or_build(changed, || panic!("the unchanged key must hit"));
+                probe.get_or_build(changed, || panic!("the unchanged key must hit"));
             assert!(found_again, "{name} unchanged must hit");
             println!("MP-FLOW2 key_invalidation {name}=miss_then_hit");
         }
-        let (_, found) = cache.get_or_build(&key, || matched_from_rows(&rows));
-        assert!(
-            !found,
-            "returning to the original key is a miss after another key"
-        );
 
         let stats = |mut values: Vec<u128>| {
             values.sort_unstable();
@@ -2093,24 +2094,100 @@ mod tests {
             let p95 = percentile(&values, 0.95);
             (median, p95, values[count - 1])
         };
-        let (mm, mp, mx) = stats(miss_total);
-        let (mmatch, mmatchp, mmatchx) = stats(miss_match);
-        let (mdiag, mdiagp, mdiagx) = stats(miss_diagram);
-        let (hm, hp, hx) = stats(hit_total);
-        let (hmatch, hmatchp, hmatchx) = stats(hit_match);
-        let (hdiag, hdiagp, hdiagx) = stats(hit_diagram);
-        println!(
-            "MP-FLOW2 series release={} nodes={NODES} edges={} iterations={ITERATIONS} warmup={WARMUP} checksum=0x{reference_checksum:016x}",
-            !cfg!(debug_assertions),
-            graph.edges.len()
-        );
-        println!("MP-FLOW2 miss_total median={mm}us p95={mp}us max={mx}us");
-        println!("MP-FLOW2 miss_matches median={mmatch}us p95={mmatchp}us max={mmatchx}us");
-        println!("MP-FLOW2 miss_diagram median={mdiag}us p95={mdiagp}us max={mdiagx}us");
-        println!("MP-FLOW2 hit_total median={hm}us p95={hp}us max={hx}us");
-        println!("MP-FLOW2 hit_matches median={hmatch}us p95={hmatchp}us max={hmatchx}us");
-        println!("MP-FLOW2 hit_diagram median={hdiag}us p95={hdiagp}us max={hdiagx}us");
+        for (name, samples) in [
+            ("miss_clear", &clear_samples),
+            ("miss_replace", &replace_samples),
+            ("hit", &hit_samples),
+        ] {
+            let measured: Vec<(u128, u128, u128)> = samples[WARMUP..].to_vec();
+            let total = measured.iter().map(|sample| sample.2).collect();
+            let match_only = measured.iter().map(|sample| sample.0).collect();
+            let diagram_only = measured.iter().map(|sample| sample.1).collect();
+            let (median, p95, max) = stats(total);
+            let (match_median, match_p95, match_max) = stats(match_only);
+            let (diagram_median, diagram_p95, diagram_max) = stats(diagram_only);
+            println!(
+                "summary series={name} n={} median_us={median} p95_us={p95} max_us={max} match_median_us={match_median} match_p95_us={match_p95} match_max_us={match_max} diagram_median_us={diagram_median} diagram_p95_us={diagram_p95} diagram_max_us={diagram_max}",
+                measured.len()
+            );
+        }
         println!("MP-FLOW2 equivalence miss==hit==reference checksum=0x{reference_checksum:016x}");
         println!("MP-FLOW2 NOT_MEASURED paint/GPU/present");
+    }
+
+    /// Measure one replacement miss (an existing other-key entry is replaced) with the
+    /// diagram build inside the same timed interval.
+    fn measure_replace(
+        cache: &mut MatchCache,
+        key: &AdmissionKey,
+        other: &AdmissionKey,
+        rows: &super::Rows,
+        graph: &Arc<GraphDisplay>,
+        layers: &super::Layers,
+        reference: &super::Diagram,
+    ) -> (u128, u128, u128) {
+        use std::time::Instant;
+        // Ensure the cache holds the *other* key before timing the replacement.
+        let _ = cache.get_or_build(other, || matched_from_rows(rows));
+        let started = Instant::now();
+        let match_started = Instant::now();
+        let (matched, hit) = cache.get_or_build(key, || matched_from_rows(rows));
+        let match_us = match_started.elapsed().as_micros();
+        let diagram_started = Instant::now();
+        let drawn = diagram(graph, layers, &matched.nodes, &matched.edges);
+        let diagram_us = diagram_started.elapsed().as_micros();
+        let total_us = started.elapsed().as_micros();
+        assert!(!hit, "an other-key entry must be replaced");
+        assert_eq!(&drawn, reference);
+        (match_us, diagram_us, total_us)
+    }
+
+    /// Measure one clear-then-rebuild miss with the diagram build inside the interval.
+    fn measure_clear(
+        cache: &mut MatchCache,
+        key: &AdmissionKey,
+        rows: &super::Rows,
+        graph: &Arc<GraphDisplay>,
+        layers: &super::Layers,
+        reference: &super::Diagram,
+    ) -> (u128, u128, u128) {
+        use std::time::Instant;
+        cache.clear();
+        let started = Instant::now();
+        let match_started = Instant::now();
+        let (matched, hit) = cache.get_or_build(key, || matched_from_rows(rows));
+        let match_us = match_started.elapsed().as_micros();
+        let diagram_started = Instant::now();
+        let drawn = diagram(graph, layers, &matched.nodes, &matched.edges);
+        let diagram_us = diagram_started.elapsed().as_micros();
+        let total_us = started.elapsed().as_micros();
+        assert!(!hit, "a cleared cache is a miss");
+        assert_eq!(&drawn, reference);
+        (match_us, diagram_us, total_us)
+    }
+
+    /// Measure one cache hit with the diagram build inside the interval.
+    fn measure_hit(
+        cache: &mut MatchCache,
+        key: &AdmissionKey,
+        rows: &super::Rows,
+        graph: &Arc<GraphDisplay>,
+        layers: &super::Layers,
+        reference: &super::Diagram,
+    ) -> (u128, u128, u128) {
+        use std::time::Instant;
+        let _ = cache.get_or_build(key, || matched_from_rows(rows));
+        let started = Instant::now();
+        let match_started = Instant::now();
+        let (matched, found) =
+            cache.get_or_build(key, || panic!("a steady frame must hit the match cache"));
+        let match_us = match_started.elapsed().as_micros();
+        let diagram_started = Instant::now();
+        let drawn = diagram(graph, layers, &matched.nodes, &matched.edges);
+        let diagram_us = diagram_started.elapsed().as_micros();
+        let total_us = started.elapsed().as_micros();
+        assert!(found);
+        assert_eq!(&drawn, reference);
+        (match_us, diagram_us, total_us)
     }
 }
