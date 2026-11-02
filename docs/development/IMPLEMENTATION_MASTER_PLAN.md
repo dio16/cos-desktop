@@ -3263,3 +3263,24 @@ layer_phase_sample iter=19 p1_us=1051 p2_us=2909 p2a_us=14 p2b_us=2895 p3_us=355
 layer_phase_sample iter=20 p1_us=1077 p2_us=3015 p2a_us=16 p2b_us=2999 p3_us=336 p4_us=507 p5_us=122 p6_us=23 p7_drop_us=719 sum_us=5799 outer_total_us=6087 unattributed_us=288
 ```
 
+### 19.149 MP-FLOW2 P2b adjacency structural analysis (2026-11-02)
+
+- **Implementation:** test-only counters in the existing P2b edge loop (`#[cfg(test)] structure`); `layers()` and `layers_phased()` pass `None`, and a separate `layers_structural()` enables counters. The P2b algorithm and edge order are unchanged; no measurement duplication. Counters observe `Vec::capacity()` changes, not allocator-internal allocation counts.
+- **Single deterministic pass (10,000 nodes / 19,800 edges, 100 layers × 100 nodes, same GraphRef and edge order):**
+
+| metric | value |
+|---|---:|
+| inserted_edges | 19,800 |
+| skipped_edges | 0 |
+| initial_allocations (capacity 0 → positive) | 9,900 |
+| capacity_grows (positive → larger) | 0 |
+| total_capacity | 39,600 |
+| total_length | 19,800 |
+| nonempty_nodes | 9,900 |
+| empty nodes (last layer) | 100 |
+| max_outdegree | 2 |
+
+- **Asserted consistency (D):** inserted + skipped == 19,800; total_length == inserted; total_capacity >= total_length; per-node adjacency lengths sum to total_length; nonempty_nodes == 9,900 and empty == 100; max_outdegree == 2; initial_allocations == nonempty_nodes; initial_allocations + capacity_grows <= inserted; adjacency content and order equal an independently built reference from the same edges. Phased/unphased Layers (depth, cyclic), independent Kahn depths and the existing Diagram/checksum checks agree.
+- **Analysis:** across 19,800 pushes there are exactly **9,900 capacity changes** (one initial allocation per non-empty list, zero growth afterwards), because every non-empty list has length 2 and Vec cap is 4. Final capacity is **2× the used length** (39,600 vs 19,800; 50% utilization). The over-capacity is 19,800 slots in this graph. Pre-sizing each inner Vec to the known out-degree (2) would remove the 2× slack, and a CSR layout would remove per-node Vec headers, but **speed improvements and allocator costs are not estimated** here; no adoption decision is made. This measurement does not attribute P2b's time to HashMap lookup versus Vec growth.
+- **Limits:** no timing comparison with the old P2b 2,895 µs (counters change the path's instruction stream); allocator-internal allocation/memory-copy counts are not observed; paint/GPU/Present not measured. MP-FLOW2 remains incomplete.
+

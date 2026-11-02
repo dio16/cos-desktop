@@ -320,11 +320,17 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
         graph,
         #[cfg(test)]
         None,
+        #[cfg(test)]
+        None,
     )
 }
 
 /// Six-phase measurement of exactly this path; `None` in every product build.
-fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128; 9]>) -> Layers {
+fn layers_inner(
+    graph: &GraphDisplay,
+    #[cfg(test)] mut phases: Option<&mut [u128; 9]>,
+    #[cfg(test)] mut structure: Option<&mut StructureStats>,
+) -> Layers {
     // The clock is only created when a phase array is supplied; the non-instrumented
     // test path takes no timestamps at all.
     #[cfg(test)]
@@ -353,13 +359,42 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
     };
     let mut self_loop = false;
     for edge in graph.edges.iter() {
-        let (Some(&from), Some(&to)) = (index_of.get(&edge.from), index_of.get(&edge.to)) else {
-            continue;
-        };
-        if from == to {
-            self_loop = true;
+        if let (Some(&from), Some(&to)) = (index_of.get(&edge.from), index_of.get(&edge.to)) {
+            if from == to {
+                self_loop = true;
+            }
+            #[cfg(test)]
+            {
+                let before = successors[from].capacity();
+                successors[from].push(to);
+                let after = successors[from].capacity();
+                if let Some(stats) = structure.as_mut() {
+                    stats.inserted_edges += 1;
+                    if before == 0 && after > 0 {
+                        stats.initial_allocations += 1;
+                    } else if before > 0 && after > before {
+                        stats.capacity_grows += 1;
+                    }
+                }
+            }
+            #[cfg(not(test))]
+            {
+                successors[from].push(to);
+            }
+        } else {
+            #[cfg(test)]
+            if let Some(stats) = structure.as_mut() {
+                stats.skipped_edges += 1;
+            }
         }
-        successors[from].push(to);
+    }
+    #[cfg(test)]
+    if let Some(stats) = structure.as_mut() {
+        stats.total_capacity = successors.iter().map(Vec::capacity).sum();
+        stats.total_length = successors.iter().map(Vec::len).sum();
+        stats.nonempty_nodes = successors.iter().filter(|list| !list.is_empty()).count();
+        stats.max_outdegree = successors.iter().map(Vec::len).max().unwrap_or(0);
+        stats.adjacency = successors.clone();
     }
     #[cfg(test)]
     if let (Some(slots), Some(start)) = (phases.as_mut(), phase_start) {
@@ -494,8 +529,31 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
 pub(crate) fn layers_phased(graph: &GraphDisplay) -> (Layers, [u128; 9], u128) {
     let mut phases = [0u128; 9];
     let outer = std::time::Instant::now();
-    let result = layers_inner(graph, Some(&mut phases));
+    let result = layers_inner(graph, Some(&mut phases), None);
     (result, phases, outer.elapsed().as_micros())
+}
+
+/// Test-only structural counters for the P2b edge pass.
+#[cfg(test)]
+#[derive(Default)]
+pub(crate) struct StructureStats {
+    pub inserted_edges: usize,
+    pub skipped_edges: usize,
+    pub initial_allocations: usize,
+    pub capacity_grows: usize,
+    pub total_capacity: usize,
+    pub total_length: usize,
+    pub nonempty_nodes: usize,
+    pub max_outdegree: usize,
+    pub adjacency: Vec<Vec<usize>>,
+}
+
+/// Test-only entry point: same `layers_inner` path, P2b structural counters enabled.
+#[cfg(test)]
+pub(crate) fn layers_structural(graph: &GraphDisplay) -> (Layers, StructureStats) {
+    let mut structure = StructureStats::default();
+    let result = layers_inner(graph, None, Some(&mut structure));
+    (result, structure)
 }
 
 /// Vertical room reserved above the first card row when a drawing has
@@ -2731,6 +2789,76 @@ mod tests {
                 "layer_phase_summary phase={name} n={ITERATIONS} median_us={median} p95_us={p95} max_us={max}"
             );
         }
+
+        // One full structural pass over the P2b edge loop (counters, not timing).
+        let (structured, stats) = super::layers_structural(&revision);
+        assert_eq!(
+            structured,
+            super::layers(&revision),
+            "analyzed path returns the same layers"
+        );
+        assert_eq!(structured.depth, expected_depth);
+        assert!(!structured.cyclic);
+        assert_eq!(
+            stats.inserted_edges + stats.skipped_edges,
+            (LAYER_COUNT - 1) * WIDTH * 2,
+            "every edge is inserted or skipped"
+        );
+        assert_eq!(
+            stats.skipped_edges, 0,
+            "the synthetic graph has no unknown endpoints"
+        );
+        assert_eq!(stats.total_length, stats.inserted_edges);
+        assert!(stats.total_capacity >= stats.total_length);
+        assert_eq!(
+            stats.adjacency.iter().map(Vec::len).sum::<usize>(),
+            stats.total_length
+        );
+        assert_eq!(stats.nonempty_nodes, (LAYER_COUNT - 1) * WIDTH);
+        assert_eq!(
+            stats
+                .adjacency
+                .iter()
+                .filter(|list| list.is_empty())
+                .count(),
+            WIDTH
+        );
+        assert_eq!(stats.max_outdegree, 2);
+        assert_eq!(stats.initial_allocations, stats.nonempty_nodes);
+        assert!(stats.initial_allocations + stats.capacity_grows <= stats.inserted_edges);
+        // Independent adjacency reference: same edges, same order.
+        let mut reference_adjacency: Vec<Vec<usize>> = vec![Vec::new(); LAYER_COUNT * WIDTH];
+        let mut index_of = std::collections::HashMap::new();
+        for (index, node) in revision.nodes.iter().enumerate() {
+            index_of.insert(node.identity.clone(), index);
+        }
+        for edge in revision.edges.iter() {
+            let (Some(&from), Some(&to)) = (index_of.get(&edge.from), index_of.get(&edge.to))
+            else {
+                continue;
+            };
+            reference_adjacency[from].push(to);
+        }
+        assert_eq!(
+            stats.adjacency, reference_adjacency,
+            "adjacency content and order agree"
+        );
+        println!(
+            "layer_structure inserted_edges={} skipped_edges={} initial_allocations={} capacity_grows={} total_capacity={} total_length={} nonempty_nodes={} empty_nodes={} max_outdegree={}",
+            stats.inserted_edges,
+            stats.skipped_edges,
+            stats.initial_allocations,
+            stats.capacity_grows,
+            stats.total_capacity,
+            stats.total_length,
+            stats.nonempty_nodes,
+            stats
+                .adjacency
+                .iter()
+                .filter(|list| list.is_empty())
+                .count(),
+            stats.max_outdegree
+        );
 
         // Different GraphRef must not reuse the other revision's match sets.
         let rows_revision =
