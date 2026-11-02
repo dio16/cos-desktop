@@ -3653,20 +3653,27 @@ fn supervise(
 
 /// Kill the child and time the round trip: request to confirmed exit.
 fn cancel(watch: &ExitWatch, started: Instant) -> (Option<u64>, Option<u64>) {
-    let requested = started.elapsed();
+    // The request instant is fixed before the kill so the reported request comes from the
+    // process start, while the observed duration is measured from that request - the
+    // contract in `Observation` is "stop requested to exit confirmed", not "process start
+    // to exit confirmed".
+    let requested_at = Instant::now();
+    let requested = elapsed_millis(requested_at.saturating_duration_since(started));
     watch.request_kill();
-    let mut waited = Instant::now();
-    while matches!(watch.state(), WatchState::Running) && waited.elapsed() < SAMPLE_EXIT_GRACE {
+    // One fixed wait start: a per-iteration reset would never accumulate and the loop
+    // would not end when the watcher stays Running.
+    let wait_started = Instant::now();
+    while matches!(watch.state(), WatchState::Running) && wait_started.elapsed() < SAMPLE_EXIT_GRACE
+    {
         std::thread::sleep(POLL_INTERVAL);
-        waited = Instant::now();
     }
     let observed = match watch.state() {
         WatchState::Exited { at, .. } => {
-            Some(elapsed_millis(at.saturating_duration_since(started)))
+            Some(elapsed_millis(at.saturating_duration_since(requested_at)))
         }
         _ => None,
     };
-    (Some(elapsed_millis(requested)), observed)
+    (Some(requested), observed)
 }
 
 /// A sampled `tasklist` call in flight: started by the supervisor and harvested on a
