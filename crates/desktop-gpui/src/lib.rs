@@ -1022,7 +1022,7 @@ impl Shell {
             // Render the stale-publication replacement off the UI thread as well.
             let changed_text = cx
                 .background_executor()
-                .spawn(move || {
+                .spawn(async move {
                     app_core::SupportReport::unavailable(
                         "observation changed while the report was built",
                         &stale_version,
