@@ -2471,6 +2471,67 @@ mod tests {
         checksum
     }
 
+    /// P2b adjacency regression: input order, duplicate edges and missing endpoints.
+    #[test]
+    fn the_p2b_adjacency_preserves_order_duplicates_and_skips_missing_endpoints() {
+        let base = graph(3, "digest/three", 8);
+        let edge = |identity: &str, from: &str, to: &str| {
+            Arc::new(GraphEdgeDisplay {
+                identity: desktop_protocol::EdgeId::fixture(identity),
+                from: desktop_protocol::NodeId::fixture(from),
+                to: desktop_protocol::NodeId::fixture(to),
+                from_label: Arc::from(from),
+                to_label: Arc::from(to),
+                kind: Some(Arc::from("FLOW")),
+            })
+        };
+        let display = Arc::new(GraphDisplay {
+            graph_ref: GraphRef {
+                graph_id: GraphId::fixture("graph/flow-p2b-order"),
+                version: 1,
+                digest: ArtifactDigest::fixture("digest/flow-p2b-order"),
+            },
+            source_revision: Counter::from_u128(1),
+            nodes: base.nodes.clone(),
+            edges: vec![
+                edge("edge/1-z-m", "node/z", "node/m"),
+                edge("edge/2-z-a", "node/z", "node/a"),
+                // Same endpoints, distinct EdgeId: the duplicate must be kept.
+                edge("edge/3-z-a-dup", "node/z", "node/a"),
+                edge("edge/4-absent-m", "node/absent", "node/m"),
+                edge("edge/5-a-m", "node/a", "node/m"),
+                edge("edge/6-m-absent", "node/m", "node/absent"),
+            ]
+            .into(),
+        });
+        let (analyzed, stats) = super::layers_structural(&display);
+        assert_eq!(
+            analyzed,
+            super::layers(&display),
+            "analyzed and plain paths agree"
+        );
+        assert_eq!(analyzed.depth, reference_depths(&display));
+        assert_eq!(analyzed.depth, vec![0, 1, 2]);
+        assert!(!analyzed.cyclic);
+        assert_eq!(
+            stats.adjacency,
+            vec![vec![2, 1, 1], vec![2], vec![]],
+            "input order, duplicates and skipped endpoints all at once"
+        );
+        assert_eq!(stats.inserted_edges, 4);
+        assert_eq!(stats.skipped_edges, 2);
+        assert_eq!(stats.total_length, 4);
+        assert_eq!(stats.nonempty_nodes, 2);
+        assert_eq!(stats.max_outdegree, 3);
+        assert_eq!(stats.inserted_edges + stats.skipped_edges, 6);
+        assert!(
+            stats
+                .adjacency
+                .iter()
+                .all(|list| list.capacity() >= list.len())
+        );
+    }
+
     /// MP-FLOW2 revision change vs query-only: separate Rows (background), Layers
     /// (display), match-set build/replace and Diagram; release measurement only.
     ///

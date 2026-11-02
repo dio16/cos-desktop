@@ -3310,3 +3310,11 @@ layer_phase_sample iter=20 p1_us=1077 p2_us=3015 p2a_us=16 p2b_us=2999 p3_us=336
 - **Analysis:** the earlier "zero capacity growth" result is **specific to narrow out-degree** (max 2, length-2 lists fitting the initial Vec capacity). With a high-fan-out hub, the same 19,800 edges produce **12 capacity growths** and capacity utilization falls to 35.6% (35,788 unused slots vs 19,800). Inner-Vec pre-sizing to the known out-degree and CSR would address the slack, but speed/memory-allocator cost is not estimated and **information about the out-degree distribution (per-node counts, headers) is needed** before comparing them. No decision is made.
 - **Limits:** capacity changes are not allocator-internal allocation counts; no timing; paint/GPU/Present not measured. MP-FLOW2 remains incomplete.
 
+### 19.151 MP-FLOW2 P2b adjacency order/duplicates/missing endpoints (2026-11-02)
+
+- **Test:** one new case in `flow.rs` reuses `layers_structural()` and the existing `StructureStats`; product code and counters are unchanged. Fixture graph: `node/z`, `node/a`, `node/m` (z=0, a=1, m=2), distinct `GraphRef` (`graph/flow-p2b-order`) and unique `EdgeId` per edge.
+- **Input order and result:** 1) z→m; 2) z→a; 3) z→a with a different EdgeId (duplicate kept); 4) absent→m (skipped); 5) a→m; 6) m→absent (skipped). Measured adjacency is exactly `vec![vec![2, 1, 1], vec![2], vec![]]` — input order preserved, duplicate preserved, missing endpoints excluded.
+- **Counters (asserted):** inserted 4 / skipped 2 / total_length 4 / nonempty_nodes 2 / max_outdegree 3 / inserted+skipped == 6 / every list `capacity >= len`. Capacity growth and total capacity are **not** pass conditions.
+- **Layers (asserted):** analyzed and plain paths identical; depth `[0, 1, 2]`; matches the independent Kahn reference; cyclic false. The duplicate edge does not inflate depth and the missing endpoint creates no node or connection. Existing Baseline/Skewed/Diagram/checksum/120-node checks are unchanged.
+- **Conclusion (facts only):** adjacency preserves input order, retains duplicates, skips missing endpoints; depth/cyclic are as expected. **No CSR speed/memory estimate and no adoption.** Structural analysis ends at this slice; MP-FLOW2 overall remains incomplete.
+
