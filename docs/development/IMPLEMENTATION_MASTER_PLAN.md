@@ -2862,7 +2862,7 @@ Re-computed from these samples (Lead, Python): `miss_replace` median 15130 / p95
 | product hit total | 1,791 µs | 2,040 µs | 2,602 µs |
 
   Build median improves by **2,245 µs (22.5%)** and probe median by **7,290 µs** in the same run; product `miss_replace` falls from the committed 15,130 µs baseline to 12,593 µs, and `hit` does not regress (2,065 → 1,791 µs; diagram-dominated).
-- **Correctness:** btree/hash sets are equal element-wise; diagrams from btree, hash and the uncached reference are identical; all existing flow tests pass (deterministic order/diagram, cap 120, skipped count, key invalidation 5/5, `clear()` rebuild, single-entry bound).
+- **Correctness:** btree/hash sets are equal element-wise; **three independently built diagrams** - from the BTreeSet-derived sets, from the HashSet-derived `hash_ref`, and the cached reference - are structurally identical, and the deterministic diagram checksum is asserted equal across all three paths and printed by the test. All existing flow tests pass (deterministic order/diagram, cap 120, skipped count, key invalidation 5/5, `clear()` rebuild, single-entry bound).
 - **Decision: ADOPT** (all E conditions met). MP-FLOW2 overall, paint/GPU/Present and real Runtime projection graphs remain unfinished.
 - **Raw samples (21 iterations × 5 series, alternating):**
 
