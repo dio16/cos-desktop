@@ -3056,9 +3056,18 @@ enum WatchState {
     },
 }
 
+/// Why a confirmed stop happened, published together with the exit so a reader can never
+/// observe an `Exited` state without its classification.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Stop {
+    Request,
+    Deadline,
+}
+
 struct WatchData {
     state: WatchState,
     kill_requested: bool,
+    abort: bool,
     deadline_killed: bool,
     killed_by_request: bool,
     kill_issued: bool,
@@ -3083,6 +3092,7 @@ impl ExitWatch {
             kill_requested: false,
             deadline_killed: false,
             killed_by_request: false,
+            abort: false,
             kill_issued: false,
             request_at: None,
             confirm_at: None,
@@ -3095,14 +3105,22 @@ impl ExitWatch {
         let deadline_at = Instant::now() + deadline;
         let handle = std::thread::spawn(move || {
             if let Some(delay) = watch_delay {
-                // Test seam: reproduce a scheduling delay of the watcher thread.
-                std::thread::sleep(delay);
+                // Test seam: reproduce a scheduling delay of the watcher thread. The delay
+                // is interruptible so an aborting cancel is never held up by it.
+                let until = Instant::now() + delay;
+                while Instant::now() < until {
+                    if thread_state.lock().map(|data| data.abort).unwrap_or(true) {
+                        return;
+                    }
+                    std::thread::sleep(POLL_INTERVAL);
+                }
             }
             // Bounded confirmation: try_wait is polled up to confirm_bound; no unbounded
             // wait() call is made, so a failed kill can never stall the watcher.
             let confirm = |child: &mut std::process::Child,
                            data: &std::sync::Arc<std::sync::Mutex<WatchData>>,
-                           last_seen: Instant| {
+                           last_seen: Instant,
+                           stop: Stop| {
                 let force_fail = data
                     .lock()
                     .map(|data| data.force_wait_failure)
@@ -3124,12 +3142,19 @@ impl ExitWatch {
                 loop {
                     match child.try_wait() {
                         Ok(Some(status)) => {
+                            // The exit and the stop classification become visible together:
+                            // a supervisor that reads Exited must also see why it exited.
+                            let at = Instant::now();
                             if let Ok(mut data) = data.lock() {
                                 data.state = WatchState::Exited {
-                                    at: Instant::now(),
+                                    at,
                                     status: Some(status),
                                 };
-                                data.confirm_at = Some(Instant::now());
+                                data.confirm_at = Some(at);
+                                match stop {
+                                    Stop::Request => data.killed_by_request = true,
+                                    Stop::Deadline => data.deadline_killed = true,
+                                }
                             }
                             return;
                         }
@@ -3147,6 +3172,9 @@ impl ExitWatch {
                 }
             };
             loop {
+                if thread_state.lock().map(|data| data.abort).unwrap_or(true) {
+                    return;
+                }
                 let kill = thread_state
                     .lock()
                     .map(|data| data.kill_requested)
@@ -3176,7 +3204,7 @@ impl ExitWatch {
                                 data.kill_failed = !kill_ok;
                             }
                             if kill_ok {
-                                confirm(&mut child, &thread_state, Instant::now());
+                                confirm(&mut child, &thread_state, Instant::now(), Stop::Request);
                             }
                             if !matches!(
                                 thread_state
@@ -3189,12 +3217,6 @@ impl ExitWatch {
                                 data.state = WatchState::Unconfirmed {
                                     last_seen: Instant::now(),
                                 };
-                            }
-                            if let Ok(mut data) = thread_state.lock() {
-                                // A confirmed stop is a stop whichever path requested it, so
-                                // the exit cannot be classified as a normal completion.
-                                data.killed_by_request =
-                                    kill_ok && matches!(data.state, WatchState::Exited { .. });
                             }
                             return;
                         }
@@ -3222,10 +3244,7 @@ impl ExitWatch {
                         }
                         return;
                     }
-                    confirm(&mut child, &thread_state, Instant::now());
-                    if let Ok(mut data) = thread_state.lock() {
-                        data.deadline_killed = matches!(data.state, WatchState::Exited { .. });
-                    }
+                    confirm(&mut child, &thread_state, Instant::now(), Stop::Deadline);
                     return;
                 }
                 if kill {
@@ -3260,10 +3279,7 @@ impl ExitWatch {
                         }
                         return;
                     }
-                    confirm(&mut child, &thread_state, Instant::now());
-                    if let Ok(mut data) = thread_state.lock() {
-                        data.killed_by_request = matches!(data.state, WatchState::Exited { .. });
-                    }
+                    confirm(&mut child, &thread_state, Instant::now(), Stop::Request);
                     return;
                 }
                 let until_deadline = deadline_at.saturating_duration_since(Instant::now());
@@ -3319,6 +3335,24 @@ impl ExitWatch {
             .lock()
             .map(|data| (data.request_at, data.confirm_at))
             .unwrap_or((None, None))
+    }
+
+    /// Publish "the exit was not confirmed" and ask the watcher to stop, so a bounded
+    /// cancel never depends on an unbounded join.
+    fn mark_unconfirmed(&self) {
+        if let Ok(mut data) = self.state.lock() {
+            if matches!(data.state, WatchState::Running) {
+                data.state = WatchState::Unconfirmed {
+                    last_seen: Instant::now(),
+                };
+                data.confirm_at = None;
+            }
+            data.abort = true;
+        }
+    }
+
+    fn aborted(&self) -> bool {
+        self.state.lock().map(|data| data.abort).unwrap_or(true)
     }
 
     fn request_kill(&self) {
@@ -3575,7 +3609,10 @@ fn supervise(
         // actually passed.
         killed = true;
         cancelled = true;
-        if started.elapsed() >= deadline {
+        // Judge the timeout from the instant the stop was requested, not from the moment
+        // supervision resumed: a recovery stop before the deadline is not a timeout.
+        let stop_at = watch.stop_times().0;
+        if stop_at.is_some_and(|at| at.saturating_duration_since(started) >= timeout) {
             timeout_fired = true;
         }
         let (requested_at, confirmed_at) = watch.stop_times();
@@ -3709,6 +3746,11 @@ fn cancel(watch: &ExitWatch, started: Instant) -> (Option<u64>, Option<u64>) {
     while matches!(watch.state(), WatchState::Running) && wait_started.elapsed() < SAMPLE_EXIT_GRACE
     {
         std::thread::sleep(POLL_INTERVAL);
+    }
+    if matches!(watch.state(), WatchState::Running) {
+        // The confirmation limit expired: publish "not confirmed" and let the watcher stop,
+        // so the later join cannot wait on a thread that is still running.
+        watch.mark_unconfirmed();
     }
     let observed = match watch.state() {
         WatchState::Exited { at, .. } => {
