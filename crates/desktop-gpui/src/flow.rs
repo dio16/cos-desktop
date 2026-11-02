@@ -341,10 +341,12 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
     }
     let mut successors: Vec<Vec<usize>> = vec![Vec::new(); count];
     #[cfg(test)]
-    let p2a_us = {
+    let p2a_us = if phases.is_some() {
         let elapsed = phase_start.elapsed().as_micros();
         phase_start = std::time::Instant::now();
         elapsed
+    } else {
+        0
     };
     let mut self_loop = false;
     for edge in graph.edges.iter() {
