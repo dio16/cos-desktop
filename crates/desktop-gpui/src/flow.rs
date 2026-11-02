@@ -2259,7 +2259,11 @@ mod tests {
 
     /// Deterministic checksum over the drawn diagram and the admitted rows, so an
     /// implementation change can be compared numerically as well as structurally.
-    fn diagram_checksum(drawn: &Diagram, rows: &super::Rows, computed: &Layers) -> u64 {
+    fn diagram_checksum(
+        drawn: &super::Diagram,
+        rows: &super::Rows,
+        computed: &super::Layers,
+    ) -> u64 {
         let mut checksum = 0u64;
         for (index, row) in rows.nodes.iter().enumerate() {
             for byte in row.node().identity.as_str().bytes() {
