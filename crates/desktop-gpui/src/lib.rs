@@ -4318,11 +4318,47 @@ impl Render for Shell {
                                                     .flex()
                                                     .flex_col()
                                                     .gap_1()
-                                                    .child(div().child("このアプリについて"))
-                                                    .child(div().child(about[0].clone()))
-                                                    .child(div().child(about[1].clone()))
-                                                    .child(div().child(about[2].clone()))
-                                                    .child(div().child(about[3].clone()))
+                                                    // DIAGNOSTICS-READONLY-BEGIN: read-only labels only,
+                                                    // never Tab stops; absent while Ctrl+D is closed.
+                                                    .child(
+                                                        div()
+                                                            .id("about-heading")
+                                                            .role(Role::Label)
+                                                            .aria_label("このアプリについて")
+                                                            .child("このアプリについて"),
+                                                    )
+                                                    .child(
+                                                        div()
+                                                            .id("about-desktop")
+                                                            .role(Role::Label)
+                                                            .aria_label("Desktop バージョン")
+                                                            .aria_value(about[0].clone())
+                                                            .child(about[0].clone()),
+                                                    )
+                                                    .child(
+                                                        div()
+                                                            .id("about-runtime")
+                                                            .role(Role::Label)
+                                                            .aria_label("Runtime バージョン")
+                                                            .aria_value(about[1].clone())
+                                                            .child(about[1].clone()),
+                                                    )
+                                                    .child(
+                                                        div()
+                                                            .id("about-protocol")
+                                                            .role(Role::Label)
+                                                            .aria_label("Protocol バージョン")
+                                                            .aria_value(about[2].clone())
+                                                            .child(about[2].clone()),
+                                                    )
+                                                    .child(
+                                                        div()
+                                                            .id("about-schema")
+                                                            .role(Role::Label)
+                                                            .aria_label("Schema バージョン")
+                                                            .aria_value(about[3].clone())
+                                                            .child(about[3].clone()),
+                                                    )
                                                     .child(
                                                         div()
                                                             // SUPPORT-PREVIEW-BEGIN
@@ -4352,10 +4388,25 @@ impl Render for Shell {
                                                             .child("サポート情報を表示")
                                                             // SUPPORT-PREVIEW-END,
                                                     )
-                                                    .child(div().child(diagnostic_text))
+                                                    .child(
+                                                        div()
+                                                            .id("diagnostic-readonly")
+                                                            .role(Role::Label)
+                                                            .aria_label("診断情報")
+                                                            .aria_value(diagnostic_text.clone())
+                                                            .child(diagnostic_text),
+                                                    )
                                                     .when_some(support_preview, |element, preview| {
-                                                        element.child(div().child(preview))
+                                                        element.child(
+                                                            div()
+                                                                .id("support-preview-readonly")
+                                                                .role(Role::Label)
+                                                                .aria_label("サポート情報")
+                                                                .aria_value(preview.clone())
+                                                                .child(preview),
+                                                        )
                                                     })
+                                                    // DIAGNOSTICS-READONLY-END
                                                     .into_any_element()
                                             } else {
                                                 div()
@@ -5082,6 +5133,55 @@ mod contrast_scope_tests {
                 "the {name} region must resolve every colour through the contrast scheme"
             );
         }
+    }
+
+    #[test]
+    fn diagnostics_readonly_labels_are_not_focus_stops() {
+        // SOURCE_WIRING_VERIFIED: the labels are built only in the open Ctrl+D branch
+        // and expose stable IDs with name/value separation. Native UIA exposure and
+        // screen-reader reading are NOT_RUN here.
+        let source = include_str!("lib.rs");
+        let begin = source
+            .find("// DIAGNOSTICS-READONLY-BEGIN")
+            .expect("marker");
+        let end = source.find("// DIAGNOSTICS-READONLY-END").expect("marker");
+        let branch = source[..begin]
+            .rfind("if diagnostics_open")
+            .expect("branch");
+        assert!(branch < begin, "labels live inside the Ctrl+D branch");
+        let region = &source[begin..end];
+        for id in [
+            "about-heading",
+            "about-desktop",
+            "about-runtime",
+            "about-protocol",
+            "about-schema",
+            "diagnostic-readonly",
+            "support-preview-readonly",
+        ] {
+            assert!(
+                region.contains(&format!(".id(\"{id}\")")),
+                "missing id {id}"
+            );
+        }
+        for label in [
+            "Desktop バージョン",
+            "Runtime バージョン",
+            "Protocol バージョン",
+            "Schema バージョン",
+            "診断情報",
+            "サポート情報",
+        ] {
+            assert!(
+                region.contains(&format!(".aria_label(\"{label}\")")),
+                "missing label {label}"
+            );
+        }
+        assert!(region.matches(".role(Role::Label)").count() >= 6);
+        assert!(
+            !region.contains(".tab_stop("),
+            "read-only labels must not add Tab stops"
+        );
     }
 
     #[test]
