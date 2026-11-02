@@ -3559,6 +3559,14 @@ fn supervise(
         cancelled = true;
         killed = false;
     }
+    if watch.killed_by_request() && !killed {
+        // A request-triggered stop that was confirmed (including the recovery path after a
+        // try_wait error) is a stop, not a normal completion: the exit code belongs to the
+        // kill, so it must not be classified as success.
+        killed = true;
+        cancelled = true;
+        timeout_fired = cancel_after.is_none_or(|early| early >= timeout);
+    }
     if watch.deadline_killed() {
         // The watcher enforced the hard deadline while a supervision step was blocked.
         killed = true;
