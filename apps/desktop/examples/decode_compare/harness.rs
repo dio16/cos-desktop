@@ -3110,6 +3110,9 @@ impl ExitWatch {
                 let until = Instant::now() + delay;
                 while Instant::now() < until {
                     if thread_state.lock().map(|data| data.abort).unwrap_or(true) {
+                        // The caller stopped waiting, but the child is still ours: stop it
+                        // before leaving so an abort never strands a running process.
+                        let _ = child.kill();
                         return;
                     }
                     std::thread::sleep(POLL_INTERVAL);
@@ -3140,20 +3143,28 @@ impl ExitWatch {
                     .unwrap_or(SAMPLE_EXIT_GRACE);
                 let started = Instant::now();
                 loop {
+                    // An aborted cancel has already published Unconfirmed; confirmation may
+                    // not turn that into an exit afterwards.
+                    if data.lock().map(|data| data.abort).unwrap_or(true) {
+                        return;
+                    }
                     match child.try_wait() {
                         Ok(Some(status)) => {
                             // The exit and the stop classification become visible together:
                             // a supervisor that reads Exited must also see why it exited.
                             let at = Instant::now();
                             if let Ok(mut data) = data.lock() {
-                                data.state = WatchState::Exited {
-                                    at,
-                                    status: Some(status),
-                                };
-                                data.confirm_at = Some(at);
-                                match stop {
-                                    Stop::Request => data.killed_by_request = true,
-                                    Stop::Deadline => data.deadline_killed = true,
+                                // Never overwrite a settled Unconfirmed state.
+                                if !data.abort {
+                                    data.state = WatchState::Exited {
+                                        at,
+                                        status: Some(status),
+                                    };
+                                    data.confirm_at = Some(at);
+                                    match stop {
+                                        Stop::Request => data.killed_by_request = true,
+                                        Stop::Deadline => data.deadline_killed = true,
+                                    }
                                 }
                             }
                             return;
@@ -3173,6 +3184,8 @@ impl ExitWatch {
             };
             loop {
                 if thread_state.lock().map(|data| data.abort).unwrap_or(true) {
+                    // Same rule as the delay path: an abort still stops the child.
+                    let _ = child.kill();
                     return;
                 }
                 let kill = thread_state
