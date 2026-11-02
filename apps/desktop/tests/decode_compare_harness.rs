@@ -18,7 +18,7 @@ mod pixels;
 use harness::{Candidate, Invocation, OutcomeClass, Program, Report};
 use std::{
     ffi::OsString,
-    io::{Read, Write},
+    io::Write,
     path::PathBuf,
     sync::atomic::{AtomicUsize, Ordering},
 };
