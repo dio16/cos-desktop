@@ -5265,7 +5265,7 @@ fn fake_candidate(support: ProbeSupport) {
         "sleep-long-heartbeat" => {
             // Keeps a sibling file growing while the process lives, so a test can show
             // that a stop really ended the process rather than only losing its exit.
-            let heartbeat = output.with_extension("heartbeat");
+            let heartbeat = std::path::Path::new(&output).with_extension("heartbeat");
             let deadline = std::time::Instant::now() + std::time::Duration::from_secs(8);
             while std::time::Instant::now() < deadline {
                 let mut file = std::fs::OpenOptions::new()
