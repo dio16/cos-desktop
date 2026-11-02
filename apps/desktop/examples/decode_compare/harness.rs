@@ -3340,12 +3340,12 @@ fn supervise(
         && !watch.killed_by_request();
     if observed_late {
         // The exit was first observed after the deadline; without a proven exit instant it
-        // cannot be reported as a deadline-compliant normal exit.
+        // cannot be reported as a deadline-compliant normal exit. No kill and no stop
+        // request happened on this path, so no cancellation timestamps are fabricated.
         timeout_fired = cancel_after.is_none_or(|early| early >= timeout);
         cancelled = true;
-        killed = true;
-        cancellation_requested_at_ms = Some(elapsed_millis(deadline));
-        cancellation_observed_ms = Some(0);
+        cancellation_requested_at_ms = None;
+        cancellation_observed_ms = None;
     }
     if watch.deadline_killed() {
         // The watcher enforced the hard deadline while a supervision step was blocked.

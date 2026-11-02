@@ -3163,6 +3163,10 @@ fn a_natural_exit_after_the_deadline_is_not_deadline_compliant() {
         "a 350 ms natural exit with a 300 ms deadline is a deadline overrun"
     );
     assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert!(
+        observation.cancellation_requested_at_ms.is_none(),
+        "no stop request happened on the late-observation path"
+    );
 }
 
 /// A delayed watcher poll must also see the normal exit first: the watcher checks the

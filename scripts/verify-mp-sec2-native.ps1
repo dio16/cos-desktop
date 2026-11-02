@@ -694,6 +694,7 @@ try {
         $capped = $false
         $unreadableDirs = @()
         $visited = 0
+        $enumerated = 0
         foreach ($root in $roots) {
             if (-not (Test-Path -LiteralPath $root)) { continue }
             $stack = [System.Collections.Generic.Stack[object]]::new()
@@ -703,8 +704,8 @@ try {
                 $directory = $item[0]
                 $depth = $item[1]
                 $visited++
-                if ($visited -gt $maxFiles) { $capped = $true; break }
-                $enumerated = 0
+                $enumerated++
+                if ($visited -gt $maxFiles -or $enumerated -gt $maxFiles) { $capped = $true; break }
                 try {
                     $directoryInfo = [System.IO.DirectoryInfo]::new($directory)
                     $entries = $directoryInfo.EnumerateFileSystemInfos()

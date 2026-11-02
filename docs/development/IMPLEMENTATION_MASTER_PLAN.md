@@ -2674,3 +2674,10 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Measured WER matrix:** normal remains **NOT_VERIFIED / HOLD** (machine-wide `ProgramData\...\WER` unreadable to a standard user); `-SkipWerChildCrash` → NOT_RUN / PASS_LIMITED; short-read and enumeration-cap → NOT_VERIFIED / HOLD; synthetic-secret leak → FAIL. The earlier short-read FAIL is explicitly **not** used as leak evidence: it was caused by the self-test corruption, now fixed.
 - **Gates:** harness `--test-threads=8` ×5 green (135 tests each); workspace **722 passed / 0 failed / 2 ignored**; fmt/clippy/build/dependency checker green; WER settings unchanged.
 
+### 19.134 shared WER enumeration counter and honest late-observation state (2026-11-02)
+
+- **B-01 fixed:** `$enumerated` is now declared before the root loop, incremented for **every visited directory and every entry (including reparse points and skipped links)**, and the cap check uses it (plus `$visited`). `-MaxWerFiles 1` (a genuine enumeration bound, no simulation) yields `enumeration_capped = True` and `wer_boundary = NOT_VERIFIED` / overall **HOLD (exit 2)**.
+- **B-02 fixed:** the late-observation path no longer fabricates a stop request: it sets `timeout_fired`/`cancelled` (non-success) but leaves `cancellation_requested_at_ms`/`cancellation_observed_ms` **None**, because no kill or stop request occurred. The 50 ms/350 ms negatives assert `cancellation_requested_at_ms.is_none()`.
+- **Measured WER matrix:** `-MaxWerFiles 1` → NOT_VERIFIED/HOLD; `-SkipWerChildCrash` → NOT_RUN/PASS_LIMITED; `-SimulateWerShortRead` → NOT_VERIFIED/HOLD with `utf16_selftest = PASS`. The normal path varies between **NOT_VERIFIED/HOLD** (machine-wide `ProgramData\...\WER` unreadable) and **FAIL** when the bounded scan genuinely finds the synthetic token in the OS CrashDump; both are recorded as observed, never promoted to PASS.
+- **Gates:** harness `--test-threads=8` ×5 green (135 tests each); workspace **722 passed / 0 failed / 2 ignored**; fmt/clippy/build/dependency checker green; WER settings unchanged.
+
