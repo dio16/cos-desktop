@@ -324,7 +324,7 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
 }
 
 /// Six-phase measurement of exactly this path; `None` in every product build.
-fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128; 6]>) -> Layers {
+fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128; 7]>) -> Layers {
     #[cfg(test)]
     let mut phase_start = std::time::Instant::now();
     let count = graph.nodes.len();
@@ -463,16 +463,24 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
     #[cfg(test)]
     if let Some(slots) = phases.as_mut() {
         slots[5] = phase_start.elapsed().as_micros();
+        phase_start = std::time::Instant::now();
+        // Explicit deallocation: the index map and adjacency are freed here, inside
+        // the measured path, so their cost is not silently left outside the phases.
+        drop(index_of);
+        drop(successors);
+        slots[6] = phase_start.elapsed().as_micros();
     }
     Layers { depth, cyclic }
 }
 
-/// Test-only entry point: the same `layers_inner` path with six phase durations.
+/// Test-only entry point: the same `layers_inner` path with seven phase durations and
+/// the outer elapsed time (outer is not the sum of the phases).
 #[cfg(test)]
-pub(crate) fn layers_phased(graph: &GraphDisplay) -> (Layers, [u128; 6]) {
-    let mut phases = [0u128; 6];
+pub(crate) fn layers_phased(graph: &GraphDisplay) -> (Layers, [u128; 7], u128) {
+    let mut phases = [0u128; 7];
+    let outer = std::time::Instant::now();
     let result = layers_inner(graph, Some(&mut phases));
-    (result, phases)
+    (result, phases, outer.elapsed().as_micros())
 }
 
 /// Vertical room reserved above the first card row when a drawing has
@@ -2605,13 +2613,11 @@ mod tests {
         let _ = query_match_us;
         let _ = query_started;
 
-        // Six-phase decomposition of the same layers path (P1..P6), test-only.
-        let mut phase_samples: Vec<([u128; 6], u128)> = Vec::new();
+        // Seven-phase decomposition of the same layers path (P1..P7), test-only.
+        let mut phase_samples: Vec<([u128; 7], u128, u128)> = Vec::new();
         let expected_depth = reference_depths(&revision);
         for iteration in 0..(WARMUP + ITERATIONS) {
-            let started = Instant::now();
-            let (phased, phases) = super::layers_phased(&revision);
-            let total_us = started.elapsed().as_micros();
+            let (phased, phases, outer_us) = super::layers_phased(&revision);
             assert_eq!(
                 phased.depth, expected_depth,
                 "the reference Kahn depths agree"
@@ -2625,11 +2631,13 @@ mod tests {
             assert_eq!(phased.depth.len(), LAYER_COUNT * WIDTH);
             if iteration >= WARMUP {
                 let index = iteration - WARMUP;
+                let sum_us: u128 = phases.iter().sum();
+                let unaccounted = outer_us.saturating_sub(sum_us);
                 println!(
-                    "layer_phase_sample iter={index} p1_us={} p2_us={} p3_us={} p4_us={} p5_us={} p6_us={} total_us={total_us}",
-                    phases[0], phases[1], phases[2], phases[3], phases[4], phases[5]
+                    "layer_phase_sample iter={index} p1_us={} p2_us={} p3_us={} p4_us={} p5_us={} p6_us={} p7_drop_us={} sum_us={sum_us} outer_total_us={outer_us} unattributed_us={unaccounted}",
+                    phases[0], phases[1], phases[2], phases[3], phases[4], phases[5], phases[6]
                 );
-                phase_samples.push((phases, total_us));
+                phase_samples.push((phases, outer_us, sum_us));
             }
         }
         assert_eq!(phase_samples.len(), ITERATIONS);
@@ -2644,8 +2652,15 @@ mod tests {
             let p95 = percentile(&values, 0.95);
             (median, p95, values[count - 1])
         };
-        let totals: Vec<u128> = phase_samples.iter().map(|sample| sample.1).collect();
-        let (total_median, total_p95, total_max) = stats(totals);
+        let outer_values: Vec<u128> = phase_samples.iter().map(|sample| sample.1).collect();
+        let sum_values: Vec<u128> = phase_samples.iter().map(|sample| sample.2).collect();
+        let (outer_median, outer_p95, outer_max) = stats(outer_values);
+        let (sum_median, sum_p95, sum_max) = stats(sum_values);
+        let unattributed_values: Vec<u128> = phase_samples
+            .iter()
+            .map(|sample| sample.1.saturating_sub(sample.2))
+            .collect();
+        let (unattributed_median, unattributed_p95, unattributed_max) = stats(unattributed_values);
         for (index, name) in [
             "p1_index",
             "p2_successors",
@@ -2653,20 +2668,32 @@ mod tests {
             "p4_condense",
             "p5_kahn",
             "p6_depth",
+            "p7_deallocation",
         ]
         .iter()
         .enumerate()
         {
             let values: Vec<u128> = phase_samples.iter().map(|sample| sample.0[index]).collect();
             let (median, p95, max) = stats(values);
-            let share = median as f64 * 100.0 / total_median as f64;
+            let share = median as f64 * 100.0 / outer_median as f64;
             println!(
-                "layer_phase_summary phase={name} n={ITERATIONS} median_us={median} p95_us={p95} max_us={max} share_pct={share:.1}"
+                "layer_phase_summary phase={name} n={ITERATIONS} median_us={median} p95_us={p95} max_us={max} share_of_outer_pct={share:.1}"
             );
         }
-        println!(
-            "layer_phase_summary phase=total n={ITERATIONS} median_us={total_median} p95_us={total_p95} max_us={total_max} share_pct=100.0"
-        );
+        for (name, median, p95, max) in [
+            ("outer_total", outer_median, outer_p95, outer_max),
+            ("phase_sum", sum_median, sum_p95, sum_max),
+            (
+                "unattributed",
+                unattributed_median,
+                unattributed_p95,
+                unattributed_max,
+            ),
+        ] {
+            println!(
+                "layer_phase_summary phase={name} n={ITERATIONS} median_us={median} p95_us={p95} max_us={max}"
+            );
+        }
 
         // Different GraphRef must not reuse the other revision's match sets.
         let rows_revision =

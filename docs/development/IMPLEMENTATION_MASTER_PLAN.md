@@ -3159,48 +3159,54 @@ rev_sample condition=query_only iter=20 rows_us=647 layers_us=0 match_us=12480 d
 rev_sample condition=revision iter=20 rows_us=781 layers_us=5648 match_us=12255 diagram_us=3165
 ```
 
-### 19.147 MP-FLOW2 Layers recompute: six-phase decomposition (2026-11-02)
+### 19.147 MP-FLOW2 Layers recompute: seven-phase decomposition (2026-11-02)
 
-- **Implementation:** `layers()` delegates to `layers_inner(graph, #[cfg(test)] phases)`; the product call passes nothing, and a `#[cfg(test)] layers_phased()` returns the same result plus six phase durations. The measured path is the real one (no algorithm copy); the independent Kahn `reference_depths` and the phased result are asserted equal on every iteration.
-- **Phases (current implementation):** P1 NodeId→index HashMap; P2 successors adjacency; P3 iterative Tarjan SCC; P4 condensation DAG + indegree; P5 Kahn longest-path depth; P6 cyclic/depth array. There is no independent sort, so no such phase exists.
+- **Implementation:** `layers()` delegates to `layers_inner(graph, #[cfg(test)] phases)`; the product call passes nothing. Under `#[cfg(test)]` the path explicitly `drop`s the index map and adjacency as **P7 (deallocation)** before returning, and `layers_phased()` returns the phases, the **outer elapsed** `outer_total_us`, and the per-iteration phase sum. **outer_total is not the sum of phases.**
+- **Phases:** P1 NodeId→index HashMap; P2 successors adjacency; P3 iterative Tarjan SCC; P4 condensation DAG + indegree; P5 Kahn depth; P6 cyclic/depth array; P7 explicit deallocation. No independent sort exists.
 - **Conditions:** release, 10,000 nodes / 19,800 edges synthetic DAG, warmup 3, 21 iterations; sequential elapsed µs (`Instant::elapsed`), not CPU time.
-- **Results (median / p95 / max, µs, share of the per-iteration total median):**
+- **Results (median / p95 / max, µs; share is of the outer median):**
 
-| phase | median | p95 | max | share |
+| phase | median | p95 | max | share of outer |
 |---|---:|---:|---:|---:|
-| P1 index | 953 | 1326 | 1333 | 17.2% |
-| P2 successors | 2842 | 3303 | 3933 | 51.2% |
-| P3 Tarjan | 342 | 425 | 493 | 6.2% |
-| P4 condense | 468 | 511 | 578 | 8.4% |
-| P5 Kahn | 120 | 131 | 137 | 2.2% |
-| P6 depth | 12 | 15 | 21 | 0.2% |
-| total (per-iteration sum) | 5555 | 6341 | 7109 | 100% |
+| P1 index | 973 | 1367 | 1488 | 17.0% |
+| P2 successors | 2862 | 3527 | 3623 | 49.9% |
+| P3 Tarjan | 366 | 456 | 501 | 6.4% |
+| P4 condense | 480 | 551 | 683 | 8.4% |
+| P5 Kahn | 98 | 108 | 109 | 1.7% |
+| P6 depth | 12 | 15 | 16 | 0.2% |
+| P7 deallocation (explicit drop) | 552 | 666 | 691 | 9.6% |
+| phase sum (per iteration) | 5541 | 6026 | 6643 | — |
+| **unattributed (outer − sum)** | **197** | **247** | **280** | 3.4% |
+| **outer_total_us** | **5739** | **6227** | **6836** | 100% |
 
-  The six medians sum to ~4737 µs; the residual (~818 µs, ~14.7%) is measurement overhead and unsampled boundary work, not a seventh algorithm phase. §19.146 measured un-instrumented `layers()` at 5,929 µs median; run-to-run variance and the six `Instant` calls make the phased total (5555 µs) not directly comparable as a product cost.
-- **Candidates (not adopted; decision deferred):** (1) P2 successors: replace `Vec<Vec<usize>>` with a single-pass CSR (count out-degree then fill) — expected ~1–2 ms saving, low correctness risk, adjacency is rebuilt per revision anyway; (2) P1 index: pre-size the HashMap with the node count — expected ~0.2–0.4 ms, low risk, must not change identity checks.
+  The explicit P7 drop accounts for the previously unexplained cost (552 µs median). The residual ~197 µs is the measured boundary between `outer` and the sum (timer calls and unsampled transition work), recorded as unattributed rather than assumed to be overhead. Percentages use the outer median as denominator; they do not sum to 100 because of this residual.
+- **Difference from §19.146:** §19.146 measured un-instrumented `layers()` (median 5,929 µs) in the revision condition; here the phased path with outer total measures 5739 µs median. The ranges overlap; the phased run is not a product-cost claim.
+- **Candidates (hypotheses only, not verified by this measurement; no adoption or implementation):**
+  (1) P2 successors → single-pass CSR (count out-degree, then fill). The 1–2 ms saving is an **unverified hypothesis**; a real CSR needs several passes, and **adjacency order must be preserved** because node/edge order affects deterministic depth/Diagram results. Correctness risk: order and duplicate edges must stay identical.
+  (2) P1 index → pre-size HashMap with node count (or a dense identity pass). The 0.2–0.4 ms saving is an **unverified hypothesis**; identity checks and collision behavior must not change.
 - **Limits:** paint/GPU/Present not measured; no Stage A–C experiment, no numeric gate, no optimization implemented. MP-FLOW2 remains incomplete.
-- **Raw samples (21 iterations):**
+- **Raw samples (21 iterations; outer totals and per-phase values):**
 
 ```text
-layer_phase_sample iter=0 p1_us=873 p2_us=2943 p3_us=399 p4_us=482 p5_us=120 p6_us=14 total_us=5555
-layer_phase_sample iter=1 p1_us=927 p2_us=3200 p3_us=403 p4_us=491 p5_us=121 p6_us=13 total_us=5946
-layer_phase_sample iter=2 p1_us=1326 p2_us=3209 p3_us=409 p4_us=486 p5_us=121 p6_us=12 total_us=6341
-layer_phase_sample iter=3 p1_us=953 p2_us=2696 p3_us=309 p4_us=451 p5_us=118 p6_us=12 total_us=5256
-layer_phase_sample iter=4 p1_us=955 p2_us=2842 p3_us=324 p4_us=453 p5_us=116 p6_us=12 total_us=5376
-layer_phase_sample iter=5 p1_us=1052 p2_us=2746 p3_us=263 p4_us=441 p5_us=117 p6_us=12 total_us=5247
-layer_phase_sample iter=6 p1_us=1027 p2_us=2641 p3_us=279 p4_us=462 p5_us=116 p6_us=12 total_us=5179
-layer_phase_sample iter=7 p1_us=940 p2_us=2501 p3_us=221 p4_us=428 p5_us=117 p6_us=12 total_us=4804
-layer_phase_sample iter=8 p1_us=962 p2_us=2606 p3_us=246 p4_us=449 p5_us=118 p6_us=12 total_us=5025
-layer_phase_sample iter=9 p1_us=953 p2_us=2596 p3_us=229 p4_us=454 p5_us=118 p6_us=12 total_us=5034
-layer_phase_sample iter=10 p1_us=872 p2_us=2519 p3_us=247 p4_us=477 p5_us=125 p6_us=13 total_us=5011
-layer_phase_sample iter=11 p1_us=882 p2_us=2557 p3_us=358 p4_us=498 p5_us=127 p6_us=15 total_us=5242
-layer_phase_sample iter=12 p1_us=883 p2_us=2933 p3_us=410 p4_us=455 p5_us=120 p6_us=12 total_us=5615
-layer_phase_sample iter=13 p1_us=1290 p2_us=3933 p3_us=493 p4_us=472 p5_us=119 p6_us=12 total_us=7109
-layer_phase_sample iter=14 p1_us=1070 p2_us=3303 p3_us=332 p4_us=455 p5_us=137 p6_us=13 total_us=6148
-layer_phase_sample iter=15 p1_us=1333 p2_us=2635 p3_us=326 p4_us=486 p5_us=131 p6_us=13 total_us=5816
-layer_phase_sample iter=16 p1_us=936 p2_us=2714 p3_us=390 p4_us=511 p5_us=123 p6_us=15 total_us=5473
-layer_phase_sample iter=17 p1_us=1019 p2_us=3050 p3_us=425 p4_us=474 p5_us=118 p6_us=13 total_us=5875
-layer_phase_sample iter=18 p1_us=876 p2_us=2878 p3_us=393 p4_us=468 p5_us=120 p6_us=21 total_us=5661
-layer_phase_sample iter=19 p1_us=930 p2_us=3099 p3_us=342 p4_us=578 p5_us=122 p6_us=14 total_us=5851
-layer_phase_sample iter=20 p1_us=1255 p2_us=3095 p3_us=369 p4_us=436 p5_us=117 p6_us=12 total_us=6007
+layer_phase_sample iter=0 p1_us=944 p2_us=2299 p3_us=237 p4_us=492 p5_us=98 p6_us=13 p7_drop_us=566 sum_us=4649 outer_total_us=4887 unattributed_us=238
+layer_phase_sample iter=1 p1_us=912 p2_us=2822 p3_us=399 p4_us=683 p5_us=109 p6_us=14 p7_drop_us=602 sum_us=5541 outer_total_us=5739 unattributed_us=198
+layer_phase_sample iter=2 p1_us=948 p2_us=3340 p3_us=451 p4_us=485 p5_us=108 p6_us=14 p7_drop_us=628 sum_us=5974 outer_total_us=6192 unattributed_us=218
+layer_phase_sample iter=3 p1_us=1488 p2_us=3623 p3_us=383 p4_us=474 p5_us=96 p6_us=12 p7_drop_us=567 sum_us=6643 outer_total_us=6836 unattributed_us=193
+layer_phase_sample iter=4 p1_us=1356 p2_us=2903 p3_us=286 p4_us=480 p5_us=98 p6_us=12 p7_drop_us=516 sum_us=5651 outer_total_us=5845 unattributed_us=194
+layer_phase_sample iter=5 p1_us=915 p2_us=2722 p3_us=352 p4_us=473 p5_us=97 p6_us=12 p7_drop_us=662 sum_us=5233 outer_total_us=5480 unattributed_us=247
+layer_phase_sample iter=6 p1_us=921 p2_us=2513 p3_us=251 p4_us=525 p5_us=102 p6_us=16 p7_drop_us=666 sum_us=4994 outer_total_us=5203 unattributed_us=209
+layer_phase_sample iter=7 p1_us=1135 p2_us=3049 p3_us=432 p4_us=511 p5_us=101 p6_us=14 p7_drop_us=592 sum_us=5834 outer_total_us=6028 unattributed_us=194
+layer_phase_sample iter=8 p1_us=916 p2_us=3527 p3_us=433 p4_us=486 p5_us=99 p6_us=13 p7_drop_us=552 sum_us=6026 outer_total_us=6227 unattributed_us=201
+layer_phase_sample iter=9 p1_us=1054 p2_us=3248 p3_us=379 p4_us=469 p5_us=96 p6_us=12 p7_drop_us=506 sum_us=5764 outer_total_us=5955 unattributed_us=191
+layer_phase_sample iter=10 p1_us=1093 p2_us=2862 p3_us=313 p4_us=466 p5_us=95 p6_us=12 p7_drop_us=453 sum_us=5294 outer_total_us=5483 unattributed_us=189
+layer_phase_sample iter=11 p1_us=996 p2_us=2738 p3_us=252 p4_us=455 p5_us=96 p6_us=12 p7_drop_us=427 sum_us=4976 outer_total_us=5173 unattributed_us=197
+layer_phase_sample iter=12 p1_us=1207 p2_us=2806 p3_us=269 p4_us=460 p5_us=98 p6_us=12 p7_drop_us=509 sum_us=5361 outer_total_us=5577 unattributed_us=216
+layer_phase_sample iter=13 p1_us=927 p2_us=2629 p3_us=444 p4_us=551 p5_us=106 p6_us=14 p7_drop_us=691 sum_us=5362 outer_total_us=5642 unattributed_us=280
+layer_phase_sample iter=14 p1_us=963 p2_us=2988 p3_us=501 p4_us=547 p5_us=101 p6_us=15 p7_drop_us=641 sum_us=5756 outer_total_us=5965 unattributed_us=209
+layer_phase_sample iter=15 p1_us=936 p2_us=3327 p3_us=456 p4_us=494 p5_us=101 p6_us=14 p7_drop_us=598 sum_us=5926 outer_total_us=6120 unattributed_us=194
+layer_phase_sample iter=16 p1_us=1367 p2_us=3045 p3_us=383 p4_us=472 p5_us=98 p6_us=12 p7_drop_us=527 sum_us=5904 outer_total_us=6095 unattributed_us=191
+layer_phase_sample iter=17 p1_us=1222 p2_us=3016 p3_us=366 p4_us=510 p5_us=99 p6_us=12 p7_drop_us=475 sum_us=5700 outer_total_us=5894 unattributed_us=194
+layer_phase_sample iter=18 p1_us=928 p2_us=2743 p3_us=257 p4_us=473 p5_us=104 p6_us=12 p7_drop_us=435 sum_us=4952 outer_total_us=5151 unattributed_us=199
+layer_phase_sample iter=19 p1_us=1091 p2_us=2828 p3_us=280 p4_us=454 p5_us=97 p6_us=12 p7_drop_us=445 sum_us=5207 outer_total_us=5398 unattributed_us=191
+layer_phase_sample iter=20 p1_us=973 p2_us=2657 p3_us=245 p4_us=451 p5_us=94 p6_us=13 p7_drop_us=396 sum_us=4829 outer_total_us=5020 unattributed_us=191
 ```
