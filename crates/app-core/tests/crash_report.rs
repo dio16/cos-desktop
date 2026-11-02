@@ -167,6 +167,38 @@ fn a_fourth_report_evicts_only_the_oldest_managed_report() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// A file edited after saving must not reach a future display path: a credential written
+/// into the version line, like `token=secret123`, changes under redaction and is refused.
+#[test]
+fn an_injected_credential_in_a_stored_report_is_refused() {
+    let root = test_root("injected-credential");
+    let store = CrashReportStore::open_at(&root).expect("the dedicated directory");
+    let meta = store
+        .save(&CrashReportInput {
+            desktop_version: "9.9.9",
+            category: CrashCategory::Unknown,
+            diagnostics: None,
+        })
+        .expect("a clean report");
+    let path = report_path(&store, meta.id);
+    let tampered = "Desktop version: 9.9.9 token=secret123
+                    Crash category: unknown
+                    Retained events: unknown (the diagnostic ring was not read)"
+        .to_owned();
+    std::fs::write(&path, &tampered).expect("the tampered file");
+    let error = store.read(meta.id).expect_err("a tampered report");
+    assert!(matches!(error, CrashStoreError::InvalidReport), "{error:?}");
+    assert!(
+        !format!("{error:?}{error}").contains("secret123"),
+        "the refusal must not echo the body"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&path).expect("unchanged"),
+        tampered,
+        "the refused file is left exactly as it was"
+    );
+}
+
 #[test]
 fn synthetic_secrets_do_not_reach_a_stored_report() {
     let root = test_root("secrets");

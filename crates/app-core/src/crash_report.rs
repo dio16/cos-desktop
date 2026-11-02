@@ -477,9 +477,11 @@ fn validate_report_body(body: &str) -> Result<(), CrashStoreError> {
     {
         return Err(CrashStoreError::InvalidReport);
     }
-    let lines: Vec<&str> = body.split('\n').collect();
+    // Stream the lines: the body may be up to the size cap, so collecting one slice per
+    // line would multiply memory for a file that is about to be refused.
+    let mut lines = body.split('\n');
     let Some(version) = lines
-        .first()
+        .next()
         .and_then(|line| line.strip_prefix("Desktop version: "))
     else {
         return Err(CrashStoreError::InvalidReport);
@@ -488,7 +490,7 @@ fn validate_report_body(body: &str) -> Result<(), CrashStoreError> {
         return Err(CrashStoreError::InvalidReport);
     }
     let Some(category) = lines
-        .get(1)
+        .next()
         .and_then(|line| line.strip_prefix("Crash category: "))
     else {
         return Err(CrashStoreError::InvalidReport);
@@ -500,31 +502,43 @@ fn validate_report_body(body: &str) -> Result<(), CrashStoreError> {
         return Err(CrashStoreError::InvalidReport);
     }
     const NO_DIAGNOSTICS: &str = "Retained events: unknown (the diagnostic ring was not read)";
-    if lines.len() == 3 {
-        return if lines[2] == NO_DIAGNOSTICS {
+    let Some(third) = lines.next() else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    if third == NO_DIAGNOSTICS {
+        return if lines.next().is_none() {
             Ok(())
         } else {
             Err(CrashStoreError::InvalidReport)
         };
     }
-    if lines.len() != 7 {
+    let Some(retained) = third.strip_prefix("Retained events: ") else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    let Some(latest) = lines
+        .next()
+        .and_then(|line| line.strip_prefix("Latest sequence: "))
+    else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    let Some(oldest) = lines
+        .next()
+        .and_then(|line| line.strip_prefix("Oldest retained: "))
+    else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    let Some(gap) = lines
+        .next()
+        .and_then(|line| line.strip_prefix("Event gap: "))
+    else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    let Some(counts) = lines.next().and_then(|line| line.strip_prefix("Counts: ")) else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    if lines.next().is_some() {
         return Err(CrashStoreError::InvalidReport);
     }
-    let Some(retained) = lines[2].strip_prefix("Retained events: ") else {
-        return Err(CrashStoreError::InvalidReport);
-    };
-    let Some(latest) = lines[3].strip_prefix("Latest sequence: ") else {
-        return Err(CrashStoreError::InvalidReport);
-    };
-    let Some(oldest) = lines[4].strip_prefix("Oldest retained: ") else {
-        return Err(CrashStoreError::InvalidReport);
-    };
-    let Some(gap) = lines[5].strip_prefix("Event gap: ") else {
-        return Err(CrashStoreError::InvalidReport);
-    };
-    let Some(counts) = lines[6].strip_prefix("Counts: ") else {
-        return Err(CrashStoreError::InvalidReport);
-    };
     canonical_number(retained)?;
     canonical_number(latest)?;
     if oldest != "unknown" {
@@ -539,6 +553,11 @@ fn validate_report_body(body: &str) -> Result<(), CrashStoreError> {
 /// redactor's fixed markers only. Credentials, URLs and private paths cannot pass.
 fn safe_version(value: &str) -> bool {
     if value.is_empty() || value.len() > 256 {
+        return false;
+    }
+    // Anything redaction would still rewrite - a key assignment, a path, a locator - is
+    // refused.
+    if crate::redaction::redact_diagnostic_text(value) != value {
         return false;
     }
     let bytes = value.as_bytes();
@@ -598,7 +617,10 @@ fn validate_gap(value: &str) -> Result<(), CrashStoreError> {
     let from = canonical_number(from)?;
     let to = canonical_number(to)?;
     let lost = canonical_number(lost)?;
-    if from > to || lost != to - from + 1 {
+    let Some(span) = to.checked_sub(from).and_then(|span| span.checked_add(1)) else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    if from > to || lost != span {
         return Err(CrashStoreError::InvalidReport);
     }
     Ok(())
