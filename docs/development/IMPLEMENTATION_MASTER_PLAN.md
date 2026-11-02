@@ -2848,6 +2848,7 @@ Re-computed from these samples (Lead, Python): `miss_replace` median 15130 / p95
 
 - **Baseline (§19.141.1, committed BTreeSet, same 10,000 nodes / 19,800 edges, release, warmup 3, 21 iterations):** miss_replace 15,130 / 16,573 / 17,438 µs; miss_clear 13,923 / 14,471 / 14,565 µs; hit 2,065 / 2,665 / 2,776 µs. The 63 baseline samples stay recorded there and are not rewritten.
 - **Candidate:** `Matched.nodes` / `Matched.edges` use `std::collections::HashSet`; the production builder allocates `HashSet::with_capacity(rows.nodes.len() / rows.edges.len())` and extends once; `diagram` takes `&HashSet`; `AdmissionKey`, `MatchCache` (single entry, five-component invalidation, `clear()`), `Rows`, `Layers` and GPU drawing are unchanged.
+- **A/B scope, stated precisely:** the A/B series measures a **representative HashSet build** (`.collect()`), while production builds with `HashSet::with_capacity` + one `extend`; the two are not the same code. The product-path figures below come from the product cache in the same run, but the **BTreeSet product path was not measured in that run**, so the 15,130 → 12,593 µs change is a **cross-run reference, not a same-run A/B**. Adoption rests on the large **same-run** build and probe differences, which are measured under identical conditions.
 - **A/B (same run, same rows/graph refs, alternating order, release):**
 
 | series (n=21) | median | p95 | max |

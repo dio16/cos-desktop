@@ -2112,6 +2112,13 @@ mod tests {
             btree_drawn, reference,
             "btree and hash draw the same diagram"
         );
+        let hash_checksum = diagram_checksum(&reference, &rows, &computed);
+        let btree_checksum = diagram_checksum(&btree_drawn, &rows, &computed);
+        assert_eq!(
+            btree_checksum, hash_checksum,
+            "btree and hash diagrams share the deterministic checksum"
+        );
+        println!("MP-FLOW2 A/B checksum=0x{hash_checksum:016x}");
 
         // Product paths with the product (hash) cache, alternating.
         let mut cache = MatchCache::default();
@@ -2248,6 +2255,24 @@ mod tests {
         }
         println!("MP-FLOW2 equivalence btree==hash==reference diagram_equal=true");
         println!("MP-FLOW2 NOT_MEASURED paint/GPU/present");
+    }
+
+    /// Deterministic checksum over the drawn diagram and the admitted rows, so an
+    /// implementation change can be compared numerically as well as structurally.
+    fn diagram_checksum(drawn: &Diagram, rows: &super::Rows, computed: &Layers) -> u64 {
+        let mut checksum = 0u64;
+        for (index, row) in rows.nodes.iter().enumerate() {
+            for byte in row.node().identity.as_str().bytes() {
+                checksum ^= u64::from(byte);
+                checksum = checksum.wrapping_mul(0x100_0000_01b3);
+            }
+            checksum ^= computed.depth[index] as u64;
+            checksum = checksum.wrapping_mul(0x100_0000_01b3);
+        }
+        checksum ^= drawn.nodes.len() as u64;
+        checksum = checksum.wrapping_mul(0x100_0000_01b3);
+        checksum ^= drawn.edges.len() as u64;
+        checksum
     }
 
     /// Measure one replacement miss (an existing other-key entry is replaced) with the
