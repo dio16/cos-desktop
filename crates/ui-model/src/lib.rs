@@ -1368,7 +1368,7 @@ impl StopDisplay {
 pub(crate) const NOT_PROJECTED_FACT: &str = "不明";
 
 /// Display-only data prepared from one complete publication.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct WorkbenchText {
     pub title: Arc<str>,
     pub axes: StateAxes,
@@ -1635,6 +1635,10 @@ fn stop_availability(
 /// A publication identity is `(session_generation, publication_version)`.
 pub struct DisplayCache {
     text: WorkbenchText,
+    /// The text restored when authorization is lost. It keeps anything the shell owns -
+    /// such as the executable-derived Desktop version - while dropping every authorized
+    /// value, so revocation cannot resurrect Runtime data.
+    withheld: WorkbenchText,
     identity: Option<(u64, u64)>,
 }
 
@@ -1642,6 +1646,7 @@ impl Default for DisplayCache {
     fn default() -> Self {
         Self {
             text: WorkbenchText::withheld(),
+            withheld: WorkbenchText::withheld(),
             identity: None,
         }
     }
@@ -1652,7 +1657,8 @@ impl DisplayCache {
     /// still unauthorized until an authorized publication installs its own text.
     pub fn from_text(text: WorkbenchText) -> Self {
         Self {
-            text,
+            text: text.clone(),
+            withheld: text,
             identity: None,
         }
     }
@@ -1692,7 +1698,7 @@ impl DisplayCache {
     /// Drop cached data; the next render shows an honest placeholder.
     pub fn invalidate(&mut self) {
         if self.identity.take().is_some() {
-            self.text = WorkbenchText::withheld();
+            self.text = self.withheld.clone();
         }
     }
 
@@ -3917,6 +3923,39 @@ mod tests {
         );
         assert!(super::StopDisplay::retention_error(&reference_capacity).manual_intervention);
     }
+    #[test]
+    fn losing_authorization_keeps_the_desktop_version_but_drops_runtime_data() {
+        let mut cache = DisplayCache::from_text(WorkbenchText::withheld_for_desktop("9.8.7"));
+        let authorized = {
+            let mut cache = DerivationCache::default();
+            cache
+                .derive(&ObservationPublication::default(), None, "9.8.7", || false)
+                .expect("a publication derives")
+        };
+        let live = PublicationNotice {
+            session_generation: authorized.session_generation,
+            publication_version: authorized.publication_version,
+        };
+        assert!(cache.install(
+            (
+                authorized.session_generation,
+                authorized.publication_version
+            ),
+            authorized,
+            Some(live),
+        ));
+        assert!(cache.is_authorized(Some(live)));
+        cache.invalidate();
+        assert!(!cache.is_authorized(Some(live)));
+        // The Desktop version survives revocation; authorized Runtime values do not.
+        assert!(
+            cache.text().diagnostics.starts_with("Desktop 9.8.7 · "),
+            "the version survives revocation: {}",
+            cache.text().diagnostics
+        );
+        assert!(!cache.text().diagnostics.contains("世代"));
+    }
+
     #[test]
     fn a_shell_without_a_handle_still_shows_the_executable_version() {
         let text = WorkbenchText::withheld_for_desktop("9.8.7");
