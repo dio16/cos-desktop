@@ -2468,8 +2468,13 @@ mod tests {
             "the revision match set covers all 10,000 nodes"
         );
         assert_eq!(
-            reference_matched.edges.len(),
             rows_revision.edges.len(),
+            (LAYER_COUNT - 1) * WIDTH * 2,
+            "the revision rows hold all 19,800 edges"
+        );
+        assert_eq!(
+            reference_matched.edges.len(),
+            (LAYER_COUNT - 1) * WIDTH * 2,
             "the revision match set covers all 19,800 edges"
         );
         assert!(!query_hit, "a query change is a cache miss");
