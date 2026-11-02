@@ -2693,3 +2693,9 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **B-02 fixed:** `ExitWatch` records the **actual** `Instant` of the deadline kill request and of the confirmed exit; `supervise` derives `cancellation_requested_at_ms`/`cancellation_observed_ms` from them and leaves both `None` if the watcher could not record them. No estimated values are written. The three states stay separate: late observation (no request, timestamps None), sampler timeout (real kill → `sample_timeout`), deadline kill (real request/confirm instants).
 - **Measured:** normal run → NOT_VERIFIED/HOLD with `correlated = 1`, `capped = false` (ProgramData WER subdirectories unreadable); reparse selftest PASS; `-MaxWerFiles 1` capped; harness `--test-threads=8` ×5 green (135 each); workspace **722 passed / 0 failed / 2 ignored**; fmt/clippy/build/dependency checker green.
 
+### 19.137 deadline-kill confirmation only on a successful wait (2026-11-02)
+
+- **B-01 fixed:** `ExitWatch` records `deadline_kill_confirmed_at` **only when `child.wait()` succeeds**; a failed wait leaves it `None` (`cancellation_observed_ms = None`, exit status unknown) instead of publishing a latency. `child.kill()` errors are recorded as `kill_failed`; `deadline_killed` is set only when the kill was actually issued, and `supervise` reports the run as cancelled but **not killed** when the stop request failed (no successful-stop claim, no exit code from a kill).
+- **Confirmed measurement:** `a_blocked_sampler_spawn_does_not_extend_the_deadline` now asserts a real request instant and a real confirmation latency; the late-observation paths still carry `None`.
+- **Verified:** harness `--test-threads=8` ×5 green (135 tests each); workspace **722 passed / 0 failed / 2 ignored**; fmt/clippy/build/dependency checker green.
+

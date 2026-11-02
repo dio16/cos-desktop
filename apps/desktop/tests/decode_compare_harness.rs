@@ -3256,6 +3256,14 @@ fn a_blocked_sampler_spawn_does_not_extend_the_deadline() {
         wall_ms <= 300 + 250,
         "the candidate stopped at {wall_ms} ms, past the 300 ms deadline + 250 ms slack"
     );
+    assert!(
+        observation.cancellation_requested_at_ms.is_some(),
+        "the watcher really issued the kill at its deadline"
+    );
+    assert!(
+        observation.cancellation_observed_ms.is_some(),
+        "a successful wait provides the real confirmation latency"
+    );
 }
 
 /// Reproduces the loaded-machine defect: creating the sampler process takes seconds and

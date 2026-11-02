@@ -3039,6 +3039,7 @@ struct ExitState {
     killed_by_request: bool,
     deadline_kill_requested_at: Option<Instant>,
     deadline_kill_confirmed_at: Option<Instant>,
+    kill_failed: bool,
 }
 
 impl ExitWatch {
@@ -3054,6 +3055,7 @@ impl ExitWatch {
             killed_by_request: false,
             deadline_kill_requested_at: None,
             deadline_kill_confirmed_at: None,
+            kill_failed: false,
         }));
         let thread_state = std::sync::Arc::clone(&state);
         let deadline_at = Instant::now() + deadline;
@@ -3090,16 +3092,28 @@ impl ExitWatch {
                     }
                 }
                 if !kill && Instant::now() >= deadline_at {
-                    // Record the real request and confirmation instants; never infer them.
+                    // Record the real request instant; only a successful wait proves the
+                    // exit was confirmed, and only a successful kill proves a stop was
+                    // actually issued. Neither failure may be reported as success.
                     let requested_at = Instant::now();
-                    let _ = child.kill();
-                    let status = child.wait().ok();
-                    let confirmed_at = Instant::now();
+                    let kill_result = child.kill();
+                    let wait_result = child.wait();
                     if let Ok(mut state) = thread_state.lock() {
-                        state.exited = Some((confirmed_at, status));
-                        state.deadline_killed = true;
                         state.deadline_kill_requested_at = Some(requested_at);
-                        state.deadline_kill_confirmed_at = Some(confirmed_at);
+                        state.deadline_killed = kill_result.is_ok();
+                        state.kill_failed = kill_result.is_err();
+                        match wait_result {
+                            Ok(status) => {
+                                state.exited = Some((Instant::now(), Some(status)));
+                                state.deadline_kill_confirmed_at = Some(Instant::now());
+                            }
+                            Err(_) => {
+                                // Exit not confirmed: keep exited without a status and do
+                                // not fabricate a confirmation instant.
+                                state.exited = Some((Instant::now(), None));
+                                state.deadline_kill_confirmed_at = None;
+                            }
+                        }
                     }
                     return;
                 }
@@ -3141,6 +3155,13 @@ impl ExitWatch {
         self.state
             .lock()
             .map(|state| state.killed_by_request)
+            .unwrap_or(false)
+    }
+
+    fn kill_failed(&self) -> bool {
+        self.state
+            .lock()
+            .map(|state| state.kill_failed)
             .unwrap_or(false)
     }
 
@@ -3367,6 +3388,11 @@ fn supervise(
         cancelled = true;
         cancellation_requested_at_ms = None;
         cancellation_observed_ms = None;
+    }
+    if watch.kill_failed() {
+        // The stop was never issued: do not report a successful kill.
+        cancelled = true;
+        killed = false;
     }
     if watch.deadline_killed() {
         // The watcher enforced the hard deadline while a supervision step was blocked.
