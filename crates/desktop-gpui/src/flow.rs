@@ -364,18 +364,20 @@ fn layers_inner(
                 self_loop = true;
             }
             #[cfg(test)]
-            {
+            if let Some(stats) = structure.as_mut() {
+                // Capacity is only read while the structural analysis runs, so the timed
+                // paths (`layers`, `layers_phased`) keep the single push above.
                 let before = successors[from].capacity();
                 successors[from].push(to);
                 let after = successors[from].capacity();
-                if let Some(stats) = structure.as_mut() {
-                    stats.inserted_edges += 1;
-                    if before == 0 && after > 0 {
-                        stats.initial_allocations += 1;
-                    } else if before > 0 && after > before {
-                        stats.capacity_grows += 1;
-                    }
+                stats.inserted_edges += 1;
+                if before == 0 && after > 0 {
+                    stats.initial_allocations += 1;
+                } else if before > 0 && after > before {
+                    stats.capacity_grows += 1;
                 }
+            } else {
+                successors[from].push(to);
             }
             #[cfg(not(test))]
             {
@@ -392,6 +394,10 @@ fn layers_inner(
     if let Some(stats) = structure.as_mut() {
         stats.total_capacity = successors.iter().map(Vec::capacity).sum();
         stats.total_length = successors.iter().map(Vec::len).sum();
+        assert!(
+            successors.iter().all(|list| list.capacity() >= list.len()),
+            "every adjacency list holds at least its elements"
+        );
         stats.nonempty_nodes = successors.iter().filter(|list| !list.is_empty()).count();
         stats.max_outdegree = successors.iter().map(Vec::len).max().unwrap_or(0);
         stats.adjacency = successors.clone();
