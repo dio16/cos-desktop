@@ -3159,3 +3159,48 @@ rev_sample condition=query_only iter=20 rows_us=647 layers_us=0 match_us=12480 d
 rev_sample condition=revision iter=20 rows_us=781 layers_us=5648 match_us=12255 diagram_us=3165
 ```
 
+### 19.147 MP-FLOW2 Layers recompute: six-phase decomposition (2026-11-02)
+
+- **Implementation:** `layers()` delegates to `layers_inner(graph, #[cfg(test)] phases)`; the product call passes nothing, and a `#[cfg(test)] layers_phased()` returns the same result plus six phase durations. The measured path is the real one (no algorithm copy); the independent Kahn `reference_depths` and the phased result are asserted equal on every iteration.
+- **Phases (current implementation):** P1 NodeId→index HashMap; P2 successors adjacency; P3 iterative Tarjan SCC; P4 condensation DAG + indegree; P5 Kahn longest-path depth; P6 cyclic/depth array. There is no independent sort, so no such phase exists.
+- **Conditions:** release, 10,000 nodes / 19,800 edges synthetic DAG, warmup 3, 21 iterations; sequential elapsed µs (`Instant::elapsed`), not CPU time.
+- **Results (median / p95 / max, µs, share of the per-iteration total median):**
+
+| phase | median | p95 | max | share |
+|---|---:|---:|---:|---:|
+| P1 index | 953 | 1326 | 1333 | 17.2% |
+| P2 successors | 2842 | 3303 | 3933 | 51.2% |
+| P3 Tarjan | 342 | 425 | 493 | 6.2% |
+| P4 condense | 468 | 511 | 578 | 8.4% |
+| P5 Kahn | 120 | 131 | 137 | 2.2% |
+| P6 depth | 12 | 15 | 21 | 0.2% |
+| total (per-iteration sum) | 5555 | 6341 | 7109 | 100% |
+
+  The six medians sum to ~4737 µs; the residual (~818 µs, ~14.7%) is measurement overhead and unsampled boundary work, not a seventh algorithm phase. §19.146 measured un-instrumented `layers()` at 5,929 µs median; run-to-run variance and the six `Instant` calls make the phased total (5555 µs) not directly comparable as a product cost.
+- **Candidates (not adopted; decision deferred):** (1) P2 successors: replace `Vec<Vec<usize>>` with a single-pass CSR (count out-degree then fill) — expected ~1–2 ms saving, low correctness risk, adjacency is rebuilt per revision anyway; (2) P1 index: pre-size the HashMap with the node count — expected ~0.2–0.4 ms, low risk, must not change identity checks.
+- **Limits:** paint/GPU/Present not measured; no Stage A–C experiment, no numeric gate, no optimization implemented. MP-FLOW2 remains incomplete.
+- **Raw samples (21 iterations):**
+
+```text
+layer_phase_sample iter=0 p1_us=873 p2_us=2943 p3_us=399 p4_us=482 p5_us=120 p6_us=14 total_us=5555
+layer_phase_sample iter=1 p1_us=927 p2_us=3200 p3_us=403 p4_us=491 p5_us=121 p6_us=13 total_us=5946
+layer_phase_sample iter=2 p1_us=1326 p2_us=3209 p3_us=409 p4_us=486 p5_us=121 p6_us=12 total_us=6341
+layer_phase_sample iter=3 p1_us=953 p2_us=2696 p3_us=309 p4_us=451 p5_us=118 p6_us=12 total_us=5256
+layer_phase_sample iter=4 p1_us=955 p2_us=2842 p3_us=324 p4_us=453 p5_us=116 p6_us=12 total_us=5376
+layer_phase_sample iter=5 p1_us=1052 p2_us=2746 p3_us=263 p4_us=441 p5_us=117 p6_us=12 total_us=5247
+layer_phase_sample iter=6 p1_us=1027 p2_us=2641 p3_us=279 p4_us=462 p5_us=116 p6_us=12 total_us=5179
+layer_phase_sample iter=7 p1_us=940 p2_us=2501 p3_us=221 p4_us=428 p5_us=117 p6_us=12 total_us=4804
+layer_phase_sample iter=8 p1_us=962 p2_us=2606 p3_us=246 p4_us=449 p5_us=118 p6_us=12 total_us=5025
+layer_phase_sample iter=9 p1_us=953 p2_us=2596 p3_us=229 p4_us=454 p5_us=118 p6_us=12 total_us=5034
+layer_phase_sample iter=10 p1_us=872 p2_us=2519 p3_us=247 p4_us=477 p5_us=125 p6_us=13 total_us=5011
+layer_phase_sample iter=11 p1_us=882 p2_us=2557 p3_us=358 p4_us=498 p5_us=127 p6_us=15 total_us=5242
+layer_phase_sample iter=12 p1_us=883 p2_us=2933 p3_us=410 p4_us=455 p5_us=120 p6_us=12 total_us=5615
+layer_phase_sample iter=13 p1_us=1290 p2_us=3933 p3_us=493 p4_us=472 p5_us=119 p6_us=12 total_us=7109
+layer_phase_sample iter=14 p1_us=1070 p2_us=3303 p3_us=332 p4_us=455 p5_us=137 p6_us=13 total_us=6148
+layer_phase_sample iter=15 p1_us=1333 p2_us=2635 p3_us=326 p4_us=486 p5_us=131 p6_us=13 total_us=5816
+layer_phase_sample iter=16 p1_us=936 p2_us=2714 p3_us=390 p4_us=511 p5_us=123 p6_us=15 total_us=5473
+layer_phase_sample iter=17 p1_us=1019 p2_us=3050 p3_us=425 p4_us=474 p5_us=118 p6_us=13 total_us=5875
+layer_phase_sample iter=18 p1_us=876 p2_us=2878 p3_us=393 p4_us=468 p5_us=120 p6_us=21 total_us=5661
+layer_phase_sample iter=19 p1_us=930 p2_us=3099 p3_us=342 p4_us=578 p5_us=122 p6_us=14 total_us=5851
+layer_phase_sample iter=20 p1_us=1255 p2_us=3095 p3_us=369 p4_us=436 p5_us=117 p6_us=12 total_us=6007
+```

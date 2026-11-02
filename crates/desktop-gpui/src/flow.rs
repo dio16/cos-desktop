@@ -316,6 +316,17 @@ pub struct Layers {
 /// Members of one component share a layer, which is the honest answer for a
 /// cyclic region.
 pub fn layers(graph: &GraphDisplay) -> Layers {
+    layers_inner(
+        graph,
+        #[cfg(test)]
+        None,
+    )
+}
+
+/// Six-phase measurement of exactly this path; `None` in every product build.
+fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128; 6]>) -> Layers {
+    #[cfg(test)]
+    let mut phase_start = std::time::Instant::now();
     let count = graph.nodes.len();
     let index_of: std::collections::HashMap<NodeId, usize> = graph
         .nodes
@@ -323,6 +334,11 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
         .enumerate()
         .map(|(index, node)| (node.identity.clone(), index))
         .collect();
+    #[cfg(test)]
+    if let Some(slots) = phases.as_mut() {
+        slots[0] = phase_start.elapsed().as_micros();
+        phase_start = std::time::Instant::now();
+    }
     let mut successors: Vec<Vec<usize>> = vec![Vec::new(); count];
     let mut self_loop = false;
     for edge in graph.edges.iter() {
@@ -333,6 +349,11 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
             self_loop = true;
         }
         successors[from].push(to);
+    }
+    #[cfg(test)]
+    if let Some(slots) = phases.as_mut() {
+        slots[1] = phase_start.elapsed().as_micros();
+        phase_start = std::time::Instant::now();
     }
 
     // Iterative Tarjan: one frame per node, no host-stack recursion.
@@ -390,6 +411,11 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
         }
     }
 
+    #[cfg(test)]
+    if let Some(slots) = phases.as_mut() {
+        slots[2] = phase_start.elapsed().as_micros();
+        phase_start = std::time::Instant::now();
+    }
     // Condense and take the longest path over the component DAG.
     let components = component_sizes.len();
     // Parallel condensation edges are skipped with a per-target stamp, so the
@@ -407,6 +433,11 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
             }
         }
     }
+    #[cfg(test)]
+    if let Some(slots) = phases.as_mut() {
+        slots[3] = phase_start.elapsed().as_micros();
+        phase_start = std::time::Instant::now();
+    }
     let mut depth_component = vec![0usize; components];
     let mut queue: std::collections::VecDeque<usize> =
         (0..components).filter(|id| indegree[*id] == 0).collect();
@@ -420,11 +451,28 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
             }
         }
     }
+    #[cfg(test)]
+    if let Some(slots) = phases.as_mut() {
+        slots[4] = phase_start.elapsed().as_micros();
+        phase_start = std::time::Instant::now();
+    }
     let cyclic = self_loop || component_sizes.iter().any(|size| *size > 1);
     let depth = (0..count)
         .map(|node| depth_component[component[node]])
         .collect();
+    #[cfg(test)]
+    if let Some(slots) = phases.as_mut() {
+        slots[5] = phase_start.elapsed().as_micros();
+    }
     Layers { depth, cyclic }
+}
+
+/// Test-only entry point: the same `layers_inner` path with six phase durations.
+#[cfg(test)]
+pub(crate) fn layers_phased(graph: &GraphDisplay) -> (Layers, [u128; 6]) {
+    let mut phases = [0u128; 6];
+    let result = layers_inner(graph, Some(&mut phases));
+    (result, phases)
 }
 
 /// Vertical room reserved above the first card row when a drawing has
@@ -2556,6 +2604,69 @@ mod tests {
         assert_eq!(rev.len(), ITERATIONS);
         let _ = query_match_us;
         let _ = query_started;
+
+        // Six-phase decomposition of the same layers path (P1..P6), test-only.
+        let mut phase_samples: Vec<([u128; 6], u128)> = Vec::new();
+        let expected_depth = reference_depths(&revision);
+        for iteration in 0..(WARMUP + ITERATIONS) {
+            let started = Instant::now();
+            let (phased, phases) = super::layers_phased(&revision);
+            let total_us = started.elapsed().as_micros();
+            assert_eq!(
+                phased.depth, expected_depth,
+                "the reference Kahn depths agree"
+            );
+            assert_eq!(
+                phased,
+                super::layers(&revision),
+                "the phased path returns the same layers"
+            );
+            assert!(!phased.cyclic, "the synthetic DAG is acyclic");
+            assert_eq!(phased.depth.len(), LAYER_COUNT * WIDTH);
+            if iteration >= WARMUP {
+                let index = iteration - WARMUP;
+                println!(
+                    "layer_phase_sample iter={index} p1_us={} p2_us={} p3_us={} p4_us={} p5_us={} p6_us={} total_us={total_us}",
+                    phases[0], phases[1], phases[2], phases[3], phases[4], phases[5]
+                );
+                phase_samples.push((phases, total_us));
+            }
+        }
+        assert_eq!(phase_samples.len(), ITERATIONS);
+        let stats = |mut values: Vec<u128>| {
+            values.sort_unstable();
+            let count = values.len();
+            let median = if count % 2 == 1 {
+                values[count / 2]
+            } else {
+                (values[count / 2 - 1] + values[count / 2]) / 2
+            };
+            let p95 = percentile(&values, 0.95);
+            (median, p95, values[count - 1])
+        };
+        let totals: Vec<u128> = phase_samples.iter().map(|sample| sample.1).collect();
+        let (total_median, total_p95, total_max) = stats(totals);
+        for (index, name) in [
+            "p1_index",
+            "p2_successors",
+            "p3_tarjan",
+            "p4_condense",
+            "p5_kahn",
+            "p6_depth",
+        ]
+        .iter()
+        .enumerate()
+        {
+            let values: Vec<u128> = phase_samples.iter().map(|sample| sample.0[index]).collect();
+            let (median, p95, max) = stats(values);
+            let share = median as f64 * 100.0 / total_median as f64;
+            println!(
+                "layer_phase_summary phase={name} n={ITERATIONS} median_us={median} p95_us={p95} max_us={max} share_pct={share:.1}"
+            );
+        }
+        println!(
+            "layer_phase_summary phase=total n={ITERATIONS} median_us={total_median} p95_us={total_p95} max_us={total_max} share_pct=100.0"
+        );
 
         // Different GraphRef must not reuse the other revision's match sets.
         let rows_revision =
