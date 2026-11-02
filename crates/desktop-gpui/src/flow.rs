@@ -2443,6 +2443,35 @@ mod tests {
             revision_reference.edges.len() + revision_reference.skipped_edges,
             (LAYER_COUNT - 1) * WIDTH * 2
         );
+        // Pin the expected numbers directly instead of only comparing them across sides.
+        assert_eq!(
+            revision_reference.skipped_edges, 19_760,
+            "the revision diagram skips the same 19,760 edges"
+        );
+        let revision_nodes: std::collections::HashSet<_> = reference_matched
+            .nodes
+            .iter()
+            .map(|(graph_ref, _)| graph_ref)
+            .collect();
+        assert_eq!(
+            revision_nodes.len(),
+            1,
+            "the revision match set holds a single graph reference"
+        );
+        assert!(
+            revision_nodes.contains(&&revision.graph_ref),
+            "the revision match set belongs to the new graph reference"
+        );
+        assert_eq!(
+            reference_matched.nodes.len(),
+            NODES,
+            "the revision match set covers all 10,000 nodes"
+        );
+        assert_eq!(
+            reference_matched.edges.len(),
+            rows_revision.edges.len(),
+            "the revision match set covers all 19,800 edges"
+        );
         assert!(!query_hit, "a query change is a cache miss");
 
         let mut query = Vec::new();
