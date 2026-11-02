@@ -2974,3 +2974,64 @@ sample series=miss_clear iter=20 match_us=7799 diagram_us=2009 total_us=9809
 sample series=hit iter=20 match_us=0 diagram_us=1830 total_us=1830
 ```
 
+### 19.144 MP-FLOW2 revision change vs query-only: CPU decomposition (2026-11-02)
+
+- **Contract (unchanged):** `RevisionKey` (`GraphRef + source_revision`) keys the Layers cache; the match cache is keyed by the five-component `AdmissionKey` (revision, epoch, publication version, session generation, query). A revision change invalidates both; a query-only change invalidates only the match set (and re-derives Rows), while Layers stay valid.
+- **Conditions (release, warmup 3, 21 iterations, alternating; same 10,000 nodes / 19,800 edges):** query-only = same `GraphRef` + new `query`; revision = new `GraphRef` version/digest + `source_revision = 2` with unchanged node/edge topology. These are synthetic identifier mutations, not real Runtime updates.
+- **Results (median / p95 / max, µs):**
+
+| condition | rows (background) | layers (display) | match set (display) | diagram (display) | display total |
+|---|---|---|---|---|---|
+| query-only | 12,789 / 16,165 / 20,718 | 0 (cached reuse) | 3,158 / 4,709 / 7,637 | 5,108 / 6,412 / 6,848 | 7,605 / 11,121 / 13,708 |
+| revision | 825 / 1,168 / 1,526 | 5,814 / 8,316 / 8,448 | 9,220 / 12,664 / 13,024 | 2,970 / 3,819 / 3,910 | 18,172 / 24,404 / 24,607 |
+
+  Rows run in the background class and are not summed with display-side values into a frame latency. Layers recompute is 32% of the revision display total; match-set rebuild is 51%.
+- **Correctness:** Layers depth/cyclic equal to the pre-change graph; Diagram has 120 nodes, `truncated = true`, `skipped_edges = 19,760`; node/edge identities, order and depths unchanged; match sets for the new revision carry only the new `GraphRef` (no cross-revision reuse). Existing deterministic/key/clear tests pass.
+- **Judgment:** after HashSet, a revision-change display-side CPU total is **~18.2 ms median (p95 24.4 ms)**, above the 60 Hz CPU budget (16.67 ms); query-only is ~7.6 ms. The remaining cost is the match-set rebuild (9.2 ms) plus Layers recompute (5.8 ms). Additional optimization (for example incremental Layers or not rebuilding the full match set) is **not implemented in this slice**; the next measurement should be paint/GPU/present, real Runtime revision frequency, and a Layers-recompute decomposition.
+- **Raw samples (21 iterations × 2 conditions, alternating):**
+
+```text
+rev_sample condition=query_only iter=0 rows_us=14981 layers_us=0 match_us=4709 diagram_us=6412
+rev_sample condition=revision iter=0 rows_us=697 layers_us=5367 match_us=8415 diagram_us=2948
+rev_sample condition=query_only iter=1 rows_us=20718 layers_us=0 match_us=254 diagram_us=6199
+rev_sample condition=revision iter=1 rows_us=1168 layers_us=7932 match_us=10709 diagram_us=3728
+rev_sample condition=query_only iter=2 rows_us=15545 layers_us=0 match_us=4077 diagram_us=5957
+rev_sample condition=revision iter=2 rows_us=752 layers_us=6092 match_us=10234 diagram_us=2978
+rev_sample condition=query_only iter=3 rows_us=15979 layers_us=0 match_us=125 diagram_us=6848
+rev_sample condition=revision iter=3 rows_us=976 layers_us=6981 match_us=10298 diagram_us=2755
+rev_sample condition=query_only iter=4 rows_us=12951 layers_us=0 match_us=3217 diagram_us=5090
+rev_sample condition=revision iter=4 rows_us=864 layers_us=5297 match_us=11133 diagram_us=3910
+rev_sample condition=query_only iter=5 rows_us=12078 layers_us=0 match_us=116 diagram_us=4342
+rev_sample condition=revision iter=5 rows_us=741 layers_us=5814 match_us=11066 diagram_us=3130
+rev_sample condition=query_only iter=6 rows_us=12210 layers_us=0 match_us=3495 diagram_us=5081
+rev_sample condition=revision iter=6 rows_us=653 layers_us=5078 match_us=9012 diagram_us=3358
+rev_sample condition=query_only iter=7 rows_us=12093 layers_us=0 match_us=115 diagram_us=4610
+rev_sample condition=revision iter=7 rows_us=999 layers_us=8448 match_us=12664 diagram_us=3495
+rev_sample condition=query_only iter=8 rows_us=14421 layers_us=0 match_us=7637 diagram_us=6071
+rev_sample condition=revision iter=8 rows_us=1526 layers_us=7561 match_us=13024 diagram_us=3819
+rev_sample condition=query_only iter=9 rows_us=14912 layers_us=0 match_us=168 diagram_us=6282
+rev_sample condition=revision iter=9 rows_us=904 layers_us=8316 match_us=8917 diagram_us=2597
+rev_sample condition=query_only iter=10 rows_us=12789 layers_us=0 match_us=3158 diagram_us=4447
+rev_sample condition=revision iter=10 rows_us=966 layers_us=5833 match_us=9755 diagram_us=2584
+rev_sample condition=query_only iter=11 rows_us=12217 layers_us=0 match_us=116 diagram_us=4301
+rev_sample condition=revision iter=11 rows_us=505 layers_us=5465 match_us=8718 diagram_us=3193
+rev_sample condition=query_only iter=12 rows_us=12209 layers_us=0 match_us=3493 diagram_us=4344
+rev_sample condition=revision iter=12 rows_us=635 layers_us=5621 match_us=9220 diagram_us=2413
+rev_sample condition=query_only iter=13 rows_us=11968 layers_us=0 match_us=113 diagram_us=4654
+rev_sample condition=revision iter=13 rows_us=599 layers_us=5448 match_us=8793 diagram_us=3023
+rev_sample condition=query_only iter=14 rows_us=12143 layers_us=0 match_us=3266 diagram_us=5108
+rev_sample condition=revision iter=14 rows_us=663 layers_us=4780 match_us=9047 diagram_us=3149
+rev_sample condition=query_only iter=15 rows_us=12675 layers_us=0 match_us=130 diagram_us=5499
+rev_sample condition=revision iter=15 rows_us=695 layers_us=5165 match_us=8787 diagram_us=2690
+rev_sample condition=query_only iter=16 rows_us=13432 layers_us=0 match_us=4010 diagram_us=5881
+rev_sample condition=revision iter=16 rows_us=710 layers_us=5033 match_us=8977 diagram_us=2920
+rev_sample condition=query_only iter=17 rows_us=13782 layers_us=0 match_us=130 diagram_us=5724
+rev_sample condition=revision iter=17 rows_us=943 layers_us=6879 match_us=9805 diagram_us=2787
+rev_sample condition=query_only iter=18 rows_us=11924 layers_us=0 match_us=3679 diagram_us=4473
+rev_sample condition=revision iter=18 rows_us=867 layers_us=6043 match_us=8933 diagram_us=2970
+rev_sample condition=query_only iter=19 rows_us=16165 layers_us=0 match_us=185 diagram_us=6255
+rev_sample condition=revision iter=19 rows_us=901 layers_us=6074 match_us=9662 diagram_us=2468
+rev_sample condition=query_only iter=20 rows_us=11737 layers_us=0 match_us=3267 diagram_us=4556
+rev_sample condition=revision iter=20 rows_us=825 layers_us=4895 match_us=8483 diagram_us=2362
+```
+

@@ -2293,6 +2293,207 @@ mod tests {
         checksum
     }
 
+    /// MP-FLOW2 revision change vs query-only: separate Rows (background), Layers
+    /// (display), match-set build/replace and Diagram; release measurement only.
+    ///
+    /// `cargo test --release -p desktop-gpui --lib ten_thousand_revision -- --ignored --nocapture`
+    #[test]
+    #[ignore = "MP-FLOW2 revision-change measurement; run explicitly with --release"]
+    fn ten_thousand_revision_change_series() {
+        use std::time::Instant;
+
+        const LAYER_COUNT: usize = 100;
+        const WIDTH: usize = 100;
+        const ITERATIONS: usize = 21;
+        const WARMUP: usize = 3;
+
+        println!(
+            "MP-FLOW2 revision conditions release={} warmup={WARMUP} iterations={ITERATIONS} nodes={} edges={} order=alternating",
+            !cfg!(debug_assertions),
+            LAYER_COUNT * WIDTH,
+            (LAYER_COUNT - 1) * WIDTH * 2
+        );
+        println!(
+            "MP-FLOW2 revision interval rows=background re-derivation (separate thread class); layers=display recompute (query-only reuses the cached layers, reported as 0); match=HashSet build/replace; diagram=Diagram build; display_total=layers+match+diagram (do not read as frame latency)"
+        );
+        println!(
+            "MP-FLOW2 revision aggregation n={ITERATIONS} median=odd:middle/even:mean(two middle) p95=nearest-rank ceil(n*0.95)-1 max=largest"
+        );
+
+        let graph = Arc::new(super::tests::ten_thousand_node_graph(LAYER_COUNT, WIDTH));
+        let revision = Arc::new(GraphDisplay {
+            graph_ref: GraphRef {
+                graph_id: graph.graph_ref.graph_id.clone(),
+                version: graph.graph_ref.version + 1,
+                digest: desktop_protocol::ArtifactDigest::fixture("digest/flow-bench-r2"),
+            },
+            source_revision: Counter::from_u128(2),
+            nodes: graph.nodes.clone(),
+            edges: graph.edges.clone(),
+        });
+        let layers_first = layers(&graph);
+        let rows_query = rows_cancellable(std::slice::from_ref(&graph), "Node 50", || false)
+            .expect("query rows");
+        let key_query = AdmissionKey {
+            session_generation: 7,
+            publication_version: 11,
+            epoch: Some(EpochId::fixture("epoch/measure")),
+            revision: revision_key(std::slice::from_ref(&graph)),
+            query: "Node 50".to_owned(),
+        };
+        let key_revision = AdmissionKey {
+            session_generation: 7,
+            publication_version: 12,
+            epoch: Some(EpochId::fixture("epoch/measure")),
+            revision: revision_key(std::slice::from_ref(&revision)),
+            query: String::new(),
+        };
+        let mut cache = MatchCache::default();
+        let query_started = Instant::now();
+        let (query_matched, query_hit) =
+            cache.get_or_build(&key_query, || matched_from_rows(&rows_query));
+        let query_diagram = diagram(
+            &graph,
+            &layers_first,
+            &query_matched.nodes,
+            &query_matched.edges,
+        );
+        let query_match_us = query_started.elapsed().as_micros();
+        assert!(!query_hit, "a query change is a cache miss");
+
+        let mut query = Vec::new();
+        let mut rev = Vec::new();
+        for iteration in 0..(WARMUP + ITERATIONS) {
+            let query_first = iteration % 2 == 0;
+            let measure_query = |cache: &mut MatchCache| {
+                let rows_started = Instant::now();
+                let rows = rows_cancellable(std::slice::from_ref(&graph), "Node 50", || false)
+                    .expect("query rows");
+                let rows_us = rows_started.elapsed().as_micros();
+                let _ = cache.get_or_build(&key_revision, || matched_from_rows(&rows_query));
+                let match_started = Instant::now();
+                let (matched, hit) = cache.get_or_build(&key_query, || matched_from_rows(&rows));
+                let match_us = match_started.elapsed().as_micros();
+                assert!(!hit, "the other key replaces the entry");
+                let diagram_started = Instant::now();
+                let drawn = diagram(&graph, &layers_first, &matched.nodes, &matched.edges);
+                let diagram_us = diagram_started.elapsed().as_micros();
+                assert_eq!(drawn, query_diagram, "query-only draws the same diagram");
+                (rows_us, 0_u128, match_us, diagram_us)
+            };
+            let measure_revision = |cache: &mut MatchCache| {
+                // Prefill the other key outside the timer so the revision build is a
+                // replacement miss regardless of which condition ran last.
+                let _ = cache.get_or_build(&key_query, || matched_from_rows(&rows_query));
+                let rows_started = Instant::now();
+                let rows = rows_cancellable(std::slice::from_ref(&revision), "", || false)
+                    .expect("revision rows");
+                let rows_us = rows_started.elapsed().as_micros();
+                let layers_started = Instant::now();
+                let computed = layers(&revision);
+                let layers_us = layers_started.elapsed().as_micros();
+                let match_started = Instant::now();
+                let (matched, hit) = cache.get_or_build(&key_revision, || matched_from_rows(&rows));
+                let match_us = match_started.elapsed().as_micros();
+                assert!(!hit, "a revision change is a cache miss");
+                let diagram_started = Instant::now();
+                let _drawn = diagram(&revision, &computed, &matched.nodes, &matched.edges);
+                let diagram_us = diagram_started.elapsed().as_micros();
+                assert_eq!(computed.depth, layers_first.depth);
+                assert_eq!(computed.cyclic, layers_first.cyclic);
+                (rows_us, layers_us, match_us, diagram_us)
+            };
+            let (q, r) = if query_first {
+                let q = measure_query(&mut cache);
+                let r = measure_revision(&mut cache);
+                (q, r)
+            } else {
+                let r = measure_revision(&mut cache);
+                let q = measure_query(&mut cache);
+                (q, r)
+            };
+            if iteration >= WARMUP {
+                let index = iteration - WARMUP;
+                println!(
+                    "rev_sample condition=query_only iter={index} rows_us={} layers_us={} match_us={} diagram_us={}",
+                    q.0, q.1, q.2, q.3
+                );
+                println!(
+                    "rev_sample condition=revision iter={index} rows_us={} layers_us={} match_us={} diagram_us={}",
+                    r.0, r.1, r.2, r.3
+                );
+                query.push(q);
+                rev.push(r);
+            }
+        }
+        assert_eq!(query.len(), ITERATIONS);
+        assert_eq!(rev.len(), ITERATIONS);
+        let _ = query_match_us;
+        let _ = query_started;
+
+        // Different GraphRef must not reuse the other revision's match sets.
+        let rows_revision =
+            rows_cancellable(std::slice::from_ref(&revision), "", || false).expect("revision rows");
+        cache.clear();
+        let _ = cache.get_or_build(&key_revision, || matched_from_rows(&rows_revision));
+        let (revision_matched, revision_hit) =
+            cache.get_or_build(&key_revision, || panic!("the second lookup must hit"));
+        assert!(revision_hit, "the key is now cached");
+        assert!(
+            revision_matched
+                .nodes
+                .iter()
+                .all(|(graph_ref, _)| *graph_ref == revision.graph_ref)
+        );
+        let reference = diagram(
+            &revision,
+            &layers(&revision),
+            &revision_matched.nodes,
+            &revision_matched.edges,
+        );
+        println!(
+            "MP-FLOW2 revision equivalence layers_equal=true diagram_nodes={} truncated={} skipped_edges={}",
+            reference.nodes.len(),
+            reference.truncated,
+            reference.skipped_edges
+        );
+        println!("MP-FLOW2 revision NOT_MEASURED paint/GPU/present");
+
+        let stats = |mut values: Vec<u128>| {
+            values.sort_unstable();
+            let count = values.len();
+            let median = if count % 2 == 1 {
+                values[count / 2]
+            } else {
+                (values[count / 2 - 1] + values[count / 2]) / 2
+            };
+            let p95 = percentile(&values, 0.95);
+            (median, p95, values[count - 1])
+        };
+        for (name, samples) in [("query_only", &query), ("revision", &rev)] {
+            let rows: Vec<u128> = samples.iter().map(|sample| sample.0).collect();
+            let layers: Vec<u128> = samples.iter().map(|sample| sample.1).collect();
+            let match_only: Vec<u128> = samples.iter().map(|sample| sample.2).collect();
+            let diagram_only: Vec<u128> = samples.iter().map(|sample| sample.3).collect();
+            let display_total: Vec<u128> = samples
+                .iter()
+                .map(|sample| sample.1 + sample.2 + sample.3)
+                .collect();
+            for (phase, values) in [
+                ("rows_background", rows),
+                ("layers_display", layers),
+                ("match_display", match_only),
+                ("diagram_display", diagram_only),
+                ("display_total", display_total),
+            ] {
+                let (median, p95, max) = stats(values);
+                println!(
+                    "rev_summary condition={name} phase={phase} n={ITERATIONS} median_us={median} p95_us={p95} max_us={max}"
+                );
+            }
+        }
+    }
+
     /// Measure one replacement miss (an existing other-key entry is replaced) with the
     /// diagram build inside the same timed interval.
     fn measure_replace(
