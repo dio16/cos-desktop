@@ -83,6 +83,7 @@ param(
     [switch]$SimulateWerShortRead,
     [switch]$SimulateWerEnumerationCap,
     [switch]$SimulateWerConfigUnreadable,
+    [switch]$SimulateWerEnumerationFailure,
     [switch]$SimulateUtf16Miss,
     [int]$MaxWerFiles = 500,
     [int]$MaxWerDepth = 4,
@@ -691,6 +692,8 @@ try {
     function Get-WerSnapshot([string[]]$roots, [int]$maxFiles, [int]$maxDepth) {
         $items = @()
         $capped = $false
+        $unreadableDirs = @()
+        $visited = 0
         foreach ($root in $roots) {
             if (-not (Test-Path -LiteralPath $root)) { continue }
             $stack = [System.Collections.Generic.Stack[object]]::new()
@@ -699,17 +702,23 @@ try {
                 $item = $stack.Pop()
                 $directory = $item[0]
                 $depth = $item[1]
-                if ($depth -gt $maxDepth) { $capped = $true; break }
+                $visited++
+                if ($visited -gt $maxFiles) { $capped = $true; break }
                 try {
                     $entries = @(Get-ChildItem -LiteralPath $directory -Force -ErrorAction Stop)
                 } catch {
-                    $items += [ordered]@{ path = $directory; readable = $false; size = 0; last_write = $null; extension = ''; owner = 'unreadable' }
+                    $unreadableDirs += $directory
                     continue
                 }
                 foreach ($entry in $entries) {
-                    if ($items.Count -ge $maxFiles) { $capped = $true; break }
-                    if ($entry.PSIsContainer) { $stack.Push(@($entry.FullName, ($depth + 1))); continue }
+                    if ($items.Count + $stack.Count -ge $maxFiles) { $capped = $true; break }
+                    # Never descend into a link/reparse point.
                     if ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) { continue }
+                    if ($entry.PSIsContainer) {
+                        if ($depth + 1 -gt $maxDepth) { $capped = $true; continue }
+                        $stack.Push(@($entry.FullName, ($depth + 1)))
+                        continue
+                    }
                     $owner = 'unreadable'
                     try { $owner = (Get-Acl -LiteralPath $entry.FullName -ErrorAction Stop).Owner } catch { $owner = 'unreadable' }
                     $items += [ordered]@{
@@ -723,7 +732,7 @@ try {
                 }
             }
         }
-        return [ordered]@{ items = $items; capped = $capped }
+        return [ordered]@{ items = $items; capped = $capped; unreadable_dirs = $unreadableDirs }
     }
 
     function Read-ExactBytes([System.IO.FileStream]$stream, [int]$count) {
@@ -738,12 +747,16 @@ try {
     }
 
     function Find-TokenInBoundedFile([string]$path, [byte[]]$needle, [int]$capBytes, [byte[]]$needleUtf16) {
-        $result = [ordered]@{ readable = $false; bytes_scanned = 0; matches = 0; matches_utf8 = 0; matches_utf16le = 0; error = $null }
+        $result = [ordered]@{ readable = $false; short_read = $false; bytes_scanned = 0; matches = 0; matches_utf8 = 0; matches_utf16le = 0; error = $null }
         try {
             $stream = [System.IO.File]::Open($path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
             try {
                 $length = [int64]$stream.Length
                 $firstCount = [int][Math]::Min([int64]$capBytes, $length)
+                if ($SimulateWerShortRead) {
+                    # Ask for one byte past EOF, so the exact-read loop really stops short.
+                    $firstCount = [int]($length + 1)
+                }
                 if ($firstCount -gt 0) {
                     $firstRead = Read-ExactBytes $stream $firstCount
                     $first = $firstRead.bytes
@@ -773,7 +786,9 @@ try {
                     if ((Find-Bytes $window $needle) -ge 0) { $result.matches_utf8++ }
                     if ($null -ne $needleUtf16 -and (Find-Bytes $window $needleUtf16) -ge 0) { $result.matches_utf16le++ }
                 }
-                $result.readable = $true
+                # A short read at either segment means the artifact was not fully scanned:
+                # it must never be treated as a verified "no match" result.
+                $result.readable = -not $result.short_read
             } finally {
                 $stream.Dispose()
             }
@@ -887,6 +902,8 @@ try {
     $afterSnapshot = Get-WerSnapshot $werRoots $MaxWerFiles $MaxWerDepth
     $afterCrash = @($afterSnapshot.items)
     $enumerationCapped = [bool]$beforeSnapshot.capped -or [bool]$afterSnapshot.capped
+    $enumerationFailures = @($beforeSnapshot.unreadable_dirs) + @($afterSnapshot.unreadable_dirs)
+    if ($SimulateWerEnumerationFailure) { $enumerationFailures += 'simulated' }
     $beforeKeys = @{}
     foreach ($item in $beforeCrash) { $beforeKeys[$item.path] = $item }
     $newArtifacts = @()
@@ -925,6 +942,7 @@ try {
             size = $artifact.size
             owner = $artifact.owner
             readable = $scanResult.readable
+            error = $scanResult.error
             bytes_scanned = $scanResult.bytes_scanned
             matches_utf8 = $scanResult.matches_utf8
             matches_utf16le = $scanResult.matches_utf16le
@@ -948,8 +966,8 @@ try {
     }
     $desktopUnchanged = (($desktopBefore | Sort-Object) -join '|') -eq (($desktopAfter | Sort-Object) -join '|')
     $werStatus = if ($secretMatches -gt 0 -or $utf16SelfTest -eq 'FAIL') { 'FAIL' }
-        elseif ($unreadableArtifacts -gt 0 -or $enumerationCapped -or -not $configVerified) { 'NOT_VERIFIED' }
         elseif ($SkipWerChildCrash) { 'NOT_RUN' }
+        elseif ($unreadableArtifacts -gt 0 -or $enumerationCapped -or $enumerationFailures.Count -gt 0 -or -not $configVerified) { 'NOT_VERIFIED' }
         elseif ($null -ne $childError) { 'HOLD' }
         elseif (-not $child.real_unhandled_exception) { 'HOLD' }
         elseif ($correlatedArtifacts.Count -eq 0) { 'HOLD' }
@@ -976,7 +994,12 @@ try {
             unrelated = $unrelatedArtifacts.Count
         }
         artifact_dirs = $werRoots
-        enumeration_bounds = [ordered]@{ max_files = $MaxWerFiles; max_depth = $MaxWerDepth; capped = $enumerationCapped }
+        enumeration_bounds = [ordered]@{
+            max_files = $MaxWerFiles
+            max_depth = $MaxWerDepth
+            capped = $enumerationCapped
+            unreadable_dirs = $enumerationFailures
+        }
         config_read = [ordered]@{ verified = $configVerified; unreadable_keys = $configUnreadable }
         short_reads = @($artifactScans | Where-Object { $_.readable -eq $false }).Count
         new_artifacts = $newArtifacts
@@ -1129,6 +1152,7 @@ finally {
         wer_verified = ($werStatus -eq 'PASS_LIMITED')
         wer_config_verified = $configVerified
         wer_enumeration_capped = $enumerationCapped
+        wer_enumeration_failed = ($enumerationFailures.Count -gt 0)
     }
     if ($fail.Count -gt 0) {
         $report.result = 'FAIL'

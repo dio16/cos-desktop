@@ -3254,6 +3254,11 @@ fn supervise(
         if let Some(bounds) = bounds.as_ref()
             && let Some(kind) = exceeded(bounds)
         {
+            // A normal exit recorded while this step was blocked takes precedence over a
+            // cap/deadline classification: never report a finished candidate as killed.
+            if let Some((_, status)) = watch.exited() {
+                break status;
+            }
             let (requested, observed) = cancel(&watch, started);
             cancellation_requested_at_ms = requested;
             cancellation_observed_ms = observed;
@@ -3263,6 +3268,11 @@ fn supervise(
         }
         let remaining = deadline.saturating_sub(started.elapsed());
         if remaining.is_zero() {
+            // A normal exit recorded while this step was blocked takes precedence over a
+            // deadline classification: never report a finished candidate as killed.
+            if let Some((_, status)) = watch.exited() {
+                break status;
+            }
             let (requested, observed) = cancel(&watch, started);
             cancellation_requested_at_ms = requested;
             cancellation_observed_ms = observed;
