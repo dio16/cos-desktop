@@ -986,17 +986,28 @@ impl Shell {
     /// publication identity still matches on return.
     fn preview_support(&mut self, cx: &mut Context<Self>) {
         let Some(handle) = self.handle.clone() else {
-            self.support_preview = Some(SupportPreview::DesktopOnly(
-                app_core::SupportReport::unavailable(
-                    "no observation handle — Desktop information only",
-                    &self.desktop_version,
-                )
-                .render(),
-            ));
-            cx.notify();
+            // No observation handle: the report is still rendered off the UI thread.
+            let version = self.desktop_version.to_string();
+            self.support_task = cx.spawn(async move |this, cx| {
+                let text = cx
+                    .background_executor()
+                    .spawn(async move {
+                        app_core::SupportReport::unavailable(
+                            "no observation handle — Desktop information only",
+                            &version,
+                        )
+                        .render()
+                    })
+                    .await;
+                let _ = this.update(cx, |this, cx| {
+                    this.support_preview = Some(SupportPreview::DesktopOnly(text));
+                    cx.notify();
+                });
+            });
             return;
         };
         let version = self.desktop_version.to_string();
+        let stale_version = self.desktop_version.to_string();
         let identity_handle = handle.clone();
         self.support_task = cx.spawn(async move |this, cx| {
             let preview = cx
@@ -1008,6 +1019,17 @@ impl Shell {
                 .ok()
                 .and_then(|lease| lease.notice())
                 .map(|notice| (notice.session_generation, notice.publication_version));
+            // Render the stale-publication replacement off the UI thread as well.
+            let changed_text = cx
+                .background_executor()
+                .spawn(move || {
+                    app_core::SupportReport::unavailable(
+                        "observation changed while the report was built",
+                        &stale_version,
+                    )
+                    .render()
+                })
+                .await;
             let _ = this.update(cx, |this, cx| {
                 this.support_preview = Some(match preview {
                     SupportPreview::Authorized {
@@ -1021,13 +1043,9 @@ impl Shell {
                             text,
                         }
                     }
-                    SupportPreview::Authorized { .. } => SupportPreview::Unavailable(
-                        app_core::SupportReport::unavailable(
-                            "observation changed while the report was built",
-                            &this.desktop_version,
-                        )
-                        .render(),
-                    ),
+                    SupportPreview::Authorized { .. } => {
+                        SupportPreview::Unavailable(changed_text.clone())
+                    }
                     other => other,
                 });
                 cx.notify();
@@ -4804,6 +4822,9 @@ mod about_tests {
         assert!(!support_preview_identity_matches(false, None, (3, 7)));
         assert!(!support_preview_identity_matches(true, None, (3, 7)));
 
+        // SOURCE_WIRING_VERIFIED only: this checks that the wiring is present in the
+        // source. Actual Tab traversal and Enter/Space delivery are NOT_RUN - no
+        // window is created in this test.
         let source = include_str!("lib.rs");
         let begin = source.find("// SUPPORT-PREVIEW-BEGIN").expect("marker");
         let end = source.find("// SUPPORT-PREVIEW-END").expect("marker");
