@@ -217,6 +217,28 @@ impl RailWorkSignal {
     }
 }
 
+/// Read-only support preview state. An authorized preview carries the publication
+/// identity it was built from and is revalidated immediately before display.
+enum SupportPreview {
+    DesktopOnly(String),
+    Authorized {
+        session_generation: u64,
+        publication_version: u64,
+        text: String,
+    },
+    Unavailable(String),
+}
+
+/// The stored preview is shown only for the publication it was built from; a missing
+/// handle shows the Desktop-only preview, and a changed/revoked identity shows nothing.
+fn support_preview_identity_matches(
+    handle_present: bool,
+    live: Option<(u64, u64)>,
+    stored: (u64, u64),
+) -> bool {
+    handle_present && live == Some(stored)
+}
+
 /// Read-only About rows for the Ctrl+D diagnostics area. Only the injected binary
 /// version is known; Runtime/Protocol/Schema stay explicitly unknown.
 fn about_lines(desktop_version: &str) -> [String; 4] {
@@ -234,6 +256,8 @@ pub struct Shell {
     handle: Option<ObservationHandle>,
     /// Desktop version injected by the binary; independent of any publication.
     desktop_version: Arc<str>,
+    /// Read-only support preview; built on demand, never cached across a publication change.
+    support_preview: Option<SupportPreview>,
     workbench: Option<Workbench>,
     /// Derived display text with its publication identity, revalidated on render.
     cache: DisplayCache,
@@ -426,6 +450,7 @@ impl Shell {
             probe_window: window.window_handle().window_id().as_u64(),
             handle,
             desktop_version: Arc::clone(&desktop_version),
+            support_preview: None,
             workbench,
             cache: DisplayCache::from_text(ui_model::WorkbenchText::withheld_for_desktop(
                 &desktop_version,
@@ -546,6 +571,7 @@ impl Shell {
                 }
                 let _ = this.update(cx, |this, cx| {
                     this.cache.revalidate(Some(notice));
+                    this.support_preview = None;
                     this.rail_state.revalidate(Some(notice));
                     this.request_rail_work(cx);
                     cx.notify();
@@ -906,6 +932,83 @@ impl Shell {
         };
         if let Some(command) = released {
             handle.release_command(command);
+        }
+    }
+
+    /// Build the bounded support report on demand from the current observation.
+    /// No file, network or clipboard output; the ring is scanned once per request.
+    fn preview_support(&mut self, cx: &mut Context<Self>) {
+        let version = self.desktop_version.to_string();
+        let preview = match self.handle.as_ref() {
+            None => SupportPreview::DesktopOnly(
+                app_core::SupportReport::unavailable(
+                    "no observation handle — Desktop information only",
+                    &version,
+                )
+                .render(),
+            ),
+            Some(handle) => match handle.current() {
+                Ok(lease) => {
+                    let notice = lease.notice();
+                    let mut publication = None;
+                    let read_ok = lease
+                        .read(|current| publication = Some(current.clone()))
+                        .is_ok();
+                    match (notice, publication, read_ok) {
+                        (Some(notice), Some(publication), true) => {
+                            let diagnostics = handle.diagnostics_after(0);
+                            SupportPreview::Authorized {
+                                session_generation: notice.session_generation,
+                                publication_version: notice.publication_version,
+                                text: app_core::SupportReport::from_publication(
+                                    &publication,
+                                    &diagnostics,
+                                    &version,
+                                )
+                                .render(),
+                            }
+                        }
+                        _ => SupportPreview::Unavailable(
+                            app_core::SupportReport::unavailable(
+                                "observation is unavailable",
+                                &version,
+                            )
+                            .render(),
+                        ),
+                    }
+                }
+                Err(_) => SupportPreview::Unavailable(
+                    app_core::SupportReport::unavailable("observation is unavailable", &version)
+                        .render(),
+                ),
+            },
+        };
+        self.support_preview = Some(preview);
+        cx.notify();
+    }
+
+    /// Revalidate a stored preview against the live publication identity at display time.
+    fn visible_support_preview(&self) -> Option<&str> {
+        match self.support_preview.as_ref()? {
+            SupportPreview::DesktopOnly(text) => self.handle.is_none().then_some(text.as_str()),
+            SupportPreview::Unavailable(text) => Some(text.as_str()),
+            SupportPreview::Authorized {
+                session_generation,
+                publication_version,
+                text,
+            } => {
+                let live = self
+                    .handle
+                    .as_ref()
+                    .and_then(Self::current_notice)
+                    .map(|notice| (notice.session_generation, notice.publication_version));
+                support_preview_identity_matches(
+                    self.handle.is_some(),
+                    live,
+                    (*session_generation, *publication_version),
+                )
+                .then_some(text.as_str())
+            }
         }
     }
 
@@ -2543,6 +2646,7 @@ impl Render for Shell {
             .is_some_and(|w| w.presentation.diagnostics_open);
         let diagnostic_text = text.diagnostics.clone();
         let about = about_lines(&self.desktop_version);
+        let support_preview = self.visible_support_preview().map(str::to_owned);
         let mode = self.error.clone().unwrap_or_else(|| text.mode.clone());
         // LIMITED-CONTRAST-BEGIN axis-cell: the Context Bar's state-axis labels resolve
         // their colours through the scheme; the guard test below covers this region.
@@ -4103,7 +4207,19 @@ impl Render for Shell {
                                                     .child(div().child(about[1].clone()))
                                                     .child(div().child(about[2].clone()))
                                                     .child(div().child(about[3].clone()))
+                                                    .child(
+                                                        div()
+                                                            .id("support-preview-button")
+                                                            .child("サポート情報を表示")
+                                                            .cursor_pointer()
+                                                            .on_click(cx.listener(|this, _, _, cx| {
+                                                                this.preview_support(cx);
+                                                            })),
+                                                    )
                                                     .child(div().child(diagnostic_text))
+                                                    .when_some(support_preview, |element, preview| {
+                                                        element.child(div().child(preview))
+                                                    })
                                                     .into_any_element()
                                             } else {
                                                 div()
@@ -4557,7 +4673,7 @@ fn flow_diagram_region(
 
 #[cfg(test)]
 mod about_tests {
-    use super::about_lines;
+    use super::{about_lines, support_preview_identity_matches};
 
     #[test]
     fn about_separates_desktop_from_unknown_runtime_versions() {
@@ -4584,6 +4700,27 @@ mod about_tests {
         for unknown in ["Runtime", "Protocol", "Schema"] {
             assert!(!withheld.diagnostics.contains(unknown));
         }
+
+        let report = app_core::SupportReport::unavailable(
+            "no observation handle — Desktop information only",
+            "9.8.7",
+        )
+        .render();
+        assert!(report.contains("Desktop version: 9.8.7"));
+        assert!(report.contains("Runtime version: unknown"));
+        assert!(report.contains("Protocol version: unknown"));
+        assert!(report.contains("Retained events: unknown"));
+        assert!(!report.contains("Retained events: 0"));
+        assert!(report.len() <= 12_288);
+
+        assert!(support_preview_identity_matches(true, Some((3, 7)), (3, 7)));
+        assert!(!support_preview_identity_matches(
+            true,
+            Some((3, 8)),
+            (3, 7)
+        ));
+        assert!(!support_preview_identity_matches(false, None, (3, 7)));
+        assert!(!support_preview_identity_matches(true, None, (3, 7)));
     }
 }
 

@@ -280,7 +280,7 @@ fn a_boundary_line_is_truncated_without_splitting_a_character_and_redacted() {
     let leaked: &'static str = Box::leak(long.into_boxed_str());
     let mut report =
         SupportReport::from_publication(&observing(Some("42")), &batch(Vec::new(), None), DESKTOP);
-    report.desktop_version = leaked;
+    report.desktop_version = leaked.to_owned();
     let rendered = report.render();
     assert!(
         rendered.len() <= MAX_SUPPORT_REPORT_BYTES,

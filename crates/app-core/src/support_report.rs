@@ -109,7 +109,7 @@ impl Default for ReportLimits {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SupportReport {
     /// Desktop package version.
-    pub desktop_version: &'static str,
+    pub desktop_version: String,
     /// Negotiated Runtime version, only when observation exposes one.
     pub runtime_version: ReportValue<String>,
     /// Negotiated protocol version, only when observation exposes one.
@@ -147,10 +147,10 @@ impl SupportReport {
     pub fn from_publication(
         publication: &ObservationPublication,
         diagnostics: &DiagnosticBatch,
-        desktop_version: &'static str,
+        desktop_version: &str,
     ) -> Self {
         Self {
-            desktop_version,
+            desktop_version: desktop_version.to_owned(),
             runtime_version: ReportValue::Unknown(
                 "Runtime version is not exposed through observation",
             ),
@@ -173,9 +173,9 @@ impl SupportReport {
     }
 
     /// Report for a Desktop with no observation handle at all.
-    pub fn unavailable(reason: &'static str, desktop_version: &'static str) -> Self {
+    pub fn unavailable(reason: &'static str, desktop_version: &str) -> Self {
         Self {
-            desktop_version,
+            desktop_version: desktop_version.to_owned(),
             runtime_version: ReportValue::Unknown("no observation session exists"),
             protocol_version: ReportValue::Unknown("no observation session exists"),
             connection: ReportValue::Available(PublicationConnection::Disconnected),
