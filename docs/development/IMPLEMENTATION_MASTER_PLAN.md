@@ -3520,3 +3520,27 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Heading re-check (review follow-up):** `about-heading` was the only label without `.aria_value(...)`, and §19.9 already recorded that a `Role::Label` needs a value to publish a UIA Name. Adding `.aria_value("このアプリについて")` to that one element and rebuilding (exe SHA-256 `5a220aae61a32500276f01ed0c9f4736982977a2cd22fe62d5dcc51cd7b0e3e9`, Windows `10.0.26300.0`, DPI 96, key `Ctrl+D`) turned the empty Text node into a `ControlType.Text` node whose **Name is このアプリについて**, still `IsKeyboardFocusable=False` and still without an AutomationId. **`about-heading` is therefore PASS**; the other six elements were deliberately not re-measured and were not changed. This narrows the earlier conclusion: a minimal attribute fix did work for the heading, while the absence of stable AutomationIds and of Name/Value separation on the other six remains a bridge-level gap.
 - **Note on the heading:** an earlier shorthand from the run called `about-heading` FAIL; under the agreed definitions it was recorded as **PARTIAL** before the fix, because the element existed but exposed no accessible name. It was **not** merely the same bridge gap after all: adding the missing `aria_value` fixed it, so the first conclusion is history, not current status.
 
+### 19.160 MP-AX1 remaining six UIA elements: GPUI mapping investigation (2026-11-02)
+
+- **Scope:** fixed GPUI revision `395def7a067b32ed598fcb3f048969ada9b54942` (Cargo checkout `zed-a70e2ad075855582/395def7`) and `accesskit_windows 0.34.0` / `accesskit_consumer 0.38.0`; no product change, no native run. §19.159 keeps `about-heading = PASS`, other six `PARTIAL`, screen-reader quality `NOT_RUN`.
+- **Attribute conversion (GPUI → AccessKit → UIA):**
+
+| GPUI attribute | GPUI implementation | AccessKit/UIA result |
+|---|---|---|
+| `.id(...)` | `gpui/src/elements/div.rs:779-783` sets the internal `element_id` | not the author ID; hashed GPUI node identity, **not** UIA `AutomationId` |
+| `.accessibility_id(...)` | `div.rs:1320-1325` → `aria.author_id`; written at `div.rs:3525-3527` | `author_id` → `AutomationId` (`accesskit_windows-0.34.0/src/node.rs:554-559`, property table `:1306-1319`) |
+| `.role(Role::Label)` | `div.rs:1301-1310` (override role), `:1899-1905` | `Role::Label → UIA_TextControlTypeId` (node.rs:65) |
+| `.aria_label(...)` | `div.rs:1326-1331`, written `:3528-3530` | label; for `Role::Label` it is **not** used as Name |
+| `.aria_value(...)` | `div.rs:1420-1425`, written `:3552-3554` | value; for `Role::Label`, Name is taken from the value (`node.rs:404-411`; `label_comes_from_value == Role::Label`, `accesskit_consumer/src/node.rs:727-728`); ValuePattern suppressed when label comes from value (`node.rs:591-596`) |
+| `.track_focus(...)` | `div.rs` focus tracking | keyboard focus (read-only labels do not use it) |
+
+- **Key finding:** for `Role::Label`, UIA **Name = value** is the designed AccessKit behavior, and `ValuePattern` is intentionally not exposed. The six elements already provide their visible text as `aria_value`, so their UIA Name is the display text. `AutomationId` is a separate, publicly supported GPUI attribute (`.accessibility_id`), currently unused.
+- **Classification for the six elements (same across all):**
+  - Name/content: **SUPPORTED** (current behavior; no change needed).
+  - `ValuePattern`: **NOT_REQUIRED** (AccessKit deliberately maps value to Name for `Role::Label`; absence is not a defect).
+  - `AutomationId`: **SUPPORTED** via `.accessibility_id(...)`; adoption not approved, no implementation in this slice.
+  - Keyboard focus on read-only labels: **NOT_REQUIRED**.
+  - Screen-reader announcement quality: **UNVERIFIED** — requires native AT verification, not inferable from source.
+- **Optional minimal follow-up (not implemented):** add `.accessibility_id("about-desktop")` etc. to the six labels to publish stable AutomationIds; no TextInput conversion, custom UIA bridge or generic wrapper. This needs a separate decision and native verification.
+- **Limits:** investigation only; no product change, no new Gate. MP-AX1/AX2 overall remain incomplete.
+
