@@ -710,6 +710,10 @@ pub struct Config {
     /// pre-spawn digest comparison, so a test that rewrote the tool can restore it only
     /// after the comparison provably ran. `None` in every operator run.
     pub sample_compare_signal: Option<PathBuf>,
+    /// Test-only: sleep before creating the sampler process, reproducing a loaded
+    /// machine's process-creation cost. It must never delay the candidate's exit
+    /// observation (see `ExitWatch`).
+    pub sample_spawn_delay: Option<Duration>,
     /// Extra argv placed before the fixed sample argv (tests only).
     pub sample_argv_prefix: Vec<OsString>,
     pub invocation: Invocation,
@@ -1197,6 +1201,7 @@ where
         sample_tool,
         sample_gate: None,
         sample_compare_signal: None,
+        sample_spawn_delay: None,
         sample_argv_prefix: Vec::new(),
         invocation: Invocation {
             argv_prefix: Vec::new(),
@@ -2235,6 +2240,7 @@ fn measure(
                     digest: paths.sample_digest.unwrap_or_default().to_owned(),
                     gate: config.sample_gate.clone(),
                     compare_signal: config.sample_compare_signal.clone(),
+                    spawn_delay: config.sample_spawn_delay,
                 });
             // The observation-level reason is the resolved token, not a fixed one:
             // opt-out is `sampling_disabled`, an unreadable or oversized operator tool
@@ -2805,6 +2811,8 @@ struct Sampling<'a> {
     digest: String,
     /// Test seam: first-attempt gate file (see `Config::sample_gate`).
     gate: Option<PathBuf>,
+    /// Test seam: sleep before creating the sampler process (loaded-machine reproduction).
+    spawn_delay: Option<Duration>,
     /// Test seam: comparison-done signal (see `Config::sample_compare_signal`).
     compare_signal: Option<PathBuf>,
 }
@@ -3009,6 +3017,85 @@ pub fn settle_exited_sample_for_tests(
     (measured, sampler.samples, sampler.reason)
 }
 
+/// The candidate's real exit observation.
+///
+/// A dedicated thread watches only the candidate, so a supervision step that blocks for
+/// seconds (for example creating the sampler process on a loaded machine) cannot delay
+/// the exit observation that freezes `wall_ms`.
+struct ExitWatch {
+    state: std::sync::Arc<std::sync::Mutex<ExitState>>,
+    handle: Option<std::thread::JoinHandle<()>>,
+}
+
+struct ExitState {
+    exited: Option<(Instant, Option<std::process::ExitStatus>)>,
+    kill_requested: bool,
+}
+
+impl ExitWatch {
+    fn start(mut child: std::process::Child) -> Self {
+        let state = std::sync::Arc::new(std::sync::Mutex::new(ExitState {
+            exited: None,
+            kill_requested: false,
+        }));
+        let thread_state = std::sync::Arc::clone(&state);
+        let handle = std::thread::spawn(move || {
+            loop {
+                let kill = thread_state
+                    .lock()
+                    .map(|state| state.kill_requested)
+                    .unwrap_or(false);
+                if kill {
+                    let _ = child.kill();
+                    let status = child.wait().ok();
+                    if let Ok(mut state) = thread_state.lock() {
+                        state.exited = Some((Instant::now(), status));
+                    }
+                    return;
+                }
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        if let Ok(mut state) = thread_state.lock() {
+                            state.exited = Some((Instant::now(), Some(status)));
+                        }
+                        return;
+                    }
+                    Ok(None) => {}
+                    Err(_) => {
+                        let _ = child.kill();
+                        let status = child.wait().ok();
+                        if let Ok(mut state) = thread_state.lock() {
+                            state.exited = Some((Instant::now(), status));
+                        }
+                        return;
+                    }
+                }
+                std::thread::sleep(POLL_INTERVAL);
+            }
+        });
+        Self {
+            state,
+            handle: Some(handle),
+        }
+    }
+
+    fn exited(&self) -> Option<(Instant, Option<std::process::ExitStatus>)> {
+        self.state.lock().ok().and_then(|state| state.exited)
+    }
+
+    fn request_kill(&self) {
+        if let Ok(mut state) = self.state.lock() {
+            state.kill_requested = true;
+        }
+    }
+
+    fn join(&mut self) {
+        if let Some(handle) = self.handle.take() {
+            let _ = handle.join();
+        }
+    }
+}
+
 /// How one exited sample settled: a measured value allows the next interval to be
 /// scheduled, any discard stops scheduling.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -3027,7 +3114,7 @@ enum SettledSample {
 /// recorded value is a sampled lower bound: a sample that cannot be read leaves the
 /// field absent with a reason token instead of guessing.
 fn supervise(
-    mut child: Child,
+    child: Child,
     timeout: Duration,
     cancel_after: Option<Duration>,
     bounds: Option<Bounds<'_>>,
@@ -3036,6 +3123,7 @@ fn supervise(
 ) -> Supervised {
     let started = Instant::now();
     let pid = child.id();
+    let mut watch = ExitWatch::start(child);
     let mut timeout_fired = false;
     let mut cancelled = false;
     let mut killed = false;
@@ -3055,16 +3143,10 @@ fn supervise(
 
     let mut in_flight: Option<SampleInFlight> = None;
     let status = loop {
-        match child.try_wait() {
-            Ok(Some(status)) => break Some(status),
-            Ok(None) => {}
-            // A supervision error still reaps the child before returning.
-            Err(_) => {
-                let _ = child.kill();
-                let _ = child.wait();
-                killed = true;
-                break None;
-            }
+        // The exit observation is owned by the watcher thread, so a blocking supervision
+        // step (sampler process creation on a loaded machine) can never delay it.
+        if let Some((_, status)) = watch.exited() {
+            break status;
         }
         if let Some(bounds) = bounds.as_ref() {
             let scratch = file_len(bounds.first) + file_len(bounds.second);
@@ -3149,7 +3231,7 @@ fn supervise(
         if let Some(bounds) = bounds.as_ref()
             && let Some(kind) = exceeded(bounds)
         {
-            let (requested, observed) = cancel(&mut child, started);
+            let (requested, observed) = cancel(&watch, started);
             cancellation_requested_at_ms = requested;
             cancellation_observed_ms = observed;
             killed = true;
@@ -3158,7 +3240,7 @@ fn supervise(
         }
         let remaining = deadline.saturating_sub(started.elapsed());
         if remaining.is_zero() {
-            let (requested, observed) = cancel(&mut child, started);
+            let (requested, observed) = cancel(&watch, started);
             cancellation_requested_at_ms = requested;
             cancellation_observed_ms = observed;
             killed = true;
@@ -3168,9 +3250,15 @@ fn supervise(
         }
         thread::sleep(remaining.min(POLL_INTERVAL));
     };
-    // The candidate's wall time stops here: everything below is sampler bookkeeping and
-    // must never be added to a performance figure.
-    let wall_ms = elapsed_millis(started.elapsed());
+    // The candidate's wall time stops at the exit observation recorded by the watcher:
+    // everything below, including the post-exit harvest bounded by SAMPLE_EXIT_GRACE, is
+    // bookkeeping and must never be added to a performance figure.
+    let exit_at = watch
+        .exited()
+        .map(|(observed_at, _)| observed_at)
+        .unwrap_or_else(Instant::now);
+    let wall_ms = elapsed_millis(exit_at.saturating_duration_since(started));
+    watch.join();
     // A sample still in flight when the child ends is normally killed and never
     // counted (N5). A sampler that already exited, however, produced complete output:
     // discarding it would make the recorded reason depend on process scheduling (the
@@ -3245,10 +3333,12 @@ fn supervise(
 }
 
 /// Kill the child and time the round trip: request to confirmed exit.
-fn cancel(child: &mut Child, started: Instant) -> (Option<u64>, Option<u64>) {
+fn cancel(watch: &ExitWatch, started: Instant) -> (Option<u64>, Option<u64>) {
     let requested = started.elapsed();
-    let _ = child.kill();
-    let _ = child.wait();
+    watch.request_kill();
+    while watch.exited().is_none() {
+        std::thread::sleep(POLL_INTERVAL);
+    }
     let observed = started.elapsed().saturating_sub(requested);
     (
         Some(elapsed_millis(requested)),
@@ -3275,6 +3365,9 @@ struct SampleInFlight {
 /// concurrently with the supervised child: the parent only spawns it here and harvests
 /// it from a later poll. That keeps the hard deadline independent of sampling cost.
 fn start_sample(pid: u32, config: &Sampling<'_>) -> Result<SampleInFlight, &'static str> {
+    if let Some(delay) = config.spawn_delay {
+        std::thread::sleep(delay);
+    }
     let Some((capture, stdout, stderr)) = CaptureFiles::open(config.captures, &config.stem) else {
         return Err(SAMPLE_PARSE_FAILED);
     };

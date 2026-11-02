@@ -3143,6 +3143,31 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     assert_within_candidate_lifetime(wall_ms, start_ms, end_ms, overhead_ms, "post-exit harvest");
 }
 
+/// Reproduces the loaded-machine defect: creating the sampler process takes seconds and
+/// must never delay observing the candidate's exit. The candidate ends in ~50 ms; the
+/// recorded wall time must exclude the 2.5 s sampler-spawn delay, so the same causal
+/// assertion that caught the Gate failure also passes here only when the freeze is real.
+#[test]
+fn a_slow_sampler_spawn_does_not_inflate_wall_ms() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-short");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    inject_sampler(&mut config, "fake_sampler_slow_exit_helper");
+    config.sample_interval_ms = 10;
+    config.max_samples = 1;
+    config.cancel_after_ms = Some(60_000);
+    config.sample_spawn_delay = Some(std::time::Duration::from_millis(2_500));
+    let overhead_ms = calibration_overhead_ms();
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    let wall_ms = observation.wall_ms.expect("the candidate ran");
+    let start_ms = read_epoch_marker(&fixture.base, "candidate-start-at-ms");
+    let end_ms = read_epoch_marker(&fixture.base, "candidate-end-at-ms");
+    assert_within_candidate_lifetime(wall_ms, start_ms, end_ms, overhead_ms, "slow sampler spawn");
+}
+
 /// A sample that passes its own per-sample bound is not counted as a success; the test
 /// asserts the observed `working_set_samples == 0` and the recorded wall time.
 #[test]
@@ -4691,18 +4716,26 @@ fn read_epoch_marker(base: &std::path::Path, name: &str) -> u128 {
 /// be expressed as a fixed delta. Each test calibrates itself once.
 fn calibration_overhead_ms() -> u128 {
     const DETECTABLE_GRACE_MS: u128 = 2_000;
-    let fixture = Fixture::new();
-    fixture.case("a.png", "exit-immediately");
-    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.invocation = helper_invocation(HELPER);
-    let report = harness::run(&config).unwrap();
-    let observation = &report.observations[0];
-    let wall_ms = u128::from(observation.wall_ms.expect("the calibration candidate ran"));
-    let start = read_epoch_marker(&fixture.base, "candidate-start-at-ms");
-    let end = read_epoch_marker(&fixture.base, "candidate-end-at-ms");
-    let lifetime = end.saturating_sub(start);
-    let overhead = wall_ms.saturating_sub(lifetime);
-    eprintln!("calibration overhead: {overhead} ms (wall {wall_ms} ms, lifetime {lifetime} ms)");
+    // The spawn/init/teardown cost varies between runs, especially under load; take the
+    // worst of three measurements from the same environment instead of one sample.
+    let mut overhead = 0_u128;
+    for _ in 0..3 {
+        let fixture = Fixture::new();
+        fixture.case("a.png", "exit-immediately");
+        let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+        config.invocation = helper_invocation(HELPER);
+        let report = harness::run(&config).unwrap();
+        let observation = &report.observations[0];
+        let wall_ms = u128::from(observation.wall_ms.expect("the calibration candidate ran"));
+        let start = read_epoch_marker(&fixture.base, "candidate-start-at-ms");
+        let end = read_epoch_marker(&fixture.base, "candidate-end-at-ms");
+        let lifetime = end.saturating_sub(start);
+        let measured = wall_ms.saturating_sub(lifetime);
+        eprintln!(
+            "calibration overhead: {measured} ms (wall {wall_ms} ms, lifetime {lifetime} ms)"
+        );
+        overhead = overhead.max(measured);
+    }
     if overhead > DETECTABLE_GRACE_MS {
         // A grace folded into the wall time must remain detectable; if the measured
         // overhead already exceeds the grace, the test would be unable to distinguish it.

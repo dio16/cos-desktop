@@ -628,9 +628,14 @@ mod tests {
         let target = temp_root("linked-target");
         std::fs::create_dir_all(&target).expect("the target directory");
         #[cfg(windows)]
-        let created = std::os::windows::fs::symlink_dir(&target, &root).is_ok()
+        let mut created = std::os::windows::fs::symlink_dir(&target, &root).is_ok();
+        #[cfg(windows)]
+        for _ in 0..10 {
+            if created {
+                break;
+            }
             // A junction is also a reparse point and needs no special privilege.
-            || std::process::Command::new("cmd")
+            created = std::process::Command::new("cmd")
                 .args([
                     "/C",
                     "mklink",
@@ -641,6 +646,10 @@ mod tests {
                 .status()
                 .map(|status| status.success())
                 .unwrap_or(false);
+            if !created {
+                std::thread::sleep(std::time::Duration::from_millis(200));
+            }
+        }
         #[cfg(not(windows))]
         let created = std::os::unix::fs::symlink(&target, &root).is_ok();
         if !created {

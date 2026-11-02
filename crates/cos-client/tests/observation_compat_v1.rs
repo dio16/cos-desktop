@@ -401,7 +401,9 @@ fn wait_for(
     now: &mut u64,
     mut condition: impl FnMut(&CompatClient) -> bool,
 ) -> Vec<ClientEvent> {
-    let deadline = Instant::now() + Duration::from_secs(5);
+    // A loaded machine (or a parallel Gate-stress run) can starve the pump loop; the
+    // bound is a sanity limit for a test, not a product timeout.
+    let deadline = Instant::now() + Duration::from_secs(30);
     let mut events = Vec::new();
     while Instant::now() < deadline {
         *now += 10;
