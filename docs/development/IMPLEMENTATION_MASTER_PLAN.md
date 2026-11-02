@@ -3286,3 +3286,27 @@ layer_phase_sample iter=20 p1_us=1077 p2_us=3015 p2a_us=16 p2b_us=2999 p3_us=336
 - **Capacity probes gated (review repair, `74e931f`):** the first version read `capacity()` on every edge even when the analysis was off, so the timed `layers`/`layers_phased` paths carried two extra calls per edge. The probes now live inside the analysis branch and the plain path keeps a single `push`; a per-list `capacity() >= len()` assertion was added for the analysis run.
 - **Post-fix release re-run:** the phase medians are P1 972 / P2 3,038 (P2a 12, P2b 3,024) / P3 374 / P4 509 / P5 99 / P6 15 / P7 601 / phase_sum 5,763 / unattributed 201 / outer 6,006 µs against 19.148's 1,041 / 2,932 / 354 / 471 / 99 / 14 / 563 / 5,608 / 198 / 5,828 - which is about 3 % higher than 19.148 at the median (P2 +3.6 %, P2b +4.5 %, P3 +6 %, P4 +8 %), with higher p95/max on this run. **The cause and the range of run-to-run variation are not established** - only two runs were compared, so this is not shown to lie inside a measured variance band. The structural counts are unchanged: inserted 19,800, skipped 0, initial_allocations 9,900, capacity_grows 0, total_capacity 39,600, total_length 19,800, nonempty 9,900, empty 100, max_outdegree 2, and the per-list assertion passes.
 
+### 19.150 MP-FLOW2 P2b out-degree distribution dependency (2026-11-02)
+
+- **Conditions:** same node/edge counts (10,000 nodes / 19,800 edges), Baseline `100 layers × 100 nodes` vs **Skewed DAG** (`node/0` hub edges to all 9,999 other nodes, plus chain `node/1 → … → node/9802` = 9,801 edges), distinct fixture identifiers/digest. Structure analysis only; **no timing, no optimization, no adoption decision**.
+- **Measured counts (one pass each):**
+
+| metric | Baseline | Skewed |
+|---|---:|---:|
+| inserted_edges | 19,800 | 19,800 |
+| skipped_edges | 0 | 0 |
+| initial_allocations | 9,900 | 9,802 |
+| capacity_grows | 0 | 12 |
+| total_capacity | 39,600 | 55,588 |
+| total_length | 19,800 | 19,800 |
+| nonempty_nodes | 9,900 | 9,802 |
+| empty_nodes | 100 | 198 |
+| max_outdegree | 2 | 9,999 |
+| unused_capacity_slots | 19,800 | 35,788 |
+| capacity utilization | 50.0% | 35.6% |
+
+- **Asserted:** inserted 19,800 / skipped 0 / total_length 19,800 / nonempty 9,802 / empty 198 / max_outdegree 9,999 / capacity_grows > 0 / every list `capacity >= len` / total_capacity >= total_length / adjacency content and order equal the independent reference. Baseline asserts unchanged.
+- **Correctness:** analyzed vs unanalyzed Layers equal for both graphs (depth, cyclic); independent Kahn reference equal; both acyclic; no missing/duplicate edges; existing Diagram/checksum/120-node checks unchanged.
+- **Analysis:** the earlier "zero capacity growth" result is **specific to narrow out-degree** (max 2, length-2 lists fitting the initial Vec capacity). With a high-fan-out hub, the same 19,800 edges produce **12 capacity growths** and capacity utilization falls to 35.6% (35,788 unused slots vs 19,800). Inner-Vec pre-sizing to the known out-degree and CSR would address the slack, but speed/memory-allocator cost is not estimated and **information about the out-degree distribution (per-node counts, headers) is needed** before comparing them. No decision is made.
+- **Limits:** capacity changes are not allocator-internal allocation counts; no timing; paint/GPU/Present not measured. MP-FLOW2 remains incomplete.
+

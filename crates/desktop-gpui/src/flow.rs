@@ -1720,6 +1720,49 @@ mod tests {
         }
     }
 
+    /// Synthetic high-fan-out + chain DAG for the P2b out-degree distribution check:
+    /// 10,000 nodes / 19,800 edges, hub `node/0` with 9,999 out-edges, chain
+    /// `node/1 -> node/2 -> ... -> node/9802` (9,801 edges), acyclic, no duplicates.
+    fn skewed_node_graph() -> GraphDisplay {
+        let nodes: Vec<Arc<GraphNodeDisplay>> = (0..10_000usize)
+            .map(|index| {
+                Arc::new(GraphNodeDisplay {
+                    identity: desktop_protocol::NodeId::fixture(format!("node/{index}")),
+                    label: Arc::from(format!("Node {index}")),
+                    layer: None,
+                })
+            })
+            .collect();
+        let mut edges = Vec::with_capacity(19_800);
+        let mut push = |from: usize, to: usize| {
+            edges.push(Arc::new(GraphEdgeDisplay {
+                identity: desktop_protocol::EdgeId::fixture(format!("skewed-edge/{from}-{to}")),
+                from: desktop_protocol::NodeId::fixture(format!("node/{from}")),
+                to: desktop_protocol::NodeId::fixture(format!("node/{to}")),
+                from_label: Arc::from(format!("Node {from}")),
+                to_label: Arc::from(format!("Node {to}")),
+                kind: Some(Arc::from("FLOW")),
+            }));
+        };
+        for target in 1..=9_999 {
+            push(0, target);
+        }
+        for source in 1..=9_801 {
+            push(source, source + 1);
+        }
+        assert_eq!(edges.len(), 19_800);
+        GraphDisplay {
+            graph_ref: GraphRef {
+                graph_id: GraphId::fixture("graph/flow-skewed"),
+                version: 1,
+                digest: ArtifactDigest::fixture("digest/flow-skewed"),
+            },
+            source_revision: Counter::from_u128(2),
+            nodes: nodes.into(),
+            edges: edges.into(),
+        }
+    }
+
     /// Independent longest-path reference (Kahn), used only for the equivalence check.
     fn reference_depths(graph: &GraphDisplay) -> Vec<usize> {
         use std::collections::{HashMap, VecDeque};
@@ -2850,7 +2893,7 @@ mod tests {
             "adjacency content and order agree"
         );
         println!(
-            "layer_structure inserted_edges={} skipped_edges={} initial_allocations={} capacity_grows={} total_capacity={} total_length={} nonempty_nodes={} empty_nodes={} max_outdegree={}",
+            "layer_structure condition=baseline inserted_edges={} skipped_edges={} initial_allocations={} capacity_grows={} total_capacity={} total_length={} nonempty_nodes={} empty_nodes={} max_outdegree={} unused_slots={} utilization_pct={:.1}",
             stats.inserted_edges,
             stats.skipped_edges,
             stats.initial_allocations,
@@ -2863,7 +2906,72 @@ mod tests {
                 .iter()
                 .filter(|list| list.is_empty())
                 .count(),
-            stats.max_outdegree
+            stats.max_outdegree,
+            stats.total_capacity - stats.total_length,
+            stats.total_length as f64 * 100.0 / stats.total_capacity as f64,
+        );
+
+        // Same node/edge counts, different out-degree distribution (hub + chain).
+        let skewed = super::tests::skewed_node_graph();
+        let (skewed_layers, skewed_stats) = super::layers_structural(&skewed);
+        assert_eq!(skewed_layers, super::layers(&skewed));
+        assert_eq!(skewed_layers.depth, reference_depths(&skewed));
+        assert!(!skewed_layers.cyclic);
+        assert_eq!(skewed_stats.inserted_edges, 19_800);
+        assert_eq!(skewed_stats.skipped_edges, 0);
+        assert_eq!(skewed_stats.total_length, 19_800);
+        assert_eq!(skewed_stats.nonempty_nodes, 9_802);
+        assert_eq!(
+            skewed_stats
+                .adjacency
+                .iter()
+                .filter(|list| list.is_empty())
+                .count(),
+            198
+        );
+        assert_eq!(skewed_stats.max_outdegree, 9_999);
+        assert!(skewed_stats.capacity_grows > 0);
+        assert!(skewed_stats.total_capacity >= skewed_stats.total_length);
+        assert!(
+            skewed_stats
+                .adjacency
+                .iter()
+                .all(|list| list.capacity() >= list.len())
+        );
+        let mut skewed_reference: Vec<Vec<usize>> = vec![Vec::new(); 10_000];
+        let mut skewed_index = std::collections::HashMap::new();
+        for (index, node) in skewed.nodes.iter().enumerate() {
+            skewed_index.insert(node.identity.clone(), index);
+        }
+        for edge in skewed.edges.iter() {
+            let (Some(&from), Some(&to)) =
+                (skewed_index.get(&edge.from), skewed_index.get(&edge.to))
+            else {
+                continue;
+            };
+            skewed_reference[from].push(to);
+        }
+        assert_eq!(
+            skewed_stats.adjacency, skewed_reference,
+            "skewed adjacency content and order agree"
+        );
+        println!(
+            "layer_structure condition=skewed inserted_edges={} skipped_edges={} initial_allocations={} capacity_grows={} total_capacity={} total_length={} nonempty_nodes={} empty_nodes={} max_outdegree={} unused_slots={} utilization_pct={:.1}",
+            skewed_stats.inserted_edges,
+            skewed_stats.skipped_edges,
+            skewed_stats.initial_allocations,
+            skewed_stats.capacity_grows,
+            skewed_stats.total_capacity,
+            skewed_stats.total_length,
+            skewed_stats.nonempty_nodes,
+            skewed_stats
+                .adjacency
+                .iter()
+                .filter(|list| list.is_empty())
+                .count(),
+            skewed_stats.max_outdegree,
+            skewed_stats.total_capacity - skewed_stats.total_length,
+            skewed_stats.total_length as f64 * 100.0 / skewed_stats.total_capacity as f64,
         );
 
         // Different GraphRef must not reuse the other revision's match sets.
