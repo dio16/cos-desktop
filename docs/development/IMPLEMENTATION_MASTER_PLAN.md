@@ -2757,7 +2757,81 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 | `hit` (cache hit) | 2,065 | 2,665 | 2,776 | 0 / 0 | 2,065 / 2,664 |
 
 - **Correction to the earlier single-block run:** the previous 13.65 ms figure was the post-`clear()` rebuild measured as a block. The `miss_replace` series replaces an existing entry with a **synthetic new `query` key over the same rows**, so it measures entry replacement at the same data volume - not a real search-result change or a whole Runtime projection update. In that condition it costs **~1.2 ms more than the clear path (p95 +2.1 ms)** because the old entry is discarded inside the timed region. **Total CPU load of a real key change in production is NOT_MEASURED.**
-- **Samples retained:** the 63 per-iteration samples, the command, the commit, the environment and the aggregation rule are stored in [evidence/flow2-stage-c-cache-1d0cc4a.txt](evidence/flow2-stage-c-cache-1d0cc4a.txt); median/p95/max above were re-computed from that file and match.
+- **Samples retained:** the 63 per-iteration samples are reproduced verbatim below (§19.141.1); the reported median/p95/max were re-computed from them and match. `docs/development/evidence/` is git-ignored by policy, so the samples live in this tracked section instead.
 - **Judgement (CPU only; paint/GPU/Present NOT_MEASURED):** `hit` fits both the 60 Hz budget and the 8.33 ms UI target. `miss_clear` fits the 60 Hz budget (p95 14.47 ms, ~2.2 ms margin) but not the 8.33 ms target. `miss_replace` reaches **p95 16.57 ms against the 16.67 ms budget** - essentially no margin - so **first-frame improvement is required before an entry-replacing key change can be called safe at 60 Hz**; whether a real Runtime projection update also fits is NOT_MEASURED. The stateful `match` set construction (12.06 ms median) remains the dominant cost; the layer recomputation measured earlier at ~4.03 ms is a separate, avoidable cost when only `revision` changes.
 - **Key invalidation and equivalence:** each of `session_generation`, `publication_version`, `epoch`, `revision`, `query` changed alone produces a miss and an unchanged key still hits (5/5). miss/hit/reference diagrams agree structurally and share the deterministic checksum `0xd3e2fdd3e8aa45f2`. Authorization-loss reuse is covered by the existing `clear()` contract test; no new Runtime projection path was exercised.
 - **Not measured / not claimed:** GPUI paint, submit, GPU and Present; the real-world miss frequency; Runtime projected graphs. MP-FLOW2 overall remains incomplete. No new cache was implemented and no production code path was changed by this measurement slice.
+
+#### 19.141.1 Raw samples (verbatim)
+
+```text
+MP-FLOW2 aggregation n=21 median=odd:middle/even:mean(two middle) p95=nearest-rank ceil(n*0.95)-1 max=largest
+sample series=miss_replace iter=0 match_us=12063 diagram_us=3038 total_us=15102
+sample series=miss_clear iter=0 match_us=10920 diagram_us=2823 total_us=13744
+sample series=hit iter=0 match_us=0 diagram_us=2031 total_us=2032
+sample series=miss_replace iter=1 match_us=12561 diagram_us=3063 total_us=15625
+sample series=miss_clear iter=1 match_us=10957 diagram_us=2856 total_us=13814
+sample series=hit iter=1 match_us=0 diagram_us=2058 total_us=2058
+sample series=miss_replace iter=2 match_us=11917 diagram_us=3043 total_us=14961
+sample series=miss_clear iter=2 match_us=11098 diagram_us=3030 total_us=14129
+sample series=hit iter=2 match_us=0 diagram_us=2017 total_us=2017
+sample series=miss_replace iter=3 match_us=12178 diagram_us=3132 total_us=15310
+sample series=miss_clear iter=3 match_us=11057 diagram_us=3001 total_us=14059
+sample series=hit iter=3 match_us=0 diagram_us=2441 total_us=2442
+sample series=miss_replace iter=4 match_us=11971 diagram_us=3067 total_us=15038
+sample series=miss_clear iter=4 match_us=10668 diagram_us=2927 total_us=13596
+sample series=hit iter=4 match_us=0 diagram_us=2019 total_us=2019
+sample series=miss_replace iter=5 match_us=11859 diagram_us=3108 total_us=14968
+sample series=miss_clear iter=5 match_us=10987 diagram_us=3085 total_us=14073
+sample series=hit iter=5 match_us=0 diagram_us=1991 total_us=1991
+sample series=miss_replace iter=6 match_us=11811 diagram_us=3120 total_us=14931
+sample series=miss_clear iter=6 match_us=10824 diagram_us=2927 total_us=13752
+sample series=hit iter=6 match_us=0 diagram_us=2019 total_us=2019
+sample series=miss_replace iter=7 match_us=11950 diagram_us=3189 total_us=15141
+sample series=miss_clear iter=7 match_us=10964 diagram_us=3027 total_us=13992
+sample series=hit iter=7 match_us=0 diagram_us=2127 total_us=2127
+sample series=miss_replace iter=8 match_us=12328 diagram_us=3083 total_us=15412
+sample series=miss_clear iter=8 match_us=10838 diagram_us=3036 total_us=13875
+sample series=hit iter=8 match_us=0 diagram_us=2154 total_us=2155
+sample series=miss_replace iter=9 match_us=11787 diagram_us=3222 total_us=15010
+sample series=miss_clear iter=9 match_us=11365 diagram_us=3106 total_us=14471
+sample series=hit iter=9 match_us=0 diagram_us=2664 total_us=2665
+sample series=miss_replace iter=10 match_us=12006 diagram_us=3042 total_us=15049
+sample series=miss_clear iter=10 match_us=11240 diagram_us=3083 total_us=14323
+sample series=hit iter=10 match_us=0 diagram_us=2468 total_us=2468
+sample series=miss_replace iter=11 match_us=12120 diagram_us=3156 total_us=15276
+sample series=miss_clear iter=11 match_us=11507 diagram_us=3057 total_us=14565
+sample series=hit iter=11 match_us=0 diagram_us=2065 total_us=2065
+sample series=miss_replace iter=12 match_us=12070 diagram_us=3092 total_us=15162
+sample series=miss_clear iter=12 match_us=10939 diagram_us=2982 total_us=13922
+sample series=hit iter=12 match_us=0 diagram_us=2036 total_us=2036
+sample series=miss_replace iter=13 match_us=11814 diagram_us=3117 total_us=14932
+sample series=miss_clear iter=13 match_us=10758 diagram_us=3006 total_us=13765
+sample series=hit iter=13 match_us=0 diagram_us=2224 total_us=2224
+sample series=miss_replace iter=14 match_us=13545 diagram_us=3028 total_us=16573
+sample series=miss_clear iter=14 match_us=11165 diagram_us=2971 total_us=14137
+sample series=hit iter=14 match_us=0 diagram_us=2439 total_us=2439
+sample series=miss_replace iter=15 match_us=12164 diagram_us=3256 total_us=15421
+sample series=miss_clear iter=15 match_us=10189 diagram_us=2816 total_us=13006
+sample series=hit iter=15 match_us=0 diagram_us=2775 total_us=2776
+sample series=miss_replace iter=16 match_us=12114 diagram_us=3015 total_us=15130
+sample series=miss_clear iter=16 match_us=10940 diagram_us=2987 total_us=13928
+sample series=hit iter=16 match_us=0 diagram_us=1972 total_us=1972
+sample series=miss_replace iter=17 match_us=14365 diagram_us=3072 total_us=17438
+sample series=miss_clear iter=17 match_us=10951 diagram_us=3117 total_us=14069
+sample series=hit iter=17 match_us=0 diagram_us=1981 total_us=1982
+sample series=miss_replace iter=18 match_us=11891 diagram_us=2933 total_us=14824
+sample series=miss_clear iter=18 match_us=10726 diagram_us=2827 total_us=13554
+sample series=hit iter=18 match_us=0 diagram_us=1984 total_us=1984
+sample series=miss_replace iter=19 match_us=12094 diagram_us=3108 total_us=15203
+sample series=miss_clear iter=19 match_us=10804 diagram_us=2929 total_us=13733
+sample series=hit iter=19 match_us=0 diagram_us=2172 total_us=2173
+sample series=miss_replace iter=20 match_us=11869 diagram_us=2987 total_us=14857
+sample series=miss_clear iter=20 match_us=10831 diagram_us=3092 total_us=13923
+sample series=hit iter=20 match_us=0 diagram_us=2423 total_us=2423
+summary series=miss_clear n=21 median_us=13923 p95_us=14471 max_us=14565 match_median_us=10940 match_p95_us=11365 match_max_us=11507 diagram_median_us=3001 diagram_p95_us=3106 diagram_max_us=3117
+summary series=miss_replace n=21 median_us=15130 p95_us=16573 max_us=17438 match_median_us=12063 match_p95_us=13545 match_max_us=14365 diagram_median_us=3083 diagram_p95_us=3222 diagram_max_us=3256
+summary series=hit n=21 median_us=2065 p95_us=2665 max_us=2776 match_median_us=0 match_p95_us=0 match_max_us=0 diagram_median_us=2065 diagram_p95_us=2664 diagram_max_us=2775
+```
+
+Re-computed from these samples (Lead, Python): `miss_replace` median 15130 / p95 16573 / max 17438; `miss_clear` 13923 / 14471 / 14565; `hit` 2065 / 2665 / 2776 - all equal to the reported values.
