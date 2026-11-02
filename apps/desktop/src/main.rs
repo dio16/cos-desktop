@@ -19,6 +19,9 @@ use gpui::App;
 use std::path::PathBuf;
 
 fn main() {
+    // Register before any work so an ordinary Rust panic is stored best-effort;
+    // the payload and backtrace are never stored or printed by this hook.
+    app_core::panic_report::install(env!("CARGO_PKG_VERSION"));
     let exit_outcome: window::ExitOutcome =
         std::sync::Arc::new(std::sync::Mutex::new(window::ExitReport::default()));
     let default_fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))

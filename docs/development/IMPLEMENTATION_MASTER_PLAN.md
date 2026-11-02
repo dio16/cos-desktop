@@ -2737,3 +2737,11 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Approval boundary:** `Owner approval = NOT_OBTAINED`; no ledger registration, no `driver.launch()`, no Native capture. Live capture stays **HOLD** pending Owner approval.
 - **R0 suite:** `Ran 354 tests` → `FAILED (failures=1, skipped=12)`; the known `test_live_manifest_and_build_metadata_name_the_current_consumer_source` FAIL remains (live manifests still name the older source; candidate manifests are isolated and not approved). MP-R0A overall completion is **not** claimed.
 
+### 19.140 MP-SEC2 limited: best-effort crash report on ordinary Rust panic (2026-11-02)
+
+- **Implementation:** `app_core::panic_report::install(version)` registers one hook at the very start of `main` (inside `install`, `INSTALLED`/`IN_HOOK` atomics make later installs and re-entrant panics no-ops). The previous hook is dropped uncalled, so the panic payload/backtrace print path is gone. The hook calls the existing `CrashReportStore::open_default()` and `save()` with `CrashReportInput { desktop_version, category: Unknown, diagnostics: None }`; no payload, backtrace, error text, path or credential is read. The save runs inside `catch_unwind`; failures leave the original exit status intact.
+- **Diagnostics:** `diagnostics: None` is explicit — the ring is not reachable from the panic path without a blocking lock, and the report renders "the diagnostic ring was not read".
+- **Tests (6):** `panic_report_helper_modes` plus `a_panic_writes_one_report_without_the_payload`, `a_normal_exit_writes_no_report`, `a_double_install_still_writes_one_report`, `a_blocked_store_does_not_recurse_or_change_the_exit`, `the_existing_three_report_limit_is_kept` (isolated child `LOCALAPPDATA`; synthetic secret never reaches the file; retention 3 kept and readable after restart).
+- **Reached / not reached:** ordinary Rust panic capture = REACHED (limited); normal exit = no report REACHED; OS forced termination, `FailFast` and WER exceptions = NOT IMPLEMENTED / NOT CLAIMED; WER settings and diagnostic-ring persistence were not changed. **MP-SEC2 overall remains HOLD.**
+- **Gates:** fmt clean, clippy 0, workspace **733 passed / 0 failed / 2 ignored** (38 binaries), build and dependency checker OK.
+

@@ -5,6 +5,7 @@ pub mod diagnostics;
 pub mod fence;
 pub mod navigation;
 pub mod observation;
+pub mod panic_report;
 pub mod preferences;
 pub mod redaction;
 pub mod support_report;
