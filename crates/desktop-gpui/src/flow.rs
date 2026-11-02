@@ -1915,4 +1915,202 @@ mod tests {
             );
         }
     }
+
+    /// MP-FLOW2 Stage C: separate 20+ iteration **miss** and **hit** series, plus
+    /// admission-key invalidation and miss/hit diagram equivalence. Release-only
+    /// evidence run; paint/GPU/Present remain NOT_MEASURED.
+    ///
+    /// `cargo test --release -p desktop-gpui --lib ten_thousand_cache -- --ignored --nocapture`
+    #[test]
+    #[ignore = "MP-FLOW2 Stage C cache measurement; run explicitly with --release"]
+    fn ten_thousand_cache_miss_and_hit_series() {
+        use std::time::Instant;
+
+        const LAYER_COUNT: usize = 100;
+        const WIDTH: usize = 100;
+        const NODES: usize = LAYER_COUNT * WIDTH;
+        const ITERATIONS: usize = 21;
+        const WARMUP: usize = 3;
+
+        let graph = Arc::new(ten_thousand_node_graph(LAYER_COUNT, WIDTH));
+        assert_eq!(graph.nodes.len(), NODES);
+        let rows = rows_cancellable(std::slice::from_ref(&graph), "", || false)
+            .expect("uncancelled admission");
+        assert_eq!(rows.nodes.len(), NODES);
+        let computed = layers(&graph);
+        let key = AdmissionKey {
+            session_generation: 7,
+            publication_version: 11,
+            epoch: Some(EpochId::fixture("epoch/measure")),
+            revision: revision_key(std::slice::from_ref(&graph)),
+            query: String::new(),
+        };
+        let reference = {
+            let mut cache = MatchCache::default();
+            let (matched, hit) = cache.get_or_build(&key, || matched_from_rows(&rows));
+            assert!(!hit);
+            diagram(&graph, &computed, &matched.nodes, &matched.edges)
+        };
+        let checksum = |drawn: &super::Diagram| {
+            let mut value = 0u64;
+            for node in &drawn.nodes {
+                for byte in node.node.as_str().bytes() {
+                    value ^= u64::from(byte);
+                    value = value.wrapping_mul(0x100_0000_01b3);
+                }
+                value ^= node.depth as u64;
+                value = value.wrapping_mul(0x100_0000_01b3);
+            }
+            value ^= drawn.edges.len() as u64;
+            value ^= (drawn.skipped_edges as u64) << 32;
+            value
+        };
+        let reference_checksum = checksum(&reference);
+
+        let mut miss = MatchCache::default();
+        let mut miss_total = Vec::with_capacity(ITERATIONS);
+        let mut miss_match = Vec::with_capacity(ITERATIONS);
+        let mut miss_diagram = Vec::with_capacity(ITERATIONS);
+        let mut miss_checksums = Vec::new();
+        for iteration in 0..(WARMUP + ITERATIONS) {
+            miss.clear();
+            let started = Instant::now();
+            let match_started = Instant::now();
+            let (matched, hit) = miss.get_or_build(&key, || matched_from_rows(&rows));
+            let match_us = match_started.elapsed().as_micros();
+            let diagram_started = Instant::now();
+            let drawn = diagram(&graph, &computed, &matched.nodes, &matched.edges);
+            let diagram_us = diagram_started.elapsed().as_micros();
+            let total_us = started.elapsed().as_micros();
+            assert!(!hit, "a cleared cache is a miss");
+            assert_eq!(drawn, reference, "a miss draws the identical diagram");
+            if iteration >= WARMUP {
+                miss_match.push(match_us);
+                miss_diagram.push(diagram_us);
+                miss_total.push(total_us);
+                miss_checksums.push(checksum(&drawn));
+            }
+        }
+
+        let mut hit = MatchCache::default();
+        let _ = hit.get_or_build(&key, || matched_from_rows(&rows));
+        let mut hit_total = Vec::with_capacity(ITERATIONS);
+        let mut hit_match = Vec::with_capacity(ITERATIONS);
+        let mut hit_diagram = Vec::with_capacity(ITERATIONS);
+        let mut hit_checksums = Vec::new();
+        for iteration in 0..(WARMUP + ITERATIONS) {
+            let started = Instant::now();
+            let match_started = Instant::now();
+            let (matched, found) =
+                hit.get_or_build(&key, || panic!("a steady frame must hit the match cache"));
+            let match_us = match_started.elapsed().as_micros();
+            let diagram_started = Instant::now();
+            let drawn = diagram(&graph, &computed, &matched.nodes, &matched.edges);
+            let diagram_us = diagram_started.elapsed().as_micros();
+            let total_us = started.elapsed().as_micros();
+            assert!(found);
+            assert_eq!(drawn, reference, "a hit draws the identical diagram");
+            if iteration >= WARMUP {
+                hit_match.push(match_us);
+                hit_diagram.push(diagram_us);
+                hit_total.push(total_us);
+                hit_checksums.push(checksum(&drawn));
+            }
+        }
+        assert!(
+            miss_checksums
+                .iter()
+                .all(|value| *value == reference_checksum)
+        );
+        assert!(
+            hit_checksums
+                .iter()
+                .all(|value| *value == reference_checksum)
+        );
+
+        // Every admission-key component alone forces a miss; the untouched key hits.
+        let mut cache = MatchCache::default();
+        let _ = cache.get_or_build(&key, || matched_from_rows(&rows));
+        let changes: [(&str, AdmissionKey); 5] = [
+            (
+                "session_generation",
+                AdmissionKey {
+                    session_generation: 8,
+                    ..key.clone()
+                },
+            ),
+            (
+                "publication_version",
+                AdmissionKey {
+                    publication_version: 12,
+                    ..key.clone()
+                },
+            ),
+            (
+                "epoch",
+                AdmissionKey {
+                    epoch: Some(EpochId::fixture("epoch/other")),
+                    ..key.clone()
+                },
+            ),
+            (
+                "revision",
+                AdmissionKey {
+                    revision: revision_key(&[]),
+                    ..key.clone()
+                },
+            ),
+            (
+                "query",
+                AdmissionKey {
+                    query: "goal".to_owned(),
+                    ..key.clone()
+                },
+            ),
+        ];
+        for (name, changed) in &changes {
+            let (_, found) = cache.get_or_build(changed, || matched_from_rows(&rows));
+            assert!(!found, "{name} changes must miss");
+            let (_, found_again) =
+                cache.get_or_build(changed, || panic!("the unchanged key must hit"));
+            assert!(found_again, "{name} unchanged must hit");
+            println!("MP-FLOW2 key_invalidation {name}=miss_then_hit");
+        }
+        let (_, found) = cache.get_or_build(&key, || matched_from_rows(&rows));
+        assert!(
+            !found,
+            "returning to the original key is a miss after another key"
+        );
+
+        let stats = |mut values: Vec<u128>| {
+            values.sort_unstable();
+            let count = values.len();
+            let median = if count % 2 == 1 {
+                values[count / 2]
+            } else {
+                (values[count / 2 - 1] + values[count / 2]) / 2
+            };
+            let p95 = percentile(&values, 0.95);
+            (median, p95, values[count - 1])
+        };
+        let (mm, mp, mx) = stats(miss_total);
+        let (mmatch, mmatchp, mmatchx) = stats(miss_match);
+        let (mdiag, mdiagp, mdiagx) = stats(miss_diagram);
+        let (hm, hp, hx) = stats(hit_total);
+        let (hmatch, hmatchp, hmatchx) = stats(hit_match);
+        let (hdiag, hdiagp, hdiagx) = stats(hit_diagram);
+        println!(
+            "MP-FLOW2 series release={} nodes={NODES} edges={} iterations={ITERATIONS} warmup={WARMUP} checksum=0x{reference_checksum:016x}",
+            !cfg!(debug_assertions),
+            graph.edges.len()
+        );
+        println!("MP-FLOW2 miss_total median={mm}us p95={mp}us max={mx}us");
+        println!("MP-FLOW2 miss_matches median={mmatch}us p95={mmatchp}us max={mmatchx}us");
+        println!("MP-FLOW2 miss_diagram median={mdiag}us p95={mdiagp}us max={mdiagx}us");
+        println!("MP-FLOW2 hit_total median={hm}us p95={hp}us max={hx}us");
+        println!("MP-FLOW2 hit_matches median={hmatch}us p95={hmatchp}us max={hmatchx}us");
+        println!("MP-FLOW2 hit_diagram median={hdiag}us p95={hdiagp}us max={hdiagx}us");
+        println!("MP-FLOW2 equivalence miss==hit==reference checksum=0x{reference_checksum:016x}");
+        println!("MP-FLOW2 NOT_MEASURED paint/GPU/present");
+    }
 }
