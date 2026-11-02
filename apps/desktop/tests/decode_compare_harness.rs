@@ -3193,6 +3193,63 @@ fn a_failed_kill_leaves_the_exit_unconfirmed() {
     );
 }
 
+/// A stop requested well before the timeout is a cancellation, not a timeout: the timeout
+/// verdict comes from the recorded stop instant, never from when supervision resumed.
+#[test]
+fn a_stop_before_the_timeout_is_not_reported_as_a_timeout() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 5_000;
+    config.cancel_after_ms = Some(100);
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert!(
+        !observation.timeout_fired,
+        "a 100 ms stop against a 5000 ms timeout is not a timeout"
+    );
+    assert!(
+        observation.cancellation_requested_at_ms.is_some(),
+        "a requested stop records when it was requested"
+    );
+}
+
+/// A cancel whose confirmation limit expires must still stop the child and leave the exit
+/// unconfirmed, without waiting on a watcher that is delayed past the limit.
+#[test]
+fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 10_000;
+    config.cancel_after_ms = Some(100);
+    config.watch_delay = Some(std::time::Duration::from_secs(4));
+    let started = std::time::Instant::now();
+    let report = harness::run(&config).unwrap();
+    let elapsed = started.elapsed();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert!(
+        observation.wall_ms.is_none(),
+        "an unconfirmed exit keeps no wall time"
+    );
+    assert!(
+        observation.cancellation_observed_ms.is_none(),
+        "an unconfirmed exit keeps no confirmation duration"
+    );
+    assert!(
+        elapsed < std::time::Duration::from_secs(8),
+        "an aborted cancel must not wait on the delayed watcher (took {elapsed:?})"
+    );
+}
+
 /// A candidate that naturally exits AFTER the deadline must not be reported as a
 /// deadline-compliant normal exit when the first observation is late.
 #[test]
