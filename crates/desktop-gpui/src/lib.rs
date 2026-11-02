@@ -229,6 +229,46 @@ enum SupportPreview {
     Unavailable(String),
 }
 
+/// Build the support report from one observation snapshot, off the UI thread. The
+/// ring is copied at most once per request and the report is bounded by app-core.
+fn build_support_preview(handle: &ObservationHandle, desktop_version: &str) -> SupportPreview {
+    match handle.current() {
+        Ok(lease) => {
+            let notice = lease.notice();
+            let mut publication = None;
+            let read_ok = lease
+                .read(|current| publication = Some(current.clone()))
+                .is_ok();
+            match (notice, publication, read_ok) {
+                (Some(notice), Some(publication), true) => {
+                    let diagnostics = handle.diagnostics_after(0);
+                    SupportPreview::Authorized {
+                        session_generation: notice.session_generation,
+                        publication_version: notice.publication_version,
+                        text: app_core::SupportReport::from_publication(
+                            &publication,
+                            &diagnostics,
+                            desktop_version,
+                        )
+                        .render(),
+                    }
+                }
+                _ => SupportPreview::Unavailable(
+                    app_core::SupportReport::unavailable(
+                        "observation is unavailable",
+                        desktop_version,
+                    )
+                    .render(),
+                ),
+            }
+        }
+        Err(_) => SupportPreview::Unavailable(
+            app_core::SupportReport::unavailable("observation is unavailable", desktop_version)
+                .render(),
+        ),
+    }
+}
+
 /// The stored preview is shown only for the publication it was built from; a missing
 /// handle shows the Desktop-only preview, and a changed/revoked identity shows nothing.
 fn support_preview_identity_matches(
@@ -258,6 +298,10 @@ pub struct Shell {
     desktop_version: Arc<str>,
     /// Read-only support preview; built on demand, never cached across a publication change.
     support_preview: Option<SupportPreview>,
+    /// Keyboard focus for the read-only support preview action.
+    support_focus: FocusHandle,
+    /// One-shot background report build; dropped when superseded.
+    support_task: Task<()>,
     workbench: Option<Workbench>,
     /// Derived display text with its publication identity, revalidated on render.
     cache: DisplayCache,
@@ -451,6 +495,8 @@ impl Shell {
             handle,
             desktop_version: Arc::clone(&desktop_version),
             support_preview: None,
+            support_focus: cx.focus_handle().tab_stop(true),
+            support_task: cx.spawn(async move |_this, _cx| {}),
             workbench,
             cache: DisplayCache::from_text(ui_model::WorkbenchText::withheld_for_desktop(
                 &desktop_version,
@@ -557,6 +603,7 @@ impl Shell {
                     let finished = handle.is_finished();
                     let _ = this.update(cx, |this, cx| {
                         this.cache.invalidate();
+                        this.support_preview = None;
                         this.rail_state.revalidate(None);
                         this.request_rail_work(cx);
                         cx.notify();
@@ -935,56 +982,57 @@ impl Shell {
         }
     }
 
-    /// Build the bounded support report on demand from the current observation.
-    /// No file, network or clipboard output; the ring is scanned once per request.
+    /// Build the bounded support report off the UI thread; install it only when the
+    /// publication identity still matches on return.
     fn preview_support(&mut self, cx: &mut Context<Self>) {
-        let version = self.desktop_version.to_string();
-        let preview = match self.handle.as_ref() {
-            None => SupportPreview::DesktopOnly(
+        let Some(handle) = self.handle.clone() else {
+            self.support_preview = Some(SupportPreview::DesktopOnly(
                 app_core::SupportReport::unavailable(
                     "no observation handle — Desktop information only",
-                    &version,
+                    &self.desktop_version,
                 )
                 .render(),
-            ),
-            Some(handle) => match handle.current() {
-                Ok(lease) => {
-                    let notice = lease.notice();
-                    let mut publication = None;
-                    let read_ok = lease
-                        .read(|current| publication = Some(current.clone()))
-                        .is_ok();
-                    match (notice, publication, read_ok) {
-                        (Some(notice), Some(publication), true) => {
-                            let diagnostics = handle.diagnostics_after(0);
-                            SupportPreview::Authorized {
-                                session_generation: notice.session_generation,
-                                publication_version: notice.publication_version,
-                                text: app_core::SupportReport::from_publication(
-                                    &publication,
-                                    &diagnostics,
-                                    &version,
-                                )
-                                .render(),
-                            }
-                        }
-                        _ => SupportPreview::Unavailable(
-                            app_core::SupportReport::unavailable(
-                                "observation is unavailable",
-                                &version,
-                            )
-                            .render(),
-                        ),
-                    }
-                }
-                Err(_) => SupportPreview::Unavailable(
-                    app_core::SupportReport::unavailable("observation is unavailable", &version)
-                        .render(),
-                ),
-            },
+            ));
+            cx.notify();
+            return;
         };
-        self.support_preview = Some(preview);
-        cx.notify();
+        let version = self.desktop_version.to_string();
+        let identity_handle = handle.clone();
+        self.support_task = cx.spawn(async move |this, cx| {
+            let preview = cx
+                .background_executor()
+                .spawn(async move { build_support_preview(&handle, &version) })
+                .await;
+            let live = identity_handle
+                .current()
+                .ok()
+                .and_then(|lease| lease.notice())
+                .map(|notice| (notice.session_generation, notice.publication_version));
+            let _ = this.update(cx, |this, cx| {
+                this.support_preview = Some(match preview {
+                    SupportPreview::Authorized {
+                        session_generation,
+                        publication_version,
+                        text,
+                    } if live == Some((session_generation, publication_version)) => {
+                        SupportPreview::Authorized {
+                            session_generation,
+                            publication_version,
+                            text,
+                        }
+                    }
+                    SupportPreview::Authorized { .. } => SupportPreview::Unavailable(
+                        app_core::SupportReport::unavailable(
+                            "observation changed while the report was built",
+                            &this.desktop_version,
+                        )
+                        .render(),
+                    ),
+                    other => other,
+                });
+                cx.notify();
+            });
+        });
     }
 
     /// Revalidate a stored preview against the live publication identity at display time.
@@ -2647,6 +2695,20 @@ impl Render for Shell {
         let diagnostic_text = text.diagnostics.clone();
         let about = about_lines(&self.desktop_version);
         let support_preview = self.visible_support_preview().map(str::to_owned);
+        let support_focused = self.support_focus.is_focused(window);
+        let support_background = colors.raised_face;
+        let (support_border_width, support_border_color) = match shell_style::control_focus(
+            &self.tokens,
+            support_focused,
+            window.scale_factor(),
+            &colors,
+            support_background,
+            colors.border,
+            &[colors.text],
+        ) {
+            Ok(value) => value,
+            Err(_) => (px(0.0), colors.border),
+        };
         let mode = self.error.clone().unwrap_or_else(|| text.mode.clone());
         // LIMITED-CONTRAST-BEGIN axis-cell: the Context Bar's state-axis labels resolve
         // their colours through the scheme; the guard test below covers this region.
@@ -4209,12 +4271,32 @@ impl Render for Shell {
                                                     .child(div().child(about[3].clone()))
                                                     .child(
                                                         div()
+                                                            // SUPPORT-PREVIEW-BEGIN
                                                             .id("support-preview-button")
-                                                            .child("サポート情報を表示")
+                                                            .role(Role::Button)
+                                                            .aria_label("サポート情報を表示")
+                                                            .aria_keyshortcuts("Enter Space")
+                                                            .aria_description(
+                                                                "現在の観測から読み取り専用のサポート情報を生成して表示します。ファイル出力や送信は行いません。",
+                                                            )
+                                                            .track_focus(&self.support_focus)
+                                                            .px_4()
+                                                            .py_2()
+                                                            .border(support_border_width)
+                                                            .border_color(rgb(support_border_color))
+                                                            .bg(rgb(support_background))
+                                                            .text_color(rgb(colors.text))
                                                             .cursor_pointer()
+                                                            .on_action(cx.listener(
+                                                                |this, _: &Activate, _, cx| {
+                                                                    this.preview_support(cx);
+                                                                },
+                                                            ))
                                                             .on_click(cx.listener(|this, _, _, cx| {
                                                                 this.preview_support(cx);
-                                                            })),
+                                                            }))
+                                                            .child("サポート情報を表示")
+                                                            // SUPPORT-PREVIEW-END,
                                                     )
                                                     .child(div().child(diagnostic_text))
                                                     .when_some(support_preview, |element, preview| {
@@ -4721,6 +4803,25 @@ mod about_tests {
         ));
         assert!(!support_preview_identity_matches(false, None, (3, 7)));
         assert!(!support_preview_identity_matches(true, None, (3, 7)));
+
+        let source = include_str!("lib.rs");
+        let begin = source.find("// SUPPORT-PREVIEW-BEGIN").expect("marker");
+        let end = source.find("// SUPPORT-PREVIEW-END").expect("marker");
+        let region = &source[begin..end];
+        for needle in [
+            ".id(\"support-preview-button\")",
+            ".role(Role::Button)",
+            ".aria_label(\"サポート情報を表示\")",
+            ".aria_keyshortcuts(\"Enter Space\")",
+            ".track_focus(&self.support_focus)",
+            ".on_action(cx.listener(",
+            ".on_click(cx.listener(",
+        ] {
+            assert!(region.contains(needle), "missing {needle}");
+        }
+        assert!(source[..begin].contains("fn build_support_preview"));
+        assert!(source[..begin].contains("background_executor()"));
+        assert!(source.contains("this.support_preview = None;"));
     }
 }
 
