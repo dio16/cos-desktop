@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use app_core::diagnostics::{DiagnosticBatch, DiagnosticCounts, EventGap};
 use app_core::{
     CrashCategory, CrashReportInput, CrashReportStore, CrashStoreError, MAX_CRASH_REPORT_BYTES,
-    MAX_CRASH_REPORTS,
+    MAX_CRASH_REPORTS, REPORT_EXTENSION, REPORT_PREFIX,
 };
 
 fn test_root(name: &str) -> PathBuf {
@@ -305,5 +305,110 @@ fn the_declared_bounds_are_the_ratified_values() {
     let reports = store.list().expect("the managed reports");
     assert!(reports.is_empty());
     assert!(store.read(1).is_err(), "a missing report is not invented");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+fn report_path(store: &CrashReportStore, id: u64) -> PathBuf {
+    store
+        .root()
+        .join(format!("{}{:0>10}.{}", REPORT_PREFIX, id, REPORT_EXTENSION))
+}
+
+fn rewrite_body(store: &CrashReportStore, id: u64, body: &str) {
+    std::fs::write(report_path(store, id), body).expect("rewrite the managed report");
+}
+
+#[test]
+fn both_rendered_formats_round_trip_through_read() {
+    let root = test_root("round-trip");
+    let store = CrashReportStore::open_at(&root).unwrap();
+    let without = store
+        .save(&CrashReportInput {
+            desktop_version: "0.1.0",
+            category: CrashCategory::Unknown,
+            diagnostics: None,
+        })
+        .unwrap();
+    let without_body = store.read(without.id).unwrap();
+    assert!(without_body.contains("Retained events: unknown"));
+
+    let with = store
+        .save(&CrashReportInput {
+            desktop_version: "0.1.0",
+            category: CrashCategory::Render,
+            diagnostics: Some(&batch()),
+        })
+        .unwrap();
+    let with_body = store.read(with.id).unwrap();
+    assert!(with_body.contains("Latest sequence: 5000"));
+    assert!(with_body.contains("Counts: activity 4095, connection 0, error 0, resync 1"));
+    assert!(store.read(without.id).unwrap() == without_body);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn a_report_with_an_extra_field_or_injected_text_is_refused() {
+    let root = test_root("extra-field");
+    let store = CrashReportStore::open_at(&root).unwrap();
+    let meta = store
+        .save(&CrashReportInput {
+            desktop_version: "0.1.0",
+            category: CrashCategory::Unknown,
+            diagnostics: None,
+        })
+        .unwrap();
+    let valid = store.read(meta.id).unwrap();
+    for body in [
+        format!("{valid}\nAuthorization: Bearer secret-token"),
+        format!("{valid}\nRetained events: 1"),
+        valid.replace(
+            "Desktop version: 0.1.0",
+            "Desktop version: file:///C:/private/x",
+        ),
+        valid.replace("Crash category: unknown", "Crash category: injected"),
+    ] {
+        rewrite_body(&store, meta.id, &body);
+        let before = std::fs::read(report_path(&store, meta.id)).unwrap();
+        assert!(matches!(
+            store.read(meta.id),
+            Err(CrashStoreError::InvalidReport)
+        ));
+        let after = std::fs::read(report_path(&store, meta.id)).unwrap();
+        assert_eq!(
+            before, after,
+            "a refused report is never rewritten or deleted"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn a_full_report_with_duplicate_or_malformed_fields_is_refused() {
+    let root = test_root("duplicate-field");
+    let store = CrashReportStore::open_at(&root).unwrap();
+    let meta = store
+        .save(&CrashReportInput {
+            desktop_version: "0.1.0",
+            category: CrashCategory::Media,
+            diagnostics: Some(&batch()),
+        })
+        .unwrap();
+    let valid = store.read(meta.id).unwrap();
+    for body in [
+        valid.replace(
+            "Latest sequence: 5000",
+            "Latest sequence: 5000\nLatest sequence: 5000",
+        ),
+        valid.replace("Event gap: 1-904 (904 lost)", "Event gap: 1-904 (905 lost)"),
+        valid.replace("Retained events: 4096", "Retained events: 04096"),
+        valid.replace("Counts: activity 4095", "Counts: activity 4095,"),
+        valid.replace("Desktop version: 0.1.0", "Desktop version: 0.1.0\u{7}"),
+    ] {
+        rewrite_body(&store, meta.id, &body);
+        assert!(
+            matches!(store.read(meta.id), Err(CrashStoreError::InvalidReport)),
+            "the body must be refused"
+        );
+    }
     let _ = std::fs::remove_dir_all(&root);
 }

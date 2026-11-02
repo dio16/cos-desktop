@@ -237,7 +237,9 @@ impl CrashReportStore {
         if bytes.len() > MAX_CRASH_REPORT_BYTES {
             return Err(CrashStoreError::InvalidReport);
         }
-        String::from_utf8(bytes).map_err(|_| CrashStoreError::InvalidReport)
+        let body = String::from_utf8(bytes).map_err(|_| CrashStoreError::InvalidReport)?;
+        validate_report_body(&body)?;
+        Ok(body)
     }
 
     /// Render, bound and atomically store one report.
@@ -461,6 +463,163 @@ fn managed_id(name: &str) -> Option<u64> {
         return None;
     }
     digits.parse().ok()
+}
+
+/// The only two accepted report layouts. Free-form lines are never accepted: the
+/// fixed field names, order, values and line count prove the body is one that
+/// `render_report` produced (or an identical previous version).
+fn validate_report_body(body: &str) -> Result<(), CrashStoreError> {
+    if body.is_empty()
+        || body
+            .chars()
+            .any(|character| character.is_control() && character != '\n')
+        || body.ends_with('\n')
+    {
+        return Err(CrashStoreError::InvalidReport);
+    }
+    let lines: Vec<&str> = body.split('\n').collect();
+    let Some(version) = lines
+        .first()
+        .and_then(|line| line.strip_prefix("Desktop version: "))
+    else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    if !safe_version(version) {
+        return Err(CrashStoreError::InvalidReport);
+    }
+    let Some(category) = lines
+        .get(1)
+        .and_then(|line| line.strip_prefix("Crash category: "))
+    else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    if !matches!(
+        category,
+        "startup" | "observation" | "media" | "render" | "shutdown" | "unknown"
+    ) {
+        return Err(CrashStoreError::InvalidReport);
+    }
+    const NO_DIAGNOSTICS: &str = "Retained events: unknown (the diagnostic ring was not read)";
+    if lines.len() == 3 {
+        return if lines[2] == NO_DIAGNOSTICS {
+            Ok(())
+        } else {
+            Err(CrashStoreError::InvalidReport)
+        };
+    }
+    if lines.len() != 7 {
+        return Err(CrashStoreError::InvalidReport);
+    }
+    let Some(retained) = lines[2].strip_prefix("Retained events: ") else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    let Some(latest) = lines[3].strip_prefix("Latest sequence: ") else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    let Some(oldest) = lines[4].strip_prefix("Oldest retained: ") else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    let Some(gap) = lines[5].strip_prefix("Event gap: ") else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    let Some(counts) = lines[6].strip_prefix("Counts: ") else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    canonical_number(retained)?;
+    canonical_number(latest)?;
+    if oldest != "unknown" {
+        canonical_number(oldest)?;
+    }
+    validate_gap(gap)?;
+    validate_counts(counts)?;
+    Ok(())
+}
+
+/// A safe, bounded version line: ASCII alphanumerics plus `. + - _`, spaces, and the
+/// redactor's fixed markers only. Credentials, URLs and private paths cannot pass.
+fn safe_version(value: &str) -> bool {
+    if value.is_empty() || value.len() > 256 {
+        return false;
+    }
+    let bytes = value.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'+' | b'-' | b'_' | b' ' | b'=') {
+            index += 1;
+            continue;
+        }
+        let rest = &value[index..];
+        let marker = "[redacted]".len();
+        if rest.starts_with("[signed-locator]") {
+            index += "[signed-locator]".len();
+            continue;
+        }
+        if rest.starts_with("[redacted]") {
+            index += marker;
+            continue;
+        }
+        let path_marker = "[private-path]".len();
+        if rest.starts_with("[private-path]") {
+            index += path_marker;
+            continue;
+        }
+        return false;
+    }
+    let lowered = value.to_lowercase();
+    !lowered.contains("bearer ") && !lowered.contains("://")
+}
+
+/// Canonical decimal `u64`: digits only, no sign, no leading zero (except `0`).
+fn canonical_number(value: &str) -> Result<u64, CrashStoreError> {
+    if value.is_empty()
+        || !value.bytes().all(|byte| byte.is_ascii_digit())
+        || (value.len() > 1 && value.starts_with('0'))
+    {
+        return Err(CrashStoreError::InvalidReport);
+    }
+    value.parse().map_err(|_| CrashStoreError::InvalidReport)
+}
+
+/// `none`, or `from-to (lost lost)` with `from <= to` and the exact lost count.
+fn validate_gap(value: &str) -> Result<(), CrashStoreError> {
+    if value == "none" {
+        return Ok(());
+    }
+    let Some((range, lost)) = value.split_once(" (") else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    let Some(lost) = lost.strip_suffix(" lost)") else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    let Some((from, to)) = range.split_once('-') else {
+        return Err(CrashStoreError::InvalidReport);
+    };
+    let from = canonical_number(from)?;
+    let to = canonical_number(to)?;
+    let lost = canonical_number(lost)?;
+    if from > to || lost != to - from + 1 {
+        return Err(CrashStoreError::InvalidReport);
+    }
+    Ok(())
+}
+
+/// `activity A, connection C, error E, resync R`, all canonical decimals.
+fn validate_counts(value: &str) -> Result<(), CrashStoreError> {
+    let parts: Vec<&str> = value.split(", ").collect();
+    if parts.len() != 4 {
+        return Err(CrashStoreError::InvalidReport);
+    }
+    for (part, name) in parts
+        .iter()
+        .zip(["activity ", "connection ", "error ", "resync "])
+    {
+        let Some(number) = part.strip_prefix(name) else {
+            return Err(CrashStoreError::InvalidReport);
+        };
+        canonical_number(number)?;
+    }
+    Ok(())
 }
 
 /// Render one bounded report from closed fields.
