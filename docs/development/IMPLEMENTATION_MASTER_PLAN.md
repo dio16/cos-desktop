@@ -2618,3 +2618,16 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Stability under load (measured):** `cargo test -p cos-desktop --test decode_compare_harness -- --test-threads=8` **10/10 runs green** (130 passed each). `cargo test --locked --workspace` with **5 parallel processes per round, 5 rounds**: the final matrix is **25/25 green** (3585 passed / 0 failed / 10 ignored per process, i.e. 5 × 717). An earlier matrix had one **unrelated transient** failure in `cos-client::recorded_context_missing_withholds_the_publication` (driver timeout under 5× parallel load, exit 101); it did not recur across the second 25-run matrix and is not one of the rewritten tests.
 - **No WER change:** the WER boundary script and its evidence are untouched by this task.
 
+### 19.128 decode-compare wall_ms: measured overhead replaces the fixed delta (2026-11-02)
+
+- **Trigger:** the Gate on `140fd249` failed with `overrunning sample: wall 688 ms exceeds the candidate lifetime (192 ms) + 250 ms` — the fixed 250 ms bookkeeping delta cannot represent a loaded machine's real spawn/exit cost.
+- **Calibration (same harness and helper, per test):** a new `exit-immediately` helper case ends as soon as it starts; each test runs it once and computes `overhead = calibration_wall_ms − candidate_lifetime` from the candidate's own epoch markers. The post-exit assertions are now
+  `wall_ms <= measured_overhead + (candidate_end − candidate_start) + 250 ms`.
+  The cancelled test uses a **kill-path calibration** (`cancellation_overhead_ms = cancelled_wall − cancellation_requested`) and asserts
+  `wall_ms <= measured_kill_overhead + cancellation_requested_at_ms + 250 ms`.
+  The 250 ms slack is only measurement fluctuation; an overhead above the **2 s detectable grace** makes the test **FAIL** (never skip), because a folded grace would be indistinguishable.
+- **Measured overhead examples:** idle `6 ms (wall 7, lifetime 1)`, `6 ms (wall 8, lifetime 2)`, kill `1 ms (wall 301, requested 300)`; under a concurrent workspace suite the same calibration reported 6 ms / 6 ms / kill 1 ms, and the 5×5 parallel matrix below exercised the loaded case.
+- **Negative proof (measured):** forcing `SAMPLE_EXIT_GRACE` (2 s) into `wall_ms` makes the calibration report `overhead 2008 ms > 2000 ms` and all three tests **FAIL (exit 101)**; a test-side `wall_ms + 2000` reproduces the production assertion failure `wall 2107 ms exceeds measured overhead 6 ms + lifetime 52 ms + 250 ms`. Restoring both returns all three to **PASS**; `harness.rs` has no diff.
+- **Stability (measured):** `decode_compare_harness --test-threads=8` **10/10 green** (130 passed each); `cargo test --locked --workspace` with **5 parallel processes per round, 5 rounds** = **25/25 green** (3585 passed / 0 failed / 10 ignored per process).
+- **No WER change.** Test count remains 717 (assertions replaced, no new test cases).
+

@@ -3127,7 +3127,7 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     config.sample_interval_ms = 10;
     config.max_samples = 1;
     config.cancel_after_ms = Some(60_000);
-    let spawn_ms = now_epoch_millis();
+    let overhead_ms = calibration_overhead_ms();
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -3138,8 +3138,9 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     );
     assert_eq!(observation.working_set_max_bytes, Some(12_000 * 1024));
     let wall_ms = observation.wall_ms.expect("the candidate ran");
+    let start_ms = read_epoch_marker(&fixture.base, "candidate-start-at-ms");
     let end_ms = read_epoch_marker(&fixture.base, "candidate-end-at-ms");
-    assert_within_candidate_lifetime(wall_ms, spawn_ms, end_ms, "post-exit harvest");
+    assert_within_candidate_lifetime(wall_ms, start_ms, end_ms, overhead_ms, "post-exit harvest");
 }
 
 /// A sample that passes its own per-sample bound is not counted as a success; the test
@@ -3154,7 +3155,7 @@ fn overrunning_sample_is_not_counted_after_the_candidate_ends() {
     config.sample_interval_ms = 10;
     config.max_samples = 1;
     config.cancel_after_ms = Some(60_000);
-    let spawn_ms = now_epoch_millis();
+    let overhead_ms = calibration_overhead_ms();
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -3166,8 +3167,9 @@ fn overrunning_sample_is_not_counted_after_the_candidate_ends() {
     assert_eq!(observation.working_set_max_bytes, None);
     assert_eq!(observation.working_set_sampling, "not_measured");
     let wall_ms = observation.wall_ms.expect("the candidate ran");
+    let start_ms = read_epoch_marker(&fixture.base, "candidate-start-at-ms");
     let end_ms = read_epoch_marker(&fixture.base, "candidate-end-at-ms");
-    assert_within_candidate_lifetime(wall_ms, spawn_ms, end_ms, "overrunning sample");
+    assert_within_candidate_lifetime(wall_ms, start_ms, end_ms, overhead_ms, "overrunning sample");
 }
 
 /// The polling loop applies the same per-sample deadline: a sample whose exit is only
@@ -3208,6 +3210,7 @@ fn cancelled_candidate_does_not_wait_past_the_sample_bound() {
     config.max_samples = 1;
     config.timeout_ms = 60_000;
     config.cancel_after_ms = Some(300);
+    let overhead_ms = cancellation_overhead_ms(300);
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -3222,12 +3225,14 @@ fn cancelled_candidate_does_not_wait_past_the_sample_bound() {
         .cancellation_requested_at_ms
         .expect("the cancellation request was recorded");
     // The causal property: cancellation was requested at this observed offset and the
-    // candidate was killed there, so the recorded wall time cannot exceed that request
-    // plus small bookkeeping. A post-exit grace added to the wall time would exceed it.
-    const BOOKKEEPING_DELTA_MS: u64 = 250;
+    // candidate was killed there, so the recorded wall time cannot exceed the measured
+    // spawn/exit overhead plus that request plus a small slack. A post-exit grace added
+    // to the wall time would exceed it.
+    const FLUCTUATION_MS: u64 = 250;
     assert!(
-        wall_ms <= cancel_requested + BOOKKEEPING_DELTA_MS,
-        "the recorded wall time {wall_ms} ms exceeds the cancellation request {cancel_requested} ms + {BOOKKEEPING_DELTA_MS} ms"
+        u128::from(wall_ms)
+            <= overhead_ms + u128::from(cancel_requested) + u128::from(FLUCTUATION_MS),
+        "the recorded wall time {wall_ms} ms exceeds measured overhead {overhead_ms} ms + cancellation request {cancel_requested} ms + {FLUCTUATION_MS} ms"
     );
     assert!(
         wall_ms < 10_000,
@@ -4680,16 +4685,81 @@ fn read_epoch_marker(base: &std::path::Path, name: &str) -> u128 {
         .unwrap_or_else(|error| panic!("the candidate {name} marker is not a number: {error}"))
 }
 
-fn assert_within_candidate_lifetime(wall_ms: u64, spawn_ms: u128, end_ms: u128, label: &str) {
-    // The causal property: the recorded wall time is not longer than the candidate's own
-    // lifetime plus the small spawn/exit bookkeeping delta. A post-exit grace (2 s) added
-    // to the wall time necessarily violates this; no machine-speed threshold is involved.
-    const BOOKKEEPING_DELTA_MS: u128 = 250;
+/// Measure the real spawn/exit/bookkeeping overhead with the same harness and helper: a
+/// candidate that exits immediately reports its own lifetime, so
+/// `overhead = wall_ms - candidate_lifetime` is the machine-dependent cost that must not
+/// be expressed as a fixed delta. Each test calibrates itself once.
+fn calibration_overhead_ms() -> u128 {
+    const DETECTABLE_GRACE_MS: u128 = 2_000;
+    let fixture = Fixture::new();
+    fixture.case("a.png", "exit-immediately");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    let report = harness::run(&config).unwrap();
+    let observation = &report.observations[0];
+    let wall_ms = u128::from(observation.wall_ms.expect("the calibration candidate ran"));
+    let start = read_epoch_marker(&fixture.base, "candidate-start-at-ms");
+    let end = read_epoch_marker(&fixture.base, "candidate-end-at-ms");
+    let lifetime = end.saturating_sub(start);
+    let overhead = wall_ms.saturating_sub(lifetime);
+    eprintln!("calibration overhead: {overhead} ms (wall {wall_ms} ms, lifetime {lifetime} ms)");
+    if overhead > DETECTABLE_GRACE_MS {
+        // A grace folded into the wall time must remain detectable; if the measured
+        // overhead already exceeds the grace, the test would be unable to distinguish it.
+        panic!(
+            "calibration overhead {overhead} ms exceeds the {DETECTABLE_GRACE_MS} ms grace; refusing to assert against an indistinguishable bound"
+        );
+    }
+    overhead
+}
+
+/// Measure the real kill/exit latency for a cancelled candidate, so the cancellation
+/// assertion scales with the machine instead of assuming a fixed bookkeeping cost.
+fn cancellation_overhead_ms(cancel_after_ms: u64) -> u128 {
+    const DETECTABLE_GRACE_MS: u128 = 2_000;
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 60_000;
+    config.cancel_after_ms = Some(cancel_after_ms);
+    let report = harness::run(&config).unwrap();
+    let observation = &report.observations[0];
+    let wall = u128::from(observation.wall_ms.expect("the calibration candidate ran"));
+    let requested = u128::from(
+        observation
+            .cancellation_requested_at_ms
+            .expect("the calibration cancellation was recorded"),
+    );
+    let overhead = wall.saturating_sub(requested);
+    eprintln!(
+        "calibration kill overhead: {overhead} ms (wall {wall} ms, requested {requested} ms)"
+    );
+    if overhead > DETECTABLE_GRACE_MS {
+        panic!(
+            "calibration kill overhead {overhead} ms exceeds the {DETECTABLE_GRACE_MS} ms grace; refusing to assert against an indistinguishable bound"
+        );
+    }
+    overhead
+}
+
+fn assert_within_candidate_lifetime(
+    wall_ms: u64,
+    start_ms: u128,
+    end_ms: u128,
+    overhead_ms: u128,
+    label: &str,
+) {
+    // The causal property: the recorded wall time is not longer than the measured
+    // overhead plus the candidate's own lifetime plus a small fixed slack. A post-exit
+    // grace (2 s) added to the wall time necessarily violates this; the overhead is
+    // measured, not assumed, so a loaded machine raises it automatically.
+    const FLUCTUATION_MS: u128 = 250;
     const SANITY_LIMIT_MS: u64 = 10_000;
+    let lifetime = end_ms.saturating_sub(start_ms);
     assert!(
-        u128::from(wall_ms) <= end_ms.saturating_sub(spawn_ms) + BOOKKEEPING_DELTA_MS,
-        "{label}: wall {wall_ms} ms exceeds the candidate lifetime ({} ms) + {BOOKKEEPING_DELTA_MS} ms",
-        end_ms.saturating_sub(spawn_ms)
+        u128::from(wall_ms) <= overhead_ms + lifetime + FLUCTUATION_MS,
+        "{label}: wall {wall_ms} ms exceeds measured overhead {overhead_ms} ms + lifetime {lifetime} ms + {FLUCTUATION_MS} ms"
     );
     assert!(
         wall_ms < SANITY_LIMIT_MS,
@@ -4888,6 +4958,12 @@ fn fake_candidate(support: ProbeSupport) {
         // 2.0 s on this host (measured), which used to outlive a 5 s candidate.
         "sleep-long" => {
             std::thread::sleep(std::time::Duration::from_secs(8));
+            0
+        }
+        "exit-immediately" => {
+            // Calibration: the candidate ends as soon as it started, so the harness's
+            // wall time minus this lifetime is the real spawn/exit/bookkeeping overhead.
+            std::fs::write(&output, png_bytes(16, 16, 2, false)).unwrap();
             0
         }
         "sleep-short" => {
