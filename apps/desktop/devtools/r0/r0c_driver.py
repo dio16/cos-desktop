@@ -1185,7 +1185,7 @@ def pinned_source_digest(manifest_path: Path) -> str | None:
     return None
 
 
-def require_pinned_source_digest(manifest_path: Path, document: dict) -> str:
+def require_pinned_source_digest(manifest_path: Path) -> str:
     """The recorded source identity, or a refusal when none was recorded.
 
     Replay must compare the manifest against an independent record; using the
@@ -1200,10 +1200,9 @@ def require_pinned_source_digest(manifest_path: Path, document: dict) -> str:
 def verify(args: argparse.Namespace) -> int:
     manifest = r0c.load_manifest(args.manifest)
     s2b_document = contracts.load_document(args.s2b_manifest, contracts.MAX_MANIFEST_BYTES)
-    # Replay uses the recorded bundle's pinned source identity. Without a recorded
-    # build record the manifest's own identity is used so the approval/executable
-    # agreement below is still enforced (a fresh bundle is validated elsewhere).
-    pinned = require_pinned_source_digest(Path(args.s2b_manifest), s2b_document)
+    # Replay uses the recorded bundle's pinned source identity and refuses when no build
+    # record was stored: comparing the manifest with its own value would always pass.
+    pinned = require_pinned_source_digest(Path(args.s2b_manifest))
     s2b_manifest = s2b.validate_manifest(s2b_document, expected_driver_hash=pinned)
     _require_identity_agreement(manifest, s2b_manifest, _approved_binding(manifest))
     result = r0c.validate_result(contracts.load_document(args.result, r0c.MAX_RESULT_BYTES))

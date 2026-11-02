@@ -547,7 +547,7 @@ class S2BWireContract(unittest.TestCase):
             # so the identity check must refuse rather than compare the manifest to itself.
             self.assertIsNone(r0c_driver.pinned_source_digest(manifest_path))
             with self.assertRaises(s2b.ObservationError) as error:
-                r0c_driver.require_pinned_source_digest(manifest_path, document)
+                r0c_driver.require_pinned_source_digest(manifest_path)
             self.assertEqual(str(error.exception), "SOURCE_IDENTITY_UNRECORDED")
 
     def test_replay_uses_the_recorded_build_identity_not_the_live_tree(self):
