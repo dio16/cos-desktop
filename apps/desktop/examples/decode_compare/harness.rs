@@ -3061,6 +3061,7 @@ struct WatchData {
     kill_requested: bool,
     deadline_killed: bool,
     killed_by_request: bool,
+    kill_issued: bool,
     request_at: Option<Instant>,
     confirm_at: Option<Instant>,
     kill_failed: bool,
@@ -3082,6 +3083,7 @@ impl ExitWatch {
             kill_requested: false,
             deadline_killed: false,
             killed_by_request: false,
+            kill_issued: false,
             request_at: None,
             confirm_at: None,
             kill_failed: false,
@@ -3155,7 +3157,26 @@ impl ExitWatch {
                         }
                         Ok(None) => {}
                         Err(_) => {
+                            // Exit could not be confirmed; attempt a bounded stop instead of
+                            // abandoning a possibly running child.
+                            let requested_at = Instant::now();
+                            let kill_ok = child.kill().is_ok();
                             if let Ok(mut data) = thread_state.lock() {
+                                data.request_at = Some(requested_at);
+                                data.kill_issued = kill_ok;
+                                data.kill_failed = !kill_ok;
+                            }
+                            if kill_ok {
+                                confirm(&mut child, &thread_state, Instant::now());
+                            }
+                            if !matches!(
+                                thread_state
+                                    .lock()
+                                    .map(|data| data.state)
+                                    .unwrap_or(WatchState::Running),
+                                WatchState::Exited { .. }
+                            ) && let Ok(mut data) = thread_state.lock()
+                            {
                                 data.state = WatchState::Unconfirmed {
                                     last_seen: Instant::now(),
                                 };
@@ -3173,7 +3194,7 @@ impl ExitWatch {
                         && child.kill().is_ok();
                     if let Ok(mut data) = thread_state.lock() {
                         data.request_at = Some(requested_at);
-                        data.deadline_killed = kill_ok;
+                        data.kill_issued = kill_ok;
                         data.kill_failed = !kill_ok;
                     }
                     if !kill_ok {
@@ -3187,6 +3208,9 @@ impl ExitWatch {
                         return;
                     }
                     confirm(&mut child, &thread_state, Instant::now());
+                    if let Ok(mut data) = thread_state.lock() {
+                        data.deadline_killed = matches!(data.state, WatchState::Exited { .. });
+                    }
                     return;
                 }
                 if kill {
@@ -3210,7 +3234,7 @@ impl ExitWatch {
                         && child.kill().is_ok();
                     if let Ok(mut data) = thread_state.lock() {
                         data.request_at = Some(Instant::now());
-                        data.killed_by_request = kill_ok;
+                        data.kill_issued = kill_ok;
                         data.kill_failed = !kill_ok;
                     }
                     if !kill_ok {
@@ -3222,6 +3246,9 @@ impl ExitWatch {
                         return;
                     }
                     confirm(&mut child, &thread_state, Instant::now());
+                    if let Ok(mut data) = thread_state.lock() {
+                        data.killed_by_request = matches!(data.state, WatchState::Exited { .. });
+                    }
                     return;
                 }
                 let until_deadline = deadline_at.saturating_duration_since(Instant::now());
@@ -3446,7 +3473,11 @@ fn supervise(
             }
             let (requested, observed) = cancel(&watch, started);
             if !watch.killed_by_request() && !watch.deadline_killed() {
-                // The candidate had already exited normally; the request only observed it.
+                // The request did not confirm a kill: either a normal exit won, or the
+                // exit is unconfirmed.
+                if matches!(watch.state(), WatchState::Unconfirmed { .. }) {
+                    unconfirmed = true;
+                }
                 match watch.state() {
                     WatchState::Exited { status, .. } => break status,
                     _ => break None,
@@ -3467,7 +3498,11 @@ fn supervise(
             }
             let (requested, observed) = cancel(&watch, started);
             if !watch.killed_by_request() {
-                // A normal exit recorded while the request was in flight wins.
+                // A normal exit recorded while the request was in flight wins; an
+                // unconfirmed stop is not a successful kill.
+                if matches!(watch.state(), WatchState::Unconfirmed { .. }) {
+                    unconfirmed = true;
+                }
                 match watch.state() {
                     WatchState::Exited { status, .. } => break status,
                     _ => break None,
@@ -3498,6 +3533,11 @@ fn supervise(
         cancelled = true;
         cancellation_requested_at_ms = None;
         cancellation_observed_ms = None;
+    }
+    if unconfirmed {
+        // No exit confirmation: report a stop state but never a successful kill.
+        cancelled = true;
+        killed = false;
     }
     if watch.kill_failed() {
         // The stop was never issued: do not report a successful kill.

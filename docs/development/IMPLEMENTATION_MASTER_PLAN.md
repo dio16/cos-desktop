@@ -2714,3 +2714,17 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Transitions tested (4):** normal exit → `Exited`; deadline kill + wait success → `Exited` with real request/confirm instants (`a_blocked_sampler_spawn_does_not_extend_the_deadline` asserts both); kill success + wait failure → `Unconfirmed` (`a_failed_wait_leaves_the_exit_unconfirmed`: `wall_ms = None`, `cancellation_observed_ms = None`); kill failure → `Unconfirmed`, no unbounded wait (`a_failed_kill_leaves_the_exit_unconfirmed`, finishes in < 1 s).
 - **Gates:** harness `--test-threads=8` ×5 green (137 tests each); workspace **724 passed / 0 failed / 2 ignored**; fmt/clippy/build/dependency checker green.
 
+#### 19.138.1 ExitWatch / cancel() contract (fixed before implementation)
+
+| # | State / transition | `wall_ms` | `killed` | `cancelled` | `requested` | `observed` | Stop attempt | Bounded wait result | Test |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | `Running` | unset | false | false | `None` | `None` | none | still running | normal-exit tests (before exit) |
+| 2 | `Exited` — natural exit (status reaped) | `at − started` | false | false | `None` | `None` | none | not needed | `post_exit_harvest_*`, `a_normal_exit_*` |
+| 3 | `Exited` — kill issued and exit confirmed | `at − started` | true | true | real request instant | `confirm − request` | yes | confirmed | `a_blocked_sampler_spawn_*` |
+| 4 | `Unconfirmed` — kill could not be issued | **`None`** | **false** | true | `None` | `None` | failed | failed | `a_failed_kill_*` |
+| 5 | `Unconfirmed` — kill issued, exit not confirmed (incl. `try_wait` error) | **`None`** | **false** | true | real request instant | `None` | yes (kill then bounded confirm) | timeout/error | `a_failed_wait_*` |
+
+- `cancel()` waits from a **fixed start instant** for at most `SAMPLE_EXIT_GRACE`; on timeout it returns `Unconfirmed` evidence (`observed = None`) and never infers an exit.
+- `observed` is always `confirm_at − request_at`, never `now − started`.
+- No state outside this table is implemented; an unconfirmed stop is never reported as `Exited` or `killed`.
+

@@ -3310,9 +3310,16 @@ fn a_blocked_sampler_spawn_does_not_extend_the_deadline() {
         observation.cancellation_requested_at_ms.is_some(),
         "the watcher really issued the kill at its deadline"
     );
+    let requested = observation
+        .cancellation_requested_at_ms
+        .expect("the stop request was issued");
+    let observed = observation
+        .cancellation_observed_ms
+        .expect("a successful wait provides the real confirmation latency");
+    // The latency is measured from the request, not from process start.
     assert!(
-        observation.cancellation_observed_ms.is_some(),
-        "a successful wait provides the real confirmation latency"
+        observed < requested,
+        "observed {observed} ms is measured from the request, not from start ({requested} ms)"
     );
 }
 
