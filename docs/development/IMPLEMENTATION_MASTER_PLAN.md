@@ -3445,3 +3445,34 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **TSV shape check (all 355 lines have 8 fields):** the file is UTF-8 with `\t` separators and a trailing newline; every line, header included, splits into exactly 8 fields (`python -c "...split('\t')..."` over the committed blob, and `awk -F'\t' 'NF!=8'` prints nothing). The last data row `zune-jpeg 0.5.15` ends with the separator for an intentionally empty `Gap`, so it is 8 fields, not 7; adding another tab would create a ninth. Field-7 emptiness means "no gap noted for this row", not a missing column.
 - **Limits:** source-evidence existence only; no legal-compliance determination, no bundle-content decision, no package/signing/installer change; §19.153 aggregates unchanged. MP-REL1 remains incomplete.
 
+### 19.156 MP-REL1 workspace dependencies (5): license/attribution evidence (2026-11-02)
+
+- **Population:** the five `source = null` workspace packages in the §19.153 normal/build closure — `desktop-gpui`, `ui-model`, `app-core`, `cos-client`, `desktop-protocol` (all 0.1.0), five unique manifest paths. `cos-desktop` itself is separate; `media` is outside the closure. No population difference.
+- **Package IDs (verbatim `packages[].id` from `cargo metadata`):**
+
+| Package | Package ID |
+|---|---|
+| app-core | `path+file:///C:/dev/cos-desktop/crates/app-core#0.1.0` |
+| cos-client | `path+file:///C:/dev/cos-desktop/crates/cos-client#0.1.0` |
+| desktop-gpui | `path+file:///C:/dev/cos-desktop/crates/desktop-gpui#0.1.0` |
+| desktop-protocol | `path+file:///C:/dev/cos-desktop/crates/desktop-protocol#0.1.0` |
+| ui-model | `path+file:///C:/dev/cos-desktop/crates/ui-model#0.1.0` |
+
+  These are workspace-local path IDs; the `<workspace>` placeholder in the row table below is shorthand for the same strings. `media` (`path+file:///C:/dev/cos-desktop/crates/media#0.1.0`) is a workspace member but sits outside the normal/build closure, so it is excluded here.
+- **Common evidence (not five independent texts):** the single root `LICENSE` is the Apache-2.0 text shared by all five declarations; one root `NOTICE` carries the project notice and the Unicode attribution. Both are referenced once, not duplicated per package.
+- **Table (5 rows):**
+
+| Package | Version | Package ID (normalized) | License declaration | License evidence | NOTICE evidence | SHA-256 (evidence files) | Status |
+|---|---:|---|---|---|---|---|---|
+| desktop-gpui | 0.1.0 | `path+file://<workspace>/crates/desktop-gpui#0.1.0` | `license = "Apache-2.0"` (member Cargo.toml) | `LICENSE` (shared root, Apache-2.0) | `NOTICE` (shared root; no per-package NOTICE) | `LICENSE` `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`; `NOTICE` `efd5a4700799e249e1c5947fdacc5dcbdf1b54572c43c2519fea5140f60a6874` | EVIDENCED |
+| ui-model | 0.1.0 | `path+file://<workspace>/crates/ui-model#0.1.0` | `license = "Apache-2.0"` | `LICENSE` (shared) + Unicode notice in `crates/ui-model/src/simple_casefold.rs` | `NOTICE` (shared; Unicode attribution) + in-file Unicode License V3 | `simple_casefold.rs` `f553bf6bd93d494ca785ae169f27a2d81ee79ee23eec71ed772dc8dd13254886`; shared `LICENSE`/`NOTICE` as above | EVIDENCED |
+| app-core | 0.1.0 | `path+file://<workspace>/crates/app-core#0.1.0` | `license = "Apache-2.0"` | `LICENSE` (shared) | `NOTICE` (shared; no per-package NOTICE) | shared `LICENSE`/`NOTICE` as above | EVIDENCED |
+| cos-client | 0.1.0 | `path+file://<workspace>/crates/cos-client#0.1.0` | `license = "Apache-2.0"` | `LICENSE` (shared) | `NOTICE` (shared; no per-package NOTICE) | shared `LICENSE`/`NOTICE` as above | EVIDENCED |
+| desktop-protocol | 0.1.0 | `path+file://<workspace>/crates/desktop-protocol#0.1.0` | `license = "Apache-2.0"` | `LICENSE` (shared) | `NOTICE` (shared; no per-package NOTICE) | shared `LICENSE`/`NOTICE` as above | EVIDENCED |
+
+- **Counts:** EVIDENCED **5** / UNVERIFIED **0**. The five member manifests declare `license = "Apache-2.0"` explicitly; the workspace root also declares `license = "Apache-2.0"` under `[workspace.package]`. No member has its own `LICENSE`/`NOTICE`/`COPYING`.
+- **Third-party data (bounded):** `crates/ui-model/src/simple_casefold.rs` states Unicode 16.0.0 default simple case folding, contains the Unicode License V3 text and `Copyright © 1991-2026 Unicode, Inc.`; root `NOTICE` names the same data and license. No other attribution file was found in this bounded check; no further source audit was performed.
+- **Bundled material (read-only):** root `LICENSE` and `NOTICE` are staged by `stage_portable.py` (`cos-desktop.exe`, `LICENSE`, `NOTICE` only). The Unicode attribution is present in both NOTICE and the source file. “Attribution information exists” is distinct from “redistribution conditions are satisfied”; no compliance conclusion is made.
+- **Reproduction:** `cargo metadata --locked --offline --format-version 1 --filter-platform x86_64-pc-windows-msvc`; inspect each member `Cargo.toml` `license`/`license_file`; `sha256sum LICENSE NOTICE crates/ui-model/src/simple_casefold.rs`. §19.153–§19.155 aggregates and the registry TSV are unchanged.
+- **Limits:** evidence existence and declaration correspondence only; no legal review, no bundle-content decision, no package/signing/installer change. Dependency evidence collection is closed at 376 packages (Git 17 + registry 354 + workspace 5); MP-REL1 overall remains incomplete.
+
