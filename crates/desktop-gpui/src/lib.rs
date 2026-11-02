@@ -5086,7 +5086,7 @@ mod contrast_scope_tests {
 
     #[test]
     fn support_preview_rejects_stale_or_revoked_results() {
-        use super::{SupportBuild, SupportPreview, SupportPreviewState};
+        use super::{SupportBuild, SupportPreviewState};
         let mut state = SupportPreviewState::default();
         let a = state.begin(Some((3, 7)));
         state.invalidate();
@@ -5096,8 +5096,7 @@ mod contrast_scope_tests {
             SupportBuild::Authorized {
                 identity: (3, 7),
                 text: "old".to_owned()
-            },
-            || panic!("discarded request")
+            }
         ));
         assert_eq!(state.visible(true, Some((3, 7))), None);
 
@@ -5109,8 +5108,7 @@ mod contrast_scope_tests {
             SupportBuild::Authorized {
                 identity: (3, 7),
                 text: "old".to_owned()
-            },
-            || panic!("changed publication")
+            }
         ));
         assert_eq!(state.visible(true, Some((3, 8))), None);
 
@@ -5123,8 +5121,7 @@ mod contrast_scope_tests {
             SupportBuild::Authorized {
                 identity: (3, 7),
                 text: "new".to_owned()
-            },
-            || panic!("B authorized")
+            }
         ));
         assert!(!state.complete(
             a,
@@ -5132,8 +5129,7 @@ mod contrast_scope_tests {
             SupportBuild::Authorized {
                 identity: (3, 7),
                 text: "old".to_owned()
-            },
-            || panic!("A stale")
+            }
         ));
         assert_eq!(state.visible(true, Some((3, 7))), Some("new"));
 
