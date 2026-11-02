@@ -80,7 +80,12 @@ param(
     [switch]$SimulateWerSecretLeak,
     [switch]$SimulateWerUnreadable,
     [switch]$SimulateWerHold,
+    [switch]$SimulateWerShortRead,
+    [switch]$SimulateWerEnumerationCap,
+    [switch]$SimulateWerConfigUnreadable,
     [switch]$SimulateUtf16Miss,
+    [int]$MaxWerFiles = 500,
+    [int]$MaxWerDepth = 4,
     [int]$WerArtifactWaitMs = 5000,
     [int]$WerScanBytes = 1048576,
     [int]$WerChildTimeoutMs = 30000,
@@ -683,32 +688,53 @@ try {
         }
     }
 
-    function Get-WerSnapshot([string[]]$roots) {
+    function Get-WerSnapshot([string[]]$roots, [int]$maxFiles, [int]$maxDepth) {
         $items = @()
+        $capped = $false
         foreach ($root in $roots) {
             if (-not (Test-Path -LiteralPath $root)) { continue }
-            try {
-                $entries = @(Get-ChildItem -LiteralPath $root -Force -Recurse -ErrorAction Stop)
-            } catch {
-                $items += [ordered]@{ path = $root; readable = $false; size = 0; last_write = $null; extension = ''; owner = 'unreadable' }
-                continue
-            }
-            foreach ($entry in $entries) {
-                if ($entry.PSIsContainer) { continue }
-                if ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) { continue }
-                $owner = 'unreadable'
-                try { $owner = (Get-Acl -LiteralPath $entry.FullName -ErrorAction Stop).Owner } catch { $owner = 'unreadable' }
-                $items += [ordered]@{
-                    path = $entry.FullName
-                    readable = $true
-                    size = [int64]$entry.Length
-                    last_write = $entry.LastWriteTimeUtc.ToString('o')
-                    extension = $entry.Extension
-                    owner = $owner
+            $stack = [System.Collections.Generic.Stack[object]]::new()
+            $stack.Push(@($root, 0))
+            while ($stack.Count -gt 0 -and -not $capped) {
+                $item = $stack.Pop()
+                $directory = $item[0]
+                $depth = $item[1]
+                if ($depth -gt $maxDepth) { $capped = $true; break }
+                try {
+                    $entries = @(Get-ChildItem -LiteralPath $directory -Force -ErrorAction Stop)
+                } catch {
+                    $items += [ordered]@{ path = $directory; readable = $false; size = 0; last_write = $null; extension = ''; owner = 'unreadable' }
+                    continue
+                }
+                foreach ($entry in $entries) {
+                    if ($items.Count -ge $maxFiles) { $capped = $true; break }
+                    if ($entry.PSIsContainer) { $stack.Push(@($entry.FullName, ($depth + 1))); continue }
+                    if ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) { continue }
+                    $owner = 'unreadable'
+                    try { $owner = (Get-Acl -LiteralPath $entry.FullName -ErrorAction Stop).Owner } catch { $owner = 'unreadable' }
+                    $items += [ordered]@{
+                        path = $entry.FullName
+                        readable = $true
+                        size = [int64]$entry.Length
+                        last_write = $entry.LastWriteTimeUtc.ToString('o')
+                        extension = $entry.Extension
+                        owner = $owner
+                    }
                 }
             }
         }
-        return $items
+        return [ordered]@{ items = $items; capped = $capped }
+    }
+
+    function Read-ExactBytes([System.IO.FileStream]$stream, [int]$count) {
+        $buffer = New-Object byte[] $count
+        $total = 0
+        while ($total -lt $count) {
+            $read = $stream.Read($buffer, $total, $count - $total)
+            if ($read -le 0) { break }
+            $total += $read
+        }
+        return [ordered]@{ bytes = $buffer; count = $total }
     }
 
     function Find-TokenInBoundedFile([string]$path, [byte[]]$needle, [int]$capBytes, [byte[]]$needleUtf16) {
@@ -719,8 +745,13 @@ try {
                 $length = [int64]$stream.Length
                 $firstCount = [int][Math]::Min([int64]$capBytes, $length)
                 if ($firstCount -gt 0) {
-                    $first = New-Object byte[] $firstCount
-                    $read = $stream.Read($first, 0, $firstCount)
+                    $firstRead = Read-ExactBytes $stream $firstCount
+                    $first = $firstRead.bytes
+                    $read = $firstRead.count
+                    if ($read -lt $firstCount) {
+                        $result.short_read = $true
+                        $result.error = "short read: $read of $firstCount bytes"
+                    }
                     $result.bytes_scanned += $read
                     $window = $first[0..([Math]::Max(0, $read - 1))]
                     if ((Find-Bytes $window $needle) -ge 0) { $result.matches_utf8++ }
@@ -730,8 +761,13 @@ try {
                     $offset = [int64]$length - [int64]$capBytes
                     $null = $stream.Seek($offset, [System.IO.SeekOrigin]::Begin)
                     $lastCount = [int][Math]::Min([int64]$capBytes, $length - $offset)
-                    $last = New-Object byte[] $lastCount
-                    $read = $stream.Read($last, 0, $lastCount)
+                    $lastRead = Read-ExactBytes $stream $lastCount
+                    $last = $lastRead.bytes
+                    $read = $lastRead.count
+                    if ($read -lt $lastCount) {
+                        $result.short_read = $true
+                        $result.error = "short read: $read of $lastCount bytes"
+                    }
                     $result.bytes_scanned += $read
                     $window = $last[0..([Math]::Max(0, $read - 1))]
                     if ((Find-Bytes $window $needle) -ge 0) { $result.matches_utf8++ }
@@ -779,6 +815,24 @@ try {
     # A demand-start service is often Stopped while idle; "disabled" requires the
     # Disabled value or a Disabled start type, never a merely stopped service.
     $disabledState = if ($werDisabled -eq 1 -or $werServiceStart -eq 'Disabled') { 'disabled' } elseif ($werDisabled -eq 0 -or $werServiceStart -eq 'Automatic' -or $werServiceStart -eq 'Manual') { 'enabled' } else { 'unknown' }
+    $configUnreadable = @()
+    $configKeys = [ordered]@{
+        machine_local_dumps = $machineLocalDumps
+        user_local_dumps = $userLocalDumps
+        machine_exe_local_dumps = $machineExeDumps
+        user_exe_local_dumps = $userExeDumps
+        machine_child_local_dumps = $childExeDumps
+        user_child_local_dumps = $userChildExeDumps
+    }
+    foreach ($entry in $configKeys.GetEnumerator()) {
+        if ($entry.Value -is [System.Collections.IDictionary] -and $entry.Value.state -eq 'unreadable') {
+            $configUnreadable += $entry.Key
+        }
+    }
+    if ($werDisabled -eq 'unreadable') { $configUnreadable += 'wer_disabled_value' }
+    if ($werServiceStart -eq 'unknown') { $configUnreadable += 'wer_service' }
+    if ($SimulateWerConfigUnreadable) { $configUnreadable += 'simulated_unreadable_key' }
+    $configVerified = $configUnreadable.Count -eq 0
 
     $desktopReportsRoot = Join-Path $env:LOCALAPPDATA 'cos-desktop\crash-reports'
     $desktopBefore = @()
@@ -792,7 +846,8 @@ try {
         (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\WER\ReportArchive'),
         (Join-Path $env:LOCALAPPDATA 'CrashDumps')
     )
-    $beforeCrash = @(Get-WerSnapshot $werRoots)
+    $beforeSnapshot = Get-WerSnapshot $werRoots $MaxWerFiles $MaxWerDepth
+    $beforeCrash = @($beforeSnapshot.items)
 
     $expectedFailFastExit = -2146232797
     $child = [ordered]@{
@@ -829,7 +884,9 @@ try {
         }
     }
     Start-Sleep -Milliseconds $WerArtifactWaitMs
-    $afterCrash = @(Get-WerSnapshot $werRoots)
+    $afterSnapshot = Get-WerSnapshot $werRoots $MaxWerFiles $MaxWerDepth
+    $afterCrash = @($afterSnapshot.items)
+    $enumerationCapped = [bool]$beforeSnapshot.capped -or [bool]$afterSnapshot.capped
     $beforeKeys = @{}
     foreach ($item in $beforeCrash) { $beforeKeys[$item.path] = $item }
     $newArtifacts = @()
@@ -850,11 +907,16 @@ try {
         }
     }
     if ($SimulateWerHold) { $correlatedArtifacts = @() }
+    if ($SimulateWerEnumerationCap) { $enumerationCapped = $true }
     $artifactScans = @()
     $unreadableArtifacts = 0
     $secretMatches = 0
     foreach ($artifact in $correlatedArtifacts) {
         $scanResult = Find-TokenInBoundedFile $artifact.path $tokenBytes $WerScanBytes $tokenUtf16Bytes
+        if ($SimulateWerShortRead) {
+            $scanResult.readable = $false
+            $scanResult.short_read = $true
+        }
         if (-not $scanResult.readable) { $unreadableArtifacts++ }
         $secretMatches += $scanResult.matches_utf8 + $scanResult.matches_utf16le
         $artifactScans += [ordered]@{
@@ -885,7 +947,13 @@ try {
         $desktopAfter = @(Get-ChildItem -LiteralPath $desktopReportsRoot -Force -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name)
     }
     $desktopUnchanged = (($desktopBefore | Sort-Object) -join '|') -eq (($desktopAfter | Sort-Object) -join '|')
-    $werStatus = if ($secretMatches -gt 0 -or $utf16SelfTest -eq 'FAIL') { 'FAIL' } elseif ($unreadableArtifacts -gt 0) { 'NOT_VERIFIED' } elseif ($SkipWerChildCrash) { 'NOT_RUN' } elseif ($null -ne $childError) { 'HOLD' } elseif (-not $child.real_unhandled_exception) { 'HOLD' } elseif ($correlatedArtifacts.Count -eq 0) { 'HOLD' } else { 'PASS_LIMITED' }
+    $werStatus = if ($secretMatches -gt 0 -or $utf16SelfTest -eq 'FAIL') { 'FAIL' }
+        elseif ($unreadableArtifacts -gt 0 -or $enumerationCapped -or -not $configVerified) { 'NOT_VERIFIED' }
+        elseif ($SkipWerChildCrash) { 'NOT_RUN' }
+        elseif ($null -ne $childError) { 'HOLD' }
+        elseif (-not $child.real_unhandled_exception) { 'HOLD' }
+        elseif ($correlatedArtifacts.Count -eq 0) { 'HOLD' }
+        else { 'PASS_LIMITED' }
 
     $report.areas['wer_boundary'] = [ordered]@{
         status = $werStatus
@@ -908,6 +976,9 @@ try {
             unrelated = $unrelatedArtifacts.Count
         }
         artifact_dirs = $werRoots
+        enumeration_bounds = [ordered]@{ max_files = $MaxWerFiles; max_depth = $MaxWerDepth; capped = $enumerationCapped }
+        config_read = [ordered]@{ verified = $configVerified; unreadable_keys = $configUnreadable }
+        short_reads = @($artifactScans | Where-Object { $_.readable -eq $false }).Count
         new_artifacts = $newArtifacts
         correlated_artifacts = $correlatedArtifacts
         unrelated_artifacts = $unrelatedArtifacts
@@ -930,7 +1001,7 @@ try {
     $report.not_run += 'Desktop-specific crash: no crash was induced in the production Desktop process'
     $report.not_run += 'WER dump contents: only a bounded first/last segment was scanned; raw artifacts were never copied into evidence'
     $report.not_run += 'OS-managed crash area ownership/size beyond the listed attributes and bounded token scan'
-    Write-Host ("WER boundary: status=" + $werStatus + " disabled=" + $disabledState + " service=" + $werService + " child_pid=" + $child.pid + " child_exit=" + $child.exit_code + " failfast_match=" + $child.exit_code_matches_failfast + " new_artifacts=" + $newArtifacts.Count + " correlated=" + $correlatedArtifacts.Count + " unrelated=" + $unrelatedArtifacts.Count + " unreadable=" + $unreadableArtifacts + " secret_matches=" + $secretMatches + " utf16_selftest=" + $utf16SelfTest + " desktop_area_unchanged=" + $desktopUnchanged)
+    Write-Host ("WER boundary: status=" + $werStatus + " config_verified=" + $configVerified + " enumeration_capped=" + $enumerationCapped + " disabled=" + $disabledState + " service=" + $werService + " child_pid=" + $child.pid + " child_exit=" + $child.exit_code + " failfast_match=" + $child.exit_code_matches_failfast + " new_artifacts=" + $newArtifacts.Count + " correlated=" + $correlatedArtifacts.Count + " unrelated=" + $unrelatedArtifacts.Count + " unreadable=" + $unreadableArtifacts + " secret_matches=" + $secretMatches + " utf16_selftest=" + $utf16SelfTest + " desktop_area_unchanged=" + $desktopUnchanged)
 
     $report.not_run += 'OS credential store contents beyond existence/deletion: no plaintext read, no ACL claim'
     $report.not_run += 'other user profiles, process memory, shell history and pagefile'
@@ -1056,6 +1127,8 @@ finally {
         support_report = 'NOT_APPLICABLE'
         wer_boundary = $werStatus
         wer_verified = ($werStatus -eq 'PASS_LIMITED')
+        wer_config_verified = $configVerified
+        wer_enumeration_capped = $enumerationCapped
     }
     if ($fail.Count -gt 0) {
         $report.result = 'FAIL'

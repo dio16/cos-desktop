@@ -3030,21 +3030,36 @@ struct ExitWatch {
 struct ExitState {
     exited: Option<(Instant, Option<std::process::ExitStatus>)>,
     kill_requested: bool,
+    deadline_killed: bool,
 }
 
 impl ExitWatch {
-    fn start(mut child: std::process::Child) -> Self {
+    fn start(mut child: std::process::Child, deadline: Duration) -> Self {
         let state = std::sync::Arc::new(std::sync::Mutex::new(ExitState {
             exited: None,
             kill_requested: false,
+            deadline_killed: false,
         }));
         let thread_state = std::sync::Arc::clone(&state);
+        let deadline_at = Instant::now() + deadline;
         let handle = std::thread::spawn(move || {
             loop {
                 let kill = thread_state
                     .lock()
                     .map(|state| state.kill_requested)
                     .unwrap_or(false);
+                // The hard deadline is enforced here, by the same thread that observes
+                // the exit, so a blocking supervision step (sampler creation) can never
+                // extend the candidate's life past its deadline.
+                if !kill && Instant::now() >= deadline_at {
+                    let _ = child.kill();
+                    let status = child.wait().ok();
+                    if let Ok(mut state) = thread_state.lock() {
+                        state.exited = Some((Instant::now(), status));
+                        state.deadline_killed = true;
+                    }
+                    return;
+                }
                 if kill {
                     let _ = child.kill();
                     let status = child.wait().ok();
@@ -3070,7 +3085,8 @@ impl ExitWatch {
                         return;
                     }
                 }
-                std::thread::sleep(POLL_INTERVAL);
+                let until_deadline = deadline_at.saturating_duration_since(Instant::now());
+                std::thread::sleep(POLL_INTERVAL.min(until_deadline.max(Duration::from_millis(1))));
             }
         });
         Self {
@@ -3081,6 +3097,13 @@ impl ExitWatch {
 
     fn exited(&self) -> Option<(Instant, Option<std::process::ExitStatus>)> {
         self.state.lock().ok().and_then(|state| state.exited)
+    }
+
+    fn deadline_killed(&self) -> bool {
+        self.state
+            .lock()
+            .map(|state| state.deadline_killed)
+            .unwrap_or(false)
     }
 
     fn request_kill(&self) {
@@ -3123,7 +3146,11 @@ fn supervise(
 ) -> Supervised {
     let started = Instant::now();
     let pid = child.id();
-    let mut watch = ExitWatch::start(child);
+    let deadline = match cancel_after {
+        Some(early) => early.min(timeout),
+        None => timeout,
+    };
+    let mut watch = ExitWatch::start(child, deadline);
     let mut timeout_fired = false;
     let mut cancelled = false;
     let mut killed = false;
@@ -3134,10 +3161,6 @@ fn supervise(
     let mut sampler = match sampling {
         Some(config) => Sampler::new(true, config.max_samples),
         None => Sampler::disabled(sampling_disabled_reason),
-    };
-    let deadline = match cancel_after {
-        Some(early) => early.min(timeout),
-        None => timeout,
     };
     let mut next_sample = sampling.map(|config| config.interval);
 
@@ -3250,6 +3273,14 @@ fn supervise(
         }
         thread::sleep(remaining.min(POLL_INTERVAL));
     };
+    if watch.deadline_killed() {
+        // The watcher enforced the hard deadline while a supervision step was blocked.
+        killed = true;
+        cancelled = true;
+        timeout_fired = cancel_after.is_none_or(|early| early >= timeout);
+        cancellation_requested_at_ms = Some(elapsed_millis(deadline.min(started.elapsed())));
+        cancellation_observed_ms = Some(0);
+    }
     // The candidate's wall time stops at the exit observation recorded by the watcher:
     // everything below, including the post-exit harvest bounded by SAMPLE_EXIT_GRACE, is
     // bookkeeping and must never be added to a performance figure.

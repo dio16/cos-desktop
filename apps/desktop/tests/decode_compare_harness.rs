@@ -3143,6 +3143,37 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     assert_within_candidate_lifetime(wall_ms, start_ms, end_ms, overhead_ms, "post-exit harvest");
 }
 
+/// The hard deadline must be enforced while a supervision step is blocked: a candidate
+/// that should be stopped at 300 ms must not survive the 2.5 s sampler-process creation.
+#[test]
+fn a_blocked_sampler_spawn_does_not_extend_the_deadline() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    inject_sampler(&mut config, "fake_sampler_slow_exit_helper");
+    config.sample_interval_ms = 10;
+    config.max_samples = 1;
+    config.timeout_ms = 300;
+    config.cancel_after_ms = None;
+    config.sample_spawn_delay = Some(std::time::Duration::from_millis(2_500));
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(
+        observation.observed_outcome,
+        OutcomeClass::Cancelled,
+        "the deadline must kill the candidate while the sampler spawn blocks"
+    );
+    assert!(observation.timeout_fired, "the stop is a deadline stop");
+    let wall_ms = observation.wall_ms.expect("the candidate ran");
+    assert!(
+        wall_ms <= 300 + 250,
+        "the candidate stopped at {wall_ms} ms, past the 300 ms deadline + 250 ms slack"
+    );
+}
+
 /// Reproduces the loaded-machine defect: creating the sampler process takes seconds and
 /// must never delay observing the candidate's exit. The candidate ends in ~50 ms; the
 /// recorded wall time must exclude the 2.5 s sampler-spawn delay, so the same causal
