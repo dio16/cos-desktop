@@ -720,6 +720,8 @@ pub struct Config {
     pub force_kill_failure: bool,
     /// Test-only: force the watcher's exit confirmation to fail (unconfirmed).
     pub force_wait_failure: bool,
+    /// Test-only: fail the first supervised poll so the recovery-stop path runs.
+    pub force_try_wait_error: bool,
     /// Extra argv placed before the fixed sample argv (tests only).
     pub sample_argv_prefix: Vec<OsString>,
     pub invocation: Invocation,
@@ -1211,6 +1213,7 @@ where
         watch_delay: None,
         force_kill_failure: false,
         force_wait_failure: false,
+        force_try_wait_error: false,
         sample_argv_prefix: Vec::new(),
         invocation: Invocation {
             argv_prefix: Vec::new(),
@@ -2273,6 +2276,7 @@ fn measure(
                     delay: config.watch_delay,
                     force_kill_failure: config.force_kill_failure,
                     force_wait_failure: config.force_wait_failure,
+                    force_try_wait_error: config.force_try_wait_error,
                 },
             );
             let (stdout, stderr) = capture.read(config.max_output_bytes);
@@ -3077,6 +3081,7 @@ struct WatchData {
     confirm_bound: Duration,
     force_kill_failure: bool,
     force_wait_failure: bool,
+    force_try_wait_error: bool,
 }
 
 impl ExitWatch {
@@ -3086,6 +3091,7 @@ impl ExitWatch {
         watch_delay: Option<Duration>,
         force_kill_failure: bool,
         force_wait_failure: bool,
+        force_try_wait_error: bool,
     ) -> Self {
         let state = std::sync::Arc::new(std::sync::Mutex::new(WatchData {
             state: WatchState::Running,
@@ -3100,6 +3106,7 @@ impl ExitWatch {
             confirm_bound: SAMPLE_EXIT_GRACE,
             force_kill_failure,
             force_wait_failure,
+            force_try_wait_error,
         }));
         let thread_state = std::sync::Arc::clone(&state);
         let deadline_at = Instant::now() + deadline;
@@ -3215,7 +3222,22 @@ impl ExitWatch {
                 // A finished child is a normal exit even when the deadline has already
                 // passed: check the exit BEFORE enforcing the deadline.
                 if !kill {
-                    match child.try_wait() {
+                    // Test seam: an injected poll failure enters the recovery-stop path,
+                    // which cannot be reached from a test otherwise.
+                    let injected = thread_state
+                        .lock()
+                        .map(|mut data| {
+                            let pending = data.force_try_wait_error;
+                            data.force_try_wait_error = false;
+                            pending
+                        })
+                        .unwrap_or(false);
+                    let poll = if injected {
+                        Err(std::io::Error::other("injected try_wait failure"))
+                    } else {
+                        child.try_wait()
+                    };
+                    match poll {
                         Ok(Some(status)) => {
                             if let Ok(mut data) = thread_state.lock() {
                                 // A settled Unconfirmed is final on this path too.
@@ -3425,6 +3447,7 @@ struct WatchTuning {
     delay: Option<Duration>,
     force_kill_failure: bool,
     force_wait_failure: bool,
+    force_try_wait_error: bool,
 }
 
 fn supervise(
@@ -3448,6 +3471,7 @@ fn supervise(
         tuning.delay,
         tuning.force_kill_failure,
         tuning.force_wait_failure,
+        tuning.force_try_wait_error,
     );
     let mut timeout_fired = false;
     let mut unconfirmed = false;

@@ -3218,18 +3218,41 @@ fn a_stop_before_the_timeout_is_not_reported_as_a_timeout() {
     );
 }
 
+/// The recovery-stop path (a poll error) must judge the timeout from when the stop was
+/// requested: an error stop well before the deadline is a cancellation, not a timeout.
+#[test]
+fn a_recovery_stop_before_the_deadline_is_not_a_timeout() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 5_000;
+    config.cancel_after_ms = None;
+    config.force_try_wait_error = true;
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert!(
+        !observation.timeout_fired,
+        "a poll-error stop against a 5000 ms timeout is not a timeout"
+    );
+}
+
 /// A cancel whose confirmation limit expires must still stop the child and leave the exit
 /// unconfirmed, without waiting on a watcher that is delayed past the limit.
 #[test]
 fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
     let _guard = sampling_guard();
     let fixture = Fixture::new();
-    fixture.case("a.png", "sleep-long");
+    fixture.case("a.png", "sleep-long-heartbeat");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
     config.invocation = helper_invocation(HELPER);
     config.timeout_ms = 10_000;
     config.cancel_after_ms = Some(100);
     config.watch_delay = Some(std::time::Duration::from_secs(4));
+    let heartbeat = fixture.base.join("a.heartbeat");
     let started = std::time::Instant::now();
     let report = harness::run(&config).unwrap();
     let elapsed = started.elapsed();
@@ -3245,8 +3268,17 @@ fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
         "an unconfirmed exit keeps no confirmation duration"
     );
     assert!(
-        elapsed < std::time::Duration::from_secs(8),
-        "an aborted cancel must not wait on the delayed watcher (took {elapsed:?})"
+        elapsed < std::time::Duration::from_millis(1_500),
+        "an aborted cancel must return well before the delayed watcher wakes (took {elapsed:?})"
+    );
+    // The aborted stop must have killed the helper: a heartbeat that stops growing proves
+    // the process is gone rather than merely unconfirmed.
+    let first = std::fs::metadata(&heartbeat).map(|m| m.len()).unwrap_or(0);
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    let second = std::fs::metadata(&heartbeat).map(|m| m.len()).unwrap_or(0);
+    assert_eq!(
+        first, second,
+        "the aborted stop must stop the helper, not leave it running"
     );
 }
 
@@ -5228,6 +5260,23 @@ fn fake_candidate(support: ProbeSupport) {
         // 2.0 s on this host (measured), which used to outlive a 5 s candidate.
         "sleep-long" => {
             std::thread::sleep(std::time::Duration::from_secs(8));
+            0
+        }
+        "sleep-long-heartbeat" => {
+            // Keeps a sibling file growing while the process lives, so a test can show
+            // that a stop really ended the process rather than only losing its exit.
+            let heartbeat = output.with_extension("heartbeat");
+            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(8);
+            while std::time::Instant::now() < deadline {
+                let mut file = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(&heartbeat)
+                    .unwrap();
+                use std::io::Write as _;
+                let _ = writeln!(file, "tick");
+                std::thread::sleep(std::time::Duration::from_millis(25));
+            }
             0
         }
         "exit-immediately" => {
