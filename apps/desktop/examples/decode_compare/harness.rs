@@ -716,6 +716,10 @@ pub struct Config {
     pub sample_spawn_delay: Option<Duration>,
     /// Test-only: delay the exit watcher's first poll (scheduling-delay reproduction).
     pub watch_delay: Option<Duration>,
+    /// Test-only: force the watcher's kill() to fail (unconfirmed stop).
+    pub force_kill_failure: bool,
+    /// Test-only: force the watcher's exit confirmation to fail (unconfirmed).
+    pub force_wait_failure: bool,
     /// Extra argv placed before the fixed sample argv (tests only).
     pub sample_argv_prefix: Vec<OsString>,
     pub invocation: Invocation,
@@ -923,7 +927,7 @@ struct Supervised {
     timeout_fired: bool,
     /// A deadline-triggered kill happened (timeout or operator cancellation).
     cancelled: bool,
-    wall_ms: u64,
+    wall_ms: Option<u64>,
     /// Observed peak of the two capture files (not a sampled lower bound).
     scratch_max_bytes: u64,
     capped: Option<CapKind>,
@@ -1205,6 +1209,8 @@ where
         sample_compare_signal: None,
         sample_spawn_delay: None,
         watch_delay: None,
+        force_kill_failure: false,
+        force_wait_failure: false,
         sample_argv_prefix: Vec::new(),
         invocation: Invocation {
             argv_prefix: Vec::new(),
@@ -1950,7 +1956,7 @@ fn probe_identity(
                 Some(probe_bounds(&capture)),
                 None,
                 SAMPLE_DISABLED,
-                None,
+                WatchTuning::default(),
             )
         });
         let (stdout, stderr) = capture.read(PROBE_CAP_BYTES);
@@ -2263,14 +2269,18 @@ fn measure(
                 Some(bounds),
                 sampling.as_ref(),
                 sampling_disabled_reason,
-                config.watch_delay,
+                WatchTuning {
+                    delay: config.watch_delay,
+                    force_kill_failure: config.force_kill_failure,
+                    force_wait_failure: config.force_wait_failure,
+                },
             );
             let (stdout, stderr) = capture.read(config.max_output_bytes);
             let (output_bytes, output_present) = match fs::metadata(&output) {
                 Ok(metadata) if metadata.is_file() => (Some(metadata.len()), metadata.len() > 0),
                 _ => (None, false),
             };
-            observation.wall_ms = Some(supervised.wall_ms);
+            observation.wall_ms = supervised.wall_ms;
             observation.scratch_max_bytes = Some(supervised.scratch_max_bytes);
             observation.working_set_attempts = supervised.working_set_attempts;
             observation.working_set_samples = supervised.working_set_samples;
@@ -3028,18 +3038,35 @@ pub fn settle_exited_sample_for_tests(
 /// seconds (for example creating the sampler process on a loaded machine) cannot delay
 /// the exit observation that freezes `wall_ms`.
 struct ExitWatch {
-    state: std::sync::Arc<std::sync::Mutex<ExitState>>,
+    state: std::sync::Arc<std::sync::Mutex<WatchData>>,
     handle: Option<std::thread::JoinHandle<()>>,
 }
 
-struct ExitState {
-    exited: Option<(Instant, Option<std::process::ExitStatus>)>,
+/// Explicit exit-observation state. `Exited` is only entered when the exit was truly
+/// confirmed (a status was reaped); an unconfirmed stop is never reported as an exit.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum WatchState {
+    Running,
+    Exited {
+        at: Instant,
+        status: Option<std::process::ExitStatus>,
+    },
+    Unconfirmed {
+        last_seen: Instant,
+    },
+}
+
+struct WatchData {
+    state: WatchState,
     kill_requested: bool,
     deadline_killed: bool,
     killed_by_request: bool,
-    deadline_kill_requested_at: Option<Instant>,
-    deadline_kill_confirmed_at: Option<Instant>,
+    request_at: Option<Instant>,
+    confirm_at: Option<Instant>,
     kill_failed: bool,
+    confirm_bound: Duration,
+    force_kill_failure: bool,
+    force_wait_failure: bool,
 }
 
 impl ExitWatch {
@@ -3047,15 +3074,20 @@ impl ExitWatch {
         mut child: std::process::Child,
         deadline: Duration,
         watch_delay: Option<Duration>,
+        force_kill_failure: bool,
+        force_wait_failure: bool,
     ) -> Self {
-        let state = std::sync::Arc::new(std::sync::Mutex::new(ExitState {
-            exited: None,
+        let state = std::sync::Arc::new(std::sync::Mutex::new(WatchData {
+            state: WatchState::Running,
             kill_requested: false,
             deadline_killed: false,
             killed_by_request: false,
-            deadline_kill_requested_at: None,
-            deadline_kill_confirmed_at: None,
+            request_at: None,
+            confirm_at: None,
             kill_failed: false,
+            confirm_bound: SAMPLE_EXIT_GRACE,
+            force_kill_failure,
+            force_wait_failure,
         }));
         let thread_state = std::sync::Arc::clone(&state);
         let deadline_at = Instant::now() + deadline;
@@ -3064,77 +3096,132 @@ impl ExitWatch {
                 // Test seam: reproduce a scheduling delay of the watcher thread.
                 std::thread::sleep(delay);
             }
+            // Bounded confirmation: try_wait is polled up to confirm_bound; no unbounded
+            // wait() call is made, so a failed kill can never stall the watcher.
+            let confirm = |child: &mut std::process::Child,
+                           data: &std::sync::Arc<std::sync::Mutex<WatchData>>,
+                           last_seen: Instant| {
+                let force_fail = data
+                    .lock()
+                    .map(|data| data.force_wait_failure)
+                    .unwrap_or(false);
+                let bound = data
+                    .lock()
+                    .map(|data| data.confirm_bound)
+                    .unwrap_or(SAMPLE_EXIT_GRACE);
+                let started = Instant::now();
+                loop {
+                    match child.try_wait() {
+                        Ok(Some(status)) => {
+                            if let Ok(mut data) = data.lock() {
+                                data.state = WatchState::Exited {
+                                    at: Instant::now(),
+                                    status: Some(status),
+                                };
+                                data.confirm_at = Some(Instant::now());
+                            }
+                            return;
+                        }
+                        Ok(None) => {}
+                        Err(_) => break,
+                    }
+                    if force_fail || started.elapsed() >= bound {
+                        break;
+                    }
+                    std::thread::sleep(POLL_INTERVAL);
+                }
+                if let Ok(mut data) = data.lock() {
+                    data.state = WatchState::Unconfirmed { last_seen };
+                    data.confirm_at = None;
+                }
+            };
             loop {
                 let kill = thread_state
                     .lock()
-                    .map(|state| state.kill_requested)
+                    .map(|data| data.kill_requested)
                     .unwrap_or(false);
                 // A finished child is a normal exit even when the deadline has already
-                // passed: check the exit BEFORE enforcing the deadline, so a delayed
-                // watcher cannot reclassify a normal exit as a deadline kill.
+                // passed: check the exit BEFORE enforcing the deadline.
                 if !kill {
                     match child.try_wait() {
                         Ok(Some(status)) => {
-                            if let Ok(mut state) = thread_state.lock() {
-                                state.exited = Some((Instant::now(), Some(status)));
+                            if let Ok(mut data) = thread_state.lock() {
+                                data.state = WatchState::Exited {
+                                    at: Instant::now(),
+                                    status: Some(status),
+                                };
                             }
                             return;
                         }
                         Ok(None) => {}
                         Err(_) => {
-                            let _ = child.kill();
-                            let status = child.wait().ok();
-                            if let Ok(mut state) = thread_state.lock() {
-                                state.exited = Some((Instant::now(), status));
+                            if let Ok(mut data) = thread_state.lock() {
+                                data.state = WatchState::Unconfirmed {
+                                    last_seen: Instant::now(),
+                                };
                             }
                             return;
                         }
                     }
                 }
                 if !kill && Instant::now() >= deadline_at {
-                    // Record the real request instant; only a successful wait proves the
-                    // exit was confirmed, and only a successful kill proves a stop was
-                    // actually issued. Neither failure may be reported as success.
                     let requested_at = Instant::now();
-                    let kill_result = child.kill();
-                    let wait_result = child.wait();
-                    if let Ok(mut state) = thread_state.lock() {
-                        state.deadline_kill_requested_at = Some(requested_at);
-                        state.deadline_killed = kill_result.is_ok();
-                        state.kill_failed = kill_result.is_err();
-                        match wait_result {
-                            Ok(status) => {
-                                state.exited = Some((Instant::now(), Some(status)));
-                                state.deadline_kill_confirmed_at = Some(Instant::now());
-                            }
-                            Err(_) => {
-                                // Exit not confirmed: keep exited without a status and do
-                                // not fabricate a confirmation instant.
-                                state.exited = Some((Instant::now(), None));
-                                state.deadline_kill_confirmed_at = None;
-                            }
-                        }
+                    let kill_ok = !thread_state
+                        .lock()
+                        .map(|data| data.force_kill_failure)
+                        .unwrap_or(false)
+                        && child.kill().is_ok();
+                    if let Ok(mut data) = thread_state.lock() {
+                        data.request_at = Some(requested_at);
+                        data.deadline_killed = kill_ok;
+                        data.kill_failed = !kill_ok;
                     }
+                    if !kill_ok {
+                        // No successful stop request: the exit stays unconfirmed, and the
+                        // watcher must not proceed to an unbounded wait.
+                        if let Ok(mut data) = thread_state.lock() {
+                            data.state = WatchState::Unconfirmed {
+                                last_seen: Instant::now(),
+                            };
+                        }
+                        return;
+                    }
+                    confirm(&mut child, &thread_state, Instant::now());
                     return;
                 }
                 if kill {
-                    // The child may have exited before the request; that is a normal exit.
                     match child.try_wait() {
                         Ok(Some(status)) => {
-                            if let Ok(mut state) = thread_state.lock() {
-                                state.exited = Some((Instant::now(), Some(status)));
+                            if let Ok(mut data) = thread_state.lock() {
+                                data.state = WatchState::Exited {
+                                    at: Instant::now(),
+                                    status: Some(status),
+                                };
                             }
                             return;
                         }
                         Ok(None) => {}
                         Err(_) => {}
                     }
-                    let _ = child.kill();
-                    let status = child.wait().ok();
-                    if let Ok(mut state) = thread_state.lock() {
-                        state.exited = Some((Instant::now(), status));
-                        state.killed_by_request = true;
+                    let kill_ok = !thread_state
+                        .lock()
+                        .map(|data| data.force_kill_failure)
+                        .unwrap_or(false)
+                        && child.kill().is_ok();
+                    if let Ok(mut data) = thread_state.lock() {
+                        data.request_at = Some(Instant::now());
+                        data.killed_by_request = kill_ok;
+                        data.kill_failed = !kill_ok;
                     }
+                    if !kill_ok {
+                        if let Ok(mut data) = thread_state.lock() {
+                            data.state = WatchState::Unconfirmed {
+                                last_seen: Instant::now(),
+                            };
+                        }
+                        return;
+                    }
+                    confirm(&mut child, &thread_state, Instant::now());
                     return;
                 }
                 let until_deadline = deadline_at.saturating_duration_since(Instant::now());
@@ -3147,46 +3234,46 @@ impl ExitWatch {
         }
     }
 
-    fn exited(&self) -> Option<(Instant, Option<std::process::ExitStatus>)> {
-        self.state.lock().ok().and_then(|state| state.exited)
+    fn state(&self) -> WatchState {
+        self.state
+            .lock()
+            .map(|data| data.state)
+            .unwrap_or(WatchState::Unconfirmed {
+                last_seen: Instant::now(),
+            })
     }
 
     fn killed_by_request(&self) -> bool {
         self.state
             .lock()
-            .map(|state| state.killed_by_request)
+            .map(|data| data.killed_by_request)
             .unwrap_or(false)
     }
 
     fn kill_failed(&self) -> bool {
         self.state
             .lock()
-            .map(|state| state.kill_failed)
+            .map(|data| data.kill_failed)
+            .unwrap_or(false)
+    }
+
+    fn deadline_killed(&self) -> bool {
+        self.state
+            .lock()
+            .map(|data| data.deadline_killed)
             .unwrap_or(false)
     }
 
     fn deadline_kill_times(&self) -> (Option<Instant>, Option<Instant>) {
         self.state
             .lock()
-            .map(|state| {
-                (
-                    state.deadline_kill_requested_at,
-                    state.deadline_kill_confirmed_at,
-                )
-            })
+            .map(|data| (data.request_at, data.confirm_at))
             .unwrap_or((None, None))
     }
 
-    fn deadline_killed(&self) -> bool {
-        self.state
-            .lock()
-            .map(|state| state.deadline_killed)
-            .unwrap_or(false)
-    }
-
     fn request_kill(&self) {
-        if let Ok(mut state) = self.state.lock() {
-            state.kill_requested = true;
+        if let Ok(mut data) = self.state.lock() {
+            data.kill_requested = true;
         }
     }
 
@@ -3214,6 +3301,13 @@ enum SettledSample {
 /// remains before the deadline, so a sample can never push the hard deadline out. Every
 /// recorded value is a sampled lower bound: a sample that cannot be read leaves the
 /// field absent with a reason token instead of guessing.
+#[derive(Clone, Copy, Default)]
+struct WatchTuning {
+    delay: Option<Duration>,
+    force_kill_failure: bool,
+    force_wait_failure: bool,
+}
+
 fn supervise(
     child: Child,
     timeout: Duration,
@@ -3221,7 +3315,7 @@ fn supervise(
     bounds: Option<Bounds<'_>>,
     sampling: Option<&Sampling<'_>>,
     sampling_disabled_reason: &'static str,
-    watch_delay: Option<Duration>,
+    tuning: WatchTuning,
 ) -> Supervised {
     let started = Instant::now();
     let pid = child.id();
@@ -3229,8 +3323,15 @@ fn supervise(
         Some(early) => early.min(timeout),
         None => timeout,
     };
-    let mut watch = ExitWatch::start(child, deadline, watch_delay);
+    let mut watch = ExitWatch::start(
+        child,
+        deadline,
+        tuning.delay,
+        tuning.force_kill_failure,
+        tuning.force_wait_failure,
+    );
     let mut timeout_fired = false;
+    let mut unconfirmed = false;
     let mut cancelled = false;
     let mut killed = false;
     let mut capped = None;
@@ -3247,8 +3348,13 @@ fn supervise(
     let status = loop {
         // The exit observation is owned by the watcher thread, so a blocking supervision
         // step (sampler process creation on a loaded machine) can never delay it.
-        if let Some((_, status)) = watch.exited() {
-            break status;
+        match watch.state() {
+            WatchState::Exited { status, .. } => break status,
+            WatchState::Unconfirmed { .. } => {
+                unconfirmed = true;
+                break None;
+            }
+            WatchState::Running => {}
         }
         if let Some(bounds) = bounds.as_ref() {
             let scratch = file_len(bounds.first) + file_len(bounds.second);
@@ -3335,13 +3441,16 @@ fn supervise(
         {
             // A normal exit recorded while this step was blocked takes precedence over a
             // cap/deadline classification: never report a finished candidate as killed.
-            if let Some((_, status)) = watch.exited() {
+            if let WatchState::Exited { status, .. } = watch.state() {
                 break status;
             }
             let (requested, observed) = cancel(&watch, started);
             if !watch.killed_by_request() && !watch.deadline_killed() {
                 // The candidate had already exited normally; the request only observed it.
-                break watch.exited().and_then(|(_, status)| status);
+                match watch.state() {
+                    WatchState::Exited { status, .. } => break status,
+                    _ => break None,
+                }
             }
             cancellation_requested_at_ms = requested;
             cancellation_observed_ms = observed;
@@ -3353,13 +3462,16 @@ fn supervise(
         if remaining.is_zero() {
             // A normal exit recorded while this step was blocked takes precedence over a
             // deadline classification: never report a finished candidate as killed.
-            if let Some((_, status)) = watch.exited() {
+            if let WatchState::Exited { status, .. } = watch.state() {
                 break status;
             }
             let (requested, observed) = cancel(&watch, started);
             if !watch.killed_by_request() {
                 // A normal exit recorded while the request was in flight wins.
-                break watch.exited().and_then(|(_, status)| status);
+                match watch.state() {
+                    WatchState::Exited { status, .. } => break status,
+                    _ => break None,
+                }
             }
             cancellation_requested_at_ms = requested;
             cancellation_observed_ms = observed;
@@ -3373,11 +3485,9 @@ fn supervise(
     // The watcher records when it observed the exit; that observation time is the only
     // proof we have. An exit first seen at/after the deadline is not deadline-compliant.
     let observed_late = !killed
+        && !unconfirmed
         && status.is_some()
-        && watch
-            .exited()
-            .map(|(observed_at, _)| observed_at.saturating_duration_since(started) >= deadline)
-            .unwrap_or(false)
+        && matches!(watch.state(), WatchState::Exited { at, .. } if at.saturating_duration_since(started) >= deadline)
         && !watch.deadline_killed()
         && !watch.killed_by_request();
     if observed_late {
@@ -3411,11 +3521,12 @@ fn supervise(
     // The candidate's wall time stops at the exit observation recorded by the watcher:
     // everything below, including the post-exit harvest bounded by SAMPLE_EXIT_GRACE, is
     // bookkeeping and must never be added to a performance figure.
-    let exit_at = watch
-        .exited()
-        .map(|(observed_at, _)| observed_at)
-        .unwrap_or_else(Instant::now);
-    let wall_ms = elapsed_millis(exit_at.saturating_duration_since(started));
+    let wall_ms = match watch.state() {
+        WatchState::Exited { at, .. } => {
+            Some(elapsed_millis(at.saturating_duration_since(started)))
+        }
+        _ => None,
+    };
     watch.join();
     // A sample still in flight when the child ends is normally killed and never
     // counted (N5). A sampler that already exited, however, produced complete output:
@@ -3504,14 +3615,18 @@ fn supervise(
 fn cancel(watch: &ExitWatch, started: Instant) -> (Option<u64>, Option<u64>) {
     let requested = started.elapsed();
     watch.request_kill();
-    while watch.exited().is_none() {
+    let mut waited = Instant::now();
+    while matches!(watch.state(), WatchState::Running) && waited.elapsed() < SAMPLE_EXIT_GRACE {
         std::thread::sleep(POLL_INTERVAL);
+        waited = Instant::now();
     }
-    let observed = started.elapsed().saturating_sub(requested);
-    (
-        Some(elapsed_millis(requested)),
-        Some(elapsed_millis(observed)),
-    )
+    let observed = match watch.state() {
+        WatchState::Exited { at, .. } => {
+            Some(elapsed_millis(at.saturating_duration_since(started)))
+        }
+        _ => None,
+    };
+    (Some(elapsed_millis(requested)), observed)
 }
 
 /// A sampled `tasklist` call in flight: started by the supervisor and harvested on a

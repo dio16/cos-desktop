@@ -3143,6 +3143,56 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     assert_within_candidate_lifetime(wall_ms, start_ms, end_ms, overhead_ms, "post-exit harvest");
 }
 
+/// Transition 3: a successful kill whose wait cannot confirm the exit stays
+/// `Unconfirmed` — no wall time, no confirmed latency, no successful stop claim.
+#[test]
+fn a_failed_wait_leaves_the_exit_unconfirmed() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 300;
+    config.force_wait_failure = true;
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert!(
+        observation.wall_ms.is_none(),
+        "an unconfirmed exit has no wall time"
+    );
+    assert!(observation.cancellation_observed_ms.is_none());
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+}
+
+/// Transition 4: a failed kill leaves the exit unconfirmed and must not block the
+/// watcher on an unbounded wait.
+#[test]
+fn a_failed_kill_leaves_the_exit_unconfirmed() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 300;
+    config.force_kill_failure = true;
+    let started = std::time::Instant::now();
+    let report = harness::run(&config).unwrap();
+    let elapsed = started.elapsed();
+
+    let observation = &report.observations[0];
+    assert!(
+        observation.wall_ms.is_none(),
+        "a failed stop has no confirmed exit"
+    );
+    assert!(observation.cancellation_observed_ms.is_none());
+    assert_eq!(observation.observed_outcome, OutcomeClass::Cancelled);
+    assert!(
+        elapsed < std::time::Duration::from_secs(10),
+        "the watcher must not wait unboundedly after a failed kill"
+    );
+}
+
 /// A candidate that naturally exits AFTER the deadline must not be reported as a
 /// deadline-compliant normal exit when the first observation is late.
 #[test]

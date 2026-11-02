@@ -2699,3 +2699,18 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 - **Confirmed measurement:** `a_blocked_sampler_spawn_does_not_extend_the_deadline` now asserts a real request instant and a real confirmation latency; the late-observation paths still carry `None`.
 - **Verified:** harness `--test-threads=8` ×5 green (135 tests each); workspace **722 passed / 0 failed / 2 ignored**; fmt/clippy/build/dependency checker green.
 
+### 19.138 ExitWatch as an explicit state machine (2026-11-02)
+
+- **State enumeration:** `WatchState::{Running, Exited { at, status }, Unconfirmed { last_seen }}`. `Exited` is entered only when the exit is truly confirmed (a reaped status). `Unconfirmed` covers a failed kill, a failed/late confirmation, or a `try_wait` error; the watcher never performs an unbounded `wait()` and stops after the bounded confirmation window (`SAMPLE_EXIT_GRACE`).
+- **Effect on the recorded fields:**
+
+| State | `wall_ms` | `killed` / `cancelled` | `cancellation_requested_at_ms` | `cancellation_observed_ms` |
+|---|---|---|---|---|
+| `Running` | pending (no value) | — | — | — |
+| `Exited` (normal) | `at − started` | not killed | `None` | `None` |
+| `Exited` (deadline/request kill confirmed) | `at − started` | killed / cancelled | real request instant | real confirmation latency |
+| `Unconfirmed` | **`None`** | **not killed**, cancelled | real request if one was issued | **`None`** |
+
+- **Transitions tested (4):** normal exit → `Exited`; deadline kill + wait success → `Exited` with real request/confirm instants (`a_blocked_sampler_spawn_does_not_extend_the_deadline` asserts both); kill success + wait failure → `Unconfirmed` (`a_failed_wait_leaves_the_exit_unconfirmed`: `wall_ms = None`, `cancellation_observed_ms = None`); kill failure → `Unconfirmed`, no unbounded wait (`a_failed_kill_leaves_the_exit_unconfirmed`, finishes in < 1 s).
+- **Gates:** harness `--test-threads=8` ×5 green (137 tests each); workspace **724 passed / 0 failed / 2 ignored**; fmt/clippy/build/dependency checker green.
+
