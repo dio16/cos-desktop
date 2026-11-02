@@ -3351,10 +3351,6 @@ impl ExitWatch {
         }
     }
 
-    fn aborted(&self) -> bool {
-        self.state.lock().map(|data| data.abort).unwrap_or(true)
-    }
-
     fn request_kill(&self) {
         if let Ok(mut data) = self.state.lock() {
             data.kill_requested = true;
