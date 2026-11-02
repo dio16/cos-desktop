@@ -857,6 +857,12 @@ class VerifyIdentityAgreementTests(unittest.TestCase):
             s2b["identity"]["executable_sha256"] = "sha256:" + "9" * 64
             manifest_path = output / "s2b.json"
             manifest_path.write_text(json.dumps(s2b), encoding="utf-8")
+            # Replay needs an independent recorded identity: without it the manifest is
+            # refused before the executable agreement below can be checked.
+            (output / "s2b-build.json").write_text(
+                json.dumps(json.loads((ROOT / "s2b-build.json").read_text(encoding="utf-8"))),
+                encoding="utf-8",
+            )
             result_path = output / "result.json"
             result_path.write_text(json.dumps(document), encoding="utf-8")
             args = type("Args", (), {"manifest": str(MANIFEST), "result": str(result_path),

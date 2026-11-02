@@ -536,6 +536,20 @@ class S2BWireContract(unittest.TestCase):
         self.assertEqual(
             s2b_capture.validate_build_record(build, live=True)["observer_source_sha256"], current)
 
+    def test_replay_without_a_recorded_build_identity_is_refused(self):
+        import contracts, json, tempfile, r0c_driver, s2b_contracts as s2b
+        document = contracts.load_document(
+            str(ROOT / "manifests/s2b-feature-a1.json"), contracts.MAX_MANIFEST_BYTES)
+        with tempfile.TemporaryDirectory() as work:
+            manifest_path = Path(work) / "s2b-feature-a1.json"
+            manifest_path.write_text(json.dumps(document), encoding="utf-8")
+            # No build record beside the manifest: nothing independent to compare with,
+            # so the identity check must refuse rather than compare the manifest to itself.
+            self.assertIsNone(r0c_driver.pinned_source_digest(manifest_path))
+            with self.assertRaises(s2b.ObservationError) as error:
+                r0c_driver.require_pinned_source_digest(manifest_path, document)
+            self.assertEqual(str(error.exception), "SOURCE_IDENTITY_UNRECORDED")
+
     def test_replay_uses_the_recorded_build_identity_not_the_live_tree(self):
         import contracts, json, tempfile, r0c_driver
         document = contracts.load_document(
