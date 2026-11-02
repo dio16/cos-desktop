@@ -325,8 +325,10 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
 
 /// Six-phase measurement of exactly this path; `None` in every product build.
 fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128; 9]>) -> Layers {
+    // The clock is only created when a phase array is supplied; the non-instrumented
+    // test path takes no timestamps at all.
     #[cfg(test)]
-    let mut phase_start = std::time::Instant::now();
+    let mut phase_start = phases.is_some().then(std::time::Instant::now);
     let count = graph.nodes.len();
     let index_of: std::collections::HashMap<NodeId, usize> = graph
         .nodes
@@ -335,18 +337,19 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
         .map(|(index, node)| (node.identity.clone(), index))
         .collect();
     #[cfg(test)]
-    if let Some(slots) = phases.as_mut() {
-        slots[0] = phase_start.elapsed().as_micros();
-        phase_start = std::time::Instant::now();
+    if let (Some(slots), Some(start)) = (phases.as_mut(), phase_start) {
+        slots[0] = start.elapsed().as_micros();
+        phase_start = Some(std::time::Instant::now());
     }
     let mut successors: Vec<Vec<usize>> = vec![Vec::new(); count];
     #[cfg(test)]
-    let p2a_us = if phases.is_some() {
-        let elapsed = phase_start.elapsed().as_micros();
-        phase_start = std::time::Instant::now();
-        elapsed
-    } else {
-        0
+    let p2a_us = match phase_start {
+        Some(start) => {
+            let elapsed = start.elapsed().as_micros();
+            phase_start = Some(std::time::Instant::now());
+            elapsed
+        }
+        None => 0,
     };
     let mut self_loop = false;
     for edge in graph.edges.iter() {
@@ -359,13 +362,13 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
         successors[from].push(to);
     }
     #[cfg(test)]
-    if let Some(slots) = phases.as_mut() {
-        let p2b_us = phase_start.elapsed().as_micros();
+    if let (Some(slots), Some(start)) = (phases.as_mut(), phase_start) {
+        let p2b_us = start.elapsed().as_micros();
         slots[7] = p2a_us;
         slots[8] = p2b_us;
         // P2 overall is exactly the two measured halves of the same pass.
         slots[1] = p2a_us + p2b_us;
-        phase_start = std::time::Instant::now();
+        phase_start = Some(std::time::Instant::now());
     }
 
     // Iterative Tarjan: one frame per node, no host-stack recursion.
@@ -424,9 +427,9 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
     }
 
     #[cfg(test)]
-    if let Some(slots) = phases.as_mut() {
-        slots[2] = phase_start.elapsed().as_micros();
-        phase_start = std::time::Instant::now();
+    if let (Some(slots), Some(start)) = (phases.as_mut(), phase_start) {
+        slots[2] = start.elapsed().as_micros();
+        phase_start = Some(std::time::Instant::now());
     }
     // Condense and take the longest path over the component DAG.
     let components = component_sizes.len();
@@ -446,9 +449,9 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
         }
     }
     #[cfg(test)]
-    if let Some(slots) = phases.as_mut() {
-        slots[3] = phase_start.elapsed().as_micros();
-        phase_start = std::time::Instant::now();
+    if let (Some(slots), Some(start)) = (phases.as_mut(), phase_start) {
+        slots[3] = start.elapsed().as_micros();
+        phase_start = Some(std::time::Instant::now());
     }
     let mut depth_component = vec![0usize; components];
     let mut queue: std::collections::VecDeque<usize> =
@@ -464,23 +467,23 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
         }
     }
     #[cfg(test)]
-    if let Some(slots) = phases.as_mut() {
-        slots[4] = phase_start.elapsed().as_micros();
-        phase_start = std::time::Instant::now();
+    if let (Some(slots), Some(start)) = (phases.as_mut(), phase_start) {
+        slots[4] = start.elapsed().as_micros();
+        phase_start = Some(std::time::Instant::now());
     }
     let cyclic = self_loop || component_sizes.iter().any(|size| *size > 1);
     let depth = (0..count)
         .map(|node| depth_component[component[node]])
         .collect();
     #[cfg(test)]
-    if let Some(slots) = phases.as_mut() {
-        slots[5] = phase_start.elapsed().as_micros();
-        phase_start = std::time::Instant::now();
+    if let (Some(slots), Some(start)) = (phases.as_mut(), phase_start) {
+        slots[5] = start.elapsed().as_micros();
+        phase_start = Some(std::time::Instant::now());
         // Explicit deallocation: the index map and adjacency are freed here, inside
         // the measured path, so their cost is not silently left outside the phases.
         drop(index_of);
         drop(successors);
-        slots[6] = phase_start.elapsed().as_micros();
+        slots[6] = phase_start.map(|s| s.elapsed().as_micros()).unwrap_or(0);
     }
     Layers { depth, cyclic }
 }

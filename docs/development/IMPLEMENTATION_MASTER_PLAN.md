@@ -3213,7 +3213,7 @@ layer_phase_sample iter=20 p1_us=973 p2_us=2657 p3_us=245 p4_us=451 p5_us=94 p6_
 
 ### 19.148 MP-FLOW2 P2 successors: P2a/P2b split (2026-11-02)
 
-- **Implementation:** only `#[cfg(test)]` timing points were added to `layers_inner`, and the P2a timer runs only when a phase array is supplied, so the non-instrumented path in tests stays timing-free; P1–P7 definitions are unchanged. P2 is the whole successors pass; **P2a** is the outer `vec![Vec::new(); count]` initialisation and **P2b** is the compound edge pass (NodeId→index lookups, `push`, inner Vec growth). P2 overall is computed as P2a+P2b (asserted equal per iteration); no per-edge timers and no duplicated algorithm.
+- **Implementation:** only `#[cfg(test)]` timing points were added to `layers_inner`, and every timer, including the clock creation, is conditional on a phase array being supplied, so the non-instrumented path takes no timestamps at all; P1–P7 definitions are unchanged. P2 is the whole successors pass; **P2a** is the outer `vec![Vec::new(); count]` initialisation and **P2b** is the compound edge pass (NodeId→index lookups, `push`, inner Vec growth). P2 overall is computed as P2a+P2b (asserted equal per iteration); no per-edge timers and no duplicated algorithm.
 - **Conditions:** release, 10,000 nodes / 19,800 edges synthetic DAG, warmup 3, 21 iterations, `Instant::elapsed()` sequential time. `phase_sum` is P1..P7 only; P2a/P2b are subdivisions and are not added again. `outer_total − phase_sum` is recorded as unattributed.
 - **Results (median / p95 / max, µs; share of outer median):**
 
