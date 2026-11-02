@@ -3252,7 +3252,7 @@ fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
     config.timeout_ms = 10_000;
     config.cancel_after_ms = Some(100);
     config.watch_delay = Some(std::time::Duration::from_secs(4));
-    let heartbeat = fixture.base.join("a.heartbeat");
+    let heartbeat = fixture.cases.join("a.heartbeat");
     let started = std::time::Instant::now();
     let report = harness::run(&config).unwrap();
     let elapsed = started.elapsed();
@@ -5272,7 +5272,9 @@ fn fake_candidate(support: ProbeSupport) {
         "sleep-long-heartbeat" => {
             // Keeps a sibling file growing while the process lives, so a test can show
             // that a stop really ended the process rather than only losing its exit.
-            let heartbeat = std::path::Path::new(&output).with_extension("heartbeat");
+            // Written beside the case file: the output path lives under the run's out
+            // directory, which the test does not know, while the case path it does.
+            let heartbeat = std::path::Path::new(&input).with_extension("heartbeat");
             let deadline = std::time::Instant::now() + std::time::Duration::from_secs(8);
             while std::time::Instant::now() < deadline {
                 let mut file = std::fs::OpenOptions::new()
