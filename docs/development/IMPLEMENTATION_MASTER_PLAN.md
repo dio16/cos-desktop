@@ -3210,3 +3210,56 @@ layer_phase_sample iter=18 p1_us=928 p2_us=2743 p3_us=257 p4_us=473 p5_us=104 p6
 layer_phase_sample iter=19 p1_us=1091 p2_us=2828 p3_us=280 p4_us=454 p5_us=97 p6_us=12 p7_drop_us=445 sum_us=5207 outer_total_us=5398 unattributed_us=191
 layer_phase_sample iter=20 p1_us=973 p2_us=2657 p3_us=245 p4_us=451 p5_us=94 p6_us=13 p7_drop_us=396 sum_us=4829 outer_total_us=5020 unattributed_us=191
 ```
+
+### 19.148 MP-FLOW2 P2 successors: P2a/P2b split (2026-11-02)
+
+- **Implementation:** only `#[cfg(test)]` timing points were added to `layers_inner`; P1–P7 definitions are unchanged. P2 is the whole successors pass; **P2a** is the outer `vec![Vec::new(); count]` initialisation and **P2b** is the compound edge pass (NodeId→index lookups, `push`, inner Vec growth). P2 overall is computed as P2a+P2b (asserted equal per iteration); no per-edge timers and no duplicated algorithm.
+- **Conditions:** release, 10,000 nodes / 19,800 edges synthetic DAG, warmup 3, 21 iterations, `Instant::elapsed()` sequential time. `phase_sum` is P1..P7 only; P2a/P2b are subdivisions and are not added again. `outer_total − phase_sum` is recorded as unattributed.
+- **Results (median / p95 / max, µs; share of outer median):**
+
+| phase | median | p95 | max | share of outer |
+|---|---:|---:|---:|---:|
+| P1 index | 1041 | 1208 | 1283 | 17.9% |
+| P2 all | 2932 | 3174 | 3327 | 50.3% |
+| **P2a outer init** | **12** | **38** | **43** | 0.2% |
+| **P2b edge pass (compound)** | **2895** | **3164** | **3317** | 49.7% |
+| P3 Tarjan | 354 | 472 | 625 | 6.1% |
+| P4 condense | 471 | 570 | 581 | 8.1% |
+| P5 Kahn | 99 | 124 | 134 | 1.7% |
+| P6 depth | 14 | 23 | 30 | 0.2% |
+| P7 deallocation | 563 | 729 | 913 | 9.7% |
+| phase sum (P1..P7) | 5608 | 5845 | 6041 | — |
+| unattributed (outer − sum) | 198 | 288 | 409 | 3.4% |
+| outer_total | 5828 | 6087 | 6238 | 100% |
+
+  P2a is negligible (12 µs); **P2b is the dominant part of P2** (2,895 of 2,932 µs). P2b is a compound step, so its cost is not attributed separately to HashMap lookup or Vec growth.
+- **Consistency:** per iteration P2a+P2b == P2 (asserted); `phase_sum` excludes the P2a/P2b split and does not double count; unattributed remains ~198 µs.
+- **Correctness:** phased and unphased results are identical every iteration; depths equal the independent Kahn reference; 10,000 nodes / 19,800 edges; the existing Diagram/checksum assertions remain unchanged. No new tests were added.
+- **Hypothesis re-evaluation (no speed estimate, no adoption):** capacity preallocation for the outer vector targets P2a, which is ~0.2% of the outer time, so this measurement does not support it as a meaningful lever. CSR would restructure the P2b edge pass, which is where the time is; any benefit is a **hypothesis** needing its own measurement, and it must preserve adjacency order (determinism). No absolute comparison with §19.147 is interpreted as a speed change.
+- **Limits:** paint/GPU/Present not measured; no Stage A–C experiment, no numeric gate, no optimization implemented. MP-FLOW2 remains incomplete.
+- **Raw samples (21 iterations; outer, P2 split, phase sum, unattributed):**
+
+```text
+layer_phase_sample iter=0 p1_us=1177 p2_us=2958 p2a_us=38 p2b_us=2920 p3_us=407 p4_us=494 p5_us=102 p6_us=22 p7_drop_us=538 sum_us=5698 outer_total_us=5890 unattributed_us=192
+layer_phase_sample iter=1 p1_us=952 p2_us=3085 p2a_us=7 p2b_us=3078 p3_us=331 p4_us=458 p5_us=99 p6_us=14 p7_drop_us=482 sum_us=5421 outer_total_us=5619 unattributed_us=198
+layer_phase_sample iter=2 p1_us=925 p2_us=2541 p2a_us=6 p2b_us=2535 p3_us=227 p4_us=404 p5_us=95 p6_us=14 p7_drop_us=395 sum_us=4601 outer_total_us=4793 unattributed_us=192
+layer_phase_sample iter=3 p1_us=1041 p2_us=2765 p2a_us=12 p2b_us=2753 p3_us=281 p4_us=471 p5_us=97 p6_us=14 p7_drop_us=638 sum_us=5307 outer_total_us=5574 unattributed_us=267
+layer_phase_sample iter=4 p1_us=947 p2_us=2714 p2a_us=6 p2b_us=2708 p3_us=339 p4_us=570 p5_us=124 p6_us=15 p7_drop_us=729 sum_us=5438 outer_total_us=5683 unattributed_us=245
+layer_phase_sample iter=5 p1_us=1029 p2_us=3327 p2a_us=10 p2b_us=3317 p3_us=384 p4_us=467 p5_us=98 p6_us=14 p7_drop_us=526 sum_us=5845 outer_total_us=6037 unattributed_us=192
+layer_phase_sample iter=6 p1_us=1080 p2_us=2866 p2a_us=12 p2b_us=2854 p3_us=354 p4_us=462 p5_us=97 p6_us=15 p7_drop_us=608 sum_us=5482 outer_total_us=5696 unattributed_us=214
+layer_phase_sample iter=7 p1_us=1177 p2_us=2932 p2a_us=14 p2b_us=2918 p3_us=411 p4_us=468 p5_us=96 p6_us=14 p7_drop_us=562 sum_us=5660 outer_total_us=5856 unattributed_us=196
+layer_phase_sample iter=8 p1_us=1208 p2_us=2935 p2a_us=43 p2b_us=2892 p3_us=422 p4_us=490 p5_us=101 p6_us=15 p7_drop_us=582 sum_us=5753 outer_total_us=5952 unattributed_us=199
+layer_phase_sample iter=9 p1_us=942 p2_us=2787 p2a_us=8 p2b_us=2779 p3_us=308 p4_us=517 p5_us=105 p6_us=17 p7_drop_us=631 sum_us=5307 outer_total_us=5513 unattributed_us=206
+layer_phase_sample iter=10 p1_us=945 p2_us=2995 p2a_us=8 p2b_us=2987 p3_us=472 p4_us=493 p5_us=134 p6_us=30 p7_drop_us=719 sum_us=5788 outer_total_us=5990 unattributed_us=202
+layer_phase_sample iter=11 p1_us=957 p2_us=3174 p2a_us=10 p2b_us=3164 p3_us=374 p4_us=460 p5_us=96 p6_us=14 p7_drop_us=533 sum_us=5608 outer_total_us=5828 unattributed_us=220
+layer_phase_sample iter=12 p1_us=1179 p2_us=2878 p2a_us=17 p2b_us=2861 p3_us=409 p4_us=460 p5_us=96 p6_us=14 p7_drop_us=539 sum_us=5575 outer_total_us=5768 unattributed_us=193
+layer_phase_sample iter=13 p1_us=978 p2_us=3173 p2a_us=10 p2b_us=3163 p3_us=404 p4_us=469 p5_us=105 p6_us=14 p7_drop_us=563 sum_us=5706 outer_total_us=5904 unattributed_us=198
+layer_phase_sample iter=14 p1_us=941 p2_us=2831 p2a_us=8 p2b_us=2823 p3_us=287 p4_us=474 p5_us=96 p6_us=14 p7_drop_us=621 sum_us=5264 outer_total_us=5472 unattributed_us=208
+layer_phase_sample iter=15 p1_us=1076 p2_us=2676 p2a_us=13 p2b_us=2663 p3_us=242 p4_us=472 p5_us=105 p6_us=14 p7_drop_us=451 sum_us=5036 outer_total_us=5229 unattributed_us=193
+layer_phase_sample iter=16 p1_us=976 p2_us=2824 p2a_us=10 p2b_us=2814 p3_us=332 p4_us=508 p5_us=106 p6_us=16 p7_drop_us=913 sum_us=5675 outer_total_us=6084 unattributed_us=409
+layer_phase_sample iter=17 p1_us=1283 p2_us=3088 p2a_us=18 p2b_us=3070 p3_us=332 p4_us=456 p5_us=98 p6_us=14 p7_drop_us=502 sum_us=5773 outer_total_us=5971 unattributed_us=198
+layer_phase_sample iter=18 p1_us=1127 p2_us=2972 p2a_us=15 p2b_us=2957 p3_us=625 p4_us=581 p5_us=106 p6_us=16 p7_drop_us=614 sum_us=6041 outer_total_us=6238 unattributed_us=197
+layer_phase_sample iter=19 p1_us=1051 p2_us=2909 p2a_us=14 p2b_us=2895 p3_us=355 p4_us=463 p5_us=97 p6_us=18 p7_drop_us=533 sum_us=5426 outer_total_us=5619 unattributed_us=193
+layer_phase_sample iter=20 p1_us=1077 p2_us=3015 p2a_us=16 p2b_us=2999 p3_us=336 p4_us=507 p5_us=122 p6_us=23 p7_drop_us=719 sum_us=5799 outer_total_us=6087 unattributed_us=288
+```
+

@@ -324,7 +324,7 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
 }
 
 /// Six-phase measurement of exactly this path; `None` in every product build.
-fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128; 7]>) -> Layers {
+fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128; 9]>) -> Layers {
     #[cfg(test)]
     let mut phase_start = std::time::Instant::now();
     let count = graph.nodes.len();
@@ -340,6 +340,12 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
         phase_start = std::time::Instant::now();
     }
     let mut successors: Vec<Vec<usize>> = vec![Vec::new(); count];
+    #[cfg(test)]
+    let p2a_us = {
+        let elapsed = phase_start.elapsed().as_micros();
+        phase_start = std::time::Instant::now();
+        elapsed
+    };
     let mut self_loop = false;
     for edge in graph.edges.iter() {
         let (Some(&from), Some(&to)) = (index_of.get(&edge.from), index_of.get(&edge.to)) else {
@@ -352,7 +358,11 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
     }
     #[cfg(test)]
     if let Some(slots) = phases.as_mut() {
-        slots[1] = phase_start.elapsed().as_micros();
+        let p2b_us = phase_start.elapsed().as_micros();
+        slots[7] = p2a_us;
+        slots[8] = p2b_us;
+        // P2 overall is exactly the two measured halves of the same pass.
+        slots[1] = p2a_us + p2b_us;
         phase_start = std::time::Instant::now();
     }
 
@@ -476,8 +486,8 @@ fn layers_inner(graph: &GraphDisplay, #[cfg(test)] mut phases: Option<&mut [u128
 /// Test-only entry point: the same `layers_inner` path with seven phase durations and
 /// the outer elapsed time (outer is not the sum of the phases).
 #[cfg(test)]
-pub(crate) fn layers_phased(graph: &GraphDisplay) -> (Layers, [u128; 7], u128) {
-    let mut phases = [0u128; 7];
+pub(crate) fn layers_phased(graph: &GraphDisplay) -> (Layers, [u128; 9], u128) {
+    let mut phases = [0u128; 9];
     let outer = std::time::Instant::now();
     let result = layers_inner(graph, Some(&mut phases));
     (result, phases, outer.elapsed().as_micros())
@@ -2614,7 +2624,7 @@ mod tests {
         let _ = query_started;
 
         // Seven-phase decomposition of the same layers path (P1..P7), test-only.
-        let mut phase_samples: Vec<([u128; 7], u128, u128)> = Vec::new();
+        let mut phase_samples: Vec<([u128; 9], u128, u128)> = Vec::new();
         let expected_depth = reference_depths(&revision);
         for iteration in 0..(WARMUP + ITERATIONS) {
             let (phased, phases, outer_us) = super::layers_phased(&revision);
@@ -2631,11 +2641,21 @@ mod tests {
             assert_eq!(phased.depth.len(), LAYER_COUNT * WIDTH);
             if iteration >= WARMUP {
                 let index = iteration - WARMUP;
-                let sum_us: u128 = phases.iter().sum();
+                // Phase sum uses P1..P7 exactly; P2a/P2b are subdivisions of P2.
+                let sum_us: u128 = phases[0..=6].iter().sum();
                 let unaccounted = outer_us.saturating_sub(sum_us);
+                assert_eq!(phases[7] + phases[8], phases[1], "P2a+P2b equals P2");
                 println!(
-                    "layer_phase_sample iter={index} p1_us={} p2_us={} p3_us={} p4_us={} p5_us={} p6_us={} p7_drop_us={} sum_us={sum_us} outer_total_us={outer_us} unattributed_us={unaccounted}",
-                    phases[0], phases[1], phases[2], phases[3], phases[4], phases[5], phases[6]
+                    "layer_phase_sample iter={index} p1_us={} p2_us={} p2a_us={} p2b_us={} p3_us={} p4_us={} p5_us={} p6_us={} p7_drop_us={} sum_us={sum_us} outer_total_us={outer_us} unattributed_us={unaccounted}",
+                    phases[0],
+                    phases[1],
+                    phases[7],
+                    phases[8],
+                    phases[2],
+                    phases[3],
+                    phases[4],
+                    phases[5],
+                    phases[6]
                 );
                 phase_samples.push((phases, outer_us, sum_us));
             }
@@ -2673,6 +2693,18 @@ mod tests {
         .iter()
         .enumerate()
         {
+            let values: Vec<u128> = phase_samples.iter().map(|sample| sample.0[index]).collect();
+            let (median, p95, max) = stats(values);
+            let share = median as f64 * 100.0 / outer_median as f64;
+            println!(
+                "layer_phase_summary phase={name} n={ITERATIONS} median_us={median} p95_us={p95} max_us={max} share_of_outer_pct={share:.1}"
+            );
+        }
+        for (name, index) in [
+            ("p2_all", 1usize),
+            ("p2a_outer_init", 7),
+            ("p2b_edge_pass", 8),
+        ] {
             let values: Vec<u128> = phase_samples.iter().map(|sample| sample.0[index]).collect();
             let (median, p95, max) = stats(values);
             let share = median as f64 * 100.0 / outer_median as f64;
