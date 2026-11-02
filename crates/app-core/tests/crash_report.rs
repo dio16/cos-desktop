@@ -181,10 +181,14 @@ fn an_injected_credential_in_a_stored_report_is_refused() {
         })
         .expect("a clean report");
     let path = report_path(&store, meta.id);
-    let tampered = "Desktop version: 9.9.9 token=secret123
-                    Crash category: unknown
-                    Retained events: unknown (the diagnostic ring was not read)"
-        .to_owned();
+    let tampered = concat!(
+        "Desktop version: 9.9.9 token=secret123",
+        "\n",
+        "Crash category: unknown",
+        "\n",
+        "Retained events: unknown (the diagnostic ring was not read)",
+    )
+    .to_owned();
     std::fs::write(&path, &tampered).expect("the tampered file");
     let error = store.read(meta.id).expect_err("a tampered report");
     assert!(matches!(error, CrashStoreError::InvalidReport), "{error:?}");
@@ -197,6 +201,27 @@ fn an_injected_credential_in_a_stored_report_is_refused() {
         tampered,
         "the refused file is left exactly as it was"
     );
+
+    // A key the redactor does not know about is refused too: any `key=value` whose value is
+    // not a fixed marker is a raw credential.
+    let unknown_key = tampered.replace("token=secret123", "api_key=SuperSecret123");
+    std::fs::write(&path, &unknown_key).expect("the second tampered file");
+    let error = store.read(meta.id).expect_err("an unknown credential key");
+    assert!(matches!(error, CrashStoreError::InvalidReport), "{error:?}");
+
+    // The rendered marker form stays readable: `access_token=[redacted]` is a shape the
+    // redactor produces, so rejecting it would break ordinary reports.
+    let marked = concat!(
+        "Desktop version: 9.9.9 access_token=[redacted]",
+        "\n",
+        "Crash category: unknown",
+        "\n",
+        "Retained events: unknown (the diagnostic ring was not read)",
+    )
+    .to_owned();
+    std::fs::write(&path, &marked).expect("the marker file");
+    assert_eq!(store.read(meta.id).expect("a marked version"), marked);
+    let _ = std::fs::remove_dir_all(&root);
 }
 
 #[test]
@@ -435,6 +460,11 @@ fn a_full_report_with_duplicate_or_malformed_fields_is_refused() {
         valid.replace("Retained events: 4096", "Retained events: 04096"),
         valid.replace("Counts: activity 4095", "Counts: activity 4095,"),
         valid.replace("Desktop version: 0.1.0", "Desktop version: 0.1.0\u{7}"),
+        // The span can overflow u64; the check must refuse rather than panic or wrap.
+        valid.replace(
+            "Event gap: 1-904 (904 lost)",
+            "Event gap: 0-18446744073709551615 (0 lost)",
+        ),
     ] {
         rewrite_body(&store, meta.id, &body);
         assert!(

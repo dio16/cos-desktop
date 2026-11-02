@@ -585,6 +585,17 @@ fn safe_version(value: &str) -> bool {
         }
         return false;
     }
+    // A rendered report may keep a key name next to a marker (`access_token=[redacted]`),
+    // but any other `key=value` is a raw value redaction did not recognise, so it is
+    // refused regardless of which key the redactor happens to know about.
+    let markers = ["[redacted]", "[signed-locator]", "[private-path]"];
+    let mut rest = value;
+    while let Some((_, tail)) = rest.split_once('=') {
+        if !markers.iter().any(|marker| tail.starts_with(marker)) {
+            return false;
+        }
+        rest = tail;
+    }
     let lowered = value.to_lowercase();
     !lowered.contains("bearer ") && !lowered.contains("://")
 }
