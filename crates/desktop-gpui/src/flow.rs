@@ -3,7 +3,7 @@
 //! Rows are pure views over the authoritative graph display. Filtering and
 //! keyboard cursors never add, remove or redirect edges.
 
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use desktop_protocol::{Counter, EdgeId, GraphRef, NodeId};
@@ -201,8 +201,8 @@ pub const MAX_DIAGRAM_NODES: usize = 120;
 /// inspection rows.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Matched {
-    pub nodes: BTreeSet<(GraphRef, NodeId)>,
-    pub edges: BTreeSet<(GraphRef, EdgeId)>,
+    pub nodes: HashSet<(GraphRef, NodeId)>,
+    pub edges: HashSet<(GraphRef, EdgeId)>,
 }
 
 /// Bounded (single-entry) cache of the match sets, owned by the shell.
@@ -584,8 +584,8 @@ pub fn connector(
 pub fn diagram(
     graph: &GraphDisplay,
     layers: &Layers,
-    matched_nodes: &std::collections::BTreeSet<(GraphRef, NodeId)>,
-    matched_edges: &std::collections::BTreeSet<(GraphRef, EdgeId)>,
+    matched_nodes: &HashSet<(GraphRef, NodeId)>,
+    matched_edges: &HashSet<(GraphRef, EdgeId)>,
 ) -> Diagram {
     let is_matched_node =
         |identity: &NodeId| matched_nodes.contains(&(graph.graph_ref.clone(), identity.clone()));
@@ -728,8 +728,8 @@ mod tests {
         let drawn = diagram(
             &graph,
             &layers(&graph),
-            &std::collections::BTreeSet::new(),
-            &std::collections::BTreeSet::new(),
+            &std::collections::HashSet::new(),
+            &std::collections::HashSet::new(),
         );
         assert_eq!(drawn.nodes.len(), 3);
         assert_eq!(drawn.edges.len(), 2);
@@ -759,8 +759,8 @@ mod tests {
         let drawn = diagram(
             &graph,
             &layers(&graph),
-            &std::collections::BTreeSet::new(),
-            &std::collections::BTreeSet::new(),
+            &std::collections::HashSet::new(),
+            &std::collections::HashSet::new(),
         );
         let labels: Vec<&str> = drawn.nodes.iter().map(|node| node.label.as_ref()).collect();
         assert_eq!(labels, vec!["Zeta", "Alpha", "Middle"]);
@@ -790,8 +790,8 @@ mod tests {
         ]
         .into();
         wide.edges = Arc::from([]);
-        let mut matched: std::collections::BTreeSet<(GraphRef, desktop_protocol::NodeId)> =
-            std::collections::BTreeSet::new();
+        let mut matched: std::collections::HashSet<(GraphRef, desktop_protocol::NodeId)> =
+            std::collections::HashSet::new();
         matched.insert((
             wide.graph_ref.clone(),
             desktop_protocol::NodeId::fixture("node/second"),
@@ -800,7 +800,7 @@ mod tests {
             &wide,
             &layers(&wide),
             &matched,
-            &std::collections::BTreeSet::new(),
+            &std::collections::HashSet::new(),
         );
         assert_eq!(
             drawn
@@ -846,8 +846,8 @@ mod tests {
             })
             .collect::<Vec<_>>()
             .into();
-        let mut matched: std::collections::BTreeSet<(GraphRef, desktop_protocol::NodeId)> =
-            std::collections::BTreeSet::new();
+        let mut matched: std::collections::HashSet<(GraphRef, desktop_protocol::NodeId)> =
+            std::collections::HashSet::new();
         matched.insert((
             chain.graph_ref.clone(),
             desktop_protocol::NodeId::fixture(format!("node/{}", count - 1)),
@@ -856,7 +856,7 @@ mod tests {
             &chain,
             &layers(&chain),
             &matched,
-            &std::collections::BTreeSet::new(),
+            &std::collections::HashSet::new(),
         );
         assert!(drawn.truncated);
         let last = drawn
@@ -906,8 +906,8 @@ mod tests {
         let drawn = diagram(
             &cycle,
             &layers(&cycle),
-            &std::collections::BTreeSet::new(),
-            &std::collections::BTreeSet::new(),
+            &std::collections::HashSet::new(),
+            &std::collections::HashSet::new(),
         );
         assert!(drawn.cyclic, "a cycle is reported instead of being hidden");
     }
@@ -915,8 +915,8 @@ mod tests {
     #[test]
     fn emphasis_is_scoped_to_the_exact_graph_revision() {
         let graph = graph(3, "digest/three", 8);
-        let mut matched: std::collections::BTreeSet<(GraphRef, desktop_protocol::NodeId)> =
-            std::collections::BTreeSet::new();
+        let mut matched: std::collections::HashSet<(GraphRef, desktop_protocol::NodeId)> =
+            std::collections::HashSet::new();
         matched.insert((
             GraphRef {
                 graph_id: GraphId::fixture("graph/other"),
@@ -929,7 +929,7 @@ mod tests {
             &graph,
             &layers(&graph),
             &matched,
-            &std::collections::BTreeSet::new(),
+            &std::collections::HashSet::new(),
         );
         assert!(
             drawn.nodes.iter().all(|node| !node.matched),
@@ -953,8 +953,8 @@ mod tests {
         let drawn = diagram(
             &missing,
             &layers(&missing),
-            &std::collections::BTreeSet::new(),
-            &std::collections::BTreeSet::new(),
+            &std::collections::HashSet::new(),
+            &std::collections::HashSet::new(),
         );
         assert_eq!(drawn.skipped_edges, 1);
         assert!(drawn.edges.is_empty());
@@ -1663,7 +1663,6 @@ mod tests {
     #[test]
     #[ignore = "MP-FLOW2 10,000-node measurement; run explicitly for evidence"]
     fn ten_thousand_node_flow_phases_stay_within_the_frame_budget() {
-        use std::collections::BTreeSet;
         use std::time::Instant;
 
         const LAYER_COUNT: usize = 100;
@@ -1705,16 +1704,18 @@ mod tests {
 
         // The product builds the match sets from the admitted rows on every render, so the
         // measurement and the equivalence check use the same populated sets.
-        let matched_nodes: BTreeSet<(GraphRef, desktop_protocol::NodeId)> = rows_once
-            .nodes
-            .iter()
-            .map(|row| (row.graph.graph_ref.clone(), row.node().identity.clone()))
-            .collect();
-        let matched_edges: BTreeSet<(GraphRef, desktop_protocol::EdgeId)> = rows_once
-            .edges
-            .iter()
-            .map(|row| (row.graph.graph_ref.clone(), row.edge().identity.clone()))
-            .collect();
+        let matched_nodes: std::collections::HashSet<(GraphRef, desktop_protocol::NodeId)> =
+            rows_once
+                .nodes
+                .iter()
+                .map(|row| (row.graph.graph_ref.clone(), row.node().identity.clone()))
+                .collect();
+        let matched_edges: std::collections::HashSet<(GraphRef, desktop_protocol::EdgeId)> =
+            rows_once
+                .edges
+                .iter()
+                .map(|row| (row.graph.graph_ref.clone(), row.edge().identity.clone()))
+                .collect();
         assert_eq!(matched_nodes.len(), NODES);
         assert_eq!(matched_edges.len(), graph.edges.len());
 
@@ -1756,16 +1757,16 @@ mod tests {
             // then draw. This mirrors flow_diagram_region on every render.
             let frame_started = Instant::now();
             let started = Instant::now();
-            let matched_nodes: BTreeSet<(GraphRef, desktop_protocol::NodeId)> = rows
-                .nodes
-                .iter()
-                .map(|row| (row.graph.graph_ref.clone(), row.node().identity.clone()))
-                .collect();
-            let matched_edges: BTreeSet<(GraphRef, desktop_protocol::EdgeId)> = rows
-                .edges
-                .iter()
-                .map(|row| (row.graph.graph_ref.clone(), row.edge().identity.clone()))
-                .collect();
+            let matched_nodes: std::collections::HashSet<(GraphRef, desktop_protocol::NodeId)> =
+                rows.nodes
+                    .iter()
+                    .map(|row| (row.graph.graph_ref.clone(), row.node().identity.clone()))
+                    .collect();
+            let matched_edges: std::collections::HashSet<(GraphRef, desktop_protocol::EdgeId)> =
+                rows.edges
+                    .iter()
+                    .map(|row| (row.graph.graph_ref.clone(), row.edge().identity.clone()))
+                    .collect();
             let matches_elapsed = started.elapsed().as_micros();
             let started = Instant::now();
             let drawn = diagram(&graph, &computed, &matched_nodes, &matched_edges);
@@ -1924,23 +1925,78 @@ mod tests {
     #[test]
     #[ignore = "MP-FLOW2 Stage C cache measurement; run explicitly with --release"]
     fn ten_thousand_cache_miss_and_hit_series() {
+        use std::collections::BTreeSet;
+        use std::time::Instant;
+
         const LAYER_COUNT: usize = 100;
         const WIDTH: usize = 100;
         const NODES: usize = LAYER_COUNT * WIDTH;
         const ITERATIONS: usize = 21;
         const WARMUP: usize = 3;
 
+        type BTreeNodes = BTreeSet<(GraphRef, desktop_protocol::NodeId)>;
+        type BTreeEdges = BTreeSet<(GraphRef, desktop_protocol::EdgeId)>;
+
         println!(
-            "MP-FLOW2 conditions release={} warmup={WARMUP} iterations={ITERATIONS} nodes={NODES} edges={}",
+            "MP-FLOW2 A/B conditions release={} warmup={WARMUP} iterations={ITERATIONS} nodes={NODES} edges={} order=alternating",
             !cfg!(debug_assertions),
             (LAYER_COUNT - 1) * WIDTH * 2
         );
         println!(
-            "MP-FLOW2 interval miss=clear-or-replace outside timer then get_or_build+build-diagram inside timer; hit=get_or_build(hit)+diagram; clear() and prefill are outside the timed interval"
+            "MP-FLOW2 A/B interval build=set construction only; probe=contains() over every admitted node and edge; product miss=clear/replace outside timer then get_or_build+diagram inside timer; hit=lookup+diagram"
         );
         println!(
-            "MP-FLOW2 aggregation n={ITERATIONS} median=odd:middle/even:mean(two middle) p95=nearest-rank ceil(n*0.95)-1 max=largest"
+            "MP-FLOW2 A/B aggregation n={ITERATIONS} median=odd:middle/even:mean(two middle) p95=nearest-rank ceil(n*0.95)-1 max=largest"
         );
+
+        fn build_btree(rows: &super::Rows) -> (BTreeNodes, BTreeEdges) {
+            (
+                rows.nodes
+                    .iter()
+                    .map(|row| (row.graph.graph_ref.clone(), row.node().identity.clone()))
+                    .collect(),
+                rows.edges
+                    .iter()
+                    .map(|row| (row.graph.graph_ref.clone(), row.edge().identity.clone()))
+                    .collect(),
+            )
+        }
+
+        fn probe_hash(rows: &super::Rows, matched: &super::Matched) -> usize {
+            let mut found = 0;
+            for row in rows.nodes.iter() {
+                if matched
+                    .nodes
+                    .contains(&(row.graph.graph_ref.clone(), row.node().identity.clone()))
+                {
+                    found += 1;
+                }
+            }
+            for row in rows.edges.iter() {
+                if matched
+                    .edges
+                    .contains(&(row.graph.graph_ref.clone(), row.edge().identity.clone()))
+                {
+                    found += 1;
+                }
+            }
+            found
+        }
+
+        fn probe_btree(rows: &super::Rows, nodes: &BTreeNodes, edges: &BTreeEdges) -> usize {
+            let mut found = 0;
+            for row in rows.nodes.iter() {
+                if nodes.contains(&(row.graph.graph_ref.clone(), row.node().identity.clone())) {
+                    found += 1;
+                }
+            }
+            for row in rows.edges.iter() {
+                if edges.contains(&(row.graph.graph_ref.clone(), row.edge().identity.clone())) {
+                    found += 1;
+                }
+            }
+            found
+        }
 
         let graph = Arc::new(ten_thousand_node_graph(LAYER_COUNT, WIDTH));
         assert_eq!(graph.nodes.len(), NODES);
@@ -1965,29 +2021,104 @@ mod tests {
             assert!(!hit);
             diagram(&graph, &computed, &matched.nodes, &matched.edges)
         };
-        let checksum = |drawn: &super::Diagram| {
-            let mut value = 0u64;
-            for node in &drawn.nodes {
-                for byte in node.node.as_str().bytes() {
-                    value ^= u64::from(byte);
-                    value = value.wrapping_mul(0x100_0000_01b3);
-                }
-                value ^= node.depth as u64;
-                value = value.wrapping_mul(0x100_0000_01b3);
-            }
-            value ^= drawn.edges.len() as u64;
-            value ^= (drawn.skipped_edges as u64) << 32;
-            value
-        };
-        let reference_checksum = checksum(&reference);
 
+        // A/B construction and existence-check series (alternating order).
+        let mut btree_build = Vec::with_capacity(ITERATIONS);
+        let mut btree_probe = Vec::with_capacity(ITERATIONS);
+        let mut hash_build = Vec::with_capacity(ITERATIONS);
+        let mut hash_probe = Vec::with_capacity(ITERATIONS);
+        let mut btree_pair = None;
+        let mut hash_matched = None;
+        for iteration in 0..(WARMUP + ITERATIONS) {
+            let btree_first = iteration % 2 == 0;
+            let measure_btree = || {
+                let started = Instant::now();
+                let pair = build_btree(&rows);
+                let build_us = started.elapsed().as_micros();
+                let started = Instant::now();
+                let found = probe_btree(&rows, &pair.0, &pair.1);
+                let probe_us = started.elapsed().as_micros();
+                (pair, build_us, probe_us, found)
+            };
+            let measure_hash = || {
+                let started = Instant::now();
+                let matched = matched_from_rows(&rows);
+                let build_us = started.elapsed().as_micros();
+                let started = Instant::now();
+                let found = probe_hash(&rows, &matched);
+                let probe_us = started.elapsed().as_micros();
+                (matched, build_us, probe_us, found)
+            };
+            let (b, h) = if btree_first {
+                let b = measure_btree();
+                let h = measure_hash();
+                (b, h)
+            } else {
+                let h = measure_hash();
+                let b = measure_btree();
+                (b, h)
+            };
+            assert_eq!(b.3, h.3, "both sets find every admitted row");
+            assert_eq!(b.3, NODES + rows.edges.len());
+            btree_pair = Some(b.0);
+            hash_matched = Some(h.0);
+            if iteration >= WARMUP {
+                let index = iteration - WARMUP;
+                println!(
+                    "ab_sample kind=btree iter={index} build_us={} probe_us={}",
+                    b.1, b.2
+                );
+                println!(
+                    "ab_sample kind=hash iter={index} build_us={} probe_us={}",
+                    h.1, h.2
+                );
+                btree_build.push(b.1);
+                btree_probe.push(b.2);
+                hash_build.push(h.1);
+                hash_probe.push(h.2);
+            }
+        }
+        let (btree_nodes, btree_edges) = btree_pair.expect("btree pair");
+        let hash_ref = hash_matched.expect("hash sets");
+        assert_eq!(
+            hash_ref.nodes,
+            btree_nodes
+                .iter()
+                .cloned()
+                .collect::<std::collections::HashSet<_>>(),
+            "node match sets agree"
+        );
+        assert_eq!(
+            hash_ref.edges,
+            btree_edges
+                .iter()
+                .cloned()
+                .collect::<std::collections::HashSet<_>>(),
+            "edge match sets agree"
+        );
+        let btree_drawn = diagram(
+            &graph,
+            &computed,
+            &btree_nodes
+                .iter()
+                .cloned()
+                .collect::<std::collections::HashSet<_>>(),
+            &btree_edges
+                .iter()
+                .cloned()
+                .collect::<std::collections::HashSet<_>>(),
+        );
+        assert_eq!(
+            btree_drawn, reference,
+            "btree and hash draw the same diagram"
+        );
+
+        // Product paths with the product (hash) cache, alternating.
         let mut cache = MatchCache::default();
         let mut clear_samples: Vec<(u128, u128, u128)> = Vec::new();
         let mut replace_samples: Vec<(u128, u128, u128)> = Vec::new();
         let mut hit_samples: Vec<(u128, u128, u128)> = Vec::new();
         for iteration in 0..(WARMUP + ITERATIONS) {
-            // Prefill the *other* key outside the timer so replacement is measured as
-            // replacing an existing single-entry cache entry.
             let _ = cache.get_or_build(&other, || matched_from_rows(&rows));
             let miss_first = iteration % 2 == 0;
             if miss_first {
@@ -2012,7 +2143,6 @@ mod tests {
                 ));
             }
             if iteration >= WARMUP {
-                // Raw per-iteration values, indexed from 0 after warmup.
                 let index = iteration - WARMUP;
                 let (match_us, diagram_us, total_us) = replace_samples.last().copied().unwrap();
                 println!(
@@ -2026,13 +2156,8 @@ mod tests {
                 println!(
                     "sample series=hit iter={index} match_us={match_us} diagram_us={diagram_us} total_us={total_us}"
                 );
-                let _ = checksum(&reference);
             }
         }
-        assert_eq!(replace_samples.len(), WARMUP + ITERATIONS);
-        assert_eq!(clear_samples.len(), WARMUP + ITERATIONS);
-        assert_eq!(hit_samples.len(), WARMUP + ITERATIONS);
-        assert_eq!(reference_checksum, checksum(&reference));
 
         // Every admission-key component alone forces a miss; the untouched key hits.
         let mut probe = MatchCache::default();
@@ -2094,6 +2219,17 @@ mod tests {
             let p95 = percentile(&values, 0.95);
             (median, p95, values[count - 1])
         };
+        for (name, values) in [
+            ("btree_build", btree_build),
+            ("btree_probe", btree_probe),
+            ("hash_build", hash_build),
+            ("hash_probe", hash_probe),
+        ] {
+            let (median, p95, max) = stats(values);
+            println!(
+                "ab_summary kind={name} n={ITERATIONS} median_us={median} p95_us={p95} max_us={max}"
+            );
+        }
         for (name, samples) in [
             ("miss_clear", &clear_samples),
             ("miss_replace", &replace_samples),
@@ -2107,11 +2243,10 @@ mod tests {
             let (match_median, match_p95, match_max) = stats(match_only);
             let (diagram_median, diagram_p95, diagram_max) = stats(diagram_only);
             println!(
-                "summary series={name} n={} median_us={median} p95_us={p95} max_us={max} match_median_us={match_median} match_p95_us={match_p95} match_max_us={match_max} diagram_median_us={diagram_median} diagram_p95_us={diagram_p95} diagram_max_us={diagram_max}",
-                measured.len()
+                "summary series={name} n={ITERATIONS} median_us={median} p95_us={p95} max_us={max} match_median_us={match_median} match_p95_us={match_p95} match_max_us={match_max} diagram_median_us={diagram_median} diagram_p95_us={diagram_p95} diagram_max_us={diagram_max}"
             );
         }
-        println!("MP-FLOW2 equivalence miss==hit==reference checksum=0x{reference_checksum:016x}");
+        println!("MP-FLOW2 equivalence btree==hash==reference diagram_equal=true");
         println!("MP-FLOW2 NOT_MEASURED paint/GPU/present");
     }
 

@@ -2841,5 +2841,135 @@ Re-computed from these samples (Lead, Python): `miss_replace` median 15130 / p95
 - **Reviewed CLEAN 0/0/0 in this session (24 limited slices):** handover Steps 1-4, MP-RT1 compatibility matrix, RC-05, RC-02, RC-03, MP-SEC1, two Gate-reliability slices, AX04 (High Contrast limited), MP-IMG2 Working Set measurement / Job Object cap / joined cancellation, MP-R0B disconnected idle baseline, MP-FLOW2 10k measurement, MP-FLOW2 Stage C cache, MP-FLOW2 first-frame re-measurement, MP-SEC2 4,096 ring, DD-22 crash-report retention, WER boundary + supervision contract, Rust panic capture, MP-R0A source-identity repair, MP-R0A A0/A1 candidate generation.
 - **Open and blocked outside this session's authority:** MP-R0A Owner approval, live capture and live manifest update (HOLD); MP-R0B connected baseline and stall conditions (needs a connected Runtime); MP-RT1 contract finalisation and MP-RT2 (Runtime owner); product acceptance.
 - **Open and design-gated:** diagnostic-ring persistence beyond DD-22's in-memory retention, MP-SEC2 export/consent UI and WER control, MP-IMG2 allocator-internal peak (`unsafe` prohibited), MP-FLOW2 paint/submit/GPU/Present, MP-IMG3.
-- **Measured direction for the next FLOW2 step:** `miss_replace` p95 16,573 µs against a 16,667 µs 60 Hz budget, dominated by match-set construction (12,063 µs); first-frame improvement is required before an entry-replacing key change can be called safe at 60 Hz (§19.141).
+- **Measured direction for the next FLOW2 step:** `miss_replace` p95 16,573 µs against a 16,667 µs 60 Hz budget, dominated by match-set construction (12,063 µs); first-frame improvement is required before an entry-replacing key change can be called safe at 60 Hz (§19.141); the follow-up A/B is §19.143.
 - **Tooling note:** the external review channel (Chrome CDP on port 9222, ChatGPT conversation) stopped accepting new WebSocket sessions during this round - `listTargets` over HTTP still answers, but session creation hangs, so no new review directive or review could be obtained. No slice was reviewed or claimed in this state; the channel needs a browser-tab restart before the loop resumes.
+
+### 19.143 MP-FLOW2 Stage C: BTreeSet → HashSet A/B (2026-11-02)
+
+- **Baseline (§19.141.1, committed BTreeSet, same 10,000 nodes / 19,800 edges, release, warmup 3, 21 iterations):** miss_replace 15,130 / 16,573 / 17,438 µs; miss_clear 13,923 / 14,471 / 14,565 µs; hit 2,065 / 2,665 / 2,776 µs. The 63 baseline samples stay recorded there and are not rewritten.
+- **Candidate:** `Matched.nodes` / `Matched.edges` use `std::collections::HashSet`; the production builder allocates `HashSet::with_capacity(rows.nodes.len() / rows.edges.len())` and extends once; `diagram` takes `&HashSet`; `AdmissionKey`, `MatchCache` (single entry, five-component invalidation, `clear()`), `Rows`, `Layers` and GPU drawing are unchanged.
+- **A/B (same run, same rows/graph refs, alternating order, release):**
+
+| series (n=21) | median | p95 | max |
+|---|---:|---:|---:|
+| BTreeSet build | 9,994 µs | 11,208 µs | 11,433 µs |
+| HashSet build | 7,749 µs | 8,065 µs | 8,200 µs |
+| BTreeSet probe (all 29,800 memberships) | 16,791 µs | 17,569 µs | 17,866 µs |
+| HashSet probe | 9,501 µs | 9,995 µs | 10,153 µs |
+| product miss_clear total | 10,195 µs | 11,483 µs | 11,755 µs |
+| product miss_replace total | 12,593 µs | 13,410 µs | 14,174 µs |
+| product hit total | 1,791 µs | 2,040 µs | 2,602 µs |
+
+  Build median improves by **2,245 µs (22.5%)** and probe median by **7,290 µs** in the same run; product `miss_replace` falls from the committed 15,130 µs baseline to 12,593 µs, and `hit` does not regress (2,065 → 1,791 µs; diagram-dominated).
+- **Correctness:** btree/hash sets are equal element-wise; diagrams from btree, hash and the uncached reference are identical; all existing flow tests pass (deterministic order/diagram, cap 120, skipped count, key invalidation 5/5, `clear()` rebuild, single-entry bound).
+- **Decision: ADOPT** (all E conditions met). MP-FLOW2 overall, paint/GPU/Present and real Runtime projection graphs remain unfinished.
+- **Raw samples (21 iterations × 5 series, alternating):**
+
+```text
+ab_sample kind=btree iter=0 build_us=9443 probe_us=16533
+ab_sample kind=hash iter=0 build_us=7101 probe_us=9728
+ab_sample kind=btree iter=1 build_us=10995 probe_us=17066
+ab_sample kind=hash iter=1 build_us=7720 probe_us=9448
+ab_sample kind=btree iter=2 build_us=9856 probe_us=16944
+ab_sample kind=hash iter=2 build_us=7760 probe_us=9741
+ab_sample kind=btree iter=3 build_us=11433 probe_us=16776
+ab_sample kind=hash iter=3 build_us=8065 probe_us=9346
+ab_sample kind=btree iter=4 build_us=9994 probe_us=16725
+ab_sample kind=hash iter=4 build_us=7050 probe_us=9930
+ab_sample kind=btree iter=5 build_us=11091 probe_us=16794
+ab_sample kind=hash iter=5 build_us=7713 probe_us=9360
+ab_sample kind=btree iter=6 build_us=9654 probe_us=16372
+ab_sample kind=hash iter=6 build_us=7357 probe_us=9709
+ab_sample kind=btree iter=7 build_us=10997 probe_us=17866
+ab_sample kind=hash iter=7 build_us=7862 probe_us=9389
+ab_sample kind=btree iter=8 build_us=9958 probe_us=16791
+ab_sample kind=hash iter=8 build_us=6845 probe_us=9855
+ab_sample kind=btree iter=9 build_us=10891 probe_us=16935
+ab_sample kind=hash iter=9 build_us=8057 probe_us=9799
+ab_sample kind=btree iter=10 build_us=9876 probe_us=16673
+ab_sample kind=hash iter=10 build_us=7544 probe_us=9451
+ab_sample kind=btree iter=11 build_us=11061 probe_us=17569
+ab_sample kind=hash iter=11 build_us=7864 probe_us=8776
+ab_sample kind=btree iter=12 build_us=9857 probe_us=16404
+ab_sample kind=hash iter=12 build_us=7018 probe_us=9995
+ab_sample kind=btree iter=13 build_us=10857 probe_us=17403
+ab_sample kind=hash iter=13 build_us=7746 probe_us=9392
+ab_sample kind=btree iter=14 build_us=9885 probe_us=16752
+ab_sample kind=hash iter=14 build_us=7749 probe_us=10153
+ab_sample kind=btree iter=15 build_us=10733 probe_us=17231
+ab_sample kind=hash iter=15 build_us=7905 probe_us=9493
+ab_sample kind=btree iter=16 build_us=9569 probe_us=16552
+ab_sample kind=hash iter=16 build_us=7818 probe_us=9928
+ab_sample kind=btree iter=17 build_us=10904 probe_us=17244
+ab_sample kind=hash iter=17 build_us=7807 probe_us=9387
+ab_sample kind=btree iter=18 build_us=9439 probe_us=16753
+ab_sample kind=hash iter=18 build_us=7939 probe_us=9109
+ab_sample kind=btree iter=19 build_us=11208 probe_us=17012
+ab_sample kind=hash iter=19 build_us=8200 probe_us=9501
+ab_sample kind=btree iter=20 build_us=9560 probe_us=16719
+ab_sample kind=hash iter=20 build_us=7707 probe_us=9718
+sample series=miss_replace iter=0 match_us=8892 diagram_us=2547 total_us=11440
+sample series=miss_clear iter=0 match_us=8019 diagram_us=2080 total_us=10100
+sample series=hit iter=0 match_us=0 diagram_us=1677 total_us=1677
+sample series=miss_replace iter=1 match_us=11272 diagram_us=2902 total_us=14174
+sample series=miss_clear iter=1 match_us=8200 diagram_us=2439 total_us=10639
+sample series=hit iter=1 match_us=0 diagram_us=2602 total_us=2602
+sample series=miss_replace iter=2 match_us=10093 diagram_us=2757 total_us=12851
+sample series=miss_clear iter=2 match_us=8146 diagram_us=2529 total_us=10676
+sample series=hit iter=2 match_us=0 diagram_us=1739 total_us=1740
+sample series=miss_replace iter=3 match_us=9225 diagram_us=2731 total_us=11956
+sample series=miss_clear iter=3 match_us=7372 diagram_us=2366 total_us=9738
+sample series=hit iter=3 match_us=0 diagram_us=1852 total_us=1852
+sample series=miss_replace iter=4 match_us=9479 diagram_us=2617 total_us=12096
+sample series=miss_clear iter=4 match_us=8141 diagram_us=2652 total_us=10793
+sample series=hit iter=4 match_us=0 diagram_us=1914 total_us=1914
+sample series=miss_replace iter=5 match_us=9114 diagram_us=2653 total_us=11768
+sample series=miss_clear iter=5 match_us=8851 diagram_us=2631 total_us=11483
+sample series=hit iter=5 match_us=0 diagram_us=1777 total_us=1777
+sample series=miss_replace iter=6 match_us=8812 diagram_us=2830 total_us=11642
+sample series=miss_clear iter=6 match_us=8642 diagram_us=2707 total_us=11350
+sample series=hit iter=6 match_us=0 diagram_us=2002 total_us=2002
+sample series=miss_replace iter=7 match_us=9508 diagram_us=2628 total_us=12137
+sample series=miss_clear iter=7 match_us=7797 diagram_us=2012 total_us=9810
+sample series=hit iter=7 match_us=0 diagram_us=1685 total_us=1685
+sample series=miss_replace iter=8 match_us=9855 diagram_us=2680 total_us=12536
+sample series=miss_clear iter=8 match_us=7586 diagram_us=2111 total_us=9697
+sample series=hit iter=8 match_us=0 diagram_us=1676 total_us=1677
+sample series=miss_replace iter=9 match_us=9882 diagram_us=2755 total_us=12638
+sample series=miss_clear iter=9 match_us=7454 diagram_us=2731 total_us=10186
+sample series=hit iter=9 match_us=0 diagram_us=1737 total_us=1737
+sample series=miss_replace iter=10 match_us=9978 diagram_us=2632 total_us=12611
+sample series=miss_clear iter=10 match_us=8267 diagram_us=2552 total_us=10820
+sample series=hit iter=10 match_us=0 diagram_us=2006 total_us=2006
+sample series=miss_replace iter=11 match_us=10268 diagram_us=2663 total_us=12932
+sample series=miss_clear iter=11 match_us=8430 diagram_us=2513 total_us=10944
+sample series=hit iter=11 match_us=0 diagram_us=1766 total_us=1766
+sample series=miss_replace iter=12 match_us=9931 diagram_us=2659 total_us=12590
+sample series=miss_clear iter=12 match_us=8158 diagram_us=2418 total_us=10576
+sample series=hit iter=12 match_us=0 diagram_us=1685 total_us=1685
+sample series=miss_replace iter=13 match_us=10015 diagram_us=2669 total_us=12685
+sample series=miss_clear iter=13 match_us=7990 diagram_us=2204 total_us=10195
+sample series=hit iter=13 match_us=0 diagram_us=1948 total_us=1948
+sample series=miss_replace iter=14 match_us=10603 diagram_us=2779 total_us=13383
+sample series=miss_clear iter=14 match_us=7959 diagram_us=2116 total_us=10076
+sample series=hit iter=14 match_us=0 diagram_us=2039 total_us=2040
+sample series=miss_replace iter=15 match_us=10744 diagram_us=2666 total_us=13410
+sample series=miss_clear iter=15 match_us=7665 diagram_us=2334 total_us=9999
+sample series=hit iter=15 match_us=0 diagram_us=1807 total_us=1807
+sample series=miss_replace iter=16 match_us=9335 diagram_us=2653 total_us=11989
+sample series=miss_clear iter=16 match_us=8343 diagram_us=2483 total_us=10827
+sample series=hit iter=16 match_us=0 diagram_us=1821 total_us=1821
+sample series=miss_replace iter=17 match_us=10044 diagram_us=2552 total_us=12597
+sample series=miss_clear iter=17 match_us=9053 diagram_us=2701 total_us=11755
+sample series=hit iter=17 match_us=0 diagram_us=1763 total_us=1764
+sample series=miss_replace iter=18 match_us=10038 diagram_us=2555 total_us=12593
+sample series=miss_clear iter=18 match_us=7922 diagram_us=2027 total_us=9949
+sample series=hit iter=18 match_us=0 diagram_us=1678 total_us=1678
+sample series=miss_replace iter=19 match_us=9983 diagram_us=2730 total_us=12714
+sample series=miss_clear iter=19 match_us=7629 diagram_us=2121 total_us=9750
+sample series=hit iter=19 match_us=0 diagram_us=1791 total_us=1791
+sample series=miss_replace iter=20 match_us=9501 diagram_us=2714 total_us=12216
+sample series=miss_clear iter=20 match_us=7799 diagram_us=2009 total_us=9809
+sample series=hit iter=20 match_us=0 diagram_us=1830 total_us=1830
+```
+

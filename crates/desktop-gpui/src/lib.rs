@@ -4217,17 +4217,22 @@ fn flow_diagram_region(
     // Stage C: the revision-wide match sets are cached by the complete admission
     // identity. A key that is not current (or an absent key) builds transiently and never
     // touches the cache, so existing behaviour is unchanged outside an admitted revision.
-    let build = || flow::Matched {
-        nodes: rows
-            .nodes
-            .iter()
-            .map(|row| (row.graph.graph_ref.clone(), row.node().identity.clone()))
-            .collect(),
-        edges: rows
-            .edges
-            .iter()
-            .map(|row| (row.graph.graph_ref.clone(), row.edge().identity.clone()))
-            .collect(),
+    let build = || {
+        // One pass per side with an exact initial capacity: the single-entry cache
+        // rebuilds these sets on every admitted revision change.
+        let mut nodes = std::collections::HashSet::with_capacity(rows.nodes.len());
+        nodes.extend(
+            rows.nodes
+                .iter()
+                .map(|row| (row.graph.graph_ref.clone(), row.node().identity.clone())),
+        );
+        let mut edges = std::collections::HashSet::with_capacity(rows.edges.len());
+        edges.extend(
+            rows.edges
+                .iter()
+                .map(|row| (row.graph.graph_ref.clone(), row.edge().identity.clone())),
+        );
+        flow::Matched { nodes, edges }
     };
     let matched = match key {
         Some(key) => match_cache.get_or_build(key, build).0,
