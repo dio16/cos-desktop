@@ -3331,10 +3331,38 @@ layer_phase_sample iter=20 p1_us=1077 p2_us=3015 p2a_us=16 p2b_us=2999 p3_us=336
 ### 19.153 MP-REL1 Windows portable dependency/license inventory (offline) (2026-11-02)
 
 - **Target fixed:** repository HEAD `ba73d900d527f59a5a5ab01dc496c0808ba83188`, `Cargo.lock` SHA-256 `9b38b1d4a4bf7d7c8403c4e445973b09c51533e0f1a246777857a7a5e4c9910d`, `cos-desktop.exe` Windows x86_64 build, and the `scripts/stage_portable.py` payload (binary + root `LICENSE` + `NOTICE`). Runtime and test-only tools are outside this graph.
-- **Reproduction:** `cargo metadata --locked --offline --format-version 1 --filter-platform x86_64-pc-windows-msvc`; normal/build reachability from the `cos-desktop` workspace member, dev edges excluded. The sorted TSV used for the run was scratch under `target/` and is **not retained**; the command above regenerates the same set, so the inventory is reproducible from the repository alone.
-- **Counts:** 385 packages in metadata; **377 reachable** over normal/build edges, which is **376 distributed dependencies plus the `cos-desktop` workspace member itself** (the member carries the root `LICENSE`); **8 NOT_APPLICABLE**. Roles: normal 367, build-only 6, both 3 among the 376 dependencies. Sources among the 376: registry 354, Git 17 (zed revision `395def7a…`), workspace 5.
-- **License declarations (Cargo metadata `license`, all reachable packages):** MIT OR Apache-2.0 172; MIT 64; Apache-2.0 OR MIT 42; Apache-2.0 23 (22 dependencies plus the member itself); Unicode-3.0 18; MIT/Apache-2.0 15; BSD-3-Clause 8; Apache-2.0/MIT 5; Unlicense OR MIT 4; BSD-2-Clause 4; MIT OR Apache-2.0 OR Zlib 4; Zlib OR Apache-2.0 OR MIT 3; Zlib 3; MIT OR Zlib OR Apache-2.0 2; BSD-3-Clause OR Apache-2.0 2; BSD-2-Clause OR Apache-2.0 OR MIT 2; and one each of 0BSD OR MIT OR Apache-2.0, CC0-1.0 OR MIT-0 OR Apache-2.0, CC0-1.0 OR Apache-2.0, bzip2-1.0.6. All 377 have a declared license string (**VERIFIED_METADATA**); no package declares `license_file`, so no declared-file gap exists.
-- **Bundled material:** root `LICENSE` (Apache-2.0), root `NOTICE` (own notice + Unicode case-fold data attribution), `crates/ui-model/src/simple_casefold.rs` (full Unicode License V3 notice), `stage_portable.py` payload is exactly `cos-desktop.exe`, `LICENSE`, `NOTICE`. The manifest already records `THIRD_PARTY_LICENSE_CLOSURE_UNASSESSED` and `licenses: LICENSE/NOTICE INCLUDED`.
-- **Classification:** **MISSING 0** confirmed license-file mismatches; a packaging-level finding: **no third-party license texts are staged** (376 packages, 354 registry + 17 Git + 5 workspace) — recorded as a confirmed absence of bundled texts, not a legal conclusion. **UNVERIFIED 376** (declared metadata only; license texts, copyright lines and redistribution conditions not verified here). **NOT_APPLICABLE 9**. Git dependencies' declared licenses come from the cached manifests; their text is not inspected.
-- **Limits:** offline inventory only; no legal review, no advisory/permission inference, no signing/installer/packaging change, no distribution approval. **MP-REL1 overall is not complete and distribution readiness is not claimed.**
+- **Reproduction (self-contained):** write `cargo metadata --locked --offline --format-version 1 --filter-platform x86_64-pc-windows-msvc` to `target/mp-rel1-meta.json` (inside the build directory, which is not tracked), then run this snippet against it; it performs the reachability walk, the dev-edge exclusion and the aggregation, so no scratch TSV is needed:
 
+```python
+import json, collections
+m = json.load(open("target/mp-rel1-meta.json", encoding="utf-8"))
+pkgs = {p["id"]: p for p in m["packages"]}
+root = next(p for p in m["packages"] if p["name"] == "cos-desktop")
+edges = {n["id"]: n["deps"] for n in m["resolve"]["nodes"]}
+seen, stack, kind_of = set(), [root["id"]], collections.defaultdict(set)
+while stack:                      # reachability over normal + build edges only
+    cur = stack.pop()
+    if cur in seen:
+        continue
+    seen.add(cur)
+    for dep in edges.get(cur, []):
+        kinds = {k.get("kind") or "normal" for k in dep["dep_kinds"]}
+        if kinds == {"dev"}:
+            continue
+        kind_of[dep["pkg"]] |= kinds
+        stack.append(dep["pkg"])
+lic = collections.Counter(pkgs[i].get("license") or "NONE" for i in seen)
+roles = collections.Counter(
+    "normal-only" if k == {"normal"} else "build-only" if k == {"build"} else "both"
+    for k in kind_of.values()
+)
+print(len(m["packages"]), len(seen), len(kind_of), dict(roles))
+print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
+```
+
+- **Counts (exact):** **385 packages** in metadata; **377 reachable** over normal/build edges; **376 packages carry a dependency role** = **367 normal-only / 6 build-only / 3 both**; the extra reachable package is the `cos-desktop` workspace member itself; **8 NOT_APPLICABLE** (not reachable from the binary). Sources among the 376: **registry 354 / Git 17 (zed revision `395def7a...`) / workspace 5**.
+- **License declarations (Cargo metadata `license`), all 377 packages, 22 distinct values summing to 377:** `MIT OR Apache-2.0` 172; `MIT` 64; `Apache-2.0 OR MIT` 42; `Apache-2.0` 23; `Unicode-3.0` 18; `MIT/Apache-2.0` 15; `BSD-3-Clause` 8; `Apache-2.0/MIT` 5; `BSD-2-Clause` 4; `MIT OR Apache-2.0 OR Zlib` 4; `Unlicense OR MIT` 4; `Zlib` 3; `Zlib OR Apache-2.0 OR MIT` 3; `BSD-2-Clause OR Apache-2.0 OR MIT` 2; `BSD-3-Clause OR Apache-2.0` 2; `MIT OR Zlib OR Apache-2.0` 2; and one each of `(MIT OR Apache-2.0) AND Unicode-3.0`, `0BSD OR MIT OR Apache-2.0`, `Apache-2.0 OR BSL-1.0`, `CC0-1.0 OR Apache-2.0`, `CC0-1.0 OR MIT-0 OR Apache-2.0`, `bzip2-1.0.6`. All 377 declare a license string (**VERIFIED_METADATA**); no package declares `license_file`, so no declared-file gap exists.
+- **Bundled material and what it does not settle:** root `LICENSE` (Apache-2.0) is shipped and covers this project's own code plus the Apache-2.0 option of the dual-licensed dependencies; root `NOTICE` carries the own notice and the Unicode case-fold data attribution; `crates/ui-model/src/simple_casefold.rs` holds the full Unicode License V3 notice; the `stage_portable.py` payload is exactly `cos-desktop.exe`, `LICENSE`, `NOTICE`. What remains open is **per-package** compliance: whether each of the 376 dependencies' own license text, copyright lines, NOTICE obligations and attribution wording are satisfied by those artefacts is **not verified**. The manifest already records `THIRD_PARTY_LICENSE_CLOSURE_UNASSESSED`.
+- **Classification:** **MISSING 0** confirmed license-file mismatches (no package declares `license_file`). **UNVERIFIED 376**: declared metadata only - license texts, copyright lines and redistribution conditions are unchecked, including the Git dependencies' texts. **NOT_APPLICABLE 8**: outside the normal/build closure of the binary. The absence of per-package third-party texts in the payload is a **packaging observation**, not a legal conclusion, and the shipped Apache-2.0 `LICENSE` is not treated as settling per-package NOTICE obligations.
+- **Terminology:** the 376 are **normal/build reachable dependencies**, not "everything distributed"; build-only dependencies are build-time inputs whose code need not appear in the binary, so their notice obligations need a separate assessment.
+- **Limits:** offline inventory only; no legal review, no advisory or permission inference, no signing, installer or packaging change, no distribution approval. **MP-REL1 overall is not complete and distribution readiness is not claimed.**
