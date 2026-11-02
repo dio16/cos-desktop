@@ -3107,6 +3107,15 @@ impl ExitWatch {
                     .lock()
                     .map(|data| data.force_wait_failure)
                     .unwrap_or(false);
+                if force_fail {
+                    // The test-only failure applies before any poll, so an already exited
+                    // child cannot mask the injected confirmation failure.
+                    if let Ok(mut data) = data.lock() {
+                        data.state = WatchState::Unconfirmed { last_seen };
+                        data.confirm_at = None;
+                    }
+                    return;
+                }
                 let bound = data
                     .lock()
                     .map(|data| data.confirm_bound)
@@ -3180,6 +3189,12 @@ impl ExitWatch {
                                 data.state = WatchState::Unconfirmed {
                                     last_seen: Instant::now(),
                                 };
+                            }
+                            if let Ok(mut data) = thread_state.lock() {
+                                // A confirmed stop is a stop whichever path requested it, so
+                                // the exit cannot be classified as a normal completion.
+                                data.killed_by_request =
+                                    kill_ok && matches!(data.state, WatchState::Exited { .. });
                             }
                             return;
                         }
