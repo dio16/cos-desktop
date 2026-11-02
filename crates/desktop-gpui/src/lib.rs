@@ -4331,6 +4331,9 @@ impl Render for Shell {
                                                             .id("about-heading")
                                                             .role(Role::Label)
                                                             .aria_label("このアプリについて")
+                                                            // Role::Label publishes a UIA Name from the
+                                                            // value, so the heading needs one too.
+                                                            .aria_value("このアプリについて")
                                                             .child("このアプリについて"),
                                                     )
                                                     .child(
