@@ -2334,6 +2334,22 @@ mod tests {
         let layers_first = layers(&graph);
         let rows_query =
             rows_cancellable(std::slice::from_ref(&graph), " ", || false).expect("query rows");
+        let rows_base =
+            rows_cancellable(std::slice::from_ref(&graph), "", || false).expect("base rows");
+        let key_query_base = AdmissionKey {
+            session_generation: 7,
+            publication_version: 11,
+            epoch: Some(EpochId::fixture("epoch/measure")),
+            revision: revision_key(std::slice::from_ref(&graph)),
+            query: String::new(),
+        };
+        let key_old = AdmissionKey {
+            session_generation: 7,
+            publication_version: 11,
+            epoch: Some(EpochId::fixture("epoch/measure")),
+            revision: revision_key(std::slice::from_ref(&graph)),
+            query: String::new(),
+        };
         let key_query = AdmissionKey {
             session_generation: 7,
             publication_version: 11,
@@ -2359,6 +2375,32 @@ mod tests {
             &query_matched.edges,
         );
         let query_match_us = query_started.elapsed().as_micros();
+        // Query-only key: identical except `query`.
+        assert_eq!(
+            key_query.session_generation,
+            key_query_base.session_generation
+        );
+        assert_eq!(
+            key_query.publication_version,
+            key_query_base.publication_version
+        );
+        assert_eq!(key_query.epoch, key_query_base.epoch);
+        assert_eq!(key_query.revision, key_query_base.revision);
+        assert_ne!(key_query.query, key_query_base.query);
+        // Revision key: identical except revision and publication_version.
+        assert_eq!(key_revision.session_generation, key_old.session_generation);
+        assert_eq!(key_revision.epoch, key_old.epoch);
+        assert_eq!(key_revision.query, key_old.query);
+        assert_ne!(key_revision.revision, key_old.revision);
+        assert_ne!(
+            key_revision.publication_version,
+            key_old.publication_version
+        );
+        let mut base_cache = MatchCache::default();
+        let (base_matched, _) =
+            base_cache.get_or_build(&key_query_base, || matched_from_rows(&rows_base));
+        assert_eq!(base_matched.nodes.len(), query_matched.nodes.len());
+        assert_eq!(base_matched.edges.len(), query_matched.edges.len());
         // Query-only keeps the revision and publication version: only the query text
         // changes. A whitespace-only query trims to the empty filter, so the admitted
         // rows and match-set cardinality stay identical.
@@ -2412,7 +2454,9 @@ mod tests {
                 let rows = rows_cancellable(std::slice::from_ref(&graph), " ", || false)
                     .expect("query rows");
                 let rows_us = rows_started.elapsed().as_micros();
-                let _ = cache.get_or_build(&key_revision, || matched_from_rows(&rows_query));
+                // Query-only: the entry replaced is the same revision/publication with
+                // the empty query, so only `query` changes.
+                let _ = cache.get_or_build(&key_query_base, || matched_from_rows(&rows_base));
                 let match_started = Instant::now();
                 let (matched, hit) = cache.get_or_build(&key_query, || matched_from_rows(&rows));
                 let match_us = match_started.elapsed().as_micros();
@@ -2424,9 +2468,9 @@ mod tests {
                 (rows_us, 0_u128, match_us, diagram_us)
             };
             let measure_revision = |cache: &mut MatchCache| {
-                // Prefill the other key outside the timer so the revision build is a
-                // replacement miss regardless of which condition ran last.
-                let _ = cache.get_or_build(&key_query, || matched_from_rows(&rows_query));
+                // Revision: the entry replaced is the old revision with the same empty
+                // query, so only revision and publication_version change.
+                let _ = cache.get_or_build(&key_old, || matched_from_rows(&rows_base));
                 let rows_started = Instant::now();
                 let rows = rows_cancellable(std::slice::from_ref(&revision), "", || false)
                     .expect("revision rows");
@@ -2492,6 +2536,27 @@ mod tests {
                 .nodes
                 .iter()
                 .all(|(graph_ref, _)| *graph_ref == revision.graph_ref)
+        );
+        assert!(
+            revision_matched
+                .edges
+                .iter()
+                .all(|(graph_ref, _)| *graph_ref == revision.graph_ref)
+        );
+        // The same semantic query before and after the revision change draws the same
+        // diagram: identities, order, depths, cap, truncation, skipped edges, checksum.
+        assert_eq!(query_diagram.nodes.len(), revision_reference.nodes.len());
+        assert_eq!(query_diagram.nodes.len(), super::MAX_DIAGRAM_NODES);
+        assert!(query_diagram.truncated);
+        assert_eq!(query_diagram, revision_reference);
+        assert_eq!(checksum(&query_diagram), checksum(&revision_reference));
+        assert_eq!(
+            query_diagram.edges.len() + query_diagram.skipped_edges,
+            (LAYER_COUNT - 1) * WIDTH * 2
+        );
+        assert_eq!(
+            query_diagram.skipped_edges,
+            revision_reference.skipped_edges
         );
         let reference = diagram(
             &revision,
