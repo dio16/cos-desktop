@@ -349,6 +349,7 @@ impl Shell {
         cx: &mut Context<Self>,
         preferences: Arc<Mutex<Preferences>>,
         tokens: DesignTokens,
+        desktop_version: &str,
     ) -> Self {
         let restored = preferences
             .lock()
@@ -388,8 +389,14 @@ impl Shell {
             Some(handle) => Self::subscribe(handle, cx),
             None => cx.spawn(async move |_this, _cx| {}),
         };
+        let desktop_version: Arc<str> = Arc::from(desktop_version);
         let rail_worker = handle.clone().map(|handle| {
-            Self::start_rail_worker(handle, Arc::clone(&rail_request_generation), cx)
+            Self::start_rail_worker(
+                handle,
+                Arc::clone(&rail_request_generation),
+                Arc::clone(&desktop_version),
+                cx,
+            )
         });
         let contrast_worker =
             contrast::platform_probe().map(|probe| contrast_probe_worker(probe, cx));
@@ -535,6 +542,7 @@ impl Shell {
     fn start_rail_worker(
         handle: ObservationHandle,
         requests: Arc<RailWorkSignal>,
+        desktop_version: Arc<str>,
         cx: &mut Context<Self>,
     ) -> Task<()> {
         cx.spawn(async move |this, cx| {
@@ -572,6 +580,7 @@ impl Shell {
                 };
                 let worker_handle = handle.clone();
                 let worker_requests = requests.clone();
+                let desktop_version = Arc::clone(&desktop_version);
                 let (returned_rail_cache, returned_display_cache, result) = cx
                     .background_executor()
                     .spawn(async move {
@@ -584,8 +593,12 @@ impl Shell {
                                     != Some(notice)
                                 || worker_handle.is_finished()
                         };
-                        let display =
-                            display_cache.derive(&publication, selected.as_ref(), cancelled);
+                        let display = display_cache.derive(
+                            &publication,
+                            selected.as_ref(),
+                            &desktop_version,
+                            cancelled,
+                        );
                         let rail =
                             rail_cache
                                 .derive(&publication, cancelled)

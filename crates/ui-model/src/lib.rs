@@ -756,6 +756,7 @@ impl DerivationCache {
         &mut self,
         publication: &ObservationPublication,
         selected_task: Option<&TaskId>,
+        desktop_version: &str,
         cancelled: impl Fn() -> bool,
     ) -> Option<WorkbenchText> {
         if cancelled() {
@@ -763,7 +764,7 @@ impl DerivationCache {
             return None;
         }
 
-        let mut text = WorkbenchText::from_publication(publication);
+        let mut text = WorkbenchText::from_publication(publication, desktop_version);
         if publication.source == PublicationSource::Unavailable {
             self.reset();
             text.title = "タスク情報がありません".into();
@@ -1399,7 +1400,7 @@ pub struct WorkbenchText {
 }
 
 impl WorkbenchText {
-    fn from_publication(publication: &ObservationPublication) -> Self {
+    fn from_publication(publication: &ObservationPublication, desktop_version: &str) -> Self {
         let unavailable = publication.source == PublicationSource::Unavailable;
         let unknown = if unavailable {
             "利用できません — 情報源を利用できません"
@@ -1412,7 +1413,7 @@ impl WorkbenchText {
             mode: mode_label(publication),
             session_generation: publication.session_generation,
             publication_version: publication.publication_version,
-            diagnostics: diagnostics(publication),
+            diagnostics: diagnostics(publication, desktop_version),
             axes: StateAxes {
                 task_status: unknown.into(),
                 inner_phase: unknown.into(),
@@ -1909,14 +1910,14 @@ fn mode_label(publication: &ObservationPublication) -> String {
         PublicationSource::Unavailable => "情報源なし / データ非公開".to_owned(),
     }
 }
-fn diagnostics(publication: &ObservationPublication) -> String {
+fn diagnostics(publication: &ObservationPublication, desktop_version: &str) -> String {
     let error = publication
         .last_error
         .as_ref()
         .map_or_else(|| "なし".to_owned(), error_label);
     format!(
         "Desktop {} · {} · 世代 {} · 公開 {} · エラー {} · コマンド {}件",
-        env!("CARGO_PKG_VERSION"),
+        desktop_version,
         source_label(publication),
         publication.session_generation,
         publication.publication_version,
@@ -2111,7 +2112,7 @@ mod tests {
 
     fn derive(cache: &mut DerivationCache, publication: &ObservationPublication) -> WorkbenchText {
         cache
-            .derive(publication, None, || false)
+            .derive(publication, None, "9.8.7", || false)
             .expect("non-canceled publication derives")
     }
 
@@ -3051,7 +3052,7 @@ mod tests {
         };
         assert!(
             DerivationCache::default()
-                .derive(&published, None, cancelled)
+                .derive(&published, None, "9.8.7", cancelled)
                 .is_none()
         );
     }
@@ -3401,14 +3402,14 @@ mod tests {
 
         let mut cache = DerivationCache::default();
         let initial = cache
-            .derive(&publication, None, || false)
+            .derive(&publication, None, "9.8.7", || false)
             .expect("initial task derives");
         assert_eq!(initial.task, Some(TaskId::fixture("task/Task-184")));
         assert!(initial.axes.task_status.contains("ACTIVE"));
         assert!(initial.stop_enabled);
 
         let selected = cache
-            .derive(&publication, Some(&selected_id), || false)
+            .derive(&publication, Some(&selected_id), "9.8.7", || false)
             .expect("selected task derives");
         assert_eq!(selected.task.as_ref(), Some(&selected_id));
         assert_eq!(selected.title.as_ref(), "Task-999  Second selected");
@@ -3418,7 +3419,7 @@ mod tests {
 
         let missing_id = TaskId::fixture("task/removed");
         let missing = cache
-            .derive(&publication, Some(&missing_id), || false)
+            .derive(&publication, Some(&missing_id), "9.8.7", || false)
             .expect("missing selected task yields unavailable context");
         assert_eq!(missing.task, None);
         assert!(!missing.stop_enabled);
@@ -3591,7 +3592,7 @@ mod tests {
         let cancel_after_start = Cell::new(false);
         assert!(
             cache
-                .derive(&current, None, || cancel_after_start.replace(true))
+                .derive(&current, None, "9.8.7", || cancel_after_start.replace(true))
                 .is_none(),
             "canceled work cannot return a partial result"
         );
@@ -3893,5 +3894,38 @@ mod tests {
             super::StopState::Unknown
         );
         assert!(super::StopDisplay::retention_error(&reference_capacity).manual_intervention);
+    }
+    #[test]
+    fn desktop_version_is_injected_by_the_binary_not_the_ui_crate() {
+        let fixture = ObservationPublication {
+            source: PublicationSource::Fixture,
+            connection: PublicationConnection::Disconnected,
+            ..ObservationPublication::default()
+        };
+        let mut cache = DerivationCache::default();
+        let text = cache
+            .derive(&fixture, None, "9.8.7", || false)
+            .expect("a fixture publication derives");
+        assert!(
+            text.diagnostics.starts_with("Desktop 9.8.7 · "),
+            "the injected version is shown: {}",
+            text.diagnostics
+        );
+        assert!(text.diagnostics.contains("テスト用記録"));
+        assert!(!text.diagnostics.contains(env!("CARGO_PKG_VERSION")));
+        assert!(!text.diagnostics.contains("Runtime"));
+
+        let unavailable = ObservationPublication::default();
+        let mut cache = DerivationCache::default();
+        let text = cache
+            .derive(&unavailable, None, "9.8.7", || false)
+            .expect("an unavailable publication still yields display context");
+        assert!(text.diagnostics.contains("Desktop 9.8.7"));
+        assert!(text.diagnostics.contains("検証済みの情報源がありません"));
+        assert!(!text.diagnostics.contains("Runtime"));
+        assert!(text.diagnostics.contains("世代 "));
+        assert!(text.diagnostics.contains("公開 "));
+        assert!(text.diagnostics.contains("エラー "));
+        assert!(text.diagnostics.contains("コマンド "));
     }
 }

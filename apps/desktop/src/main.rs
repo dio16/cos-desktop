@@ -148,7 +148,15 @@ fn main() {
         let opened = window::open(
             cx,
             move |window, cx, preferences| {
-                Shell::new(core, handle, window, cx, preferences, tokens)
+                Shell::new(
+                    core,
+                    handle,
+                    window,
+                    cx,
+                    preferences,
+                    tokens,
+                    env!("CARGO_PKG_VERSION"),
+                )
             },
             host,
             outcome,
