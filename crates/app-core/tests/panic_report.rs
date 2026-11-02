@@ -96,6 +96,17 @@ fn a_panic_writes_one_report_without_the_payload() {
         "the panic payload must never reach the report"
     );
     assert!(!text.to_lowercase().contains("backtrace"));
+    // The replaced hook must not print the payload either: the child's stderr would
+    // otherwise carry the very secret the report is careful to drop.
+    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    assert!(
+        !stderr.contains(SECRET),
+        "the panic payload must never reach stderr"
+    );
+    assert!(
+        !stderr.to_lowercase().contains("note: run with"),
+        "the default backtrace hint must not be printed"
+    );
 }
 
 #[test]
