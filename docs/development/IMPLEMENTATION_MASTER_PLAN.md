@@ -3346,8 +3346,10 @@ while stack:                      # reachability over normal + build edges only
         continue
     seen.add(cur)
     for dep in edges.get(cur, []):
-        kinds = {k.get("kind") or "normal" for k in dep["dep_kinds"]}
-        if kinds == {"dev"}:
+        # Keep only the distribution roles; a dev edge never makes a package shipped,
+        # and a package reachable both normally and as a dev-dependency is normal-only.
+        kinds = {k.get("kind") or "normal" for k in dep["dep_kinds"]} & {"normal", "build"}
+        if not kinds:
             continue
         kind_of[dep["pkg"]] |= kinds
         stack.append(dep["pkg"])
@@ -3356,11 +3358,19 @@ roles = collections.Counter(
     "normal-only" if k == {"normal"} else "build-only" if k == {"build"} else "both"
     for k in kind_of.values()
 )
+sources = collections.Counter(
+    "workspace" if not pkgs[i].get("source")
+    else "registry" if pkgs[i]["source"].startswith("registry+")
+    else "git" if pkgs[i]["source"].startswith("git+")
+    else "other:" + pkgs[i]["source"].split("+")[0]
+    for i in kind_of
+)
 print(len(m["packages"]), len(seen), len(kind_of), dict(roles))
+print(dict(sources))
 print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 ```
 
-- **Counts (exact):** **385 packages** in metadata; **377 reachable** over normal/build edges; **376 packages carry a dependency role** = **367 normal-only / 6 build-only / 3 both**; the extra reachable package is the `cos-desktop` workspace member itself; **8 NOT_APPLICABLE** (not reachable from the binary). Sources among the 376: **registry 354 / Git 17 (zed revision `395def7a...`) / workspace 5**.
+- **Counts (exact):** **385 packages** in metadata; **377 reachable** over normal/build edges; **376 packages carry a dependency role** = **367 normal-only / 6 build-only / 3 both**; the extra reachable package is the `cos-desktop` workspace member itself; **8 NOT_APPLICABLE** (not reachable from the binary). Sources among the 376 (printed by the snippet): **registry 354 / Git 17 (zed revision `395def7a...`) / workspace 5**; any source that is neither registry-, git- nor workspace-based would print as `other:<scheme>` rather than be folded into an existing bucket.
 - **License declarations (Cargo metadata `license`), all 377 packages, 22 distinct values summing to 377:** `MIT OR Apache-2.0` 172; `MIT` 64; `Apache-2.0 OR MIT` 42; `Apache-2.0` 23; `Unicode-3.0` 18; `MIT/Apache-2.0` 15; `BSD-3-Clause` 8; `Apache-2.0/MIT` 5; `BSD-2-Clause` 4; `MIT OR Apache-2.0 OR Zlib` 4; `Unlicense OR MIT` 4; `Zlib` 3; `Zlib OR Apache-2.0 OR MIT` 3; `BSD-2-Clause OR Apache-2.0 OR MIT` 2; `BSD-3-Clause OR Apache-2.0` 2; `MIT OR Zlib OR Apache-2.0` 2; and one each of `(MIT OR Apache-2.0) AND Unicode-3.0`, `0BSD OR MIT OR Apache-2.0`, `Apache-2.0 OR BSL-1.0`, `CC0-1.0 OR Apache-2.0`, `CC0-1.0 OR MIT-0 OR Apache-2.0`, `bzip2-1.0.6`. All 377 declare a license string (**VERIFIED_METADATA**); no package declares `license_file`, so no declared-file gap exists.
 - **Bundled material and what it does not settle:** root `LICENSE` (Apache-2.0) is shipped and covers this project's own code plus the Apache-2.0 option of the dual-licensed dependencies; root `NOTICE` carries the own notice and the Unicode case-fold data attribution; `crates/ui-model/src/simple_casefold.rs` holds the full Unicode License V3 notice; the `stage_portable.py` payload is exactly `cos-desktop.exe`, `LICENSE`, `NOTICE`. What remains open is **per-package** compliance: whether each of the 376 dependencies' own license text, copyright lines, NOTICE obligations and attribution wording are satisfied by those artefacts is **not verified**. The manifest already records `THIRD_PARTY_LICENSE_CLOSURE_UNASSESSED`.
 - **Classification:** **MISSING 0** confirmed license-file mismatches (no package declares `license_file`). **UNVERIFIED 376**: declared metadata only - license texts, copyright lines and redistribution conditions are unchecked, including the Git dependencies' texts. **NOT_APPLICABLE 8**: outside the normal/build closure of the binary. The absence of per-package third-party texts in the payload is a **packaging observation**, not a legal conclusion, and the shipped Apache-2.0 `LICENSE` is not treated as settling per-package NOTICE obligations.
