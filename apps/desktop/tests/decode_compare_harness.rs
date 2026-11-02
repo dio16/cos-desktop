@@ -3143,6 +3143,29 @@ fn post_exit_harvest_does_not_inflate_wall_ms() {
     assert_within_candidate_lifetime(wall_ms, start_ms, end_ms, overhead_ms, "post-exit harvest");
 }
 
+/// A delayed watcher poll must also see the normal exit first: the watcher checks the
+/// child before enforcing its deadline, so a scheduling delay cannot fake a kill.
+#[test]
+fn a_late_watcher_poll_does_not_reclassify_a_normal_exit() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-short");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 300;
+    config.cancel_after_ms = None;
+    config.watch_delay = Some(std::time::Duration::from_millis(400));
+    let report = harness::run(&config).unwrap();
+
+    let observation = &report.observations[0];
+    assert_eq!(
+        observation.observed_outcome,
+        OutcomeClass::Decoded,
+        "a normal exit observed late is still a normal exit"
+    );
+    assert!(!observation.timeout_fired);
+}
+
 /// A candidate that already exited normally must never be reclassified as killed just
 /// because the supervisor was blocked past the deadline creating a sampler.
 #[test]

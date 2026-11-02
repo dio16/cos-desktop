@@ -705,16 +705,17 @@ try {
                 $visited++
                 if ($visited -gt $maxFiles) { $capped = $true; break }
                 try {
-                    $entries = @(Get-ChildItem -LiteralPath $directory -Force -ErrorAction Stop)
+                    $directoryInfo = [System.IO.DirectoryInfo]::new($directory)
+                    $entries = $directoryInfo.EnumerateFileSystemInfos()
                 } catch {
                     $unreadableDirs += $directory
                     continue
                 }
-                foreach ($entry in $entries) {
+                try { foreach ($entry in $entries) {
                     if ($items.Count + $stack.Count -ge $maxFiles) { $capped = $true; break }
                     # Never descend into a link/reparse point.
                     if ($entry.Attributes -band [System.IO.FileAttributes]::ReparsePoint) { continue }
-                    if ($entry.PSIsContainer) {
+                    if ($entry -is [System.IO.DirectoryInfo]) {
                         if ($depth + 1 -gt $maxDepth) { $capped = $true; continue }
                         $stack.Push(@($entry.FullName, ($depth + 1)))
                         continue
@@ -729,6 +730,8 @@ try {
                         extension = $entry.Extension
                         owner = $owner
                     }
+                } } catch {
+                    $unreadableDirs += $directory
                 }
             }
         }
@@ -753,9 +756,10 @@ try {
             try {
                 $length = [int64]$stream.Length
                 $firstCount = [int][Math]::Min([int64]$capBytes, $length)
-                if ($SimulateWerShortRead) {
-                    # Ask for one byte past EOF, so the exact-read loop really stops short.
-                    $firstCount = [int]($length + 1)
+                if ($SimulateWerShortRead -and $length -ge 2) {
+                    # Keep the 1 MiB cap: leave one byte less in the stream so the exact
+                    # read loop genuinely stops short without allocating past the cap.
+                    $null = $stream.Seek($length - ($firstCount - 1), [System.IO.SeekOrigin]::Begin)
                 }
                 if ($firstCount -gt 0) {
                     $firstRead = Read-ExactBytes $stream $firstCount

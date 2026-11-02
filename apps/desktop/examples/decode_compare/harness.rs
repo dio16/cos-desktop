@@ -714,6 +714,8 @@ pub struct Config {
     /// machine's process-creation cost. It must never delay the candidate's exit
     /// observation (see `ExitWatch`).
     pub sample_spawn_delay: Option<Duration>,
+    /// Test-only: delay the exit watcher's first poll (scheduling-delay reproduction).
+    pub watch_delay: Option<Duration>,
     /// Extra argv placed before the fixed sample argv (tests only).
     pub sample_argv_prefix: Vec<OsString>,
     pub invocation: Invocation,
@@ -1202,6 +1204,7 @@ where
         sample_gate: None,
         sample_compare_signal: None,
         sample_spawn_delay: None,
+        watch_delay: None,
         sample_argv_prefix: Vec::new(),
         invocation: Invocation {
             argv_prefix: Vec::new(),
@@ -1947,6 +1950,7 @@ fn probe_identity(
                 Some(probe_bounds(&capture)),
                 None,
                 SAMPLE_DISABLED,
+                None,
             )
         });
         let (stdout, stderr) = capture.read(PROBE_CAP_BYTES);
@@ -2259,6 +2263,7 @@ fn measure(
                 Some(bounds),
                 sampling.as_ref(),
                 sampling_disabled_reason,
+                config.watch_delay,
             );
             let (stdout, stderr) = capture.read(config.max_output_bytes);
             let (output_bytes, output_present) = match fs::metadata(&output) {
@@ -3031,26 +3036,55 @@ struct ExitState {
     exited: Option<(Instant, Option<std::process::ExitStatus>)>,
     kill_requested: bool,
     deadline_killed: bool,
+    killed_by_request: bool,
 }
 
 impl ExitWatch {
-    fn start(mut child: std::process::Child, deadline: Duration) -> Self {
+    fn start(
+        mut child: std::process::Child,
+        deadline: Duration,
+        watch_delay: Option<Duration>,
+    ) -> Self {
         let state = std::sync::Arc::new(std::sync::Mutex::new(ExitState {
             exited: None,
             kill_requested: false,
             deadline_killed: false,
+            killed_by_request: false,
         }));
         let thread_state = std::sync::Arc::clone(&state);
         let deadline_at = Instant::now() + deadline;
         let handle = std::thread::spawn(move || {
+            if let Some(delay) = watch_delay {
+                // Test seam: reproduce a scheduling delay of the watcher thread.
+                std::thread::sleep(delay);
+            }
             loop {
                 let kill = thread_state
                     .lock()
                     .map(|state| state.kill_requested)
                     .unwrap_or(false);
-                // The hard deadline is enforced here, by the same thread that observes
-                // the exit, so a blocking supervision step (sampler creation) can never
-                // extend the candidate's life past its deadline.
+                // A finished child is a normal exit even when the deadline has already
+                // passed: check the exit BEFORE enforcing the deadline, so a delayed
+                // watcher cannot reclassify a normal exit as a deadline kill.
+                if !kill {
+                    match child.try_wait() {
+                        Ok(Some(status)) => {
+                            if let Ok(mut state) = thread_state.lock() {
+                                state.exited = Some((Instant::now(), Some(status)));
+                            }
+                            return;
+                        }
+                        Ok(None) => {}
+                        Err(_) => {
+                            let _ = child.kill();
+                            let status = child.wait().ok();
+                            if let Ok(mut state) = thread_state.lock() {
+                                state.exited = Some((Instant::now(), status));
+                            }
+                            return;
+                        }
+                    }
+                }
                 if !kill && Instant::now() >= deadline_at {
                     let _ = child.kill();
                     let status = child.wait().ok();
@@ -3061,29 +3095,24 @@ impl ExitWatch {
                     return;
                 }
                 if kill {
+                    // The child may have exited before the request; that is a normal exit.
+                    match child.try_wait() {
+                        Ok(Some(status)) => {
+                            if let Ok(mut state) = thread_state.lock() {
+                                state.exited = Some((Instant::now(), Some(status)));
+                            }
+                            return;
+                        }
+                        Ok(None) => {}
+                        Err(_) => {}
+                    }
                     let _ = child.kill();
                     let status = child.wait().ok();
                     if let Ok(mut state) = thread_state.lock() {
                         state.exited = Some((Instant::now(), status));
+                        state.killed_by_request = true;
                     }
                     return;
-                }
-                match child.try_wait() {
-                    Ok(Some(status)) => {
-                        if let Ok(mut state) = thread_state.lock() {
-                            state.exited = Some((Instant::now(), Some(status)));
-                        }
-                        return;
-                    }
-                    Ok(None) => {}
-                    Err(_) => {
-                        let _ = child.kill();
-                        let status = child.wait().ok();
-                        if let Ok(mut state) = thread_state.lock() {
-                            state.exited = Some((Instant::now(), status));
-                        }
-                        return;
-                    }
                 }
                 let until_deadline = deadline_at.saturating_duration_since(Instant::now());
                 std::thread::sleep(POLL_INTERVAL.min(until_deadline.max(Duration::from_millis(1))));
@@ -3097,6 +3126,13 @@ impl ExitWatch {
 
     fn exited(&self) -> Option<(Instant, Option<std::process::ExitStatus>)> {
         self.state.lock().ok().and_then(|state| state.exited)
+    }
+
+    fn killed_by_request(&self) -> bool {
+        self.state
+            .lock()
+            .map(|state| state.killed_by_request)
+            .unwrap_or(false)
     }
 
     fn deadline_killed(&self) -> bool {
@@ -3143,6 +3179,7 @@ fn supervise(
     bounds: Option<Bounds<'_>>,
     sampling: Option<&Sampling<'_>>,
     sampling_disabled_reason: &'static str,
+    watch_delay: Option<Duration>,
 ) -> Supervised {
     let started = Instant::now();
     let pid = child.id();
@@ -3150,7 +3187,7 @@ fn supervise(
         Some(early) => early.min(timeout),
         None => timeout,
     };
-    let mut watch = ExitWatch::start(child, deadline);
+    let mut watch = ExitWatch::start(child, deadline, watch_delay);
     let mut timeout_fired = false;
     let mut cancelled = false;
     let mut killed = false;
@@ -3260,6 +3297,10 @@ fn supervise(
                 break status;
             }
             let (requested, observed) = cancel(&watch, started);
+            if !watch.killed_by_request() && !watch.deadline_killed() {
+                // The candidate had already exited normally; the request only observed it.
+                break watch.exited().and_then(|(_, status)| status);
+            }
             cancellation_requested_at_ms = requested;
             cancellation_observed_ms = observed;
             killed = true;
@@ -3274,6 +3315,10 @@ fn supervise(
                 break status;
             }
             let (requested, observed) = cancel(&watch, started);
+            if !watch.killed_by_request() {
+                // A normal exit recorded while the request was in flight wins.
+                break watch.exited().and_then(|(_, status)| status);
+            }
             cancellation_requested_at_ms = requested;
             cancellation_observed_ms = observed;
             killed = true;
