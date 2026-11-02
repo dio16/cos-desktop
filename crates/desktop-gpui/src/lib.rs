@@ -229,11 +229,12 @@ enum SupportPreview {
     Unavailable(String),
 }
 
-/// What the background builder produced. Failures carry no text: the unavailable
-/// wording is produced on the UI thread only after the identity check passes.
+/// What the background builder produced. Every variant carries text that was rendered
+/// off the UI thread, so installing a preview never serialises on the UI thread.
 enum SupportBuild {
     Authorized { identity: (u64, u64), text: String },
-    Failed,
+    DesktopOnly { text: String },
+    Failed { text: String },
 }
 
 /// Serializes preview requests and rejects stale completions. `generation` changes on
@@ -256,13 +257,7 @@ impl SupportPreviewState {
 
     /// Install only when the request is still current and its target identity is alive.
     /// Returns `false` (and leaves nothing installed) for stale or changed requests.
-    fn complete(
-        &mut self,
-        generation: u64,
-        live: Option<(u64, u64)>,
-        build: SupportBuild,
-        unavailable: impl FnOnce() -> SupportPreview,
-    ) -> bool {
+    fn complete(&mut self, generation: u64, live: Option<(u64, u64)>, build: SupportBuild) -> bool {
         if generation != self.generation {
             return false;
         }
@@ -283,8 +278,11 @@ impl SupportPreviewState {
                     text,
                 });
             }
-            SupportBuild::Failed => {
-                self.current = Some(unavailable());
+            SupportBuild::DesktopOnly { text } => {
+                self.current = Some(SupportPreview::DesktopOnly(text));
+            }
+            SupportBuild::Failed { text } => {
+                self.current = Some(SupportPreview::Unavailable(text));
             }
         }
         true
@@ -330,10 +328,22 @@ fn build_support_preview(handle: &ObservationHandle, desktop_version: &str) -> S
                     )
                     .render(),
                 },
-                _ => SupportBuild::Failed,
+                _ => SupportBuild::Failed {
+                    text: app_core::SupportReport::unavailable(
+                        "observation is unavailable",
+                        desktop_version,
+                    )
+                    .render(),
+                },
             }
         }
-        Err(_) => SupportBuild::Failed,
+        Err(_) => SupportBuild::Failed {
+            text: app_core::SupportReport::unavailable(
+                "observation is unavailable",
+                desktop_version,
+            )
+            .render(),
+        },
     }
 }
 
@@ -1052,43 +1062,41 @@ impl Shell {
         let generation = self.support_state.begin(target);
         let version = self.desktop_version.to_string();
         let Some(handle) = self.handle.clone() else {
-            let installed =
-                self.support_state
-                    .complete(generation, None, SupportBuild::Failed, || {
-                        SupportPreview::DesktopOnly(
-                            app_core::SupportReport::unavailable(
+            // No observation handle: the Desktop-only report is rendered off the UI thread.
+            self.support_task = cx.spawn(async move |this, cx| {
+                let build = cx
+                    .background_executor()
+                    .spawn(async move {
+                        SupportBuild::DesktopOnly {
+                            text: app_core::SupportReport::unavailable(
                                 "no observation handle — Desktop information only",
                                 &version,
                             )
                             .render(),
-                        )
-                    });
-            debug_assert!(installed);
-            cx.notify();
+                        }
+                    })
+                    .await;
+                let _ = this.update(cx, |this, cx| {
+                    let installed = this.support_state.complete(generation, None, build);
+                    if installed {
+                        cx.notify();
+                    }
+                });
+            });
             return;
         };
-        let text_version = version.clone();
         let identity_handle = handle.clone();
         self.support_task = cx.spawn(async move |this, cx| {
             let build = cx
                 .background_executor()
                 .spawn(async move { build_support_preview(&handle, &version) })
                 .await;
-            let live = identity_handle
-                .current()
-                .ok()
-                .and_then(|lease| lease.notice())
-                .map(|notice| (notice.session_generation, notice.publication_version));
             let _ = this.update(cx, |this, cx| {
-                let installed = this.support_state.complete(generation, live, build, || {
-                    SupportPreview::Unavailable(
-                        app_core::SupportReport::unavailable(
-                            "observation is unavailable",
-                            &text_version,
-                        )
-                        .render(),
-                    )
-                });
+                // The live identity is read here, inside the update, so no revocation or
+                // publication change can slip between the check and the assignment.
+                let live = Self::current_notice(&identity_handle)
+                    .map(|notice| (notice.session_generation, notice.publication_version));
+                let installed = this.support_state.complete(generation, live, build);
                 if installed {
                     cx.notify();
                 }
@@ -5137,27 +5145,32 @@ mod contrast_scope_tests {
             SupportBuild::Authorized {
                 identity: (4, 1),
                 text: "report".to_owned()
-            },
-            || panic!("authorized")
+            }
         ));
         assert_eq!(state.visible(true, Some((4, 1))), Some("report"));
         assert_eq!(state.visible(true, Some((4, 2))), None);
 
         let mut state = SupportPreviewState::default();
         let desktop = state.begin(None);
-        assert!(state.complete(desktop, None, SupportBuild::Failed, || {
-            SupportPreview::DesktopOnly("Desktop 9.8.7".to_owned())
-        }));
+        assert!(state.complete(
+            desktop,
+            None,
+            SupportBuild::DesktopOnly {
+                text: "Desktop 9.8.7".to_owned()
+            }
+        ));
         assert_eq!(state.visible(false, None), Some("Desktop 9.8.7"));
         assert_eq!(state.visible(true, None), None);
 
         let mut state = SupportPreviewState::default();
         let unavailable = state.begin(Some((5, 5)));
-        assert!(
-            state.complete(unavailable, Some((5, 5)), SupportBuild::Failed, || {
-                SupportPreview::Unavailable("Retained events: unknown".to_owned())
-            })
-        );
+        assert!(state.complete(
+            unavailable,
+            Some((5, 5)),
+            SupportBuild::Failed {
+                text: "Retained events: unknown".to_owned()
+            }
+        ));
         assert_eq!(
             state.visible(true, Some((5, 5))),
             Some("Retained events: unknown")
