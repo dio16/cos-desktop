@@ -217,8 +217,8 @@ impl RailWorkSignal {
     }
 }
 
-/// Read-only support preview state. An authorized preview carries the publication
-/// identity it was built from and is revalidated immediately before display.
+/// Read-only support preview. An authorized preview carries the publication identity
+/// it was built from and is revalidated immediately before display.
 enum SupportPreview {
     DesktopOnly(String),
     Authorized {
@@ -229,9 +229,90 @@ enum SupportPreview {
     Unavailable(String),
 }
 
+/// What the background builder produced. Failures carry no text: the unavailable
+/// wording is produced on the UI thread only after the identity check passes.
+enum SupportBuild {
+    Authorized { identity: (u64, u64), text: String },
+    Failed,
+}
+
+/// Serializes preview requests and rejects stale completions. `generation` changes on
+/// every request and on invalidation, so a delayed older request can never overwrite a
+/// newer result or resurrect a revoked publication.
+#[derive(Default)]
+struct SupportPreviewState {
+    generation: u64,
+    pending: Option<Option<(u64, u64)>>,
+    current: Option<SupportPreview>,
+}
+
+impl SupportPreviewState {
+    fn begin(&mut self, target: Option<(u64, u64)>) -> u64 {
+        self.generation = self.generation.wrapping_add(1);
+        self.pending = Some(target);
+        self.current = None;
+        self.generation
+    }
+
+    /// Install only when the request is still current and its target identity is alive.
+    /// Returns `false` (and leaves nothing installed) for stale or changed requests.
+    fn complete(
+        &mut self,
+        generation: u64,
+        live: Option<(u64, u64)>,
+        build: SupportBuild,
+        unavailable: impl FnOnce() -> SupportPreview,
+    ) -> bool {
+        if generation != self.generation {
+            return false;
+        }
+        let Some(target) = self.pending.take() else {
+            return false;
+        };
+        if live != target {
+            return false;
+        }
+        match build {
+            SupportBuild::Authorized { identity, text } => {
+                if Some(identity) != target {
+                    return false;
+                }
+                self.current = Some(SupportPreview::Authorized {
+                    session_generation: identity.0,
+                    publication_version: identity.1,
+                    text,
+                });
+            }
+            SupportBuild::Failed => {
+                self.current = Some(unavailable());
+            }
+        }
+        true
+    }
+
+    fn invalidate(&mut self) {
+        self.generation = self.generation.wrapping_add(1);
+        self.pending = None;
+        self.current = None;
+    }
+
+    fn visible(&self, handle_present: bool, live: Option<(u64, u64)>) -> Option<&str> {
+        match self.current.as_ref()? {
+            SupportPreview::DesktopOnly(text) => (!handle_present).then_some(text.as_str()),
+            SupportPreview::Unavailable(text) => Some(text.as_str()),
+            SupportPreview::Authorized {
+                session_generation,
+                publication_version,
+                text,
+            } => (handle_present && live == Some((*session_generation, *publication_version)))
+                .then_some(text.as_str()),
+        }
+    }
+}
+
 /// Build the support report from one observation snapshot, off the UI thread. The
 /// ring is copied at most once per request and the report is bounded by app-core.
-fn build_support_preview(handle: &ObservationHandle, desktop_version: &str) -> SupportPreview {
+fn build_support_preview(handle: &ObservationHandle, desktop_version: &str) -> SupportBuild {
     match handle.current() {
         Ok(lease) => {
             let notice = lease.notice();
@@ -240,46 +321,23 @@ fn build_support_preview(handle: &ObservationHandle, desktop_version: &str) -> S
                 .read(|current| publication = Some(current.clone()))
                 .is_ok();
             match (notice, publication, read_ok) {
-                (Some(notice), Some(publication), true) => {
-                    let diagnostics = handle.diagnostics_after(0);
-                    SupportPreview::Authorized {
-                        session_generation: notice.session_generation,
-                        publication_version: notice.publication_version,
-                        text: app_core::SupportReport::from_publication(
-                            &publication,
-                            &diagnostics,
-                            desktop_version,
-                        )
-                        .render(),
-                    }
-                }
-                _ => SupportPreview::Unavailable(
-                    app_core::SupportReport::unavailable(
-                        "observation is unavailable",
+                (Some(notice), Some(publication), true) => SupportBuild::Authorized {
+                    identity: (notice.session_generation, notice.publication_version),
+                    text: app_core::SupportReport::from_publication(
+                        &publication,
+                        &handle.diagnostics_after(0),
                         desktop_version,
                     )
                     .render(),
-                ),
+                },
+                _ => SupportBuild::Failed,
             }
         }
-        Err(_) => SupportPreview::Unavailable(
-            app_core::SupportReport::unavailable("observation is unavailable", desktop_version)
-                .render(),
-        ),
+        Err(_) => SupportBuild::Failed,
     }
 }
 
-/// The stored preview is shown only for the publication it was built from; a missing
-/// handle shows the Desktop-only preview, and a changed/revoked identity shows nothing.
-fn support_preview_identity_matches(
-    handle_present: bool,
-    live: Option<(u64, u64)>,
-    stored: (u64, u64),
-) -> bool {
-    handle_present && live == Some(stored)
-}
-
-/// Read-only About rows for the Ctrl+D diagnostics area. Only the injected binary
+/// Read-only About rows for the Ctrl+D diagnostics area./// Read-only About rows for the Ctrl+D diagnostics area. Only the injected binary
 /// version is known; Runtime/Protocol/Schema stay explicitly unknown.
 fn about_lines(desktop_version: &str) -> [String; 4] {
     [
@@ -296,8 +354,8 @@ pub struct Shell {
     handle: Option<ObservationHandle>,
     /// Desktop version injected by the binary; independent of any publication.
     desktop_version: Arc<str>,
-    /// Read-only support preview; built on demand, never cached across a publication change.
-    support_preview: Option<SupportPreview>,
+    /// Read-only support preview state; cleared on every publication change/invalidation.
+    support_state: SupportPreviewState,
     /// Keyboard focus for the read-only support preview action.
     support_focus: FocusHandle,
     /// One-shot background report build; dropped when superseded.
@@ -494,7 +552,7 @@ impl Shell {
             probe_window: window.window_handle().window_id().as_u64(),
             handle,
             desktop_version: Arc::clone(&desktop_version),
-            support_preview: None,
+            support_state: SupportPreviewState::default(),
             support_focus: cx.focus_handle().tab_stop(true),
             support_task: cx.spawn(async move |_this, _cx| {}),
             workbench,
@@ -603,7 +661,7 @@ impl Shell {
                     let finished = handle.is_finished();
                     let _ = this.update(cx, |this, cx| {
                         this.cache.invalidate();
-                        this.support_preview = None;
+                        this.support_state.invalidate();
                         this.rail_state.revalidate(None);
                         this.request_rail_work(cx);
                         cx.notify();
@@ -618,7 +676,7 @@ impl Shell {
                 }
                 let _ = this.update(cx, |this, cx| {
                     this.cache.revalidate(Some(notice));
-                    this.support_preview = None;
+                    this.support_state.invalidate();
                     this.rail_state.revalidate(Some(notice));
                     this.request_rail_work(cx);
                     cx.notify();
@@ -982,35 +1040,37 @@ impl Shell {
         }
     }
 
-    /// Build the bounded support report off the UI thread; install it only when the
-    /// publication identity still matches on return.
+    /// Build the bounded support report off the UI thread. The completion installs
+    /// only while its request generation and publication identity are still current;
+    /// no await occurs between the identity check and the install.
     fn preview_support(&mut self, cx: &mut Context<Self>) {
+        let target = self
+            .handle
+            .as_ref()
+            .and_then(Self::current_notice)
+            .map(|notice| (notice.session_generation, notice.publication_version));
+        let generation = self.support_state.begin(target);
+        let version = self.desktop_version.to_string();
         let Some(handle) = self.handle.clone() else {
-            // No observation handle: the report is still rendered off the UI thread.
-            let version = self.desktop_version.to_string();
-            self.support_task = cx.spawn(async move |this, cx| {
-                let text = cx
-                    .background_executor()
-                    .spawn(async move {
-                        app_core::SupportReport::unavailable(
-                            "no observation handle — Desktop information only",
-                            &version,
+            let installed =
+                self.support_state
+                    .complete(generation, None, SupportBuild::Failed, || {
+                        SupportPreview::DesktopOnly(
+                            app_core::SupportReport::unavailable(
+                                "no observation handle — Desktop information only",
+                                &version,
+                            )
+                            .render(),
                         )
-                        .render()
-                    })
-                    .await;
-                let _ = this.update(cx, |this, cx| {
-                    this.support_preview = Some(SupportPreview::DesktopOnly(text));
-                    cx.notify();
-                });
-            });
+                    });
+            debug_assert!(installed);
+            cx.notify();
             return;
         };
-        let version = self.desktop_version.to_string();
-        let stale_version = self.desktop_version.to_string();
+        let text_version = version.clone();
         let identity_handle = handle.clone();
         self.support_task = cx.spawn(async move |this, cx| {
-            let preview = cx
+            let build = cx
                 .background_executor()
                 .spawn(async move { build_support_preview(&handle, &version) })
                 .await;
@@ -1019,66 +1079,34 @@ impl Shell {
                 .ok()
                 .and_then(|lease| lease.notice())
                 .map(|notice| (notice.session_generation, notice.publication_version));
-            // Render the stale-publication replacement off the UI thread as well.
-            let changed_text = cx
-                .background_executor()
-                .spawn(async move {
-                    app_core::SupportReport::unavailable(
-                        "observation changed while the report was built",
-                        &stale_version,
-                    )
-                    .render()
-                })
-                .await;
             let _ = this.update(cx, |this, cx| {
-                this.support_preview = Some(match preview {
-                    SupportPreview::Authorized {
-                        session_generation,
-                        publication_version,
-                        text,
-                    } if live == Some((session_generation, publication_version)) => {
-                        SupportPreview::Authorized {
-                            session_generation,
-                            publication_version,
-                            text,
-                        }
-                    }
-                    SupportPreview::Authorized { .. } => {
-                        SupportPreview::Unavailable(changed_text.clone())
-                    }
-                    other => other,
+                let installed = this.support_state.complete(generation, live, build, || {
+                    SupportPreview::Unavailable(
+                        app_core::SupportReport::unavailable(
+                            "observation is unavailable",
+                            &text_version,
+                        )
+                        .render(),
+                    )
                 });
-                cx.notify();
+                if installed {
+                    cx.notify();
+                }
             });
         });
     }
 
-    /// Revalidate a stored preview against the live publication identity at display time.
+    /// Revalidate the stored preview at display time (no I/O, no ring scan).
     fn visible_support_preview(&self) -> Option<&str> {
-        match self.support_preview.as_ref()? {
-            SupportPreview::DesktopOnly(text) => self.handle.is_none().then_some(text.as_str()),
-            SupportPreview::Unavailable(text) => Some(text.as_str()),
-            SupportPreview::Authorized {
-                session_generation,
-                publication_version,
-                text,
-            } => {
-                let live = self
-                    .handle
-                    .as_ref()
-                    .and_then(Self::current_notice)
-                    .map(|notice| (notice.session_generation, notice.publication_version));
-                support_preview_identity_matches(
-                    self.handle.is_some(),
-                    live,
-                    (*session_generation, *publication_version),
-                )
-                .then_some(text.as_str())
-            }
-        }
+        let live = self
+            .handle
+            .as_ref()
+            .and_then(Self::current_notice)
+            .map(|notice| (notice.session_generation, notice.publication_version));
+        self.support_state.visible(self.handle.is_some(), live)
     }
 
-    /// The current authorized display text, when this window holds one.
+    /// The current authorized display text, when this window holds one.    /// The current authorized display text, when this window holds one.
     fn authorized_text(&self) -> Option<&ui_model::WorkbenchText> {
         let handle = self.handle.as_ref()?;
         self.cache
@@ -4773,7 +4801,7 @@ fn flow_diagram_region(
 
 #[cfg(test)]
 mod about_tests {
-    use super::{about_lines, support_preview_identity_matches};
+    use super::about_lines;
 
     #[test]
     fn about_separates_desktop_from_unknown_runtime_versions() {
@@ -4813,15 +4841,6 @@ mod about_tests {
         assert!(!report.contains("Retained events: 0"));
         assert!(report.len() <= 12_288);
 
-        assert!(support_preview_identity_matches(true, Some((3, 7)), (3, 7)));
-        assert!(!support_preview_identity_matches(
-            true,
-            Some((3, 8)),
-            (3, 7)
-        ));
-        assert!(!support_preview_identity_matches(false, None, (3, 7)));
-        assert!(!support_preview_identity_matches(true, None, (3, 7)));
-
         // SOURCE_WIRING_VERIFIED only: this checks that the wiring is present in the
         // source. Actual Tab traversal and Enter/Space delivery are NOT_RUN - no
         // window is created in this test.
@@ -4842,7 +4861,7 @@ mod about_tests {
         }
         assert!(source[..begin].contains("fn build_support_preview"));
         assert!(source[..begin].contains("background_executor()"));
-        assert!(source.contains("this.support_preview = None;"));
+        assert!(source.contains("this.support_state.invalidate();"));
     }
 }
 
@@ -5055,5 +5074,93 @@ mod contrast_scope_tests {
                 "the {name} region must resolve every colour through the contrast scheme"
             );
         }
+    }
+
+    #[test]
+    fn support_preview_rejects_stale_or_revoked_results() {
+        use super::{SupportBuild, SupportPreview, SupportPreviewState};
+        let mut state = SupportPreviewState::default();
+        let a = state.begin(Some((3, 7)));
+        state.invalidate();
+        assert!(!state.complete(
+            a,
+            Some((3, 7)),
+            SupportBuild::Authorized {
+                identity: (3, 7),
+                text: "old".to_owned()
+            },
+            || panic!("discarded request")
+        ));
+        assert_eq!(state.visible(true, Some((3, 7))), None);
+
+        let mut state = SupportPreviewState::default();
+        let a = state.begin(Some((3, 7)));
+        assert!(!state.complete(
+            a,
+            Some((3, 8)),
+            SupportBuild::Authorized {
+                identity: (3, 7),
+                text: "old".to_owned()
+            },
+            || panic!("changed publication")
+        ));
+        assert_eq!(state.visible(true, Some((3, 8))), None);
+
+        let mut state = SupportPreviewState::default();
+        let a = state.begin(Some((3, 7)));
+        let b = state.begin(Some((3, 7)));
+        assert!(state.complete(
+            b,
+            Some((3, 7)),
+            SupportBuild::Authorized {
+                identity: (3, 7),
+                text: "new".to_owned()
+            },
+            || panic!("B authorized")
+        ));
+        assert!(!state.complete(
+            a,
+            Some((3, 7)),
+            SupportBuild::Authorized {
+                identity: (3, 7),
+                text: "old".to_owned()
+            },
+            || panic!("A stale")
+        ));
+        assert_eq!(state.visible(true, Some((3, 7))), Some("new"));
+
+        let mut state = SupportPreviewState::default();
+        let current = state.begin(Some((4, 1)));
+        assert!(state.complete(
+            current,
+            Some((4, 1)),
+            SupportBuild::Authorized {
+                identity: (4, 1),
+                text: "report".to_owned()
+            },
+            || panic!("authorized")
+        ));
+        assert_eq!(state.visible(true, Some((4, 1))), Some("report"));
+        assert_eq!(state.visible(true, Some((4, 2))), None);
+
+        let mut state = SupportPreviewState::default();
+        let desktop = state.begin(None);
+        assert!(state.complete(desktop, None, SupportBuild::Failed, || {
+            SupportPreview::DesktopOnly("Desktop 9.8.7".to_owned())
+        }));
+        assert_eq!(state.visible(false, None), Some("Desktop 9.8.7"));
+        assert_eq!(state.visible(true, None), None);
+
+        let mut state = SupportPreviewState::default();
+        let unavailable = state.begin(Some((5, 5)));
+        assert!(
+            state.complete(unavailable, Some((5, 5)), SupportBuild::Failed, || {
+                SupportPreview::Unavailable("Retained events: unknown".to_owned())
+            })
+        );
+        assert_eq!(
+            state.visible(true, Some((5, 5))),
+            Some("Retained events: unknown")
+        );
     }
 }
