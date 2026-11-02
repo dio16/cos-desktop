@@ -3581,9 +3581,11 @@ fn supervise(
         let (requested_at, confirmed_at) = watch.stop_times();
         cancellation_requested_at_ms =
             requested_at.map(|at| elapsed_millis(at.saturating_duration_since(started)));
-        cancellation_observed_ms = requested_at.zip(confirmed_at).map(|(requested, confirmed)| {
-            elapsed_millis(confirmed.saturating_duration_since(requested))
-        });
+        cancellation_observed_ms = requested_at
+            .zip(confirmed_at)
+            .map(|(requested, confirmed)| {
+                elapsed_millis(confirmed.saturating_duration_since(requested))
+            });
     }
     if watch.deadline_killed() {
         // The watcher enforced the hard deadline while a supervision step was blocked.
