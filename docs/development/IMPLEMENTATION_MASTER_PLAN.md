@@ -2835,3 +2835,11 @@ summary series=hit n=21 median_us=2065 p95_us=2665 max_us=2776 match_median_us=0
 ```
 
 Re-computed from these samples (Lead, Python): `miss_replace` median 15130 / p95 16573 / max 17438; `miss_clear` 13923 / 14471 / 14565; `hit` 2065 / 2665 / 2776 - all equal to the reported values.
+
+### 19.142 Continuation status after the MP-FLOW2 first-frame re-measurement (2026-11-02, session round 19)
+
+- **Reviewed CLEAN 0/0/0 in this session (24 limited slices):** handover Steps 1-4, MP-RT1 compatibility matrix, RC-05, RC-02, RC-03, MP-SEC1, two Gate-reliability slices, AX04 (High Contrast limited), MP-IMG2 Working Set measurement / Job Object cap / joined cancellation, MP-R0B disconnected idle baseline, MP-FLOW2 10k measurement, MP-FLOW2 Stage C cache, MP-FLOW2 first-frame re-measurement, MP-SEC2 4,096 ring, DD-22 crash-report retention, WER boundary + supervision contract, Rust panic capture, MP-R0A source-identity repair, MP-R0A A0/A1 candidate generation.
+- **Open and blocked outside this session's authority:** MP-R0A Owner approval, live capture and live manifest update (HOLD); MP-R0B connected baseline and stall conditions (needs a connected Runtime); MP-RT1 contract finalisation and MP-RT2 (Runtime owner); product acceptance.
+- **Open and design-gated:** diagnostic-ring persistence beyond DD-22's in-memory retention, MP-SEC2 export/consent UI and WER control, MP-IMG2 allocator-internal peak (`unsafe` prohibited), MP-FLOW2 paint/submit/GPU/Present, MP-IMG3.
+- **Measured direction for the next FLOW2 step:** `miss_replace` p95 16,573 µs against a 16,667 µs 60 Hz budget, dominated by match-set construction (12,063 µs); first-frame improvement is required before an entry-replacing key change can be called safe at 60 Hz (§19.141).
+- **Tooling note:** the external review channel (Chrome CDP on port 9222, ChatGPT conversation) stopped accepting new WebSocket sessions during this round - `listTargets` over HTTP still answers, but session creation hangs, so no new review directive or review could be obtained. No slice was reviewed or claimed in this state; the channel needs a browser-tab restart before the loop resumes.
