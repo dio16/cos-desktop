@@ -3403,7 +3403,29 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 | ztracing | 0.1.0 | `crates/ztracing` | Apache-2.0 | `crates/ztracing/LICENSE-APACHE` | `9cff568488e9d56aae60f162404acdb15d8533a0202cf01f6eb0843b264f20ff` | `752daf2fb234ca4a1fa372c073fe127f44b7b90fd2529ae44273a64f9d53da7a` | none | TEXT_FOUND |
 | ztracing_macro | 0.1.0 | `crates/ztracing_macro` | Apache-2.0 | `crates/ztracing_macro/LICENSE-APACHE` | `9cff568488e9d56aae60f162404acdb15d8533a0202cf01f6eb0843b264f20ff` | `752daf2fb234ca4a1fa372c073fe127f44b7b90fd2529ae44273a64f9d53da7a` | none | TEXT_FOUND |
 
-- **Package IDs:** all 17 share `git+https://github.com/zed-industries/zed#395def7a067b32ed598fcb3f048969ada9b54942` with the crate name appended (e.g. `...?...#395def7a...#gpui@0.2.2`); manifest paths are the crate paths above plus `/Cargo.toml`. The per-file hashes in the table are the evidence and are reproducible with `sha256sum` over the checkout; no scratch file is relied on.
+- **Package IDs (verbatim `packages[].id` from `cargo metadata`, not reconstructed):**
+
+| Package | Package ID |
+|---|---|
+| `collections` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#collections@0.1.0` |
+| `derive_refineable` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#derive_refineable@0.1.0` |
+| `gpui` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#gpui@0.2.2` |
+| `gpui_macros` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#gpui_macros@0.1.0` |
+| `gpui_platform` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#gpui_platform@0.1.0` |
+| `gpui_shared_string` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#gpui_shared_string@0.1.0` |
+| `gpui_util` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#gpui_util@0.1.0` |
+| `gpui_windows` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#gpui_windows@0.1.0` |
+| `http_client` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#http_client@0.1.0` |
+| `perf` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#perf@0.1.0` |
+| `refineable` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#refineable@0.1.0` |
+| `scheduler` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#scheduler@0.1.0` |
+| `sum_tree` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#sum_tree@0.1.0` |
+| `util_macros` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#util_macros@0.1.0` |
+| `zlog` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#zlog@0.1.0` |
+| `ztracing` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#ztracing@0.1.0` |
+| `ztracing_macro` | `git+https://github.com/zed-industries/zed?rev=395def7a067b32ed598fcb3f048969ada9b54942#ztracing_macro@0.1.0` |
+
+- Manifest paths are the crate paths above plus `/Cargo.toml`. The per-file hashes in the evidence table are reproducible with `sha256sum` over the checkout; no scratch file is relied on.
 - **D — declared/text correspondence:** all 17 declare `Apache-2.0`; the shared resolved file is the Apache-2.0 text with a Zed copyright header, so the declaration matches the text family. The 16 `../../` pointers and the one `../../../` pointer (`derive_refineable`) resolve to the same file; shared evidence is not duplicated. A common file is not treated as 17 independent confirmations, and a missing `NOTICE` is not treated as proof that no notice obligation exists.
 - **E — current bundled material:** root `LICENSE` (11358 B, SHA-256 `cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30`) is the plain Apache-2.0 text without the Zed copyright header; root `NOTICE` (400 B, SHA-256 `efd5a4700799e249e1c5947fdacc5dcbdf1b54572c43c2519fea5140f60a6874`) covers only the Unicode case-fold data; `stage_portable.py` ships exactly `cos-desktop.exe`, `LICENSE`, `NOTICE`. **Missing candidates** (to be resolved in a later compliance step): Zed copyright/attribution is not in the bundled NOTICE/LICENSE; there is no upstream NOTICE to copy, so the absence of a NOTICE obligation is unconfirmed; the checkout also carries `LICENSE-GPL` at repository root, unreferenced by these crates’ declarations; subdirectory-specific exceptions/additional attributions were not found beyond the shared header. No required bundle content is concluded here.
 - **Limits:** evidence existence only; no legal review, no permission inference, no bundle/signing/installer change. MP-REL1 remains incomplete.
