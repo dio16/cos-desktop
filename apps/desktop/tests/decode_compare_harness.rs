@@ -3267,9 +3267,12 @@ fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
         observation.cancellation_observed_ms.is_none(),
         "an unconfirmed exit keeps no confirmation duration"
     );
+    // The cancel waits at most SAMPLE_EXIT_GRACE (2 s) for confirmation before aborting,
+    // so the run costs about that. The point is that it is bounded by that limit and not by
+    // the 4 s watcher delay it is waiting on.
     assert!(
-        elapsed < std::time::Duration::from_millis(1_500),
-        "an aborted cancel must return well before the delayed watcher wakes (took {elapsed:?})"
+        elapsed < std::time::Duration::from_secs(3),
+        "an aborted cancel must return before the delayed watcher wakes (took {elapsed:?})"
     );
     // The aborted stop must have killed the helper: a heartbeat that stops growing proves
     // the process is gone rather than merely unconfirmed.
