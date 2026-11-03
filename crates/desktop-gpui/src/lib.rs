@@ -518,6 +518,7 @@ pub struct Shell {
     support_state: SupportPreviewState,
     /// Keyboard focus for the read-only support preview action.
     support_focus: FocusHandle,
+    diagnostics_focus: FocusHandle,
     export_focus: FocusHandle,
     export_task: Task<()>,
     /// One-shot background report build; dropped when superseded.
@@ -721,6 +722,7 @@ impl Shell {
             desktop_version: Arc::clone(&desktop_version),
             support_state: SupportPreviewState::default(),
             support_focus: cx.focus_handle().tab_stop(true),
+            diagnostics_focus: cx.focus_handle().tab_stop(true),
             export_focus: cx.focus_handle().tab_stop(true),
             export_task: cx.spawn(async move |_this, _cx| {}),
             support_task: cx.spawn(async move |_this, _cx| {}),
@@ -1277,7 +1279,21 @@ impl Shell {
         self.support_state.visible(self.handle.is_some(), live)
     }
 
-    /// The current authorized display text, when this window holds one.    /// Explicit user save: native dialog, revalidation, background write, closed
+    /// The current authorized display text, when this window holds one.    /// Single diagnostics open/close path shared by Ctrl+D and the toggle button.
+    fn toggle_diagnostics(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(workbench) = &mut self.workbench {
+            let closing = workbench.presentation.diagnostics_open;
+            workbench.presentation.diagnostics_open = !closing;
+            // Closing removes the focused support action: move only that focus to the
+            // existing shell focus. The always-present toggle keeps its own focus.
+            if closing && self.support_focus.is_focused(window) {
+                self.focus.focus(window, cx);
+            }
+            cx.notify();
+        }
+    }
+
+    /// Explicit user save: native dialog, revalidation, background write, closed
     /// status. Cancel and double-press never write. No automatic retry.
     fn export_support(&mut self, cx: &mut Context<Self>) {
         if !begin_export_trial(&mut self.export_in_progress, &mut self.export_trace) {
@@ -4259,16 +4275,7 @@ impl Render for Shell {
                 }
             }))
             .on_action(cx.listener(|this, _: &Diagnostics, window, cx| {
-                if let Some(w) = &mut this.workbench {
-                    let closing = w.presentation.diagnostics_open;
-                    w.presentation.diagnostics_open = !closing;
-                    // Closing removes the focused support action: move only that focus to
-                    // the existing shell focus. Any other focus is left untouched.
-                    if closing && this.support_focus.is_focused(window) {
-                        this.focus.focus(window, cx);
-                    }
-                    cx.notify();
-                }
+                this.toggle_diagnostics(window, cx);
             }))
             .size_full()
             .flex()
@@ -4560,6 +4567,37 @@ impl Render for Shell {
                                                 )
                                             })
                                             .child(inspector_panel)
+                                            .child(
+                                                div()
+                                                    .id("diagnostics-toggle")
+                                                    .accessibility_id("diagnostics-toggle")
+                                                    .role(Role::Button)
+                                                    .aria_label(if diagnostics_open {
+                                                        "診断情報を閉じる"
+                                                    } else {
+                                                        "診断情報を開く"
+                                                    })
+                                                    .aria_keyshortcuts("Enter Space Ctrl+D")
+                                                    .track_focus(&self.diagnostics_focus)
+                                                    .px_4()
+                                                    .py_2()
+                                                    .border(support_border_width)
+                                                    .border_color(rgb(support_border_color))
+                                                    .bg(rgb(support_background))
+                                                    .text_color(rgb(colors.text))
+                                                    .cursor_pointer()
+                                                    .on_action(cx.listener(|this, _: &Activate, window, cx| {
+                                                        this.toggle_diagnostics(window, cx);
+                                                    }))
+                                                    .on_click(cx.listener(|this, _, window, cx| {
+                                                        this.toggle_diagnostics(window, cx);
+                                                    }))
+                                                    .child(if diagnostics_open {
+                                                        "診断情報を閉じる"
+                                                    } else {
+                                                        "診断情報を開く：Ctrl+D"
+                                                    }),
+                                            )
                                             .child(if diagnostics_open {
                                                 div()
                                                     .flex()
@@ -4617,6 +4655,7 @@ impl Render for Shell {
                                                         div()
                                                             // SUPPORT-PREVIEW-BEGIN
                                                             .id("support-preview-button")
+                                                            .accessibility_id("support-preview-button")
                                                             .role(Role::Button)
                                                             .aria_label("サポート情報を表示")
                                                             .aria_keyshortcuts("Enter Space")
@@ -4664,6 +4703,7 @@ impl Render for Shell {
                                                         .child(
                                                             div()
                                                                 .id("support-export-button")
+                                                                .accessibility_id("support-export-button")
                                                                 .role(Role::Button)
                                                                 .track_focus(&self.export_focus)
                                                                 .aria_label("サポート情報をエクスポート")
@@ -4715,9 +4755,7 @@ impl Render for Shell {
                                                     // DIAGNOSTICS-READONLY-END
                                                     .into_any_element()
                                             } else {
-                                                div()
-                                                    .child("診断情報：Ctrl+D")
-                                                    .into_any_element()
+                                                div().into_any_element()
                                             }),
                                     ),
                             ),
@@ -5514,8 +5552,8 @@ mod contrast_scope_tests {
         }
         assert_eq!(
             region.matches(".accessibility_id(").count(),
-            automation_ids.len() + 2,
-            "six labels plus the status and trace carry exactly one AutomationId"
+            automation_ids.len() + 4,
+            "six labels plus status, trace and buttons carry exactly one AutomationId"
         );
         assert!(
             region.contains(".accessibility_id(\"support-export-status\")"),
@@ -5920,5 +5958,20 @@ mod contrast_scope_tests {
             Some("old"),
             "double press changes nothing"
         );
+    }
+    #[test]
+    fn diagnostics_toggle_is_shared_and_exposes_a_stable_automation_id() {
+        let source = include_str!("lib.rs");
+        assert!(source.contains(".accessibility_id(\"diagnostics-toggle\")"));
+        assert!(source.contains("fn toggle_diagnostics("));
+        // Ctrl+D and the button must both call the one shared path.
+        assert!(
+            source
+                .matches("this.toggle_diagnostics(window, cx);")
+                .count()
+                >= 2
+        );
+        assert!(source.contains(".accessibility_id(\"support-preview-button\")"));
+        assert!(source.contains(".accessibility_id(\"support-export-button\")"));
     }
 }

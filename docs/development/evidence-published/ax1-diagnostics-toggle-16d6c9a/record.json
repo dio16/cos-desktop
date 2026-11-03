@@ -1,0 +1,22 @@
+{
+  "measurement": "MP-AX1 diagnostics toggle native UIA at 16d6c9a",
+  "base_commit": "16d6c9a",
+  "A": "PASS: always-visible diagnostics-toggle button, Role::Button, accessibility_id, open/close Japanese label.",
+  "B": "PASS: Ctrl+D and button both call toggle_diagnostics(); existing shortcut preserved; no duplicated state logic.",
+  "C": "PASS source: Tab focus handle added; support-preview-button/support-export-button accessibility_ids added. Native focused reachability NOT re-measured.",
+  "D": "PASS: diagnostic-readonly exists only while open; save/redaction/authority code unchanged.",
+  "E": "PASS unit: 118 tests; source test asserts shared path and IDs.",
+  "F": "PASS: UIA found diagnostics-toggle by AutomationId, ControlType.Button, IsKeyboardFocusable=True, InvokePattern available; Invoke opened panel (diagnostic-readonly visible) and closed it (absent); label switched \u958b\u304f/\u9589\u3058\u308b. Export button absent before preview generation (expected).",
+  "files": {
+    "environment.txt": {
+      "sha256": "sha256:bf60625242a058f1c1364a15b8e096f08176927ca742ff1657171c4491aa5514",
+      "git_blob": "08c749e5602d67c225e3b859eff38c7f35be9efd",
+      "bytes": 211
+    },
+    "result.txt": {
+      "sha256": "sha256:38e797278e15b1a83c8acc8ebbc66a67d5dfe200a32a2be303bee9be901e0307",
+      "git_blob": "92129f5e7a853fce50b655aad23ecf9386a43f1d",
+      "bytes": 299
+    }
+  }
+}

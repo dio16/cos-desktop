@@ -1,0 +1,5 @@
+exe_sha256=45274b90f9bb97e3e63a7914e8d9e510e8ee697fafa0483839d2fd888e577a7d
+base_commit=16d6c9a
+windows=10.0.26300.0
+dpi=96
+log_encoding=cp932 console (Japanese labels may be mojibake); ASCII IDs/patterns exact

@@ -4215,3 +4215,14 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Consequence:** everything needing keyboard input stays `NOT_OBSERVED` - opening the diagnostics panel, Tab and Shift+Tab traversal, the save dialog and its overwrite confirmation. The panel's automation ids could not be listed because the panel never opened. The earlier `NOT_OBSERVED` items in 19.208, 19.209 and 19.210 are therefore **not** superseded by this record.
 - **Evidence:** `docs/development/evidence-published/rel3-native-fresh-release-20261104/` with the first foreground attempt, the UI Automation snapshot before attempting to open the panel, the posted-keys attempt, the Orca tree and state, and a `record.json` listing each file's SHA-256.
 - **State:** MP-REL3, MP-R0B, MP-AX1/AX2 and MP-R0A remain incomplete; connected baseline `NOT_MEASURED`; product acceptance `NOT_RUN`.
+
+### 19.216 MP-AX1 accessible diagnostics toggle (2026-11-04)
+
+- **A/B:** the closed-state text was replaced by an always-visible `diagnostics-toggle` button (`Role::Button`, `accessibility_id`, state-dependent 開く/閉じる label, Enter/Space action and mouse click). Ctrl+D and the button call the single `toggle_diagnostics()` method; the shortcut is preserved and no second state implementation exists.
+- **C:** `diagnostics_focus` is a Tab stop; closing still moves focus off the removed support action to the shell focus. `support-preview-button` and `support-export-button` gained explicit AutomationIds.
+- **D:** the read-only diagnostics content and all save/redaction/authority conditions are unchanged; `diagnostic-readonly` remains absent while closed.
+- **E:** source test asserts the shared toggle path and the three AutomationIds; `cargo test -p desktop-gpui` **118 passed / 0 failed**; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` OK.
+- **F Native (PASS):** UIA found `diagnostics-toggle` as `ControlType.Button`, keyboard-focusable, with `InvokePattern`; Invoke opened the panel (`diagnostic-readonly` present) and closed it (absent), and the label changed between 開く/閉じる. Direct Tab traversal was not re-measured; the export button is absent before preview generation, as expected.
+- **Evidence:** `docs/development/evidence-published/ax1-diagnostics-toggle-16d6c9a/` (`result.txt`, `environment.txt`, `record.json`); log is cp932, ASCII IDs/patterns exact.
+- **State:** MP-AX1/AX2 remain incomplete; product acceptance NOT_RUN.
+

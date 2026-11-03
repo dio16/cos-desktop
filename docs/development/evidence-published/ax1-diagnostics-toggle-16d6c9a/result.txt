@@ -1,0 +1,9 @@
+TOGGLE|True|ControlType.Button|f’fî•ñ‚ğŠJ‚­|focusable=True
+PATTERNS|InvokePatternIdentifiers.Pattern
+CONTENT_CLOSED|False
+AFTER_OPEN_TOGGLE|f’fî•ñ‚ğ•Â‚¶‚é
+CONTENT_OPEN|True
+PREVIEW_BTN|True|ControlType.Button
+EXPORT_BTN|False
+AFTER_CLOSE_CONTENT|False
+AFTER_CLOSE_TOGGLE|f’fî•ñ‚ğŠJ‚­
