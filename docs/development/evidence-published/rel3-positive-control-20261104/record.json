@@ -5,7 +5,7 @@
   "windows": "10.0.26300.0",
   "attempt": "The task search field offers ValuePattern. SetValue('Task-184') returned without error, but the value read back afterwards was the empty string and both the row list and the descendant count were unchanged (49 descendants, 2 matching rows before and after).",
   "conclusion": "WEAK NEGATIVE: an accessibility call that returned successfully produced no observable state change for this element. That weakens, but does not refute, the assumption that a clean call implies the handler ran; the trace reading therefore stays an observation of undetermined meaning rather than proof that the preview handler was never reached.",
-  "what_still_stands": "The diagnostics toggle did change state through Invoke in earlier runs (49 -> 56 descendants, name change), so the action path is not universally dead; why it works there and not for these two elements remains unexplained.",
+  "what_still_stands": "The diagnostics toggle did change state through Invoke in earlier runs (49 -> 56 descendants, name change), so the action path is not universally dead. Why it works for the toggle and appears not to for the preview button remains unexplained. The search-field result is a separate, weak negative observation and is not part of that comparison.",
   "files": {
     "positive-control-attempt.txt": {
       "sha256": "sha256:afd1a4e01b1d6cf4d7157702bf006e2bbe571ae17d28a29d0e5c16e40df26fc3",
