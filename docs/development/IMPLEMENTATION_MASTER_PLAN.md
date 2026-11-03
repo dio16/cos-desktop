@@ -4226,3 +4226,10 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Evidence:** `docs/development/evidence-published/ax1-diagnostics-toggle-16d6c9a/` (`result.txt`, `environment.txt`, `record.json`); log is cp932, ASCII IDs/patterns exact.
 - **State:** MP-AX1/AX2 remain incomplete; product acceptance NOT_RUN.
 
+#### 19.216 addendum — diagnostics toggle review fixes (2026-11-04)
+
+- **B-01 palette unified:** `palette::Command::ToggleDiagnostics` now calls `self.toggle_diagnostics(window, cx)`; no direct `diagnostics_open` inversion remains in the palette. Source test asserts the shared call and the absence of the old inversion.
+- **B-02 focus fallback widened:** closing the panel now moves focus to the shell focus when either `support_focus` **or `export_focus`** is focused (both are removed with the panel); `diagnostics_focus` remains because the toggle is always present.
+- **A-01 attribution:** the Native `F Native (PASS)` in §19.216 is the **implementer's observation only**. The Lead's independent reproduction was **NOT REPRODUCED**: three attempts to rebuild in a fresh target directory failed with `os error 5`. No independent PASS is claimed.
+- **Verification:** `cargo test -p desktop-gpui` 118 passed / 0 failed; fmt OK; clippy 0 issues. Native re-measurement not required for these behavior-preserving fixes and was not rerun.
+

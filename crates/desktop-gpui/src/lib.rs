@@ -1286,7 +1286,9 @@ impl Shell {
             workbench.presentation.diagnostics_open = !closing;
             // Closing removes the focused support action: move only that focus to the
             // existing shell focus. The always-present toggle keeps its own focus.
-            if closing && self.support_focus.is_focused(window) {
+            if closing
+                && (self.support_focus.is_focused(window) || self.export_focus.is_focused(window))
+            {
                 self.focus.focus(window, cx);
             }
             cx.notify();
@@ -5973,5 +5975,11 @@ mod contrast_scope_tests {
         );
         assert!(source.contains(".accessibility_id(\"support-preview-button\")"));
         assert!(source.contains(".accessibility_id(\"support-export-button\")"));
+        let palette = include_str!("palette.rs");
+        assert!(
+            palette.contains("Command::ToggleDiagnostics => self.toggle_diagnostics(window, cx)"),
+            "command palette must share the toggle path"
+        );
+        assert!(!palette.contains("workbench.presentation.diagnostics_open ="));
     }
 }

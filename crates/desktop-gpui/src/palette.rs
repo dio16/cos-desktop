@@ -431,13 +431,7 @@ impl Shell {
             Command::ShowEvidence => {
                 self.show_inspector_section(ui_model::inspector::Section::Evidence, window, cx)
             }
-            Command::ToggleDiagnostics => {
-                if let Some(workbench) = &mut self.workbench {
-                    workbench.presentation.diagnostics_open =
-                        !workbench.presentation.diagnostics_open;
-                    cx.notify();
-                }
-            }
+            Command::ToggleDiagnostics => self.toggle_diagnostics(window, cx),
             Command::StopTask => self.start_stop(window, cx),
             Command::CheckStopReceipt => self.start_receipt_check(window, cx),
         }
