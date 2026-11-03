@@ -17,10 +17,16 @@
       "sha256": "sha256:943b847e101d47ffe94a8bc17efd7da83a00a39b811581062057813ef59d1651",
       "git_object_id": "a965baf720104995f565d2c73a388da2ee93eb26",
       "bytes": 760
+    },
+    "instance-ownership-blocker.txt": {
+      "sha256": "sha256:5312bc936af5e41f9a25e31a2064a02e33173aaa71f282cdf10fc4890c4929f0",
+      "git_object_id": "dc3712e09af369ebfebaf1daf3e7cd71e112be06",
+      "bytes": 1614
     }
   },
   "note": "Only the refusal is captured here: the connected CPU and working-set baseline was not measured because no reachable runtime endpoint exists in this environment. The refusal demonstrates that a connected run cannot be recorded against an unreachable endpoint.",
   "foreground_attempt": "A loopback listener satisfied reachability and the connected probe was run, but the application never produced a window, so the calls that use the Win32 helper - SetForegroundWindow, GetForegroundWindow and the UI Automation read - were never reached. Add-Type itself sits before the application launch, so the declaration ran; what is missing is an independent record that the type generation succeeded.",
   "add_type_scope": "Add-Type sits before the application launch, so the script reached and executed that declaration; what is missing is an independent record that the type generation succeeded, and the calls that use the type were never reached.",
-  "startup_refusal_scope": "The 'instance ownership unavailable' message was captured from a separate direct launch (fixture mode, stderr redirected, port 47812). That run's cause is identified. The earlier connected probe ran under different conditions (-Connected -RejectProbe, port 47811) and its own stderr was not captured, so applying this cause to that attempt is not proven - the earlier attempt's cause stays unidentified."
+  "startup_refusal_scope": "The 'instance ownership unavailable' message was captured from a separate direct launch (fixture mode, stderr redirected, port 47812). That run's cause is identified. The earlier connected probe ran under different conditions (-Connected -RejectProbe, port 47811) and its own stderr was not captured, so applying this cause to that attempt is not proven - the earlier attempt's cause stays unidentified.",
+  "instance_ownership_blocker": "Every launch refuses startup with the ownership-unavailable message, including with a fresh isolated LOCALAPPDATA and with no other instance running. The individual operations the guard performs - opening the directory with BACKUP_SEMANTICS, opening the lock file with read/write sharing, and LockFileEx - all succeed when executed outside the application, so the cause is not identified. Recorded as an unresolved blocker."
 }
