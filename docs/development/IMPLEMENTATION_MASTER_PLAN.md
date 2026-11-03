@@ -4349,6 +4349,10 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests:** env gate accepts only `"1"`; all 14 tokens are closed/ASCII/path-free; existing tests pass. `cargo test -p desktop-gpui` 121 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` OK.
 - **Native:** Lead re-measurement pending; no fix or causal claim. MP-REL3 / MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
 
+- **Stage separation (`574758b`):** the trace reads `action=reached`, `task=started`, `dialog=requested` and then stops - the handler runs, the spawned task starts and the save-dialog request is issued - with **no** `dialog=<selected|cancelled|failed|dropped>` line afterwards. A full enumeration of **all eleven top-level windows with their classes**, before and after, is identical: `Shell_TrayWnd`, `Zed::Window` (COS Desktop), five `Chrome_WidgetWin_1` entries, `CabinetWClass`, `Shell_SecondaryWnd`, `CEF-OSC-WIDGET`, `Progman`. **No window appears.**
+- **Conclusion:** the attempt reaches the platform save-dialog call, which in this session **neither produces a window nor returns**, so the flow never reaches the payload decision. **The accessibility path is not at fault** - the explicit listener dispatched, the handler ran and the task started. Earlier rounds did see a save dialog, which fits this being a property of the current non-interactive session, but **that is not proven** here.
+- **Not established:** whether the platform call failed silently or hangs; gpui's dialog implementation was not inspected.
+
 ### 19.225 In-process export trace: the handler runs, the flow stops inside (2026-11-04)
 
 - **Instrumentation:** with `COS_EXPORT_TRACE=1`, `export_support` writes closed ASCII tokens to **stderr** at handler entry, the payload decision, the dialog result, the writer result and the status update. Default is silent; no path, file name, report body or OS error is written; saving, the state machine, redaction and permissions are unchanged.
