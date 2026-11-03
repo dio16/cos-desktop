@@ -9,7 +9,9 @@ param(
     [string]$EvidenceDir = "C:\dev\cos-desktop-verification\rel1-2026-10-30",
     [string]$WorkRoot = "",
     [int]$SimulateEarlyExitSeconds = 0,
-    [switch]$SimulateExeMismatch
+    [switch]$SimulateExeMismatch,
+    [switch]$Connected,
+    [switch]$SimulateFixture
 )
 
 # MP-R0B idle baseline, disconnected variant. The approved conditions are mandatory for a
@@ -86,6 +88,46 @@ $git_dirty = $git_status.Count -gt 0
 # B-02: pin the executable and source identity BEFORE the first launch, not afterwards.
 $exe_pinned_sha = Get-FileHashText $Exe
 $endpoint_available = Test-EndpointAvailable $Endpoint
+if ($Connected -and -not $endpoint_available) {
+    [Console]::Error.WriteLine("-Connected requires a reachable runtime endpoint (got $Endpoint); refusing to record a disconnected run as connected")
+    exit 2
+}
+
+# Positive source check: the Desktop support preview must report Source: runtime.
+# This reads only the fixed "Source:" line; it never records a path or report body.
+function Get-SupportSource([int]$TargetProcessId) {
+    $cond = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::ProcessIdProperty, $TargetProcessId)
+    $window = [System.Windows.Automation.AutomationElement]::RootElement.FindFirst(
+        [System.Windows.Automation.TreeScope]::Children, $cond)
+    if ($null -eq $window) { return $null }
+    $panel = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'diagnostic-readonly')
+    if ($null -eq $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $panel)) {
+        [System.Windows.Forms.SendKeys]::SendWait('^d')
+        Start-Sleep -Milliseconds 500
+    }
+    $buttons = $window.FindAll([System.Windows.Automation.TreeScope]::Descendants,
+        (New-Object System.Windows.Automation.PropertyCondition(
+            [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+            [System.Windows.Automation.ControlType]::Button)))
+    $previewButton = $null
+    for ($i = 0; $i -lt $buttons.Count; $i++) {
+        $candidate = $buttons.Item($i)
+        if ($candidate.Current.Name -like '*サポート情報を表示*') { $previewButton = $candidate }
+    }
+    if ($null -ne $previewButton) {
+        $previewButton.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+        Start-Sleep -Milliseconds 1500
+    }
+    $preview = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
+        (New-Object System.Windows.Automation.PropertyCondition(
+            [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'support-preview-readonly')))
+    if ($null -eq $preview) { return $null }
+    $line = ($preview.Current.Name -split "`n" | Where-Object { $_ -like 'Source:*' } | Select-Object -First 1)
+    [System.Windows.Forms.SendKeys]::SendWait('^d')
+    return $line
+}
 
 $runs_out = @()
 $abort_hold = $false
@@ -133,6 +175,7 @@ for ($i = 1; $i -le $Runs; $i++) {
         # Steady state: visible window plus the approved 30 s settle with no input and no
         # endpoint traffic (the endpoint is unreachable).
         Start-Sleep -Seconds $SettleSeconds
+        $source_start = if ($Connected) { Get-SupportSource $process.Id } else { $null }
 
         $samples = @()
         $window_started = Get-Date
@@ -187,13 +230,19 @@ for ($i = 1; $i -le $Runs; $i++) {
         # B-01: the approved conditions are part of validity, including the observed span,
         # the sample count and the fact that the process survived the whole window.
         $expected_samples = [math]::Floor($WindowSeconds * 1000 / $SampleMs) - 5
+        $source_end = if ($Connected) { Get-SupportSource $process.Id } else { $null }
+        $source_ok = if ($Connected) {
+            ($source_start -eq 'Source: runtime') -and ($source_end -eq 'Source: runtime') -and
+            ($null -eq $disconnected_line) -and $endpoint_available
+        } else {
+            ($null -ne $disconnected_line) -and (-not $endpoint_available)
+        }
         $valid = $hash_stable -and
                  ($exit_code -eq 0) -and
                  $window_completed -and
                  ($samples.Count -ge $expected_samples) -and
                  ($observed_span -ge ($WindowSeconds - 1.0)) -and
-                 ($null -ne $disconnected_line) -and
-                 (-not $endpoint_available)
+                 $source_ok
 
         $runs_out += [ordered]@{
             run = $i
@@ -205,6 +254,9 @@ for ($i = 1; $i -le $Runs; $i++) {
             endpoint = $Endpoint
             endpoint_available = $endpoint_available
             disconnected_line = $disconnected_line
+            source_start = $source_start
+            source_end = $source_end
+            source_ok = $source_ok
             window_ready_ms = $window_ready_ms
             settle_seconds = $SettleSeconds
             window_seconds = $WindowSeconds
@@ -240,7 +292,7 @@ $hold = $abort_hold -or (@($runs_out | Where-Object { $_['hold'] -eq $true }).Co
 $cpu_metrics = [double[]]@($valid_runs | ForEach-Object { [double]$_['cpu_fraction_of_one_core'] })
 $ws_metrics = [double[]]@($valid_runs | ForEach-Object { [double]$_['working_set']['mean'] })
 $summary = [ordered]@{
-    class = 'MP-R0B idle baseline, runtime mode against an unreachable loopback endpoint (disconnected UI)'
+    class = if ($Connected) { 'MP-R0B connected runtime idle baseline' } else { 'MP-R0B idle baseline, runtime mode against an unreachable loopback endpoint (disconnected UI)' }
     exe = $Exe
     exe_sha256_pinned_before_launch = $exe_pinned_sha
     source = [ordered]@{
@@ -251,7 +303,7 @@ $summary = [ordered]@{
     }
     endpoint = $Endpoint
     endpoint_available = $endpoint_available
-    endpoint_label = if ($endpoint_available) { 'available' } else { 'unavailable (connection refused): disconnected baseline' }
+    endpoint_label = if ($endpoint_available) { if ($Connected) { 'available: connected runtime' } else { 'available (not used: disconnected variant)' } } else { 'unavailable (connection refused): disconnected baseline' }
     conditions = "fresh process per run; window visible; ${SettleSeconds} s settle; ${WindowSeconds} s observation; ${SampleMs} ms sampling; no input; no endpoint traffic"
     required = [ordered]@{
         runs = 5
@@ -267,7 +319,7 @@ $summary = [ordered]@{
     hold = $hold
     cpu_fraction_of_one_core = Get-Statistics $cpu_metrics
     working_set_mean_bytes = Get-Statistics $ws_metrics
-    measurement_limit = 'Disconnected baseline only: the endpoint was unreachable, so nothing here is a connected-endpoint baseline. CPU is TotalProcessorTime delta divided by the observation window (fraction of one core), not a frame time or an SLO. Working Set is process-wide and does not cover GPU/render timing. Every sample series is stored in this record so the aggregates can be recomputed.'
+    measurement_limit = if ($Connected) { 'Connected Runtime idle baseline: Source: runtime was required at both ends; CPU/Working Set only, not frame time/SLO/GPU/Present.' } else { 'Disconnected baseline only: the endpoint was unreachable, so nothing here is a connected-endpoint baseline. CPU is TotalProcessorTime delta divided by the observation window (fraction of one core), not a frame time or an SLO. Working Set is process-wide and does not cover GPU/render timing. Every sample series is stored in this record so the aggregates can be recomputed.' }
     sampled_at_utc = $stamp
 }
 
@@ -293,5 +345,5 @@ foreach ($run in $runs_out) {
 }
 if ($hold) { exit 3 }
 if ($summary.invalid_runs -ne 0 -or $summary.valid_runs -ne 5) { exit 1 }
-Write-Host "PASS_LIMITED (disconnected baseline)"
+Write-Host $(if ($Connected) { "PASS_LIMITED (connected runtime baseline)" } else { "PASS_LIMITED (disconnected baseline)" })
 exit 0

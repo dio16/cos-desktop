@@ -1,0 +1,4 @@
+$ pwsh -NoProfile -File scripts/measure-r0b-idle.ps1 -Connected -Endpoint http://127.0.0.1:9 -Exe target/release/cos-desktop.exe -EvidenceDir target/r0b-connected-evidence
+-Connected requires a reachable runtime endpoint (got http://127.0.0.1:9); refusing to record a disconnected run as connected
+exit_code=2
+result=CONNECTED_REFUSED_NO_ENDPOINT

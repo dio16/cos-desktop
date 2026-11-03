@@ -4163,3 +4163,14 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Limits recorded:** the trace cannot distinguish "UI update failed" from "attempt still running" by itself; such a state is `trace absent` after a trial start. No path or report content is added.
 - **Verification:** `cargo test -p desktop-gpui` 117 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` succeeds. Native re-measurement not required for these two fixes and was not rerun.
 
+### 19.212 MP-R0B Connected Runtime baseline path (2026-11-02)
+
+- **A (inventory):** `scripts/measure-r0b-idle.ps1` already pins exe SHA, enforces 5 runs / 30 s settle / 60 s window / 500 ms sampling, samples CPU and Working Set, validates sample count/span/exit/hash and writes raw series. It had only the disconnected variant and a TCP reachability check. Missing: positive `Source=Runtime` confirmation.
+- **B/C (path, no duplicate sampler):** the same script now has `-Connected`. It refuses to start unless the endpoint is TCP-reachable, and `Get-SupportSource()` reads the fixed `Source:` line from the support preview via UIA (no path or report body recorded). A run is valid only if both start and end source read `Source: runtime`, there is no `Runtime observation unavailable` stderr line, and the endpoint was available. Fixture/Disconnected sources therefore fail the check rather than being measured.
+- **D (conditions):** unchanged exactly 5 fresh processes / 30 s settle / 60 s observation / 500 ms sampling; wrong values still exit 2.
+- **E:** raw samples, sample counts, observed span, CPU fraction and Working Set remain in the existing JSON/text summary; a run with a missing/failed source check is invalid and excluded from aggregates.
+- **F (tests):** connected refusal with an unavailable endpoint executed: **exit 2**, message recorded. Existing negative paths (early exit, exe mismatch) remain available. `-SimulateFixture` is declared but **not yet wired to launch fixture arguments**, so fixture-mix validation is implementation-only / **NOT_RUN**; sample-shortage and cleanup-failure execution were not rerun this slice.
+- **G (Native):** no Runtime endpoint was available in this environment, so **Connected CPU/Working Set baseline is `NOT_MEASURED`**; no numbers or Disconnected-vs-Connected comparison are produced. Present/GPU remain NOT_MEASURED.
+- **Evidence:** `docs/development/evidence-published/rel3-r0b-connected-e5af45e/refusal.txt` (SHA-256 `9aff3ec8…`, git blob `bd8b1f94…`).
+- **State:** measurement path implemented; **MP-R0B incomplete; product acceptance NOT_RUN**.
+
