@@ -5,7 +5,7 @@
   "A": "PASS: status had .id() but no .accessibility_id(); Role::Label maps value->Name and the element had no aria_value, so UIA exposed no named status element. Old uia-before.txt has no support-export-status.",
   "B": "PASS: accessibility_id(\"support-export-status\") + aria_value(status); Native element = ControlType.Text with Name=closed message. ValuePattern is not exposed for Role::Label.",
   "C": "PASS (unit): success/AlreadyExists/CleanupFailed/other messages unchanged and distinct; source test checks wiring.",
-  "D": "PASS success: status Name=保存しました; 573 bytes; preview/saved sha256 identical (67f69633...). PARTIAL existing: content unchanged (ORIGINAL/ORIGINAL2); AlreadyExists message not observed (generic 保存できませんでした), so native AlreadyExists text NOT_PROVABLE.",
+  "D": "success wording read from UIA (the saved message); saved file byte-identical to the preview and existing files unchanged. The AlreadyExists wording was NOT observed: both rejection attempts record the earlier success wording instead, so the native AlreadyExists text stays NOT_PROVABLE; only the unit mapping of the messages is PASS.",
   "E": "PASS: cancel created no file and retained previous success status 保存しました.",
   "F": "Tab PASS: independent Tab loop reached preview and export, and Enter on focused export opened dialog. Shift+Tab NOT_RUN. Stale-publication rejection NOT_RUN.",
   "G": "Evidence files below; SHA-256 and Git blob recorded. Screen-reader quality NOT_MEASURED.",
@@ -55,5 +55,6 @@
   "verified_against": {
     "commit": "fa6d1a55d12cf7bca93e67e959d5a81a06030f39",
     "ref": "origin/dev"
-  }
+  },
+  "correction_note": "An earlier statement claimed the generic failure wording was observed; the logs show the previous success wording instead, and this record is corrected accordingly."
 }

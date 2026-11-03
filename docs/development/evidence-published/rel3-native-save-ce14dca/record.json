@@ -25,6 +25,6 @@
     "F": "PASS for existing-content preservation; overwrite-message NOT_PROVABLE; stale-publication NOT_RUN",
     "G": "recorded"
   },
-  "note": "Evidence is committed with -text so the published bytes equal the digests; line endings are not converted for anything under evidence-published.",
-  "digest_basis": "SHA-256 of the committed bytes as stored (the tree is marked -text, so the blob equals the working-tree file and no end-of-line conversion applies)"
+  "note": "Historically this run was protected by a .gitattributes -text rule. That file was later removed because the gate rejects it, so the tree now relies on the repository-local core.autocrlf=false and on digests verified against origin/dev; a clone with different settings could store other bytes.",
+  "digest_basis": "SHA-256 of the blob as served by origin/dev; the historical .gitattributes basis is superseded. git_object_id, where present, is git's own object id for the same blob."
 }
