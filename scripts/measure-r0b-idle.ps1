@@ -94,6 +94,15 @@ if ($Connected -and -not $endpoint_available) {
     exit 2
 }
 
+if (-not ('R0BWin' -as [type])) {
+    Add-Type -Namespace '' -Name 'R0BWin' -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern bool SetForegroundWindow(System.IntPtr hWnd);
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern System.IntPtr GetForegroundWindow();
+'@
+}
+
 # Positive source check: the Desktop support preview must report Source: runtime.
 # This reads only the fixed "Source:" line; it never records a path or report body.
 function Get-SupportSource([int]$TargetProcessId) {

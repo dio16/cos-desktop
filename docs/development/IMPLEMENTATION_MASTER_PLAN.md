@@ -4184,3 +4184,6 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests executed:** PowerShell syntax parse OK; `-Connected` with unreachable endpoint exits **2** (refusal). Fixture probe: app exit 2 before window, **NOT_OBSERVED**; sample-shortage/cleanup-failure not rerun.
 - **Native numbers remain `NOT_MEASURED`**; no Connected vs Disconnected comparison. MP-R0B incomplete; product acceptance NOT_RUN.
 
+- **Review follow-up - the foreground helper was never defined:** the script called `[R0BWin]::SetForegroundWindow` and `GetForegroundWindow` without declaring the type, so that path would have thrown instead of proving the target window was foreground. The type is now declared with `Add-Type` (user32 imports) before first use and the file parses with zero errors under `Parser::ParseFile`; the foreground path itself is still **not exercised natively**, so it remains unproven.
+- **Review follow-up - what is still missing for the stale case:** the connected run currently requires `Source: runtime` and `Connection: observing` at both ends. A run that starts connected and loses the session between the two samples while the end sample still reads observing is not yet excluded by an independent marker, so that case stays **NOT_PROVABLE** until a further signal is added.
+
