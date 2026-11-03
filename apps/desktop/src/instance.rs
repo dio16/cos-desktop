@@ -282,7 +282,7 @@ mod tests {
         std::fs::write(&directory.0, b"keep").expect("non-directory namespace");
         assert_eq!(
             InstanceGuard::in_directory(&directory.0).err(),
-            Some(AcquireError::Unavailable(UnavailableReason::OpenDirectory))
+            Some(AcquireError::Unavailable(UnavailableReason::CreateDirectory))
         );
         assert_eq!(
             std::fs::read(&directory.0).expect("original bytes"),
