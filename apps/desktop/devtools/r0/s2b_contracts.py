@@ -263,9 +263,13 @@ def validate_capture(document: object, *, execution: str | None = None,
             spans.add(span)
         if kind == 5 and record["lost"] == 0:
             fail("LOSS")
+    LOCAL_KIND_FIELDS = (
+        "local_kind_received", "local_kind_retained", "local_kind_scope_clock_rejected",
+        "local_kind_lifetime_rejected", "local_kind_retention_omitted",
+    )
     summary = object_fields(value["summary"], COUNT_FIELDS | {
         "cancelled", "source_coverage", "unoffered_loss", "unfinalized_tail", "kind_counts",
-    })
+    } | set(LOCAL_KIND_FIELDS))
     for field in COUNT_FIELDS:
         integer(summary[field])
     if (type(summary["cancelled"]) is not bool or summary["cancelled"] != (end - start < MAX_DURATION_NS)
@@ -277,6 +281,28 @@ def validate_capture(document: object, *, execution: str | None = None,
         fail("COUNTS")
     for count in kinds:
         integer(count)
+    present = [name for name in LOCAL_KIND_FIELDS if name in summary]
+    if present and len(present) != len(LOCAL_KIND_FIELDS):
+        fail("COUNTS")
+    if present:
+        arrays = {}
+        for name in LOCAL_KIND_FIELDS:
+            values = summary[name]
+            if not isinstance(values, list) or len(values) != 2:
+                fail("COUNTS")
+            for item in values:
+                integer(item)
+            arrays[name] = values
+        if (sum(arrays["local_kind_received"]) != summary["local_received"]
+                or arrays["local_kind_retained"] != [kinds[8], kinds[9]]):
+            fail("COUNTS")
+        for index in range(2):
+            accounted = (arrays["local_kind_retained"][index]
+                         + arrays["local_kind_scope_clock_rejected"][index]
+                         + arrays["local_kind_lifetime_rejected"][index]
+                         + arrays["local_kind_retention_omitted"][index])
+            if accounted != arrays["local_kind_received"][index]:
+                fail("COUNTS")
     received = summary["journal_seen"] + summary["local_received"]
     accounted = sum(summary[name] for name in (
         "eligible", "excluded", "pre_scope", "post_scope", "invalid_clock",

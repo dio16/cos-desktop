@@ -233,6 +233,10 @@ struct Counts {
     journal_lost: u64,
     journal_seen: u64,
     local_received: u64,
+    local_received_kinds: [u64; 2],
+    local_scope_clock_rejected: [u64; 2],
+    local_lifetime_rejected: [u64; 2],
+    local_retention_omitted: [u64; 2],
     eligible: u64,
     retained: u64,
     excluded: u64,
@@ -487,6 +491,9 @@ impl Observer {
         if let Some(window) = record.window {
             let at = record.end.ok_or(io::ErrorKind::InvalidData)?;
             let Ok(lifetime) = self.window(window, at, record.kind == 4) else {
+                if record.kind >= 8 {
+                    self.counts.local_lifetime_rejected[(record.kind - 8) as usize] += 1;
+                }
                 return Ok(());
             };
             record.lifetime = Some(lifetime);
@@ -502,6 +509,8 @@ impl Observer {
             record.write(out, self.counts.retained + 1)?;
             self.counts.retained += 1;
             self.counts.kinds[record.kind] += 1;
+        } else if record.kind >= 8 {
+            self.counts.local_retention_omitted[(record.kind - 8) as usize] += 1;
         }
         Ok(())
     }
@@ -531,8 +540,14 @@ impl Observer {
                 break;
             };
             self.counts.local_received += 1;
-            if let Ok(record) = self.local(event) {
-                self.retain(record, out)?;
+            let kind = match event.kind {
+                EventKind::SurfaceChanged(_) => 0usize,
+                EventKind::Notify => 1usize,
+            };
+            self.counts.local_received_kinds[kind] += 1;
+            match self.local(event) {
+                Ok(record) => self.retain(record, out)?,
+                Err(_) => self.counts.local_scope_clock_rejected[kind] += 1,
             }
         }
         Ok(())
@@ -659,7 +674,7 @@ fn capture(
         .ok_or(io::ErrorKind::InvalidData)?;
     write!(
         out,
-        "\n],\"scope_end_ns\":{},\"summary\":{{\"journal_lost\":{},\"journal_seen\":{},\"local_received\":{},\"local_enqueued\":{enqueued},\"local_dropped\":{dropped},\"local_undrained\":{undrained},\"eligible\":{},\"retained\":{},\"retention_dropped\":{},\"excluded\":{},\"pre_scope\":{},\"post_scope\":{},\"invalid_clock\":{},\"barrier_spans\":{},\"correlation_invalid\":{},\"input_unassociated\":{},\"unmatched_submission\":{},\"undrained_journal\":{},\"cancelled\":{},\"source_coverage\":\"OFFERED_FINALIZED_JOURNAL_ONLY\",\"unoffered_loss\":\"UNKNOWN\",\"unfinalized_tail\":\"UNKNOWN\",\"kind_counts\":[{},{},{},{},{},{},{},{},{},{}]}}}}\n",
+        "\n],\"scope_end_ns\":{},\"summary\":{{\"journal_lost\":{},\"journal_seen\":{},\"local_received\":{},\"local_enqueued\":{enqueued},\"local_dropped\":{dropped},\"local_undrained\":{undrained},\"eligible\":{},\"retained\":{},\"retention_dropped\":{},\"excluded\":{},\"pre_scope\":{},\"post_scope\":{},\"invalid_clock\":{},\"barrier_spans\":{},\"correlation_invalid\":{},\"input_unassociated\":{},\"unmatched_submission\":{},\"undrained_journal\":{},\"cancelled\":{},\"source_coverage\":\"OFFERED_FINALIZED_JOURNAL_ONLY\",\"unoffered_loss\":\"UNKNOWN\",\"unfinalized_tail\":\"UNKNOWN\",\"kind_counts\":[{},{},{},{},{},{},{},{},{},{}],\"local_kind_received\":[{},{}],\"local_kind_retained\":[{},{}],\"local_kind_scope_clock_rejected\":[{},{}],\"local_kind_lifetime_rejected\":[{},{}],\"local_kind_retention_omitted\":[{},{}]}}}}\n",
         observer.end,
         c.journal_lost,
         c.journal_seen,
@@ -686,7 +701,17 @@ fn capture(
         c.kinds[6],
         c.kinds[7],
         c.kinds[8],
-        c.kinds[9]
+        c.kinds[9],
+        c.local_received_kinds[0],
+        c.local_received_kinds[1],
+        c.kinds[8],
+        c.kinds[9],
+        c.local_scope_clock_rejected[0],
+        c.local_scope_clock_rejected[1],
+        c.local_lifetime_rejected[0],
+        c.local_lifetime_rejected[1],
+        c.local_retention_omitted[0],
+        c.local_retention_omitted[1]
     )?;
     out.flush()?;
     let mut sink = out.into_inner().map_err(|error| error.into_error())?;
@@ -745,6 +770,47 @@ mod tests {
         assert_eq!(observer.counts.kinds[8], 1);
         assert_eq!(observer.counts.kinds[9], 1);
         assert_eq!(observer.counts.retained, 2);
+        assert_eq!(observer.counts.local_scope_clock_rejected, [0, 0]);
+        assert_eq!(observer.counts.local_lifetime_rejected, [0, 0]);
+        assert_eq!(observer.counts.local_retention_omitted, [0, 0]);
+        // The 257th local record is retention-omitted, not silently dropped.
+        let mut observer = Observer {
+            origin: Instant::now(),
+            start: 0,
+            end: DURATION_NS,
+            barrier: 0,
+            windows: Vec::new(),
+            counts: Counts::default(),
+        };
+        let mut out = Vec::new();
+        for _ in 0..(RETAINED + 1) {
+            let record = observer.local(Event {
+                at: Instant::now(),
+                window: 11,
+                kind: EventKind::Notify,
+            })?;
+            observer.retain(record, &mut out)?;
+        }
+        assert_eq!(observer.counts.local_retention_omitted, [0, 1]);
+        assert_eq!(observer.counts.kinds[9], RETAINED as u64);
+        // A local record whose window/lifetime correlation fails is rejected and counted.
+        let mut observer = Observer {
+            origin: Instant::now(),
+            start: 0,
+            end: DURATION_NS,
+            barrier: 0,
+            windows: vec![(11, Some(0))],
+            counts: Counts::default(),
+        };
+        let record = observer.local(Event {
+            at: Instant::now(),
+            window: 11,
+            kind: EventKind::SurfaceChanged(app_core::navigation::Surface::Compare),
+        })?;
+        let mut out = Vec::new();
+        observer.retain(record, &mut out)?;
+        assert_eq!(observer.counts.local_lifetime_rejected, [1, 0]);
+        assert!(out.is_empty());
         Ok(())
     }
 }
