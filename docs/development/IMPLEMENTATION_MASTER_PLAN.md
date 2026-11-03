@@ -3987,3 +3987,10 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Verification:** Rust 187 passed / 0 failed; fmt OK; clippy 0 issues; `pytest apps/desktop/devtools/r0/tests -q` 359 passed / 12 skipped / 1 failed (known live-manifest driver_hash; manifest unchanged).
 - **State:** first-frame remains NOT_MEASURED; MP-R0A IN_PROGRESS; product acceptance NOT_RUN. Next area should be chosen accordingly; no forced OBSERVED.
 
+### 19.196 MP-REL3 DD-22 export policy contract (documentation only, 2026-11-02)
+
+- **Inventory:** `support_report` (24 lines / 12,288 bytes, always redacted), diagnostics ring (4,096, `event_gap`), crash reports (3 × 5 MiB, atomic, fail-closed read) are implemented. The Desktop support preview is read-only/background and writes no file. **No exporter, save dialog or consent surface exists.**
+- **Contract recorded in [DC-MP-REL3](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rel3):** explicit user save only; byte-for-byte the redacted support report; UTF-8 `.txt`, no BOM; user-chosen destination via OS dialog; exact preview + no-send explanation + Save/Cancel + closed failure; cancel/consent-absent writes nothing; exclusive temp file + fsync + atomic rename, no silent overwrite, temp removed on failure; second-pass secret scan refuses on match; rendering/redaction failure or size-bound violation publishes nothing. Crash-report inclusion is OPEN and defaults to excluded.
+- **Open owner decisions:** crash-report attachment, default filename/folder, diagnostics-panel export entry point, retention duration, log-subsystem split. DD-22's approved ring/crash bounds are unchanged; this slice does not approve an exporter or mark MP-REL3 complete.
+- **No product code/UI/dependency change; no Gate.** Canon DD-22 row now states the export decision remains owner-owned.
+
