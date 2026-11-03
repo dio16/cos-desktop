@@ -3757,3 +3757,22 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Gates:** fmt OK; clippy workspace `-D warnings` 0 issues; workspace tests 751 passed / 0 failed / 4 ignored (feature). `python -B -m pytest apps/desktop/devtools/r0/tests -q`: **345 passed / 12 skipped / 1 failed** — the only failure remains the known stale live-manifest `driver_hash` identity test; canonical manifests were not modified.
 - **State:** MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.176 MP-R0A rebuild, approval, identity reconciliation, counter capture (2026-11-02)
+
+- **Build from `760a434144e93bbe82612d9f133f43a77542a82d`** (isolated target dirs, dev profile, CXX shim):
+  - A0 `sha256:940451e3d5d6c2cea6878e2172c1b0d9cba30e57aaacb863dc4c5e47549e5ab0` (35,189,248 B; PDB `208b8ffc…`)
+  - A1 `sha256:072a4208834a8d2f6447d4e060fc5e8fa22aafbfec39e40d030789e4d9c8c451` (35,525,120 B; PDB `bed734d0…`)
+  - helper `sha256:18c16ef15f198c61670af47776cc6a7abd2b695844cbf0855fbba65856a4b754` (616,960 B; PDB `3f3ab7a8…`); helper source `5b585f8e…`; protocol 2.
+- **Approval ledger 15 → 17:** two entries for `760a434…` (A0/A1) with the new helper digest/source; existing 15 unchanged; `driver.approved_digests()` resolves 17 with exactly two unique entries for the new commit.
+- **Identity reconciliation:** `source_digest = sha256:304654e6fad26e45e90950ff65a41278f9ed41406e1c68c85122a183c9c02520`; `s2b-build.json` commit/baseline/observer/A0/A1 updated; both s2b manifests updated (repository sha, driver_hash, executable, fixture `db1cfc80…`, definition_hash recomputed via `canonical_definition`); `r0c-s1-keyboard.json` updated (repository, A1 executable, new helper, fixture). `s2b_capture.validate_build_record(live=True)`, `s2b_contracts.validate_manifest`, `contracts.validate_manifest` all PASS.
+- **R0 Python suite:** `pytest apps/desktop/devtools/r0/tests -q` → **346 passed / 12 skipped / 0 failed**.
+- **Counter capture** (same-run probe, new output/profile `target/r0a-native-a1-760a`, existing `target/r0a-local-tab-enter-plan.json`, `--timeout-ms 60000`):
+  - correspondence: probe `window.pid 32472` == ledger `pid 32472`; ledger exit 0 / timed_out false / elapsed 36,981 ms.
+  - `local_received 7`, `local_kind_received [3, 4]`, `local_kind_retained [2, 3]`, `local_kind_scope_clock_rejected [0, 0]`, `local_kind_lifetime_rejected [0, 0]`, `local_kind_retention_omitted [1, 1]`.
+  - **Conservation: 7 = 5 retained + 0 rejected + 2 retention-omitted** (kind 8: 3 = 2+0+0+1; kind 9: 4 = 3+0+0+1).
+  - `kind_counts [100,49,50,48,0,0,4,0,2,3]`; retained 256; eligible 320; retention_dropped 64; excluded 130; disposition **OBSERVED / RETAINED_SOURCE_OBSERVATION**.
+  - Artifacts: `s2b-capture.json` `b581a152…`, `s2b-observation.json` `3216b2db…`, `build-record.json` `a9676a95…`, `source-identity.json` `ea2ae7df…`, `ledger.json` `0d0a2d0a…`, probe `237e3ec5…`.
+- **Evidence:** `docs/development/evidence-published/r0a-capture-latest/` adds `a1-760a-*` (ledger/capture/observation/build-record/source-identity/probe/plan) with SHA-256 in `record.json` under `wm_close_runs.local-accounting-760a` (correspondence MATCHED, conservation recorded).
+- **Checks:** fmt OK; clippy workspace `-D warnings` 0 issues; `cargo test -p cos-desktop --features r0-s2b-instrumentation` 184 passed / 0 failed. Gate not run (Lead decision).
+- **State:** the earlier **UNDETERMINED** local breakdown is resolved by measurement; MP-R0A remains IN_PROGRESS and product acceptance NOT_RUN.
+
