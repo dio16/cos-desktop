@@ -318,8 +318,10 @@ fn preview_trace_emit(token: &'static str) {
 }
 
 #[cfg(test)]
-const EXPORT_TRACE_TOKENS: [&str; 14] = [
+const EXPORT_TRACE_TOKENS: [&str; 16] = [
     "action=reached",
+    "task=started",
+    "dialog=requested",
     "data=ready",
     "data=rejected",
     "dialog=selected",
@@ -1476,9 +1478,11 @@ impl Shell {
         // so a cancelled dialog leaves the last result readable instead of blank.
         let generation = self.support_state.generation;
         self.export_task = cx.spawn(async move |this, cx| {
+            export_trace_emit("task=started");
             let directory = std::env::var_os("USERPROFILE")
                 .map(std::path::PathBuf::from)
                 .unwrap_or_else(|| std::path::PathBuf::from("."));
+            export_trace_emit("dialog=requested");
             let receiver =
                 cx.update(|cx| cx.prompt_for_new_path(&directory, Some("support-report.txt")));
             let (dialog, path) = match receiver.await {
@@ -6285,7 +6289,7 @@ mod contrast_scope_tests {
         for value in [None, Some("0"), Some("true"), Some(""), Some(" 1")] {
             assert!(!export_trace_enabled(value), "{value:?} must stay disabled");
         }
-        assert_eq!(EXPORT_TRACE_TOKENS.len(), 14);
+        assert_eq!(EXPORT_TRACE_TOKENS.len(), 16);
         for token in EXPORT_TRACE_TOKENS {
             assert!(!token.contains('/'));
             assert!(!token.chars().any(|character| character == char::from(92)));

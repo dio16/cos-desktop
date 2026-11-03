@@ -4357,3 +4357,13 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Next emission point:** a token immediately before the dialog call and another when it returns, and record every enumerated top-level window's class rather than only the app's.
 - **Evidence:** `docs/development/evidence-published/rel3-export-inprocess-20261104/` with the trace read, the window enumeration and a `record.json`.
 - **State:** MP-REL3, MP-AX1/AX2, MP-R0A and MP-R0B remain incomplete; the save dialog, Tab traversal, connected baseline and screen-reader quality are unmeasured; product acceptance NOT_RUN.
+
+#### 19.225 addendum — spawn/dialog-request trace tokens (2026-11-04)
+
+- **Added tokens:** `export-trace task=started` at the first statement inside the `export_task` spawn closure, and `export-trace dialog=requested` immediately before `prompt_for_new_path`.
+- **Separation:** missing `task=started` means the spawned task never ran; `task=started` but no `dialog=requested` means execution stopped between them; `dialog=requested` but no post-call `dialog=<selected|cancelled|failed|dropped>` means the dialog call did not return.
+- **Closed set:** `EXPORT_TRACE_TOKENS` is now 16 fixed ASCII tokens; env gate remains `COS_EXPORT_TRACE=1` only; no path/body/OS error/user input is emitted.
+- **Behavior:** instrumentation only; no save/state/redaction/authority change.
+- **Tests:** token-set size/gate/path checks updated; `cargo test -p desktop-gpui` 121 passed / 0 failed; fmt OK; clippy 0 issues.
+- **Native:** Lead re-measurement pending; no causal conclusion claimed. MP-REL3 / MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
+
