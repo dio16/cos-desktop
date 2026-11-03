@@ -1,23 +1,32 @@
 # Reproducing the published evidence
 
-This file gives the commands and conditions needed to re-create each recent evidence set.
-Every set stores a `record.json` with the SHA-256 of each file; verify with:
+This document covers the **21 recent sets** that were produced by native measurement:
+**8 AX1 sets** and **13 REL3 sets**. Older sets keep their own notes and are not
+described here.
 
-```
-python - <<'PY'
+## Verifying the stored bytes
+
+Every set below stores a `record.json`. Two shapes exist: `files` values may be an object with a
+`sha256` field, or a bare digest string, so the check must accept both, and sets without a
+`record.json` are skipped rather than failed.
+
+```python
 import hashlib, json, pathlib
-base = pathlib.Path('docs/development/evidence-published/<set>')
-rec = json.loads((base / 'record.json').read_text(encoding='utf-8'))
-for name, info in rec['files'].items():
-    actual = 'sha256:' + hashlib.sha256((base / name).read_bytes()).hexdigest()
-    print(('OK  ' if actual == info['sha256'] else 'BAD ') + name)
-PY
+root = pathlib.Path('docs/development/evidence-published')
+for setdir in sorted(p for p in root.iterdir() if p.is_dir()):
+    record = setdir / 'record.json'
+    if not record.is_file():
+        continue
+    files = json.loads(record.read_text(encoding='utf-8')).get('files') or {}
+    for name, info in files.items():
+        digest = info['sha256'] if isinstance(info, dict) else info
+        actual = 'sha256:' + hashlib.sha256((setdir / name).read_bytes()).hexdigest()
+        print(('OK   ' if actual == digest else 'MISMATCH ') + f'{setdir.name}/{name}')
 ```
 
-## Build used by the native sets
+Run from the repository root. Current state: **every stored digest matches** (`missing 0`, `mismatch 0`).
 
-The window-based sets use a release build in an isolated target directory. Rebuilds into some other
-fresh directories failed with `os error 5` while rustc wrote dependency files, so use this one:
+## Building the binary the native sets used
 
 ```bat
 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
@@ -26,138 +35,182 @@ set CARGO_TARGET_DIR=C:\dev\cos-build-fresh
 cargo build --locked --release -p cos-desktop --bin cos-desktop
 ```
 
-## Launch conditions shared by the window sets
+Rebuilds into several other fresh target directories failed with `os error 5` while rustc wrote
+dependency files; the directory above is the one that produced the measured binaries. The debug profile
+built from the same source aborted with a stack overflow at startup, so the native sets use release.
 
-- `LOCALAPPDATA` is a **fresh temporary directory** containing `cos-desktop/`, so the instance guard and
-  preferences start clean.
-- Fixture mode: `--fixture --fixture-file crates/cos-client/fixtures/task-184.json`.
-- Instrumentation switches: `COS_PREVIEW_TRACE=1` and/or `COS_EXPORT_TRACE=1`; unset means silent.
-- Accessibility driving goes through UI Automation (`InvokePattern`, `ValuePattern`); keyboard input is
-  **not** available in this session because the window cannot be made foreground, so any set that needs
-  keystrokes records `NOT_RUN` rather than pretending otherwise.
+## Launching and reading a set
+
+```powershell
+$exe = 'C:\dev\cos-build-fresh\release\cos-desktop.exe'
+$local = Join-Path $env:TEMP ('cos-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path (Join-Path $local 'cos-desktop') -Force | Out-Null
+$env:LOCALAPPDATA = $local          # fresh profile: instance guard and preferences start clean
+$env:COS_PREVIEW_TRACE = '1'       # preview instrumentation; unset means silent
+$env:COS_EXPORT_TRACE = '1'        # export instrumentation; unset means silent
+$p = Start-Process -FilePath $exe `
+    -ArgumentList @('--fixture','--fixture-file','C:\dev\cos-desktop\crates\cos-client\fixtures\task-184.json') `
+    -PassThru -NoNewWindow -RedirectStandardError (Join-Path $local 'err.txt')
+Start-Sleep -Seconds 8
+Add-Type -AssemblyName UIAutomationClient
+$root = [System.Windows.Automation.AutomationElement]::RootElement
+$cond = New-Object System.Windows.Automation.PropertyCondition(
+    [System.Windows.Automation.AutomationElement]::ProcessIdProperty, $p.Id)
+$window = $root.FindFirst([System.Windows.Automation.TreeScope]::Children, $cond)
+# read an element by automation id
+$find = { param($id) $c = New-Object System.Windows.Automation.PropertyCondition(
+    [System.Windows.Automation.AutomationElement]::AutomationIdProperty, $id)
+    $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $c) }
+# drive a control
+(& $find 'diagnostics-toggle').GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+# finish: read stderr, then close
+Get-Content (Join-Path $local 'err.txt')
+$p.Kill(); Get-Process -Name cos-desktop -ErrorAction SilentlyContinue | Stop-Process -Force
+```
+
+Interaction rules that matter for reading these sets:
+
+- **Keyboard is unavailable.** The window cannot be granted focus in this session (`SetForegroundWindow`
+  returns false, Orca reports `window_not_focused`), so `Ctrl+D`, Tab and Shift+Tab never land. Anything
+  requiring them is `NOT_RUN`.
+- **Drive controls with `InvokePattern`**, not clicks. Elements whose handler only exists behind a synthetic
+  click need an explicit accessibility listener; that is what the AX1 slice added.
+- **`ValuePattern.SetValue`** on a styled div is not wired to application state (measured), so it is not a
+  usable driving path.
 
 ## Per-set procedures
 
+Each entry states what to do, what to expect, and when the set cannot be recreated here.
+
 ### `ax1-a11y-action-fix-20261104`
 
-Open the panel, invoke `support-preview-button` once, and read stderr: with `COS_PREVIEW_TRACE=1` the
-sequence `action=reached`, `build=started`, `build=finished`, `install=accepted` appears, and
-`support-preview-readonly` becomes present.
+- **Do:** Open the panel, invoke `support-preview-button` once, read stderr and the tree.
+- **Expect:** `action=reached`, `build=started`, `build=finished`, `install=accepted`; `support-preview-readonly` present.
+- **Availability here:** Recreatable.
 
-Verification: run the digest snippet above against this directory.
+### `ax1-contract-matrix-latest`
+
+- **Do:** No specific procedure recorded.
+- **Expect:** —
+- **Availability here:** Unknown.
+
+### `ax1-diagnostics-toggle-16d6c9a`
+
+- **Do:** Read `diagnostics-toggle`, invoke it, re-read the tree.
+- **Expect:** Panel ids appear while open, disappear when closed; the toggle's Name switches between 開く and 閉じる.
+- **Availability here:** Recreatable.
 
 ### `ax1-export-action-20261104`
 
-Open the panel, invoke the preview button, wait for `support-export-button`, then invoke it. Before the
-explicit listener this produced no dialog and no status; the set records that negative result and the
-state it did and did not capture.
+- **Do:** Open the panel, invoke the preview button, wait for `support-export-button`, invoke it.
+- **Expect:** Before the explicit listener: no dialog and no status element.
+- **Availability here:** Partly recreatable; the dialog stage cannot complete here.
 
-Verification: run the digest snippet above against this directory.
+### `ax1-ime-deep-latest`
+
+- **Do:** No specific procedure recorded.
+- **Expect:** —
+- **Availability here:** Unknown.
+
+### `ax1-ime-latest`
+
+- **Do:** No specific procedure recorded.
+- **Expect:** —
+- **Availability here:** Unknown.
 
 ### `ax1-remaining-listeners-20261104`
 
-Attempt to invoke each migrated control. Only `task-search` exists on the initial surface and it exposes
-`ValuePattern`, not `InvokePattern`, so the set records `NOT EXERCISED` rather than a pass.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** Invoke each of the eight migrated controls.
+- **Expect:** Only `task-search` is on the initial surface and it exposes `ValuePattern`; the rest are `NOT EXERCISED`.
+- **Availability here:** Not recreatable beyond `task-search` - the other surfaces need navigation.
 
 ### `ax1-toggle-lead-reproduction-20261104`
 
-Same procedure as above, but capturing the descendant count around each invoke (49 closed, 56 open at
-that revision) and recording the button's `InvokePattern` presence.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** As above, also counting descendants around each invoke.
+- **Expect:** 49 descendants closed against 56 open at that revision, with `InvokePattern` offered.
+- **Availability here:** Recreatable.
 
 ### `rel3-diagnostics-latest`
 
-No special procedure recorded; the set is a snapshot of the conditions stated above.
+- **Do:** No specific procedure recorded.
+- **Expect:** —
+- **Availability here:** Unknown.
 
 ### `rel3-dispatch-experiment-20261104`
 
-Invoke the preview button five times, once after closing and reopening the panel, and read the rectangles
-of both buttons while the panel is open.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** Invoke the preview five times, once after reopening the panel; read rectangles.
+- **Expect:** Both buttons measure 288x38 on screen; five invokes all return cleanly with no trace lines (pre-fix).
+- **Availability here:** Recreatable only against that build.
 
 ### `rel3-existing-a9e4d15`
 
-Save onto an existing file and record the OS overwrite confirmation. The status samples in that set are
-cp932-encoded; decode as cp932, not UTF-8.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** Save onto an existing file and record the OS overwrite confirmation.
+- **Expect:** Existing file unchanged; status samples recorded (the log is cp932 and must be decoded as such).
+- **Availability here:** Not recreatable now.
 
 ### `rel3-export-inprocess-20261104`
 
-With `COS_EXPORT_TRACE=1`, open the panel, generate a preview, invoke the export button and read stderr; the set records exactly which stage tokens appear and which never do.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** With `COS_EXPORT_TRACE=1`, open the panel, generate a preview, invoke export.
+- **Expect:** Stage tokens stop at `dialog=opened`; the wait window was six seconds.
+- **Availability here:** Recreatable up to the dialog stage.
 
 ### `rel3-inprocess-trace-20261104`
 
-With `COS_PREVIEW_TRACE=1`, invoke the preview button and compare stderr against the two controls: the
-variable reaches the child (`cmd.exe /c echo %COS_PREVIEW_TRACE%`) and the same exe writes to the captured
-stderr for an unknown flag or a missing fixture.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** With `COS_PREVIEW_TRACE=1`, invoke the preview, plus the two controls.
+- **Expect:** Variable reaches the child; the same exe writes to captured stderr for an unknown flag or missing fixture.
+- **Availability here:** Recreatable.
 
 ### `rel3-native-fresh-release-20261104`
 
-No special procedure recorded; the set is a snapshot of the conditions stated above.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** No specific procedure recorded.
+- **Expect:** —
+- **Availability here:** Unknown.
 
 ### `rel3-native-save-ce14dca`
 
-Ctrl+D opens the panel; the preview button produces a report; Save opens the native dialog and writes
-573 bytes. Note: that set needed keyboard input, which this session cannot supply, so it cannot be
-recreated here even though its bytes are intact.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** Ctrl+D, generate the preview, save to a chosen path.
+- **Expect:** 573 bytes, valid UTF-8 without BOM, byte-identical to the preview.
+- **Availability here:** Not recreatable now: it needed Ctrl+D and a completed save dialog.
 
 ### `rel3-native-status-e5f3c27`
 
-Same as above, reading the status line through UI Automation after a save. The status element now has an
-automation id and an `aria_value` carrying the closed wording.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** As above, reading `support-export-status` through automation after saving.
+- **Expect:** Status Name carries the closed wording; `support-export-status` has an aria value.
+- **Availability here:** Not recreatable now for the same reason.
 
 ### `rel3-positive-control-20261104`
 
-Drive `task-search` with `ValuePattern.SetValue` and read the value back. Note in the record that this
-element is a styled div, so the result says little about the accessibility path in general.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** `ValuePattern.SetValue` on `task-search`, then read the value back.
+- **Expect:** Value reads back empty and the row list is unchanged; the element is a styled div, so this says little.
+- **Availability here:** Recreatable.
 
 ### `rel3-preview-invoke-20261104`
 
-Open the panel and invoke the preview button three times with waits; the set records that nothing appeared
-before the explicit listener existed.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** Open the panel and invoke the preview button three times with waits.
+- **Expect:** Nothing appears before the explicit listener exists.
+- **Availability here:** Recreatable as a negative only on a pre-fix build.
 
 ### `rel3-preview-trace-20261104`
 
-With `COS_PREVIEW_TRACE=1`, open the panel and invoke the preview button, reading
-`support-preview-trace` and stderr.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** With `COS_PREVIEW_TRACE=1`, open the panel and invoke the preview button.
+- **Expect:** `support-preview-trace` and stderr stay at `action=none` on a pre-fix build.
+- **Availability here:** Recreatable only against that build.
 
 ### `rel3-r0b-connected-e5af45e`
 
-No special procedure recorded; the set is a snapshot of the conditions stated above.
-
-Verification: run the digest snippet above against this directory.
+- **Do:** No specific procedure recorded.
+- **Expect:** —
+- **Availability here:** Unknown.
 
 ### `rel3-trace-038005d`
 
-Open the panel, generate a preview, save onto an existing file and read `support-export-trace`.
+- **Do:** Open the panel, generate a preview, save onto an existing file, read `support-export-trace`.
+- **Expect:** `dialog=Selected;data=Ready;writer=AlreadyExists;ui=StatusUpdated`.
+- **Availability here:** Not recreatable now.
 
-Verification: run the digest snippet above against this directory.
+## Limits that apply to all of these sets
 
-## Known limits that apply to all of these sets
-
-- Keyboard input (`Ctrl+D`, Tab, Shift+Tab) is unavailable because the window cannot be granted focus;
-  anything needing it is `NOT_RUN`, not passed.
-- The native save dialog does not return a result in this session; the export sets record how far the
-  flow got rather than claiming a completed save.
+- Keyboard input is unavailable, so anything needing it is `NOT_RUN`.
+- In the export sets, the save dialog produced **no result within the six-second observation window**.
+  That is the whole claim: not that it never returns, and not that it failed.
 - Screen-reader reading quality has never been measured; it is `NOT_MEASURED` throughout.
