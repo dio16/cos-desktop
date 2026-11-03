@@ -43,7 +43,7 @@ class S2BWireContract(unittest.TestCase):
     def test_frame_identity_is_measured_only_from_exact_tuple_ids(self):
         value = copy.deepcopy(example())
         kind3 = next(record for record in value["records"] if record["kind"] == 3)
-        kind3["frame_id"] = 12345
+        kind3["frame_id"] = s2b.frame_id_for(kind3)
         validated = s2b.validate_capture(value)
         result = s2b_capture.frame_identity_result(validated)
         self.assertEqual(result["status"], "MEASURED")
@@ -55,6 +55,15 @@ class S2BWireContract(unittest.TestCase):
         value = copy.deepcopy(example())
         kind2 = next(record for record in value["records"] if record["kind"] == 2)
         kind2["frame_id"] = 7
+        self.reject(value, "RECORD_SEMANTICS")
+
+    def test_duplicate_present_tuple_is_rejected(self):
+        value = copy.deepcopy(example())
+        kind3 = next(record for record in value["records"] if record["kind"] == 3)
+        duplicate = copy.deepcopy(kind3)
+        duplicate["seq"] = len(value["records"]) + 1
+        duplicate["frame_id"] = s2b.frame_id_for(duplicate)
+        value["records"].append(duplicate)
         self.reject(value, "DUPLICATE_EVENT")
 
     def test_complete_local_kind_arrays_validate(self):

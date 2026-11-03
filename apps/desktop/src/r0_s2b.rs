@@ -208,6 +208,10 @@ impl<T: std::fmt::Display> std::fmt::Display for Nullable<T> {
     }
 }
 
+fn frame_id_is_new(frames: &[u64], id: u64) -> bool {
+    !frames.contains(&id)
+}
+
 fn frame_identity(
     window: u64,
     invalidations: u64,
@@ -407,7 +411,7 @@ impl Observer {
                 start,
                 end,
             );
-            if self.frames.contains(&id) {
+            if !frame_id_is_new(&self.frames, id) {
                 self.counts.correlation_invalid += 1;
                 return Err(io::ErrorKind::InvalidData.into());
             }
@@ -832,6 +836,14 @@ mod tests {
                 .is_err()
         );
         assert_eq!(observer.counts.local_scope_clock_rejected, [1, 1]);
+    }
+
+    #[test]
+    fn frame_id_reuse_is_rejected() {
+        let id = frame_identity(11, 2, 100, 120, 130, 150);
+        assert!(frame_id_is_new(&[], id));
+        assert!(frame_id_is_new(&[id + 1], id));
+        assert!(!frame_id_is_new(&[id], id));
     }
 
     #[test]

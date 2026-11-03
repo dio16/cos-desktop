@@ -206,7 +206,15 @@ def validate_capture(document: object, *, execution: str | None = None,
         counts[kind] += 1
         if frame_id is not None:
             integer(frame_id)
-            if kind != 3 or frame_id in frame_ids:
+            if kind != 3:
+                fail("RECORD_SEMANTICS")
+            if (record["paired_draw_start_ns"] is None
+                    or record["paired_draw_end_ns"] is None
+                    or record["invalidations"] is None):
+                fail("RECORD_SEMANTICS")
+            if frame_id_for(record) != frame_id:
+                fail("RECORD_SEMANTICS")
+            if frame_id in frame_ids:
                 fail("DUPLICATE_EVENT")
             frame_ids.add(frame_id)
         nonnull = {key for key in RECORD_FIELDS - {"seq", "kind"} if record[key] is not None}
@@ -343,6 +351,21 @@ def validate_capture(document: object, *, execution: str | None = None,
     if len(windows) > MAX_WINDOWS:
         fail("WINDOW_LIMIT")
     return value
+
+
+def _fnv64(values: tuple[int, ...]) -> int:
+    value = 0xCBF29CE484222325
+    for item in values:
+        for byte in item.to_bytes(8, "little"):
+            value ^= byte
+            value = (value * 0x100000001B3) & 0xFFFFFFFFFFFFFFFF
+    return value
+
+
+def frame_id_for(record: dict) -> int:
+    return _fnv64((record["window"], record["invalidations"],
+                   record["paired_draw_start_ns"], record["paired_draw_end_ns"],
+                   record["start_ns"], record["end_ns"]))
 
 
 def endpoint_matrix(capture: dict) -> dict:

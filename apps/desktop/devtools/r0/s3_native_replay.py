@@ -15,6 +15,7 @@ from pathlib import Path
 
 import contracts
 import driver
+import s2b_capture
 import s2b_contracts as s2b
 import s3_ledger
 from s2b_capture import read_pinned
@@ -168,11 +169,10 @@ def validate_scenario(data: dict[str, bytes], name: str) -> tuple[dict, dict, di
     for digest in s2a.values():
         s2b.digest(digest)
     require(s2a["ledger.json"] == sha(data[base + "ledger.json"]), "LEDGER_DIGEST")
+    expected_frame_identity = s2b_capture.frame_identity_result(capture)
     require(observation["endpoints"] == s2b.endpoint_matrix(capture)
             and observation["coverage"] == "LIMITED_SOURCE_OBSERVATIONS_ONLY"
-            and (observation["frame_identity"] == "NOT_MEASURED"
-                 or (isinstance(observation["frame_identity"], dict)
-                     and observation["frame_identity"].get("status") == "MEASURED"))
+            and observation["frame_identity"] == expected_frame_identity
             and observation["cross_domain_latency"] == "NOT_MEASURED"
             and observation["loss_scope"] == "OFFERED_FINALIZED_JOURNAL_PLUS_LOCAL_QUEUE"
             and observation["unobserved_source_loss"] == "UNKNOWN", "OBSERVATION_BINDING")
