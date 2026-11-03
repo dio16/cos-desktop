@@ -1,0 +1,15 @@
+MP-R0B connected probe: application startup refusal captured
+
+command: target/debug/cos-desktop.exe --fixture --fixture-file crates/cos-client/fixtures/task-184.json
+isolated LOCALAPPDATA: yes (temporary directory)
+loopback listener on 127.0.0.1:47812 to satisfy reachability
+app exited within 15000 ms: True
+app exit code: 2
+app stderr bytes: 60
+app stderr text:
+COS Desktop instance ownership unavailable; startup refused
+
+Interpretation: the application refused startup because instance ownership was unavailable, so no window
+was created and the foreground path (SetForegroundWindow, GetForegroundWindow, UI Automation read) was
+never reached. The exit code is now explained by the application's own message rather than assumed to be
+an environment limit.

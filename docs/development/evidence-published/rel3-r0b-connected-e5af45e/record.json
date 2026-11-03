@@ -12,8 +12,14 @@
       "sha256": "sha256:040eab606744e466439b722bcc0a73ef46678497bea082d926120694c7d39f12",
       "git_object_id": "4b426b57a5f6bc0545f64d6fb084e5110975e1a3",
       "bytes": 912
+    },
+    "startup-refusal.txt": {
+      "sha256": "sha256:943b847e101d47ffe94a8bc17efd7da83a00a39b811581062057813ef59d1651",
+      "git_object_id": "a965baf720104995f565d2c73a388da2ee93eb26",
+      "bytes": 760
     }
   },
   "note": "Only the refusal is captured here: the connected CPU and working-set baseline was not measured because no reachable runtime endpoint exists in this environment. The refusal demonstrates that a connected run cannot be recorded against an unreachable endpoint.",
-  "foreground_attempt": "A loopback listener was started to satisfy the endpoint reachability check and the connected probe was run. The application exited with code 2 before any window existed, so Add-Type, SetForegroundWindow, GetForegroundWindow and the UI Automation read could not be exercised. The foreground path therefore stays unproven; this is an environment limit, not a pass."
+  "foreground_attempt": "A loopback listener satisfied reachability and the connected probe was run, but the application refused startup with exit code 2 and the message 'COS Desktop instance ownership unavailable; startup refused', so no window existed and Add-Type, SetForegroundWindow, GetForegroundWindow and the UI Automation read were never reached. The cause of the exit is now identified from the application's own stderr, not assumed; the foreground path stays unproven.",
+  "add_type_scope": "Add-Type sits before the application launch, so the script reached and executed that declaration; what is missing is an independent record that the type generation succeeded, and the calls that use the type were never reached."
 }
