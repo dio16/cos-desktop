@@ -3144,9 +3144,18 @@ impl Render for Shell {
                             .when(side_a_exists, |element| element.cursor_pointer())
                             .child("A側を変更")
                             .when(side_a_exists, |element| {
-                                element.on_click(cx.listener(|this, _, _, cx| {
-                                    this.change_compare_side(CompareSide::A, cx);
-                                }))
+                                element
+                                    .on_click(cx.listener(|this, _, _, cx| {
+                                        this.change_compare_side(CompareSide::A, cx);
+                                    }))
+                                    .on_a11y_action(AccessibleAction::Click, {
+                                        let this = cx.entity().downgrade();
+                                        move |_, _window, cx| {
+                                            let _ = this.update(cx, |this, cx| {
+                                                this.change_compare_side(CompareSide::A, cx);
+                                            });
+                                        }
+                                    })
                             })
                     })
                     .child({
@@ -3171,9 +3180,18 @@ impl Render for Shell {
                             .when(side_b_exists, |element| element.cursor_pointer())
                             .child("B側を変更")
                             .when(side_b_exists, |element| {
-                                element.on_click(cx.listener(|this, _, _, cx| {
-                                    this.change_compare_side(CompareSide::B, cx);
-                                }))
+                                element
+                                    .on_click(cx.listener(|this, _, _, cx| {
+                                        this.change_compare_side(CompareSide::B, cx);
+                                    }))
+                                    .on_a11y_action(AccessibleAction::Click, {
+                                        let this = cx.entity().downgrade();
+                                        move |_, _window, cx| {
+                                            let _ = this.update(cx, |this, cx| {
+                                                this.change_compare_side(CompareSide::B, cx);
+                                            });
+                                        }
+                                    })
                             })
                     })
                     .child(
@@ -3194,7 +3212,15 @@ impl Render for Shell {
                             .child("比較を閉じる")
                             .on_click(cx.listener(|this, _, _, cx| {
                                 this.close_compare(cx);
-                            })),
+                            }))
+                            .on_a11y_action(AccessibleAction::Click, {
+                                let this = cx.entity().downgrade();
+                                move |_, _window, cx| {
+                                    let _ = this.update(cx, |this, cx| {
+                                        this.close_compare(cx);
+                                    });
+                                }
+                            }),
                     ),
             )
             .children(dock::side_change_hint(side_a_exists, side_b_exists).map(|message| {
@@ -3613,6 +3639,14 @@ impl Render for Shell {
                     .on_click(
                         cx.listener(|this, _, window, cx| this.flow_input_focus.focus(window, cx)),
                     )
+                    .on_a11y_action(AccessibleAction::Click, {
+                        let this = cx.entity().downgrade();
+                        move |_, window, cx| {
+                            let _ = this.update(cx, |this, cx| {
+                                this.flow_input_focus.focus(window, cx);
+                            });
+                        }
+                    })
                     .on_action(cx.listener(|this, _: &FlowEnter, window, cx| {
                         this.flow_focus_first_node(window, cx)
                     }))
@@ -3796,6 +3830,14 @@ impl Render for Shell {
                 .on_click(cx.listener(|this, _, window, cx| {
                     this.start_stop(window, cx);
                 }))
+                .on_a11y_action(AccessibleAction::Click, {
+                    let this = cx.entity().downgrade();
+                    move |_, window, cx| {
+                        let _ = this.update(cx, |this, cx| {
+                            this.start_stop(window, cx);
+                        });
+                    }
+                })
         } else {
             stop_button
         };
@@ -3866,6 +3908,14 @@ impl Render for Shell {
                 .on_click(cx.listener(|this, _, window, cx| {
                     this.start_receipt_check(window, cx);
                 }))
+                .on_a11y_action(AccessibleAction::Click, {
+                    let this = cx.entity().downgrade();
+                    move |_, window, cx| {
+                        let _ = this.update(cx, |this, cx| {
+                            this.start_receipt_check(window, cx);
+                        });
+                    }
+                })
         } else {
             reconcile_button
         };
@@ -4605,6 +4655,14 @@ impl Render for Shell {
                                             .child(SearchInputRegistration { entity: cx.entity() }),
                                     )
                                     .on_click(cx.listener(|this, _, window, cx| this.rail_input_focus.focus(window, cx)))
+                                    .on_a11y_action(AccessibleAction::Click, {
+                                        let this = cx.entity().downgrade();
+                                        move |_, window, cx| {
+                                            let _ = this.update(cx, |this, cx| {
+                                                this.rail_input_focus.focus(window, cx);
+                                            });
+                                        }
+                                    })
                                     .on_action(cx.listener(|_, _: &Activate, _, _| {}))
                                     .on_action(cx.listener(|_, _: &RailEnter, _, _| {}))
                                     .on_action(cx.listener(|this, _: &RailBackspace, _, cx| this.rail_backspace(cx)))
@@ -5108,10 +5166,20 @@ impl Render for Shell {
                             .when(!compare_unavailable, |element| element.cursor_pointer())
                             .child(SharedString::from(label))
                             .when(!compare_unavailable, |element| {
-                                element.on_click(cx.listener(move |this, _, window, cx| {
-                                    this.surface_focus[index].focus(window, cx);
-                                    this.navigate(item, cx);
-                                }))
+                                element
+                                    .on_click(cx.listener(move |this, _, window, cx| {
+                                        this.surface_focus[index].focus(window, cx);
+                                        this.navigate(item, cx);
+                                    }))
+                                    .on_a11y_action(AccessibleAction::Click, {
+                                        let this = cx.entity().downgrade();
+                                        move |_, window, cx| {
+                                            let _ = this.update(cx, |this, cx| {
+                                                this.surface_focus[index].focus(window, cx);
+                                                this.navigate(item, cx);
+                                            });
+                                        }
+                                    })
                             })
                     })),
             )
@@ -6300,5 +6368,32 @@ mod contrast_scope_tests {
             assert!(!token.chars().any(|character| character == char::from(92)));
             assert!(!token.contains("SyntheticSecretValue"));
         }
+    }
+    #[test]
+    fn a11y_click_listeners_cover_the_migrated_click_targets() {
+        let source = include_str!("lib.rs");
+        let migrated = [
+            "change_compare_side(CompareSide::A",
+            "change_compare_side(CompareSide::B",
+            "close_compare(cx)",
+            "start_stop(window, cx)",
+            "start_receipt_check(window, cx)",
+            "flow_input_focus.focus(window, cx)",
+            "rail_input_focus.focus(window, cx)",
+            "surface_focus[index].focus(window, cx)",
+        ];
+        for handler in migrated {
+            assert!(
+                source.contains(handler),
+                "missing migrated handler {handler}"
+            );
+        }
+        assert!(
+            source
+                .matches(".on_a11y_action(AccessibleAction::Click")
+                .count()
+                >= 11,
+            "three diagnostics/export buttons plus eight migrated targets need explicit listeners"
+        );
     }
 }

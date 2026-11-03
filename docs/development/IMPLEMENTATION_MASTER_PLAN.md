@@ -4383,3 +4383,11 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests:** set size/gate/path checks updated; `cargo test -p desktop-gpui` 121 passed / 0 failed; fmt OK; clippy 0 issues.
 - **Native:** Lead re-measurement pending; no fix or cause claimed. MP-REL3 / MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
 
+### 19.226 MP-AX1 a11y Click listeners for remaining targets (2026-11-04)
+
+- **Migrated (8):** `compare-change-a`, `compare-change-b`, `compare-close`, `stop-request`, `stop-reconcile`, `flow-search`, `task-search`, `surface-switcher`. Each registers `.on_a11y_action(AccessibleAction::Click, ...)` calling the same handler as its existing `.on_click`; mouse/keyboard paths and behavior are unchanged.
+- **Excluded this slice (5 no-id click targets):** candidate-card/tile click handlers at the inventory positions (around `on_click(move |_, window, app|` with captured `click_key`/`shell_entity`) lack a stable element identity; adding an id and an a11y listener requires deciding the card's accessible identity, so they were not changed. `flow-diagram-region` from the earlier heuristic was a **test string**, not an element.
+- **Structural guard:** a manual-list synchronization test checks all eight migrated handlers are present and that at least 11 explicit a11y Click listeners exist (3 diagnostics/export + 8 migrated). This is not yet a full element-by-element invariant over every `.on_click`.
+- **Tests:** `cargo test -p desktop-gpui` 122 passed / 0 failed; fmt OK; clippy 0 issues.
+- **Native:** not claimed (Lead may check). Tab reach, save dialog and screen-reader quality remain unmeasured. MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
+
