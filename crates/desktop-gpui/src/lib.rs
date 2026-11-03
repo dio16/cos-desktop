@@ -4622,8 +4622,10 @@ impl Render for Shell {
                                                         element.child(
                                                             div()
                                                                 .id("support-export-status")
+                                                                .accessibility_id("support-export-status")
                                                                 .role(Role::Label)
                                                                 .aria_label("エクスポート結果")
+                                                                .aria_value(status)
                                                                 .child(status),
                                                         )
                                                     })
@@ -5429,9 +5431,18 @@ mod contrast_scope_tests {
         }
         assert_eq!(
             region.matches(".accessibility_id(").count(),
-            automation_ids.len(),
-            "each label must carry exactly one AutomationId"
+            automation_ids.len() + 1,
+            "six labels plus the export status carry exactly one AutomationId"
         );
+        assert!(
+            region.contains(".accessibility_id(\"support-export-status\")"),
+            "export status must expose a stable AutomationId"
+        );
+        assert!(
+            region.contains(".aria_value(status)"),
+            "export status must map the closed message to the AccessKit value/Name"
+        );
+        assert!(region.contains(".aria_label(\"エクスポート結果\")"));
         let mut seen = std::collections::BTreeSet::new();
         for id in automation_ids {
             assert!(seen.insert(id), "duplicate AutomationId {id}");

@@ -1,0 +1,5 @@
+base_commit=e5f3c2784505f6e3d2546b78351c86e4215faf22
+exe_sha256=56bc66ab4512e62485e73f3d086bc009490e372bfadc9259576f8c407d227682
+windows=10.0.26300.0
+dpi=96
+fix=accessibility_id(support-export-status)+aria_value(status)

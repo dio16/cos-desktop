@@ -1,0 +1,55 @@
+{
+  "measurement": "MP-REL3 support-export-status UIA exposure and Native retest",
+  "base_commit": "e5f3c2784505f6e3d2546b78351c86e4215faf22",
+  "exe_sha256": "sha256:56bc66ab4512e62485e73f3d086bc009490e372bfadc9259576f8c407d227682",
+  "A": "PASS: status had .id() but no .accessibility_id(); Role::Label maps value->Name and the element had no aria_value, so UIA exposed no named status element. Old uia-before.txt has no support-export-status.",
+  "B": "PASS: accessibility_id(\"support-export-status\") + aria_value(status); Native element = ControlType.Text with Name=closed message. ValuePattern is not exposed for Role::Label.",
+  "C": "PASS (unit): success/AlreadyExists/CleanupFailed/other messages unchanged and distinct; source test checks wiring.",
+  "D": "PASS success: status Name=保存しました; 573 bytes; preview/saved sha256 identical (67f69633...). PARTIAL existing: content unchanged (ORIGINAL/ORIGINAL2); AlreadyExists message not observed (generic 保存できませんでした), so native AlreadyExists text NOT_PROVABLE.",
+  "E": "PASS: cancel created no file and retained previous success status 保存しました.",
+  "F": "Tab PASS: independent Tab loop reached preview and export, and Enter on focused export opened dialog. Shift+Tab NOT_RUN. Stale-publication rejection NOT_RUN.",
+  "G": "Evidence files below; SHA-256 and Git blob recorded. Screen-reader quality NOT_MEASURED.",
+  "files": {
+    "environment.txt": {
+      "sha256": "sha256:e84e3880527ad548969b82989eeb773c0ca0d6b320b02039a2480cc7bce0224e",
+      "git_blob": "e84e3880527ad548969b82989eeb773c0ca0d6b320b02039a2480cc7bce0224e",
+      "bytes": 220
+    },
+    "existing.txt": {
+      "sha256": "sha256:962f85a27854336f3286ad54b49321f62525043b5f3508b2ecc887fdd6e7550e",
+      "git_blob": "962f85a27854336f3286ad54b49321f62525043b5f3508b2ecc887fdd6e7550e",
+      "bytes": 8
+    },
+    "existing2.txt": {
+      "sha256": "sha256:c34cbef3ca96142ff533cf9d65d0085dfa7b3e8d40a72a901fa304c2e639d729",
+      "git_blob": "c34cbef3ca96142ff533cf9d65d0085dfa7b3e8d40a72a901fa304c2e639d729",
+      "bytes": 9
+    },
+    "preview-text.txt": {
+      "sha256": "sha256:67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
+      "git_blob": "67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
+      "bytes": 573
+    },
+    "report-success.txt": {
+      "sha256": "sha256:67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
+      "git_blob": "67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
+      "bytes": 573
+    },
+    "result.txt": {
+      "sha256": "sha256:e91356dca253bbff2dda31d182472fecac7e34a6c06dcbed7f1eee8ea9d0e195",
+      "git_blob": "e91356dca253bbff2dda31d182472fecac7e34a6c06dcbed7f1eee8ea9d0e195",
+      "bytes": 1432
+    },
+    "result2.txt": {
+      "sha256": "sha256:cde6d9b437dacf233bdd19af858b353f74ce7001898f5b6794faa915d82f3012",
+      "git_blob": "cde6d9b437dacf233bdd19af858b353f74ce7001898f5b6794faa915d82f3012",
+      "bytes": 245
+    },
+    "uia-before.txt": {
+      "sha256": "sha256:43e2ec2c103c7a620509e5286e92c7ebdb3a9e0ed9aaad040eef87033e8aa5f1",
+      "git_blob": "43e2ec2c103c7a620509e5286e92c7ebdb3a9e0ed9aaad040eef87033e8aa5f1",
+      "bytes": 3565
+    }
+  },
+  "digest_basis": "SHA-256 and git blob hash both refer to the committed bytes; the tree is marked -text so no end-of-line conversion applies."
+}

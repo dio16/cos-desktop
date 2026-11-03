@@ -1,0 +1,25 @@
+CANCEL_DIALOG|True
+STATUS_AFTER_CANCEL|<none>
+Test-Path: C:\dev\cos-desktop\target\status_measure.ps1:23
+Line |
+  23 |  … NCEL_FILE|$(Test-Path (Resolve-Path 'target/native-save-e5f3c27').Pat …
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | 引数 '+\cancel.txt' を受け取る位置指定パラメーターが見つかりません。
+AFTER_CANCEL_FILE|
+MethodInvocationException: C:\dev\cos-desktop\target\status_measure.ps1:8
+Line |
+   8 |  … me)|value=$($e.GetCurrentPattern([System.Windows.Automation.ValuePatt …
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | "1" 個の引数を指定して "GetCurrentPattern" を呼び出し中に例外が発生しました: "サポートされていないパターンです。"
+STATUS_AFTER_SUCCESS|ControlType.Text|保存しました|value=
+GOOD_EXISTS|True
+GOOD_LEN|573
+GOOD_SHA|67F69633CD6FE90C4FF20DFC02CBBDFCE6BE5E2E4B16C5B56EEB394B837B90E3
+MethodInvocationException: C:\dev\cos-desktop\target\status_measure.ps1:8
+Line |
+   8 |  … me)|value=$($e.GetCurrentPattern([System.Windows.Automation.ValuePatt …
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | "1" 個の引数を指定して "GetCurrentPattern" を呼び出し中に例外が発生しました: "サポートされていないパターンです。"
+STATUS_AFTER_EXISTING|ControlType.Text|保存しました|value=
+EXISTING_CONTENT|ORIGINAL
+TAB_HITS|2|サポート情報を表示;サポート情報をエクスポート

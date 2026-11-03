@@ -1,0 +1,19 @@
+Desktop version: 0.1.0
+Runtime version: unknown (Runtime version is not exposed through observation)
+Protocol version: unknown (no protocol version pair was negotiated)
+Connection: observing
+Source: fixture
+Stale projection: no
+Projection revision: 1
+Session generation: 1
+Publication version: 2
+Last error: unknown
+Command views: 0
+Unavailable: none
+Retained events: 6
+Latest sequence: 6
+Oldest retained: 1
+Event gap: none
+Sequence exhausted: false
+Event counts: activity 4, connection 2, error 0, resync 0
+Limits: events 4096, line 512 bytes, report 12288 bytes, 24 lines

@@ -4122,3 +4122,14 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Reproduction steps (open):** the per-case rerun commands have not been written up yet and stay an open item for the next slice; the failed PowerShell attempt and the garbled UIA excerpts remain in the evidence rather than being cleaned away.
 - **Scope:** no product code change in this slice. `CleanupFailed` forced test and full consent-UI acceptance remain out of scope. **MP-REL3 incomplete; product acceptance NOT_RUN.**
 
+### 19.209 MP-REL3/AX1 support-export-status Native UIA exposure (2026-11-02)
+
+- **A (cause):** the status label had `.id("support-export-status")` but no `.accessibility_id`, and as `Role::Label` its UIA Name comes from the AccessKit value while only `aria_label` was set. The pre-fix UIA tree (`uia-before.txt`) contains no `support-export-status`.
+- **B (fix):** added `.accessibility_id("support-export-status")` and `.aria_value(status)`; role stays `Role::Label`, Name remains the closed message, and the messages themselves are unchanged. `ValuePattern` is not exposed for `Role::Label`; the message is obtained as the element Name.
+- **C (tests):** source test checks the AutomationId/value wiring; existing mapping test keeps success / `AlreadyExists` / `CleanupFailed` / other messages distinct and path/content-free.
+- **D (Native):** success status read as `ControlType.Text` Name `保存しました`; saved `report-success.txt` is 573 bytes and byte-identical to the preview (`sha256:67f69633…` both). Existing-file attempts left `ORIGINAL` / `ORIGINAL2` unchanged. The native `AlreadyExists` message was **not observed** (status showed the generic failure), so native AlreadyExists text remains **NOT_PROVABLE**; unit mapping is PASS.
+- **E:** Cancel created no file and preserved the previous `保存しました` status in UIA.
+- **F:** independent Tab loop reached both preview and export buttons; Enter on the focused export opened the dialog. **Shift+Tab NOT_RUN; publication-change stale rejection NOT_RUN; C is only partially covered (Tab PASS, Shift+Tab not measured).**
+- **G:** evidence under `docs/development/evidence-published/rel3-native-status-e5f3c27/` with SHA-256 and Git blob IDs in `record.json`; `.txt` only. Screen-reader reading quality remains **NOT_MEASURED**.
+- **Verification:** `cargo test -p desktop-gpui` 115 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` succeeds. **MP-REL3 incomplete; product acceptance NOT_RUN.**
+
