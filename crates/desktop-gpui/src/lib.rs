@@ -6371,7 +6371,14 @@ mod contrast_scope_tests {
     }
     #[test]
     fn a11y_click_listeners_cover_the_migrated_click_targets() {
-        let source = include_str!("lib.rs");
+        // Count only the production half of the file. Searching the whole text would let the
+        // assertions be satisfied by the literals in this very test, which is how a guard stays
+        // green after the widget loses its listener.
+        let whole = include_str!("lib.rs");
+        let cut = whole
+            .find("\n#[cfg(test)]\nmod ")
+            .expect("the first test module marker");
+        let source = &whole[..cut];
         let migrated = [
             "change_compare_side(CompareSide::A",
             "change_compare_side(CompareSide::B",

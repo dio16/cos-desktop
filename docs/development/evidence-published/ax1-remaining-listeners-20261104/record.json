@@ -12,5 +12,6 @@
       "bytes": 432
     }
   },
-  "exclusions": "Five click targets were left out, and the earlier reason given for them - that they have no stable id - was wrong: they carry .id and .accessibility_id already. What they lack is a handler shape that maps onto a plain Click action without deciding what activation should do on their behalf, since their closures carry click keys and entity handles. One match, flow-diagram-region, was a test string rather than a real element."
+  "exclusions": "Five click targets were left out. The earlier reason given - that they lack a stable id - was wrong. What is accurate per element: candidate cards, task rows and the flow diagram nodes each carry a dynamic .id (for example a formatted flow-diagram-node-<a>:<b> key), and not all of them carry an .accessibility_id; their click closures also capture click keys and entity handles, so a plain Click action would have to decide what activation means for that specific element. That combination, not a missing id, is why they were deferred. One match, flow-diagram-region, was a test string rather than a real element.",
+  "guard_fix": "FIXED AND PROVEN. The guard now searches only the production half of the file - everything before the first #[cfg(test)] module - so its own literals cannot satisfy it. Proven by renaming one production listener's action and running it: the test failed at the count assertion (FAILED, exit 101), then the file was restored."
 }
