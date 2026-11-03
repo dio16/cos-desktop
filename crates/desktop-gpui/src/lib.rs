@@ -317,8 +317,33 @@ impl SupportPreviewState {
     /// Hand the checked export to one save attempt only when it belongs to the
     /// caller's current generation. A stale or repeated call gets `None`.
     #[allow(dead_code)] // UI wiring is the next slice; the state machine is tested now.
-    fn take_for_save(&mut self, generation: u64) -> Option<app_core::ExportData> {
+    /// Take the checked export only for the current generation and only while the
+    /// preview is still valid under the same visibility rules as `visible()`.
+    /// A publication change invalidates the payload even before `invalidate()` runs.
+    /// The future save flow must re-run this check after the dialog returns and
+    /// immediately before writing.
+    fn take_for_save(
+        &mut self,
+        generation: u64,
+        handle_present: bool,
+        live: Option<(u64, u64)>,
+    ) -> Option<app_core::ExportData> {
         if generation != self.generation || self.pending.is_some() {
+            self.export = None;
+            return None;
+        }
+        let valid = match self.current.as_ref() {
+            Some(SupportPreview::DesktopOnly(_)) => !handle_present,
+            Some(SupportPreview::Unavailable(_)) => true,
+            Some(SupportPreview::Authorized {
+                session_generation,
+                publication_version,
+                ..
+            }) => handle_present && live == Some((*session_generation, *publication_version)),
+            None => false,
+        };
+        if !valid {
+            self.export = None;
             return None;
         }
         self.export.take()
@@ -5391,7 +5416,7 @@ mod contrast_scope_tests {
         let mut state = SupportPreviewState::default();
         let generation = state.begin(None);
         assert!(
-            state.take_for_save(generation).is_none(),
+            state.take_for_save(generation, false, None).is_none(),
             "no export while pending"
         );
         assert!(state.complete(
@@ -5402,14 +5427,12 @@ mod contrast_scope_tests {
                 export: Some(export()),
             }
         ));
-        assert!(
-            state.take_for_save(generation.wrapping_add(1)).is_none(),
-            "a different generation must not receive the export"
-        );
-        let data = state.take_for_save(generation).expect("current export");
+        let data = state
+            .take_for_save(generation, false, None)
+            .expect("current export");
         assert!(!data.as_bytes().is_empty());
         assert!(
-            state.take_for_save(generation).is_none(),
+            state.take_for_save(generation, false, None).is_none(),
             "second take is refused"
         );
 
@@ -5425,8 +5448,69 @@ mod contrast_scope_tests {
         ));
         let _next = state.begin(None);
         assert!(
-            state.take_for_save(generation).is_none(),
+            state.take_for_save(generation, false, None).is_none(),
             "begin() discards the previous export"
+        );
+    }
+    #[test]
+    fn invalidate_and_publication_change_revoke_the_checked_export() {
+        use super::{SupportBuild, SupportPreviewState};
+        let export = || {
+            app_core::checked_export(&app_core::SupportReport::unavailable("UnitReason", "0.1.0"))
+                .expect("checked export")
+        };
+        let mut state = SupportPreviewState::default();
+        let generation = state.begin(Some((3, 7)));
+        assert!(state.complete(
+            generation,
+            Some((3, 7)),
+            SupportBuild::Authorized {
+                identity: (3, 7),
+                text: "report".to_owned(),
+                export: Some(export()),
+            }
+        ));
+        assert!(
+            state
+                .take_for_save(generation, true, Some((3, 8)))
+                .is_none(),
+            "a changed publication must revoke before invalidate() runs"
+        );
+        assert!(
+            state
+                .take_for_save(generation, true, Some((3, 7)))
+                .is_none(),
+            "the revoked export must not reappear"
+        );
+
+        let mut state = SupportPreviewState::default();
+        let generation = state.begin(None);
+        assert!(state.complete(
+            generation,
+            None,
+            SupportBuild::DesktopOnly {
+                text: "report".to_owned(),
+                export: Some(export()),
+            }
+        ));
+        state.invalidate();
+        assert!(state.take_for_save(generation, false, None).is_none());
+
+        let mut state = SupportPreviewState::default();
+        let generation = state.begin(None);
+        assert!(state.complete(
+            generation,
+            None,
+            SupportBuild::DesktopOnly {
+                text: "report".to_owned(),
+                export: Some(export()),
+            }
+        ));
+        assert!(
+            state
+                .take_for_save(generation.wrapping_add(1), false, None)
+                .is_none(),
+            "a different generation is refused"
         );
     }
 }

@@ -4085,3 +4085,10 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests:** generation mismatch → None; pending → None; one take only; `begin()` discards; existing support-preview/stale tests pass. `cargo test -p desktop-gpui` 111 passed / 0 failed; fmt OK; clippy 0 issues; `cargo build -p cos-desktop` succeeds.
 - **Native UI/save:** NOT_RUN by scope.
 
+### 19.205 MP-REL3 take_for_save publication validation (2026-11-02)
+
+- **B-01 fixed:** `take_for_save(generation, handle_present, live)` now applies the same validity rules as `visible()` before returning `ExportData`: DesktopOnly requires no handle; Unavailable is always valid; Authorized requires a present handle and `live == Some((session_generation, publication_version))`. A publication change therefore revokes the export even before the async `invalidate()` runs. Any mismatch clears the stored export and returns `None`.
+- **Future-save prerequisite recorded in code:** the save flow must re-run this check after the dialog returns and immediately before writing.
+- **Tests:** publication change before `invalidate()` → `None` and payload discarded; `invalidate()` → `None`; generation mismatch → `None`; pending → `None`; one take only; `begin()` discards. Existing preview/stale regressions pass. `cargo test -p desktop-gpui` 112 passed / 0 failed; fmt OK; clippy 0 issues.
+- **Not implemented:** Save/Cancel UI, dialog/oneshot/background save, failure display, Native save. MP-REL3 remains incomplete.
+
