@@ -19,7 +19,8 @@
   "re_measurement_after_notify": {
     "base_commit": "f8c406efaac5bc883efda27f6324d6be23a5ed89",
     "exe_sha256": "sha256:0ccc6a8cacbd3ba257d8929d62a32b74a5ac05afefa1c19284ef08f0097ab0c0",
-    "result": "With every trace update now followed by a repaint request, an invoke that returned cleanly still left action=none at 1.5 s, 3 s and 5 s. The earlier objection - that a stale action=none could survive a handler that did run - is therefore addressed, and the reading stands: the handler is not reached for this element through the accessibility action, while the diagnostics toggle in the same panel is.",
+    "result": "With every trace update now followed by a repaint request, an invoke that returned cleanly still left action=none at 1.5 s, 3 s and 5 s. A missing repaint is therefore ruled out as the explanation, but this is not a positive control: notify is a repaint request, not a measurement that automation published the value, and nothing in this run shows a trace change being read back. action=none is strong evidence that the handler did not run; it does not conclusively exclude the generation-side candidates.",
     "still_open": "Why dispatch differs between the two elements. The candidates for the generation step (a task that never finishes, an install rejected by the state machine) are not the first failure here, because the handler never runs."
-  }
+  },
+  "positive_control": "ABSENT - no run yet shows a known trace transition being read back through UI Automation, so the read path itself is unproven for this element."
 }
