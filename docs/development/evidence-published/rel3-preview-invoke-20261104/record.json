@@ -1,0 +1,15 @@
+{
+  "measurement": "MP-REL3 support preview through the accessibility action",
+  "base_commit": "6ac727c84b3683ec0fb72c4cf5141b58e451b3b5",
+  "exe_sha256": "sha256:c71286f1672bb96aefbf92454a5cf11cf16eef6eafaa630c53fd107264588c94",
+  "observation": "In the same window and build where the diagnostics toggle works through InvokePattern, invoking support-preview-button three times - after a fifteen second settle, with six seconds between attempts - never produced support-preview-readonly: the descendant count stayed at 56 every time and no support-export-button, support-export-status or support-export-trace appeared. Earlier runs with shorter settles showed the same.",
+  "contrast": "The toggle in the same panel does work: 49 -> 56 descendants when opened, back to 49 when closed, with a state-dependent name. So the accessibility action route itself is live; what fails is specific to the preview action.",
+  "not_decided": "Whether the preview action is not wired to generation, or the generation task does not complete in an inactive window, or the completion is rejected by the state machine, is NOT determined. Distinguishing them needs product-side instrumentation, not more attempts from outside.",
+  "consequence": "The preview, the export button, the status line and the trace therefore stay NOT_OBSERVED through this route, and the earlier native measurement that did see a preview (at ce14dca) is not reproduced here with the current build.",
+  "files": {
+    "preview-invoke-probe.txt": {
+      "sha256": "sha256:58ecfa59c68f9d14fcf97b4aeb8a4084cdf02153aa4b22d37128e82a397eea70",
+      "bytes": 5621
+    }
+  }
+}

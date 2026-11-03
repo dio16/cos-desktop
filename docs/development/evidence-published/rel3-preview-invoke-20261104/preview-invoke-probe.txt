@@ -1,0 +1,66 @@
+support preview: longer settle, repeated invoke, full name dump
+exe_sha256: c71286f1672bb96aefbf92454a5cf11cf16eef6eafaa630c53fd107264588c94
+base_commit: 6ac727c84b3683ec0fb72c4cf5141b58e451b3b5
+attempt_1_button: present
+attempt_1_preview: absent descendants=56
+attempt_2_button: present
+attempt_2_preview: absent descendants=56
+attempt_3_button: present
+attempt_3_preview: absent descendants=56
+  [0] id=TitleBar type=ControlType.TitleBar name=COS Desktop
+  [1] id=SystemMenuBar type=ControlType.MenuBar name=システム メニュー バー
+  [2] id=Item 1 type=ControlType.MenuItem name=System
+  [3] id=Minimize type=ControlType.Button name=最小化
+  [4] id=Maximize type=ControlType.Button name=最大化
+  [5] id=Close type=ControlType.Button name=閉じる
+  [6] id= type=ControlType.Pane name=COS Desktop 作業画面
+  [7] id= type=ControlType.Group name=現在のタスクと状態
+  [8] id= type=ControlType.Text name=Task-184  新製品キービジュアル
+  [9] id= type=ControlType.Text name=テストデータ / 模擬表示
+  [10] id= type=ControlType.Text name=タスクの状態: 実行中（ACTIVE）
+  [11] id= type=ControlType.Text name=処理段階: REFINE
+  [12] id= type=ControlType.Text name=反復回数: 第3回
+  [13] id= type=ControlType.Text name=成果物の利用状態: 取得可能（AVAILABLE）（5件）
+  [14] id= type=ControlType.Text name=接続・情報の鮮度: 情報を受信中
+  [15] id= type=ControlType.Text name=正式な結果: 不明 — 正式な結果の情報を受け取れていません
+  [16] id= type=ControlType.Group name=停止の操作と現在の受付状況
+  [17] id= type=ControlType.Button name=タスクを停止
+  [18] id= type=ControlType.Button name=停止要求の受付状況を確認（現在は操作できません）
+  [19] id= type=ControlType.Text name=この画面から停止要求は送っていません
+  [20] id= type=ControlType.Text name=停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。
+  [21] id= type=ControlType.Group name=タスク一覧
+  [22] id=task-search type=ControlType.Edit name=タスクを検索
+  [23] id= type=ControlType.List name=
+  [24] id=task-row-fixture:task/Task-184 type=ControlType.ListItem name=Task-184 — 新製品キービジュアル
+  [25] id= type=ControlType.Text name=キーボード操作対象
+  [26] id= type=ControlType.Group name=作業領域：成果物
+  [27] id= type=ControlType.Text name=現在の版では、成果物の画像を表示できません。候補の説明情報のみを表示しています。
+  [28] id= type=ControlType.Group name=候補の詳細
+  [29] id= type=ControlType.Group name=詳細と説明
+  [30] id= type=ControlType.Text name=候補は表示されていません
+  [31] id= type=ControlType.Button name=目的 — 利用可能: Task-184 — 新製品キービジュアル
+  [32] id= type=ControlType.Button name=評価 — 利用不可: 候補は選択されていません。
+  [33] id= type=ControlType.Button name=判断の根拠 — 利用不可: 候補は選択されていません。
+  [34] id= type=ControlType.Button name=改善 — 利用不可: 候補は選択されていません。
+  [35] id= type=ControlType.Button name=結果 — 利用不可: このタスクの正式な結果は、受信した情報に含まれていません。
+  [36] id=diagnostics-toggle type=ControlType.Button name=診断情報を閉じる
+  [37] id= type=ControlType.Text name=このアプリについて
+  [38] id=about-desktop type=ControlType.Text name=Desktop 0.1.0
+  [39] id=about-runtime type=ControlType.Text name=Runtime 未確認
+  [40] id=about-protocol type=ControlType.Text name=Protocol 未確認
+  [41] id=about-schema type=ControlType.Text name=Schema 未確認
+  [42] id=support-preview-button type=ControlType.Button name=サポート情報を表示
+  [43] id=diagnostic-readonly type=ControlType.Text name=Desktop 0.1.0 · テスト用記録 · 世代 1 · 公開 2 · エラー なし · コマンド 0件
+  [44] id= type=ControlType.Group name=反復ごとの候補一覧
+  [45] id= type=ControlType.Text name=反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。
+  [46] id= type=ControlType.Group name=候補一覧
+  [47] id=candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a type=ControlType.Button name=fixture:task/Task-184 — 第1回 — A キーボード操作対象
+  [48] id=candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/b18:fixture:artifact/b type=ControlType.Button name=fixture:task/Task-184 — 第1回 — B 
+  [49] id=candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/c18:fixture:artifact/c type=ControlType.Button name=fixture:task/Task-184 — 第2回 — C 
+  [50] id=candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/d18:fixture:artifact/d type=ControlType.Button name=fixture:task/Task-184 — 第2回 — D 
+  [51] id=candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:319:fixture:candidate/e18:fixture:artifact/e type=ControlType.Button name=fixture:task/Task-184 — 第3回 — E 
+  [52] id= type=ControlType.Group name=作業画面の切り替え
+  [53] id= type=ControlType.Button name=成果物  Ctrl+1
+  [54] id= type=ControlType.Button name=候補を比較  Ctrl+2
+  [55] id= type=ControlType.Button name=処理の流れ  Ctrl+3
+stderr: 
