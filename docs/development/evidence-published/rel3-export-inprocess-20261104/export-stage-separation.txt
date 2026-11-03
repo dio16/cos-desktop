@@ -3,30 +3,30 @@ exe_sha256: afb1afc78221d851fb11716c12876096fce3f2a4fd4dc4f458e05d8b60af030d
 base_commit: 574758bb7152b202c8f3a49dbe4d7fd080b384cd
 --- windows before ---
 count: 11
-  [0] class=Shell_TrayWnd pid=14420 name=''
-  [1] class=Zed::Window pid=55792 name='COS Desktop'
-  [2] class=Chrome_WidgetWin_1 pid=7992 name='以下の指示をGTPレビュースキ — DeepSeek Harness'
-  [3] class=Chrome_WidgetWin_1 pid=41932 name='SteelSeries GG'
-  [4] class=Chrome_WidgetWin_1 pid=51824 name='Orca'
-  [5] class=Chrome_WidgetWin_1 pid=35004 name='(132) BAMBI CAMPバンビキャンプ - YouTube - Google Chrome'
-  [6] class=Chrome_WidgetWin_1 pid=44480 name='A01解消レビュー判定 - Google Chrome'
-  [7] class=CabinetWClass pid=14420 name='C:\dev - エクスプローラー'
-  [8] class=Shell_SecondaryTrayWnd pid=14420 name=''
-  [9] class=CEF-OSC-WIDGET pid=19384 name='NVIDIA GeForce Overlay'
-  [10] class=Progman pid=14420 name='Program Manager'
+  [0] class=Shell_TrayWnd pid=14420 label=(foreign window)
+  [1] class=Zed::Window pid=55792 label=COS Desktop
+  [2] class=Chrome_WidgetWin_1 pid=7992 label=(foreign window)
+  [3] class=Chrome_WidgetWin_1 pid=41932 label=(foreign window)
+  [4] class=Chrome_WidgetWin_1 pid=51824 label=(foreign window)
+  [5] class=Chrome_WidgetWin_1 pid=35004 label=(foreign window)
+  [6] class=Chrome_WidgetWin_1 pid=44480 label=(foreign window)
+  [7] class=CabinetWClass pid=14420 label=(foreign window)
+  [8] class=Shell_SecondaryTrayWnd pid=14420 label=(foreign window)
+  [9] class=CEF-OSC-WIDGET pid=19384 label=(foreign window)
+  [10] class=Progman pid=14420 label=(foreign window)
 --- windows after ---
 count: 11
-  [0] class=Shell_TrayWnd pid=14420 name=''
-  [1] class=Zed::Window pid=55792 name='COS Desktop'
-  [2] class=Chrome_WidgetWin_1 pid=7992 name='以下の指示をGTPレビュースキ — DeepSeek Harness'
-  [3] class=Chrome_WidgetWin_1 pid=41932 name='SteelSeries GG'
-  [4] class=Chrome_WidgetWin_1 pid=51824 name='Orca'
-  [5] class=Chrome_WidgetWin_1 pid=35004 name='(132) BAMBI CAMPバンビキャンプ - YouTube - Google Chrome'
-  [6] class=Chrome_WidgetWin_1 pid=44480 name='A01解消レビュー判定 - Google Chrome'
-  [7] class=CabinetWClass pid=14420 name='C:\dev - エクスプローラー'
-  [8] class=Shell_SecondaryTrayWnd pid=14420 name=''
-  [9] class=CEF-OSC-WIDGET pid=19384 name='NVIDIA GeForce Overlay'
-  [10] class=Progman pid=14420 name='Program Manager'
+  [0] class=Shell_TrayWnd pid=14420 label=(foreign window)
+  [1] class=Zed::Window pid=55792 label=COS Desktop
+  [2] class=Chrome_WidgetWin_1 pid=7992 label=(foreign window)
+  [3] class=Chrome_WidgetWin_1 pid=41932 label=(foreign window)
+  [4] class=Chrome_WidgetWin_1 pid=51824 label=(foreign window)
+  [5] class=Chrome_WidgetWin_1 pid=35004 label=(foreign window)
+  [6] class=Chrome_WidgetWin_1 pid=44480 label=(foreign window)
+  [7] class=CabinetWClass pid=14420 label=(foreign window)
+  [8] class=Shell_SecondaryTrayWnd pid=14420 label=(foreign window)
+  [9] class=CEF-OSC-WIDGET pid=19384 label=(foreign window)
+  [10] class=Progman pid=14420 label=(foreign window)
 --- stderr ---
   preview-trace action=reached
   preview-trace build=started
@@ -35,3 +35,6 @@ count: 11
   export-trace action=reached
   export-trace task=started
   export-trace dialog=requested
+
+Foreign window titles and local paths were removed from this copy; only the class and process id
+are retained, which is all the argument uses.

@@ -16,15 +16,16 @@
       "bytes": 486
     },
     "export-stage-separation.txt": {
-      "sha256": "sha256:0c18182d77f937e76e5bc449494749fa88da8ba4e3dca324235bac168c58470e",
-      "bytes": 2047
+      "sha256": "sha256:923af705be1f8c4645aeb5396ede2e73bbe1fcd5592039204361c3982570831a",
+      "bytes": 1980
     }
   },
   "stage_separation": {
     "base_commit": "574758bb7152b202c8f3a49dbe4d7fd080b384cd",
     "exe_sha256": "sha256:afb1afc78221d851fb11716c12876096fce3f2a4fd4dc4f458e05d8b60af030d",
-    "result": "DECISIVE for the stage. The trace reads action=reached, task=started, dialog=requested - the handler runs, the spawned task starts, and the save-dialog request is issued - and then stops. No dialog=<selected|cancelled|failed|dropped> line follows, and a full enumeration of all eleven top-level windows with their classes before and after shows no new window at all: Shell_TrayWnd, Zed::Window (COS Desktop), five Chrome_WidgetWin_1 entries, CabinetWClass, Shell_SecondaryTrayWnd, CEF-OSC-WIDGET and Progman, identical before and after.",
-    "conclusion": "The attempt reaches the platform save-dialog call, that call neither produces a window nor returns in this session, and the flow therefore never reaches the payload decision. The accessibility path is not at fault: the explicit listener dispatched, the handler ran and the task started. Earlier rounds did see a save dialog, which is consistent with this being a property of the current (non-interactive) session rather than of the product, but that is not proven by this run.",
-    "what_is_not_established": "Why the platform call neither shows a window nor fails: gpui's dialog implementation was not inspected, and a silent failure and a silent hang are not distinguished here."
+    "result": "DECISIVE ONLY UP TO THE REQUEST LINE. The trace reads action=reached, task=started, dialog=requested and then stops. Because dialog=requested is emitted before the update call that opens the dialog, the evidence establishes that the handler ran, the trial guard accepted, the spawned task started and the request line was reached - it does NOT establish that the platform dialog call was entered or that it failed to return.",
+    "conclusion": "The accessibility path is cleared: dispatch, handler and task start all happen. Where the flow stops after the request line is not determined. Two snapshots of the top-level window list, taken before and after, show no new window at the two observation points; a window appearing only between them is not excluded.",
+    "what_is_not_established": "Whether the flow enters cx.update and the receiver await, whether the platform dialog call fails or hangs, and whether a window appeared only between the two snapshots.",
+    "next_boundary": "Instrument the cx.update and receiver.await boundary."
   }
 }
