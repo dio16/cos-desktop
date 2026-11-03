@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REPO = ROOT.parents[3]
 sys.path.insert(0, str(ROOT))
 import s2b_capture  # noqa: E402
+import s3_native_replay  # noqa: E402
 import s2b_contracts as s2b  # noqa: E402
 
 FIXTURE = ROOT / "fixtures/s2b-wire-v1.json"
@@ -370,8 +371,12 @@ class S2BWireContract(unittest.TestCase):
                          {"status": "NOT_MEASURED", "reason": "NO_RETAINED_VALID_RECORD"})
 
     def test_old_capture_without_platform_submission_start_still_validates(self) -> None:
-        value = copy.deepcopy(example())
-        self.assertEqual(s2b.validate_capture(value)["summary"]["kind_counts"][3], 1)
+        value = s2b.validate_capture(example())
+        expected = s2b.endpoint_matrix(value)
+        legacy = {name: item for name, item in expected.items()
+                  if name != "platform-submission-start"}
+        s3_native_replay.require_endpoints(
+            {"observation_version": 1, "endpoints": legacy}, value)
 
     def test_retained_bundles_are_classified_cancelled_and_observed(self) -> None:
         bundle = REPO / "docs/development/evidence/r0a-s2b/native-bundles.zip"

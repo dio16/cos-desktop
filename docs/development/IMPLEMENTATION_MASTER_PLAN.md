@@ -3848,3 +3848,10 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Verification:** fmt OK; clippy 0 issues; `cargo test -p cos-desktop --features r0-s2b-instrumentation` 186 passed / 0 failed.
 - **State:** implementation complete; **Native measurement NOT_RUN** (the new endpoint appears only in a new approved capture). `present-return` is deferred to a separate slice. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.183 MP-R0A endpoint replay compatibility fix (2026-11-02)
+
+- **Version 1:** `require_endpoints()` now compares against the **full expected matrix minus only `platform-submission-start`**, so a version-1 observation that omits any pre-existing endpoint is refused (`OBSERVATION_BINDING`). Version 2 still requires exact equality including the new endpoint.
+- **Tests:** `test_v1_requires_full_legacy_matrix_and_v2_requires_new_endpoint` (correct v1 matrix accepted; v1 missing `local-notify` rejected; v2 missing the new endpoint rejected); `test_old_capture_without_platform_submission_start_still_validates` now builds the actual legacy observation and calls `require_endpoints` rather than only `validate_capture`; `test_platform_submission_start_is_recomputed_or_rejected` updated to use the full legacy matrix plus status/reason tampering.
+- **Verification:** `pytest apps/desktop/devtools/r0/tests -q` 354 passed / 12 skipped / 1 failed — the sole failure is the known live-manifest `driver_hash` mismatch (recorded, not caused by this change); fmt OK.
+- **State:** implementation only; Native measurement NOT_RUN; MP-R0A IN_PROGRESS, product acceptance NOT_RUN.
+

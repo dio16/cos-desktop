@@ -335,8 +335,9 @@ def require_endpoints(observation: dict, capture: dict) -> None:
     if observation.get("observation_version") == 2:
         require(actual == expected, "OBSERVATION_BINDING")
     else:
-        for name, value in actual.items():
-            require(expected.get(name) == value, "OBSERVATION_BINDING")
+        expected_v1 = {name: value for name, value in expected.items()
+                       if name != "platform-submission-start"}
+        require(actual == expected_v1, "OBSERVATION_BINDING")
 
 
 def require_frame_identity(observation: dict, capture: dict) -> None:
