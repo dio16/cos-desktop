@@ -1,0 +1,5 @@
+base_commit=ce14dca2181fe34469af6e2120f50ba7c9bc4724
+exe_sha256=f2913a8216cb097c2ffcef2329880adc16d0c85bcb093b2747533ec9f1b966a2
+windows=Microsoft Windows NT 10.0.26300.0
+dpi=96
+run=release fixture task-184 isolated LOCALAPPDATA

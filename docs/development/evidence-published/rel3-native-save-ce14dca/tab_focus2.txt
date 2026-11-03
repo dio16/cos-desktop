@@ -1,0 +1,16 @@
+PANEL|False
+PREVIEW_VISIBLE|False
+PREVIEW_REACHED|False
+EXPORT_REACHED|False
+InvalidOperation: C:\dev\cos-desktop\target\tab_focus2.ps1:29
+Line |
+  29 |  $exp.SetFocus(); Start-Sleep -Milliseconds 200; [System.Windows.Forms …
+     |  ~~~~~~~~~~~~~~~
+     | null 値の式に対してメソッドを呼び出すことはできません。
+ENTER_DIALOG|False
+InvalidOperation: C:\dev\cos-desktop\target\tab_focus2.ps1:32
+Line |
+  32 |  $exp.SetFocus(); Start-Sleep -Milliseconds 200; [System.Windows.Forms …
+     |  ~~~~~~~~~~~~~~~
+     | null 値の式に対してメソッドを呼び出すことはできません。
+SPACE_DIALOG|False

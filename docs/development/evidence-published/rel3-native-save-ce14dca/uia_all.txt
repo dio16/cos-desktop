@@ -1,0 +1,61 @@
+TitleBar|ControlType.TitleBar|COS Desktop
+SystemMenuBar|ControlType.MenuBar|システム メニュー バー
+Item 1|ControlType.MenuItem|System
+Minimize|ControlType.Button|最小化
+Maximize|ControlType.Button|最大化
+Close|ControlType.Button|閉じる
+|ControlType.Pane|COS Desktop 作業画面
+|ControlType.Group|現在のタスクと状態
+|ControlType.Text|Task-184  新製品キービジュアル
+|ControlType.Text|テストデータ / 模擬表示
+|ControlType.Text|タスクの状態: 実行中（ACTIVE）
+|ControlType.Text|処理段階: REFINE
+|ControlType.Text|反復回数: 第3回
+|ControlType.Text|成果物の利用状態: 取得可能（AVAILABLE）（5件）
+|ControlType.Text|接続・情報の鮮度: 情報を受信中
+|ControlType.Text|正式な結果: 不明 ? 正式な結果の情報を受け取れていません
+|ControlType.Group|停止の操作と現在の受付状況
+|ControlType.Button|タスクを停止
+|ControlType.Button|停止要求の受付状況を確認（現在は操作できません）
+|ControlType.Text|この画面から停止要求は送っていません
+|ControlType.Text|停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。
+|ControlType.Group|タスク一覧
+task-search|ControlType.Edit|タスクを検索
+|ControlType.List|
+task-row-fixture:task/Task-184|ControlType.ListItem|Task-184 ? 新製品キービジュアル
+|ControlType.Text|キーボード操作対象
+|ControlType.Group|作業領域：候補を比較
+|ControlType.Group|この画面での比較対象。正式な採用結果ではありません
+|ControlType.Group|比較するA側：未選択
+|ControlType.Group|比較するB側：未選択
+|ControlType.Button|比較するA側の候補を変更
+|ControlType.Button|比較するB側の候補を変更
+|ControlType.Button|比較を閉じて閲覧中の候補に戻る
+|ControlType.Group|候補の詳細
+|ControlType.Group|詳細と説明
+|ControlType.Text|候補は表示されていません
+|ControlType.Button|目的 ? 利用可能: Task-184 ? 新製品キービジュアル
+|ControlType.Button|評価 ? 利用不可: 候補は選択されていません。
+|ControlType.Button|判断の根拠 ? 利用不可: 候補は選択されていません。
+|ControlType.Group|判断の根拠の詳細
+|ControlType.Button|改善 ? 利用不可: 候補は選択されていません。
+|ControlType.Button|結果 ? 利用不可: このタスクの正式な結果は、受信した情報に含まれていません。
+|ControlType.Text|このアプリについて
+about-desktop|ControlType.Text|Desktop 0.1.0
+about-runtime|ControlType.Text|Runtime 未確認
+about-protocol|ControlType.Text|Protocol 未確認
+about-schema|ControlType.Text|Schema 未確認
+|ControlType.Button|サポート情報を表示
+diagnostic-readonly|ControlType.Text|Desktop 0.1.0 ・ テスト用記録 ・ 世代 1 ・ 公開 2 ・ エラー なし ・ コマンド 0件
+|ControlType.Group|反復ごとの候補一覧
+|ControlType.Text|反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。
+|ControlType.Group|候補一覧
+candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a|ControlType.Button|fixture:task/Task-184 ? 第1回 ? A キーボード操作対象
+candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/b18:fixture:artifact/b|ControlType.Button|fixture:task/Task-184 ? 第1回 ? B 
+candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/c18:fixture:artifact/c|ControlType.Button|fixture:task/Task-184 ? 第2回 ? C 
+candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/d18:fixture:artifact/d|ControlType.Button|fixture:task/Task-184 ? 第2回 ? D 
+candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:319:fixture:candidate/e18:fixture:artifact/e|ControlType.Button|fixture:task/Task-184 ? 第3回 ? E 
+|ControlType.Group|作業画面の切り替え
+|ControlType.Button|成果物  Ctrl+1
+|ControlType.Button|候補を比較  Ctrl+2
+|ControlType.Button|処理の流れ  Ctrl+3

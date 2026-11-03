@@ -1,0 +1,30 @@
+D|PID=52904|HWND=3474834|DPI=96
+WINDOW|COS Desktop|
+BUTTON|support-preview-button|ABSENT
+BUTTON|support-export-button|ABSENT
+TAB|0||ControlType.Window|COS Desktop
+TAB|1||ControlType.Window|COS Desktop
+TAB|2||ControlType.Window|COS Desktop
+TAB|3||ControlType.Window|COS Desktop
+TAB|4||ControlType.Window|COS Desktop
+TAB|5||ControlType.Window|COS Desktop
+TAB|6||ControlType.Window|COS Desktop
+TAB|7||ControlType.Window|COS Desktop
+TAB|8||ControlType.Window|COS Desktop
+TAB|9||ControlType.Window|COS Desktop
+TAB|10||ControlType.Window|COS Desktop
+TAB|11||ControlType.Window|COS Desktop
+TAB|12||ControlType.Window|COS Desktop
+TAB|13||ControlType.Window|COS Desktop
+TAB|14||ControlType.Window|COS Desktop
+TAB|15||ControlType.Window|COS Desktop
+TAB|16||ControlType.Window|COS Desktop
+TAB|17||ControlType.Window|COS Desktop
+FOCUS_PREVIEW||ControlType.Window|COS Desktop
+PREVIEW|ABSENT
+FOCUS_EXPORT||ControlType.Window|COS Desktop
+STATUS_BEFORE|<none>
+DIALOGS|1
+DIALOG|COS Desktop|Zed::Window|ControlType.Window
+AFTER_CANCEL_FILES|2
+STATUS_AFTER_CANCEL|<none>

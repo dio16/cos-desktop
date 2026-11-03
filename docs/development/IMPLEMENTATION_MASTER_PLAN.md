@@ -4109,3 +4109,14 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Unverified:** exact Tab order and native dialog behavior are **NOT_RUN**; the remaining review item is deferred to the next review as instructed.
 - **Verification:** `cargo test -p desktop-gpui` 114 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` succeeds. MP-REL3 remains incomplete.
 
+### 19.208 MP-REL3 Native save measurement at ce14dca (2026-11-02)
+
+- **Environment (A):** base `ce14dca2181fe34469af6e2120f50ba7c9bc4724`; release exe `sha256:f2913a8216cb097c2ffcef2329880adc16d0c85bcb093b2747533ec9f1b966a2`; Windows `10.0.26300.0`; DPI 96; fixture `task-184`, isolated `LOCALAPPDATA`.
+- **B PASS:** Ctrl+D panel opened; support preview displayed 573 UTF-8 bytes and was `ControlType.Text`, `IsKeyboardFocusable=False` (read-only).
+- **C NOT_PROVABLE:** both `support-preview-button` and `support-export-button` were present and `IsKeyboardFocusable=True`; export opened the native dialog when focused + Enter/Space. A Tab traversal reaching them was not observed through UIA automation (foreground/keyboard delivery unreliable), so Tab/Shift+Tab reachability is not claimed.
+- **D PARTIAL:** native save dialog `#32770 名前を付けて保存` opened; Escape/Cancel created no file (`cancel-report.txt` absent). Status preservation after cancel is **NOT_PROVABLE** because the status label is not exposed in the UIA tree.
+- **E PASS:** saving to a dedicated directory produced `report-final.txt`, 573 bytes, no BOM, valid UTF-8, and **byte-identical** to the preview text (`sha256:67f69633…` for both); below the 12,288-byte bound.
+- **F PARTIAL:** pre-seeded `report-existing.txt` remained exactly `ORIGINAL` (8 bytes) after attempting the same path; destructive overwrite did not occur. The `AlreadyExists` message and stale-publication-during-dialog rejection are **NOT_PROVABLE / NOT_RUN** (status text not UIA-exposed; publication change during dialog not exercised).
+- **G:** evidence published under `docs/development/evidence-published/rel3-native-save-ce14dca/` (`.txt` logs, preview/saved bytes, `environment.txt`, `record.json` with per-file SHA-256).
+- **Scope:** no product code change in this slice. `CleanupFailed` forced test and full consent-UI acceptance remain out of scope. **MP-REL3 incomplete; product acceptance NOT_RUN.**
+

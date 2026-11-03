@@ -1,0 +1,28 @@
+{
+  "measurement": "MP-REL3 native save with ce14dca release",
+  "base_commit": "ce14dca2181fe34469af6e2120f50ba7c9bc4724",
+  "exe_sha256": "sha256:f2913a8216cb097c2ffcef2329880adc16d0c85bcb093b2747533ec9f1b966a2",
+  "windows": "10.0.26300.0",
+  "dpi": 96,
+  "files": {
+    "cancel_existing_tab.txt": "sha256:5da77dbc8f0c0ec1d3b25650b3cc51b519e9ad06e5eff359e833158f23cbaad1",
+    "environment.txt": "sha256:75b24f55e853c56cfc941d435806a1db1292ca8d7855cd1fd6466d6a1cf24f53",
+    "final_measure.txt": "sha256:ab89c9f62ac5d5d8c42853ca31e5149439d96222ba06d708e03f31e8657695a9",
+    "preview-text.txt": "sha256:67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
+    "report-existing.txt": "sha256:962f85a27854336f3286ad54b49321f62525043b5f3508b2ecc887fdd6e7550e",
+    "report-final.txt": "sha256:67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
+    "save_keys.txt": "sha256:84f4f1537590bd81c2f7eac7490e8255da08bd628edc79a8d24b64ee0cf2900f",
+    "session1.txt": "sha256:e39b758ba28a1b8baa01a2a22ed4a7566ec075e5faeaa230c93e3e5047cf8d89",
+    "tab_focus2.txt": "sha256:e447d2f5b96ea7c330f32271c3a21072be602c8052e98fe49ca7e55dfe0ff27f",
+    "uia_all.txt": "sha256:00fc3705be9747d8954e4faaf58ca16d2ea1615df7eb924de138b535d99cdfe3"
+  },
+  "verdicts": {
+    "A": "PASS",
+    "B": "PASS",
+    "C": "NOT_PROVABLE (buttons keyboard-focusable; Tab traversal not observed via UIA automation)",
+    "D": "PASS for dialog-open/no-file-on-cancel; status preservation NOT_PROVABLE (status text not exposed by UIA)",
+    "E": "PASS (573 bytes, no BOM, preview bytes identical)",
+    "F": "PASS for existing-content preservation; overwrite-message NOT_PROVABLE; stale-publication NOT_RUN",
+    "G": "recorded"
+  }
+}

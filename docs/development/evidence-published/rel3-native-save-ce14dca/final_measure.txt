@@ -1,0 +1,15 @@
+PANEL|True
+PREVIEW_BTN|True|focusable=True
+PREVIEW|True|focusable=False|len=573
+EXPORT_BTN|True|focusable=True
+TAB_REACHED|False
+FINAL_EXISTS|True
+FINAL_LEN|573
+FINAL_BOM|False
+FINAL_SHA|67F69633CD6FE90C4FF20DFC02CBBDFCE6BE5E2E4B16C5B56EEB394B837B90E3
+Get-Item: C:\dev\cos-desktop\target\final_measure.ps1:30
+Line |
+  30 |  … FILE_LEN|$((Get-Item (Resolve-Path 'target/native-save-ce14dca').Path …
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | 引数 '+\preview-text.txt' を受け取る位置指定パラメーターが見つかりません。
+PREVIEW_FILE_LEN|

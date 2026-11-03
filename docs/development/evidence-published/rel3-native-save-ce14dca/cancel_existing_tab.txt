@@ -1,0 +1,29 @@
+STATUS_NOW|<none>
+TAB|0|ControlType.Button|サイト情報を表示
+TAB|1|ControlType.Edit|アドレス検索バー
+TAB|2|ControlType.Button|YouTube をインストールします
+TAB|3|ControlType.Button|このタブのブックマークを編集します
+TAB|4|ControlType.Button| m グループ - 閉じています
+TAB|5|ControlType.Button|ガイド
+TAB|6|ControlType.Hyperlink|YouTube ホーム
+TAB|7|ControlType.Button|ナビゲーションをスキップ
+TAB|8|ControlType.ComboBox|検索
+TAB|9|ControlType.Button|Search
+TAB|10|ControlType.Button|音声で検索
+TAB|11|ControlType.Button|作成
+TAB|12|ControlType.Button|通知
+TAB|13|ControlType.Button|アカウント メニュー
+TAB|14|ControlType.Slider|移動スライダー
+TAB|15|ControlType.Slider|パネルをクリックまたはスクロールすると、再生位置を細かく調整できます。
+TAB|16|ControlType.Button|
+TAB|17|ControlType.Button|一時停止 キーボード ショートカット k
+TAB|18|ControlType.Button|一時停止 キーボード ショートカット k
+TAB|19|ControlType.Button|一時停止 キーボード ショートカット k
+TAB_HAS_PREVIEW|False
+TAB_HAS_EXPORT|False
+CANCEL_DIALOG_OPEN|True
+AFTER_CANCEL_EXISTS|False
+AFTER_CANCEL_STATUS|<none>
+EXIST_DIALOG_OPEN|True
+EXIST_CONTENT|ORIGINAL
+EXIST_STATUS|<none>
