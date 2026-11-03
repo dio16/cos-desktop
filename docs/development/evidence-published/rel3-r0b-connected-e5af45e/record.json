@@ -1,0 +1,13 @@
+{
+  "measurement": "MP-R0B connected-only refusal (no runtime endpoint available)",
+  "base_commit": "e48e2a95fcff470df311ca370bd55bf289e52ccd",
+  "ref": "origin/dev",
+  "files": {
+    "refusal.txt": {
+      "sha256": "sha256:9aff3ec80d063a21fbc1a6fcf73cbffb28899b30419236fb1200bbbc64c88757",
+      "git_object_id": "bd8b1f94414594c154eef17ca9fc45c5b9255bef",
+      "bytes": 347
+    }
+  },
+  "note": "Only the refusal is captured here: the connected CPU and working-set baseline was not measured because no reachable runtime endpoint exists in this environment. The refusal demonstrates that a connected run cannot be recorded against an unreachable endpoint."
+}
