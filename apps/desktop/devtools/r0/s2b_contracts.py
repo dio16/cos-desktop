@@ -326,7 +326,7 @@ def validate_capture(document: object, *, execution: str | None = None,
                 or arrays["local_kind_retained"][:2] != [kinds[8], kinds[9]]
                 or arrays["local_kind_retained"][2] != kinds[10]):
             fail("COUNTS")
-        for index in range(2):
+        for index in range(3):
             accounted = (arrays["local_kind_retained"][index]
                          + arrays["local_kind_scope_clock_rejected"][index]
                          + arrays["local_kind_lifetime_rejected"][index]
@@ -387,11 +387,11 @@ def first_frame_matrix(capture: dict) -> dict:
         if not submissions:
             continue
         first = min(submissions, key=lambda record: record["start_ns"])
-        if first["start_ns"] < created:
-            continue
-        gaps = [record for record in records
-                if record.get("kind") == 5 and created < record["start_ns"] < first["start_ns"]]
-        if gaps:
+        if not created < first["start_ns"]:
+            return {"status": "NOT_MEASURED", "reason": "ORDER_UNDETERMINED"}
+        # kind 5 carries only a lost count and no timestamp; any retained gap makes
+        # initiality non-provable for the whole capture (conservative).
+        if any(record.get("kind") == 5 for record in records):
             return {"status": "NOT_MEASURED", "reason": "JOURNAL_GAP"}
         return {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"}
     return {"status": "NOT_MEASURED", "reason": "NO_RETAINED_VALID_RECORD"}

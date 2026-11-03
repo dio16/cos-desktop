@@ -546,6 +546,7 @@ impl Observer {
                     .any(|(id, submitted)| *id == window && *submitted < at)
                 {
                     self.counts.correlation_invalid += 1;
+                    self.counts.local_lifetime_rejected[2] += 1;
                     return Err(io::ErrorKind::InvalidData.into());
                 }
                 let _ = self.window(window, at, false)?;
@@ -646,7 +647,7 @@ impl Observer {
 }
 
 fn local_conservation_holds(counts: &Counts) -> bool {
-    (0..2).all(|index| {
+    (0..3).all(|index| {
         counts.kinds[8 + index]
             .checked_add(counts.local_scope_clock_rejected[index])
             .and_then(|value| value.checked_add(counts.local_lifetime_rejected[index]))
@@ -913,6 +914,10 @@ mod tests {
         assert!(local_conservation_holds(&counts));
         counts.local_retention_omitted[1] = 1;
         assert!(!local_conservation_holds(&counts));
+        counts.local_retention_omitted[1] = 0;
+        counts.local_received_kinds[2] = 1;
+        counts.local_lifetime_rejected[2] = 1;
+        assert!(local_conservation_holds(&counts));
     }
 
     #[test]

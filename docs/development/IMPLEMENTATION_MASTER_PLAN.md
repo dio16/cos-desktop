@@ -3932,3 +3932,11 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Tests:** Rust scope/counter and frame tests updated for 3 slots; Python adds marker-before-submission accepted, missing marker, marker-after-submission and gap cases, plus the existing v1–v4 compatibility checks. `pytest apps/desktop/devtools/r0/tests -q` **356 passed / 12 skipped / 1 failed** (the known live-manifest driver_hash mismatch); Rust `cargo test -p cos-desktop --features r0-s2b-instrumentation` **186 passed / 0 failed**; fmt OK; clippy 0 issues.
 - **State:** implementation complete; **Native measurement NOT_RUN** (new A1 needs build/approval/identity/capture). MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.190 MP-R0A marker review fixes B-01/B-02/A-01 (2026-11-02)
+
+- **B-01 three-slot conservation:** Rust `local_conservation_holds()` loops `0..3` and `s2b_contracts.validate_capture()` checks `range(3)`, so kind 10 received/retained/rejected/omitted inconsistencies are detected. A marker rejected because a submission already precedes it increments `local_lifetime_rejected[2]` as well as `correlation_invalid`, keeping the three-slot equation true.
+- **B-02 kind 5 schema:** `first_frame_matrix()` no longer reads `start_ns` from kind 5 records (they carry only `lost`). Any retained kind 5 gap makes initiality non-provable, returning `NOT_MEASURED / JOURNAL_GAP` conservatively instead of raising `TypeError`.
+- **A-01 same timestamp:** `created < first_start` is now strict; equal timestamps return `NOT_MEASURED / ORDER_UNDETERMINED` rather than `OBSERVED`.
+- **Tests:** Rust conservation test covers a valid third slot (`received[2)=1` = `lifetime_rejected[2]`); Python first-frame tests use a timestamp-less kind 5 gap and add the equal-time case. `pytest apps/desktop/devtools/r0/tests -q` 356 passed / 12 skipped / 1 failed (known live-manifest driver_hash); Rust `cargo test -p cos-desktop --features r0-s2b-instrumentation` 186 passed / 0 failed; fmt OK; clippy 0 issues.
+- **State:** implementation only; Native measurement NOT_RUN; MP-R0A IN_PROGRESS, product acceptance NOT_RUN.
+

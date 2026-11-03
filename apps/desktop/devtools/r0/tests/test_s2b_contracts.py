@@ -90,8 +90,12 @@ class S2BWireContract(unittest.TestCase):
             {"kind": 3, "window": 7, "start_ns": 200}]})["status"], "NOT_MEASURED")
         self.assertEqual(s2b.first_frame_matrix({"records": [
             {"kind": 10, "window": 7, "start_ns": 100},
-            {"kind": 5, "window": 7, "start_ns": 150},
+            {"kind": 5, "lost": 1},
             {"kind": 3, "window": 7, "start_ns": 200}]})["reason"], "JOURNAL_GAP")
+        self.assertEqual(s2b.first_frame_matrix({"records": [
+            {"kind": 10, "window": 7, "start_ns": 200},
+            {"kind": 3, "window": 7, "start_ns": 200}]})["reason"],
+            "ORDER_UNDETERMINED")
 
     def test_complete_local_kind_arrays_validate(self):
         value = copy.deepcopy(example())
