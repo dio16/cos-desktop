@@ -1,0 +1,16 @@
+automation id inventory (fresh release build)
+exe_sha256: bf73a64cf22d81cf2b187e56539fe083b05d97e01e93e28f2c7ab61ec02cd22e
+descendants: 48
+id[0]=TitleBar type=ControlType.TitleBar
+id[1]=SystemMenuBar type=ControlType.MenuBar
+id[2]=Item 1 type=ControlType.MenuItem
+id[3]=Minimize type=ControlType.Button
+id[4]=Maximize type=ControlType.Button
+id[5]=Close type=ControlType.Button
+id[22]=task-search type=ControlType.Edit
+id[24]=task-row-fixture:task/Task-184 type=ControlType.ListItem
+id[39]=candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a type=ControlType.Button
+id[40]=candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/b18:fixture:artifact/b type=ControlType.Button
+id[41]=candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/c18:fixture:artifact/c type=ControlType.Button
+id[42]=candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/d18:fixture:artifact/d type=ControlType.Button
+id[43]=candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:319:fixture:candidate/e18:fixture:artifact/e type=ControlType.Button
