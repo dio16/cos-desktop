@@ -366,6 +366,18 @@ impl SupportPreviewState {
 }
 
 /// Closed UI messages for the export result; never include a path or report text.
+/// Apply the outcome of one export attempt to the status line. A cancelled dialog or a
+/// failed open produces `None` and must leave the previous status untouched; the widget
+/// and the tests both go through this function so the rule is covered by tests.
+fn apply_export_outcome(
+    status: &mut Option<&'static str>,
+    result: Option<Result<(), app_core::support_report::ExportWriteError>>,
+) {
+    if let Some(outcome) = result {
+        *status = Some(export_status_message(outcome));
+    }
+}
+
 fn export_status_message(
     result: Result<(), app_core::support_report::ExportWriteError>,
 ) -> &'static str {
@@ -1263,11 +1275,8 @@ impl Shell {
             };
             let _ = this.update(cx, |this, cx| {
                 this.export_in_progress = false;
-                // A cancelled dialog or a failed open produces no outcome at all, so the
-                // previous status must stay readable instead of being cleared.
-                if let Some(outcome) = result {
-                    this.export_status = Some(export_status_message(outcome));
-                }
+                // Cancelled or failed opens produce no outcome and keep the last status.
+                apply_export_outcome(&mut this.export_status, result);
                 cx.notify();
             });
         });
@@ -5699,22 +5708,16 @@ mod contrast_scope_tests {
         // The product path only writes a status when the attempt produced an outcome:
         // a cancelled dialog or a failed open leaves whatever was there untouched.
         let mut status: Option<&'static str> = Some("保存しました");
-        let cancelled: Option<Result<(), app_core::support_report::ExportWriteError>> = None;
-        if let Some(outcome) = cancelled {
-            status = Some(super::export_status_message(outcome));
-        }
+        super::apply_export_outcome(&mut status, None);
         assert_eq!(status, Some("保存しました"), "cancel keeps the previous status");
 
-        let failed = Some(Err(app_core::support_report::ExportWriteError::AlreadyExists));
-        if let Some(outcome) = failed {
-            status = Some(super::export_status_message(outcome));
-        }
+        super::apply_export_outcome(
+            &mut status,
+            Some(Err(app_core::support_report::ExportWriteError::AlreadyExists)),
+        );
         assert_eq!(status, Some("同名のファイルが存在します"), "an outcome replaces it");
 
-        let succeeded: Option<Result<(), app_core::support_report::ExportWriteError>> = Some(Ok(()));
-        if let Some(outcome) = succeeded {
-            status = Some(super::export_status_message(outcome));
-        }
+        super::apply_export_outcome(&mut status, Some(Ok(())));
         assert_eq!(status, Some("保存しました"), "success replaces it too");
     }
 
