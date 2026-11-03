@@ -5519,5 +5519,26 @@ mod contrast_scope_tests {
             state.take_for_save(generation, false, None).is_some(),
             "the current generation can still save after a stale request"
         );
+        // Re-run the scenario with a genuinely older generation: begin twice, keep the
+        // first one, and check that its request neither returns data nor clears the second.
+        let mut state = SupportPreviewState::default();
+        let older = state.begin(None);
+        let newer = state.begin(None);
+        assert!(state.complete(
+            newer,
+            None,
+            SupportBuild::DesktopOnly {
+                text: "report".to_owned(),
+                export: Some(export()),
+            }
+        ));
+        assert!(
+            state.take_for_save(older, false, None).is_none(),
+            "an older generation is refused"
+        );
+        assert!(
+            state.take_for_save(newer, false, None).is_some(),
+            "the newer generation still saves after the older request"
+        );
     }
 }
