@@ -1225,7 +1225,8 @@ impl Shell {
         if !begin_export(&mut self.export_in_progress) {
             return;
         }
-        self.export_status = None;
+        // Keep the previous status visible until this attempt produces a real outcome,
+        // so a cancelled dialog leaves the last result readable instead of blank.
         let generation = self.support_state.generation;
         self.export_task = cx.spawn(async move |this, cx| {
             let directory = std::env::var_os("USERPROFILE")
