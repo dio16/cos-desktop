@@ -527,7 +527,7 @@
         "full_coverage": false
       },
       "approved": {
-        "product_commit": "0c6434144e93bbe82612d9f133f43a77542a82d",
+        "product_commit": "0c6d581e7dd507182aa2f9b305fe06f34c238423",
         "executable_sha256": "sha256:75495068af0c2ab43bf93578b4c673fbdff56652efa4d8951d72593a8a1cbf6e",
         "build_record_sha256": "sha256:45e594bb579c1a3d0c207532d3c4b9cf7a8d8416729891ebd0bd518d611c59a2"
       },
