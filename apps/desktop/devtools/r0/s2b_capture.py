@@ -307,6 +307,10 @@ def verify_bundle(manifest_path: Path, output: Path, timeout_ms: int) -> dict:
         expected = observation_document(manifest, driver.sha256_file(manifest_path), build_digest,
                                         identity["observer_source_sha256"], entry, capture, capture_bytes, output)
         version = actual.get("observation_version")
+        # Exact int check: bool and float compare equal to ints in python, so `in (1, 2)`
+        # would accept True, 1.0 and 2.0 as legacy versions.
+        if type(version) is not int or version not in (1, 2, 3):
+            s2b.fail("OBSERVATION_BINDING")
         if version in (1, 2):
             # Legacy archives predate the derived platform-submission endpoints.
             expected["observation_version"] = version

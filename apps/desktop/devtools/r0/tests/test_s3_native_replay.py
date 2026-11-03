@@ -82,6 +82,17 @@ class NativePublishedReplay(unittest.TestCase):
                     {"observation_version": version, "endpoints": extra}, capture)
             self.assertEqual(str(caught.exception), "OBSERVATION_BINDING")
 
+    def test_observation_version_must_be_a_plain_integer(self):
+        # bool and float compare equal to ints in python, so a loose membership test would
+        # treat True, 1.0 and 2.0 as legacy versions.
+        capture = {"summary": {"kind_counts": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]}}
+        expected = s2b.endpoint_matrix(capture)
+        for bad in (True, 1.0, 2.0, 0, 4, "3", None):
+            with self.assertRaises(s2b.ObservationError) as caught:
+                replay.require_endpoints(
+                    {"observation_version": bad, "endpoints": dict(expected)}, capture)
+            self.assertEqual(str(caught.exception), "OBSERVATION_BINDING")
+
     def test_frame_identity_must_equal_capture_recomputation(self):
         capture = {"records": [{"frame_id": 7}]}
         expected = {"status": "MEASURED", "records": 1, "distinct_ids": 1,

@@ -333,6 +333,9 @@ def require_endpoints(observation: dict, capture: dict) -> None:
     actual = observation.get("endpoints")
     require(isinstance(actual, dict), "OBSERVATION_BINDING")
     version = observation.get("observation_version")
+    # Exact int: bool and float compare equal to ints, so True/1.0/2.0 would otherwise be
+    # taken for a legacy version.
+    require(type(version) is int and version in (1, 2, 3), "OBSERVATION_BINDING")
     if version == 3:
         require(actual == expected, "OBSERVATION_BINDING")
         return
