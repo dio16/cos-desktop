@@ -1,0 +1,20 @@
+MP-AX1 diagnostics toggle: independent native measurement (Lead build)
+exe: C:\dev\cos-build-fresh\release\cos-desktop.exe
+exe_sha256: c71286f1672bb96aefbf92454a5cf11cf16eef6eafaa630c53fd107264588c94
+windows: 10.0.26300.0
+base_commit: ac17a645be06b65d6b496a3b03b8849349b5f7ad
+window: COS Desktop
+closed: descendants=49 ids=diagnostics-toggle
+toggle_found: type=ControlType.Button focusable=True name=診断情報を開く
+toggle_patterns: InvokePatternIdentifiers.Pattern
+after_invoke_open: descendants=56 ids=diagnostics-toggle,support-preview-button,diagnostic-readonly
+toggle_name_open: 診断情報を閉じる
+after_invoke_close: descendants=49 ids=diagnostics-toggle
+toggle_name_closed: 診断情報を開く
+reopened: descendants=56 ids=diagnostics-toggle,support-preview-button,diagnostic-readonly
+support_preview_button: present type=ControlType.Button
+after_preview_invoke: descendants=56 ids=diagnostics-toggle,support-preview-button,diagnostic-readonly
+export_button: absent
+export_status: (absent)
+export_trace: (absent)
+alive_at_end: True

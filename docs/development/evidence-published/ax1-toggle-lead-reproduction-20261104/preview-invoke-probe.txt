@@ -1,0 +1,12 @@
+MP-REL3 support preview through accessibility invoke
+exe_sha256: c71286f1672bb96aefbf92454a5cf11cf16eef6eafaa630c53fd107264588c94
+base_commit: ac17a645be06b65d6b496a3b03b8849349b5f7ad
+preview_button: present
+preview_button_name: サポート情報を表示
+after_wait_3000: export=absent status=absent trace=absent preview=absent
+after_wait_6000: export=absent status=absent trace=absent preview=absent
+after_wait_10000: export=absent status=absent trace=absent preview=absent
+descendants_final: 56
+  diagnostics-toggle | ControlType.Button | 診断情報を閉じる
+  support-preview-button | ControlType.Button | サポート情報を表示
+  diagnostic-readonly | ControlType.Text | Desktop 0.1.0 · テスト用記録 · 世代 1 · 公開 2 · エラー なし · コマンド 0件

@@ -1,0 +1,19 @@
+{
+  "measurement": "MP-AX1 diagnostics toggle - independent reproduction by the Lead, plus a preview-invoke probe",
+  "base_commit": "ac17a645be06b65d6b496a3b03b8849349b5f7ad",
+  "exe_sha256": "sha256:c71286f1672bb96aefbf92454a5cf11cf16eef6eafaa630c53fd107264588c94",
+  "build": "Release build of the candidate into C:\\dev\\cos-build-fresh. Rebuilds into three other fresh target directories failed with os error 5 while rustc wrote dependency files, so this is the only directory that produced a binary for this candidate.",
+  "windows": "10.0.26300.0",
+  "toggle_result": "INDEPENDENTLY REPRODUCED. diagnostics-toggle is present as ControlType.Button, keyboard-focusable, with a name that reads 診断情報を開く while closed and 診断情報を閉じる while open; it offers InvokePattern; invoking it changed the descendant count from 49 to 56 with diagnostic-readonly and support-preview-button appearing, and invoking again returned to 49 with both gone.",
+  "preview_probe": "Invoking support-preview-button (named サポート情報を表示) did not produce support-preview-readonly within the three waits tried (3s, then 6s, then 10s more): the descendant count stayed at 56 and no support-export-button, support-export-status or support-export-trace ever appeared. The diagnostic-readonly line did render on open, so the panel itself is live. Whether the button's accessibility action is not wired to the generation, or the generation needs something this environment cannot supply, is NOT distinguished by this probe.",
+  "files": {
+    "preview-invoke-probe.txt": {
+      "sha256": "sha256:0ca9082562a9b79796e0e07c15be15f649c502e64a9d9b5fc7e878b3a07697c1",
+      "bytes": 789
+    },
+    "toggle-measurement.txt": {
+      "sha256": "sha256:b69955d667f7281167b1142dc5055e6f0ace4804947bb61ffbbb3d3279e197e2",
+      "bytes": 1054
+    }
+  }
+}
