@@ -13,6 +13,7 @@ skipped rather than failed. Where a record exists, two shapes appear: `files` va
 ```python
 import hashlib, json, pathlib
 root = pathlib.Path('docs/development/evidence-published')
+failures = 0
 for setdir in sorted(p for p in root.iterdir() if p.is_dir()):
     record = setdir / 'record.json'
     if not record.is_file():
@@ -21,7 +22,12 @@ for setdir in sorted(p for p in root.iterdir() if p.is_dir()):
     for name, info in files.items():
         digest = info['sha256'] if isinstance(info, dict) else info
         actual = 'sha256:' + hashlib.sha256((setdir / name).read_bytes()).hexdigest()
-        print(('OK   ' if actual == digest else 'MISMATCH ') + f'{setdir.name}/{name}')
+        status = 'OK   ' if actual == digest else 'MISMATCH '
+        print(status + f'{setdir.name}/{name}')
+        if status != 'OK   ':
+            failures += 1
+if failures:
+    raise SystemExit(f'{failures} digest mismatch(es)')
 ```
 
 Run from the repository root. **Sets without a `record.json`:** `ax1-contract-matrix-latest`, `ax1-ime-deep-latest`, `ax1-ime-latest` and `rel3-diagnostics-latest`.
@@ -37,6 +43,8 @@ set CARGO_TARGET_DIR=C:\dev\cos-build-fresh
 cargo build --locked --release -p cos-desktop --bin cos-desktop
 ```
 
+Which source a set was measured from is in its own `record.json` under `base_commit` (and, for the older
+sets, in the section that describes them). Check that value out before rebuilding if the numbers matter.
 Rebuilds into several other fresh target directories failed with `os error 5` while rustc wrote
 dependency files; the directory above is the one that produced the measured binaries. The debug profile
 built from the same source aborted with a stack overflow at startup, so the native sets use release.
@@ -67,7 +75,7 @@ $find = { param($id) $c = New-Object System.Windows.Automation.PropertyCondition
 (& $find 'diagnostics-toggle').GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
 # finish: read stderr, then close
 Get-Content (Join-Path $local 'err.txt')
-$p.Kill(); Get-Process -Name cos-desktop -ErrorAction SilentlyContinue | Stop-Process -Force
+$p.Kill(); $null = $p.WaitForExit(3000)   # only the process this run started
 ```
 
 Interaction rules that matter for reading these sets:

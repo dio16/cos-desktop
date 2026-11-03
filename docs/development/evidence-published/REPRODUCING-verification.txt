@@ -3,3 +3,9 @@ command: python (snippet body, run from the repository root)
 
 
 ok=58 mismatch=0 missing=0 sets_without_record=44
+
+Failure-path check of the same snippet
+method: copy the sets to a temporary tree, append one byte to one recorded file, run the snippet
+corrupted entry: ax1-a11y-action-fix-20261104/inprocess-trace-after-fix.txt
+result: exit code 1 with '1 digest mismatch(es)' on stderr
+meaning: a mismatch fails the check instead of only printing a line
