@@ -11,7 +11,8 @@ param(
     [int]$SimulateEarlyExitSeconds = 0,
     [switch]$SimulateExeMismatch,
     [switch]$Connected,
-    [switch]$SimulateFixture
+    [switch]$SimulateFixture,
+    [switch]$RejectProbe
 )
 
 # MP-R0B idle baseline, disconnected variant. The approved conditions are mandatory for a
@@ -101,6 +102,11 @@ function Get-SupportSource([int]$TargetProcessId) {
     $window = [System.Windows.Automation.AutomationElement]::RootElement.FindFirst(
         [System.Windows.Automation.TreeScope]::Children, $cond)
     if ($null -eq $window) { return $null }
+    $handle = [IntPtr]$window.Current.NativeWindowHandle
+    if ($handle -eq [IntPtr]::Zero) { return $null }
+    [void][R0BWin]::SetForegroundWindow($handle)
+    Start-Sleep -Milliseconds 200
+    if ([R0BWin]::GetForegroundWindow() -ne $handle) { return $null }
     $panel = New-Object System.Windows.Automation.PropertyCondition(
         [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'diagnostic-readonly')
     if ($null -eq $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $panel)) {
@@ -124,9 +130,11 @@ function Get-SupportSource([int]$TargetProcessId) {
         (New-Object System.Windows.Automation.PropertyCondition(
             [System.Windows.Automation.AutomationElement]::AutomationIdProperty, 'support-preview-readonly')))
     if ($null -eq $preview) { return $null }
-    $line = ($preview.Current.Name -split "`n" | Where-Object { $_ -like 'Source:*' } | Select-Object -First 1)
-    [System.Windows.Forms.SendKeys]::SendWait('^d')
-    return $line
+    $lines = $preview.Current.Name -split "`n"
+    $source = ($lines | Where-Object { $_ -like 'Source:*' } | Select-Object -First 1)
+    $connection = ($lines | Where-Object { $_ -like 'Connection:*' } | Select-Object -First 1)
+    # Return only the minimum closed fields; no path or body is retained.
+    return [ordered]@{ source = $source; connection = $connection }
 }
 
 $runs_out = @()
@@ -154,13 +162,21 @@ for ($i = 1; $i -le $Runs; $i++) {
             break
         }
 
+        $isolated_local = Join-Path $run_dir 'localappdata'
+        New-Item -ItemType Directory -Force -Path $isolated_local | Out-Null
+        $previous_local = $env:LOCALAPPDATA
+        $env:LOCALAPPDATA = $isolated_local
         $previous_env = $env:COS_DESKTOP_RUNTIME_ENDPOINT
         $env:COS_DESKTOP_RUNTIME_ENDPOINT = $Endpoint
         try {
-            $process = Start-Process -FilePath $Exe -PassThru -NoNewWindow `
+            $launchArgs = if ($SimulateFixture) {
+                @('--fixture', '--fixture-file', 'C:/dev/cos-desktop/crates/cos-client/fixtures/task-184.json')
+            } else { @() }
+            $process = Start-Process -FilePath $Exe -ArgumentList $launchArgs -PassThru -NoNewWindow `
                 -RedirectStandardOutput $stdout -RedirectStandardError $stderr
         } finally {
             $env:COS_DESKTOP_RUNTIME_ENDPOINT = $previous_env
+            $env:LOCALAPPDATA = $previous_local
         }
 
         $deadline = (Get-Date).AddSeconds(120)
@@ -171,6 +187,18 @@ for ($i = 1; $i -le $Runs; $i++) {
             $process.Refresh()
         }
         $window_ready_ms = [int](((Get-Date) - $process.StartTime).TotalMilliseconds)
+        if ($RejectProbe) {
+            # Fast negative-path probe only; never produces a baseline.
+            Start-Sleep -Seconds 2
+            $probe = Get-SupportSource $process.Id
+            $probe_source = if ($null -eq $probe) { $null } else { $probe.source }
+            $probe_connection = if ($null -eq $probe) { $null } else { $probe.connection }
+            Write-Host "REJECT_PROBE source=$probe_source connection=$probe_connection fixture=$SimulateFixture"
+            $closed = $process.CloseMainWindow(); $null = $process.WaitForExit(15000)
+            if ($null -eq $probe) { exit 4 }
+            if ($probe_source -ne 'Source: runtime' -or $probe_connection -ne 'Connection: observing') { exit 3 }
+            exit 0
+        }
 
         # Steady state: visible window plus the approved 30 s settle with no input and no
         # endpoint traffic (the endpoint is unreachable).
@@ -211,6 +239,9 @@ for ($i = 1; $i -le $Runs; $i++) {
         $process.Refresh()
         $cpu_total = if ($null -ne $cpu_first -and $null -ne $cpu_previous) { $cpu_previous - $cpu_first } else { 0.0 }
         $cpu_fraction = if ($window_elapsed -gt 0) { $cpu_total / $window_elapsed } else { 0.0 }
+        # Source must be re-read while the process is still alive; a closed process
+        # cannot prove that observation continued through the window.
+        $source_end = if ($Connected) { Get-SupportSource $process.Id } else { $null }
 
         $cpu_deltas = [double[]]@($samples | Where-Object { $null -ne $_['cpu_delta_s'] } | ForEach-Object { [double]$_['cpu_delta_s'] })
         $ws_values = [double[]]@($samples | ForEach-Object { [double]$_['working_set_bytes'] })
@@ -230,9 +261,12 @@ for ($i = 1; $i -le $Runs; $i++) {
         # B-01: the approved conditions are part of validity, including the observed span,
         # the sample count and the fact that the process survived the whole window.
         $expected_samples = [math]::Floor($WindowSeconds * 1000 / $SampleMs) - 5
-        $source_end = if ($Connected) { Get-SupportSource $process.Id } else { $null }
         $source_ok = if ($Connected) {
-            ($source_start -eq 'Source: runtime') -and ($source_end -eq 'Source: runtime') -and
+            ($null -ne $source_start) -and ($null -ne $source_end) -and
+            ($source_start.source -eq 'Source: runtime') -and
+            ($source_start.connection -eq 'Connection: observing') -and
+            ($source_end.source -eq 'Source: runtime') -and
+            ($source_end.connection -eq 'Connection: observing') -and
             ($null -eq $disconnected_line) -and $endpoint_available
         } else {
             ($null -ne $disconnected_line) -and (-not $endpoint_available)

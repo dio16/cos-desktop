@@ -4174,3 +4174,13 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Evidence:** `docs/development/evidence-published/rel3-r0b-connected-e5af45e/refusal.txt` (SHA-256 `9aff3ec8…`, git blob `bd8b1f94…`).
 - **State:** measurement path implemented; **MP-R0B incomplete; product acceptance NOT_RUN**.
 
+#### 19.212 addendum — R0B review fixes (2026-11-02)
+
+- **B-01 order fixed:** `source_end` is now read after the 60 s window but **before** `CloseMainWindow()`/kill; a missing end source makes the run invalid.
+- **B-02 observability widened:** the support preview must report **both** `Source: runtime` and `Connection: observing` at start and end; the UIA reader returns only these two fixed lines.
+- **A-01 fixture wiring:** `-SimulateFixture` now launches with `--fixture --fixture-file <fixture>`; the same start/end source check rejects `Source: fixture`. A `-RejectProbe` fast path exists (launch, read source, exit 3 on mismatch, exit 4 if unreadable) that never produces a baseline. **Execution result: the fixture probe launched but the app exited before a window (exit code 2), so fixture rejection was NOT_OBSERVED in this environment; it remains a code path, not a PASS.**
+- **A-02 foreground safety:** before any `SendKeys('^d')`, the UIA window handle is brought to the foreground and `GetForegroundWindow()` must match; otherwise the source read returns `$null`, making the run invalid. Input is not sent to another application.
+- **Runs are isolated** with a per-run `LOCALAPPDATA` directory so a stale instance cannot invalidate the measurement.
+- **Tests executed:** PowerShell syntax parse OK; `-Connected` with unreachable endpoint exits **2** (refusal). Fixture probe: app exit 2 before window, **NOT_OBSERVED**; sample-shortage/cleanup-failure not rerun.
+- **Native numbers remain `NOT_MEASURED`**; no Connected vs Disconnected comparison. MP-R0B incomplete; product acceptance NOT_RUN.
+
