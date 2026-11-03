@@ -4065,3 +4065,12 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests:** byte-for-byte write, existing-file default refusal (content unchanged), directory/missing-parent refusal, no temporary file after success/failure, final file absent on refusal. Type enforcement is by construction (`ExportData` private field, single public constructor). `cargo test -p app-core` **151 passed / 0 failed**; fmt OK; clippy 0 issues.
 - **Not implemented:** consent UI, dialog wiring, workspace/security policy for destination, and any Native save flow. Diagnostics ring 4,096 / crash 3×5 MiB / preview control unchanged. MP-REL3 remains incomplete.
 
+### 19.203 MP-REL3 atomic writer review fixes (2026-11-02)
+
+- **B-01 TOCTOU fixed:** final publication uses `std::fs::hard_link(temporary, path)` in the same directory. The kernel creates the final name only if it does not exist, so a concurrent writer cannot be replaced; the pre-check is no longer the guarantee.
+- **B-02 overwrite safety:** `overwrite = true` is now explicitly refused with `OverwriteUnsupported`; remove→rename was removed, so a failed overwrite can no longer lose the existing file. `ExportWriteError` adds `OverwriteUnsupported` and `CleanupFailed`.
+- **A-01 cleanup:** temporary-file removal failure is no longer ignored; failure paths map it to `CleanupFailed`, and successful publication also reports `CleanupFailed` if the temporary link cannot be removed. Write/link failure paths remove the temporary file.
+- **Tests:** byte-for-byte write; default existing-file refusal; `overwrite=true` refusal with existing content preserved; directory/missing-parent refusal; no temporary file after success. `cargo test -p app-core` 151 passed / 0 failed; fmt OK; clippy 0 issues.
+- **A-02 docs:** DC-MP-REL3 now states the writer is implemented (atomic no-replace hard-link finalisation, overwrite refused) and that save-dialog/consent UI wiring is not.
+- **Not implemented:** consent UI, dialog wiring, Native save flow. MP-REL3 remains incomplete.
+

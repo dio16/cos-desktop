@@ -509,6 +509,8 @@ mod export_tests {
 pub enum ExportWriteError {
     InvalidPath,
     AlreadyExists,
+    OverwriteUnsupported,
+    CleanupFailed,
     Io,
 }
 
@@ -523,6 +525,11 @@ impl ExportData {
         overwrite: bool,
     ) -> Result<(), ExportWriteError> {
         use std::io::Write;
+        if overwrite {
+            // std::fs::rename cannot replace atomically on Windows and remove+rename
+            // can lose the previous file; explicit overwrite is refused this slice.
+            return Err(ExportWriteError::OverwriteUnsupported);
+        }
         let Some(parent) = path.parent() else {
             return Err(ExportWriteError::InvalidPath);
         };
@@ -540,9 +547,7 @@ impl ExportData {
                 if meta.file_type().is_symlink() || !meta.file_type().is_file() {
                     return Err(ExportWriteError::InvalidPath);
                 }
-                if !overwrite || !meta.is_file() {
-                    return Err(ExportWriteError::AlreadyExists);
-                }
+                return Err(ExportWriteError::AlreadyExists);
             }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(_) => return Err(ExportWriteError::InvalidPath),
@@ -560,19 +565,33 @@ impl ExportData {
             .and_then(|()| file.sync_all());
         drop(file);
         if write_result.is_err() {
-            let _ = std::fs::remove_file(&temporary);
-            return Err(ExportWriteError::Io);
+            return Err(cleanup_failed(&temporary, ExportWriteError::Io));
         }
-        if overwrite {
-            // std::fs::rename does not replace on Windows; explicit overwrite is
-            // therefore a remove-then-rename and not claimed as atomic replace.
-            let _ = std::fs::remove_file(path);
+        // hard_link creates the final name only if it does not exist: the kernel
+        // performs the no-replace check atomically, so a concurrent writer cannot be
+        // overwritten. The temporary link is removed afterwards.
+        let link_result = std::fs::hard_link(&temporary, path);
+        if let Err(_error) = link_result {
+            let code = if std::fs::symlink_metadata(path).is_ok() {
+                ExportWriteError::AlreadyExists
+            } else {
+                ExportWriteError::Io
+            };
+            return Err(cleanup_failed(&temporary, code));
         }
-        if std::fs::rename(&temporary, path).is_err() {
-            let _ = std::fs::remove_file(&temporary);
-            return Err(ExportWriteError::Io);
+        match std::fs::remove_file(&temporary) {
+            Ok(()) => Ok(()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(_) => Err(ExportWriteError::CleanupFailed),
         }
-        Ok(())
+    }
+}
+
+fn cleanup_failed(temporary: &std::path::Path, failure: ExportWriteError) -> ExportWriteError {
+    match std::fs::remove_file(temporary) {
+        Ok(()) => failure,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => failure,
+        Err(_) => ExportWriteError::CleanupFailed,
     }
 }
 
