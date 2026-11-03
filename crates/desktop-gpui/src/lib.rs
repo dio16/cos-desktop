@@ -5709,13 +5709,23 @@ mod contrast_scope_tests {
         // a cancelled dialog or a failed open leaves whatever was there untouched.
         let mut status: Option<&'static str> = Some("保存しました");
         super::apply_export_outcome(&mut status, None);
-        assert_eq!(status, Some("保存しました"), "cancel keeps the previous status");
+        assert_eq!(
+            status,
+            Some("保存しました"),
+            "cancel keeps the previous status"
+        );
 
         super::apply_export_outcome(
             &mut status,
-            Some(Err(app_core::support_report::ExportWriteError::AlreadyExists)),
+            Some(Err(
+                app_core::support_report::ExportWriteError::AlreadyExists,
+            )),
         );
-        assert_eq!(status, Some("同名のファイルが存在します"), "an outcome replaces it");
+        assert_eq!(
+            status,
+            Some("同名のファイルが存在します"),
+            "an outcome replaces it"
+        );
 
         super::apply_export_outcome(&mut status, Some(Ok(())));
         assert_eq!(status, Some("保存しました"), "success replaces it too");
