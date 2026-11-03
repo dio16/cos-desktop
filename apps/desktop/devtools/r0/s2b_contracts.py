@@ -403,6 +403,10 @@ def first_frame_matrix(capture: dict) -> dict:
     scope_start = capture.get("scope_start_ns")
     for marker in markers:
         window, created = marker["window"], marker["start_ns"]
+        # `submission_history_complete` is deliberately NOT part of ROOT_FIELDS: no
+        # validated capture can carry it today, so this branch is a closed placeholder
+        # rather than a measurable path. Enabling it requires a contract-level
+        # completeness source and its verification, not merely a boolean.
         if (isinstance(scope_start, int) and created < scope_start
                 and capture.get("submission_history_complete") is not True):
             # The source offers only finalized journal entries and reports unoffered
