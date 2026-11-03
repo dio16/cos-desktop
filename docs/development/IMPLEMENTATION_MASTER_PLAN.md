@@ -4250,7 +4250,7 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Evidence:** `docs/development/evidence-published/rel3-preview-invoke-20261104/` with the probe output and a `record.json`.
 - **State:** MP-REL3, MP-AX1/AX2, MP-R0A and MP-R0B remain incomplete; connected baseline and screen-reader quality `NOT_MEASURED`; product acceptance `NOT_RUN`.
 
-### 19.219 MP-REL3 support-preview path instrumentation (2026-08-11)
+### 19.219 MP-REL3 support-preview path instrumentation (2026-11-04)
 
 - **Design:** `preview_trace` exposes four closed ASCII measurement points without requiring focus: handler `action=reached|none`; builder `build=started|finished|none`; install result `install=accepted|generation|identity|pending|none`; render `render=present|absent`. Exposed as `support-preview-trace` (`Role::Label`, `accessibility_id`, `aria_value(trace)`).
 - **Install reasons:** `SupportPreviewState::complete_outcome()` separates generation mismatch, missing pending request, identity mismatch and accepted installs; the existing boolean `complete()` now delegates to it and remains test-only. Preview install behavior is unchanged.
@@ -4258,4 +4258,12 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Behavior unchanged:** generation stamping, target identity checks, background build, stale rejection, export/save/redaction/authority paths are untouched; the trace only records transitions.
 - **Tests:** closed-token formatting, no path/content, AutomationId/aria-value wiring; `cargo test -p desktop-gpui` 119 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` OK.
 - **Cause status:** **undetermined**; Native measurement is owned by the Lead. MP-REL3 incomplete; product acceptance NOT_RUN.
+
+#### 19.219 addendum — preview trace review fixes (2026-11-04)
+
+- **B-01 notify:** `preview_support()` now calls `cx.notify()` immediately after the `action=reached;build=started` trace update, and both completion closures notify regardless of accepted/rejected install. A stale `action=none` in UIA can therefore not be blamed on a missing notify.
+- **A-01 render is explicit assumption:** the render token is now `render=assumed` (derived from `InstallOutcome::Accepted`), not `present`; real visibility revalidation is not measured. `render=absent` remains for non-accepted outcomes.
+- **A-02 date corrected** to 2026-11-04.
+- **Regression test:** source wiring test asserts a `cx.notify()` between the handler trace update and `let target = self`, plus the existing closed-token/AutomationId checks.
+- **Verification:** `cargo test -p desktop-gpui` 119 passed / 0 failed; fmt OK; clippy 0 issues. Native re-measurement remains the Lead's task; the cause is still undetermined.
 

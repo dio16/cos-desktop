@@ -268,7 +268,8 @@ enum PreviewInstall {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum PreviewRender {
-    Present,
+    /// Derived from InstallOutcome::Accepted, not from a real render observation.
+    Assumed,
     Absent,
 }
 
@@ -1284,6 +1285,7 @@ impl Shell {
             PreviewInstall::None,
             PreviewRender::Absent,
         );
+        cx.notify();
         let target = self
             .handle
             .as_ref()
@@ -1319,14 +1321,12 @@ impl Shell {
                             InstallOutcome::Pending => PreviewInstall::Pending,
                         },
                         if outcome == InstallOutcome::Accepted {
-                            PreviewRender::Present
+                            PreviewRender::Assumed
                         } else {
                             PreviewRender::Absent
                         },
                     );
-                    if outcome == InstallOutcome::Accepted {
-                        cx.notify();
-                    }
+                    cx.notify();
                 });
             });
             return;
@@ -1353,14 +1353,12 @@ impl Shell {
                         InstallOutcome::Pending => PreviewInstall::Pending,
                     },
                     if outcome == InstallOutcome::Accepted {
-                        PreviewRender::Present
+                        PreviewRender::Assumed
                     } else {
                         PreviewRender::Absent
                     },
                 );
-                if outcome == InstallOutcome::Accepted {
-                    cx.notify();
-                }
+                cx.notify();
             });
         });
     }
@@ -6096,11 +6094,11 @@ mod contrast_scope_tests {
             PreviewAction::Reached,
             PreviewBuildStage::Finished,
             PreviewInstall::Accepted,
-            PreviewRender::Present,
+            PreviewRender::Assumed,
         );
         assert_eq!(
             line,
-            "action=reached;build=finished;install=accepted;render=present"
+            "action=reached;build=finished;install=accepted;render=assumed"
         );
         assert!(!line.contains('/'));
         assert!(!line.chars().any(|character| character == char::from(92)));
@@ -6108,6 +6106,12 @@ mod contrast_scope_tests {
         let source = include_str!("lib.rs");
         assert!(source.contains(".accessibility_id(\"support-preview-trace\")"));
         assert!(source.contains(".aria_value(self.preview_trace.clone())"));
+        let start = source.find("fn preview_support(").expect("handler");
+        let next = source[start..].find("let target = self").expect("target");
+        assert!(
+            source[start..start + next].contains("cx.notify();"),
+            "handler trace update must be notified"
+        );
         for token in [
             "action=none",
             "build=started",
