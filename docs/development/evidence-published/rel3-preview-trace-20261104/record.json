@@ -10,6 +10,16 @@
     "trace-read.txt": {
       "sha256": "sha256:691702cf7fb0476a9f126847648a724a6c136353d4f7fc578ceeeeb6295ef6cf",
       "bytes": 567
+    },
+    "trace-read-after-notify.txt": {
+      "sha256": "sha256:ae3c0ab98f20b6fdf92797f32bee6578b56691c3de2f21e02923d58cebcd3395",
+      "bytes": 567
     }
+  },
+  "re_measurement_after_notify": {
+    "base_commit": "f8c406efaac5bc883efda27f6324d6be23a5ed89",
+    "exe_sha256": "sha256:0ccc6a8cacbd3ba257d8929d62a32b74a5ac05afefa1c19284ef08f0097ab0c0",
+    "result": "With every trace update now followed by a repaint request, an invoke that returned cleanly still left action=none at 1.5 s, 3 s and 5 s. The earlier objection - that a stale action=none could survive a handler that did run - is therefore addressed, and the reading stands: the handler is not reached for this element through the accessibility action, while the diagnostics toggle in the same panel is.",
+    "still_open": "Why dispatch differs between the two elements. The candidates for the generation step (a task that never finishes, an install rejected by the state machine) are not the first failure here, because the handler never runs."
   }
 }

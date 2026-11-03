@@ -1,0 +1,12 @@
+MP-REL3 preview trace: native read after accessibility invoke
+exe_sha256: 0ccc6a8cacbd3ba257d8929d62a32b74a5ac05afefa1c19284ef08f0097ab0c0
+base_commit: f8c406efaac5bc883efda27f6324d6be23a5ed89
+trace_before: "action=none;build=none;install=none;render=absent"
+preview_button: present
+invoke_result: ok
+trace_after_1500ms: "action=none;build=none;install=none;render=absent"
+trace_after_3000ms: "action=none;build=none;install=none;render=absent"
+trace_after_5000ms: "action=none;build=none;install=none;render=absent"
+preview_element: absent
+descendants: 57
+stderr: 
