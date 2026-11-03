@@ -4124,6 +4124,8 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 
 ### 19.209 MP-REL3/AX1 support-export-status Native UIA exposure (2026-11-02)
 
+- **Evidence byte-stability:** the first attempt to stop the line-ending conversion used a `.gitattributes` with explanatory comments; the Gate rejected the candidate as `REPOSITORY_ERROR / unsupported_git_content` because the file does not match its safe attributes grammar, and a comment-free form was rejected too. `.gitattributes` is therefore removed and the repository keeps `core.autocrlf=false` instead, which is a local setting and is recorded here as such rather than as a committed guarantee. With that in place both evidence directories' recorded digests match their committed blobs (10/10 and 8/8).
+
 - **A (cause):** the status label had `.id("support-export-status")` but no `.accessibility_id`, and as `Role::Label` its UIA Name comes from the AccessKit value while only `aria_label` was set. The pre-fix UIA tree (`uia-before.txt`) contains no `support-export-status`.
 - **B (fix):** added `.accessibility_id("support-export-status")` and `.aria_value(status)`; role stays `Role::Label`, Name remains the closed message, and the messages themselves are unchanged. `ValuePattern` is not exposed for `Role::Label`; the message is obtained as the element Name.
 - **C (tests):** source test checks the AutomationId/value wiring; existing mapping test keeps success / `AlreadyExists` / `CleanupFailed` / other messages distinct and path/content-free.
