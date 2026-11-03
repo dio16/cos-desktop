@@ -3,7 +3,7 @@
   "base_commit": "c882748e00b4cff26a0f47656d318243395d0e03",
   "exe_sha256": "sha256:6c2ecf6d66c6d57da2ded93a6c494b0ef4fdbd5c7614b1add4f15d798944f39d",
   "windows": "10.0.26300.0",
-  "result": "FIXED AND MEASURED. With explicit accessibility Click listeners on both panel buttons, one accessibility invoke on support-preview-button produced the full in-process sequence - action=reached, build=started, build=finished, install=accepted - and the preview element appeared in the automation tree (support-preview-readonly present, 59 descendants in the dump, five support* ids). Before the change the same invoke produced zero trace lines in five attempts.",
+  "result": "FIXED AND MEASURED. With explicit accessibility Click listeners on both panel buttons, one accessibility invoke on support-preview-button produced the full in-process sequence - action=reached, build=started, build=finished, install=accepted - and the preview element appeared in the automation tree (support-preview-readonly present, 59 descendants in the dump, four support* ids). Before the change the same invoke produced zero trace lines in five attempts.",
   "cause": "MEASURED: adding an explicit accessibility Click listener makes the handler run. NOT measured: whether the synthesised press was ever generated for the earlier attempts, or was generated and then missed in the hit test - gpui's internal node bounds at dispatch time were never inspected. The only proven statement is that removing the dependency on a synthetic press removes the failure.",
   "scope": "Both panel buttons got the same explicit listener so neither is treated specially; mouse and keyboard paths are unchanged, as are generation, the state machine, saving, redaction and permissions.",
   "files": {
