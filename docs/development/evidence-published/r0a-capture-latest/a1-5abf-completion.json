@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "execution_id": "c9e3a7f1d5b24086e7c1a9d3f0b64852",
+  "artifacts": {
+    "ledger.json": "sha256:130bf1f360713bd260562d4838aa34d8e7b97dcbc2616e6b30a8235c85721a4d",
+    "endpoint-availability.json": "sha256:619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303",
+    "result.json": "sha256:dbe9d1edc1a0ca40116cb90eb806388a058bd52fbb66ec07aeb135eb3114b166"
+  }
+}

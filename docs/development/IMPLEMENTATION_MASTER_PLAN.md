@@ -3802,3 +3802,14 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Verification:** fmt OK; clippy 0 issues; `cargo test -p cos-desktop --features r0-s2b-instrumentation` 186 passed / 0 failed; `pytest apps/desktop/devtools/r0/tests -q` 350 passed / 12 skipped / 1 failed — the sole failure remains the known stale live-manifest `driver_hash` (identity refresh next slice).
 - **State:** implementation only; Native measurement NOT_RUN; MP-R0A IN_PROGRESS, product acceptance NOT_RUN.
 
+### 19.180 MP-R0A frame identity Native measurement (2026-11-02)
+
+- **Build from `5abf4c1ab6b954804df7e2a71965e2217540dd84`:** A0 `sha256:b73102fe6ae68f300ea1c2f2d36434014bfdab78bf21bdf4ae55e861446e4fbf` (35,189,248 B), A1 `sha256:6307d6516bbacc57165cb4dadf6c8f7ecbdfcd4652fdaf65ef5a5c20a52fe2d0` (35,529,728 B), helper `sha256:cec8127f4fa83e17573b93a9f8890d32542d399b5118b61a536303389f0ec103` (616,960 B); source_digest `sha256:ebf907e8…`.
+- **Approval ledger 17 → 19:** two `5abf4c1` entries (A0/A1) with the new helper digest/source; existing 17 unchanged; `approved_digests()` 19 with exactly two unique new entries.
+- **Identity reconciliation:** `s2b-build.json` and both s2b manifests + `r0c-s1-keyboard.json` updated; `validate_manifest` ×2, `validate_build_record(live=True)` PASS; `pytest apps/desktop/devtools/r0/tests -q` **351 passed / 12 skipped / 0 failed**.
+- **Capture:** existing TAB→ENTER plan, new output/profile, `--timeout-ms 60000`; probe `window.pid 14448` == ledger `pid 14448`; ledger exit 0 / timed_out false / elapsed 37,397 ms; disposition OBSERVED / RETAINED_SOURCE_OBSERVATION.
+- **`frame_identity` = MEASURED:** `records 48`, `distinct_ids 48`, `source "gpui.profiler.PresentedFrame"`, `identity "exact_tuple_fnv64"`; capture carries 48 distinct non-null `frame_id`s. `cross_domain_latency` remains `NOT_MEASURED` (no second clock domain).
+- **Counters:** `kind_counts [100,49,51,48,0,0,3,0,2,3]`; local `received 7 = retained 5 (2+3) + scope 0 + lifetime 0 + retention-omitted 2 (1+1)`; retained 256.
+- **Evidence:** `evidence-published/r0a-capture-latest/a1-5abf-*` plus `record.json` block `wm_close_runs.local-accounting-5abf` (digests, correspondence, frame identity, local accounting).
+- **State:** frame identity Native measurement is established for this approved build; cross-domain remains NOT_MEASURED. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
+

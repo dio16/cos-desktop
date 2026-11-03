@@ -136,6 +136,22 @@
       "helper_source_sha256": "sha256:5b585f8ea1adcea540fab97adff9449c0e2ea88af97e29d3f97d4bac522c8058",
       "helper_protocol": 2,
       "helper_relative_path": "target/debug/examples/r0_owner.exe"
+    },
+    {
+      "product_commit": "5abf4c1ab6b954804df7e2a71965e2217540dd84",
+      "executable_sha256": "sha256:b73102fe6ae68f300ea1c2f2d36434014bfdab78bf21bdf4ae55e861446e4fbf",
+      "helper_sha256": "sha256:cec8127f4fa83e17573b93a9f8890d32542d399b5118b61a536303389f0ec103",
+      "helper_source_sha256": "sha256:5b585f8ea1adcea540fab97adff9449c0e2ea88af97e29d3f97d4bac522c8058",
+      "helper_protocol": 2,
+      "helper_relative_path": "target/debug/examples/r0_owner.exe"
+    },
+    {
+      "product_commit": "5abf4c1ab6b954804df7e2a71965e2217540dd84",
+      "executable_sha256": "sha256:6307d6516bbacc57165cb4dadf6c8f7ecbdfcd4652fdaf65ef5a5c20a52fe2d0",
+      "helper_sha256": "sha256:cec8127f4fa83e17573b93a9f8890d32542d399b5118b61a536303389f0ec103",
+      "helper_source_sha256": "sha256:5b585f8ea1adcea540fab97adff9449c0e2ea88af97e29d3f97d4bac522c8058",
+      "helper_protocol": 2,
+      "helper_relative_path": "target/debug/examples/r0_owner.exe"
     }
   ]
 }
