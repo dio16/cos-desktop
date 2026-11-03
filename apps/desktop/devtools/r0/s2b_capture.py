@@ -225,7 +225,7 @@ def observation_document(manifest: dict, manifest_digest: str, build_digest: str
     # All identity content is closed technical data; never copy machine metadata,
     # fixture contents, file paths, input text, Task IDs or arbitrary labels.
     return {
-        "observation_version": 3,
+        "observation_version": 4,
         "identity": {
             "source_commit": manifest["identity"]["repository"]["sha"],
             "manifest_sha256": manifest_digest,

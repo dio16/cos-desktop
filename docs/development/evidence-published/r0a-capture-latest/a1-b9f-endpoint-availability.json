@@ -1,0 +1,82 @@
+[
+  {
+    "id": "process-launch",
+    "status": "OBSERVED",
+    "reason": ""
+  },
+  {
+    "id": "app-main-entry",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "model-mutation",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "invalidate-notify",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "frame-request",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "frame-start",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "scene-prepared",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "gpu-submission",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "input-received",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "present-call",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "present-return",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "first-frame",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "useful-shell",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "present",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "displayed",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  },
+  {
+    "id": "input-to-photon",
+    "status": "NOT_MEASURED",
+    "reason": "no GPUI/Windows probe exists in S2A; deferred to S2B"
+  }
+]
