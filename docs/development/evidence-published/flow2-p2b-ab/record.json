@@ -1,4 +1,19 @@
 {
-  "raw_samples": "sha256:e676c1f2344ce9957cb9ff9dd452058f2985d462454adbec68cbb6be3a704d0b",
-  "summary": "sha256:c7719dc4dd49c0b833d26c24f11228aa2952a62da80c4c729cde10fd8021cea0"
+  "measurement": "MP-FLOW2 P2b preallocated adjacency A/B (corrected span)",
+  "build": "release",
+  "warmup": 3,
+  "iterations": 21,
+  "rounds": 3,
+  "order": [
+    "A-first",
+    "B-first",
+    "A-first"
+  ],
+  "raw_samples_lines": 252,
+  "raw_samples_file": "raw-samples.txt",
+  "raw_samples_sha256": "sha256:e676c1f2344ce9957cb9ff9dd452058f2985d462454adbec68cbb6be3a704d0b",
+  "summary_file": "summary.json",
+  "summary_sha256": "sha256:c7719dc4dd49c0b833d26c24f11228aa2952a62da80c4c729cde10fd8021cea0",
+  "decision": "candidate rejected; baseline retained",
+  "note": "Raw samples keep round, iteration, run order and variant so the three rounds and the medians can be recomputed independently. The earlier log file name was excluded by the *.log ignore rule; the tracked extension is .txt so the evidence is actually published."
 }

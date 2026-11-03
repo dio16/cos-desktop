@@ -4025,6 +4025,8 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Decision: maintain Baseline, do not adopt.** Correctness matches, but the CPU cost is consistently and substantially worse (P2 ~2.0–2.3×, p95 worse) while the capacity gain does not meet the adoption criteria. MP-FLOW2 remains incomplete; paint/submit/GPU/Present remain NOT_MEASURED.
 - **Verification:** `cargo test -p desktop-gpui flow` 27 passed / 0 failed (4 ignored); ignored release A/B test passes; fmt OK; clippy 0 issues.
 
+> **INVALIDATED (double-counted span):** the P2b figures and the "about 2.0-2.3x worse" judgement below were computed with the candidate's reservation time counted twice. They are retained as history only; section 19.199 re-measured with the corrected span and is the valid result.
+
 ### 19.199 MP-FLOW2 P2b A/B review fixes: single count, test-only branch, ordered evidence (2026-11-02)
 
 - **Double counting fixed:** `phase_start` already covers the preallocation pre-pass, so P2b is now `start.elapsed()` only (the previous `+ prealloc_us` sum was wrong). Re-measured release A/B (3 rounds, warmup 3 + 21 iterations, alternating A→B / B→A / A→B):
