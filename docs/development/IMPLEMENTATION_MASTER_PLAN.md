@@ -3887,3 +3887,23 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Evidence:** `evidence-published/r0a-capture-latest/a1-e31-*` plus `record.json` block `wm_close_runs.local-platform-end-e31`; `approved.product_commit` is copied from the approval ledger by executable digest and all recorded commits were cross-checked (0 mismatches).
 - **State:** Native measurement established for this approved build; no PASS claim. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.187 MP-R0A first-frame definition and provability (static, 2026-11-02)
+
+- **Candidate definition:** the first completed GPUI platform submission for the target window after that window was created. It is **not** GPU execution completion, display completion, scanout, or the application's first-ever frame unless the target window is specified. App-wide and per-window first frame are distinct.
+- **Existing sources:** the journal exposes `Event(Draw/Present/Input)`, `FrameStateChange::Pending`, and `IntervalBoundary::{Presented,Idle,PowerTransition}` only (`gpui/profiler/journal.rs:239-251`); there is **no window-created event**. `r0_s2b::install` attaches the collector before `Shell::new` (`apps/desktop/src/main.rs:83`, `:151`; `r0_s2b.rs:54-68`), and the capture thread calls `control.start()` later (`r0_s2b.rs:719`; `r0_probe.rs:51-56`). `window()`/lifetime is learned only from the first record carrying that window ID (`r0_s2b.rs:330-344`). `Presented` is the only Draw↔Present pairing (`r0_s2b.rs:394-396`).
+- **Six proof conditions (all required):**
+
+| # | Condition | Result |
+|---|---|---|
+| 1 | Window creation time is identifiable | **FAIL** — no window-created/first-window event in the journal or probe |
+| 2 | Observation is active before the first submission | **NOT PROVEN** — install precedes `Shell::new`, but `control.start()` runs on a worker and no marker proves admission was active before the first present |
+| 3 | Absence of pre-observation loss can be excluded | **FAIL** — no pre-attach journal boundary; the collector may start after entries exist |
+| 4 | Journal loss/discontinuity cannot affect the decision | **FAIL** — `kind 5` gap records exist; `journal_lost = 0` alone is not proof; a discontinuity before the first observed record is indistinguishable |
+| 5 | The first record is not lost to the 256 cap | **INSUFFICIENT** — retention keeps the first captured records, but it cannot prove no earlier submission occurred before capture |
+| 6 | Window lifetime maps uniquely to the first submission | **FAIL** — lifetime is assigned only when the first record is observed (`r0_s2b.rs:330-344`); no pre-first-record lifetime exists |
+
+  Native captures already show `pre_scope 4`, i.e. journal records exist before the measurement scope; the first present could be among them. Therefore unconditional "first retained kind 3 = first frame" is invalid.
+- **Judgment: NOT_PROVABLE** with current information. No implementation was made (per E).
+- **Missing information / minimal addition:** a feature-gated `WindowCreated(window_id)` (or equivalent generation marker) emitted at window creation with a monotonic sequence, a capture-start barrier recorded in the same journal, and inclusion of the window-create→first-present interval in scope; `first-frame` could then require marker → first kind 3 with no `kind 5` discontinuity between, plus the existing lifetime mapping. This needs a new probe event and a GPUI-side call site, so it belongs to a separate slice.
+- **State:** `first-frame` remains `NOT_MEASURED / NOT_EXPOSED_BY_SELECTED_PROBE`; MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
+
