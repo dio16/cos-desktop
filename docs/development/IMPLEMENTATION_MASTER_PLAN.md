@@ -3687,7 +3687,7 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 
 **C — keyboard plan reachability**
 
-- The 460-action plan contains only `TAB`, `RIGHT`, `LEFT` at 20 Hz (`r0c-s1-keyboard.json`). `TAB` is globally bound to `FocusNext` (`lib.rs:121`, handler `:4013`); `RIGHT`/`LEFT` are only scoped bindings (`TaskRailInput`, `CandidateDock`, `FlowSearchInput`) (`lib.rs:136-153`). Neither dispatches `navigate()` or `advance_surface()`.
+- The 460-action plan contains only `TAB`, `RIGHT`, `LEFT` at 20 Hz (`r0c-s1-keyboard.json`). `TAB` is globally bound to `FocusNext` (`lib.rs:121`, handler `:4013`); `RIGHT`/`LEFT` have **four** scoped bindings, not three: `TaskRailInput` (`RailLeft`/`RailRight`, `lib.rs:137-138`), `CandidateDock` (`DockPrevious`/`DockNext`, `:140-141`), `FlowSearchInput` (`FlowLeft`/`FlowRight`, `:151-152`) and **`CommandPalette` (`PaletteLeft`/`PaletteRight`, `:163-164`)**. None of them dispatches `navigate()` or `advance_surface()`.
 - Surface changes require `Ctrl+1/2/3` (`Artifact`/`Compare`/`Flow` → `navigate`, `lib.rs:117-119`, `:4006-4009`), `Ctrl+Tab` (`NextSurface` → `advance_surface`, `:120`, `:4010-4012`), or `Activate` while one of the surface focus handles is focused (`:4015-4019`).
 - Therefore the tested keyboard plan **was not designed to produce local-surface/notify events**; this is a design-level reachability conclusion, not a runtime proof that the producer was never called.
 
@@ -3703,7 +3703,8 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 
 **E — frame identity / cross-domain latency**
 
-- The capture writer hardcodes `"frame_identity": "NOT_MEASURED"` and `"cross_domain_latency": "NOT_MEASURED"` (`apps/desktop/devtools/r0/s2b_capture.py:231-232`). The record schema has no frame identifier or cross-clock correlation field (`apps/desktop/src/r0_s2b.rs:210-224`; `s2b_contracts.py:35-42`), and the probe has no GPU/Present/display-completion source (`s2b_contracts.py:51-55` MISSING list). Contract wording uses `NOT_EXPOSED_BY_SELECTED_PROBE` for those endpoints (`s2b_contracts.py:307-316`), while local endpoints with `kind_counts 0` become `NOT_MEASURED / NO_RETAINED_VALID_RECORD`. **Without additional implementation, frame identity and cross-domain latency are not measurable in this build.**
+- The capture writer hardcodes `"frame_identity": "NOT_MEASURED"` and `"cross_domain_latency": "NOT_MEASURED"` (`apps/desktop/devtools/r0/s2b_capture.py:231-232`). The record schema has no frame identifier or cross-clock correlation field (`apps/desktop/src/r0_s2b.rs:210-224`; `s2b_contracts.py:35-42`). Contract wording uses `NOT_EXPOSED_BY_SELECTED_PROBE` for those endpoints (`s2b_contracts.py:307-316`), while local endpoints with `kind_counts 0` become `NOT_MEASURED / NO_RETAINED_VALID_RECORD`.
+- **Correction to an earlier reading of this section:** it is **not** true that no Present source exists. `r0_s2b.rs:387-390` maps `ForegroundEvent::Present(timing)` through `submission(timing, None)` and `IntervalBoundary::Presented(frame)` through `submission(frame.presentation, Some(frame.frame))`, and this build observes that path - `gpui-platform-submission` is one of the four OBSERVED endpoints and `kind_counts[6] = 52` in §19.170. What is missing for `frame_identity` and `cross_domain_latency` is narrower and specific: a **frame identifier that survives into the record**, and a **mapping between the different clocks** the events carry. Those are absent, so both stay unmeasurable in this build even though Present timing itself is collected.
 
 **F — endpoint conclusion table**
 
@@ -3711,8 +3712,8 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 |---|---|---|---|---|---|---|
 | `local-surface-mutation` | Implemented (feature-gated) | `navigate()` / `advance_surface()` (`lib.rs:1324`, `:1354`) | queue + kind 8, `SUPPORTED` (`s2b_contracts.py:49`) | kind 8 = 0; `NOT_MEASURED / NO_RETAINED_VALID_RECORD` | Reachability not established; producer call **UNDETERMINED** | Existing Ctrl+1/2/3 or Ctrl+Tab capture (no implementation) |
 | `local-notify` | Implemented (feature-gated) | `navigate()` success only (`lib.rs:1329`); **not** `advance_surface` | queue + kind 9, `SUPPORTED` | kind 9 = 0; `NOT_MEASURED` | Same; also note Ctrl+Tab emits no Notify by design | Existing Ctrl+1/2/3 or Activate-navigation capture |
-| `frame_identity` | Not implemented | none | hardcoded `NOT_MEASURED` (`s2b_capture.py:231`) | NOT_MEASURED | **Probe absent** | Implementation needed |
-| `cross_domain_latency` | Not implemented | none | hardcoded `NOT_MEASURED` (`s2b_capture.py:232`) | NOT_MEASURED | **Probe absent** | Implementation needed |
+| `frame_identity` | Not implemented | none | hardcoded `NOT_MEASURED` (`s2b_capture.py:231`) | NOT_MEASURED | **Probe absent** (no frame identifier reaches the record) | Implementation needed |
+| `cross_domain_latency` | Not implemented | none | hardcoded `NOT_MEASURED` (`s2b_capture.py:232`) | NOT_MEASURED | **Probe absent** (Present timing is collected through `submission()`; the cross-clock mapping is not) | Implementation needed |
 
 - **UNDETERMINED:** runtime producer-call status for local kinds; separation between "not called" and "called outside active scope"; whether a future navigation capture will retain local records under the 256 cap.
 - **State:** MP-R0A remains **IN_PROGRESS**; product acceptance **NOT_RUN**. No measurement was fabricated and no product/probe code changed.
