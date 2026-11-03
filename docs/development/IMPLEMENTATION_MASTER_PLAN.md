@@ -4059,6 +4059,8 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 
 ### 19.202 MP-REL3 atomic export publication and save-dialog availability (2026-11-02)
 
+> **SUPERSEDED:** the writer described here published with `rename` and an `overwrite=true` path that removed the target first. Both are gone; section 19.203 replaces them with kernel no-replace publication and an explicit refusal of overwrite.
+
 - **Atomic writer implemented:** `ExportData::write_atomic(path, overwrite)` is the only file-writing API and `ExportData` remains constructible only via `checked_export(&SupportReport)`. It validates the parent directory and target (directory/symlink/non-regular refused), creates a same-directory exclusive temporary file, writes all bytes, `sync_all`, then `rename`; any failure removes the temporary file. Default `overwrite = false` refuses an existing file. Closed `ExportWriteError { InvalidPath, AlreadyExists, Io }` carries no path/content.
 - **Windows overwrite caveat:** explicit `overwrite = true` uses remove-then-rename because `std::fs::rename` does not replace an existing target on Windows; it is not claimed as atomic replacement. The default path is the atomic no-overwrite case.
 - **Save dialog verdict: `DIALOG_AVAILABLE`.** Fixed GPUI revision `395def7a067b32ed598fcb3f048969ada9b54942` exposes `App::prompt_for_new_path(&Path, Option<&str>) -> oneshot::Receiver<Result<Option<PathBuf>>>` at `crates/gpui/src/app.rs:1700`; the Windows platform implements it at `crates/gpui_windows/src/platform.rs:686` using the native dialog (`file_save_dialog`). No new dependency (no `rfd`) is needed. UI wiring and consent remain unimplemented.

@@ -517,7 +517,7 @@ pub enum ExportWriteError {
 impl ExportData {
     /// Publish the checked bytes at `path`. The default (`overwrite = false`)
     /// refuses an existing file. A same-directory exclusive temporary file is
-    /// written, flushed and synced, then renamed; a failure removes the temporary
+    /// written, flushed and synced, then published under the final name; a failure removes the temporary
     /// file and never leaves a partial final file.
     pub fn write_atomic(
         &self,
@@ -650,6 +650,27 @@ mod export_write_tests {
             ExportWriteError::InvalidPath
         );
         assert!(!missing.exists());
+        let names: Vec<_> = std::fs::read_dir(&dir)
+            .expect("dir")
+            .filter_map(|entry| entry.ok().map(|entry| entry.file_name()))
+            .collect();
+        assert_eq!(names, vec![std::ffi::OsString::from("support.txt")]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_explicit_overwrite_is_refused_before_anything_is_written() {
+        let dir = temp_dir("overwrite");
+        let path = dir.join("support.txt");
+        std::fs::write(&path, b"existing").expect("seed");
+        let data = checked_export(&SupportReport::unavailable("UnitReason", "0.1.0"))
+            .expect("checked export");
+        assert_eq!(
+            data.write_atomic(&path, true).unwrap_err(),
+            ExportWriteError::OverwriteUnsupported
+        );
+        // Existing content survives and no temporary file was created.
+        assert_eq!(std::fs::read(&path).expect("read"), b"existing");
         let names: Vec<_> = std::fs::read_dir(&dir)
             .expect("dir")
             .filter_map(|entry| entry.ok().map(|entry| entry.file_name()))
