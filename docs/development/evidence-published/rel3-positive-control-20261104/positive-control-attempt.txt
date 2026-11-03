@@ -1,0 +1,13 @@
+positive control: does an accessibility action change state that UI Automation then reads back
+exe_sha256: 0ccc6a8cacbd3ba257d8929d62a32b74a5ac05afefa1c19284ef08f0097ab0c0
+base_commit: 50a479f6f566661603d0f87ec946cdb44877dc85
+before: descendants=49 rows=2
+    task-search=タスクを検索
+    task-row-fixture:task/Task-184=Task-184 — 新製品キービジュアル
+search_element: present
+search_patterns: ValuePatternIdentifiers.Pattern
+setvalue: ok
+after_setvalue: descendants=49 rows=2
+    task-search=タスクを検索
+    task-row-fixture:task/Task-184=Task-184 — 新製品キービジュアル
+search_value_read_back: ''

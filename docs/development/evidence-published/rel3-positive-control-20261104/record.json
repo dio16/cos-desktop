@@ -1,0 +1,15 @@
+{
+  "measurement": "positive control attempt for the accessibility action path",
+  "base_commit": "50a479f6f566661603d0f87ec946cdb44877dc85",
+  "exe_sha256": "sha256:0ccc6a8cacbd3ba257d8929d62a32b74a5ac05afefa1c19284ef08f0097ab0c0",
+  "windows": "10.0.26300.0",
+  "attempt": "The task search field offers ValuePattern. SetValue('Task-184') returned without error, but the value read back afterwards was the empty string and both the row list and the descendant count were unchanged (49 descendants, 2 matching rows before and after).",
+  "conclusion": "NEGATIVE RESULT: an accessibility action that returns successfully did not change application state here. Together with the preview button - whose Invoke returns cleanly while its trace stays action=none - this means a clean accessibility call is NOT evidence that the handler ran, and therefore action=none cannot be read as proof that the preview handler was not reached. The earlier note that leaned that way is weakened again by this measurement.",
+  "what_still_stands": "The diagnostics toggle did change state through Invoke in earlier runs (49 -> 56 descendants, name change), so the action path is not universally dead; why it works there and not for these two elements remains unexplained.",
+  "files": {
+    "positive-control-attempt.txt": {
+      "sha256": "sha256:afd1a4e01b1d6cf4d7157702bf006e2bbe571ae17d28a29d0e5c16e40df26fc3",
+      "bytes": 636
+    }
+  }
+}
