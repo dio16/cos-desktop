@@ -1,0 +1,54 @@
+{
+  "task": "MP-R0A",
+  "slice": "native capture with the approved a732adc candidates",
+  "base_sha": "e3ad17f921761b8cf360a618d54cc3f75df23cee",
+  "result": "NOT_RUN",
+  "note": "Sanitised evidence for two refused captures. Only the driver-published documents are copied; no absolute user paths, no screenshots and no environment dump are included.",
+  "runs": {
+    "a0": {
+      "published": {
+        "ledger.json": "sha256:e4604fa3c003c72a060c4ecca669665af6e42723fe9db0143fd7bef4afcf8323",
+        "result.json": "sha256:257f2575201feb5fb8e5ec00df4dbd542e7ffd270775380145433ce707da61cc",
+        "completion.json": "sha256:76e23c7f51d13d878c6af8985291971644dda54471e20fd3c0725374bd863c16",
+        "endpoint-availability.json": "sha256:619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303",
+        "run-id": "sha256:0e6fa8035942a391fd40981b36f4897b68f0fc2d838e835a73f62e8befa2f9eb"
+      },
+      "ledger": {
+        "exit_code": 1,
+        "timed_out": true,
+        "elapsed_ms": 30050,
+        "pid": 13364
+      },
+      "runs_recorded": [
+        {
+          "run_id": "run-n01",
+          "status": "FAILED",
+          "reason": "launcher timeout; owned child terminated and reaped"
+        }
+      ]
+    },
+    "a1": {
+      "published": {
+        "ledger.json": "sha256:ac76de4fe75f66ccfb1065c2adcb2bc9a6400f19d1ba45c3bf9ca3b311f4092b",
+        "result.json": "sha256:5e0dfc9cd78d440aabe950bdc3dd81d305dcff9576666c41566ec29c3f95c5af",
+        "completion.json": "sha256:58c66416f665f2feb59e67cf1f04c217a73a98e6afe56439526b1d8c7496e38f",
+        "endpoint-availability.json": "sha256:619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303",
+        "run-id": "sha256:beea15091d9c1d34d2f51cd666d3d02665fc110e8bf126e036008b7966091ff5"
+      },
+      "ledger": {
+        "exit_code": 1,
+        "timed_out": true,
+        "elapsed_ms": 30049,
+        "pid": 49364
+      },
+      "runs_recorded": [
+        {
+          "run_id": "run-n02",
+          "status": "FAILED",
+          "reason": "launcher timeout; owned child terminated and reaped"
+        }
+      ]
+    }
+  },
+  "verification": "every published file's SHA-256 was recomputed after copying and matches the digest recorded beside it"
+}

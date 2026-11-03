@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "execution_id": "7c3a91e5d2b8f460a1c9e7d3b5f2084a",
+  "pid": 49364,
+  "exit_code": 1,
+  "timed_out": true,
+  "approved": true,
+  "executable_sha256": "sha256:f7ec10bded7b3022c05b9140ea946242950f49be8ced9f21b0ac487502703e10",
+  "executable_bytes": 35521536,
+  "fixture_sha256": "sha256:db1cfc8014ad44d3a512415af22ab90523b639de36d606e83247ac109daec2c0",
+  "fixture_bytes": 28706,
+  "elapsed_ms": 30049,
+  "child_reaped": true,
+  "termination_status": "requested",
+  "cleanup": "complete",
+  "publication": "driver-owned"
+}
