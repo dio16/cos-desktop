@@ -381,14 +381,18 @@ fn export_status_message(
 }
 
 /// Testable selection step: cancel (`None`) never calls the writer.
-#[cfg(test)]
-fn export_selected(
-    selection: Result<Option<std::path::PathBuf>, ()>,
-    data: Option<app_core::ExportData>,
-) -> Option<Result<(), app_core::support_report::ExportWriteError>> {
-    let path = selection.ok().flatten()?;
-    let data = data?;
-    Some(data.write_atomic(&path, false))
+/// Reject a second export while one is active.
+fn begin_export(in_progress: &mut bool) -> bool {
+    if *in_progress {
+        return false;
+    }
+    *in_progress = true;
+    true
+}
+
+/// Product selection decision: cancel and dialog errors choose no path.
+fn selected_export_path(selection: Result<std::path::PathBuf, ()>) -> Option<std::path::PathBuf> {
+    selection.ok()
 }
 
 /// Build the support report from one observation snapshot, off the UI thread. The
@@ -458,6 +462,8 @@ pub struct Shell {
     support_state: SupportPreviewState,
     /// Keyboard focus for the read-only support preview action.
     support_focus: FocusHandle,
+    export_focus: FocusHandle,
+    export_task: Task<()>,
     /// One-shot background report build; dropped when superseded.
     support_task: Task<()>,
     export_in_progress: bool,
@@ -658,6 +664,8 @@ impl Shell {
             desktop_version: Arc::clone(&desktop_version),
             support_state: SupportPreviewState::default(),
             support_focus: cx.focus_handle().tab_stop(true),
+            export_focus: cx.focus_handle().tab_stop(true),
+            export_task: cx.spawn(async move |_this, _cx| {}),
             support_task: cx.spawn(async move |_this, _cx| {}),
             export_in_progress: false,
             export_status: None,
@@ -1214,42 +1222,36 @@ impl Shell {
     /// The current authorized display text, when this window holds one.    /// Explicit user save: native dialog, revalidation, background write, closed
     /// status. Cancel and double-press never write. No automatic retry.
     fn export_support(&mut self, cx: &mut Context<Self>) {
-        if self.export_in_progress {
+        if !begin_export(&mut self.export_in_progress) {
             return;
         }
-        self.export_in_progress = true;
         self.export_status = None;
         let generation = self.support_state.generation;
-        self.support_task = cx.spawn(async move |this, cx| {
+        self.export_task = cx.spawn(async move |this, cx| {
             let directory = std::env::var_os("USERPROFILE")
                 .map(std::path::PathBuf::from)
                 .unwrap_or_else(|| std::path::PathBuf::from("."));
             let receiver =
                 cx.update(|cx| cx.prompt_for_new_path(&directory, Some("support-report.txt")));
             let selection = match receiver.await {
-                Ok(Ok(Some(path))) => Ok(Some(path)),
-                Ok(Ok(None)) => Ok(None),
+                Ok(Ok(Some(path))) => Ok(path),
+                Ok(Ok(None)) => Err(()),
                 _ => Err(()),
             };
-            let data = match &selection {
-                Err(()) | Ok(None) => None,
-                Ok(Some(path)) => {
-                    let mut taken = None;
-                    let _ = this.update(cx, |this, _cx| {
-                        let live = this
-                            .handle
-                            .as_ref()
-                            .and_then(Self::current_notice)
-                            .map(|notice| (notice.session_generation, notice.publication_version));
-                        taken = this.support_state.take_for_save(
-                            generation,
-                            this.handle.is_some(),
-                            live,
-                        );
-                    });
-                    taken.map(|data| (path.clone(), data))
-                }
-            };
+            let data = selected_export_path(selection).and_then(|path| {
+                let mut taken = None;
+                let _ = this.update(cx, |this, _cx| {
+                    let live = this
+                        .handle
+                        .as_ref()
+                        .and_then(Self::current_notice)
+                        .map(|notice| (notice.session_generation, notice.publication_version));
+                    taken =
+                        this.support_state
+                            .take_for_save(generation, this.handle.is_some(), live);
+                });
+                taken.map(|data| (path, data))
+            });
             let result = match data {
                 Some((path, data)) => Some(
                     cx.background_executor()
@@ -4577,6 +4579,7 @@ impl Render for Shell {
                                                             div()
                                                                 .id("support-export-button")
                                                                 .role(Role::Button)
+                                                                .track_focus(&self.export_focus)
                                                                 .aria_label("サポート情報をエクスポート")
                                                                 .aria_keyshortcuts("Enter Space")
                                                                 .aria_description(
@@ -5691,7 +5694,14 @@ mod contrast_scope_tests {
         let data =
             app_core::checked_export(&app_core::SupportReport::unavailable("UnitReason", "0.1.0"))
                 .expect("checked export");
-        assert!(super::export_selected(Ok(None), Some(data)).is_none());
-        assert!(super::export_selected(Err(()), None).is_none());
+        assert!(super::selected_export_path(Err(())).is_none());
+        assert!(super::selected_export_path(Ok(std::path::PathBuf::from("x"))).is_some());
+        let mut in_progress = false;
+        assert!(super::begin_export(&mut in_progress));
+        assert!(
+            !super::begin_export(&mut in_progress),
+            "double press is refused"
+        );
+        let _ = data;
     }
 }

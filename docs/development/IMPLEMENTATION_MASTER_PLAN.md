@@ -4101,3 +4101,11 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests:** message mapping distinct and path/content-free; cancel (`Ok(None)`/Err) never calls the writer; existing preview/state tests pass. `cargo test -p desktop-gpui` 114 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` succeeds.
 - **Native save/dialog:** **NOT_RUN**. MP-REL3 remains incomplete (consent wording polish, failure-path native verification, workspace policy).
 
+### 19.207 MP-REL3 export task/focus/test-path fixes (2026-11-02)
+
+- **B-01 task isolation:** `Shell` now has a dedicated `export_task: Task<()>`; preview regeneration uses `support_task`, so rebuilding a preview cannot abort an in-flight save.
+- **B-02 focus:** `export_focus: FocusHandle` added and `support-export-button` uses `.track_focus(&self.export_focus)`; the existing Enter/Space action listener remains, so Tab reachability is wired like the preview button.
+- **A-01 shared product path:** `begin_export(&mut bool)` (double-press refusal) and `selected_export_path(Result<PathBuf, ()>)` (cancel/dialog error → `None`) are product functions used by `export_support`; the tests exercise the same functions instead of a test-only duplicate. Cancel/dialog-error paths never call `write_atomic`; a second press is refused.
+- **Unverified:** exact Tab order and native dialog behavior are **NOT_RUN**; the remaining review item is deferred to the next review as instructed.
+- **Verification:** `cargo test -p desktop-gpui` 114 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` succeeds. MP-REL3 remains incomplete.
+
