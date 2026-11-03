@@ -4334,6 +4334,7 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Hypothesis:** the same delivery gap as `support-preview-button` — the advertised Click was not reaching the node because no explicit accessibility Click listener existed; not confirmed.
 - **Fix:** `support-export-button` now has `.on_a11y_action(AccessibleAction::Click, ...)` calling `export_support(cx)`, matching the diagnostics/preview pattern. Existing `.on_click` and `.on_action` paths and all save/state-machine behavior are unchanged.
 - **Inventory (lib.rs `.on_click` without `.on_a11y_action`):** `compare-change-a`, `compare-change-b`, `compare-close`, one `<no-id>` element, `flow-search`, `stop-request`, `stop-reconcile`, `task-search`, `surface-switcher`, `flow-diagram-region`. Not changed in this slice; decision deferred.
-- **Tests:** source test now requires at least three explicit a11y Click listeners; export/preview/toggle/state tests pass. `cargo test -p desktop-gpui` 120 passed / 0 failed; fmt OK; clippy 0 issues.
+- **Tests:** source test now requires at least two explicit a11y Click listeners; export/preview/toggle/state tests pass. `cargo test -p desktop-gpui` 120 passed / 0 failed; fmt OK; clippy 0 issues.
 - **Native:** dialog opening is **not claimed**; Lead re-measurement pending. MP-REL3 / MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
+- **Test condition as implemented:** the source test asserts that the literal `.on_a11y_action(AccessibleAction::Click` occurs **at least twice** (`count() >= 2`), which covers the toggle and the preview button; the export button's listener was added afterwards and is not yet covered by a count of its own. Recording the real condition rather than a stricter one that was never written.
 
