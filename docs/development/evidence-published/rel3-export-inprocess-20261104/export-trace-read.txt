@@ -1,0 +1,14 @@
+export path with in-process trace, driven entirely through accessibility
+exe_sha256: b0dfa54cb459cfb78454362a517c2105a7964de921af19728103d657f169579c
+base_commit: ed21287bafc39d320939e24fe72d29241f271ee8
+COS_EXPORT_TRACE=1 COS_PREVIEW_TRACE=1
+export_button: present
+trace_before_export: 4 lines
+export_invoke: ok
+--- stderr ---
+  preview-trace action=reached
+  preview-trace build=started
+  preview-trace build=finished
+  preview-trace install=accepted
+  export-trace action=reached
+status_after: (absent)

@@ -1,0 +1,19 @@
+{
+  "measurement": "export path driven by accessibility, with in-process tracing",
+  "base_commit": "ed21287bafc39d320939e24fe72d29241f271ee8",
+  "exe_sha256": "sha256:b0dfa54cb459cfb78454362a517c2105a7964de921af19728103d657f169579c",
+  "windows": "10.0.26300.0",
+  "result": "The explicit accessibility listener works: the trace shows 'export-trace action=reached', so export_support runs. Nothing follows it - no data=, dialog=, writer= or ui= line - and a full enumeration of every top-level window shows no dialog at all (11 windows before and after, only 'COS Desktop' belonging to the app, no #32770 anywhere). The status element is absent afterwards.",
+  "what_this_narrows": "The handler is reached, so the failure is inside the flow rather than in dispatch. The two remaining candidates are (a) begin_export_trial refusing because the in-progress flag was already set, which returns silently before any further token, and (b) the call into the platform save dialog never returning, so the await after it does not resume. The current trace emits nothing between handler entry and the post-dialog payload decision, so these cannot be told apart yet.",
+  "next_emission_point": "Emit a token immediately after the trial guard accepts or refuses, and another immediately before entering the dialog call, so (a) and (b) separate.",
+  "files": {
+    "export-trace-read.txt": {
+      "sha256": "sha256:aa796a0acc0ee1f8100f2c1548f5a8b6138276de8aa68bf28ea5833c40dfbe03",
+      "bytes": 507
+    },
+    "export-window-enumeration.txt": {
+      "sha256": "sha256:d78af4771ade56f16bc292fdebc2c565802e26b44ede4fea5e4cdef4b874a047",
+      "bytes": 486
+    }
+  }
+}

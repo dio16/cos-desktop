@@ -4349,3 +4349,11 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests:** env gate accepts only `"1"`; all 14 tokens are closed/ASCII/path-free; existing tests pass. `cargo test -p desktop-gpui` 121 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` OK.
 - **Native:** Lead re-measurement pending; no fix or causal claim. MP-REL3 / MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
 
+### 19.225 In-process export trace: the handler runs, the flow stops inside (2026-11-04)
+
+- **Instrumentation:** with `COS_EXPORT_TRACE=1`, `export_support` writes closed ASCII tokens to **stderr** at handler entry, the payload decision, the dialog result, the writer result and the status update. Default is silent; no path, file name, report body or OS error is written; saving, the state machine, redaction and permissions are unchanged.
+- **Result:** the trace shows **`export-trace action=reached`** - so the explicit accessibility listener **works** and the handler runs - and **nothing follows it**: no `data=`, `dialog=`, `writer=` or `ui=` line. A full enumeration of every top-level window shows **no dialog at all** (11 windows before and after, only `COS Desktop`, no `#32770`). The status element is absent afterwards.
+- **What that narrows:** the failure is **inside the flow**, not in dispatch. Two candidates remain and the current trace cannot separate them: (a) `begin_export_trial` refuses because the in-progress flag is already set, returning silently before any further token; (b) the call into the platform save dialog never returns, so the await after it never resumes.
+- **Next emission point:** a token immediately after the trial guard decides, and one immediately before entering the dialog call.
+- **Evidence:** `docs/development/evidence-published/rel3-export-inprocess-20261104/` with the trace read, the window enumeration and a `record.json`.
+- **State:** MP-REL3, MP-AX1/AX2, MP-R0A and MP-R0B remain incomplete; the save dialog, Tab traversal, connected baseline and screen-reader quality are unmeasured; product acceptance NOT_RUN.
