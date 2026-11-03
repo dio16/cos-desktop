@@ -365,6 +365,32 @@ impl SupportPreviewState {
     }
 }
 
+/// Closed UI messages for the export result; never include a path or report text.
+fn export_status_message(
+    result: Result<(), app_core::support_report::ExportWriteError>,
+) -> &'static str {
+    use app_core::support_report::ExportWriteError;
+    match result {
+        Ok(()) => "保存しました",
+        Err(ExportWriteError::AlreadyExists) => "同名のファイルが存在します",
+        Err(ExportWriteError::CleanupFailed) => {
+            "保存結果を確認できません。ファイルが存在する可能性があります"
+        }
+        Err(_) => "保存できませんでした",
+    }
+}
+
+/// Testable selection step: cancel (`None`) never calls the writer.
+#[cfg(test)]
+fn export_selected(
+    selection: Result<Option<std::path::PathBuf>, ()>,
+    data: Option<app_core::ExportData>,
+) -> Option<Result<(), app_core::support_report::ExportWriteError>> {
+    let path = selection.ok().flatten()?;
+    let data = data?;
+    Some(data.write_atomic(&path, false))
+}
+
 /// Build the support report from one observation snapshot, off the UI thread. The
 /// ring is copied at most once per request and the report is bounded by app-core.
 fn build_support_preview(handle: &ObservationHandle, desktop_version: &str) -> SupportBuild {
@@ -434,6 +460,8 @@ pub struct Shell {
     support_focus: FocusHandle,
     /// One-shot background report build; dropped when superseded.
     support_task: Task<()>,
+    export_in_progress: bool,
+    export_status: Option<&'static str>,
     workbench: Option<Workbench>,
     /// Derived display text with its publication identity, revalidated on render.
     cache: DisplayCache,
@@ -631,6 +659,8 @@ impl Shell {
             support_state: SupportPreviewState::default(),
             support_focus: cx.focus_handle().tab_stop(true),
             support_task: cx.spawn(async move |_this, _cx| {}),
+            export_in_progress: false,
+            export_status: None,
             workbench,
             cache: DisplayCache::from_text(ui_model::WorkbenchText::withheld_for_desktop(
                 &desktop_version,
@@ -1181,7 +1211,63 @@ impl Shell {
         self.support_state.visible(self.handle.is_some(), live)
     }
 
-    /// The current authorized display text, when this window holds one.    /// The current authorized display text, when this window holds one.
+    /// The current authorized display text, when this window holds one.    /// Explicit user save: native dialog, revalidation, background write, closed
+    /// status. Cancel and double-press never write. No automatic retry.
+    fn export_support(&mut self, cx: &mut Context<Self>) {
+        if self.export_in_progress {
+            return;
+        }
+        self.export_in_progress = true;
+        self.export_status = None;
+        let generation = self.support_state.generation;
+        self.support_task = cx.spawn(async move |this, cx| {
+            let directory = std::env::var_os("USERPROFILE")
+                .map(std::path::PathBuf::from)
+                .unwrap_or_else(|| std::path::PathBuf::from("."));
+            let receiver =
+                cx.update(|cx| cx.prompt_for_new_path(&directory, Some("support-report.txt")));
+            let selection = match receiver.await {
+                Ok(Ok(Some(path))) => Ok(Some(path)),
+                Ok(Ok(None)) => Ok(None),
+                _ => Err(()),
+            };
+            let data = match &selection {
+                Err(()) | Ok(None) => None,
+                Ok(Some(path)) => {
+                    let mut taken = None;
+                    let _ = this.update(cx, |this, _cx| {
+                        let live = this
+                            .handle
+                            .as_ref()
+                            .and_then(Self::current_notice)
+                            .map(|notice| (notice.session_generation, notice.publication_version));
+                        taken = this.support_state.take_for_save(
+                            generation,
+                            this.handle.is_some(),
+                            live,
+                        );
+                    });
+                    taken.map(|data| (path.clone(), data))
+                }
+            };
+            let result = match data {
+                Some((path, data)) => Some(
+                    cx.background_executor()
+                        .spawn(async move { data.write_atomic(&path, false) })
+                        .await,
+                ),
+                None => None,
+            };
+            let _ = this.update(cx, |this, cx| {
+                this.export_in_progress = false;
+                this.export_status = result.map(export_status_message);
+                cx.notify();
+            });
+        });
+        cx.notify();
+    }
+
+    /// The current authorized display text, when this window holds one.
     fn authorized_text(&self) -> Option<&ui_model::WorkbenchText> {
         let handle = self.handle.as_ref()?;
         self.cache
@@ -4487,6 +4573,42 @@ impl Render for Shell {
                                                                 .aria_value(preview.clone())
                                                                 .child(preview),
                                                         )
+                                                        .child(
+                                                            div()
+                                                                .id("support-export-button")
+                                                                .role(Role::Button)
+                                                                .aria_label("サポート情報をエクスポート")
+                                                                .aria_keyshortcuts("Enter Space")
+                                                                .aria_description(
+                                                                    "検査済みのサポート情報を、選択したローカルファイルへ保存します。送信は行いません。",
+                                                                )
+                                                                .px_4()
+                                                                .py_2()
+                                                                .border(support_border_width)
+                                                                .border_color(rgb(support_border_color))
+                                                                .bg(rgb(support_background))
+                                                                .text_color(rgb(colors.text))
+                                                                .cursor_pointer()
+                                                                .when(self.export_in_progress, |element| element.opacity(0.5))
+                                                                .on_action(cx.listener(
+                                                                    |this, _: &Activate, _, cx| {
+                                                                        this.export_support(cx);
+                                                                    },
+                                                                ))
+                                                                .on_click(cx.listener(|this, _, _, cx| {
+                                                                    this.export_support(cx);
+                                                                }))
+                                                                .child("エクスポート"),
+                                                        )
+                                                    })
+                                                    .when_some(self.export_status, |element, status| {
+                                                        element.child(
+                                                            div()
+                                                                .id("support-export-status")
+                                                                .role(Role::Label)
+                                                                .aria_label("エクスポート結果")
+                                                                .child(status),
+                                                        )
                                                     })
                                                     // DIAGNOSTICS-READONLY-END
                                                     .into_any_element()
@@ -5540,5 +5662,36 @@ mod contrast_scope_tests {
             state.take_for_save(newer, false, None).is_some(),
             "the newer generation still saves after the older request"
         );
+    }
+    #[test]
+    fn export_status_messages_are_closed_and_distinct() {
+        use app_core::support_report::ExportWriteError;
+        let ok = super::export_status_message(Ok(()));
+        let exists = super::export_status_message(Err(ExportWriteError::AlreadyExists));
+        let cleanup = super::export_status_message(Err(ExportWriteError::CleanupFailed));
+        let other = super::export_status_message(Err(ExportWriteError::Io));
+        assert_eq!(ok, "保存しました");
+        assert_eq!(exists, "同名のファイルが存在します");
+        assert_eq!(
+            cleanup,
+            "保存結果を確認できません。ファイルが存在する可能性があります"
+        );
+        assert_eq!(other, "保存できませんでした");
+        assert_ne!(exists, cleanup);
+        assert_ne!(cleanup, other);
+        for message in [ok, exists, cleanup, other] {
+            assert!(!message.chars().any(|character| character == char::from(92)));
+            assert!(!message.chars().any(|character| character == char::from(92)));
+            assert!(!message.chars().any(|character| character == char::from(92)));
+        }
+    }
+
+    #[test]
+    fn export_cancel_never_calls_the_writer() {
+        let data =
+            app_core::checked_export(&app_core::SupportReport::unavailable("UnitReason", "0.1.0"))
+                .expect("checked export");
+        assert!(super::export_selected(Ok(None), Some(data)).is_none());
+        assert!(super::export_selected(Err(()), None).is_none());
     }
 }

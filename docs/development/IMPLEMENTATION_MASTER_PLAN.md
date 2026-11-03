@@ -4092,3 +4092,12 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests:** publication change before `invalidate()` → `None` and payload discarded; `invalidate()` → `None`; generation mismatch → `None`; pending → `None`; one take only; `begin()` discards. Existing preview/stale regressions pass. `cargo test -p desktop-gpui` 112 passed / 0 failed; fmt OK; clippy 0 issues.
 - **Not implemented:** Save/Cancel UI, dialog/oneshot/background save, failure display, Native save. MP-REL3 remains incomplete.
 
+### 19.206 MP-REL3 minimal export UI wiring (2026-11-02)
+
+- **UI:** one `support-export-button` added beside the existing read-only support preview (same focus/button pattern, Enter/Space, closed aria description). A one-line `support-export-status` label shows the outcome.
+- **Flow:** explicit click only; `cx.spawn` waits for `prompt_for_new_path(USERPROFILE, "support-report.txt")`. `Ok(Some(path))` re-runs `take_for_save(generation, handle_present, live)` at that moment, then writes `ExportData::write_atomic(path, false)` on the background executor. `Ok(None)`/dialog error/cancel writes nothing and leaves status unchanged.
+- **Messages:** `保存しました`; `同名のファイルが存在します`; `CleanupFailed` → `保存結果を確認できません。ファイルが存在する可能性があります` (not asserted as failure); all others → `保存できませんでした`. No path or report text is shown.
+- **Guards:** `export_in_progress` rejects double clicks and dims the button; no automatic retry; revalidation uses the publication identity at save time, not only generation.
+- **Tests:** message mapping distinct and path/content-free; cancel (`Ok(None)`/Err) never calls the writer; existing preview/state tests pass. `cargo test -p desktop-gpui` 114 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` succeeds.
+- **Native save/dialog:** **NOT_RUN**. MP-REL3 remains incomplete (consent wording polish, failure-path native verification, workspace policy).
+
