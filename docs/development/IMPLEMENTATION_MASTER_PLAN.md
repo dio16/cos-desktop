@@ -3839,3 +3839,12 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **G — next slice chosen:** **the platform-submission start only**, derived from existing kind 3 records and named for what it measures rather than as the OS Present call; the submission end is deferred. Reaching the real OS API boundary needs separate instrumentation and is not part of this choice.
 - **State:** investigation/design only; no product code changed. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.182 MP-R0A platform-submission-start derivation (2026-11-02)
+
+- **Endpoint definition:** `platform-submission-start` = the GPUI platform-submission boundary `PresentTiming.present_start`, already retained as kind 3 `start_ns`. It is **not** the DXGI `Present` call timestamp and makes no claim about GPU submission, display, or scanout.
+- **Matrix:** `s2b_contracts.endpoint_matrix()` derives it from `counts[3]`: `OBSERVED / RETAINED_SOURCE_RECORD` when a kind 3 record is retained, otherwise `NOT_MEASURED / NO_RETAINED_VALID_RECORD` (the probe exists; this is not `NOT_EXPOSED_BY_SELECTED_PROBE`). Existing endpoint meanings and the 256 cap are unchanged.
+- **Observation / replay:** `s2b_capture` emits observation_version 2 including the derived endpoint. `s3_native_replay.require_endpoints()` requires exact equality for version 2 and subset compatibility for version 1; `verify_bundle` removes the new endpoint (and uses version 1) only for legacy archives. New values are recomputed from the validated capture, so a tampered `status`/`reason` is refused with `OBSERVATION_BINDING`.
+- **Tests:** `test_platform_submission_start_is_derived_from_retained_kind3` (OBSERVED with kind 3, NOT_MEASURED with zero), `test_old_capture_without_platform_submission_start_still_validates`, `test_platform_submission_start_is_recomputed_or_rejected` (version-1 subset + version-2 exact + status/reason tamper). `pytest apps/desktop/devtools/r0/tests -q`: 353 passed / 12 skipped / 1 failed (the known stale live-manifest driver_hash only).
+- **Verification:** fmt OK; clippy 0 issues; `cargo test -p cos-desktop --features r0-s2b-instrumentation` 186 passed / 0 failed.
+- **State:** implementation complete; **Native measurement NOT_RUN** (the new endpoint appears only in a new approved capture). `present-return` is deferred to a separate slice. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
+

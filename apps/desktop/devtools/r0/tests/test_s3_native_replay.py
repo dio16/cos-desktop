@@ -42,6 +42,22 @@ class NativePublishedReplay(unittest.TestCase):
             replay.validate_scenario(data, "keyboard")
         self.assertEqual(str(caught.exception), code)
 
+    def test_platform_submission_start_is_recomputed_or_rejected(self):
+        capture = {"summary": {"kind_counts": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]}}
+        expected = s2b.endpoint_matrix(capture)
+        legacy = {"observation_version": 1, "endpoints": {}}
+        replay.require_endpoints(legacy, capture)
+        current = {"observation_version": 2, "endpoints": dict(expected)}
+        replay.require_endpoints(current, capture)
+        for key in ("status", "reason"):
+            mutated = {"observation_version": 2,
+                       "endpoints": dict(expected)}
+            mutated["endpoints"]["platform-submission-start"] = dict(expected["platform-submission-start"])
+            mutated["endpoints"]["platform-submission-start"][key] = "WRONG"
+            with self.assertRaises(s2b.ObservationError) as caught:
+                replay.require_endpoints(mutated, capture)
+            self.assertEqual(str(caught.exception), "OBSERVATION_BINDING")
+
     def test_frame_identity_must_equal_capture_recomputation(self):
         capture = {"records": [{"frame_id": 7}]}
         expected = {"status": "MEASURED", "records": 1, "distinct_ids": 1,

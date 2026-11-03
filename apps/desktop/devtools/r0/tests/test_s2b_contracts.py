@@ -358,6 +358,21 @@ class S2BWireContract(unittest.TestCase):
         self.assertEqual(without_local["local-notify"],
                          {"status": "NOT_MEASURED", "reason": "NO_RETAINED_VALID_RECORD"})
 
+    def test_platform_submission_start_is_derived_from_retained_kind3(self) -> None:
+        value = s2b.validate_capture(example())
+        matrix = s2b.endpoint_matrix(value)
+        self.assertEqual(matrix["platform-submission-start"],
+                         {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"})
+        without_present = copy.deepcopy(value)
+        without_present["summary"]["kind_counts"][3] = 0
+        matrix = s2b.endpoint_matrix(without_present)
+        self.assertEqual(matrix["platform-submission-start"],
+                         {"status": "NOT_MEASURED", "reason": "NO_RETAINED_VALID_RECORD"})
+
+    def test_old_capture_without_platform_submission_start_still_validates(self) -> None:
+        value = copy.deepcopy(example())
+        self.assertEqual(s2b.validate_capture(value)["summary"]["kind_counts"][3], 1)
+
     def test_retained_bundles_are_classified_cancelled_and_observed(self) -> None:
         bundle = REPO / "docs/development/evidence/r0a-s2b/native-bundles.zip"
         if not bundle.is_file():

@@ -147,7 +147,7 @@ def validate_scenario(data: dict[str, bytes], name: str) -> tuple[dict, dict, di
         "endpoints", "coverage", "frame_identity", "cross_domain_latency", "loss_scope",
         "unobserved_source_loss"})
     require(type(observation["observation_version"]) is int
-            and observation["observation_version"] == 1, "VERSION")
+            and observation["observation_version"] in (1, 2), "VERSION")
     bound = s2b.object_fields(observation["identity"], {"source_commit", "manifest_sha256",
         "build_sha256", "observer_source_sha256", "executable_sha256", "helper_sha256",
         "helper_source_sha256", "fixture_sha256", "execution_id", "pid", "gpui_pin", "feature"})
@@ -170,8 +170,8 @@ def validate_scenario(data: dict[str, bytes], name: str) -> tuple[dict, dict, di
         s2b.digest(digest)
     require(s2a["ledger.json"] == sha(data[base + "ledger.json"]), "LEDGER_DIGEST")
     require_frame_identity(observation, capture)
-    require(observation["endpoints"] == s2b.endpoint_matrix(capture)
-            and observation["coverage"] == "LIMITED_SOURCE_OBSERVATIONS_ONLY"
+    require_endpoints(observation, capture)
+    require(observation["coverage"] == "LIMITED_SOURCE_OBSERVATIONS_ONLY"
             and observation["cross_domain_latency"] == "NOT_MEASURED"
             and observation["loss_scope"] == "OFFERED_FINALIZED_JOURNAL_PLUS_LOCAL_QUEUE"
             and observation["unobserved_source_loss"] == "UNKNOWN", "OBSERVATION_BINDING")
@@ -326,6 +326,17 @@ def readme_comparison(readme: str, name: str, capture: dict, aggregate: dict) ->
             "gap_denominator_agrees": counts[2] == gap["count"],
             "scope_initial_gap_included": False,
             "gap_definition_limit": "README interval denominator names n records, not n-1 adjacent pairs; no hidden sample inferred"}
+
+
+def require_endpoints(observation: dict, capture: dict) -> None:
+    expected = s2b.endpoint_matrix(capture)
+    actual = observation.get("endpoints")
+    require(isinstance(actual, dict), "OBSERVATION_BINDING")
+    if observation.get("observation_version") == 2:
+        require(actual == expected, "OBSERVATION_BINDING")
+    else:
+        for name, value in actual.items():
+            require(expected.get(name) == value, "OBSERVATION_BINDING")
 
 
 def require_frame_identity(observation: dict, capture: dict) -> None:
