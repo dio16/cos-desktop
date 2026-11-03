@@ -194,6 +194,7 @@ def validate_capture(document: object, *, execution: str | None = None,
     windows, lifetimes, closed, spans = {}, {}, {}, set()
     power_boundary = start
     frame_ids = set()
+    marker_windows = set()
     for seq, raw in enumerate(records, 1):
         if not isinstance(raw, dict):
             fail("SCHEMA")
@@ -204,6 +205,10 @@ def validate_capture(document: object, *, execution: str | None = None,
             fail("SEQUENCE")
         kind = integer(record["kind"], high=10)
         counts[kind] += 1
+        if kind == 10:
+            if record["window"] in marker_windows:
+                fail("DUPLICATE_EVENT")
+            marker_windows.add(record["window"])
         if frame_id is not None:
             integer(frame_id)
             if kind != 3:

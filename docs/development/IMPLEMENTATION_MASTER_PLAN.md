@@ -3951,3 +3951,13 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Evidence:** `a1-b9f-*` plus `record.json` block `wm_close_runs.first-frame-b9f`; `product_commit` copied from the approval ledger (`b9f6919…` in ledger).
 - **State:** first-frame Native measurement failed as designed closed; no OBSERVED claim. Fix direction is to admit the marker earlier (start capture admission before window creation or buffer the pre-active marker) in a separate implementation slice. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.192 MP-R0A bounded pre-admission marker buffer (2026-11-02)
+
+- **Chosen: (B) buffer the pre-active marker.** (A) would require starting the capture worker/admission before `open_window`, which changes startup ownership/ordering; B keeps admission semantics and only retains the earliest marker until the worker starts.
+- **Implementation:** `r0_probe` adds a per-binding `Vec<Event>` bounded by **`PRE_ACTIVE_LIMIT = 64`**. While admission is inactive and not stopped, records are buffered; the first active record drains the buffer (FIFO) before itself. Overflow increments the existing `Control.dropped` counter (never silent). The observer still orders marker vs submission by monotonic time + window id, not by record order, and `local_lifetime_rejected[2]` counts rejected markers.
+- **Duplicate markers:** a second marker for the same window is rejected in the observer (`correlation_invalid` + kind-10 rejection counter); the capture contract also refuses duplicate kind-10 windows (`DUPLICATE_EVENT`).
+- **Version/limits:** observation_version stays **4** (no endpoint change); retention cap 256 and all eight existing endpoint meanings unchanged. Buffer overflow is visible in the existing `local_dropped` figure; no extra summary field was added.
+- **Tests:** probe tests `a_pre_admission_marker_is_flushed_after_start` (marker before start → flushed ahead of the next event) and `the_pre_admission_buffer_is_bounded_and_loss_is_counted` (65 markers → 64 retained, 1 counted drop); Rust observer tests still pass with 3-slot conservation.
+- **Verification:** fmt OK; clippy 0 issues; `cargo test -p cos-desktop --features r0-s2b-instrumentation` 186 passed / 0 failed; `pytest apps/desktop/devtools/r0/tests -q` 356 passed / 12 skipped / 1 failed (known live-manifest driver_hash; manifests not modified).
+- **State:** implementation complete; **Native measurement NOT_RUN** (needs new build/approval/identity/capture). MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
+

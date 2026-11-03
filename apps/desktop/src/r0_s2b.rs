@@ -540,6 +540,11 @@ impl Observer {
                         return Err(error);
                     }
                 };
+                if self.created.iter().any(|(id, _)| *id == window) {
+                    self.counts.correlation_invalid += 1;
+                    self.counts.local_lifetime_rejected[2] += 1;
+                    return Err(io::ErrorKind::InvalidData.into());
+                }
                 if self
                     .submitted
                     .iter()

@@ -10,6 +10,8 @@ use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::mpsc::{SyncSender, TrySendError};
 use std::time::Instant;
 
+const PRE_ACTIVE_LIMIT: usize = 64;
+
 /// Local presentation facts; no canonical revision or private identity is invented.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EventKind {
@@ -86,6 +88,7 @@ impl Control {
 struct Binding {
     sender: SyncSender<Event>,
     control: Arc<Control>,
+    pending: RefCell<Vec<Event>>,
 }
 
 thread_local! {
@@ -123,6 +126,7 @@ pub fn attach(sender: SyncSender<Event>, control: Arc<Control>) -> Result<Lease,
         *binding = Some(Binding {
             sender,
             control: Arc::clone(&control),
+            pending: RefCell::new(Vec::new()),
         });
         Ok(Lease {
             control,
@@ -145,31 +149,85 @@ pub(crate) fn record(window: u64, kind: EventKind) {
         };
         let control = &binding.control;
         control.in_flight.fetch_add(1, Ordering::AcqRel);
-        if control.active.load(Ordering::Acquire)
-            && control.stop_ns_plus_one.load(Ordering::Acquire) == 0
-        {
-            let event = Event {
-                at: Instant::now(),
-                window,
-                kind,
-            };
-            match binding.sender.try_send(event) {
-                Ok(()) => {
-                    control.enqueued.fetch_add(1, Ordering::Release);
+        let active = control.active.load(Ordering::Acquire);
+        let stopped = control.stop_ns_plus_one.load(Ordering::Acquire) != 0;
+        let mut pending = binding.pending.borrow_mut();
+        if !stopped {
+            if active {
+                for event in pending.drain(..) {
+                    send(binding, control, event);
                 }
-                Err(TrySendError::Full(_) | TrySendError::Disconnected(_)) => {
-                    control.dropped.fetch_add(1, Ordering::Release);
-                }
+                send(
+                    binding,
+                    control,
+                    Event {
+                        at: Instant::now(),
+                        window,
+                        kind,
+                    },
+                );
+            } else if pending.len() < PRE_ACTIVE_LIMIT {
+                pending.push(Event {
+                    at: Instant::now(),
+                    window,
+                    kind,
+                });
+            } else {
+                // Bounded pre-admission buffer: never drop silently.
+                control.dropped.fetch_add(1, Ordering::Release);
             }
         }
         control.in_flight.fetch_sub(1, Ordering::Release);
     });
 }
 
+fn send(binding: &Binding, control: &Control, event: Event) {
+    match binding.sender.try_send(event) {
+        Ok(()) => {
+            control.enqueued.fetch_add(1, Ordering::Release);
+        }
+        Err(TrySendError::Full(_) | TrySendError::Disconnected(_)) => {
+            control.dropped.fetch_add(1, Ordering::Release);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::sync::mpsc;
+
+    #[test]
+    fn a_pre_admission_marker_is_flushed_after_start() -> Result<(), String> {
+        let (sender, receiver) = mpsc::sync_channel(8);
+        let control = Arc::new(Control::new(Instant::now()));
+        let _lease = attach(sender, Arc::clone(&control))?;
+        record_window_created(11);
+        assert_eq!(receiver.try_iter().count(), 0);
+        control.start();
+        record(11, EventKind::Notify);
+        let events: Vec<_> = receiver.try_iter().collect();
+        assert_eq!(events.len(), 2);
+        assert_eq!(events[0].kind, EventKind::WindowCreated(11));
+        assert_eq!(events[1].kind, EventKind::Notify);
+        assert_eq!(control.accounting(), (2, 0, 0));
+        Ok(())
+    }
+
+    #[test]
+    fn the_pre_admission_buffer_is_bounded_and_loss_is_counted() -> Result<(), String> {
+        let (sender, receiver) = mpsc::sync_channel(200);
+        let control = Arc::new(Control::new(Instant::now()));
+        let _lease = attach(sender, Arc::clone(&control))?;
+        for _ in 0..(PRE_ACTIVE_LIMIT + 1) {
+            record_window_created(11);
+        }
+        control.start();
+        record(11, EventKind::Notify);
+        assert_eq!(receiver.try_iter().count(), PRE_ACTIVE_LIMIT + 1);
+        assert_eq!(control.accounting(), ((PRE_ACTIVE_LIMIT + 1) as u64, 1, 0));
+        Ok(())
+    }
 
     #[test]
     fn a_full_probe_queue_preserves_accepted_events_and_accounts_for_loss() -> Result<(), String> {
