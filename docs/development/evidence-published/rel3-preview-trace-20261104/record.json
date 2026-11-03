@@ -3,8 +3,8 @@
   "base_commit": "a4fdc7f9e50a485168e9c959352bea8c3dde714a",
   "exe_sha256": "sha256:7573ca44a4aac3f787eb02be8660640e0788f258c00171098bcfe4dba286a528",
   "windows": "10.0.26300.0",
-  "result": "DECISIVE for the first candidate: InvokePattern.Invoke() on support-preview-button returned without an exception, yet the published trace stayed action=none;build=none;install=none;render=absent across reads at 1.5 s, 3 s and 5 s afterwards. The action handler is therefore never reached, which rules out the two other candidates as the explanation for this observation - a background task that never finishes, and a completion rejected by the state machine - because neither can be the first failure if the handler never runs.",
-  "what_remains_open": "Why the accessibility action does not reach that element's handler while the diagnostics toggle, built with the same on_action plus on_click wiring in the same panel, does dispatch. That is now the single question, and it is a dispatch question rather than a generation question.",
+  "result": "InvokePattern.Invoke() on support-preview-button returned without an exception, yet the published trace stayed action=none;build=none;install=none;render=absent at 1.5 s, 3 s and 5 s. With no positive control showing a trace transition being read back through automation in this window, this is strong evidence that the action handler did not run, but it does not conclusively exclude the generation-side candidates (a task that never finishes, a completion rejected by the state machine). The earlier wording that excluded them is withdrawn.",
+  "what_remains_open": "Two questions, in order: whether a trace transition can be read back through automation at all in this window (positive control), and why the accessibility action appears not to reach this element's handler while the diagnostics toggle is reached by the same mechanism.",
   "not_claimed": "No defect classification beyond the observation, no fix, and no claim that assistive technology users are affected on other builds; the earlier preview observation at ce14dca is still not reproduced here.",
   "files": {
     "trace-read.txt": {

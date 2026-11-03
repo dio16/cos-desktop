@@ -4252,7 +4252,7 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 
 ### 19.219 MP-REL3 support-preview path instrumentation (2026-11-04)
 
-- **Design:** `preview_trace` exposes four closed ASCII measurement points without requiring focus: handler `action=reached|none`; builder `build=started|finished|none`; install result `install=accepted|generation|identity|pending|none`; render `render=present|absent`. Exposed as `support-preview-trace` (`Role::Label`, `accessibility_id`, `aria_value(trace)`).
+- **Design:** `preview_trace` exposes four closed ASCII measurement points without requiring focus: handler `action=reached|none`; builder `build=started|finished|none`; install result `install=accepted|generation|identity|pending|none`; render `render=assumed|absent`. Exposed as `support-preview-trace` (`Role::Label`, `accessibility_id`, `aria_value(trace)`).
 - **Install reasons:** `SupportPreviewState::complete_outcome()` separates generation mismatch, missing pending request, identity mismatch and accepted installs; the existing boolean `complete()` now delegates to it and remains test-only. Preview install behavior is unchanged.
 - **Not recorded:** report text, paths, filenames, OS error text, secret values. Only fixed ASCII tokens are stored.
 - **Behavior unchanged:** generation stamping, target identity checks, background build, stale rejection, export/save/redaction/authority paths are untouched; the trace only records transitions.
