@@ -4330,7 +4330,7 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 
 ### 19.224 MP-REL3/AX1 export button explicit a11y Click listener (2026-11-04)
 
-- **Symptom (Lead Native):** after preview generation `support-export-button` was present and Invoke returned no exception, but no OS save dialog appeared and status/trace stayed absent.
+- **Symptom (Lead Native):** after preview generation `support-export-button` was present and Invoke returned no exception, but no OS save dialog appeared and status/trace were absent before the invoke and were not re-read afterwards.
 - **Hypothesis:** the same delivery gap as `support-preview-button` — the advertised Click was not reaching the node because no explicit accessibility Click listener existed; not confirmed.
 - **Fix:** `support-export-button` now has `.on_a11y_action(AccessibleAction::Click, ...)` calling `export_support(cx)`, matching the diagnostics/preview pattern. Existing `.on_click` and `.on_action` paths and all save/state-machine behavior are unchanged.
 - **Inventory (lib.rs `.on_click` without `.on_a11y_action`):** `compare-change-a`, `compare-change-b`, `compare-close`, one `<no-id>` element, `flow-search`, `stop-request`, `stop-reconcile`, `task-search`, `surface-switcher`, `flow-diagram-region`. Not changed in this slice; decision deferred.
