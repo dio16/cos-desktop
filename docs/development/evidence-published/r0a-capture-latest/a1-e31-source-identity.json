@@ -1,0 +1,16 @@
+{
+  "record_version": 1,
+  "observer_source_sha256": "sha256:265efe50afed5fa0aea0d4c7bf9d276b00ef652cabf05e22b2fcc844aae63b01",
+  "files": {
+    "Cargo.lock": "sha256:9b38b1d4a4bf7d7c8403c4e445973b09c51533e0f1a246777857a7a5e4c9910d",
+    "apps/desktop/Cargo.toml": "sha256:698bcadad308a7ba4a812ccf51f641136f323558ec037bed583949a671f1a42e",
+    "apps/desktop/devtools/r0/s2b_capture.py": "sha256:e1176b3ed4c6675d85facde57d7529bb9a852eb833811f982f8ed380bc1010b0",
+    "apps/desktop/devtools/r0/s2b_contracts.py": "sha256:ade650e01771f393bc37d4e315b7241b869658960e103a02c2ce512a5823f3a5",
+    "apps/desktop/devtools/r0/s2b_validate.py": "sha256:3fbe351330cd89266efaea62945a1d88755682585c106e41b832d51d0abf2520",
+    "apps/desktop/src/main.rs": "sha256:4f0c1aacfb8b28f2a52a68bdc7536446db89d59c41892119c702ff16cf13ab44",
+    "apps/desktop/src/r0_s2b.rs": "sha256:86c4fb4de43e63ba2fc599a6abf80008be34032dc3236f554236dbb1e338c7a1",
+    "crates/desktop-gpui/Cargo.toml": "sha256:914448185b3252aba16a86f2798118eb065ee33b6ab5e32ff32773ece9997aaa",
+    "crates/desktop-gpui/src/lib.rs": "sha256:1be9a077853c1adbad52bbf5b677078dd4e9bc85e9619ea790a9fff5dbc350e2",
+    "crates/desktop-gpui/src/r0_probe.rs": "sha256:fd4efc4a360a06b7e93a932dc83821e6cd8181769178f7846a2d2f1e6ae47e90"
+  }
+}

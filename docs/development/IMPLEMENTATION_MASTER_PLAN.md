@@ -3876,3 +3876,14 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Version type strictness (review follow-up):** python treats `True`, `1.0` and `2.0` as equal to the integers `1` and `2`, so a loose membership test would accept them as legacy versions while the scenario validator demands a real `int`. Both `verify_bundle` and `replay.require_endpoints` now require `type(version) is int and version in (1, 2, 3)` and refuse anything else with `OBSERVATION_BINDING`; a test covers `True`, `1.0`, `2.0`, `0`, `4`, `"3"` and `None`.
 - **State:** derivation implementation complete; **Native measurement NOT_RUN** (needs new build/approval/identity/capture). MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.186 MP-R0A platform-submission-end Native measurement (2026-11-02)
+
+- **Build from `e31f58cbc0974d86725e96b00f4c04ede511ee5c`:** A0 `sha256:1d5f598c467c1c55d46f0f9e4db5ad53ab7524a3209b361fe12a1d2aac5ca934` (35,189,248 B), A1 `sha256:b5bd026df85b544055359c9f598514781e83010951e32d8cfd1ea43d2c149750` (35,529,728 B), helper `sha256:c55c97758e99254478b0ce7cc9c98538ef784a22589711e58eced88d1eccec5d` (616,960 B); source_digest `sha256:265efe50…`.
+- **Approval ledger 21 → 23:** two `e31f58c` entries; existing 21 unchanged; `approved_digests()` 23 with exactly two unique new entries.
+- **Identity:** `s2b-build.json`, both s2b manifests and `r0c-s1-keyboard.json` updated; `validate_manifest` ×2 / `validate_build_record(live=True)` PASS; `pytest apps/desktop/devtools/r0/tests -q` **356 passed / 12 skipped / 0 failed**.
+- **Capture:** existing TAB→ENTER plan, new output/profile, `--timeout-ms 60000`; probe `window.pid 53156` == ledger `pid 53156`; ledger exit 0 / timed_out false / elapsed 37,667 ms; disposition OBSERVED / RETAINED_SOURCE_OBSERVATION; **observation_version 3**.
+- **Endpoint matrix (measured, 8 OBSERVED):** input-dispatch, gpui-dirty, gpui-cpu-draw, gpui-platform-submission, local-surface-mutation, local-notify, **platform-submission-start**, **platform-submission-end** — all OBSERVED / RETAINED_SOURCE_RECORD. `frame_identity` MEASURED (48/48, exact_tuple_fnv64); `cross_domain_latency` NOT_MEASURED. Other endpoints remain NOT_MEASURED with their prior reasons.
+- **Counters:** `kind_counts [100,49,50,48,0,0,4,0,2,3]`; local `received 7 = retained 5 + 0 + 0 + retention-omitted 2`; retained 256.
+- **Evidence:** `evidence-published/r0a-capture-latest/a1-e31-*` plus `record.json` block `wm_close_runs.local-platform-end-e31`; `approved.product_commit` is copied from the approval ledger by executable digest and all recorded commits were cross-checked (0 mismatches).
+- **State:** Native measurement established for this approved build; no PASS claim. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
+

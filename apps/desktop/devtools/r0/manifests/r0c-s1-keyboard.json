@@ -16,9 +16,9 @@
     ]
   },
   "identity": {
-    "repository_sha": "0c6d581e7dd507182aa2f9b305fe06f34c238423",
-    "executable_sha256": "sha256:75495068af0c2ab43bf93578b4c673fbdff56652efa4d8951d72593a8a1cbf6e",
-    "helper_sha256": "sha256:ac15dad2a203634a72ea32d6a0f85672847947d4b3b30f902bef7ce3f6bfbd86",
+    "repository_sha": "e31f58cbc0974d86725e96b00f4c04ede511ee5c",
+    "executable_sha256": "sha256:b5bd026df85b544055359c9f598514781e83010951e32d8cfd1ea43d2c149750",
+    "helper_sha256": "sha256:c55c97758e99254478b0ce7cc9c98538ef784a22589711e58eced88d1eccec5d",
     "gpui_revision": "395def7a067b32ed598fcb3f048969ada9b54942",
     "build_profile": "dev",
     "features": [
