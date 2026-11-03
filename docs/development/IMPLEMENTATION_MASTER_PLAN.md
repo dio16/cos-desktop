@@ -4338,3 +4338,14 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Native:** dialog opening is **not claimed**; Lead re-measurement pending. MP-REL3 / MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
 - **Test condition as implemented:** the source test asserts that the literal `.on_a11y_action(AccessibleAction::Click` occurs **at least twice** (`count() >= 2`), which covers the toggle and the preview button; the export button's listener was added afterwards and is not yet covered by a count of its own. Recording the real condition rather than a stricter one that was never written.
 
+### 19.225 MP-REL3 in-process export trace (2026-11-04)
+
+- **Enablement:** only `COS_EXPORT_TRACE=1`; default and all other values emit nothing.
+- **Output:** stderr, one ASCII line per event:
+  `export-trace action=reached`, `data=<ready|rejected>`, `dialog=<selected|cancelled|failed|dropped>`, `writer=<not-started|success|already-exists|cleanup-failed|other>`, `ui=<updated|preserved>`.
+- **Output points:** `export_support()` entry; dialog receiver result; `take_for_save` result; `write_atomic` result; status reflection (`ui=updated` inside the final update after `apply_export_outcome`, `ui=preserved` when no writer outcome).
+- **Not emitted:** paths, filenames, report body, OS error text, user input or secrets; tokens are a fixed 14-value closed set.
+- **Behavior unchanged:** save/state machine/redaction/authority logic is untouched; only env-gated stderr writes were added.
+- **Tests:** env gate accepts only `"1"`; all 14 tokens are closed/ASCII/path-free; existing tests pass. `cargo test -p desktop-gpui` 121 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` OK.
+- **Native:** Lead re-measurement pending; no fix or causal claim. MP-REL3 / MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
+

@@ -317,6 +317,39 @@ fn preview_trace_emit(token: &'static str) {
     }
 }
 
+#[cfg(test)]
+const EXPORT_TRACE_TOKENS: [&str; 14] = [
+    "action=reached",
+    "data=ready",
+    "data=rejected",
+    "dialog=selected",
+    "dialog=cancelled",
+    "dialog=failed",
+    "dialog=dropped",
+    "writer=not-started",
+    "writer=success",
+    "writer=already-exists",
+    "writer=cleanup-failed",
+    "writer=other",
+    "ui=updated",
+    "ui=preserved",
+];
+
+fn export_trace_enabled(value: Option<&str>) -> bool {
+    value == Some("1")
+}
+
+fn export_trace_on() -> bool {
+    export_trace_enabled(std::env::var("COS_EXPORT_TRACE").ok().as_deref())
+}
+
+/// Emit one fixed, path-free token to stderr only when explicitly enabled.
+fn export_trace_emit(token: &'static str) {
+    if export_trace_on() {
+        eprintln!("export-trace {token}");
+    }
+}
+
 /// Serializes preview requests and rejects stale completions. `generation` changes on
 /// every request and on invalidation, so a delayed older request can never overwrite a
 /// newer result or resurrect a revoked publication.
@@ -1438,6 +1471,7 @@ impl Shell {
         if !begin_export_trial(&mut self.export_in_progress, &mut self.export_trace) {
             return;
         }
+        export_trace_emit("action=reached");
         // Keep the previous status visible until this attempt produces a real outcome,
         // so a cancelled dialog leaves the last result readable instead of blank.
         let generation = self.support_state.generation;
@@ -1453,6 +1487,12 @@ impl Shell {
                 Ok(Err(_)) => (DialogStage::Failed, None),
                 Err(_) => (DialogStage::ReceiverDropped, None),
             };
+            export_trace_emit(match dialog {
+                DialogStage::Selected => "dialog=selected",
+                DialogStage::Cancelled => "dialog=cancelled",
+                DialogStage::Failed => "dialog=failed",
+                DialogStage::ReceiverDropped => "dialog=dropped",
+            });
             let mut data_stage = DataStage::Rejected;
             let mut writer_stage = WriterStage::NotStarted;
             let mut result = None;
@@ -1493,6 +1533,19 @@ impl Shell {
                     result = Some(write);
                 }
             }
+            export_trace_emit(if data_stage == DataStage::Ready {
+                "data=ready"
+            } else {
+                "data=rejected"
+            });
+            export_trace_emit(match writer_stage {
+                WriterStage::NotStarted => "writer=not-started",
+                WriterStage::Success => "writer=success",
+                WriterStage::AlreadyExists => "writer=already-exists",
+                WriterStage::CleanupFailed => "writer=cleanup-failed",
+                WriterStage::OtherError => "writer=other",
+            });
+            let has_outcome = result.is_some();
             let ui_stage = if result.is_some() {
                 UiStage::StatusUpdated
             } else {
@@ -1504,6 +1557,11 @@ impl Shell {
                 // Cancelled or failed opens produce no outcome and keep the last status.
                 apply_export_outcome(&mut this.export_status, result);
                 this.export_trace = Some(trace);
+                export_trace_emit(if has_outcome {
+                    "ui=updated"
+                } else {
+                    "ui=preserved"
+                });
                 cx.notify();
             });
         });
@@ -6218,6 +6276,20 @@ mod contrast_scope_tests {
                     || token.starts_with("build=")
                     || token.starts_with("install=")
             );
+        }
+    }
+    #[test]
+    fn export_trace_env_gate_and_closed_tokens_are_stable() {
+        use super::{EXPORT_TRACE_TOKENS, export_trace_enabled};
+        assert!(export_trace_enabled(Some("1")));
+        for value in [None, Some("0"), Some("true"), Some(""), Some(" 1")] {
+            assert!(!export_trace_enabled(value), "{value:?} must stay disabled");
+        }
+        assert_eq!(EXPORT_TRACE_TOKENS.len(), 14);
+        for token in EXPORT_TRACE_TOKENS {
+            assert!(!token.contains('/'));
+            assert!(!token.chars().any(|character| character == char::from(92)));
+            assert!(!token.contains("SyntheticSecretValue"));
         }
     }
 }
