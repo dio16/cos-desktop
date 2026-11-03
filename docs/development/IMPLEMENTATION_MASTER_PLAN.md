@@ -4407,3 +4407,11 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Current blocker:** Chrome is no longer reachable over CDP (`CDP not reachable on port 9222`; no `chrome.exe` process carries `--remote-debugging-port`), so no review can be submitted or read. The conversation the owner pointed at (`.../c/local-chatgpt%3A5f45f2a4-c5e3-4299-94c6-19fc529d6b3e`) is also **rejected by the CLI as `CONVERSATION-ID-MISSING`**, so the CLI needs a conversation id it can parse.
 - **What is needed to resume:** a Chrome with remote debugging on port 9222 and the intended conversation open, then re-submit the request file `mprt1-review-request-candidate.txt`. Until then no further slice will be claimed as reviewed.
 - **State:** MP-AX1/AX2 incomplete (four targets still unmigrated), MP-REL3/MP-R0A/MP-R0B incomplete, product acceptance NOT_RUN.
+
+### 19.229 Candidate-card guard narrowed to the accessibility handler (2026-11-04)
+
+- **Review finding (ACTIONABLE, `36d045d`):** the test checked two conditions independently - that an explicit listener exists, and that `view_candidate` appears within the following 8000 characters - so deleting the call from the accessibility handler would still pass, because the click handler that follows also calls it.
+- **Fix:** the check now takes the span from `.on_a11y_action(AccessibleAction::Click` to the following `.on_click(` and requires `view_candidate` inside **that** span.
+- **Why a helper:** mutating the real handler to prove the guard fails turned out to break compilation (`no method named other_action`), which proves nothing about the assertion. The check is now a pure function, `a11y_handler_views_the_candidate(&str)`, exercised by `a11y_handler_check_rejects_a_handler_that_does_nothing` on synthetic text: a good handler passes, a handler that only clicks fails, and a block with no accessibility listener fails. That gives a compiling, honest negative case.
+- **Verified locally:** `cargo test -p desktop-gpui` **125 passed / 0 failed**, `cargo clippy -p desktop-gpui --all-targets -D warnings` clean, `cargo fmt --all -- --check` clean.
+- **State:** the implementation was already correct; only the test's reach changed. Four targets remain unmigrated, MP-AX1/AX2 incomplete, native activation unmeasured, product acceptance NOT_RUN.

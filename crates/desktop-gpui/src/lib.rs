@@ -6381,6 +6381,31 @@ mod contrast_scope_tests {
             assert!(!token.contains("SyntheticSecretValue"));
         }
     }
+    /// True when the accessibility click handler on the candidate card itself calls
+    /// `view_candidate`. The click handler that follows also calls it, so searching the whole block
+    /// would accept a handler that does nothing.
+    fn a11y_handler_views_the_candidate(block: &str) -> bool {
+        let Some(start) = block.find(".on_a11y_action(AccessibleAction::Click") else {
+            return false;
+        };
+        let rest = &block[start..];
+        let end = rest.find(".on_click(").unwrap_or(rest.len());
+        rest[..end].contains("this.view_candidate(")
+    }
+
+    #[test]
+    fn a11y_handler_check_rejects_a_handler_that_does_nothing() {
+        let good = ".on_a11y_action(AccessibleAction::Click, { this.view_candidate(id, w, cx); }) .on_click(x)";
+        let bad = ".on_a11y_action(AccessibleAction::Click, { let _ = 0; }) .on_click({ this.view_candidate(id) })";
+        let missing = ".on_click({ this.view_candidate(id) })";
+        assert!(a11y_handler_views_the_candidate(good));
+        assert!(
+            !a11y_handler_views_the_candidate(bad),
+            "a handler that only clicks must not count"
+        );
+        assert!(!a11y_handler_views_the_candidate(missing));
+    }
+
     #[test]
     fn candidate_cards_activate_through_accessibility() {
         // Candidate cards are built per item, so their id is dynamic; check the construction site
@@ -6396,12 +6421,8 @@ mod contrast_scope_tests {
             .expect("the candidate card construction site");
         let block: String = source[site..].chars().take(8000).collect();
         assert!(
-            block.contains(".on_a11y_action(AccessibleAction::Click"),
-            "candidate cards have no explicit accessibility click listener"
-        );
-        assert!(
-            block.contains("this.view_candidate("),
-            "candidate card activation no longer views the candidate"
+            a11y_handler_views_the_candidate(&block),
+            "the accessibility handler no longer views the candidate"
         );
     }
 
