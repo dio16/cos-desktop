@@ -46,8 +46,11 @@ fn main() {
             eprintln!("COS Desktop is already running; second launch refused");
             std::process::exit(3);
         }
-        Err(instance::AcquireError::Unavailable) => {
-            eprintln!("COS Desktop instance ownership unavailable; startup refused");
+        Err(instance::AcquireError::Unavailable(reason)) => {
+            eprintln!(
+                "COS Desktop instance ownership unavailable; startup refused ({})",
+                reason.token()
+            );
             std::process::exit(2);
         }
     };

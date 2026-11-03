@@ -5,7 +5,48 @@ use std::path::Path;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AcquireError {
     AlreadyRunning,
-    Unavailable,
+    /// The guard could not be established. The reason is a closed set so the
+    /// failure can be reported without exposing any path or OS error text.
+    Unavailable(UnavailableReason),
+}
+
+/// Which step of the ownership guard failed. Values are fixed and carry no data.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum UnavailableReason {
+    NoDefaultPath,
+    NoParent,
+    RelativeDirectory,
+    CreateDirectory,
+    OpenDirectory,
+    DirectoryMetadata,
+    NotADirectory,
+    DirectoryIsReparsePoint,
+    OpenLockFile,
+    LockMetadata,
+    LockIsNotFile,
+    LockIsReparsePoint,
+    LockError,
+}
+
+impl UnavailableReason {
+    /// Stable token for the startup message; never contains a path.
+    pub(crate) fn token(self) -> &'static str {
+        match self {
+            Self::NoDefaultPath => "no-default-path",
+            Self::NoParent => "no-parent",
+            Self::RelativeDirectory => "relative-directory",
+            Self::CreateDirectory => "create-directory",
+            Self::OpenDirectory => "open-directory",
+            Self::DirectoryMetadata => "directory-metadata",
+            Self::NotADirectory => "not-a-directory",
+            Self::DirectoryIsReparsePoint => "directory-reparse-point",
+            Self::OpenLockFile => "open-lock-file",
+            Self::LockMetadata => "lock-metadata",
+            Self::LockIsNotFile => "lock-is-not-file",
+            Self::LockIsReparsePoint => "lock-reparse-point",
+            Self::LockError => "lock-error",
+        }
+    }
 }
 
 /// The OS releases both handles on normal return and process termination.
@@ -19,16 +60,22 @@ pub(crate) struct InstanceGuard {
 
 impl InstanceGuard {
     pub(crate) fn acquire() -> Result<Self, AcquireError> {
-        let path = app_core::preferences::default_path().ok_or(AcquireError::Unavailable)?;
-        let directory = path.parent().ok_or(AcquireError::Unavailable)?;
+        let path = app_core::preferences::default_path()
+            .ok_or(AcquireError::Unavailable(UnavailableReason::NoDefaultPath))?;
+        let directory = path
+            .parent()
+            .ok_or(AcquireError::Unavailable(UnavailableReason::NoParent))?;
         if !directory.is_absolute() {
-            return Err(AcquireError::Unavailable);
+            return Err(AcquireError::Unavailable(
+                UnavailableReason::RelativeDirectory,
+            ));
         }
         Self::in_directory(directory)
     }
 
     fn in_directory(directory: &Path) -> Result<Self, AcquireError> {
-        std::fs::create_dir_all(directory).map_err(|_| AcquireError::Unavailable)?;
+        std::fs::create_dir_all(directory)
+            .map_err(|_| AcquireError::Unavailable(UnavailableReason::CreateDirectory))?;
         #[cfg(windows)]
         let directory_guard = {
             use std::os::windows::fs::{MetadataExt, OpenOptionsExt};
@@ -39,10 +86,17 @@ impl InstanceGuard {
                 .share_mode(0x3) // FILE_SHARE_READ | FILE_SHARE_WRITE
                 .custom_flags(0x0220_0000) // BACKUP_SEMANTICS | OPEN_REPARSE_POINT
                 .open(directory)
-                .map_err(|_| AcquireError::Unavailable)?;
-            let metadata = handle.metadata().map_err(|_| AcquireError::Unavailable)?;
-            if !metadata.is_dir() || metadata.file_attributes() & 0x400 != 0 {
-                return Err(AcquireError::Unavailable);
+                .map_err(|_| AcquireError::Unavailable(UnavailableReason::OpenDirectory))?;
+            let metadata = handle
+                .metadata()
+                .map_err(|_| AcquireError::Unavailable(UnavailableReason::DirectoryMetadata))?;
+            if !metadata.is_dir() {
+                return Err(AcquireError::Unavailable(UnavailableReason::NotADirectory));
+            }
+            if metadata.file_attributes() & 0x400 != 0 {
+                return Err(AcquireError::Unavailable(
+                    UnavailableReason::DirectoryIsReparsePoint,
+                ));
             }
             handle
         };
@@ -55,16 +109,20 @@ impl InstanceGuard {
         }
         let lock = options
             .open(directory.join("desktop.instance"))
-            .map_err(|_| AcquireError::Unavailable)?;
-        let metadata = lock.metadata().map_err(|_| AcquireError::Unavailable)?;
+            .map_err(|_| AcquireError::Unavailable(UnavailableReason::OpenLockFile))?;
+        let metadata = lock
+            .metadata()
+            .map_err(|_| AcquireError::Unavailable(UnavailableReason::LockMetadata))?;
         if !metadata.is_file() {
-            return Err(AcquireError::Unavailable);
+            return Err(AcquireError::Unavailable(UnavailableReason::LockIsNotFile));
         }
         #[cfg(windows)]
         {
             use std::os::windows::fs::MetadataExt;
             if metadata.file_attributes() & 0x400 != 0 {
-                return Err(AcquireError::Unavailable);
+                return Err(AcquireError::Unavailable(
+                    UnavailableReason::LockIsReparsePoint,
+                ));
             }
         }
         match lock.try_lock() {
@@ -74,7 +132,9 @@ impl InstanceGuard {
                 _directory: directory_guard,
             }),
             Err(TryLockError::WouldBlock) => Err(AcquireError::AlreadyRunning),
-            Err(TryLockError::Error(_)) => Err(AcquireError::Unavailable),
+            Err(TryLockError::Error(_)) => {
+                Err(AcquireError::Unavailable(UnavailableReason::LockError))
+            }
         }
     }
 }
@@ -187,12 +247,42 @@ mod tests {
     }
 
     #[test]
+    fn every_unavailable_reason_has_a_stable_path_free_token() {
+        use UnavailableReason::*;
+        let all = [
+            NoDefaultPath,
+            NoParent,
+            RelativeDirectory,
+            CreateDirectory,
+            OpenDirectory,
+            DirectoryMetadata,
+            NotADirectory,
+            DirectoryIsReparsePoint,
+            OpenLockFile,
+            LockMetadata,
+            LockIsNotFile,
+            LockIsReparsePoint,
+            LockError,
+        ];
+        let mut seen = std::collections::BTreeSet::new();
+        for reason in all {
+            let token = reason.token();
+            assert!(!token.is_empty());
+            assert!(token.chars().all(|c| c.is_ascii_lowercase() || c == '-'));
+            // Tokens carry no path separators or drive letters.
+            assert!(!token.contains('\\') && !token.contains('/') && !token.contains(':'));
+            assert!(seen.insert(token), "duplicate token {token}");
+        }
+        assert_eq!(seen.len(), all.len());
+    }
+
+    #[test]
     fn invalid_namespace_is_unavailable_not_a_claimed_collision() {
         let directory = Directory::new();
         std::fs::write(&directory.0, b"keep").expect("non-directory namespace");
         assert_eq!(
             InstanceGuard::in_directory(&directory.0).err(),
-            Some(AcquireError::Unavailable)
+            Some(AcquireError::Unavailable(UnavailableReason::OpenDirectory))
         );
         assert_eq!(
             std::fs::read(&directory.0).expect("original bytes"),
