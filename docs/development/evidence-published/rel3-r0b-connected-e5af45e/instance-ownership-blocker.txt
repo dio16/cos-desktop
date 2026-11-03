@@ -14,10 +14,13 @@ What was probed, with results:
      flags 0x02200000 (BACKUP_SEMANTICS | OPEN_REPARSE_POINT) succeeds (handle obtained, error 0).
   5. LockFileEx exclusive on desktop.instance succeeds (returns true, error 0).
 
-Conclusion: each individual operation the guard performs succeeds when executed outside the
-application, yet the application still reports the ownership guard as unavailable. The cause is
-therefore not identified by these probes; this is recorded as an unresolved blocker, not as an
-environment limit and not as a pass. Native GUI verification stays blocked until it is identified.
+Conclusion: the main operating-system operations the guard relies on succeed when executed outside the
+application - directory handle, lock-file open with sharing, exclusive lock - yet the application still
+reports the ownership guard as unavailable. This is not a whole-guard verification: the probes did not
+cover create_dir_all, the metadata() checks on the directory and the lock file, the reparse-point
+attribute rejection, or the Rust File::try_lock result. The cause is therefore not identified, and this
+is recorded as an unresolved blocker with those branches untested, not as an environment limit and not
+as a pass. Native GUI verification stays blocked until it is identified.
 
 Consequence for MP-R0B: connected CPU and working-set numbers remain NOT_MEASURED; the connected
 measurement path and its refusals stand as the implementation result.
