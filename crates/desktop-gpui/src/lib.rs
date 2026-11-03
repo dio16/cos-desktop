@@ -328,8 +328,10 @@ impl SupportPreviewState {
         handle_present: bool,
         live: Option<(u64, u64)>,
     ) -> Option<app_core::ExportData> {
+        // A caller holding an outdated generation only loses its own chance to save:
+        // the current payload belongs to the current preview and must survive, or a
+        // delayed dialog result would discard a perfectly valid export.
         if generation != self.generation || self.pending.is_some() {
-            self.export = None;
             return None;
         }
         let valid = match self.current.as_ref() {
@@ -5511,6 +5513,11 @@ mod contrast_scope_tests {
                 .take_for_save(generation.wrapping_add(1), false, None)
                 .is_none(),
             "a different generation is refused"
+        );
+        // A delayed caller from an older generation must not destroy the live payload.
+        assert!(
+            state.take_for_save(generation, false, None).is_some(),
+            "the current generation can still save after a stale request"
         );
     }
 }
