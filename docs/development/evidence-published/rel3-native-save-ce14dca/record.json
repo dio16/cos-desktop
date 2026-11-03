@@ -24,5 +24,6 @@
     "E": "PASS (573 bytes, no BOM, preview bytes identical)",
     "F": "PASS for existing-content preservation; overwrite-message NOT_PROVABLE; stale-publication NOT_RUN",
     "G": "recorded"
-  }
+  },
+  "note": "Evidence is committed with -text so the published bytes equal the digests; line endings are not converted for anything under evidence-published."
 }
