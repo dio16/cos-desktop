@@ -4019,7 +4019,7 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 
 - **Baseline/product path:** `layers_inner` now takes an internal `AdjacencyMode`; product `layers`/`layers_phased`/`layers_structural` use `Baseline` unchanged. A test-only `Preallocated` mode counts out-degrees, allocates `Vec::with_capacity` per existing endpoint (duplicates kept, missing endpoints skipped, order unchanged, zero-degree nodes get zero capacity, overflow falls back to empty), and folds prepass/alloc time into P2b. No algorithm duplicate.
 - **Equivalence:** 10,000-node DAG, skewed fan-out DAG, and a graph with duplicate edges/missing endpoints/self-loop/cycle produce identical `Layers.depth`, `cyclic` and `Diagram` (PartialEq) between Baseline and Preallocated.
-- **A/B (release, same graph, 3 rounds, order A→B / B→A / A→B, warmup 3 + 21 samples, raw arrays in `target/p2b-ab-raw.log`):**
+- **A/B (release, same graph, 3 rounds, order A→B / B→A / A→B, warmup 3 + 21 samples, raw arrays in the temporary `target/` log superseded by [`raw-samples.txt`](evidence-published/flow2-p2b-ab/raw-samples.txt)):**
   - normal 10k: P2 median/p95/max baseline 2,853/3,425/3,844 µs vs candidate 6,640/7,559/8,074 µs; `layers()` total 5,659/6,670/7,124 vs 7,284/8,069/8,467 µs.
   - skewed: P2 2,926/3,670/3,947 vs 5,883/7,335/8,012 µs; total 5,491/6,526/7,651 vs 6,646/7,845/8,998 µs.
   - Baseline P2b is the edge loop; candidate P2b includes degree pre-pass and allocation, so P2 total is the like-for-like figure.
