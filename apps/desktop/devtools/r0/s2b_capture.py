@@ -205,6 +205,21 @@ def require_source_agreement(recorded_build: dict, identity: dict) -> None:
         s2b.fail("SOURCE_IDENTITY")
 
 
+def frame_identity_result(capture: dict) -> object:
+    """Frame identity is reported only when the producer supplied exact tuple IDs."""
+    ids = [record["frame_id"] for record in capture["records"]
+           if isinstance(record, dict) and record.get("frame_id") is not None]
+    if not ids:
+        return "NOT_MEASURED"
+    return {
+        "status": "MEASURED",
+        "records": len(ids),
+        "distinct_ids": len(set(ids)),
+        "source": "gpui.profiler.PresentedFrame",
+        "identity": "exact_tuple_fnv64",
+    }
+
+
 def observation_document(manifest: dict, manifest_digest: str, build_digest: str, observer_source: str,
                          entry: dict, capture: dict, capture_bytes: bytes, output: Path) -> dict:
     # All identity content is closed technical data; never copy machine metadata,
@@ -228,7 +243,7 @@ def observation_document(manifest: dict, manifest_digest: str, build_digest: str
                 for name in ("ledger.json", "result.json", "completion.json")},
         "endpoints": s2b.endpoint_matrix(capture),
         "coverage": "LIMITED_SOURCE_OBSERVATIONS_ONLY",
-        "frame_identity": "NOT_MEASURED",
+        "frame_identity": frame_identity_result(capture),
         "cross_domain_latency": "NOT_MEASURED",
         "loss_scope": "OFFERED_FINALIZED_JOURNAL_PLUS_LOCAL_QUEUE",
         "unobserved_source_loss": "UNKNOWN",

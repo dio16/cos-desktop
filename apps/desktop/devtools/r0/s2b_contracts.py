@@ -193,12 +193,22 @@ def validate_capture(document: object, *, execution: str | None = None,
     counts = [0] * 10
     windows, lifetimes, closed, spans = {}, {}, {}, set()
     power_boundary = start
+    frame_ids = set()
     for seq, raw in enumerate(records, 1):
+        if not isinstance(raw, dict):
+            fail("SCHEMA")
+        frame_id = raw.get("frame_id")
+        raw = {key: value for key, value in raw.items() if key != "frame_id"}
         record = object_fields(raw, RECORD_FIELDS)
         if integer(record["seq"], low=1) != seq:
             fail("SEQUENCE")
         kind = integer(record["kind"], high=9)
         counts[kind] += 1
+        if frame_id is not None:
+            integer(frame_id)
+            if kind != 3 or frame_id in frame_ids:
+                fail("DUPLICATE_EVENT")
+            frame_ids.add(frame_id)
         nonnull = {key for key in RECORD_FIELDS - {"seq", "kind"} if record[key] is not None}
         required = {
             0: {"start_ns", "end_ns", "category", "caused_invalidation"},

@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REPO = ROOT.parents[3]
 sys.path.insert(0, str(ROOT))
+import s2b_capture  # noqa: E402
 import s2b_contracts as s2b  # noqa: E402
 
 FIXTURE = ROOT / "fixtures/s2b-wire-v1.json"
@@ -38,6 +39,23 @@ class S2BWireContract(unittest.TestCase):
         with self.assertRaises(s2b.ObservationError) as error:
             s2b.validate_capture(value)
         self.assertEqual(str(error.exception), code)
+
+    def test_frame_identity_is_measured_only_from_exact_tuple_ids(self):
+        value = copy.deepcopy(example())
+        kind3 = next(record for record in value["records"] if record["kind"] == 3)
+        kind3["frame_id"] = 12345
+        validated = s2b.validate_capture(value)
+        result = s2b_capture.frame_identity_result(validated)
+        self.assertEqual(result["status"], "MEASURED")
+        self.assertEqual(result["distinct_ids"], 1)
+        clean = copy.deepcopy(example())
+        self.assertEqual(s2b_capture.frame_identity_result(clean), "NOT_MEASURED")
+
+    def test_frame_identity_on_a_non_present_record_or_a_duplicate_is_rejected(self):
+        value = copy.deepcopy(example())
+        kind2 = next(record for record in value["records"] if record["kind"] == 2)
+        kind2["frame_id"] = 7
+        self.reject(value, "DUPLICATE_EVENT")
 
     def test_complete_local_kind_arrays_validate(self):
         value = copy.deepcopy(example())

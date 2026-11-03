@@ -170,7 +170,9 @@ def validate_scenario(data: dict[str, bytes], name: str) -> tuple[dict, dict, di
     require(s2a["ledger.json"] == sha(data[base + "ledger.json"]), "LEDGER_DIGEST")
     require(observation["endpoints"] == s2b.endpoint_matrix(capture)
             and observation["coverage"] == "LIMITED_SOURCE_OBSERVATIONS_ONLY"
-            and observation["frame_identity"] == "NOT_MEASURED"
+            and (observation["frame_identity"] == "NOT_MEASURED"
+                 or (isinstance(observation["frame_identity"], dict)
+                     and observation["frame_identity"].get("status") == "MEASURED"))
             and observation["cross_domain_latency"] == "NOT_MEASURED"
             and observation["loss_scope"] == "OFFERED_FINALIZED_JOURNAL_PLUS_LOCAL_QUEUE"
             and observation["unobserved_source_loss"] == "UNKNOWN", "OBSERVATION_BINDING")

@@ -195,6 +195,7 @@ struct Record {
     category: Option<u64>,
     caused_invalidation: Option<bool>,
     lost: Option<u64>,
+    frame_id: Option<u64>,
 }
 
 struct Nullable<T>(Option<T>);
@@ -207,11 +208,37 @@ impl<T: std::fmt::Display> std::fmt::Display for Nullable<T> {
     }
 }
 
+fn frame_identity(
+    window: u64,
+    invalidations: u64,
+    draw_start: u64,
+    draw_end: u64,
+    present_start: u64,
+    present_end: u64,
+) -> u64 {
+    // Exact tuple identity, never timestamp proximity. FNV-1a 64 over fixed-width fields.
+    let mut hash: u64 = 0xcbf29ce484222325;
+    for value in [
+        window,
+        invalidations,
+        draw_start,
+        draw_end,
+        present_start,
+        present_end,
+    ] {
+        for byte in value.to_le_bytes() {
+            hash ^= u64::from(byte);
+            hash = hash.wrapping_mul(0x100000001b3);
+        }
+    }
+    hash
+}
+
 impl Record {
     fn write(&self, out: &mut impl Write, seq: u64) -> io::Result<()> {
         write!(
             out,
-            "{{\"seq\":{seq},\"kind\":{},\"window\":{},\"lifetime\":{},\"start_ns\":{},\"end_ns\":{},\"dirty_ns\":{},\"invalidations\":{},\"paired_draw_start_ns\":{},\"paired_draw_end_ns\":{},\"category\":{},\"caused_invalidation\":{},\"lost\":{}}}",
+            "{{\"seq\":{seq},\"kind\":{},\"window\":{},\"lifetime\":{},\"start_ns\":{},\"end_ns\":{},\"dirty_ns\":{},\"invalidations\":{},\"paired_draw_start_ns\":{},\"paired_draw_end_ns\":{},\"category\":{},\"caused_invalidation\":{},\"lost\":{},\"frame_id\":{}}}",
             self.kind,
             Nullable(self.window),
             Nullable(self.lifetime),
@@ -223,7 +250,8 @@ impl Record {
             Nullable(self.pair_end),
             Nullable(self.category),
             Nullable(self.caused_invalidation),
-            Nullable(self.lost)
+            Nullable(self.lost),
+            Nullable(self.frame_id)
         )
     }
 }
@@ -258,6 +286,7 @@ struct Observer {
     barrier: u64,
     // WindowId already includes the source's opaque identity. Do not decode it.
     windows: Vec<(u64, Option<u64>)>,
+    frames: Vec<u64>,
     counts: Counts,
 }
 
@@ -370,6 +399,20 @@ impl Observer {
             record.pair_end = pair.end;
             record.dirty = pair.dirty;
             record.invalidations = pair.invalidations;
+            let id = frame_identity(
+                key,
+                pair.invalidations.ok_or(io::ErrorKind::InvalidData)?,
+                pair.start.ok_or(io::ErrorKind::InvalidData)?,
+                pair.end.ok_or(io::ErrorKind::InvalidData)?,
+                start,
+                end,
+            );
+            if self.frames.contains(&id) {
+                self.counts.correlation_invalid += 1;
+                return Err(io::ErrorKind::InvalidData.into());
+            }
+            self.frames.push(id);
+            record.frame_id = Some(id);
         }
         Ok(record)
     }
@@ -666,6 +709,7 @@ fn capture(
         end,
         barrier: start,
         windows: Vec::with_capacity(WINDOWS),
+        frames: Vec::new(),
         counts: Counts::default(),
     };
     control.start();
@@ -762,6 +806,7 @@ mod tests {
             end: DURATION_NS,
             barrier: 0,
             windows: Vec::new(),
+            frames: Vec::new(),
             counts: Counts::default(),
         };
         let mut out = Vec::<u8>::new();
@@ -790,6 +835,15 @@ mod tests {
     }
 
     #[test]
+    fn frame_identity_is_an_exact_tuple_not_timestamp_proximity() {
+        let base = frame_identity(11, 2, 100, 120, 130, 150);
+        assert_eq!(base, frame_identity(11, 2, 100, 120, 130, 150));
+        assert_ne!(base, frame_identity(11, 2, 100, 120, 131, 150));
+        assert_ne!(base, frame_identity(12, 2, 100, 120, 130, 150));
+        assert_ne!(base, frame_identity(11, 3, 100, 120, 130, 150));
+    }
+
+    #[test]
     fn local_conservation_mismatch_is_rejected() {
         let mut counts = Counts::default();
         assert!(local_conservation_holds(&counts));
@@ -810,6 +864,7 @@ mod tests {
             end: DURATION_NS,
             barrier: 0,
             windows: Vec::new(),
+            frames: Vec::new(),
             counts: Counts::default(),
         };
         let at = Instant::now();
@@ -846,6 +901,7 @@ mod tests {
             end: DURATION_NS,
             barrier: 0,
             windows: Vec::new(),
+            frames: Vec::new(),
             counts: Counts::default(),
         };
         let mut out = Vec::new();
@@ -866,6 +922,7 @@ mod tests {
             end: DURATION_NS,
             barrier: 0,
             windows: vec![(11, Some(0))],
+            frames: Vec::new(),
             counts: Counts::default(),
         };
         let record = observer.local(Event {
