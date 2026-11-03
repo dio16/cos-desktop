@@ -35,8 +35,8 @@
   "boundary_measurement": {
     "base_commit": "70c7099577d50e04457e18c37cb5023d112abdf6",
     "exe_sha256": "sha256:04fea5c24edeb9006c3ed77c1470fbb318d9dfd64c0847d47fdf52ad4b40829a",
-    "result": "DECISIVE AT THE AWAIT. The trace reads action=reached, task=started, dialog=requested, dialog=opened - so the update call that starts the save dialog returned and the receiver exists - and then stops: there is no dialog=returned. The flow therefore waits forever on the receiver await; the dialog never delivers a result in this session, and the full top-level window list is unchanged before and after.",
-    "conclusion": "The accessibility path, the trial guard, the spawned task and the call into the platform dialog all succeed. The failure is the platform save dialog never producing a result here. That matches the earlier finding that this session cannot give the window focus, since a file dialog is modal on its owner; it is still not proven that lost focus is the mechanism.",
+    "result": "DECISIVE WITHIN THE OBSERVATION WINDOW. The trace reads action=reached, task=started, dialog=requested and dialog=opened, then stops for the six seconds the probe waited: there is no dialog=returned. dialog=opened means only that the update call returned and a receiver was obtained - not that the dialog was shown. What is established is therefore that the await had not completed within the observation window, not that it never will.",
+    "conclusion": "The accessibility path, the trial guard, the spawned task and the update call that requests the dialog all succeed. The observable failure is that no result reached the await during the observation window, and that the top-level window list was unchanged at the two sample points. Whether the dialog opened invisibly, failed silently, or is waiting for input that cannot arrive is not distinguished; focus loss is a plausible mechanism but unproven.",
     "not_established": "Why no result is delivered - whether the dialog failed to open silently, opened invisibly, or is waiting for input that cannot arrive. gpui's dialog implementation was not inspected."
   }
 }
