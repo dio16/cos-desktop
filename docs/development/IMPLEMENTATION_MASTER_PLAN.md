@@ -4015,6 +4015,8 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 
 ### 19.198 MP-FLOW2 P2b preallocated adjacency A/B (2026-11-02)
 
+> **INVALIDATED (double-counted span):** every P2b figure and the "about 2.0-2.3x worse" judgement in this section were computed with the candidate's reservation time counted twice. Read them as history only; the corrected re-measurement in section 19.199 is the valid result and it still rejects the candidate.
+
 - **Baseline/product path:** `layers_inner` now takes an internal `AdjacencyMode`; product `layers`/`layers_phased`/`layers_structural` use `Baseline` unchanged. A test-only `Preallocated` mode counts out-degrees, allocates `Vec::with_capacity` per existing endpoint (duplicates kept, missing endpoints skipped, order unchanged, zero-degree nodes get zero capacity, overflow falls back to empty), and folds prepass/alloc time into P2b. No algorithm duplicate.
 - **Equivalence:** 10,000-node DAG, skewed fan-out DAG, and a graph with duplicate edges/missing endpoints/self-loop/cycle produce identical `Layers.depth`, `cyclic` and `Diagram` (PartialEq) between Baseline and Preallocated.
 - **A/B (release, same graph, 3 rounds, order A→B / B→A / A→B, warmup 3 + 21 samples, raw arrays in `target/p2b-ab-raw.log`):**
@@ -4025,8 +4027,6 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Decision: maintain Baseline, do not adopt.** Correctness matches, but the CPU cost is consistently and substantially worse (P2 ~2.0–2.3×, p95 worse) while the capacity gain does not meet the adoption criteria. MP-FLOW2 remains incomplete; paint/submit/GPU/Present remain NOT_MEASURED.
 - **Verification:** `cargo test -p desktop-gpui flow` 27 passed / 0 failed (4 ignored); ignored release A/B test passes; fmt OK; clippy 0 issues.
 
-> **INVALIDATED (double-counted span):** the P2b figures and the "about 2.0-2.3x worse" judgement below were computed with the candidate's reservation time counted twice. They are retained as history only; section 19.199 re-measured with the corrected span and is the valid result.
-
 ### 19.199 MP-FLOW2 P2b A/B review fixes: single count, test-only branch, ordered evidence (2026-11-02)
 
 - **Double counting fixed:** `phase_start` already covers the preallocation pre-pass, so P2b is now `start.elapsed()` only (the previous `+ prealloc_us` sum was wrong). Re-measured release A/B (3 rounds, warmup 3 + 21 iterations, alternating A→B / B→A / A→B):
@@ -4034,7 +4034,7 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
   - skewed: P2 3,033/4,550/5,930 vs 4,652/6,349/9,052 µs; total 6,297/8,819/9,696 vs 7,780/9,832/11,530 µs.
   - Candidate P2b includes the degree pre-pass and allocations once; baseline P2b is the edge loop only. P2 total is the like-for-like figure.
 - **Test-only branch:** `AdjacencyMode::Preallocated`, its `cfg(test)` variant and the preallocation block are compiled only in test builds; product `layers()`/`layers_phased()`/`layers_structural()` compile the Baseline path only.
-- **Ordered evidence:** the measurement now emits one `P2B_SAMPLE` line per variant per iteration with graph, round, iteration and A/B order (252 lines total, 21 per round/order/variant). Published under `docs/development/evidence-published/flow2-p2b-ab/` with `raw-samples.log` SHA-256 `e676c1f2…`, `summary.json` SHA-256 `c7719dc9…` and `record.json`.
+- **Ordered evidence:** the measurement now emits one `P2B_SAMPLE` line per variant per iteration with graph, round, iteration and A/B order (252 lines total, 21 per round/order/variant). Published under `docs/development/evidence-published/flow2-p2b-ab/` with `raw-samples.txt` SHA-256 `e676c1f2…`, `summary.json` SHA-256 `c7719dc9…` and `record.json`.
 - **REL3 wording:** crash-report inclusion is recorded as **owner-approved direction: excluded by default**, with the concrete inclusion mechanism still unspecified; it is no longer labelled an OPEN decision. Other owner items (default filename/folder, diagnostics entry point, retention, log split) remain open.
 - **Decision unchanged: Baseline maintained, candidate NOT adopted** (correctness equal, capacity lower, but CPU consistently worse and p95 worse). MP-FLOW2 remains incomplete; paint/submit/GPU/Present remain NOT_MEASURED.
 - **Verification:** `cargo test -p desktop-gpui flow` 27 passed / 0 failed (4 ignored); fmt OK; clippy 0 issues. No product-path behavior change; Gate remains the Lead's decision.
