@@ -180,7 +180,7 @@ for ($i = 1; $i -le $Runs; $i++) {
         $env:COS_DESKTOP_RUNTIME_ENDPOINT = $Endpoint
         try {
             $launchArgs = if ($SimulateFixture) {
-                @('--fixture', '--fixture-file', (Join-Path $PSScriptRoot '..\..\crates\cos-client\fixtures\task-184.json'))
+                @('--fixture', '--fixture-file', (Join-Path $PSScriptRoot '..\crates\cos-client\fixtures\task-184.json'))
             } else { @() }
             $process = Start-Process -FilePath $Exe -ArgumentList $launchArgs -PassThru -NoNewWindow `
                 -RedirectStandardOutput $stdout -RedirectStandardError $stderr
