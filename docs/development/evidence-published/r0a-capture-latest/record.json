@@ -384,5 +384,56 @@
       "local-notify"
     ],
     "note": "Driven with TAB focus moves and ENTER activations, because the existing probe has no CONTROL virtual key and cannot synthesise Ctrl chords. Both local endpoints are OBSERVED here; the frame-family endpoints remain NOT_EXPOSED_BY_SELECTED_PROBE."
-  }
+  },
+  "failed_attempts": {
+    "ctrl-attempt": {
+      "published": {
+        "ledger.json": "sha256:8baffa79a3270fe255965345ef19b1f337bb11e15870ea67b0030a420b3f3a88",
+        "result.json": "sha256:5e0dfc9cd78d440aabe950bdc3dd81d305dcff9576666c41566ec29c3f95c5af",
+        "completion.json": "sha256:a113d682ae160f443afb6376c02d150860a7876a436a219d52f2fe16daabebcb"
+      },
+      "ledger": {
+        "exit_code": 1,
+        "timed_out": true,
+        "elapsed_ms": 60049
+      },
+      "runs_recorded": [
+        {
+          "run_id": "run-n02",
+          "status": "FAILED",
+          "reason": "launcher timeout; owned child terminated and reaped"
+        }
+      ]
+    },
+    "pointer-attempt": {
+      "published": {
+        "ledger.json": "sha256:a31b80e7fc52e72dc66a03342298a8d173d4b6a3fbaac5860278bbc0606fbfdd",
+        "result.json": "sha256:dbe9d1edc1a0ca40116cb90eb806388a058bd52fbb66ec07aeb135eb3114b166",
+        "completion.json": "sha256:cb974bb086457c2b29ad621e4841c4948d503260f0a25c1d27b106ae50b8351b"
+      },
+      "ledger": {
+        "exit_code": 0,
+        "timed_out": false,
+        "elapsed_ms": 34916
+      },
+      "runs_recorded": [
+        {
+          "run_id": "run-n02",
+          "status": "NOT_MEASURED",
+          "reason": "process exited 0; visual/frame endpoints were not measured"
+        }
+      ],
+      "extra": {
+        "plan": {
+          "published_file": "pointer-attempt-plan.json",
+          "sha256_worktree": "sha256:dd24bc47b2f3d4d79d11c544f2b103cd59de00e950da1c7b83c65a1b48f5f487"
+        },
+        "probe": {
+          "published_file": "pointer-attempt-close-probe.json",
+          "sha256_worktree": "sha256:41f20d767b5c5ccf46f10d96b9619ef0c9d3b2b7c0b3fe1edc71aca902d4d651"
+        }
+      }
+    }
+  },
+  "failed_attempts_note": "Both failed attempts kept their driver documents under target/, so they are published with recomputed digests instead of being reported from memory. The ctrl attempt produced no probe output because r0c_input has no CONTROL virtual key and raised before writing it."
 }

@@ -1,0 +1,1444 @@
+{
+  "actions": [
+    {
+      "sequence": 0,
+      "kind": "pointer",
+      "planned_ns": 3000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 1,
+      "kind": "pointer",
+      "planned_ns": 3100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 2,
+      "kind": "pointer",
+      "planned_ns": 3200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 3,
+      "kind": "pointer",
+      "planned_ns": 3300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 4,
+      "kind": "pointer",
+      "planned_ns": 3400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 5,
+      "kind": "pointer",
+      "planned_ns": 3500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 6,
+      "kind": "pointer",
+      "planned_ns": 3600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 7,
+      "kind": "pointer",
+      "planned_ns": 3700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 8,
+      "kind": "pointer",
+      "planned_ns": 3800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 9,
+      "kind": "pointer",
+      "planned_ns": 3900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 10,
+      "kind": "pointer",
+      "planned_ns": 4000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 11,
+      "kind": "pointer",
+      "planned_ns": 4100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 12,
+      "kind": "pointer",
+      "planned_ns": 4200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 13,
+      "kind": "pointer",
+      "planned_ns": 4300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 14,
+      "kind": "pointer",
+      "planned_ns": 4400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 15,
+      "kind": "pointer",
+      "planned_ns": 4500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 16,
+      "kind": "pointer",
+      "planned_ns": 4600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 17,
+      "kind": "pointer",
+      "planned_ns": 4700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 18,
+      "kind": "pointer",
+      "planned_ns": 4800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 19,
+      "kind": "pointer",
+      "planned_ns": 4900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 20,
+      "kind": "pointer",
+      "planned_ns": 5000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 21,
+      "kind": "pointer",
+      "planned_ns": 5100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 22,
+      "kind": "pointer",
+      "planned_ns": 5200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 23,
+      "kind": "pointer",
+      "planned_ns": 5300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 24,
+      "kind": "pointer",
+      "planned_ns": 5400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 25,
+      "kind": "pointer",
+      "planned_ns": 5500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 26,
+      "kind": "pointer",
+      "planned_ns": 5600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 27,
+      "kind": "pointer",
+      "planned_ns": 5700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 28,
+      "kind": "pointer",
+      "planned_ns": 5800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 29,
+      "kind": "pointer",
+      "planned_ns": 5900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 30,
+      "kind": "pointer",
+      "planned_ns": 6000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 31,
+      "kind": "pointer",
+      "planned_ns": 6100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 32,
+      "kind": "pointer",
+      "planned_ns": 6200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 33,
+      "kind": "pointer",
+      "planned_ns": 6300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 34,
+      "kind": "pointer",
+      "planned_ns": 6400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 35,
+      "kind": "pointer",
+      "planned_ns": 6500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 36,
+      "kind": "pointer",
+      "planned_ns": 6600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 37,
+      "kind": "pointer",
+      "planned_ns": 6700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 38,
+      "kind": "pointer",
+      "planned_ns": 6800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 39,
+      "kind": "pointer",
+      "planned_ns": 6900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 40,
+      "kind": "pointer",
+      "planned_ns": 7000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 41,
+      "kind": "pointer",
+      "planned_ns": 7100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 42,
+      "kind": "pointer",
+      "planned_ns": 7200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 43,
+      "kind": "pointer",
+      "planned_ns": 7300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 44,
+      "kind": "pointer",
+      "planned_ns": 7400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 45,
+      "kind": "pointer",
+      "planned_ns": 7500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 46,
+      "kind": "pointer",
+      "planned_ns": 7600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 47,
+      "kind": "pointer",
+      "planned_ns": 7700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 48,
+      "kind": "pointer",
+      "planned_ns": 7800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 49,
+      "kind": "pointer",
+      "planned_ns": 7900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 50,
+      "kind": "pointer",
+      "planned_ns": 8000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 51,
+      "kind": "pointer",
+      "planned_ns": 8100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 52,
+      "kind": "pointer",
+      "planned_ns": 8200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 53,
+      "kind": "pointer",
+      "planned_ns": 8300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 54,
+      "kind": "pointer",
+      "planned_ns": 8400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 55,
+      "kind": "pointer",
+      "planned_ns": 8500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 56,
+      "kind": "pointer",
+      "planned_ns": 8600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 57,
+      "kind": "pointer",
+      "planned_ns": 8700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 58,
+      "kind": "pointer",
+      "planned_ns": 8800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 59,
+      "kind": "pointer",
+      "planned_ns": 8900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 60,
+      "kind": "pointer",
+      "planned_ns": 9000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 61,
+      "kind": "pointer",
+      "planned_ns": 9100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 62,
+      "kind": "pointer",
+      "planned_ns": 9200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 63,
+      "kind": "pointer",
+      "planned_ns": 9300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 64,
+      "kind": "pointer",
+      "planned_ns": 9400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 65,
+      "kind": "pointer",
+      "planned_ns": 9500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 66,
+      "kind": "pointer",
+      "planned_ns": 9600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 67,
+      "kind": "pointer",
+      "planned_ns": 9700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 68,
+      "kind": "pointer",
+      "planned_ns": 9800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 69,
+      "kind": "pointer",
+      "planned_ns": 9900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 70,
+      "kind": "pointer",
+      "planned_ns": 10000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 71,
+      "kind": "pointer",
+      "planned_ns": 10100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 72,
+      "kind": "pointer",
+      "planned_ns": 10200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 73,
+      "kind": "pointer",
+      "planned_ns": 10300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 74,
+      "kind": "pointer",
+      "planned_ns": 10400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 75,
+      "kind": "pointer",
+      "planned_ns": 10500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 76,
+      "kind": "pointer",
+      "planned_ns": 10600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 77,
+      "kind": "pointer",
+      "planned_ns": 10700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 78,
+      "kind": "pointer",
+      "planned_ns": 10800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 79,
+      "kind": "pointer",
+      "planned_ns": 10900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 205,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 80,
+      "kind": "pointer",
+      "planned_ns": 11000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 81,
+      "kind": "pointer",
+      "planned_ns": 11100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 82,
+      "kind": "pointer",
+      "planned_ns": 11200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 83,
+      "kind": "pointer",
+      "planned_ns": 11300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 84,
+      "kind": "pointer",
+      "planned_ns": 11400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 85,
+      "kind": "pointer",
+      "planned_ns": 11500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 86,
+      "kind": "pointer",
+      "planned_ns": 11600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 87,
+      "kind": "pointer",
+      "planned_ns": 11700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 88,
+      "kind": "pointer",
+      "planned_ns": 11800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 89,
+      "kind": "pointer",
+      "planned_ns": 11900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 90,
+      "kind": "pointer",
+      "planned_ns": 12000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 91,
+      "kind": "pointer",
+      "planned_ns": 12100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 92,
+      "kind": "pointer",
+      "planned_ns": 12200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 93,
+      "kind": "pointer",
+      "planned_ns": 12300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 94,
+      "kind": "pointer",
+      "planned_ns": 12400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 95,
+      "kind": "pointer",
+      "planned_ns": 12500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 96,
+      "kind": "pointer",
+      "planned_ns": 12600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 97,
+      "kind": "pointer",
+      "planned_ns": 12700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 98,
+      "kind": "pointer",
+      "planned_ns": 12800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 99,
+      "kind": "pointer",
+      "planned_ns": 12900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 80,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 100,
+      "kind": "pointer",
+      "planned_ns": 13000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 101,
+      "kind": "pointer",
+      "planned_ns": 13100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 102,
+      "kind": "pointer",
+      "planned_ns": 13200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 103,
+      "kind": "pointer",
+      "planned_ns": 13300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 104,
+      "kind": "pointer",
+      "planned_ns": 13400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 105,
+      "kind": "pointer",
+      "planned_ns": 13500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 106,
+      "kind": "pointer",
+      "planned_ns": 13600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 107,
+      "kind": "pointer",
+      "planned_ns": 13700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 108,
+      "kind": "pointer",
+      "planned_ns": 13800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 109,
+      "kind": "pointer",
+      "planned_ns": 13900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 110,
+      "kind": "pointer",
+      "planned_ns": 14000000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 111,
+      "kind": "pointer",
+      "planned_ns": 14100000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 112,
+      "kind": "pointer",
+      "planned_ns": 14200000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 113,
+      "kind": "pointer",
+      "planned_ns": 14300000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 114,
+      "kind": "pointer",
+      "planned_ns": 14400000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 115,
+      "kind": "pointer",
+      "planned_ns": 14500000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 116,
+      "kind": "pointer",
+      "planned_ns": 14600000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 117,
+      "kind": "pointer",
+      "planned_ns": 14700000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 118,
+      "kind": "pointer",
+      "planned_ns": 14800000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    },
+    {
+      "sequence": 119,
+      "kind": "pointer",
+      "planned_ns": 14900000000,
+      "requested_hz": 10.0,
+      "burst_index": 0,
+      "payload": {
+        "x": 330,
+        "y": 812,
+        "button": "left"
+      }
+    }
+  ]
+}
