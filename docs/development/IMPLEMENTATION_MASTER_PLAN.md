@@ -3997,3 +3997,11 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Review follow-up - second-pass feasibility:** `redaction.rs` exposes a text-transforming redactor, not a classifier that returns a verdict, so the record now states the scan target (exact post-redaction bytes before publication), the refusal rule and the fail-closed behaviour when the check cannot decide; adding that classifier belongs to the eventual implementation.
 - **No product code/UI/dependency change; no Gate.** Canon DD-22 row now states the export decision remains owner-owned.
 
+### 19.197 MP-AX1 stable AutomationIds for six diagnostics labels (2026-11-02)
+
+- **Implementation:** `.accessibility_id(...)` added to `about-desktop`, `about-runtime`, `about-protocol`, `about-schema`, `diagnostic-readonly`, `support-preview-readonly`, keeping the existing `.id(...)`, `Role::Label`, `aria_value`, visible text and non-focusable Tab behavior. `about-heading` is unchanged and keeps its earlier PASS.
+- **Source test:** `diagnostics_readonly_labels_are_not_focus_stops` now asserts each of the six AutomationIds exists, exactly six `accessibility_id` calls exist, no duplicate ID, and no wrong truncated IDs; the comment now states the AccessKit fact that `Role::Label` maps value→UIA Name and exposes no ValuePattern.
+- **Native UIA (Windows 10.0.26300.0, release exe `4304096f…`, fixture `task-184.json`, isolated `LOCALAPPDATA`):** Ctrl+D opened the panel; all six expected AutomationIds were found; each was `ControlType.Text`, `IsKeyboardFocusable=False`; Names were `Desktop 0.1.0`, `Runtime 未確認`, `Protocol 未確認`, `Schema 未確認`, the existing diagnostic string, and the redacted support report. `support-preview-readonly` was absent before Enter, appeared after Tab×5 + Enter, and all six were absent after Ctrl+D close.
+- **Not measured:** Narrator/NVDA reading quality remains `NOT_MEASURED`; no screen-reader claim is made. Other UIA properties (ValuePattern) are not required for `Role::Label`.
+- **Verification:** fmt OK; clippy 0 issues; `cargo test -p desktop-gpui` 109 passed / 0 failed. No new Gate definition; the existing independent Gate remains the Lead's decision. MP-AX1/AX2 overall remain incomplete.
+

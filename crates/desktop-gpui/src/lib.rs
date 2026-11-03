@@ -4341,6 +4341,7 @@ impl Render for Shell {
                                                     .child(
                                                         div()
                                                             .id("about-desktop")
+                                                            .accessibility_id("about-desktop")
                                                             .role(Role::Label)
                                                             .aria_label("Desktop バージョン")
                                                             .aria_value(about[0].clone())
@@ -4349,6 +4350,7 @@ impl Render for Shell {
                                                     .child(
                                                         div()
                                                             .id("about-runtime")
+                                                            .accessibility_id("about-runtime")
                                                             .role(Role::Label)
                                                             .aria_label("Runtime バージョン")
                                                             .aria_value(about[1].clone())
@@ -4357,6 +4359,7 @@ impl Render for Shell {
                                                     .child(
                                                         div()
                                                             .id("about-protocol")
+                                                            .accessibility_id("about-protocol")
                                                             .role(Role::Label)
                                                             .aria_label("Protocol バージョン")
                                                             .aria_value(about[2].clone())
@@ -4365,6 +4368,7 @@ impl Render for Shell {
                                                     .child(
                                                         div()
                                                             .id("about-schema")
+                                                            .accessibility_id("about-schema")
                                                             .role(Role::Label)
                                                             .aria_label("Schema バージョン")
                                                             .aria_value(about[3].clone())
@@ -4402,6 +4406,7 @@ impl Render for Shell {
                                                     .child(
                                                         div()
                                                             .id("diagnostic-readonly")
+                                                            .accessibility_id("diagnostic-readonly")
                                                             .role(Role::Label)
                                                             .aria_label("診断情報")
                                                             .aria_value(diagnostic_text.clone())
@@ -4411,6 +4416,7 @@ impl Render for Shell {
                                                         element.child(
                                                             div()
                                                                 .id("support-preview-readonly")
+                                                                .accessibility_id("support-preview-readonly")
                                                                 .role(Role::Label)
                                                                 .aria_label("サポート情報")
                                                                 .aria_value(preview.clone())
@@ -5162,8 +5168,9 @@ mod contrast_scope_tests {
 
     #[test]
     fn diagnostics_readonly_labels_are_not_focus_stops() {
-        // SOURCE_WIRING_VERIFIED: the labels are built only in the open Ctrl+D branch
-        // and expose stable IDs with name/value separation. Native UIA exposure and
+        // SOURCE_WIRING_VERIFIED: the labels are built only in the open Ctrl+D branch.
+        // AccessKit maps Role::Label's value to the UIA Name (no ValuePattern); the
+        // AutomationId comes from .accessibility_id(...). Native UIA exposure and
         // screen-reader reading are NOT_RUN here.
         let source = include_str!("lib.rs");
         let begin = source
@@ -5202,6 +5209,31 @@ mod contrast_scope_tests {
                 "missing label {label}"
             );
         }
+        let automation_ids = [
+            "about-desktop",
+            "about-runtime",
+            "about-protocol",
+            "about-schema",
+            "diagnostic-readonly",
+            "support-preview-readonly",
+        ];
+        for id in automation_ids {
+            assert!(
+                region.contains(&format!(".accessibility_id(\"{id}\")")),
+                "missing AutomationId {id}"
+            );
+        }
+        assert_eq!(
+            region.matches(".accessibility_id(").count(),
+            automation_ids.len(),
+            "each label must carry exactly one AutomationId"
+        );
+        let mut seen = std::collections::BTreeSet::new();
+        for id in automation_ids {
+            assert!(seen.insert(id), "duplicate AutomationId {id}");
+        }
+        assert!(!region.contains(".accessibility_id(\"about\")"));
+        assert!(!region.contains(".accessibility_id(\"diagnostic\")"));
         assert!(region.matches(".role(Role::Label)").count() >= 6);
         assert!(
             !region.contains(".tab_stop("),
