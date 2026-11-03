@@ -5,16 +5,16 @@
   "windows": "10.0.26300.0",
   "dpi": 96,
   "files": {
-    "cancel_existing_tab.txt": "sha256:5da77dbc8f0c0ec1d3b25650b3cc51b519e9ad06e5eff359e833158f23cbaad1",
+    "cancel_existing_tab.txt": "sha256:8d678bdc6a7cdc82aec4f77de2b81a008107b80d3b881f5daa9f02e41fe6344b",
     "environment.txt": "sha256:75b24f55e853c56cfc941d435806a1db1292ca8d7855cd1fd6466d6a1cf24f53",
-    "final_measure.txt": "sha256:ab89c9f62ac5d5d8c42853ca31e5149439d96222ba06d708e03f31e8657695a9",
+    "final_measure.txt": "sha256:6d2eec4a841926e923b62ce5081d6fd7969dedf2a20b33ace89a8283ff7dc666",
     "preview-text.txt": "sha256:67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
     "report-existing.txt": "sha256:962f85a27854336f3286ad54b49321f62525043b5f3508b2ecc887fdd6e7550e",
     "report-final.txt": "sha256:67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
-    "save_keys.txt": "sha256:84f4f1537590bd81c2f7eac7490e8255da08bd628edc79a8d24b64ee0cf2900f",
-    "session1.txt": "sha256:e39b758ba28a1b8baa01a2a22ed4a7566ec075e5faeaa230c93e3e5047cf8d89",
-    "tab_focus2.txt": "sha256:e447d2f5b96ea7c330f32271c3a21072be602c8052e98fe49ca7e55dfe0ff27f",
-    "uia_all.txt": "sha256:00fc3705be9747d8954e4faaf58ca16d2ea1615df7eb924de138b535d99cdfe3"
+    "save_keys.txt": "sha256:95fcbefa5ed9a7533625da548b342485d5a40021521e6a0ab46a5b3d3146b896",
+    "session1.txt": "sha256:11624b88c7ec4788819bc8ce669ac34f9cfe49522282c05d139f992d0ae2e0f0",
+    "tab_focus2.txt": "sha256:58246ef3877acc68be4af833f4e3fdc4eafb0f2d45bc076ce95cf8fddd6b900f",
+    "uia_all.txt": "sha256:43e2ec2c103c7a620509e5286e92c7ebdb3a9e0ed9aaad040eef87033e8aa5f1"
   },
   "verdicts": {
     "A": "PASS",
@@ -25,5 +25,6 @@
     "F": "PASS for existing-content preservation; overwrite-message NOT_PROVABLE; stale-publication NOT_RUN",
     "G": "recorded"
   },
-  "note": "Evidence is committed with -text so the published bytes equal the digests; line endings are not converted for anything under evidence-published."
+  "note": "Evidence is committed with -text so the published bytes equal the digests; line endings are not converted for anything under evidence-published.",
+  "digest_basis": "SHA-256 of the committed bytes as stored (the tree is marked -text, so the blob equals the working-tree file and no end-of-line conversion applies)"
 }
