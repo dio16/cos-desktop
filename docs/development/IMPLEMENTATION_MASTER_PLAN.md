@@ -3774,5 +3774,6 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
   - Artifacts: `s2b-capture.json` `b581a152…`, `s2b-observation.json` `3216b2db…`, `build-record.json` `a9676a95…`, `source-identity.json` `ea2ae7df…`, `ledger.json` `0d0a2d0a…`, probe `237e3ec5…`.
 - **Evidence:** `docs/development/evidence-published/r0a-capture-latest/` adds `a1-760a-*` (ledger/capture/observation/build-record/source-identity/probe/plan) with SHA-256 in `record.json` under `wm_close_runs.local-accounting-760a` (correspondence MATCHED, conservation recorded).
 - **Checks:** fmt OK; clippy workspace `-D warnings` 0 issues; `cargo test -p cos-desktop --features r0-s2b-instrumentation` 184 passed / 0 failed. Gate not run (Lead decision).
-- **State:** the earlier **UNDETERMINED** local breakdown is resolved by measurement; MP-R0A remains IN_PROGRESS and product acceptance NOT_RUN.
+- **Scope of the settlement:** this run's seven receipts are fully explained. The **earlier** run (pid 18864, the same plan) received seven and retained four, leaving **three unresolved**, and those three are **not** the same events as this run's two cap omissions. They stay **UNDETERMINED as history**. What this run establishes is that the breakdown is now measurable, not that the old remainder has been retroactively explained.
+- **State:** MP-R0A remains IN_PROGRESS and product acceptance NOT_RUN.
 
