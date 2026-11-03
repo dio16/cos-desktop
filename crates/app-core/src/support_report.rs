@@ -503,3 +503,139 @@ mod export_tests {
         }
     }
 }
+
+/// Closed failure for the atomic export write. Never carries the path or content.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ExportWriteError {
+    InvalidPath,
+    AlreadyExists,
+    Io,
+}
+
+impl ExportData {
+    /// Publish the checked bytes at `path`. The default (`overwrite = false`)
+    /// refuses an existing file. A same-directory exclusive temporary file is
+    /// written, flushed and synced, then renamed; a failure removes the temporary
+    /// file and never leaves a partial final file.
+    pub fn write_atomic(
+        &self,
+        path: &std::path::Path,
+        overwrite: bool,
+    ) -> Result<(), ExportWriteError> {
+        use std::io::Write;
+        let Some(parent) = path.parent() else {
+            return Err(ExportWriteError::InvalidPath);
+        };
+        let file_name = path.file_name().ok_or(ExportWriteError::InvalidPath)?;
+        if file_name.is_empty() {
+            return Err(ExportWriteError::InvalidPath);
+        }
+        let parent_meta =
+            std::fs::symlink_metadata(parent).map_err(|_| ExportWriteError::InvalidPath)?;
+        if !parent_meta.file_type().is_dir() {
+            return Err(ExportWriteError::InvalidPath);
+        }
+        match std::fs::symlink_metadata(path) {
+            Ok(meta) => {
+                if meta.file_type().is_symlink() || !meta.file_type().is_file() {
+                    return Err(ExportWriteError::InvalidPath);
+                }
+                if !overwrite || !meta.is_file() {
+                    return Err(ExportWriteError::AlreadyExists);
+                }
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(_) => return Err(ExportWriteError::InvalidPath),
+        }
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        let sequence = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let temporary = parent.join(format!(".cos-export-{}-{sequence}.tmp", std::process::id()));
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temporary)
+            .map_err(|_| ExportWriteError::Io)?;
+        let write_result = file
+            .write_all(self.as_bytes())
+            .and_then(|()| file.sync_all());
+        drop(file);
+        if write_result.is_err() {
+            let _ = std::fs::remove_file(&temporary);
+            return Err(ExportWriteError::Io);
+        }
+        if overwrite {
+            // std::fs::rename does not replace on Windows; explicit overwrite is
+            // therefore a remove-then-rename and not claimed as atomic replace.
+            let _ = std::fs::remove_file(path);
+        }
+        if std::fs::rename(&temporary, path).is_err() {
+            let _ = std::fs::remove_file(&temporary);
+            return Err(ExportWriteError::Io);
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod export_write_tests {
+    use super::*;
+
+    fn temp_dir(tag: &str) -> std::path::PathBuf {
+        let path = std::env::temp_dir().join(format!(
+            "cos-export-test-{tag}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|value| value.as_nanos())
+                .unwrap_or(0)
+        ));
+        std::fs::create_dir(&path).expect("temp dir");
+        path
+    }
+
+    #[test]
+    fn writes_checked_bytes_byte_for_byte_without_leaving_a_temporary() {
+        let dir = temp_dir("ok");
+        let path = dir.join("support.txt");
+        let report = SupportReport::unavailable("UnitReason", "0.1.0");
+        let data = checked_export(&report).expect("checked export");
+        data.write_atomic(&path, false).expect("write");
+        assert_eq!(std::fs::read(&path).expect("read"), data.as_bytes());
+        let names: Vec<_> = std::fs::read_dir(&dir)
+            .expect("dir")
+            .filter_map(|entry| entry.ok().map(|entry| entry.file_name()))
+            .collect();
+        assert_eq!(names, vec![std::ffi::OsString::from("support.txt")]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn existing_files_directories_and_missing_parents_are_refused() {
+        let dir = temp_dir("refuse");
+        let path = dir.join("support.txt");
+        std::fs::write(&path, b"existing").expect("seed");
+        let data = checked_export(&SupportReport::unavailable("UnitReason", "0.1.0"))
+            .expect("checked export");
+        assert_eq!(
+            data.write_atomic(&path, false).unwrap_err(),
+            ExportWriteError::AlreadyExists
+        );
+        assert_eq!(std::fs::read(&path).expect("read"), b"existing");
+        assert_eq!(
+            data.write_atomic(&dir, false).unwrap_err(),
+            ExportWriteError::InvalidPath
+        );
+        let missing = dir.join("missing").join("support.txt");
+        assert_eq!(
+            data.write_atomic(&missing, false).unwrap_err(),
+            ExportWriteError::InvalidPath
+        );
+        assert!(!missing.exists());
+        let names: Vec<_> = std::fs::read_dir(&dir)
+            .expect("dir")
+            .filter_map(|entry| entry.ok().map(|entry| entry.file_name()))
+            .collect();
+        assert_eq!(names, vec![std::ffi::OsString::from("support.txt")]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
