@@ -1,0 +1,4 @@
+control for environment inheritance through the same launch mechanism
+command: cmd.exe /c echo COS_PREVIEW_TRACE=%COS_PREVIEW_TRACE%
+parent set COS_PREVIEW_TRACE=1 before Start-Process
+child output: COS_PREVIEW_TRACE=1

@@ -1,0 +1,9 @@
+in-process preview evidence (stderr captured), accessibility invoke
+exe_sha256: a0588f1fe623cbae2f36b8b9c7f22adb8eb9981a8e628f8e1cf2a6f0f3ac119d
+base_commit: 012e4c510f5009ec89f5183756d72d774f9c7468
+COS_PREVIEW_TRACE=1
+stderr_at_startup_lines: 0
+stderr_at_startup: ''
+preview_button: present
+invoke_result: ok
+stderr_total_lines: 0
