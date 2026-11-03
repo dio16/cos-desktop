@@ -147,7 +147,7 @@ def validate_scenario(data: dict[str, bytes], name: str) -> tuple[dict, dict, di
         "endpoints", "coverage", "frame_identity", "cross_domain_latency", "loss_scope",
         "unobserved_source_loss"})
     require(type(observation["observation_version"]) is int
-            and observation["observation_version"] in (1, 2, 3), "VERSION")
+            and observation["observation_version"] in (1, 2, 3, 4), "VERSION")
     bound = s2b.object_fields(observation["identity"], {"source_commit", "manifest_sha256",
         "build_sha256", "observer_source_sha256", "executable_sha256", "helper_sha256",
         "helper_source_sha256", "fixture_sha256", "execution_id", "pid", "gpui_pin", "feature"})
@@ -333,14 +333,15 @@ def require_endpoints(observation: dict, capture: dict) -> None:
     actual = observation.get("endpoints")
     require(isinstance(actual, dict), "OBSERVATION_BINDING")
     version = observation.get("observation_version")
-    # Exact int: bool and float compare equal to ints, so True/1.0/2.0 would otherwise be
-    # taken for a legacy version.
-    require(type(version) is int and version in (1, 2, 3), "OBSERVATION_BINDING")
-    if version == 3:
+    require(type(version) is int and version in (1, 2, 3, 4), "OBSERVATION_BINDING")
+    if version == 4:
         require(actual == expected, "OBSERVATION_BINDING")
         return
-    legacy = {name: value for name, value in expected.items()
-              if name != "platform-submission-end"}
+    legacy = dict(expected)
+    legacy["first-frame"] = {
+        "status": "NOT_MEASURED", "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"}
+    if version in (1, 2):
+        legacy.pop("platform-submission-end", None)
     if version == 1:
         legacy.pop("platform-submission-start", None)
     require(actual == legacy, "OBSERVATION_BINDING")

@@ -557,6 +557,8 @@ impl Shell {
                 cx,
             )
         });
+        #[cfg(feature = "r0-s2b-instrumentation")]
+        r0_probe::record_window_created(window.window_handle().window_id().as_u64());
         Self {
             #[cfg(feature = "r0-s2b-instrumentation")]
             probe_window: window.window_handle().window_id().as_u64(),

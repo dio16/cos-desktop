@@ -75,6 +75,24 @@ class S2BWireContract(unittest.TestCase):
         value["records"].append(duplicate)
         self.reject(value, "DUPLICATE_EVENT")
 
+    def test_first_frame_requires_marker_before_first_submission_without_gap(self):
+        base = {"records": [
+            {"kind": 10, "window": 7, "start_ns": 100},
+            {"kind": 3, "window": 7, "start_ns": 200},
+        ]}
+        self.assertEqual(s2b.first_frame_matrix(base),
+                         {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"})
+        self.assertEqual(s2b.first_frame_matrix({"records": [
+            {"kind": 3, "window": 7, "start_ns": 200}]})["reason"],
+            "NO_WINDOW_CREATED_MARKER")
+        self.assertEqual(s2b.first_frame_matrix({"records": [
+            {"kind": 10, "window": 7, "start_ns": 300},
+            {"kind": 3, "window": 7, "start_ns": 200}]})["status"], "NOT_MEASURED")
+        self.assertEqual(s2b.first_frame_matrix({"records": [
+            {"kind": 10, "window": 7, "start_ns": 100},
+            {"kind": 5, "window": 7, "start_ns": 150},
+            {"kind": 3, "window": 7, "start_ns": 200}]})["reason"], "JOURNAL_GAP")
+
     def test_complete_local_kind_arrays_validate(self):
         value = copy.deepcopy(example())
         summary = value["summary"]
@@ -344,7 +362,9 @@ class S2BWireContract(unittest.TestCase):
                          {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"})
         self.assertEqual(matrix["local-notify"],
                          {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"})
-        for name in ("app-main-entry", "frame-request", "first-frame", "useful-shell",
+        self.assertEqual(matrix["first-frame"],
+                         {"status": "NOT_MEASURED", "reason": "NO_WINDOW_CREATED_MARKER"})
+        for name in ("app-main-entry", "frame-request", "useful-shell",
                      "present-call", "present-return", "present", "displayed",
                      "scanout", "input-to-photon"):
             self.assertEqual(
@@ -366,7 +386,7 @@ class S2BWireContract(unittest.TestCase):
             self.assertEqual(matrix[endpoint],
                              {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"})
         s3_native_replay.require_endpoints(
-            {"observation_version": 3, "endpoints": matrix}, value)
+            {"observation_version": 4, "endpoints": matrix}, value)
         without_present = copy.deepcopy(value)
         without_present["summary"]["kind_counts"][3] = 0
         matrix = s2b.endpoint_matrix(without_present)
@@ -379,6 +399,7 @@ class S2BWireContract(unittest.TestCase):
         expected = s2b.endpoint_matrix(value)
         legacy = {name: item for name, item in expected.items()
                   if name not in ("platform-submission-start", "platform-submission-end")}
+        legacy["first-frame"] = {"status": "NOT_MEASURED", "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"}
         s3_native_replay.require_endpoints(
             {"observation_version": 1, "endpoints": legacy}, value)
 

@@ -49,7 +49,7 @@ SUPPORTED = {
     "gpui-platform-submission": 3, "local-surface-mutation": 8, "local-notify": 9,
 }
 MISSING = (
-    "app-main-entry", "frame-request", "first-frame", "useful-shell", "gpu-submission",
+    "app-main-entry", "frame-request", "useful-shell", "gpu-submission",
     "present-call", "present-return", "present", "displayed", "scanout", "input-to-photon",
 )
 
@@ -190,7 +190,7 @@ def validate_capture(document: object, *, execution: str | None = None,
     records = value["records"]
     if not isinstance(records, list) or len(records) > MAX_RECORDS:
         fail("RECORD_LIMIT")
-    counts = [0] * 10
+    counts = [0] * 11
     windows, lifetimes, closed, spans = {}, {}, {}, set()
     power_boundary = start
     frame_ids = set()
@@ -202,7 +202,7 @@ def validate_capture(document: object, *, execution: str | None = None,
         record = object_fields(raw, RECORD_FIELDS)
         if integer(record["seq"], low=1) != seq:
             fail("SEQUENCE")
-        kind = integer(record["kind"], high=9)
+        kind = integer(record["kind"], high=10)
         counts[kind] += 1
         if frame_id is not None:
             integer(frame_id)
@@ -230,6 +230,7 @@ def validate_capture(document: object, *, execution: str | None = None,
             5: {"lost"}, 6: {"start_ns", "end_ns"}, 7: {"start_ns", "end_ns"},
             8: {"window", "lifetime", "start_ns", "end_ns", "category"},
             9: {"window", "lifetime", "start_ns", "end_ns"},
+            10: {"window", "lifetime", "start_ns", "end_ns"},
         }[kind]
         optional = {"dirty_ns"} if kind == 2 else ({
             "dirty_ns", "invalidations", "paired_draw_start_ns", "paired_draw_end_ns",
@@ -303,10 +304,11 @@ def validate_capture(document: object, *, execution: str | None = None,
             or summary["unoffered_loss"] != "UNKNOWN" or summary["unfinalized_tail"] != "UNKNOWN"):
         fail("COVERAGE")
     kinds = summary["kind_counts"]
-    if not isinstance(kinds, list) or len(kinds) != 10:
+    if not isinstance(kinds, list) or len(kinds) not in (10, 11):
         fail("COUNTS")
     for count in kinds:
         integer(count)
+    kinds = list(kinds) + [0] * (11 - len(kinds))
     present = [name for name in LOCAL_KIND_FIELDS if name in summary]
     if present and len(present) != len(LOCAL_KIND_FIELDS):
         fail("COUNTS")
@@ -314,13 +316,15 @@ def validate_capture(document: object, *, execution: str | None = None,
         arrays = {}
         for name in LOCAL_KIND_FIELDS:
             values = summary[name]
-            if not isinstance(values, list) or len(values) != 2:
+            if not isinstance(values, list) or len(values) not in (2, 3):
                 fail("COUNTS")
+            values = list(values) + [0] * (3 - len(values))
             for item in values:
                 integer(item)
             arrays[name] = values
         if (sum(arrays["local_kind_received"]) != summary["local_received"]
-                or arrays["local_kind_retained"] != [kinds[8], kinds[9]]):
+                or arrays["local_kind_retained"][:2] != [kinds[8], kinds[9]]
+                or arrays["local_kind_retained"][2] != kinds[10]):
             fail("COUNTS")
         for index in range(2):
             accounted = (arrays["local_kind_retained"][index]
@@ -336,7 +340,7 @@ def validate_capture(document: object, *, execution: str | None = None,
     ))
     if received >= 1 << 64 or accounted != received:
         fail("COUNTS")
-    if (summary["local_received"] < counts[8] + counts[9]
+    if (summary["local_received"] < counts[8] + counts[9] + counts[10]
             or summary["journal_seen"] < sum(counts[:8])
             or summary["unmatched_submission"] < sum(
                 1 for item in records if item["kind"] == 3 and item["paired_draw_start_ns"] is None)):
@@ -371,6 +375,28 @@ def frame_id_for(record: dict) -> int:
                    record["start_ns"], record["end_ns"]))
 
 
+def first_frame_matrix(capture: dict) -> dict:
+    records = capture.get("records", [])
+    markers = [record for record in records if record.get("kind") == 10]
+    if not markers:
+        return {"status": "NOT_MEASURED", "reason": "NO_WINDOW_CREATED_MARKER"}
+    for marker in markers:
+        window, created = marker["window"], marker["start_ns"]
+        submissions = [record for record in records
+                       if record.get("kind") == 3 and record.get("window") == window]
+        if not submissions:
+            continue
+        first = min(submissions, key=lambda record: record["start_ns"])
+        if first["start_ns"] < created:
+            continue
+        gaps = [record for record in records
+                if record.get("kind") == 5 and created < record["start_ns"] < first["start_ns"]]
+        if gaps:
+            return {"status": "NOT_MEASURED", "reason": "JOURNAL_GAP"}
+        return {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"}
+    return {"status": "NOT_MEASURED", "reason": "NO_RETAINED_VALID_RECORD"}
+
+
 def endpoint_matrix(capture: dict) -> dict:
     counts = capture["summary"]["kind_counts"]
     result = {
@@ -378,6 +404,7 @@ def endpoint_matrix(capture: dict) -> dict:
                "reason": "RETAINED_SOURCE_RECORD" if counts[kind] else "NO_RETAINED_VALID_RECORD"}
         for name, kind in SUPPORTED.items()
     }
+    result["first-frame"] = first_frame_matrix(capture)
     for name in ("platform-submission-start", "platform-submission-end"):
         result[name] = {
             "status": "OBSERVED" if counts[3] else "NOT_MEASURED",

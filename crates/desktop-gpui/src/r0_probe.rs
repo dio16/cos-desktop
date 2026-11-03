@@ -15,6 +15,7 @@ use std::time::Instant;
 pub enum EventKind {
     SurfaceChanged(Surface),
     Notify,
+    WindowCreated(u64),
 }
 
 /// One source-side observation. Its serial is assigned by the downstream observer.
@@ -128,6 +129,11 @@ pub fn attach(sender: SyncSender<Event>, control: Arc<Control>) -> Result<Lease,
             _main_thread: PhantomData,
         })
     })
+}
+
+/// Record a window-creation marker before the first draw.
+pub fn record_window_created(window: u64) {
+    record(window, EventKind::WindowCreated(window));
 }
 
 /// Record only at an actual mutation or notify call. Full queues drop, never wait.

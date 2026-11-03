@@ -47,14 +47,18 @@ class NativePublishedReplay(unittest.TestCase):
         expected = s2b.endpoint_matrix(capture)
         v2 = {name: value for name, value in expected.items()
               if name != "platform-submission-end"}
+        v2["first-frame"] = {"status": "NOT_MEASURED", "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"}
         v1 = {name: value for name, value in v2.items()
               if name != "platform-submission-start"}
         replay.require_endpoints({"observation_version": 1, "endpoints": v1}, capture)
         replay.require_endpoints({"observation_version": 2, "endpoints": v2}, capture)
-        replay.require_endpoints({"observation_version": 3, "endpoints": dict(expected)}, capture)
+        v3 = dict(expected)
+        v3["first-frame"] = {"status": "NOT_MEASURED", "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"}
+        replay.require_endpoints({"observation_version": 3, "endpoints": v3}, capture)
+        replay.require_endpoints({"observation_version": 4, "endpoints": dict(expected)}, capture)
         for key in ("status", "reason"):
             for endpoint in ("platform-submission-start", "platform-submission-end"):
-                mutated = {"observation_version": 3, "endpoints": dict(expected)}
+                mutated = {"observation_version": 4, "endpoints": dict(expected)}
                 mutated["endpoints"][endpoint] = dict(expected[endpoint])
                 mutated["endpoints"][endpoint][key] = "WRONG"
                 with self.assertRaises(s2b.ObservationError) as caught:
@@ -68,7 +72,9 @@ class NativePublishedReplay(unittest.TestCase):
               if name != "platform-submission-end"}
         v1 = {name: value for name, value in v2.items()
               if name != "platform-submission-start"}
-        for version, matrix in ((1, v1), (2, v2), (3, dict(expected))):
+        v3 = dict(expected)
+        v3["first-frame"] = {"status": "NOT_MEASURED", "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"}
+        for version, matrix in ((1, v1), (2, v2), (3, v3), (4, dict(expected))):
             missing = dict(matrix)
             missing.pop("local-notify")
             with self.assertRaises(s2b.ObservationError) as caught:
@@ -87,7 +93,7 @@ class NativePublishedReplay(unittest.TestCase):
         # treat True, 1.0 and 2.0 as legacy versions.
         capture = {"summary": {"kind_counts": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]}}
         expected = s2b.endpoint_matrix(capture)
-        for bad in (True, 1.0, 2.0, 0, 4, "3", None):
+        for bad in (True, 1.0, 2.0, 0, 5, "3", None):
             with self.assertRaises(s2b.ObservationError) as caught:
                 replay.require_endpoints(
                     {"observation_version": bad, "endpoints": dict(expected)}, capture)

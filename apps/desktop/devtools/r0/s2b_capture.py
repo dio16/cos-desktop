@@ -309,12 +309,16 @@ def verify_bundle(manifest_path: Path, output: Path, timeout_ms: int) -> dict:
         version = actual.get("observation_version")
         # Exact int check: bool and float compare equal to ints in python, so `in (1, 2)`
         # would accept True, 1.0 and 2.0 as legacy versions.
-        if type(version) is not int or version not in (1, 2, 3):
+        if type(version) is not int or version not in (1, 2, 3, 4):
             s2b.fail("OBSERVATION_BINDING")
-        if version in (1, 2):
-            # Legacy archives predate the derived platform-submission endpoints.
+        if version in (1, 2, 3):
+            # Legacy archives predate the derived platform endpoints and used the
+            # non-derived first-frame statement.
             expected["observation_version"] = version
-            expected["endpoints"].pop("platform-submission-end", None)
+            expected["endpoints"]["first-frame"] = {
+                "status": "NOT_MEASURED", "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"}
+            if version in (1, 2):
+                expected["endpoints"].pop("platform-submission-end", None)
             if version == 1:
                 expected["endpoints"].pop("platform-submission-start", None)
         if json.dumps(actual, sort_keys=True, separators=(",", ":")) != json.dumps(expected, sort_keys=True, separators=(",", ":")):

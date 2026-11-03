@@ -265,10 +265,10 @@ struct Counts {
     journal_lost: u64,
     journal_seen: u64,
     local_received: u64,
-    local_received_kinds: [u64; 2],
-    local_scope_clock_rejected: [u64; 2],
-    local_lifetime_rejected: [u64; 2],
-    local_retention_omitted: [u64; 2],
+    local_received_kinds: [u64; 3],
+    local_scope_clock_rejected: [u64; 3],
+    local_lifetime_rejected: [u64; 3],
+    local_retention_omitted: [u64; 3],
     eligible: u64,
     retained: u64,
     excluded: u64,
@@ -280,7 +280,7 @@ struct Counts {
     input_unassociated: u64,
     unmatched_submission: u64,
     undrained_journal: u64,
-    kinds: [u64; 10],
+    kinds: [u64; 11],
 }
 
 struct Observer {
@@ -290,6 +290,8 @@ struct Observer {
     barrier: u64,
     // WindowId already includes the source's opaque identity. Do not decode it.
     windows: Vec<(u64, Option<u64>)>,
+    created: Vec<(u64, u64)>,
+    submitted: Vec<(u64, u64)>,
     frames: Vec<u64>,
     counts: Counts,
 }
@@ -381,6 +383,15 @@ impl Observer {
     ) -> io::Result<Record> {
         let (start, end) = self.span(timing.present_start, timing.present_end)?;
         let key = timing.window_id.as_u64();
+        if self
+            .created
+            .iter()
+            .any(|(id, created)| *id == key && *created > start)
+        {
+            self.counts.correlation_invalid += 1;
+            return Err(io::ErrorKind::InvalidData.into());
+        }
+        self.submitted.push((key, start));
         let mut record = Record {
             kind: 3,
             window: Some(key),
@@ -521,6 +532,32 @@ impl Observer {
                 0usize,
             ),
             EventKind::Notify => (9, None, 1usize),
+            EventKind::WindowCreated(window) => {
+                let at = match self.point(event.at) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        self.counts.local_scope_clock_rejected[2] += 1;
+                        return Err(error);
+                    }
+                };
+                if self
+                    .submitted
+                    .iter()
+                    .any(|(id, submitted)| *id == window && *submitted < at)
+                {
+                    self.counts.correlation_invalid += 1;
+                    return Err(io::ErrorKind::InvalidData.into());
+                }
+                let _ = self.window(window, at, false)?;
+                self.created.push((window, at));
+                return Ok(Record {
+                    kind: 10,
+                    window: Some(window),
+                    start: Some(at),
+                    end: Some(at),
+                    ..Record::default()
+                });
+            }
         };
         let at = match self.point(event.at) {
             Ok(value) => value,
@@ -597,6 +634,7 @@ impl Observer {
             let kind = match event.kind {
                 EventKind::SurfaceChanged(_) => 0usize,
                 EventKind::Notify => 1usize,
+                EventKind::WindowCreated(_) => 2usize,
             };
             self.counts.local_received_kinds[kind] += 1;
             if let Ok(record) = self.local(event) {
@@ -713,6 +751,8 @@ fn capture(
         end,
         barrier: start,
         windows: Vec::with_capacity(WINDOWS),
+        created: Vec::new(),
+        submitted: Vec::new(),
         frames: Vec::new(),
         counts: Counts::default(),
     };
@@ -741,7 +781,7 @@ fn capture(
     }
     write!(
         out,
-        "\n],\"scope_end_ns\":{},\"summary\":{{\"journal_lost\":{},\"journal_seen\":{},\"local_received\":{},\"local_enqueued\":{enqueued},\"local_dropped\":{dropped},\"local_undrained\":{undrained},\"eligible\":{},\"retained\":{},\"retention_dropped\":{},\"excluded\":{},\"pre_scope\":{},\"post_scope\":{},\"invalid_clock\":{},\"barrier_spans\":{},\"correlation_invalid\":{},\"input_unassociated\":{},\"unmatched_submission\":{},\"undrained_journal\":{},\"cancelled\":{},\"source_coverage\":\"OFFERED_FINALIZED_JOURNAL_ONLY\",\"unoffered_loss\":\"UNKNOWN\",\"unfinalized_tail\":\"UNKNOWN\",\"kind_counts\":[{},{},{},{},{},{},{},{},{},{}],\"local_kind_received\":[{},{}],\"local_kind_retained\":[{},{}],\"local_kind_scope_clock_rejected\":[{},{}],\"local_kind_lifetime_rejected\":[{},{}],\"local_kind_retention_omitted\":[{},{}]}}}}\n",
+        "\n],\"scope_end_ns\":{},\"summary\":{{\"journal_lost\":{},\"journal_seen\":{},\"local_received\":{},\"local_enqueued\":{enqueued},\"local_dropped\":{dropped},\"local_undrained\":{undrained},\"eligible\":{},\"retained\":{},\"retention_dropped\":{},\"excluded\":{},\"pre_scope\":{},\"post_scope\":{},\"invalid_clock\":{},\"barrier_spans\":{},\"correlation_invalid\":{},\"input_unassociated\":{},\"unmatched_submission\":{},\"undrained_journal\":{},\"cancelled\":{},\"source_coverage\":\"OFFERED_FINALIZED_JOURNAL_ONLY\",\"unoffered_loss\":\"UNKNOWN\",\"unfinalized_tail\":\"UNKNOWN\",\"kind_counts\":[{},{},{},{},{},{},{},{},{},{},{}],\"local_kind_received\":[{},{},{}],\"local_kind_retained\":[{},{},{}],\"local_kind_scope_clock_rejected\":[{},{},{}],\"local_kind_lifetime_rejected\":[{},{},{}],\"local_kind_retention_omitted\":[{},{},{}]}}}}\n",
         observer.end,
         c.journal_lost,
         c.journal_seen,
@@ -769,16 +809,22 @@ fn capture(
         c.kinds[7],
         c.kinds[8],
         c.kinds[9],
+        c.kinds[10],
         c.local_received_kinds[0],
         c.local_received_kinds[1],
+        c.local_received_kinds[2],
         c.kinds[8],
         c.kinds[9],
+        c.kinds[10],
         c.local_scope_clock_rejected[0],
         c.local_scope_clock_rejected[1],
+        c.local_scope_clock_rejected[2],
         c.local_lifetime_rejected[0],
         c.local_lifetime_rejected[1],
+        c.local_lifetime_rejected[2],
         c.local_retention_omitted[0],
-        c.local_retention_omitted[1]
+        c.local_retention_omitted[1],
+        c.local_retention_omitted[2]
     )?;
     out.flush()?;
     let mut sink = out.into_inner().map_err(|error| error.into_error())?;
@@ -810,6 +856,8 @@ mod tests {
             end: DURATION_NS,
             barrier: 0,
             windows: Vec::new(),
+            created: Vec::new(),
+            submitted: Vec::new(),
             frames: Vec::new(),
             counts: Counts::default(),
         };
@@ -823,7 +871,7 @@ mod tests {
                 })
                 .is_err()
         );
-        assert_eq!(observer.counts.local_scope_clock_rejected, [1, 0]);
+        assert_eq!(observer.counts.local_scope_clock_rejected, [1, 0, 0]);
         assert_eq!(observer.counts.pre_scope, 1);
         assert!(out.is_empty());
         assert!(
@@ -835,7 +883,7 @@ mod tests {
                 })
                 .is_err()
         );
-        assert_eq!(observer.counts.local_scope_clock_rejected, [1, 1]);
+        assert_eq!(observer.counts.local_scope_clock_rejected, [1, 1, 0]);
     }
 
     #[test]
@@ -876,6 +924,8 @@ mod tests {
             end: DURATION_NS,
             barrier: 0,
             windows: Vec::new(),
+            created: Vec::new(),
+            submitted: Vec::new(),
             frames: Vec::new(),
             counts: Counts::default(),
         };
@@ -903,9 +953,9 @@ mod tests {
         assert_eq!(observer.counts.kinds[8], 1);
         assert_eq!(observer.counts.kinds[9], 1);
         assert_eq!(observer.counts.retained, 2);
-        assert_eq!(observer.counts.local_scope_clock_rejected, [0, 0]);
-        assert_eq!(observer.counts.local_lifetime_rejected, [0, 0]);
-        assert_eq!(observer.counts.local_retention_omitted, [0, 0]);
+        assert_eq!(observer.counts.local_scope_clock_rejected, [0, 0, 0]);
+        assert_eq!(observer.counts.local_lifetime_rejected, [0, 0, 0]);
+        assert_eq!(observer.counts.local_retention_omitted, [0, 0, 0]);
         // The 257th local record is retention-omitted, not silently dropped.
         let mut observer = Observer {
             origin: Instant::now(),
@@ -913,6 +963,8 @@ mod tests {
             end: DURATION_NS,
             barrier: 0,
             windows: Vec::new(),
+            created: Vec::new(),
+            submitted: Vec::new(),
             frames: Vec::new(),
             counts: Counts::default(),
         };
@@ -925,7 +977,7 @@ mod tests {
             })?;
             observer.retain(record, &mut out)?;
         }
-        assert_eq!(observer.counts.local_retention_omitted, [0, 1]);
+        assert_eq!(observer.counts.local_retention_omitted, [0, 1, 0]);
         assert_eq!(observer.counts.kinds[9], RETAINED as u64);
         // A local record whose window/lifetime correlation fails is rejected and counted.
         let mut observer = Observer {
@@ -934,6 +986,8 @@ mod tests {
             end: DURATION_NS,
             barrier: 0,
             windows: vec![(11, Some(0))],
+            created: Vec::new(),
+            submitted: Vec::new(),
             frames: Vec::new(),
             counts: Counts::default(),
         };
@@ -944,7 +998,7 @@ mod tests {
         })?;
         let mut out = Vec::new();
         observer.retain(record, &mut out)?;
-        assert_eq!(observer.counts.local_lifetime_rejected, [1, 0]);
+        assert_eq!(observer.counts.local_lifetime_rejected, [1, 0, 0]);
         assert!(out.is_empty());
         Ok(())
     }
