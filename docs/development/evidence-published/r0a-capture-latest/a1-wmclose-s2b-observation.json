@@ -1,0 +1,102 @@
+{
+  "observation_version": 1,
+  "identity": {
+    "source_commit": "a732adc677cf28b414a5643cb72a519b156de7a1",
+    "manifest_sha256": "sha256:33b78335d9a2227adcc7d112fdb4b89f85a26e104775b3e88467f4a3096d2052",
+    "build_sha256": "sha256:bb8bc0b7abeae0be97694f1240d7f7eaaa0f4fcd0588d298ac2fc17c35fd92b3",
+    "observer_source_sha256": "sha256:3e0bec1d7a4969dcc110cb29e926be69ae932a33b77fe9cf90a50eaa3d3c47d9",
+    "executable_sha256": "sha256:f7ec10bded7b3022c05b9140ea946242950f49be8ced9f21b0ac487502703e10",
+    "helper_sha256": "sha256:fefdd0d406f58af50331ad5db682cba7ce16af79516edf3c0d9383f0066c9ca6",
+    "helper_source_sha256": "sha256:5b585f8ea1adcea540fab97adff9449c0e2ea88af97e29d3f97d4bac522c8058",
+    "fixture_sha256": "sha256:db1cfc8014ad44d3a512415af22ab90523b639de36d606e83247ac109daec2c0",
+    "execution_id": "9c4e1f7a2b8d3056e7a1c9d4f6b20853",
+    "pid": 16132,
+    "gpui_pin": "395def7a067b32ed598fcb3f048969ada9b54942",
+    "feature": "r0-s2b-instrumentation"
+  },
+  "capture": {
+    "name": "s2b-capture.json",
+    "bytes": 1068,
+    "sha256": "sha256:a0b560e0f0f1d01e343d70ea2daefefefb693a971cced317302d693f619b8238"
+  },
+  "s2a": {
+    "ledger.json": "sha256:ab1c1055f18f7dc61c0e2f12d67719dcb59491f65770ea72b72bc2b7166e85a1",
+    "result.json": "sha256:dbe9d1edc1a0ca40116cb90eb806388a058bd52fbb66ec07aeb135eb3114b166",
+    "completion.json": "sha256:cf91775ab2f23b3c8bca19590dc7845196c9438a70f016e35f6a2f5b8d8ba6de"
+  },
+  "endpoints": {
+    "input-dispatch": {
+      "status": "NOT_MEASURED",
+      "reason": "NO_RETAINED_VALID_RECORD"
+    },
+    "gpui-dirty": {
+      "status": "NOT_MEASURED",
+      "reason": "NO_RETAINED_VALID_RECORD"
+    },
+    "gpui-cpu-draw": {
+      "status": "NOT_MEASURED",
+      "reason": "NO_RETAINED_VALID_RECORD"
+    },
+    "gpui-platform-submission": {
+      "status": "NOT_MEASURED",
+      "reason": "NO_RETAINED_VALID_RECORD"
+    },
+    "local-surface-mutation": {
+      "status": "NOT_MEASURED",
+      "reason": "NO_RETAINED_VALID_RECORD"
+    },
+    "local-notify": {
+      "status": "NOT_MEASURED",
+      "reason": "NO_RETAINED_VALID_RECORD"
+    },
+    "app-main-entry": {
+      "status": "NOT_MEASURED",
+      "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+    },
+    "frame-request": {
+      "status": "NOT_MEASURED",
+      "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+    },
+    "first-frame": {
+      "status": "NOT_MEASURED",
+      "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+    },
+    "useful-shell": {
+      "status": "NOT_MEASURED",
+      "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+    },
+    "gpu-submission": {
+      "status": "NOT_MEASURED",
+      "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+    },
+    "present-call": {
+      "status": "NOT_MEASURED",
+      "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+    },
+    "present-return": {
+      "status": "NOT_MEASURED",
+      "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+    },
+    "present": {
+      "status": "NOT_MEASURED",
+      "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+    },
+    "displayed": {
+      "status": "NOT_MEASURED",
+      "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+    },
+    "scanout": {
+      "status": "NOT_MEASURED",
+      "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+    },
+    "input-to-photon": {
+      "status": "NOT_MEASURED",
+      "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+    }
+  },
+  "coverage": "LIMITED_SOURCE_OBSERVATIONS_ONLY",
+  "frame_identity": "NOT_MEASURED",
+  "cross_domain_latency": "NOT_MEASURED",
+  "loss_scope": "OFFERED_FINALIZED_JOURNAL_PLUS_LOCAL_QUEUE",
+  "unobserved_source_loss": "UNKNOWN"
+}

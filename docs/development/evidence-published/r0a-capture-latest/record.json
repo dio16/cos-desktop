@@ -50,5 +50,90 @@
       ]
     }
   },
-  "verification": "every published file's SHA-256 was recomputed after copying and matches the digest recorded beside it"
+  "verification": "every published file's SHA-256 was recomputed after copying and matches the digest recorded beside it",
+  "wm_close_runs": {
+    "a1-wmclose": {
+      "published": {
+        "ledger.json": "sha256:ab1c1055f18f7dc61c0e2f12d67719dcb59491f65770ea72b72bc2b7166e85a1",
+        "result.json": "sha256:dbe9d1edc1a0ca40116cb90eb806388a058bd52fbb66ec07aeb135eb3114b166",
+        "completion.json": "sha256:cf91775ab2f23b3c8bca19590dc7845196c9438a70f016e35f6a2f5b8d8ba6de",
+        "endpoint-availability.json": "sha256:619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303",
+        "s2b-capture.json": "sha256:a0b560e0f0f1d01e343d70ea2daefefefb693a971cced317302d693f619b8238",
+        "s2b-observation.json": "sha256:c03bf713100914daf9dc50f20e9b3684a9ecf31c9045fd8c36c06ae52e519b62",
+        "build-record.json": "sha256:bb8bc0b7abeae0be97694f1240d7f7eaaa0f4fcd0588d298ac2fc17c35fd92b3",
+        "source-identity.json": "sha256:730f1c8b3f4bcf15b3677d81da162ecaba0ab820d6ba8bad6019a86c168a53d2"
+      },
+      "ledger": {
+        "exit_code": 0,
+        "timed_out": false,
+        "elapsed_ms": 32842
+      },
+      "runs_recorded": [
+        {
+          "run_id": "run-n02",
+          "status": "NOT_MEASURED",
+          "reason": "process exited 0; visual/frame endpoints were not measured"
+        }
+      ],
+      "capture_summary": {
+        "journal_lost": 0,
+        "journal_seen": 7,
+        "local_received": 0,
+        "local_enqueued": 0,
+        "local_dropped": 0,
+        "local_undrained": 0,
+        "eligible": 0,
+        "retained": 0,
+        "retention_dropped": 0,
+        "excluded": 3,
+        "pre_scope": 4,
+        "post_scope": 0,
+        "invalid_clock": 0,
+        "barrier_spans": 0,
+        "correlation_invalid": 0,
+        "input_unassociated": 0,
+        "unmatched_submission": 0,
+        "undrained_journal": 0,
+        "cancelled": false,
+        "source_coverage": "OFFERED_FINALIZED_JOURNAL_ONLY",
+        "unoffered_loss": "UNKNOWN",
+        "unfinalized_tail": "UNKNOWN",
+        "kind_counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "execution_id": "9c4e1f7a2b8d3056e7a1c9d4f6b20853",
+      "captured_feature": "r0-s2b-instrumentation"
+    },
+    "a0-wmclose": {
+      "published": {
+        "ledger.json": "sha256:df1bb61dfd5a383f6c6c2da262b5bd9a548756a6a7fc9303d9a540920a2d8545",
+        "result.json": "sha256:3bb4a90ef21ae922d56615191ca577a2e8b78ea360c596325bdfc7ffc6f07be7",
+        "completion.json": "sha256:37a08181b6eb619ab5098a34e21a5e6322f364fa01b329a80fd89cf1b3fab3ff",
+        "endpoint-availability.json": "sha256:619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303"
+      },
+      "ledger": {
+        "exit_code": 0,
+        "timed_out": false,
+        "elapsed_ms": 32810
+      },
+      "runs_recorded": [
+        {
+          "run_id": "run-n01",
+          "status": "NOT_MEASURED",
+          "reason": "process exited 0; visual/frame endpoints were not measured"
+        }
+      ]
+    }
+  },
+  "wm_close_note": "Second attempt: the same approved candidates captured with an explicit WM_CLOSE so the app exits inside the bound. The launcher timeout is gone; the observation outcome is recorded as measured, including the retained=0 result."
 }
