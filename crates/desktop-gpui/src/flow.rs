@@ -318,6 +318,7 @@ pub struct Layers {
 pub fn layers(graph: &GraphDisplay) -> Layers {
     layers_inner(
         graph,
+        AdjacencyMode::Baseline,
         #[cfg(test)]
         None,
         #[cfg(test)]
@@ -326,8 +327,15 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
 }
 
 /// Six-phase measurement of exactly this path; `None` in every product build.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AdjacencyMode {
+    Baseline,
+    Preallocated,
+}
+
 fn layers_inner(
     graph: &GraphDisplay,
+    adjacency: AdjacencyMode,
     #[cfg(test)] mut phases: Option<&mut [u128; 9]>,
     #[cfg(test)] mut structure: Option<&mut StructureStats>,
 ) -> Layers {
@@ -347,7 +355,11 @@ fn layers_inner(
         slots[0] = start.elapsed().as_micros();
         phase_start = Some(std::time::Instant::now());
     }
-    let mut successors: Vec<Vec<usize>> = vec![Vec::new(); count];
+    let mut successors: Vec<Vec<usize>> = if adjacency == AdjacencyMode::Baseline {
+        vec![Vec::new(); count]
+    } else {
+        Vec::new()
+    };
     #[cfg(test)]
     let p2a_us = match phase_start {
         Some(start) => {
@@ -357,6 +369,33 @@ fn layers_inner(
         }
         None => 0,
     };
+    #[cfg(test)]
+    let mut prealloc_us = 0u128;
+    if adjacency == AdjacencyMode::Preallocated {
+        #[cfg(test)]
+        let started = std::time::Instant::now();
+        let mut degrees = vec![0usize; count];
+        for edge in graph.edges.iter() {
+            if let Some(&from) = index_of.get(&edge.from) {
+                degrees[from] = degrees[from].saturating_add(1);
+            }
+        }
+        successors = degrees
+            .into_iter()
+            .map(|degree| {
+                let bytes = degree.saturating_mul(std::mem::size_of::<usize>());
+                if bytes <= isize::MAX as usize {
+                    Vec::with_capacity(degree)
+                } else {
+                    Vec::new()
+                }
+            })
+            .collect();
+        #[cfg(test)]
+        {
+            prealloc_us = started.elapsed().as_micros();
+        }
+    }
     let mut self_loop = false;
     for edge in graph.edges.iter() {
         if let (Some(&from), Some(&to)) = (index_of.get(&edge.from), index_of.get(&edge.to)) {
@@ -404,7 +443,7 @@ fn layers_inner(
     }
     #[cfg(test)]
     if let (Some(slots), Some(start)) = (phases.as_mut(), phase_start) {
-        let p2b_us = start.elapsed().as_micros();
+        let p2b_us = start.elapsed().as_micros() + prealloc_us;
         slots[7] = p2a_us;
         slots[8] = p2b_us;
         // P2 overall is exactly the two measured halves of the same pass.
@@ -535,7 +574,7 @@ fn layers_inner(
 pub(crate) fn layers_phased(graph: &GraphDisplay) -> (Layers, [u128; 9], u128) {
     let mut phases = [0u128; 9];
     let outer = std::time::Instant::now();
-    let result = layers_inner(graph, Some(&mut phases), None);
+    let result = layers_inner(graph, AdjacencyMode::Baseline, Some(&mut phases), None);
     (result, phases, outer.elapsed().as_micros())
 }
 
@@ -558,7 +597,33 @@ pub(crate) struct StructureStats {
 #[cfg(test)]
 pub(crate) fn layers_structural(graph: &GraphDisplay) -> (Layers, StructureStats) {
     let mut structure = StructureStats::default();
-    let result = layers_inner(graph, None, Some(&mut structure));
+    let result = layers_inner(graph, AdjacencyMode::Baseline, None, Some(&mut structure));
+    (result, structure)
+}
+
+/// Test-only comparison entries: identical algorithm, P2b adjacency only differs.
+#[cfg(test)]
+pub(crate) fn layers_preallocated(graph: &GraphDisplay) -> Layers {
+    layers_inner(graph, AdjacencyMode::Preallocated, None, None)
+}
+
+#[cfg(test)]
+pub(crate) fn layers_preallocated_phased(graph: &GraphDisplay) -> (Layers, [u128; 9], u128) {
+    let mut phases = [0u128; 9];
+    let outer = std::time::Instant::now();
+    let result = layers_inner(graph, AdjacencyMode::Preallocated, Some(&mut phases), None);
+    (result, phases, outer.elapsed().as_micros())
+}
+
+#[cfg(test)]
+pub(crate) fn layers_preallocated_structural(graph: &GraphDisplay) -> (Layers, StructureStats) {
+    let mut structure = StructureStats::default();
+    let result = layers_inner(
+        graph,
+        AdjacencyMode::Preallocated,
+        None,
+        Some(&mut structure),
+    );
     (result, structure)
 }
 
@@ -802,8 +867,8 @@ pub fn revision_label(graph: &GraphDisplay) -> String {
 mod tests {
     use super::{
         AdmissionKey, MAX_DIAGRAM_NODES, MatchCache, Matched, RevisionKey, SAME_LAYER_HEADROOM,
-        admit, connector, contains_edge, contains_node, diagram, layers, revision_key, rows,
-        rows_cancellable,
+        admit, connector, contains_edge, contains_node, diagram, layers, layers_preallocated,
+        revision_key, rows, rows_cancellable,
     };
     use desktop_protocol::{ArtifactDigest, Counter, EpochId, GraphId, GraphRef};
     use std::sync::Arc;
@@ -2472,6 +2537,202 @@ mod tests {
     }
 
     /// P2b adjacency regression: input order, duplicate edges and missing endpoints.
+    #[test]
+    #[ignore = "MP-FLOW2 measurement: release-only A/B; not part of the regular suite"]
+    fn p2b_preallocated_ab_measurement() {
+        use super::{
+            layers_phased, layers_preallocated_phased, layers_preallocated_structural,
+            layers_structural,
+        };
+        struct Samples {
+            a_p2: Vec<u128>,
+            a_p2b: Vec<u128>,
+            a_all: Vec<u128>,
+            b_p2: Vec<u128>,
+            b_p2b: Vec<u128>,
+            b_all: Vec<u128>,
+        }
+        fn stats(samples: &mut [u128]) -> (u128, u128, u128) {
+            samples.sort_unstable();
+            let n = samples.len();
+            let median = if n % 2 == 1 {
+                samples[n / 2]
+            } else {
+                (samples[n / 2 - 1] + samples[n / 2]) / 2
+            };
+            let p95 = samples[(n * 95).div_ceil(100) - 1];
+            let max = *samples.last().unwrap();
+            (median, p95, max)
+        }
+        fn run(graph: &GraphDisplay) -> Samples {
+            let (mut a_p2, mut a_p2b, mut a_all) = (Vec::new(), Vec::new(), Vec::new());
+            let (mut b_p2, mut b_p2b, mut b_all) = (Vec::new(), Vec::new(), Vec::new());
+            for round in 0..3 {
+                let baseline_first = round != 1;
+                let measure_a = || {
+                    let (_layers, phases, all) = layers_phased(graph);
+                    (phases[1], phases[8], all)
+                };
+                let measure_b = || {
+                    let (_layers, phases, all) = layers_preallocated_phased(graph);
+                    (phases[1], phases[8], all)
+                };
+                for _ in 0..3 {
+                    let _ = measure_a();
+                    let _ = measure_b();
+                }
+                for _ in 0..21 {
+                    let (a, b) = if baseline_first {
+                        let a = measure_a();
+                        let b = measure_b();
+                        (a, b)
+                    } else {
+                        let b = measure_b();
+                        let a = measure_a();
+                        (a, b)
+                    };
+                    a_p2.push(a.0);
+                    a_p2b.push(a.1);
+                    a_all.push(a.2);
+                    b_p2.push(b.0);
+                    b_p2b.push(b.1);
+                    b_all.push(b.2);
+                }
+            }
+            Samples {
+                a_p2,
+                a_p2b,
+                a_all,
+                b_p2,
+                b_p2b,
+                b_all,
+            }
+        }
+        for (name, graph) in [
+            ("normal", ten_thousand_node_graph(100, 100)),
+            ("skewed", skewed_node_graph()),
+        ] {
+            let Samples {
+                mut a_p2,
+                mut a_p2b,
+                mut a_all,
+                mut b_p2,
+                mut b_p2b,
+                mut b_all,
+            } = run(&graph);
+            let a = (stats(&mut a_p2), stats(&mut a_p2b), stats(&mut a_all));
+            let b = (stats(&mut b_p2), stats(&mut b_p2b), stats(&mut b_all));
+            let (_l, base) = layers_structural(&graph);
+            let (_l2, cand) = layers_preallocated_structural(&graph);
+            println!(
+                "P2B_RAW graph={name} baseline_p2={:?} baseline_p2b={:?} baseline_all={:?} candidate_p2={:?} candidate_p2b={:?} candidate_all={:?}",
+                a_p2, a_p2b, a_all, b_p2, b_p2b, b_all
+            );
+            println!(
+                "P2B_AB graph={name} baseline p2={:?} p2b={:?} all={:?} candidate p2={:?} p2b={:?} all={:?} base_cap total={} length={} initial={} grows={} nonempty={} maxout={} cand_cap total={} length={} initial={} grows={} nonempty={} maxout={}",
+                a.0,
+                a.1,
+                a.2,
+                b.0,
+                b.1,
+                b.2,
+                base.total_capacity,
+                base.total_length,
+                base.initial_allocations,
+                base.capacity_grows,
+                base.nonempty_nodes,
+                base.max_outdegree,
+                cand.total_capacity,
+                cand.total_length,
+                cand.initial_allocations,
+                cand.capacity_grows,
+                cand.nonempty_nodes,
+                cand.max_outdegree
+            );
+        }
+    }
+
+    #[test]
+    fn p2b_preallocated_adjacency_is_equivalent_on_dag_skew_duplicates_and_cycles() {
+        fn adversarial() -> GraphDisplay {
+            let nodes: Vec<Arc<GraphNodeDisplay>> = (0..=5)
+                .map(|index| {
+                    Arc::new(GraphNodeDisplay {
+                        identity: desktop_protocol::NodeId::fixture(format!("node/{index}")),
+                        label: Arc::from(format!("Node {index}")),
+                        layer: None,
+                    })
+                })
+                .collect();
+            let mut edges = Vec::new();
+            let mut push = |from: usize, to: usize| {
+                edges.push(Arc::new(GraphEdgeDisplay {
+                    identity: desktop_protocol::EdgeId::fixture(format!(
+                        "adv/{from}-{to}-{}",
+                        edges.len()
+                    )),
+                    from: desktop_protocol::NodeId::fixture(format!("node/{from}")),
+                    to: desktop_protocol::NodeId::fixture(format!("node/{to}")),
+                    from_label: Arc::from("from"),
+                    to_label: Arc::from("to"),
+                    kind: None,
+                }))
+            };
+            push(0, 1);
+            push(0, 1);
+            push(0, 2);
+            push(1, 2);
+            push(2, 1);
+            push(3, 4);
+            push(4, 4);
+            push(1, 3);
+            push(5, 1);
+            edges.push(Arc::new(GraphEdgeDisplay {
+                identity: desktop_protocol::EdgeId::fixture("adv/missing-to"),
+                from: desktop_protocol::NodeId::fixture("node/0"),
+                to: desktop_protocol::NodeId::fixture("node/999"),
+                from_label: Arc::from("from"),
+                to_label: Arc::from("to"),
+                kind: None,
+            }));
+            edges.push(Arc::new(GraphEdgeDisplay {
+                identity: desktop_protocol::EdgeId::fixture("adv/missing-from"),
+                from: desktop_protocol::NodeId::fixture("node/999"),
+                to: desktop_protocol::NodeId::fixture("node/0"),
+                from_label: Arc::from("from"),
+                to_label: Arc::from("to"),
+                kind: None,
+            }));
+            GraphDisplay {
+                graph_ref: GraphRef {
+                    graph_id: GraphId::fixture("graph/adversarial"),
+                    version: 1,
+                    digest: ArtifactDigest::fixture("digest/adversarial"),
+                },
+                source_revision: Counter::from_u128(7),
+                nodes: nodes.into(),
+                edges: edges.into(),
+            }
+        }
+        for graph in [
+            ten_thousand_node_graph(100, 100),
+            skewed_node_graph(),
+            adversarial(),
+        ] {
+            let baseline = layers(&graph);
+            let candidate = layers_preallocated(&graph);
+            assert_eq!(candidate.depth, baseline.depth);
+            assert_eq!(candidate.cyclic, baseline.cyclic);
+            let nodes: std::collections::HashSet<(GraphRef, desktop_protocol::NodeId)> =
+                std::collections::HashSet::new();
+            let edges: std::collections::HashSet<(GraphRef, desktop_protocol::EdgeId)> =
+                std::collections::HashSet::new();
+            let a = diagram(&graph, &baseline, &nodes, &edges);
+            let b = diagram(&graph, &candidate, &nodes, &edges);
+            assert_eq!(b, a, "diagram must be identical");
+        }
+    }
+
     #[test]
     fn the_p2b_adjacency_preserves_order_duplicates_and_skips_missing_endpoints() {
         let base = graph(3, "digest/three", 8);
