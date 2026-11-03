@@ -18,6 +18,10 @@
     "export-stage-separation.txt": {
       "sha256": "sha256:923af705be1f8c4645aeb5396ede2e73bbe1fcd5592039204361c3982570831a",
       "bytes": 1980
+    },
+    "export-boundary.txt": {
+      "sha256": "sha256:091ea63f42c18b34b9893b5de28c006e716d9f1c3efd45ad62118a4198f8793f",
+      "bytes": 1865
     }
   },
   "stage_separation": {
@@ -27,5 +31,12 @@
     "conclusion": "The accessibility path is cleared: dispatch, handler and task start all happen. Where the flow stops after the request line is not determined. Two snapshots of the top-level window list, taken before and after, show no new window at the two observation points; a window appearing only between them is not excluded.",
     "what_is_not_established": "Whether the flow enters cx.update and the receiver await, whether the platform dialog call fails or hangs, and whether a window appeared only between the two snapshots.",
     "next_boundary": "Instrument the cx.update and receiver.await boundary."
+  },
+  "boundary_measurement": {
+    "base_commit": "70c7099577d50e04457e18c37cb5023d112abdf6",
+    "exe_sha256": "sha256:04fea5c24edeb9006c3ed77c1470fbb318d9dfd64c0847d47fdf52ad4b40829a",
+    "result": "DECISIVE AT THE AWAIT. The trace reads action=reached, task=started, dialog=requested, dialog=opened - so the update call that starts the save dialog returned and the receiver exists - and then stops: there is no dialog=returned. The flow therefore waits forever on the receiver await; the dialog never delivers a result in this session, and the full top-level window list is unchanged before and after.",
+    "conclusion": "The accessibility path, the trial guard, the spawned task and the call into the platform dialog all succeed. The failure is the platform save dialog never producing a result here. That matches the earlier finding that this session cannot give the window focus, since a file dialog is modal on its owner; it is still not proven that lost focus is the mechanism.",
+    "not_established": "Why no result is delivered - whether the dialog failed to open silently, opened invisibly, or is waiting for input that cannot arrive. gpui's dialog implementation was not inspected."
   }
 }

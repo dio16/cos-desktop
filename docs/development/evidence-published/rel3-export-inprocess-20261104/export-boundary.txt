@@ -1,0 +1,38 @@
+export stage separation, with every top-level window class recorded
+exe_sha256: 04fea5c24edeb9006c3ed77c1470fbb318d9dfd64c0847d47fdf52ad4b40829a
+base_commit: 70c7099577d50e04457e18c37cb5023d112abdf6
+--- windows before ---
+count: 11
+  [0] class=Shell_TrayWnd pid=14420 label=(foreign window)
+  [1] class=Zed::Window pid=52044 label=COS Desktop
+  [2] class=Chrome_WidgetWin_1 pid=7992 label=(foreign window)
+  [3] class=Chrome_WidgetWin_1 pid=41932 label=(foreign window)
+  [4] class=Chrome_WidgetWin_1 pid=51824 label=(foreign window)
+  [5] class=Chrome_WidgetWin_1 pid=35004 label=(foreign window)
+  [6] class=Chrome_WidgetWin_1 pid=44480 label=(foreign window)
+  [7] class=CabinetWClass pid=14420 label=(foreign window)
+  [8] class=Shell_SecondaryTrayWnd pid=14420 label=(foreign window)
+  [9] class=CEF-OSC-WIDGET pid=19384 label=(foreign window)
+  [10] class=Progman pid=14420 label=(foreign window)
+--- windows after ---
+count: 11
+  [0] class=Shell_TrayWnd pid=14420 label=(foreign window)
+  [1] class=Zed::Window pid=52044 label=COS Desktop
+  [2] class=Chrome_WidgetWin_1 pid=7992 label=(foreign window)
+  [3] class=Chrome_WidgetWin_1 pid=41932 label=(foreign window)
+  [4] class=Chrome_WidgetWin_1 pid=51824 label=(foreign window)
+  [5] class=Chrome_WidgetWin_1 pid=35004 label=(foreign window)
+  [6] class=Chrome_WidgetWin_1 pid=44480 label=(foreign window)
+  [7] class=CabinetWClass pid=14420 label=(foreign window)
+  [8] class=Shell_SecondaryTrayWnd pid=14420 label=(foreign window)
+  [9] class=CEF-OSC-WIDGET pid=19384 label=(foreign window)
+  [10] class=Progman pid=14420 label=(foreign window)
+--- stderr ---
+  preview-trace action=reached
+  preview-trace build=started
+  preview-trace build=finished
+  preview-trace install=accepted
+  export-trace action=reached
+  export-trace task=started
+  export-trace dialog=requested
+  export-trace dialog=opened

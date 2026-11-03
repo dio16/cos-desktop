@@ -4353,6 +4353,9 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Conclusion:** the **accessibility path is cleared** - dispatch, handler and task start all happen. Where the flow stops after the request line is **undetermined**; the next boundary to measure is `cx.update` and the `receiver.await`.
 - **Not established:** whether the platform dialog call fails silently or hangs, and gpui's dialog implementation was not inspected.
 
+- **Boundary measurement (`70c7099`):** the trace now reads `action=reached`, `task=started`, `dialog=requested`, **`dialog=opened`** - so the update call that starts the save dialog **returned** and the receiver exists - and then stops: **there is no `dialog=returned`**. The flow therefore waits on the receiver await forever; the dialog never delivers a result here and the top-level window list is unchanged before and after. Every earlier stage (dispatch, guard, task start, the call into the platform dialog) is now cleared, and the failure is located at **the platform dialog never producing a result**.
+- **Plausible mechanism, not proven:** this session cannot give the window focus (19.215), and a file dialog is modal on its owner; that fits, but lost focus as the mechanism is **not** established, and whether the dialog opened invisibly or failed silently is unknown. gpui's dialog implementation was not inspected.
+
 ### 19.225 In-process export trace: the handler runs, the flow stops inside (2026-11-04)
 
 - **Instrumentation:** with `COS_EXPORT_TRACE=1`, `export_support` writes closed ASCII tokens to **stderr** at handler entry, the payload decision, the dialog result, the writer result and the status update. Default is silent; no path, file name, report body or OS error is written; saving, the state machine, redaction and permissions are unchanged.
