@@ -1,0 +1,39 @@
+{
+  "measurement": "MP-REL3 existing-file refusal Native diagnosis at a9e4d15",
+  "base_commit": "a9e4d156635a8429df7a84258218dd2920e024c5",
+  "exe_sha256": "sha256:56bc66ab4512e62485e73f3d086bc009490e372bfadc9259576f8c407d227682",
+  "A": "PASS: environment fixed (commit, exe SHA, Windows 10.0.26300.0, DPI 96, isolated LOCALAPPDATA).",
+  "B": "PASS: baseline status was read after a fresh success attempt (it showed the generic failure, not \u4fdd\u5b58\u3057\u307e\u3057\u305f; file still 573 bytes and matched preview).",
+  "C": "PASS observation: save dialog #32770 \u540d\u524d\u3092\u4ed8\u3051\u3066\u4fdd\u5b58, then overwrite confirmation #32770 \u540d\u524d\u3092\u4ed8\u3051\u3066\u4fdd\u5b58\u306e\u78ba\u8a8d with \u306f\u3044(Y)/\u3044\u3044\u3048(N). Invoking \u306f\u3044 closed both dialogs.",
+  "D": "NOT_PROVABLE: after \u306f\u3044, existing file SHA-256 stayed identical and no temp-file FS event was seen; status changed to \u4fdd\u5b58\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f. Whether prompt_for_new_path returned and write_atomic returned AlreadyExists versus another error cannot be distinguished without an internal signal.",
+  "E": "NOT_PROVABLE: Native UIA status was \u4fdd\u5b58\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f, not \u540c\u540d\u306e\u30d5\u30a1\u30a4\u30eb\u304c\u5b58\u5728\u3057\u307e\u3059. Unit mapping for AlreadyExists is PASS, so this is either an unmapped error variant or a status display issue.",
+  "F": "PASS: existing3.txt SHA-256 B4A53CD8... unchanged, size 9, content ORIGINAL3.",
+  "G": "Evidence below; SHA-256 and git blobs in record.json. Failure classification: OS overwrite confirmation definitely appeared (case 1 for the prompt); after Yes, writer/error identity is unresolved (case 3), so no PASS for AlreadyExists.",
+  "unresolved": [
+    "Shift+Tab NOT_RUN",
+    "publication stale rejection NOT_RUN",
+    "reproduction procedure not re-authored this slice"
+  ],
+  "files": {
+    "diag.txt": {
+      "sha256": "sha256:b5a5b706df36585dd1b1b809b368dff1f6c5ed4c68335c330c5f7d27d5c69c49",
+      "git_blob": "4be143a8227e124ffc27063256e1ea39dbe2367e",
+      "bytes": 1100
+    },
+    "environment.txt": {
+      "sha256": "sha256:25226a9882518c299bbbe38ba5ebb28edf42010c31594ab5d99b50d80366187b",
+      "git_blob": "1e9b9204f4a5d2fa6f8c500e8f93a6d7d9b329a2",
+      "bytes": 157
+    },
+    "existing3.txt": {
+      "sha256": "sha256:b4a53cd8361016688cb6598397e0ce8d163d9d137e39f7043fed045f10410d9e",
+      "git_blob": "0a6ed3ea4e2a2b3b24c52c4753e5796f51b281ed",
+      "bytes": 9
+    },
+    "ok.txt": {
+      "sha256": "sha256:67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
+      "git_blob": "38aff221adb3d4322e9d2e2500880a7cd0752f71",
+      "bytes": 573
+    }
+  }
+}

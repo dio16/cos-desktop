@@ -4135,3 +4135,14 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **G:** evidence under `docs/development/evidence-published/rel3-native-status-e5f3c27/` with SHA-256 and Git blob IDs in `record.json`; `.txt` only. Screen-reader reading quality remains **NOT_MEASURED**.
 - **Verification:** `cargo test -p desktop-gpui` 115 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` succeeds. **MP-REL3 incomplete; product acceptance NOT_RUN.**
 
+### 19.210 MP-REL3 existing-file refusal Native diagnosis (2026-11-02)
+
+- **A PASS:** base `a9e4d156635a8429df7a84258218dd2920e024c5`; release exe `sha256:56bc66ab…`; Windows `10.0.26300.0`; DPI 96; isolated `LOCALAPPDATA`; fixture `task-184`.
+- **B:** baseline status was read after a fresh success attempt; the saved file was 573 bytes and byte-identical to the preview (`67f69633…`) although UIA showed the generic failure message — a status/message inconsistency to investigate separately, not a save failure.
+- **C PASS observation:** the save dialog `#32770 名前を付けて保存` appeared, then overwrite confirmation `#32770 名前を付けて保存の確認` with `はい(Y)` / `いいえ(N)`. Invoking `はい` closed both dialogs.
+- **Cause classification:** the initial block is **case 1** (OS overwrite confirmation) up to the Yes click. After Yes, the existing file SHA-256 stayed identical and no temp-file event was observed, but the status became the generic `保存できませんでした`; therefore whether `prompt_for_new_path()` returned and `write_atomic()` returned `AlreadyExists` vs another error is **NOT_PROVABLE (case 3)**. Native `AlreadyExists` text was not obtained.
+- **D/E NOT_PROVABLE:** no direct instrumentation exists for the dialog return value or writer variant; UIA exposed only the generic message. **Do not fix in this slice; a separate slice should add a closed, non-content observability signal or reproduce the exact variant.**
+- **F PASS:** `existing3.txt` was unchanged (SHA-256 `b4a53cd8…`, 9 bytes, `ORIGINAL3`); no destructive overwrite.
+- **G:** evidence under `docs/development/evidence-published/rel3-existing-a9e4d15/` with `.txt` files and SHA-256/Git blob IDs in `record.json`.
+- **Residual:** Shift+Tab, publication stale rejection and reproduction-procedure cleanup remain NOT_RUN / pending. **MP-REL3 incomplete; product acceptance NOT_RUN.**
+
