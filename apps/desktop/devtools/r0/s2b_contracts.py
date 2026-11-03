@@ -378,10 +378,11 @@ def endpoint_matrix(capture: dict) -> dict:
                "reason": "RETAINED_SOURCE_RECORD" if counts[kind] else "NO_RETAINED_VALID_RECORD"}
         for name, kind in SUPPORTED.items()
     }
-    result["platform-submission-start"] = {
-        "status": "OBSERVED" if counts[3] else "NOT_MEASURED",
-        "reason": "RETAINED_SOURCE_RECORD" if counts[3] else "NO_RETAINED_VALID_RECORD",
-    }
+    for name in ("platform-submission-start", "platform-submission-end"):
+        result[name] = {
+            "status": "OBSERVED" if counts[3] else "NOT_MEASURED",
+            "reason": "RETAINED_SOURCE_RECORD" if counts[3] else "NO_RETAINED_VALID_RECORD",
+        }
     result.update({name: {"status": "NOT_MEASURED", "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"}
                    for name in MISSING})
     return result

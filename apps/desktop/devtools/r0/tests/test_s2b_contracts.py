@@ -362,19 +362,23 @@ class S2BWireContract(unittest.TestCase):
     def test_platform_submission_start_is_derived_from_retained_kind3(self) -> None:
         value = s2b.validate_capture(example())
         matrix = s2b.endpoint_matrix(value)
-        self.assertEqual(matrix["platform-submission-start"],
-                         {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"})
+        for endpoint in ("platform-submission-start", "platform-submission-end"):
+            self.assertEqual(matrix[endpoint],
+                             {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"})
+        s3_native_replay.require_endpoints(
+            {"observation_version": 3, "endpoints": matrix}, value)
         without_present = copy.deepcopy(value)
         without_present["summary"]["kind_counts"][3] = 0
         matrix = s2b.endpoint_matrix(without_present)
-        self.assertEqual(matrix["platform-submission-start"],
-                         {"status": "NOT_MEASURED", "reason": "NO_RETAINED_VALID_RECORD"})
+        for endpoint in ("platform-submission-start", "platform-submission-end"):
+            self.assertEqual(matrix[endpoint],
+                             {"status": "NOT_MEASURED", "reason": "NO_RETAINED_VALID_RECORD"})
 
     def test_old_capture_without_platform_submission_start_still_validates(self) -> None:
         value = s2b.validate_capture(example())
         expected = s2b.endpoint_matrix(value)
         legacy = {name: item for name, item in expected.items()
-                  if name != "platform-submission-start"}
+                  if name not in ("platform-submission-start", "platform-submission-end")}
         s3_native_replay.require_endpoints(
             {"observation_version": 1, "endpoints": legacy}, value)
 

@@ -225,7 +225,7 @@ def observation_document(manifest: dict, manifest_digest: str, build_digest: str
     # All identity content is closed technical data; never copy machine metadata,
     # fixture contents, file paths, input text, Task IDs or arbitrary labels.
     return {
-        "observation_version": 2,
+        "observation_version": 3,
         "identity": {
             "source_commit": manifest["identity"]["repository"]["sha"],
             "manifest_sha256": manifest_digest,
@@ -306,10 +306,13 @@ def verify_bundle(manifest_path: Path, output: Path, timeout_ms: int) -> dict:
         actual = s2b.parse_bytes(observation_bytes, contracts.MAX_MANIFEST_BYTES)
         expected = observation_document(manifest, driver.sha256_file(manifest_path), build_digest,
                                         identity["observer_source_sha256"], entry, capture, capture_bytes, output)
-        if actual.get("observation_version") == 1:
-            # Legacy archives predate the derived platform-submission-start endpoint.
-            expected["observation_version"] = 1
-            expected["endpoints"].pop("platform-submission-start", None)
+        version = actual.get("observation_version")
+        if version in (1, 2):
+            # Legacy archives predate the derived platform-submission endpoints.
+            expected["observation_version"] = version
+            expected["endpoints"].pop("platform-submission-end", None)
+            if version == 1:
+                expected["endpoints"].pop("platform-submission-start", None)
         if json.dumps(actual, sort_keys=True, separators=(",", ":")) != json.dumps(expected, sort_keys=True, separators=(",", ":")):
             s2b.fail("OBSERVATION_BINDING")
         require_marker(output, "s2b-committed-" + hashlib.sha256(observation_bytes).hexdigest())

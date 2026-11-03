@@ -147,7 +147,7 @@ def validate_scenario(data: dict[str, bytes], name: str) -> tuple[dict, dict, di
         "endpoints", "coverage", "frame_identity", "cross_domain_latency", "loss_scope",
         "unobserved_source_loss"})
     require(type(observation["observation_version"]) is int
-            and observation["observation_version"] in (1, 2), "VERSION")
+            and observation["observation_version"] in (1, 2, 3), "VERSION")
     bound = s2b.object_fields(observation["identity"], {"source_commit", "manifest_sha256",
         "build_sha256", "observer_source_sha256", "executable_sha256", "helper_sha256",
         "helper_source_sha256", "fixture_sha256", "execution_id", "pid", "gpui_pin", "feature"})
@@ -332,12 +332,15 @@ def require_endpoints(observation: dict, capture: dict) -> None:
     expected = s2b.endpoint_matrix(capture)
     actual = observation.get("endpoints")
     require(isinstance(actual, dict), "OBSERVATION_BINDING")
-    if observation.get("observation_version") == 2:
+    version = observation.get("observation_version")
+    if version == 3:
         require(actual == expected, "OBSERVATION_BINDING")
-    else:
-        expected_v1 = {name: value for name, value in expected.items()
-                       if name != "platform-submission-start"}
-        require(actual == expected_v1, "OBSERVATION_BINDING")
+        return
+    legacy = {name: value for name, value in expected.items()
+              if name != "platform-submission-end"}
+    if version == 1:
+        legacy.pop("platform-submission-start", None)
+    require(actual == legacy, "OBSERVATION_BINDING")
 
 
 def require_frame_identity(observation: dict, capture: dict) -> None:

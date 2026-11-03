@@ -3866,3 +3866,12 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Evidence:** `evidence-published/r0a-capture-latest/a1-0c6-*` plus `record.json` block `wm_close_runs.local-accounting-0c6` with digests, correspondence, endpoint matrix, frame identity and local accounting.
 - **State:** Native measurement established for this approved build; no PASS claim. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.185 MP-R0A platform-submission-end derivation (2026-11-02)
+
+- **Definition:** `platform-submission-end` = GPUI `PresentTiming.present_end`, retained as kind 3 `end_ns`. It is **not** a DXGI `Present` return, GPU execution completion, or display completion; it is the end of the platform submission call.
+- **Matrix:** derived from validated `kind_counts[3]` exactly like `platform-submission-start`: `OBSERVED / RETAINED_SOURCE_RECORD` with at least one retained kind 3, otherwise `NOT_MEASURED / NO_RETAINED_VALID_RECORD`. No independent event is claimed.
+- **Schema:** new observations use `observation_version 3`; the seven existing endpoint meanings, frame identity, clock domains and the 256 cap are unchanged.
+- **Version compatibility (both `verify_bundle` and `require_endpoints`, exact match):** v1 = full matrix minus both derived endpoints; v2 = full matrix minus `platform-submission-end`; v3 = full matrix required. Missing, extra, or altered keys/values are refused with `OBSERVATION_BINDING`.
+- **Tests:** derived endpoint OBSERVED/NOT_MEASURED; validated-capture v3 exact match; v1/v2/v3 matrices accepted; each version rejects a missing required endpoint and an extra key; v3 `status`/`reason` tampering on either derived endpoint rejected. `pytest apps/desktop/devtools/r0/tests -q` 354 passed / 12 skipped / 1 failed — the sole failure is the known live-manifest `driver_hash` mismatch (manifest not modified).
+- **State:** derivation implementation complete; **Native measurement NOT_RUN** (needs new build/approval/identity/capture). MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
+

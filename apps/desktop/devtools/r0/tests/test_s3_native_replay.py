@@ -42,43 +42,45 @@ class NativePublishedReplay(unittest.TestCase):
             replay.validate_scenario(data, "keyboard")
         self.assertEqual(str(caught.exception), code)
 
-    def test_platform_submission_start_is_recomputed_or_rejected(self):
+    def test_platform_submission_endpoints_are_recomputed_or_rejected(self):
         capture = {"summary": {"kind_counts": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]}}
         expected = s2b.endpoint_matrix(capture)
-        legacy_matrix = {name: value for name, value in expected.items()
-                         if name != "platform-submission-start"}
-        legacy = {"observation_version": 1, "endpoints": legacy_matrix}
-        replay.require_endpoints(legacy, capture)
-        current = {"observation_version": 2, "endpoints": dict(expected)}
-        replay.require_endpoints(current, capture)
+        v2 = {name: value for name, value in expected.items()
+              if name != "platform-submission-end"}
+        v1 = {name: value for name, value in v2.items()
+              if name != "platform-submission-start"}
+        replay.require_endpoints({"observation_version": 1, "endpoints": v1}, capture)
+        replay.require_endpoints({"observation_version": 2, "endpoints": v2}, capture)
+        replay.require_endpoints({"observation_version": 3, "endpoints": dict(expected)}, capture)
         for key in ("status", "reason"):
-            mutated = {"observation_version": 2,
-                       "endpoints": dict(expected)}
-            mutated["endpoints"]["platform-submission-start"] = dict(expected["platform-submission-start"])
-            mutated["endpoints"]["platform-submission-start"][key] = "WRONG"
-            with self.assertRaises(s2b.ObservationError) as caught:
-                replay.require_endpoints(mutated, capture)
-            self.assertEqual(str(caught.exception), "OBSERVATION_BINDING")
+            for endpoint in ("platform-submission-start", "platform-submission-end"):
+                mutated = {"observation_version": 3, "endpoints": dict(expected)}
+                mutated["endpoints"][endpoint] = dict(expected[endpoint])
+                mutated["endpoints"][endpoint][key] = "WRONG"
+                with self.assertRaises(s2b.ObservationError) as caught:
+                    replay.require_endpoints(mutated, capture)
+                self.assertEqual(str(caught.exception), "OBSERVATION_BINDING")
 
-    def test_v1_requires_full_legacy_matrix_and_v2_requires_new_endpoint(self):
+    def test_each_version_requires_its_full_matrix(self):
         capture = {"summary": {"kind_counts": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]}}
         expected = s2b.endpoint_matrix(capture)
-        legacy_matrix = {name: value for name, value in expected.items()
-                         if name != "platform-submission-start"}
-        replay.require_endpoints(
-            {"observation_version": 1, "endpoints": legacy_matrix}, capture)
-        missing = dict(legacy_matrix)
-        missing.pop("local-notify")
-        with self.assertRaises(s2b.ObservationError) as caught:
-            replay.require_endpoints(
-                {"observation_version": 1, "endpoints": missing}, capture)
-        self.assertEqual(str(caught.exception), "OBSERVATION_BINDING")
-        current = dict(expected)
-        current.pop("platform-submission-start")
-        with self.assertRaises(s2b.ObservationError) as caught:
-            replay.require_endpoints(
-                {"observation_version": 2, "endpoints": current}, capture)
-        self.assertEqual(str(caught.exception), "OBSERVATION_BINDING")
+        v2 = {name: value for name, value in expected.items()
+              if name != "platform-submission-end"}
+        v1 = {name: value for name, value in v2.items()
+              if name != "platform-submission-start"}
+        for version, matrix in ((1, v1), (2, v2), (3, dict(expected))):
+            missing = dict(matrix)
+            missing.pop("local-notify")
+            with self.assertRaises(s2b.ObservationError) as caught:
+                replay.require_endpoints(
+                    {"observation_version": version, "endpoints": missing}, capture)
+            self.assertEqual(str(caught.exception), "OBSERVATION_BINDING")
+            extra = dict(matrix)
+            extra["unexpected"] = {"status": "OBSERVED", "reason": "x"}
+            with self.assertRaises(s2b.ObservationError) as caught:
+                replay.require_endpoints(
+                    {"observation_version": version, "endpoints": extra}, capture)
+            self.assertEqual(str(caught.exception), "OBSERVATION_BINDING")
 
     def test_frame_identity_must_equal_capture_recomputation(self):
         capture = {"records": [{"frame_id": 7}]}
