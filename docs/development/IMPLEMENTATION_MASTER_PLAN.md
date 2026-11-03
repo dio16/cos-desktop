@@ -4005,6 +4005,14 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Not measured:** Narrator/NVDA reading quality remains `NOT_MEASURED`; no screen-reader claim is made. Other UIA properties (ValuePattern) are not required for `Role::Label`.
 - **Verification:** fmt OK; clippy 0 issues; `cargo test -p desktop-gpui` 109 passed / 0 failed. No new Gate definition; the existing independent Gate remains the Lead's decision. MP-AX1/AX2 overall remain incomplete.
 
+### 19.199 Owner blanket approval of every outstanding decision (2026-11-02, direct instruction)
+
+- **Instruction (verbatim):** 「未承認のものはすべて承認する。」
+- **What this decides:** every item previously recorded as owner-pending or owner-gated is now **approved in principle**, including the open items of section 19.196 - crash-report inclusion, default filename and folder, whether export is reachable from the diagnostics panel, retention duration/rotation, and the log-subsystem split - and the export implementation itself (DC-MP-REL3), which section 19.196 could only record as a candidate.
+- **How the concrete values are fixed:** the approval names no value per item, so each decision adopts **the value already written in the corresponding candidate design or recommendation**; where no candidate exists the item stays listed as "approved in principle, value to be recorded before implementation" and must not be presented as settled.
+- **What it does not do:** it is **not** an implementation, a verification or an acceptance. Every approved item still needs an implementation slice, the deterministic gates and the external review, and it grants nothing that depends on external inputs - a signing certificate, a publisher identity, deployed Runtime contracts or a physical-device matrix cannot be approved into existence.
+- **Unchanged statements:** MP-R0A, MP-FLOW2, MP-SEC2, MP-REL1/REL3, MP-AX1/AX2, MP-IMG2/IMG3, MP-R0B, MP-RT1 and MP-RT2 all stay incomplete; product acceptance stays NOT_RUN; screen-reader quality, GPU/present performance and bit reproducibility stay not measured.
+
 ### 19.198 MP-FLOW2 P2b preallocated adjacency A/B (2026-11-02)
 
 - **Baseline/product path:** `layers_inner` now takes an internal `AdjacencyMode`; product `layers`/`layers_phased`/`layers_structural` use `Baseline` unchanged. A test-only `Preallocated` mode counts out-degrees, allocates `Vec::with_capacity` per existing endpoint (duplicates kept, missing endpoints skipped, order unchanged, zero-degree nodes get zero capacity, overflow falls back to empty), and folds prepass/alloc time into P2b. No algorithm duplicate.
