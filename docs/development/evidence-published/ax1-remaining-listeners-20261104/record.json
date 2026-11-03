@@ -5,11 +5,12 @@
   "windows": "10.0.26300.0",
   "result": "NOT EXERCISED NATIVELY. On the initial surface only task-search was present; it exposes ValuePattern and not InvokePattern, which is expected for a text field, so the invoke threw. surface-switcher, flow-search, compare-change-a, compare-close, stop-request and stop-reconcile were absent because they belong to other surfaces, and reaching those needs navigation this session cannot deliver. The change is therefore verified by the unit tests and the Gate only, not by a native activation.",
   "what_this_means": "Adding the listener is justified by the preview-button evidence - the same defect class, fixed and measured - but for these eight controls the fix is unmeasured. No claim is made that they now respond to accessibility activation.",
-  "guard_limitation": "The regression guard is a synchronised manual list plus a count, not a structural invariant over every on_click in the file, so a future element could still be added without a listener.",
+  "guard_limitation": "The regression guard is a synchronised manual list plus a count, not a structural invariant. Worse, its assertions search the whole source text, which includes the test's own literals, so deleting a handler from the widget could still leave the test passing.",
   "files": {
     "invoke-attempt.txt": {
       "sha256": "sha256:29d17e6c90b9150355af13c569706b436675f98916eb66516fe050938b5116b7",
       "bytes": 432
     }
-  }
+  },
+  "exclusions": "Five click targets were left out, and the earlier reason given for them - that they have no stable id - was wrong: they carry .id and .accessibility_id already. What they lack is a handler shape that maps onto a plain Click action without deciding what activation should do on their behalf, since their closures carry click keys and entity handles. One match, flow-diagram-region, was a test string rather than a real element."
 }

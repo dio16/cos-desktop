@@ -4390,4 +4390,5 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Structural guard:** a manual-list synchronization test checks all eight migrated handlers are present and that at least 11 explicit a11y Click listeners exist (3 diagnostics/export + 8 migrated). This is not yet a full element-by-element invariant over every `.on_click`.
 - **Tests:** `cargo test -p desktop-gpui` 122 passed / 0 failed; fmt OK; clippy 0 issues.
 - **Native:** not claimed (Lead may check). Tab reach, save dialog and screen-reader quality remain unmeasured. MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
+- **Guard limitation, corrected:** the test asserts over the whole source text including its own literals, so deleting a widget handler can still leave it green; it is a synchronised list, not a structural invariant.
 
