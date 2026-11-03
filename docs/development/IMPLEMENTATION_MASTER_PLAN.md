@@ -3562,3 +3562,17 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Tests:** `apps/desktop/devtools/r0/tests/test_s2b_contracts.py` → **32 passed, 1 failed**. The failure is the pre-existing known item `test_live_manifest_and_build_metadata_name_the_current_consumer_source`: the live manifest records `driver_hash` `da8b69e3…39884` while the current consumer source hashes `3e0bec1d…47d9`. **This remains open** and was not resolved here; refreshing the live manifest belongs to a later slice.
 - **State:** reaching **`APPROVAL_REGISTERED`**. Native capture **NOT_RUN**, live manifest update **NOT_RUN**, R0A overall **IN_PROGRESS**, product acceptance **NOT_RUN**.
 - **Limits:** ledger registration only - no launch, no `driver.launch()`, no capture, no manifest rewrite, no change to `SOURCE_IDENTITY` verification, no Runtime/fixture/DB change, and no new Gate (the R0 contract suite is the deterministic check for this data change).
+
+### 19.163 MP-R0A native capture attempt with approved 9c5130c candidates (2026-11-02)
+
+- **Identity pre-check (PASS):** `driver.approved_digests()` resolves 13 entries; for product commit `9c5130c9efd4eb491301da8d36fb5fee8258561a` exactly two entries exist with unique executable digests — A0 `sha256:b00e12aed592f7cf4029fe0410dee0ab7c4de4cc95ab99c6461828f536ea84bc`, A1 `sha256:2b125c9bd08ba33d32d8d194026d885a038889551db08639989fff8181979eba`; helper `sha256:5f187a70b9db85acf3d0c07ff77b33d75ee3ac2faffac5d16cc6f41a3174edf0`, protocol 2; helper source digest `sha256:5b585f8ea1adcea540fab97adff9449c0e2ea88af97e29d3f97d4bac522c8058` matches `driver.helper_source_digest()`. Re-hashed files under `target/r0a-candidates-9c5130c/` match all three digests.
+- **Attempted commands** (isolated absolute output/profile under `target/`; fixture mode only):
+  - A0: `s2b_capture.py --manifest manifests/s2b-default-a0.json --executable target/r0a-candidates-9c5130c/a0/cos-desktop.exe --helper .../helper/r0_owner.exe --fixture fixtures/s2b-wire-v1.json --output-dir target/r0a-native-a0 --profile target/r0a-native-a0-profile`
+  - A1: same with `manifests/s2b-feature-a1.json` and `a1/cos-desktop.exe`.
+- **Result: NOT_RUN (refused, fail-closed; no workaround applied).**
+  - A0 rejected by `s2b_contracts.validate_manifest`: `INSTRUMENTATION_IDENTITY` — manifest `identity.build.features` is `[]`, while the validator requires `["r0-s2b-instrumentation"]`.
+  - A1 rejected by `SOURCE_IDENTITY` — manifest `driver_hash` (`da8b69e3…`) differs from the current live `source_digest()`; this is the residual §19.162 live-manifest driver-hash mismatch and was **not** resolved by editing manifests or the build record.
+  - Additional blocker visible without modification: live `s2b-build.json` records `source_commit bcce8167…` / executable `850b73a0…`, not the approved `9c5130c…` candidates; `binding()` would therefore reject `BUILD_IDENTITY`/`APPROVAL` even after manifest validation.
+- **Artifacts:** both isolated output directories are empty; no capture, observation, ledger or build artifact was published; no partial success claimed. Approval ledger, live manifests, `s2b-build.json` and contracts were not modified.
+- **State:** MP-R0A native capture stays **NOT_RUN**; the evidence is limited to the approved-candidate identity pre-check. Registered candidates derive from `9c5130c`; the current `dev` HEAD S2B measurement is **not** claimed possible.
+
