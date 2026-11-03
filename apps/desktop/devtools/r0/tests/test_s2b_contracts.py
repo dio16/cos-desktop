@@ -554,10 +554,15 @@ class S2BWireContract(unittest.TestCase):
         import contracts, json, tempfile, r0c_driver
         document = contracts.load_document(
             str(ROOT / "manifests/s2b-feature-a1.json"), contracts.MAX_MANIFEST_BYTES)
+        # The stored bundle was captured from an older consumer revision: the previous
+        # recorded pair, not whatever the live tree happens to be. Now that the live
+        # manifests name the current source, that older identity is supplied explicitly.
+        older = "sha256:da8b69e370d80b13711bab079a9a6b01965cf65ed61db83f4e91d102c3539884"
+        document["identity"]["driver_hash"] = older
         recorded = document["identity"]["driver_hash"]
-        # The stored bundle was captured from an older consumer revision.
         self.assertNotEqual(recorded, s2b.source_digest())
         build = contracts.load_document(str(ROOT / "s2b-build.json"), contracts.MAX_MANIFEST_BYTES)
+        build["observer_source_sha256"] = older
         with tempfile.TemporaryDirectory() as work:
             manifest_path = Path(work) / "s2b-feature-a1.json"
             manifest_path.write_text(json.dumps(document), encoding="utf-8")

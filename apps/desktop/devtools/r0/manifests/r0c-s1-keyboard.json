@@ -5,7 +5,7 @@
     "version": 1,
     "family": "keyboard",
     "seed": 7,
-    "fixture_sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52",
+    "fixture_sha256": "sha256:db1cfc8014ad44d3a512415af22ab90523b639de36d606e83247ac109daec2c0",
     "duration_ms": 35000,
     "warmup_ms": 2000,
     "active_start_ms": 2000,
@@ -16,9 +16,9 @@
     ]
   },
   "identity": {
-    "repository_sha": "bcce8167591f6f142232b3c5ca7c5c14c7da5cdf",
-    "executable_sha256": "sha256:850b73a029b80fa8ad49d3cc5ac38a5683df8ae962d0a66f3f4fb282c0141ccb",
-    "helper_sha256": "sha256:4d64f7c3ab8074af0d507c51b70e1a2757de47763c0bf088390df9e4d803b3ec",
+    "repository_sha": "a732adc677cf28b414a5643cb72a519b156de7a1",
+    "executable_sha256": "sha256:f7ec10bded7b3022c05b9140ea946242950f49be8ced9f21b0ac487502703e10",
+    "helper_sha256": "sha256:fefdd0d406f58af50331ad5db682cba7ce16af79516edf3c0d9383f0066c9ca6",
     "gpui_revision": "395def7a067b32ed598fcb3f048969ada9b54942",
     "build_profile": "dev",
     "features": [
