@@ -4279,3 +4279,15 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Consequence:** these two attempts do not settle the preview question, and this control does not establish that automation is unreliable in general. What they do show is that **more UIA attempts will not settle it**. Settling it needs **in-process evidence** - reading the trace from the process rather than through automation - which is the next slice's decision, not something this measurement can supply.
 - **Evidence:** `docs/development/evidence-published/rel3-positive-control-20261104/` with the attempt and its record.
 - **State:** MP-REL3, MP-AX1/AX2, MP-R0A and MP-R0B remain incomplete; product acceptance NOT_RUN.
+
+### 19.221 MP-REL3 in-process preview trace (2026-11-04)
+
+- **Enablement:** only when `COS_PREVIEW_TRACE=1`; default and all other values emit nothing. No production diagnostic route is changed.
+- **Output:** stderr, one ASCII line per event:
+  `preview-trace action=reached`, `preview-trace build=started`, `preview-trace build=finished`, `preview-trace install=<accepted|generation|identity|pending>`.
+  `render` is not emitted because it is an assumption, not a measurement.
+- **Not emitted:** report body, paths, filenames, OS error text, user input, secrets. Tokens are a fixed closed set.
+- **Behavior unchanged:** generation, target identity checks, stale rejection, export/save/redaction/authority paths are untouched; the emitter only writes an env-gated stderr line.
+- **Tests:** env gate accepts only `"1"`; the seven tokens are fixed/ASCII and contain no paths or `SyntheticSecretValue`; existing tests pass. `cargo test -p desktop-gpui` 120 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` OK.
+- **Cause:** still **undetermined**; Native stderr collection is owned by the Lead. MP-REL3 incomplete; product acceptance NOT_RUN.
+

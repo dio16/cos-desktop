@@ -291,6 +291,32 @@ enum InstallOutcome {
     Pending,
 }
 
+#[cfg(test)]
+const PREVIEW_TRACE_TOKENS: [&str; 7] = [
+    "action=reached",
+    "build=started",
+    "build=finished",
+    "install=accepted",
+    "install=generation",
+    "install=identity",
+    "install=pending",
+];
+
+fn preview_trace_enabled(value: Option<&str>) -> bool {
+    value == Some("1")
+}
+
+fn preview_trace_on() -> bool {
+    preview_trace_enabled(std::env::var("COS_PREVIEW_TRACE").ok().as_deref())
+}
+
+/// Emit one fixed, path-free token to stderr only when explicitly enabled.
+fn preview_trace_emit(token: &'static str) {
+    if preview_trace_on() {
+        eprintln!("preview-trace {token}");
+    }
+}
+
 /// Serializes preview requests and rejects stale completions. `generation` changes on
 /// every request and on invalidation, so a delayed older request can never overwrite a
 /// newer result or resurrect a revoked publication.
@@ -1286,6 +1312,7 @@ impl Shell {
             PreviewRender::Absent,
         );
         cx.notify();
+        preview_trace_emit("action=reached");
         let target = self
             .handle
             .as_ref()
@@ -1295,6 +1322,7 @@ impl Shell {
         let version = self.desktop_version.to_string();
         let Some(handle) = self.handle.clone() else {
             // No observation handle: the Desktop-only report is rendered off the UI thread.
+            preview_trace_emit("build=started");
             self.support_task = cx.spawn(async move |this, cx| {
                 let build = cx
                     .background_executor()
@@ -1310,7 +1338,14 @@ impl Shell {
                     })
                     .await;
                 let _ = this.update(cx, |this, cx| {
+                    preview_trace_emit("build=finished");
                     let outcome = this.support_state.complete_outcome(generation, None, build);
+                    preview_trace_emit(match outcome {
+                        InstallOutcome::Accepted => "install=accepted",
+                        InstallOutcome::Generation => "install=generation",
+                        InstallOutcome::Identity => "install=identity",
+                        InstallOutcome::Pending => "install=pending",
+                    });
                     this.preview_trace = preview_trace_line(
                         PreviewAction::Reached,
                         PreviewBuildStage::Finished,
@@ -1332,6 +1367,7 @@ impl Shell {
             return;
         };
         let identity_handle = handle.clone();
+        preview_trace_emit("build=started");
         self.support_task = cx.spawn(async move |this, cx| {
             let build = cx
                 .background_executor()
@@ -1342,7 +1378,14 @@ impl Shell {
                 // publication change can slip between the check and the assignment.
                 let live = Self::current_notice(&identity_handle)
                     .map(|notice| (notice.session_generation, notice.publication_version));
+                preview_trace_emit("build=finished");
                 let outcome = this.support_state.complete_outcome(generation, live, build);
+                preview_trace_emit(match outcome {
+                    InstallOutcome::Accepted => "install=accepted",
+                    InstallOutcome::Generation => "install=generation",
+                    InstallOutcome::Identity => "install=identity",
+                    InstallOutcome::Pending => "install=pending",
+                });
                 this.preview_trace = preview_trace_line(
                     PreviewAction::Reached,
                     PreviewBuildStage::Finished,
@@ -6119,6 +6162,28 @@ mod contrast_scope_tests {
             "render=absent",
         ] {
             let _ = token;
+        }
+    }
+    #[test]
+    fn preview_trace_env_gate_and_closed_tokens_are_stable() {
+        use super::{PREVIEW_TRACE_TOKENS, preview_trace_enabled};
+        assert!(preview_trace_enabled(Some("1")));
+        for value in [None, Some("0"), Some("true"), Some(""), Some(" 1")] {
+            assert!(
+                !preview_trace_enabled(value),
+                "{value:?} must stay disabled"
+            );
+        }
+        assert_eq!(PREVIEW_TRACE_TOKENS.len(), 7);
+        for token in PREVIEW_TRACE_TOKENS {
+            assert!(!token.contains('/'));
+            assert!(!token.chars().any(|character| character == char::from(92)));
+            assert!(!token.contains("SyntheticSecretValue"));
+            assert!(
+                token.starts_with("action=")
+                    || token.starts_with("build=")
+                    || token.starts_with("install=")
+            );
         }
     }
 }
