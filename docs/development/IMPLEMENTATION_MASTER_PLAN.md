@@ -3813,3 +3813,28 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Evidence:** `evidence-published/r0a-capture-latest/a1-5abf-*` plus `record.json` block `wm_close_runs.local-accounting-5abf` (digests, correspondence, frame identity, local accounting).
 - **State:** frame identity Native measurement is established for this approved build; cross-domain remains NOT_MEASURED. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.181 MP-R0A unmeasured frame endpoints: feasibility and measurement-path design (2026-11-02)
+
+- **A — what the existing paths observe:** GPUI's journal exposes `ForegroundEvent::{Input, Draw(FrameTiming), Present(PresentTiming)}`, `FrameStateChange::Pending`, and `IntervalBoundary::{Presented(PresentedFrame), Idle, PowerTransition}` (`gpui/profiler/journal.rs:239-251`; `profiler.rs:788-848`). `FrameTiming` = window, dirty_at, invalidations, draw_start/end; `PresentTiming` = window, present_start/end; `PresentedFrame` is the only Draw↔Present pairing. `r0_probe` adds only local `SurfaceChanged`/`Notify`. All timestamps are the process `std::time::Instant`; no GPU/DWM/display source is attached.
+- **B/C/D — endpoint feasibility (design only, not OBSERVED):**
+
+| Endpoint | Classification | Basis / API | Clock domain |
+|---|---|---|---|
+| `frame-request` | **NOT_AVAILABLE** | journal has no request event; `FrameStateChange::Pending` is dirty metadata, not a request | process Instant |
+| `first-frame` | **FEASIBLE** | first retained kind 2/3 per window from `FrameTiming`/`PresentTiming`; needs explicit "first" semantics in contract | process Instant |
+| `gpu-submission` | **CONDITIONAL** | DXGI/D3D12 submission and ETW `Microsoft-Windows-DxgKrnl` Present events; requires new probe and privileges/overhead | QPC/ETW (100 ns) |
+| `present-call` | **FEASIBLE** | `PresentTiming.present_start`, already recorded as kind 3 `start_ns` | process Instant |
+| `present-return` | **FEASIBLE** | `PresentTiming.present_end`, already recorded as kind 3 `end_ns` | process Instant |
+| `present` | **CONDITIONAL** | platform submission completion is not display; DWM `DWM_TIMING_INFO`/ETW could add composition facts but not per-frame proof | QPC/DWM |
+| `displayed` | **CONDITIONAL** | DWM composition statistics/ETW provide aggregate display facts; no per-frame display completion guarantee | QPC/DWM |
+| `scanout` | **NOT_AVAILABLE** | no public per-frame scanout timestamp in Win32/DXGI/DWM; DXGI frame statistics are not scanout time | — |
+| `input-to-photon` | **CONDITIONAL** | input kind 0 timestamp exists; display completion source is absent, so endpoint cannot close today | process Instant + display domain |
+| `app-main-entry` | **UNDETERMINED** | no app-lifecycle marker in the current journal/probe | — |
+| `useful-shell` | **UNDETERMINED** | UX semantic boundary is not defined as a measurable event; needs product definition first | — |
+
+- **C — candidate APIs:** `IDXGISwapChain::GetFrameStatistics` (PresentCount/`SyncQPCTime`, QPC), DWM `DWM_TIMING_INFO` (`qpcVBlank`, composition stats), ETW `Microsoft-Windows-DxgKrnl` Present events (QPC), GPU timestamp queries (GPU frequency domain, requires D3D12 command queue instrumentation). AccessKit provides accessibility events only — no display/scanout timing; DWM/ETW are not assumed to expose scanout.
+- **D — design:** current `exact_tuple_fnv64` is valid only for GPUI `PresentedFrame` tuples in the process `Instant` domain; foreign-domain frames need a composite identity (source, QPC timestamp, swap-chain/frame count) with explicit rejection of missing/reused IDs. Cross-domain latency requires a calibration between `Instant` and QPC/GPU clocks with a bounded uncertainty; without calibration the value stays `NOT_MEASURED`. Same-domain deltas are never labelled cross-domain.
+- **F — minimal feasible slice:** derive `present-call` from the already-retained kind 3 `start_ns` (no producer buffer or retention change; only endpoint matrix/observation mapping and contract tests). `present-return` is the same mechanism and can follow separately. No multi-endpoint implementation in one slice.
+- **G — next slice chosen:** **`present-call` only**, derived from existing kind 3 records; `present-return` deferred.
+- **State:** investigation/design only; no product code changed. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
+
