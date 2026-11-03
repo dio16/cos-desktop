@@ -1,0 +1,23 @@
+{
+  "measurement": "MP-FLOW2 P2b preallocated adjacency A/B",
+  "build": "release",
+  "graphs": [
+    "normal",
+    "skewed"
+  ],
+  "warmup": 3,
+  "iterations": 21,
+  "rounds": 3,
+  "order": [
+    "A-first",
+    "B-first",
+    "A-first"
+  ],
+  "raw_samples": 252,
+  "ab_summary": [
+    "P2B_AB graph=normal baseline p2=(2909, 4723, 5855) p2b=(2894, 4710, 5841) all=(6130, 8151, 10688) candidate p2=(4814, 6433, 8733) p2b=(4814, 6433, 8733) all=(7664, 9260, 11721) base_cap total=39600 length=19800 initial=9900 grows=0 nonempty=9900 maxout=2 cand_cap total=19800 length=19800 initial=0 grows=0 nonempty=9900 maxout=2",
+    "P2B_AB graph=skewed baseline p2=(3033, 4550, 5930) p2b=(3013, 4540, 5919) all=(6297, 8819, 9696) candidate p2=(4652, 6349, 9052) p2b=(4652, 6349, 9052) all=(7780, 9832, 11530) base_cap total=55588 length=19800 initial=9802 grows=12 nonempty=9802 maxout=9999 cand_cap total=19800 length=19800 initial=0 grows=0 nonempty=9802 maxout=9999"
+  ],
+  "decision": "NOT_ADOPTED (baseline maintained)",
+  "note": "candidate P2b includes degree pre-pass and capacity allocation; baseline P2b is the edge loop only. Double counting fix applied: P2b elapsed covers pre-pass+loop once."
+}

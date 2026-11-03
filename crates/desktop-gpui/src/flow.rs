@@ -330,6 +330,7 @@ pub fn layers(graph: &GraphDisplay) -> Layers {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum AdjacencyMode {
     Baseline,
+    #[cfg(test)]
     Preallocated,
 }
 
@@ -370,9 +371,7 @@ fn layers_inner(
         None => 0,
     };
     #[cfg(test)]
-    let mut prealloc_us = 0u128;
     if adjacency == AdjacencyMode::Preallocated {
-        #[cfg(test)]
         let started = std::time::Instant::now();
         let mut degrees = vec![0usize; count];
         for edge in graph.edges.iter() {
@@ -391,10 +390,7 @@ fn layers_inner(
                 }
             })
             .collect();
-        #[cfg(test)]
-        {
-            prealloc_us = started.elapsed().as_micros();
-        }
+        let _ = started.elapsed().as_micros();
     }
     let mut self_loop = false;
     for edge in graph.edges.iter() {
@@ -443,7 +439,7 @@ fn layers_inner(
     }
     #[cfg(test)]
     if let (Some(slots), Some(start)) = (phases.as_mut(), phase_start) {
-        let p2b_us = start.elapsed().as_micros() + prealloc_us;
+        let p2b_us = start.elapsed().as_micros();
         slots[7] = p2a_us;
         slots[8] = p2b_us;
         // P2 overall is exactly the two measured halves of the same pass.
@@ -2564,7 +2560,7 @@ mod tests {
             let max = *samples.last().unwrap();
             (median, p95, max)
         }
-        fn run(graph: &GraphDisplay) -> Samples {
+        fn run(name: &str, graph: &GraphDisplay) -> Samples {
             let (mut a_p2, mut a_p2b, mut a_all) = (Vec::new(), Vec::new(), Vec::new());
             let (mut b_p2, mut b_p2b, mut b_all) = (Vec::new(), Vec::new(), Vec::new());
             for round in 0..3 {
@@ -2581,7 +2577,8 @@ mod tests {
                     let _ = measure_a();
                     let _ = measure_b();
                 }
-                for _ in 0..21 {
+                for iteration in 0..21 {
+                    let order = if baseline_first { "A-first" } else { "B-first" };
                     let (a, b) = if baseline_first {
                         let a = measure_a();
                         let b = measure_b();
@@ -2591,6 +2588,14 @@ mod tests {
                         let a = measure_a();
                         (a, b)
                     };
+                    println!(
+                        "P2B_SAMPLE graph={name} round={round} iteration={iteration} order={order} variant=baseline p2={} p2b={} all={}",
+                        a.0, a.1, a.2
+                    );
+                    println!(
+                        "P2B_SAMPLE graph={name} round={round} iteration={iteration} order={order} variant=candidate p2={} p2b={} all={}",
+                        b.0, b.1, b.2
+                    );
                     a_p2.push(a.0);
                     a_p2b.push(a.1);
                     a_all.push(a.2);
@@ -2619,7 +2624,7 @@ mod tests {
                 mut b_p2,
                 mut b_p2b,
                 mut b_all,
-            } = run(&graph);
+            } = run(name, &graph);
             let a = (stats(&mut a_p2), stats(&mut a_p2b), stats(&mut a_all));
             let b = (stats(&mut b_p2), stats(&mut b_p2b), stats(&mut b_all));
             let (_l, base) = layers_structural(&graph);
