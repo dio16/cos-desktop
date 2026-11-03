@@ -3969,3 +3969,12 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **first-frame:** the condition is marker retained + same-window first kind 3 strictly later + no retained kind 5 gap + clock-resolved; a pre-scope marker is allowed by design. Duplicate markers remain rejected.
 - **Tests:** `a_pre_scope_window_marker_extends_the_scope_without_faking_its_time` was corrected to assert **scope start stays `DURATION_NS`**, the marker keeps its true elapsed time, `pre_scope_marker == Some(true)`, and a normal pre-scope event still increments `pre_scope`; probe flush-without-event test retained. Rust 187 passed / 0 failed; fmt OK; clippy 0 issues; `pytest apps/desktop/devtools/r0/tests -q` 356 passed / 12 skipped / 1 failed (known live-manifest driver_hash; manifest unchanged).
 - **State:** implementation complete; **Native measurement NOT_RUN**. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
+
+### 19.194 MP-R0A pre-scope initiality conservatism and marker-flag consistency (2026-11-02)
+
+- **B-01:** `first_frame_matrix()` now treats a pre-scope marker conservatively. If the marker precedes `scope_start_ns` and the capture's `pre_scope` counter is non-zero, a pre-scope submission may exist between marker and scope start and was dropped by normal admission, so the result is **`NOT_MEASURED / UNPROVEN_PRE_SCOPE_SUBMISSION`**. Only with `pre_scope == 0` can the marker-to-first-kind-3 comparison stand. This is expected to keep `first-frame` NOT_MEASURED for the observed captures (their `pre_scope` is 4), which is the honest outcome.
+- **A-01:** the contract requires `pre_scope_marker == (record.start_ns < scope_start)` for kind 10 (both fields integer-checked first); a mismatched flag is `RECORD_SEMANTICS`. `marker_flag_matches()` is the shared predicate.
+- **Scope semantics:** unchanged — `scope_start_ns`, scope length and `pre_scope`'s meaning are not modified.
+- **Tests:** pre-scope marker with `pre_scope=1` → UNPROVEN; same with `pre_scope=0` → OBSERVED; flag/scope predicate cases (pre-scope true/false, in-scope false/true). Rust tests unchanged 187 passed / 0 failed; fmt OK; clippy 0 issues; `pytest` 358 passed / 12 skipped / 1 failed (known live-manifest driver_hash).
+- **State:** implementation only; Native measurement NOT_RUN and likely NOT_MEASURED under current captures; MP-R0A IN_PROGRESS, product acceptance NOT_RUN.
+

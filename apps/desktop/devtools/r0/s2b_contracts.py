@@ -210,6 +210,10 @@ def validate_capture(document: object, *, execution: str | None = None,
         if kind == 10:
             if type(pre_scope_marker) is not bool:
                 fail("RECORD_SEMANTICS")
+            integer(record["start_ns"])
+            integer(record["end_ns"])
+            if not marker_flag_matches(record["start_ns"], start, pre_scope_marker):
+                fail("RECORD_SEMANTICS")
             if record["window"] in marker_windows:
                 fail("DUPLICATE_EVENT")
             marker_windows.add(record["window"])
@@ -387,13 +391,23 @@ def frame_id_for(record: dict) -> int:
                    record["start_ns"], record["end_ns"]))
 
 
+def marker_flag_matches(start_ns: int, scope_start: int, flag: bool) -> bool:
+    return flag == (start_ns < scope_start)
+
+
 def first_frame_matrix(capture: dict) -> dict:
     records = capture.get("records", [])
     markers = [record for record in records if record.get("kind") == 10]
     if not markers:
         return {"status": "NOT_MEASURED", "reason": "NO_WINDOW_CREATED_MARKER"}
+    scope_start = capture.get("scope_start_ns")
+    pre_scope = capture.get("summary", {}).get("pre_scope", 0)
     for marker in markers:
         window, created = marker["window"], marker["start_ns"]
+        if (isinstance(scope_start, int) and created < scope_start and pre_scope > 0):
+            # A pre-scope submission may exist between the marker and scope start but
+            # was rejected by normal pre-scope admission; initiality is unprovable.
+            return {"status": "NOT_MEASURED", "reason": "UNPROVEN_PRE_SCOPE_SUBMISSION"}
         submissions = [record for record in records
                        if record.get("kind") == 3 and record.get("window") == window]
         if not submissions:

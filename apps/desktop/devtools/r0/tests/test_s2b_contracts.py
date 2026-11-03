@@ -97,6 +97,23 @@ class S2BWireContract(unittest.TestCase):
             {"kind": 3, "window": 7, "start_ns": 200}]})["reason"],
             "ORDER_UNDETERMINED")
 
+    def test_pre_scope_submission_between_marker_and_scope_is_unproven(self):
+        capture = {"scope_start_ns": 200, "summary": {"pre_scope": 1},
+                   "records": [{"kind": 10, "window": 7, "start_ns": 100},
+                               {"kind": 3, "window": 7, "start_ns": 300}]}
+        self.assertEqual(s2b.first_frame_matrix(capture),
+                         {"status": "NOT_MEASURED",
+                          "reason": "UNPROVEN_PRE_SCOPE_SUBMISSION"})
+        capture["summary"]["pre_scope"] = 0
+        self.assertEqual(s2b.first_frame_matrix(capture),
+                         {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"})
+
+    def test_marker_flag_must_match_the_scope_comparison(self):
+        self.assertTrue(s2b.marker_flag_matches(100, 200, True))
+        self.assertFalse(s2b.marker_flag_matches(100, 200, False))
+        self.assertTrue(s2b.marker_flag_matches(300, 200, False))
+        self.assertFalse(s2b.marker_flag_matches(300, 200, True))
+
     def test_complete_local_kind_arrays_validate(self):
         value = copy.deepcopy(example())
         summary = value["summary"]
