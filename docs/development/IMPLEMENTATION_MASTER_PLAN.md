@@ -4039,3 +4039,12 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Decision unchanged: Baseline maintained, candidate NOT adopted** (correctness equal, capacity lower, but CPU consistently worse and p95 worse). MP-FLOW2 remains incomplete; paint/submit/GPU/Present remain NOT_MEASURED.
 - **Verification:** `cargo test -p desktop-gpui flow` 27 passed / 0 failed (4 ignored); fmt OK; clippy 0 issues. No product-path behavior change; Gate remains the Lead's decision.
 
+### 19.200 MP-REL3 second-pass secret scan and checked export data (2026-11-02)
+
+- **`redaction::contains_sensitive_content()`:** conservative scanner over the exact intended UTF-8 text. It detects sensitive assignments using the existing key list (token/Bearer/credential/signature family), Bearer values, signed-locator URLs with query/fragment or sig/token markers, Windows drive/UNC/POSIX/`file:` private paths, values separated by whitespace/control characters, and overlong tokens carrying assignments/URL markers. It returns only a bool; matching values are never returned or logged.
+- **Checked type:** `support_report::checked_export()` renders the existing report and `checked_export_bytes()` validates an intended write payload. Both return `ExportData` only after: valid UTF-8, non-empty, ≤12,288 bytes, ≤24 lines, ≤512 bytes/line, no BOM/CR, and a clean second-pass scan. Failures return closed `ExportError` variants (`InvalidUtf8`, `InvalidSize`, `TooManyLines`, `InvalidBoundary`, `SensitiveContent`) with no report content.
+- **Content:** byte-for-byte the existing `SupportReport::render()` string; no added fields, no crash-report inclusion, no BOM.
+- **Tests:** normal render round-trips; redaction markers and normal report lines pass; token/Bearer/signed URL/Windows/UNC/POSIX path/whitespace-separated/long-token cases are refused; invalid UTF-8, empty/oversized, >24 lines, BOM/CR are refused; existing redactor tests unchanged.
+- **Not implemented:** save dialog, consent UI and file writing remain the next slice. `crash_report` storage was not reused. Diagnostics ring 4,096 / crash 3×5 MiB / support-preview generation are unchanged.
+- **Verification:** `cargo test -p app-core` 147 passed / 0 failed; fmt OK; clippy 0 issues. MP-REL3 overall remains incomplete.
+

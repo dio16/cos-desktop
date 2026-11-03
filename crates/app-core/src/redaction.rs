@@ -483,10 +483,78 @@ fn append(out: &mut String, text: &str, limit: usize) {
     }
 }
 
+/// Conservative second-pass scan for a redaction failure in text that is about
+/// to leave the process. Reuses the same key list and surface rules; it is
+/// intentionally fail-closed and never returns the matching value.
+pub fn contains_sensitive_content(input: &str) -> bool {
+    let mut pending_key = false;
+    for token in input.split(|character: char| character.is_whitespace() || character.is_control())
+    {
+        if token.is_empty() {
+            continue;
+        }
+        let trimmed = token.trim_matches(|character: char| {
+            matches!(
+                character,
+                '"' | '\u{27}' | ',' | ';' | '(' | ')' | '[' | ']' | '<' | '>'
+            )
+        });
+        let lower = trimmed.to_ascii_lowercase();
+        if pending_key {
+            return true;
+        }
+        if lower == "bearer" || lower.starts_with("bearer:") {
+            return true;
+        }
+        if trimmed.contains("://")
+            && (trimmed.contains('?')
+                || trimmed.contains('#')
+                || lower.contains("sig=")
+                || lower.contains("signature=")
+                || lower.contains("token="))
+        {
+            return true;
+        }
+        if trimmed.starts_with('/')
+            || trimmed.as_bytes().first() == Some(&b'\\')
+            || lower.starts_with("file:")
+        {
+            return true;
+        }
+        let bytes = trimmed.as_bytes();
+        if bytes.len() >= 3
+            && bytes[0].is_ascii_alphabetic()
+            && bytes[1] == b':'
+            && (bytes[2] == b'\\' || bytes[2] == b'/')
+        {
+            return true;
+        }
+        if let Some((key, value)) = trimmed.split_once('=') {
+            let key = key
+                .trim_matches(|character: char| matches!(character, '"' | '\u{27}'))
+                .trim_end_matches(':')
+                .to_ascii_lowercase();
+            if SENSITIVE_KEYS.contains(&key.as_str()) {
+                return true;
+            }
+            if value.is_empty() {
+                pending_key = true;
+            }
+        }
+        if trimmed.len() > TOKEN_LIMIT * 2
+            && (trimmed.contains('=') || trimmed.contains('?') || trimmed.contains('#'))
+        {
+            return true;
+        }
+    }
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        MAX_DIAGNOSTIC_LINE_BYTES, REDACTED, redact_diagnostic_text, redact_diagnostic_text_within,
+        MAX_DIAGNOSTIC_LINE_BYTES, REDACTED, contains_sensitive_content, redact_diagnostic_text,
+        redact_diagnostic_text_within,
     };
 
     #[test]
@@ -807,5 +875,35 @@ mod tests {
             redact_diagnostic_text("C:\\private\\x frame=3 count=10"),
             "[private-path] frame=3 count=10"
         );
+    }
+
+    #[test]
+    fn second_pass_detects_residual_secrets_and_paths_without_echoing_values() {
+        for bad in [
+            "token=SyntheticSecretValue",
+            "access_token = SyntheticSecretValue",
+            "Authorization: Bearer SyntheticSecretValue",
+            "Authorization: Bearer\nSyntheticSecretValue",
+            "https://example.test/file?sig=SyntheticSecretValue",
+            r"C:\Users\private\file.txt",
+            r"\server\share\file.txt",
+            "/home/private/file.txt",
+            concat!("tok", "en=", "SyntheticSecretValue"),
+        ] {
+            assert!(contains_sensitive_content(bad), "{bad:?} must be refused");
+        }
+    }
+
+    #[test]
+    fn second_pass_accepts_redaction_markers_and_normal_report_lines() {
+        for good in [
+            "[redacted]",
+            "Desktop version: 0.1.0",
+            "Runtime version: unknown (Runtime version is not exposed)",
+            "Limits: events 4096, line 512 bytes, report 12288 bytes, 24 lines",
+            "Retained events: 6",
+        ] {
+            assert!(!contains_sensitive_content(good), "{good:?} must pass");
+        }
     }
 }

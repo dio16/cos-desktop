@@ -370,3 +370,135 @@ fn error_line(error: &PublicationError) -> &'static str {
         PublicationError::Fixture => "fixture",
     }
 }
+
+/// Closed failure for the checked export data path. Never carries report text.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ExportError {
+    InvalidUtf8,
+    InvalidSize,
+    TooManyLines,
+    InvalidBoundary,
+    SensitiveContent,
+}
+
+/// Bytes that passed the size/encoding/boundary/second-pass checks and are the
+/// only export payload the later file writer may receive.
+#[derive(Clone)]
+pub struct ExportData(String);
+
+impl ExportData {
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Debug for ExportData {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ExportData")
+            .field("bytes", &self.0.len())
+            .finish()
+    }
+}
+
+fn checked_export_text(text: &str) -> Result<ExportData, ExportError> {
+    if text.is_empty() {
+        return Err(ExportError::InvalidSize);
+    }
+    if text.len() > MAX_SUPPORT_REPORT_BYTES {
+        return Err(ExportError::InvalidSize);
+    }
+    if text.starts_with('\u{feff}') || text.contains('\r') {
+        return Err(ExportError::InvalidBoundary);
+    }
+    let mut lines = 0usize;
+    for line in text.split('\n') {
+        lines += 1;
+        if line.len() > MAX_DIAGNOSTIC_LINE_BYTES {
+            return Err(ExportError::InvalidBoundary);
+        }
+    }
+    if lines > MAX_REPORT_LINES {
+        return Err(ExportError::TooManyLines);
+    }
+    if crate::redaction::contains_sensitive_content(text) {
+        return Err(ExportError::SensitiveContent);
+    }
+    Ok(ExportData(text.to_owned()))
+}
+
+/// Build checked export data from the existing fixed report render.
+pub fn checked_export(report: &SupportReport) -> Result<ExportData, ExportError> {
+    checked_export_text(&report.render())
+}
+
+/// Build checked export data from bytes that are already the intended write
+/// payload. Invalid UTF-8 is refused before any text inspection.
+pub fn checked_export_bytes(bytes: &[u8]) -> Result<ExportData, ExportError> {
+    let text = std::str::from_utf8(bytes).map_err(|_| ExportError::InvalidUtf8)?;
+    checked_export_text(text)
+}
+
+#[cfg(test)]
+mod export_tests {
+    use super::*;
+
+    #[test]
+    fn the_normal_render_round_trips_byte_for_byte() {
+        let report = SupportReport::unavailable("UnitReason", "0.1.0");
+        let rendered = report.render();
+        let data = checked_export(&report).expect("normal report is exportable");
+        assert_eq!(data.as_bytes(), rendered.as_bytes());
+        assert!(!data.as_str().contains('\r'));
+    }
+
+    #[test]
+    fn invalid_utf8_size_lines_and_boundaries_are_refused() {
+        assert_eq!(
+            checked_export_bytes(&[0xff, 0xfe]).unwrap_err(),
+            ExportError::InvalidUtf8
+        );
+        assert_eq!(
+            checked_export_bytes(b"\xef\xbb\xbfreport").unwrap_err(),
+            ExportError::InvalidBoundary
+        );
+        assert_eq!(
+            checked_export_bytes(b"line\r\nline").unwrap_err(),
+            ExportError::InvalidBoundary
+        );
+        assert_eq!(
+            checked_export_bytes(b"").unwrap_err(),
+            ExportError::InvalidSize
+        );
+        let too_big = vec![b'a'; MAX_SUPPORT_REPORT_BYTES + 1];
+        assert_eq!(
+            checked_export_bytes(&too_big).unwrap_err(),
+            ExportError::InvalidSize
+        );
+        let many_lines = b"l\n".repeat(25);
+        assert_eq!(
+            checked_export_bytes(&many_lines).unwrap_err(),
+            ExportError::TooManyLines
+        );
+    }
+
+    #[test]
+    fn residual_sensitive_content_is_refused_without_echoing_it() {
+        for bad in [
+            "token=SyntheticSecretValue",
+            "Authorization: Bearer SyntheticSecretValue",
+            "https://example.test/file?sig=SyntheticSecretValue",
+            r"C:\Users\private\file.txt",
+            r"\server\share\file.txt",
+            "/home/private/file.txt",
+        ] {
+            let error = checked_export_bytes(bad.as_bytes()).unwrap_err();
+            assert_eq!(error, ExportError::SensitiveContent);
+            assert!(!format!("{error:?}").contains("SyntheticSecretValue"));
+        }
+    }
+}
