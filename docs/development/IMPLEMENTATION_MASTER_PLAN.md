@@ -4156,3 +4156,10 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **G evidence:** `docs/development/evidence-published/rel3-trace-038005d/` with `trace.txt`, `existing.txt`, `environment.txt`, `record.json`. Captured console text is **cp932** for Japanese; trace enum values are ASCII. SHA-256 and `git_object_id` are recorded.
 - **Residual:** Shift+Tab and publication-change stale rejection remain NOT_RUN; screen-reader quality NOT_MEASURED. **MP-REL3 incomplete; product acceptance NOT_RUN.**
 
+#### 19.211 addendum — trace trial identity and UI-stage definition (2026-11-02)
+
+- **A-01 fixed:** `begin_export_trial(&mut in_progress, &mut trace)` clears the previous `export_trace` at the start of every accepted trial, so a trace shown during a later attempt cannot be the previous Cancel result. A second press is still refused and changes nothing. Unit test: `starting_a_trial_clears_the_previous_trace_and_refuses_double_press`.
+- **A-02 definition:** `StatusUpdated` now means the final UI update closure ran and installed both the outcome status and this trace. `StatusPreserved` means no writer outcome, so the previous status was deliberately kept. `UpdateFailed` is not materializable — a failed final update cannot install a trace; it is retained only to name the unobservable case and carries a documented `#[allow(dead_code)]`. UI update failure is observed as "trace absent" because the trial start cleared it.
+- **Limits recorded:** the trace cannot distinguish "UI update failed" from "attempt still running" by itself; such a state is `trace absent` after a trial start. No path or report content is added.
+- **Verification:** `cargo test -p desktop-gpui` 117 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` succeeds. Native re-measurement not required for these two fixes and was not rerun.
+

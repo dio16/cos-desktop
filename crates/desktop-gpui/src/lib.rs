@@ -435,6 +435,16 @@ fn begin_export(in_progress: &mut bool) -> bool {
     true
 }
 
+/// Begin one trial: reject a second press and clear the previous trial's trace so
+/// a new attempt is never identified by an older result.
+fn begin_export_trial(in_progress: &mut bool, trace: &mut Option<String>) -> bool {
+    if !begin_export(in_progress) {
+        return false;
+    }
+    *trace = None;
+    true
+}
+
 /// Product selection decision: cancel and dialog errors choose no path.
 #[cfg(test)]
 fn selected_export_path(selection: Result<std::path::PathBuf, ()>) -> Option<std::path::PathBuf> {
@@ -1270,7 +1280,7 @@ impl Shell {
     /// The current authorized display text, when this window holds one.    /// Explicit user save: native dialog, revalidation, background write, closed
     /// status. Cancel and double-press never write. No automatic retry.
     fn export_support(&mut self, cx: &mut Context<Self>) {
-        if !begin_export(&mut self.export_in_progress) {
+        if !begin_export_trial(&mut self.export_in_progress, &mut self.export_trace) {
             return;
         }
         // Keep the previous status visible until this attempt produces a real outcome,
@@ -5891,5 +5901,24 @@ mod contrast_scope_tests {
             assert!(!line.chars().any(|character| character == char::from(92)));
             assert!(!line.chars().any(|character| character == char::from(92)));
         }
+    }
+    #[test]
+    fn starting_a_trial_clears_the_previous_trace_and_refuses_double_press() {
+        use super::begin_export_trial;
+        let mut in_progress = false;
+        let mut trace =
+            Some("dialog=Cancelled;data=Rejected;writer=NotStarted;ui=StatusPreserved".to_owned());
+        assert!(begin_export_trial(&mut in_progress, &mut trace));
+        assert!(
+            trace.is_none(),
+            "new trial must not inherit the previous trace"
+        );
+        trace = Some("old".to_owned());
+        assert!(!begin_export_trial(&mut in_progress, &mut trace));
+        assert_eq!(
+            trace.as_deref(),
+            Some("old"),
+            "double press changes nothing"
+        );
     }
 }
