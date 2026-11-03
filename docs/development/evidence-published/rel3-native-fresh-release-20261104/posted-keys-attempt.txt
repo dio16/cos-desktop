@@ -1,0 +1,7 @@
+MP-REL3/AX: opening the diagnostics panel without foreground ownership
+exe_sha256: bf73a64cf22d81cf2b187e56539fe083b05d97e01e93e28f2c7ab61ec02cd22e
+hwnd: 7341516
+current_foreground_pid: 35004 (our app pid: 52532)
+after_attach_set_foreground: set=False foreground_is_app=False
+descendants_after_posted_ctrl_d: 48
+panel_ids: 

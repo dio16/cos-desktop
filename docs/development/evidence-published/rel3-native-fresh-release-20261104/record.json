@@ -1,0 +1,31 @@
+{
+  "measurement": "MP-REL3/AX native inspection with a fresh release build, and why interaction is blocked",
+  "base_commit": "b6c856cf8eb85346db3e33f7aa64dfd28496a791",
+  "exe_sha256": "sha256:bf73a64cf22d81cf2b187e56539fe083b05d97e01e93e28f2c7ab61ec02cd22e",
+  "windows": "10.0.26300.0",
+  "files": {
+    "first-attempt-foreground.txt": {
+      "sha256": "sha256:afdc915b15a9050659a8dd0e58f11024647e3f14426840b79ea60f21a4e07146",
+      "bytes": 1303
+    },
+    "orca-accessibility-tree.txt": {
+      "sha256": "sha256:41c3124ccf3dade694a6a71f58faf46f53d6265aaad1804a160c2ef718e7f76c",
+      "bytes": 3254
+    },
+    "orca-state.json": {
+      "sha256": "sha256:80e8c417d35660f5a30c9e040021f8623f502b63211897376618cef3f8022bbb",
+      "bytes": 4742
+    },
+    "posted-keys-attempt.txt": {
+      "sha256": "sha256:47dcd6924677b038b82c65915da1bce2ef0ef08f1f633c02d7a2571156dec4c2",
+      "bytes": 325
+    },
+    "uia-before-open.txt": {
+      "sha256": "sha256:02d0e2f01a709e283b1405bfea1815eb3ac8d4febd2ca323f3eb76fd6ab29265",
+      "bytes": 235
+    }
+  },
+  "inspection_worked": "A release build from a fresh target directory creates a window named 'COS Desktop' (class Zed::Window). Two independent accessibility paths read it: UI Automation reports 48 descendants with automation ids including TitleBar, task-search, task-row-fixture:task/Task-184 and the candidate rows, and Orca's computer-use surface reports the same window with a 46-line tree.",
+  "interaction_blocked": "Keyboard input cannot be delivered in this session. UI Automation's SetForegroundWindow returns false even after AttachThreadInput, and the foreground window belongs to another process; SendKeys therefore reaches nothing, and the same shortcut posted as window messages leaves the descendant count unchanged at 48 with no panel ids. Orca reports window_not_focused for the chord and says the same after --restore-window, so a second, independent tool confirms the window cannot be focused.",
+  "consequence": "Everything that needs keyboard input stays NOT_OBSERVED: opening the diagnostics panel with the shortcut, Tab and Shift+Tab traversal, the save dialog and its overwrite confirmation. The panel ids (diagnostic-readonly, support-preview-readonly, support-export-button, support-export-status) could not be listed because the panel never opened."
+}

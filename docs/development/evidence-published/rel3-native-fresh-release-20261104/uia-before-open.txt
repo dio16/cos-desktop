@@ -1,0 +1,6 @@
+MP-REL3/AX native UIA inspection (fresh release build, no keyboard injection)
+exe_sha256: bf73a64cf22d81cf2b187e56539fe083b05d97e01e93e28f2c7ab61ec02cd22e
+windows: 10.0.26300.0
+--- before ---
+descendants: 48
+preview_button: NOT FOUND

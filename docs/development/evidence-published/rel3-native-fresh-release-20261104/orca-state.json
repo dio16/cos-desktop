@@ -1,0 +1,55 @@
+{
+  "id": "3837400b-a3dc-474b-b76d-fc9de8851a97",
+  "ok": true,
+  "result": {
+    "snapshot": {
+      "id": "2e5d5045-b346-46f4-8a04-ffc7e39cb379",
+      "app": {
+        "name": "cos-desktop",
+        "bundleId": "cos-desktop",
+        "pid": 52440
+      },
+      "window": {
+        "title": "COS Desktop",
+        "id": 5965158,
+        "index": null,
+        "x": 1072,
+        "y": 277,
+        "width": 1296,
+        "height": 839,
+        "isMinimized": null,
+        "isOffscreen": null,
+        "screenIndex": null
+      },
+      "coordinateSpace": "window",
+      "treeText": "App=cos-desktop (pid 52440)\nWindow: \"COS Desktop\", App: cos-desktop.\n\n0 領域 COS Desktop\n\t1 アプリケーション COS Desktop 作業画面\n\t\t2 領域 現在のタスクと状態\n\t\t\t3 テキスト Task-184 新製品キービジュアル\n\t\t\t4 テキスト テストデータ / 模擬表示\n\t\t\t5 テキスト タスクの状態: 実行中（ACTIVE）\n\t\t\t6 テキスト 処理段階: REFINE\n\t\t\t7 テキスト 反復回数: 第3回\n\t\t\t8 テキスト 成果物の利用状態: 取得可能（AVAILABLE）（5件）\n\t\t\t9 テキスト 接続・情報の鮮度: 情報を受信中\n\t\t\t10 テキスト 正式な結果: 不明 — 正式な結果の情報を受け取れていません\n\t\t\t11 グループ 停止の操作と現在の受付状況\n\t\t\t\t12 ボタン タスクを停止\n\t\t\t\t13 ボタン 停止要求の受付状況を確認（現在は操作できません）\n\t\t\t\t14 テキスト この画面から停止要求は送っていません\n\t\t\t\t15 テキスト 停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。\n\t\t16 領域 タスク一覧\n\t\t\t17 編集 タスクを検索, Secondary Actions: SetValue\n\t\t\t18 一覧\n\t\t\t\t19 一覧項目 Task-184 — 新製品キービジュアル, Secondary Actions: Select\n\t\t\t\t\t20 テキスト キーボード操作対象\n\t\t21 領域 作業領域：成果物\n\t\t\t22 テキスト 現在の版では、成果物の画像を表示できません。候補の説明情報のみを表示しています。\n\t\t23 領域 候補の詳細\n\t\t\t24 グループ 詳細と説明\n\t\t\t\t25 テキスト 候補は表示されていません\n\t\t\t\t26 ボタン 目的 — 利用可能: Task-184 — 新製品キービジュアル, Value: Task-184 — 新製品キービジュアル, Secondary Actions: SetValue\n\t\t\t\t27 ボタン 評価 — 利用不可: 候補は選択されていません。, Value: 候補は選択されていません。, Secondary Actions: SetValue\n\t\t\t\t28 ボタン 判断の根拠 — 利用不可: 候補は選択されていません。, Value: 候補は選択されていません。, Secondary Actions: SetValue\n\t\t\t\t29 ボタン 改善 — 利用不可: 候補は選択されていません。, Value: 候補は選択されていません。, Secondary Actions: SetValue\n\t\t\t\t30 ボタン 結果 — 利用不可: このタスクの正式な結果は、受信した情報に含まれていません。, Value: このタスクの正式な結果は、受信した情報に含まれていません。, Secondary Actions: SetValue\n\t\t31 領域 反復ごとの候補一覧\n\t\t\t32 テキスト 反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。\n\t\t\t33 グループ 候補一覧\n\t\t\t\t34 ボタン fixture:task/Task-184 — 第1回 — A キーボード操作対象\n\t\t\t\t35 ボタン fixture:task/Task-184 — 第1回 — B\n\t\t\t\t36 ボタン fixture:task/Task-184 — 第2回 — C\n\t\t\t\t37 ボタン fixture:task/Task-184 — 第2回 — D\n\t\t\t\t38 ボタン fixture:task/Task-184 — 第3回 — E\n\t\t39 グループ 作業画面の切り替え\n\t\t\t40 ボタン 成果物 Ctrl+1\n\t\t\t41 ボタン 候補を比較 Ctrl+2\n\t\t\t42 ボタン 処理の流れ Ctrl+3",
+      "elementCount": 43,
+      "focusedElementId": null,
+      "truncation": {
+        "truncated": false,
+        "maxNodes": 1200,
+        "maxDepth": 64,
+        "maxDepthReached": false
+      }
+    },
+    "screenshot": {
+      "format": "png",
+      "width": 668,
+      "height": 433,
+      "scale": 0.5154320987654321,
+      "path": "C:\\Users\\DIOBRA~1\\AppData\\Local\\Temp\\orca-computer-use\\3837400b-a3dc-474b-b76d-fc9de8851a97-screenshot.png",
+      "dataOmitted": true,
+      "expiresAt": "2026-11-04T16:14:25.716Z"
+    },
+    "screenshotStatus": {
+      "state": "captured",
+      "metadata": {
+        "engine": "unknown",
+        "windowId": 5965158
+      }
+    }
+  },
+  "_meta": {
+    "runtimeId": "08272aa6-95fd-4bcb-854d-17cc063e8927"
+  }
+}

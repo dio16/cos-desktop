@@ -1,0 +1,41 @@
+MP-REL3/AX native verification with a fresh release build
+exe: C:\dev\cos-build-release\release\cos-desktop.exe
+exe_sha256: bf73a64cf22d81cf2b187e56539fe083b05d97e01e93e28f2c7ab61ec02cd22e
+isolated LOCALAPPDATA: C:\Users\DIOBRA~1\AppData\Local\Temp\uia2-c2b09a545cda4189ab6e3556c016b38a
+windows: 10.0.26300.0
+alive_after_4s: True
+main_window_handle: 1705554
+window_name: COS Desktop
+foreground_matches: False
+--- before_ctrl_d ---
+descendants: 48
+--- after_ctrl_d ---
+descendants: 48
+--- focus_forward ---
+start: (ControlType.Window)
+tab1: (ControlType.Window)
+tab2: (ControlType.Window)
+tab3: (ControlType.Window)
+tab4: (ControlType.Window)
+tab5: (ControlType.Window)
+tab6: (ControlType.Window)
+tab7: (ControlType.Window)
+tab8: (ControlType.Window)
+tab9: (ControlType.Window)
+tab10: (ControlType.Window)
+tab11: (ControlType.Window)
+tab12: (ControlType.Window)
+--- focus_backward ---
+shift_tab1: (ControlType.Window)
+shift_tab2: (ControlType.Window)
+shift_tab3: (ControlType.Window)
+shift_tab4: (ControlType.Window)
+shift_tab5: (ControlType.Window)
+shift_tab6: (ControlType.Window)
+shift_tab7: (ControlType.Window)
+shift_tab8: (ControlType.Window)
+shift_tab9: (ControlType.Window)
+shift_tab10: (ControlType.Window)
+shift_tab11: (ControlType.Window)
+shift_tab12: (ControlType.Window)
+alive_at_end: True
