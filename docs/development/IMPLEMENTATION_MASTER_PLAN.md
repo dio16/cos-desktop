@@ -3586,6 +3586,7 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
   - A1: same `--target-dir target/r0a-build-a1 ... --features r0-s2b-instrumentation`
   - helper: `cargo build --locked --target-dir target/r0a-build-helper -p cos-desktop --example r0_owner`
   - Retained under `target/r0a-candidates-a732adc/{a0,a1,helper}` with PDBs; **binaries not committed**.
+- **Fixture identity corrected (review follow-up):** both candidate manifests inherited `workload.source.sha256 = 2e33ed06…` from the older set, which is **not** the fixture this tree ships. Recomputed from the checked-out file, `crates/cos-client/fixtures/task-184.json` hashes **`sha256:db1cfc8014ad44d3a512415af22ab90523b639de36d606e83247ac109daec2c0`** (the bytes a capture actually reads), while the same file as a git blob with LF endings hashes `sha256:09eb2bbe3d2b0eb8f0eb0319dbe6aba8b1c4560053fe7d159628e8d43858ff14`; the line-ending difference is why the two disagree. Both candidates now carry the on-disk digest, and because the definition hash covers `scenario` plus `workload`, `identity.definition_hash` was recomputed with the contract's own `canonical_definition` (A0 `e1b50c1a…` → `96bca2b0…`, A1 `4ce0e235…` → `d5716bfc…`) rather than by relaxing the check. After the correction `validate_manifest` passes for both candidates and the build record still passes `validate_build_record(..., live=True)`.
 - **Artifacts (re-hashed from the built files):**
 
 | artifact | SHA-256 | bytes | PDB SHA-256 |
@@ -3598,4 +3599,3 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Candidate metadata (tracked):** `apps/desktop/devtools/r0/candidates/a732adc/records/{candidate.json,s2b-build-candidate.json,s2b-default-a0-candidate.json,s2b-feature-a1-candidate.json}`. Identity blocks point at the measured source/executable digests; canonical `r0/s2b-build.json` and `r0/manifests/*` are unchanged.
 - **Validation (existing validators, no relaxation):** `s2b_capture.validate_build_record(..., live=True)` PASS; `s2b_contracts.validate_manifest(a1, expected_driver_hash=source_digest)` PASS with features `["r0-s2b-instrumentation"]`; `contracts.validate_manifest(a0)` PASS. Status `CANDIDATE_UNAPPROVED`.
 - **Not proven / hold:** approval ledger registration, native capture/launch, Owner approval; rebuild bit-reproducibility is NOT_VERIFIED. MP-R0A remains incomplete; this slice only re-candidates the current dev sources.
-
