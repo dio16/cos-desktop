@@ -19,9 +19,9 @@
       "bytes": 760
     },
     "instance-ownership-blocker.txt": {
-      "sha256": "sha256:5312bc936af5e41f9a25e31a2064a02e33173aaa71f282cdf10fc4890c4929f0",
-      "git_object_id": "dc3712e09af369ebfebaf1daf3e7cd71e112be06",
-      "bytes": 1614
+      "sha256": "sha256:a9de121c042c48ab630424a645770b44549767851d72671df2bdbad4e0e0acd4",
+      "git_object_id": "5a35e925ec60a0248199b5fb1f7374374c86dae3",
+      "bytes": 1920
     }
   },
   "note": "Only the refusal is captured here: the connected CPU and working-set baseline was not measured because no reachable runtime endpoint exists in this environment. The refusal demonstrates that a connected run cannot be recorded against an unreachable endpoint.",
