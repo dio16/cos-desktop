@@ -3750,3 +3750,10 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Gates:** fmt OK; clippy 0 issues; workspace tests 750 passed / 0 failed / 4 ignored (feature); build OK; dependency checker OK; `quality.ps1` fails at clippy in this environment (C++ toolchain), as before. Python `test_s2b_contracts`: 34/35 pass, the one failure is the stale live-manifest identity above.
 - **State:** MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.175 MP-R0A local accounting test coverage (2026-11-02)
+
+- **Rust:** `local_scope_rejection_is_counted_without_a_record` calls `local()` with an event before `start`; `point` fails, `local_scope_clock_rejected[0]` (surface) and then `[1]` (notify) increment, `pre_scope` increments, and no record is written. The rejection counter moved from `drain()` into `local()` so the direct path is testable; the successful path and all counting totals are unchanged.
+- **Python (`test_s2b_contracts.py`):** `test_complete_local_kind_arrays_validate` supplies all five arrays consistently and validates; `test_local_kind_conservation_violation_is_rejected` breaks `local_kind_received` and is refused with `COUNTS`.
+- **Gates:** fmt OK; clippy workspace `-D warnings` 0 issues; workspace tests 751 passed / 0 failed / 4 ignored (feature). `python -B -m pytest apps/desktop/devtools/r0/tests -q`: **345 passed / 12 skipped / 1 failed** — the only failure remains the known stale live-manifest `driver_hash` identity test; canonical manifests were not modified.
+- **State:** MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
+

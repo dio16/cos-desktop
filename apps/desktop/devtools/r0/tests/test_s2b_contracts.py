@@ -39,6 +39,33 @@ class S2BWireContract(unittest.TestCase):
             s2b.validate_capture(value)
         self.assertEqual(str(error.exception), code)
 
+    def test_complete_local_kind_arrays_validate(self):
+        value = copy.deepcopy(example())
+        summary = value["summary"]
+        kinds = summary["kind_counts"]
+        retained = [kinds[8], kinds[9]]
+        omitted = [summary["local_received"] - sum(retained), 0]
+        summary["local_kind_received"] = retained
+        summary["local_kind_retained"] = retained
+        summary["local_kind_scope_clock_rejected"] = [0, 0]
+        summary["local_kind_lifetime_rejected"] = [0, 0]
+        summary["local_kind_retention_omitted"] = omitted
+        validated = s2b.validate_capture(value)
+        self.assertEqual(validated["summary"]["local_kind_received"], [1, 1])
+
+    def test_local_kind_conservation_violation_is_rejected(self):
+        value = copy.deepcopy(example())
+        summary = value["summary"]
+        kinds = summary["kind_counts"]
+        retained = [kinds[8], kinds[9]]
+        summary["local_kind_received"] = retained
+        summary["local_kind_retained"] = retained
+        summary["local_kind_scope_clock_rejected"] = [0, 0]
+        summary["local_kind_lifetime_rejected"] = [0, 0]
+        summary["local_kind_retention_omitted"] = [0, 0]
+        summary["local_kind_received"] = [retained[0] + 1, retained[1]]
+        self.reject(value, "COUNTS")
+
     def test_old_capture_without_local_kind_arrays_still_validates(self):
         value = copy.deepcopy(example())
         for name in ("local_kind_received", "local_kind_retained",

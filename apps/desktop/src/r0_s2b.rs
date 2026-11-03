@@ -463,8 +463,7 @@ impl Observer {
     }
 
     fn local(&mut self, event: Event) -> io::Result<Record> {
-        let at = self.point(event.at)?;
-        let (kind, category) = match event.kind {
+        let (kind, category, index) = match event.kind {
             EventKind::SurfaceChanged(surface) => (
                 8,
                 Some(match surface {
@@ -472,8 +471,16 @@ impl Observer {
                     app_core::navigation::Surface::Compare => 1,
                     app_core::navigation::Surface::Flow => 2,
                 }),
+                0usize,
             ),
-            EventKind::Notify => (9, None),
+            EventKind::Notify => (9, None, 1usize),
+        };
+        let at = match self.point(event.at) {
+            Ok(value) => value,
+            Err(error) => {
+                self.counts.local_scope_clock_rejected[index] += 1;
+                return Err(error);
+            }
         };
         Ok(Record {
             kind,
@@ -545,9 +552,8 @@ impl Observer {
                 EventKind::Notify => 1usize,
             };
             self.counts.local_received_kinds[kind] += 1;
-            match self.local(event) {
-                Ok(record) => self.retain(record, out)?,
-                Err(_) => self.counts.local_scope_clock_rejected[kind] += 1,
+            if let Ok(record) = self.local(event) {
+                self.retain(record, out)?;
             }
         }
         Ok(())
@@ -747,6 +753,41 @@ fn capture(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn local_scope_rejection_is_counted_without_a_record() {
+        let mut observer = Observer {
+            origin: Instant::now(),
+            start: DURATION_NS,
+            end: DURATION_NS,
+            barrier: 0,
+            windows: Vec::new(),
+            counts: Counts::default(),
+        };
+        let mut out = Vec::<u8>::new();
+        assert!(
+            observer
+                .local(Event {
+                    at: Instant::now(),
+                    window: 11,
+                    kind: EventKind::SurfaceChanged(app_core::navigation::Surface::Compare),
+                })
+                .is_err()
+        );
+        assert_eq!(observer.counts.local_scope_clock_rejected, [1, 0]);
+        assert_eq!(observer.counts.pre_scope, 1);
+        assert!(out.is_empty());
+        assert!(
+            observer
+                .local(Event {
+                    at: Instant::now(),
+                    window: 11,
+                    kind: EventKind::Notify,
+                })
+                .is_err()
+        );
+        assert_eq!(observer.counts.local_scope_clock_rejected, [1, 1]);
+    }
 
     #[test]
     fn local_conservation_mismatch_is_rejected() {
