@@ -3907,3 +3907,18 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Missing information / minimal addition, in order of preference:** first evaluate what the application's own window lifecycle already offers - `apps/desktop/src/window.rs` calls `cx.open_window()` and has an initialisation callback, so an application-side generation marker may be recordable without touching GPUI internals. Only if that cannot establish firstness should the next slice consider a GPUI-side event. Either route also needs a capture-start barrier recorded in the same journal and the window-create→first-present interval inside scope; `first-frame` would then require marker → first kind 3 with no `kind 5` discontinuity between, plus the existing lifetime mapping.
 - **State:** `first-frame` remains `NOT_MEASURED / NOT_EXPOSED_BY_SELECTED_PROBE`; MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.188 MP-R0A window-generation marker feasibility on the app side (static, 2026-11-02)
+
+- **Investigation (file:line):**
+  - `window::open` calls `cx.open_window` through the shell builder; GPUI's `open_window` creates the window id, invokes `build_root_view` (our `Shell::new`) and only then draws at least once (`gpui/src/app.rs:1347-1368`). A marker recorded in `Shell::new` is therefore **before the first draw/present**.
+  - Startup order: `r0_s2b::install` (collector attach) runs before `window::open` (`apps/desktop/src/main.rs:83`, `window.rs:173`); `Shell::new` receives the window and sets `probe_window = window.window_handle().window_id().as_u64()` (`crates/desktop-gpui/src/lib.rs:562`). The window id is available at construction time.
+  - `r0_probe::record()` is currently `pub(crate)` and only admits while `Control` is active (`r0_probe.rs:133-160`); the existing `EventKind` has only `SurfaceChanged`/`Notify`. A new marker needs a **desktop-gpui public API + new event kind**, not GPUI-internal changes.
+  - All target captures already carry `pre_scope 4`, so "first retained kind 3" alone is not proof; a creation marker plus gap checks is required.
+- **Judgment: `APP_MARKER_AVAILABLE`.** The app-side `open_window` callback path (Shell construction) can emit a window-creation marker with the window id, before the first draw, without modifying GPUI internals. Conditions 1/2/3/6 become provable *when the marker is admitted and retained*; 4/5 remain explicit checks (no `kind 5` gap between marker and first submission; marker present before retention cap).
+- **Design for the next implementation slice (not implemented here):**
+  - `desktop-gpui`: add `EventKind::WindowCreated(u64)` (feature `r0-s2b-instrumentation`) and a `pub fn record_window_created(window: u64)` wrapper; call it at the start of `Shell::new` before any render. No GPUI crate change.
+  - `apps/desktop/src/r0_s2b.rs`: map the marker to a new record kind 10 (arrays/schema expanded to 11), register the window/lifetime at marker time, and reject a marker after any submission for that window.
+  - Capture/observation: bump observation version to 4; add derived `first-frame` only when a marker exists, is retained, and no `kind 5` discontinuity lies between marker and the first kind 3 for that window; otherwise `NOT_MEASURED` with a closed reason.
+  - Tests: marker-before-first-submission accepted; missing marker refused; marker after submission refused; gap between marker and submission refused; v1–v3 archive compatibility preserved.
+- **State:** investigation/design only; no code changed. `first-frame` remains NOT_MEASURED. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
+
