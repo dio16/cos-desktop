@@ -378,9 +378,169 @@
         "identity": "exact_tuple_fnv64"
       },
       "cross_domain_latency": "NOT_MEASURED"
+    },
+    "local-accounting-0c6": {
+      "published": {
+        "ledger.json": "sha256:1e52967d9bdc859d80c0dfadd025b8031a3c17de048ef3f95a30d5f978e6f018",
+        "result.json": "sha256:dbe9d1edc1a0ca40116cb90eb806388a058bd52fbb66ec07aeb135eb3114b166",
+        "completion.json": "sha256:06ef643672dce618d1a5f2b86dac167c8364c5a994e5ba119429cf224cce56c2",
+        "endpoint-availability.json": "sha256:619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303",
+        "s2b-capture.json": "sha256:17d29015d7c50f4aee6de3ce0b2909adeb1981ed64c52f82c894681712897c74",
+        "s2b-observation.json": "sha256:45c358e432ff65f85a70e16d4d13901d3b18a6cf8de7fa4991637f30162534b5",
+        "build-record.json": "sha256:45e594bb579c1a3d0c207532d3c4b9cf7a8d8416729891ebd0bd518d611c59a2",
+        "source-identity.json": "sha256:f26e59ea5b5b00779aa851b699cdf516bbacdce257c9fb8bcb8222be03ecdb33",
+        "run-id": "sha256:cc15831a03cf9f39ef47317cdf31ccf796999a4448bc3110b3e1debede9c3ca7",
+        "close-probe.json": "sha256:41856d641c6b408dadb9172867aeab96b595b519a452c901b906b6e6a06024b1",
+        "plan.json": "sha256:56408b87b7cebeffb9189cee83623c52237592519fa074a0dc9bba938fd003cf"
+      },
+      "ledger": {
+        "exit_code": 0,
+        "timed_out": false,
+        "elapsed_ms": 38479,
+        "pid": 38352
+      },
+      "correspondence": {
+        "probe_window_pid": 38352,
+        "ledger_pid": 38352,
+        "matched": true,
+        "launcher_pid": 54132,
+        "helper_pid": 17424
+      },
+      "execution_id": "d2f6b8a4c1e30975b6d8f2a4c0e19753",
+      "captured_feature": "r0-s2b-instrumentation",
+      "local_accounting": {
+        "local_received": 7,
+        "local_kind_received": [
+          3,
+          4
+        ],
+        "local_kind_retained": [
+          2,
+          3
+        ],
+        "local_kind_scope_clock_rejected": [
+          0,
+          0
+        ],
+        "local_kind_lifetime_rejected": [
+          0,
+          0
+        ],
+        "local_kind_retention_omitted": [
+          1,
+          1
+        ],
+        "kind_counts": [
+          100,
+          49,
+          51,
+          48,
+          0,
+          0,
+          3,
+          0,
+          2,
+          3
+        ],
+        "retained": 256,
+        "conservation": "7 = 5 retained + 0 + 0 + 2 retention-omitted"
+      },
+      "endpoints": {
+        "input-dispatch": {
+          "status": "OBSERVED",
+          "reason": "RETAINED_SOURCE_RECORD"
+        },
+        "gpui-dirty": {
+          "status": "OBSERVED",
+          "reason": "RETAINED_SOURCE_RECORD"
+        },
+        "gpui-cpu-draw": {
+          "status": "OBSERVED",
+          "reason": "RETAINED_SOURCE_RECORD"
+        },
+        "gpui-platform-submission": {
+          "status": "OBSERVED",
+          "reason": "RETAINED_SOURCE_RECORD"
+        },
+        "local-surface-mutation": {
+          "status": "OBSERVED",
+          "reason": "RETAINED_SOURCE_RECORD"
+        },
+        "local-notify": {
+          "status": "OBSERVED",
+          "reason": "RETAINED_SOURCE_RECORD"
+        },
+        "platform-submission-start": {
+          "status": "OBSERVED",
+          "reason": "RETAINED_SOURCE_RECORD"
+        },
+        "app-main-entry": {
+          "status": "NOT_MEASURED",
+          "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+        },
+        "frame-request": {
+          "status": "NOT_MEASURED",
+          "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+        },
+        "first-frame": {
+          "status": "NOT_MEASURED",
+          "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+        },
+        "useful-shell": {
+          "status": "NOT_MEASURED",
+          "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+        },
+        "gpu-submission": {
+          "status": "NOT_MEASURED",
+          "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+        },
+        "present-call": {
+          "status": "NOT_MEASURED",
+          "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+        },
+        "present-return": {
+          "status": "NOT_MEASURED",
+          "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+        },
+        "present": {
+          "status": "NOT_MEASURED",
+          "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+        },
+        "displayed": {
+          "status": "NOT_MEASURED",
+          "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+        },
+        "scanout": {
+          "status": "NOT_MEASURED",
+          "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+        },
+        "input-to-photon": {
+          "status": "NOT_MEASURED",
+          "reason": "NOT_EXPOSED_BY_SELECTED_PROBE"
+        }
+      },
+      "observation_version": 2,
+      "observation": {
+        "disposition": "OBSERVED",
+        "disposition_reason": "RETAINED_SOURCE_OBSERVATION",
+        "retained": 256,
+        "full_coverage": false
+      },
+      "approved": {
+        "product_commit": "0c6434144e93bbe82612d9f133f43a77542a82d",
+        "executable_sha256": "sha256:75495068af0c2ab43bf93578b4c673fbdff56652efa4d8951d72593a8a1cbf6e",
+        "build_record_sha256": "sha256:45e594bb579c1a3d0c207532d3c4b9cf7a8d8416729891ebd0bd518d611c59a2"
+      },
+      "frame_identity": {
+        "status": "MEASURED",
+        "records": 48,
+        "distinct_ids": 48,
+        "source": "gpui.profiler.PresentedFrame",
+        "identity": "exact_tuple_fnv64"
+      }
     }
   },
-  "wm_close_note": "a1-5abf is the counter-bearing A1 capture at 5abf434; probe and ledger PIDs match, and the local accounting closes 7 = retained 5 + scope 0 + lifetime 0 + retention-omitted 2.",
+  "wm_close_note": "a1-0c6 is the counter-bearing A1 capture at 0c6434; probe and ledger PIDs match, and the local accounting closes 7 = retained 5 + scope 0 + lifetime 0 + retention-omitted 2.",
   "close_probe_note": "The original probe files were still present under target/, so both are published with their original digests recorded alongside the digests of the published copies; the published copies drop only fields unrelated to the close action.",
   "keyboard_run": {
     "published": {

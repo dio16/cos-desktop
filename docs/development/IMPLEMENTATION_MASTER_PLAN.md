@@ -3855,3 +3855,14 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Verification:** `pytest apps/desktop/devtools/r0/tests -q` 354 passed / 12 skipped / 1 failed — the sole failure is the known live-manifest `driver_hash` mismatch (recorded, not caused by this change); fmt OK.
 - **State:** implementation only; Native measurement NOT_RUN; MP-R0A IN_PROGRESS, product acceptance NOT_RUN.
 
+### 19.184 MP-R0A platform-submission-start Native measurement (2026-11-02)
+
+- **Build from `0c6d581e7dd507182aa2f9b305fe06f34c238423`:** A0 `sha256:b049096f7bfabaa6e17e7f1ce6395939593615af30fa0d348f627f5fa13497a5` (35,189,248 B), A1 `sha256:75495068af0c2ab43bf93578b4c673fbdff56652efa4d8951d72593a8a1cbf6e` (35,529,728 B), helper `sha256:ac15dad2a203634a72ea32d6a0f85672847947d4b3b30f902bef7ce3f6bfbd86` (616,960 B); source_digest `sha256:efb28b75…`.
+- **Approval ledger 19 → 21:** two `0c6d581` entries (A0/A1); existing 19 unchanged; `approved_digests()` 21 with exactly two unique new entries.
+- **Identity reconciliation:** `s2b-build.json`, both s2b manifests and `r0c-s1-keyboard.json` updated; `validate_manifest` ×2 / `validate_build_record(live=True)` PASS; `pytest apps/desktop/devtools/r0/tests -q` **355 passed / 12 skipped / 0 failed**.
+- **Capture:** existing TAB→ENTER plan, new output/profile, `--timeout-ms 60000`; probe `window.pid 38352` == ledger `pid 38352`; ledger exit 0 / timed_out false / elapsed 38,479 ms; disposition OBSERVED / RETAINED_SOURCE_OBSERVATION; `observation_version 2`.
+- **Endpoint matrix (measured):** `platform-submission-start` = **OBSERVED / RETAINED_SOURCE_RECORD**; also OBSERVED: input-dispatch, gpui-dirty, gpui-cpu-draw, gpui-platform-submission, local-surface-mutation, local-notify. Other endpoints remain `NOT_MEASURED` with their prior reasons. `frame_identity` = MEASURED (48 records / 48 distinct, exact_tuple_fnv64); `cross_domain_latency` NOT_MEASURED.
+- **Counters:** `kind_counts [100,49,51,48,0,0,3,0,2,3]`; local `received 7 = retained 5 + 0 + 0 + retention-omitted 2`; retained 256.
+- **Evidence:** `evidence-published/r0a-capture-latest/a1-0c6-*` plus `record.json` block `wm_close_runs.local-accounting-0c6` with digests, correspondence, endpoint matrix, frame identity and local accounting.
+- **State:** Native measurement established for this approved build; no PASS claim. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
+
