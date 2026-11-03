@@ -1,3 +1,1 @@
-# Evidence must be byte-identical to the digests recorded beside it: keep the
-# published evidence out of any end-of-line conversion.
 docs/development/evidence-published/** -text
