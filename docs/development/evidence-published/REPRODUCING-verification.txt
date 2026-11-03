@@ -1,0 +1,5 @@
+Verification run of the snippet printed in REPRODUCING.md
+command: python (snippet body, run from the repository root)
+
+
+ok=58 mismatch=0 missing=0 sets_without_record=44

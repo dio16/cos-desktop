@@ -1,14 +1,14 @@
 # Reproducing the published evidence
 
-This document covers the **21 recent sets** that were produced by native measurement:
+This document covers the **21 recent sets** under `ax1-*` and `rel3-*`.
 **8 AX1 sets** and **13 REL3 sets**. Older sets keep their own notes and are not
 described here.
 
 ## Verifying the stored bytes
 
-Every set below stores a `record.json`. Two shapes exist: `files` values may be an object with a
-`sha256` field, or a bare digest string, so the check must accept both, and sets without a
-`record.json` are skipped rather than failed.
+**Most** sets below store a `record.json`; four do not (listed at the end of this section), and those are
+skipped rather than failed. Where a record exists, two shapes appear: `files` values may be an object with a
+`sha256` field or a bare digest string, so the check must accept both.
 
 ```python
 import hashlib, json, pathlib
@@ -24,7 +24,9 @@ for setdir in sorted(p for p in root.iterdir() if p.is_dir()):
         print(('OK   ' if actual == digest else 'MISMATCH ') + f'{setdir.name}/{name}')
 ```
 
-Run from the repository root. Current state: **every stored digest matches** (`missing 0`, `mismatch 0`).
+Run from the repository root. **Sets without a `record.json`:** `ax1-contract-matrix-latest`, `ax1-ime-deep-latest`, `ax1-ime-latest` and `rel3-diagnostics-latest`.
+
+The run itself is stored beside this document as `REPRODUCING-verification.txt`: **58 digests OK, 0 mismatch, 0 missing, 44 sets without a record**.
 
 ## Building the binary the native sets used
 
@@ -90,9 +92,9 @@ Each entry states what to do, what to expect, and when the set cannot be recreat
 
 ### `ax1-contract-matrix-latest`
 
-- **Do:** No specific procedure recorded.
-- **Expect:** —
-- **Availability here:** Unknown.
+- **Do:** Produced by the contract-matrix harness, not by the window procedure above.
+- **Expect:** A table of contract-to-implementation links; see the set's own files.
+- **Availability here:** Not recreated here: different harness and no `record.json`.
 
 ### `ax1-diagnostics-toggle-16d6c9a`
 
@@ -108,15 +110,15 @@ Each entry states what to do, what to expect, and when the set cannot be recreat
 
 ### `ax1-ime-deep-latest`
 
-- **Do:** No specific procedure recorded.
-- **Expect:** —
-- **Availability here:** Unknown.
+- **Do:** Produced by the IME probe harness, not by the window procedure above.
+- **Expect:** Deep IME session captures; see the set's own files.
+- **Availability here:** Not recreated here: different harness and no `record.json`.
 
 ### `ax1-ime-latest`
 
-- **Do:** No specific procedure recorded.
-- **Expect:** —
-- **Availability here:** Unknown.
+- **Do:** Produced by the IME probe harness, not by the window procedure above.
+- **Expect:** IME session captures; see the set's own files.
+- **Availability here:** Not recreated here: different harness and no `record.json`.
 
 ### `ax1-remaining-listeners-20261104`
 
@@ -132,9 +134,9 @@ Each entry states what to do, what to expect, and when the set cannot be recreat
 
 ### `rel3-diagnostics-latest`
 
-- **Do:** No specific procedure recorded.
-- **Expect:** —
-- **Availability here:** Unknown.
+- **Do:** Produced by the diagnostics capture harness; it holds `session.json` instead of a `record.json`.
+- **Expect:** A diagnostics session capture.
+- **Availability here:** Not recreated here: different harness and no `record.json`.
 
 ### `rel3-dispatch-experiment-20261104`
 
@@ -162,9 +164,9 @@ Each entry states what to do, what to expect, and when the set cannot be recreat
 
 ### `rel3-native-fresh-release-20261104`
 
-- **Do:** No specific procedure recorded.
-- **Expect:** —
-- **Availability here:** Unknown.
+- **Do:** Open the fresh release build and read the window with UI Automation; then attempt the keyboard path.
+- **Expect:** Window `COS Desktop` (`Zed::Window`) with 48 descendants and automation ids; `SetForegroundWindow` returns false, so no keystroke lands and no diagnostics panel opens.
+- **Availability here:** Recreatable.
 
 ### `rel3-native-save-ce14dca`
 
@@ -198,9 +200,9 @@ Each entry states what to do, what to expect, and when the set cannot be recreat
 
 ### `rel3-r0b-connected-e5af45e`
 
-- **Do:** No specific procedure recorded.
-- **Expect:** —
-- **Availability here:** Unknown.
+- **Do:** Run `scripts/measure-r0b-idle.ps1 -Connected` against a reachable endpoint; for the foreground attempt start a loopback listener and run with `-RejectProbe`.
+- **Expect:** With no endpoint the script exits 2; with a listener the app exits 2 with the instance-ownership message.
+- **Availability here:** Partly recreatable: a real connected baseline needs a Runtime endpoint this environment lacks.
 
 ### `rel3-trace-038005d`
 
@@ -211,6 +213,9 @@ Each entry states what to do, what to expect, and when the set cannot be recreat
 ## Limits that apply to all of these sets
 
 - Keyboard input is unavailable, so anything needing it is `NOT_RUN`.
-- In the export sets, the save dialog produced **no result within the six-second observation window**.
-  That is the whole claim: not that it never returns, and not that it failed.
+- The dialog limit applies to **the two sets measured in this session** - `rel3-export-inprocess-20261104`
+  (`dialog=opened`, no `dialog=returned`, six-second window) and `ax1-export-action-20261104` (no dialog found
+  among the windows it listed). It does **not** apply to the older export sets: `rel3-native-save-ce14dca`
+  recorded a **completed save** of 573 bytes. Those older sets cannot be recreated here because they needed
+  keyboard input, which is a different limitation.
 - Screen-reader reading quality has never been measured; it is `NOT_MEASURED` throughout.
