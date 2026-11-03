@@ -6370,6 +6370,38 @@ mod contrast_scope_tests {
         }
     }
     #[test]
+    fn every_migrated_control_carries_its_own_listener() {
+        // Counting listeners cannot tell whether a particular control has one: a listener added
+        // elsewhere keeps the count satisfied. Check each control's own element instead, bounded
+        // to the text that follows its id.
+        let whole = include_str!("lib.rs");
+        let cut = whole
+            .find("\n#[cfg(test)]\nmod ")
+            .expect("the first test module marker");
+        let source = &whole[..cut];
+        for id in [
+            "compare-change-a",
+            "compare-change-b",
+            "compare-close",
+            "flow-search",
+            "stop-request",
+            "stop-reconcile",
+            "task-search",
+            "surface-switcher",
+        ] {
+            let marker = format!(".id(\"{id}\")");
+            let start = source
+                .find(&marker)
+                .unwrap_or_else(|| panic!("control {id} is not in the production source"));
+            // Slice by characters, not bytes: the source contains Japanese labels.
+            let window: String = source[start..].chars().take(4000).collect();
+            assert!(
+                window.contains(".on_a11y_action(AccessibleAction::Click"),
+                "control {id} has no explicit accessibility click listener"
+            );
+        }
+    }
+
     fn a11y_click_listeners_cover_the_migrated_click_targets() {
         // Count only the production half of the file. Searching the whole text would let the
         // assertions be satisfied by the literals in this very test, which is how a guard stays
