@@ -4371,3 +4371,12 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests:** token-set size/gate/path checks updated; `cargo test -p desktop-gpui` 121 passed / 0 failed; fmt OK; clippy 0 issues.
 - **Native:** Lead re-measurement pending; no causal conclusion claimed. MP-REL3 / MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
 
+#### 19.225 addendum 2 — platform-dialog entry/return trace (2026-11-04)
+
+- **Added tokens:** `export-trace dialog=opened` immediately after `cx.update(|cx| cx.prompt_for_new_path(...))` returns (the request was handed to the platform layer), and `export-trace dialog=returned` immediately after `receiver.await` completes (before classifying selected/cancelled/failed/dropped).
+- **Separation:** no `dialog=opened` → stopped inside `cx.update`/platform call; `opened` but no `returned` → `receiver.await` never completes; `returned` → the post-result classification runs.
+- **Closed set:** 18 fixed ASCII tokens; gate remains `COS_EXPORT_TRACE=1`; no path/body/OS error/user input.
+- **Behavior:** instrumentation only; no save/state/redaction/authority change.
+- **Tests:** set size/gate/path checks updated; `cargo test -p desktop-gpui` 121 passed / 0 failed; fmt OK; clippy 0 issues.
+- **Native:** Lead re-measurement pending; no fix or cause claimed. MP-REL3 / MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
+

@@ -318,10 +318,12 @@ fn preview_trace_emit(token: &'static str) {
 }
 
 #[cfg(test)]
-const EXPORT_TRACE_TOKENS: [&str; 16] = [
+const EXPORT_TRACE_TOKENS: [&str; 18] = [
     "action=reached",
     "task=started",
     "dialog=requested",
+    "dialog=opened",
+    "dialog=returned",
     "data=ready",
     "data=rejected",
     "dialog=selected",
@@ -1485,7 +1487,10 @@ impl Shell {
             export_trace_emit("dialog=requested");
             let receiver =
                 cx.update(|cx| cx.prompt_for_new_path(&directory, Some("support-report.txt")));
-            let (dialog, path) = match receiver.await {
+            export_trace_emit("dialog=opened");
+            let received = receiver.await;
+            export_trace_emit("dialog=returned");
+            let (dialog, path) = match received {
                 Ok(Ok(Some(path))) => (DialogStage::Selected, Some(path)),
                 Ok(Ok(None)) => (DialogStage::Cancelled, None),
                 Ok(Err(_)) => (DialogStage::Failed, None),
@@ -6289,7 +6294,7 @@ mod contrast_scope_tests {
         for value in [None, Some("0"), Some("true"), Some(""), Some(" 1")] {
             assert!(!export_trace_enabled(value), "{value:?} must stay disabled");
         }
-        assert_eq!(EXPORT_TRACE_TOKENS.len(), 16);
+        assert_eq!(EXPORT_TRACE_TOKENS.len(), 18);
         for token in EXPORT_TRACE_TOKENS {
             assert!(!token.contains('/'));
             assert!(!token.chars().any(|character| character == char::from(92)));
