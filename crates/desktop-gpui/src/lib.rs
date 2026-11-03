@@ -4882,6 +4882,14 @@ impl Render for Shell {
                                                                 .on_click(cx.listener(|this, _, _, cx| {
                                                                     this.export_support(cx);
                                                                 }))
+                                                                .on_a11y_action(AccessibleAction::Click, {
+                                                                    let this = cx.entity().downgrade();
+                                                                    move |_, _window, cx| {
+                                                                        let _ = this.update(cx, |this, cx| {
+                                                                            this.export_support(cx);
+                                                                        });
+                                                                    }
+                                                                })
                                                                 .child("エクスポート"),
                                                         )
                                                     })

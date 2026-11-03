@@ -4327,3 +4327,13 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Scope:** generation logic, the state machine, saving, redaction and permissions are unchanged. Both buttons share the same mechanism, so this is not a special case for one control.
 - **Evidence:** `docs/development/evidence-published/ax1-a11y-action-fix-20261104/` with the in-process trace, the preview-after-fix dump and a `record.json`.
 - **State:** MP-AX1/AX2 and MP-REL3 remain **incomplete** - the panel and preview are reachable through accessibility now, but Tab traversal, the save dialog, the connected baseline and screen-reader quality are still unmeasured. Product acceptance NOT_RUN.
+
+### 19.224 MP-REL3/AX1 export button explicit a11y Click listener (2026-11-04)
+
+- **Symptom (Lead Native):** after preview generation `support-export-button` was present and Invoke returned no exception, but no OS save dialog appeared and status/trace stayed absent.
+- **Hypothesis:** the same delivery gap as `support-preview-button` — the advertised Click was not reaching the node because no explicit accessibility Click listener existed; not confirmed.
+- **Fix:** `support-export-button` now has `.on_a11y_action(AccessibleAction::Click, ...)` calling `export_support(cx)`, matching the diagnostics/preview pattern. Existing `.on_click` and `.on_action` paths and all save/state-machine behavior are unchanged.
+- **Inventory (lib.rs `.on_click` without `.on_a11y_action`):** `compare-change-a`, `compare-change-b`, `compare-close`, one `<no-id>` element, `flow-search`, `stop-request`, `stop-reconcile`, `task-search`, `surface-switcher`, `flow-diagram-region`. Not changed in this slice; decision deferred.
+- **Tests:** source test now requires at least three explicit a11y Click listeners; export/preview/toggle/state tests pass. `cargo test -p desktop-gpui` 120 passed / 0 failed; fmt OK; clippy 0 issues.
+- **Native:** dialog opening is **not claimed**; Lead re-measurement pending. MP-REL3 / MP-AX1/AX2 incomplete; product acceptance NOT_RUN.
+
