@@ -1,0 +1,7 @@
+positive control for stderr capture from this exe, same launch mechanism
+exe_sha256: a0588f1fe623cbae2f36b8b9c7f22adb8eb9981a8e628f8e1cf2a6f0f3ac119d
+base_commit: 6cf2462b09143b0449c3c828ec235aabfa861c36
+unknown_flag: exited=True code=2
+unknown_flag_stderr: 'Usage: cos-desktop [--fixture [--fixture-file PATH]]'
+missing_fixture: exited=True code=0
+missing_fixture_stderr: 'Fixture load failed; no Runtime fallback | observation shutdown not observed (quit callback not observed) | preferences save not observed (quit callback not observed)'

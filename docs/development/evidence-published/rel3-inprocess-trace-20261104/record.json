@@ -3,8 +3,8 @@
   "base_commit": "012e4c510f5009ec89f5183756d72d774f9c7468",
   "exe_sha256": "sha256:a0588f1fe623cbae2f36b8b9c7f22adb8eb9981a8e628f8e1cf2a6f0f3ac119d",
   "windows": "10.0.26300.0",
-  "result": "With COS_PREVIEW_TRACE=1 set, the app launched, the diagnostics panel opened through Invoke, and InvokePattern.Invoke() on support-preview-button returned without an exception - and stderr contained ZERO lines, both at startup and after the invoke. Since the trace is written from inside the process at handler entry, the handler was NOT reached. This is in-process evidence and does not depend on the automation read path that the earlier attempts relied on.",
-  "control": "The environment variable's inheritance was checked separately with the same launch mechanism: a child process printed COS_PREVIEW_TRACE=1, so the zero output is not explained by the variable failing to reach the application.",
+  "result": "With COS_PREVIEW_TRACE=1, the app launched, the panel was opened through Invoke and InvokePattern.Invoke() on support-preview-button returned without an exception, while stderr held ZERO lines - both at startup and after the invoke - and the same exe demonstrably writes to that stderr in other situations. The trace is written from inside the process at handler entry, so the handler was NOT reached. This does not depend on the automation read path that the earlier attempts relied on.",
+  "control": "The capture itself was proven with this exe and this launch mechanism: an unknown flag made the app exit 2 with 'Usage: cos-desktop [--fixture [--fixture-file PATH]]' on the captured stderr, and a missing fixture file made it write 'Fixture load failed; no Runtime fallback | ...' there. A GUI process launched this way therefore does reach the redirected stderr, so zero trace lines cannot be explained by capture failing. Environment inheritance was checked separately as well (a child printed COS_PREVIEW_TRACE=1).",
   "conclusion": "The accessibility action on support-preview-button does not dispatch to its handler, while the same mechanism does dispatch for diagnostics-toggle in the same window. The generation-side candidates (a task that never completes, an install rejected by the state machine) are excluded as the first failure, now on in-process evidence rather than an automation reading. Why dispatch differs between the two elements remains unidentified, and no fix is attempted here.",
   "files": {
     "env-inheritance-control.txt": {
@@ -14,6 +14,10 @@
     "inprocess-trace.txt": {
       "sha256": "sha256:1877da872b6c9a38eb5f3e4ff0c207120399eea125c46129bdbca45376580023",
       "bytes": 333
+    },
+    "stderr-capture-control.txt": {
+      "sha256": "sha256:ea1c2009a4556628762edbe26dd7daecfba2ca19bab6b14e7281c6842615c5f3",
+      "bytes": 543
     }
   }
 }
