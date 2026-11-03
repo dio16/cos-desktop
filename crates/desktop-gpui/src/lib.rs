@@ -6402,6 +6402,7 @@ mod contrast_scope_tests {
         }
     }
 
+    #[test]
     fn a11y_click_listeners_cover_the_migrated_click_targets() {
         // Count only the production half of the file. Searching the whole text would let the
         // assertions be satisfied by the literals in this very test, which is how a guard stays
