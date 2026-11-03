@@ -5,12 +5,17 @@
   "windows": "10.0.26300.0",
   "result": "Five invokes - four in a row and one after closing and reopening the panel so the subtree was rebuilt - all returned without an exception, and the in-process trace produced ZERO lines every time. Repainting or rebuilding the subtree does not change the outcome, so this is not a one-frame or stale-snapshot effect.",
   "wiring_comparison": "Both elements are divs with .id, .accessibility_id, .role(Role::Button), .aria_label, .aria_keyshortcuts, .track_focus, .cursor_pointer and both .on_action(Activate) and .on_click. Differences: the toggle's label is state-dependent and its shortcut list includes Ctrl+D, while the preview button additionally carries .aria_description and a static label, and sits deeper in the child chain. Which of those differences, if any, decides dispatch is NOT determined.",
-  "mechanism_note": "In the pinned gpui (395def7a), .on_click registers an AccessibleAction::Click listener during paint against the element's global id, and the listener is only registered inside the a11y-active branch. Both elements produce InvokePattern in the automation tree, so the action is advertised for both; what differs is whether the dispatch reaches the handler.",
+  "mechanism_note": "In the pinned gpui (395def7a), .on_click registers an ordinary click listener, the element advertises a Click action in the accessibility tree, and dispatch for that action synthesises a mouse down/up at the centre of the target node's bounds when no dedicated a11y listener is registered. So an advertised action does not mean a handler is called directly; it means a synthetic click is aimed at the node's rectangle.",
   "not_attempted": "No product change: the next step would be a bisect of the structural differences (for example making the preview button identical to the toggle one property at a time), which is a product edit and needs a decision before it is made.",
   "files": {
     "dispatch-experiment.txt": {
       "sha256": "sha256:46409eebbe8666748afa332b15390bef3f8c9a43e93821b60befd14b3fcce374",
       "bytes": 397
+    },
+    "button-rectangles.txt": {
+      "sha256": "sha256:7c4c803c1cbcbf125724ff0e81def91f8abc7735a2134494f7ae2ace6aeeddff",
+      "bytes": 518
     }
-  }
+  },
+  "rectangles": "Measured while the panel was open: diagnostics-toggle at x=2056 y=776 288x38, support-preview-button at x=2056 y=946 288x38, both on screen, enabled and focusable, inside a window at 1072,277 sized 1296x839. The preview button therefore has a real, non-empty rectangle, so 'the synthetic click is aimed at an empty rectangle' is ruled out as the explanation."
 }

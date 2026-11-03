@@ -1,0 +1,10 @@
+bounding rectangles of the two buttons while the panel is open
+exe_sha256: a0588f1fe623cbae2f36b8b9c7f22adb8eb9981a8e628f8e1cf2a6f0f3ac119d
+base_commit: 316471af036dc5b708f940d32b1b4c033c9910e6
+--- panel open ---
+diagnostics-toggle: x=2056 y=776 w=288 h=38 offscreen=False enabled=True
+support-preview-button: x=2056 y=946 w=288 h=38 offscreen=False enabled=True
+support-export-button: absent
+diagnostic-readonly: x=2056 y=988 w=288 h=40 offscreen=False enabled=True
+window: x=1072 y=277 w=1296 h=839
+stderr_lines: 0
