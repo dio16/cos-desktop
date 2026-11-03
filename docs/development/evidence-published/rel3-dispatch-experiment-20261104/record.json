@@ -17,5 +17,5 @@
       "bytes": 518
     }
   },
-  "rectangles": "Measured while the panel was open: diagnostics-toggle at x=2056 y=776 288x38, support-preview-button at x=2056 y=946 288x38, both on screen, enabled and focusable, inside a window at 1072,277 sized 1296x839. The preview button therefore has a real, non-empty rectangle, so 'the synthetic click is aimed at an empty rectangle' is ruled out as the explanation."
+  "rectangles": "Measured while the panel was open: diagnostics-toggle at x=2056 y=776 288x38 and support-preview-button at x=2056 y=946 288x38, both on screen, enabled, inside a 1296x839 window. What this shows is limited: the rectangle UIA reports is non-empty and inside the window. It does NOT show that gpui's internal node bounds existed at dispatch time, nor that the hit test at the synthesised centre resolved to this button. The empty-rectangle explanation is therefore weakened, not eliminated."
 }
