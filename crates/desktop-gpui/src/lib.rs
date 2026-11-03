@@ -1263,7 +1263,11 @@ impl Shell {
             };
             let _ = this.update(cx, |this, cx| {
                 this.export_in_progress = false;
-                this.export_status = result.map(export_status_message);
+                // A cancelled dialog or a failed open produces no outcome at all, so the
+                // previous status must stay readable instead of being cleared.
+                if let Some(outcome) = result {
+                    this.export_status = Some(export_status_message(outcome));
+                }
                 cx.notify();
             });
         });
