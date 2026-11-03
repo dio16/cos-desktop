@@ -1,0 +1,4618 @@
+{
+  "trace_version": "r0c-trace-1",
+  "scenario": {
+    "id": "r0c-keyboard-20hz",
+    "version": 1,
+    "family": "keyboard",
+    "seed": 7,
+    "fixture_sha256": "sha256:db1cfc8014ad44d3a512415af22ab90523b639de36d606e83247ac109daec2c0",
+    "active_start_ms": 2000,
+    "active_end_ms": 25000
+  },
+  "counts": {
+    "keyboard": 460
+  },
+  "actions": [
+    {
+      "sequence": 0,
+      "kind": "keyboard",
+      "planned_ns": 2000689251,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 1,
+      "kind": "keyboard",
+      "planned_ns": 2055722437,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 2,
+      "kind": "keyboard",
+      "planned_ns": 2100914117,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 3,
+      "kind": "keyboard",
+      "planned_ns": 2152255228,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 4,
+      "kind": "keyboard",
+      "planned_ns": 2201448956,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 5,
+      "kind": "keyboard",
+      "planned_ns": 2253162054,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 6,
+      "kind": "keyboard",
+      "planned_ns": 2305003222,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 7,
+      "kind": "keyboard",
+      "planned_ns": 2350853595,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 8,
+      "kind": "keyboard",
+      "planned_ns": 2403171123,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 9,
+      "kind": "keyboard",
+      "planned_ns": 2455584925,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 10,
+      "kind": "keyboard",
+      "planned_ns": 2505019619,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 11,
+      "kind": "keyboard",
+      "planned_ns": 2555304795,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 12,
+      "kind": "keyboard",
+      "planned_ns": 2603079439,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 13,
+      "kind": "keyboard",
+      "planned_ns": 2653577818,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 14,
+      "kind": "keyboard",
+      "planned_ns": 2705464381,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 15,
+      "kind": "keyboard",
+      "planned_ns": 2753981358,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 16,
+      "kind": "keyboard",
+      "planned_ns": 2802519145,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 17,
+      "kind": "keyboard",
+      "planned_ns": 2852444494,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 18,
+      "kind": "keyboard",
+      "planned_ns": 2901251259,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 19,
+      "kind": "keyboard",
+      "planned_ns": 2954577286,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 20,
+      "kind": "keyboard",
+      "planned_ns": 3004062518,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 21,
+      "kind": "keyboard",
+      "planned_ns": 3055604625,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 22,
+      "kind": "keyboard",
+      "planned_ns": 3105444133,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 23,
+      "kind": "keyboard",
+      "planned_ns": 3155789375,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 24,
+      "kind": "keyboard",
+      "planned_ns": 3205242033,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 25,
+      "kind": "keyboard",
+      "planned_ns": 3255318003,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 26,
+      "kind": "keyboard",
+      "planned_ns": 3300300145,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 27,
+      "kind": "keyboard",
+      "planned_ns": 3355424682,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 28,
+      "kind": "keyboard",
+      "planned_ns": 3404628281,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 29,
+      "kind": "keyboard",
+      "planned_ns": 3454550028,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 30,
+      "kind": "keyboard",
+      "planned_ns": 3502984624,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 31,
+      "kind": "keyboard",
+      "planned_ns": 3550975837,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 32,
+      "kind": "keyboard",
+      "planned_ns": 3605786632,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 33,
+      "kind": "keyboard",
+      "planned_ns": 3654079521,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 34,
+      "kind": "keyboard",
+      "planned_ns": 3701287554,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 35,
+      "kind": "keyboard",
+      "planned_ns": 3756024174,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 36,
+      "kind": "keyboard",
+      "planned_ns": 3805872704,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 37,
+      "kind": "keyboard",
+      "planned_ns": 3853427450,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 38,
+      "kind": "keyboard",
+      "planned_ns": 3905816000,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 39,
+      "kind": "keyboard",
+      "planned_ns": 3950727998,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 40,
+      "kind": "keyboard",
+      "planned_ns": 4001285866,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 41,
+      "kind": "keyboard",
+      "planned_ns": 4055031035,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 42,
+      "kind": "keyboard",
+      "planned_ns": 4100432284,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 43,
+      "kind": "keyboard",
+      "planned_ns": 4151654872,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 44,
+      "kind": "keyboard",
+      "planned_ns": 4206116290,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 45,
+      "kind": "keyboard",
+      "planned_ns": 4251051076,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 46,
+      "kind": "keyboard",
+      "planned_ns": 4302332438,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 47,
+      "kind": "keyboard",
+      "planned_ns": 4355658692,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 48,
+      "kind": "keyboard",
+      "planned_ns": 4401734123,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 49,
+      "kind": "keyboard",
+      "planned_ns": 4453089791,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 50,
+      "kind": "keyboard",
+      "planned_ns": 4500746236,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 51,
+      "kind": "keyboard",
+      "planned_ns": 4553695000,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 52,
+      "kind": "keyboard",
+      "planned_ns": 4603902005,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 53,
+      "kind": "keyboard",
+      "planned_ns": 4654931648,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 54,
+      "kind": "keyboard",
+      "planned_ns": 4703085459,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 55,
+      "kind": "keyboard",
+      "planned_ns": 4751936473,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 56,
+      "kind": "keyboard",
+      "planned_ns": 4802216526,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 57,
+      "kind": "keyboard",
+      "planned_ns": 4850558832,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 58,
+      "kind": "keyboard",
+      "planned_ns": 4901923189,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 59,
+      "kind": "keyboard",
+      "planned_ns": 4955761516,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 60,
+      "kind": "keyboard",
+      "planned_ns": 5003843862,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 61,
+      "kind": "keyboard",
+      "planned_ns": 5055228165,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 62,
+      "kind": "keyboard",
+      "planned_ns": 5101316198,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 63,
+      "kind": "keyboard",
+      "planned_ns": 5156158974,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 64,
+      "kind": "keyboard",
+      "planned_ns": 5200742135,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 65,
+      "kind": "keyboard",
+      "planned_ns": 5254476277,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 66,
+      "kind": "keyboard",
+      "planned_ns": 5301446437,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 67,
+      "kind": "keyboard",
+      "planned_ns": 5350946679,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 68,
+      "kind": "keyboard",
+      "planned_ns": 5402661282,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 69,
+      "kind": "keyboard",
+      "planned_ns": 5450324522,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 70,
+      "kind": "keyboard",
+      "planned_ns": 5505565866,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 71,
+      "kind": "keyboard",
+      "planned_ns": 5551102558,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 72,
+      "kind": "keyboard",
+      "planned_ns": 5600799327,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 73,
+      "kind": "keyboard",
+      "planned_ns": 5655021483,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 74,
+      "kind": "keyboard",
+      "planned_ns": 5702302179,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 75,
+      "kind": "keyboard",
+      "planned_ns": 5750671561,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 76,
+      "kind": "keyboard",
+      "planned_ns": 5805195853,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 77,
+      "kind": "keyboard",
+      "planned_ns": 5851915609,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 78,
+      "kind": "keyboard",
+      "planned_ns": 5903436692,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 79,
+      "kind": "keyboard",
+      "planned_ns": 5954143835,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 80,
+      "kind": "keyboard",
+      "planned_ns": 6000467040,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 81,
+      "kind": "keyboard",
+      "planned_ns": 6055023896,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 82,
+      "kind": "keyboard",
+      "planned_ns": 6103868884,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 83,
+      "kind": "keyboard",
+      "planned_ns": 6150214581,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 84,
+      "kind": "keyboard",
+      "planned_ns": 6204454590,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 85,
+      "kind": "keyboard",
+      "planned_ns": 6254370502,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 86,
+      "kind": "keyboard",
+      "planned_ns": 6304633375,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 87,
+      "kind": "keyboard",
+      "planned_ns": 6352685895,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 88,
+      "kind": "keyboard",
+      "planned_ns": 6400430731,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 89,
+      "kind": "keyboard",
+      "planned_ns": 6452916812,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 90,
+      "kind": "keyboard",
+      "planned_ns": 6500514497,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 91,
+      "kind": "keyboard",
+      "planned_ns": 6554422494,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 92,
+      "kind": "keyboard",
+      "planned_ns": 6603883879,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 93,
+      "kind": "keyboard",
+      "planned_ns": 6652387409,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 94,
+      "kind": "keyboard",
+      "planned_ns": 6702994169,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 95,
+      "kind": "keyboard",
+      "planned_ns": 6750470949,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 96,
+      "kind": "keyboard",
+      "planned_ns": 6803854135,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 97,
+      "kind": "keyboard",
+      "planned_ns": 6853337141,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 98,
+      "kind": "keyboard",
+      "planned_ns": 6903852502,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 99,
+      "kind": "keyboard",
+      "planned_ns": 6952529672,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 100,
+      "kind": "keyboard",
+      "planned_ns": 7000972827,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 101,
+      "kind": "keyboard",
+      "planned_ns": 7050742537,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 102,
+      "kind": "keyboard",
+      "planned_ns": 7106158389,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 103,
+      "kind": "keyboard",
+      "planned_ns": 7151405897,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 104,
+      "kind": "keyboard",
+      "planned_ns": 7203638002,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 105,
+      "kind": "keyboard",
+      "planned_ns": 7254927779,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 106,
+      "kind": "keyboard",
+      "planned_ns": 7303962264,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 107,
+      "kind": "keyboard",
+      "planned_ns": 7354548506,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 108,
+      "kind": "keyboard",
+      "planned_ns": 7400137162,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 109,
+      "kind": "keyboard",
+      "planned_ns": 7455115594,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 110,
+      "kind": "keyboard",
+      "planned_ns": 7504373335,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 111,
+      "kind": "keyboard",
+      "planned_ns": 7555863019,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 112,
+      "kind": "keyboard",
+      "planned_ns": 7603167401,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 113,
+      "kind": "keyboard",
+      "planned_ns": 7651808577,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 114,
+      "kind": "keyboard",
+      "planned_ns": 7705154119,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 115,
+      "kind": "keyboard",
+      "planned_ns": 7753538038,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 116,
+      "kind": "keyboard",
+      "planned_ns": 7802067165,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 117,
+      "kind": "keyboard",
+      "planned_ns": 7850583893,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 118,
+      "kind": "keyboard",
+      "planned_ns": 7903581444,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 119,
+      "kind": "keyboard",
+      "planned_ns": 7953948252,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 120,
+      "kind": "keyboard",
+      "planned_ns": 8005267724,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 121,
+      "kind": "keyboard",
+      "planned_ns": 8056199689,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 122,
+      "kind": "keyboard",
+      "planned_ns": 8103134385,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 123,
+      "kind": "keyboard",
+      "planned_ns": 8153465726,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 124,
+      "kind": "keyboard",
+      "planned_ns": 8203882159,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 125,
+      "kind": "keyboard",
+      "planned_ns": 8253642656,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 126,
+      "kind": "keyboard",
+      "planned_ns": 8301828872,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 127,
+      "kind": "keyboard",
+      "planned_ns": 8354688977,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 128,
+      "kind": "keyboard",
+      "planned_ns": 8405123184,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 129,
+      "kind": "keyboard",
+      "planned_ns": 8453311225,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 130,
+      "kind": "keyboard",
+      "planned_ns": 8504344953,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 131,
+      "kind": "keyboard",
+      "planned_ns": 8553906030,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 132,
+      "kind": "keyboard",
+      "planned_ns": 8604759803,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 133,
+      "kind": "keyboard",
+      "planned_ns": 8651047836,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 134,
+      "kind": "keyboard",
+      "planned_ns": 8704552187,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 135,
+      "kind": "keyboard",
+      "planned_ns": 8751643074,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 136,
+      "kind": "keyboard",
+      "planned_ns": 8802286382,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 137,
+      "kind": "keyboard",
+      "planned_ns": 8851154600,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 138,
+      "kind": "keyboard",
+      "planned_ns": 8902909664,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 139,
+      "kind": "keyboard",
+      "planned_ns": 8952676473,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 140,
+      "kind": "keyboard",
+      "planned_ns": 9002004673,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 141,
+      "kind": "keyboard",
+      "planned_ns": 9054416153,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 142,
+      "kind": "keyboard",
+      "planned_ns": 9105041182,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 143,
+      "kind": "keyboard",
+      "planned_ns": 9153271786,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 144,
+      "kind": "keyboard",
+      "planned_ns": 9206038617,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 145,
+      "kind": "keyboard",
+      "planned_ns": 9254784496,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 146,
+      "kind": "keyboard",
+      "planned_ns": 9305275391,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 147,
+      "kind": "keyboard",
+      "planned_ns": 9356118964,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 148,
+      "kind": "keyboard",
+      "planned_ns": 9403738528,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 149,
+      "kind": "keyboard",
+      "planned_ns": 9455917775,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 150,
+      "kind": "keyboard",
+      "planned_ns": 9504797769,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 151,
+      "kind": "keyboard",
+      "planned_ns": 9550154676,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 152,
+      "kind": "keyboard",
+      "planned_ns": 9600393002,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 153,
+      "kind": "keyboard",
+      "planned_ns": 9654944900,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 154,
+      "kind": "keyboard",
+      "planned_ns": 9704637680,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 155,
+      "kind": "keyboard",
+      "planned_ns": 9753466773,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 156,
+      "kind": "keyboard",
+      "planned_ns": 9800472855,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 157,
+      "kind": "keyboard",
+      "planned_ns": 9854309350,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 158,
+      "kind": "keyboard",
+      "planned_ns": 9905948300,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 159,
+      "kind": "keyboard",
+      "planned_ns": 9955639871,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 160,
+      "kind": "keyboard",
+      "planned_ns": 10001481286,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 161,
+      "kind": "keyboard",
+      "planned_ns": 10054604542,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 162,
+      "kind": "keyboard",
+      "planned_ns": 10102362757,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 163,
+      "kind": "keyboard",
+      "planned_ns": 10154971773,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 164,
+      "kind": "keyboard",
+      "planned_ns": 10206217969,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 165,
+      "kind": "keyboard",
+      "planned_ns": 10252038074,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 166,
+      "kind": "keyboard",
+      "planned_ns": 10300282896,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 167,
+      "kind": "keyboard",
+      "planned_ns": 10354213594,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 168,
+      "kind": "keyboard",
+      "planned_ns": 10400995922,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 169,
+      "kind": "keyboard",
+      "planned_ns": 10450847658,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 170,
+      "kind": "keyboard",
+      "planned_ns": 10500882093,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 171,
+      "kind": "keyboard",
+      "planned_ns": 10551147440,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 172,
+      "kind": "keyboard",
+      "planned_ns": 10603706878,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 173,
+      "kind": "keyboard",
+      "planned_ns": 10656175090,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 174,
+      "kind": "keyboard",
+      "planned_ns": 10704551264,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 175,
+      "kind": "keyboard",
+      "planned_ns": 10750810547,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 176,
+      "kind": "keyboard",
+      "planned_ns": 10805951617,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 177,
+      "kind": "keyboard",
+      "planned_ns": 10853310723,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 178,
+      "kind": "keyboard",
+      "planned_ns": 10900894911,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 179,
+      "kind": "keyboard",
+      "planned_ns": 10952464050,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 180,
+      "kind": "keyboard",
+      "planned_ns": 11003664584,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 181,
+      "kind": "keyboard",
+      "planned_ns": 11054835767,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 182,
+      "kind": "keyboard",
+      "planned_ns": 11101748564,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 183,
+      "kind": "keyboard",
+      "planned_ns": 11151838636,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 184,
+      "kind": "keyboard",
+      "planned_ns": 11204665620,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 185,
+      "kind": "keyboard",
+      "planned_ns": 11252424624,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 186,
+      "kind": "keyboard",
+      "planned_ns": 11300907283,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 187,
+      "kind": "keyboard",
+      "planned_ns": 11354246284,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 188,
+      "kind": "keyboard",
+      "planned_ns": 11406216645,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 189,
+      "kind": "keyboard",
+      "planned_ns": 11451463352,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 190,
+      "kind": "keyboard",
+      "planned_ns": 11502673702,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 191,
+      "kind": "keyboard",
+      "planned_ns": 11555228887,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 192,
+      "kind": "keyboard",
+      "planned_ns": 11603788452,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 193,
+      "kind": "keyboard",
+      "planned_ns": 11655918306,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 194,
+      "kind": "keyboard",
+      "planned_ns": 11703871782,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 195,
+      "kind": "keyboard",
+      "planned_ns": 11753893102,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 196,
+      "kind": "keyboard",
+      "planned_ns": 11802767783,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 197,
+      "kind": "keyboard",
+      "planned_ns": 11850336506,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 198,
+      "kind": "keyboard",
+      "planned_ns": 11905094038,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 199,
+      "kind": "keyboard",
+      "planned_ns": 11955298991,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 200,
+      "kind": "keyboard",
+      "planned_ns": 12005619384,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 201,
+      "kind": "keyboard",
+      "planned_ns": 12055968193,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 202,
+      "kind": "keyboard",
+      "planned_ns": 12104248969,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 203,
+      "kind": "keyboard",
+      "planned_ns": 12150393996,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 204,
+      "kind": "keyboard",
+      "planned_ns": 12203867205,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 205,
+      "kind": "keyboard",
+      "planned_ns": 12256007926,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 206,
+      "kind": "keyboard",
+      "planned_ns": 12302323114,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 207,
+      "kind": "keyboard",
+      "planned_ns": 12354041066,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 208,
+      "kind": "keyboard",
+      "planned_ns": 12401942860,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 209,
+      "kind": "keyboard",
+      "planned_ns": 12450384122,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 210,
+      "kind": "keyboard",
+      "planned_ns": 12502430640,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 211,
+      "kind": "keyboard",
+      "planned_ns": 12553682477,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 212,
+      "kind": "keyboard",
+      "planned_ns": 12606233743,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 213,
+      "kind": "keyboard",
+      "planned_ns": 12655934781,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 214,
+      "kind": "keyboard",
+      "planned_ns": 12700341935,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 215,
+      "kind": "keyboard",
+      "planned_ns": 12754071012,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 216,
+      "kind": "keyboard",
+      "planned_ns": 12805631276,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 217,
+      "kind": "keyboard",
+      "planned_ns": 12851295351,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 218,
+      "kind": "keyboard",
+      "planned_ns": 12900157036,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 219,
+      "kind": "keyboard",
+      "planned_ns": 12953912533,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 220,
+      "kind": "keyboard",
+      "planned_ns": 13001770633,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 221,
+      "kind": "keyboard",
+      "planned_ns": 13055766212,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 222,
+      "kind": "keyboard",
+      "planned_ns": 13104266384,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 223,
+      "kind": "keyboard",
+      "planned_ns": 13156119081,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 224,
+      "kind": "keyboard",
+      "planned_ns": 13201587569,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 225,
+      "kind": "keyboard",
+      "planned_ns": 13251334808,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 226,
+      "kind": "keyboard",
+      "planned_ns": 13300212788,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 227,
+      "kind": "keyboard",
+      "planned_ns": 13351372122,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 228,
+      "kind": "keyboard",
+      "planned_ns": 13400462574,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 229,
+      "kind": "keyboard",
+      "planned_ns": 13454075985,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 230,
+      "kind": "keyboard",
+      "planned_ns": 13503988378,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 231,
+      "kind": "keyboard",
+      "planned_ns": 13554907472,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 232,
+      "kind": "keyboard",
+      "planned_ns": 13606017585,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 233,
+      "kind": "keyboard",
+      "planned_ns": 13652345508,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 234,
+      "kind": "keyboard",
+      "planned_ns": 13700452302,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 235,
+      "kind": "keyboard",
+      "planned_ns": 13753704869,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 236,
+      "kind": "keyboard",
+      "planned_ns": 13803321271,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 237,
+      "kind": "keyboard",
+      "planned_ns": 13851271222,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 238,
+      "kind": "keyboard",
+      "planned_ns": 13904630555,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 239,
+      "kind": "keyboard",
+      "planned_ns": 13955807571,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 240,
+      "kind": "keyboard",
+      "planned_ns": 14005142930,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 241,
+      "kind": "keyboard",
+      "planned_ns": 14055993941,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 242,
+      "kind": "keyboard",
+      "planned_ns": 14103568492,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 243,
+      "kind": "keyboard",
+      "planned_ns": 14152361903,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 244,
+      "kind": "keyboard",
+      "planned_ns": 14203785814,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 245,
+      "kind": "keyboard",
+      "planned_ns": 14253353279,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 246,
+      "kind": "keyboard",
+      "planned_ns": 14300885450,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 247,
+      "kind": "keyboard",
+      "planned_ns": 14350609359,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 248,
+      "kind": "keyboard",
+      "planned_ns": 14405116102,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 249,
+      "kind": "keyboard",
+      "planned_ns": 14454530903,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 250,
+      "kind": "keyboard",
+      "planned_ns": 14501321241,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 251,
+      "kind": "keyboard",
+      "planned_ns": 14555106833,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 252,
+      "kind": "keyboard",
+      "planned_ns": 14603354975,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 253,
+      "kind": "keyboard",
+      "planned_ns": 14651351717,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 254,
+      "kind": "keyboard",
+      "planned_ns": 14702243492,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 255,
+      "kind": "keyboard",
+      "planned_ns": 14752835829,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 256,
+      "kind": "keyboard",
+      "planned_ns": 14803586916,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 257,
+      "kind": "keyboard",
+      "planned_ns": 14855174803,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 258,
+      "kind": "keyboard",
+      "planned_ns": 14906032779,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 259,
+      "kind": "keyboard",
+      "planned_ns": 14955009833,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 260,
+      "kind": "keyboard",
+      "planned_ns": 15004386730,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 261,
+      "kind": "keyboard",
+      "planned_ns": 15054211838,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 262,
+      "kind": "keyboard",
+      "planned_ns": 15103987817,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 263,
+      "kind": "keyboard",
+      "planned_ns": 15154269238,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 264,
+      "kind": "keyboard",
+      "planned_ns": 15203345166,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 265,
+      "kind": "keyboard",
+      "planned_ns": 15254825287,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 266,
+      "kind": "keyboard",
+      "planned_ns": 15300429695,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 267,
+      "kind": "keyboard",
+      "planned_ns": 15350741462,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 268,
+      "kind": "keyboard",
+      "planned_ns": 15404926886,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 269,
+      "kind": "keyboard",
+      "planned_ns": 15450443394,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 270,
+      "kind": "keyboard",
+      "planned_ns": 15503603166,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 271,
+      "kind": "keyboard",
+      "planned_ns": 15554555961,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 272,
+      "kind": "keyboard",
+      "planned_ns": 15603608420,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 273,
+      "kind": "keyboard",
+      "planned_ns": 15653139557,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 274,
+      "kind": "keyboard",
+      "planned_ns": 15701592338,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 275,
+      "kind": "keyboard",
+      "planned_ns": 15752507137,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 276,
+      "kind": "keyboard",
+      "planned_ns": 15804719223,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 277,
+      "kind": "keyboard",
+      "planned_ns": 15852033663,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 278,
+      "kind": "keyboard",
+      "planned_ns": 15903237609,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 279,
+      "kind": "keyboard",
+      "planned_ns": 15954906374,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 280,
+      "kind": "keyboard",
+      "planned_ns": 16001958878,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 281,
+      "kind": "keyboard",
+      "planned_ns": 16056166085,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 282,
+      "kind": "keyboard",
+      "planned_ns": 16103400609,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 283,
+      "kind": "keyboard",
+      "planned_ns": 16151388367,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 284,
+      "kind": "keyboard",
+      "planned_ns": 16206173871,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 285,
+      "kind": "keyboard",
+      "planned_ns": 16251984753,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 286,
+      "kind": "keyboard",
+      "planned_ns": 16302565490,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 287,
+      "kind": "keyboard",
+      "planned_ns": 16350613414,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 288,
+      "kind": "keyboard",
+      "planned_ns": 16403923541,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 289,
+      "kind": "keyboard",
+      "planned_ns": 16450749019,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 290,
+      "kind": "keyboard",
+      "planned_ns": 16500385801,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 291,
+      "kind": "keyboard",
+      "planned_ns": 16551049810,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 292,
+      "kind": "keyboard",
+      "planned_ns": 16603943421,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 293,
+      "kind": "keyboard",
+      "planned_ns": 16653075096,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 294,
+      "kind": "keyboard",
+      "planned_ns": 16700330892,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 295,
+      "kind": "keyboard",
+      "planned_ns": 16754431030,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 296,
+      "kind": "keyboard",
+      "planned_ns": 16801489982,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 297,
+      "kind": "keyboard",
+      "planned_ns": 16854452455,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 298,
+      "kind": "keyboard",
+      "planned_ns": 16902522136,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 299,
+      "kind": "keyboard",
+      "planned_ns": 16953864692,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 300,
+      "kind": "keyboard",
+      "planned_ns": 17002161189,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 301,
+      "kind": "keyboard",
+      "planned_ns": 17053450177,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 302,
+      "kind": "keyboard",
+      "planned_ns": 17104227649,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 303,
+      "kind": "keyboard",
+      "planned_ns": 17151080955,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 304,
+      "kind": "keyboard",
+      "planned_ns": 17200386555,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 305,
+      "kind": "keyboard",
+      "planned_ns": 17253269495,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 306,
+      "kind": "keyboard",
+      "planned_ns": 17305554882,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 307,
+      "kind": "keyboard",
+      "planned_ns": 17352153837,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 308,
+      "kind": "keyboard",
+      "planned_ns": 17404974224,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 309,
+      "kind": "keyboard",
+      "planned_ns": 17450221104,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 310,
+      "kind": "keyboard",
+      "planned_ns": 17501772749,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 311,
+      "kind": "keyboard",
+      "planned_ns": 17553885383,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 312,
+      "kind": "keyboard",
+      "planned_ns": 17602109952,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 313,
+      "kind": "keyboard",
+      "planned_ns": 17652847475,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 314,
+      "kind": "keyboard",
+      "planned_ns": 17705945200,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 315,
+      "kind": "keyboard",
+      "planned_ns": 17754464257,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 316,
+      "kind": "keyboard",
+      "planned_ns": 17800719069,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 317,
+      "kind": "keyboard",
+      "planned_ns": 17854170285,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 318,
+      "kind": "keyboard",
+      "planned_ns": 17905666631,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 319,
+      "kind": "keyboard",
+      "planned_ns": 17954371062,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 320,
+      "kind": "keyboard",
+      "planned_ns": 18005021548,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 321,
+      "kind": "keyboard",
+      "planned_ns": 18056005594,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 322,
+      "kind": "keyboard",
+      "planned_ns": 18105916179,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 323,
+      "kind": "keyboard",
+      "planned_ns": 18153571568,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 324,
+      "kind": "keyboard",
+      "planned_ns": 18205747592,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 325,
+      "kind": "keyboard",
+      "planned_ns": 18251939117,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 326,
+      "kind": "keyboard",
+      "planned_ns": 18302958171,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 327,
+      "kind": "keyboard",
+      "planned_ns": 18355137863,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 328,
+      "kind": "keyboard",
+      "planned_ns": 18400400525,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 329,
+      "kind": "keyboard",
+      "planned_ns": 18451615369,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 330,
+      "kind": "keyboard",
+      "planned_ns": 18500353465,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 331,
+      "kind": "keyboard",
+      "planned_ns": 18554991535,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 332,
+      "kind": "keyboard",
+      "planned_ns": 18603034574,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 333,
+      "kind": "keyboard",
+      "planned_ns": 18650091316,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 334,
+      "kind": "keyboard",
+      "planned_ns": 18706009247,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 335,
+      "kind": "keyboard",
+      "planned_ns": 18753527222,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 336,
+      "kind": "keyboard",
+      "planned_ns": 18800542691,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 337,
+      "kind": "keyboard",
+      "planned_ns": 18854366827,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 338,
+      "kind": "keyboard",
+      "planned_ns": 18904093223,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 339,
+      "kind": "keyboard",
+      "planned_ns": 18951729911,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 340,
+      "kind": "keyboard",
+      "planned_ns": 19000829395,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 341,
+      "kind": "keyboard",
+      "planned_ns": 19051045438,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 342,
+      "kind": "keyboard",
+      "planned_ns": 19103250976,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 343,
+      "kind": "keyboard",
+      "planned_ns": 19155524882,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 344,
+      "kind": "keyboard",
+      "planned_ns": 19201867268,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 345,
+      "kind": "keyboard",
+      "planned_ns": 19254264399,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 346,
+      "kind": "keyboard",
+      "planned_ns": 19305215370,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 347,
+      "kind": "keyboard",
+      "planned_ns": 19351178279,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 348,
+      "kind": "keyboard",
+      "planned_ns": 19401109551,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 349,
+      "kind": "keyboard",
+      "planned_ns": 19451601915,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 350,
+      "kind": "keyboard",
+      "planned_ns": 19502518618,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 351,
+      "kind": "keyboard",
+      "planned_ns": 19556139203,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 352,
+      "kind": "keyboard",
+      "planned_ns": 19602262992,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 353,
+      "kind": "keyboard",
+      "planned_ns": 19652384362,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 354,
+      "kind": "keyboard",
+      "planned_ns": 19701949967,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 355,
+      "kind": "keyboard",
+      "planned_ns": 19754123331,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 356,
+      "kind": "keyboard",
+      "planned_ns": 19800168266,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 357,
+      "kind": "keyboard",
+      "planned_ns": 19854282037,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 358,
+      "kind": "keyboard",
+      "planned_ns": 19903400542,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 359,
+      "kind": "keyboard",
+      "planned_ns": 19955036012,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 360,
+      "kind": "keyboard",
+      "planned_ns": 20002269177,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 361,
+      "kind": "keyboard",
+      "planned_ns": 20053056783,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 362,
+      "kind": "keyboard",
+      "planned_ns": 20100448645,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 363,
+      "kind": "keyboard",
+      "planned_ns": 20150710875,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 364,
+      "kind": "keyboard",
+      "planned_ns": 20203270909,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 365,
+      "kind": "keyboard",
+      "planned_ns": 20254262229,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 366,
+      "kind": "keyboard",
+      "planned_ns": 20304427004,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 367,
+      "kind": "keyboard",
+      "planned_ns": 20350967420,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 368,
+      "kind": "keyboard",
+      "planned_ns": 20400656039,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 369,
+      "kind": "keyboard",
+      "planned_ns": 20450790383,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 370,
+      "kind": "keyboard",
+      "planned_ns": 20504272501,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 371,
+      "kind": "keyboard",
+      "planned_ns": 20554438919,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 372,
+      "kind": "keyboard",
+      "planned_ns": 20601640335,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 373,
+      "kind": "keyboard",
+      "planned_ns": 20652780235,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 374,
+      "kind": "keyboard",
+      "planned_ns": 20700256900,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 375,
+      "kind": "keyboard",
+      "planned_ns": 20755969521,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 376,
+      "kind": "keyboard",
+      "planned_ns": 20800334798,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 377,
+      "kind": "keyboard",
+      "planned_ns": 20851103272,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 378,
+      "kind": "keyboard",
+      "planned_ns": 20905705395,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 379,
+      "kind": "keyboard",
+      "planned_ns": 20953979703,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 380,
+      "kind": "keyboard",
+      "planned_ns": 21004598189,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 381,
+      "kind": "keyboard",
+      "planned_ns": 21051229598,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 382,
+      "kind": "keyboard",
+      "planned_ns": 21102544633,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 383,
+      "kind": "keyboard",
+      "planned_ns": 21156213419,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 384,
+      "kind": "keyboard",
+      "planned_ns": 21205289351,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 385,
+      "kind": "keyboard",
+      "planned_ns": 21255103446,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 386,
+      "kind": "keyboard",
+      "planned_ns": 21304080459,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 387,
+      "kind": "keyboard",
+      "planned_ns": 21355239769,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 388,
+      "kind": "keyboard",
+      "planned_ns": 21402322922,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 389,
+      "kind": "keyboard",
+      "planned_ns": 21454333056,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 390,
+      "kind": "keyboard",
+      "planned_ns": 21502110983,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 391,
+      "kind": "keyboard",
+      "planned_ns": 21552482493,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 392,
+      "kind": "keyboard",
+      "planned_ns": 21600772518,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 393,
+      "kind": "keyboard",
+      "planned_ns": 21652479241,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 394,
+      "kind": "keyboard",
+      "planned_ns": 21705551929,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 395,
+      "kind": "keyboard",
+      "planned_ns": 21753240770,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 396,
+      "kind": "keyboard",
+      "planned_ns": 21804756428,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 397,
+      "kind": "keyboard",
+      "planned_ns": 21853160914,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 398,
+      "kind": "keyboard",
+      "planned_ns": 21901245240,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 399,
+      "kind": "keyboard",
+      "planned_ns": 21956224255,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 400,
+      "kind": "keyboard",
+      "planned_ns": 22000747308,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 401,
+      "kind": "keyboard",
+      "planned_ns": 22055305918,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 402,
+      "kind": "keyboard",
+      "planned_ns": 22104285977,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 403,
+      "kind": "keyboard",
+      "planned_ns": 22154932436,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 404,
+      "kind": "keyboard",
+      "planned_ns": 22202673202,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 405,
+      "kind": "keyboard",
+      "planned_ns": 22253081108,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 406,
+      "kind": "keyboard",
+      "planned_ns": 22303895247,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 407,
+      "kind": "keyboard",
+      "planned_ns": 22351083487,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 408,
+      "kind": "keyboard",
+      "planned_ns": 22402978384,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 409,
+      "kind": "keyboard",
+      "planned_ns": 22455111935,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 410,
+      "kind": "keyboard",
+      "planned_ns": 22500229379,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 411,
+      "kind": "keyboard",
+      "planned_ns": 22551569441,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 412,
+      "kind": "keyboard",
+      "planned_ns": 22602451231,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 413,
+      "kind": "keyboard",
+      "planned_ns": 22651400864,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 414,
+      "kind": "keyboard",
+      "planned_ns": 22706169929,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 415,
+      "kind": "keyboard",
+      "planned_ns": 22755836922,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 416,
+      "kind": "keyboard",
+      "planned_ns": 22804309406,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 417,
+      "kind": "keyboard",
+      "planned_ns": 22850247165,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 418,
+      "kind": "keyboard",
+      "planned_ns": 22900168289,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 419,
+      "kind": "keyboard",
+      "planned_ns": 22953600669,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 420,
+      "kind": "keyboard",
+      "planned_ns": 23002160676,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 421,
+      "kind": "keyboard",
+      "planned_ns": 23050431751,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 422,
+      "kind": "keyboard",
+      "planned_ns": 23103976526,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 423,
+      "kind": "keyboard",
+      "planned_ns": 23154830238,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 424,
+      "kind": "keyboard",
+      "planned_ns": 23201690240,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 425,
+      "kind": "keyboard",
+      "planned_ns": 23253150183,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 426,
+      "kind": "keyboard",
+      "planned_ns": 23300473333,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 427,
+      "kind": "keyboard",
+      "planned_ns": 23353146211,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 428,
+      "kind": "keyboard",
+      "planned_ns": 23404296462,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 429,
+      "kind": "keyboard",
+      "planned_ns": 23451426710,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 430,
+      "kind": "keyboard",
+      "planned_ns": 23505308578,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 431,
+      "kind": "keyboard",
+      "planned_ns": 23550856809,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 432,
+      "kind": "keyboard",
+      "planned_ns": 23602908185,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 433,
+      "kind": "keyboard",
+      "planned_ns": 23655589538,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 434,
+      "kind": "keyboard",
+      "planned_ns": 23701938746,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 435,
+      "kind": "keyboard",
+      "planned_ns": 23750026479,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 436,
+      "kind": "keyboard",
+      "planned_ns": 23803291618,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 437,
+      "kind": "keyboard",
+      "planned_ns": 23853500366,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 438,
+      "kind": "keyboard",
+      "planned_ns": 23903879405,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 439,
+      "kind": "keyboard",
+      "planned_ns": 23950694717,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 440,
+      "kind": "keyboard",
+      "planned_ns": 24001233483,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 441,
+      "kind": "keyboard",
+      "planned_ns": 24050817517,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 442,
+      "kind": "keyboard",
+      "planned_ns": 24102634994,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 443,
+      "kind": "keyboard",
+      "planned_ns": 24155206040,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 444,
+      "kind": "keyboard",
+      "planned_ns": 24205238003,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 445,
+      "kind": "keyboard",
+      "planned_ns": 24253837298,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 446,
+      "kind": "keyboard",
+      "planned_ns": 24304396840,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 447,
+      "kind": "keyboard",
+      "planned_ns": 24351516541,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 448,
+      "kind": "keyboard",
+      "planned_ns": 24400607154,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 449,
+      "kind": "keyboard",
+      "planned_ns": 24455797211,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 450,
+      "kind": "keyboard",
+      "planned_ns": 24502444236,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 451,
+      "kind": "keyboard",
+      "planned_ns": 24553565927,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 452,
+      "kind": "keyboard",
+      "planned_ns": 24603166242,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 453,
+      "kind": "keyboard",
+      "planned_ns": 24654036890,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 454,
+      "kind": "keyboard",
+      "planned_ns": 24705199781,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 455,
+      "kind": "keyboard",
+      "planned_ns": 24753320529,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "RIGHT"
+      }
+    },
+    {
+      "sequence": 456,
+      "kind": "keyboard",
+      "planned_ns": 24804942513,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 457,
+      "kind": "keyboard",
+      "planned_ns": 24854000106,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    },
+    {
+      "sequence": 458,
+      "kind": "keyboard",
+      "planned_ns": 24900919265,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "LEFT"
+      }
+    },
+    {
+      "sequence": 459,
+      "kind": "keyboard",
+      "planned_ns": 24951548117,
+      "requested_hz": 20.0,
+      "burst_index": 0,
+      "payload": {
+        "key": "TAB"
+      }
+    }
+  ],
+  "trace_sha256": "sha256:ef31c464326354627efdb636595f19d058140624c49eddecdd93e6994fa83adb"
+}

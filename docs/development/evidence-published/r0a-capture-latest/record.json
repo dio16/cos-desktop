@@ -217,5 +217,90 @@
     }
   },
   "wm_close_note": "A1 correspondence rerun: a1-rerun-close-probe.json was saved for the same run and its window.pid matches a1-rerun-ledger.json pid. The earlier a1-wmclose probe is the first attempt's probe and is marked UNPROVEN for the 32 s run.",
-  "close_probe_note": "The original probe files were still present under target/, so both are published with their original digests recorded alongside the digests of the published copies; the published copies drop only fields unrelated to the close action."
+  "close_probe_note": "The original probe files were still present under target/, so both are published with their original digests recorded alongside the digests of the published copies; the published copies drop only fields unrelated to the close action.",
+  "keyboard_run": {
+    "published": {
+      "ledger.json": "sha256:f0e9edbfb0165d9146a434deb83e141b802303e7b668df78636514234c096a90",
+      "result.json": "sha256:dbe9d1edc1a0ca40116cb90eb806388a058bd52fbb66ec07aeb135eb3114b166",
+      "completion.json": "sha256:d90868a264dfc79c6fa519247227848051f014958d8305a1f451f5055c5e1c04",
+      "endpoint-availability.json": "sha256:619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303",
+      "s2b-capture.json": "sha256:bd2ee744c07b759ebb23125242849231b295e1c087c0f0579ba0f8a17fad78ec",
+      "s2b-observation.json": "sha256:07312448adf8b8e021273a9289c007e494caf8349678c76242420fc49dce5b69",
+      "build-record.json": "sha256:bb8bc0b7abeae0be97694f1240d7f7eaaa0f4fcd0588d298ac2fc17c35fd92b3",
+      "source-identity.json": "sha256:730f1c8b3f4bcf15b3677d81da162ecaba0ab820d6ba8bad6019a86c168a53d2"
+    },
+    "correspondence": "MATCHED",
+    "extra": {
+      "run-id": {
+        "published_file": "a1-keyboard-run-id",
+        "sha256": "sha256:41c9b233610556c8eb3174c3077c04e528e4bafb3b39974b0e529937fc499931"
+      },
+      "plan": {
+        "published_file": "a1-keyboard-plan.json",
+        "sha256": "sha256:d44ed6db7bf6824250b26d8eb7108e33bc33adb70dcdb262586b4aab4469fe3d"
+      },
+      "close-probe": {
+        "published_file": "a1-keyboard-close-probe.json",
+        "sha256": "sha256:0793fd3ebc9615632a2eff203b0f34df822ae802a12895b3d337fb2ef777b307"
+      }
+    },
+    "capture_summary": {
+      "journal_lost": 0,
+      "journal_seen": 2497,
+      "local_received": 0,
+      "local_enqueued": 0,
+      "local_dropped": 0,
+      "local_undrained": 0,
+      "eligible": 2054,
+      "retained": 256,
+      "retention_dropped": 1798,
+      "excluded": 439,
+      "pre_scope": 4,
+      "post_scope": 0,
+      "invalid_clock": 0,
+      "barrier_spans": 0,
+      "correlation_invalid": 0,
+      "input_unassociated": 920,
+      "unmatched_submission": 0,
+      "undrained_journal": 0,
+      "cancelled": false,
+      "source_coverage": "OFFERED_FINALIZED_JOURNAL_ONLY",
+      "unoffered_loss": "UNKNOWN",
+      "unfinalized_tail": "UNKNOWN",
+      "kind_counts": [
+        112,
+        31,
+        31,
+        30,
+        0,
+        0,
+        52,
+        0,
+        0,
+        0
+      ]
+    },
+    "ledger": {
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_ms": 34830,
+      "pid": 52372
+    },
+    "probe_window_pid": 52372,
+    "close": {
+      "attempts": 1,
+      "posted": true,
+      "refused": "",
+      "window_gone": true
+    },
+    "observed_endpoints": [
+      "input-dispatch",
+      "gpui-dirty",
+      "gpui-cpu-draw",
+      "gpui-platform-submission"
+    ],
+    "coverage": "LIMITED_SOURCE_OBSERVATIONS_ONLY",
+    "frame_identity": "NOT_MEASURED",
+    "note": "First run with the declared keyboard trace: the observation is OBSERVED and retains 256 records. Frame identity and cross-domain latency remain NOT_MEASURED, so this is partial coverage rather than a complete measurement."
+  }
 }
