@@ -1,0 +1,28 @@
+{
+  "actions": [],
+  "binding": {
+    "bound": true,
+    "helper_pid": 28504,
+    "launcher_pid": 19656,
+    "window_pid": 46676
+  },
+  "binding_lost": false,
+  "cancelled": false,
+  "close": {
+    "attempts": 1,
+    "posted": true,
+    "refused": "",
+    "window_gone": true
+  },
+  "generation": 1,
+  "probe_version": "r0c-input-2",
+  "synthetic": true,
+  "time_correspondence": {
+    "input_end_wall_ns": 1793673448938764300,
+    "input_start_wall_ns": 1793673448938761800
+  },
+  "window": {
+    "pid": 46676,
+    "title": "COS Desktop"
+  }
+}
