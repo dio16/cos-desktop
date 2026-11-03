@@ -4263,6 +4263,18 @@ impl Render for Shell {
                                 )
                             }),
                     )
+                    // Activation means the same here as a click: view this candidate. The
+                    // accessibility action is registered explicitly so it does not depend on a
+                    // synthesised press reaching this element's hitbox.
+                    .on_a11y_action(AccessibleAction::Click, {
+                        let this = cx.entity().downgrade();
+                        let identity = activate_identity.clone();
+                        move |_, window, cx| {
+                            let _ = this.update(cx, |this, cx| {
+                                this.view_candidate(identity.clone(), window, cx);
+                            });
+                        }
+                    })
                     .on_click(cx.listener(move |this, _, window, cx| {
                         this.view_candidate(activate_identity.clone(), window, cx);
                     }))
@@ -6369,6 +6381,30 @@ mod contrast_scope_tests {
             assert!(!token.contains("SyntheticSecretValue"));
         }
     }
+    #[test]
+    fn candidate_cards_activate_through_accessibility() {
+        // Candidate cards are built per item, so their id is dynamic; check the construction site
+        // rather than an element instance. Activation must mean the same thing to a screen reader
+        // as to a click: view this candidate.
+        let whole = include_str!("lib.rs");
+        let cut = whole
+            .find("\n#[cfg(test)]\nmod ")
+            .expect("the first test module marker");
+        let source = &whole[..cut];
+        let site = source
+            .find(".accessibility_id(SharedString::from(candidate.element_key.clone()))")
+            .expect("the candidate card construction site");
+        let block: String = source[site..].chars().take(8000).collect();
+        assert!(
+            block.contains(".on_a11y_action(AccessibleAction::Click"),
+            "candidate cards have no explicit accessibility click listener"
+        );
+        assert!(
+            block.contains("this.view_candidate("),
+            "candidate card activation no longer views the candidate"
+        );
+    }
+
     #[test]
     fn every_migrated_control_carries_its_own_listener() {
         // Counting listeners cannot tell whether a particular control has one: a listener added
