@@ -1,0 +1,82 @@
+{
+  "record_version": 1,
+  "candidate_id": "r0a-s2b-candidate-a732adc",
+  "status": "CANDIDATE_UNAPPROVED",
+  "approval": {
+    "owner_approval": "NOT_OBTAINED",
+    "ledger_registration": "NOT_PERFORMED",
+    "launch_or_capture": "NOT_PERFORMED",
+    "note": "Candidate only; the Owner decides approval. No entry was added to approved-executables.json."
+  },
+  "source": {
+    "repository_head": "a732adc677cf28b414a5643cb72a519b156de7a1",
+    "tree": "08f6eae617ea7d93715d11244cd62479aec63a92",
+    "repository_dirty": false,
+    "observer_source_sha256": "sha256:3e0bec1d7a4969dcc110cb29e926be69ae932a33b77fe9cf90a50eaa3d3c47d9",
+    "helper_source_sha256": "sha256:5b585f8ea1adcea540fab97adff9449c0e2ea88af97e29d3f97d4bac522c8058",
+    "gpui_pin": "395def7a067b32ed598fcb3f048969ada9b54942",
+    "toolchain": {
+      "rustc": "1.98.1",
+      "cargo": "1.98.1",
+      "target": "x86_64-pc-windows-msvc"
+    },
+    "cargo_lock_sha256": "sha256:9b38b1d4a4bf7d7c8403c4e445973b09c51533e0f1a246777857a7a5e4c9910d"
+  },
+  "artifacts": {
+    "a0": {
+      "path": "a0/cos-desktop.exe",
+      "sha256": "sha256:9fe8241e72e331404e1b5eea8bc1b00d6ffc1ba4d63cfc42dae06f18d19fb458",
+      "bytes": 35189248,
+      "pdb": {
+        "path": "a0/cos_desktop.pdb",
+        "sha256": "sha256:deb0578b3f3772fb3e467455dd43290edd9741b098b8c0099356d697e1ce65ec"
+      },
+      "features": [],
+      "build": "cargo build --locked -p cos-desktop --bin cos-desktop"
+    },
+    "a1": {
+      "path": "a1/cos-desktop.exe",
+      "sha256": "sha256:f7ec10bded7b3022c05b9140ea946242950f49be8ced9f21b0ac487502703e10",
+      "bytes": 35521536,
+      "pdb": {
+        "path": "a1/cos_desktop.pdb",
+        "sha256": "sha256:490396c87a9ee2397fddf97e546f94635b21fbce3a7ede2651e47f7c6f088146"
+      },
+      "features": [
+        "r0-s2b-instrumentation"
+      ],
+      "build": "cargo build --locked -p cos-desktop --bin cos-desktop --features r0-s2b-instrumentation"
+    },
+    "helper": {
+      "path": "helper/r0_owner.exe",
+      "sha256": "sha256:fefdd0d406f58af50331ad5db682cba7ce16af79516edf3c0d9383f0066c9ca6",
+      "bytes": 616960,
+      "pdb": {
+        "path": "helper/r0_owner.pdb",
+        "sha256": "sha256:120ea3127a9580e1109f6f6540e450942050c5e8d87cd6693cc8474f82ebf834"
+      },
+      "build": "cargo build --locked -p cos-desktop --example r0_owner",
+      "source_sha256": "sha256:5b585f8ea1adcea540fab97adff9449c0e2ea88af97e29d3f97d4bac522c8058",
+      "protocol": 2
+    }
+  },
+  "identity_checks": {
+    "a0_a1_executable_differ": true,
+    "build_record_live_source_match": true,
+    "a1_feature": [
+      "r0-s2b-instrumentation"
+    ],
+    "manifest_driver_hash_matches_source": true,
+    "helper_source_matches": true,
+    "rebuild_bit_reproducibility": "NOT_VERIFIED (dev-profile rebuilds are not claimed bit-reproducible)"
+  },
+  "manifests": {
+    "a0": "records/s2b-default-a0-candidate.json",
+    "a1": "records/s2b-feature-a1-candidate.json",
+    "build": "records/s2b-build-candidate.json"
+  },
+  "hold": [
+    "Owner approval of the candidate identities",
+    "live capture/launch"
+  ]
+}

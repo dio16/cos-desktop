@@ -3578,3 +3578,24 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Artifacts:** both isolated output directories are empty; no capture, observation, ledger or build artifact was published; no partial success claimed. Approval ledger, live manifests, `s2b-build.json` and contracts were not modified.
 - **State:** MP-R0A native capture stays **NOT_RUN**; the evidence is limited to the approved-candidate identity pre-check. Registered candidates derive from `9c5130c`; the current `dev` HEAD S2B measurement is **not** claimed possible.
 
+### 19.164 MP-R0A fresh candidate rebuild from dev HEAD a732adc (2026-11-02)
+
+- **Source identity (measured):** repository head `a732adc677cf28b414a5643cb72a519b156de7a1`, tree `08f6eae617ea7d93715d11244cd62479aec63a92`, worktree clean; `s2b_contracts.source_digest() = sha256:3e0bec1d7a4969dcc110cb29e926be69ae932a33b77fe9cf90a50eaa3d3c47d9`; `driver.helper_source_digest() = sha256:5b585f8ea1adcea540fab97adff9449c0e2ea88af97e29d3f97d4bac522c8058`; toolchain rustc/cargo 1.98.1, target x86_64-pc-windows-msvc, GPUI pin `395def7a…`.
+- **Build commands (isolated target dirs; dev profile; CXX shim wrapper):**
+  - A0: `cargo build --locked --target-dir target/r0a-build-a0 -p cos-desktop --bin cos-desktop`
+  - A1: same `--target-dir target/r0a-build-a1 ... --features r0-s2b-instrumentation`
+  - helper: `cargo build --locked --target-dir target/r0a-build-helper -p cos-desktop --example r0_owner`
+  - Retained under `target/r0a-candidates-a732adc/{a0,a1,helper}` with PDBs; **binaries not committed**.
+- **Artifacts (re-hashed from the built files):**
+
+| artifact | SHA-256 | bytes | PDB SHA-256 |
+|---|---|---:|---|
+| A0 `cos-desktop.exe` | `sha256:9fe8241e72e331404e1b5eea8bc1b00d6ffc1ba4d63cfc42dae06f18d19fb458` | 35,189,248 | `sha256:deb0578b3f3772fb3e467455dd43290edd9741b098b8c0099356d697e1ce65ec` |
+| A1 `cos-desktop.exe` | `sha256:f7ec10bded7b3022c05b9140ea946242950f49be8ced9f21b0ac487502703e10` | 35,521,536 | `sha256:490396c87a9ee2397fddf97e546f94635b21fbce3a7ede2651e47f7c6f088146` |
+| helper `r0_owner.exe` | `sha256:fefdd0d406f58af50331ad5db682cba7ce16af79516edf3c0d9383f0066c9ca6` | 616,960 | `sha256:120ea3127a9580e1109f6f6540e450942050c5e8d87cd6693cc8474f82ebf834` |
+
+  A0 ≠ A1; helper `source_sha256` matches the current helper source digest; protocol 2; Cargo.lock SHA-256 `9b38b1d4…`.
+- **Candidate metadata (tracked):** `apps/desktop/devtools/r0/candidates/a732adc/records/{candidate.json,s2b-build-candidate.json,s2b-default-a0-candidate.json,s2b-feature-a1-candidate.json}`. Identity blocks point at the measured source/executable digests; canonical `r0/s2b-build.json` and `r0/manifests/*` are unchanged.
+- **Validation (existing validators, no relaxation):** `s2b_capture.validate_build_record(..., live=True)` PASS; `s2b_contracts.validate_manifest(a1, expected_driver_hash=source_digest)` PASS with features `["r0-s2b-instrumentation"]`; `contracts.validate_manifest(a0)` PASS. Status `CANDIDATE_UNAPPROVED`.
+- **Not proven / hold:** approval ledger registration, native capture/launch, Owner approval; rebuild bit-reproducibility is NOT_VERIFIED. MP-R0A remains incomplete; this slice only re-candidates the current dev sources.
+
