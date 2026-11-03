@@ -267,9 +267,14 @@ def validate_capture(document: object, *, execution: str | None = None,
         "local_kind_received", "local_kind_retained", "local_kind_scope_clock_rejected",
         "local_kind_lifetime_rejected", "local_kind_retention_omitted",
     )
-    summary = object_fields(value["summary"], COUNT_FIELDS | {
+    required = COUNT_FIELDS | {
         "cancelled", "source_coverage", "unoffered_loss", "unfinalized_tail", "kind_counts",
-    } | set(LOCAL_KIND_FIELDS))
+    }
+    allowed = required | set(LOCAL_KIND_FIELDS)
+    summary = value.get("summary")
+    if (not isinstance(summary, dict) or not required <= set(summary)
+            or not set(summary) <= allowed):
+        fail("SCHEMA")
     for field in COUNT_FIELDS:
         integer(summary[field])
     if (type(summary["cancelled"]) is not bool or summary["cancelled"] != (end - start < MAX_DURATION_NS)

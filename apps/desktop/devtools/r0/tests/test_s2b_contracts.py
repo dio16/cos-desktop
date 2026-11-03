@@ -39,6 +39,20 @@ class S2BWireContract(unittest.TestCase):
             s2b.validate_capture(value)
         self.assertEqual(str(error.exception), code)
 
+    def test_old_capture_without_local_kind_arrays_still_validates(self):
+        value = copy.deepcopy(example())
+        for name in ("local_kind_received", "local_kind_retained",
+                     "local_kind_scope_clock_rejected", "local_kind_lifetime_rejected",
+                     "local_kind_retention_omitted"):
+            value["summary"].pop(name, None)
+        validated = s2b.validate_capture(value)
+        self.assertNotIn("local_kind_received", validated["summary"])
+
+    def test_partial_local_kind_arrays_are_rejected(self):
+        value = copy.deepcopy(example())
+        value["summary"]["local_kind_received"] = [0, 0]
+        self.reject(value, "COUNTS")
+
     def test_nested_input_coalescing_and_explicit_draw_pair_are_not_one_to_one(self):
         value = s2b.validate_capture(example())
         self.assertEqual(value["summary"]["kind_counts"][2:4], [2, 1])

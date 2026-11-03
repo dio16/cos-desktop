@@ -554,6 +554,16 @@ impl Observer {
     }
 }
 
+fn local_conservation_holds(counts: &Counts) -> bool {
+    (0..2).all(|index| {
+        counts.kinds[8 + index]
+            .checked_add(counts.local_scope_clock_rejected[index])
+            .and_then(|value| value.checked_add(counts.local_lifetime_rejected[index]))
+            .and_then(|value| value.checked_add(counts.local_retention_omitted[index]))
+            == Some(counts.local_received_kinds[index])
+    })
+}
+
 fn input_category(kind: &str) -> u64 {
     match kind {
         "key_down" => 1,
@@ -672,6 +682,9 @@ fn capture(
     let undrained = enqueued
         .checked_sub(c.local_received)
         .ok_or(io::ErrorKind::InvalidData)?;
+    if !local_conservation_holds(c) {
+        return Err(io::ErrorKind::InvalidData.into());
+    }
     write!(
         out,
         "\n],\"scope_end_ns\":{},\"summary\":{{\"journal_lost\":{},\"journal_seen\":{},\"local_received\":{},\"local_enqueued\":{enqueued},\"local_dropped\":{dropped},\"local_undrained\":{undrained},\"eligible\":{},\"retained\":{},\"retention_dropped\":{},\"excluded\":{},\"pre_scope\":{},\"post_scope\":{},\"invalid_clock\":{},\"barrier_spans\":{},\"correlation_invalid\":{},\"input_unassociated\":{},\"unmatched_submission\":{},\"undrained_journal\":{},\"cancelled\":{},\"source_coverage\":\"OFFERED_FINALIZED_JOURNAL_ONLY\",\"unoffered_loss\":\"UNKNOWN\",\"unfinalized_tail\":\"UNKNOWN\",\"kind_counts\":[{},{},{},{},{},{},{},{},{},{}],\"local_kind_received\":[{},{}],\"local_kind_retained\":[{},{}],\"local_kind_scope_clock_rejected\":[{},{}],\"local_kind_lifetime_rejected\":[{},{}],\"local_kind_retention_omitted\":[{},{}]}}}}\n",
@@ -734,6 +747,18 @@ fn capture(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn local_conservation_mismatch_is_rejected() {
+        let mut counts = Counts::default();
+        assert!(local_conservation_holds(&counts));
+        counts.local_received_kinds[0] = 1;
+        assert!(!local_conservation_holds(&counts));
+        counts.kinds[8] = 1;
+        assert!(local_conservation_holds(&counts));
+        counts.local_retention_omitted[1] = 1;
+        assert!(!local_conservation_holds(&counts));
+    }
 
     #[test]
     fn real_local_surface_and_notify_events_become_retained_records() -> io::Result<()> {
