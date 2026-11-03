@@ -237,7 +237,9 @@
       },
       "plan": {
         "published_file": "a1-keyboard-plan.json",
-        "sha256": "sha256:d44ed6db7bf6824250b26d8eb7108e33bc33adb70dcdb262586b4aab4469fe3d"
+        "sha256": "sha256:d44ed6db7bf6824250b26d8eb7108e33bc33adb70dcdb262586b4aab4469fe3d",
+        "sha256_worktree": "sha256:d44ed6db7bf6824250b26d8eb7108e33bc33adb70dcdb262586b4aab4469fe3d",
+        "sha256_git_blob": "sha256:8c0e7e7faab4c3f81fb64d523ab5d9d5a237653fcf0a6a307967814ed42a4be4"
       },
       "close-probe": {
         "published_file": "a1-keyboard-close-probe.json",
@@ -302,5 +304,6 @@
     "coverage": "LIMITED_SOURCE_OBSERVATIONS_ONLY",
     "frame_identity": "NOT_MEASURED",
     "note": "First run with the declared keyboard trace: the observation is OBSERVED and retains 256 records. Frame identity and cross-domain latency remain NOT_MEASURED, so this is partial coverage rather than a complete measurement."
-  }
+  },
+  "digest_note": "Digests are computed over the bytes in the working tree. This repository checks out text files with CRLF on Windows while the git blob keeps LF, so a published text file has two legitimate digests; both are recorded where that difference applies, as for the plan."
 }
