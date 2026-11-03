@@ -4048,3 +4048,12 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Not implemented:** save dialog, consent UI and file writing remain the next slice. `crash_report` storage was not reused. Diagnostics ring 4,096 / crash 3×5 MiB / support-preview generation are unchanged.
 - **Verification:** `cargo test -p app-core` 147 passed / 0 failed; fmt OK; clippy 0 issues. MP-REL3 overall remains incomplete.
 
+### 19.201 MP-REL3 export review fixes B-01/B-02/A-01/A-02/A-03 (2026-11-02)
+
+- **B-01 shared rules:** `contains_sensitive_content()` now delegates to the real redactor: it redacts the newline-joined text and each line, and treats any byte change as residual sensitive content. `password:SecretValue`, `token SecretValue`, `?sig=SecretValue`, `path=/home/private/file` and `Bearer
+SecretValue` are all refused; existing redactor behavior is unchanged.
+- **B-02 constructor restriction:** `checked_export_bytes` is now private and test-only; the only public constructor of `ExportData` is `checked_export(&SupportReport)`, so an arbitrary byte string cannot become export data.
+- **A-01 tests:** long (>512-byte) sensitive token, separator-crossing secrets, and benign assignments/`[redacted]`/normal report lines are covered (false positives included).
+- **A-02 docs:** `support_report` module comments and DC-MP-REL3 now state the second pass is implemented and save dialog/consent/file writing remain unimplemented.
+- **A-03 verification record:** implementer environment `cargo test -p app-core` **149 passed / 0 failed**; the Lead's independent run separately reported 17 `PermissionDenied` cases attributable to the environment; the independent Gate result is recorded separately as **SUCCEEDED**. These are not merged into one claim. fmt OK; clippy 0 issues. MP-REL3 overall remains incomplete.
+

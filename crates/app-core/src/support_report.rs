@@ -8,9 +8,9 @@
 //! is reported as `Unknown` with the reason, not as a zero.
 //!
 //! DD-22 ratifies bounded retention, non-exposure of credentials/locators/private
-//! paths and typed diagnostic categories. The export format, destination,
-//! retention period and consent flow are **not** decided, so this module renders
-//! a string for an in-process reader and provides no file or network export.
+//! paths and typed diagnostic categories. This module now also produces checked
+//! export bytes (`checked_export` -> `ExportData`) after a second-pass scan; the
+//! save destination, consent UI and file writing remain unimplemented.
 
 use crate::diagnostics::{DiagnosticBatch, EventGap, MAX_DIAGNOSTIC_EVENTS};
 use crate::observation::PublicationSource;
@@ -438,7 +438,8 @@ pub fn checked_export(report: &SupportReport) -> Result<ExportData, ExportError>
 
 /// Build checked export data from bytes that are already the intended write
 /// payload. Invalid UTF-8 is refused before any text inspection.
-pub fn checked_export_bytes(bytes: &[u8]) -> Result<ExportData, ExportError> {
+#[cfg(test)]
+fn checked_export_bytes(bytes: &[u8]) -> Result<ExportData, ExportError> {
     let text = std::str::from_utf8(bytes).map_err(|_| ExportError::InvalidUtf8)?;
     checked_export_text(text)
 }

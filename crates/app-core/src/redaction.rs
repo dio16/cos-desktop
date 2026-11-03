@@ -487,67 +487,16 @@ fn append(out: &mut String, text: &str, limit: usize) {
 /// to leave the process. Reuses the same key list and surface rules; it is
 /// intentionally fail-closed and never returns the matching value.
 pub fn contains_sensitive_content(input: &str) -> bool {
-    let mut pending_key = false;
-    for token in input.split(|character: char| character.is_whitespace() || character.is_control())
-    {
-        if token.is_empty() {
-            continue;
-        }
-        let trimmed = token.trim_matches(|character: char| {
-            matches!(
-                character,
-                '"' | '\u{27}' | ',' | ';' | '(' | ')' | '[' | ']' | '<' | '>'
-            )
-        });
-        let lower = trimmed.to_ascii_lowercase();
-        if pending_key {
-            return true;
-        }
-        if lower == "bearer" || lower.starts_with("bearer:") {
-            return true;
-        }
-        if trimmed.contains("://")
-            && (trimmed.contains('?')
-                || trimmed.contains('#')
-                || lower.contains("sig=")
-                || lower.contains("signature=")
-                || lower.contains("token="))
-        {
-            return true;
-        }
-        if trimmed.starts_with('/')
-            || trimmed.as_bytes().first() == Some(&b'\\')
-            || lower.starts_with("file:")
-        {
-            return true;
-        }
-        let bytes = trimmed.as_bytes();
-        if bytes.len() >= 3
-            && bytes[0].is_ascii_alphabetic()
-            && bytes[1] == b':'
-            && (bytes[2] == b'\\' || bytes[2] == b'/')
-        {
-            return true;
-        }
-        if let Some((key, value)) = trimmed.split_once('=') {
-            let key = key
-                .trim_matches(|character: char| matches!(character, '"' | '\u{27}'))
-                .trim_end_matches(':')
-                .to_ascii_lowercase();
-            if SENSITIVE_KEYS.contains(&key.as_str()) {
-                return true;
-            }
-            if value.is_empty() {
-                pending_key = true;
-            }
-        }
-        if trimmed.len() > TOKEN_LIMIT * 2
-            && (trimmed.contains('=') || trimmed.contains('?') || trimmed.contains('#'))
-        {
-            return true;
-        }
+    // Share the redactor's exact decision rules. A newline may split a secret
+    // (e.g. `Bearer\nsecret`), so the joined text is checked as well as each line.
+    let joined = input.replace('\n', " ");
+    let limit = joined.len().max(MAX_DIAGNOSTIC_LINE_BYTES);
+    if redact_diagnostic_text_within(&joined, limit) != joined {
+        return true;
     }
-    false
+    input
+        .split('\n')
+        .any(|line| redact_diagnostic_text_within(line, MAX_DIAGNOSTIC_LINE_BYTES) != line)
 }
 
 #[cfg(test)]
@@ -902,6 +851,37 @@ mod tests {
             "Runtime version: unknown (Runtime version is not exposed)",
             "Limits: events 4096, line 512 bytes, report 12288 bytes, 24 lines",
             "Retained events: 6",
+        ] {
+            assert!(!contains_sensitive_content(good), "{good:?} must pass");
+        }
+    }
+
+    #[test]
+    fn second_pass_shares_redactor_rules_for_separators_and_assignments() {
+        for bad in [
+            "password:SecretValue",
+            "token SecretValue",
+            "?sig=SecretValue",
+            "path=/home/private/file",
+            "Authorization: Bearer\nSecretValue",
+        ] {
+            assert!(contains_sensitive_content(bad), "{bad:?} must be refused");
+        }
+        let long = format!("token={}", "x".repeat(600));
+        assert!(
+            contains_sensitive_content(&long),
+            "long token must be refused"
+        );
+    }
+
+    #[test]
+    fn second_pass_does_not_flag_benign_assignments_or_report_lines() {
+        for good in [
+            "frame=3 count=10",
+            "version: 0.1.0",
+            "Desktop version: 0.1.0",
+            "Limits: events 4096, line 512 bytes, report 12288 bytes, 24 lines",
+            "[redacted]",
         ] {
             assert!(!contains_sensitive_content(good), "{good:?} must pass");
         }
