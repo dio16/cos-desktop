@@ -3978,3 +3978,11 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Tests:** pre-scope marker with `pre_scope=1` → UNPROVEN; same with `pre_scope=0` → OBSERVED; flag/scope predicate cases (pre-scope true/false, in-scope false/true). Rust tests unchanged 187 passed / 0 failed; fmt OK; clippy 0 issues; `pytest` 358 passed / 12 skipped / 1 failed (known live-manifest driver_hash).
 - **State:** implementation only; Native measurement NOT_RUN and likely NOT_MEASURED under current captures; MP-R0A IN_PROGRESS, product acceptance NOT_RUN.
 
+### 19.195 MP-R0A submission-history completeness proves first-frame unprovable (2026-11-02)
+
+- **B-01:** `first_frame_matrix()` no longer treats `pre_scope == 0` as evidence. A marker before `scope_start_ns` is derivable only if the capture carries an explicit `submission_history_complete: true`; otherwise it returns **`NOT_MEASURED / UNPROVEN_SUBMISSION_HISTORY`**. The capture source is `OFFERED_FINALIZED_JOURNAL_ONLY` with `unoffered_loss = UNKNOWN`, so an unobserved pre-scope submission is not counted anywhere.
+- **Conclusion recorded:** **marker observation alone is insufficient.** `first-frame` is **`NOT_PROVABLE` under the current information source**; no OBSERVED will be produced for pre-scope markers. A completeness claim or a capture that starts before window creation with proven no-loss history is required.
+- **A-01:** the contract validates `pre_scope_marker == (start_ns < scope_start)` for kind 10; `test_validate_capture_rejects_a_flipped_pre_scope_marker_flag` builds a valid kind-10 capture and flips only the flag, expecting `RECORD_SEMANTICS`. `test_pre_scope_submission_between_marker_and_scope_is_unproven` asserts UNPROVEN even with `pre_scope == 0`, and OBSERVED only with the explicit completeness field.
+- **Verification:** Rust 187 passed / 0 failed; fmt OK; clippy 0 issues; `pytest apps/desktop/devtools/r0/tests -q` 359 passed / 12 skipped / 1 failed (known live-manifest driver_hash; manifest unchanged).
+- **State:** first-frame remains NOT_MEASURED; MP-R0A IN_PROGRESS; product acceptance NOT_RUN. Next area should be chosen accordingly; no forced OBSERVED.
+

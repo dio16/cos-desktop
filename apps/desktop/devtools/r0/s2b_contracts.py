@@ -401,13 +401,15 @@ def first_frame_matrix(capture: dict) -> dict:
     if not markers:
         return {"status": "NOT_MEASURED", "reason": "NO_WINDOW_CREATED_MARKER"}
     scope_start = capture.get("scope_start_ns")
-    pre_scope = capture.get("summary", {}).get("pre_scope", 0)
     for marker in markers:
         window, created = marker["window"], marker["start_ns"]
-        if (isinstance(scope_start, int) and created < scope_start and pre_scope > 0):
-            # A pre-scope submission may exist between the marker and scope start but
-            # was rejected by normal pre-scope admission; initiality is unprovable.
-            return {"status": "NOT_MEASURED", "reason": "UNPROVEN_PRE_SCOPE_SUBMISSION"}
+        if (isinstance(scope_start, int) and created < scope_start
+                and capture.get("submission_history_complete") is not True):
+            # The source offers only finalized journal entries and reports unoffered
+            # loss as UNKNOWN. Without an explicit completeness claim, a pre-scope
+            # initial submission may exist but was never observed; pre_scope is not
+            # evidence of its absence.
+            return {"status": "NOT_MEASURED", "reason": "UNPROVEN_SUBMISSION_HISTORY"}
         submissions = [record for record in records
                        if record.get("kind") == 3 and record.get("window") == window]
         if not submissions:

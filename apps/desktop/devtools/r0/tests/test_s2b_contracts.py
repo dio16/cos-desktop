@@ -103,10 +103,34 @@ class S2BWireContract(unittest.TestCase):
                                {"kind": 3, "window": 7, "start_ns": 300}]}
         self.assertEqual(s2b.first_frame_matrix(capture),
                          {"status": "NOT_MEASURED",
-                          "reason": "UNPROVEN_PRE_SCOPE_SUBMISSION"})
+                          "reason": "UNPROVEN_SUBMISSION_HISTORY"})
         capture["summary"]["pre_scope"] = 0
         self.assertEqual(s2b.first_frame_matrix(capture),
+                         {"status": "NOT_MEASURED",
+                          "reason": "UNPROVEN_SUBMISSION_HISTORY"})
+        capture["submission_history_complete"] = True
+        self.assertEqual(s2b.first_frame_matrix(capture),
                          {"status": "OBSERVED", "reason": "RETAINED_SOURCE_RECORD"})
+
+    def test_validate_capture_rejects_a_flipped_pre_scope_marker_flag(self):
+        value = copy.deepcopy(example())
+        start = value["scope_start_ns"]
+        marker = {"seq": len(value["records"]) + 1, "kind": 10, "window": 10,
+                  "lifetime": 1, "start_ns": start - 1, "end_ns": start - 1,
+                  "dirty_ns": None, "invalidations": None,
+                  "paired_draw_start_ns": None, "paired_draw_end_ns": None,
+                  "category": None, "caused_invalidation": None, "lost": None,
+                  "pre_scope_marker": True}
+        value["records"].append(marker)
+        value["summary"]["kind_counts"] = list(value["summary"]["kind_counts"]) + [1]
+        value["summary"]["local_received"] += 1
+        value["summary"]["local_enqueued"] += 1
+        value["summary"]["retained"] += 1
+        value["summary"]["eligible"] += 1
+        validated = s2b.validate_capture(copy.deepcopy(value))
+        self.assertEqual(validated["records"][-1]["kind"], 10)
+        marker["pre_scope_marker"] = False
+        self.reject(value, "RECORD_SEMANTICS")
 
     def test_marker_flag_must_match_the_scope_comparison(self):
         self.assertTrue(s2b.marker_flag_matches(100, 200, True))
