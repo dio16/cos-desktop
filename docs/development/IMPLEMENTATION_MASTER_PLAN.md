@@ -3668,3 +3668,52 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Digest convention for published text:** this repository checks out text files with CRLF on Windows while the git blob keeps LF, so a published file has two legitimate digests. For the plan, `d44ed6db…9fe3d` is the working-tree copy and `8c0e7e7f…42abe4` is the blob; both are recorded in `record.json`, which also states the convention.
 - **Conclusion (measured only):** with a non-empty synthetic keyboard plan, the same approved A1 run retained **256** records and reached `OBSERVED / RETAINED_SOURCE_OBSERVATION`; the earlier empty-plan runs retained 0. This does not establish a single cause, does not make `local-surface-mutation`/`local-notify` measured, and is not a PASS or product acceptance. Ledger/manifests/`s2b-build.json`/contracts unchanged.
 
+### 19.171 MP-R0A unmeasured endpoints: reachability and collection boundary (static, 2026-11-02)
+
+- **Scope:** static investigation at HEAD `f1c3283` of the two local endpoints and the two frame-identity fields; no capture, probe or Gate was added. §19.170's measured counters are referenced unchanged (retained 256; local counters all 0; `kind_counts [112,31,31,30,0,0,52,0,0,0]`).
+
+**B — local producer paths**
+
+| Fact | Source |
+|---|---|
+| `EventKind::SurfaceChanged(Surface)` / `EventKind::Notify` are the only local kinds | `crates/desktop-gpui/src/r0_probe.rs:15-18` |
+| `navigate()` records `SurfaceChanged` only when the admitted surface actually changes; on success it **always** records `Notify` | `crates/desktop-gpui/src/lib.rs:1310-1338` (`1324`, `1329`) |
+| `advance_surface()` records `SurfaceChanged` when `dock::advance` yields a surface, but records **no `Notify`** | `crates/desktop-gpui/src/lib.rs:1343-1360` (`1354`) |
+| Both are `#[cfg(feature = "r0-s2b-instrumentation")]`; admissions only while `Control` is active and not stopped | `crates/desktop-gpui/src/lib.rs:1318-1328`, `r0_probe.rs:133-160` |
+| Producer enqueues via `try_send`; full/disconnected queues increment `dropped`, success increments `enqueued` | `r0_probe.rs:133-160` |
+| Consumer maps `SurfaceChanged → kind 8` (category Artifact/Compare/Flow) and `Notify → kind 9`; both are `SUPPORTED` endpoints | `apps/desktop/src/r0_s2b.rs:461-484`; `apps/desktop/devtools/r0/s2b_contracts.py:46-50` |
+| Consumer drains local queue and increments `local_received`, then `retain()` applies the 256-record cap | `apps/desktop/src/r0_s2b.rs:509-536`, `r0_s2b.rs:487-505` |
+| A unit test proves kinds 8/9 become retained records when events are emitted | `apps/desktop/src/r0_s2b.rs:714-747` |
+
+**C — keyboard plan reachability**
+
+- The 460-action plan contains only `TAB`, `RIGHT`, `LEFT` at 20 Hz (`r0c-s1-keyboard.json`). `TAB` is globally bound to `FocusNext` (`lib.rs:121`, handler `:4013`); `RIGHT`/`LEFT` are only scoped bindings (`TaskRailInput`, `CandidateDock`, `FlowSearchInput`) (`lib.rs:136-153`). Neither dispatches `navigate()` or `advance_surface()`.
+- Surface changes require `Ctrl+1/2/3` (`Artifact`/`Compare`/`Flow` → `navigate`, `lib.rs:117-119`, `:4006-4009`), `Ctrl+Tab` (`NextSurface` → `advance_surface`, `:120`, `:4010-4012`), or `Activate` while one of the surface focus handles is focused (`:4015-4019`).
+- Therefore the tested keyboard plan **was not designed to produce local-surface/notify events**; this is a design-level reachability conclusion, not a runtime proof that the producer was never called.
+
+**D — cause candidates for `local_enqueued 0 / local_received 0 / local_dropped 0`**
+
+| Candidate | Assessment |
+|---|---|
+| 1. Producer never called | **Most consistent** with the key map (no navigate/advance action in the plan), but no per-call trace exists → **UNDETERMINED** at runtime |
+| 2. Called outside capture scope | Cannot be separated from (1) by counters: `enqueued` only counts active admissions → **UNDETERMINED** |
+| 3. Enqueue lost | Not supported: `local_enqueued 0` and `local_dropped 0`; nothing reached the queue |
+| 4. Observer excluded | Not supported: `local_received 0`; no local record reached retention |
+| 5. Retention cap | Not implicated for local kinds: `kind_counts[8]=kind_counts[9]=0`; the 1,798 drops are of other eligible records. `retained 256` does not explain the local zeros because all local counters are zero. |
+
+**E — frame identity / cross-domain latency**
+
+- The capture writer hardcodes `"frame_identity": "NOT_MEASURED"` and `"cross_domain_latency": "NOT_MEASURED"` (`apps/desktop/devtools/r0/s2b_capture.py:231-232`). The record schema has no frame identifier or cross-clock correlation field (`apps/desktop/src/r0_s2b.rs:210-224`; `s2b_contracts.py:35-42`), and the probe has no GPU/Present/display-completion source (`s2b_contracts.py:51-55` MISSING list). Contract wording uses `NOT_EXPOSED_BY_SELECTED_PROBE` for those endpoints (`s2b_contracts.py:307-316`), while local endpoints with `kind_counts 0` become `NOT_MEASURED / NO_RETAINED_VALID_RECORD`. **Without additional implementation, frame identity and cross-domain latency are not measurable in this build.**
+
+**F — endpoint conclusion table**
+
+| Endpoint | Implementation state | Producer | Consumer / contract | Measured value and status (§19.170) | Determination | Next work |
+|---|---|---|---|---|---|---|
+| `local-surface-mutation` | Implemented (feature-gated) | `navigate()` / `advance_surface()` (`lib.rs:1324`, `:1354`) | queue + kind 8, `SUPPORTED` (`s2b_contracts.py:49`) | kind 8 = 0; `NOT_MEASURED / NO_RETAINED_VALID_RECORD` | Reachability not established; producer call **UNDETERMINED** | Existing Ctrl+1/2/3 or Ctrl+Tab capture (no implementation) |
+| `local-notify` | Implemented (feature-gated) | `navigate()` success only (`lib.rs:1329`); **not** `advance_surface` | queue + kind 9, `SUPPORTED` | kind 9 = 0; `NOT_MEASURED` | Same; also note Ctrl+Tab emits no Notify by design | Existing Ctrl+1/2/3 or Activate-navigation capture |
+| `frame_identity` | Not implemented | none | hardcoded `NOT_MEASURED` (`s2b_capture.py:231`) | NOT_MEASURED | **Probe absent** | Implementation needed |
+| `cross_domain_latency` | Not implemented | none | hardcoded `NOT_MEASURED` (`s2b_capture.py:232`) | NOT_MEASURED | **Probe absent** | Implementation needed |
+
+- **UNDETERMINED:** runtime producer-call status for local kinds; separation between "not called" and "called outside active scope"; whether a future navigation capture will retain local records under the 256 cap.
+- **State:** MP-R0A remains **IN_PROGRESS**; product acceptance **NOT_RUN**. No measurement was fabricated and no product/probe code changed.
+
