@@ -1,0 +1,29 @@
+{
+  "measurement": "MP-REL3 closed observability for existing-file refusal",
+  "base_commit": "038005d83c1665dc5df22e628dfb933616d7214f",
+  "exe_sha256": "sha256:255116017633ba572a70a4cef84191136794b3b141b7baaa6dc716dad5038999",
+  "A": "PASS: instrumented dialog/data/writer/UI boundary in export_support; closed enum values only, no paths/content/OS text.",
+  "B": "PASS: enum values Dialog Selected/Cancelled/Failed/ReceiverDropped, Data Ready/Rejected/UpdateFailed, Writer NotStarted/Success/AlreadyExists/CleanupFailed/OtherError, UI StatusUpdated/StatusPreserved/UpdateFailed.",
+  "C": "PASS: UIA exposes support-export-trace as ControlType.Text with ASCII stage string; status/export behavior unchanged.",
+  "D": "PASS: cancel trace dialog=Cancelled;data=Rejected;writer=NotStarted;ui=StatusPreserved. Existing-file after Yes trace dialog=Selected;data=Ready;writer=AlreadyExists;ui=StatusUpdated; status=\u540c\u540d\u306e\u30d5\u30a1\u30a4\u30eb\u304c\u5b58\u5728\u3057\u307e\u3059.",
+  "E": "PASS: branch tests for trace values and no-path/content; existing status/export unit tests unchanged.",
+  "F": "PASS: OS overwrite confirmation observed (case 1); after Yes writer returned AlreadyExists (case 3); existing SHA-256 unchanged and content ORIGINAL. Cases are distinguished, not mutually exclusive.",
+  "G": "Evidence files below; SHA-256 and git_object_id recorded. Shift+Tab/stale rejection remain NOT_RUN.",
+  "files": {
+    "environment.txt": {
+      "sha256": "sha256:0bbf45801773f016b3084e08fd5ebc1aa3148cde7ee40482f162733f196f22dd",
+      "git_blob": "292c5b234d65c4fb60c911878bf554d679382a42",
+      "bytes": 338
+    },
+    "existing.txt": {
+      "sha256": "sha256:962f85a27854336f3286ad54b49321f62525043b5f3508b2ecc887fdd6e7550e",
+      "git_blob": "0ee48e9dd23abe6953a9877eaa1ccf44519a2c8b",
+      "bytes": 8
+    },
+    "trace.txt": {
+      "sha256": "sha256:6051d03ca74c09d5e0b83bf1ffe8d9df325c89ab5ec1899744e593a4a792ae2f",
+      "git_blob": "48555d4e69adb0712e99b3127bd2acb3bfc131e9",
+      "bytes": 397
+    }
+  }
+}

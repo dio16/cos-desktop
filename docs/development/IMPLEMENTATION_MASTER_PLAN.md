@@ -4146,3 +4146,13 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **G:** evidence under `docs/development/evidence-published/rel3-existing-a9e4d15/` with `.txt` files and SHA-256/Git blob IDs in `record.json`.
 - **Residual:** Shift+Tab, publication stale rejection and reproduction-procedure cleanup remain NOT_RUN / pending. **MP-REL3 incomplete; product acceptance NOT_RUN.**
 
+### 19.211 MP-REL3 closed save observability and Native cause determination (2026-11-02)
+
+- **A/B design:** `export_support` now records fixed enum stages — Dialog `Selected/Cancelled/Failed/ReceiverDropped`; Data `Ready/Rejected/UpdateFailed`; Writer `NotStarted/Success/AlreadyExists/CleanupFailed/OtherError`; UI `StatusUpdated/StatusPreserved/UpdateFailed`. Only enum tags are rendered (`dialog=…;data=…;writer=…;ui=…`); no path, filename, report text or OS error text is captured.
+- **C observation:** the trace is exposed as `support-export-trace` (`ControlType.Text`, ASCII stage string). The save/status behavior and closed messages are unchanged.
+- **D Native cause determination (PASS):** on cancel the trace was `dialog=Cancelled;data=Rejected;writer=NotStarted;ui=StatusPreserved`. For an existing file, the OS overwrite confirmation appeared (case 1); after choosing `はい`, the trace was `dialog=Selected;data=Ready;writer=AlreadyExists;ui=StatusUpdated` and the status read `同名のファイルが存在します`. This proves the writer was reached and returned `AlreadyExists` (case 3); it also confirms case 2 did not occur for this run.
+- **E tests:** branch tests cover trace values and assert no path/content; existing export/status tests pass. `cargo test -p desktop-gpui` 116 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` succeeded before the Native run.
+- **F existing file:** SHA-256 unchanged (`962f85a2…`), 8 bytes, content `ORIGINAL`.
+- **G evidence:** `docs/development/evidence-published/rel3-trace-038005d/` with `trace.txt`, `existing.txt`, `environment.txt`, `record.json`. Captured console text is **cp932** for Japanese; trace enum values are ASCII. SHA-256 and `git_object_id` are recorded.
+- **Residual:** Shift+Tab and publication-change stale rejection remain NOT_RUN; screen-reader quality NOT_MEASURED. **MP-REL3 incomplete; product acceptance NOT_RUN.**
+

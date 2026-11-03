@@ -378,6 +378,39 @@ fn apply_export_outcome(
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum DialogStage {
+    Selected,
+    Cancelled,
+    Failed,
+    ReceiverDropped,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum DataStage {
+    Ready,
+    Rejected,
+    UpdateFailed,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum WriterStage {
+    NotStarted,
+    Success,
+    AlreadyExists,
+    CleanupFailed,
+    OtherError,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum UiStage {
+    StatusUpdated,
+    StatusPreserved,
+    #[allow(dead_code)] // only unobservable when the final UI update itself fails
+    UpdateFailed,
+}
+
+fn trace_line(d: DialogStage, data: DataStage, writer: WriterStage, ui: UiStage) -> String {
+    format!("dialog={d:?};data={data:?};writer={writer:?};ui={ui:?}")
+}
+
 fn export_status_message(
     result: Result<(), app_core::support_report::ExportWriteError>,
 ) -> &'static str {
@@ -403,6 +436,7 @@ fn begin_export(in_progress: &mut bool) -> bool {
 }
 
 /// Product selection decision: cancel and dialog errors choose no path.
+#[cfg(test)]
 fn selected_export_path(selection: Result<std::path::PathBuf, ()>) -> Option<std::path::PathBuf> {
     selection.ok()
 }
@@ -480,6 +514,7 @@ pub struct Shell {
     support_task: Task<()>,
     export_in_progress: bool,
     export_status: Option<&'static str>,
+    export_trace: Option<String>,
     workbench: Option<Workbench>,
     /// Derived display text with its publication identity, revalidated on render.
     cache: DisplayCache,
@@ -681,6 +716,7 @@ impl Shell {
             support_task: cx.spawn(async move |_this, _cx| {}),
             export_in_progress: false,
             export_status: None,
+            export_trace: None,
             workbench,
             cache: DisplayCache::from_text(ui_model::WorkbenchText::withheld_for_desktop(
                 &desktop_version,
@@ -1246,37 +1282,63 @@ impl Shell {
                 .unwrap_or_else(|| std::path::PathBuf::from("."));
             let receiver =
                 cx.update(|cx| cx.prompt_for_new_path(&directory, Some("support-report.txt")));
-            let selection = match receiver.await {
-                Ok(Ok(Some(path))) => Ok(path),
-                Ok(Ok(None)) => Err(()),
-                _ => Err(()),
+            let (dialog, path) = match receiver.await {
+                Ok(Ok(Some(path))) => (DialogStage::Selected, Some(path)),
+                Ok(Ok(None)) => (DialogStage::Cancelled, None),
+                Ok(Err(_)) => (DialogStage::Failed, None),
+                Err(_) => (DialogStage::ReceiverDropped, None),
             };
-            let data = selected_export_path(selection).and_then(|path| {
+            let mut data_stage = DataStage::Rejected;
+            let mut writer_stage = WriterStage::NotStarted;
+            let mut result = None;
+            if let Some(path) = path {
                 let mut taken = None;
-                let _ = this.update(cx, |this, _cx| {
-                    let live = this
-                        .handle
-                        .as_ref()
-                        .and_then(Self::current_notice)
-                        .map(|notice| (notice.session_generation, notice.publication_version));
-                    taken =
-                        this.support_state
-                            .take_for_save(generation, this.handle.is_some(), live);
-                });
-                taken.map(|data| (path, data))
-            });
-            let result = match data {
-                Some((path, data)) => Some(
-                    cx.background_executor()
+                let update_ok = this
+                    .update(cx, |this, _cx| {
+                        let live = this
+                            .handle
+                            .as_ref()
+                            .and_then(Self::current_notice)
+                            .map(|notice| (notice.session_generation, notice.publication_version));
+                        taken = this.support_state.take_for_save(
+                            generation,
+                            this.handle.is_some(),
+                            live,
+                        );
+                    })
+                    .is_ok();
+                if !update_ok {
+                    data_stage = DataStage::UpdateFailed;
+                } else if let Some(data) = taken {
+                    data_stage = DataStage::Ready;
+                    let write = cx
+                        .background_executor()
                         .spawn(async move { data.write_atomic(&path, false) })
-                        .await,
-                ),
-                None => None,
+                        .await;
+                    writer_stage = match &write {
+                        Ok(()) => WriterStage::Success,
+                        Err(app_core::support_report::ExportWriteError::AlreadyExists) => {
+                            WriterStage::AlreadyExists
+                        }
+                        Err(app_core::support_report::ExportWriteError::CleanupFailed) => {
+                            WriterStage::CleanupFailed
+                        }
+                        Err(_) => WriterStage::OtherError,
+                    };
+                    result = Some(write);
+                }
+            }
+            let ui_stage = if result.is_some() {
+                UiStage::StatusUpdated
+            } else {
+                UiStage::StatusPreserved
             };
+            let trace = trace_line(dialog, data_stage, writer_stage, ui_stage);
             let _ = this.update(cx, |this, cx| {
                 this.export_in_progress = false;
                 // Cancelled or failed opens produce no outcome and keep the last status.
                 apply_export_outcome(&mut this.export_status, result);
+                this.export_trace = Some(trace);
                 cx.notify();
             });
         });
@@ -4629,6 +4691,17 @@ impl Render for Shell {
                                                                 .child(status),
                                                         )
                                                     })
+                                                    .when_some(self.export_trace.clone(), |element, trace| {
+                                                        element.child(
+                                                            div()
+                                                                .id("support-export-trace")
+                                                                .accessibility_id("support-export-trace")
+                                                                .role(Role::Label)
+                                                                .aria_label("エクスポート診断")
+                                                                .aria_value(trace.clone())
+                                                                .child(trace),
+                                                        )
+                                                    })
                                                     // DIAGNOSTICS-READONLY-END
                                                     .into_any_element()
                                             } else {
@@ -5431,8 +5504,8 @@ mod contrast_scope_tests {
         }
         assert_eq!(
             region.matches(".accessibility_id(").count(),
-            automation_ids.len() + 1,
-            "six labels plus the export status carry exactly one AutomationId"
+            automation_ids.len() + 2,
+            "six labels plus the status and trace carry exactly one AutomationId"
         );
         assert!(
             region.contains(".accessibility_id(\"support-export-status\")"),
@@ -5443,6 +5516,8 @@ mod contrast_scope_tests {
             "export status must map the closed message to the AccessKit value/Name"
         );
         assert!(region.contains(".aria_label(\"エクスポート結果\")"));
+        assert!(region.contains(".accessibility_id(\"support-export-trace\")"));
+        assert!(region.contains(".aria_value(trace.clone())"));
         let mut seen = std::collections::BTreeSet::new();
         for id in automation_ids {
             assert!(seen.insert(id), "duplicate AutomationId {id}");
@@ -5756,5 +5831,65 @@ mod contrast_scope_tests {
             "double press is refused"
         );
         let _ = data;
+    }
+    #[test]
+    fn export_trace_is_closed_and_contains_no_paths_or_content() {
+        use super::{DataStage, DialogStage, UiStage, WriterStage, trace_line};
+        for (d, data, writer, ui) in [
+            (
+                DialogStage::Cancelled,
+                DataStage::Rejected,
+                WriterStage::NotStarted,
+                UiStage::StatusPreserved,
+            ),
+            (
+                DialogStage::Failed,
+                DataStage::Rejected,
+                WriterStage::NotStarted,
+                UiStage::StatusPreserved,
+            ),
+            (
+                DialogStage::ReceiverDropped,
+                DataStage::Rejected,
+                WriterStage::NotStarted,
+                UiStage::StatusPreserved,
+            ),
+            (
+                DialogStage::Selected,
+                DataStage::Rejected,
+                WriterStage::NotStarted,
+                UiStage::StatusPreserved,
+            ),
+            (
+                DialogStage::Selected,
+                DataStage::Ready,
+                WriterStage::AlreadyExists,
+                UiStage::StatusUpdated,
+            ),
+            (
+                DialogStage::Selected,
+                DataStage::Ready,
+                WriterStage::CleanupFailed,
+                UiStage::StatusUpdated,
+            ),
+            (
+                DialogStage::Selected,
+                DataStage::Ready,
+                WriterStage::OtherError,
+                UiStage::StatusUpdated,
+            ),
+            (
+                DialogStage::Selected,
+                DataStage::Ready,
+                WriterStage::Success,
+                UiStage::StatusUpdated,
+            ),
+        ] {
+            let line = trace_line(d, data, writer, ui);
+            assert!(line.contains("dialog="));
+            assert!(!line.chars().any(|character| character == char::from(92)));
+            assert!(!line.chars().any(|character| character == char::from(92)));
+            assert!(!line.chars().any(|character| character == char::from(92)));
+        }
     }
 }

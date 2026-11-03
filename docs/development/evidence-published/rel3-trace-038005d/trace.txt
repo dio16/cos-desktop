@@ -1,0 +1,8 @@
+TRACE_CANCEL_OPEN|<none>
+TRACE_AFTER_CANCEL|dialog=Cancelled;data=Rejected;writer=NotStarted;ui=StatusPreserved
+STATUS_AFTER_CANCEL|<none>
+TRACE_AT_CONFIRM|dialog=Cancelled;data=Rejected;writer=NotStarted;ui=StatusPreserved
+YES_FOUND|True
+TRACE_AFTER_YES|dialog=Selected;data=Ready;writer=AlreadyExists;ui=StatusUpdated
+STATUS_AFTER_YES|ìØñºÇÃÉtÉ@ÉCÉãÇ™ë∂ç›ÇµÇ‹Ç∑
+EXIST_SAME|True|ORIGINAL

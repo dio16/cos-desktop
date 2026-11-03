@@ -1,0 +1,6 @@
+base_commit=038005d83c1665dc5df22e628dfb933616d7214f
+exe_sha256=255116017633ba572a70a4cef84191136794b3b141b7baaa6dc716dad5038999
+windows=10.0.26300.0
+dpi=96
+exe built from working tree with trace observability
+log_encoding=cp932 console text; trace values are ASCII enum tags; status Japanese text may be mojibake in captured console log
