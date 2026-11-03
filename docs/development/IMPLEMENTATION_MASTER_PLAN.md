@@ -3795,3 +3795,10 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Verification:** fmt OK; clippy 0 issues; `cargo test -p cos-desktop --features r0-s2b-instrumentation` 186 passed / 0 failed; `pytest apps/desktop/devtools/r0/tests -q` 348 passed / 12 skipped / 1 failed — the sole failure is the known stale live-manifest `driver_hash` (identity refresh remains the next slice).
 - **State:** implementation only; Native measurement still NOT_RUN; MP-R0A IN_PROGRESS, product acceptance NOT_RUN.
 
+### 19.179 MP-R0A frame identity review fixes B-01/A-01 (2026-11-02)
+
+- **B-01 ordering:** before `frame_id_for(record)`, all six tuple members (`window`, `invalidations`, `paired_draw_start_ns`, `paired_draw_end_ns`, `start_ns`, `end_ns`) are checked with `integer()` (type and 0..2^64-1 range). A string/negative/overflow value now raises `ObservationError("INTEGER")` instead of escaping as `AttributeError`/`OverflowError`. Normal-path behavior is unchanged. Covered by `test_frame_identity_tuple_members_are_type_checked_before_hashing` (string, -1, 2^64).
+- **A-01 replay tamper tests:** `require_frame_identity(observation, capture)` recomputes the expected object and is called from replay. `test_frame_identity_must_equal_capture_recomputation` mutates `records`, `source`, and `status` separately and each is refused with `OBSERVATION_BINDING`.
+- **Verification:** fmt OK; clippy 0 issues; `cargo test -p cos-desktop --features r0-s2b-instrumentation` 186 passed / 0 failed; `pytest apps/desktop/devtools/r0/tests -q` 350 passed / 12 skipped / 1 failed — the sole failure remains the known stale live-manifest `driver_hash` (identity refresh next slice).
+- **State:** implementation only; Native measurement NOT_RUN; MP-R0A IN_PROGRESS, product acceptance NOT_RUN.
+

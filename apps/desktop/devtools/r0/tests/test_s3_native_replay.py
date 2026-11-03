@@ -42,6 +42,19 @@ class NativePublishedReplay(unittest.TestCase):
             replay.validate_scenario(data, "keyboard")
         self.assertEqual(str(caught.exception), code)
 
+    def test_frame_identity_must_equal_capture_recomputation(self):
+        capture = {"records": [{"frame_id": 7}]}
+        expected = {"status": "MEASURED", "records": 1, "distinct_ids": 1,
+                    "source": "gpui.profiler.PresentedFrame", "identity": "exact_tuple_fnv64"}
+        replay.require_frame_identity({"frame_identity": expected}, capture)
+        for key, value in (("records", 2), ("source", "other"),
+                           ("status", "NOT_MEASURED")):
+            mutated = {"frame_identity": dict(expected)}
+            mutated["frame_identity"][key] = value
+            with self.assertRaises(s2b.ObservationError) as caught:
+                replay.require_frame_identity(mutated, capture)
+            self.assertEqual(str(caught.exception), "OBSERVATION_BINDING")
+
     def test_six_real_journals_match_independently_retained_integer_oracle(self):
         self.assertEqual(len(self.report["inputs"]), 37)
         self.assertEqual([r["scenario"] for r in self.report["scenarios"]], list(replay.SCENARIOS))

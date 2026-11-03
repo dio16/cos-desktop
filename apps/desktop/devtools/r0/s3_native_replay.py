@@ -169,10 +169,9 @@ def validate_scenario(data: dict[str, bytes], name: str) -> tuple[dict, dict, di
     for digest in s2a.values():
         s2b.digest(digest)
     require(s2a["ledger.json"] == sha(data[base + "ledger.json"]), "LEDGER_DIGEST")
-    expected_frame_identity = s2b_capture.frame_identity_result(capture)
+    require_frame_identity(observation, capture)
     require(observation["endpoints"] == s2b.endpoint_matrix(capture)
             and observation["coverage"] == "LIMITED_SOURCE_OBSERVATIONS_ONLY"
-            and observation["frame_identity"] == expected_frame_identity
             and observation["cross_domain_latency"] == "NOT_MEASURED"
             and observation["loss_scope"] == "OFFERED_FINALIZED_JOURNAL_PLUS_LOCAL_QUEUE"
             and observation["unobserved_source_loss"] == "UNKNOWN", "OBSERVATION_BINDING")
@@ -327,6 +326,11 @@ def readme_comparison(readme: str, name: str, capture: dict, aggregate: dict) ->
             "gap_denominator_agrees": counts[2] == gap["count"],
             "scope_initial_gap_included": False,
             "gap_definition_limit": "README interval denominator names n records, not n-1 adjacent pairs; no hidden sample inferred"}
+
+
+def require_frame_identity(observation: dict, capture: dict) -> None:
+    expected = s2b_capture.frame_identity_result(capture)
+    require(observation.get("frame_identity") == expected, "OBSERVATION_BINDING")
 
 
 def replay(root: Path) -> dict:

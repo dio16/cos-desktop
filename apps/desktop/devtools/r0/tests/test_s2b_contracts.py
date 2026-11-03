@@ -40,6 +40,14 @@ class S2BWireContract(unittest.TestCase):
             s2b.validate_capture(value)
         self.assertEqual(str(error.exception), code)
 
+    def test_frame_identity_tuple_members_are_type_checked_before_hashing(self):
+        for bad in ("text", -1, 1 << 64):
+            value = copy.deepcopy(example())
+            record = next(record for record in value["records"] if record["kind"] == 3)
+            record["paired_draw_start_ns"] = bad
+            record["frame_id"] = record["frame_id"] if False else 1
+            self.reject(value, "INTEGER")
+
     def test_frame_identity_is_measured_only_from_exact_tuple_ids(self):
         value = copy.deepcopy(example())
         kind3 = next(record for record in value["records"] if record["kind"] == 3)

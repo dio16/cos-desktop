@@ -212,6 +212,9 @@ def validate_capture(document: object, *, execution: str | None = None,
                     or record["paired_draw_end_ns"] is None
                     or record["invalidations"] is None):
                 fail("RECORD_SEMANTICS")
+            for name in ("window", "invalidations", "paired_draw_start_ns",
+                         "paired_draw_end_ns", "start_ns", "end_ns"):
+                integer(record[name])
             if frame_id_for(record) != frame_id:
                 fail("RECORD_SEMANTICS")
             if frame_id in frame_ids:
