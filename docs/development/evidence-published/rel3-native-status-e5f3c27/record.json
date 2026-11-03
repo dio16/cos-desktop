@@ -12,44 +12,48 @@
   "files": {
     "environment.txt": {
       "sha256": "sha256:e84e3880527ad548969b82989eeb773c0ca0d6b320b02039a2480cc7bce0224e",
-      "git_blob": "e84e3880527ad548969b82989eeb773c0ca0d6b320b02039a2480cc7bce0224e",
-      "bytes": 220
+      "bytes": 220,
+      "git_object_id": "fd04f733c0a76991a2b2336a637ce3e2826dbb85"
     },
     "existing.txt": {
       "sha256": "sha256:962f85a27854336f3286ad54b49321f62525043b5f3508b2ecc887fdd6e7550e",
-      "git_blob": "962f85a27854336f3286ad54b49321f62525043b5f3508b2ecc887fdd6e7550e",
-      "bytes": 8
+      "bytes": 8,
+      "git_object_id": "0ee48e9dd23abe6953a9877eaa1ccf44519a2c8b"
     },
     "existing2.txt": {
       "sha256": "sha256:c34cbef3ca96142ff533cf9d65d0085dfa7b3e8d40a72a901fa304c2e639d729",
-      "git_blob": "c34cbef3ca96142ff533cf9d65d0085dfa7b3e8d40a72a901fa304c2e639d729",
-      "bytes": 9
+      "bytes": 9,
+      "git_object_id": "d64a6b18b56dbc332e1fca53842638f901e9add8"
     },
     "preview-text.txt": {
       "sha256": "sha256:67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
-      "git_blob": "67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
-      "bytes": 573
+      "bytes": 573,
+      "git_object_id": "38aff221adb3d4322e9d2e2500880a7cd0752f71"
     },
     "report-success.txt": {
       "sha256": "sha256:67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
-      "git_blob": "67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3",
-      "bytes": 573
+      "bytes": 573,
+      "git_object_id": "38aff221adb3d4322e9d2e2500880a7cd0752f71"
     },
     "result.txt": {
       "sha256": "sha256:e91356dca253bbff2dda31d182472fecac7e34a6c06dcbed7f1eee8ea9d0e195",
-      "git_blob": "e91356dca253bbff2dda31d182472fecac7e34a6c06dcbed7f1eee8ea9d0e195",
-      "bytes": 1432
+      "bytes": 1432,
+      "git_object_id": "6711273e9ec5fb08c8554cc99176aa8b087eddc8"
     },
     "result2.txt": {
       "sha256": "sha256:cde6d9b437dacf233bdd19af858b353f74ce7001898f5b6794faa915d82f3012",
-      "git_blob": "cde6d9b437dacf233bdd19af858b353f74ce7001898f5b6794faa915d82f3012",
-      "bytes": 245
+      "bytes": 245,
+      "git_object_id": "77c40dc23fe012cb5ee7cee0ecf1d7f3a2b4fcf2"
     },
     "uia-before.txt": {
       "sha256": "sha256:43e2ec2c103c7a620509e5286e92c7ebdb3a9e0ed9aaad040eef87033e8aa5f1",
-      "git_blob": "43e2ec2c103c7a620509e5286e92c7ebdb3a9e0ed9aaad040eef87033e8aa5f1",
-      "bytes": 3565
+      "bytes": 3565,
+      "git_object_id": "477890b48455f3de6ef9daab6c8ba817daf5c5cb"
     }
   },
-  "digest_basis": "SHA-256 and git blob hash both refer to the committed bytes; the tree is marked -text so no end-of-line conversion applies."
+  "digest_basis": "sha256 is the digest of the blob bytes as stored in origin/dev; git_object_id is git's own object id for the same blob (sha-1), not a sha256 of anything.",
+  "verified_against": {
+    "commit": "fa6d1a55d12cf7bca93e67e959d5a81a06030f39",
+    "ref": "origin/dev"
+  }
 }
