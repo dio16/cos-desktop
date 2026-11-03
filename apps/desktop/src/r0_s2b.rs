@@ -196,6 +196,7 @@ struct Record {
     caused_invalidation: Option<bool>,
     lost: Option<u64>,
     frame_id: Option<u64>,
+    pre_scope_marker: Option<bool>,
 }
 
 struct Nullable<T>(Option<T>);
@@ -242,7 +243,7 @@ impl Record {
     fn write(&self, out: &mut impl Write, seq: u64) -> io::Result<()> {
         write!(
             out,
-            "{{\"seq\":{seq},\"kind\":{},\"window\":{},\"lifetime\":{},\"start_ns\":{},\"end_ns\":{},\"dirty_ns\":{},\"invalidations\":{},\"paired_draw_start_ns\":{},\"paired_draw_end_ns\":{},\"category\":{},\"caused_invalidation\":{},\"lost\":{},\"frame_id\":{}}}",
+            "{{\"seq\":{seq},\"kind\":{},\"window\":{},\"lifetime\":{},\"start_ns\":{},\"end_ns\":{},\"dirty_ns\":{},\"invalidations\":{},\"paired_draw_start_ns\":{},\"paired_draw_end_ns\":{},\"category\":{},\"caused_invalidation\":{},\"lost\":{},\"frame_id\":{},\"pre_scope_marker\":{}}}",
             self.kind,
             Nullable(self.window),
             Nullable(self.lifetime),
@@ -255,7 +256,8 @@ impl Record {
             Nullable(self.category),
             Nullable(self.caused_invalidation),
             Nullable(self.lost),
-            Nullable(self.frame_id)
+            Nullable(self.frame_id),
+            Nullable(self.pre_scope_marker)
         )
     }
 }
@@ -533,13 +535,19 @@ impl Observer {
             ),
             EventKind::Notify => (9, None, 1usize),
             EventKind::WindowCreated(window) => {
-                let at = match self.point(event.at) {
+                let at = match ns(self.origin, event.at) {
                     Ok(value) => value,
                     Err(error) => {
                         self.counts.local_scope_clock_rejected[2] += 1;
                         return Err(error);
                     }
                 };
+                if at > self.end {
+                    self.counts.post_scope += 1;
+                    self.counts.local_scope_clock_rejected[2] += 1;
+                    return Err(io::ErrorKind::InvalidData.into());
+                }
+                let pre_scope_marker = at < self.start;
                 if self.created.iter().any(|(id, _)| *id == window) {
                     self.counts.correlation_invalid += 1;
                     self.counts.local_lifetime_rejected[2] += 1;
@@ -561,6 +569,7 @@ impl Observer {
                     window: Some(window),
                     start: Some(at),
                     end: Some(at),
+                    pre_scope_marker: Some(pre_scope_marker),
                     ..Record::default()
                 });
             }
@@ -763,6 +772,7 @@ fn capture(
         counts: Counts::default(),
     };
     control.start();
+    r0_probe::flush_pending();
     while control.stopped_at_ns().is_none() && ns(origin, Instant::now())? < end {
         observer.drain(&mut collector, &local, &mut out, None)?;
         std::thread::sleep(Duration::from_millis(20));
@@ -853,6 +863,47 @@ fn capture(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_pre_scope_window_marker_extends_the_scope_without_faking_its_time() {
+        let origin = Instant::now();
+        let mut observer = Observer {
+            origin,
+            start: DURATION_NS,
+            end: DURATION_NS,
+            barrier: 0,
+            windows: Vec::new(),
+            created: Vec::new(),
+            submitted: Vec::new(),
+            frames: Vec::new(),
+            counts: Counts::default(),
+        };
+        let marker_at = Instant::now();
+        let record = observer
+            .local(Event {
+                at: marker_at,
+                window: 11,
+                kind: EventKind::WindowCreated(11),
+            })
+            .expect("pre-scope marker is admitted");
+        let expected = ns(origin, marker_at).expect("monotonic elapsed");
+        assert_eq!(record.kind, 10);
+        assert_eq!(record.start, Some(expected));
+        assert_eq!(record.pre_scope_marker, Some(true));
+        assert_eq!(observer.start, DURATION_NS);
+        assert_eq!(observer.counts.pre_scope, 0);
+        assert_eq!(observer.counts.local_scope_clock_rejected, [0, 0, 0]);
+        assert!(
+            observer
+                .local(Event {
+                    at: marker_at,
+                    window: 12,
+                    kind: EventKind::Notify,
+                })
+                .is_err()
+        );
+        assert_eq!(observer.counts.pre_scope, 1);
+    }
 
     #[test]
     fn local_scope_rejection_is_counted_without_a_record() {

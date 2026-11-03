@@ -3961,3 +3961,11 @@ print(sorted(lic.items(), key=lambda kv: (-kv[1], kv[0])))
 - **Verification:** fmt OK; clippy 0 issues; `cargo test -p cos-desktop --features r0-s2b-instrumentation` 186 passed / 0 failed; `pytest apps/desktop/devtools/r0/tests -q` 356 passed / 12 skipped / 1 failed (known live-manifest driver_hash; manifests not modified).
 - **State:** implementation complete; **Native measurement NOT_RUN** (needs new build/approval/identity/capture). MP-R0A IN_PROGRESS; product acceptance NOT_RUN.
 
+### 19.193 MP-R0A pre-scope marker admission and explicit flush (2026-11-02)
+
+- **scope is fixed:** the observer never moves `start`/`scope_start_ns`; the capture scope length and `pre_scope` meaning are unchanged. The earlier worktree attempt that moved the scope start was discarded.
+- **marker admission:** a `WindowCreated` marker is admitted through a marker-specific path that bypasses `point()`'s pre-scope rejection. Its true timestamp is retained and the record carries `pre_scope_marker: true` when it precedes the scope; normal records still classify pre-scope as `pre_scope`. The capture contract accepts the optional marker flag only on kind 10 and permits kind-10 `start_ns` below the scope start (other records remain `start <= begin <= finish <= end`).
+- **A-01 flush retained:** `BINDING` is a process `Mutex`; `pub fn flush_pending()` drains the bounded 64-entry pre-admission buffer after `Control::start()` with no later event. Overflow still increments `Control.dropped`.
+- **first-frame:** the condition is marker retained + same-window first kind 3 strictly later + no retained kind 5 gap + clock-resolved; a pre-scope marker is allowed by design. Duplicate markers remain rejected.
+- **Tests:** `a_pre_scope_window_marker_extends_the_scope_without_faking_its_time` was corrected to assert **scope start stays `DURATION_NS`**, the marker keeps its true elapsed time, `pre_scope_marker == Some(true)`, and a normal pre-scope event still increments `pre_scope`; probe flush-without-event test retained. Rust 187 passed / 0 failed; fmt OK; clippy 0 issues; `pytest apps/desktop/devtools/r0/tests -q` 356 passed / 12 skipped / 1 failed (known live-manifest driver_hash; manifest unchanged).
+- **State:** implementation complete; **Native measurement NOT_RUN**. MP-R0A IN_PROGRESS; product acceptance NOT_RUN.

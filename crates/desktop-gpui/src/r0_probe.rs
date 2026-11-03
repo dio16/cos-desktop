@@ -2,12 +2,11 @@
 //! Only the application thread records fixed-size events; export is owned by the binary.
 
 use app_core::navigation::Surface;
-use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::mpsc::{SyncSender, TrySendError};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Instant;
 
 const PRE_ACTIVE_LIMIT: usize = 64;
@@ -88,11 +87,13 @@ impl Control {
 struct Binding {
     sender: SyncSender<Event>,
     control: Arc<Control>,
-    pending: RefCell<Vec<Event>>,
+    pending: Vec<Event>,
 }
 
-thread_local! {
-    static BINDING: RefCell<Option<Binding>> = const { RefCell::new(None) };
+static BINDING: Mutex<Option<Binding>> = Mutex::new(None);
+
+fn binding() -> MutexGuard<'static, Option<Binding>> {
+    BINDING.lock().unwrap_or_else(|error| error.into_inner())
 }
 
 /// Main-thread lease: do not move attachment/cleanup to an unrelated worker.
@@ -110,28 +111,24 @@ impl Lease {
 impl Drop for Lease {
     fn drop(&mut self) {
         self.control.stop();
-        BINDING.with(|binding| {
-            *binding.borrow_mut() = None;
-        });
+        *binding() = None;
     }
 }
 
 /// Install once on the owning application thread. No producer-side formatting or I/O.
 pub fn attach(sender: SyncSender<Event>, control: Arc<Control>) -> Result<Lease, &'static str> {
-    BINDING.with(|binding| {
-        let mut binding = binding.borrow_mut();
-        if binding.is_some() {
-            return Err("R0 presentation probe is already attached");
-        }
-        *binding = Some(Binding {
-            sender,
-            control: Arc::clone(&control),
-            pending: RefCell::new(Vec::new()),
-        });
-        Ok(Lease {
-            control,
-            _main_thread: PhantomData,
-        })
+    let mut slot = binding();
+    if slot.is_some() {
+        return Err("R0 presentation probe is already attached");
+    }
+    *slot = Some(Binding {
+        sender,
+        control: Arc::clone(&control),
+        pending: Vec::new(),
+    });
+    Ok(Lease {
+        control,
+        _main_thread: PhantomData,
     })
 }
 
@@ -140,49 +137,73 @@ pub fn record_window_created(window: u64) {
     record(window, EventKind::WindowCreated(window));
 }
 
+/// Flush buffered pre-admission records without requiring a later event.
+/// Safe to call from the capture worker after `Control::start()`.
+pub fn flush_pending() {
+    let mut slot = binding();
+    let Some(binding) = slot.as_mut() else {
+        return;
+    };
+    if !binding.control.active.load(Ordering::Acquire)
+        || binding.control.stop_ns_plus_one.load(Ordering::Acquire) != 0
+    {
+        return;
+    }
+    let Binding {
+        sender,
+        control,
+        pending,
+    } = binding;
+    for event in pending.drain(..) {
+        send(sender, control, event);
+    }
+}
+
 /// Record only at an actual mutation or notify call. Full queues drop, never wait.
 pub(crate) fn record(window: u64, kind: EventKind) {
-    BINDING.with(|binding| {
-        let binding = binding.borrow();
-        let Some(binding) = binding.as_ref() else {
-            return;
-        };
-        let control = &binding.control;
-        control.in_flight.fetch_add(1, Ordering::AcqRel);
-        let active = control.active.load(Ordering::Acquire);
-        let stopped = control.stop_ns_plus_one.load(Ordering::Acquire) != 0;
-        let mut pending = binding.pending.borrow_mut();
-        if !stopped {
-            if active {
-                for event in pending.drain(..) {
-                    send(binding, control, event);
-                }
-                send(
-                    binding,
-                    control,
-                    Event {
-                        at: Instant::now(),
-                        window,
-                        kind,
-                    },
-                );
-            } else if pending.len() < PRE_ACTIVE_LIMIT {
-                pending.push(Event {
+    let mut slot = binding();
+    let Some(binding) = slot.as_mut() else {
+        return;
+    };
+    let control = Arc::clone(&binding.control);
+    control.in_flight.fetch_add(1, Ordering::AcqRel);
+    let active = control.active.load(Ordering::Acquire);
+    let stopped = control.stop_ns_plus_one.load(Ordering::Acquire) != 0;
+    if !stopped {
+        if active {
+            let Binding {
+                sender,
+                control,
+                pending,
+            } = binding;
+            for event in pending.drain(..) {
+                send(sender, control, event);
+            }
+            send(
+                sender,
+                control,
+                Event {
                     at: Instant::now(),
                     window,
                     kind,
-                });
-            } else {
-                // Bounded pre-admission buffer: never drop silently.
-                control.dropped.fetch_add(1, Ordering::Release);
-            }
+                },
+            );
+        } else if binding.pending.len() < PRE_ACTIVE_LIMIT {
+            binding.pending.push(Event {
+                at: Instant::now(),
+                window,
+                kind,
+            });
+        } else {
+            // Bounded pre-admission buffer: never drop silently.
+            control.dropped.fetch_add(1, Ordering::Release);
         }
-        control.in_flight.fetch_sub(1, Ordering::Release);
-    });
+    }
+    control.in_flight.fetch_sub(1, Ordering::Release);
 }
 
-fn send(binding: &Binding, control: &Control, event: Event) {
-    match binding.sender.try_send(event) {
+fn send(sender: &SyncSender<Event>, control: &Control, event: Event) {
+    match sender.try_send(event) {
         Ok(()) => {
             control.enqueued.fetch_add(1, Ordering::Release);
         }
@@ -211,6 +232,21 @@ mod tests {
         assert_eq!(events[0].kind, EventKind::WindowCreated(11));
         assert_eq!(events[1].kind, EventKind::Notify);
         assert_eq!(control.accounting(), (2, 0, 0));
+        Ok(())
+    }
+
+    #[test]
+    fn flush_pending_drains_without_a_later_event() -> Result<(), String> {
+        let (sender, receiver) = mpsc::sync_channel(8);
+        let control = Arc::new(Control::new(Instant::now()));
+        let _lease = attach(sender, Arc::clone(&control))?;
+        record_window_created(11);
+        control.start();
+        flush_pending();
+        let events: Vec<_> = receiver.try_iter().collect();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].kind, EventKind::WindowCreated(11));
+        assert_eq!(control.accounting(), (1, 0, 0));
         Ok(())
     }
 

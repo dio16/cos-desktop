@@ -199,16 +199,22 @@ def validate_capture(document: object, *, execution: str | None = None,
         if not isinstance(raw, dict):
             fail("SCHEMA")
         frame_id = raw.get("frame_id")
-        raw = {key: value for key, value in raw.items() if key != "frame_id"}
+        pre_scope_marker = raw.get("pre_scope_marker")
+        raw = {key: value for key, value in raw.items()
+               if key not in ("frame_id", "pre_scope_marker")}
         record = object_fields(raw, RECORD_FIELDS)
         if integer(record["seq"], low=1) != seq:
             fail("SEQUENCE")
         kind = integer(record["kind"], high=10)
         counts[kind] += 1
         if kind == 10:
+            if type(pre_scope_marker) is not bool:
+                fail("RECORD_SEMANTICS")
             if record["window"] in marker_windows:
                 fail("DUPLICATE_EVENT")
             marker_windows.add(record["window"])
+        elif pre_scope_marker is not None:
+            fail("RECORD_SEMANTICS")
         if frame_id is not None:
             integer(frame_id)
             if kind != 3:
@@ -246,7 +252,8 @@ def validate_capture(document: object, *, execution: str | None = None,
             integer(record[name])
         if kind != 5:
             begin, finish = record["start_ns"], record["end_ns"]
-            if not start <= begin <= finish <= end:
+            lower_ok = begin >= start or kind == 10
+            if not lower_ok or not begin <= finish <= end:
                 fail("TIMESTAMP")
             if kind not in (0, 2, 3) and begin != finish:
                 fail("POINT_EVENT")
