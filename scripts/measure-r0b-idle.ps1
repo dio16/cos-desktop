@@ -142,8 +142,9 @@ function Get-SupportSource([int]$TargetProcessId) {
     $lines = $preview.Current.Name -split "`n"
     $source = ($lines | Where-Object { $_ -like 'Source:*' } | Select-Object -First 1)
     $connection = ($lines | Where-Object { $_ -like 'Connection:*' } | Select-Object -First 1)
+    $stale = ($lines | Where-Object { $_ -like 'Stale projection:*' } | Select-Object -First 1)
     # Return only the minimum closed fields; no path or body is retained.
-    return [ordered]@{ source = $source; connection = $connection }
+    return [ordered]@{ source = $source; connection = $connection; stale = $stale }
 }
 
 $runs_out = @()
@@ -179,7 +180,7 @@ for ($i = 1; $i -le $Runs; $i++) {
         $env:COS_DESKTOP_RUNTIME_ENDPOINT = $Endpoint
         try {
             $launchArgs = if ($SimulateFixture) {
-                @('--fixture', '--fixture-file', 'C:/dev/cos-desktop/crates/cos-client/fixtures/task-184.json')
+                @('--fixture', '--fixture-file', (Join-Path $PSScriptRoot '..\..\crates\cos-client\fixtures\task-184.json'))
             } else { @() }
             $process = Start-Process -FilePath $Exe -ArgumentList $launchArgs -PassThru -NoNewWindow `
                 -RedirectStandardOutput $stdout -RedirectStandardError $stderr
@@ -276,6 +277,8 @@ for ($i = 1; $i -le $Runs; $i++) {
             ($source_start.connection -eq 'Connection: observing') -and
             ($source_end.source -eq 'Source: runtime') -and
             ($source_end.connection -eq 'Connection: observing') -and
+            ($source_start.stale -eq 'Stale projection: no') -and
+            ($source_end.stale -eq 'Stale projection: no') -and
             ($null -eq $disconnected_line) -and $endpoint_available
         } else {
             ($null -ne $disconnected_line) -and (-not $endpoint_available)
