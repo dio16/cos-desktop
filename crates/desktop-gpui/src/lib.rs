@@ -6393,8 +6393,11 @@ mod contrast_scope_tests {
             let start = source
                 .find(&marker)
                 .unwrap_or_else(|| panic!("control {id} is not in the production source"));
-            // Slice by characters, not bytes: the source contains Japanese labels.
-            let window: String = source[start..].chars().take(4000).collect();
+            let after = &source[start + marker.len()..];
+            // Bound the window by the next element id so a neighbouring control's listener
+            // cannot stand in for this one.
+            let end = after.find(".id(\"").unwrap_or(after.len());
+            let window = &after[..end];
             assert!(
                 window.contains(".on_a11y_action(AccessibleAction::Click"),
                 "control {id} has no explicit accessibility click listener"
