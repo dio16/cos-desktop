@@ -1,0 +1,10 @@
+a11y dispatch experiment: repeated invoke, repaint between attempts
+exe_sha256: a0588f1fe623cbae2f36b8b9c7f22adb8eb9981a8e628f8e1cf2a6f0f3ac119d
+base_commit: bcef9a3598d4559b48b03d74784a96b2df49f7a6
+trace_after_open: 0 lines
+invoke_1: ok | trace_lines=0
+invoke_2: ok | trace_lines=0
+invoke_3: ok | trace_lines=0
+invoke_4: ok | trace_lines=0
+invoke_after_reopen: ok | trace_lines=0
+--- stderr ---

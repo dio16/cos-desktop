@@ -1,0 +1,16 @@
+{
+  "measurement": "repeated accessibility invoke on support-preview-button, with repaint between attempts",
+  "base_commit": "bcef9a3598d4559b48b03d74784a96b2df49f7a6",
+  "exe_sha256": "sha256:a0588f1fe623cbae2f36b8b9c7f22adb8eb9981a8e628f8e1cf2a6f0f3ac119d",
+  "windows": "10.0.26300.0",
+  "result": "Five invokes - four in a row and one after closing and reopening the panel so the subtree was rebuilt - all returned without an exception, and the in-process trace produced ZERO lines every time. Repainting or rebuilding the subtree does not change the outcome, so this is not a one-frame or stale-snapshot effect.",
+  "wiring_comparison": "Both elements are divs with .id, .accessibility_id, .role(Role::Button), .aria_label, .aria_keyshortcuts, .track_focus, .cursor_pointer and both .on_action(Activate) and .on_click. Differences: the toggle's label is state-dependent and its shortcut list includes Ctrl+D, while the preview button additionally carries .aria_description and a static label, and sits deeper in the child chain. Which of those differences, if any, decides dispatch is NOT determined.",
+  "mechanism_note": "In the pinned gpui (395def7a), .on_click registers an AccessibleAction::Click listener during paint against the element's global id, and the listener is only registered inside the a11y-active branch. Both elements produce InvokePattern in the automation tree, so the action is advertised for both; what differs is whether the dispatch reaches the handler.",
+  "not_attempted": "No product change: the next step would be a bisect of the structural differences (for example making the preview button identical to the toggle one property at a time), which is a product edit and needs a decision before it is made.",
+  "files": {
+    "dispatch-experiment.txt": {
+      "sha256": "sha256:46409eebbe8666748afa332b15390bef3f8c9a43e93821b60befd14b3fcce374",
+      "bytes": 397
+    }
+  }
+}
