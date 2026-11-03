@@ -6,9 +6,9 @@ use app_core::{
 };
 use desktop_protocol::{EpochId, TaskId};
 use gpui::{
-    AnyElement, App, Bounds, Context, Element, ElementId, ElementInputHandler, Entity,
-    EntityInputHandler, FocusHandle, GlobalElementId, InspectorElementId, IntoElement, KeyBinding,
-    LayoutId, ListAlignment, ListOffset, ListState, Pixels, Render, Role, ScrollHandle,
+    AccessibleAction, AnyElement, App, Bounds, Context, Element, ElementId, ElementInputHandler,
+    Entity, EntityInputHandler, FocusHandle, GlobalElementId, InspectorElementId, IntoElement,
+    KeyBinding, LayoutId, ListAlignment, ListOffset, ListState, Pixels, Render, Role, ScrollHandle,
     SharedString, Style, Task, UTF16Selection, Window, actions, div, list, prelude::*, px,
     relative, rgb,
 };
@@ -4731,6 +4731,14 @@ impl Render for Shell {
                                                     .on_click(cx.listener(|this, _, window, cx| {
                                                         this.toggle_diagnostics(window, cx);
                                                     }))
+                                                    .on_a11y_action(AccessibleAction::Click, {
+                                                        let this = cx.entity().downgrade();
+                                                        move |_, window, cx| {
+                                                            let _ = this.update(cx, |this, cx| {
+                                                                this.toggle_diagnostics(window, cx);
+                                                            });
+                                                        }
+                                                    })
                                                     .child(if diagnostics_open {
                                                         "診断情報を閉じる"
                                                     } else {
@@ -4817,6 +4825,14 @@ impl Render for Shell {
                                                             .on_click(cx.listener(|this, _, _, cx| {
                                                                 this.preview_support(cx);
                                                             }))
+                                                            .on_a11y_action(AccessibleAction::Click, {
+                                                                let this = cx.entity().downgrade();
+                                                                move |_, _window, cx| {
+                                                                    let _ = this.update(cx, |this, cx| {
+                                                                        this.preview_support(cx);
+                                                                    });
+                                                                }
+                                                            })
                                                             .child("サポート情報を表示")
                                                             // SUPPORT-PREVIEW-END,
                                                     )
@@ -6121,6 +6137,16 @@ mod contrast_scope_tests {
         );
         assert!(source.contains(".accessibility_id(\"support-preview-button\")"));
         assert!(source.contains(".accessibility_id(\"support-export-button\")"));
+        // Both buttons must have an explicit accessibility Click listener, not only
+        // a synthetic mouse click path.
+        assert!(source.contains(".on_a11y_action(AccessibleAction::Click"));
+        assert!(
+            source
+                .matches(".on_a11y_action(AccessibleAction::Click")
+                .count()
+                >= 2,
+            "diagnostics toggle and support preview both need a11y Click listeners"
+        );
         let palette = include_str!("palette.rs");
         assert!(
             palette.contains("Command::ToggleDiagnostics => self.toggle_diagnostics(window, cx)"),

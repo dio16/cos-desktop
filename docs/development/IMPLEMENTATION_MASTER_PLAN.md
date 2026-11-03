@@ -4309,3 +4309,12 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Not attempted:** no product change. The next step would be a **bisect of the structural differences** (for example making the preview button identical to the toggle one property at a time), which is a product edit and needs a decision before it is made.
 - **Evidence:** `docs/development/evidence-published/rel3-dispatch-experiment-20261104/` with the experiment output and its record.
 - **State:** MP-REL3, MP-AX1/AX2, MP-R0A and MP-R0B remain incomplete; product acceptance NOT_RUN.
+
+### 19.223 MP-AX1 explicit accessibility Click listeners (2026-11-04)
+
+- **Hypothesis:** pinned gpui `395def7a` may deliver advertised `Click` as a synthetic mouse down/up at the node rectangle centre; `diagnostics-toggle` succeeds while `support-preview-button` failed 5/5 despite equal 288×38 in-bounds rectangles. A hit-test miss is the leading explanation, not a confirmed cause.
+- **Defensive wiring:** both `diagnostics-toggle` and `support-preview-button` now register an explicit `.on_a11y_action(AccessibleAction::Click, ...)` listener that calls the same shared methods (`toggle_diagnostics` / `preview_support`). Existing `on_click` and `on_action` paths are unchanged, so mouse/keyboard behavior is unchanged and one button is not special-cased.
+- **Unchanged:** preview generation logic, state machine, export/save, redaction, authority checks, and `preview_trace_emit` instrumentation.
+- **Tests:** source wiring test requires at least two explicit a11y Click listeners (both buttons); existing toggle/preview/state tests pass. `cargo test -p desktop-gpui` 120 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` OK.
+- **Native re-measurement:** owned by the Lead; this slice does **not** claim that generation now works. MP-REL3 / MP-AX1/AX2 remain incomplete; product acceptance NOT_RUN.
+
