@@ -4318,3 +4318,12 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests:** source wiring test requires at least two explicit a11y Click listeners (both buttons); existing toggle/preview/state tests pass. `cargo test -p desktop-gpui` 120 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` OK.
 - **Native re-measurement:** owned by the Lead; this slice does **not** claim that generation now works. MP-REL3 / MP-AX1/AX2 remain incomplete; product acceptance NOT_RUN.
 
+### 19.223 Explicit accessibility click listeners: the preview works (2026-11-04)
+
+- **Hypothesis:** in the pinned gpui an advertised `Click` is dispatched by synthesising a mouse press at the node's centre; that worked for `diagnostics-toggle` and missed `support-preview-button` in five attempts, including after a subtree rebuild, despite both reporting 288×38 rectangles on screen.
+- **Treatment:** both panel buttons now register an explicit `.on_a11y_action(AccessibleAction::Click, ...)` listener - the preview button's calls `preview_support`, the toggle's calls `toggle_diagnostics` - so dispatch no longer depends on a synthetic press landing on the right hitbox. The existing `.on_click` and `.on_action` paths are untouched, and neither button is treated specially.
+- **Result (measured, PASS):** one accessibility invoke on the preview button produced the complete in-process sequence `action=reached`, `build=started`, `build=finished`, `install=accepted`, and `support-preview-readonly` appeared in the automation tree with five `support*` ids. Before the change the same invoke produced **zero** trace lines in five attempts, so the fix is confirmed by the measurement it was designed against.
+- **What remains unknown:** which hit-test detail made the synthesised press miss, and whether other elements in the product rely on the same fragile route. That is left open rather than assumed; the whole-product sweep is not done.
+- **Scope:** generation logic, the state machine, saving, redaction and permissions are unchanged. Both buttons share the same mechanism, so this is not a special case for one control.
+- **Evidence:** `docs/development/evidence-published/ax1-a11y-action-fix-20261104/` with the in-process trace, the preview-after-fix dump and a `record.json`.
+- **State:** MP-AX1/AX2 and MP-REL3 remain **incomplete** - the panel and preview are reachable through accessibility now, but Tab traversal, the save dialog, the connected baseline and screen-reader quality are still unmeasured. Product acceptance NOT_RUN.

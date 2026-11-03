@@ -1,0 +1,19 @@
+{
+  "measurement": "explicit accessibility click listeners: native re-measurement",
+  "base_commit": "c882748e00b4cff26a0f47656d318243395d0e03",
+  "exe_sha256": "sha256:6c2ecf6d66c6d57da2ded93a6c494b0ef4fdbd5c7614b1add4f15d798944f39d",
+  "windows": "10.0.26300.0",
+  "result": "FIXED AND MEASURED. With explicit accessibility Click listeners on both panel buttons, one accessibility invoke on support-preview-button produced the full in-process sequence - action=reached, build=started, build=finished, install=accepted - and the preview element appeared in the automation tree (support-preview-readonly present, 62 descendants in the dump, five support* ids). Before the change the same invoke produced zero trace lines in five attempts.",
+  "cause": "An advertised click is dispatched by synthesising a mouse press at the node's centre, and that synthetic press did not reach this element's click handler. Registering an explicit accessibility Click listener removes that dependency and the handler now runs. Which hit-test detail made the synthetic press miss remains unidentified, but it is no longer on the path.",
+  "scope": "Both panel buttons got the same explicit listener so neither is treated specially; mouse and keyboard paths are unchanged, as are generation, the state machine, saving, redaction and permissions.",
+  "files": {
+    "inprocess-trace-after-fix.txt": {
+      "sha256": "sha256:dd0e4f720639d10345fe4603cdabe55eb03b93b0a3ca61bb1a9323318e372f5e",
+      "bytes": 458
+    },
+    "preview-after-fix.txt": {
+      "sha256": "sha256:ff648bb6eb3553d4715a4b0b7a2583f9b7e46f46612f3bb513b9708498a5f88a",
+      "bytes": 5798
+    }
+  }
+}
