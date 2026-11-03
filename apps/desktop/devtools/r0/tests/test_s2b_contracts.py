@@ -63,7 +63,9 @@ class S2BWireContract(unittest.TestCase):
         summary["local_kind_scope_clock_rejected"] = [0, 0]
         summary["local_kind_lifetime_rejected"] = [0, 0]
         summary["local_kind_retention_omitted"] = [0, 0]
-        summary["local_kind_received"] = [retained[0] + 1, retained[1]]
+        # Keep the received total consistent with local_received so the failure can only be
+        # caught by the per-kind conservation check, not by the aggregate one.
+        summary["local_kind_scope_clock_rejected"] = [1, 0]
         self.reject(value, "COUNTS")
 
     def test_old_capture_without_local_kind_arrays_still_validates(self):
