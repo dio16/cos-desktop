@@ -6,17 +6,18 @@
   "C": "PASS source: Tab focus handle added; support-preview-button/support-export-button accessibility_ids added. Native focused reachability NOT re-measured.",
   "D": "PASS: diagnostic-readonly exists only while open; save/redaction/authority code unchanged.",
   "E": "PASS unit: 118 tests; source test asserts shared path and IDs.",
-  "F": "PASS: UIA found diagnostics-toggle by AutomationId, ControlType.Button, IsKeyboardFocusable=True, InvokePattern available; Invoke opened panel (diagnostic-readonly visible) and closed it (absent); label switched \u958b\u304f/\u9589\u3058\u308b. Export button absent before preview generation (expected).",
+  "F": "PASS: UIA found diagnostics-toggle by AutomationId, ControlType.Button, IsKeyboardFocusable=True, InvokePattern available; Invoke opened panel (diagnostic-readonly visible) and closed it (absent); label switched 開く/閉じる. Export button absent before preview generation (expected).",
   "files": {
     "environment.txt": {
       "sha256": "sha256:bf60625242a058f1c1364a15b8e096f08176927ca742ff1657171c4491aa5514",
-      "git_blob": "08c749e5602d67c225e3b859eff38c7f35be9efd",
+      "git_object_id": "08c749e5602d67c225e3b859eff38c7f35be9efd",
       "bytes": 211
     },
     "result.txt": {
       "sha256": "sha256:38e797278e15b1a83c8acc8ebbc66a67d5dfe200a32a2be303bee9be901e0307",
-      "git_blob": "92129f5e7a853fce50b655aad23ecf9386a43f1d",
+      "git_object_id": "92129f5e7a853fce50b655aad23ecf9386a43f1d",
       "bytes": 299
     }
-  }
+  },
+  "independent_reproduction": "NOT REPRODUCED BY THE LEAD: rebuilding this candidate was attempted three times into fresh target directories and each failed with access denied while rustc wrote dependency files, so no binary containing this change could be produced here. The native result recorded above is the implementer's measurement from their own build; it is published with digests but is not independently reproduced."
 }
