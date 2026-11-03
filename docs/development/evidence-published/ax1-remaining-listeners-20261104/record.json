@@ -1,0 +1,15 @@
+{
+  "measurement": "native invocation attempt for the newly covered accessibility controls",
+  "base_commit": "04575bb756dfbf629f2ceeb802002bd70dfeebd0",
+  "exe_sha256": "sha256:266ce83b048fc6c4c53bcb14aef2cb96d70110337a62641405c9d7a732dfc864",
+  "windows": "10.0.26300.0",
+  "result": "NOT EXERCISED NATIVELY. On the initial surface only task-search was present; it exposes ValuePattern and not InvokePattern, which is expected for a text field, so the invoke threw. surface-switcher, flow-search, compare-change-a, compare-close, stop-request and stop-reconcile were absent because they belong to other surfaces, and reaching those needs navigation this session cannot deliver. The change is therefore verified by the unit tests and the Gate only, not by a native activation.",
+  "what_this_means": "Adding the listener is justified by the preview-button evidence - the same defect class, fixed and measured - but for these eight controls the fix is unmeasured. No claim is made that they now respond to accessibility activation.",
+  "guard_limitation": "The regression guard is a synchronised manual list plus a count, not a structural invariant over every on_click in the file, so a future element could still be added without a listener.",
+  "files": {
+    "invoke-attempt.txt": {
+      "sha256": "sha256:29d17e6c90b9150355af13c569706b436675f98916eb66516fe050938b5116b7",
+      "bytes": 432
+    }
+  }
+}

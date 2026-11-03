@@ -1,0 +1,11 @@
+accessibility invokes on the newly covered controls
+exe_sha256: 266ce83b048fc6c4c53bcb14aef2cb96d70110337a62641405c9d7a732dfc864
+base_commit: 04575bb756dfbf629f2ceeb802002bd70dfeebd0
+descendants_initial: 49
+surface-switcher: absent
+task-search: patterns=ValuePatternIdentifiers.Pattern invoke=threw descendants 49 -> 49
+flow-search: absent
+compare-change-a: absent
+compare-close: absent
+stop-request: absent
+stop-reconcile: absent
