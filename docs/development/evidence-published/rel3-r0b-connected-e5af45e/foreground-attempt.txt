@@ -1,0 +1,18 @@
+MP-R0B foreground path attempt (RejectProbe with a live loopback listener)
+date: 2026-11-04T00:02:29.9345338+09:00
+exe: C:\\dev\\cos-desktop\\target\\debug\\cos-desktop.exe
+exe sha256: 44dc57a8430f9766b8857ff58b9a2fb19fd9dda4ad4bfaf9fae9b35866039491
+endpoint: http://127.0.0.1:47811 (listener started by the harness)
+
+script exit code: 1
+script output:
+Exception: C:\dev\cos-desktop\scripts\measure-r0b-idle.ps1:194
+Line |
+ 194 |  … asExited) { throw "run ${i}: the app exited before a window appeared  …
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | run 1: the app exited before a window appeared (code 2)
+
+
+Interpretation: the application exited with code 2 before any window existed, so the
+foreground check (Add-Type, SetForegroundWindow, GetForegroundWindow, UI Automation)
+could not be exercised. This is an environment limit of this session, not a pass.

@@ -7,7 +7,13 @@
       "sha256": "sha256:9aff3ec80d063a21fbc1a6fcf73cbffb28899b30419236fb1200bbbc64c88757",
       "git_object_id": "bd8b1f94414594c154eef17ca9fc45c5b9255bef",
       "bytes": 347
+    },
+    "foreground-attempt.txt": {
+      "sha256": "sha256:040eab606744e466439b722bcc0a73ef46678497bea082d926120694c7d39f12",
+      "git_object_id": "4b426b57a5f6bc0545f64d6fb084e5110975e1a3",
+      "bytes": 912
     }
   },
-  "note": "Only the refusal is captured here: the connected CPU and working-set baseline was not measured because no reachable runtime endpoint exists in this environment. The refusal demonstrates that a connected run cannot be recorded against an unreachable endpoint."
+  "note": "Only the refusal is captured here: the connected CPU and working-set baseline was not measured because no reachable runtime endpoint exists in this environment. The refusal demonstrates that a connected run cannot be recorded against an unreachable endpoint.",
+  "foreground_attempt": "A loopback listener was started to satisfy the endpoint reachability check and the connected probe was run. The application exited with code 2 before any window existed, so Add-Type, SetForegroundWindow, GetForegroundWindow and the UI Automation read could not be exercised. The foreground path therefore stays unproven; this is an environment limit, not a pass."
 }
