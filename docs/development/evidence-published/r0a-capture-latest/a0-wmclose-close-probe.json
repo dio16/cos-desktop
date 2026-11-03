@@ -1,0 +1,18 @@
+{
+  "probe_version": "r0c-input-2",
+  "synthetic": true,
+  "generation": 1,
+  "cancelled": false,
+  "binding_lost": false,
+  "close": {
+    "attempts": 1,
+    "posted": true,
+    "refused": "",
+    "window_gone": true
+  },
+  "window": {
+    "pid": 2368,
+    "title": "COS Desktop"
+  },
+  "actions": []
+}

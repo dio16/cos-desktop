@@ -112,7 +112,18 @@
         ]
       },
       "execution_id": "9c4e1f7a2b8d3056e7a1c9d4f6b20853",
-      "captured_feature": "r0-s2b-instrumentation"
+      "captured_feature": "r0-s2b-instrumentation",
+      "close_probe": {
+        "published_file": "a1-wmclose-close-probe.json",
+        "sha256_of_published": "sha256:b6a202df49e868379dd718652218a76bd462483a37021b2f379e9d113d1f3c18",
+        "sha256_of_original": "sha256:5994e1c3238a9f6aeb214760b9aabe6cbd1ee779292bd69da803ac0f86e54c9a",
+        "close": {
+          "attempts": 1,
+          "posted": true,
+          "refused": "",
+          "window_gone": true
+        }
+      }
     },
     "a0-wmclose": {
       "published": {
@@ -132,8 +143,20 @@
           "status": "NOT_MEASURED",
           "reason": "process exited 0; visual/frame endpoints were not measured"
         }
-      ]
+      ],
+      "close_probe": {
+        "published_file": "a0-wmclose-close-probe.json",
+        "sha256_of_published": "sha256:ed02bff8f09c1c51b3b90c0d6287a40290aef026d35fc91134fa5a700283fc2d",
+        "sha256_of_original": "sha256:a13b7e20674d3e139eba2f6d6e4967e5a1be360298a18330479c781653ff5c1a",
+        "close": {
+          "attempts": 1,
+          "posted": true,
+          "refused": "",
+          "window_gone": true
+        }
+      }
     }
   },
-  "wm_close_note": "Second attempt: the same approved candidates captured with an explicit WM_CLOSE so the app exits inside the bound. The launcher timeout is gone; the observation outcome is recorded as measured, including the retained=0 result."
+  "wm_close_note": "Second attempt: the same approved candidates captured with an explicit WM_CLOSE so the app exits inside the bound. The launcher timeout is gone; the observation outcome is recorded as measured, including the retained=0 result.",
+  "close_probe_note": "The original probe files were still present under target/, so both are published with their original digests recorded alongside the digests of the published copies; the published copies drop only fields unrelated to the close action."
 }
