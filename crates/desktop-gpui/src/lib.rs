@@ -5695,6 +5695,30 @@ mod contrast_scope_tests {
     }
 
     #[test]
+    fn cancelling_keeps_the_previous_status_and_outcomes_replace_it() {
+        // The product path only writes a status when the attempt produced an outcome:
+        // a cancelled dialog or a failed open leaves whatever was there untouched.
+        let mut status: Option<&'static str> = Some("保存しました");
+        let cancelled: Option<Result<(), app_core::support_report::ExportWriteError>> = None;
+        if let Some(outcome) = cancelled {
+            status = Some(super::export_status_message(outcome));
+        }
+        assert_eq!(status, Some("保存しました"), "cancel keeps the previous status");
+
+        let failed = Some(Err(app_core::support_report::ExportWriteError::AlreadyExists));
+        if let Some(outcome) = failed {
+            status = Some(super::export_status_message(outcome));
+        }
+        assert_eq!(status, Some("同名のファイルが存在します"), "an outcome replaces it");
+
+        let succeeded: Option<Result<(), app_core::support_report::ExportWriteError>> = Some(Ok(()));
+        if let Some(outcome) = succeeded {
+            status = Some(super::export_status_message(outcome));
+        }
+        assert_eq!(status, Some("保存しました"), "success replaces it too");
+    }
+
+    #[test]
     fn export_cancel_never_calls_the_writer() {
         let data =
             app_core::checked_export(&app_core::SupportReport::unavailable("UnitReason", "0.1.0"))
