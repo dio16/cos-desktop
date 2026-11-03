@@ -32,8 +32,8 @@ pub use redaction::{
     MAX_DIAGNOSTIC_LINE_BYTES, REDACTED, redact_diagnostic_text, redact_diagnostic_text_within,
 };
 pub use support_report::{
-    DiagnosticsSummary, MAX_REPORT_LINES, MAX_SUPPORT_REPORT_BYTES, ReportLimits, ReportValue,
-    SupportReport,
+    DiagnosticsSummary, ExportData, MAX_REPORT_LINES, MAX_SUPPORT_REPORT_BYTES, ReportLimits,
+    ReportValue, SupportReport, checked_export,
 };
 
 /// Application ownership is separate from each window's local presentation state.

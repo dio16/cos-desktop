@@ -4076,3 +4076,12 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **A-02 docs:** DC-MP-REL3 now states the writer is implemented (atomic no-replace hard-link finalisation, overwrite refused) and that save-dialog/consent UI wiring is not.
 - **Not implemented:** consent UI, dialog wiring, Native save flow. MP-REL3 remains incomplete.
 
+### 19.204 MP-REL3 checked-export state machine only (2026-11-02)
+
+- **Implemented:** `SupportBuild` variants carry `export: Option<app_core::ExportData>`; `SupportPreviewState` stores the checked export alongside the current preview. `begin()` and `invalidate()` clear it; `complete()` installs it only when the generation/target checks succeed; `take_for_save(generation)` returns it only for the matching current generation, refuses while a request is pending, and consumes it so a second take returns `None`.
+- **Builder:** `build_support_preview` builds the existing report once and stores `checked_export(&report).ok()` beside `report.render()`; the Desktop-only and unavailable fallbacks do the same.
+- **Removed the stale-preview risk:** a new `begin()` discards the previous export, so a late completion cannot expose an older payload.
+- **Not implemented:** Save/Cancel UI, `prompt_for_new_path` wiring, oneshot/background save flow, failure-message display (including `CleanupFailed`), and Native save. **MP-REL3 remains incomplete.**
+- **Tests:** generation mismatch → None; pending → None; one take only; `begin()` discards; existing support-preview/stale tests pass. `cargo test -p desktop-gpui` 111 passed / 0 failed; fmt OK; clippy 0 issues; `cargo build -p cos-desktop` succeeds.
+- **Native UI/save:** NOT_RUN by scope.
+

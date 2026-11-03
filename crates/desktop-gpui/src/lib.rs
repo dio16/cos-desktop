@@ -232,9 +232,19 @@ enum SupportPreview {
 /// What the background builder produced. Every variant carries text that was rendered
 /// off the UI thread, so installing a preview never serialises on the UI thread.
 enum SupportBuild {
-    Authorized { identity: (u64, u64), text: String },
-    DesktopOnly { text: String },
-    Failed { text: String },
+    Authorized {
+        identity: (u64, u64),
+        text: String,
+        export: Option<app_core::ExportData>,
+    },
+    DesktopOnly {
+        text: String,
+        export: Option<app_core::ExportData>,
+    },
+    Failed {
+        text: String,
+        export: Option<app_core::ExportData>,
+    },
 }
 
 /// Serializes preview requests and rejects stale completions. `generation` changes on
@@ -245,6 +255,7 @@ struct SupportPreviewState {
     generation: u64,
     pending: Option<Option<(u64, u64)>>,
     current: Option<SupportPreview>,
+    export: Option<app_core::ExportData>,
 }
 
 impl SupportPreviewState {
@@ -252,6 +263,7 @@ impl SupportPreviewState {
         self.generation = self.generation.wrapping_add(1);
         self.pending = Some(target);
         self.current = None;
+        self.export = None;
         self.generation
     }
 
@@ -268,7 +280,11 @@ impl SupportPreviewState {
             return false;
         }
         match build {
-            SupportBuild::Authorized { identity, text } => {
+            SupportBuild::Authorized {
+                identity,
+                text,
+                export,
+            } => {
                 if Some(identity) != target {
                     return false;
                 }
@@ -277,12 +293,15 @@ impl SupportPreviewState {
                     publication_version: identity.1,
                     text,
                 });
+                self.export = export;
             }
-            SupportBuild::DesktopOnly { text } => {
+            SupportBuild::DesktopOnly { text, export } => {
                 self.current = Some(SupportPreview::DesktopOnly(text));
+                self.export = export;
             }
-            SupportBuild::Failed { text } => {
+            SupportBuild::Failed { text, export } => {
                 self.current = Some(SupportPreview::Unavailable(text));
+                self.export = export;
             }
         }
         true
@@ -292,6 +311,17 @@ impl SupportPreviewState {
         self.generation = self.generation.wrapping_add(1);
         self.pending = None;
         self.current = None;
+        self.export = None;
+    }
+
+    /// Hand the checked export to one save attempt only when it belongs to the
+    /// caller's current generation. A stale or repeated call gets `None`.
+    #[allow(dead_code)] // UI wiring is the next slice; the state machine is tested now.
+    fn take_for_save(&mut self, generation: u64) -> Option<app_core::ExportData> {
+        if generation != self.generation || self.pending.is_some() {
+            return None;
+        }
+        self.export.take()
     }
 
     fn visible(&self, handle_present: bool, live: Option<(u64, u64)>) -> Option<&str> {
@@ -319,31 +349,38 @@ fn build_support_preview(handle: &ObservationHandle, desktop_version: &str) -> S
                 .read(|current| publication = Some(current.clone()))
                 .is_ok();
             match (notice, publication, read_ok) {
-                (Some(notice), Some(publication), true) => SupportBuild::Authorized {
-                    identity: (notice.session_generation, notice.publication_version),
-                    text: app_core::SupportReport::from_publication(
+                (Some(notice), Some(publication), true) => {
+                    let report = app_core::SupportReport::from_publication(
                         &publication,
                         &handle.diagnostics_after(0),
                         desktop_version,
-                    )
-                    .render(),
-                },
-                _ => SupportBuild::Failed {
-                    text: app_core::SupportReport::unavailable(
+                    );
+                    SupportBuild::Authorized {
+                        identity: (notice.session_generation, notice.publication_version),
+                        text: report.render(),
+                        export: app_core::checked_export(&report).ok(),
+                    }
+                }
+                _ => {
+                    let report = app_core::SupportReport::unavailable(
                         "observation is unavailable",
                         desktop_version,
-                    )
-                    .render(),
-                },
+                    );
+                    SupportBuild::Failed {
+                        text: report.render(),
+                        export: app_core::checked_export(&report).ok(),
+                    }
+                }
             }
         }
-        Err(_) => SupportBuild::Failed {
-            text: app_core::SupportReport::unavailable(
-                "observation is unavailable",
-                desktop_version,
-            )
-            .render(),
-        },
+        Err(_) => {
+            let report =
+                app_core::SupportReport::unavailable("observation is unavailable", desktop_version);
+            SupportBuild::Failed {
+                text: report.render(),
+                export: app_core::checked_export(&report).ok(),
+            }
+        }
     }
 }
 
@@ -1069,12 +1106,13 @@ impl Shell {
                 let build = cx
                     .background_executor()
                     .spawn(async move {
+                        let report = app_core::SupportReport::unavailable(
+                            "no observation handle — Desktop information only",
+                            &version,
+                        );
                         SupportBuild::DesktopOnly {
-                            text: app_core::SupportReport::unavailable(
-                                "no observation handle — Desktop information only",
-                                &version,
-                            )
-                            .render(),
+                            text: report.render(),
+                            export: app_core::checked_export(&report).ok(),
                         }
                     })
                     .await;
@@ -5252,7 +5290,9 @@ mod contrast_scope_tests {
             Some((3, 7)),
             SupportBuild::Authorized {
                 identity: (3, 7),
-                text: "old".to_owned()
+                text: "old".to_owned(),
+
+                export: None,
             }
         ));
         assert_eq!(state.visible(true, Some((3, 7))), None);
@@ -5264,7 +5304,9 @@ mod contrast_scope_tests {
             Some((3, 8)),
             SupportBuild::Authorized {
                 identity: (3, 7),
-                text: "old".to_owned()
+                text: "old".to_owned(),
+
+                export: None,
             }
         ));
         assert_eq!(state.visible(true, Some((3, 8))), None);
@@ -5277,7 +5319,9 @@ mod contrast_scope_tests {
             Some((3, 7)),
             SupportBuild::Authorized {
                 identity: (3, 7),
-                text: "new".to_owned()
+                text: "new".to_owned(),
+
+                export: None,
             }
         ));
         assert!(!state.complete(
@@ -5285,7 +5329,9 @@ mod contrast_scope_tests {
             Some((3, 7)),
             SupportBuild::Authorized {
                 identity: (3, 7),
-                text: "old".to_owned()
+                text: "old".to_owned(),
+
+                export: None,
             }
         ));
         assert_eq!(state.visible(true, Some((3, 7))), Some("new"));
@@ -5297,7 +5343,9 @@ mod contrast_scope_tests {
             Some((4, 1)),
             SupportBuild::Authorized {
                 identity: (4, 1),
-                text: "report".to_owned()
+                text: "report".to_owned(),
+
+                export: None,
             }
         ));
         assert_eq!(state.visible(true, Some((4, 1))), Some("report"));
@@ -5309,7 +5357,9 @@ mod contrast_scope_tests {
             desktop,
             None,
             SupportBuild::DesktopOnly {
-                text: "Desktop 9.8.7".to_owned()
+                text: "Desktop 9.8.7".to_owned(),
+
+                export: None,
             }
         ));
         assert_eq!(state.visible(false, None), Some("Desktop 9.8.7"));
@@ -5321,12 +5371,62 @@ mod contrast_scope_tests {
             unavailable,
             Some((5, 5)),
             SupportBuild::Failed {
-                text: "Retained events: unknown".to_owned()
+                text: "Retained events: unknown".to_owned(),
+
+                export: None,
             }
         ));
         assert_eq!(
             state.visible(true, Some((5, 5))),
             Some("Retained events: unknown")
+        );
+    }
+    #[test]
+    fn checked_export_is_bound_to_its_generation_and_taken_once() {
+        use super::{SupportBuild, SupportPreviewState};
+        let export = || {
+            app_core::checked_export(&app_core::SupportReport::unavailable("UnitReason", "0.1.0"))
+                .expect("checked export")
+        };
+        let mut state = SupportPreviewState::default();
+        let generation = state.begin(None);
+        assert!(
+            state.take_for_save(generation).is_none(),
+            "no export while pending"
+        );
+        assert!(state.complete(
+            generation,
+            None,
+            SupportBuild::DesktopOnly {
+                text: "report".to_owned(),
+                export: Some(export()),
+            }
+        ));
+        assert!(
+            state.take_for_save(generation.wrapping_add(1)).is_none(),
+            "a different generation must not receive the export"
+        );
+        let data = state.take_for_save(generation).expect("current export");
+        assert!(!data.as_bytes().is_empty());
+        assert!(
+            state.take_for_save(generation).is_none(),
+            "second take is refused"
+        );
+
+        let mut state = SupportPreviewState::default();
+        let generation = state.begin(None);
+        assert!(state.complete(
+            generation,
+            None,
+            SupportBuild::DesktopOnly {
+                text: "report".to_owned(),
+                export: Some(export()),
+            }
+        ));
+        let _next = state.begin(None);
+        assert!(
+            state.take_for_save(generation).is_none(),
+            "begin() discards the previous export"
         );
     }
 }
