@@ -1,0 +1,15 @@
+{
+  "measurement": "export button with an explicit accessibility click listener: native probe",
+  "base_commit": "1a03afc65e4334ffffddea75fcd9dd2f5080db3f",
+  "exe_sha256": "sha256:6d406a9498906b0b9efb431702f9658ef8ab616fa0fe2317a40b38cad0d61d44",
+  "windows": "10.0.26300.0",
+  "result": "NEGATIVE for the dialog. With the panel opened by accessibility, the preview generated (the in-process trace shows action=reached through install=accepted), the export button present, and its accessibility invoke returning without an exception, NO save dialog appeared among the top-level windows, and neither support-export-status nor support-export-trace became present.",
+  "what_this_does_not_show": "The export path has no in-process handler-entry trace, so this probe cannot say whether export_support ran and stopped later, or never ran at all. Unlike the preview path, there is no evidence here that the handler was reached, so the listener cannot be judged effective or ineffective from this run.",
+  "next_step": "Instrument the export path the same way the preview path was instrumented (closed tokens on stderr behind an environment variable) and repeat the probe. Only then can the dispatch question be answered for this button.",
+  "files": {
+    "export-action-probe.txt": {
+      "sha256": "sha256:09bee6ef4783ba1a1b32a603c2fe29b37a79d037d14b9cd67bbc44202e2a43d0",
+      "bytes": 652
+    }
+  }
+}

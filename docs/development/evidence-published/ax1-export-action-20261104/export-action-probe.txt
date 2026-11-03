@@ -1,0 +1,16 @@
+save flow through accessibility: open preview, invoke export, inspect the dialog
+exe_sha256: 6d406a9498906b0b9efb431702f9658ef8ab616fa0fe2317a40b38cad0d61d44
+base_commit: 1a03afc65e4334ffffddea75fcd9dd2f5080db3f
+isolated LOCALAPPDATA: C:\Users\DIOBRA~1\AppData\Local\Temp\save-5ce327ad9b4a46998e4c33582645e154
+export_button: present
+status_before: (absent)
+export_trace_before: (absent)
+export_invoke: ok
+--- top level windows after export invoke ---
+  name='COS Desktop' class=Zed::Window pid=49852
+dialog: not found
+stderr:
+  preview-trace action=reached
+  preview-trace build=started
+  preview-trace build=finished
+  preview-trace install=accepted
