@@ -305,5 +305,84 @@
     "frame_identity": "NOT_MEASURED",
     "note": "First run with the declared keyboard trace: the observation is OBSERVED and retains 256 records. Frame identity and cross-domain latency remain NOT_MEASURED, so this is partial coverage rather than a complete measurement."
   },
-  "digest_note": "Digests are computed over the bytes in the working tree. This repository checks out text files with CRLF on Windows while the git blob keeps LF, so a published text file has two legitimate digests; both are recorded where that difference applies, as for the plan."
+  "digest_note": "Digests are computed over the bytes in the working tree. This repository checks out text files with CRLF on Windows while the git blob keeps LF, so a published text file has two legitimate digests; both are recorded where that difference applies, as for the plan.",
+  "local_tab_run": {
+    "correspondence": "MATCHED",
+    "published": {
+      "ledger.json": "sha256:bb1c67c11f181eb9d3fb2304ee4d307b87979e4a27c4d43a5d75fc16ae9ef4aa",
+      "result.json": "sha256:dbe9d1edc1a0ca40116cb90eb806388a058bd52fbb66ec07aeb135eb3114b166",
+      "completion.json": "sha256:d7c29238ac3556cb8d5b8dcb67d55ade076f21dd0f35b9cb48305d178ad853e3",
+      "endpoint-availability.json": "sha256:619ca702323e64198f6d91150230fbf1b7982121b90cd6f49778c52670267303",
+      "s2b-capture.json": "sha256:61dfd62793fd2b02b981c160a1a1bf8fe595c8445bdd321e3ae22c5a1723fe22",
+      "s2b-observation.json": "sha256:a92d9376706d727c07fb6ebee3388f4f634df3971395d4d1f0142eb7b285ee1b",
+      "build-record.json": "sha256:bb8bc0b7abeae0be97694f1240d7f7eaaa0f4fcd0588d298ac2fc17c35fd92b3",
+      "source-identity.json": "sha256:730f1c8b3f4bcf15b3677d81da162ecaba0ab820d6ba8bad6019a86c168a53d2"
+    },
+    "extra": {
+      "run-id": {
+        "published_file": "a1-localtab-run-id",
+        "sha256_worktree": "sha256:f48b8a886d121e1efcadccc213098813a934030d5592dac145906b060ba79ad3"
+      },
+      "plan": {
+        "published_file": "a1-localtab-plan.json",
+        "sha256_worktree": "sha256:56408b87b7cebeffb9189cee83623c52237592519fa074a0dc9bba938fd003cf"
+      },
+      "close-probe": {
+        "published_file": "a1-localtab-close-probe.json",
+        "sha256_worktree": "sha256:04ff8ec1908534b7a4cc9881f82e00911c9ec1563e106e3ee60c454ade830cd1"
+      }
+    },
+    "capture_summary": {
+      "journal_lost": 0,
+      "journal_seen": 457,
+      "local_received": 7,
+      "local_enqueued": 7,
+      "local_dropped": 0,
+      "local_undrained": 0,
+      "eligible": 331,
+      "retained": 256,
+      "retention_dropped": 75,
+      "excluded": 129,
+      "pre_scope": 4,
+      "post_scope": 0,
+      "invalid_clock": 0,
+      "barrier_spans": 0,
+      "correlation_invalid": 0,
+      "input_unassociated": 132,
+      "unmatched_submission": 0,
+      "undrained_journal": 0,
+      "cancelled": false,
+      "source_coverage": "OFFERED_FINALIZED_JOURNAL_ONLY",
+      "unoffered_loss": "UNKNOWN",
+      "unfinalized_tail": "UNKNOWN",
+      "kind_counts": [
+        100,
+        50,
+        50,
+        49,
+        0,
+        0,
+        3,
+        0,
+        2,
+        2
+      ]
+    },
+    "ledger": {
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_ms": 34830,
+      "pid": 18864
+    },
+    "probe_window_pid": 18864,
+    "observed_endpoints": [
+      "input-dispatch",
+      "gpui-dirty",
+      "gpui-cpu-draw",
+      "gpui-platform-submission",
+      "local-surface-mutation",
+      "local-notify"
+    ],
+    "note": "Driven with TAB focus moves and ENTER activations, because the existing probe has no CONTROL virtual key and cannot synthesise Ctrl chords. Both local endpoints are OBSERVED here; the frame-family endpoints remain NOT_EXPOSED_BY_SELECTED_PROBE."
+  }
 }

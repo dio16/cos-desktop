@@ -1,0 +1,13 @@
+{
+  "build_version": 1,
+  "baseline_source_commit": "a732adc677cf28b414a5643cb72a519b156de7a1",
+  "source_commit": "a732adc677cf28b414a5643cb72a519b156de7a1",
+  "observer_source_sha256": "sha256:3e0bec1d7a4969dcc110cb29e926be69ae932a33b77fe9cf90a50eaa3d3c47d9",
+  "baseline_executable_sha256": "sha256:9fe8241e72e331404e1b5eea8bc1b00d6ffc1ba4d63cfc42dae06f18d19fb458",
+  "executable_sha256": "sha256:f7ec10bded7b3022c05b9140ea946242950f49be8ced9f21b0ac487502703e10",
+  "feature": "r0-s2b-instrumentation",
+  "gpui_pin": "395def7a067b32ed598fcb3f048969ada9b54942",
+  "target": "x86_64-pc-windows-msvc",
+  "rustc": "1.98.1",
+  "cargo": "1.98.1"
+}
