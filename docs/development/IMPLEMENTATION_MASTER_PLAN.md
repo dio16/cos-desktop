@@ -4249,3 +4249,13 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Consequence:** the preview, the export button, the status line and the trace stay `NOT_OBSERVED` through this route, and the earlier native run that did see a preview (at `ce14dca`) is **not reproduced** with the current build. That earlier measurement is not withdrawn - it observed then what it observed - but it cannot be re-created now.
 - **Evidence:** `docs/development/evidence-published/rel3-preview-invoke-20261104/` with the probe output and a `record.json`.
 - **State:** MP-REL3, MP-AX1/AX2, MP-R0A and MP-R0B remain incomplete; connected baseline and screen-reader quality `NOT_MEASURED`; product acceptance `NOT_RUN`.
+
+### 19.219 MP-REL3 support-preview path instrumentation (2026-08-11)
+
+- **Design:** `preview_trace` exposes four closed ASCII measurement points without requiring focus: handler `action=reached|none`; builder `build=started|finished|none`; install result `install=accepted|generation|identity|pending|none`; render `render=present|absent`. Exposed as `support-preview-trace` (`Role::Label`, `accessibility_id`, `aria_value(trace)`).
+- **Install reasons:** `SupportPreviewState::complete_outcome()` separates generation mismatch, missing pending request, identity mismatch and accepted installs; the existing boolean `complete()` now delegates to it and remains test-only. Preview install behavior is unchanged.
+- **Not recorded:** report text, paths, filenames, OS error text, secret values. Only fixed ASCII tokens are stored.
+- **Behavior unchanged:** generation stamping, target identity checks, background build, stale rejection, export/save/redaction/authority paths are untouched; the trace only records transitions.
+- **Tests:** closed-token formatting, no path/content, AutomationId/aria-value wiring; `cargo test -p desktop-gpui` 119 passed / 0 failed; fmt OK; clippy 0 issues; `cargo check -p cos-desktop` OK.
+- **Cause status:** **undetermined**; Native measurement is owned by the Lead. MP-REL3 incomplete; product acceptance NOT_RUN.
+

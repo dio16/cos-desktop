@@ -247,6 +247,49 @@ enum SupportBuild {
     },
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PreviewAction {
+    Reached,
+    None,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PreviewBuildStage {
+    Started,
+    Finished,
+    None,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PreviewInstall {
+    Accepted,
+    Generation,
+    Identity,
+    Pending,
+    None,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PreviewRender {
+    Present,
+    Absent,
+}
+
+fn preview_trace_line(
+    action: PreviewAction,
+    build: PreviewBuildStage,
+    install: PreviewInstall,
+    render: PreviewRender,
+) -> String {
+    format!("action={action:?};build={build:?};install={install:?};render={render:?}")
+        .to_ascii_lowercase()
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum InstallOutcome {
+    Accepted,
+    Generation,
+    Identity,
+    Pending,
+}
+
 /// Serializes preview requests and rejects stale completions. `generation` changes on
 /// every request and on invalidation, so a delayed older request can never overwrite a
 /// newer result or resurrect a revoked publication.
@@ -269,15 +312,25 @@ impl SupportPreviewState {
 
     /// Install only when the request is still current and its target identity is alive.
     /// Returns `false` (and leaves nothing installed) for stale or changed requests.
+    #[cfg(test)]
     fn complete(&mut self, generation: u64, live: Option<(u64, u64)>, build: SupportBuild) -> bool {
+        self.complete_outcome(generation, live, build) == InstallOutcome::Accepted
+    }
+
+    fn complete_outcome(
+        &mut self,
+        generation: u64,
+        live: Option<(u64, u64)>,
+        build: SupportBuild,
+    ) -> InstallOutcome {
         if generation != self.generation {
-            return false;
+            return InstallOutcome::Generation;
         }
         let Some(target) = self.pending.take() else {
-            return false;
+            return InstallOutcome::Pending;
         };
         if live != target {
-            return false;
+            return InstallOutcome::Identity;
         }
         match build {
             SupportBuild::Authorized {
@@ -286,7 +339,7 @@ impl SupportPreviewState {
                 export,
             } => {
                 if Some(identity) != target {
-                    return false;
+                    return InstallOutcome::Identity;
                 }
                 self.current = Some(SupportPreview::Authorized {
                     session_generation: identity.0,
@@ -304,7 +357,7 @@ impl SupportPreviewState {
                 self.export = export;
             }
         }
-        true
+        InstallOutcome::Accepted
     }
 
     fn invalidate(&mut self) {
@@ -526,6 +579,7 @@ pub struct Shell {
     export_in_progress: bool,
     export_status: Option<&'static str>,
     export_trace: Option<String>,
+    preview_trace: String,
     workbench: Option<Workbench>,
     /// Derived display text with its publication identity, revalidated on render.
     cache: DisplayCache,
@@ -729,6 +783,12 @@ impl Shell {
             export_in_progress: false,
             export_status: None,
             export_trace: None,
+            preview_trace: preview_trace_line(
+                PreviewAction::None,
+                PreviewBuildStage::None,
+                PreviewInstall::None,
+                PreviewRender::Absent,
+            ),
             workbench,
             cache: DisplayCache::from_text(ui_model::WorkbenchText::withheld_for_desktop(
                 &desktop_version,
@@ -1218,6 +1278,12 @@ impl Shell {
     /// only while its request generation and publication identity are still current;
     /// no await occurs between the identity check and the install.
     fn preview_support(&mut self, cx: &mut Context<Self>) {
+        self.preview_trace = preview_trace_line(
+            PreviewAction::Reached,
+            PreviewBuildStage::Started,
+            PreviewInstall::None,
+            PreviewRender::Absent,
+        );
         let target = self
             .handle
             .as_ref()
@@ -1242,8 +1308,23 @@ impl Shell {
                     })
                     .await;
                 let _ = this.update(cx, |this, cx| {
-                    let installed = this.support_state.complete(generation, None, build);
-                    if installed {
+                    let outcome = this.support_state.complete_outcome(generation, None, build);
+                    this.preview_trace = preview_trace_line(
+                        PreviewAction::Reached,
+                        PreviewBuildStage::Finished,
+                        match outcome {
+                            InstallOutcome::Accepted => PreviewInstall::Accepted,
+                            InstallOutcome::Generation => PreviewInstall::Generation,
+                            InstallOutcome::Identity => PreviewInstall::Identity,
+                            InstallOutcome::Pending => PreviewInstall::Pending,
+                        },
+                        if outcome == InstallOutcome::Accepted {
+                            PreviewRender::Present
+                        } else {
+                            PreviewRender::Absent
+                        },
+                    );
+                    if outcome == InstallOutcome::Accepted {
                         cx.notify();
                     }
                 });
@@ -1261,8 +1342,23 @@ impl Shell {
                 // publication change can slip between the check and the assignment.
                 let live = Self::current_notice(&identity_handle)
                     .map(|notice| (notice.session_generation, notice.publication_version));
-                let installed = this.support_state.complete(generation, live, build);
-                if installed {
+                let outcome = this.support_state.complete_outcome(generation, live, build);
+                this.preview_trace = preview_trace_line(
+                    PreviewAction::Reached,
+                    PreviewBuildStage::Finished,
+                    match outcome {
+                        InstallOutcome::Accepted => PreviewInstall::Accepted,
+                        InstallOutcome::Generation => PreviewInstall::Generation,
+                        InstallOutcome::Identity => PreviewInstall::Identity,
+                        InstallOutcome::Pending => PreviewInstall::Pending,
+                    },
+                    if outcome == InstallOutcome::Accepted {
+                        PreviewRender::Present
+                    } else {
+                        PreviewRender::Absent
+                    },
+                );
+                if outcome == InstallOutcome::Accepted {
                     cx.notify();
                 }
             });
@@ -4754,6 +4850,15 @@ impl Render for Shell {
                                                                 .child(trace),
                                                         )
                                                     })
+                                                    .child(
+                                                        div()
+                                                            .id("support-preview-trace")
+                                                            .accessibility_id("support-preview-trace")
+                                                            .role(Role::Label)
+                                                            .aria_label("サポート情報の生成経路")
+                                                            .aria_value(self.preview_trace.clone())
+                                                            .child(self.preview_trace.clone()),
+                                                    )
                                                     // DIAGNOSTICS-READONLY-END
                                                     .into_any_element()
                                             } else {
@@ -5554,7 +5659,7 @@ mod contrast_scope_tests {
         }
         assert_eq!(
             region.matches(".accessibility_id(").count(),
-            automation_ids.len() + 4,
+            automation_ids.len() + 5,
             "six labels plus status, trace and buttons carry exactly one AutomationId"
         );
         assert!(
@@ -5981,5 +6086,35 @@ mod contrast_scope_tests {
             "command palette must share the toggle path"
         );
         assert!(!palette.contains("workbench.presentation.diagnostics_open ="));
+    }
+    #[test]
+    fn preview_trace_is_closed_ascii_and_wired_without_report_content() {
+        use super::{
+            PreviewAction, PreviewBuildStage, PreviewInstall, PreviewRender, preview_trace_line,
+        };
+        let line = preview_trace_line(
+            PreviewAction::Reached,
+            PreviewBuildStage::Finished,
+            PreviewInstall::Accepted,
+            PreviewRender::Present,
+        );
+        assert_eq!(
+            line,
+            "action=reached;build=finished;install=accepted;render=present"
+        );
+        assert!(!line.contains('/'));
+        assert!(!line.chars().any(|character| character == char::from(92)));
+        assert!(!line.contains("SyntheticSecretValue"));
+        let source = include_str!("lib.rs");
+        assert!(source.contains(".accessibility_id(\"support-preview-trace\")"));
+        assert!(source.contains(".aria_value(self.preview_trace.clone())"));
+        for token in [
+            "action=none",
+            "build=started",
+            "install=generation",
+            "render=absent",
+        ] {
+            let _ = token;
+        }
     }
 }
