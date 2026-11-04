@@ -206,3 +206,134 @@ mod tests {
         );
     }
 }
+
+/// A grid of tiles that together cover one frame, each of which fits the budget on its own.
+///
+/// This is the **arithmetic** of application-side tiling: how many sub-images of what size would
+/// be needed. It is not evidence that the application can issue them within the frame time, that
+/// the per-image overhead leaves the budget intact, or that GPUI accepts that many images in one
+/// paint pass - those are `NOT_ESTABLISHED`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TilePlan {
+    /// Edge length in pixels of a full tile.
+    pub tile_edge: u32,
+    /// Tiles along each axis, `ceil(frame_edge / tile_edge)`.
+    pub tiles_per_axis: u32,
+    /// Total tiles, `tiles_per_axis ** 2`.
+    pub tile_count: u64,
+    /// Bytes of one full tile.
+    pub tile_bytes: u64,
+    /// Bytes of the whole frame, which the tiles together still add up to.
+    pub frame_bytes: u64,
+    /// Whether a single full tile fits the budget (the point of tiling).
+    pub tile_fits_budget: bool,
+}
+
+/// Plan a square tiling of `frame_edge` pixels so that each full tile fits `budget` bytes.
+///
+/// Returns `None` when not even a one-pixel tile fits, i.e. the budget is below the size of a
+/// single pixel and no tiling can help.
+pub fn plan_tiled_upload(frame_edge: u32, budget: u64) -> Option<TilePlan> {
+    // Largest edge whose RGBA8 bytes still fit: edge^2 * 4 <= budget.
+    let mut tile_edge = (budget / 4).isqrt() as u32;
+    if tile_edge == 0 {
+        return None;
+    }
+    tile_edge = tile_edge.min(frame_edge);
+    let tile_bytes = u64::from(tile_edge) * u64::from(tile_edge) * 4;
+    let tiles_per_axis = frame_edge.div_ceil(tile_edge);
+    let frame_bytes = rgba8_frame_bytes(frame_edge);
+    Some(TilePlan {
+        tile_edge,
+        tiles_per_axis,
+        tile_count: u64::from(tiles_per_axis) * u64::from(tiles_per_axis),
+        tile_bytes,
+        frame_bytes,
+        tile_fits_budget: tile_bytes <= budget,
+    })
+}
+
+#[cfg(test)]
+mod tiling_tests {
+    use super::*;
+
+    const APPROVED_EDGE: u32 = 2048;
+
+    #[test]
+    fn a_16_mib_frame_splits_into_budget_sized_tiles() {
+        // 4 MiB at 60 Hz is exactly a 1024x1024 RGBA8 tile, so the frame is a 2x2 grid.
+        let plan = plan_tiled_upload(APPROVED_EDGE, RefreshRate::Hz60.budget_bytes())
+            .expect("a 4 MiB budget fits a tile");
+        assert_eq!(plan.tile_edge, 1024);
+        assert_eq!(plan.tile_bytes, 4 * 1024 * 1024);
+        assert_eq!(plan.tiles_per_axis, 2);
+        assert_eq!(plan.tile_count, 4);
+        assert!(plan.tile_fits_budget);
+        assert_eq!(plan.frame_bytes, 16 * 1024 * 1024);
+
+        // 2 MiB at 120 Hz is a 724-pixel edge (724^2 * 4 = 2,096,704 B), giving 3x3 tiles.
+        let plan = plan_tiled_upload(APPROVED_EDGE, RefreshRate::Hz120.budget_bytes())
+            .expect("a 2 MiB budget fits a tile");
+        assert_eq!(plan.tile_edge, 724);
+        assert_eq!(plan.tile_bytes, 724 * 724 * 4);
+        assert!(plan.tile_bytes <= RefreshRate::Hz120.budget_bytes());
+        assert_eq!(plan.tiles_per_axis, 3);
+        assert_eq!(plan.tile_count, 9);
+    }
+
+    #[test]
+    fn every_tile_fits_and_the_tiles_cover_the_frame_exactly() {
+        // Walk the grid the way an uploader would: each tile's own bytes must fit the budget, and
+        // the tiles must cover every pixel exactly once - no gap, no overlap.
+        for budget in [
+            RefreshRate::Hz60.budget_bytes(),
+            RefreshRate::Hz120.budget_bytes(),
+            1024 * 1024,
+            512 * 1024,
+        ] {
+            let plan = plan_tiled_upload(APPROVED_EDGE, budget).expect("a tile fits");
+            assert!(plan.tile_fits_budget, "budget {budget}: a tile must fit");
+            let mut covered = 0u64;
+            for ty in 0..plan.tiles_per_axis {
+                for tx in 0..plan.tiles_per_axis {
+                    let x0 = tx * plan.tile_edge;
+                    let y0 = ty * plan.tile_edge;
+                    let width = plan.tile_edge.min(APPROVED_EDGE - x0);
+                    let height = plan.tile_edge.min(APPROVED_EDGE - y0);
+                    let bytes = u64::from(width) * u64::from(height) * 4;
+                    assert!(
+                        bytes <= budget,
+                        "budget {budget}: tile ({tx},{ty}) is {bytes} B, over the budget"
+                    );
+                    covered += u64::from(width) * u64::from(height);
+                }
+            }
+            assert_eq!(
+                covered,
+                u64::from(APPROVED_EDGE) * u64::from(APPROVED_EDGE),
+                "budget {budget}: the tiles must cover the frame exactly"
+            );
+        }
+    }
+
+    #[test]
+    fn a_budget_that_already_fits_the_frame_needs_one_tile() {
+        let plan = plan_tiled_upload(APPROVED_EDGE, rgba8_frame_bytes(APPROVED_EDGE))
+            .expect("the frame fits");
+        assert_eq!(plan.tile_edge, APPROVED_EDGE);
+        assert_eq!(plan.tile_count, 1, "one tile covers the whole frame");
+        assert!(plan.tile_fits_budget);
+    }
+
+    #[test]
+    fn a_budget_below_one_pixel_has_no_tiling() {
+        assert!(
+            plan_tiled_upload(APPROVED_EDGE, 3).is_none(),
+            "three bytes cannot hold one RGBA8 pixel"
+        );
+        assert!(
+            plan_tiled_upload(APPROVED_EDGE, 4).is_some(),
+            "four bytes hold exactly one pixel"
+        );
+    }
+}
