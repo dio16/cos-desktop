@@ -406,6 +406,11 @@ mod bounds_tests {
     }
 }
 
+/// The most tiles a schedule will plan for. Beyond this the arithmetic is still correct but the
+/// plan is not something an uploader could act on, and building it would cost a great deal of
+/// memory for no use.
+pub const MAX_SCHEDULE_TILES: u64 = 4096;
+
 /// One tile's rectangle within the frame, in pixels.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TileSpan {
@@ -417,8 +422,18 @@ pub struct TileSpan {
 
 impl TileSpan {
     /// Bytes this tile occupies as RGBA8.
+    ///
+    /// Saturates rather than wrapping: a wrapping product could look smaller than it is and be
+    /// admitted against a budget it cannot fit.
     pub fn bytes(&self) -> u64 {
-        u64::from(self.width) * u64::from(self.height) * 4
+        self.checked_bytes().unwrap_or(u64::MAX)
+    }
+
+    /// Bytes this tile occupies, or `None` when the product does not fit a `u64`.
+    pub fn checked_bytes(&self) -> Option<u64> {
+        u64::from(self.width)
+            .checked_mul(u64::from(self.height))?
+            .checked_mul(4)
     }
 }
 
@@ -469,6 +484,13 @@ pub fn schedule_tiles(frame_edge: u32, tile_edge: u32, budget: u64) -> Option<Up
     if frame_edge == 0 || tile_edge == 0 || budget < 4 {
         return None;
     }
+    // Refuse an impractical grid before allocating it: one pixel per tile on the approved frame
+    // would be over four million periods, each with its own vector.
+    let tiles_per_axis = frame_edge.div_ceil(tile_edge);
+    let tile_count = u64::from(tiles_per_axis) * u64::from(tiles_per_axis);
+    if tile_count > MAX_SCHEDULE_TILES {
+        return None;
+    }
     let mut periods: Vec<UploadPeriod> = Vec::new();
     for y in (0..frame_edge).step_by(tile_edge as usize) {
         for x in (0..frame_edge).step_by(tile_edge as usize) {
@@ -478,14 +500,19 @@ pub fn schedule_tiles(frame_edge: u32, tile_edge: u32, budget: u64) -> Option<Up
                 width: tile_edge.min(frame_edge - x),
                 height: tile_edge.min(frame_edge - y),
             };
-            let bytes = span.bytes();
+            let bytes = span.checked_bytes()?;
             if bytes > budget {
                 return None;
             }
             match periods.last_mut() {
-                Some(period) if period.bytes + bytes <= budget => {
+                Some(period)
+                    if period
+                        .bytes
+                        .checked_add(bytes)
+                        .is_some_and(|sum| sum <= budget) =>
+                {
                     period.tiles.push(span);
-                    period.bytes += bytes;
+                    period.bytes = period.bytes.checked_add(bytes)?;
                 }
                 _ => periods.push(UploadPeriod {
                     tiles: vec![span],
@@ -576,6 +603,45 @@ mod schedule_tests {
                 "tile_edge {tile_edge}: the schedule must cover the frame"
             );
         }
+    }
+
+    #[test]
+    fn byte_arithmetic_that_would_overflow_is_refused() {
+        // An edge whose RGBA8 byte count does not fit a u64 must not look like it fits the budget.
+        assert!(
+            schedule_tiles(2_147_483_648, 2_147_483_648, 4).is_none(),
+            "an unrepresentable tile size must be refused"
+        );
+        let span = TileSpan {
+            x: 0,
+            y: 0,
+            width: u32::MAX,
+            height: u32::MAX,
+        };
+        assert!(
+            span.checked_bytes().is_none(),
+            "the product of two huge edges does not fit a u64"
+        );
+        assert_eq!(
+            span.bytes(),
+            u64::MAX,
+            "the saturating figure must not wrap to something small"
+        );
+    }
+
+    #[test]
+    fn an_impractical_grid_is_refused_before_it_is_allocated() {
+        // One pixel per tile on the approved frame would be over four million periods.
+        assert!(schedule_tiles(APPROVED_EDGE, 1, 4).is_none());
+        // The documented ceiling itself is still allowed: a 64x64 grid of 32-pixel tiles.
+        let schedule = schedule_tiles(APPROVED_EDGE, 32, RefreshRate::Hz60.budget_bytes())
+            .expect("a 64x64 grid is within the ceiling");
+        assert!(
+            schedule.period_count() <= MAX_SCHEDULE_TILES as usize,
+            "a grid at the ceiling must stay within it"
+        );
+        // One tile over the ceiling is refused.
+        assert!(schedule_tiles(4160, 32, RefreshRate::Hz60.budget_bytes()).is_none());
     }
 
     #[test]
