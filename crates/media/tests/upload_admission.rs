@@ -285,16 +285,19 @@ fn concurrent_admissions_of_different_identities_cannot_exceed_the_budget() {
     let verified = std::sync::Arc::new(verified_approved());
     let results = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
     // One party per thread plus this thread, which waits with them so every attempt starts together.
-    let barrier = std::sync::Arc::new(std::sync::Barrier::new(usize::from(THREADS) + 1));
-    let released = std::sync::Arc::new(std::sync::Barrier::new(usize::from(THREADS) + 1));
+    let barrier_start = std::sync::Arc::new(std::sync::Barrier::new(usize::from(THREADS) + 1));
+    let barrier_hold = std::sync::Arc::new(std::sync::Barrier::new(usize::from(THREADS) + 1));
     let mut handles = Vec::new();
     for tag in 0..THREADS {
         let pool = std::sync::Arc::clone(&pool);
         let verified = std::sync::Arc::clone(&verified);
         let results = std::sync::Arc::clone(&results);
-        let barrier = std::sync::Arc::clone(&barrier);
-        let released = std::sync::Arc::clone(&released);
+        let barrier_start = std::sync::Arc::clone(&barrier_start);
+        let barrier_hold = std::sync::Arc::clone(&barrier_hold);
         handles.push(std::thread::spawn(move || {
+            // Wait here so every attempt is issued together; the barrier is before the call,
+            // not after it.
+            barrier_start.wait();
             let outcome = admit_upload(
                 &verified,
                 identity(tag + 10, 1),
@@ -304,17 +307,16 @@ fn concurrent_admissions_of_different_identities_cannot_exceed_the_budget() {
             );
             let admitted = outcome.is_ok();
             results.lock().expect("results").push(admitted);
-            // Wait for every attempt before the main thread releases the reservations.
-            barrier.wait();
-            released.wait();
+            // Hold the reservation until every attempt has been made.
+            barrier_hold.wait();
             if let Ok(mut admission) = outcome {
                 admission.release().expect("release");
             }
         }));
     }
-    // Let all attempts complete, then let the holders go.
-    barrier.wait();
-    released.wait();
+    // Release every attempt at once, then let the holders finish.
+    barrier_start.wait();
+    barrier_hold.wait();
     for handle in handles {
         handle.join().expect("thread");
     }
@@ -687,5 +689,82 @@ fn an_uploading_drop_quarantines_one_frame_not_three() {
     assert_eq!(
         usage.unreclaimed, FRAME_BYTES,
         "the quarantine holds exactly one frame"
+    );
+}
+
+#[test]
+fn a_quarantined_transfer_keeps_charging_staging_and_in_flight() {
+    // Quarantine is per resource: a stuck transfer must not free the staging or in-flight capacity
+    // it still occupies, or a second transfer could exceed those limits.
+    let pool = UploadPool::new(UploadBudget {
+        staging_bytes: FRAME_BYTES,
+        in_flight_bytes: FRAME_BYTES,
+        resident_bytes: FRAME_BYTES * 4,
+    });
+    let verified = verified_approved();
+    {
+        let mut admitted = admit_upload(
+            &verified,
+            identity(40, 1),
+            1,
+            &pool,
+            &Cancellation::default(),
+        )
+        .expect("admitted");
+        admitted.begin_upload().expect("begin");
+    }
+    assert!(pool.has_quarantine());
+    // Resident has room for three more frames, staging and in-flight have none: the refusal must be
+    // charged to those two, not to resident.
+    match admit_upload(
+        &verified,
+        identity(41, 1),
+        1,
+        &pool,
+        &Cancellation::default(),
+    ) {
+        Err(UploadRefusal::BudgetExceeded {
+            staging,
+            in_flight,
+            resident,
+        }) => {
+            assert!(staging, "the stuck transfer still occupies staging");
+            assert!(in_flight, "the stuck transfer still occupies in-flight");
+            assert!(!resident, "resident capacity is not the limit here");
+        }
+        other => panic!("expected a staging/in-flight refusal, got {other:?}"),
+    }
+}
+
+#[test]
+fn an_abandoned_transfer_hands_its_payload_to_the_pool() {
+    // Dropping mid-transfer must not free the CPU bytes a device transfer may still be reading.
+    let pool = UploadPool::new(UploadBudget {
+        staging_bytes: FRAME_BYTES * 2,
+        in_flight_bytes: FRAME_BYTES * 2,
+        resident_bytes: FRAME_BYTES * 2,
+    });
+    let verified = verified_approved();
+    {
+        let mut admitted = admit_upload(
+            &verified,
+            identity(42, 1),
+            1,
+            &pool,
+            &Cancellation::default(),
+        )
+        .expect("admitted");
+        admitted.begin_upload().expect("begin");
+    }
+    let orphans = pool.take_orphaned_payloads();
+    assert_eq!(orphans.len(), 1, "the payload outlives the admission");
+    assert_eq!(
+        orphans[0].rgba.len() as u64,
+        FRAME_BYTES,
+        "and it is the same frame"
+    );
+    assert!(
+        pool.take_orphaned_payloads().is_empty(),
+        "taking them clears the pool's copy"
     );
 }

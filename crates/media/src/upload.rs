@@ -164,10 +164,15 @@ struct PoolState {
     staging: u64,
     in_flight: u64,
     resident: u64,
-    /// Resident bytes whose GPU completion was never asserted (dropped without `release`). Kept
-    /// visible instead of being reported as freed, and **counted against the resident limit**,
-    /// because a resource nobody has confirmed released still occupies the device.
-    unreclaimed: u64,
+    /// Bytes whose release was never confirmed, tracked **per resource** so each of the three
+    /// limits is charged for what is stuck in its own category. A single combined figure would let
+    /// a stuck transfer free staging or in-flight capacity it still occupies.
+    staging_stuck: u64,
+    in_flight_stuck: u64,
+    resident_stuck: u64,
+    /// CPU payloads whose transfer was abandoned mid-flight. They are moved here rather than
+    /// dropped, so bytes a future asynchronous uploader may still read are not freed early.
+    orphaned_payloads: Vec<DecodedRaster>,
     resident_keys: Vec<RepresentationKey>,
     /// Keys whose resident bytes are quarantined. Reuse is refused until a safe release is
     /// asserted, so the same representation cannot be admitted twice on the device.
@@ -180,6 +185,13 @@ pub struct UploadUsage {
     pub staging: u64,
     pub in_flight: u64,
     pub resident: u64,
+    /// Stuck bytes, per resource. Each category is charged to its own limit.
+    pub staging_stuck: u64,
+    pub in_flight_stuck: u64,
+    pub resident_stuck: u64,
+    /// Frames stuck on the device: the resident-category figure, which is what a device budget
+    /// cares about. The three categories can each hold the same frame, so their sum is not a
+    /// device figure.
     pub unreclaimed: u64,
 }
 
@@ -208,8 +220,26 @@ impl UploadPool {
             staging: state.staging,
             in_flight: state.in_flight,
             resident: state.resident,
-            unreclaimed: state.unreclaimed,
+            staging_stuck: state.staging_stuck,
+            in_flight_stuck: state.in_flight_stuck,
+            resident_stuck: state.resident_stuck,
+            unreclaimed: state.resident_stuck,
         }
+    }
+
+    /// Payloads whose transfer was abandoned mid-flight and which nobody has claimed yet.
+    ///
+    /// A future asynchronous uploader must take these before their bytes are released, which is why
+    /// an abandoned transfer moves the payload here instead of dropping it.
+    pub fn take_orphaned_payloads(&self) -> Vec<DecodedRaster> {
+        let mut state = self.state.lock().expect("pool state");
+        std::mem::take(&mut state.orphaned_payloads)
+    }
+
+    /// Whether any per-resource quarantine is non-empty.
+    pub fn has_quarantine(&self) -> bool {
+        let state = self.state.lock().expect("pool state");
+        state.staging_stuck + state.in_flight_stuck + state.resident_stuck > 0
     }
 
     fn with_state<T>(&self, body: impl FnOnce(&mut PoolState) -> T) -> T {
@@ -308,6 +338,13 @@ impl Drop for AdmittedUpload {
         let bytes = self.bytes;
         let key = self.identity.key.clone();
         let stage = self.stage;
+        // An abandoned transfer keeps its payload: the bytes a device transfer may still read must
+        // outlive this value.
+        let orphan = if stage == UploadStage::Uploading {
+            self.raster.take()
+        } else {
+            None
+        };
         self.pool.with_state(|state| match stage {
             // Never transferred: the CPU side is gone and nothing reached the device, so all three
             // counters can be given back without quarantining anything.
@@ -317,14 +354,17 @@ impl Drop for AdmittedUpload {
                 state.resident = state.resident.saturating_sub(bytes);
                 state.resident_keys.retain(|entry| *entry != key);
             }
-            // Mid-transfer: the transfer may still be running, so the bytes are moved out of the
-            // live counters into the quarantine **once**. Counting them in both places would
-            // report one frame as two.
+            // Mid-transfer: the transfer may still be running. The reservation moves out of the
+            // live counters into the per-resource quarantine, and the CPU payload moves to the pool
+            // rather than being freed, so a future asynchronous uploader cannot lose the bytes it
+            // may still be reading.
             UploadStage::Uploading => {
                 state.staging = state.staging.saturating_sub(bytes);
                 state.in_flight = state.in_flight.saturating_sub(bytes);
                 state.resident = state.resident.saturating_sub(bytes);
-                state.unreclaimed = state.unreclaimed.saturating_add(bytes);
+                state.staging_stuck = state.staging_stuck.saturating_add(bytes);
+                state.in_flight_stuck = state.in_flight_stuck.saturating_add(bytes);
+                state.resident_stuck = state.resident_stuck.saturating_add(bytes);
                 state.resident_keys.retain(|entry| *entry != key);
                 if !state.unreclaimed_keys.contains(&key) {
                     state.unreclaimed_keys.push(key);
@@ -335,7 +375,7 @@ impl Drop for AdmittedUpload {
                 state.staging = state.staging.saturating_sub(bytes);
                 state.in_flight = state.in_flight.saturating_sub(bytes);
                 state.resident = state.resident.saturating_sub(bytes);
-                state.unreclaimed = state.unreclaimed.saturating_add(bytes);
+                state.resident_stuck = state.resident_stuck.saturating_add(bytes);
                 state.resident_keys.retain(|entry| *entry != key);
                 if !state.unreclaimed_keys.contains(&key) {
                     state.unreclaimed_keys.push(key);
@@ -345,6 +385,10 @@ impl Drop for AdmittedUpload {
             // practice; it exists so the state machine is exhaustive.
             UploadStage::Released => {}
         });
+        if let Some(raster) = orphan {
+            self.pool
+                .with_state(|state| state.orphaned_payloads.push(raster));
+        }
     }
 }
 
@@ -394,12 +438,22 @@ pub fn admit_upload(
         if state.resident_keys.contains(&key) || state.unreclaimed_keys.contains(&key) {
             return Err(UploadRefusal::DuplicateRepresentation);
         }
-        let staging_over = state.staging.saturating_add(bytes) > limits.staging_bytes;
-        let in_flight_over = state.in_flight.saturating_add(bytes) > limits.in_flight_bytes;
-        // Quarantined bytes occupy the device until a release is asserted, so they count here.
+        // Every limit is charged for what is stuck in its own category: a quarantined transfer
+        // still occupies staging and in-flight capacity, and a quarantined frame still occupies the
+        // device, so none of them is free to hand out.
+        let staging_over = state
+            .staging
+            .saturating_add(state.staging_stuck)
+            .saturating_add(bytes)
+            > limits.staging_bytes;
+        let in_flight_over = state
+            .in_flight
+            .saturating_add(state.in_flight_stuck)
+            .saturating_add(bytes)
+            > limits.in_flight_bytes;
         let resident_over = state
             .resident
-            .saturating_add(state.unreclaimed)
+            .saturating_add(state.resident_stuck)
             .saturating_add(bytes)
             > limits.resident_bytes;
         if staging_over || in_flight_over || resident_over {
