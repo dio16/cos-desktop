@@ -1,0 +1,112 @@
+{
+  "kind": "quality-gates",
+  "head": "914b76d1a7db2e73bbd4c357cef838bd25cb7c59",
+  "dirty": false,
+  "target_dir": "C:\\dev\\cos-build-fresh",
+  "recorded_at": "2026-11-04T21:46:45.1886070+09:00",
+  "gates": [
+    {
+      "name": "fmt",
+      "command": "cargo fmt --all -- --check",
+      "exit_code": 0,
+      "seconds": 1,
+      "stdout": "fmt.stdout.txt",
+      "stderr": "fmt.stderr.txt"
+    },
+    {
+      "name": "metadata",
+      "command": "cargo metadata --locked --no-deps --format-version 1",
+      "exit_code": 0,
+      "seconds": 0,
+      "stdout": "metadata.stdout.txt",
+      "stderr": "metadata.stderr.txt"
+    },
+    {
+      "name": "dep-self",
+      "command": "python -B scripts/check_dependency_rules.py --self-test",
+      "exit_code": 0,
+      "seconds": 0,
+      "stdout": "dep-self.stdout.txt",
+      "stderr": "dep-self.stderr.txt"
+    },
+    {
+      "name": "dep-rules",
+      "command": "python -B scripts/check_dependency_rules.py",
+      "exit_code": 0,
+      "seconds": 0,
+      "stdout": "dep-rules.stdout.txt",
+      "stderr": "dep-rules.stderr.txt"
+    },
+    {
+      "name": "clippy",
+      "command": "cargo clippy --locked --workspace --all-targets -- -D warnings",
+      "exit_code": 0,
+      "seconds": 2,
+      "stdout": "clippy.stdout.txt",
+      "stderr": "clippy.stderr.txt"
+    },
+    {
+      "name": "tests",
+      "command": "cargo test --locked --workspace",
+      "exit_code": 0,
+      "seconds": 47,
+      "stdout": "tests.stdout.txt",
+      "stderr": "tests.stderr.txt"
+    }
+  ],
+  "files": {
+    "tests.stdout.txt": {
+      "sha256": "sha256:269294705cd096c5fe3f20828b6a64fc6791442e9fb288f3f2cc923774cbc348",
+      "bytes": 70244
+    },
+    "tests.stderr.txt": {
+      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "bytes": 2
+    },
+    "dep-self.stderr.txt": {
+      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "bytes": 2
+    },
+    "fmt.stdout.txt": {
+      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "bytes": 2
+    },
+    "dep-rules.stderr.txt": {
+      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "bytes": 2
+    },
+    "metadata.stdout.txt": {
+      "sha256": "sha256:a198a700a20f9fb2e9db5060f6cec73ab41b8dd9cfaed9450712023558f25753",
+      "bytes": 20333
+    },
+    "dep-self.stdout.txt": {
+      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "bytes": 2
+    },
+    "fmt.stderr.txt": {
+      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "bytes": 2
+    },
+    "clippy.stderr.txt": {
+      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "bytes": 2
+    },
+    "metadata.stderr.txt": {
+      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "bytes": 2
+    },
+    "clippy.stdout.txt": {
+      "sha256": "sha256:010255e356d6202f68816f19aa91ac61c28dbfe77daf8e6a5949b7f31ab7342d",
+      "bytes": 75
+    },
+    "dep-rules.stdout.txt": {
+      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "bytes": 2
+    }
+  },
+  "summary": {
+    "total": 6,
+    "failed": 0,
+    "passed": 6
+  }
+}

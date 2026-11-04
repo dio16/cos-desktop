@@ -4500,3 +4500,11 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Evidence:** `docs/development/evidence-published/workspace-gates-20261104/` with the command log and a `record.json` whose digest was re-verified.
 - **What this is not:** not product acceptance, not a native/GUI verification, and not the independent Refine Gate, which is run separately against the pinned commit.
 - **Still open:** MP-AX1/AX2 remain incomplete (native keyboard, Tab traversal and screen-reader quality unmeasured); the MP-IMG2 row-wise cancellation path is **not** the product decode path; MP-RT1 as a whole, MP-RT2 and product acceptance remain NOT_RUN.
+
+### 19.239 Auditable quality-gate recording (2026-11-04)
+
+- **Why:** §19.238 stored a summary of the six gate results. A review pointed out that a summary cannot be audited after the fact, so the raw output and exit codes are now kept.
+- **What was added:** `scripts/record-quality-gates.ps1` runs the six documented commands (`cargo fmt --check`, `cargo metadata`, the dependency-rule checker and its self-test, workspace clippy with `-D warnings`, workspace tests), writing **each command's full output to its own file**, its **exit code and duration** into `manifest.json`, and a **SHA-256 for every file**. The manifest also records the **commit**, whether the tree was **dirty**, and the target directory, so a reader can tell exactly what was measured.
+- **Recorded run (clean tree, `914b76d`):** six gates, **six passed, zero failed**; twelve files, all digests re-verified by an independent script.
+- **Honest limit:** the script still runs the gates **in this environment**; it is not the independent Refine Gate, not a native/GUI check and not product acceptance. A red gate is recorded and the script exits 1 rather than hiding it.
+- **Still open:** MP-AX1/AX2 incomplete (native keyboard, Tab traversal, screen-reader quality unmeasured); the row-wise PNG path is not the product decode path; MP-RT1 as a whole, MP-RT2 and product acceptance NOT_RUN.
