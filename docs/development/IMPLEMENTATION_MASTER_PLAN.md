@@ -2442,13 +2442,19 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 | Class definition (static 8-bit RGB PNG 2048×2048) | **PASS** | `crates/media/tests/measured_png_class.rs`, `examples/peak_probe.rs` |
 | Declared admission ceiling (34,603,008 B) | **PASS** | formula pinned in the test/plan |
 | **Real memory: Working Set peak increment ≤ ceiling** | **PASS** | 5-run harness: max 29,782,016 B ≤ 34,603,008 B (decode-phase samples 16–17/run) |
-| Real internal peak (allocator measurement) | **HOLD** | `unsafe_code = "forbid"`; options (a)–(c) above |
+| Real internal peak (allocator measurement) | **CLOSED** | `peak_alloc` as an approved dev-only dependency (§19.233); 2048×2048 PNG increment **17,198,408 B** ≤ 34,603,008 B (§19.251) |
 | Worker lifetime: joined before return | **PASS** | `std::thread::scope` + `join()` in `decode_raster_joined`, plus the complete-raster assertion; no product-side counter exists |
 | Cancellation is typed and publishes nothing | **PASS** | pre-cancelled call asserts exactly `Err(MediaError::Cancelled)` and no raster |
 | Rejection typed and no output published | **PASS** | 20,000 px input → `TooLarge`; slot empty |
-| Rejection allocation flatness | **HOLD** | same allocator blocker |
-| Bounded cancellation of a running decoder | **NOT_VERIFIED / HOLD** | decoder call is not interruptible |
-| Other classes (JPEG/WebP/GIF, other depths/sizes) | **NOT_VERIFIED** | out of this slice |
+| Rejection allocation flatness | **CLOSED** | PNG refusals 80,800 / 151,712 / 151,712 B over a 16× area span (§19.233); the absolute bound alone was insufficient, so a relative growth bound is asserted too |
+| Bounded cancellation of a running decoder | **PASS for non-interlaced PNG; HOLD for every other class** | the product path runs the row decoder for non-interlaced PNG (§19.240): external cancel mid-decode stopped after row 9 of 3000 and returned 253–564 µs later (§19.241); interlaced PNG, JPEG, WebP and GIF remain uninterruptible |
+| **JPEG class peak** | **PASS** | 2048×2048 increment **29,360,328 B** ≤ 34,603,008 B (§19.251) |
+| **JPEG refusal shape** | **PASS** | 12,950 / 13,865 / 31,021 B over a 16× area span; absolute and relative bounds asserted (§19.251) |
+| **WebP class peak** | **PASS** | 1024×1024 increment **7,342,044 B** ≤ 9,437,184 B (§19.252) |
+| **WebP refusal shape** | **NOT_VERIFIED — not constructible here** | the refusal these tests exercise is a dimension one, and WebP's encoder caps dimensions below that threshold, so the 16,000-wide shapes it accepts decode instead (§19.252) |
+| **GIF class peak** | **PASS** | 1024×1024 increment **5,281,574 B** ≤ 9,437,184 B (§19.252) |
+| **GIF refusal shape** | **PASS** | **9,142 B** at all three areas, i.e. flat (§19.252) |
+| Other depths and sizes | **NOT_VERIFIED** | out of this slice |
 | MP-IMG2 overall completion | **NOT CLAIMED** | — |
 
 - **Worker-lifetime evidence:** there is no product-side worker counter (a caller-side increment would measure joined-call concurrency, not live workers, and the scope join already guarantees collection). The evidence is the language-level `std::thread::scope` + `join()` in `decode_raster_joined`, the complete-raster check, and the typed-`Cancelled`/no-publication test.
@@ -4659,3 +4665,11 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **A gap that was found and is recorded rather than worked around:** no **comparable WebP refusal fixture** can be built here. The refusal these tests exercise is a **dimension** one (the 20,000-wide shape exceeds `max_dimension`, which sits between 16,000 and 20,000), while WebP's own encoder caps a dimension at **16,383** and the 16,000-wide shapes that it does accept **decode instead of being refused**. So WebP has a measured peak and **no** measured refusal shape; that asymmetry is stated here instead of being hidden behind a differently-shaped case.
 - **Not established:** cancellation for any of these classes (still uninterruptible), other bit depths and sizes, GPU or native behaviour. **MP-IMG2 is still not complete**, and MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p media --test measured_decode_allocations` 6 passed; workspace clippy clean; fmt clean; `cargo test --locked --workspace` all 44 binaries green.
+
+### 19.253 MP-IMG2: the evidence table catches up with the measurements (2026-11-05)
+
+- **What changed:** the MP-IMG2 judgment table still carried **"Real internal peak: HOLD"**, **"Rejection allocation flatness: HOLD"**, **"Bounded cancellation: NOT_VERIFIED / HOLD"** and a single **"Other classes: NOT_VERIFIED"** row, although §19.233, §19.240-19.241, §19.251 and §19.252 measured each of them. The table now records what was measured and keeps what was not.
+- **Rows now closed:** internal peak (**17,198,408 B** for the PNG class) and rejection flatness, both from the `peak_alloc` dev-dependency approved in §19.233; and bounded cancellation, marked **PASS for non-interlaced PNG and HOLD for every other class**, because that is exactly what §19.240-19.241 established.
+- **Rows added:** JPEG, WebP and GIF each get a **peak** row and a **refusal** row. WebP's refusal row is **`NOT_VERIFIED - not constructible here`** rather than a pass, because §19.252 could not build a comparable fixture.
+- **Still not claimed:** MP-IMG2 overall completion stays **NOT CLAIMED**. Other bit depths and sizes stay `NOT_VERIFIED`. The table gaining measurements is not the task gaining completion, and this section says so where a reader will see it next to the rows.
+- **No code changed**, so no Gate was run for this change; the measurements it cites each carry their own Gate in the sections named above.
