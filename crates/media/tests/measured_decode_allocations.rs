@@ -218,10 +218,17 @@ fn jpeg_refusal_allocation_does_not_grow_with_the_refused_area() {
         increments.push(increment);
     }
     let largest = *increments.iter().max().expect("three cases");
+    let smallest = *increments.iter().min().expect("three cases");
     // The largest refused area would need 1,280,000 B of RGBA8; a refusal must not be shaped like
-    // that. The bound here is the same one the PNG refusal test uses.
+    // that. The absolute bound is the same one the PNG refusal test uses.
     assert!(
         largest < 1_280_000,
         "the largest JPEG refusal allocated {largest} B, which is decode-shaped rather than a refusal"
+    );
+    // And the cost must not scale with the area: the 16× case may not cost 16× the first. Without
+    // this, a refusal that grew with the input would still pass the absolute bound.
+    assert!(
+        largest <= smallest.saturating_mul(4) + 64 * 1024,
+        "JPEG refusal cost grew with the refused area: {increments:?}"
     );
 }
