@@ -68,10 +68,6 @@ fn key(tag: u8) -> RepresentationKey {
     }
 }
 
-fn identity(tag: u8, generation: u64) -> UploadIdentity {
-    identity_for(tag, generation, &verified_approved())
-}
-
 /// An identity whose digest matches the given raster, so only the fields under test vary.
 fn identity_for(tag: u8, generation: u64, verified: &media::VerifiedRaster) -> UploadIdentity {
     UploadIdentity {
@@ -127,7 +123,7 @@ fn the_approved_raster_is_admitted_and_holds_its_payload() {
     let verified = verified_approved();
     let mut admitted = admit_upload(
         &verified,
-        identity(1, 4),
+        identity_for(1, 4, &verified),
         4,
         &pool,
         &Cancellation::default(),
@@ -166,7 +162,7 @@ fn lifetime_moves_through_states_and_a_plain_drop_quarantines_resident_bytes() {
     let verified = verified_approved();
     let mut admitted = admit_upload(
         &verified,
-        identity(2, 1),
+        identity_for(2, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -202,7 +198,7 @@ fn the_state_machine_refuses_out_of_order_calls() {
     let verified = verified_approved();
     let mut admitted = admit_upload(
         &verified,
-        identity(3, 1),
+        identity_for(3, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -235,7 +231,7 @@ fn a_generation_that_is_not_current_is_refused_in_both_directions() {
     for (requested, current) in [(2u64, 3u64), (4, 3)] {
         match admit_upload(
             &verified,
-            identity(4, requested),
+            identity_for(4, requested, &verified),
             current,
             &pool,
             &Cancellation::default(),
@@ -263,7 +259,7 @@ fn a_one_byte_tighter_budget_refuses_each_counter_independently() {
         let pool = UploadPool::new(budget);
         match admit_upload(
             &verified,
-            identity(5, 1),
+            identity_for(5, 1, &verified),
             1,
             &pool,
             &Cancellation::default(),
@@ -306,7 +302,7 @@ fn concurrent_admissions_of_different_identities_cannot_exceed_the_budget() {
             barrier_start.wait();
             let outcome = admit_upload(
                 &verified,
-                identity(tag + 10, 1),
+                identity_for(tag + 10, 1, &verified),
                 1,
                 &pool,
                 &Cancellation::default(),
@@ -359,7 +355,7 @@ fn duplicate_and_reuse_of_the_same_key() {
     let verified = verified_approved();
     let mut first = admit_upload(
         &verified,
-        identity(6, 1),
+        identity_for(6, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -367,7 +363,7 @@ fn duplicate_and_reuse_of_the_same_key() {
     .expect("first admission");
     match admit_upload(
         &verified,
-        identity(6, 1),
+        identity_for(6, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -379,7 +375,7 @@ fn duplicate_and_reuse_of_the_same_key() {
     // After release the same key is admitted again: reuse is allowed, duplication is not.
     let mut second = admit_upload(
         &verified,
-        identity(6, 1),
+        identity_for(6, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -395,7 +391,8 @@ fn a_cancelled_caller_is_refused_before_anything_is_reserved() {
     let pool = UploadPool::new(one_frame_budget());
     let cancel = Cancellation::default();
     cancel.cancel();
-    match admit_upload(&verified_approved(), identity(7, 1), 1, &pool, &cancel) {
+    let verified = verified_approved();
+    match admit_upload(&verified, identity_for(7, 1, &verified), 1, &pool, &cancel) {
         Err(UploadRefusal::Cancelled) => {}
         other => panic!("expected Cancelled, got {other:?}"),
     }
@@ -446,7 +443,7 @@ fn a_quarantined_identity_blocks_reuse_and_counts_against_the_resident_limit() {
     let verified = verified_approved();
     let mut admitted = admit_upload(
         &verified,
-        identity(8, 1),
+        identity_for(8, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -462,7 +459,7 @@ fn a_quarantined_identity_blocks_reuse_and_counts_against_the_resident_limit() {
     // Same identity: refused, because the device may still hold it.
     match admit_upload(
         &verified,
-        identity(8, 1),
+        identity_for(8, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -473,7 +470,7 @@ fn a_quarantined_identity_blocks_reuse_and_counts_against_the_resident_limit() {
     // A different identity is also refused: the quarantined bytes consume the resident budget.
     match admit_upload(
         &verified,
-        identity(9, 1),
+        identity_for(9, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -505,13 +502,13 @@ fn an_identity_that_disagrees_with_the_raster_is_refused() {
     let pool = UploadPool::new(one_frame_budget());
     let verified = verified_approved();
     // A key claiming a different size, and one claiming a different revision, must both be refused.
-    let mut wrong_size = identity(11, 1);
+    let mut wrong_size = identity_for(11, 1, &verified);
     wrong_size.key.size = PixelSize::new(1024, 1024).expect("size");
     match admit_upload(&verified, wrong_size, 1, &pool, &Cancellation::default()) {
         Err(UploadRefusal::WrongLayout) => {}
         other => panic!("expected a layout refusal for the size, got {other:?}"),
     }
-    let mut wrong_revision = identity(12, 1);
+    let mut wrong_revision = identity_for(12, 1, &verified);
     wrong_revision.source_revision = 999;
     match admit_upload(
         &verified,
@@ -549,7 +546,7 @@ fn a_staged_admission_releases_normally_but_an_uploading_one_is_quarantined() {
     {
         let _admitted = admit_upload(
             &verified,
-            identity(20, 1),
+            identity_for(20, 1, &verified),
             1,
             &pool,
             &Cancellation::default(),
@@ -577,7 +574,7 @@ fn a_staged_admission_releases_normally_but_an_uploading_one_is_quarantined() {
     {
         let mut admitted = admit_upload(
             &verified,
-            identity(21, 1),
+            identity_for(21, 1, &verified),
             1,
             &pool,
             &Cancellation::default(),
@@ -623,7 +620,7 @@ fn release_is_terminal_and_cannot_disturb_a_re_admitted_key() {
     let verified = verified_approved();
     let mut first = admit_upload(
         &verified,
-        identity(30, 1),
+        identity_for(30, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -634,7 +631,7 @@ fn release_is_terminal_and_cannot_disturb_a_re_admitted_key() {
 
     let mut second = admit_upload(
         &verified,
-        identity(30, 1),
+        identity_for(30, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -655,7 +652,7 @@ fn release_is_terminal_and_cannot_disturb_a_re_admitted_key() {
     // The second admission still holds its identity: a duplicate attempt is still refused.
     match admit_upload(
         &verified,
-        identity(30, 1),
+        identity_for(30, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -678,7 +675,7 @@ fn an_uploading_drop_quarantines_one_frame_not_three() {
     {
         let mut admitted = admit_upload(
             &verified,
-            identity(31, 1),
+            identity_for(31, 1, &verified),
             1,
             &pool,
             &Cancellation::default(),
@@ -711,7 +708,7 @@ fn a_quarantined_transfer_keeps_charging_staging_and_in_flight() {
     {
         let mut admitted = admit_upload(
             &verified,
-            identity(40, 1),
+            identity_for(40, 1, &verified),
             1,
             &pool,
             &Cancellation::default(),
@@ -724,7 +721,7 @@ fn a_quarantined_transfer_keeps_charging_staging_and_in_flight() {
     // charged to those two, not to resident.
     match admit_upload(
         &verified,
-        identity(41, 1),
+        identity_for(41, 1, &verified),
         1,
         &pool,
         &Cancellation::default(),
@@ -753,7 +750,7 @@ fn an_abandoned_transfer_keeps_its_payload_until_termination_is_confirmed() {
         resident_bytes: FRAME_BYTES * 2,
     });
     let verified = verified_approved();
-    let identity_used = identity(42, 1);
+    let identity_used = identity_for(42, 1, &verified);
     {
         let mut admitted = admit_upload(
             &verified,
@@ -797,7 +794,7 @@ fn an_abandoned_transfer_keeps_its_payload_until_termination_is_confirmed() {
 fn an_identity_whose_digest_does_not_match_the_pixels_is_refused() {
     let pool = UploadPool::new(one_frame_budget());
     let verified = verified_approved();
-    let mut wrong = identity(50, 1);
+    let mut wrong = identity_for(50, 1, &verified);
     wrong.content_digest[0] ^= 0xff;
     match admit_upload(&verified, wrong, 1, &pool, &Cancellation::default()) {
         Err(UploadRefusal::WrongLayout) => {}
