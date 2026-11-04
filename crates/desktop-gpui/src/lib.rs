@@ -6603,15 +6603,34 @@ mod contrast_scope_tests {
         found
     }
 
+    /// The text of the `.on_action(...)` closure that handles `action`, found by locating the
+    /// action and reading forward to the end of its own closure braces.
+    fn action_handler_body(source: &str, action: &str) -> Option<String> {
+        let at = source.find(action)?;
+        // Back up to the start of the enclosing `.on_action(` call.
+        let call = source[..at].rfind(".on_action(")?;
+        let open = source[call..].find('{')? + call;
+        let mut depth = 0usize;
+        for (index, ch) in source[open..].char_indices() {
+            match ch {
+                '{' => depth += 1,
+                '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return Some(source[call..open + index + 1].to_string());
+                    }
+                }
+                _ => {}
+            }
+        }
+        None
+    }
+
     #[test]
     fn the_flow_lists_bind_home_and_end_too() {
         let source = include_str!("lib.rs");
         let cut = source
-            .find(
-                "
-#[cfg(test)]
-mod ",
-            )
+            .find("\n#[cfg(test)]\nmod ")
             .expect("the first test module marker");
         let production = &source[..cut];
         for binding in [
@@ -6622,14 +6641,21 @@ mod ",
         ] {
             assert!(production.contains(binding), "missing binding {binding}");
         }
-        // Each list must reach its own edge mover, not the one-step mover.
-        for call in [
-            "this.move_flow_node_edge(RailEdge::First, window, cx);",
-            "this.move_flow_node_edge(RailEdge::Last, window, cx);",
-            "this.move_flow_edge_edge(RailEdge::First, window, cx);",
-            "this.move_flow_edge_edge(RailEdge::Last, window, cx);",
-        ] {
-            assert!(production.contains(call), "missing handler call {call}");
+        // Swapping two handlers would keep every string above present, so check the pairing:
+        // each action's own closure must contain its own call.
+        let pairs = [
+            ("&FlowNodeHome", "move_flow_node_edge(RailEdge::First"),
+            ("&FlowNodeEnd", "move_flow_node_edge(RailEdge::Last"),
+            ("&FlowEdgeHome", "move_flow_edge_edge(RailEdge::First"),
+            ("&FlowEdgeEnd", "move_flow_edge_edge(RailEdge::Last"),
+        ];
+        for (action, call) in pairs {
+            let handler = action_handler_body(production, action)
+                .unwrap_or_else(|| panic!("no handler found for {action}"));
+            assert!(
+                handler.contains(call),
+                "{action} does not reach {call}; its handler was {handler}"
+            );
         }
     }
 
