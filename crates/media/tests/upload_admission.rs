@@ -95,8 +95,23 @@ fn verified_approved() -> media::VerifiedRaster {
     .expect("the approved class decodes for upload")
 }
 
+/// Serialises the memory-heavy tests in this binary.
+///
+/// Every test here decodes at least one 2048×2048 frame (16 MiB of RGBA8) and one decodes 4096×4096.
+/// Running twenty such tests at once made the binary die with `STATUS_ACCESS_VIOLATION` in the
+/// Gate's environment while passing locally, which is a memory-pressure crash rather than a test
+/// failure. One heavy test at a time keeps the peak to a single frame.
+static HEAVY: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn heavy() -> std::sync::MutexGuard<'static, ()> {
+    HEAVY
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 #[test]
 fn only_the_approved_class_produces_a_verified_raster() {
+    let _heavy = heavy();
     // The proof type has no public constructor, so the only way to get one is a decode that checks
     // the container, the bit depth, the colour format and the size.
     assert!(
@@ -119,6 +134,7 @@ fn only_the_approved_class_produces_a_verified_raster() {
 
 #[test]
 fn the_approved_raster_is_admitted_and_holds_its_payload() {
+    let _heavy = heavy();
     let pool = UploadPool::new(one_frame_budget());
     let verified = verified_approved();
     let mut admitted = admit_upload(
@@ -158,6 +174,7 @@ fn the_approved_raster_is_admitted_and_holds_its_payload() {
 
 #[test]
 fn lifetime_moves_through_states_and_a_plain_drop_quarantines_resident_bytes() {
+    let _heavy = heavy();
     let pool = UploadPool::new(one_frame_budget());
     let verified = verified_approved();
     let mut admitted = admit_upload(
@@ -194,6 +211,7 @@ fn lifetime_moves_through_states_and_a_plain_drop_quarantines_resident_bytes() {
 
 #[test]
 fn the_state_machine_refuses_out_of_order_calls() {
+    let _heavy = heavy();
     let pool = UploadPool::new(one_frame_budget());
     let verified = verified_approved();
     let mut admitted = admit_upload(
@@ -226,6 +244,7 @@ fn the_state_machine_refuses_out_of_order_calls() {
 
 #[test]
 fn a_generation_that_is_not_current_is_refused_in_both_directions() {
+    let _heavy = heavy();
     let pool = UploadPool::new(one_frame_budget());
     let verified = verified_approved();
     for (requested, current) in [(2u64, 3u64), (4, 3)] {
@@ -248,6 +267,7 @@ fn a_generation_that_is_not_current_is_refused_in_both_directions() {
 
 #[test]
 fn a_one_byte_tighter_budget_refuses_each_counter_independently() {
+    let _heavy = heavy();
     let verified = verified_approved();
     for tighten in [
         |budget: &mut UploadBudget| budget.staging_bytes -= 1,
@@ -278,6 +298,7 @@ fn a_one_byte_tighter_budget_refuses_each_counter_independently() {
 
 #[test]
 fn concurrent_admissions_of_different_identities_cannot_exceed_the_budget() {
+    let _heavy = heavy();
     // The pool admits under one lock, so two threads cannot both pass the check and then both
     // reserve. A barrier releases every attempt at once and each successful reservation is held
     // until all attempts have been made, so scheduling order cannot let a late thread succeed
@@ -347,6 +368,7 @@ fn concurrent_admissions_of_different_identities_cannot_exceed_the_budget() {
 
 #[test]
 fn duplicate_and_reuse_of_the_same_key() {
+    let _heavy = heavy();
     let pool = UploadPool::new(UploadBudget {
         staging_bytes: FRAME_BYTES * 2,
         in_flight_bytes: FRAME_BYTES * 2,
@@ -388,6 +410,7 @@ fn duplicate_and_reuse_of_the_same_key() {
 
 #[test]
 fn a_cancelled_caller_is_refused_before_anything_is_reserved() {
+    let _heavy = heavy();
     let pool = UploadPool::new(one_frame_budget());
     let cancel = Cancellation::default();
     cancel.cancel();
@@ -402,6 +425,7 @@ fn a_cancelled_caller_is_refused_before_anything_is_reserved() {
 
 #[test]
 fn the_refusal_reasons_map_to_the_existing_error_vocabulary() {
+    let _heavy = heavy();
     assert_eq!(
         refusal_reason(&UploadRefusal::GenerationMismatch {
             requested: 1,
@@ -437,6 +461,7 @@ fn the_refusal_reasons_map_to_the_existing_error_vocabulary() {
 
 #[test]
 fn a_quarantined_identity_blocks_reuse_and_counts_against_the_resident_limit() {
+    let _heavy = heavy();
     // A dropped resident admission leaves bytes nobody confirmed released. They must keep counting
     // against the device budget and must stop the same representation being admitted again.
     let pool = UploadPool::new(one_frame_budget());
@@ -482,6 +507,7 @@ fn a_quarantined_identity_blocks_reuse_and_counts_against_the_resident_limit() {
 
 #[test]
 fn an_interlaced_png_cannot_obtain_the_class_proof() {
+    let _heavy = heavy();
     // The cancellation evidence behind this approval covers non-interlaced PNG, so an Adam7 image
     // must be refused from the header, before any decoding work happens.
     let mut bytes = approved_png(2048, 2048);
@@ -499,6 +525,7 @@ fn an_interlaced_png_cannot_obtain_the_class_proof() {
 
 #[test]
 fn an_identity_that_disagrees_with_the_raster_is_refused() {
+    let _heavy = heavy();
     let pool = UploadPool::new(one_frame_budget());
     let verified = verified_approved();
     // A key claiming a different size, and one claiming a different revision, must both be refused.
@@ -539,6 +566,7 @@ fn crc32(bytes: &[u8]) -> u32 {
 
 #[test]
 fn a_staged_admission_releases_normally_but_an_uploading_one_is_quarantined() {
+    let _heavy = heavy();
     // A staged admission never transferred anything, so dropping it must give the capacity back
     // rather than quarantining it forever.
     let pool = UploadPool::new(one_frame_budget());
@@ -601,6 +629,7 @@ fn a_staged_admission_releases_normally_but_an_uploading_one_is_quarantined() {
 
 #[test]
 fn an_out_of_class_size_is_refused_from_the_header() {
+    let _heavy = heavy();
     // 4096×4096 is 4× the approved area; it must be refused before the decoder expands it.
     let bytes = approved_png(4096, 4096);
     match decode_for_upload(&bytes, limits(), &Cancellation::default()) {
@@ -611,6 +640,7 @@ fn an_out_of_class_size_is_refused_from_the_header() {
 
 #[test]
 fn release_is_terminal_and_cannot_disturb_a_re_admitted_key() {
+    let _heavy = heavy();
     // A second release must not touch a key that by then belongs to a new admission.
     let pool = UploadPool::new(UploadBudget {
         staging_bytes: FRAME_BYTES * 2,
@@ -665,6 +695,7 @@ fn release_is_terminal_and_cannot_disturb_a_re_admitted_key() {
 
 #[test]
 fn an_uploading_drop_quarantines_one_frame_not_three() {
+    let _heavy = heavy();
     // The bytes must leave the live counters and appear once in the quarantine, not twice.
     let pool = UploadPool::new(UploadBudget {
         staging_bytes: FRAME_BYTES * 4,
@@ -697,6 +728,7 @@ fn an_uploading_drop_quarantines_one_frame_not_three() {
 
 #[test]
 fn a_quarantined_transfer_keeps_charging_staging_and_in_flight() {
+    let _heavy = heavy();
     // Quarantine is per resource: a stuck transfer must not free the staging or in-flight capacity
     // it still occupies, or a second transfer could exceed those limits.
     let pool = UploadPool::new(UploadBudget {
@@ -741,6 +773,7 @@ fn a_quarantined_transfer_keeps_charging_staging_and_in_flight() {
 
 #[test]
 fn an_abandoned_transfer_keeps_its_payload_until_termination_is_confirmed() {
+    let _heavy = heavy();
     // The payload must not be takeable: a caller holding the bytes could drop them while a
     // transfer still reads them. It is held with its identity and freed only by an explicit
     // termination assertion.
@@ -792,6 +825,7 @@ fn an_abandoned_transfer_keeps_its_payload_until_termination_is_confirmed() {
 
 #[test]
 fn an_identity_whose_digest_does_not_match_the_pixels_is_refused() {
+    let _heavy = heavy();
     let pool = UploadPool::new(one_frame_budget());
     let verified = verified_approved();
     let mut wrong = identity_for(50, 1, &verified);
