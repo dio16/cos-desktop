@@ -3957,9 +3957,14 @@ impl Render for Shell {
                 shell_style::row_visual(shell_style::RowState::Disabled, &colors).text
             }))
             .child(if stop_enabled && retryable_admission {
-                "新しい停止要求を送る"
+                "新しい停止要求を送る".to_string()
+            } else if stop_enabled {
+                "タスクを停止".to_string()
             } else {
-                "タスクを停止"
+                shell_style::dock_row_text(
+                    "タスクを停止",
+                    &shell_style::row_visual(shell_style::RowState::Disabled, &colors),
+                )
             });
         let stop_button = if stop_enabled {
             stop_button
@@ -4282,6 +4287,15 @@ impl Render for Shell {
                 let formal = formal_candidates
                     .iter()
                     .any(|reference| reference == &identity);
+                let row_visual = shell_style::row_visual(
+                    match (selected, active) {
+                        (true, true) => shell_style::RowState::SelectedAndFocused,
+                        (true, false) => shell_style::RowState::Selected,
+                        (false, true) => shell_style::RowState::Focused,
+                        (false, false) => shell_style::RowState::Normal,
+                    },
+                    &colors,
+                );
                 let state_label = match (selected, compared, active) {
                     (true, true, true) => "閲覧中・比較対象・キーボード操作対象",
                     (true, true, false) => "閲覧中・比較対象",
@@ -4363,16 +4377,7 @@ impl Render for Shell {
                     .px_2()
                     .py_2()
                     .when_some(row_border, |element, width| element.border(width))
-                    .border_color(rgb(shell_style::row_visual(
-                        match (selected, active) {
-                            (true, true) => shell_style::RowState::SelectedAndFocused,
-                            (true, false) => shell_style::RowState::Selected,
-                            (false, true) => shell_style::RowState::Focused,
-                            (false, false) => shell_style::RowState::Normal,
-                        },
-                        &colors,
-                    )
-                    .border))
+                    .border_color(rgb(row_visual.border))
                     .cursor_pointer()
                     .child(
                         div()
@@ -4398,7 +4403,7 @@ impl Render for Shell {
                             .child(div().truncate().child(SharedString::from(format!(
                                 "{}{}",
                                 if group_start { "▸ " } else { "" },
-                                label
+                                shell_style::dock_row_text(&label, &row_visual)
                             ))))
                             .child(xs_text.clone().apply(div()).truncate().child(state_label))
                             .when(formal, |element| {

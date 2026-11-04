@@ -188,87 +188,85 @@ pub(crate) enum RowState {
     Disabled,
 }
 
-/// A non-colour cue. Colour alone must never be the only difference between two states, because
-/// a High Contrast palette may resolve two colours to the same value.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum RowMarker {
-    /// Nothing beyond the text.
-    None,
-    /// A leading glyph marking the selected row.
-    SelectionGlyph,
-    /// The disabled row reads as unavailable without relying on its colour.
-    UnavailableLabel,
-}
-
 /// Everything the row renderer needs for one state.
+///
+/// The parts are the ones the shell actually draws: the border and text colours come from here,
+/// `cue` is the text drawn beside the row's label (the same strings the accessibility state label
+/// uses), and `ring_by_container` records that the **Dock container**, not the row, draws the focus
+/// ring - the row does not claim an outline it never draws.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct RowVisual {
-    /// Border/indicator colour for the row.
     pub border: u32,
-    /// Text colour for the row's label.
     pub text: u32,
-    /// Whether the focus outline width is drawn (the width is the caller's token lookup).
-    pub draws_focus_outline: bool,
-    /// Non-colour cue carried by the row.
-    pub marker: RowMarker,
+    /// Non-colour cue drawn beside the row's label. Empty for a plain row.
+    pub cue: &'static str,
+    /// Whether the Dock container draws the focus ring for this row.
+    pub ring_by_container: bool,
 }
 
 /// Choose the appearance of one row state.
 ///
-/// The three indicators are deliberately carried by different channels so that no single one can
-/// be flattened by a palette:
-///
-/// - **selection** changes the row's border **colour** and adds a **glyph**;
-/// - **focus** changes the border **width** (drawn by the caller) and never only its colour;
-/// - **disabled** changes the text colour **and** adds an unavailability marker.
+/// Each indicator travels its own channel, so a High Contrast palette that resolves two roles to
+/// the same value still leaves the states distinguishable: **selection** and **focus** both carry a
+/// cue in text, **focus** is additionally ringed by the container, and **disabled** carries its own
+/// cue and its own text colour.
 pub(crate) fn row_visual(state: RowState, colors: &crate::contrast::ShellColors) -> RowVisual {
     match state {
         RowState::Normal => RowVisual {
             border: colors.border,
             text: colors.text,
-            draws_focus_outline: false,
-            marker: RowMarker::None,
+            cue: "",
+            ring_by_container: false,
         },
         RowState::Selected => RowVisual {
             border: colors.selection,
             text: colors.selection_text,
-            draws_focus_outline: false,
-            marker: RowMarker::SelectionGlyph,
+            cue: "閲覧中",
+            ring_by_container: false,
         },
         RowState::Focused => RowVisual {
             border: colors.focus,
             text: colors.text,
-            draws_focus_outline: true,
-            marker: RowMarker::None,
+            cue: "キーボード操作対象",
+            ring_by_container: true,
         },
         RowState::SelectedAndFocused => RowVisual {
             border: colors.focus,
             text: colors.selection_text,
-            draws_focus_outline: true,
-            marker: RowMarker::SelectionGlyph,
+            cue: "閲覧中・キーボード操作対象",
+            ring_by_container: true,
         },
         RowState::Disabled => RowVisual {
             border: colors.disabled,
             text: colors.disabled,
-            draws_focus_outline: false,
-            marker: RowMarker::UnavailableLabel,
+            cue: "利用不可",
+            ring_by_container: false,
         },
     }
 }
 
-#[cfg(test)]
-/// Whether two states can be told apart **without relying on colour**.
-///
-/// Two states are distinct when they differ in the focus outline, in the marker, or in both text
-/// and border value at once. A palette that collapses two colours therefore cannot make two rows
-/// look identical.
-pub(crate) fn states_differ_without_colour(left: RowState, right: RowState) -> bool {
-    let probe = crate::contrast::NORMAL_COLORS;
-    let (a, b) = (row_visual(left, &probe), row_visual(right, &probe));
-    if a.draws_focus_outline != b.draws_focus_outline || a.marker != b.marker {
-        return true;
+/// The text a row draws for its label, including the state's non-colour cue.
+pub(crate) fn dock_row_text(label: &str, visual: &RowVisual) -> String {
+    if visual.cue.is_empty() {
+        label.to_string()
+    } else {
+        format!("{label}（{}）", visual.cue)
     }
-    a.text != b.text && a.border != b.border
+}
+
+#[cfg(test)]
+/// Whether two states can be told apart using only what the shell draws.
+///
+/// Colour differences count only when the resolved values actually differ, so a palette that
+/// collapses two roles cannot be what separates the states: the cue text or the container ring has
+/// to do that work.
+pub(crate) fn row_states_differ(
+    left: RowState,
+    right: RowState,
+    colors: &crate::contrast::ShellColors,
+) -> bool {
+    let (a, b) = (row_visual(left, colors), row_visual(right, colors));
+    a.cue != b.cue || a.ring_by_container != b.ring_by_container || a.border != b.border
 }
 
 /// One physical pixel of structural separator at `scale_factor`, in DIP.
@@ -647,81 +645,65 @@ mod tests {
     }
 
     #[test]
-    fn every_row_state_is_distinct_without_colour() {
-        // The states a list row can be in, and the requirement that no palette can make two of
-        // them look the same by collapsing colours: each pair must differ in a non-colour channel.
+    fn every_pair_of_states_is_separable_under_a_collapsing_palette() {
         use RowState::*;
+        // A monochrome probe: several roles resolve to the same value, which is what a High
+        // Contrast palette can produce.
+        let monochrome = crate::contrast::SystemColors {
+            window: 0x000000,
+            window_text: 0xffffff,
+            highlight: 0xffffff,
+            highlight_text: 0x000000,
+            gray_text: 0x000000,
+            button_face: 0xffffff,
+            button_text: 0x000000,
+        };
+        let colors =
+            crate::contrast::colors_for(crate::contrast::ContrastScheme::HighContrast, &monochrome);
         let states = [Normal, Selected, Focused, SelectedAndFocused, Disabled];
         for (index, left) in states.iter().enumerate() {
             for right in &states[index + 1..] {
                 assert!(
-                    states_differ_without_colour(*left, *right),
-                    "{left:?} and {right:?} cannot be told apart without colour"
+                    row_states_differ(*left, *right, &colors),
+                    "{left:?} and {right:?} are indistinguishable under this palette"
                 );
             }
         }
     }
 
     #[test]
-    fn selection_focus_and_disabled_each_use_their_own_channel() {
+    fn the_cue_is_drawn_beside_the_label() {
         let colors = crate::contrast::NORMAL_COLORS;
-
-        // Selection: colour plus glyph.
-        let selected = row_visual(RowState::Selected, &colors);
-        assert_eq!(selected.border, colors.selection);
-        assert_eq!(selected.marker, RowMarker::SelectionGlyph);
-        assert!(!selected.draws_focus_outline, "selection is not focus");
-
-        // Focus: the outline width, not only the colour.
-        let focused = row_visual(RowState::Focused, &colors);
-        assert!(focused.draws_focus_outline);
-        assert_eq!(focused.marker, RowMarker::None);
-
-        // Disabled: text colour plus an unavailability marker, never colour alone.
-        let disabled = row_visual(RowState::Disabled, &colors);
-        assert_eq!(disabled.text, colors.disabled);
-        assert_eq!(disabled.marker, RowMarker::UnavailableLabel);
-        assert!(!disabled.draws_focus_outline);
-    }
-
-    #[test]
-    fn a_selected_and_focused_row_keeps_both_cues() {
-        let colors = crate::contrast::NORMAL_COLORS;
-        let both = row_visual(RowState::SelectedAndFocused, &colors);
-        assert!(both.draws_focus_outline, "focus must survive selection");
         assert_eq!(
-            both.marker,
-            RowMarker::SelectionGlyph,
-            "selection must survive focus"
+            dock_row_text("候補", &row_visual(RowState::Selected, &colors)),
+            "候補（閲覧中）"
         );
-        assert_eq!(both.text, colors.selection_text);
+        assert_eq!(
+            dock_row_text("候補", &row_visual(RowState::Focused, &colors)),
+            "候補（キーボード操作対象）"
+        );
+        assert_eq!(
+            dock_row_text("候補", &row_visual(RowState::SelectedAndFocused, &colors)),
+            "候補（閲覧中・キーボード操作対象）"
+        );
+        assert_eq!(
+            dock_row_text("停止", &row_visual(RowState::Disabled, &colors)),
+            "停止（利用不可）"
+        );
+        // A plain row draws its label unchanged, so the cue is a real difference and not noise.
+        assert_eq!(
+            dock_row_text("候補", &row_visual(RowState::Normal, &colors)),
+            "候補"
+        );
     }
 
     #[test]
-    fn a_high_contrast_palette_cannot_collapse_two_states() {
-        // Resolve the High Contrast palette from a monochrome system probe, where several roles
-        // resolve to the same value; the states must still be separable.
-        let monochrome = crate::contrast::SystemColors {
-            window: 0x0000_0000,
-            window_text: 0xffff_ffff,
-            highlight: 0xffff_ffff,
-            highlight_text: 0x0000_0000,
-            gray_text: 0xffff_ffff,
-            button_face: 0xffff_ffff,
-            button_text: 0x0000_0000,
-        };
-        // The palette is resolved here and deliberately not asserted on: this test is about the
-        // non-colour channels surviving a palette that may collapse two roles to one value.
-        let _ =
-            crate::contrast::colors_for(crate::contrast::ContrastScheme::HighContrast, &monochrome);
-        // Selection and disabled may well share a value here; the non-colour channels must not.
-        assert!(
-            states_differ_without_colour(RowState::Selected, RowState::Disabled),
-            "a palette that collapses selection and disabled must not collapse their cues"
-        );
-        assert!(states_differ_without_colour(
-            RowState::Focused,
-            RowState::Disabled
-        ));
+    fn focus_is_claimed_only_where_the_container_draws_the_ring() {
+        let colors = crate::contrast::NORMAL_COLORS;
+        assert!(!row_visual(RowState::Normal, &colors).ring_by_container);
+        assert!(!row_visual(RowState::Selected, &colors).ring_by_container);
+        assert!(row_visual(RowState::Focused, &colors).ring_by_container);
+        assert!(row_visual(RowState::SelectedAndFocused, &colors).ring_by_container);
+        assert!(!row_visual(RowState::Disabled, &colors).ring_by_container);
     }
 }
