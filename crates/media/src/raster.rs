@@ -306,12 +306,12 @@ fn ensure_still_gif(bytes: &[u8]) -> Result<(), MediaError> {
 /// checked between rows, which lets a cancelled decode stop early instead of finishing work
 /// nobody will use.
 ///
-/// Scope: **non-interlaced PNG only**, and only through this entry point. An Adam7 PNG is
-/// refused as `UnsupportedContainer` because `next_row` yields per-pass rows rather than
-/// full-width rows. Other containers still use the uninterruptible backend and remain HOLD
-/// for bounded cancellation. Admission and the declared ceiling are the same as
-/// `decode_raster`'s; a refused input never starts the row loop, and a cancelled one
-/// publishes nothing.
+/// Scope: **non-interlaced PNG only**. An Adam7 PNG is refused here as `UnsupportedContainer`
+/// because `next_row` yields per-pass rows rather than full-width rows. [`decode_raster`] calls
+/// this decoder for non-interlaced PNGs (and this entry point reserves for itself, while that
+/// caller passes the reservation it already holds); interlaced PNGs and the other containers
+/// go through the generic backend. Admission and the declared ceiling are the same either way;
+/// a refused input never starts the row loop, and a cancelled one publishes nothing.
 pub fn decode_png_rows(
     bytes: &[u8],
     limits: DecodeLimits,
@@ -465,11 +465,12 @@ pub fn decode_raster_with_row_hook(
 /// by this call and always joined, so a cancelled or failed decode cannot leave a decode
 /// thread behind. Cancellation is cooperative and is only observed at the bounded
 /// checkpoints inside [`decode_raster`] (before metadata, before the decoder call, after
-/// decode and after RGBA8 conversion); a cancellation arriving inside the decoder itself
-/// is observed at the next checkpoint, and the `join` may wait for that decoder call to
-/// return. Bounded cancellation of a running decoder is `NOT_VERIFIED` for this function
-/// and for the containers it handles; the separate [`decode_png_rows`] path exists
-/// precisely because this one cannot interrupt the decoder (plan §19.234). On `Cancelled` (or any refusal) no raster is
+/// decode and after RGBA8 conversion). For a **non-interlaced PNG** the decode itself now runs
+/// through [`decode_png_rows`], which checks cancellation between rows, so a cancellation is
+/// observed inside the image rather than only at those checkpoints. For **interlaced PNG,
+/// JPEG, WebP and GIF** the decoder call is still uninterruptible, so a cancellation arriving
+/// inside it is only observed at the next checkpoint and the `join` may wait for that call to
+/// return; bounded cancellation for those classes remains `NOT_VERIFIED` (plan §19.234-19.240). On `Cancelled` (or any refusal) no raster is
 /// returned, so a caller cannot publish a partial artifact from this path.
 pub fn decode_raster_joined(
     bytes: &[u8],
