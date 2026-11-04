@@ -12,11 +12,18 @@
 //! - an over-limit JPEG is typed `TooLarge` before decode and publishes nothing;
 //! - a truncated JPEG is typed `InvalidMetadata` and publishes nothing.
 //!
-//! **Not claimed here:** Working Set peak for JPEG (that measurement is the PNG
-//! class in `measured_png_class.rs` plus `examples/peak_probe.rs`), internal
-//! allocator peak (HOLD, `unsafe_code = "forbid"`), bounded cancellation of a
-//! running decoder (NOT_VERIFIED, the backend call is not interruptible), and other
-//! encoded classes (WebP/GIF) or other bit depths.
+//! **Verified here:** the class ceiling for the same geometry, complete-raster
+//! decoding for JPEG, static WebP and GIF, cancellation for JPEG, the dimension-edge
+//! refusal for JPEG and GIF, the byte-budget refusal for WebP and GIF, and the
+//! truncated-input refusal for JPEG.
+//!
+//! **Not claimed here:** Working Set peak for these classes (that measurement is the
+//! PNG class in `measured_png_class.rs` plus `examples/peak_probe.rs`), internal
+//! allocator peak and rejection allocation flatness (HOLD, `unsafe_code = "forbid"`),
+//! bounded cancellation of a *running* decoder (NOT_VERIFIED, the backend call is not
+//! interruptible), cancellation for WebP/GIF, the dimension-edge refusal for WebP (its
+//! encoder refuses such dimensions, so the case cannot be constructed), and other bit
+//! depths.
 
 use image::{DynamicImage, ImageFormat, RgbImage};
 use media::{
@@ -149,22 +156,32 @@ fn the_other_advertised_classes_decode_to_complete_rasters() {
 }
 
 #[test]
-fn the_other_advertised_classes_refuse_a_tight_budget_typed() {
+fn an_over_limit_gif_is_refused_typed_at_the_dimension_edge() {
     let _guard = test_guard();
-    // WebP caps its dimensions below the declared 16,384 px edge and GIF is palettised, so neither
-    // can exceed the edge limit; the byte ceiling is what refuses them. Tighten only that field and
-    // require the same typed refusal.
+    // GIF stores dimensions as 16-bit values, so the edge case is reachable for this class and the
+    // refusal must come from admission rather than from the encoder.
+    let bytes = encoded_rgb(20_000, 1, ImageFormat::Gif);
+    match decode_raster_joined(&bytes, limits(), &Cancellation::default()) {
+        Err(error) => assert_eq!(error, MediaError::TooLarge),
+        Ok(_) => panic!("a refused input must not publish a raster"),
+    }
+}
+
+#[test]
+fn webp_is_refused_typed_under_a_tight_byte_budget() {
+    let _guard = test_guard();
+    // The WebP encoder refuses dimensions past its own limit (`InvalidDimensions`), so an oversized
+    // WebP cannot be built to exercise the edge; the byte ceiling is the refusal this class can
+    // actually reach.
     let tight = DecodeLimitsOverride {
         max_decoded_bytes: Some(1024),
         ..DecodeLimitsOverride::none()
     }
     .resolve()
     .expect("tight budget resolves");
-    for format in [ImageFormat::WebP, ImageFormat::Gif] {
-        let bytes = encoded_rgb(64, 64, format);
-        match decode_raster_joined(&bytes, tight, &Cancellation::default()) {
-            Err(error) => assert_eq!(error, MediaError::TooLarge, "{format:?}"),
-            Ok(_) => panic!("{format:?}: a refused input must not publish a raster"),
-        }
+    let bytes = encoded_rgb(64, 64, ImageFormat::WebP);
+    match decode_raster_joined(&bytes, tight, &Cancellation::default()) {
+        Err(error) => assert_eq!(error, MediaError::TooLarge),
+        Ok(_) => panic!("a refused input must not publish a raster"),
     }
 }
