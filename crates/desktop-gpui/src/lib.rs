@@ -70,8 +70,12 @@ actions!(
         DockActivate,
         FlowNodeUp,
         FlowNodeDown,
+        FlowNodeHome,
+        FlowNodeEnd,
         FlowEdgeUp,
         FlowEdgeDown,
+        FlowEdgeHome,
+        FlowEdgeEnd,
         FlowEnter,
         FlowBackspace,
         FlowDelete,
@@ -165,8 +169,12 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("space", DockActivate, Some("CandidateDock")),
         KeyBinding::new("up", FlowNodeUp, Some("FlowNodeList")),
         KeyBinding::new("down", FlowNodeDown, Some("FlowNodeList")),
+        KeyBinding::new("home", FlowNodeHome, Some("FlowNodeList")),
+        KeyBinding::new("end", FlowNodeEnd, Some("FlowNodeList")),
         KeyBinding::new("up", FlowEdgeUp, Some("FlowEdgeList")),
         KeyBinding::new("down", FlowEdgeDown, Some("FlowEdgeList")),
+        KeyBinding::new("home", FlowEdgeHome, Some("FlowEdgeList")),
+        KeyBinding::new("end", FlowEdgeEnd, Some("FlowEdgeList")),
         KeyBinding::new("enter", FlowEnter, Some("FlowSearchInput")),
         KeyBinding::new("backspace", FlowBackspace, Some("FlowSearchInput")),
         KeyBinding::new("delete", FlowDelete, Some("FlowSearchInput")),
@@ -2316,6 +2324,34 @@ impl Shell {
         cx.notify();
     }
 
+    /// Home/End for the flow node list: same active row the arrow keys move.
+    fn move_flow_node_edge(&mut self, edge: RailEdge, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(rows) = self.flow_rows() else {
+            return;
+        };
+        let Some(next) = rail_edge_index(rows.nodes.len(), edge) else {
+            return;
+        };
+        self.flow_node_active = Some(rows.nodes[next].key());
+        self.flow_node_list.scroll_to_reveal_item(next);
+        self.flow_node_focus.focus(window, cx);
+        cx.notify();
+    }
+
+    /// Home/End for the flow edge list.
+    fn move_flow_edge_edge(&mut self, edge: RailEdge, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(rows) = self.flow_rows() else {
+            return;
+        };
+        let Some(next) = rail_edge_index(rows.edges.len(), edge) else {
+            return;
+        };
+        self.flow_edge_active = Some(rows.edges[next].key());
+        self.flow_edge_list.scroll_to_reveal_item(next);
+        self.flow_edge_focus.focus(window, cx);
+        cx.notify();
+    }
+
     fn move_flow_edge(&mut self, delta: isize, window: &mut Window, cx: &mut Context<Self>) {
         let Some(rows) = self.flow_rows() else {
             return;
@@ -3764,11 +3800,15 @@ impl Render for Shell {
                                     .on_action(cx.listener(|this, _: &FlowNodeUp, window, cx| {
                                         this.move_flow_node(-1, window, cx);
                                     }))
-                                    .on_action(cx.listener(
-                                        |this, _: &FlowNodeDown, window, cx| {
-                                            this.move_flow_node(1, window, cx);
-                                        },
-                                    )),
+                                    .on_action(cx.listener(|this, _: &FlowNodeDown, window, cx| {
+                                        this.move_flow_node(1, window, cx);
+                                    }))
+                                    .on_action(cx.listener(|this, _: &FlowNodeHome, window, cx| {
+                                        this.move_flow_node_edge(RailEdge::First, window, cx);
+                                    }))
+                                    .on_action(cx.listener(|this, _: &FlowNodeEnd, window, cx| {
+                                        this.move_flow_node_edge(RailEdge::Last, window, cx);
+                                    })),
                             )
                             .children(flow_node_rows.is_empty().then(|| {
                                 div()
@@ -3804,11 +3844,15 @@ impl Render for Shell {
                                     .on_action(cx.listener(|this, _: &FlowEdgeUp, window, cx| {
                                         this.move_flow_edge(-1, window, cx);
                                     }))
-                                    .on_action(cx.listener(
-                                        |this, _: &FlowEdgeDown, window, cx| {
-                                            this.move_flow_edge(1, window, cx);
-                                        },
-                                    )),
+                                    .on_action(cx.listener(|this, _: &FlowEdgeDown, window, cx| {
+                                        this.move_flow_edge(1, window, cx);
+                                    }))
+                                    .on_action(cx.listener(|this, _: &FlowEdgeHome, window, cx| {
+                                        this.move_flow_edge_edge(RailEdge::First, window, cx);
+                                    }))
+                                    .on_action(cx.listener(|this, _: &FlowEdgeEnd, window, cx| {
+                                        this.move_flow_edge_edge(RailEdge::Last, window, cx);
+                                    })),
                             )
                             .children(flow_edge_rows.is_empty().then(|| {
                                 div()
@@ -6557,6 +6601,36 @@ mod contrast_scope_tests {
             from = end;
         }
         found
+    }
+
+    #[test]
+    fn the_flow_lists_bind_home_and_end_too() {
+        let source = include_str!("lib.rs");
+        let cut = source
+            .find(
+                "
+#[cfg(test)]
+mod ",
+            )
+            .expect("the first test module marker");
+        let production = &source[..cut];
+        for binding in [
+            "KeyBinding::new(\"home\", FlowNodeHome, Some(\"FlowNodeList\"))",
+            "KeyBinding::new(\"end\", FlowNodeEnd, Some(\"FlowNodeList\"))",
+            "KeyBinding::new(\"home\", FlowEdgeHome, Some(\"FlowEdgeList\"))",
+            "KeyBinding::new(\"end\", FlowEdgeEnd, Some(\"FlowEdgeList\"))",
+        ] {
+            assert!(production.contains(binding), "missing binding {binding}");
+        }
+        // Each list must reach its own edge mover, not the one-step mover.
+        for call in [
+            "this.move_flow_node_edge(RailEdge::First, window, cx);",
+            "this.move_flow_node_edge(RailEdge::Last, window, cx);",
+            "this.move_flow_edge_edge(RailEdge::First, window, cx);",
+            "this.move_flow_edge_edge(RailEdge::Last, window, cx);",
+        ] {
+            assert!(production.contains(call), "missing handler call {call}");
+        }
     }
 
     #[test]
