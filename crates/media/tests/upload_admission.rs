@@ -87,17 +87,24 @@ fn one_frame_budget() -> UploadBudget {
 }
 
 fn verified_approved() -> media::VerifiedRaster {
-    decode_for_upload(
-        &approved_png(2048, 2048),
-        limits(),
-        &Cancellation::default(),
-    )
-    .expect("the approved class decodes for upload")
+    // One decode per test run: every test needs the same frame, and decoding it twenty times cost
+    // both wall time and memory (see §19.249).
+    static CACHED: std::sync::OnceLock<media::VerifiedRaster> = std::sync::OnceLock::new();
+    CACHED
+        .get_or_init(|| {
+            decode_for_upload(
+                &approved_png(2048, 2048),
+                limits(),
+                &Cancellation::default(),
+            )
+            .expect("the approved class decodes for upload")
+        })
+        .clone()
 }
 
 /// Serialises the memory-heavy tests in this binary.
 ///
-/// Every test here decodes at least one 2048×2048 frame (16 MiB of RGBA8) and one decodes 4096×4096.
+/// The tests share one decode of a 2048×2048 frame (16 MiB of RGBA8), cached for the run.
 /// Running twenty such tests at once made the binary die with `STATUS_ACCESS_VIOLATION` in the
 /// Gate's environment while passing locally, which is a memory-pressure crash rather than a test
 /// failure. One heavy test at a time keeps the peak to a single frame.
@@ -630,8 +637,9 @@ fn a_staged_admission_releases_normally_but_an_uploading_one_is_quarantined() {
 #[test]
 fn an_out_of_class_size_is_refused_from_the_header() {
     let _heavy = heavy();
-    // 4096×4096 is 4× the approved area; it must be refused before the decoder expands it.
-    let bytes = approved_png(4096, 4096);
+    // 2049×2049 differs from the approved edge by one pixel and must still be refused from the
+    // header, before the decoder expands it. A larger edge would only make the test slower.
+    let bytes = approved_png(2049, 2049);
     match decode_for_upload(&bytes, limits(), &Cancellation::default()) {
         Err(MediaError::UnsupportedContainer) => {}
         other => panic!("expected an early header refusal, got {other:?}"),
