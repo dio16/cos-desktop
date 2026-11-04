@@ -175,14 +175,34 @@ fn with_actl(png: &[u8]) -> Vec<u8> {
 }
 
 #[test]
-fn an_animated_png_is_unavailable_through_the_row_path_too() {
-    // A real still PNG with a well-formed `acTL` after `IHDR`: the existing still-image
-    // contract refuses this as `Unavailable`, and the row path must apply the same rule
-    // instead of returning the first frame of an animation.
+fn a_png_carrying_actl_is_unavailable_through_the_row_path_too() {
+    // Scope of this test: a PNG that carries a well-formed `acTL` chunk is refused as
+    // `Unavailable` by the row path, as it already is by `decode_raster`. It does **not**
+    // claim a complete APNG animation (that would also need `fcTL` frames); it pins the
+    // still-image rule this path inherits.
+    const AFTER_IHDR: usize = 33;
     let bytes = with_actl(&png_rgb(32, 32));
+
+    // Verify the synthesized chunk independently before relying on it: length counts the
+    // data only, and the CRC covers the chunk type together with that data.
+    let length = u32::from_be_bytes(
+        bytes[AFTER_IHDR..AFTER_IHDR + 4]
+            .try_into()
+            .expect("length"),
+    );
+    assert_eq!(length, 8, "acTL data is num_frames plus num_plays");
+    assert_eq!(&bytes[AFTER_IHDR + 4..AFTER_IHDR + 8], b"acTL");
+    let data_end = AFTER_IHDR + 4 + 4 + length as usize;
+    let stored = u32::from_be_bytes(bytes[data_end..data_end + 4].try_into().expect("crc"));
+    assert_eq!(
+        stored,
+        crc32(&bytes[AFTER_IHDR + 4..data_end]),
+        "the chunk CRC must be the one a reader computes"
+    );
+
     match media::decode_png_rows(&bytes, limits(), &Cancellation::default()) {
         Err(error) => assert_eq!(error, MediaError::Unavailable),
-        Ok(_) => panic!("an animated PNG must not produce a still raster"),
+        Ok(_) => panic!("a PNG carrying acTL must not produce a still raster"),
     }
 }
 
