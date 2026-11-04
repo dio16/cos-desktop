@@ -139,3 +139,89 @@ fn refusal_allocation_does_not_grow_with_the_refused_area() {
         "refusal cost grew with the refused area: {increments:?}"
     );
 }
+
+fn jpeg_rgb(width: u32, height: u32) -> Vec<u8> {
+    let image = image::RgbImage::from_fn(width, height, |x, y| {
+        image::Rgb([(x % 251) as u8, (y % 241) as u8, 90])
+    });
+    let mut bytes = std::io::Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgb8(image)
+        .write_to(&mut bytes, image::ImageFormat::Jpeg)
+        .expect("encode an 8-bit RGB JPEG");
+    bytes.into_inner()
+}
+
+#[test]
+fn the_jpeg_class_peak_is_measured_against_the_same_ceiling() {
+    let _guard = test_guard();
+    // The PNG class is the only one the plan's table calls measured. Run the same measurement for
+    // the JPEG class at the same dimensions, so the table can say what happens rather than that
+    // nobody looked. The ceiling formula is the same; whether JPEG respects it is what this prints.
+    let size = PixelSize::new(2048, 2048).expect("size");
+    let ceiling = limits().peak_rgba8_bytes(size).expect("ceiling");
+    let bytes = jpeg_rgb(2048, 2048);
+    assert!(
+        bytes.len() as u64 <= limits().max_scratch_bytes,
+        "the JPEG fixture must be far smaller than the scratch ceiling, or this measures a refusal"
+    );
+
+    let mut raster = None;
+    let increment = peak_increment_during(|| {
+        raster = Some(
+            decode_raster_joined(&bytes, limits(), &Cancellation::default())
+                .expect("the JPEG class decodes"),
+        );
+    });
+    drop(raster);
+
+    eprintln!(
+        "2048x2048 JPEG decode increment above baseline: {increment} B \
+         (PNG class ceiling {ceiling} B, encoded {} B)",
+        bytes.len()
+    );
+    assert!(
+        increment > 0,
+        "the counter observed nothing, so this measurement proves nothing"
+    );
+    // Measured at 29,360,328 B, inside the same ceiling: the JPEG class now has a figure of its own
+    // rather than an assumption that it behaves like PNG.
+    assert!(
+        increment <= ceiling,
+        "the JPEG decode increment {increment} B exceeded the declared ceiling {ceiling} B"
+    );
+}
+
+#[test]
+fn jpeg_refusal_allocation_does_not_grow_with_the_refused_area() {
+    let _guard = test_guard();
+    // 20,000 x 1 / 4 / 16 px: identical to the PNG refusal cases, so the two classes can be
+    // compared on the same terms.
+    let mut increments = Vec::new();
+    for height in [1u32, 4, 16] {
+        let width = 20_000u32;
+        let bytes = jpeg_rgb(width, height);
+        let area = u64::from(width) * u64::from(height);
+        let mut observed = None;
+        let increment = peak_increment_during(|| {
+            observed = Some(decode_raster_joined(
+                &bytes,
+                limits(),
+                &Cancellation::default(),
+            ));
+        });
+        eprintln!("refused JPEG {width}x{height} ({area} px): increment {increment} B");
+        assert_eq!(
+            observed.expect("a result").err(),
+            Some(MediaError::TooLarge),
+            "{width}x{height} must be refused for size"
+        );
+        increments.push(increment);
+    }
+    let largest = *increments.iter().max().expect("three cases");
+    // The largest refused area would need 1,280,000 B of RGBA8; a refusal must not be shaped like
+    // that. The bound here is the same one the PNG refusal test uses.
+    assert!(
+        largest < 1_280_000,
+        "the largest JPEG refusal allocated {largest} B, which is decode-shaped rather than a refusal"
+    );
+}
