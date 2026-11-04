@@ -55,7 +55,8 @@ pub enum UploadCapability {
 /// The answer for one frame at one refresh rate.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum UploadPlan {
-    /// One transfer moves the frame and it fits the budget.
+    /// The frame fits the budget as one image. This is a **byte-budget** statement: whether the
+    /// transfer itself succeeds is not established here.
     Whole { bytes: u64, budget: u64 },
     /// A single image of this size cannot be moved within the budget.
     ///
