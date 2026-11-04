@@ -56,6 +56,8 @@ actions!(
         InterventionDismiss,
         RailUp,
         RailDown,
+        RailHome,
+        RailEnd,
         RailEnter,
         RailSpace,
         RailBackspace,
@@ -112,6 +114,24 @@ fn task_status_label(status: &desktop_protocol::TaskStatus) -> &str {
     }
 }
 
+/// Which row Home (`First`) or End (`Last`) selects, or `None` when there is nothing
+/// to select. Pure so the edge arithmetic is testable without a window.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RailEdge {
+    First,
+    Last,
+}
+
+pub fn rail_edge_index(len: usize, edge: RailEdge) -> Option<usize> {
+    if len == 0 {
+        return None;
+    }
+    match edge {
+        RailEdge::First => Some(0),
+        RailEdge::Last => Some(len - 1),
+    }
+}
+
 pub fn bind_keys(cx: &mut App) {
     cx.bind_keys([
         KeyBinding::new("ctrl-1", Artifact, None),
@@ -130,6 +150,8 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("escape", InterventionDismiss, Some("InterventionStrip")),
         KeyBinding::new("up", RailUp, Some("TaskRailList")),
         KeyBinding::new("down", RailDown, Some("TaskRailList")),
+        KeyBinding::new("home", RailHome, Some("TaskRailList")),
+        KeyBinding::new("end", RailEnd, Some("TaskRailList")),
         KeyBinding::new("enter", RailEnter, Some("TaskRailList")),
         KeyBinding::new("space", RailSpace, Some("TaskRailList")),
         KeyBinding::new("backspace", RailBackspace, Some("TaskRailInput")),
@@ -2009,6 +2031,29 @@ impl Shell {
             self.rail_focus.focus(window, cx);
             self.request_rail_work(cx);
         }
+    }
+
+    /// Move the active row to the first or last search result.
+    ///
+    /// Home/End are the ratified map's remaining entries (§19.106); they move the same
+    /// active-descendant cursor the arrow keys do, so focus and selection stay independent.
+    fn move_rail_edge(&mut self, edge: RailEdge, window: &mut Window, cx: &mut Context<Self>) {
+        self.rail_state
+            .revalidate(self.handle.as_ref().and_then(Self::current_notice));
+        let Some(search) = self.rail_state.results() else {
+            return;
+        };
+        let Some(collection) = self.rail_state.collection() else {
+            return;
+        };
+        let Some(next) = rail_edge_index(search.indices.len(), edge) else {
+            return;
+        };
+        let task = collection.rows[search.indices[next]].identity.clone();
+        self.set_rail_active(task, next);
+        self.rail_list.scroll_to_reveal_item(next);
+        self.rail_focus.focus(window, cx);
+        cx.notify();
     }
 
     fn move_rail_active(&mut self, delta: isize, window: &mut Window, cx: &mut Context<Self>) {
@@ -4733,6 +4778,12 @@ impl Render for Shell {
                                     .on_action(cx.listener(|this, _: &RailDown, window, cx| {
                                         this.move_rail_active(1, window, cx);
                                     }))
+                                    .on_action(cx.listener(|this, _: &RailHome, window, cx| {
+                                        this.move_rail_edge(RailEdge::First, window, cx);
+                                    }))
+                                    .on_action(cx.listener(|this, _: &RailEnd, window, cx| {
+                                        this.move_rail_edge(RailEdge::Last, window, cx);
+                                    }))
                                     .on_action(cx.listener(|this, _: &RailEnter, window, cx| {
                                         if let Some(task) = this.rail_active.clone() {
                                             this.select_rail_task(&task, window, cx);
@@ -6506,6 +6557,43 @@ mod contrast_scope_tests {
             from = end;
         }
         found
+    }
+
+    #[test]
+    fn home_and_end_select_the_first_and_last_row() {
+        use super::{RailEdge, rail_edge_index};
+        assert_eq!(
+            rail_edge_index(0, RailEdge::First),
+            None,
+            "nothing to select"
+        );
+        assert_eq!(
+            rail_edge_index(0, RailEdge::Last),
+            None,
+            "nothing to select"
+        );
+        assert_eq!(rail_edge_index(1, RailEdge::First), Some(0));
+        assert_eq!(rail_edge_index(1, RailEdge::Last), Some(0));
+        assert_eq!(rail_edge_index(7, RailEdge::First), Some(0));
+        assert_eq!(rail_edge_index(7, RailEdge::Last), Some(6));
+    }
+
+    #[test]
+    fn home_and_end_are_bound_in_the_task_rail_only() {
+        let source = include_str!("lib.rs");
+        let cut = source
+            .find("\n#[cfg(test)]\nmod ")
+            .expect("the first test module marker");
+        let production = &source[..cut];
+        for binding in [
+            "KeyBinding::new(\"home\", RailHome, Some(\"TaskRailList\"))",
+            "KeyBinding::new(\"end\", RailEnd, Some(\"TaskRailList\"))",
+        ] {
+            assert!(production.contains(binding), "missing binding {binding}");
+        }
+        // Both actions must reach the edge mover rather than the one-step mover.
+        assert!(production.contains("this.move_rail_edge(RailEdge::First, window, cx);"));
+        assert!(production.contains("this.move_rail_edge(RailEdge::Last, window, cx);"));
     }
 
     #[test]
