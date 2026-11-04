@@ -404,6 +404,7 @@ impl Drop for AdmittedUpload {
         }
         let bytes = self.bytes;
         let key = self.identity.key.clone();
+        let identity = self.identity.clone();
         let stage = self.stage;
         // An abandoned transfer keeps its payload: the bytes a device transfer may still read must
         // outlive this value.
@@ -412,54 +413,55 @@ impl Drop for AdmittedUpload {
         } else {
             None
         };
-        self.pool.with_state(|state| match stage {
-            // Never transferred: the CPU side is gone and nothing reached the device, so all three
-            // counters can be given back without quarantining anything.
-            UploadStage::Staged => {
-                state.staging = state.staging.saturating_sub(bytes);
-                state.in_flight = state.in_flight.saturating_sub(bytes);
-                state.resident = state.resident.saturating_sub(bytes);
-                state.resident_keys.retain(|entry| *entry != key);
-            }
-            // Mid-transfer: the transfer may still be running. The reservation moves out of the
-            // live counters into the per-resource quarantine, and the CPU payload moves to the pool
-            // rather than being freed, so a future asynchronous uploader cannot lose the bytes it
-            // may still be reading.
-            UploadStage::Uploading => {
-                state.staging = state.staging.saturating_sub(bytes);
-                state.in_flight = state.in_flight.saturating_sub(bytes);
-                state.resident = state.resident.saturating_sub(bytes);
-                state.staging_stuck = state.staging_stuck.saturating_add(bytes);
-                state.in_flight_stuck = state.in_flight_stuck.saturating_add(bytes);
-                state.resident_stuck = state.resident_stuck.saturating_add(bytes);
-                state.resident_keys.retain(|entry| *entry != key);
-                if !state.unreclaimed_keys.contains(&key) {
-                    state.unreclaimed_keys.push(key);
+        self.pool.with_state(|state| {
+            match stage {
+                // Never transferred: the CPU side is gone and nothing reached the device, so all three
+                // counters can be given back without quarantining anything.
+                UploadStage::Staged => {
+                    state.staging = state.staging.saturating_sub(bytes);
+                    state.in_flight = state.in_flight.saturating_sub(bytes);
+                    state.resident = state.resident.saturating_sub(bytes);
+                    state.resident_keys.retain(|entry| *entry != key);
                 }
-            }
-            // Resident: the CPU copy is gone, but nothing asserted the device copy was released.
-            UploadStage::Resident => {
-                state.staging = state.staging.saturating_sub(bytes);
-                state.in_flight = state.in_flight.saturating_sub(bytes);
-                state.resident = state.resident.saturating_sub(bytes);
-                state.resident_stuck = state.resident_stuck.saturating_add(bytes);
-                state.resident_keys.retain(|entry| *entry != key);
-                if !state.unreclaimed_keys.contains(&key) {
-                    state.unreclaimed_keys.push(key);
+                // Mid-transfer: the transfer may still be running. The reservation moves out of the
+                // live counters into the per-resource quarantine, and the CPU payload moves to the pool
+                // rather than being freed, so a future asynchronous uploader cannot lose the bytes it
+                // may still be reading.
+                UploadStage::Uploading => {
+                    state.staging = state.staging.saturating_sub(bytes);
+                    state.in_flight = state.in_flight.saturating_sub(bytes);
+                    state.resident = state.resident.saturating_sub(bytes);
+                    state.staging_stuck = state.staging_stuck.saturating_add(bytes);
+                    state.in_flight_stuck = state.in_flight_stuck.saturating_add(bytes);
+                    state.resident_stuck = state.resident_stuck.saturating_add(bytes);
+                    state.resident_keys.retain(|entry| *entry != key);
+                    if !state.unreclaimed_keys.contains(&key) {
+                        state.unreclaimed_keys.push(key);
+                    }
                 }
+                // Resident: the CPU copy is gone, but nothing asserted the device copy was released.
+                UploadStage::Resident => {
+                    state.staging = state.staging.saturating_sub(bytes);
+                    state.in_flight = state.in_flight.saturating_sub(bytes);
+                    state.resident = state.resident.saturating_sub(bytes);
+                    state.resident_stuck = state.resident_stuck.saturating_add(bytes);
+                    state.resident_keys.retain(|entry| *entry != key);
+                    if !state.unreclaimed_keys.contains(&key) {
+                        state.unreclaimed_keys.push(key);
+                    }
+                }
+                // Already released: `release` zeroed the byte count, so this arm is unreachable in
+                // practice; it exists so the state machine is exhaustive.
+                UploadStage::Released => {}
             }
-            // Already released: `release` zeroed the byte count, so this arm is unreachable in
-            // practice; it exists so the state machine is exhaustive.
-            UploadStage::Released => {}
-        });
-        if let Some(raster) = orphan {
-            let identity = self.identity.clone();
-            self.pool.with_state(|state| {
+            // The payload is registered in the same locked section as the counters and the
+            // identity, so no observer can see quarantined bytes whose payload is missing.
+            if let Some(raster) = orphan {
                 state
                     .orphaned_payloads
-                    .push(OrphanedTransfer { identity, raster })
-            });
-        }
+                    .push(OrphanedTransfer { identity, raster });
+            }
+        });
     }
 }
 
