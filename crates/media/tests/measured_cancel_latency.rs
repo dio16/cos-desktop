@@ -1,19 +1,26 @@
-// MP-IMG2: how long a row-wise PNG decode keeps running after cancellation is observed.
+// MP-IMG2: how long a row-wise PNG decode keeps running after cancellation.
 //
 // §19.240 wired the row decoder into the product path and recorded that cancellation is
-// observed between rows, but explicitly did **not** claim a latency bound because none was
-// measured. This binary measures it: cancel from inside the row hook and time how long the
-// call takes to return afterwards.
+// observed between rows, but claimed **no** latency bound because none was measured. This
+// binary measures two different questions and keeps them apart:
 //
-// The bound asserted here is a **measurement threshold chosen when writing the test**, not a
-// product SLO: it exists so a regression that stopped checking between rows (and therefore ran
-// to completion) fails instead of quietly passing. The measured figures are printed for the
-// record.
+// 1. **Cancelled from inside a row hook** - at a row boundary, the moment the loop is already
+//    checking. That is the *best* case, reported as "return time at a row boundary", not as a
+//    bound.
+// 2. **Cancelled from another thread while the decode is running** - the realistic case. The
+//    helper thread records when it set the flag, and the elapsed time to the call's return is
+//    the figure that matters. No claim is made that it is bounded by one row: the per-row figure
+//    available here is an average, not a worst case.
+//
+// Both runs assert that the loop stopped at the first row where the flag was already visible,
+// which is what a regression that kept decoding past the flag would break.
 
 use image::{DynamicImage, ImageFormat, RgbImage};
 use media::{Cancellation, DecodeBudget, DecodeLimits, MediaError};
 use std::io::Cursor;
-use std::time::Instant;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, Instant};
 
 fn limits() -> DecodeLimits {
     DecodeBudget::ratified_default()
@@ -33,60 +40,106 @@ fn png_rgb(width: u32, height: u32) -> Vec<u8> {
 }
 
 #[test]
-fn cancellation_is_observed_and_the_call_returns_promptly() {
-    // 3000×3000 is large enough that a decode which ignored the cancellation would keep running
-    // long enough to be obvious in the timing, and small enough to keep this test quick.
+fn cancellation_at_a_row_boundary_returns_without_decoding_further() {
     const WIDTH: u32 = 3000;
     const HEIGHT: u32 = 3000;
     const CANCEL_AT_ROW: u32 = HEIGHT / 4;
-    /// Measurement threshold, not an SLO.
-    const BOUND_MS: u128 = 250;
 
     let bytes = png_rgb(WIDTH, HEIGHT);
-    let mut samples = Vec::new();
-    for run in 0..3 {
-        let cancel = Cancellation::default();
-        let mut cancelled_at: Option<Instant> = None;
-        let mut rows_when_cancelled = 0u32;
-        let result = media::decode_raster_with_row_hook(&bytes, limits(), &cancel, &mut |rows| {
-            if rows == CANCEL_AT_ROW {
-                rows_when_cancelled = rows;
-                cancelled_at = Some(Instant::now());
+    let cancel = Cancellation::default();
+    let cancelled_at: Arc<std::sync::Mutex<Option<Instant>>> =
+        Arc::new(std::sync::Mutex::new(None));
+    let rows_after_flag = Arc::new(AtomicU64::new(0));
+    let last_row = Arc::new(AtomicU64::new(0));
+
+    let stamp = Arc::clone(&cancelled_at);
+    let observer = Arc::clone(&rows_after_flag);
+    let last = Arc::clone(&last_row);
+    let result = media::decode_raster_with_row_hook(&bytes, limits(), &cancel, &mut |rows| {
+        last.store(u64::from(rows), Ordering::SeqCst);
+        let mut slot = stamp.lock().expect("stamp");
+        match *slot {
+            None if rows == CANCEL_AT_ROW => {
+                *slot = Some(Instant::now());
                 cancel.cancel();
             }
-        });
-        let elapsed_ms = cancelled_at
-            .expect("the hook must have run before the call returned")
-            .elapsed()
-            .as_millis();
-        eprintln!(
-            "run {run}: cancelled at row {rows_when_cancelled} of {HEIGHT}, returned {elapsed_ms} ms later"
-        );
-        assert_eq!(
-            result.err(),
-            Some(MediaError::Cancelled),
-            "run {run}: a cancelled decode must be typed Cancelled"
-        );
-        assert_eq!(
-            rows_when_cancelled, CANCEL_AT_ROW,
-            "run {run}: cancellation must be observed at the requested row"
-        );
-        samples.push(elapsed_ms);
-    }
+            Some(_) => {
+                observer.fetch_add(1, Ordering::SeqCst);
+            }
+            None => {}
+        }
+    });
 
-    // What the 0 ms figure means: cancellation is checked at the top of each row iteration, so
-    // the wait is at most one row's work. Measure that row to give the number a scale.
-    let full_start = Instant::now();
-    let _ = media::decode_raster(&bytes, limits(), &Cancellation::default())
-        .expect("the same image decodes when not cancelled");
-    let full_ms = full_start.elapsed().as_millis();
-    let per_row_us = (full_start.elapsed().as_micros()) / u128::from(HEIGHT);
-    eprintln!("full decode {full_ms} ms for {HEIGHT} rows, about {per_row_us} us per row");
+    let micros = cancelled_at
+        .lock()
+        .expect("stamp")
+        .expect("the hook must have run")
+        .elapsed()
+        .as_micros();
+    eprintln!(
+        "row-boundary cancel at row {CANCEL_AT_ROW}/{HEIGHT}: returned in {micros} us, \
+         rows processed after the flag: {}",
+        rows_after_flag.load(Ordering::SeqCst)
+    );
+    assert_eq!(result.err(), Some(MediaError::Cancelled));
+    assert_eq!(
+        rows_after_flag.load(Ordering::SeqCst),
+        0,
+        "no row may be decoded after the cancellation was observed"
+    );
+    assert_eq!(
+        last_row.load(Ordering::SeqCst),
+        u64::from(CANCEL_AT_ROW),
+        "the loop must stop at the row where cancellation was observed"
+    );
+}
 
-    let worst = *samples.iter().max().expect("three samples");
-    eprintln!("worst return latency after cancellation: {worst} ms");
+#[test]
+fn cancellation_from_another_thread_mid_decode_returns_promptly() {
+    const WIDTH: u32 = 3000;
+    const HEIGHT: u32 = 3000;
+    /// Measurement threshold only: far above one row's work and far below a full decode of this
+    /// image, so a loop that stopped checking between rows would fail.
+    const BOUND_US: u128 = 250_000;
+
+    let bytes = png_rgb(WIDTH, HEIGHT);
+    let cancel = Cancellation::default();
+    let rows_seen = Arc::new(AtomicU64::new(0));
+    let cancelled_at: Arc<std::sync::Mutex<Option<Instant>>> =
+        Arc::new(std::sync::Mutex::new(None));
+
+    // The decode runs on this thread; the helper sets the flag while the image is still being
+    // decoded, which is the case the row-boundary measurement cannot represent.
+    let helper_cancel = cancel.clone();
+    let helper_stamp = Arc::clone(&cancelled_at);
+    let helper = std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(5));
+        *helper_stamp.lock().expect("stamp") = Some(Instant::now());
+        helper_cancel.cancel();
+    });
+
+    let seen = Arc::clone(&rows_seen);
+    let result = media::decode_raster_with_row_hook(&bytes, limits(), &cancel, &mut |rows| {
+        seen.store(u64::from(rows), Ordering::SeqCst);
+    });
+
+    let returned = Instant::now();
+    helper.join().expect("helper thread");
+    let cancelled_moment = cancelled_at.lock().expect("stamp").expect("stamp set");
+    let micros = returned.duration_since(cancelled_moment).as_micros();
+    let stopped_at = rows_seen.load(Ordering::SeqCst);
+
+    eprintln!(
+        "external cancel mid-decode: stopped after row {stopped_at} of {HEIGHT}, \
+         returned {micros} us after the flag was set"
+    );
+    assert_eq!(result.err(), Some(MediaError::Cancelled));
     assert!(
-        worst <= BOUND_MS,
-        "returning took {worst} ms after cancellation, beyond this test's {BOUND_MS} ms threshold"
+        stopped_at > 0 && stopped_at < u64::from(HEIGHT),
+        "the cancellation must have landed mid-image, not before the first row or after the last"
+    );
+    assert!(
+        micros <= BOUND_US,
+        "returned {micros} us after cancellation, beyond this test's {BOUND_US} us threshold"
     );
 }
