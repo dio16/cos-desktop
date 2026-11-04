@@ -371,3 +371,84 @@ fn webp_refusals_are_measured_under_a_byte_ceiling() {
         "WebP refusal cost grew with the refused area: {increments:?}"
     );
 }
+
+/// A 16-bit-per-channel RGB PNG, to exercise the declared bit-depth ceiling rather than the common
+/// 8-bit case alone.
+fn png_rgb16(width: u32, height: u32) -> Vec<u8> {
+    let image = image::ImageBuffer::<image::Rgb<u16>, Vec<u16>>::from_fn(width, height, |x, y| {
+        image::Rgb([
+            ((x * 257) % 65_536) as u16,
+            ((y * 257) % 65_536) as u16,
+            90 * 257,
+        ])
+    });
+    let mut bytes = std::io::Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgb16(image)
+        .write_to(&mut bytes, image::ImageFormat::Png)
+        .expect("encode a 16-bit RGB PNG");
+    bytes.into_inner()
+}
+
+#[test]
+fn a_sixteen_bit_png_is_refused_and_the_refusal_is_not_decode_shaped() {
+    let _guard = test_guard();
+    // The "other depths and sizes" row. A 16-bit source is **refused as Unavailable** rather than
+    // decoded - the declared bit-depth ceiling admits the header, the backend does not convert it -
+    // so what can be measured is the refusal, not a peak. 512x512 keeps this inside the gate budget.
+    let edge = 512u32;
+    let bytes = png_rgb16(edge, edge);
+    let mut observed = None;
+    let increment = peak_increment_during(|| {
+        observed = Some(decode_raster_joined(
+            &bytes,
+            limits(),
+            &Cancellation::default(),
+        ));
+    });
+    eprintln!(
+        "refused {edge}x{edge} 16-bit PNG: increment {increment} B          (a decode of that area would need {} B of RGBA8)",
+        u64::from(edge) * u64::from(edge) * 4
+    );
+    assert_eq!(
+        observed.expect("a result").err(),
+        Some(MediaError::Unavailable),
+        "a 16-bit PNG must be refused as unavailable, not decoded"
+    );
+    let needed = u64::from(edge) * u64::from(edge) * 4;
+    assert!(
+        increment < needed,
+        "the refusal allocated {increment} B, which is decode-shaped rather than a refusal"
+    );
+}
+#[test]
+fn a_smaller_size_is_measured_against_its_own_ceiling() {
+    let _guard = test_guard();
+    // The other half of "other depths and sizes": the ceiling must scale with the size rather than
+    // being a single hard-coded figure.
+    let edge = 512u32;
+    let size = PixelSize::new(edge, edge).expect("size");
+    let ceiling = limits().peak_rgba8_bytes(size).expect("ceiling");
+    assert!(
+        ceiling < 34_603_008,
+        "a 512x512 ceiling must be smaller than the 2048x2048 one, or this proves nothing"
+    );
+    let bytes = png_rgb(edge, edge);
+
+    let mut raster = None;
+    let increment = peak_increment_during(|| {
+        raster = Some(
+            decode_raster_joined(&bytes, limits(), &Cancellation::default())
+                .expect("the class decodes"),
+        );
+    });
+    drop(raster);
+
+    eprintln!(
+        "{edge}x{edge} 8-bit PNG decode increment above baseline: {increment} B (ceiling {ceiling} B)"
+    );
+    assert!(increment > 0, "the counter observed nothing");
+    assert!(
+        increment <= ceiling,
+        "512x512 decode increment {increment} B exceeded the declared ceiling {ceiling} B"
+    );
+}
