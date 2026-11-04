@@ -3495,6 +3495,17 @@ impl Render for Shell {
                             .truncate()
                             .child(SharedString::from(node.identity.as_str())),
                     )
+                    // Activation means the same to a screen reader as a click: select this node.
+                    // Registered explicitly so dispatch does not depend on a synthesised press.
+                    .on_a11y_action(AccessibleAction::Click, {
+                        let this = click_shell.clone();
+                        let key = click_key.clone();
+                        move |_, window, cx| {
+                            this.update(cx, |this, cx| {
+                                this.select_flow_node(key.clone(), window, cx);
+                            });
+                        }
+                    })
                     .on_click(move |_, window, app| {
                         let key = click_key.clone();
                         click_shell.update(app, |this, cx| {
@@ -3571,6 +3582,16 @@ impl Render for Shell {
                             .truncate()
                             .child(SharedString::from(edge.identity.as_str())),
                     )
+                    // Activation means the same to a screen reader as a click: select this edge.
+                    .on_a11y_action(AccessibleAction::Click, {
+                        let this = click_shell.clone();
+                        let key = click_key.clone();
+                        move |_, window, cx| {
+                            this.update(cx, |this, cx| {
+                                this.select_flow_edge(key.clone(), window, cx);
+                            });
+                        }
+                    })
                     .on_click(move |_, window, app| {
                         let key = click_key.clone();
                         click_shell.update(app, |this, cx| {
@@ -4465,6 +4486,16 @@ impl Render for Shell {
                                 .child(format!("この画面からの案内：{label}"))
                         }),
                     )
+                    // Activation means the same to a screen reader as a click: select this task.
+                    .on_a11y_action(AccessibleAction::Click, {
+                        let this = shell_entity.clone();
+                        let identity = identity.clone();
+                        move |_, window, cx| {
+                            this.update(cx, |this, cx| {
+                                this.select_rail_task(&identity, window, cx);
+                            });
+                        }
+                    })
                     .on_click({
                         let shell_entity = shell_entity.clone();
                         move |_, window, app| {
@@ -5433,6 +5464,16 @@ fn flow_diagram_region(
                                 node.node.as_str()
                             ))),
                     )
+                    // Activation means the same to a screen reader as a click: select this node.
+                    .on_a11y_action(AccessibleAction::Click, {
+                        let this = click_shell.clone();
+                        let key = key.clone();
+                        move |_, window, cx| {
+                            this.update(cx, |this, cx| {
+                                this.select_flow_node(key.clone(), window, cx);
+                            });
+                        }
+                    })
                     .on_click(move |_, window, app| {
                         let key = key.clone();
                         click_shell.update(app, |this, cx| {
@@ -6424,6 +6465,63 @@ mod contrast_scope_tests {
             a11y_handler_views_the_candidate(&block),
             "the accessibility handler no longer views the candidate"
         );
+    }
+
+    /// Each per-item control is built inside a closure, so these are checked at their construction
+    /// sites rather than by an element id. The handler name differs per target, which is what makes
+    /// the check meaningful: it must be the target's own activation, not any nearby call.
+    #[test]
+    fn per_item_rows_activate_through_accessibility() {
+        let whole = include_str!("lib.rs");
+        let cut = whole
+            .find("\n#[cfg(test)]\nmod ")
+            .expect("the first test module marker");
+        let source = &whole[..cut];
+        let cases = [
+            ("this.select_flow_node(key.clone(), window, cx);", 2),
+            ("this.select_flow_edge(key.clone(), window, cx);", 1),
+            ("this.select_rail_task(&identity, window, cx);", 1),
+        ];
+        for (call, expected) in cases {
+            let found = source.matches(call).count();
+            assert_eq!(
+                found, expected,
+                "{call} should appear {expected} time(s) because it is once per migrated target's \
+                 accessibility handler; found {found}"
+            );
+        }
+        // And each of those calls lives inside an accessibility handler, not only inside a click
+        // handler.
+        for (marker, call) in [
+            (
+                ".on_a11y_action(AccessibleAction::Click",
+                "this.select_flow_node(key.clone(), window, cx);",
+            ),
+            (
+                ".on_a11y_action(AccessibleAction::Click",
+                "this.select_flow_edge(key.clone(), window, cx);",
+            ),
+            (
+                ".on_a11y_action(AccessibleAction::Click",
+                "this.select_rail_task(&identity, window, cx);",
+            ),
+        ] {
+            let mut from = 0;
+            let mut paired = 0;
+            while let Some(offset) = source[from..].find(marker) {
+                let start = from + offset;
+                let rest = &source[start..];
+                let end = rest.find(".on_click").unwrap_or(rest.len());
+                if rest[..end].contains(call) {
+                    paired += 1;
+                }
+                from = start + marker.len();
+            }
+            assert!(
+                paired >= 1,
+                "{call} never appears inside an accessibility handler"
+            );
+        }
     }
 
     #[test]
