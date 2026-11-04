@@ -24,6 +24,35 @@ if (-not [string]::IsNullOrWhiteSpace($TargetDir)) {
     $env:CARGO_TARGET_DIR = $TargetDir
 }
 
+function Resolve-Tool {
+    <#
+      Resolve a bare tool name to a real executable file.
+
+      `Start-Process` cannot launch a shell wrapper or a Windows Store alias, and on this
+      machine `python` on PATH is a bash script, while `python.exe` is a Store alias that
+      prints nothing. So candidates are tried in order and the first one that answers with a
+      real interpreter path wins; if none do, the recorder fails loudly instead of writing
+      empty logs and calling them evidence.
+    #>
+    param([string]$Name, [string[]]$Probe = @(), [string[]]$ProbeArgs = @())
+
+    $command = Get-Command $Name -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+        $candidate = if ($command.Source) { $command.Source } else { $command.Path }
+        if (-not [string]::IsNullOrWhiteSpace($candidate) -and $candidate -match '\.exe$' -and -not $Probe) {
+            return $candidate
+        }
+    }
+
+    foreach ($item in $Probe) {
+        $resolved = & $item @ProbeArgs 2>$null
+        if (-not [string]::IsNullOrWhiteSpace(($resolved | Out-String).Trim())) {
+            return ($resolved | Out-String).Trim().Split("`n")[-1].Trim()
+        }
+    }
+    throw "no usable executable found for $Name (tried: $($Probe -join ', '))"
+}
+
 function Invoke-Recorded {
     <#
       Run one command with its streams redirected to real files by the OS.
@@ -78,13 +107,20 @@ $head = (& git -C $repo rev-parse HEAD).Trim()
 $status = (& git -C $repo status --porcelain)
 $dirty = -not [string]::IsNullOrWhiteSpace(($status -join ''))
 
+$cargo = Resolve-Tool 'cargo'
+$pythonCandidates = @(
+    'C:\Users\diobrando\AppData\Roaming\uv\python\cpython-3.13.14-windows-x86_64-none\python.exe',
+    'python.exe',
+    'python3.exe'
+)
+$python = Resolve-Tool -Name 'python' -Probe $pythonCandidates -ProbeArgs @('-c', 'import sys; print(sys.executable)')
 $gates = @(
-    @{ Name = 'fmt';       File = 'cargo';  Args = @('fmt', '--all', '--', '--check') },
-    @{ Name = 'metadata';  File = 'cargo';  Args = @('metadata', '--locked', '--no-deps', '--format-version', '1') },
-    @{ Name = 'dep-self';  File = 'python'; Args = @('-B', 'scripts/check_dependency_rules.py', '--self-test') },
-    @{ Name = 'dep-rules'; File = 'python'; Args = @('-B', 'scripts/check_dependency_rules.py') },
-    @{ Name = 'clippy';    File = 'cargo';  Args = @('clippy', '--locked', '--workspace', '--all-targets', '--', '-D', 'warnings') },
-    @{ Name = 'tests';     File = 'cargo';  Args = @('test', '--locked', '--workspace') }
+    @{ Name = 'fmt';       File = $cargo;  Args = @('fmt', '--all', '--', '--check') },
+    @{ Name = 'metadata';  File = $cargo;  Args = @('metadata', '--locked', '--no-deps', '--format-version', '1') },
+    @{ Name = 'dep-self';  File = $python; Args = @('-B', 'scripts/check_dependency_rules.py', '--self-test') },
+    @{ Name = 'dep-rules'; File = $python; Args = @('-B', 'scripts/check_dependency_rules.py') },
+    @{ Name = 'clippy';    File = $cargo;  Args = @('clippy', '--locked', '--workspace', '--all-targets', '--', '-D', 'warnings') },
+    @{ Name = 'tests';     File = $cargo;  Args = @('test', '--locked', '--workspace') }
 )
 
 $results = @()
@@ -124,6 +160,7 @@ $manifest = [pscustomobject]@{
     head        = $head
     dirty       = $dirty
     target_dir  = $env:CARGO_TARGET_DIR
+    tools       = [pscustomobject]@{ cargo = $cargo; python = $python }
     recorded_at = (Get-Date).ToString('o')
     gates       = $results
     files       = $files
