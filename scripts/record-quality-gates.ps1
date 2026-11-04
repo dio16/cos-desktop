@@ -38,13 +38,9 @@ function Resolve-Tool {
     #>
     param([string]$Name, [string[]]$Probe = @(), [string[]]$ProbeArgs = @())
 
+    # Order is part of the contract: an explicit override must win over anything found by name,
+    # so the caller's candidates are collected first and the PATH lookup for $Name comes after.
     $candidates = @()
-    if (-not [string]::IsNullOrWhiteSpace($Name)) {
-        $onPath = Get-Command $Name -CommandType Application -ErrorAction SilentlyContinue
-        foreach ($item in @($onPath)) {
-            if ($item -and $item.Source) { $candidates += $item.Source }
-        }
-    }
     foreach ($item in $Probe) {
         if ([string]::IsNullOrWhiteSpace($item)) { continue }
         if (Test-Path -LiteralPath $item) {
@@ -54,6 +50,13 @@ function Resolve-Tool {
             foreach ($found in @($onPath)) {
                 if ($found -and $found.Source) { $candidates += $found.Source }
             }
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($Name)) {
+        $onPath = Get-Command $Name -CommandType Application -ErrorAction SilentlyContinue
+        foreach ($item in @($onPath)) {
+            if ($item -and $item.Source) { $candidates += $item.Source }
         }
     }
 
@@ -142,7 +145,7 @@ $cargo = Resolve-Tool 'cargo'
 # usual names - each resolved on PATH and verified by launching it. No version is assumed.
 $pythonCandidates = @()
 if (-not [string]::IsNullOrWhiteSpace($PythonPath)) { $pythonCandidates += $PythonPath }
-$pythonCandidates += @('python', 'python3', 'python.exe', 'python3.exe')
+$pythonCandidates += @('python3', 'python.exe', 'python3.exe')
 $python = Resolve-Tool -Name 'python' -Probe $pythonCandidates -ProbeArgs @('-c', 'import sys; print(sys.executable)')
 $gates = @(
     @{ Name = 'fmt';       File = $cargo;  Args = @('fmt', '--all', '--', '--check') },
