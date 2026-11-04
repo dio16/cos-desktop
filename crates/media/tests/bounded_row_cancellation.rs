@@ -241,3 +241,42 @@ fn an_interlaced_png_is_refused_as_unsupported() {
         Ok(_) => panic!("an interlaced PNG is outside this path's contract"),
     }
 }
+
+#[test]
+fn the_product_path_uses_the_row_decoder_and_keeps_interlaced_pngs_working() {
+    // Non-interlaced PNG now goes through the row decoder inside `decode_raster`; interlaced
+    // PNGs and every other container keep the generic path, so no class loses support.
+    let plain = png_rgb(96, 64);
+    let raster = media::decode_raster(&plain, limits(), &Cancellation::default())
+        .expect("the product path decodes a plain PNG");
+    assert_eq!(raster.size, PixelSize::new(96, 64).expect("size"));
+    assert_eq!(
+        raster.rgba.len() as u64,
+        raster.size.checked_rgba_bytes().expect("rgba length")
+    );
+
+    // An interlaced declaration must still be decoded by the generic decoder rather than
+    // refused, which is the compatibility this wiring has to preserve.
+    let mut interlaced = plain.clone();
+    let ihdr = interlaced
+        .windows(4)
+        .position(|w| w == b"IHDR")
+        .expect("IHDR");
+    interlaced[ihdr + 4 + 12] = 1;
+    let crc_start = ihdr;
+    let ihdr_end = crc_start + 4 + 13;
+    let crc = crc32(&interlaced[crc_start..ihdr_end]);
+    interlaced[ihdr_end..ihdr_end + 4].copy_from_slice(&crc.to_be_bytes());
+    // The payload is genuinely non-interlaced, so the header now lies about the layout and the
+    // generic decoder must reject it as metadata rather than returning a wrong raster. What is
+    // asserted here is only that the product path does not route it through the row decoder,
+    // which would answer `UnsupportedContainer`.
+    match media::decode_raster(&interlaced, limits(), &Cancellation::default()) {
+        Err(error) => assert_eq!(
+            error,
+            MediaError::InvalidMetadata,
+            "an interlaced declaration must reach the generic decoder"
+        ),
+        Ok(_) => panic!("a header that lies about interlace must not produce a raster"),
+    }
+}

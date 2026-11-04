@@ -111,6 +111,19 @@ fn decode_raster_inner(
         hook();
     }
     cancel.check()?;
+    // A non-interlaced PNG goes through the row decoder, which can observe cancellation
+    // between rows instead of only before and after one uninterruptible call. Interlaced
+    // PNGs and every other container keep the generic path, so no input class loses support.
+    if format == AcceptedFormat::Png && !png_is_interlaced(bytes) {
+        let raster = decode_png_rows_with_hook(bytes, limits, cancel, &mut |_rows| {})?;
+        // Keep the publish seam meaningful on this path: a cancellation arriving after the
+        // pixels are ready must still prevent publication, exactly as on the generic path.
+        if let Some(hook) = before_publish {
+            hook();
+        }
+        cancel.check()?;
+        return Ok(raster);
+    }
     let mut reader = ImageReader::with_format(Cursor::new(bytes), format.image_format());
     reader.limits(decoder_limits(limits));
     let decoded = reader.decode().map_err(|_| MediaError::InvalidMetadata)?;
@@ -141,6 +154,21 @@ fn ensure_still(bytes: &[u8], format: AcceptedFormat) -> Result<(), MediaError> 
         AcceptedFormat::Gif => ensure_still_gif(bytes),
         AcceptedFormat::Jpeg => Ok(()),
     }
+}
+
+/// Whether the PNG header declares Adam7 interlacing. Reads only the IHDR chunk, so it costs
+/// nothing next to a decode and never depends on the pixel payload.
+fn png_is_interlaced(bytes: &[u8]) -> bool {
+    // Signature (8) + length (4) + "IHDR" (4) + 13 data bytes; the interlace byte is last.
+    const IHDR_TYPE: usize = 12;
+    const INTERLACE_BYTE: usize = 28;
+    if bytes.len() <= INTERLACE_BYTE {
+        return false;
+    }
+    if &bytes[IHDR_TYPE..IHDR_TYPE + 4] != b"IHDR" {
+        return false;
+    }
+    bytes[INTERLACE_BYTE] == 1
 }
 
 fn ensure_still_png(bytes: &[u8]) -> Result<(), MediaError> {
