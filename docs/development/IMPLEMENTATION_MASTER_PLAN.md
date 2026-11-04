@@ -4444,3 +4444,15 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 
 - **Verified locally:** `cargo test -p desktop-gpui` **126 passed / 0 failed**, `cargo clippy -p desktop-gpui --all-targets -D warnings` clean, `cargo fmt --all -- --check` clean.
 - **Not established:** **no native activation was performed** for any of these controls, so whether a screen reader can now operate them is **unmeasured**. Screen-reader quality, Tab traversal and the save dialog remain unmeasured, MP-AX1/AX2 remain incomplete and product acceptance is NOT_RUN.
+
+### 19.233 MP-IMG2: internal allocator peak measured, the HOLD is closed (2026-11-04)
+
+- **What was blocked:** §19.119 left **internal allocator peak** and **rejection allocation flatness** at HOLD because measuring them needs a counting `GlobalAlloc`, and this workspace forbids **own-code** `unsafe`.
+- **Unblock chosen:** a **dev-dependency of `media` only**, `peak_alloc` 0.3.0 (Apache-2.0/MIT). The `unsafe impl GlobalAlloc` lives in that reviewed crate; the test binary only declares `#[global_allocator]`, so no own-code `unsafe` is introduced. It is absent from the shipped binary and from the normal/build graphs; the addition is recorded in [DEPENDENCY_RULES](../architecture/DEPENDENCY_RULES.md#reviewed-third-party-additions).
+- **Measured (`crates/media/tests/measured_decode_allocations.rs`, 256×256 static 8-bit PNG):**
+  - internal peak **530,377 B** against the declared admission ceiling **1,572,864 B** (2 × 262,144 B + 1 MiB slack) - **within the ceiling**;
+  - **rejection flatness**: an admitted decode peaks at **555,360 B**, a refused 20,000 px input at **123,232 B** (≈ 22 %), so refusal does not allocate like a decode;
+  - the first assertion also requires `peak > 0`, so a counter that observed nothing cannot pass.
+- **What this is not:** the ceiling is a **declared** budget, not a profile of the decoder's internals, and this measures **one decode at a time** - concurrent decodes, allocator behaviour under cancellation and the process Working Set (that is `examples/peak_probe.rs`) are separate and unchanged.
+- **Dependency checks:** `python -B scripts/check_dependency_rules.py` reports the allowlist verified for 7 workspace members; `cargo clippy -p media --all-targets -D warnings` and `cargo fmt --all -- --check` are clean; `cargo test -p media` passes.
+- **Still HOLD / NOT_VERIFIED in MP-IMG2:** bounded cancellation of a **running** decoder (the backend call is not interruptible), other bit depths, and the Working Set re-measurement against a connected Runtime. MP-IMG2 overall and MP-IMG3 are **not** claimed; product acceptance NOT_RUN.
