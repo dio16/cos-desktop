@@ -108,8 +108,12 @@ pub fn plan_upload(capability: UploadCapability, frame_bytes: u64, budget: u64) 
 }
 
 /// Bytes in one RGBA8 frame of the given edge length.
+///
+/// Saturates rather than wrapping: an edge large enough to overflow a `u64` byte count is not a
+/// frame this boundary could ever admit, and a saturated figure keeps the arithmetic total.
 pub fn rgba8_frame_bytes(edge: u32) -> u64 {
-    u64::from(edge) * u64::from(edge) * 4
+    let side = u64::from(edge);
+    side.saturating_mul(side).saturating_mul(4)
 }
 
 #[cfg(test)]
@@ -227,13 +231,25 @@ pub struct TilePlan {
     pub frame_bytes: u64,
     /// Whether a single full tile fits the budget (the point of tiling).
     pub tile_fits_budget: bool,
+    /// How many **frame periods** the whole frame would take at one tile per period.
+    ///
+    /// The budget is a per-frame allowance, so this is the lower bound on how long a full
+    /// resolution upload takes - it is not a duration, because no transfer was measured.
+    pub frame_periods_at_one_tile: u64,
 }
 
 /// Plan a square tiling of `frame_edge` pixels so that each full tile fits `budget` bytes.
 ///
-/// Returns `None` when not even a one-pixel tile fits, i.e. the budget is below the size of a
-/// single pixel and no tiling can help.
+/// Returns `None` when there is nothing to plan: a zero-sized frame, or a budget below the size of
+/// a single RGBA8 pixel (4 bytes), where no tiling can help.
+///
+/// The budget is a **per-frame** allowance shared by the whole process, so a plan that needs four
+/// tiles of 4 MiB does **not** fit inside one 4 MiB frame period - it spreads the cost over
+/// several frames. See the module documentation.
 pub fn plan_tiled_upload(frame_edge: u32, budget: u64) -> Option<TilePlan> {
+    if frame_edge == 0 {
+        return None;
+    }
     // Largest edge whose RGBA8 bytes still fit: edge^2 * 4 <= budget.
     let mut tile_edge = (budget / 4).isqrt() as u32;
     if tile_edge == 0 {
@@ -250,6 +266,8 @@ pub fn plan_tiled_upload(frame_edge: u32, budget: u64) -> Option<TilePlan> {
         tile_bytes,
         frame_bytes,
         tile_fits_budget: tile_bytes <= budget,
+        frame_periods_at_one_tile: frame_edge.div_ceil(tile_edge).div_ceil(1).saturating_pow(2)
+            as u64,
     })
 }
 
@@ -335,5 +353,43 @@ mod tiling_tests {
             plan_tiled_upload(APPROVED_EDGE, 4).is_some(),
             "four bytes hold exactly one pixel"
         );
+    }
+}
+
+#[cfg(test)]
+mod bounds_tests {
+    use super::*;
+
+    #[test]
+    fn a_zero_sized_frame_has_no_plan_instead_of_panicking() {
+        assert!(plan_tiled_upload(0, RefreshRate::Hz60.budget_bytes()).is_none());
+        assert!(plan_tiled_upload(0, 4).is_none());
+    }
+
+    #[test]
+    fn a_huge_edge_saturates_instead_of_wrapping_or_panicking() {
+        // u32::MAX squared is about 1.8e19, and times four that exceeds u64::MAX. The function must
+        // report saturation rather than wrapping or panicking, and normal sizes must be exact.
+        let bytes = rgba8_frame_bytes(u32::MAX);
+        assert!(
+            bytes >= u64::from(u32::MAX) * u64::from(u32::MAX),
+            "a saturated figure must not be smaller than the square of the edge"
+        );
+        assert_eq!(rgba8_frame_bytes(2048), 16 * 1024 * 1024);
+        assert_eq!(rgba8_frame_bytes(1), 4);
+    }
+
+    #[test]
+    fn a_full_resolution_upload_spans_several_frame_periods() {
+        // The 4 MiB budget is per frame, so the four tiles need four frame periods - the point the
+        // review asked to make explicit.
+        let plan = plan_tiled_upload(2048, RefreshRate::Hz60.budget_bytes()).expect("plan");
+        assert_eq!(plan.tile_count, 4);
+        assert_eq!(plan.frame_periods_at_one_tile, 4);
+        assert_eq!(plan.frame_bytes, 16 * 1024 * 1024);
+
+        let plan = plan_tiled_upload(2048, RefreshRate::Hz120.budget_bytes()).expect("plan");
+        assert_eq!(plan.tile_count, 9);
+        assert_eq!(plan.frame_periods_at_one_tile, 9);
     }
 }
