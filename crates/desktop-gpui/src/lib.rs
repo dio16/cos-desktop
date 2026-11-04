@@ -6470,6 +6470,44 @@ mod contrast_scope_tests {
     /// Each per-item control is built inside a closure, so these are checked at their construction
     /// sites rather than by an element id. The handler name differs per target, which is what makes
     /// the check meaningful: it must be the target's own activation, not any nearby call.
+    /// Every accessibility activation in the file, paired with the handler it must contain.
+    ///
+    /// Counting calls cannot show that a particular site has one - two flow-node sites share a call
+    /// name - so each accessibility handler is enumerated in source order and checked against the
+    /// activation it is expected to perform.
+    fn accessibility_activations_in_order(source: &str) -> Vec<String> {
+        // The closure body is delimited by its own braces. Searching for the next `.on_click` was
+        // wrong: a handler with no click counterpart swallowed the following element and stole its
+        // activation call, which made six sites look like four.
+        let mut found = Vec::new();
+        let mut from = 0;
+        while let Some(offset) = source[from..].find(".on_a11y_action(AccessibleAction::Click") {
+            let start = from + offset;
+            let Some(open_offset) = source[start..].find('{') else {
+                break;
+            };
+            let mut depth = 0usize;
+            let mut end = None;
+            for (index, ch) in source[start + open_offset..].char_indices() {
+                match ch {
+                    '{' => depth += 1,
+                    '}' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            end = Some(start + open_offset + index + 1);
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            let Some(end) = end else { break };
+            found.push(source[start..end].to_string());
+            from = end;
+        }
+        found
+    }
+
     #[test]
     fn per_item_rows_activate_through_accessibility() {
         let whole = include_str!("lib.rs");
@@ -6477,49 +6515,42 @@ mod contrast_scope_tests {
             .find("\n#[cfg(test)]\nmod ")
             .expect("the first test module marker");
         let source = &whole[..cut];
-        let cases = [
-            ("this.select_flow_node(key.clone(), window, cx);", 2),
-            ("this.select_flow_edge(key.clone(), window, cx);", 1),
-            ("this.select_rail_task(&identity, window, cx);", 1),
+        let activations = accessibility_activations_in_order(source);
+        // Four per-item sites were migrated in this slice; each must perform its own activation.
+        // The two flow-node sites are distinguishable only by position, which is why the order is
+        // asserted rather than a count.
+        let expected = [
+            "this.select_flow_node(key.clone(), window, cx);",
+            "this.select_flow_edge(key.clone(), window, cx);",
+            "this.select_rail_task(&identity, window, cx);",
+            "this.select_flow_node(key.clone(), window, cx);",
         ];
-        for (call, expected) in cases {
-            let found = source.matches(call).count();
-            assert_eq!(
-                found, expected,
-                "{call} should appear {expected} time(s) because it is once per migrated target's \
-                 accessibility handler; found {found}"
+        let per_item: Vec<&String> = activations
+            .iter()
+            .filter(|body| expected.iter().any(|call| body.contains(call)))
+            .collect();
+        assert_eq!(
+            per_item.len(),
+            expected.len(),
+            "expected {} per-item accessibility activations, found {}",
+            expected.len(),
+            per_item.len()
+        );
+        for (body, call) in per_item.iter().zip(expected.iter()) {
+            assert!(
+                body.contains(call),
+                "accessibility activation out of order: expected {call}"
             );
         }
-        // And each of those calls lives inside an accessibility handler, not only inside a click
-        // handler.
-        for (marker, call) in [
-            (
-                ".on_a11y_action(AccessibleAction::Click",
-                "this.select_flow_node(key.clone(), window, cx);",
-            ),
-            (
-                ".on_a11y_action(AccessibleAction::Click",
-                "this.select_flow_edge(key.clone(), window, cx);",
-            ),
-            (
-                ".on_a11y_action(AccessibleAction::Click",
-                "this.select_rail_task(&identity, window, cx);",
-            ),
+        // The widget actions that were migrated in earlier slices must still be there too.
+        for call in [
+            "this.view_candidate(identity.clone(), window, cx);",
+            "this.preview_support(cx);",
+            "this.export_support(cx);",
         ] {
-            let mut from = 0;
-            let mut paired = 0;
-            while let Some(offset) = source[from..].find(marker) {
-                let start = from + offset;
-                let rest = &source[start..];
-                let end = rest.find(".on_click").unwrap_or(rest.len());
-                if rest[..end].contains(call) {
-                    paired += 1;
-                }
-                from = start + marker.len();
-            }
             assert!(
-                paired >= 1,
-                "{call} never appears inside an accessibility handler"
+                activations.iter().any(|body| body.contains(call)),
+                "{call} no longer appears in any accessibility handler"
             );
         }
     }
