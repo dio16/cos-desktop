@@ -266,9 +266,21 @@ pub fn plan_tiled_upload(frame_edge: u32, budget: u64) -> Option<TilePlan> {
         tile_bytes,
         frame_bytes,
         tile_fits_budget: tile_bytes <= budget,
-        frame_periods_at_one_tile: frame_edge.div_ceil(tile_edge).div_ceil(1).saturating_pow(2)
-            as u64,
+        // Computed in u64 so a very large grid does not saturate at the u32 ceiling.
+        frame_periods_at_one_tile: u64::from(tiles_per_axis) * u64::from(tiles_per_axis),
     })
+}
+
+#[test]
+fn the_frame_period_count_matches_the_tile_count_for_large_grids() {
+    // A budget of four bytes makes every pixel its own tile: the two figures must still agree, which
+    // they did not when the count was computed in u32 and saturated.
+    let plan = plan_tiled_upload(65536, 4).expect("one pixel per tile");
+    assert_eq!(plan.tile_count, 65536u64 * 65536);
+    assert_eq!(
+        plan.frame_periods_at_one_tile, plan.tile_count,
+        "the period count must equal the tile count at one tile per period"
+    );
 }
 
 #[cfg(test)]
