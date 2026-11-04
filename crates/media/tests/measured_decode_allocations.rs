@@ -414,6 +414,15 @@ fn a_sixteen_bit_png_is_refused_and_the_refusal_is_not_decode_shaped() {
         Some(MediaError::Unavailable),
         "a 16-bit PNG must be refused as unavailable, not decoded"
     );
+    // `decode_raster_joined` maps a worker panic to `Unavailable` as well, so the joined call alone
+    // cannot distinguish an intended refusal from a crash. Call the synchronous path directly: it
+    // runs on this thread, where a panic would surface as a panic instead of a typed error.
+    let direct = media::decode_raster(&bytes, limits(), &Cancellation::default());
+    assert_eq!(
+        direct.err(),
+        Some(MediaError::Unavailable),
+        "the refusal must come from admission, not from a panic mapped to Unavailable"
+    );
     let needed = u64::from(edge) * u64::from(edge) * 4;
     assert!(
         increment < needed,
