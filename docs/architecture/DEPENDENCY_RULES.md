@@ -27,7 +27,7 @@ The checker's allowlist covers workspace-member edges only; crates.io dependenci
 
 `peak_alloc` 0.3.0 is a **dev-dependency of `media` only**, used by `tests/measured_decode_allocations.rs` to measure the internal allocator peak that §19.119 left at HOLD. It is Apache-2.0/MIT, adds no runtime, TLS or network capability, is absent from the shipped binary and from normal/build graphs, and contains no own-code `unsafe`: the test only declares `#[global_allocator]`, which this workspace permits because the `unsafe impl GlobalAlloc` lives in the reviewed third-party crate, not in our source.
 
-`png` 0.17.16 is a **normal dependency of `media`** added so the row-wise decoder can read one row at a time and check cancellation between rows (§19.234). It is the **same crate and version `image` already pulls in**, so no new crate enters the graph; the direct edge exists only because `image` does not re-export the row reader. It adds no TLS, runtime, network or filesystem capability.
+`png` **0.18.1** is a **normal dependency of `media`** added so the row-wise decoder can read one row at a time and check cancellation between rows (§19.234). That is the same version `image` 0.25.10 resolves to, so this edge introduces no new crate version; the direct edge exists only because `image` does not re-export the row reader. The lock also contains a `png` 0.17.16 copy pulled by another dependency - it is **not** introduced by this edge, and `media` does not link it. No TLS, runtime, network or filesystem capability is added.
 
 ## Prohibitions
 

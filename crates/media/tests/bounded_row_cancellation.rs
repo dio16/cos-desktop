@@ -100,3 +100,73 @@ fn a_non_png_input_is_refused_by_the_row_wise_path() {
         Ok(_) => panic!("the row-wise path is PNG-only"),
     }
 }
+
+/// A greyscale 8-bit PNG: the decoder returns grey (or grey+alpha), not RGBA8, so this checks
+/// the conversion rather than assuming four channels arrive.
+fn png_gray(width: u32, height: u32) -> Vec<u8> {
+    let image =
+        image::GrayImage::from_fn(width, height, |x, y| image::Luma([((x + y) % 256) as u8]));
+    let mut bytes = Cursor::new(Vec::new());
+    DynamicImage::ImageLuma8(image)
+        .write_to(&mut bytes, ImageFormat::Png)
+        .expect("encode an 8-bit grey PNG");
+    bytes.into_inner()
+}
+
+#[test]
+fn a_greyscale_png_is_widened_to_rgba8() {
+    let bytes = png_gray(64, 32);
+    let raster = media::decode_png_rows(&bytes, limits(), &Cancellation::default())
+        .expect("a grey PNG decodes through the row path");
+    assert_eq!(raster.size, PixelSize::new(64, 32).expect("size"));
+    assert_eq!(
+        raster.rgba.len() as u64,
+        raster.size.checked_rgba_bytes().expect("rgba length"),
+        "the buffer must be RGBA8, not grey"
+    );
+    // Every pixel is opaque, and the channels come from the grey sample.
+    for pixel in raster.rgba.as_chunks::<4>().0 {
+        assert_eq!(pixel[3], 0xff, "converted pixels are opaque");
+        assert_eq!(pixel[0], pixel[1], "grey is replicated across R, G and B");
+        assert_eq!(pixel[1], pixel[2], "grey is replicated across R, G and B");
+    }
+    // And the value really came from the image, not from a zero fill.
+    assert!(
+        raster
+            .rgba
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .any(|pixel| pixel[0] != 0),
+        "a converted raster must carry the image's samples"
+    );
+}
+
+#[test]
+fn an_animated_png_is_unavailable_through_the_row_path_too() {
+    // A still PNG with an `acTL` chunk spliced in: the existing still-image contract refuses
+    // this as `Unavailable`, and the row path must apply the same rule rather than returning
+    // the first frame of an animation.
+    let mut bytes = png_rgb(32, 32);
+    let actl_chunk = {
+        let mut chunk = Vec::new();
+        chunk.extend_from_slice(&8u32.to_be_bytes());
+        chunk.extend_from_slice(b"acTL");
+        chunk.extend_from_slice(&1u32.to_be_bytes());
+        chunk.extend_from_slice(&0u32.to_be_bytes());
+        chunk.extend_from_slice(&0u32.to_be_bytes());
+        // CRC is not validated by the still-image scan, which only looks for the chunk name.
+        chunk.extend_from_slice(&0u32.to_be_bytes());
+        chunk
+    };
+    // Insert after the 8-byte signature.
+    let mut spliced = Vec::with_capacity(bytes.len() + actl_chunk.len());
+    spliced.extend_from_slice(&bytes[..8]);
+    spliced.extend_from_slice(&actl_chunk);
+    spliced.extend_from_slice(&bytes[8..]);
+    bytes = spliced;
+    match media::decode_png_rows(&bytes, limits(), &Cancellation::default()) {
+        Err(error) => assert_eq!(error, MediaError::Unavailable),
+        Ok(_) => panic!("an animated PNG must not produce a still raster"),
+    }
+}

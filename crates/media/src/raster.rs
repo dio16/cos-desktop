@@ -301,6 +301,9 @@ pub fn decode_png_rows_with_hook(
     if AcceptedFormat::from_bytes(bytes)? != AcceptedFormat::Png {
         return Err(MediaError::UnsupportedContainer);
     }
+    // Same input contract as `decode_raster`: an animated PNG is `Unavailable`, never a still
+    // frame quietly taken from an animation.
+    ensure_still(bytes, AcceptedFormat::Png)?;
     let size = {
         let decoder = png::Decoder::new(Cursor::new(bytes));
         let reader = decoder
@@ -325,6 +328,16 @@ pub fn decode_png_rows_with_hook(
     let mut reader = decoder
         .read_info()
         .map_err(|_| MediaError::InvalidMetadata)?;
+    // `EXPAND | ALPHA` widens to 8-bit and adds an alpha channel, but a grey image becomes
+    // grey+alpha, not RGBA8. Read the actual output layout and convert per row, rather than
+    // assuming four channels and zero-filling whatever does not arrive.
+    let channels = match reader.output_color_type() {
+        (png::ColorType::Rgba, png::BitDepth::Eight) => 4usize,
+        (png::ColorType::Rgb, png::BitDepth::Eight) => 3,
+        (png::ColorType::GrayscaleAlpha, png::BitDepth::Eight) => 2,
+        (png::ColorType::Grayscale, png::BitDepth::Eight) => 1,
+        _ => return Err(MediaError::UnsupportedContainer),
+    };
     let mut rgba = vec![0u8; decoded_bytes as usize];
     let mut offset = 0usize;
     let mut rows: u32 = 0;
@@ -333,11 +346,31 @@ pub fn decode_png_rows_with_hook(
         let row = reader.next_row().map_err(|_| MediaError::InvalidMetadata)?;
         let Some(row) = row else { break };
         let data = row.data();
-        let end = offset.checked_add(data.len()).ok_or(MediaError::TooLarge)?;
+        let expect = channels
+            .checked_mul(size.width() as usize)
+            .ok_or(MediaError::TooLarge)?;
+        if data.len() != expect {
+            return Err(MediaError::InvalidMetadata);
+        }
+        let end = offset
+            .checked_add(4 * (size.width() as usize))
+            .ok_or(MediaError::TooLarge)?;
         if end > rgba.len() {
             return Err(MediaError::TooLarge);
         }
-        rgba[offset..end].copy_from_slice(data);
+        for (index, pixel) in data.chunks_exact(channels).enumerate() {
+            let target = offset + index * 4;
+            let (r, g, b, a) = match channels {
+                4 => (pixel[0], pixel[1], pixel[2], pixel[3]),
+                3 => (pixel[0], pixel[1], pixel[2], 0xff),
+                2 => (pixel[0], pixel[0], pixel[0], pixel[1]),
+                _ => (pixel[0], pixel[0], pixel[0], 0xff),
+            };
+            rgba[target] = r;
+            rgba[target + 1] = g;
+            rgba[target + 2] = b;
+            rgba[target + 3] = a;
+        }
         offset = end;
         rows += 1;
         on_row(rows);

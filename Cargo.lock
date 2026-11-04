@@ -2870,7 +2870,7 @@ dependencies = [
  "desktop-protocol",
  "image",
  "peak_alloc",
- "png 0.17.16",
+ "png 0.18.1",
  "sha2",
 ]
 
