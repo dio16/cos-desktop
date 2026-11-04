@@ -69,10 +69,16 @@ fn key(tag: u8) -> RepresentationKey {
 }
 
 fn identity(tag: u8, generation: u64) -> UploadIdentity {
+    identity_for(tag, generation, &verified_approved())
+}
+
+/// An identity whose digest matches the given raster, so only the fields under test vary.
+fn identity_for(tag: u8, generation: u64, verified: &media::VerifiedRaster) -> UploadIdentity {
     UploadIdentity {
         key: key(tag),
         source_revision: u64::from(tag),
         device_generation: generation,
+        content_digest: verified.content_digest(),
     }
 }
 
@@ -737,18 +743,21 @@ fn a_quarantined_transfer_keeps_charging_staging_and_in_flight() {
 }
 
 #[test]
-fn an_abandoned_transfer_hands_its_payload_to_the_pool() {
-    // Dropping mid-transfer must not free the CPU bytes a device transfer may still be reading.
+fn an_abandoned_transfer_keeps_its_payload_until_termination_is_confirmed() {
+    // The payload must not be takeable: a caller holding the bytes could drop them while a
+    // transfer still reads them. It is held with its identity and freed only by an explicit
+    // termination assertion.
     let pool = UploadPool::new(UploadBudget {
         staging_bytes: FRAME_BYTES * 2,
         in_flight_bytes: FRAME_BYTES * 2,
         resident_bytes: FRAME_BYTES * 2,
     });
     let verified = verified_approved();
+    let identity_used = identity(42, 1);
     {
         let mut admitted = admit_upload(
             &verified,
-            identity(42, 1),
+            identity_used.clone(),
             1,
             &pool,
             &Cancellation::default(),
@@ -756,15 +765,44 @@ fn an_abandoned_transfer_hands_its_payload_to_the_pool() {
         .expect("admitted");
         admitted.begin_upload().expect("begin");
     }
-    let orphans = pool.take_orphaned_payloads();
-    assert_eq!(orphans.len(), 1, "the payload outlives the admission");
+    let held = pool.orphaned();
+    assert_eq!(held.len(), 1, "the payload is held, not handed out");
+    assert_eq!(held[0].bytes, FRAME_BYTES);
+    assert_eq!(held[0].device_generation, 1);
+    assert_eq!(held[0].key, identity_used.key);
+
+    // Termination for a different identity changes nothing.
+    let mut wrong = identity_used.clone();
+    wrong.source_revision += 1;
+    assert!(pool.confirm_transfer_terminated(&wrong).is_err());
+    assert_eq!(pool.orphaned().len(), 1);
+
+    // Confirming the right one frees the payload and every quarantined category.
+    pool.confirm_transfer_terminated(&identity_used)
+        .expect("termination confirmed");
+    assert!(pool.orphaned().is_empty());
+    let usage = pool.usage();
     assert_eq!(
-        orphans[0].rgba.len() as u64,
-        FRAME_BYTES,
-        "and it is the same frame"
+        (
+            usage.staging_stuck,
+            usage.in_flight_stuck,
+            usage.resident_stuck
+        ),
+        (0, 0, 0),
+        "confirming termination releases all three categories"
     );
-    assert!(
-        pool.take_orphaned_payloads().is_empty(),
-        "taking them clears the pool's copy"
-    );
+}
+
+#[test]
+fn an_identity_whose_digest_does_not_match_the_pixels_is_refused() {
+    let pool = UploadPool::new(one_frame_budget());
+    let verified = verified_approved();
+    let mut wrong = identity(50, 1);
+    wrong.content_digest[0] ^= 0xff;
+    match admit_upload(&verified, wrong, 1, &pool, &Cancellation::default()) {
+        Err(UploadRefusal::WrongLayout) => {}
+        other => panic!("expected a digest mismatch to be refused, got {other:?}"),
+    }
+    let usage = pool.usage();
+    assert_eq!((usage.staging, usage.resident), (0, 0));
 }

@@ -43,6 +43,7 @@ pub enum SourceClass {
 pub struct VerifiedRaster {
     raster: DecodedRaster,
     class: SourceClass,
+    content_digest: [u8; 32],
 }
 
 impl VerifiedRaster {
@@ -54,6 +55,10 @@ impl VerifiedRaster {
     }
     pub fn size(&self) -> PixelSize {
         self.raster.size
+    }
+    /// SHA-256 of the decoded bytes, computed once at decode time.
+    pub fn content_digest(&self) -> [u8; 32] {
+        self.content_digest
     }
 }
 
@@ -104,9 +109,11 @@ pub fn decode_for_upload(
     if !approved {
         return Err(MediaError::UnsupportedContainer);
     }
+    let content_digest = digest_of(&raster.rgba);
     Ok(VerifiedRaster {
         raster,
         class: SourceClass::StillPng8Rgb2048,
+        content_digest,
     })
 }
 
@@ -116,6 +123,9 @@ pub struct UploadIdentity {
     pub key: RepresentationKey,
     pub source_revision: u64,
     pub device_generation: u64,
+    /// SHA-256 of the decoded RGBA8 bytes. Requiring it here is what ties the identity to the
+    /// actual pixels: a key alone could describe any raster of the same size.
+    pub content_digest: [u8; 32],
 }
 
 /// The three budgets, owned by the pool, kept separate because they bound different resources.
@@ -170,13 +180,30 @@ struct PoolState {
     staging_stuck: u64,
     in_flight_stuck: u64,
     resident_stuck: u64,
-    /// CPU payloads whose transfer was abandoned mid-flight. They are moved here rather than
-    /// dropped, so bytes a future asynchronous uploader may still read are not freed early.
-    orphaned_payloads: Vec<DecodedRaster>,
+    /// CPU payloads whose transfer was abandoned mid-flight, with the identity and generation they
+    /// belong to. A payload is only released by an explicit
+    /// [`UploadPool::confirm_transfer_terminated`] for that identity, never by a caller taking the
+    /// bytes away.
+    orphaned_payloads: Vec<OrphanedTransfer>,
     resident_keys: Vec<RepresentationKey>,
     /// Keys whose resident bytes are quarantined. Reuse is refused until a safe release is
     /// asserted, so the same representation cannot be admitted twice on the device.
     unreclaimed_keys: Vec<RepresentationKey>,
+}
+
+/// A payload held for an abandoned transfer, kept with the identity it belongs to.
+#[derive(Debug)]
+struct OrphanedTransfer {
+    identity: UploadIdentity,
+    raster: DecodedRaster,
+}
+
+/// Read-only description of what is held for abandoned transfers.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OrphanedSummary {
+    pub key: RepresentationKey,
+    pub device_generation: u64,
+    pub bytes: u64,
 }
 
 /// One snapshot of the pool, for reporting and tests.
@@ -227,13 +254,53 @@ impl UploadPool {
         }
     }
 
-    /// Payloads whose transfer was abandoned mid-flight and which nobody has claimed yet.
+    /// What is currently held for abandoned transfers. Read-only: there is no call that hands the
+    /// bytes out, because a caller could drop them while a transfer still reads them.
+    pub fn orphaned(&self) -> Vec<OrphanedSummary> {
+        let state = self.state.lock().expect("pool state");
+        state
+            .orphaned_payloads
+            .iter()
+            .map(|held| OrphanedSummary {
+                key: held.identity.key.clone(),
+                device_generation: held.identity.device_generation,
+                bytes: held.raster.rgba.len() as u64,
+            })
+            .collect()
+    }
+
+    /// Assert that the transfer for this identity has terminated, releasing the payload and the
+    /// quarantined bytes for it.
     ///
-    /// A future asynchronous uploader must take these before their bytes are released, which is why
-    /// an abandoned transfer moves the payload here instead of dropping it.
-    pub fn take_orphaned_payloads(&self) -> Vec<DecodedRaster> {
+    /// This is the only way an abandoned payload is freed. Without a GPU it is the caller's
+    /// assertion, not a measurement, and the module says so rather than pretending to confirm it.
+    pub fn confirm_transfer_terminated(
+        &self,
+        identity: &UploadIdentity,
+    ) -> Result<(), UploadRefusal> {
         let mut state = self.state.lock().expect("pool state");
-        std::mem::take(&mut state.orphaned_payloads)
+        let before = state.orphaned_payloads.len();
+        let mut released_bytes = None;
+        state.orphaned_payloads.retain(|held| {
+            if held.identity == *identity {
+                released_bytes = Some(held.raster.rgba.len() as u64);
+                false
+            } else {
+                true
+            }
+        });
+        if state.orphaned_payloads.len() == before {
+            return Err(UploadRefusal::StageViolation);
+        }
+        if let Some(bytes) = released_bytes {
+            state.staging_stuck = state.staging_stuck.saturating_sub(bytes);
+            state.in_flight_stuck = state.in_flight_stuck.saturating_sub(bytes);
+            state.resident_stuck = state.resident_stuck.saturating_sub(bytes);
+        }
+        state
+            .unreclaimed_keys
+            .retain(|entry| *entry != identity.key);
+        Ok(())
     }
 
     /// Whether any per-resource quarantine is non-empty.
@@ -386,8 +453,12 @@ impl Drop for AdmittedUpload {
             UploadStage::Released => {}
         });
         if let Some(raster) = orphan {
-            self.pool
-                .with_state(|state| state.orphaned_payloads.push(raster));
+            let identity = self.identity.clone();
+            self.pool.with_state(|state| {
+                state
+                    .orphaned_payloads
+                    .push(OrphanedTransfer { identity, raster })
+            });
         }
     }
 }
@@ -428,6 +499,9 @@ pub fn admit_upload(
     // The identity must describe this raster: a key whose size disagrees with the pixels would let
     // a caller label one representation as another.
     if identity.key.size != verified.raster.size {
+        return Err(UploadRefusal::WrongLayout);
+    }
+    if identity.content_digest != verified.content_digest {
         return Err(UploadRefusal::WrongLayout);
     }
     match revision_of(&identity.key) {
@@ -489,6 +563,17 @@ fn revision_of(key: &RepresentationKey) -> Option<u64> {
         RepresentationSource::Local { revision, .. } => Some(*revision),
         RepresentationSource::Artifact { .. } => None,
     }
+}
+
+/// SHA-256 of RGBA8 bytes, so an identity can be tied to the pixels it describes.
+fn digest_of(bytes: &[u8]) -> [u8; 32] {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    let digest = hasher.finalize();
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&digest);
+    out
 }
 
 /// Map a refusal onto the existing error vocabulary, for callers that report one type.
