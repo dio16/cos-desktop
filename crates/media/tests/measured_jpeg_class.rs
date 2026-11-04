@@ -14,7 +14,7 @@
 //!
 //! **Verified here:** the class ceiling for the same geometry, complete-raster
 //! decoding for JPEG, static WebP and GIF, cancellation for JPEG, the dimension-edge
-//! refusal for JPEG and GIF, the byte-budget refusal for WebP and GIF, and the
+//! refusal for JPEG and GIF, the byte-budget refusal **for WebP only**, and the
 //! truncated-input refusal for JPEG.
 //!
 //! **Not claimed here:** Working Set peak for these classes (that measurement is the
