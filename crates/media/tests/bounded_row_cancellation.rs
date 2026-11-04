@@ -165,7 +165,8 @@ fn with_actl(png: &[u8]) -> Vec<u8> {
     payload.extend_from_slice(b"acTL");
     payload.extend_from_slice(&1u32.to_be_bytes()); // num_frames
     payload.extend_from_slice(&0u32.to_be_bytes()); // num_plays: infinite
-    out.extend_from_slice(&12u32.to_be_bytes()); // chunk length is the data only
+    // Chunk length counts the data only: acTL carries num_frames and num_plays, 8 bytes.
+    out.extend_from_slice(&8u32.to_be_bytes());
     out.extend_from_slice(&payload);
     let crc = crc32(&payload);
     out.extend_from_slice(&crc.to_be_bytes());
