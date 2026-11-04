@@ -4647,3 +4647,15 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **One observation that is deliberately not claimed as a finding:** the PNG figure is now **17.2 MB**, while §19.119 recorded **29.4 MB** for the same class. The plausible explanation is §19.240's wiring of the **row decoder** into the product path, which avoids a second full-size buffer. That is a comparison across **different commits**, not a controlled experiment, so it is recorded as an observation with its plausible cause - **not** as a measured improvement.
 - **What this does not establish:** the JPEG **cancellation** behaviour (still uninterruptible), **WebP/GIF counts** (not re-measured here), other bit depths and sizes, and any GPU or native behaviour. The MP-IMG2 table gains a measured JPEG peak and a measured JPEG refusal shape; **MP-IMG2 overall remains not complete**, and MP-RT1 as a whole, MP-RT2 and product acceptance stay **NOT_RUN**.
 - **Verified:** `cargo test -p media --test measured_decode_allocations` 4 passed; workspace clippy clean; fmt clean; `cargo test --locked --workspace` all 44 binaries green.
+
+### 19.252 MP-IMG2: WebP and GIF measured, and one gap that cannot be filled (2026-11-05)
+
+- **Why:** §19.251 measured the JPEG peak and left WebP and GIF at `NOT_VERIFIED`. This slice measures them the same way.
+- **Measured (`measured_decode_allocations.rs`, 1024×1024, peak increment above baseline):**
+  - **WebP: 7,342,044 B**, against the ceiling of **9,437,184 B** for that size - inside it, **asserted**.
+  - **GIF: 5,281,574 B**, also inside the same ceiling and asserted.
+  - These are 1024×1024 rather than 2048×2048 because the ceilings scale with area and the encoded fixtures are much larger for these containers; the figure is per-class, not comparable to the 2048 row.
+- **GIF refusals** at 20,000×1 / ×4 / ×16: **9,142 B in all three** - flat, and far below the 1,280,000 B of RGBA8 the largest refused area would need. Both the absolute and the relative growth bound are asserted, as for PNG and JPEG.
+- **A gap that was found and is recorded rather than worked around:** no **comparable WebP refusal fixture** can be built here. The refusal these tests exercise is a **dimension** one (the 20,000-wide shape exceeds `max_dimension`, which sits between 16,000 and 20,000), while WebP's own encoder caps a dimension at **16,383** and the 16,000-wide shapes that it does accept **decode instead of being refused**. So WebP has a measured peak and **no** measured refusal shape; that asymmetry is stated here instead of being hidden behind a differently-shaped case.
+- **Not established:** cancellation for any of these classes (still uninterruptible), other bit depths and sizes, GPU or native behaviour. **MP-IMG2 is still not complete**, and MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p media --test measured_decode_allocations` 6 passed; workspace clippy clean; fmt clean; `cargo test --locked --workspace` all 44 binaries green.

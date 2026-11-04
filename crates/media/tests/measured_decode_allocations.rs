@@ -232,3 +232,93 @@ fn jpeg_refusal_allocation_does_not_grow_with_the_refused_area() {
         "JPEG refusal cost grew with the refused area: {increments:?}"
     );
 }
+
+fn encoded_rgb(width: u32, height: u32, format: image::ImageFormat) -> Vec<u8> {
+    let image = image::RgbImage::from_fn(width, height, |x, y| {
+        image::Rgb([(x % 251) as u8, (y % 241) as u8, 90])
+    });
+    let mut bytes = std::io::Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgb8(image)
+        .write_to(&mut bytes, format)
+        .expect("encode the requested class");
+    bytes.into_inner()
+}
+
+#[test]
+fn the_webp_and_gif_peaks_are_measured_against_the_same_ceiling() {
+    let _guard = test_guard();
+    // The plan's table still calls these classes NOT_VERIFIED. Measure them at 1024x1024: WebP's
+    // lossless encoder and GIF's palette both grow with area, and 1024 keeps the encoded fixtures
+    // small enough to stay well inside the scratch ceiling.
+    let edge = 1024u32;
+    let size = PixelSize::new(edge, edge).expect("size");
+    let ceiling = limits().peak_rgba8_bytes(size).expect("ceiling");
+    for format in [image::ImageFormat::WebP, image::ImageFormat::Gif] {
+        let bytes = encoded_rgb(edge, edge, format);
+        assert!(
+            bytes.len() as u64 <= limits().max_scratch_bytes,
+            "{format:?}: the fixture must not itself be the reason for a refusal"
+        );
+        let mut raster = None;
+        let increment = peak_increment_during(|| {
+            raster = Some(
+                decode_raster_joined(&bytes, limits(), &Cancellation::default())
+                    .unwrap_or_else(|error| panic!("{format:?} must decode, got {error:?}")),
+            );
+        });
+        drop(raster);
+        eprintln!(
+            "{edge}x{edge} {format:?} decode increment above baseline: {increment} B \
+             (ceiling {ceiling} B, encoded {} B)",
+            bytes.len()
+        );
+        assert!(
+            increment > 0,
+            "{format:?}: the counter observed nothing, so this measurement proves nothing"
+        );
+        assert!(
+            increment <= ceiling,
+            "{format:?}: decode increment {increment} B exceeded the declared ceiling {ceiling} B"
+        );
+    }
+}
+
+#[test]
+fn gif_refusals_are_flat_and_not_decode_shaped() {
+    let _guard = test_guard();
+    // GIF keeps the 20,000-wide shape used for PNG and JPEG, whose refusal is a dimension one: the
+    // 16,000-wide extremes that the WebP encoder also accepts decode rather than being refused, so
+    // no comparable WebP refusal fixture can be built here. That gap is recorded rather than
+    // papered over with a different kind of case.
+    let format = image::ImageFormat::Gif;
+    let width = 20_000u32;
+    let mut increments = Vec::new();
+    for height in [1u32, 4, 16] {
+        let bytes = encoded_rgb(width, height, format);
+        let mut observed = None;
+        let increment = peak_increment_during(|| {
+            observed = Some(decode_raster_joined(
+                &bytes,
+                limits(),
+                &Cancellation::default(),
+            ));
+        });
+        eprintln!("refused {format:?} {width}x{height}: increment {increment} B");
+        assert_eq!(
+            observed.expect("a result").err(),
+            Some(MediaError::TooLarge),
+            "{format:?} {width}x{height} must be refused for size"
+        );
+        increments.push(increment);
+    }
+    let largest = *increments.iter().max().expect("three cases");
+    let smallest = *increments.iter().min().expect("three cases");
+    assert!(
+        largest < 1_280_000,
+        "{format:?}: the largest refusal allocated {largest} B, which is decode-shaped"
+    );
+    assert!(
+        largest <= smallest.saturating_mul(4) + 64 * 1024,
+        "{format:?}: refusal cost grew with the refused area: {increments:?}"
+    );
+}
