@@ -24,7 +24,10 @@ pub use key::{
     DecodePolicy, LocalId, LocalProvenance, Orientation, PixelSize, RepresentationKey,
     RepresentationSource,
 };
-pub use raster::{AcceptedFormat, DecodedRaster, decode_raster, decode_raster_joined};
+pub use raster::{
+    AcceptedFormat, DecodedRaster, decode_png_rows, decode_png_rows_with_hook, decode_raster,
+    decode_raster_joined,
+};
 
 /// Safe failure categories; no private paths, descriptor tokens or payload bodies.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

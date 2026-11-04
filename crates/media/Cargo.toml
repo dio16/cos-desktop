@@ -9,6 +9,9 @@ description = "Bounded local encoded media and representation identity; no Runti
 [dependencies]
 desktop-protocol = { path = "../desktop-protocol" }
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "webp", "gif"] }
+# Direct use of the PNG row reader for bounded, cancellable decoding (MP-IMG2).
+# Same crate and version that `image` already pulls in, so nothing new enters the graph.
+png = "0.17.16"
 sha2 = "0.10.9"
 
 [lints]

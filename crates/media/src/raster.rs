@@ -269,6 +269,96 @@ fn ensure_still_gif(bytes: &[u8]) -> Result<(), MediaError> {
 /// return. Bounded cancellation/interruption of a running decoder is `NOT_VERIFIED`
 /// (plan §19.118) and not claimed here. On `Cancelled` (or any refusal) no raster is
 /// returned, so a caller cannot publish a partial artifact from this path.
+/// Decode a PNG **one row at a time**, honouring `cancel` between rows.
+///
+/// This is the bounded-cancellation path for a *running* decode: the generic backend
+/// (`decode_raster`) hands the whole image to `image` in one uninterruptible call, so a
+/// cancellation can only be observed before or after it. Here the caller's cancellation is
+/// checked between rows, which lets a cancelled decode stop early instead of finishing work
+/// nobody will use.
+///
+/// Scope: **PNG only**, and only through this entry point. Other containers still use the
+/// uninterruptible backend and remain HOLD for bounded cancellation. Admission and the
+/// declared ceiling are the same as `decode_raster`'s; a refused input never starts the
+/// row loop, and a cancelled one publishes nothing.
+pub fn decode_png_rows(
+    bytes: &[u8],
+    limits: DecodeLimits,
+    cancel: &Cancellation,
+) -> Result<DecodedRaster, MediaError> {
+    let mut hook = |_rows: u32| {};
+    decode_png_rows_with_hook(bytes, limits, cancel, &mut hook)
+}
+
+/// Test seam: observes the row count and can cancel from inside the loop.
+pub fn decode_png_rows_with_hook(
+    bytes: &[u8],
+    limits: DecodeLimits,
+    cancel: &Cancellation,
+    on_row: &mut dyn FnMut(u32),
+) -> Result<DecodedRaster, MediaError> {
+    cancel.check()?;
+    if AcceptedFormat::from_bytes(bytes)? != AcceptedFormat::Png {
+        return Err(MediaError::UnsupportedContainer);
+    }
+    let size = {
+        let decoder = png::Decoder::new(Cursor::new(bytes));
+        let reader = decoder
+            .read_info()
+            .map_err(|_| MediaError::InvalidMetadata)?;
+        let info = reader.info();
+        PixelSize::new(info.width, info.height)?
+    };
+    let admission = admit_raster(
+        size,
+        source_bit_depth(bytes, AcceptedFormat::Png)?,
+        limits,
+        cancel,
+    )?;
+    let decoded_bytes = admission.decoded_bytes;
+    let _reservation = crate::decode::reserve_in_flight(admission.peak_bytes)?;
+
+    let mut decoder = png::Decoder::new(Cursor::new(bytes));
+    // Expand palette/low-bit-depth input and add an alpha channel so every row arrives as
+    // RGBA8, the format this adapter returns.
+    decoder.set_transformations(png::Transformations::EXPAND | png::Transformations::ALPHA);
+    let mut reader = decoder
+        .read_info()
+        .map_err(|_| MediaError::InvalidMetadata)?;
+    let mut rgba = vec![0u8; decoded_bytes as usize];
+    let mut offset = 0usize;
+    let mut rows: u32 = 0;
+    loop {
+        cancel.check()?;
+        let row = reader.next_row().map_err(|_| MediaError::InvalidMetadata)?;
+        let Some(row) = row else { break };
+        let data = row.data();
+        let end = offset.checked_add(data.len()).ok_or(MediaError::TooLarge)?;
+        if end > rgba.len() {
+            return Err(MediaError::TooLarge);
+        }
+        rgba[offset..end].copy_from_slice(data);
+        offset = end;
+        rows += 1;
+        on_row(rows);
+    }
+    cancel.check()?;
+    if rows != size.height() {
+        return Err(MediaError::InvalidMetadata);
+    }
+    let expected = size
+        .checked_rgba_bytes()
+        .map_err(|_| MediaError::TooLarge)?;
+    if rgba.len() as u64 != expected || rgba.len() as u64 != decoded_bytes {
+        return Err(MediaError::TooLarge);
+    }
+    Ok(DecodedRaster {
+        size,
+        format: AcceptedFormat::Png,
+        rgba,
+    })
+}
+
 pub fn decode_raster_joined(
     bytes: &[u8],
     limits: DecodeLimits,
