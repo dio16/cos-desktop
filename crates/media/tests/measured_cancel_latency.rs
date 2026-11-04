@@ -118,13 +118,13 @@ fn cancellation_from_another_thread_mid_decode_returns_promptly() {
     let helper_rows = Arc::clone(&rows_at_flag);
     let helper = std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(5));
-        let mut rows = helper_progress.lock().expect("progress");
+        let rows = helper_progress.lock().expect("progress");
         // Snapshot first, then set the flag, both while holding the lock the loop needs to count
         // its next row: no row can be counted between these two statements.
         helper_rows.store(*rows, Ordering::SeqCst);
         *helper_stamp.lock().expect("stamp") = Some(Instant::now());
         helper_cancel.cancel();
-        *rows = *rows;
+        drop(rows);
     });
 
     let loop_progress = Arc::clone(&progress);
