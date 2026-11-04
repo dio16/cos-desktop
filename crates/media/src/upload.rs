@@ -66,6 +66,8 @@ const PNG_BIT_DEPTH_OFFSET: usize = 24;
 const PNG_COLOUR_TYPE_OFFSET: usize = 25;
 /// Byte offset of the interlace method, one past the colour type.
 const PNG_INTERLACE_OFFSET: usize = 28;
+/// The single approved edge length.
+const APPROVED_EDGE: u32 = 2048;
 
 /// Decode an encoded image **for upload**, producing the class proof only if the source really was
 /// the approved class.
@@ -87,6 +89,13 @@ pub fn decode_for_upload(
         || bytes[PNG_COLOUR_TYPE_OFFSET] != PNG_COLOUR_TYPE_RGB
         || bytes[PNG_INTERLACE_OFFSET] != 0
     {
+        return Err(MediaError::UnsupportedContainer);
+    }
+    // Dimensions too: an out-of-class image must be refused before the decoder expands it, not
+    // after paying for a full raster.
+    let width = u32::from_be_bytes([bytes[16], bytes[17], bytes[18], bytes[19]]);
+    let height = u32::from_be_bytes([bytes[20], bytes[21], bytes[22], bytes[23]]);
+    if width != APPROVED_EDGE || height != APPROVED_EDGE {
         return Err(MediaError::UnsupportedContainer);
     }
     let raster = decode_raster(bytes, limits, cancel)?;
@@ -264,11 +273,11 @@ impl AdmittedUpload {
     ///
     /// The two cases are deliberately separate in effect: a `Staged` admission never transferred
     /// anything, so all three counters go back; a `Resident` one is the caller asserting the device
-    /// copy is gone. Releasing mid-transfer is refused - the in-flight bytes are still in use, and
-    /// handing them to another transfer would let the device hold more than its budget.
-    pub fn release(mut self) -> Result<(), UploadRefusal> {
+    /// copy is gone. Releasing mid-transfer is refused **without consuming the admission** - the
+    /// caller keeps ownership, so in-flight bytes cannot be handed to another transfer by a failed
+    /// call followed by a drop.
+    pub fn release(&mut self) -> Result<(), UploadRefusal> {
         if self.stage == UploadStage::Uploading {
-            // Leave the reservation in place; dropping without release will quarantine it.
             return Err(UploadRefusal::StageViolation);
         }
         let bytes = self.bytes;
@@ -293,16 +302,35 @@ impl Drop for AdmittedUpload {
         }
         let bytes = self.bytes;
         let key = self.identity.key.clone();
-        self.pool.with_state(|state| {
-            // The CPU side is genuinely gone, so staging and in-flight can be given back.
-            state.staging = state.staging.saturating_sub(bytes);
-            state.in_flight = state.in_flight.saturating_sub(bytes);
-            // Resident bytes are *not* reported as freed: nothing asserted the device copy is gone.
-            state.resident = state.resident.saturating_sub(bytes);
-            state.unreclaimed = state.unreclaimed.saturating_add(bytes);
-            state.resident_keys.retain(|entry| *entry != key);
-            if !state.unreclaimed_keys.contains(&key) {
-                state.unreclaimed_keys.push(key);
+        let stage = self.stage;
+        self.pool.with_state(|state| match stage {
+            // Never transferred: the CPU side is gone and nothing reached the device, so all three
+            // counters can be given back without quarantining anything.
+            UploadStage::Staged => {
+                state.staging = state.staging.saturating_sub(bytes);
+                state.in_flight = state.in_flight.saturating_sub(bytes);
+                state.resident = state.resident.saturating_sub(bytes);
+                state.resident_keys.retain(|entry| *entry != key);
+            }
+            // Mid-transfer: the in-flight bytes are still in use, so nothing is reported as
+            // released. All three are quarantined and the key is blocked.
+            UploadStage::Uploading => {
+                state.unreclaimed = state.unreclaimed.saturating_add(bytes * 3);
+                state.resident_keys.retain(|entry| *entry != key);
+                if !state.unreclaimed_keys.contains(&key) {
+                    state.unreclaimed_keys.push(key);
+                }
+            }
+            // Resident: the CPU copy is gone, but nothing asserted the device copy was released.
+            UploadStage::Resident => {
+                state.staging = state.staging.saturating_sub(bytes);
+                state.in_flight = state.in_flight.saturating_sub(bytes);
+                state.resident = state.resident.saturating_sub(bytes);
+                state.unreclaimed = state.unreclaimed.saturating_add(bytes);
+                state.resident_keys.retain(|entry| *entry != key);
+                if !state.unreclaimed_keys.contains(&key) {
+                    state.unreclaimed_keys.push(key);
+                }
             }
         });
     }

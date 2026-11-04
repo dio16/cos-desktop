@@ -119,7 +119,7 @@ fn only_the_approved_class_produces_a_verified_raster() {
 fn the_approved_raster_is_admitted_and_holds_its_payload() {
     let pool = UploadPool::new(one_frame_budget());
     let verified = verified_approved();
-    let admitted = admit_upload(
+    let mut admitted = admit_upload(
         &verified,
         identity(1, 4),
         4,
@@ -307,7 +307,7 @@ fn concurrent_admissions_of_different_identities_cannot_exceed_the_budget() {
             // Wait for every attempt before the main thread releases the reservations.
             barrier.wait();
             released.wait();
-            if let Ok(admission) = outcome {
+            if let Ok(mut admission) = outcome {
                 admission.release().expect("release");
             }
         }));
@@ -349,7 +349,7 @@ fn duplicate_and_reuse_of_the_same_key() {
         resident_bytes: FRAME_BYTES * 2,
     });
     let verified = verified_approved();
-    let first = admit_upload(
+    let mut first = admit_upload(
         &verified,
         identity(6, 1),
         1,
@@ -369,7 +369,7 @@ fn duplicate_and_reuse_of_the_same_key() {
     }
     first.release().expect("release");
     // After release the same key is admitted again: reuse is allowed, duplication is not.
-    let second = admit_upload(
+    let mut second = admit_upload(
         &verified,
         identity(6, 1),
         1,
@@ -530,4 +530,72 @@ fn crc32(bytes: &[u8]) -> u32 {
         }
     }
     !crc
+}
+
+#[test]
+fn a_staged_admission_releases_normally_but_an_uploading_one_is_quarantined() {
+    // A staged admission never transferred anything, so dropping it must give the capacity back
+    // rather than quarantining it forever.
+    let pool = UploadPool::new(one_frame_budget());
+    let verified = verified_approved();
+    {
+        let _admitted = admit_upload(
+            &verified,
+            identity(20, 1),
+            1,
+            &pool,
+            &Cancellation::default(),
+        )
+        .expect("admitted");
+    }
+    let usage = pool.usage();
+    assert_eq!(
+        (
+            usage.staging,
+            usage.in_flight,
+            usage.resident,
+            usage.unreclaimed
+        ),
+        (0, 0, 0, 0),
+        "a staged admission that is dropped early frees everything"
+    );
+
+    // Mid-transfer the bytes are still in use, so nothing may be reported as released.
+    let pool = UploadPool::new(UploadBudget {
+        staging_bytes: FRAME_BYTES * 4,
+        in_flight_bytes: FRAME_BYTES * 4,
+        resident_bytes: FRAME_BYTES * 4,
+    });
+    {
+        let mut admitted = admit_upload(
+            &verified,
+            identity(21, 1),
+            1,
+            &pool,
+            &Cancellation::default(),
+        )
+        .expect("admitted");
+        admitted.begin_upload().expect("begin");
+        // Release during upload is refused, and the caller keeps ownership until it drops.
+        assert!(
+            admitted.release().is_err(),
+            "release during upload is refused"
+        );
+    }
+    let usage = pool.usage();
+    assert_eq!(
+        usage.unreclaimed,
+        FRAME_BYTES * 3,
+        "an uploading admission quarantines its whole reservation when dropped"
+    );
+}
+
+#[test]
+fn an_out_of_class_size_is_refused_from_the_header() {
+    // 4096×4096 is 4× the approved area; it must be refused before the decoder expands it.
+    let bytes = approved_png(4096, 4096);
+    match decode_for_upload(&bytes, limits(), &Cancellation::default()) {
+        Err(MediaError::UnsupportedContainer) => {}
+        other => panic!("expected an early header refusal, got {other:?}"),
+    }
 }
