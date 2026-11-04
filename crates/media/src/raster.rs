@@ -300,11 +300,13 @@ fn ensure_still_gif(bytes: &[u8]) -> Result<(), MediaError> {
 
 /// Decode a PNG **one row at a time**, honouring `cancel` between rows.
 ///
-/// This is the bounded-cancellation path for a *running* decode: the generic backend
-/// (`decode_raster`) hands the whole image to `image` in one uninterruptible call, so a
-/// cancellation can only be observed before or after it. Here the caller's cancellation is
-/// checked between rows, which lets a cancelled decode stop early instead of finishing work
-/// nobody will use.
+/// This is the row-wise path for a *running* decode. The generic backend hands the whole image
+/// to `image` in one uninterruptible call, so a cancellation there can only be observed before
+/// or after it. Here the caller's cancellation is checked between rows, which lets a cancelled
+/// decode stop early instead of finishing work nobody will use.
+///
+/// Which path a given input takes: [`decode_raster`] delegates **non-interlaced PNG** to this
+/// decoder, and everything else - interlaced PNG, JPEG, WebP, GIF - to the generic backend.
 ///
 /// Scope: **non-interlaced PNG only**. An Adam7 PNG is refused here as `UnsupportedContainer`
 /// because `next_row` yields per-pass rows rather than full-width rows. [`decode_raster`] calls
