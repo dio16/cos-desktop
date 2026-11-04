@@ -1,19 +1,19 @@
 {
   "kind": "quality-gates",
-  "head": "4cf87a9ea1528836e50d870ebcd4862897c10c29",
+  "head": "5fdc553ff82db1c6a905fd6e594e6e1c9964c29e",
   "dirty": true,
   "target_dir": "C:\\dev\\cos-build-fresh",
   "tools": {
     "cargo": "C:\\Users\\diobrando\\.cargo\\bin\\cargo.exe",
     "python": "C:\\Users\\diobrando\\AppData\\Roaming\\uv\\python\\cpython-3.13.14-windows-x86_64-none\\python.exe"
   },
-  "recorded_at": "2026-11-04T22:40:21.5503502+09:00",
+  "recorded_at": "2026-11-04T23:56:51.5163865+09:00",
   "gates": [
     {
       "name": "fmt",
       "command": "C:\\Users\\diobrando\\.cargo\\bin\\cargo.exe fmt --all -- --check",
       "exit_code": 0,
-      "seconds": 1,
+      "seconds": 2,
       "stdout": "fmt.stdout.txt",
       "stderr": "fmt.stderr.txt",
       "stdout_bytes": 0,
@@ -53,7 +53,7 @@
       "name": "clippy",
       "command": "C:\\Users\\diobrando\\.cargo\\bin\\cargo.exe clippy --locked --workspace --all-targets -- -D warnings",
       "exit_code": 0,
-      "seconds": 603,
+      "seconds": 2,
       "stdout": "clippy.stdout.txt",
       "stderr": "clippy.stderr.txt",
       "stdout_bytes": 0,
@@ -63,31 +63,15 @@
       "name": "tests",
       "command": "C:\\Users\\diobrando\\.cargo\\bin\\cargo.exe test --locked --workspace",
       "exit_code": 0,
-      "seconds": 603,
+      "seconds": 47,
       "stdout": "tests.stdout.txt",
       "stderr": "tests.stderr.txt",
-      "stdout_bytes": 65046,
+      "stdout_bytes": 65045,
       "stderr_bytes": 4117
     }
   ],
   "files": {
-    "metadata.stderr.txt": {
-      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "bytes": 0
-    },
-    "metadata.stdout.txt": {
-      "sha256": "sha256:c45dd353dd9ff9c9b59f386c67059e8dd416333710ef7619107d5674df665f74",
-      "bytes": 20330
-    },
     "dep-self.stdout.txt": {
-      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "bytes": 0
-    },
-    "tests.stderr.txt": {
-      "sha256": "sha256:4374d26668c23a6d512e363f95080590fc3fda3e49fba39d013673623a4b41d2",
-      "bytes": 4117
-    },
-    "fmt.stderr.txt": {
       "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "bytes": 0
     },
@@ -95,29 +79,45 @@
       "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "bytes": 0
     },
-    "dep-rules.stdout.txt": {
-      "sha256": "sha256:7324a248581aca3179ab86e244966f886d14b87d2e04372d548eb5f96c3b1cfe",
-      "bytes": 79
+    "metadata.stderr.txt": {
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
     },
     "clippy.stderr.txt": {
-      "sha256": "sha256:021042b95b1152e2f6b982059be59038aeacba94428d42356567d9bf349eaf21",
+      "sha256": "sha256:a43c0844ccea29a67956b80e4bbe57477805dd311e7ca17b356c8e5e1dfe3acd",
       "bytes": 72
-    },
-    "tests.stdout.txt": {
-      "sha256": "sha256:db5d8fe2e9f8ccfabb5f172f208fb0587684fcbd6d2804ca1c3fff00cfd77f3f",
-      "bytes": 65046
     },
     "fmt.stdout.txt": {
       "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "bytes": 0
     },
-    "dep-self.stderr.txt": {
-      "sha256": "sha256:f3caa46caa5e2d430956c7c17cf768a349cb9fc0fb46d4827c4ea21511ce808f",
-      "bytes": 2680
+    "metadata.stdout.txt": {
+      "sha256": "sha256:c45dd353dd9ff9c9b59f386c67059e8dd416333710ef7619107d5674df665f74",
+      "bytes": 20330
+    },
+    "dep-rules.stdout.txt": {
+      "sha256": "sha256:7324a248581aca3179ab86e244966f886d14b87d2e04372d548eb5f96c3b1cfe",
+      "bytes": 79
+    },
+    "tests.stdout.txt": {
+      "sha256": "sha256:25778ce8da15d27f709c9191fbc6a6c62f693e118bd889eb47c1531f3daad9e9",
+      "bytes": 65045
     },
     "clippy.stdout.txt": {
       "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "bytes": 0
+    },
+    "tests.stderr.txt": {
+      "sha256": "sha256:bea0f69ac96c5674ced2381258c97facd3b1c9a46c664197e8a9896520fd866a",
+      "bytes": 4117
+    },
+    "fmt.stderr.txt": {
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "dep-self.stderr.txt": {
+      "sha256": "sha256:78cde038ab4450fe81e0b8b91550664748049973f254ac5c613010e8d1f3e46f",
+      "bytes": 2680
     }
   },
   "summary": {

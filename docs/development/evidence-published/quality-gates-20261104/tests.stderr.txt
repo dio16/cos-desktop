@@ -1,4 +1,4 @@
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.74s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.38s
      Running unittests src\lib.rs (C:\dev\cos-build-fresh\debug\deps\app_core-7a467bd3bcaafbc5.exe)
      Running tests\crash_report.rs (C:\dev\cos-build-fresh\debug\deps\crash_report-1c1d6119744c48ba.exe)
      Running tests\observation_publication.rs (C:\dev\cos-build-fresh\debug\deps\observation_publication-1e92fccaac1eb746.exe)

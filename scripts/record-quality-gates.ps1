@@ -30,38 +30,52 @@ function Resolve-Tool {
     <#
       Resolve a bare tool name to a real executable file.
 
-      `Start-Process` cannot launch a shell wrapper or a Windows Store alias, and on this
-      machine `python` on PATH is a bash script, while `python.exe` is a Store alias that
-      prints nothing. So candidates are tried in order and the first one that answers with a
-      real interpreter path wins; if none do, the recorder fails loudly instead of writing
-      empty logs and calling them evidence.
+      `Start-Process` cannot launch a shell wrapper or a Windows Store alias, so a candidate is
+      only accepted after it is launched and answers with a usable interpreter path. Names are
+      looked up **on PATH** through `Get-Command -CommandType Application` (a `Test-Path` check
+      is not a PATH search), and no specific version or user directory is assumed: an explicit
+      override wins, then whatever the shell resolves, then the usual names.
     #>
     param([string]$Name, [string[]]$Probe = @(), [string[]]$ProbeArgs = @())
 
-    $command = Get-Command $Name -ErrorAction SilentlyContinue
-    if ($null -ne $command) {
-        $candidate = if ($command.Source) { $command.Source } else { $command.Path }
-        if (-not [string]::IsNullOrWhiteSpace($candidate) -and $candidate -match '\.exe$' -and -not $Probe) {
-            return $candidate
+    $candidates = @()
+    if (-not [string]::IsNullOrWhiteSpace($Name)) {
+        $onPath = Get-Command $Name -CommandType Application -ErrorAction SilentlyContinue
+        foreach ($item in @($onPath)) {
+            if ($item -and $item.Source) { $candidates += $item.Source }
+        }
+    }
+    foreach ($item in $Probe) {
+        if ([string]::IsNullOrWhiteSpace($item)) { continue }
+        if (Test-Path -LiteralPath $item) {
+            $candidates += (Resolve-Path -LiteralPath $item).Path
+        } else {
+            $onPath = Get-Command $item -CommandType Application -ErrorAction SilentlyContinue
+            foreach ($found in @($onPath)) {
+                if ($found -and $found.Source) { $candidates += $found.Source }
+            }
         }
     }
 
-    foreach ($item in $Probe) {
-        if ([string]::IsNullOrWhiteSpace($item)) { continue }
-        # A candidate may not exist on this machine; that is a reason to try the next one, not
-        # to stop. `$ErrorActionPreference = 'Stop'` would otherwise abort on the first miss.
-        if (-not (Test-Path -LiteralPath $item)) { continue }
-        try {
-            $resolved = & $item @ProbeArgs 2>$null
-        } catch {
-            continue
-        }
-        $text = ($resolved | Out-String).Trim()
-        if (-not [string]::IsNullOrWhiteSpace($text)) {
+    $seen = @{}
+    foreach ($candidate in $candidates) {
+        if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+        if ($seen.ContainsKey($candidate)) { continue }
+        $seen[$candidate] = $true
+        if (-not (Test-Path -LiteralPath $candidate)) { continue }
+        if ($ProbeArgs.Count -gt 0) {
+            try {
+                $answer = & $candidate @ProbeArgs 2>$null
+            } catch {
+                continue
+            }
+            $text = ($answer | Out-String).Trim()
+            if ([string]::IsNullOrWhiteSpace($text)) { continue }
             return $text.Split("`n")[-1].Trim()
         }
+        return $candidate
     }
-    throw "no usable executable found for $Name (tried: $($Probe -join ', '))"
+    throw "no usable executable found for $Name (tried: $($candidates -join ', '))"
 }
 
 function Invoke-Recorded {
@@ -75,12 +89,17 @@ function Invoke-Recorded {
         [string]$StdoutPath,
         [string]$StderrPath
     )
+    # Do not use `-Wait`: it waits for the whole process tree, and a build tool that leaves an
+    # inherited handle behind makes the recorder sit far past the command's own lifetime (this
+    # showed up as two gates reporting ~603 s each). Waiting on the process object returns when
+    # that process exits, which is what the exit code describes.
     $process = Start-Process -FilePath $FilePath `
         -ArgumentList $ArgumentList `
         -WorkingDirectory $repo `
-        -NoNewWindow -Wait -PassThru `
+        -NoNewWindow -PassThru `
         -RedirectStandardOutput $StdoutPath `
         -RedirectStandardError $StderrPath
+    $process.WaitForExit()
     return $process.ExitCode
 }
 
@@ -119,15 +138,11 @@ $status = (& git -C $repo status --porcelain)
 $dirty = -not [string]::IsNullOrWhiteSpace(($status -join ''))
 
 $cargo = Resolve-Tool 'cargo'
-# Order matters only for convenience: an explicit -PythonPath wins, then the interpreter this
-# shell already resolves, then the usual names. Nothing is assumed to exist.
+# An explicit -PythonPath wins; otherwise the shell's own `python` (whatever it is), then the
+# usual names - each resolved on PATH and verified by launching it. No version is assumed.
 $pythonCandidates = @()
 if (-not [string]::IsNullOrWhiteSpace($PythonPath)) { $pythonCandidates += $PythonPath }
-$pythonCandidates += @(
-    (Join-Path $HOME 'AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe'),
-    'python.exe',
-    'python3.exe'
-)
+$pythonCandidates += @('python', 'python3', 'python.exe', 'python3.exe')
 $python = Resolve-Tool -Name 'python' -Probe $pythonCandidates -ProbeArgs @('-c', 'import sys; print(sys.executable)')
 $gates = @(
     @{ Name = 'fmt';       File = $cargo;  Args = @('fmt', '--all', '--', '--check') },
@@ -144,7 +159,7 @@ if (-not [string]::IsNullOrWhiteSpace($FaultGate)) {
     $found = $false
     foreach ($gate in $gates) {
         if ($gate.Name -eq $FaultGate) {
-            $gate.File = $env:ComSpec
+            $gate.File = if ($env:ComSpec) { $env:ComSpec } else { 'cmd.exe' }
             $gate.Args = @('/c', 'echo injected failure 1>&2 & exit 3')
             $found = $true
         }
