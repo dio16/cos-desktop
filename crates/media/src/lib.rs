@@ -27,8 +27,8 @@ pub use key::{
 mod upload;
 
 pub use upload::{
-    AdmittedUpload, UploadBudget, UploadIdentity, UploadPool, UploadRefusal, VerifiedSourceClass,
-    admit_upload, refusal_reason,
+    AdmittedUpload, SourceClass, UploadBudget, UploadIdentity, UploadPool, UploadRefusal,
+    UploadStage, UploadUsage, VerifiedRaster, admit_upload, decode_for_upload, refusal_reason,
 };
 
 pub use raster::{

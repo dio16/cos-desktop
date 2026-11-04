@@ -1,69 +1,101 @@
 //! MP-IMG3-S1: the upload admission boundary.
 //!
-//! The approved scope is the **2048×2048 static 8-bit RGB PNG class**. This module turns a
-//! decoded raster into something a GPU uploader may use, and it is deliberately strict about
-//! three things the plan calls out:
+//! The approved scope is the **2048×2048 static 8-bit RGB PNG class**. This module decides
+//! whether a decoded raster may be handed to a GPU uploader. It performs **no** upload and makes
+//! **no** claim that one works.
 //!
-//! 1. **The verified class travels with the pixels.** [`DecodedRaster`] only says "RGBA8 of this
-//!    size". Treating that as proof that the source was the approved class would be an
-//!    over-claim, so an upload needs a [`VerifiedSourceClass`] produced by the decoder path.
-//! 2. **Staging, in-flight and resident bytes are counted separately.** They bound different
-//!    things, so one combined figure would hide which limit was hit.
-//! 3. **A stale device generation is refused**, not silently uploaded against a new device.
+//! Four contracts, each of which the first version got wrong and a review caught:
 //!
-//! Nothing here performs a GPU upload, measures one, or claims one works. It admits or refuses.
+//! 1. **The verified class is a proof, not a record.** [`VerifiedRaster`] can only be produced by
+//!    [`decode_for_upload`], which checks the container, the bit depth and the colour format before
+//!    the type exists. `DecodedRaster` on its own is not accepted anywhere.
+//! 2. **The pool owns the limits and admits under one lock.** Capacity check, identity
+//!    registration and all three reservations happen while holding the same mutex, so two threads
+//!    cannot both pass the check and then both reserve.
+//! 3. **Lifetime is a state machine, not a drop.** The CPU payload is held by the admission, an
+//!    upload must be begun and completed explicitly, and resident bytes are only freed by
+//!    [`AdmittedUpload::release`]. A plain drop moves them to an `unreclaimed` figure instead of
+//!    pretending the device returned them.
+//! 4. **Identity is the canon's key.** [`UploadIdentity`] carries the full [`RepresentationKey`]
+//!    plus the source revision and device generation, and duplicate detection uses it. A generation
+//!    that is not the caller's current one is refused in either direction.
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
-use crate::{Cancellation, DecodedRaster, MediaError, PixelSize};
+use crate::{
+    AcceptedFormat, Cancellation, DecodeLimits, DecodedRaster, MediaError, PixelSize,
+    RepresentationKey, decode_raster,
+};
 
-/// The class the decoder actually verified, carried to the upload boundary.
+/// The one verified source class this boundary accepts.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct VerifiedSourceClass {
-    /// Bit depth per channel, as read from the encoded header.
-    pub source_bit_depth: u8,
-    /// Whether the encoded container was the approved still PNG class.
-    pub is_still_png: bool,
-    /// Decoded dimensions, which must match the raster.
-    pub size: PixelSize,
+pub enum SourceClass {
+    /// Static 8-bit RGB PNG at 2048×2048.
+    StillPng8Rgb2048,
 }
 
-impl VerifiedSourceClass {
-    /// The single class approved for MP-IMG3-S1: static 8-bit RGB PNG, 2048×2048.
-    pub const APPROVED_EDGE: u32 = 2048;
+/// A decoded raster whose source class was verified at decode time.
+///
+/// Fields are private and there is no public constructor: the only way to obtain one is
+/// [`decode_for_upload`], so "the class was checked" cannot be asserted by a caller that did not
+/// check it.
+#[derive(Clone, Debug)]
+pub struct VerifiedRaster {
+    raster: DecodedRaster,
+    class: SourceClass,
+}
 
-    /// Whether this is the approved class. Anything else is refused rather than uploaded on a
-    /// best-effort basis.
-    pub fn is_approved_class(&self) -> bool {
-        self.is_still_png
-            && self.source_bit_depth == 8
-            && self.size.width() == Self::APPROVED_EDGE
-            && self.size.height() == Self::APPROVED_EDGE
+impl VerifiedRaster {
+    pub fn raster(&self) -> &DecodedRaster {
+        &self.raster
     }
+    pub fn class(&self) -> SourceClass {
+        self.class
+    }
+    pub fn size(&self) -> PixelSize {
+        self.raster.size
+    }
+}
 
-    /// Read the class from a decoded raster plus what the decoder recorded about the source.
-    pub fn from_decoded(raster: &DecodedRaster, source_bit_depth: u8, is_still_png: bool) -> Self {
-        Self {
-            source_bit_depth,
-            is_still_png,
-            size: raster.size,
-        }
+/// Colour type 2 in a PNG IHDR is RGB without alpha, which is the approved class.
+const PNG_COLOUR_TYPE_RGB: u8 = 2;
+/// Byte offset of the bit depth inside a PNG: signature (8) + length (4) + "IHDR" (4) + width (4)
+/// + height (4).
+const PNG_BIT_DEPTH_OFFSET: usize = 24;
+/// Byte offset of the colour type, one past the bit depth.
+const PNG_COLOUR_TYPE_OFFSET: usize = 25;
+
+/// Decode an encoded image **for upload**, producing the class proof only if the source really was
+/// the approved class.
+pub fn decode_for_upload(
+    bytes: &[u8],
+    limits: DecodeLimits,
+    cancel: &Cancellation,
+) -> Result<VerifiedRaster, MediaError> {
+    let raster = decode_raster(bytes, limits, cancel)?;
+    let approved = raster.format == AcceptedFormat::Png
+        && bytes.len() > PNG_COLOUR_TYPE_OFFSET
+        && bytes[PNG_BIT_DEPTH_OFFSET] == 8
+        && bytes[PNG_COLOUR_TYPE_OFFSET] == PNG_COLOUR_TYPE_RGB
+        && raster.size == PixelSize::new(2048, 2048).map_err(|_| MediaError::InvalidMetadata)?;
+    if !approved {
+        return Err(MediaError::UnsupportedContainer);
     }
+    Ok(VerifiedRaster {
+        raster,
+        class: SourceClass::StillPng8Rgb2048,
+    })
 }
 
 /// Where an upload comes from and which device it targets.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UploadIdentity {
-    /// Content identity of the representation being uploaded.
-    pub content_digest: [u8; 32],
-    /// Source revision this raster was decoded from.
+    pub key: RepresentationKey,
     pub source_revision: u64,
-    /// Device generation the upload is intended for.
     pub device_generation: u64,
 }
 
-/// The three budgets, kept separate because they bound different resources.
+/// The three budgets, owned by the pool, kept separate because they bound different resources.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct UploadBudget {
     pub staging_bytes: u64,
@@ -72,211 +104,254 @@ pub struct UploadBudget {
 }
 
 /// Why an upload was refused. Closed, so a caller can report it without inspecting state.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum UploadRefusal {
-    /// The source was not the approved class (wrong container, depth or dimensions).
-    UnverifiedClass,
-    /// The raster's length did not match its declared geometry.
-    WrongLayout,
-    /// A device generation older than the current one.
-    StaleGeneration { requested: u64, current: u64 },
-    /// Staging, in-flight or resident capacity would be exceeded.
+    /// The device generation is not the one the caller is currently rendering for.
+    GenerationMismatch { requested: u64, current: u64 },
     BudgetExceeded {
         staging: bool,
         in_flight: bool,
         resident: bool,
     },
+    /// The same representation is already resident.
+    DuplicateRepresentation,
+    /// The raster's length did not match its declared geometry.
+    WrongLayout,
     /// Cancelled before admission.
     Cancelled,
+    /// An upload was begun twice, completed without beginning, or released mid-upload.
+    StageViolation,
+}
+
+/// How far an admission has progressed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UploadStage {
+    /// CPU payload held, nothing transferred.
+    Staged,
+    /// Transfer begun; the device copy is not known to exist yet.
+    Uploading,
+    /// Transfer completed by the caller's account; the device copy is resident.
+    Resident,
+}
+
+#[derive(Debug, Default)]
+struct PoolState {
+    staging: u64,
+    in_flight: u64,
+    resident: u64,
+    /// Resident bytes whose GPU completion was never asserted (dropped without `release`). Kept
+    /// visible instead of being reported as freed.
+    unreclaimed: u64,
+    resident_keys: Vec<RepresentationKey>,
+}
+
+/// One snapshot of the pool, for reporting and tests.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UploadUsage {
+    pub staging: u64,
+    pub in_flight: u64,
+    pub resident: u64,
+    pub unreclaimed: u64,
+}
+
+/// Process-wide counters and limits. All mutation happens under one lock.
+#[derive(Debug)]
+pub struct UploadPool {
+    limits: UploadBudget,
+    state: Mutex<PoolState>,
+}
+
+impl UploadPool {
+    pub fn new(limits: UploadBudget) -> Arc<Self> {
+        Arc::new(Self {
+            limits,
+            state: Mutex::new(PoolState::default()),
+        })
+    }
+
+    pub fn limits(&self) -> UploadBudget {
+        self.limits
+    }
+
+    pub fn usage(&self) -> UploadUsage {
+        let state = self.state.lock().expect("pool state");
+        UploadUsage {
+            staging: state.staging,
+            in_flight: state.in_flight,
+            resident: state.resident,
+            unreclaimed: state.unreclaimed,
+        }
+    }
+
+    fn with_state<T>(&self, body: impl FnOnce(&mut PoolState) -> T) -> T {
+        let mut state = self.state.lock().expect("pool state");
+        body(&mut state)
+    }
 }
 
 /// An admitted upload: the only value the uploader accepts.
 #[derive(Debug)]
 pub struct AdmittedUpload {
-    class: VerifiedSourceClass,
+    /// The CPU payload, held for the whole admission, so the reservation describes bytes that
+    /// exist.
+    raster: Option<DecodedRaster>,
     identity: UploadIdentity,
-    stride_bytes: u32,
-    staging_bytes: u64,
-    in_flight_bytes: u64,
-    resident_bytes: u64,
+    stage: UploadStage,
+    bytes: u64,
     pool: Arc<UploadPool>,
 }
 
 impl AdmittedUpload {
-    pub fn class(&self) -> VerifiedSourceClass {
-        self.class
+    pub fn identity(&self) -> &UploadIdentity {
+        &self.identity
     }
-    pub fn identity(&self) -> UploadIdentity {
-        self.identity
+    pub fn stage(&self) -> UploadStage {
+        self.stage
     }
-    pub fn stride_bytes(&self) -> u32 {
-        self.stride_bytes
+    pub fn bytes(&self) -> u64 {
+        self.bytes
     }
-    pub fn staging_bytes(&self) -> u64 {
-        self.staging_bytes
+    pub fn raster(&self) -> Option<&DecodedRaster> {
+        self.raster.as_ref()
     }
-    pub fn in_flight_bytes(&self) -> u64 {
-        self.in_flight_bytes
+    pub fn stride_bytes(&self) -> Result<u32, UploadRefusal> {
+        self.raster
+            .as_ref()
+            .and_then(|raster| raster.size.width().checked_mul(4))
+            .ok_or(UploadRefusal::WrongLayout)
     }
-    pub fn resident_bytes(&self) -> u64 {
-        self.resident_bytes
+
+    /// Begin the transfer. The CPU payload stays held: the device copy does not exist yet.
+    pub fn begin_upload(&mut self) -> Result<(), UploadRefusal> {
+        if self.stage != UploadStage::Staged {
+            return Err(UploadRefusal::StageViolation);
+        }
+        self.stage = UploadStage::Uploading;
+        Ok(())
+    }
+
+    /// Complete the transfer. Only the caller can assert this; without a GPU it is a statement,
+    /// not a measurement.
+    pub fn complete_upload(&mut self) -> Result<(), UploadRefusal> {
+        if self.stage != UploadStage::Uploading {
+            return Err(UploadRefusal::StageViolation);
+        }
+        self.stage = UploadStage::Resident;
+        // The CPU copy is no longer needed once the caller asserts the device copy exists.
+        self.raster = None;
+        Ok(())
+    }
+
+    /// Release the admission, freeing all three counters and the identity entry.
+    ///
+    /// This is the only path that frees resident bytes: the caller is asserting the device copy is
+    /// gone.
+    pub fn release(mut self) {
+        let bytes = self.bytes;
+        let key = self.identity.key.clone();
+        self.pool.with_state(|state| {
+            state.staging = state.staging.saturating_sub(bytes);
+            state.in_flight = state.in_flight.saturating_sub(bytes);
+            state.resident = state.resident.saturating_sub(bytes);
+            state.resident_keys.retain(|entry| *entry != key);
+        });
+        self.raster = None;
+        // Zeroing the byte count tells `Drop` the reservation was consumed.
+        self.bytes = 0;
     }
 }
 
 impl Drop for AdmittedUpload {
     fn drop(&mut self) {
-        forget_identity(&self.pool, &self.identity);
-        self.pool.release(
-            self.staging_bytes,
-            self.in_flight_bytes,
-            self.resident_bytes,
-        );
+        if self.bytes == 0 {
+            return;
+        }
+        let bytes = self.bytes;
+        let key = self.identity.key.clone();
+        self.pool.with_state(|state| {
+            // The CPU side is genuinely gone, so staging and in-flight can be given back.
+            state.staging = state.staging.saturating_sub(bytes);
+            state.in_flight = state.in_flight.saturating_sub(bytes);
+            // Resident bytes are *not* reported as freed: nothing asserted the device copy is gone.
+            state.resident = state.resident.saturating_sub(bytes);
+            state.unreclaimed = state.unreclaimed.saturating_add(bytes);
+            state.resident_keys.retain(|entry| *entry != key);
+        });
     }
 }
 
-/// Process-wide counters for the three budgets. Separate counters, separate limits.
-#[derive(Debug, Default)]
-pub struct UploadPool {
-    staging: AtomicU64,
-    in_flight: AtomicU64,
-    resident: AtomicU64,
-    /// Identity of the upload currently holding resident capacity, so a second admission of the
-    /// same representation is refused instead of counted twice.
-    resident_identities: Mutex<Vec<([u8; 32], u64, u64)>>,
-}
-
-impl UploadPool {
-    pub fn new() -> Arc<Self> {
-        Arc::new(Self::default())
-    }
-
-    pub fn usage(&self) -> (u64, u64, u64) {
-        (
-            self.staging.load(Ordering::SeqCst),
-            self.in_flight.load(Ordering::SeqCst),
-            self.resident.load(Ordering::SeqCst),
-        )
-    }
-
-    fn release(&self, staging: u64, in_flight: u64, resident: u64) {
-        self.staging.fetch_sub(staging, Ordering::SeqCst);
-        self.in_flight.fetch_sub(in_flight, Ordering::SeqCst);
-        self.resident.fetch_sub(resident, Ordering::SeqCst);
-    }
-
-    fn identity_key(identity: &UploadIdentity) -> ([u8; 32], u64, u64) {
-        (
-            identity.content_digest,
-            identity.source_revision,
-            identity.device_generation,
-        )
-    }
-}
-
-/// Admit a decoded raster for upload, or refuse it with a closed reason.
+/// Admit a verified raster for upload, or refuse it with a closed reason.
 ///
-/// `budget` bounds each counter independently; the bytes requested are the raster's own size for
-/// staging and in-flight (the CPU copy and the transfer in progress) and the same size again for
-/// residency, because the device copy outlives both.
+/// The capacity check, the identity registration and the three reservations all happen while
+/// holding the pool lock, so concurrent admissions cannot both pass the check and then both
+/// reserve.
 pub fn admit_upload(
-    raster: &DecodedRaster,
-    class: VerifiedSourceClass,
+    verified: &VerifiedRaster,
     identity: UploadIdentity,
     current_device_generation: u64,
-    budget: UploadBudget,
     pool: &Arc<UploadPool>,
     cancel: &Cancellation,
 ) -> Result<AdmittedUpload, UploadRefusal> {
     if cancel.is_cancelled() {
         return Err(UploadRefusal::Cancelled);
     }
-    if class.size != raster.size || !class.is_approved_class() {
-        return Err(UploadRefusal::UnverifiedClass);
-    }
-    let expected = raster
-        .size
-        .checked_rgba_bytes()
-        .map_err(|_| UploadRefusal::WrongLayout)?;
-    if raster.rgba.len() as u64 != expected {
-        return Err(UploadRefusal::WrongLayout);
-    }
-    if identity.device_generation < current_device_generation {
-        return Err(UploadRefusal::StaleGeneration {
+    if identity.device_generation != current_device_generation {
+        return Err(UploadRefusal::GenerationMismatch {
             requested: identity.device_generation,
             current: current_device_generation,
         });
     }
+    let expected = verified
+        .raster
+        .size
+        .checked_rgba_bytes()
+        .map_err(|_| UploadRefusal::WrongLayout)?;
+    if verified.raster.rgba.len() as u64 != expected {
+        return Err(UploadRefusal::WrongLayout);
+    }
 
     let bytes = expected;
-    let stride = raster
-        .size
-        .width()
-        .checked_mul(4)
-        .ok_or(UploadRefusal::WrongLayout)?;
-
-    // Compute everything before mutating, so a refusal leaves the pool untouched.
-    let (staging_now, in_flight_now, resident_now) = pool.usage();
-    let staging_over = staging_now.saturating_add(bytes) > budget.staging_bytes;
-    let in_flight_over = in_flight_now.saturating_add(bytes) > budget.in_flight_bytes;
-    let resident_over = resident_now.saturating_add(bytes) > budget.resident_bytes;
-    if staging_over || in_flight_over || resident_over {
-        return Err(UploadRefusal::BudgetExceeded {
-            staging: staging_over,
-            in_flight: in_flight_over,
-            resident: resident_over,
-        });
-    }
-
-    // Same representation, same source revision and same device: already resident.
-    let key = UploadPool::identity_key(&identity);
-    {
-        let mut identities = pool.resident_identities.lock().expect("identities");
-        if identities.contains(&key) {
+    let key = identity.key.clone();
+    let limits = pool.limits();
+    pool.with_state(|state| {
+        if state.resident_keys.contains(&key) {
+            return Err(UploadRefusal::DuplicateRepresentation);
+        }
+        let staging_over = state.staging.saturating_add(bytes) > limits.staging_bytes;
+        let in_flight_over = state.in_flight.saturating_add(bytes) > limits.in_flight_bytes;
+        let resident_over = state.resident.saturating_add(bytes) > limits.resident_bytes;
+        if staging_over || in_flight_over || resident_over {
             return Err(UploadRefusal::BudgetExceeded {
-                staging: false,
-                in_flight: false,
-                resident: true,
+                staging: staging_over,
+                in_flight: in_flight_over,
+                resident: resident_over,
             });
         }
-        identities.push(key);
-    }
-    pool.staging.fetch_add(bytes, Ordering::SeqCst);
-    pool.in_flight.fetch_add(bytes, Ordering::SeqCst);
-    pool.resident.fetch_add(bytes, Ordering::SeqCst);
+        state.staging += bytes;
+        state.in_flight += bytes;
+        state.resident += bytes;
+        state.resident_keys.push(key);
+        Ok(())
+    })?;
 
     Ok(AdmittedUpload {
-        class,
+        raster: Some(verified.raster.clone()),
         identity,
-        stride_bytes: stride,
-        staging_bytes: bytes,
-        in_flight_bytes: bytes,
-        resident_bytes: bytes,
+        stage: UploadStage::Staged,
+        bytes,
         pool: Arc::clone(pool),
     })
 }
 
-/// Release hook for the identity table when an admission is dropped.
-pub(crate) fn forget_identity(pool: &UploadPool, identity: &UploadIdentity) {
-    let key = UploadPool::identity_key(identity);
-    let mut identities = pool.resident_identities.lock().expect("identities");
-    identities.retain(|entry| *entry != key);
-}
-
-impl AdmittedUpload {
-    /// Drop this admission and free all three counters together.
-    pub fn release(self) {
-        // Dropping runs the `Drop` impl, which clears the identity and releases the counters.
-        drop(self);
-    }
-}
-
-/// Convenience: the surface-used error type for callers that only need a reason.
-pub fn refusal_reason(refusal: UploadRefusal) -> MediaError {
+/// Map a refusal onto the existing error vocabulary, for callers that report one type.
+pub fn refusal_reason(refusal: &UploadRefusal) -> MediaError {
     match refusal {
-        UploadRefusal::UnverifiedClass => MediaError::UnsupportedContainer,
+        UploadRefusal::GenerationMismatch { .. } => MediaError::Unavailable,
+        UploadRefusal::BudgetExceeded { .. } | UploadRefusal::DuplicateRepresentation => {
+            MediaError::Busy
+        }
         UploadRefusal::WrongLayout => MediaError::InvalidMetadata,
-        UploadRefusal::StaleGeneration { .. } => MediaError::Unavailable,
-        UploadRefusal::BudgetExceeded { .. } => MediaError::Busy,
         UploadRefusal::Cancelled => MediaError::Cancelled,
+        UploadRefusal::StageViolation => MediaError::Unavailable,
     }
 }
