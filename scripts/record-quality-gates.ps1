@@ -15,6 +15,8 @@
 param(
     [string]$OutDir = "",
     [string]$TargetDir = "",
+    [string]$PythonPath = "",
+    [string]$FaultGate = "",
     [switch]$SelfCheck
 )
 
@@ -45,9 +47,18 @@ function Resolve-Tool {
     }
 
     foreach ($item in $Probe) {
-        $resolved = & $item @ProbeArgs 2>$null
-        if (-not [string]::IsNullOrWhiteSpace(($resolved | Out-String).Trim())) {
-            return ($resolved | Out-String).Trim().Split("`n")[-1].Trim()
+        if ([string]::IsNullOrWhiteSpace($item)) { continue }
+        # A candidate may not exist on this machine; that is a reason to try the next one, not
+        # to stop. `$ErrorActionPreference = 'Stop'` would otherwise abort on the first miss.
+        if (-not (Test-Path -LiteralPath $item)) { continue }
+        try {
+            $resolved = & $item @ProbeArgs 2>$null
+        } catch {
+            continue
+        }
+        $text = ($resolved | Out-String).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($text)) {
+            return $text.Split("`n")[-1].Trim()
         }
     }
     throw "no usable executable found for $Name (tried: $($Probe -join ', '))"
@@ -108,8 +119,12 @@ $status = (& git -C $repo status --porcelain)
 $dirty = -not [string]::IsNullOrWhiteSpace(($status -join ''))
 
 $cargo = Resolve-Tool 'cargo'
-$pythonCandidates = @(
-    'C:\Users\diobrando\AppData\Roaming\uv\python\cpython-3.13.14-windows-x86_64-none\python.exe',
+# Order matters only for convenience: an explicit -PythonPath wins, then the interpreter this
+# shell already resolves, then the usual names. Nothing is assumed to exist.
+$pythonCandidates = @()
+if (-not [string]::IsNullOrWhiteSpace($PythonPath)) { $pythonCandidates += $PythonPath }
+$pythonCandidates += @(
+    (Join-Path $HOME 'AppData/Roaming/uv/python/cpython-3.13.14-windows-x86_64-none/python.exe'),
     'python.exe',
     'python3.exe'
 )
@@ -122,6 +137,21 @@ $gates = @(
     @{ Name = 'clippy';    File = $cargo;  Args = @('clippy', '--locked', '--workspace', '--all-targets', '--', '-D', 'warnings') },
     @{ Name = 'tests';     File = $cargo;  Args = @('test', '--locked', '--workspace') }
 )
+if (-not [string]::IsNullOrWhiteSpace($FaultGate)) {
+    # Test aid: make one named gate fail, so the failing path (log capture, manifest
+    # `failed` count and the recorder's own exit code) can be demonstrated rather than
+    # asserted. It records the injected failure like any other.
+    $found = $false
+    foreach ($gate in $gates) {
+        if ($gate.Name -eq $FaultGate) {
+            $gate.File = $env:ComSpec
+            $gate.Args = @('/c', 'echo injected failure 1>&2 & exit 3')
+            $found = $true
+        }
+    }
+    if (-not $found) { throw "no gate named $FaultGate to fail" }
+    Write-Host ("fault injection: {0} will fail" -f $FaultGate)
+}
 
 $results = @()
 foreach ($gate in $gates) {
