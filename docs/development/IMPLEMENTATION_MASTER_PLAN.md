@@ -2451,7 +2451,7 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 | **JPEG class peak** | **PASS** | 2048×2048 increment **29,360,328 B** ≤ 34,603,008 B (§19.251) |
 | **JPEG refusal shape** | **PASS** | 12,950 / 13,865 / 31,021 B over a 16× area span; absolute and relative bounds asserted (§19.251) |
 | **WebP class peak** | **PASS** | 1024×1024 increment **7,342,044 B** ≤ 9,437,184 B (§19.252) |
-| **WebP refusal shape** | **NOT_VERIFIED — not constructible here** | the refusal these tests exercise is a dimension one, and WebP's encoder caps dimensions below that threshold, so the 16,000-wide shapes it accepts decode instead (§19.252) |
+| **WebP refusal shape** | **PASS (byte-ceiling kind)** | **516 B at all three areas** under a 64,000 B byte ceiling, i.e. flat (§19.254). A *dimension* refusal remains unbuildable; an earlier note calling the refusal generally unconstructible was too strong |
 | **GIF class peak** | **PASS** | 1024×1024 increment **5,281,574 B** ≤ 9,437,184 B (§19.252) |
 | **GIF refusal shape** | **PASS** | **9,142 B** at all three areas, i.e. flat (§19.252) |
 | Other depths and sizes | **NOT_VERIFIED** | out of this slice |
@@ -4662,7 +4662,7 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
   - **GIF: 5,281,574 B**, also inside the same ceiling and asserted.
   - These are 1024×1024 rather than 2048×2048 because the ceilings scale with area and the encoded fixtures are much larger for these containers; the figure is per-class, not comparable to the 2048 row.
 - **GIF refusals** at 20,000×1 / ×4 / ×16: **9,142 B in all three** - flat, and far below the 1,280,000 B of RGBA8 the largest refused area would need. Both the absolute and the relative growth bound are asserted, as for PNG and JPEG.
-- **A gap that was found and is recorded rather than worked around:** no **comparable WebP refusal fixture** can be built here. The refusal these tests exercise is a **dimension** one (the 20,000-wide shape exceeds `max_dimension`, which sits between 16,000 and 20,000), while WebP's own encoder caps a dimension at **16,383** and the 16,000-wide shapes that it does accept **decode instead of being refused**. So WebP has a measured peak and **no** measured refusal shape; that asymmetry is stated here instead of being hidden behind a differently-shaped case.
+- **A gap that was found and is recorded rather than worked around:** no **comparable WebP refusal fixture of the dimension kind** can be built here. The refusal these tests exercise is a **dimension** one (the 20,000-wide shape exceeds `max_dimension`, which sits between 16,000 and 20,000), while WebP's own encoder caps a dimension at **16,383** and the 16,000-wide shapes that it does accept **decode instead of being refused**. So WebP has a measured peak and **no** measured refusal shape; that asymmetry is stated here instead of being hidden behind a differently-shaped case.
 - **Not established:** cancellation for any of these classes (still uninterruptible), other bit depths and sizes, GPU or native behaviour. **MP-IMG2 is still not complete**, and MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p media --test measured_decode_allocations` 6 passed; workspace clippy clean; fmt clean; `cargo test --locked --workspace` all 44 binaries green.
 
@@ -4673,3 +4673,12 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Rows added:** JPEG, WebP and GIF each get a **peak** row and a **refusal** row. WebP's refusal row is **`NOT_VERIFIED - not constructible here`** rather than a pass, because §19.252 could not build a comparable fixture.
 - **Still not claimed:** MP-IMG2 overall completion stays **NOT CLAIMED**. Other bit depths and sizes stay `NOT_VERIFIED`. The table gaining measurements is not the task gaining completion, and this section says so where a reader will see it next to the rows.
 - **No code changed**, so no Gate was run for this change; the measurements it cites each carry their own Gate in the sections named above.
+
+### 19.254 MP-IMG2: the WebP refusal gap was an overstatement, and closes (2026-11-05)
+
+- **What §19.252 said:** WebP had a measured peak but **no** measured refusal shape, described as *not constructible here*.
+- **Why that was too strong:** what cannot be built is a **dimension** refusal - the WebP encoder caps a dimension at **16,383** while `DecodeLimits::MAX_DIMENSION` is **16,384**, so no WebP can exceed the dimension cap. A **byte-ceiling** refusal is entirely reachable: `DecodeLimitsOverride { max_decoded_bytes }` refuses it, and an existing test in `measured_jpeg_class.rs` already used exactly that to show a typed refusal. The claim should have been about the dimension shape only.
+- **Measured (`webp_refusals_are_measured_under_a_byte_ceiling`, 64,000 B ceiling, 20k / 80k / 320k px):** **516 B in all three cases** - flat across a 16× area span, and far below the 1,280,000 B of RGBA8 the largest refused area would need. Both the absolute and the relative growth bound are asserted.
+- **Table row corrected** from `NOT_VERIFIED` to **PASS (byte-ceiling kind)**, with the dimension case recorded as still unbuildable rather than dropping the distinction.
+- **Not claimed:** this does not measure a **dimension** refusal for WebP (none can be built), nor cancellation, nor other bit depths and sizes. **MP-IMG2 overall stays NOT CLAIMED**; MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p media --test measured_decode_allocations` 7 passed; workspace clippy clean; `cargo test --locked --workspace` all 44 binaries green.

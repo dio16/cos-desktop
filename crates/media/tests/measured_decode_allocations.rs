@@ -322,3 +322,52 @@ fn gif_refusals_are_flat_and_not_decode_shaped() {
         "{format:?}: refusal cost grew with the refused area: {increments:?}"
     );
 }
+
+#[test]
+fn webp_refusals_are_measured_under_a_byte_ceiling() {
+    let _guard = test_guard();
+    // §19.252 recorded WebP's refusal shape as "not constructible", which was too strong: what is
+    // impossible is a *dimension* refusal (the encoder caps dimensions below `max_dimension`). A
+    // **byte-ceiling** refusal is reachable, and this measures whether it is flat across areas.
+    let tight = media::DecodeLimitsOverride {
+        max_decoded_bytes: Some(64_000),
+        ..media::DecodeLimitsOverride::none()
+    }
+    .resolve()
+    .expect("the tight budget resolves");
+
+    let mut increments = Vec::new();
+    for (width, height) in [(200u32, 100u32), (200, 400), (400, 800)] {
+        let area = u64::from(width) * u64::from(height);
+        let bytes = encoded_rgb(width, height, image::ImageFormat::WebP);
+        let mut observed = None;
+        let increment = peak_increment_during(|| {
+            observed = Some(decode_raster_joined(
+                &bytes,
+                tight,
+                &Cancellation::default(),
+            ));
+        });
+        eprintln!(
+            "refused WebP {width}x{height} ({area} px): increment {increment} B \
+             (ceiling 64,000 B, area needs {} B of RGBA8)",
+            area * 4
+        );
+        assert_eq!(
+            observed.expect("a result").err(),
+            Some(MediaError::TooLarge),
+            "{width}x{height} must be refused by the byte ceiling"
+        );
+        increments.push(increment);
+    }
+    let largest = *increments.iter().max().expect("three cases");
+    let smallest = *increments.iter().min().expect("three cases");
+    assert!(
+        largest < 1_280_000,
+        "the largest WebP refusal allocated {largest} B, which is decode-shaped"
+    );
+    assert!(
+        largest <= smallest.saturating_mul(4) + 64 * 1024,
+        "WebP refusal cost grew with the refused area: {increments:?}"
+    );
+}
