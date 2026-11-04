@@ -155,6 +155,8 @@ pub enum UploadStage {
     Uploading,
     /// Transfer completed by the caller's account; the device copy is resident.
     Resident,
+    /// Released or aborted. Terminal: no further transition is accepted.
+    Released,
 }
 
 #[derive(Debug, Default)]
@@ -277,7 +279,7 @@ impl AdmittedUpload {
     /// caller keeps ownership, so in-flight bytes cannot be handed to another transfer by a failed
     /// call followed by a drop.
     pub fn release(&mut self) -> Result<(), UploadRefusal> {
-        if self.stage == UploadStage::Uploading {
+        if matches!(self.stage, UploadStage::Uploading | UploadStage::Released) {
             return Err(UploadRefusal::StageViolation);
         }
         let bytes = self.bytes;
@@ -289,6 +291,9 @@ impl AdmittedUpload {
             state.resident_keys.retain(|entry| *entry != key);
         });
         self.raster = None;
+        // Terminal: a second release, or any later transition, is refused instead of touching a
+        // key that may by then belong to another admission.
+        self.stage = UploadStage::Released;
         // Zeroing the byte count tells `Drop` the reservation was consumed.
         self.bytes = 0;
         Ok(())
@@ -312,10 +317,14 @@ impl Drop for AdmittedUpload {
                 state.resident = state.resident.saturating_sub(bytes);
                 state.resident_keys.retain(|entry| *entry != key);
             }
-            // Mid-transfer: the in-flight bytes are still in use, so nothing is reported as
-            // released. All three are quarantined and the key is blocked.
+            // Mid-transfer: the transfer may still be running, so the bytes are moved out of the
+            // live counters into the quarantine **once**. Counting them in both places would
+            // report one frame as two.
             UploadStage::Uploading => {
-                state.unreclaimed = state.unreclaimed.saturating_add(bytes * 3);
+                state.staging = state.staging.saturating_sub(bytes);
+                state.in_flight = state.in_flight.saturating_sub(bytes);
+                state.resident = state.resident.saturating_sub(bytes);
+                state.unreclaimed = state.unreclaimed.saturating_add(bytes);
                 state.resident_keys.retain(|entry| *entry != key);
                 if !state.unreclaimed_keys.contains(&key) {
                     state.unreclaimed_keys.push(key);
@@ -332,6 +341,9 @@ impl Drop for AdmittedUpload {
                     state.unreclaimed_keys.push(key);
                 }
             }
+            // Already released: `release` zeroed the byte count, so this arm is unreachable in
+            // practice; it exists so the state machine is exhaustive.
+            UploadStage::Released => {}
         });
     }
 }
@@ -374,8 +386,9 @@ pub fn admit_upload(
     if identity.key.size != verified.raster.size {
         return Err(UploadRefusal::WrongLayout);
     }
-    if identity.source_revision != revision_of(&identity.key) {
-        return Err(UploadRefusal::WrongLayout);
+    match revision_of(&identity.key) {
+        Some(revision) if revision == identity.source_revision => {}
+        _ => return Err(UploadRefusal::WrongLayout),
     }
     pool.with_state(|state| {
         if state.resident_keys.contains(&key) || state.unreclaimed_keys.contains(&key) {
@@ -412,11 +425,15 @@ pub fn admit_upload(
     })
 }
 
-/// The revision carried by a representation key, so an identity cannot claim a different one.
-fn revision_of(key: &RepresentationKey) -> u64 {
+/// The revision carried by a representation key, when this boundary can verify it.
+///
+/// Only a local source carries a revision that a decoded raster can be checked against; an
+/// artifact source has no equivalent here, so admitting one would mean trusting a value nobody
+/// verified.
+fn revision_of(key: &RepresentationKey) -> Option<u64> {
     match &key.source {
-        RepresentationSource::Local { revision, .. } => *revision,
-        RepresentationSource::Artifact { .. } => 0,
+        RepresentationSource::Local { revision, .. } => Some(*revision),
+        RepresentationSource::Artifact { .. } => None,
     }
 }
 

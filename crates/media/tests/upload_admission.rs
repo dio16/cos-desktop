@@ -584,9 +584,13 @@ fn a_staged_admission_releases_normally_but_an_uploading_one_is_quarantined() {
     }
     let usage = pool.usage();
     assert_eq!(
-        usage.unreclaimed,
-        FRAME_BYTES * 3,
-        "an uploading admission quarantines its whole reservation when dropped"
+        usage.unreclaimed, FRAME_BYTES,
+        "an uploading admission quarantines one frame when dropped, not three"
+    );
+    assert_eq!(
+        (usage.staging, usage.in_flight, usage.resident),
+        (0, 0, 0),
+        "and the live counters no longer hold it"
     );
 }
 
@@ -598,4 +602,90 @@ fn an_out_of_class_size_is_refused_from_the_header() {
         Err(MediaError::UnsupportedContainer) => {}
         other => panic!("expected an early header refusal, got {other:?}"),
     }
+}
+
+#[test]
+fn release_is_terminal_and_cannot_disturb_a_re_admitted_key() {
+    // A second release must not touch a key that by then belongs to a new admission.
+    let pool = UploadPool::new(UploadBudget {
+        staging_bytes: FRAME_BYTES * 2,
+        in_flight_bytes: FRAME_BYTES * 2,
+        resident_bytes: FRAME_BYTES * 2,
+    });
+    let verified = verified_approved();
+    let mut first = admit_upload(
+        &verified,
+        identity(30, 1),
+        1,
+        &pool,
+        &Cancellation::default(),
+    )
+    .expect("first admission");
+    first.release().expect("first release");
+    assert_eq!(first.stage(), UploadStage::Released);
+
+    let mut second = admit_upload(
+        &verified,
+        identity(30, 1),
+        1,
+        &pool,
+        &Cancellation::default(),
+    )
+    .expect("the same key is admissible again after a clean release");
+
+    // Releasing the finished one again would remove the live key from the pool.
+    assert_eq!(
+        first.release(),
+        Err(UploadRefusal::StageViolation),
+        "release is terminal"
+    );
+    assert_eq!(
+        first.begin_upload(),
+        Err(UploadRefusal::StageViolation),
+        "a released admission cannot transition"
+    );
+    // The second admission still holds its identity: a duplicate attempt is still refused.
+    match admit_upload(
+        &verified,
+        identity(30, 1),
+        1,
+        &pool,
+        &Cancellation::default(),
+    ) {
+        Err(UploadRefusal::DuplicateRepresentation) => {}
+        other => panic!("the live admission must still own its key, got {other:?}"),
+    }
+    second.release().expect("release");
+}
+
+#[test]
+fn an_uploading_drop_quarantines_one_frame_not_three() {
+    // The bytes must leave the live counters and appear once in the quarantine, not twice.
+    let pool = UploadPool::new(UploadBudget {
+        staging_bytes: FRAME_BYTES * 4,
+        in_flight_bytes: FRAME_BYTES * 4,
+        resident_bytes: FRAME_BYTES * 4,
+    });
+    let verified = verified_approved();
+    {
+        let mut admitted = admit_upload(
+            &verified,
+            identity(31, 1),
+            1,
+            &pool,
+            &Cancellation::default(),
+        )
+        .expect("admitted");
+        admitted.begin_upload().expect("begin");
+    }
+    let usage = pool.usage();
+    assert_eq!(
+        (usage.staging, usage.in_flight, usage.resident),
+        (0, 0, 0),
+        "the live counters must not keep the quarantined frame"
+    );
+    assert_eq!(
+        usage.unreclaimed, FRAME_BYTES,
+        "the quarantine holds exactly one frame"
+    );
 }
