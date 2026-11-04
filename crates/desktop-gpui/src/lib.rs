@@ -67,6 +67,8 @@ actions!(
         RailSelectAll,
         DockNext,
         DockPrevious,
+        DockHome,
+        DockEnd,
         DockActivate,
         FlowNodeUp,
         FlowNodeDown,
@@ -165,6 +167,8 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("ctrl-a", RailSelectAll, Some("TaskRailInput")),
         KeyBinding::new("right", DockNext, Some("CandidateDock")),
         KeyBinding::new("left", DockPrevious, Some("CandidateDock")),
+        KeyBinding::new("home", DockHome, Some("CandidateDock")),
+        KeyBinding::new("end", DockEnd, Some("CandidateDock")),
         KeyBinding::new("enter", DockActivate, Some("CandidateDock")),
         KeyBinding::new("space", DockActivate, Some("CandidateDock")),
         KeyBinding::new("up", FlowNodeUp, Some("FlowNodeList")),
@@ -2171,6 +2175,30 @@ impl Shell {
         let next = current.map_or(0, |current| {
             (current as isize + delta).clamp(0, count.saturating_sub(1) as isize) as usize
         });
+        let identity = self.rendered_candidates[next].identity.clone();
+        self.dock_active = Some(identity);
+        let viewport = f32::from(self.candidate_scroll.bounds().size.width);
+        let offset = dock::reveal(
+            count,
+            next,
+            viewport,
+            f32::from(self.candidate_scroll.offset().x),
+        );
+        self.candidate_scroll
+            .set_offset(gpui::point(px(offset), px(0.0)));
+        self.dock_focus.focus(window, cx);
+        cx.notify();
+    }
+
+    /// Home/End for the candidate dock: same active row the left/right keys move.
+    fn move_dock_edge(&mut self, edge: RailEdge, window: &mut Window, cx: &mut Context<Self>) {
+        if !self.dock_is_current() {
+            return;
+        }
+        let count = self.rendered_candidates.len();
+        let Some(next) = rail_edge_index(count, edge) else {
+            return;
+        };
         let identity = self.rendered_candidates[next].identity.clone();
         self.dock_active = Some(identity);
         let viewport = f32::from(self.candidate_scroll.bounds().size.width);
@@ -5240,6 +5268,12 @@ impl Render for Shell {
                             .on_action(cx.listener(|this, _: &DockPrevious, window, cx| {
                                 this.move_dock_active(-1, window, cx);
                             }))
+                            .on_action(cx.listener(|this, _: &DockHome, window, cx| {
+                                this.move_dock_edge(RailEdge::First, window, cx);
+                            }))
+                            .on_action(cx.listener(|this, _: &DockEnd, window, cx| {
+                                this.move_dock_edge(RailEdge::Last, window, cx);
+                            }))
                             .on_action(cx.listener(|this, _: &DockActivate, window, cx| {
                                 this.activate_dock_active(window, cx);
                             }))
@@ -6624,6 +6658,42 @@ mod contrast_scope_tests {
             }
         }
         None
+    }
+
+    #[test]
+    fn the_candidate_dock_binds_home_and_end_too() {
+        let source = include_str!("lib.rs");
+        let cut = source
+            .find(
+                "
+#[cfg(test)]
+mod ",
+            )
+            .expect("the first test module marker");
+        let production = &source[..cut];
+        for binding in [
+            "KeyBinding::new(\"home\", DockHome, Some(\"CandidateDock\"))",
+            "KeyBinding::new(\"end\", DockEnd, Some(\"CandidateDock\"))",
+        ] {
+            assert!(production.contains(binding), "missing binding {binding}");
+        }
+        for (action, call) in [
+            ("&DockHome", "move_dock_edge(RailEdge::First"),
+            ("&DockEnd", "move_dock_edge(RailEdge::Last"),
+        ] {
+            let handler = action_handler_body(production, action)
+                .unwrap_or_else(|| panic!("no handler found for {action}"));
+            assert!(
+                handler.contains(call),
+                "{action} does not reach {call}; its handler was {handler}"
+            );
+        }
+        // The dock's own one-step mover must not be what Home/End reach.
+        let home = action_handler_body(production, "&DockHome").expect("DockHome handler");
+        assert!(
+            !home.contains("move_dock_active"),
+            "Home must not be wired to the one-step mover: {home}"
+        );
     }
 
     #[test]
