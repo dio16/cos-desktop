@@ -13,13 +13,18 @@
 //!   returns the whole `(Size<DevicePixels>, Cow<[u8]>)` for a tile (`crates/gpui/src/platform.rs`).
 //!   `AtlasBackend::insert` likewise takes a complete image.
 //!
-//! There is no public entry point that takes a rectangle, a row range, or a byte range of a
-//! frame, so a 16 MiB frame **cannot** be moved as several sub-budget transfers through the API
-//! this workspace pins. That is what [`UploadPlan::Unavailable`] encodes.
+//! There is no public entry point that takes a rectangle, a row range, or a byte range **of one
+//! frame**, so a single 16 MiB image cannot be **partially updated** through the API this
+//! workspace pins.
 //!
-//! This module decides **only** that question. It performs no upload, measures no throughput and
-//! says nothing about whether a smaller preview path could satisfy the budget - that is a separate
-//! step and is not claimed here.
+//! What that does **not** prove: the same pinned source exposes `RenderImage::new`, and
+//! `paint_image` takes a draw area, so an application could build **several smaller images** and
+//! upload and compose them itself. Whether that route satisfies the budget is
+//! **`NOT_ESTABLISHED`** - it was not evaluated here, and this module does not conclude that
+//! full-resolution display is impossible.
+//!
+//! This module decides **only** the single-image question. It performs no upload, measures no
+//! throughput and says nothing about whether a smaller preview path could satisfy the budget.
 
 /// The provisional upload budget from the design canon.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -52,18 +57,26 @@ pub enum UploadCapability {
 pub enum UploadPlan {
     /// One transfer moves the frame and it fits the budget.
     Whole { bytes: u64, budget: u64 },
-    /// The frame cannot be moved within the budget through the available API.
+    /// A single image of this size cannot be moved within the budget.
+    ///
+    /// This says nothing about application-side tiling, which is `NOT_ESTABLISHED` (see the module
+    /// docs).
     Unavailable {
         frame_bytes: u64,
         budget: u64,
-        /// How many whole-image transfers' worth the frame is, which is why it cannot fit.
-        transfers_needed: u64,
+        /// How many budget-sized units the frame is. This is an arithmetic ratio, **not** a count
+        /// of transfers that can actually be issued.
+        minimum_budget_units: u64,
     },
 }
 
 impl UploadPlan {
-    /// Whether the frame can be uploaded within the budget.
-    pub fn is_available(&self) -> bool {
+    /// Whether the frame **fits the byte budget** as one image.
+    ///
+    /// This is a budget statement only: it is not evidence that the upload succeeds on the GPU,
+    /// that the size is aligned as the backend requires, or that the transferred byte count
+    /// matches. Those are `NOT_ESTABLISHED` until measured.
+    pub fn fits_budget(&self) -> bool {
         matches!(self, Self::Whole { .. })
     }
 }
@@ -81,12 +94,12 @@ pub fn plan_upload(capability: UploadCapability, frame_bytes: u64, budget: u64) 
                     budget,
                 }
             } else {
-                // Round up, so a frame one byte over the budget reports one transfer's worth.
-                let transfers_needed = frame_bytes.div_ceil(budget.max(1));
+                // Round up, so a frame one byte over the budget reports two units rather than one.
+                let minimum_budget_units = frame_bytes.div_ceil(budget.max(1));
                 UploadPlan::Unavailable {
                     frame_bytes,
                     budget,
-                    transfers_needed,
+                    minimum_budget_units,
                 }
             }
         }
@@ -112,14 +125,14 @@ mod tests {
         for rate in [RefreshRate::Hz60, RefreshRate::Hz120] {
             let plan = plan_upload(UploadCapability::WholeImageOnly, frame, rate.budget_bytes());
             assert!(
-                !plan.is_available(),
+                !plan.fits_budget(),
                 "{rate:?}: a whole-image-only uploader cannot move 16 MiB within the budget"
             );
             match plan {
                 UploadPlan::Unavailable {
                     frame_bytes,
                     budget,
-                    transfers_needed,
+                    minimum_budget_units,
                 } => {
                     assert_eq!(frame_bytes, frame);
                     assert_eq!(budget, rate.budget_bytes());
@@ -128,7 +141,7 @@ mod tests {
                         RefreshRate::Hz60 => 4,
                         RefreshRate::Hz120 => 8,
                     };
-                    assert_eq!(transfers_needed, expected);
+                    assert_eq!(minimum_budget_units, expected);
                 }
                 other => panic!("expected Unavailable, got {other:?}"),
             }
@@ -155,11 +168,15 @@ mod tests {
     fn one_byte_over_the_budget_is_unavailable() {
         let budget = RefreshRate::Hz60.budget_bytes();
         let plan = plan_upload(UploadCapability::WholeImageOnly, budget + 1, budget);
-        assert!(!plan.is_available());
+        assert!(!plan.fits_budget());
         match plan {
             UploadPlan::Unavailable {
-                transfers_needed, ..
-            } => assert_eq!(transfers_needed, 2, "rounding up reports two transfers"),
+                minimum_budget_units,
+                ..
+            } => assert_eq!(
+                minimum_budget_units, 2,
+                "rounding up reports two budget units"
+            ),
             other => panic!("expected Unavailable, got {other:?}"),
         }
     }
@@ -176,7 +193,7 @@ mod tests {
                 frame,
                 RefreshRate::Hz60.budget_bytes()
             )
-            .is_available()
+            .fits_budget()
         );
         assert!(
             !plan_upload(
@@ -184,7 +201,7 @@ mod tests {
                 frame,
                 RefreshRate::Hz120.budget_bytes()
             )
-            .is_available()
+            .fits_budget()
         );
     }
 }
