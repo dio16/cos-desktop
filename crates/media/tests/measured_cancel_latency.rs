@@ -104,45 +104,47 @@ fn cancellation_from_another_thread_mid_decode_returns_promptly() {
 
     let bytes = png_rgb(WIDTH, HEIGHT);
     let cancel = Cancellation::default();
-    let rows_seen = Arc::new(AtomicU64::new(0));
     let cancelled_at: Arc<std::sync::Mutex<Option<Instant>>> =
         Arc::new(std::sync::Mutex::new(None));
+    // One lock guards both the row counter and the moment of cancellation, so the baseline cannot
+    // be inflated by rows the decode finishes between the flag being set and the count being read.
+    // Reading the count and setting the flag happen under the same lock the row loop needs.
+    let progress: Arc<std::sync::Mutex<u64>> = Arc::new(std::sync::Mutex::new(0));
+    let rows_at_flag = Arc::new(AtomicU64::new(0));
 
-    // The decode runs on this thread; the helper sets the flag while the image is still being
-    // decoded, which is the case the row-boundary measurement cannot represent.
     let helper_cancel = cancel.clone();
     let helper_stamp = Arc::clone(&cancelled_at);
-    // The helper also records how many rows had been reported when it set the flag, so the final
-    // row can be compared against it: that is what shows the loop stopped at the next check
-    // rather than running on for some other reason.
-    let progress = Arc::clone(&rows_seen);
-    let rows_at_flag = Arc::new(AtomicU64::new(0));
+    let helper_progress = Arc::clone(&progress);
     let helper_rows = Arc::clone(&rows_at_flag);
     let helper = std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(5));
+        let mut rows = helper_progress.lock().expect("progress");
+        // Snapshot first, then set the flag, both while holding the lock the loop needs to count
+        // its next row: no row can be counted between these two statements.
+        helper_rows.store(*rows, Ordering::SeqCst);
         *helper_stamp.lock().expect("stamp") = Some(Instant::now());
         helper_cancel.cancel();
-        helper_rows.store(progress.load(Ordering::SeqCst), Ordering::SeqCst);
+        *rows = *rows;
     });
 
-    let seen = Arc::clone(&rows_seen);
+    let loop_progress = Arc::clone(&progress);
     let result = media::decode_raster_with_row_hook(&bytes, limits(), &cancel, &mut |rows| {
-        seen.store(u64::from(rows), Ordering::SeqCst);
+        let mut counter = loop_progress.lock().expect("progress");
+        *counter = u64::from(rows);
     });
 
     let returned = Instant::now();
     helper.join().expect("helper thread");
     let cancelled_moment = cancelled_at.lock().expect("stamp").expect("stamp set");
     let micros = returned.duration_since(cancelled_moment).as_micros();
-    let stopped_at = rows_seen.load(Ordering::SeqCst);
+    let stopped_at = *progress.lock().expect("progress");
+    let baseline = rows_at_flag.load(Ordering::SeqCst);
 
     eprintln!(
-        "external cancel mid-decode: stopped after row {stopped_at} of {HEIGHT}, \
-         returned {micros} us after the flag was set"
+        "external cancel mid-decode: {baseline} rows counted when the flag was set, stopped after \
+         row {stopped_at} of {HEIGHT}, returned {micros} us after the flag was set"
     );
     assert_eq!(result.err(), Some(MediaError::Cancelled));
-    let rows_when_flag_set = rows_at_flag.load(Ordering::SeqCst);
-    eprintln!("rows reported when the flag was set: {rows_when_flag_set}");
     assert!(
         stopped_at > 0 && stopped_at < u64::from(HEIGHT),
         "the cancellation must have landed mid-image, not before the first row or after the last"
@@ -150,9 +152,9 @@ fn cancellation_from_another_thread_mid_decode_returns_promptly() {
     // The row in progress when the flag was set may still finish, so one row of slack is the
     // expected allowance; anything beyond that means the loop kept decoding past the check.
     assert!(
-        stopped_at <= rows_when_flag_set.saturating_add(1),
-        "the loop stopped at row {stopped_at} although only {rows_when_flag_set} rows had been \
-         reported when the flag was set: it kept decoding past the cancellation check"
+        stopped_at <= baseline.saturating_add(1),
+        "the loop stopped at row {stopped_at} although only {baseline} rows had been counted when \
+         the flag was set: it kept decoding past the cancellation check"
     );
     assert!(
         micros <= BOUND_US,
