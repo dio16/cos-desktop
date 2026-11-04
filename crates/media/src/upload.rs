@@ -24,7 +24,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::{
     AcceptedFormat, Cancellation, DecodeLimits, DecodedRaster, MediaError, PixelSize,
-    RepresentationKey, decode_raster,
+    RepresentationKey, RepresentationSource, decode_raster,
 };
 
 /// The one verified source class this boundary accepts.
@@ -64,6 +64,8 @@ const PNG_COLOUR_TYPE_RGB: u8 = 2;
 const PNG_BIT_DEPTH_OFFSET: usize = 24;
 /// Byte offset of the colour type, one past the bit depth.
 const PNG_COLOUR_TYPE_OFFSET: usize = 25;
+/// Byte offset of the interlace method, one past the colour type.
+const PNG_INTERLACE_OFFSET: usize = 28;
 
 /// Decode an encoded image **for upload**, producing the class proof only if the source really was
 /// the approved class.
@@ -72,11 +74,23 @@ pub fn decode_for_upload(
     limits: DecodeLimits,
     cancel: &Cancellation,
 ) -> Result<VerifiedRaster, MediaError> {
+    // Decide what can be decided from the header, before paying for a decode. The approved class
+    // is a non-interlaced PNG: the running-decoder cancellation evidence behind this approval is
+    // non-interlaced only, so an Adam7 image must not acquire the proof.
+    if bytes.len() <= PNG_INTERLACE_OFFSET {
+        return Err(MediaError::UnsupportedContainer);
+    }
+    if &bytes[12..16] != b"IHDR" {
+        return Err(MediaError::UnsupportedContainer);
+    }
+    if bytes[PNG_BIT_DEPTH_OFFSET] != 8
+        || bytes[PNG_COLOUR_TYPE_OFFSET] != PNG_COLOUR_TYPE_RGB
+        || bytes[PNG_INTERLACE_OFFSET] != 0
+    {
+        return Err(MediaError::UnsupportedContainer);
+    }
     let raster = decode_raster(bytes, limits, cancel)?;
     let approved = raster.format == AcceptedFormat::Png
-        && bytes.len() > PNG_COLOUR_TYPE_OFFSET
-        && bytes[PNG_BIT_DEPTH_OFFSET] == 8
-        && bytes[PNG_COLOUR_TYPE_OFFSET] == PNG_COLOUR_TYPE_RGB
         && raster.size == PixelSize::new(2048, 2048).map_err(|_| MediaError::InvalidMetadata)?;
     if !approved {
         return Err(MediaError::UnsupportedContainer);
@@ -140,9 +154,13 @@ struct PoolState {
     in_flight: u64,
     resident: u64,
     /// Resident bytes whose GPU completion was never asserted (dropped without `release`). Kept
-    /// visible instead of being reported as freed.
+    /// visible instead of being reported as freed, and **counted against the resident limit**,
+    /// because a resource nobody has confirmed released still occupies the device.
     unreclaimed: u64,
     resident_keys: Vec<RepresentationKey>,
+    /// Keys whose resident bytes are quarantined. Reuse is refused until a safe release is
+    /// asserted, so the same representation cannot be admitted twice on the device.
+    unreclaimed_keys: Vec<RepresentationKey>,
 }
 
 /// One snapshot of the pool, for reporting and tests.
@@ -242,11 +260,17 @@ impl AdmittedUpload {
         Ok(())
     }
 
-    /// Release the admission, freeing all three counters and the identity entry.
+    /// Abort a staged admission, or release a resident one.
     ///
-    /// This is the only path that frees resident bytes: the caller is asserting the device copy is
-    /// gone.
-    pub fn release(mut self) {
+    /// The two cases are deliberately separate in effect: a `Staged` admission never transferred
+    /// anything, so all three counters go back; a `Resident` one is the caller asserting the device
+    /// copy is gone. Releasing mid-transfer is refused - the in-flight bytes are still in use, and
+    /// handing them to another transfer would let the device hold more than its budget.
+    pub fn release(mut self) -> Result<(), UploadRefusal> {
+        if self.stage == UploadStage::Uploading {
+            // Leave the reservation in place; dropping without release will quarantine it.
+            return Err(UploadRefusal::StageViolation);
+        }
         let bytes = self.bytes;
         let key = self.identity.key.clone();
         self.pool.with_state(|state| {
@@ -258,6 +282,7 @@ impl AdmittedUpload {
         self.raster = None;
         // Zeroing the byte count tells `Drop` the reservation was consumed.
         self.bytes = 0;
+        Ok(())
     }
 }
 
@@ -276,6 +301,9 @@ impl Drop for AdmittedUpload {
             state.resident = state.resident.saturating_sub(bytes);
             state.unreclaimed = state.unreclaimed.saturating_add(bytes);
             state.resident_keys.retain(|entry| *entry != key);
+            if !state.unreclaimed_keys.contains(&key) {
+                state.unreclaimed_keys.push(key);
+            }
         });
     }
 }
@@ -313,13 +341,26 @@ pub fn admit_upload(
     let bytes = expected;
     let key = identity.key.clone();
     let limits = pool.limits();
+    // The identity must describe this raster: a key whose size disagrees with the pixels would let
+    // a caller label one representation as another.
+    if identity.key.size != verified.raster.size {
+        return Err(UploadRefusal::WrongLayout);
+    }
+    if identity.source_revision != revision_of(&identity.key) {
+        return Err(UploadRefusal::WrongLayout);
+    }
     pool.with_state(|state| {
-        if state.resident_keys.contains(&key) {
+        if state.resident_keys.contains(&key) || state.unreclaimed_keys.contains(&key) {
             return Err(UploadRefusal::DuplicateRepresentation);
         }
         let staging_over = state.staging.saturating_add(bytes) > limits.staging_bytes;
         let in_flight_over = state.in_flight.saturating_add(bytes) > limits.in_flight_bytes;
-        let resident_over = state.resident.saturating_add(bytes) > limits.resident_bytes;
+        // Quarantined bytes occupy the device until a release is asserted, so they count here.
+        let resident_over = state
+            .resident
+            .saturating_add(state.unreclaimed)
+            .saturating_add(bytes)
+            > limits.resident_bytes;
         if staging_over || in_flight_over || resident_over {
             return Err(UploadRefusal::BudgetExceeded {
                 staging: staging_over,
@@ -341,6 +382,14 @@ pub fn admit_upload(
         bytes,
         pool: Arc::clone(pool),
     })
+}
+
+/// The revision carried by a representation key, so an identity cannot claim a different one.
+fn revision_of(key: &RepresentationKey) -> u64 {
+    match &key.source {
+        RepresentationSource::Local { revision, .. } => *revision,
+        RepresentationSource::Artifact { .. } => 0,
+    }
 }
 
 /// Map a refusal onto the existing error vocabulary, for callers that report one type.
