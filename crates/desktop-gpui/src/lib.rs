@@ -35,6 +35,7 @@ mod shell_style;
 mod stop;
 pub mod tokens;
 mod trace;
+pub mod upload_budget;
 use contrast::{ContrastState, contrast_probe_worker};
 use shell_style::TextSpec;
 use stop::{ReadCompletion, ReadFailure, ReceiptData, ReceiptFeedback, StopProgress, StopTracker};
