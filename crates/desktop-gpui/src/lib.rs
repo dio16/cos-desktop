@@ -3953,7 +3953,8 @@ impl Render for Shell {
             .text_color(rgb(if stop_enabled {
                 colors.danger_text
             } else {
-                colors.muted_text
+                // Disabled is one row state, and its text colour is decided in one place.
+                shell_style::row_visual(shell_style::RowState::Disabled, &colors).text
             }))
             .child(if stop_enabled && retryable_admission {
                 "新しい停止要求を送る"
@@ -4362,7 +4363,16 @@ impl Render for Shell {
                     .px_2()
                     .py_2()
                     .when_some(row_border, |element, width| element.border(width))
-                    .border_color(rgb(shell_style::dock_row_color(selected, &colors)))
+                    .border_color(rgb(shell_style::row_visual(
+                        match (selected, active) {
+                            (true, true) => shell_style::RowState::SelectedAndFocused,
+                            (true, false) => shell_style::RowState::Selected,
+                            (false, true) => shell_style::RowState::Focused,
+                            (false, false) => shell_style::RowState::Normal,
+                        },
+                        &colors,
+                    )
+                    .border))
                     .cursor_pointer()
                     .child(
                         div()
