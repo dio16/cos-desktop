@@ -405,3 +405,185 @@ mod bounds_tests {
         assert_eq!(plan.frame_periods_at_one_tile, 9);
     }
 }
+
+/// One tile's rectangle within the frame, in pixels.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct TileSpan {
+    pub x: u32,
+    pub y: u32,
+    pub width: u32,
+    pub height: u32,
+}
+
+impl TileSpan {
+    /// Bytes this tile occupies as RGBA8.
+    pub fn bytes(&self) -> u64 {
+        u64::from(self.width) * u64::from(self.height) * 4
+    }
+}
+
+/// One frame period's worth of tiles, all of which together fit the budget.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UploadPeriod {
+    pub tiles: Vec<TileSpan>,
+    /// Total bytes this period would move.
+    pub bytes: u64,
+}
+
+/// A distribution of a frame's tiles across frame periods.
+///
+/// Each period stays within the per-frame budget, so a full-resolution upload spread over these
+/// periods never asks for more than the budget in any one of them. This is **arithmetic**: the
+/// periods are not scheduled against a clock, no transfer is performed, and whether the
+/// application can actually keep to one period's worth of work per frame is `NOT_ESTABLISHED`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UploadSchedule {
+    pub periods: Vec<UploadPeriod>,
+    pub budget: u64,
+}
+
+impl UploadSchedule {
+    /// How many frame periods the schedule needs.
+    pub fn period_count(&self) -> usize {
+        self.periods.len()
+    }
+
+    /// Whether every period stays within the budget.
+    pub fn every_period_fits(&self) -> bool {
+        self.periods
+            .iter()
+            .all(|period| period.bytes <= self.budget)
+    }
+}
+
+/// Distribute a `frame_edge`-square frame's tiles of `tile_edge` pixels across frame periods that
+/// each fit `budget` bytes.
+///
+/// Tiles are packed greedily in row-major order: a tile joins the current period when it still
+/// fits, otherwise a new period starts. Greedy packing is not claimed to minimise the period count
+/// for every grid, and the tests only pin what it does do.
+///
+/// Returns `None` for a zero-sized frame or tile, or when a single tile does not fit the budget at
+/// all - no distribution can fix that.
+pub fn schedule_tiles(frame_edge: u32, tile_edge: u32, budget: u64) -> Option<UploadSchedule> {
+    if frame_edge == 0 || tile_edge == 0 || budget < 4 {
+        return None;
+    }
+    let mut periods: Vec<UploadPeriod> = Vec::new();
+    for y in (0..frame_edge).step_by(tile_edge as usize) {
+        for x in (0..frame_edge).step_by(tile_edge as usize) {
+            let span = TileSpan {
+                x,
+                y,
+                width: tile_edge.min(frame_edge - x),
+                height: tile_edge.min(frame_edge - y),
+            };
+            let bytes = span.bytes();
+            if bytes > budget {
+                return None;
+            }
+            match periods.last_mut() {
+                Some(period) if period.bytes + bytes <= budget => {
+                    period.tiles.push(span);
+                    period.bytes += bytes;
+                }
+                _ => periods.push(UploadPeriod {
+                    tiles: vec![span],
+                    bytes,
+                }),
+            }
+        }
+    }
+    Some(UploadSchedule { periods, budget })
+}
+
+#[cfg(test)]
+mod schedule_tests {
+    use super::*;
+
+    const APPROVED_EDGE: u32 = 2048;
+
+    #[test]
+    fn a_1024_tile_grid_needs_one_period_per_tile() {
+        // Each 1024x1024 tile is exactly the 60 Hz budget, so nothing can share a period.
+        let schedule = schedule_tiles(APPROVED_EDGE, 1024, RefreshRate::Hz60.budget_bytes())
+            .expect("a schedule exists");
+        assert_eq!(schedule.period_count(), 4);
+        assert!(schedule.every_period_fits());
+        for period in &schedule.periods {
+            assert_eq!(
+                period.tiles.len(),
+                1,
+                "one tile per period at exactly budget"
+            );
+            assert_eq!(period.bytes, RefreshRate::Hz60.budget_bytes());
+        }
+    }
+
+    #[test]
+    fn smaller_tiles_pack_several_per_period() {
+        // 512x512 tiles are 1 MiB each, so four of them fill a 4 MiB period: 16 tiles, 4 periods.
+        let budget = RefreshRate::Hz60.budget_bytes();
+        let schedule = schedule_tiles(APPROVED_EDGE, 512, budget).expect("a schedule exists");
+        assert_eq!(schedule.period_count(), 4);
+        assert!(schedule.every_period_fits());
+        for period in &schedule.periods {
+            assert_eq!(period.tiles.len(), 4);
+            assert_eq!(period.bytes, budget);
+        }
+    }
+
+    #[test]
+    fn the_schedule_covers_every_pixel_exactly_once() {
+        for (tile_edge, budget) in [
+            (1024u32, RefreshRate::Hz60.budget_bytes()),
+            (724, RefreshRate::Hz120.budget_bytes()),
+            (512, RefreshRate::Hz60.budget_bytes()),
+            (300, 512 * 1024),
+        ] {
+            let schedule = schedule_tiles(APPROVED_EDGE, tile_edge, budget).expect("a schedule");
+            let mut covered = 0u64;
+            let mut seen = vec![0u64; (APPROVED_EDGE as usize) * (APPROVED_EDGE as usize) / 64 + 1];
+            for period in &schedule.periods {
+                assert!(
+                    period.bytes <= budget,
+                    "tile_edge {tile_edge}: a period exceeds the budget"
+                );
+                for span in &period.tiles {
+                    assert!(
+                        span.x + span.width <= APPROVED_EDGE,
+                        "tile runs off the frame"
+                    );
+                    assert!(
+                        span.y + span.height <= APPROVED_EDGE,
+                        "tile runs off the frame"
+                    );
+                    for y in span.y..span.y + span.height {
+                        for x in span.x..span.x + span.width {
+                            let index = (y as usize) * (APPROVED_EDGE as usize) + x as usize;
+                            let word = index / 64;
+                            let bit = 1u64 << (index % 64);
+                            assert_eq!(seen[word] & bit, 0, "pixel ({x},{y}) is covered twice");
+                            seen[word] |= bit;
+                        }
+                    }
+                    covered += u64::from(span.width) * u64::from(span.height);
+                }
+            }
+            assert_eq!(
+                covered,
+                u64::from(APPROVED_EDGE) * u64::from(APPROVED_EDGE),
+                "tile_edge {tile_edge}: the schedule must cover the frame"
+            );
+        }
+    }
+
+    #[test]
+    fn an_impossible_schedule_is_refused() {
+        // A tile larger than the budget cannot be placed in any period.
+        assert!(schedule_tiles(APPROVED_EDGE, 1024, 1024 * 1024).is_none());
+        assert!(schedule_tiles(0, 1024, RefreshRate::Hz60.budget_bytes()).is_none());
+        assert!(schedule_tiles(APPROVED_EDGE, 0, RefreshRate::Hz60.budget_bytes()).is_none());
+        assert!(schedule_tiles(APPROVED_EDGE, 1024, 3).is_none());
+    }
+}
