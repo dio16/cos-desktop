@@ -4574,6 +4574,7 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 ### 19.245 MP-IMG3-S1: atomic quarantine, and an attempt to reproduce the Gate failure (2026-11-04)
 
 - **Atomic quarantine (A-05, fixed):** a mid-transfer drop registered its counters and identity under one lock and its payload under a second, so an observer could see quarantined bytes with no payload. The payload is now registered **inside the same locked section** as the counters and the identity.
+- **Digests compared directly (A-07):** the first version of the investigation compared decoded **bytes**; the failed test had compared **digests**, so the comparison is now made on digests too - SHA-256 of the **encoded** input and of the **decoded** output, repeated sequentially and with four decodes running at once, plus a check that encoding the same image twice yields the same bytes. Every one of them repeats exactly, so neither the encoder nor the digest computation is the part that differed.
 - **The Gate failure, investigated rather than explained away (A-06):** §19.244 recorded that a test compared digests of two decodes of the same encoded bytes and found them different, without identifying the cause. A new `crates/media/tests/decode_determinism.rs` asks the question directly:
   - **5 sequential decodes** of the same bytes: byte-identical.
   - **4 concurrent decodes** of the same bytes: byte-identical, and identical to the sequential result.

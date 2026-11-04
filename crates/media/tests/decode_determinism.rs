@@ -8,7 +8,18 @@
 
 use image::{DynamicImage, ImageFormat, RgbImage};
 use media::{Cancellation, DecodeBudget, DecodeLimits, decode_raster};
+use sha2::{Digest, Sha256};
 use std::io::Cursor;
+
+/// SHA-256 of a byte slice, computed the same way the upload boundary computes it.
+fn sha256(bytes: &[u8]) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    let digest = hasher.finalize();
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&digest);
+    out
+}
 
 fn limits() -> DecodeLimits {
     DecodeBudget::ratified_default()
@@ -104,4 +115,52 @@ fn the_approved_class_size_is_also_deterministic() {
         second, first,
         "two decodes of the approved class size produced different bytes"
     );
+}
+
+#[test]
+fn the_encoded_and_decoded_digests_repeat_exactly() {
+    // The Gate failure compared digests rather than bytes, so compare digests directly: one of the
+    // encoded input and one of the decoded output, sequentially and concurrently. If these repeat,
+    // the digest computation is not the part that differed; if they do not, this is where it is.
+    let encoded = png(512, 512);
+    let encoded_digest = sha256(&encoded);
+    let decoded_digest = sha256(&decode_pixels(&encoded));
+
+    let encoded_again = png(512, 512);
+    assert_eq!(
+        sha256(&encoded_again),
+        encoded_digest,
+        "encoding the same image twice must produce the same bytes"
+    );
+
+    for run in 1..4 {
+        assert_eq!(
+            sha256(&decode_pixels(&encoded)),
+            decoded_digest,
+            "run {run}: the decoded digest changed"
+        );
+        assert_eq!(
+            sha256(&encoded),
+            encoded_digest,
+            "run {run}: the encoded digest changed"
+        );
+    }
+
+    // Now the same comparison with the decodes running at once.
+    let encoded = std::sync::Arc::new(encoded);
+    let mut handles = Vec::new();
+    for _ in 0..4 {
+        let encoded = std::sync::Arc::clone(&encoded);
+        handles.push(std::thread::spawn(move || {
+            (sha256(&encoded), sha256(&decode_pixels(&encoded)))
+        }));
+    }
+    for (index, handle) in handles.into_iter().enumerate() {
+        let (encoded_seen, decoded_seen) = handle.join().expect("decode thread");
+        assert_eq!(encoded_seen, encoded_digest, "thread {index}: input digest");
+        assert_eq!(
+            decoded_seen, decoded_digest,
+            "thread {index}: output digest"
+        );
+    }
 }
