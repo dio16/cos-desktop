@@ -4492,3 +4492,11 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests:** `the_candidate_dock_binds_home_and_end_too` pins both bindings, pairs each action with `move_dock_edge` and the right edge through its own `.on_action` closure, and additionally asserts that the Home handler does **not** reach the one-step mover.
 - **Verified locally:** `cargo test -p desktop-gpui` **130 passed / 0 failed**, `cargo clippy -p desktop-gpui --all-targets -D warnings` clean, `cargo fmt --all -- --check` clean.
 - **Not measured:** **no native keystroke was delivered** - the window cannot be made foreground in this session - so all four Home/End implementations are source-and-unit level, not keyboard observations. MP-AX1/AX2 remain incomplete; Tab traversal, screen-reader quality and product acceptance stay NOT_RUN.
+
+### 19.238 Workspace-wide gate run after the AX1 and IMG2 slices (2026-11-04)
+
+- **Why:** each slice was verified **per crate** as it was written, while the documented completion gates cover the **whole workspace**. This run closes that gap, so the added `peak_alloc` dev-dependency, the direct `png` edge and the new test binaries are exercised together.
+- **Result (all six documented commands, on `90abe30`):** `cargo fmt --all -- --check` clean; `cargo metadata --locked --no-deps` parses; `scripts/check_dependency_rules.py --self-test` and the checker both pass (allowlist verified for **7 workspace members**); `cargo clippy --locked --workspace --all-targets -- -D warnings` clean in 63 s; `cargo test --locked --workspace` passes **every** binary - `desktop-gpui` 104, `media` 75 across ten binaries, the others 11.
+- **Evidence:** `docs/development/evidence-published/workspace-gates-20261104/` with the command log and a `record.json` whose digest was re-verified.
+- **What this is not:** not product acceptance, not a native/GUI verification, and not the independent Refine Gate, which is run separately against the pinned commit.
+- **Still open:** MP-AX1/AX2 remain incomplete (native keyboard, Tab traversal and screen-reader quality unmeasured); the MP-IMG2 row-wise cancellation path is **not** the product decode path; MP-RT1 as a whole, MP-RT2 and product acceptance remain NOT_RUN.

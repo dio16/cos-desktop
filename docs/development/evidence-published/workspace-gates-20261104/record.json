@@ -1,0 +1,13 @@
+{
+  "measurement": "workspace quality gates (fmt, metadata, dependency rules, clippy, workspace tests)",
+  "head": "90abe30870aa9288e4aab69383c68cceedff63f5",
+  "result": "All six documented gate commands pass on this commit: fmt clean, metadata parses, the dependency-rule checker and its self-test pass for seven workspace members, clippy over the whole workspace with warnings-as-errors is clean, and cargo test --workspace passes every binary (desktop-gpui 104, media 75 across ten binaries, others 11).",
+  "why": "The individual slices were verified per crate as they were written. This run covers the workspace as a whole, so the added dev-dependency, the direct png edge and the new test binaries are exercised together under the documented gate commands.",
+  "what_this_is_not": "It is not product acceptance, not a native/GUI verification, and not the independent Refine Gate - the Gate is run separately against a pinned commit.",
+  "files": {
+    "workspace-gates.txt": {
+      "sha256": "sha256:be3fb494c9a218317f3f8d603e39926903a0597feb1903be2db192ec489961db",
+      "bytes": 1215
+    }
+  }
+}

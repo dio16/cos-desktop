@@ -1,0 +1,31 @@
+Workspace quality gates after the MP-AX1 / MP-IMG2 slices
+date: 2026-11-04
+head: 90abe30870aa9288e4aab69383c68cceedff63f5
+CARGO_TARGET_DIR: C:\dev\cos-build-fresh
+
+1) cargo fmt --all -- --check
+   exit 0
+
+2) cargo metadata --locked --no-deps --format-version 1
+   exit 0
+
+3) python -B scripts/check_dependency_rules.py --self-test
+   exit 0, output: OK
+
+4) python -B scripts/check_dependency_rules.py
+   exit 0, output: dependency rules check OK: allowlist edges verified for 7 workspace member(s)
+
+5) cargo clippy --locked --workspace --all-targets -- -D warnings
+   exit 0, finished in 1m 03s, no warnings
+
+6) cargo test --locked --workspace
+   exit 0, every binary passed; notable counts:
+     desktop-gpui lib: 104 passed
+     media (10 binaries): 18 / 8 / 5 / 4 / 3 / 9 / 8 / 2 / 8 / 10 passed
+     others: 4 / 6 / 1 passed
+   no failures, no ignored results that hid a failure
+
+Why this run exists: the MP-AX1 and MP-IMG2 slices were each verified per crate while
+they were written. This run checks the whole workspace under the documented gate
+commands, so a new dev-dependency (peak_alloc), a new normal dependency on the same
+png version image already uses, and the new test binaries are covered together.
