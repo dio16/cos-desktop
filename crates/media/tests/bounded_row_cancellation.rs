@@ -142,31 +142,81 @@ fn a_greyscale_png_is_widened_to_rgba8() {
     );
 }
 
+/// CRC-32 (ISO-HDLC) as PNG chunks use it, so the synthesized chunks are well-formed.
+fn crc32(bytes: &[u8]) -> u32 {
+    let mut crc = 0xffff_ffffu32;
+    for byte in bytes {
+        crc ^= u32::from(*byte);
+        for _ in 0..8 {
+            let mask = (crc & 1).wrapping_neg();
+            crc = (crc >> 1) ^ (0xedb8_8320 & mask);
+        }
+    }
+    !crc
+}
+
+/// Append a well-formed `acTL` chunk immediately after `IHDR`, which is where an APNG puts it.
+fn with_actl(png: &[u8]) -> Vec<u8> {
+    // Signature (8) + IHDR chunk (4 len + 4 type + 13 data + 4 crc) = 33 bytes.
+    const AFTER_IHDR: usize = 33;
+    let mut out = Vec::with_capacity(png.len() + 20);
+    out.extend_from_slice(&png[..AFTER_IHDR]);
+    let mut payload = Vec::new();
+    payload.extend_from_slice(b"acTL");
+    payload.extend_from_slice(&1u32.to_be_bytes()); // num_frames
+    payload.extend_from_slice(&0u32.to_be_bytes()); // num_plays: infinite
+    out.extend_from_slice(&12u32.to_be_bytes()); // chunk length is the data only
+    out.extend_from_slice(&payload);
+    let crc = crc32(&payload);
+    out.extend_from_slice(&crc.to_be_bytes());
+    out.extend_from_slice(&png[AFTER_IHDR..]);
+    out
+}
+
 #[test]
 fn an_animated_png_is_unavailable_through_the_row_path_too() {
-    // A still PNG with an `acTL` chunk spliced in: the existing still-image contract refuses
-    // this as `Unavailable`, and the row path must apply the same rule rather than returning
-    // the first frame of an animation.
-    let mut bytes = png_rgb(32, 32);
-    let actl_chunk = {
-        let mut chunk = Vec::new();
-        chunk.extend_from_slice(&8u32.to_be_bytes());
-        chunk.extend_from_slice(b"acTL");
-        chunk.extend_from_slice(&1u32.to_be_bytes());
-        chunk.extend_from_slice(&0u32.to_be_bytes());
-        chunk.extend_from_slice(&0u32.to_be_bytes());
-        // CRC is not validated by the still-image scan, which only looks for the chunk name.
-        chunk.extend_from_slice(&0u32.to_be_bytes());
-        chunk
-    };
-    // Insert after the 8-byte signature.
-    let mut spliced = Vec::with_capacity(bytes.len() + actl_chunk.len());
-    spliced.extend_from_slice(&bytes[..8]);
-    spliced.extend_from_slice(&actl_chunk);
-    spliced.extend_from_slice(&bytes[8..]);
-    bytes = spliced;
+    // A real still PNG with a well-formed `acTL` after `IHDR`: the existing still-image
+    // contract refuses this as `Unavailable`, and the row path must apply the same rule
+    // instead of returning the first frame of an animation.
+    let bytes = with_actl(&png_rgb(32, 32));
     match media::decode_png_rows(&bytes, limits(), &Cancellation::default()) {
         Err(error) => assert_eq!(error, MediaError::Unavailable),
         Ok(_) => panic!("an animated PNG must not produce a still raster"),
+    }
+}
+
+#[test]
+fn an_interlaced_png_is_refused_as_unsupported() {
+    // The row loop needs full-width rows, which Adam7 does not provide; the contract is
+    // non-interlaced only, so an interlaced input must be a typed refusal rather than a
+    // mis-decoded raster or a generic metadata error.
+    let bytes = {
+        let image = RgbImage::from_fn(17, 9, |x, y| {
+            image::Rgb([(x % 251) as u8, (y % 241) as u8, 7])
+        });
+        let mut out = Vec::new();
+        {
+            let mut encoder = png::Encoder::new(&mut out, 17, 9);
+            encoder.set_color(png::ColorType::Rgb);
+            encoder.set_depth(png::BitDepth::Eight);
+            let mut writer = encoder.write_header().expect("png header");
+            let raw: Vec<u8> = image.as_raw().clone();
+            writer.write_image_data(&raw).expect("png data");
+        }
+        out
+    };
+    // The encoder writes non-interlaced data; flip the IHDR interlace byte to declare Adam7,
+    // fix the IHDR CRC, and require the typed refusal.
+    let mut bytes = bytes;
+    let idat = bytes.windows(4).position(|w| w == b"IHDR").expect("IHDR");
+    let interlace_at = idat + 4 + 12; // type(4) + data offset 12 (width..filter method)
+    bytes[interlace_at] = 1;
+    let crc_start = idat; // PNG hashes the chunk type together with its data
+    let ihdr_end = crc_start + 4 + 13; // chunk type + IHDR data
+    let crc = crc32(&bytes[crc_start..ihdr_end]);
+    bytes[ihdr_end..ihdr_end + 4].copy_from_slice(&crc.to_be_bytes());
+    match media::decode_png_rows(&bytes, limits(), &Cancellation::default()) {
+        Err(error) => assert_eq!(error, MediaError::UnsupportedContainer),
+        Ok(_) => panic!("an interlaced PNG is outside this path's contract"),
     }
 }
