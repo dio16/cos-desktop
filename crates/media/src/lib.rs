@@ -24,6 +24,13 @@ pub use key::{
     DecodePolicy, LocalId, LocalProvenance, Orientation, PixelSize, RepresentationKey,
     RepresentationSource,
 };
+mod upload;
+
+pub use upload::{
+    AdmittedUpload, UploadBudget, UploadIdentity, UploadPool, UploadRefusal, VerifiedSourceClass,
+    admit_upload, refusal_reason,
+};
+
 pub use raster::{
     AcceptedFormat, DecodedRaster, decode_png_rows, decode_png_rows_with_hook, decode_raster,
     decode_raster_joined, decode_raster_with_row_hook,

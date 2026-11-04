@@ -55,6 +55,12 @@ impl Cancellation {
     pub fn cancel(&self) {
         self.0.store(true, Ordering::Release);
     }
+
+    /// Whether cancellation has been requested. Exposed so callers outside this crate - the
+    /// upload admission boundary, for one - can refuse work without attempting it.
+    pub fn is_cancelled(&self) -> bool {
+        self.0.load(Ordering::Acquire)
+    }
     pub(crate) fn check(&self) -> Result<(), MediaError> {
         if self.0.load(Ordering::Acquire) {
             Err(MediaError::Cancelled)
