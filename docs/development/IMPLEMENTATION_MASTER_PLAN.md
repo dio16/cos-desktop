@@ -2454,7 +2454,9 @@ While preparing the MP-R0C-S1-R15 candidate the R0 suite reported **12 skipped t
 | **WebP refusal shape** | **PASS (byte-ceiling kind)** | **516 B at all three areas** under a 64,000 B byte ceiling, i.e. flat (§19.254). A *dimension* refusal remains unbuildable; an earlier note calling the refusal generally unconstructible was too strong |
 | **GIF class peak** | **PASS** | 1024×1024 increment **5,281,574 B** ≤ 9,437,184 B (§19.252) |
 | **GIF refusal shape** | **PASS** | **9,142 B** at all three areas, i.e. flat (§19.252) |
-| Other depths and sizes | **NOT_VERIFIED** | out of this slice |
+| **16-bit PNG** | **REFUSED as `Unavailable`** | a 512×512 16-bit PNG is not decoded; the refusal allocates **151,712 B** against the **1,048,576 B** a decode would need (§19.255) |
+| **Other sizes** | **PASS (512×512 measured)** | ceiling scales with area: **1,463,624 B** ≤ **3,145,728 B** at 512×512 (§19.255) |
+| Other depths and sizes beyond these | **NOT_VERIFIED** | out of this slice |
 | MP-IMG2 overall completion | **NOT CLAIMED** | — |
 
 - **Worker-lifetime evidence:** there is no product-side worker counter (a caller-side increment would measure joined-call concurrency, not live workers, and the scope join already guarantees collection). The evidence is the language-level `std::thread::scope` + `join()` in `decode_raster_joined`, the complete-raster check, and the typed-`Cancelled`/no-publication test.
@@ -4683,3 +4685,11 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Table row corrected** from `NOT_VERIFIED` to **PASS (byte-ceiling kind)**, with the dimension case recorded as still unbuildable rather than dropping the distinction.
 - **Not claimed:** this does not measure a **dimension** refusal for WebP (none can be built), nor cancellation, nor other bit depths and sizes. **MP-IMG2 overall stays NOT CLAIMED**; MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p media --test measured_decode_allocations` 7 passed; workspace clippy clean; `cargo test --locked --workspace` all 44 binaries green.
+
+### 19.255 MP-IMG2: the bit-depth and size rows, and what 16-bit really does (2026-11-05)
+
+- **What the table still said:** one row, **"other depths and sizes: NOT_VERIFIED"**. Two measurements replace part of it.
+- **16-bit is refused, not decoded.** A 512×512 16-bit RGB PNG returns **`Unavailable`**, so there is no peak to measure. What is measurable is the refusal: **151,712 B** allocated, against the **1,048,576 B** of RGBA8 a decode of that area would need. The declared `max_bit_depth` of 16 admits the **header**; the backend does not convert 16-bit into the RGBA8 output class, and that is now recorded as observed behaviour rather than assumed. The pre-existing unit test `a_sixteen_bit_png_is_unavailable_under_an_eight_bit_limit` covers the *narrowed-limit* case; this covers the **default** limits, which is the case a caller actually meets.
+- **The ceiling scales with size.** At 512×512 the declared ceiling is **3,145,728 B** (the same formula over a quarter of the area) and the measured increment is **1,463,624 B**, inside it. The test asserts that the 512 ceiling is strictly smaller than the 2048 one, so the row cannot pass by being compared against a single hard-coded figure.
+- **Not claimed:** no other depths were measured, no sizes beyond 512 and 2048, and "16-bit is refused" is a statement about **this** backend and build rather than about what a future decoder must do. **MP-IMG2 overall stays NOT CLAIMED**; MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p media --test measured_decode_allocations` 9 passed; workspace clippy clean; fmt clean; `cargo test --locked --workspace` all 44 binaries green.
