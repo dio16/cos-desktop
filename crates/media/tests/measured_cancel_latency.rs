@@ -112,10 +112,17 @@ fn cancellation_from_another_thread_mid_decode_returns_promptly() {
     // decoded, which is the case the row-boundary measurement cannot represent.
     let helper_cancel = cancel.clone();
     let helper_stamp = Arc::clone(&cancelled_at);
+    // The helper also records how many rows had been reported when it set the flag, so the final
+    // row can be compared against it: that is what shows the loop stopped at the next check
+    // rather than running on for some other reason.
+    let progress = Arc::clone(&rows_seen);
+    let rows_at_flag = Arc::new(AtomicU64::new(0));
+    let helper_rows = Arc::clone(&rows_at_flag);
     let helper = std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(5));
         *helper_stamp.lock().expect("stamp") = Some(Instant::now());
         helper_cancel.cancel();
+        helper_rows.store(progress.load(Ordering::SeqCst), Ordering::SeqCst);
     });
 
     let seen = Arc::clone(&rows_seen);
@@ -134,9 +141,18 @@ fn cancellation_from_another_thread_mid_decode_returns_promptly() {
          returned {micros} us after the flag was set"
     );
     assert_eq!(result.err(), Some(MediaError::Cancelled));
+    let rows_when_flag_set = rows_at_flag.load(Ordering::SeqCst);
+    eprintln!("rows reported when the flag was set: {rows_when_flag_set}");
     assert!(
         stopped_at > 0 && stopped_at < u64::from(HEIGHT),
         "the cancellation must have landed mid-image, not before the first row or after the last"
+    );
+    // The row in progress when the flag was set may still finish, so one row of slack is the
+    // expected allowance; anything beyond that means the loop kept decoding past the check.
+    assert!(
+        stopped_at <= rows_when_flag_set.saturating_add(1),
+        "the loop stopped at row {stopped_at} although only {rows_when_flag_set} rows had been \
+         reported when the flag was set: it kept decoding past the cancellation check"
     );
     assert!(
         micros <= BOUND_US,
