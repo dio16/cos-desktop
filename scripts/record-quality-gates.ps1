@@ -38,8 +38,9 @@ function Resolve-Tool {
     #>
     param([string]$Name, [string[]]$Probe = @(), [string[]]$ProbeArgs = @())
 
-    # Order is part of the contract: an explicit override must win over anything found by name,
-    # so the caller's candidates are collected first and the PATH lookup for $Name comes after.
+    # Order is part of the contract: the caller's candidates are tried **in the order given**, and
+    # looking up $Name is only the last resort. `-PythonPath` is therefore the documented first
+    # choice and cannot be shadowed by a `python` that happens to be on PATH.
     $candidates = @()
     foreach ($item in $Probe) {
         if ([string]::IsNullOrWhiteSpace($item)) { continue }
@@ -145,7 +146,7 @@ $cargo = Resolve-Tool 'cargo'
 # usual names - each resolved on PATH and verified by launching it. No version is assumed.
 $pythonCandidates = @()
 if (-not [string]::IsNullOrWhiteSpace($PythonPath)) { $pythonCandidates += $PythonPath }
-$pythonCandidates += @('python3', 'python.exe', 'python3.exe')
+$pythonCandidates += @('python', 'python3', 'python.exe', 'python3.exe')
 $python = Resolve-Tool -Name 'python' -Probe $pythonCandidates -ProbeArgs @('-c', 'import sys; print(sys.executable)')
 $gates = @(
     @{ Name = 'fmt';       File = $cargo;  Args = @('fmt', '--all', '--', '--check') },
