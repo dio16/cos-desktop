@@ -13,6 +13,36 @@ use image::{DynamicImage, ImageFormat, RgbImage};
 use media::{Cancellation, DecodeBudget, DecodeLimits, MediaError, PixelSize};
 use std::io::Cursor;
 
+#[path = "fixtures/adam7_png.rs"]
+mod adam7;
+
+/// Minimal base64 decoder, so the fixture needs no test dependency.
+fn base64_decode(text: &str) -> Vec<u8> {
+    fn value(ch: u8) -> Option<u32> {
+        match ch {
+            b'A'..=b'Z' => Some(u32::from(ch - b'A')),
+            b'a'..=b'z' => Some(u32::from(ch - b'a') + 26),
+            b'0'..=b'9' => Some(u32::from(ch - b'0') + 52),
+            b'+' => Some(62),
+            b'/' => Some(63),
+            _ => None,
+        }
+    }
+    let mut out = Vec::new();
+    let mut buffer = 0u32;
+    let mut bits = 0u32;
+    for ch in text.bytes() {
+        let Some(v) = value(ch) else { continue };
+        buffer = (buffer << 6) | v;
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((buffer >> bits) as u8);
+        }
+    }
+    out
+}
+
 fn limits() -> DecodeLimits {
     DecodeBudget::ratified_default()
         .limits()
@@ -255,8 +285,9 @@ fn the_product_path_uses_the_row_decoder_and_keeps_interlaced_pngs_working() {
         raster.size.checked_rgba_bytes().expect("rgba length")
     );
 
-    // An interlaced declaration must still be decoded by the generic decoder rather than
-    // refused, which is the compatibility this wiring has to preserve.
+    // An interlaced declaration must still reach the generic decoder rather than being refused
+    // by the row decoder, which is the compatibility this wiring has to preserve. The payload is
+    // genuinely non-interlaced, so the generic decoder rejects the lying header as metadata.
     let mut interlaced = plain.clone();
     let ihdr = interlaced
         .windows(4)
@@ -267,10 +298,6 @@ fn the_product_path_uses_the_row_decoder_and_keeps_interlaced_pngs_working() {
     let ihdr_end = crc_start + 4 + 13;
     let crc = crc32(&interlaced[crc_start..ihdr_end]);
     interlaced[ihdr_end..ihdr_end + 4].copy_from_slice(&crc.to_be_bytes());
-    // The payload is genuinely non-interlaced, so the header now lies about the layout and the
-    // generic decoder must reject it as metadata rather than returning a wrong raster. What is
-    // asserted here is only that the product path does not route it through the row decoder,
-    // which would answer `UnsupportedContainer`.
     match media::decode_raster(&interlaced, limits(), &Cancellation::default()) {
         Err(error) => assert_eq!(
             error,
@@ -278,5 +305,80 @@ fn the_product_path_uses_the_row_decoder_and_keeps_interlaced_pngs_working() {
             "an interlaced declaration must reach the generic decoder"
         ),
         Ok(_) => panic!("a header that lies about interlace must not produce a raster"),
+    }
+}
+
+#[test]
+fn a_large_png_is_not_refused_by_a_double_reservation() {
+    // The product path takes the process-wide reservation once. If the row decoder took it again,
+    // an image whose ceiling fits the pool on its own would be refused as `Busy`, because twice
+    // that ceiling exceeds the pool. 6000×6000 is chosen so exactly that happens: ceiling about
+    // 289 MB against a 512 MB pool.
+    let bytes = png_rgb(6000, 6000);
+    let size = PixelSize::new(6000, 6000).expect("size");
+    let ceiling = limits().peak_rgba8_bytes(size).expect("ceiling");
+    assert!(
+        ceiling < 536_870_912,
+        "the chosen size must fit the pool on its own, or the test proves nothing"
+    );
+    assert!(
+        ceiling * 2 > 536_870_912,
+        "twice the ceiling must exceed the pool, which is the defect being guarded"
+    );
+    let raster = media::decode_raster(&bytes, limits(), &Cancellation::default())
+        .expect("a large PNG must not be refused for a reservation taken twice");
+    assert_eq!(raster.size, size);
+}
+
+#[test]
+fn the_product_path_can_cancel_between_rows() {
+    // The claim under test is about the *product* path, so drive `decode_raster_with_row_hook`
+    // rather than the standalone row decoder: cancel at row 16 of a 256x512 image and require
+    // `Cancelled` with the hook having seen exactly 16 rows.
+    let bytes = png_rgb(256, 512);
+    let cancel = Cancellation::default();
+    let rows_seen = std::cell::Cell::new(0u32);
+    let result = media::decode_raster_with_row_hook(&bytes, limits(), &cancel, &mut |rows| {
+        rows_seen.set(rows);
+        if rows == 16 {
+            cancel.cancel();
+        }
+    });
+    assert_eq!(result.err(), Some(MediaError::Cancelled));
+    assert_eq!(
+        rows_seen.get(),
+        16,
+        "the product path must stop at the row where cancellation was observed"
+    );
+}
+
+#[test]
+fn a_valid_adam7_png_still_decodes_to_the_expected_pixels() {
+    // An honestly interlaced image: the product path must hand it to the generic decoder and
+    // return the same pixels the fixture was built from.
+    let bytes = base64_decode(adam7::ADAM7_PNG_BASE64);
+    assert_eq!(bytes[28], 1, "the fixture really declares Adam7");
+    let raster = media::decode_raster(&bytes, limits(), &Cancellation::default())
+        .expect("a valid interlaced PNG must decode through the product path");
+    assert_eq!(
+        raster.size,
+        PixelSize::new(adam7::ADAM7_WIDTH, adam7::ADAM7_HEIGHT).expect("size")
+    );
+    let width = adam7::ADAM7_WIDTH as usize;
+    for y in 0..adam7::ADAM7_HEIGHT {
+        for x in 0..adam7::ADAM7_WIDTH {
+            let index = (y as usize * width + x as usize) * 4;
+            let expected = adam7::adam7_expected_pixel(x, y);
+            assert_eq!(
+                [
+                    raster.rgba[index],
+                    raster.rgba[index + 1],
+                    raster.rgba[index + 2]
+                ],
+                expected,
+                "pixel ({x}, {y}) differs from the fixture's pattern"
+            );
+            assert_eq!(raster.rgba[index + 3], 0xff, "an RGB PNG decodes opaque");
+        }
     }
 }

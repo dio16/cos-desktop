@@ -26,7 +26,7 @@ pub use key::{
 };
 pub use raster::{
     AcceptedFormat, DecodedRaster, decode_png_rows, decode_png_rows_with_hook, decode_raster,
-    decode_raster_joined,
+    decode_raster_joined, decode_raster_with_row_hook,
 };
 
 /// Safe failure categories; no private paths, descriptor tokens or payload bodies.

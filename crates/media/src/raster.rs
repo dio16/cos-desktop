@@ -58,7 +58,7 @@ pub fn decode_raster(
     limits: DecodeLimits,
     cancel: &Cancellation,
 ) -> Result<DecodedRaster, MediaError> {
-    decode_raster_inner(bytes, limits, cancel, None, None)
+    decode_raster_inner(bytes, limits, cancel, None, None, None)
 }
 
 /// Test seam: run a decode that cancels at a chosen checkpoint, so the cancellation
@@ -81,8 +81,12 @@ pub(crate) fn decode_raster_with_hook(
     hook: &mut dyn FnMut(),
 ) -> Result<DecodedRaster, MediaError> {
     match phase {
-        HookPhase::AfterAdmission => decode_raster_inner(bytes, limits, cancel, Some(hook), None),
-        HookPhase::AfterConversion => decode_raster_inner(bytes, limits, cancel, None, Some(hook)),
+        HookPhase::AfterAdmission => {
+            decode_raster_inner(bytes, limits, cancel, Some(hook), None, None)
+        }
+        HookPhase::AfterConversion => {
+            decode_raster_inner(bytes, limits, cancel, None, Some(hook), None)
+        }
     }
 }
 
@@ -92,6 +96,7 @@ fn decode_raster_inner(
     cancel: &Cancellation,
     before_decode: Option<&mut dyn FnMut()>,
     before_publish: Option<&mut dyn FnMut()>,
+    png_row_hook: Option<&mut dyn FnMut(u32)>,
 ) -> Result<DecodedRaster, MediaError> {
     cancel.check()?;
     let format = AcceptedFormat::from_bytes(bytes)?;
@@ -115,7 +120,14 @@ fn decode_raster_inner(
     // between rows instead of only before and after one uninterruptible call. Interlaced
     // PNGs and every other container keep the generic path, so no input class loses support.
     if format == AcceptedFormat::Png && !png_is_interlaced(bytes) {
-        let raster = decode_png_rows_with_hook(bytes, limits, cancel, &mut |_rows| {})?;
+        // The reservation was taken above for this decode; the row decoder must not take a
+        // second one for the same image.
+        let mut no_hook = |_rows: u32| {};
+        let row_hook: &mut dyn FnMut(u32) = match png_row_hook {
+            Some(hook) => hook,
+            None => &mut no_hook,
+        };
+        let raster = decode_png_rows_inner(bytes, limits, cancel, row_hook, false)?;
         // Keep the publish seam meaningful on this path: a cancellation arriving after the
         // pixels are ready must still prevent publication, exactly as on the generic path.
         if let Some(hook) = before_publish {
@@ -316,6 +328,19 @@ pub fn decode_png_rows_with_hook(
     cancel: &Cancellation,
     on_row: &mut dyn FnMut(u32),
 ) -> Result<DecodedRaster, MediaError> {
+    decode_png_rows_inner(bytes, limits, cancel, on_row, true)
+}
+
+/// Row-wise PNG decode. `reserve` is false only for the product path, which already holds the
+/// process-wide reservation for this decode: taking it twice would count one image's ceiling
+/// against a finite pool twice and refuse input that fits.
+fn decode_png_rows_inner(
+    bytes: &[u8],
+    limits: DecodeLimits,
+    cancel: &Cancellation,
+    on_row: &mut dyn FnMut(u32),
+    reserve: bool,
+) -> Result<DecodedRaster, MediaError> {
     cancel.check()?;
     if AcceptedFormat::from_bytes(bytes)? != AcceptedFormat::Png {
         return Err(MediaError::UnsupportedContainer);
@@ -343,7 +368,13 @@ pub fn decode_png_rows_with_hook(
         cancel,
     )?;
     let decoded_bytes = admission.decoded_bytes;
-    let _reservation = crate::decode::reserve_in_flight(admission.peak_bytes)?;
+    // The product path already holds the reservation for this decode; taking it twice would
+    // count one image's ceiling against the pool twice and refuse input that fits.
+    let _reservation = if reserve {
+        Some(crate::decode::reserve_in_flight(admission.peak_bytes)?)
+    } else {
+        None
+    };
 
     let mut decoder = png::Decoder::new(Cursor::new(bytes));
     // Expand palette/low-bit-depth input and add an alpha channel so every row arrives as
@@ -414,6 +445,18 @@ pub fn decode_png_rows_with_hook(
         format: AcceptedFormat::Png,
         rgba,
     })
+}
+
+/// Product-path seam: decode exactly as [`decode_raster`] does, but report each PNG row and let
+/// the caller cancel from inside the row loop. Used to prove that the product path - not just the
+/// standalone row decoder - observes cancellation between rows.
+pub fn decode_raster_with_row_hook(
+    bytes: &[u8],
+    limits: DecodeLimits,
+    cancel: &Cancellation,
+    on_row: &mut dyn FnMut(u32),
+) -> Result<DecodedRaster, MediaError> {
+    decode_raster_inner(bytes, limits, cancel, None, None, Some(on_row))
 }
 
 /// Decode on a scoped worker and join it before returning.
