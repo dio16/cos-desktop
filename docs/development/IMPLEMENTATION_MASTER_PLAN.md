@@ -4523,3 +4523,11 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Verified:** `cargo test --locked --workspace` all 41 result lines green, `cargo clippy --locked --workspace --all-targets -D warnings` clean, `cargo fmt --all -- --check` clean, dependency rules verified for 7 members.
 - **Not claimed:** no **latency bound** was measured for cancellation; JPEG/WebP/GIF still cannot be interrupted at all; no native/GUI verification; MP-IMG2 is not complete, MP-IMG3 is not started, product acceptance NOT_RUN.
 
+### 19.241 MP-IMG2: cancellation return latency, measured (2026-11-04)
+
+- **What was open:** §19.240 recorded that the product PNG path observes cancellation **between rows** but explicitly claimed **no latency bound**, because none had been measured.
+- **Measured (`crates/media/tests/measured_cancel_latency.rs`, 3000×3000 PNG, three runs):** cancelling from inside the row hook at row 750 returned **0 ms** after the cancellation in every run, with the result typed `Cancelled` and the hook having seen exactly the requested row. For scale, the same image takes **1783 ms** to decode in full, about **594 µs per row**, so the wait is at most one row's work rather than the remainder of the image.
+- **Why that is the number to expect:** the row loop checks cancellation at the top of each iteration, so after the flag is set the next check happens immediately. The measured 0 ms is consistent with that design and would not be if the loop checked only every N rows.
+- **The asserted threshold is a measurement guard, not an SLO:** the test fails above **250 ms**, which is far beyond one row's work but far below a full decode of this image, so a regression that stopped checking between rows fails instead of quietly passing.
+- **Verified:** `cargo test --locked --workspace` all **42** result lines green, `cargo clippy --locked --workspace --all-targets -D warnings` clean, `cargo fmt --all -- --check` clean.
+- **Still not claimed:** this covers **PNG only** - interlaced PNG, JPEG, WebP and GIF remain uninterruptible, the figure is for one machine and one image size, and no native/GUI verification, MP-IMG2 completion, MP-IMG3 start or product acceptance is implied.
