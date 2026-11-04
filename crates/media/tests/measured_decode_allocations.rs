@@ -1,20 +1,26 @@
-// MP-IMG2 internal allocator peak and rejection allocation flatness.
+// MP-IMG2 internal allocator peak, measured on the assigned class.
 //
-// §19.119 left both conditions at HOLD because measuring them needs a counting
-// `GlobalAlloc`, and this workspace forbids *own-code* `unsafe`. This binary takes the
-// unblock option that needs no own-code `unsafe`: a third-party allocator wrapper
-// (`peak_alloc`, Apache-2.0/MIT) declared as `#[global_allocator]`. Installing a global
-// allocator is a declaration, not an `unsafe impl` in this crate.
+// §19.119 left internal allocator peak and rejection allocation flatness at HOLD because
+// measuring them needs a counting `GlobalAlloc` and this workspace forbids *own-code*
+// `unsafe`. This binary takes the unblock option that needs none: a third-party allocator
+// wrapper (`peak_alloc`, dev-dependency of `media` only, Apache-2.0/MIT) declared as
+// `#[global_allocator]`.
 //
-// What is measured here:
-// - the internal peak of one decode of the class against the declared admission ceiling;
-// - that a refused decode allocates far less than an admitted one (flatness of refusal).
+// **What the counter measures:** `peak_alloc::peak_usage()` is a **process-wide** figure -
+// the maximum live allocation at any moment - not a decoder-only figure. `reset_peak_usage`
+// resets the peak to the *current* live amount, not to zero. Both facts make every number
+// here an **upper bound** that includes this test harness's own allocations, which is why
+// the assertions are phrased as "does not exceed", never as "the decoder used exactly X".
 //
-// What is NOT measured here: peak across concurrent decodes, allocator behaviour on
-// cancellation, or the process Working Set (that is `examples/peak_probe.rs`).
+// Measured: the assigned 2048×2048 static 8-bit PNG class against its declared admission
+// ceiling, and that a refused input does not allocate anywhere near what admitting it would
+// have needed. Not measured: concurrency, allocator behaviour under cancellation, or the
+// process Working Set (`examples/peak_probe.rs`).
 
 use image::{DynamicImage, ImageFormat, RgbImage};
-use media::{Cancellation, DecodeBudget, MediaError, PixelSize, decode_raster_joined};
+use media::{
+    Cancellation, DecodeBudget, DecodeLimits, MediaError, PixelSize, decode_raster_joined,
+};
 use peak_alloc::PeakAlloc;
 use std::io::Cursor;
 
@@ -27,7 +33,7 @@ fn test_guard() -> std::sync::MutexGuard<'static, ()> {
     TEST_LOCK.lock().expect("test lock")
 }
 
-fn limits() -> media::DecodeLimits {
+fn limits() -> DecodeLimits {
     DecodeBudget::ratified_default()
         .limits()
         .expect("ratified budget resolves")
@@ -45,11 +51,16 @@ fn png_rgb(width: u32, height: u32) -> Vec<u8> {
 }
 
 #[test]
-fn one_decode_peak_stays_within_the_declared_ceiling() {
+fn the_assigned_class_peak_does_not_exceed_its_ceiling() {
     let _guard = test_guard();
-    let size = PixelSize::new(256, 256).expect("size");
+    // The assigned measurement class from §19.119: static 8-bit RGB PNG at 2048×2048.
+    let size = PixelSize::new(2048, 2048).expect("size");
     let ceiling = limits().peak_rgba8_bytes(size).expect("ceiling");
-    let bytes = png_rgb(256, 256);
+    assert_eq!(
+        ceiling, 34_603_008,
+        "the assigned class ceiling is fixed by the formula"
+    );
+    let bytes = png_rgb(2048, 2048);
 
     PEAK_ALLOC.reset_peak_usage();
     let raster = decode_raster_joined(&bytes, limits(), &Cancellation::default())
@@ -57,35 +68,42 @@ fn one_decode_peak_stays_within_the_declared_ceiling() {
     let peak = PEAK_ALLOC.peak_usage() as u64;
     drop(raster);
 
-    eprintln!("measured peak {peak} B against ceiling {ceiling} B for 256x256");
+    eprintln!(
+        "2048x2048 process-wide peak {peak} B against the declared ceiling {ceiling} B \
+         (upper bound: includes this harness)"
+    );
     assert!(
         peak > 0,
-        "the counter must observe allocations, otherwise this test proves nothing"
+        "the counter observed nothing, so this measurement proves nothing"
     );
     assert!(
         peak <= ceiling,
-        "decoded peak {peak} B exceeded the declared ceiling {ceiling} B"
+        "process-wide peak {peak} B exceeded the declared ceiling {ceiling} B"
     );
 }
 
 #[test]
-fn a_refused_decode_allocates_far_less_than_an_admitted_one() {
+fn a_refused_input_does_not_allocate_like_the_decode_it_would_have_needed() {
     let _guard = test_guard();
-    let admitted = png_rgb(256, 256);
+    // Comparing a refused 20,000×1 input against an admitted 256×256 decode would compare
+    // different pixel counts. Compare it instead against the ceiling that admitting it would
+    // have required: refusal must not pay for the work it refuses.
+    let refused_size = PixelSize::new(20_000, 1).expect("size");
+    let would_be_ceiling = limits().peak_rgba8_bytes(refused_size).expect("ceiling");
     let oversized = png_rgb(20_000, 1);
-
-    PEAK_ALLOC.reset_peak_usage();
-    let _ = decode_raster_joined(&admitted, limits(), &Cancellation::default());
-    let admitted_peak = PEAK_ALLOC.peak_usage() as u64;
 
     PEAK_ALLOC.reset_peak_usage();
     let refused = decode_raster_joined(&oversized, limits(), &Cancellation::default());
     let refused_peak = PEAK_ALLOC.peak_usage() as u64;
 
-    eprintln!("admitted peak {admitted_peak} B, refused peak {refused_peak} B");
+    eprintln!(
+        "refused 20000x1 process-wide peak {refused_peak} B against the {would_be_ceiling} B \
+         it would have needed if admitted"
+    );
     assert_eq!(refused.err(), Some(MediaError::TooLarge));
     assert!(
-        refused_peak * 4 < admitted_peak,
-        "refusal should not allocate like a decode: refused {refused_peak} B against admitted {admitted_peak} B"
+        refused_peak * 2 < would_be_ceiling,
+        "refusal allocated {refused_peak} B, which is not far below the {would_be_ceiling} B \
+         an admitted decode would have needed"
     );
 }
