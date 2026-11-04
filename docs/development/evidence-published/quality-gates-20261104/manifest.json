@@ -1,107 +1,123 @@
 {
   "kind": "quality-gates",
-  "head": "914b76d1a7db2e73bbd4c357cef838bd25cb7c59",
-  "dirty": false,
+  "head": "4cf87a9ea1528836e50d870ebcd4862897c10c29",
+  "dirty": true,
   "target_dir": "C:\\dev\\cos-build-fresh",
-  "recorded_at": "2026-11-04T21:46:45.1886070+09:00",
+  "tools": {
+    "cargo": "C:\\Users\\diobrando\\.cargo\\bin\\cargo.exe",
+    "python": "C:\\Users\\diobrando\\AppData\\Roaming\\uv\\python\\cpython-3.13.14-windows-x86_64-none\\python.exe"
+  },
+  "recorded_at": "2026-11-04T22:40:21.5503502+09:00",
   "gates": [
     {
       "name": "fmt",
-      "command": "cargo fmt --all -- --check",
+      "command": "C:\\Users\\diobrando\\.cargo\\bin\\cargo.exe fmt --all -- --check",
       "exit_code": 0,
       "seconds": 1,
       "stdout": "fmt.stdout.txt",
-      "stderr": "fmt.stderr.txt"
+      "stderr": "fmt.stderr.txt",
+      "stdout_bytes": 0,
+      "stderr_bytes": 0
     },
     {
       "name": "metadata",
-      "command": "cargo metadata --locked --no-deps --format-version 1",
+      "command": "C:\\Users\\diobrando\\.cargo\\bin\\cargo.exe metadata --locked --no-deps --format-version 1",
       "exit_code": 0,
       "seconds": 0,
       "stdout": "metadata.stdout.txt",
-      "stderr": "metadata.stderr.txt"
+      "stderr": "metadata.stderr.txt",
+      "stdout_bytes": 20330,
+      "stderr_bytes": 0
     },
     {
       "name": "dep-self",
-      "command": "python -B scripts/check_dependency_rules.py --self-test",
+      "command": "C:\\Users\\diobrando\\AppData\\Roaming\\uv\\python\\cpython-3.13.14-windows-x86_64-none\\python.exe -B scripts/check_dependency_rules.py --self-test",
       "exit_code": 0,
-      "seconds": 0,
+      "seconds": 1,
       "stdout": "dep-self.stdout.txt",
-      "stderr": "dep-self.stderr.txt"
+      "stderr": "dep-self.stderr.txt",
+      "stdout_bytes": 0,
+      "stderr_bytes": 2680
     },
     {
       "name": "dep-rules",
-      "command": "python -B scripts/check_dependency_rules.py",
+      "command": "C:\\Users\\diobrando\\AppData\\Roaming\\uv\\python\\cpython-3.13.14-windows-x86_64-none\\python.exe -B scripts/check_dependency_rules.py",
       "exit_code": 0,
       "seconds": 0,
       "stdout": "dep-rules.stdout.txt",
-      "stderr": "dep-rules.stderr.txt"
+      "stderr": "dep-rules.stderr.txt",
+      "stdout_bytes": 79,
+      "stderr_bytes": 0
     },
     {
       "name": "clippy",
-      "command": "cargo clippy --locked --workspace --all-targets -- -D warnings",
+      "command": "C:\\Users\\diobrando\\.cargo\\bin\\cargo.exe clippy --locked --workspace --all-targets -- -D warnings",
       "exit_code": 0,
-      "seconds": 2,
+      "seconds": 603,
       "stdout": "clippy.stdout.txt",
-      "stderr": "clippy.stderr.txt"
+      "stderr": "clippy.stderr.txt",
+      "stdout_bytes": 0,
+      "stderr_bytes": 72
     },
     {
       "name": "tests",
-      "command": "cargo test --locked --workspace",
+      "command": "C:\\Users\\diobrando\\.cargo\\bin\\cargo.exe test --locked --workspace",
       "exit_code": 0,
-      "seconds": 47,
+      "seconds": 603,
       "stdout": "tests.stdout.txt",
-      "stderr": "tests.stderr.txt"
+      "stderr": "tests.stderr.txt",
+      "stdout_bytes": 65046,
+      "stderr_bytes": 4117
     }
   ],
   "files": {
-    "tests.stdout.txt": {
-      "sha256": "sha256:269294705cd096c5fe3f20828b6a64fc6791442e9fb288f3f2cc923774cbc348",
-      "bytes": 70244
-    },
-    "tests.stderr.txt": {
-      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
-      "bytes": 2
-    },
-    "dep-self.stderr.txt": {
-      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
-      "bytes": 2
-    },
-    "fmt.stdout.txt": {
-      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
-      "bytes": 2
-    },
-    "dep-rules.stderr.txt": {
-      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
-      "bytes": 2
+    "metadata.stderr.txt": {
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
     },
     "metadata.stdout.txt": {
-      "sha256": "sha256:a198a700a20f9fb2e9db5060f6cec73ab41b8dd9cfaed9450712023558f25753",
-      "bytes": 20333
+      "sha256": "sha256:c45dd353dd9ff9c9b59f386c67059e8dd416333710ef7619107d5674df665f74",
+      "bytes": 20330
     },
     "dep-self.stdout.txt": {
-      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
-      "bytes": 2
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "tests.stderr.txt": {
+      "sha256": "sha256:4374d26668c23a6d512e363f95080590fc3fda3e49fba39d013673623a4b41d2",
+      "bytes": 4117
     },
     "fmt.stderr.txt": {
-      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
-      "bytes": 2
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
     },
-    "clippy.stderr.txt": {
-      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
-      "bytes": 2
-    },
-    "metadata.stderr.txt": {
-      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
-      "bytes": 2
-    },
-    "clippy.stdout.txt": {
-      "sha256": "sha256:010255e356d6202f68816f19aa91ac61c28dbfe77daf8e6a5949b7f31ab7342d",
-      "bytes": 75
+    "dep-rules.stderr.txt": {
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
     },
     "dep-rules.stdout.txt": {
-      "sha256": "sha256:7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
-      "bytes": 2
+      "sha256": "sha256:7324a248581aca3179ab86e244966f886d14b87d2e04372d548eb5f96c3b1cfe",
+      "bytes": 79
+    },
+    "clippy.stderr.txt": {
+      "sha256": "sha256:021042b95b1152e2f6b982059be59038aeacba94428d42356567d9bf349eaf21",
+      "bytes": 72
+    },
+    "tests.stdout.txt": {
+      "sha256": "sha256:db5d8fe2e9f8ccfabb5f172f208fb0587684fcbd6d2804ca1c3fff00cfd77f3f",
+      "bytes": 65046
+    },
+    "fmt.stdout.txt": {
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "dep-self.stderr.txt": {
+      "sha256": "sha256:f3caa46caa5e2d430956c7c17cf768a349cb9fc0fb46d4827c4ea21511ce808f",
+      "bytes": 2680
+    },
+    "clippy.stdout.txt": {
+      "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
     }
   },
   "summary": {

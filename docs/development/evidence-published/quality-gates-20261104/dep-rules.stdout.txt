@@ -1,1 +1,1 @@
-
+dependency rules check OK: allowlist edges verified for 7 workspace member(s)

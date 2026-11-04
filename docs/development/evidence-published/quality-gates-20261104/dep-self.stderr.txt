@@ -1,1 +1,23 @@
+test_cargo_program_comes_from_environment (test_check_dependency_rules.CargoResolutionTests.test_cargo_program_comes_from_environment) ... ok
+test_cargo_program_falls_back_to_bare_cargo (test_check_dependency_rules.CargoResolutionTests.test_cargo_program_falls_back_to_bare_cargo) ... ok
+test_resolution_does_not_change_rule_outcomes_or_exit_codes (test_check_dependency_rules.CargoResolutionTests.test_resolution_does_not_change_rule_outcomes_or_exit_codes) ... ok
+test_unlaunchable_cargo_is_a_closed_input_error (test_check_dependency_rules.CargoResolutionTests.test_unlaunchable_cargo_is_a_closed_input_error) ... ok
+test_accepted_direct_dto_dependency_passes (test_check_dependency_rules.DependencyRulesTests.test_accepted_direct_dto_dependency_passes) ... ok
+test_clean_workspace_passes (test_check_dependency_rules.DependencyRulesTests.test_clean_workspace_passes) ... ok
+test_cli_reports_violations_and_exit_codes (test_check_dependency_rules.DependencyRulesTests.test_cli_reports_violations_and_exit_codes) ... ok
+test_dev_and_build_edge_cycles_detected (test_check_dependency_rules.DependencyRulesTests.test_dev_and_build_edge_cycles_detected) ... ok
+test_external_path_dependency_detected (test_check_dependency_rules.DependencyRulesTests.test_external_path_dependency_detected) ... ok
+test_floating_git_ref_detected (test_check_dependency_rules.DependencyRulesTests.test_floating_git_ref_detected) ... ok
+test_gpui_outside_binary_and_ui_detected (test_check_dependency_rules.DependencyRulesTests.test_gpui_outside_binary_and_ui_detected) ... ok
+test_media_cannot_import_client_core_or_gpui (test_check_dependency_rules.DependencyRulesTests.test_media_cannot_import_client_core_or_gpui) ... ok
+test_renamed_forbidden_cos_client_edge_detected (test_check_dependency_rules.DependencyRulesTests.test_renamed_forbidden_cos_client_edge_detected) ... ok
+test_repo_internal_non_member_path_detected (test_check_dependency_rules.DependencyRulesTests.test_repo_internal_non_member_path_detected) ... ok
+test_target_specific_forbidden_edge_detected (test_check_dependency_rules.DependencyRulesTests.test_target_specific_forbidden_edge_detected) ... ok
+test_unknown_workspace_member_detected (test_check_dependency_rules.DependencyRulesTests.test_unknown_workspace_member_detected) ... ok
+test_unreviewed_external_source_detected (test_check_dependency_rules.DependencyRulesTests.test_unreviewed_external_source_detected) ... ok
+test_zed_revision_mismatch_detected (test_check_dependency_rules.DependencyRulesTests.test_zed_revision_mismatch_detected) ... ok
 
+----------------------------------------------------------------------
+Ran 18 tests in 0.382s
+
+OK

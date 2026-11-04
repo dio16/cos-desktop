@@ -1,1 +1,42 @@
-
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.74s
+     Running unittests src\lib.rs (C:\dev\cos-build-fresh\debug\deps\app_core-7a467bd3bcaafbc5.exe)
+     Running tests\crash_report.rs (C:\dev\cos-build-fresh\debug\deps\crash_report-1c1d6119744c48ba.exe)
+     Running tests\observation_publication.rs (C:\dev\cos-build-fresh\debug\deps\observation_publication-1e92fccaac1eb746.exe)
+     Running tests\panic_report.rs (C:\dev\cos-build-fresh\debug\deps\panic_report-bc38cb13db890e0e.exe)
+     Running tests\support_report.rs (C:\dev\cos-build-fresh\debug\deps\support_report-679c5bb033cd3d3c.exe)
+     Running unittests src\lib.rs (C:\dev\cos-build-fresh\debug\deps\cos_client-fd42e4819e7dc705.exe)
+     Running tests\automatic_reads.rs (C:\dev\cos-build-fresh\debug\deps\automatic_reads-70fdbd2b442f82a6.exe)
+     Running tests\commands.rs (C:\dev\cos-build-fresh\debug\deps\commands-3694e223535b3561.exe)
+     Running tests\delayed_step.rs (C:\dev\cos-build-fresh\debug\deps\delayed_step-fe4e087bc7fbb8e1.exe)
+     Running tests\effective_state.rs (C:\dev\cos-build-fresh\debug\deps\effective_state-0179e15c93189299.exe)
+     Running tests\fixture_observation.rs (C:\dev\cos-build-fresh\debug\deps\fixture_observation-60503165f8bb70d6.exe)
+     Running tests\graph_integrity.rs (C:\dev\cos-build-fresh\debug\deps\graph_integrity-c7c87c19c1b2a6d4.exe)
+     Running tests\observation_compat_v1.rs (C:\dev\cos-build-fresh\debug\deps\observation_compat_v1-d075ab381532cb7e.exe)
+     Running tests\protocol_transport.rs (C:\dev\cos-build-fresh\debug\deps\protocol_transport-5e88ca79ac2746ea.exe)
+     Running tests\recovery.rs (C:\dev\cos-build-fresh\debug\deps\recovery-9626ea71383a8151.exe)
+     Running tests\retention.rs (C:\dev\cos-build-fresh\debug\deps\retention-2935a65968d7627e.exe)
+     Running unittests src\main.rs (C:\dev\cos-build-fresh\debug\deps\cos_desktop-61043d5cdc3a9c22.exe)
+     Running tests\decode_compare_harness.rs (C:\dev\cos-build-fresh\debug\deps\decode_compare_harness-75421741c0e74830.exe)
+     Running tests\media_picker_boundary.rs (C:\dev\cos-build-fresh\debug\deps\media_picker_boundary-2c004844ec3abb04.exe)
+     Running unittests src\lib.rs (C:\dev\cos-build-fresh\debug\deps\desktop_gpui-71296657e1bcd5ca.exe)
+     Running unittests src\lib.rs (C:\dev\cos-build-fresh\debug\deps\desktop_protocol-879551d1c94d5a55.exe)
+     Running tests\canonical_v1_parity.rs (C:\dev\cos-build-fresh\debug\deps\canonical_v1_parity-e257c5d2d1c57b2a.exe)
+     Running tests\desktop_projection_vector.rs (C:\dev\cos-build-fresh\debug\deps\desktop_projection_vector-74c49db0399e0e47.exe)
+     Running tests\negotiation.rs (C:\dev\cos-build-fresh\debug\deps\negotiation-d5188c766a889d8d.exe)
+     Running tests\serde_policy.rs (C:\dev\cos-build-fresh\debug\deps\serde_policy-9834bc6082d5d95e.exe)
+     Running unittests src\lib.rs (C:\dev\cos-build-fresh\debug\deps\media-4768d78625c9ba03.exe)
+     Running tests\bounded_row_cancellation.rs (C:\dev\cos-build-fresh\debug\deps\bounded_row_cancellation-aa6eae854516f99c.exe)
+     Running tests\decode_admission.rs (C:\dev\cos-build-fresh\debug\deps\decode_admission-415fc0b8f78d4244.exe)
+     Running tests\decode_budget.rs (C:\dev\cos-build-fresh\debug\deps\decode_budget-0c48ffaf2f2d67e7.exe)
+     Running tests\local_contract.rs (C:\dev\cos-build-fresh\debug\deps\local_contract-b28995fc7fa47395.exe)
+     Running tests\measured_decode_allocations.rs (C:\dev\cos-build-fresh\debug\deps\measured_decode_allocations-e3c60b8c1f89006b.exe)
+     Running tests\measured_jpeg_class.rs (C:\dev\cos-build-fresh\debug\deps\measured_jpeg_class-e34cb2a5e036ecc3.exe)
+     Running tests\measured_png_class.rs (C:\dev\cos-build-fresh\debug\deps\measured_png_class-dfea8094255fdc0b.exe)
+     Running tests\security_contract.rs (C:\dev\cos-build-fresh\debug\deps\security_contract-6b15e5f64218f1c4.exe)
+     Running unittests src\lib.rs (C:\dev\cos-build-fresh\debug\deps\ui_model-dd168e57618c1bf8.exe)
+   Doc-tests app_core
+   Doc-tests cos_client
+   Doc-tests desktop_gpui
+   Doc-tests desktop_protocol
+   Doc-tests media
+   Doc-tests ui_model
