@@ -1424,6 +1424,96 @@ mod integrity_tests {
             .expect("a removal without a dangling reference is valid");
     }
 
+    /// Every dangling-reference rule in the aggregate check, exercised one at a time.
+    ///
+    /// The recorded-fixture test proves the rules pass on a consistent snapshot; these cases prove
+    /// each rule **refuses** when the edge it guards is broken. Without them, a rule that silently
+    /// stopped checking would look identical to a rule that never needed to.
+    #[test]
+    fn a_broken_reference_edge_is_refused_by_the_aggregate_check() {
+        let (state, mutations) = populated();
+        let (_base, upsert) = first_upsert(&mutations);
+        let ProjectionMutation::Upsert { projection, .. } = &upsert else {
+            panic!("the recorded upsert is an upsert");
+        };
+        let Projection::Task(task) = projection else {
+            panic!("the fixture projection is a task snapshot");
+        };
+
+        // A task whose declared iteration is not in the state: the edge the first rule guards.
+        let absent_iteration =
+            desktop_protocol::IterationId::new("fixture:absent-iteration").expect("an id");
+        let mut broken = task.clone();
+        broken.iteration_ref = Some(absent_iteration);
+        let error = state
+            .validate_effective_state(std::slice::from_ref(&Projection::Task(broken)), &[])
+            .expect_err("a task referencing an absent iteration must be refused");
+        assert!(
+            format!("{error}").contains("references absent iteration"),
+            "the refusal names the cause: {error}"
+        );
+
+        // A best candidate owned by a different task: the tuple rule, before the existence rule.
+        let other_task = state
+            .tasks
+            .keys()
+            .find(|id| **id != task.task_ref)
+            .cloned()
+            .expect("the fixture observes more than one task");
+        let mut mismatched = task.clone();
+        mismatched.best_candidate_ref = Some(desktop_protocol::CandidateRef {
+            task_id: other_task,
+            run_id: desktop_protocol::RunId::new("fixture:run").expect("an id"),
+            iteration: 0,
+            artifact_ref: desktop_protocol::ArtifactId::new("fixture:candidate-artifact")
+                .expect("an id"),
+            candidate_id: desktop_protocol::CandidateId::new("fixture:candidate").expect("an id"),
+        });
+        let error = state
+            .validate_effective_state(std::slice::from_ref(&Projection::Task(mismatched)), &[])
+            .expect_err("a best candidate owned by another task must be refused");
+        assert!(
+            format!("{error}").contains("owned by"),
+            "the refusal names the cause: {error}"
+        );
+
+        // A declared reference to a projection that is being removed in the same transaction: the
+        // removal makes the edge dangle, which is the case the overlay exists to catch.
+        for (label, field) in [
+            ("formal outcome", "outcome"),
+            ("accepted brief", "artifact"),
+            ("capabilities", "capabilities"),
+        ] {
+            let mut referencing = task.clone();
+            match field {
+                "outcome" => {
+                    referencing.formal_outcome_ref = Some(
+                        desktop_protocol::OutcomeId::new("fixture:absent-outcome").expect("an id"),
+                    );
+                }
+                "artifact" => {
+                    referencing.accepted_brief_ref = Some(
+                        desktop_protocol::ArtifactId::new("fixture:absent-artifact")
+                            .expect("an id"),
+                    );
+                }
+                _ => {
+                    referencing.capabilities_ref = Some(
+                        desktop_protocol::CapabilitiesId::new("fixture:absent-capabilities")
+                            .expect("an id"),
+                    );
+                }
+            }
+            let error = state
+                .validate_effective_state(std::slice::from_ref(&Projection::Task(referencing)), &[])
+                .expect_err("a declared reference to an absent projection must be refused");
+            assert!(
+                format!("{error}").contains("references absent"),
+                "the {label} reference must be refused, got {error}"
+            );
+        }
+    }
+
     #[test]
     fn the_recorded_snapshot_is_the_positive_control() {
         // Building the state from these mutations runs the same integrity checks a live snapshot end
