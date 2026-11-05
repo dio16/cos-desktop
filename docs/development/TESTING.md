@@ -18,7 +18,7 @@ c1xx: fatal error C1083: cannot open compiler intermediate file
 
 and the same file compiles cleanly when the identical command is run directly in the same shell (`cl.exe -nologo -MD -Brepro -W4 /Zm2000 -c ext/vswhom.cpp` exits 0), so the denial is specific to the process the build script spawns, not to the source or the toolchain. Redirecting `TMP`/`TEMP` moves the failing path but not the failure. Consequences to state honestly:
 
-- in this shell, `pwsh scripts/quality.ps1` reaches `plan ledger` and then fails at `check`; that is **environment**, not a red gate, and **`quality.ps1` as a whole is `NOT_RUN` here**;
+- the exact command run here was **`pwsh scripts/quality.ps1 -CheckOnly`** (the `check` step only exists on that route; the full route runs `clippy`/`tests`/`build` instead). It reached `plan ledger`, which **passed**, and then **failed** at `check`: the route is **FAILED**, and `clippy`, `tests`, `build` and the native smoke were never reached, so they are **`NOT_RUN` on that route**. That failure is **environment**, not a red gate;
 - `cargo` invocations that reuse an already-built `vswhom-sys` (for example `CARGO_TARGET_DIR=C:\dev\cos-build-fresh`) run normally, and every gate recorded in this session was run that way;
 - a full local completion route needs a shell where the child compiler can write its temporary file. Whether the cause is the confined token or the temp directory's permissions is **unresolved**; the file-permission diagnostics were not run to completion here.
 

@@ -3255,6 +3255,11 @@ fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
     // instead of aborting, the run would cost at least this delay, so the bound below compares
     // against the delay rather than against a plausible-looking number of seconds.
     config.watch_delay = Some(std::time::Duration::from_secs(10));
+    // The property is an **event**, not a duration: the watcher writes this marker when its delay
+    // has genuinely elapsed, so its absence after the run proves the abort returned without the
+    // watcher waking. The elapsed-time bound stays only as a safety net against a hung run.
+    let watch_marker = fixture.cases.join("a.watch-awake");
+    config.watch_delay_marker = Some(watch_marker.clone());
     let heartbeat = fixture.cases.join("a.heartbeat");
     let started = std::time::Instant::now();
     let report = harness::run(&config).unwrap();
@@ -3270,14 +3275,16 @@ fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
         observation.cancellation_observed_ms.is_none(),
         "an unconfirmed exit keeps no confirmation duration"
     );
-    // The property is ordering, not speed: the aborted cancel returns after SAMPLE_EXIT_GRACE
-    // (2 s) and well before the delayed watcher wakes. The bound is **half the watcher delay**, so
-    // an implementation that waited for the watcher (10 s or more) fails while a loaded machine
-    // still has room - a fixed three-second bound made this test fail under gate load at 4.6 s
-    // while the same build passed in 2.45 s when run alone.
+    // The event: the watcher never left its delay while this run was going on.
     assert!(
-        elapsed < std::time::Duration::from_secs(5),
-        "an aborted cancel must return before the delayed watcher wakes (took {elapsed:?},          against a 10 s watcher delay)"
+        !watch_marker.exists(),
+        "the watcher woke during the run, so the abort waited for it instead of aborting"
+    );
+    // Safety net only (a hung run, not machine load): the delay is ten seconds, so anything past
+    // eight seconds means the run did not return promptly even if the marker is somehow missing.
+    assert!(
+        elapsed < std::time::Duration::from_secs(8),
+        "an aborted cancel returned only after {elapsed:?}"
     );
     // The aborted stop must have killed the helper: a heartbeat that stops growing proves
     // the process is gone rather than merely unconfirmed. It must also have been produced,

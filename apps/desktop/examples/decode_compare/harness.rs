@@ -716,6 +716,12 @@ pub struct Config {
     pub sample_spawn_delay: Option<Duration>,
     /// Test-only: delay the exit watcher's first poll (scheduling-delay reproduction).
     pub watch_delay: Option<Duration>,
+    /// Test-only: written when the watcher's delay has actually elapsed.
+    ///
+    /// This is the signal the "aborted cancel does not wait for the watcher" test uses: the marker
+    /// is absent exactly when the run finished without the watcher waking, so the property is
+    /// checked by an event rather than by a stopwatch. `None` in every operator run.
+    pub watch_delay_marker: Option<PathBuf>,
     /// Test-only: force the watcher's kill() to fail (unconfirmed stop).
     pub force_kill_failure: bool,
     /// Test-only: force the watcher's exit confirmation to fail (unconfirmed).
@@ -1211,6 +1217,7 @@ where
         sample_compare_signal: None,
         sample_spawn_delay: None,
         watch_delay: None,
+        watch_delay_marker: None,
         force_kill_failure: false,
         force_wait_failure: false,
         force_try_wait_error: false,
@@ -2274,6 +2281,7 @@ fn measure(
                 sampling_disabled_reason,
                 WatchTuning {
                     delay: config.watch_delay,
+                    delay_marker: config.watch_delay_marker.clone(),
                     force_kill_failure: config.force_kill_failure,
                     force_wait_failure: config.force_wait_failure,
                     force_try_wait_error: config.force_try_wait_error,
@@ -3089,6 +3097,7 @@ impl ExitWatch {
         mut child: std::process::Child,
         deadline: Duration,
         watch_delay: Option<Duration>,
+        watch_delay_marker: Option<PathBuf>,
         force_kill_failure: bool,
         force_wait_failure: bool,
         force_try_wait_error: bool,
@@ -3115,6 +3124,7 @@ impl ExitWatch {
                 // Test seam: reproduce a scheduling delay of the watcher thread. The delay
                 // is interruptible so an aborting cancel is never held up by it.
                 let until = Instant::now() + delay;
+                let mut aborted = false;
                 while Instant::now() < until {
                     if thread_state.lock().map(|data| data.abort).unwrap_or(true) {
                         // The caller stopped waiting, but the child is still ours: stop it
@@ -3130,9 +3140,18 @@ impl ExitWatch {
                                 };
                             }
                         }
-                        return;
+                        aborted = true;
+                        break;
                     }
                     std::thread::sleep(POLL_INTERVAL);
+                }
+                if aborted {
+                    return;
+                }
+                // The delay elapsed without an abort, so the watcher did wake. A test that asserts
+                // this marker's absence is asserting the event, not a duration.
+                if let Some(marker) = watch_delay_marker.as_ref() {
+                    let _ = std::fs::write(marker, b"watch-delay-elapsed");
                 }
             }
             // Bounded confirmation: try_wait is polled up to confirm_bound; no unbounded
@@ -3442,9 +3461,11 @@ enum SettledSample {
 /// remains before the deadline, so a sample can never push the hard deadline out. Every
 /// recorded value is a sampled lower bound: a sample that cannot be read leaves the
 /// field absent with a reason token instead of guessing.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Default)]
 struct WatchTuning {
     delay: Option<Duration>,
+    /// Written once the delay has genuinely elapsed, so a test can assert the watcher never woke.
+    delay_marker: Option<PathBuf>,
     force_kill_failure: bool,
     force_wait_failure: bool,
     force_try_wait_error: bool,
@@ -3469,6 +3490,7 @@ fn supervise(
         child,
         deadline,
         tuning.delay,
+        tuning.delay_marker,
         tuning.force_kill_failure,
         tuning.force_wait_failure,
         tuning.force_try_wait_error,
