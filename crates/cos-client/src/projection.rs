@@ -1299,6 +1299,97 @@ mod integrity_tests {
         );
     }
 
+    /// How an upsert and a removal of the same key resolve in the overlay.
+    ///
+    /// The rule is per key and **independent of argument order**: an upsert shadows a removal of the
+    /// same key, while a removal hides an entry no upsert recreates. Asserting the overlay's answer
+    /// directly is what makes this meaningful - a validator that merely returns `Ok` would not show
+    /// which way the key resolved.
+    #[test]
+    fn an_upsert_shadows_a_removal_of_the_same_key() {
+        let (state, mutations) = populated();
+        let (_base, upsert) = first_upsert(&mutations);
+        let ProjectionMutation::Upsert { projection, .. } = &upsert else {
+            panic!("the recorded upsert is an upsert");
+        };
+        let Projection::Task(snapshot) = projection else {
+            panic!("the fixture projection is a task snapshot");
+        };
+        let task_id = snapshot.task_ref.clone();
+        let target = desktop_protocol::RemoveTarget::Task {
+            task_id: task_id.clone(),
+        };
+        // Both present: the upsert wins and the task stays visible.
+        let both = super::EffectiveState {
+            base: &state,
+            upserts: std::slice::from_ref(projection),
+            removals: std::slice::from_ref(&target),
+        };
+        assert!(
+            both.task(&task_id).is_some(),
+            "an upsert shadows the removal of the same key"
+        );
+        // And it is valid, so the overlay's answer and the validator's agree.
+        state
+            .validate_effective_state(
+                std::slice::from_ref(projection),
+                std::slice::from_ref(&target),
+            )
+            .expect("an upsert shadows the removal of the same key");
+    }
+
+    #[test]
+    fn a_removal_alone_hides_an_existing_entry() {
+        // Without an upsert the removal must take effect, which is the other half of the same rule.
+        let (state, mutations) = populated();
+        let (_base, upsert) = first_upsert(&mutations);
+        let ProjectionMutation::Upsert { projection, .. } = &upsert else {
+            panic!("the recorded upsert is an upsert");
+        };
+        let Projection::Task(snapshot) = projection else {
+            panic!("the fixture projection is a task snapshot");
+        };
+        let task_id = snapshot.task_ref.clone();
+        let target = desktop_protocol::RemoveTarget::Task {
+            task_id: task_id.clone(),
+        };
+        let removal_only = super::EffectiveState {
+            base: &state,
+            upserts: &[],
+            removals: std::slice::from_ref(&target),
+        };
+        assert!(
+            removal_only.task(&task_id).is_none(),
+            "a removal hides an entry that no upsert recreates"
+        );
+        // The same key is still present in the base state, so the answer above came from the overlay
+        // rather than from the entry never existing.
+        assert!(
+            state.task(&task_id).is_some(),
+            "the base state still holds it"
+        );
+        // An unrelated key is untouched by the removal.
+        let other = state
+            .tasks
+            .keys()
+            .find(|id| **id != task_id)
+            .cloned()
+            .expect("the fixture observes more than one task");
+        assert!(
+            removal_only.task(&other).is_some(),
+            "the removal must not hide a different key"
+        );
+        // The recorded fixture carries no outcome for this task, so the removal is also internally
+        // valid - which is the case the aggregate check is meant to allow.
+        assert!(
+            state.outcome_for_task(&task_id).is_none(),
+            "the fixture carries no outcome for the first task"
+        );
+        state
+            .validate_effective_state(&[], std::slice::from_ref(&target))
+            .expect("a removal without a dangling reference is valid");
+    }
+
     #[test]
     fn the_recorded_snapshot_is_the_positive_control() {
         // Building the state from these mutations runs the same integrity checks a live snapshot end
