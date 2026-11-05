@@ -80,10 +80,15 @@ fn an_unrecognized_capability_value_is_preserved_and_disables_the_operation() {
     );
     assert!(!support.is_known(), "an unrecognized value is not known");
     assert!(!support.is_supported());
-    // And the value round-trips unchanged, so nothing is silently rewritten on the way back out.
+    // And the value round-trips through **JSON**, not only through the string helper: a value this
+    // release does not know must survive serialization verbatim rather than being rewritten into a
+    // known one or refused on the way back in.
     assert_eq!(support.as_str(), "SUPPORTED_FOR_FUTURE_SCOPE");
-    let again = SupportState::from_wire(support.as_str());
+    let wire = serde_json::to_string(support).expect("an unknown value serializes");
+    assert_eq!(wire, "\"SUPPORTED_FOR_FUTURE_SCOPE\"");
+    let again: SupportState = serde_json::from_str(&wire).expect("an unknown value deserializes");
     assert_eq!(&again, support);
+    assert!(!again.is_supported());
 }
 
 #[test]
@@ -116,9 +121,10 @@ fn an_unrecognized_command_operation_is_kept_separate_from_the_known_ones() {
 }
 
 #[test]
-fn a_media_descriptor_defaults_its_representation_version_and_keeps_unknown_extras() {
+fn a_media_descriptor_defaults_its_representation_version_and_tolerates_unknown_extras() {
     // `representation_version` has a real default (1), and a descriptor from a newer peer may carry
-    // fields this release does not know.
+    // fields this release does not know. Serde **ignores** an unknown field rather than keeping it, so
+    // what is pinned here is that the frame still parses and nothing is invented for it.
     let json = r#"{"descriptor_id": "descriptor-1",
                    "artifact_ref": "artifact-1",
                    "representation": "THUMBNAIL",
