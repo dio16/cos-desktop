@@ -220,19 +220,21 @@ fn the_pre_decode_cancellation_check_comes_before_any_work() {
     let cancel = body
         .find("cancel.check()?;")
         .expect("the first cancellation check is present");
+    // Every step must be **found** as well as ordered: a guard that skipped a missing needle would
+    // pass silently after the code was renamed or the step moved into another function.
     for (label, needle) in [
         ("the format sniff", "AcceptedFormat::from_bytes"),
         ("the dimension read", "into_dimensions"),
         ("the reservation", "reserve_in_flight"),
         ("the decoder call", "decode_png_rows_inner"),
     ] {
-        let position = body.find(needle);
-        if let Some(position) = position {
-            assert!(
-                cancel < position,
-                "{label} appears before the first cancellation check"
-            );
-        }
+        let position = body.find(needle).unwrap_or_else(|| {
+            panic!("{label} is no longer in the decode path, so this guard is stale")
+        });
+        assert!(
+            cancel < position,
+            "{label} appears before the first cancellation check"
+        );
     }
 }
 
