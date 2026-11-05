@@ -4927,7 +4927,7 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Pinned, in `read.rs`'s own tests:**
   - **no evidence is not a denial** - `permission` returns `None`, and `readable_with` is false; the caller may say "not determined" rather than "denied";
   - **evidence answers only for its own stamp** - and this is asserted **twice**, because `readable()` compares the stamp itself and `permission`/`readable_with` compare it again; removing the comparison in `readable()` leaves the other two green (a mutation showed exactly that), so the test now exercises `readable()` under a foreign stamp;
-  - **a server-derived record is never disclosed as a local intent** - `Accepted`, `Rejected`, `CanonicalReflected` and `Unsupported` all count as server-derived even when the binding allows local intents;
+  - **a server-derived record is never disclosed as a local intent** - `Accepted`, `Rejected`, `CanonicalReflected`, `Failed` and `Unsupported` all count as server-derived even when the binding allows local intents (`Failed` was missing from the first version, although `server_derived()` has always treated it as a server fact);
   - **a local intent is disclosed only for its own context** and only while the binding says local intents are readable;
   - **a recovered receipt makes an unknown result server-derived**: `ResultUnknown` without a receipt is the desktop's own uncertainty and is shown, with a receipt it is a server fact and is not;
   - **the readable iterator yields only what the binding may disclose**, which is what the publication layer iterates.

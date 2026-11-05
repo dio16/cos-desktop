@@ -544,6 +544,19 @@ mod tests {
             crate::CommandState::Accepted(receipt()),
             crate::CommandState::Rejected(receipt()),
             crate::CommandState::CanonicalReflected(receipt()),
+            crate::CommandState::Failed {
+                error: desktop_protocol::ProtocolError {
+                    code: desktop_protocol::ErrorCode::ValidationFailed,
+                    message: "failed".to_string(),
+                    correlation_id: None,
+                    command_id: None,
+                    scope_id: None,
+                    retry_after_ms: None,
+                    field_errors: Vec::new(),
+                    current_revision: None,
+                    resync_reason: None,
+                },
+            },
             crate::CommandState::Unsupported {
                 error: desktop_protocol::ProtocolError {
                     code: desktop_protocol::ErrorCode::UnsupportedCommand,
