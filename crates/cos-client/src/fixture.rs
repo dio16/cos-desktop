@@ -992,3 +992,158 @@ impl FixtureRuntime {
         cursor
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{FixtureError, FixtureScenario};
+
+    /// A real scenario from the repository, so each test can break exactly one rule instead of
+    /// fighting the JSON shape.
+    fn base() -> FixtureScenario {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/fixtures/task-184.json");
+        FixtureScenario::from_file(path).expect("the repository fixture is valid")
+    }
+
+    #[test]
+    fn the_repository_fixture_is_valid() {
+        let scenario = base();
+        assert!(scenario.fixture, "the fixture declares its mode");
+        assert!(
+            !scenario.scope.task_ids.is_empty(),
+            "a scenario observes at least one task"
+        );
+        for task in &scenario.scope.task_ids {
+            assert!(
+                task.as_str().starts_with("fixture:"),
+                "every observed task lives in the fixture namespace"
+            );
+        }
+    }
+
+    #[test]
+    fn fixture_mode_must_be_declared_explicitly() {
+        // Fixture mode is explicit and never a fallback, so a scenario that does not declare it is
+        // refused rather than treated as a fixture by accident.
+        let mut scenario = base();
+        scenario.fixture = false;
+        assert!(matches!(
+            scenario.validate(),
+            Err(FixtureError::NotFixture(_))
+        ));
+    }
+
+    #[test]
+    fn every_synthetic_identity_must_live_in_the_fixture_namespace() {
+        let mut server = base();
+        server.server_identity =
+            desktop_protocol::ServerId::new("real-looking-server").expect("id");
+        assert!(matches!(server.validate(), Err(FixtureError::Invalid(_))));
+
+        let mut epoch = base();
+        epoch.epoch = desktop_protocol::EpochId::new("real-looking-epoch").expect("id");
+        assert!(matches!(epoch.validate(), Err(FixtureError::Invalid(_))));
+
+        let mut scope = base();
+        scope.scope.scope_id = desktop_protocol::ScopeId::new("real-looking-scope").expect("id");
+        assert!(matches!(scope.validate(), Err(FixtureError::Invalid(_))));
+
+        // The **observed task list is not part of that check**, although the refusal message speaks
+        // of display labels and real identities generally. Recorded as the current behaviour: a
+        // scenario may name a task outside the fixture namespace, while the server, epoch and scope
+        // identities may not.
+        let mut tasked = base();
+        tasked.scope.task_ids = vec![desktop_protocol::TaskId::new("Task-184").expect("id")];
+        assert!(
+            tasked.validate().is_ok(),
+            "the task list is not namespace-checked today"
+        );
+    }
+
+    #[test]
+    fn a_scope_without_an_observed_task_is_refused() {
+        let mut scenario = base();
+        scenario.scope.task_ids.clear();
+        assert!(matches!(scenario.validate(), Err(FixtureError::Invalid(_))));
+    }
+
+    #[test]
+    fn the_handshake_ranges_must_be_present_and_well_formed() {
+        let mut empty_protocol = base();
+        empty_protocol.hello.protocol.clear();
+        assert!(matches!(
+            empty_protocol.validate(),
+            Err(FixtureError::Invalid(_))
+        ));
+
+        let mut malformed = base();
+        malformed.hello.protocol = vec![desktop_protocol::VersionRange::new(1, 5, 2)];
+        assert!(matches!(
+            malformed.validate(),
+            Err(FixtureError::Invalid(_))
+        ));
+
+        let mut empty_schema = base();
+        empty_schema.hello.schema.clear();
+        assert!(matches!(
+            empty_schema.validate(),
+            Err(FixtureError::Invalid(_))
+        ));
+    }
+
+    #[test]
+    fn limits_may_be_omitted_and_must_be_non_zero_when_given() {
+        let mut scenario = base();
+        scenario.limits = None;
+        assert!(
+            scenario.validate().is_ok(),
+            "absent limits are the defaults"
+        );
+
+        // Build the zeroed case from the contract defaults rather than assuming the repository
+        // fixture carries limits (it does not).
+        let mut zeroed = base();
+        zeroed.limits = Some(desktop_protocol::Limits {
+            max_frame_bytes: 0,
+            ..desktop_protocol::Limits::default()
+        });
+        assert!(matches!(zeroed.validate(), Err(FixtureError::Invalid(_))));
+    }
+
+    #[test]
+    fn a_step_list_is_bounded_and_step_identities_are_unique() {
+        let mut scenario = base();
+        scenario.steps = (0..1025)
+            .map(|index| super::FixtureStep {
+                id: format!("step-{index}"),
+                trigger: "after_open".to_string(),
+                actions: Vec::new(),
+            })
+            .collect();
+        assert!(matches!(scenario.validate(), Err(FixtureError::Invalid(_))));
+
+        let mut duplicate = base();
+        let step = || super::FixtureStep {
+            id: "same".to_string(),
+            trigger: "after_open".to_string(),
+            actions: Vec::new(),
+        };
+        duplicate.steps = vec![step(), step()];
+        assert!(matches!(
+            duplicate.validate(),
+            Err(FixtureError::Invalid(_))
+        ));
+    }
+
+    #[test]
+    fn unreadable_fixture_files_report_the_path_and_not_the_contents() {
+        match FixtureScenario::from_file("C:/definitely/not/a/fixture.json") {
+            Err(FixtureError::Io { path, .. }) => {
+                assert!(
+                    path.contains("fixture.json"),
+                    "the path is reported: {path}"
+                );
+            }
+            other => panic!("expected an I/O error, got {other:?}"),
+        }
+    }
+}
