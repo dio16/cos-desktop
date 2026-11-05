@@ -33,6 +33,7 @@ mod palette;
 #[cfg(feature = "r0-s2b-instrumentation")]
 pub mod r0_probe;
 mod shell_style;
+mod state_text;
 mod stop;
 pub mod tokens;
 mod trace;
@@ -4598,6 +4599,27 @@ impl Render for Shell {
                         |element| element.aria_active_descendant(),
                     )
                     .children(
+                        state_text::rail_row_state_texts(
+                            task.as_str(),
+                            task_status_label(&row.task_status),
+                            Some(row.inner_phase.as_ref()),
+                            row.iteration_index,
+                            row.attention.unavailable_reference,
+                        )
+                        .into_iter()
+                        .map(|text| {
+                            let accessible =
+                                SharedString::from(format!("{}: {}", text.name, text.value));
+                            div()
+                                .id(text.id)
+                                .role(Role::Label)
+                                .aria_label(accessible.clone())
+                                .aria_description(SharedString::from(text.description))
+                                .child(accessible)
+                        })
+                        .collect::<Vec<_>>(),
+                    )
+                    .children(
                         [
                             selected.then_some((
                                 "選択中",
@@ -4940,6 +4962,29 @@ impl Render for Shell {
                                 "作業領域：{}",
                                 surface.label()
                             )))
+                            .children(
+                                state_text::surface_state_texts(
+                                    match surface {
+                                        Surface::Artifact => "artifact",
+                                        Surface::Compare => "compare",
+                                        Surface::Flow => "flow",
+                                    },
+                                    surface.label(),
+                                    &state_text::StateValue::Reported("表示中".to_string()),
+                                )
+                                .into_iter()
+                                .map(|text| {
+                                    let accessible =
+                                        SharedString::from(format!("{}: {}", text.name, text.value));
+                                    div()
+                                        .id(text.id)
+                                        .role(Role::Label)
+                                        .aria_label(accessible.clone())
+                                        .aria_description(SharedString::from(text.description))
+                                        .child(accessible)
+                                })
+                                .collect::<Vec<_>>(),
+                            )
                             .flex_1()
                             .min_w_0()
                             .min_h_0()
