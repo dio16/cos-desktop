@@ -22,6 +22,12 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
+/// The whole binary's measurements share one lock, so timings do not perturb each other.
+fn heavy_lock() -> std::sync::MutexGuard<'static, ()> {
+    static HEAVY: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    HEAVY.lock().unwrap_or_else(|poison| poison.into_inner())
+}
+
 fn limits() -> DecodeLimits {
     DecodeBudget::ratified_default()
         .limits()
@@ -41,6 +47,7 @@ fn png_rgb(width: u32, height: u32) -> Vec<u8> {
 
 #[test]
 fn cancellation_at_a_row_boundary_returns_without_decoding_further() {
+    let _guard = heavy_lock();
     const WIDTH: u32 = 3000;
     const HEIGHT: u32 = 3000;
     const CANCEL_AT_ROW: u32 = HEIGHT / 4;
@@ -96,6 +103,7 @@ fn cancellation_at_a_row_boundary_returns_without_decoding_further() {
 
 #[test]
 fn cancellation_from_another_thread_mid_decode_returns_promptly() {
+    let _guard = heavy_lock();
     const WIDTH: u32 = 3000;
     const HEIGHT: u32 = 3000;
     /// Measurement threshold only: far above one row's work and far below a full decode of this
@@ -169,10 +177,7 @@ fn cancellation_from_another_thread_mid_decode_returns_promptly() {
 /// will throw away.
 #[test]
 fn a_pre_cancelled_request_stops_before_the_decoder_in_every_class() {
-    use std::sync::Mutex;
-    static HEAVY: Mutex<()> = Mutex::new(());
-
-    let _guard = HEAVY.lock().unwrap_or_else(|poison| poison.into_inner());
+    let _guard = heavy_lock();
     let edge = 1024u32;
     let cases = [
         ("PNG", png_rgb(edge, edge)),
@@ -196,6 +201,38 @@ fn a_pre_cancelled_request_stops_before_the_decoder_in_every_class() {
             micros < 10_000,
             "{label}: a pre-cancelled request took {micros} us, which is decode-scale"
         );
+    }
+}
+
+/// The pre-decode cancellation must be the **first** thing the decode does.
+///
+/// A timing bound alone would pass if the format sniff, the dimension read or the reservation moved
+/// above the check: the work is small next to a decode. This reads the source and requires the
+/// order `cancel.check()` -> format -> dimensions -> reservation -> decoder, so a reordering fails
+/// here rather than showing up as a slightly slower cancelled call.
+#[test]
+fn the_pre_decode_cancellation_check_comes_before_any_work() {
+    let source = include_str!("../src/raster.rs");
+    let body_start = source
+        .find("fn decode_raster_inner(")
+        .expect("the decode entry point is present");
+    let body = &source[body_start..];
+    let cancel = body
+        .find("cancel.check()?;")
+        .expect("the first cancellation check is present");
+    for (label, needle) in [
+        ("the format sniff", "AcceptedFormat::from_bytes"),
+        ("the dimension read", "into_dimensions"),
+        ("the reservation", "reserve_in_flight"),
+        ("the decoder call", "decode_png_rows_inner"),
+    ] {
+        let position = body.find(needle);
+        if let Some(position) = position {
+            assert!(
+                cancel < position,
+                "{label} appears before the first cancellation check"
+            );
+        }
     }
 }
 
