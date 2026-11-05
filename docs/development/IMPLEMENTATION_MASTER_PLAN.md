@@ -4920,3 +4920,17 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Proven by mutation:** duplicating a table key fails with `the table is not strictly ascending at U+2126`; changing the Kelvin target to uppercase fails with `U+212A folds to U+004B, which folds again to U+006B` (and three tests, because idempotence and the pinned mapping both notice).
 - **Not claimed:** this pins the data and the lookup rule, not the user-visible search ranking, which the palette and rail tests cover separately. Unicode version changes remain an explicit data change, as the module header says; nothing here was renormalized or regenerated. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p ui-model simple_casefold` 6 passed; `cargo clippy -p ui-model --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
+
+### 19.277 the read rules that decide what may be disclosed (2026-11-05)
+
+- **Why these six rules:** `cos-client`'s `read.rs` decides whether a retained command record may be shown. Getting one wrong discloses either a receipt the user is no longer authorized to read or, in the other direction, hides the desktop's own action. The rules were carried by the code and the `automatic_reads`/`commands` integration tests, but the three predicates themselves had no direct test.
+- **Pinned, in `read.rs`'s own tests:**
+  - **no evidence is not a denial** - `permission` returns `None`, and `readable_with` is false; the caller may say "not determined" rather than "denied";
+  - **evidence answers only for its own stamp** - and this is asserted **twice**, because `readable()` compares the stamp itself and `permission`/`readable_with` compare it again; removing the comparison in `readable()` leaves the other two green (a mutation showed exactly that), so the test now exercises `readable()` under a foreign stamp;
+  - **a server-derived record is never disclosed as a local intent** - `Accepted`, `Rejected`, `CanonicalReflected` and `Unsupported` all count as server-derived even when the binding allows local intents;
+  - **a local intent is disclosed only for its own context** and only while the binding says local intents are readable;
+  - **a recovered receipt makes an unknown result server-derived**: `ResultUnknown` without a receipt is the desktop's own uncertainty and is shown, with a receipt it is a server fact and is not;
+  - **the readable iterator yields only what the binding may disclose**, which is what the publication layer iterates.
+- **Proven by mutation:** allowing the decision to answer under any stamp fails `a decision for another stamp must not disclose the record`; treating server-derived records as local intents fails three tests.
+- **Not claimed:** these are the predicates, not the end-to-end authorization flow - the grant, invalidation and fence behaviour is covered by `observation_publication.rs`, and a real Runtime is still **NOT_RUN**. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p cos-client read::tests` 6 passed; `cargo clippy -p cos-client --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.

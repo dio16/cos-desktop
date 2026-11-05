@@ -93,20 +93,20 @@ impl CommandStatus {
     /// Whether this record's lifecycle fields are receipt-bearing or server-derived.
     pub(crate) fn server_derived(&self) -> bool {
         match &self.status {
-            CommandState::Prepared | CommandState::Pending { .. } => false,
-            CommandState::ResultUnknown { receipt, .. } => receipt.is_some(),
-            CommandState::Accepted(_)
-            | CommandState::Rejected(_)
-            | CommandState::CanonicalReflected(_)
-            | CommandState::Failed { .. }
-            | CommandState::Unsupported { .. } => true,
+            crate::CommandState::Prepared | crate::CommandState::Pending { .. } => false,
+            crate::CommandState::ResultUnknown { receipt, .. } => receipt.is_some(),
+            crate::CommandState::Accepted(_)
+            | crate::CommandState::Rejected(_)
+            | crate::CommandState::CanonicalReflected(_)
+            | crate::CommandState::Failed { .. }
+            | crate::CommandState::Unsupported { .. } => true,
         }
     }
 
     pub(crate) fn prepared(envelope: CommandEnvelope, origin: Option<Arc<ReadContextId>>) -> Self {
         Self {
             envelope: Some(envelope),
-            status: CommandState::Prepared,
+            status: crate::CommandState::Prepared,
             origin,
             decision: None,
             needs_read: false,
@@ -231,7 +231,7 @@ pub(crate) const TOMBSTONE_REASON: &str = "CommandReceiptTombstone";
 
 /// Whether this state is the explicit receipt tombstone shape.
 pub(crate) fn tombstone_shape(state: &CommandState) -> bool {
-    matches!(state, CommandState::ResultUnknown { reason, receipt: Some(_) } if reason == TOMBSTONE_REASON)
+    matches!(state, crate::CommandState::ResultUnknown { reason, receipt: Some(_) } if reason == TOMBSTONE_REASON)
 }
 
 #[derive(Clone)]
@@ -389,10 +389,10 @@ pub(crate) fn capacity_error() -> ClientError {
 pub(crate) fn unsettled(state: &CommandState) -> bool {
     matches!(
         state,
-        CommandState::Prepared
-            | CommandState::Pending { .. }
-            | CommandState::Accepted(_)
-            | CommandState::ResultUnknown { .. }
+        crate::CommandState::Prepared
+            | crate::CommandState::Pending { .. }
+            | crate::CommandState::Accepted(_)
+            | crate::CommandState::ResultUnknown { .. }
     )
 }
 
@@ -416,4 +416,253 @@ fn correlation(prefix: &str) -> String {
         .map(|elapsed| elapsed.as_nanos())
         .unwrap_or(0);
     format!("{prefix}-{}-{nanos}-{sequence}", std::process::id())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn stamp(label: &str) -> Arc<ReadStamp> {
+        // The rules under test compare stamp identity, so a faithful value built from the wire
+        // shape is enough; the label makes a mix-up visible in the failure message.
+        Arc::new(ReadStamp {
+            request_id: desktop_protocol::ReadRequestId::fixture(label),
+            server_id: desktop_protocol::ServerId::fixture(label),
+            epoch: desktop_protocol::EpochId::fixture(label),
+            context_id: ReadContextId::fixture(label),
+            read_revision: desktop_protocol::ReadRevision::new(
+                desktop_protocol::Counter::new("1").expect("a decimal counter"),
+            ),
+            scope_id: desktop_protocol::ScopeId::fixture(label),
+        })
+    }
+
+    fn record(state: crate::CommandState, context: &str) -> CommandStatus {
+        let mut record = CommandStatus::prepared(
+            CommandEnvelope {
+                command_id: desktop_protocol::CommandId::fixture(format!("command/{context}")),
+                target: desktop_protocol::CommandTarget::Task {
+                    task_id: desktop_protocol::TaskId::fixture("task"),
+                },
+                expected_revision: None,
+                epoch: None,
+                payload: desktop_protocol::CommandPayload::StopTask(
+                    desktop_protocol::StopTaskCommand {
+                        task_id: desktop_protocol::TaskId::fixture("task"),
+                        reason: None,
+                    },
+                ),
+            },
+            Some(Arc::new(ReadContextId::fixture(context))),
+        );
+        record.status = state;
+        record
+    }
+
+    fn binding(stamp: Arc<ReadStamp>, context: &str, local_intents_readable: bool) -> ReadBinding {
+        ReadBinding {
+            stamp,
+            context: Arc::new(ReadContextId::fixture(context)),
+            scope: ObservationScope {
+                scope_id: desktop_protocol::ScopeId::fixture("scope"),
+                task_ids: Vec::new(),
+                filters: Vec::new(),
+                protocol: desktop_protocol::Version::new(1, 0),
+                schema: desktop_protocol::Version::new(1, 0),
+            },
+            local_intents_readable,
+            visibility_sequence: 1,
+        }
+    }
+
+    fn receipt() -> desktop_protocol::CommandReceipt {
+        desktop_protocol::CommandReceipt {
+            command_id: desktop_protocol::CommandId::fixture("command/context"),
+            operation: desktop_protocol::CommandOperation::StopTask,
+            state: desktop_protocol::ReceiptState::Accepted,
+            task_id: Some(desktop_protocol::TaskId::fixture("task")),
+            accepted_at: None,
+            reject_reason: None,
+            effect_refs: Vec::new(),
+            dedupe_expires_at: None,
+            message: None,
+        }
+    }
+
+    #[test]
+    fn no_evidence_is_not_a_denial() {
+        // The distinction the publication layer depends on: `None` means "no current evidence", so
+        // a caller may say "not determined" rather than "denied".
+        let record = record(crate::CommandState::Prepared, "context");
+        let asked = stamp("stamp");
+        assert_eq!(record.permission(asked.as_ref()), None);
+        assert!(
+            !record.readable_with(asked.as_ref()),
+            "without positive evidence the record is not disclosed"
+        );
+    }
+
+    #[test]
+    fn evidence_for_another_stamp_is_never_used() {
+        let allowed = {
+            let mut status = record(crate::CommandState::Accepted(receipt()), "context");
+            status.decision = Some((stamp("stamp-a"), true));
+            status
+        };
+        // The same record asked under a different stamp: the earlier decision must not answer.
+        assert_eq!(allowed.permission(stamp("stamp-b").as_ref()), None);
+        assert!(!allowed.readable_with(stamp("stamp-b").as_ref()));
+        // Asked under its own stamp the decision does answer, in both directions.
+        assert_eq!(allowed.permission(stamp("stamp-a").as_ref()), Some(true));
+        assert!(allowed.readable_with(stamp("stamp-a").as_ref()));
+        // `readable()` has its own stamp comparison, separate from `permission`/`readable_with`, and
+        // only this assertion exercises it: a positive decision for stamp A must not disclose the
+        // record under stamp B, where the record itself would otherwise be withheld.
+        assert!(
+            allowed.readable(&binding(stamp("stamp-a"), "context", true)),
+            "its own stamp discloses the record"
+        );
+        assert!(
+            !allowed.readable(&binding(stamp("stamp-b"), "context", true)),
+            "a decision for another stamp must not disclose the record"
+        );
+
+        let denied = {
+            let mut status = record(crate::CommandState::Accepted(receipt()), "context");
+            status.decision = Some((stamp("stamp-a"), false));
+            status
+        };
+        assert_eq!(denied.permission(stamp("stamp-a").as_ref()), Some(false));
+        assert!(!denied.readable_with(stamp("stamp-a").as_ref()));
+    }
+
+    #[test]
+    fn a_server_derived_record_is_not_disclosed_as_a_local_intent() {
+        // A local intent is the desktop's own act and may be shown; once the server has answered,
+        // the same record carries server-derived facts and needs evidence of its own.
+        for state in [
+            crate::CommandState::Accepted(receipt()),
+            crate::CommandState::Rejected(receipt()),
+            crate::CommandState::CanonicalReflected(receipt()),
+            crate::CommandState::Unsupported {
+                error: desktop_protocol::ProtocolError {
+                    code: desktop_protocol::ErrorCode::UnsupportedCommand,
+                    message: "unsupported".to_string(),
+                    correlation_id: None,
+                    command_id: None,
+                    scope_id: None,
+                    retry_after_ms: None,
+                    field_errors: Vec::new(),
+                    current_revision: None,
+                    resync_reason: None,
+                },
+            },
+        ] {
+            let described = format!("{state:?}");
+            let record = record(state, "context");
+            let open = binding(stamp("stamp"), "context", true);
+            assert!(
+                record.server_derived(),
+                "{described} must count as server-derived"
+            );
+            assert!(
+                !record.readable(&open),
+                "{described} must not be disclosed as a local intent"
+            );
+        }
+    }
+
+    #[test]
+    fn a_local_intent_is_disclosed_only_for_its_own_context() {
+        let prepared = record(crate::CommandState::Prepared, "context");
+        let pending = record(crate::CommandState::Pending { sent_at_ms: 10 }, "context");
+        for (label, record) in [("prepared", &prepared), ("pending", &pending)] {
+            assert!(!record.server_derived(), "{label} is a local intent");
+            // Its own context, with local intents readable: disclosed.
+            assert!(
+                record.readable(&binding(stamp("stamp"), "context", true)),
+                "{label} must be visible in its own context"
+            );
+            // Another context: not disclosed.
+            assert!(
+                !record.readable(&binding(stamp("stamp"), "other", true)),
+                "{label} must not cross into another context"
+            );
+            // Its own context but local intents are not readable: not disclosed.
+            assert!(
+                !record.readable(&binding(stamp("stamp"), "context", false)),
+                "{label} must respect the binding's local-intent flag"
+            );
+        }
+    }
+
+    #[test]
+    fn a_recovered_receipt_makes_an_unknown_result_server_derived() {
+        // `ResultUnknown` is the desktop's own uncertainty until a receipt arrives; with a receipt it
+        // is a server fact and follows the evidence rules.
+        let without = record(
+            crate::CommandState::ResultUnknown {
+                reason: "response lost".to_string(),
+                receipt: None,
+            },
+            "context",
+        );
+        let with = record(
+            crate::CommandState::ResultUnknown {
+                reason: "response lost".to_string(),
+                receipt: Some(receipt()),
+            },
+            "context",
+        );
+        assert!(!without.server_derived());
+        assert!(with.server_derived());
+        let open = binding(stamp("stamp"), "context", true);
+        assert!(without.readable(&open));
+        assert!(!with.readable(&open));
+    }
+
+    #[test]
+    fn the_readable_iterator_skips_records_it_may_not_disclose() {
+        let open = binding(stamp("stamp"), "context", true);
+        let visible = CommandStatus::prepared(
+            CommandEnvelope {
+                command_id: desktop_protocol::CommandId::fixture("command/visible"),
+                target: desktop_protocol::CommandTarget::Task {
+                    task_id: desktop_protocol::TaskId::fixture("task"),
+                },
+                expected_revision: None,
+                epoch: None,
+                payload: desktop_protocol::CommandPayload::StopTask(
+                    desktop_protocol::StopTaskCommand {
+                        task_id: desktop_protocol::TaskId::fixture("task"),
+                        reason: None,
+                    },
+                ),
+            },
+            Some(Arc::new(ReadContextId::fixture("context"))),
+        );
+        let hidden = record(crate::CommandState::Accepted(receipt()), "context");
+        let mut records = BTreeMap::new();
+        records.insert(
+            desktop_protocol::CommandId::fixture("command/hidden"),
+            hidden,
+        );
+        records.insert(
+            desktop_protocol::CommandId::fixture("command/visible"),
+            visible,
+        );
+        let visible: Vec<String> = ReadableCommands {
+            records: records.iter(),
+            binding: &open,
+        }
+        .map(|(id, _)| id.as_str().to_string())
+        .collect();
+        // `fixture(...)` prefixes the synthetic namespace, which is exactly what identity looks like
+        // here; the point is that only one record comes back and it is the local intent.
+        assert_eq!(
+            visible,
+            vec!["fixture:command/visible".to_string()],
+            "only the record the binding may disclose is yielded"
+        );
+    }
 }
