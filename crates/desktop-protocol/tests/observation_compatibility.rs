@@ -7,7 +7,7 @@
 
 use desktop_protocol::messages::{
     ObservationScopeRequest, OpenObservation, ReplayAccepted, ResyncRequired, ScopeFilter,
-    UnknownMessage,
+    ServerMessage,
 };
 use desktop_protocol::{Cursor, ScopeId};
 
@@ -41,7 +41,15 @@ fn a_resume_coordinate_may_be_omitted_and_then_means_the_first_session() {
         open.last_seen_cursor.as_ref().map(Cursor::as_str),
         Some("cursor-41")
     );
-    assert!(open.epoch.is_some());
+    assert_eq!(
+        open.epoch.as_ref().map(desktop_protocol::EpochId::as_str),
+        Some(desktop_protocol::EpochId::fixture("epoch").as_str())
+    );
+    // Round trip: what was parsed must serialize back and parse to the same value.
+    let again: OpenObservation =
+        serde_json::from_str(&serde_json::to_string(&open).expect("the resume serializes"))
+            .expect("the serialized resume parses");
+    assert_eq!(open, again);
 }
 
 #[test]
@@ -72,8 +80,13 @@ fn an_unrecognized_server_message_defaults_to_affecting_state() {
     // The safe default matters: an unknown event that might change authoritative state must be
     // treated as if it does, so a newer peer cannot silently desynchronise the desktop.
     let without_flag = r#"{"kind": "observation-v2.unknown"}"#;
-    let unknown: UnknownMessage =
-        serde_json::from_str(without_flag).expect("an unknown message deserializes");
+    // The classification happens in `ServerMessage`'s own deserializer, so the frame is parsed as a
+    // `ServerMessage` and the unknown kind has to land in `Unknown` rather than failing.
+    let frame: ServerMessage =
+        serde_json::from_str(without_flag).expect("an unknown kind must not fail the frame");
+    let ServerMessage::Unknown(unknown) = frame else {
+        panic!("an unrecognized kind must dispatch to Unknown");
+    };
     assert!(
         unknown.affects_state,
         "an unknown message must default to affecting state"
@@ -83,12 +96,22 @@ fn an_unrecognized_server_message_defaults_to_affecting_state() {
     // A peer that says otherwise is believed, and the cursor it declares is kept.
     let declared =
         r#"{"kind": "observation-v2.unknown", "affects_state": false, "cursor": "cursor-7"}"#;
-    let unknown: UnknownMessage = serde_json::from_str(declared).expect("the declared form");
+    let frame: ServerMessage = serde_json::from_str(declared).expect("the declared form");
+    let ServerMessage::Unknown(unknown) = frame else {
+        panic!("an unrecognized kind must dispatch to Unknown");
+    };
     assert!(!unknown.affects_state);
     assert_eq!(
         unknown.cursor.as_ref().map(Cursor::as_str),
         Some("cursor-7")
     );
+
+    // Control: a kind this release knows still reaches its own variant, so `Unknown` is not the
+    // only path this test exercises.
+    let known: ServerMessage =
+        serde_json::from_str(r#"{"kind": "REPLAY_ACCEPTED", "cursor": "cursor-12"}"#)
+            .expect("a known kind parses");
+    assert!(matches!(known, ServerMessage::ReplayAccepted(_)));
 }
 
 #[test]
