@@ -530,6 +530,35 @@ pub const DERIVED_TEXT_VARIABLES: &[(&str, &str)] = &[
     ),
 ];
 
+/// Keywords and condition identifiers that may appear **around** a colour expression.
+///
+/// The guard fails closed: an identifier outside the braces that is not listed here is rejected, so
+/// a new condition has to be declared before its expression is accepted. That is deliberate - it
+/// cannot silently grow a hole the way a permissive scan would.
+pub const EXPRESSION_KEYWORDS: &[&str] = &["if", "else", "match", "true", "false"];
+
+/// Condition components the drawing code really uses around a colour choice.
+pub const CONDITION_IDENTIFIERS: &[&str] = &[
+    "node",
+    "edge",
+    "matched",
+    "is_active",
+    "surface",
+    "item",
+    "selected",
+    "active",
+    "focused",
+    "compared",
+    "formal",
+    "group_start",
+    "reconcile_enabled",
+    "stop_enabled",
+    "retryable",
+    "retryable_admission",
+    "compare_unavailable",
+    "index",
+];
+
 /// The palette roles the audit covers, named as the drawing code spells them.
 ///
 /// A guard test scans `lib.rs` for `text_color(rgb(colors.<role>))` and requires every role it finds
@@ -785,10 +814,19 @@ mod tests {
                 _ => {}
             }
         }
-        if outside.contains("colors.") {
+        if outside.contains("colors.") || has_hex_literal(&outside) {
             return vec![ColourSource::Unknown(outside.trim().to_string())];
         }
-        if has_hex_literal(&outside) {
+        // Only structure may surround the branches: keywords, declared condition identifiers,
+        // operators and punctuation. Anything else - a bare variable holding a colour, or an
+        // operator combining the branches with one - is rejected.
+        for token in outside.split(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '_')) {
+            if token.is_empty() || token.chars().next().is_some_and(|ch| ch.is_ascii_digit()) {
+                continue;
+            }
+            if EXPRESSION_KEYWORDS.contains(&token) || CONDITION_IDENTIFIERS.contains(&token) {
+                continue;
+            }
             return vec![ColourSource::Unknown(outside.trim().to_string())];
         }
 
@@ -929,6 +967,17 @@ mod tests {
                 ColourSource::Role("text".to_string())
             ]
         );
+        // A bare variable combined with the branches is not a colour the audit can see.
+        match classify_argument(
+            "(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ unregistered_color",
+        )
+        .as_slice()
+        {
+            [ColourSource::Unknown(_)] => {}
+            other => {
+                panic!("an unknown variable outside the branches must be rejected, got {other:?}")
+            }
+        }
         // A role *outside* the branches is not.
         match classify_argument("(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ colors.border")
             .as_slice()
