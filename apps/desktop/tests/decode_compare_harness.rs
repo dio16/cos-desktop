@@ -3240,6 +3240,31 @@ fn a_recovery_stop_before_the_deadline_is_not_a_timeout() {
     );
 }
 
+/// The companion to the aborted-cancel test: with a delay short enough to elapse, the flag must
+/// become true. Without this, "the flag stayed false" could just mean the flag was never wired.
+#[test]
+fn the_watcher_wake_flag_records_a_watcher_that_actually_woke() {
+    let _guard = sampling_guard();
+    let fixture = Fixture::new();
+    fixture.case("a.png", "sleep-long");
+    let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
+    config.invocation = helper_invocation(HELPER);
+    config.timeout_ms = 10_000;
+    config.cancel_after_ms = None;
+    config.watch_delay = Some(std::time::Duration::from_millis(50));
+    let woke = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    config.watch_woke = Some(std::sync::Arc::clone(&woke));
+    let report = harness::run(&config).unwrap();
+    assert!(
+        !report.observations.is_empty(),
+        "the run must produce an observation for this control to mean anything"
+    );
+    assert!(
+        woke.load(std::sync::atomic::Ordering::SeqCst),
+        "a watcher whose delay elapsed must record that it woke"
+    );
+}
+
 /// A cancel whose confirmation limit expires must still stop the child and leave the exit
 /// unconfirmed, without waiting on a watcher that is delayed past the limit.
 #[test]
@@ -3255,11 +3280,11 @@ fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
     // instead of aborting, the run would cost at least this delay, so the bound below compares
     // against the delay rather than against a plausible-looking number of seconds.
     config.watch_delay = Some(std::time::Duration::from_secs(10));
-    // The property is an **event**, not a duration: the watcher writes this marker when its delay
-    // has genuinely elapsed, so its absence after the run proves the abort returned without the
-    // watcher waking. The elapsed-time bound stays only as a safety net against a hung run.
-    let watch_marker = fixture.cases.join("a.watch-awake");
-    config.watch_delay_marker = Some(watch_marker.clone());
+    // The property is an **event**, not a duration: the watcher sets this flag when its delay has
+    // genuinely elapsed, so it staying false proves the abort returned without the watcher waking.
+    // The elapsed-time bound stays only as a safety net against a hung run.
+    let woke = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    config.watch_woke = Some(std::sync::Arc::clone(&woke));
     let heartbeat = fixture.cases.join("a.heartbeat");
     let started = std::time::Instant::now();
     let report = harness::run(&config).unwrap();
@@ -3275,16 +3300,10 @@ fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
         observation.cancellation_observed_ms.is_none(),
         "an unconfirmed exit keeps no confirmation duration"
     );
-    // The event: the watcher never left its delay while this run was going on. A failed attempt to
-    // write the marker is reported separately, so "no marker" cannot stand for "write failed".
-    let mut marker_failure = watch_marker.clone().into_os_string();
-    marker_failure.push(".failed");
+    // The event: the watcher never left its delay while this run was going on. The flag is plain
+    // shared state, so there is no write that could fail and no "absent file" to misread.
     assert!(
-        !std::path::PathBuf::from(marker_failure).exists(),
-        "the watcher woke and could not record it, so this run proves nothing"
-    );
-    assert!(
-        !watch_marker.exists(),
+        !woke.load(std::sync::atomic::Ordering::SeqCst),
         "the watcher woke during the run, so the abort waited for it instead of aborting"
     );
     // Safety net only (a hung run, not machine load): the delay is ten seconds, so anything past

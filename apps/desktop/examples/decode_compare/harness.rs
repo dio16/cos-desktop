@@ -716,12 +716,13 @@ pub struct Config {
     pub sample_spawn_delay: Option<Duration>,
     /// Test-only: delay the exit watcher's first poll (scheduling-delay reproduction).
     pub watch_delay: Option<Duration>,
-    /// Test-only: written when the watcher's delay has actually elapsed.
+    /// Test-only: set when the watcher's delay has actually elapsed.
     ///
-    /// This is the signal the "aborted cancel does not wait for the watcher" test uses: the marker
-    /// is absent exactly when the run finished without the watcher waking, so the property is
-    /// checked by an event rather than by a stopwatch. `None` in every operator run.
-    pub watch_delay_marker: Option<PathBuf>,
+    /// This is the signal the "aborted cancel does not wait for the watcher" test uses: the flag
+    /// stays false exactly when the run finished without the watcher waking. It is in-process
+    /// shared state rather than a marker file, so recording it cannot fail and a failed write
+    /// cannot masquerade as "the watcher never woke". `None` in every operator run.
+    pub watch_woke: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
     /// Test-only: force the watcher's kill() to fail (unconfirmed stop).
     pub force_kill_failure: bool,
     /// Test-only: force the watcher's exit confirmation to fail (unconfirmed).
@@ -1217,7 +1218,7 @@ where
         sample_compare_signal: None,
         sample_spawn_delay: None,
         watch_delay: None,
-        watch_delay_marker: None,
+        watch_woke: None,
         force_kill_failure: false,
         force_wait_failure: false,
         force_try_wait_error: false,
@@ -2281,7 +2282,7 @@ fn measure(
                 sampling_disabled_reason,
                 WatchTuning {
                     delay: config.watch_delay,
-                    delay_marker: config.watch_delay_marker.clone(),
+                    woke: config.watch_woke.clone(),
                     force_kill_failure: config.force_kill_failure,
                     force_wait_failure: config.force_wait_failure,
                     force_try_wait_error: config.force_try_wait_error,
@@ -3097,7 +3098,7 @@ impl ExitWatch {
         mut child: std::process::Child,
         deadline: Duration,
         watch_delay: Option<Duration>,
-        watch_delay_marker: Option<PathBuf>,
+        watch_woke: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
         force_kill_failure: bool,
         force_wait_failure: bool,
         force_try_wait_error: bool,
@@ -3150,14 +3151,10 @@ impl ExitWatch {
                 }
                 // The delay elapsed without an abort, so the watcher did wake. A test that asserts
                 // this marker's absence is asserting the event, not a duration.
-                if let Some(marker) = watch_delay_marker.as_ref() {
-                    // A failed write must not look like "the watcher never woke": the test asserts
-                    // this marker's absence, so silence here would turn a real wake into a pass.
-                    if std::fs::write(marker, b"watch-delay-elapsed").is_err() {
-                        let mut failed = marker.clone().into_os_string();
-                        failed.push(".failed");
-                        let _ = std::fs::write(PathBuf::from(failed), b"marker-write-failed");
-                    }
+                // In-process state: recording the wake cannot fail, so a test that asserts the
+                // flag is still false is asserting the event rather than the health of the disk.
+                if let Some(woke) = watch_woke.as_ref() {
+                    woke.store(true, std::sync::atomic::Ordering::SeqCst);
                 }
             }
             // Bounded confirmation: try_wait is polled up to confirm_bound; no unbounded
@@ -3470,8 +3467,8 @@ enum SettledSample {
 #[derive(Clone, Default)]
 struct WatchTuning {
     delay: Option<Duration>,
-    /// Written once the delay has genuinely elapsed, so a test can assert the watcher never woke.
-    delay_marker: Option<PathBuf>,
+    /// Set once the delay has genuinely elapsed, so a test can assert the watcher never woke.
+    woke: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
     force_kill_failure: bool,
     force_wait_failure: bool,
     force_try_wait_error: bool,
@@ -3496,7 +3493,7 @@ fn supervise(
         child,
         deadline,
         tuning.delay,
-        tuning.delay_marker,
+        tuning.woke,
         tuning.force_kill_failure,
         tuning.force_wait_failure,
         tuning.force_try_wait_error,
