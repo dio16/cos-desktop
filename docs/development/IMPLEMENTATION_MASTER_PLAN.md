@@ -4854,3 +4854,15 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Session negotiation:** the selected pair comes from both axes, and a missing schema or protocol intersection returns `NoSchemaIntersection` / `NoProtocolIntersection` rather than a partial pair.
 - **Not claimed:** this is the **desktop-protocol** side only. The RT1 compatibility matrix (`IMPLEMENTATION_STATUS_AUDIT`) covers **observation v1 against a real Runtime**, which remains **NOT_RUN**; MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p desktop-protocol versions` 4 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all 44 binaries green.
+
+### 19.272 MP-RT1: what a peer may omit, add and break (2026-11-05)
+
+- **Scope:** still the **desktop-protocol** half of RT1. No Runtime is connected, so no observation was exchanged; **the RT1 card does not move.**
+- **Four properties, in `crates/desktop-protocol/tests/wire_compatibility.rs`:**
+  1. a handshake **missing a required field** (its protocol ranges) does not deserialize;
+  2. an **optional** field (`features`, declared `#[serde(default)]`) may be absent or present, and its absence leaves every other field equal - so the optional field is the only difference;
+  3. a field a **newer peer added** is **ignored**, on both the handshake and the acceptance frame, rather than making the release skew fatal;
+  4. a **rejection** deserializes with its typed reason, its optional schema list may be omitted, and a reason this release does not know falls back to `Unknown` instead of failing the frame.
+- **A wire detail this pinned:** the reason travels as the upper-snake token (`NO_PROTOCOL_INTERSECTION`), not the Rust variant name. The test asserted the variant spelling first and failed, which is how it was found.
+- **Not claimed:** this is **shape**, not behaviour - it says a frame with an unknown field can be parsed, not that the desktop does the right thing with a newer peer's semantics. Observation-v1 compatibility against a real Runtime remains **NOT_RUN**; MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p desktop-protocol --test wire_compatibility` 4 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all **45** binaries green (the new test binary is the 45th).
