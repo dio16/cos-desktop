@@ -826,10 +826,15 @@ mod tests {
         for allowed in ["==", "!=", "<=", ">=", "&&", "||"] {
             structural = structural.replace(allowed, " ");
         }
-        if structural
-            .chars()
-            .any(|ch| matches!(ch, '^' | '+' | '-' | '*' | '/' | '%' | '|' | '<' | '>'))
-        {
+        // `&`, `|` and `!` are value operators here, not conditions: `a & b` and `!a` over colour
+        // expressions produce colours the audit never sees. Only `&&`, `||` and `!=` (which are
+        // removed above) are structural.
+        if structural.chars().any(|ch| {
+            matches!(
+                ch,
+                '^' | '+' | '-' | '*' | '/' | '%' | '|' | '&' | '!' | '<' | '>'
+            )
+        }) {
             return vec![ColourSource::Unknown(outside.trim().to_string())];
         }
         // Only structure may surround the branches: keywords, declared condition identifiers,
@@ -1006,6 +1011,22 @@ mod tests {
         {
             [ColourSource::Unknown(_)] => {}
             other => panic!("combining two branch expressions must be rejected, got {other:?}"),
+        }
+        // Bitwise AND and logical NOT over branch expressions are colour operations too.
+        match classify_argument(
+            "(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) & (if node.matched { 0xaeb6bf } else { 0xbcc6d0 })",
+        )
+        .as_slice()
+        {
+            [ColourSource::Unknown(_)] => {}
+            other => panic!("a bitwise AND of two branch expressions must be rejected, got {other:?}"),
+        }
+        // `!(if c { a } else { b })` is equally a colour operation.
+        match classify_argument("!(if node.matched { 0xbcc6d0 } else { 0xaeb6bf })").as_slice() {
+            [ColourSource::Unknown(_)] => {}
+            other => {
+                panic!("a logical NOT over a branch expression must be rejected, got {other:?}")
+            }
         }
         // A comparison in the condition is structure, not a colour operation.
         assert!(
