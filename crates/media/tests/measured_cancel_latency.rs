@@ -216,7 +216,46 @@ fn the_pre_decode_cancellation_check_comes_before_any_work() {
     let body_start = source
         .find("fn decode_raster_inner(")
         .expect("the decode entry point is present");
-    let body = &source[body_start..];
+    // The range must be **this function only**: everything after its opening brace up to the brace
+    // that closes it. Searching to the end of the file would let a later function satisfy a check
+    // the decode path no longer performs.
+    let after_signature = &source[body_start..];
+    let open = after_signature
+        .find('{')
+        .expect("the decode entry point has a body");
+    let mut depth = 0usize;
+    let mut close = None;
+    for (offset, ch) in after_signature[open..].char_indices() {
+        match ch {
+            '{' => depth += 1,
+            '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    close = Some(open + offset);
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+    let close = close.expect("the decode entry point has a closing brace");
+    let body = &after_signature[..=close];
+    // The extraction is pinned directly: the range must end at this function's closing brace, so a
+    // later function in the same file cannot satisfy a check the decode path no longer performs.
+    assert!(
+        body.ends_with('}'),
+        "the extracted range does not end at the function's closing brace"
+    );
+    assert!(
+        !body.contains("fn decode_raster_with_hook"),
+        "the extracted range ran past the decode entry point into the next function"
+    );
+    let opened = body.matches('{').count();
+    let closed = body.matches('}').count();
+    assert_eq!(
+        opened, closed,
+        "the extracted range is not brace-balanced, so it is not one function body"
+    );
     let cancel = body
         .find("cancel.check()?;")
         .expect("the first cancellation check is present");
