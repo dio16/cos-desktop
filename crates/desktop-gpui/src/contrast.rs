@@ -767,8 +767,29 @@ mod tests {
                 _ => {}
             }
         }
+        // With no braces there is no structure around a value: the whole argument is the value.
         if branches.is_empty() {
-            branches.push(argument.trim().to_string());
+            return vec![classify_branch(argument)];
+        }
+
+        // Everything outside the braces is structure (`if`, `else`, `match`, the condition
+        // expression and its operators). A colour must never appear there: `(if c { a } else { b })
+        // ^ 0xc0ffee` combines the branches with a literal the branch scan would otherwise miss.
+        let mut outside = String::new();
+        let mut depth = 0usize;
+        for ch in argument.chars() {
+            match ch {
+                '{' => depth += 1,
+                '}' => depth = depth.saturating_sub(1),
+                _ if depth == 0 => outside.push(ch),
+                _ => {}
+            }
+        }
+        if outside.contains("colors.") {
+            return vec![ColourSource::Unknown(outside.trim().to_string())];
+        }
+        if has_hex_literal(&outside) {
+            return vec![ColourSource::Unknown(outside.trim().to_string())];
         }
 
         let mut sources = Vec::new();
@@ -776,6 +797,26 @@ mod tests {
             sources.push(classify_branch(&branch));
         }
         sources
+    }
+
+    /// Whether the text contains a `0x…` literal anywhere, which outside a branch is a colour the
+    /// audit would otherwise not see.
+    fn has_hex_literal(text: &str) -> bool {
+        let bytes = text.as_bytes();
+        let mut index = 0usize;
+        while index + 2 < bytes.len() {
+            if bytes[index] == b'0' && (bytes[index + 1] | 32) == b'x' {
+                let mut end = index + 2;
+                while end < bytes.len() && (bytes[end] as char).is_ascii_hexdigit() {
+                    end += 1;
+                }
+                if end > index + 2 {
+                    return true;
+                }
+            }
+            index += 1;
+        }
+        false
     }
 
     /// Classify one branch: it must be exactly a role, a literal, or a declared derived value.
@@ -873,6 +914,28 @@ mod tests {
             classify_argument("some_other_colour"),
             vec![ColourSource::Unknown("some_other_colour".to_string())]
         );
+        // A colour outside the braces must be rejected even though every branch is audited.
+        match classify_argument("(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ 0xc0ffee")
+            .as_slice()
+        {
+            [ColourSource::Unknown(_)] => {}
+            other => panic!("a literal outside the branches must be rejected, got {other:?}"),
+        }
+        // A role inside a branch is a legitimate audited value.
+        assert_eq!(
+            classify_argument("(if node.matched { 0xbcc6d0 } else { colors.text })"),
+            vec![
+                ColourSource::Literal(0xbcc6d0),
+                ColourSource::Role("text".to_string())
+            ]
+        );
+        // A role *outside* the branches is not.
+        match classify_argument("(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ colors.border")
+            .as_slice()
+        {
+            [ColourSource::Unknown(_)] => {}
+            other => panic!("a role outside the branches must be rejected, got {other:?}"),
+        }
     }
 
     #[test]
