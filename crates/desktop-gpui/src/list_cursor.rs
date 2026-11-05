@@ -11,9 +11,17 @@
 ///
 /// A stale key - one whose row was filtered out or removed - resolves to `None`, which is what
 /// keeps a removed row from staying published.
+#[cfg(test)]
 pub(crate) fn active_index<K: PartialEq>(active: Option<&K>, rows: &[K]) -> Option<usize> {
     let active = active?;
     rows.iter().position(|row| row == active)
+}
+
+/// The same rule for a caller whose rows are keyed individually, which cannot hand out a slice of
+/// keys and should not build one just to search it: the predicate is asked about each index in
+/// order and the search stops at the first match.
+pub(crate) fn position_where(len: usize, mut matches: impl FnMut(usize) -> bool) -> Option<usize> {
+    (0..len).find(|index| matches(*index))
 }
 
 /// The index a Up/Down move lands on.
@@ -90,6 +98,26 @@ mod tests {
         assert_eq!(crate::rail_edge_index(4, crate::RailEdge::Last), Some(3));
         assert_eq!(crate::rail_edge_index(0, crate::RailEdge::First), None);
         assert_eq!(crate::rail_edge_index(0, crate::RailEdge::Last), None);
+    }
+
+    #[test]
+    fn the_index_form_finds_the_same_row_without_a_copy() {
+        // The flow lists key their rows individually, so they search by predicate instead of
+        // building a key vector for every keystroke.
+        let keys = vec!["a", "b", "c", "d"];
+        assert_eq!(
+            position_where(keys.len(), |index| keys[index] == "c"),
+            active_index(Some(&"c"), &keys)
+        );
+        assert_eq!(position_where(keys.len(), |index| keys[index] == "z"), None);
+        // The search stops at the first match rather than scanning on.
+        let mut visited = Vec::new();
+        let found = position_where(keys.len(), |index| {
+            visited.push(index);
+            keys[index] == "b"
+        });
+        assert_eq!(found, Some(1));
+        assert_eq!(visited, vec![0, 1]);
     }
 
     #[test]

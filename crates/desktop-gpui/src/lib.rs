@@ -2341,8 +2341,11 @@ impl Shell {
         if rows.nodes.is_empty() {
             return;
         }
-        let keys: Vec<_> = rows.nodes.iter().map(|row| row.key()).collect();
-        let current = list_cursor::active_index(self.flow_node_active.as_ref(), &keys);
+        let current = self.flow_node_active.as_ref().and_then(|active| {
+            list_cursor::position_where(rows.nodes.len(), |index| {
+                rows.nodes[index].key() == *active
+            })
+        });
         let Some(next) = list_cursor::stepped_index(current, rows.nodes.len(), delta) else {
             return;
         };
@@ -2387,8 +2390,11 @@ impl Shell {
         if rows.edges.is_empty() {
             return;
         }
-        let keys: Vec<_> = rows.edges.iter().map(|row| row.key()).collect();
-        let current = list_cursor::active_index(self.flow_edge_active.as_ref(), &keys);
+        let current = self.flow_edge_active.as_ref().and_then(|active| {
+            list_cursor::position_where(rows.edges.len(), |index| {
+                rows.edges[index].key() == *active
+            })
+        });
         let Some(next) = list_cursor::stepped_index(current, rows.edges.len(), delta) else {
             return;
         };
