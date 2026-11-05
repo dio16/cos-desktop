@@ -2777,26 +2777,39 @@ mod backoff_tests {
         // `attempt.saturating_sub(1)` means attempt 0 and attempt 1 share a window. That is harmless
         // for recovery, but it makes the growth property below start at 1, and it is worth pinning
         // so nobody reads a zero attempt as "no delay".
-        // They share the **window**, not the value: the jitter mixes in the attempt number, so the
-        // two attempts land on different delays inside the same range.
+        // They share the **window**. Whether they share a value is not guaranteed in either
+        // direction: the jitter calculation also mixes in the attempt, so the two may coincide -
+        // seed 20 gives 595 ms for both - and may differ. Only the range is contractual.
         let (low, high) = window(1);
-        for seed in [0u64, 1, 7, u64::MAX] {
-            for attempt in [0u32, 1] {
-                let delay = backoff_ms(attempt, seed);
+        let mut coincide = 0;
+        for seed in 0..64u64 {
+            let first = backoff_ms(0, seed);
+            let second = backoff_ms(1, seed);
+            for delay in [first, second] {
                 assert!(
                     (low..high).contains(&delay),
-                    "attempt {attempt} seed {seed} produced {delay} ms, outside the first window \
+                    "attempt 0 or 1 with seed {seed} produced {delay} ms, outside the first window \
                      [{low}, {high})"
                 );
             }
+            if first == second {
+                coincide += 1;
+            }
         }
+        // Both outcomes occur, which is why the test asserts the window and not a relation between
+        // the two values.
+        assert!(
+            coincide > 0 && coincide < 64,
+            "sixty-four seeds gave {coincide} coincidences, so this pair is not actually unconstrained"
+        );
     }
 
     #[test]
-    fn a_later_attempt_never_schedules_earlier_than_an_earlier_one() {
-        // From attempt 1 on, the windows are disjoint, so growth is a real property rather than a
-        // coincidence of the jitter: the slowest value of attempt n stays below the fastest value of
-        // attempt n + 1.
+    fn the_windows_do_not_overlap_before_the_cap() {
+        // Up to the cap the windows are disjoint, so growth is a property rather than a coincidence
+        // of the jitter: the slowest value of attempt n stays below the fastest value of attempt
+        // n + 1. **After** the cap this is deliberately not true - the base stops growing, so a later
+        // attempt can wait less than an earlier one; what holds there is only the bound.
         for attempt in 1..6u32 {
             let (_, high) = window(attempt);
             let (next_low, _) = window(attempt + 1);
