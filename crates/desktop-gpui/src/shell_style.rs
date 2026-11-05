@@ -673,22 +673,28 @@ mod tests {
 
     #[test]
     fn a_collapsing_palette_still_leaves_every_row_label_readable() {
-        // The palette resolves selection text to white, and the dock rows are drawn on the shell
-        // background - so a model that trusted the role's text colour would draw white on white.
+        // The surfaces the product actually draws on: dock rows sit on the raised face and a
+        // disabled stop button on the disabled face. Testing against `background` would let the
+        // product regress to a wrong surface without any test noticing.
         let colors = monochrome_high_contrast();
-        for state in [
-            RowState::Normal,
-            RowState::Selected,
-            RowState::Focused,
-            RowState::SelectedAndFocused,
-            RowState::Disabled,
+        for (label, surface) in [
+            ("dock row", colors.button_face),
+            ("disabled stop", colors.disabled_face),
         ] {
-            let visual = row_visual(state, &colors, colors.background);
-            let ratio = crate::contrast::contrast_ratio(visual.text, colors.background);
-            assert!(
-                ratio >= ROW_TEXT_MIN_CONTRAST,
-                "{state:?} text contrast is {ratio:.2}:1 against the surface it is drawn on"
-            );
+            for state in [
+                RowState::Normal,
+                RowState::Selected,
+                RowState::Focused,
+                RowState::SelectedAndFocused,
+                RowState::Disabled,
+            ] {
+                let visual = row_visual(state, &colors, surface);
+                let ratio = crate::contrast::contrast_ratio(visual.text, surface);
+                assert!(
+                    ratio >= ROW_TEXT_MIN_CONTRAST,
+                    "{label} {state:?}: text contrast is {ratio:.2}:1 against its real surface"
+                );
+            }
         }
     }
 
