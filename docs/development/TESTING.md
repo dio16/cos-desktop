@@ -5,6 +5,18 @@
 - **Scope:** Offline tests use deterministic fixtures and mocks, never `<runtime-root>`, network access, or direct Runtime database access. Real Runtime integration requires explicit authorization and Runtime-owned implementation.
 - **Inputs:** [repository architecture](../architecture/REPOSITORY_ARCHITECTURE.md), [dependency rules](../architecture/DEPENDENCY_RULES.md), [protocol draft](../architecture/DESKTOP_PROTOCOL.md), [ADR-0001](../decisions/ADR-0001-GPUI.md), canon sections 63–66.
 
+## Wall-clock assertions: an audit and the rule they follow
+
+A gate that fails on a loaded machine is worse than no gate: it teaches the team to re-run instead of to read. Every duration in the test surface was audited for that (2026-11-05) and falls into exactly one of three kinds.
+
+| Kind | Rule | Where it lives |
+|---|---|---|
+| **Measurement** | Prints the number; the assertion is about something else (a state, an error, a count) | `desktop-gpui/src/flow.rs` phase timings, `cos-client` deadline trace, `media` allocation measurements |
+| **Safety net** | A generous bound whose only job is to catch a hung run; never the property under test | the eight-second bound in `an_aborted_cancel_stops_the_child_and_stays_unconfirmed`, `media`'s 250 ms cancel bound against a multi-second decode |
+| **Self-calibrated comparison** | Measures this machine's overhead first, then compares against it, and **refuses to assert** when the calibration says the bound would be indistinguishable | `calibration_overhead_ms` / `cancellation_overhead_ms` in `apps/desktop/tests/decode_compare_harness.rs` (worst of three runs, then a `DETECTABLE_GRACE_MS` refusal) |
+
+The rule that follows, and the reason two tests were rewritten: **an event is a better assertion than a duration.** Both tests that failed a gate on machine load were fixed that way rather than by loosening a number - the watcher's wake became an in-process flag with a companion test proving the flag fires, and the cross-thread cancel waits for a counted row instead of sleeping five milliseconds. A future test may observe a duration under the second or third rule; it may not assert a property under the first.
+
 ## 1. Quality gates and impact routes
 
 The repository keeps one declared quality workflow; adding a test category does not imply another CI job or platform lane. FAST feedback runs the relevant sequence from the existing workflow: `cargo fmt --all -- --check`; `cargo metadata --locked --no-deps --format-version 1`; `python -B scripts/check_dependency_rules.py --self-test`; `python -B scripts/check_dependency_rules.py`; `cargo clippy --locked --workspace --all-targets -- -D warnings`; affected tests (for example, `cargo test -p app-core local_disconnect_never_sends_stop_implicitly`); and `cargo build --locked --workspace`. The aggregate Windows entry point is `pwsh scripts/quality.ps1`, which runs the repository's declared gates in order. It resolves and proves a concrete Python interpreter and a concrete `cargo` before any gate runs (a bare `python` or an extensionless launcher is not proof on Windows), prints both resolved paths, and fails closed with an explicit message when a tool cannot be proven rather than skipping the gate; [BUILD_AND_RUN §4.14](BUILD_AND_RUN.md#414-mp-img2-gdi-comparison-probe-and-fail-closed-gate-entry-point-2026-10-24) records the details and [§4.11](BUILD_AND_RUN.md#411-fixed-interpreter-and-environment-rules-2026-10-24) the interpreter rules. The Windows native startup smoke is specified in §6. CI configuration and service-side execution status are distinct evidence; do not report a PASS unless observed.
