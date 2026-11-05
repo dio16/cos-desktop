@@ -1316,25 +1316,53 @@ mod integrity_tests {
             panic!("the fixture projection is a task snapshot");
         };
         let task_id = snapshot.task_ref.clone();
+        let key = ProjectionKey::of_projection(projection);
+        let stored = state
+            .revisions
+            .get(&key)
+            .cloned()
+            .expect("the state holds the projection");
         let target = desktop_protocol::RemoveTarget::Task {
             task_id: task_id.clone(),
         };
-        // Both present: the upsert wins and the task stays visible.
+        // The upsert carries a **different** revision, so "the overlay answered with the base entry"
+        // is distinguishable from "it answered with the upsert".
+        let bumped_revision = Counter::new(
+            stored
+                .as_str()
+                .parse::<u128>()
+                .expect("a counter")
+                .saturating_add(1)
+                .to_string(),
+        )
+        .expect("a counter");
+        let bumped = with_revision(projection, bumped_revision.clone());
         let both = super::EffectiveState {
             base: &state,
-            upserts: std::slice::from_ref(projection),
+            upserts: std::slice::from_ref(&bumped),
             removals: std::slice::from_ref(&target),
         };
-        assert!(
-            both.task(&task_id).is_some(),
-            "an upsert shadows the removal of the same key"
+        assert_eq!(
+            both.task(&task_id)
+                .map(|task| task.projection_revision.clone()),
+            Some(bumped_revision.clone()),
+            "the overlay must answer with the upsert, not the base entry"
         );
-        // And it is valid, so the overlay's answer and the validator's agree.
+        // The aggregate iterator the integrity rules use must agree with the single-key answer, and
+        // must yield the task **once**.
+        let listed: Vec<_> = both
+            .tasks()
+            .filter(|task| task.task_ref == task_id)
+            .map(|task| task.projection_revision.clone())
+            .collect();
+        assert_eq!(
+            listed,
+            vec![bumped_revision],
+            "the aggregate iterator yields the upserted task exactly once"
+        );
+        // And the validator agrees with the overlay.
         state
-            .validate_effective_state(
-                std::slice::from_ref(projection),
-                std::slice::from_ref(&target),
-            )
+            .validate_effective_state(std::slice::from_ref(&bumped), std::slice::from_ref(&target))
             .expect("an upsert shadows the removal of the same key");
     }
 
@@ -1361,6 +1389,12 @@ mod integrity_tests {
         assert!(
             removal_only.task(&task_id).is_none(),
             "a removal hides an entry that no upsert recreates"
+        );
+        // The aggregate iterator must hide it too: an integrity rule that iterated `tasks()` would
+        // otherwise still see the entry the single-key answer already hides.
+        assert!(
+            removal_only.tasks().all(|task| task.task_ref != task_id),
+            "the aggregate iterator must not yield the removed task"
         );
         // The same key is still present in the base state, so the answer above came from the overlay
         // rather than from the entry never existing.
