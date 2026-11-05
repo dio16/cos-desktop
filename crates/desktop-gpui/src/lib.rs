@@ -3954,12 +3954,7 @@ impl Render for Shell {
                 colors.danger_text
             } else {
                 // Disabled is one row state, and its text colour is decided in one place.
-                shell_style::row_visual(
-                    shell_style::RowState::Disabled,
-                    &colors,
-                    colors.disabled_face,
-                )
-                .text
+                shell_style::stop_control_visual(false, &colors).text
             }))
             .child(if stop_enabled && retryable_admission {
                 "新しい停止要求を送る".to_string()
@@ -3968,11 +3963,7 @@ impl Render for Shell {
             } else {
                 shell_style::dock_row_text(
                     "タスクを停止",
-                    &shell_style::row_visual(
-                        shell_style::RowState::Disabled,
-                        &colors,
-                        colors.disabled_face,
-                    ),
+                    &shell_style::stop_control_visual(false, &colors),
                 )
             });
         let stop_button = if stop_enabled {
@@ -4296,7 +4287,7 @@ impl Render for Shell {
                 let formal = formal_candidates
                     .iter()
                     .any(|reference| reference == &identity);
-                let row_visual = shell_style::row_visual(
+                let row_visual = shell_style::dock_row_visual(
                     match (selected, active) {
                         (true, true) => shell_style::RowState::SelectedAndFocused,
                         (true, false) => shell_style::RowState::Selected,
@@ -4304,7 +4295,6 @@ impl Render for Shell {
                         (false, false) => shell_style::RowState::Normal,
                     },
                     &colors,
-                    colors.button_face,
                 );
                 let state_label = match (selected, compared, active) {
                     (true, true, true) => "閲覧中・比較対象・キーボード操作対象",

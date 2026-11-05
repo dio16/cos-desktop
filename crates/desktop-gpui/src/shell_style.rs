@@ -252,6 +252,31 @@ pub(crate) fn row_visual(
     RowVisual { border, text, cue }
 }
 
+/// The visual for a candidate dock row.
+///
+/// The surface is decided **here**, not by the caller, so the drawing code cannot pass a different
+/// one than the tests check. A regression in this function fails the contrast test; a caller cannot
+/// silently reintroduce a wrong surface because it no longer supplies one.
+pub(crate) fn dock_row_visual(state: RowState, colors: &crate::contrast::ShellColors) -> RowVisual {
+    row_visual(state, colors, colors.button_face)
+}
+
+/// The visual for the stop control, whose surface is the disabled face when it is not enabled.
+pub(crate) fn stop_control_visual(
+    enabled: bool,
+    colors: &crate::contrast::ShellColors,
+) -> RowVisual {
+    if enabled {
+        RowVisual {
+            border: colors.focus,
+            text: colors.danger_text,
+            cue: "",
+        }
+    } else {
+        row_visual(RowState::Disabled, colors, colors.disabled_face)
+    }
+}
+
 /// The text a row draws for its label, including the state's non-colour cue.
 pub(crate) fn dock_row_text(label: &str, visual: &RowVisual) -> String {
     if visual.cue.is_empty() {
@@ -677,6 +702,7 @@ mod tests {
         // disabled stop button on the disabled face. Testing against `background` would let the
         // product regress to a wrong surface without any test noticing.
         let colors = monochrome_high_contrast();
+        // The same entry points the drawing code calls, so a wrong surface inside them fails here.
         for (label, surface) in [
             ("dock row", colors.button_face),
             ("disabled stop", colors.disabled_face),
@@ -688,7 +714,11 @@ mod tests {
                 RowState::SelectedAndFocused,
                 RowState::Disabled,
             ] {
-                let visual = row_visual(state, &colors, surface);
+                let visual = if label == "dock row" {
+                    dock_row_visual(state, &colors)
+                } else {
+                    stop_control_visual(false, &colors)
+                };
                 let ratio = crate::contrast::contrast_ratio(visual.text, surface);
                 assert!(
                     ratio >= ROW_TEXT_MIN_CONTRAST,
