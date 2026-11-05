@@ -649,6 +649,88 @@ pub const CONDITION_IDENTIFIERS: &[&str] = &[
     "none",
 ];
 
+/// A non-text indicator and the surface it is drawn against.
+///
+/// WCAG 1.4.11 asks for **3:1** from a graphic that is needed to identify a control or its state.
+#[derive(Clone, Copy, Debug)]
+pub struct NonTextPair {
+    pub purpose: &'static str,
+    pub indicator: u32,
+    pub surface: u32,
+    /// Whether this indicator is one the shell relies on to show state, and so must meet 3:1.
+    pub carries_state: bool,
+}
+
+impl NonTextPair {
+    pub fn ratio(&self) -> f32 {
+        contrast_ratio(self.indicator, self.surface)
+    }
+}
+
+/// The non-text indicators the shell draws, measured against the surfaces they sit on.
+///
+/// `carries_state` is the question that decides the requirement: a **focus ring, a selection bar or
+/// a disabled boundary** tells the user something, so it needs 3:1; a **decorative separator** does
+/// not. A boundary that both delineates a control and is its only cue is listed as carrying state.
+pub fn non_text_pairs(colors: &ShellColors) -> Vec<NonTextPair> {
+    vec![
+        NonTextPair {
+            purpose: "keyboard focus ring on the shell background",
+            indicator: colors.focus,
+            surface: colors.background,
+            carries_state: true,
+        },
+        NonTextPair {
+            purpose: "keyboard focus ring on a button face",
+            indicator: colors.focus,
+            surface: colors.button_face,
+            carries_state: true,
+        },
+        NonTextPair {
+            purpose: "keyboard focus ring on a raised surface",
+            indicator: colors.focus,
+            surface: colors.raised_face,
+            carries_state: true,
+        },
+        NonTextPair {
+            purpose: "selection indicator on the shell background",
+            indicator: colors.selection,
+            surface: colors.background,
+            carries_state: true,
+        },
+        NonTextPair {
+            purpose: "structural separator on the shell background",
+            indicator: colors.border,
+            surface: colors.background,
+            // Decorative: it separates regions and is not the only cue for any state.
+            carries_state: false,
+        },
+        NonTextPair {
+            purpose: "disabled control boundary on the shell background",
+            indicator: colors.disabled_border,
+            surface: colors.background,
+            // Inactive control: exempt from the minimum, but measured and listed.
+            carries_state: false,
+        },
+    ]
+}
+
+/// The indicators that carry state but fall below 3:1, as `(purpose, ratio)`.
+pub fn failing_non_text_pairs(colors: &ShellColors) -> Vec<(&'static str, f32)> {
+    non_text_pairs(colors)
+        .into_iter()
+        .filter(|pair| pair.carries_state && pair.ratio() < 3.0)
+        .map(|pair| (pair.purpose, pair.ratio()))
+        .collect()
+}
+
+/// The resting boundary of an interactive control, as the drawing code pins it.
+///
+/// It is measured and reported separately because it is **not** a state indicator: the control is
+/// also identified by its label and its surface. Its ratio is recorded so a future decision about
+/// the boundary has a number to start from.
+pub const RESTING_CONTROL_BORDER: u32 = 0x343940;
+
 /// The palette roles the audit covers, named as the drawing code spells them.
 ///
 /// A guard test scans `lib.rs` for `text_color(rgb(colors.<role>))` and requires every role it finds
@@ -1220,6 +1302,41 @@ mod tests {
                 entry.required
             );
         }
+    }
+
+    #[test]
+    fn the_state_indicators_meet_the_non_text_threshold() {
+        let failing = failing_non_text_pairs(&NORMAL_COLORS);
+        assert!(
+            failing.is_empty(),
+            "state indicators below 3:1: {failing:?}"
+        );
+        for pair in non_text_pairs(&NORMAL_COLORS) {
+            eprintln!(
+                "{}: {:#x} on {:#x} is {:.2}:1 (state: {})",
+                pair.purpose,
+                pair.indicator,
+                pair.surface,
+                pair.ratio(),
+                pair.carries_state
+            );
+        }
+    }
+
+    #[test]
+    fn the_resting_control_boundary_ratio_is_recorded() {
+        // Not a threshold assertion: the boundary is not the control's only cue. The number is
+        // printed and asserted to be a real measurement so a change to either value is visible.
+        let on_face = contrast_ratio(RESTING_CONTROL_BORDER, NORMAL_COLORS.button_face);
+        let on_raised = contrast_ratio(RESTING_CONTROL_BORDER, NORMAL_COLORS.raised_face);
+        eprintln!(
+            "resting control boundary: {on_face:.2}:1 on the button face, {on_raised:.2}:1 on a raised surface"
+        );
+        assert!(on_face > 0.0 && on_raised > 0.0);
+        assert!(
+            on_face < 3.0,
+            "if the boundary now clears 3:1 this row can be promoted to a state indicator"
+        );
     }
     #[test]
     fn every_drawn_text_pair_reports_its_ratio() {
