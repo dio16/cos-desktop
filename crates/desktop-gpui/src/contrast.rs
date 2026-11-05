@@ -817,6 +817,21 @@ mod tests {
         if outside.contains("colors.") || has_hex_literal(&outside) {
             return vec![ColourSource::Unknown(outside.trim().to_string())];
         }
+        // A colour expression is one value: an `if`/`else` chain, optionally compared in its
+        // condition. Combining two branch expressions with an operator produces a colour the audit
+        // never sees - `(if c { a } else { b }) ^ (if c { a } else { b })` is `0x000000` - so any
+        // value-level operator outside the braces is rejected. Comparison and boolean operators are
+        // allowed, because conditions need them.
+        let mut structural = outside.clone();
+        for allowed in ["==", "!=", "<=", ">=", "&&", "||"] {
+            structural = structural.replace(allowed, " ");
+        }
+        if structural
+            .chars()
+            .any(|ch| matches!(ch, '^' | '+' | '-' | '*' | '/' | '%' | '|' | '<' | '>'))
+        {
+            return vec![ColourSource::Unknown(outside.trim().to_string())];
+        }
         // Only structure may surround the branches: keywords, declared condition identifiers,
         // operators and punctuation. Anything else - a bare variable holding a colour, or an
         // operator combining the branches with one - is rejected.
@@ -983,6 +998,22 @@ mod tests {
                 panic!("an unknown variable outside the branches must be rejected, got {other:?}")
             }
         }
+        // Two branch expressions combined by an operator produce a colour the audit never sees.
+        match classify_argument(
+            "(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ (if node.matched { 0xbcc6d0 } else { 0xaeb6bf })",
+        )
+        .as_slice()
+        {
+            [ColourSource::Unknown(_)] => {}
+            other => panic!("combining two branch expressions must be rejected, got {other:?}"),
+        }
+        // A comparison in the condition is structure, not a colour operation.
+        assert!(
+            classify_argument("if surface == item { 0x3c5268 } else { 0x24272c }")
+                .iter()
+                .all(|source| matches!(source, ColourSource::Literal(_))),
+            "a condition comparison must stay acceptable"
+        );
         // A decimal literal outside the branches shifts the colour and must not pass.
         match classify_argument("(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ 1").as_slice() {
             [ColourSource::Unknown(_)] => {}
