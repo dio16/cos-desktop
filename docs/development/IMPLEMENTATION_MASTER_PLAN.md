@@ -5035,3 +5035,18 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Proven by mutation:** taking the **maximum** instead of the minimum fails three tests; making either bound **exclusive** fails its own test.
 - **Not claimed:** these are the arithmetic and the negotiation rule. Nothing here exchanges a proposal with a real peer; the handshake path that calls this is covered by the version-negotiation tests, and a real Runtime remains **NOT_RUN**. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p desktop-protocol bounds` 5 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
+
+### 19.286 the canonical encoding is a pure function of its value (2026-11-05)
+
+- **Why:** `canonical_json` produces the bytes an integrity digest is computed over. If two peers that mean the same thing produced different bytes, every digest would be meaningless - so determinism is the whole contract, and it had six properties unpinned.
+- **Six tests:**
+  - **input key order does not change the encoding**: two spellings of one object encode identically, and to a stated string;
+  - **non-ASCII keys and values are NFC-normalised**, so composed and decomposed spellings of the same text encode identically;
+  - **two keys that collide under normalisation are refused** - sorting alone cannot fix that, because the encoding would depend on which member the map held last;
+  - **a float is refused and an integer is kept verbatim**, including an integer past the `u64` range that `serde_json` still carries as text;
+  - **a null member is omitted while a null array element is kept** - absence and nullness are the same statement for a member but a position for an element - and an object of only nulls encodes as `{}`;
+  - **the encoding is stable across repeated calls**, and array order is preserved while object order is not.
+- **Proven by mutation, four of five:** dropping the collision check fails two tests, dropping the null-member omission fails three, admitting floats fails three, and removing key NFC fails three.
+- **A mutation that could not be caught, and why:** deleting the encoder's own **key sort** changes nothing, because `serde_json::Value`'s object is already ordered - the test pins the output order but cannot attribute it to the sort or to the map. The sort stays as the guarantee that would survive a change to that representation (for example `preserve_order`); the test's own doc comment says so, so a later reader does not over-read the green.
+- **Not claimed:** this is the encoder's determinism, not the digest and not the projection-bundle parity, which `canonical_v1_parity` covers separately. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p desktop-protocol canonical::` 20 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.

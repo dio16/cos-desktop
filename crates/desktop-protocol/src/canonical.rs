@@ -506,3 +506,102 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod determinism_tests {
+    use super::{CanonicalError, canonical_json};
+
+    fn encoded(value: &serde_json::Value) -> String {
+        String::from_utf8(canonical_json(value).expect("canonical")).expect("utf-8")
+    }
+
+    /// The encoding's key order is what a peer sees, so it is pinned here.
+    ///
+    /// **What this cannot prove:** `serde_json::Value`'s object is already ordered, so deleting the
+    /// encoder's own sort does not change any result and this test still passes - a mutation showed
+    /// exactly that. The sort in `write_value` is therefore the guarantee that survives a change to
+    /// that representation (for example enabling `preserve_order`), and the test pins the output
+    /// order without being able to attribute it to one of the two.
+    #[test]
+    fn key_order_in_the_input_does_not_change_the_encoding() {
+        // The digest is over these bytes, so two peers that spell the same object in different
+        // orders must produce the same encoding or the digest is worthless.
+        let first: serde_json::Value =
+            serde_json::from_str(r#"{"b": 1, "a": 2, "c": {"z": 1, "y": 2}}"#).expect("json");
+        let second: serde_json::Value =
+            serde_json::from_str(r#"{"c": {"y": 2, "z": 1}, "a": 2, "b": 1}"#).expect("json");
+        assert_eq!(encoded(&first), encoded(&second));
+        assert_eq!(encoded(&first), r#"{"a":2,"b":1,"c":{"y":2,"z":1}}"#);
+    }
+
+    #[test]
+    fn a_non_ascii_key_and_value_are_normalised_before_encoding() {
+        // Composed and decomposed spellings are the same text; NFC makes them the same bytes.
+        let composed: serde_json::Value =
+            serde_json::from_str("{\"caf\u{e9}\": \"\u{e9}\"}").expect("json");
+        let decomposed: serde_json::Value =
+            serde_json::from_str("{\"cafe\u{301}\": \"e\u{301}\"}").expect("json");
+        assert_eq!(
+            encoded(&composed),
+            encoded(&decomposed),
+            "NFC must make the two spellings identical"
+        );
+    }
+
+    #[test]
+    fn two_keys_that_collide_under_normalisation_are_refused() {
+        // Sorting alone would not help here: the two keys normalise to one, so the encoding would
+        // depend on which member the map happened to hold last. The encoder must refuse instead.
+        let colliding: serde_json::Value =
+            serde_json::from_str("{\"caf\u{e9}\": 1, \"cafe\u{301}\": 2}").expect("json");
+        let error = canonical_json(&colliding).expect_err("a collision must be refused");
+        let message = format!("{error}");
+        assert!(
+            message.contains("collide"),
+            "the refusal names the cause: {message}"
+        );
+    }
+
+    #[test]
+    fn a_float_is_refused_and_an_integer_is_kept_verbatim() {
+        let float: serde_json::Value = serde_json::from_str(r#"{"a": 1.5}"#).expect("json");
+        assert!(matches!(canonical_json(&float), Err(CanonicalError { .. })));
+        let exponent: serde_json::Value = serde_json::from_str(r#"{"a": 1e3}"#).expect("json");
+        assert!(canonical_json(&exponent).is_err(), "an exponent is a float");
+
+        // Integers are kept exactly, including values past `i64` and `u64` bounds that serde_json can
+        // still represent as text.
+        let big: serde_json::Value =
+            serde_json::from_str(r#"{"a": 123456789012345678901234567890}"#).expect("json");
+        assert_eq!(encoded(&big), r#"{"a":123456789012345678901234567890}"#);
+    }
+
+    #[test]
+    fn a_null_member_is_omitted_but_a_null_array_element_is_kept() {
+        // Absence and nullness are the same statement for a member, so omitting it removes a way for
+        // two peers to differ; inside an array the position matters, so the null stays.
+        let member: serde_json::Value =
+            serde_json::from_str(r#"{"a": null, "b": 1}"#).expect("json");
+        assert_eq!(encoded(&member), r#"{"b":1}"#);
+        let element: serde_json::Value = serde_json::from_str(r#"[null, 1]"#).expect("json");
+        assert_eq!(encoded(&element), "[null,1]");
+        // An object that is only nulls encodes as an empty object rather than disappearing.
+        let only_null: serde_json::Value = serde_json::from_str(r#"{"a": null}"#).expect("json");
+        assert_eq!(encoded(&only_null), "{}");
+    }
+
+    #[test]
+    fn the_encoding_is_stable_across_repeated_calls() {
+        // A digest that changed between two calls on the same value would break every integrity
+        // check, so the encoder must be a pure function of its input.
+        let value: serde_json::Value =
+            serde_json::from_str(r#"{"list": [3, 1, 2], "obj": {"b": true, "a": "text"}}"#)
+                .expect("json");
+        let first = encoded(&value);
+        for _ in 0..8 {
+            assert_eq!(encoded(&value), first);
+        }
+        // Array order is meaningful and therefore preserved, unlike object order.
+        assert_eq!(first, r#"{"list":[3,1,2],"obj":{"a":"text","b":true}}"#);
+    }
+}
