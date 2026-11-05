@@ -547,24 +547,30 @@ mod tests {
 
     #[test]
     fn an_opaque_identity_is_bounded_by_bytes_not_characters() {
-        // The bound is in **bytes**: a multi-byte scalar counts for its encoded length, so a string of
-        // 512 characters can be over the limit while one of 512 bytes cannot.
-        let at_bound = "a".repeat(MAX_OPAQUE_BYTES);
-        assert!(ServerId::new(at_bound).is_ok(), "512 bytes is accepted");
+        // The limits are pinned as **literals** as well, because inputs derived from the constants
+        // would follow a change to them and never fail.
+        assert_eq!(MAX_OPAQUE_BYTES, 512);
+        assert_eq!(MAX_COUNTER_DIGITS, 39);
+
+        // The bound is in **bytes**: a multi-byte scalar counts for its encoded length.
         assert!(
-            ServerId::new("a".repeat(MAX_OPAQUE_BYTES + 1)).is_err(),
+            ServerId::new("a".repeat(512)).is_ok(),
+            "512 bytes is accepted"
+        );
+        assert!(
+            ServerId::new("a".repeat(513)).is_err(),
             "one byte more is refused"
         );
         // 'é' is two bytes in UTF-8, so 257 of them exceed the byte bound although the character
-        // count is far below it.
-        let multi_byte = "é".repeat(MAX_OPAQUE_BYTES / 2 + 1);
-        assert_eq!(multi_byte.chars().count(), MAX_OPAQUE_BYTES / 2 + 1);
+        // count is far below it, while 256 sit exactly at it.
+        let multi_byte = "é".repeat(257);
+        assert_eq!(multi_byte.chars().count(), 257);
+        assert_eq!(multi_byte.len(), 514);
         assert!(
             ServerId::new(multi_byte).is_err(),
             "the bound counts bytes, so this is over the limit"
         );
-        // Exactly at the byte bound with multi-byte scalars is accepted.
-        assert!(ServerId::new("é".repeat(MAX_OPAQUE_BYTES / 2)).is_ok());
+        assert!(ServerId::new("é".repeat(256)).is_ok());
     }
 
     #[test]
@@ -592,14 +598,36 @@ mod tests {
 
     #[test]
     fn the_fixture_namespace_is_constructible_and_marked() {
-        // The synthetic namespace exists so a fixture identity can never be mistaken for a real one,
-        // and it stays inside the opaque rules.
+        // The synthetic namespace exists so a fixture identity can never be mistaken for a real one.
         let fixture = ServerId::fixture("server");
         assert!(fixture.as_str().starts_with("fixture:"));
         assert_eq!(fixture.as_str(), "fixture:server");
-        // A fixture identity is still bounded like any other, so the namespace cannot smuggle an
-        // unbounded value past the limit.
-        assert!(ServerId::new(format!("fixture:{}", "a".repeat(MAX_OPAQUE_BYTES))).is_err());
+    }
+
+    /// `fixture()` builds the value directly and does **not** run `validate_opaque`.
+    ///
+    /// That is the current contract, and this test pins it rather than blessing it: a fixture
+    /// identity may be longer than 512 bytes and may contain control characters, which the
+    /// constructor refuses. It is safe only because fixtures are test-only producers whose value is
+    /// visibly `fixture:`-prefixed and never sent to a real server - so this is a documented
+    /// exception, not an oversight to rely on. Making `fixture()` validate would be a contract change
+    /// and is left to the owning design, not to a test.
+    #[test]
+    fn the_fixture_constructor_bypasses_the_opaque_validation() {
+        let long = ServerId::fixture("a".repeat(600));
+        assert!(
+            long.as_str().len() > 512,
+            "the fixture path does not enforce the byte bound"
+        );
+        let with_tab = ServerId::fixture("with\ttab");
+        assert!(
+            with_tab.as_str().contains('\t'),
+            "the fixture path does not refuse control characters"
+        );
+        // The same values through the validating constructor are refused, which is the difference
+        // this test exists to record.
+        assert!(ServerId::new(format!("fixture:{}", "a".repeat(600))).is_err());
+        assert!(ServerId::new("fixture:with\ttab").is_err());
     }
 
     #[test]
@@ -610,9 +638,10 @@ mod tests {
             Counter::new("18446744073709551615").expect("huge").as_str(),
             "18446744073709551615"
         );
-        // The bound is digits, not value: 39 digits is accepted, 40 refused.
-        assert!(Counter::new("9".repeat(MAX_COUNTER_DIGITS)).is_ok());
-        assert!(Counter::new("9".repeat(MAX_COUNTER_DIGITS + 1)).is_err());
+        // The bound is digits, not value: 39 is accepted, 40 refused (written as literals so a
+        // changed constant cannot hide behind inputs derived from it).
+        assert!(Counter::new("9".repeat(39)).is_ok());
+        assert!(Counter::new("9".repeat(40)).is_err());
         // Anything that is not a decimal digit is refused, including signs, spaces and letters.
         for refused in ["", "-1", "+1", " 1", "1 ", "0x10", "١٢٣", "1.5", "1_000"] {
             assert!(
