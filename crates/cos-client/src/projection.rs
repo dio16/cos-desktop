@@ -1515,6 +1515,164 @@ mod integrity_tests {
         }
     }
 
+    /// A snapshot that actually contains the projections below the task.
+    ///
+    /// The recorded fixture is made of **task projections only**, so the candidate, artifact,
+    /// evaluation and iteration edges have no coverage from it at all. This document is the smallest
+    /// consistent snapshot that exercises them; every case below breaks one edge in it.
+    const MIXED_SNAPSHOT: &str = r#"[
+      {"op": "UPSERT", "projection": {"projection": "TASK",
+        "task_ref": "fixture:task", "title": "t", "task_status": "ACTIVE",
+        "inner_phase": "RUNNING", "projection_revision": "1",
+        "iteration_ref": "fixture:iteration"}},
+      {"op": "UPSERT", "projection": {"projection": "ITERATION",
+        "iteration_ref": "fixture:iteration", "task_ref": "fixture:task", "index": 0,
+        "candidate_refs": [], "projection_revision": "1"}},
+      {"op": "UPSERT", "projection": {"projection": "ARTIFACT",
+        "artifact_ref": "fixture:artifact", "artifact_digest": "sha256:00",
+        "availability": "AVAILABLE", "projection_revision": "1"}},
+      {"op": "UPSERT", "projection": {"projection": "CANDIDATE",
+        "candidate_ref": {"task_id": "fixture:task", "run_id": "fixture:run",
+          "iteration": 0, "artifact_ref": "fixture:artifact",
+          "candidate_id": "fixture:candidate"},
+        "task_ref": "fixture:task", "iteration_ref": "fixture:iteration",
+        "artifact_refs": ["fixture:artifact"], "display_label": "A",
+        "projection_revision": "1"}},
+      {"op": "UPSERT", "projection": {"projection": "EVALUATION",
+        "evaluation_ref": "fixture:evaluation",
+        "candidate_ref": {"task_id": "fixture:task", "run_id": "fixture:run",
+          "iteration": 0, "artifact_ref": "fixture:artifact",
+          "candidate_id": "fixture:candidate"},
+        "artifact_refs": ["fixture:artifact"], "decision": "PASS",
+        "authority": "fixture", "projection_revision": "1"}}
+    ]"#;
+
+    fn mixed() -> (ProjectionState, EpochId) {
+        let epoch = EpochId::new("fixture:epoch").expect("an epoch");
+        let mutations: Vec<ProjectionMutation> =
+            serde_json::from_str(MIXED_SNAPSHOT).expect("the mixed snapshot parses");
+        let state = ProjectionState::from_snapshot(&epoch, &mutations).expect("it is consistent");
+        (state, epoch)
+    }
+
+    #[test]
+    fn the_mixed_snapshot_is_consistent_to_begin_with() {
+        // The positive control: every case below must fail **because of the edge it breaks**, not
+        // because the starting document is already invalid.
+        let (state, _epoch) = mixed();
+        assert_eq!(state.tasks.len(), 1);
+        assert_eq!(state.candidates.len(), 1);
+        assert_eq!(state.artifacts.len(), 1);
+        assert_eq!(state.evaluations.len(), 1);
+        assert_eq!(state.iterations.len(), 1);
+        state
+            .validate_effective_state(&[], &[])
+            .expect("the mixed snapshot is consistent");
+    }
+
+    #[test]
+    fn a_broken_edge_below_the_task_is_refused() {
+        let (state, _epoch) = mixed();
+        let candidate = state
+            .candidates
+            .values()
+            .next()
+            .expect("the mixed snapshot carries a candidate")
+            .clone();
+        let evaluation = state
+            .evaluations
+            .values()
+            .next()
+            .expect("the mixed snapshot carries an evaluation")
+            .clone();
+        let iteration = state
+            .iterations
+            .values()
+            .next()
+            .expect("the mixed snapshot carries an iteration")
+            .clone();
+
+        // A candidate whose tuple disagrees with the task it claims to belong to.
+        let mut mismatched = candidate.clone();
+        mismatched.candidate_ref.task_id =
+            desktop_protocol::TaskId::new("fixture:another-task").expect("an id");
+        let error = state
+            .validate_effective_state(
+                std::slice::from_ref(&Projection::Candidate(mismatched)),
+                &[],
+            )
+            .expect_err("a mismatched candidate tuple must be refused");
+        assert!(
+            format!("{error}").contains("mismatched task tuple"),
+            "the refusal names the cause: {error}"
+        );
+
+        // A candidate referencing an artifact that is not there.
+        let mut dangling_artifact = candidate.clone();
+        dangling_artifact
+            .artifact_refs
+            .push(desktop_protocol::ArtifactId::new("fixture:absent-artifact").expect("an id"));
+        let error = state
+            .validate_effective_state(
+                std::slice::from_ref(&Projection::Candidate(dangling_artifact)),
+                &[],
+            )
+            .expect_err("a candidate referencing an absent artifact must be refused");
+        assert!(
+            format!("{error}").contains("references absent artifact"),
+            "the refusal names the cause: {error}"
+        );
+
+        // A candidate referencing an evaluation that is not there.
+        let mut dangling_evaluation = candidate.clone();
+        dangling_evaluation
+            .evaluation_refs
+            .push(desktop_protocol::EvaluationId::new("fixture:absent-evaluation").expect("an id"));
+        let error = state
+            .validate_effective_state(
+                std::slice::from_ref(&Projection::Candidate(dangling_evaluation)),
+                &[],
+            )
+            .expect_err("a candidate referencing an absent evaluation must be refused");
+        assert!(
+            format!("{error}").contains("references absent evaluation"),
+            "the refusal names the cause: {error}"
+        );
+
+        // An evaluation referencing a candidate that is not there.
+        let mut absent_candidate = evaluation.clone();
+        absent_candidate.candidate_ref.candidate_id =
+            desktop_protocol::CandidateId::new("fixture:absent-candidate").expect("an id");
+        let error = state
+            .validate_effective_state(
+                std::slice::from_ref(&Projection::Evaluation(absent_candidate)),
+                &[],
+            )
+            .expect_err("an evaluation referencing an absent candidate must be refused");
+        assert!(
+            format!("{error}").contains("references absent candidate"),
+            "the refusal names the cause: {error}"
+        );
+
+        // An iteration listing a candidate it does not own: the listed candidate **exists**, so the
+        // existence rule passes and only the ownership rule can refuse this.
+        let mut second_iteration = iteration.clone();
+        second_iteration.iteration_ref =
+            desktop_protocol::IterationId::new("fixture:iteration-2").expect("an id");
+        second_iteration.index = 1;
+        second_iteration.candidate_refs = vec![candidate.candidate_ref.clone()];
+        let error = state
+            .validate_effective_state(
+                std::slice::from_ref(&Projection::Iteration(second_iteration)),
+                &[],
+            )
+            .expect_err("a candidate owned by another iteration must be refused");
+        assert!(
+            format!("{error}").contains("owned by another iteration"),
+            "the refusal names the cause: {error}"
+        );
+    }
+
     #[test]
     fn the_recorded_snapshot_is_the_positive_control() {
         // Building the state from these mutations runs the same integrity checks a live snapshot end
