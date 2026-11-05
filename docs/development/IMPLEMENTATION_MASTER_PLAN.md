@@ -5063,3 +5063,17 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Proven by mutation:** removing the byte bound fails two tests; removing the control check fails two; letting the counter accept non-digits fails one; unbinding its digit count fails one; changing either constant (512 bytes, 39 digits) fails two, because the tests now derive nothing from them; and giving `fixture()` validation fails one, which is the documented exception being tracked rather than assumed.
 - **Not claimed:** this is the validator. What a caller does with an accepted identity - including the media crate's stricter rule that an identity is never a path - is a separate contract covered by `media`'s own tests. A real Runtime remains **NOT_RUN**; MP-RT1, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p desktop-protocol ids::` 6 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
+
+### 19.288 the optimistic-concurrency rule for projection mutations (2026-11-05)
+
+- **Why:** `ProjectionState::validate_mutation` decides whether an incoming upsert may be applied. A creation replayed over existing state would overwrite authoritative projections; an update against a base this client never held would merge two different histories. The rule had one indirect test (through a recorded snapshot) and no direct one.
+- **Five tests, built on the repository's recorded fixture (`observation-grant.json`, 39 mutations):**
+  - **the recorded upsert is a creation and an empty state accepts it** - the positive control, without which the three refusals below could pass for the wrong reason;
+  - **a creation over an existing projection is refused** with `declares creation`;
+  - **an update against an absent projection is refused** with `is absent`;
+  - **a base revision that does not match the stored one is refused** with `does not match stored revision`;
+  - **the recorded snapshot is what the other tests build on** - its mutation count is asserted so a fixture change is visible.
+- **What writing them corrected:** my first version assumed the recorded upserts were updates and asserted an existing base revision; they are **creations** (the snapshot is a full state), and the tests failed until each case constructed the shape it needed. The positive control had to flip from "update validates" to "creation validates against an empty state".
+- **Proven by mutation:** accepting a creation over existing state fails one test; making the mismatched base pass fails one; and making the absent case succeed fails one - the third needed a real arm rewrite rather than a guard, because a non-exhaustive match only stops compilation.
+- **Not claimed:** this is the per-mutation rule. Snapshot entry, dangling references and the end-of-snapshot validation are covered by the existing recorded-fixture test; nothing here contacts a Runtime. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p cos-client projection::` 6 passed; `cargo clippy -p cos-client --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.

@@ -913,3 +913,143 @@ mod recorded_observation_v1 {
         );
     }
 }
+
+#[cfg(test)]
+mod integrity_tests {
+    use super::ProjectionState;
+    use desktop_protocol::{Counter, EpochId, ProjectionMutation};
+
+    const GRANT: &str = include_str!("../fixtures/desktop-observation-v1/observation-grant.json");
+
+    /// The recorded snapshot's mutations, which the existing test already proves valid.
+    fn recorded() -> (EpochId, Vec<ProjectionMutation>) {
+        let document: serde_json::Value =
+            serde_json::from_str(GRANT).expect("the recorded grant parses");
+        let epoch = EpochId::new(
+            document["body"]["server"]["epoch"]
+                .as_str()
+                .expect("an epoch"),
+        )
+        .expect("a valid epoch");
+        let mutations: Vec<ProjectionMutation> = document["body"]["snapshot"]["chunks"]
+            .as_array()
+            .expect("chunks")
+            .iter()
+            .flat_map(|chunk| {
+                chunk["mutations"]
+                    .as_array()
+                    .expect("mutations")
+                    .iter()
+                    .map(|mutation| serde_json::from_value(mutation.clone()).expect("a mutation"))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        (epoch, mutations)
+    }
+
+    fn populated() -> (ProjectionState, Vec<ProjectionMutation>) {
+        let (epoch, mutations) = recorded();
+        let state = ProjectionState::from_snapshot(&epoch, &mutations).expect("valid snapshot");
+        (state, mutations)
+    }
+
+    /// The first upsert and its creation form, for the checks below.
+    fn first_upsert(mutations: &[ProjectionMutation]) -> (Option<Counter>, ProjectionMutation) {
+        for mutation in mutations {
+            if let ProjectionMutation::Upsert {
+                base_revision,
+                projection,
+            } = mutation
+            {
+                return (
+                    base_revision.clone(),
+                    ProjectionMutation::Upsert {
+                        base_revision: base_revision.clone(),
+                        projection: projection.clone(),
+                    },
+                );
+            }
+        }
+        panic!("the recorded snapshot contains an upsert");
+    }
+
+    #[test]
+    fn the_recorded_upsert_is_a_creation_and_is_accepted_by_an_empty_state() {
+        // The recorded snapshot is a full state, so its upserts create. This is the positive control
+        // for the three refusals below: the same mutation validates when it is being created.
+        let (epoch, mutations) = recorded();
+        let empty = ProjectionState::from_snapshot(&epoch, &[]).expect("an empty snapshot");
+        let (base, upsert) = first_upsert(&mutations);
+        assert!(base.is_none(), "the recorded upsert declares creation");
+        assert!(
+            empty.validate_mutation(&upsert).is_ok(),
+            "a creation is accepted by an empty state"
+        );
+    }
+
+    #[test]
+    fn a_creation_upsert_is_refused_when_the_projection_already_exists() {
+        // Replaying a creation over an existing projection would overwrite authoritative state, so it
+        // is refused.
+        let (state, mutations) = populated();
+        let (_base, upsert) = first_upsert(&mutations);
+        let error = state
+            .validate_mutation(&upsert)
+            .expect_err("a creation over an existing projection must be refused");
+        assert!(
+            format!("{error}").contains("declares creation"),
+            "the refusal names the cause: {error}"
+        );
+    }
+
+    #[test]
+    fn an_update_upsert_is_refused_when_the_projection_is_absent() {
+        // The mirror case: a mutation that claims to update something the state does not hold. The
+        // recorded creation is turned into an update for this check.
+        let (epoch, mutations) = recorded();
+        let empty = ProjectionState::from_snapshot(&epoch, &[]).expect("an empty snapshot");
+        let (_base, mut upsert) = first_upsert(&mutations);
+        if let ProjectionMutation::Upsert { base_revision, .. } = &mut upsert {
+            *base_revision = Some(Counter::new("1").expect("a counter"));
+        }
+        let error = empty
+            .validate_mutation(&upsert)
+            .expect_err("an update against an absent projection must be refused");
+        assert!(
+            format!("{error}").contains("is absent"),
+            "the refusal names the cause: {error}"
+        );
+    }
+
+    #[test]
+    fn a_base_revision_that_does_not_match_the_stored_one_is_refused() {
+        // Optimistic concurrency: the mutation must name the revision it was computed against. A
+        // different base means the peer built on a state this client never had, so the update is
+        // refused even though the projection exists.
+        let (state, mutations) = populated();
+        let (_base, mut upsert) = first_upsert(&mutations);
+        if let ProjectionMutation::Upsert { base_revision, .. } = &mut upsert {
+            *base_revision = Some(Counter::new("999999999").expect("a counter"));
+        }
+        let error = state
+            .validate_mutation(&upsert)
+            .expect_err("a mismatched base must be refused");
+        assert!(
+            format!("{error}").contains("does not match stored revision"),
+            "the refusal names the cause: {error}"
+        );
+    }
+
+    #[test]
+    fn the_recorded_snapshot_is_the_positive_control() {
+        // Building the state from these mutations runs the same integrity checks a live snapshot end
+        // runs, so a state that builds is a state that validates. This is what makes the refusals
+        // above meaningful rather than vacuous.
+        let (_state, mutations) = populated();
+        assert_eq!(
+            mutations.len(),
+            39,
+            "the recorded snapshot carries thirty-nine mutations"
+        );
+    }
+}
