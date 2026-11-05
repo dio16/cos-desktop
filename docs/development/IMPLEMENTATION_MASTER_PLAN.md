@@ -4881,3 +4881,17 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **A wire detail this pinned:** a cursor is an **opaque string on the wire** (`"cursor-12"`), not an object with a sequence number. The test assumed the latter and failed, which is how the shape was confirmed.
 - **Not claimed:** this is the shape of the messages, not what the desktop does with a newer peer's semantics, and not a compatibility result against a real Runtime - that remains **NOT_RUN**. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p desktop-protocol --test observation_compatibility` 5 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all **46** binaries green.
+
+### 19.274 MP-RT1: a capability this release does not know stays off (2026-11-05)
+
+- **Scope:** still **desktop-protocol**. No Runtime is connected; **the RT1 card does not move.**
+- **The contract being pinned** is the one the type states in prose: a capability the projection does not mention, or a value this release does not recognize, leaves the operation **disabled**. Getting it wrong turns an unknown future capability into a permitted command.
+- **Five properties (`tests/capability_compatibility.rs`):**
+  - a **completely absent** command is `None`, not "supported" - the projection listing one command says nothing about the others;
+  - **present-but-unsupported** and **absent** are different answers and both leave the operation off;
+  - a **support value this release does not recognize** does not fail the frame: it is preserved **verbatim** (`Unknown(raw)`), reports `is_known() == false` and `is_supported() == false`, and round-trips unchanged;
+  - an **operation this release does not know** stays separate: asking for the known operation of that kind does **not** match it;
+  - a `MediaDescriptor` **defaults `representation_version` to 1**, keeps a newer peer's extra fields, invents nothing for the optional metadata, and **refuses to deserialize without its availability** - that field decides whether pixels may be requested at all.
+- **Wire details this pinned:** a capability scope is tagged `SERVER` / `TASK` / `ARTIFACT` (not a session kind), and a `Counter` travels as a **decimal string** (`"3"`), not a number. Both were wrong in the first version of the test and failed.
+- **Not claimed:** this is the shape and the disabling rule, not a compatibility result against a real Runtime, which remains **NOT_RUN**. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p desktop-protocol --test capability_compatibility` 5 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all **47** binaries green.
