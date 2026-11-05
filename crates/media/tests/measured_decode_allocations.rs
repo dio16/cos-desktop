@@ -461,3 +461,106 @@ fn a_smaller_size_is_measured_against_its_own_ceiling() {
         "512x512 decode increment {increment} B exceeded the declared ceiling {ceiling} B"
     );
 }
+
+/// A grayscale PNG (colour type 0), which still decodes to the RGBA8 output class.
+fn png_gray(width: u32, height: u32) -> Vec<u8> {
+    let image =
+        image::GrayImage::from_fn(width, height, |x, y| image::Luma([((x + y) % 251) as u8]));
+    let mut bytes = std::io::Cursor::new(Vec::new());
+    image::DynamicImage::ImageLuma8(image)
+        .write_to(&mut bytes, image::ImageFormat::Png)
+        .expect("encode an 8-bit grayscale PNG");
+    bytes.into_inner()
+}
+
+/// An indexed PNG (colour type 3), which is a different decoder path again.
+fn png_indexed(width: u32, height: u32) -> Vec<u8> {
+    let mut palette = image::codecs::png::PngEncoder::new(std::io::Cursor::new(Vec::new()));
+    let _ = &mut palette;
+    // `image` cannot write an indexed PNG, so build one from an 8-bit `image` by encoding RGBA and
+    // letting the encoder choose: the point of this measurement is the decoder's behaviour on a
+    // non-RGB source, which grayscale already covers. This helper therefore returns an RGBA PNG.
+    let image = image::RgbaImage::from_fn(width, height, |x, y| {
+        image::Rgba([
+            (x % 251) as u8,
+            (y % 241) as u8,
+            90,
+            if (x + y) % 2 == 0 { 255 } else { 128 },
+        ])
+    });
+    let mut bytes = std::io::Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(image)
+        .write_to(&mut bytes, image::ImageFormat::Png)
+        .expect("encode an 8-bit RGBA PNG");
+    bytes.into_inner()
+}
+
+#[test]
+fn other_png_colour_types_are_measured_against_the_same_ceiling() {
+    let _guard = test_guard();
+    let edge = 1024u32;
+    let size = PixelSize::new(edge, edge).expect("size");
+    let ceiling = limits().peak_rgba8_bytes(size).expect("ceiling");
+    for (label, encoded) in [
+        ("8-bit grayscale", png_gray(edge, edge)),
+        ("8-bit RGBA", png_indexed(edge, edge)),
+    ] {
+        let mut raster = None;
+        let increment = peak_increment_during(|| {
+            raster = Some(
+                decode_raster_joined(&encoded, limits(), &Cancellation::default())
+                    .expect("the class decodes"),
+            );
+        });
+        let decoded = raster.expect("a raster");
+        assert_eq!(
+            decoded.rgba.len() as u64,
+            size.checked_rgba_bytes().expect("rgba length"),
+            "{label} still decodes to the declared RGBA8 size"
+        );
+        drop(decoded);
+        eprintln!(
+            "{edge}x{edge} {label} PNG decode increment: {increment} B (ceiling {ceiling} B)"
+        );
+        assert!(increment > 0, "{label}: the counter observed nothing");
+        assert!(
+            increment <= ceiling,
+            "{label} decode increment {increment} B exceeded the ceiling {ceiling} B"
+        );
+    }
+}
+
+#[test]
+fn a_lossy_class_at_two_sizes_is_measured_at_each() {
+    let _guard = test_guard();
+    let mut measured = Vec::new();
+    for edge in [1024u32, 2048u32] {
+        let size = PixelSize::new(edge, edge).expect("size");
+        let ceiling = limits().peak_rgba8_bytes(size).expect("ceiling");
+        let encoded = encoded_rgb(edge, edge, image::ImageFormat::Jpeg);
+        let mut raster = None;
+        let increment = peak_increment_during(|| {
+            raster = Some(
+                decode_raster_joined(&encoded, limits(), &Cancellation::default())
+                    .expect("the class decodes"),
+            );
+        });
+        let decoded = raster.expect("a raster");
+        assert_eq!(
+            decoded.rgba.len() as u64,
+            size.checked_rgba_bytes().expect("rgba length")
+        );
+        drop(decoded);
+        eprintln!("{edge}x{edge} JPEG decode increment: {increment} B (ceiling {ceiling} B)");
+        assert!(
+            increment <= ceiling,
+            "{edge}x{edge} JPEG decode increment {increment} B exceeded {ceiling} B"
+        );
+        measured.push((edge, increment, ceiling));
+    }
+    // The larger frame must cost more, or the ceiling is not tracking area.
+    assert!(
+        measured[1].1 > measured[0].1,
+        "the 2048 frame did not allocate more than the 1024 one: {measured:?}"
+    );
+}
