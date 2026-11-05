@@ -43,6 +43,24 @@ pub(crate) fn stepped_index(current: Option<usize>, len: usize, delta: isize) ->
     })
 }
 
+/// Whether **this rendered row** publishes the list's active descendant.
+///
+/// The single decision the three lists share: the list must hold focus, the row being drawn must be
+/// the active one, and the active row must still exist in this list. A row that is merely mounted,
+/// or an active key whose row was filtered out, publishes nothing.
+///
+/// The caller passes what its render loop already knows - its index and the list length - so this
+/// costs nothing to call and cannot disagree with which row the tree contains.
+pub(crate) fn publishes_row<K: PartialEq>(
+    focused: bool,
+    active_key: Option<&K>,
+    row_index: usize,
+    row_key: &K,
+    list_len: usize,
+) -> bool {
+    focused && active_key.is_some_and(|active| active == row_key) && row_index < list_len
+}
+
 /// Whether the active descendant should be published for this list.
 ///
 /// It is published only when the list **holds keyboard focus** and the active row **still exists**.
@@ -135,35 +153,49 @@ mod tests {
 
     #[test]
     fn only_the_active_row_is_published() {
-        // The render loop mounts every row with its own index and length, and knows whether that
-        // row is the active one. Exactly one row - the active one - must publish, and only while
-        // the list holds focus.
+        // The product calls `publishes_row` from its render loop with the row's own index and key,
+        // so this test calls the same function rather than restating it.
         let rows = rows();
         let active_key = "c";
-        let active_position = active_index(Some(&active_key), &rows);
-        assert_eq!(active_position, Some(2));
-
         for (index, key) in rows.iter().enumerate() {
-            let is_active_row = active_key == *key;
-            let mounted = position_where(rows.len(), |row_index| row_index == index);
-            let publishes = is_active_row && publishes_active_descendant(true, mounted, rows.len());
             assert_eq!(
-                publishes,
+                publishes_row(true, Some(&active_key), index, key, rows.len()),
                 *key == active_key,
-                "row {key} published={publishes}"
+                "row {key} at {index}"
             );
         }
 
-        // With focus elsewhere, no row publishes - not even the active one.
+        // With focus elsewhere nothing publishes, not even the active row.
         for (index, key) in rows.iter().enumerate() {
-            let is_active_row = active_key == *key;
-            let mounted = position_where(rows.len(), |row_index| row_index == index);
-            assert!(!(is_active_row && publishes_active_descendant(false, mounted, rows.len())));
+            assert!(!publishes_row(
+                false,
+                Some(&active_key),
+                index,
+                key,
+                rows.len()
+            ));
         }
 
-        // A filter that removes the active row publishes nothing: the key no longer resolves.
+        // A filter that removes the active row publishes nothing: no mounted row matches the key.
         let filtered = ["a", "b"];
-        assert_eq!(active_index(Some(&active_key), &filtered), None);
+        for (index, key) in filtered.iter().enumerate() {
+            assert!(!publishes_row(
+                true,
+                Some(&active_key),
+                index,
+                key,
+                filtered.len()
+            ));
+        }
+
+        // An index past the end is not published even when the key matches.
+        assert!(!publishes_row(
+            true,
+            Some(&active_key),
+            9,
+            &active_key,
+            rows.len()
+        ));
     }
 
     #[test]

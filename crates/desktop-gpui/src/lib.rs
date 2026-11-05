@@ -4542,6 +4542,7 @@ impl Render for Shell {
         self.rail_frame = self.rail_frame.saturating_add(1);
         let rail_frame = self.rail_frame;
         let rail_focused = self.rail_focus.is_focused(window);
+        let rail_active_for_gate = self.rail_active.clone();
         let shell_entity = cx.entity();
         let rail_trace_lines = self.rail_trace_lines.clone();
         let rail_list = rail_collection.clone().zip(rail_search.clone()).map(|(collection, search)| {
@@ -4577,6 +4578,7 @@ impl Render for Shell {
                     },
                 );
                 let identity = task.clone();
+                let rail_active_key = rail_active_for_gate.clone();
                 div()
                     .id(stable_id.clone())
                     .accessibility_id(stable_id)
@@ -4584,13 +4586,13 @@ impl Render for Shell {
                     .aria_selected(selected)
                     .aria_label(SharedString::new(format!("{} — {}", row.display_id, row.title)))
                     .when(
-                        list_cursor::publishes_active_descendant(
+                        list_cursor::publishes_row(
                             rail_focused,
-                            list_cursor::position_where(search.indices.len(), |row_index| {
-                                row_index == index
-                            }),
+                            rail_active_key.as_ref(),
+                            index,
+                            &task,
                             search.indices.len(),
-                        ) && active,
+                        ),
                         |element| element.aria_active_descendant(),
                     )
                     .children(
