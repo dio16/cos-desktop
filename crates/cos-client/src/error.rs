@@ -148,7 +148,17 @@ mod tests {
         // Referenced so the exhaustive match is not dead code, and so the table below stays the only
         // place that decides the expected class.
         let _ = evaluate as fn(&ClientError) -> bool;
-        assert_eq!(cases.len(), 9, "the table must name every variant once");
+        // The table's labels are checked to be distinct: this is a statement about the table (no row
+        // is duplicated), and it is **not** a statement that every variant appears - the exhaustive
+        // match above is what covers that, at compile time.
+        let labels: std::collections::BTreeSet<&str> =
+            cases.iter().map(|(label, _, _)| *label).collect();
+        assert_eq!(
+            labels.len(),
+            cases.len(),
+            "the table repeats a row instead of listing distinct cases"
+        );
+        assert_eq!(cases.len(), 9, "the table lists nine rows");
         for (label, error, expected) in cases {
             assert_eq!(
                 error.requires_resync(),
