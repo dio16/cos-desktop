@@ -4722,3 +4722,14 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Tests (3):** the audit prints all sixteen pairs with their ratios so a failure names the surface; the normal palette has no non-exempt pair below threshold; and a High Contrast probe (white on black, navy selection) likewise has none.
 - **Not claimed:** these are **token-level** ratios, not measurements of rendered pixels; no screen reader, no AT session, no High Contrast visual check on a real window. MP-AX1 as a whole, MP-AX2 and product acceptance stay **NOT_RUN**.
 - **Verified:** `cargo test -p desktop-gpui contrast` 33 passed; `cargo clippy -p desktop-gpui --all-targets -D warnings` clean; `cargo fmt --all -- --check` clean; `cargo test --locked --workspace` all 44 binaries green.
+
+### 19.258 MP-AX1: the audit becomes a guard, and two real contrast defects fall out (2026-11-05)
+
+- **Why:** §19.257's audit was a hand-written list, and a review said so. This slice makes the list **check itself against the drawing code** instead of relying on whoever updated it last.
+- **The guard:** `every_text_colour_in_the_shell_is_either_audited_or_pinned` reads `lib.rs` through `include_str!`, extracts **every** `text_color(rgb(...))` argument with balanced parentheses, and requires each one to be either a palette role named in `AUDITED_ROLES` or a literal listed in `hardcoded_text_colours()`. A new `text_color` line now fails the test until the audit accounts for it. The scan found **23 call sites** across **6 roles** and **8 distinct literals**.
+- **Two defects it found, both in the flow surfaces and both real:**
+  - **Unmatched flow node label** was `0x7d848c` on `0x25292e` - **3.87:1** for ordinary text. Raised to `0x8b949e`, which measures **4.76:1** on that surface (computed across candidates before choosing).
+  - **Unavailable surface label** is `0x8b949e` on the selected row `0x3c5268` - **2.63:1**. That label is drawn **only when the surface is unavailable**, so it is an inactive control: it is now marked `exempt: true`, still listed, still measured, and printed with its ratio instead of being quietly dropped.
+- **Tests (2 new):** the source-scanning guard above, and a check that every pinned literal with a known surface meets 4.5:1 unless it is exempt.
+- **Not claimed:** the guard covers `text_color(rgb(...))` in `lib.rs` only - it does not see colours set through other helpers, other files, or a future API, and it cannot check a literal whose surface the code does not pin alongside it (those rows carry `background: None` and are listed as such). **Native display quality, screen readers and AT remain `NOT_MEASURED`**; MP-AX1 as a whole, MP-AX2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p desktop-gpui contrast` 35 passed; `cargo clippy -p desktop-gpui --all-targets -D warnings` clean; `cargo fmt --all -- --check` clean; `cargo test --locked --workspace` all 44 binaries green.

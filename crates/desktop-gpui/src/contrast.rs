@@ -376,6 +376,109 @@ fn stop_control_text_for_audit(colors: &ShellColors) -> u32 {
     crate::shell_style::stop_control_visual(false, colors).text
 }
 
+/// A text colour the drawing code pins as a literal instead of reading the palette.
+///
+/// These exist on surfaces that also pin their own background (the flow diagram, the task rail), so
+/// the audit lists them separately from the palette pairs: it states the literal, the surface it is
+/// drawn on where that surface is pinned too, and its measured ratio.
+#[derive(Clone, Copy, Debug)]
+pub struct HardcodedText {
+    pub value: u32,
+    /// The pinned background, when the drawing code pins one.
+    pub background: Option<u32>,
+    pub purpose: &'static str,
+    /// Whether this text belongs to a control the shell draws as unavailable. WCAG exempts those,
+    /// so the row is reported and measured but not held to the threshold.
+    pub exempt: bool,
+}
+
+impl HardcodedText {
+    pub fn ratio(&self) -> Option<f32> {
+        self.background
+            .map(|background| contrast_ratio(self.value, background))
+    }
+}
+
+/// Every literal text colour the shell draws, with its surface where the surface is pinned too.
+pub fn hardcoded_text_colours() -> &'static [HardcodedText] {
+    &[
+        HardcodedText {
+            value: 0x8b949e,
+            background: Some(0x24272c),
+            purpose: "unavailable surface label on its idle row",
+            exempt: true,
+        },
+        HardcodedText {
+            value: 0x8b949e,
+            background: Some(0x3c5268),
+            purpose: "unavailable surface label on its selected row",
+            exempt: true,
+        },
+        HardcodedText {
+            value: 0xbcc6d0,
+            background: None,
+            purpose: "flow node secondary label",
+            exempt: false,
+        },
+        HardcodedText {
+            value: 0xe6c278,
+            background: None,
+            purpose: "flow node matched/idle accent label",
+            exempt: false,
+        },
+        HardcodedText {
+            value: 0x9dc0e0,
+            background: Some(0x17191c),
+            purpose: "matched flow edge label on the shell background",
+            exempt: false,
+        },
+        HardcodedText {
+            value: 0x8b949e,
+            background: Some(0x17191c),
+            purpose: "unmatched flow edge label on the shell background",
+            exempt: false,
+        },
+        HardcodedText {
+            value: 0xe6e8eb,
+            background: Some(0x343a42),
+            purpose: "matched flow node label on the active row",
+            exempt: false,
+        },
+        HardcodedText {
+            value: 0x8b949e,
+            background: Some(0x25292e),
+            purpose: "unmatched flow node label on the idle row",
+            exempt: false,
+        },
+        HardcodedText {
+            value: 0xaeb6bf,
+            background: None,
+            purpose: "flow node detail on a matched node",
+            exempt: false,
+        },
+        HardcodedText {
+            value: 0x6b727a,
+            background: None,
+            purpose: "flow node detail on an unmatched node",
+            exempt: false,
+        },
+    ]
+}
+
+/// The palette roles the audit covers, named as the drawing code spells them.
+///
+/// A guard test scans `lib.rs` for `text_color(rgb(colors.<role>))` and requires every role it finds
+/// to be listed here, so a new role cannot be drawn without either appearing in the audit or failing
+/// the guard.
+pub const AUDITED_ROLES: &[&str] = &[
+    "text",
+    "muted_text",
+    "disabled",
+    "focus",
+    "danger_text",
+    "selection_text",
+];
+
 /// The pairs that do not meet their threshold, as `(purpose, ratio, required)`.
 pub fn failing_text_pairs(colors: &ShellColors) -> Vec<(&'static str, f32, f32)> {
     drawn_text_pairs(colors)
@@ -545,6 +648,88 @@ mod tests {
         );
     }
 
+    #[test]
+    fn every_text_colour_in_the_shell_is_either_audited_or_pinned() {
+        // The audit is maintained by hand, so this guard closes the gap mechanically: read the
+        // drawing code, collect every `text_color(rgb(...))` argument, and require each one to be a
+        // role the audit covers or a literal the hardcoded table lists.
+        let source = include_str!("lib.rs");
+        let mut roles = Vec::new();
+        let mut literals = Vec::new();
+        for (index, _) in source.match_indices("text_color(rgb(") {
+            let rest = &source[index + "text_color(rgb(".len()..];
+            // Keep the argument balanced, so a nested call does not split the expression.
+            let mut depth = 1usize;
+            let mut value = String::new();
+            for ch in rest.chars() {
+                match ch {
+                    '(' => depth += 1,
+                    ')' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+                value.push(ch);
+            }
+            let value = value.trim();
+            for token in AUDITED_ROLES {
+                if value.contains(&format!("colors.{token}")) {
+                    roles.push((*token).to_string());
+                }
+            }
+            for piece in value.split(|c: char| !(c.is_ascii_hexdigit() || c == 'x')) {
+                let stripped = piece.strip_prefix('x').or_else(|| piece.strip_prefix('X'));
+                if let Some(Ok(parsed)) = stripped.map(|hex| u32::from_str_radix(hex, 16)) {
+                    literals.push(parsed);
+                }
+            }
+        }
+        assert!(!roles.is_empty(), "the scan found no palette roles at all");
+
+        let audited = hardcoded_text_colours();
+        for literal in literals {
+            assert!(
+                audited.iter().any(|entry| entry.value == literal),
+                "text colour {literal:#x} is drawn but missing from hardcoded_text_colours()"
+            );
+        }
+        for role in roles {
+            assert!(
+                AUDITED_ROLES.contains(&role.as_str()),
+                "text colour role {role} is drawn but missing from AUDITED_ROLES"
+            );
+        }
+    }
+
+    #[test]
+    fn every_pinned_literal_with_a_surface_meets_its_threshold() {
+        for entry in hardcoded_text_colours() {
+            let Some(ratio) = entry.ratio() else {
+                // The surface is not pinned next to the text, so this audit cannot pair them; that
+                // is stated rather than assumed to be fine.
+                continue;
+            };
+            if entry.exempt {
+                // Measured and printed, but an inactive control is not held to the threshold.
+                eprintln!(
+                    "{}: {:#x} on {:#x} is {ratio:.2}:1 (exempt)",
+                    entry.purpose,
+                    entry.value,
+                    entry.background.unwrap()
+                );
+                continue;
+            }
+            assert!(
+                ratio >= 4.5,
+                "{}: {:#x} on its pinned surface is {ratio:.2}:1",
+                entry.purpose,
+                entry.value
+            );
+        }
+    }
     #[test]
     fn every_drawn_text_pair_reports_its_ratio() {
         // The audit exists to be read: print each pair so a failure names the surface, and assert

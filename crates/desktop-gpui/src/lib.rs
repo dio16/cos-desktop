@@ -5599,7 +5599,7 @@ fn flow_diagram_region(
                     } else {
                         0x1e2124
                     }))
-                    .text_color(rgb(if node.matched { 0xe6e8eb } else { 0x7d848c }))
+                    .text_color(rgb(if node.matched { 0xe6e8eb } else { 0x8b949e }))
                     .flex()
                     .flex_col()
                     .justify_center()
