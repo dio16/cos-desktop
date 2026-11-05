@@ -589,3 +589,78 @@ fn a_lossy_class_at_two_sizes_is_measured_at_each() {
         "the 2048 frame did not allocate more than the 1024 one: {measured:?}"
     );
 }
+
+/// Twelve decodes of a frame whose reservation is a seventh of the pool.
+///
+/// The pool is refused non-blockingly, so a reservation that was never released would not show up
+/// as a wrong result - it would show up as a `Busy` refusal after a handful of decodes. Running the
+/// same frame repeatedly and requiring **every** one to succeed is a behavioural test that the
+/// reservation is released, without reaching into the private counter.
+#[test]
+fn repeated_decodes_keep_getting_a_reservation() {
+    let _guard = test_guard();
+    let edge = 2048u32;
+    let size = PixelSize::new(edge, edge).expect("size");
+    let bytes = png_rgb(edge, edge);
+    // How many decodes the pool could admit at once if nothing were ever released: one more than
+    // that must still succeed, which is only possible if the earlier reservations came back.
+    let reservation = limits().peak_rgba8_bytes(size).expect("ceiling");
+    let pool = media::IN_FLIGHT_POOL_BYTES;
+    let would_fit_without_release = (pool / reservation) as usize;
+    let rounds = would_fit_without_release + 2;
+    eprintln!(
+        "pool {pool} B, one reservation {reservation} B, so {would_fit_without_release} could \
+         fit without release; running {rounds}"
+    );
+    for round in 0..rounds {
+        let raster = decode_raster_joined(&bytes, limits(), &Cancellation::default())
+            .unwrap_or_else(|error| {
+                panic!(
+                    "round {round} was refused with {error:?}, which a leaked reservation explains"
+                )
+            });
+        assert_eq!(
+            raster.rgba.len() as u64,
+            size.checked_rgba_bytes().expect("rgba length"),
+            "round {round} returned the wrong size"
+        );
+    }
+    eprintln!("{rounds} sequential decodes of a {edge}x{edge} frame were all admitted");
+}
+
+/// Four decodes at once take and release the same pool.
+///
+/// The barrier makes them contend for the reservation together; every one must succeed and return
+/// the declared size, which fails if the atomic take-and-release loses an update.
+#[test]
+fn concurrent_decodes_all_get_their_reservation_back() {
+    let _guard = test_guard();
+    const THREADS: usize = 4;
+    let edge = 1024u32;
+    let bytes = std::sync::Arc::new(png_rgb(edge, edge));
+    let size = PixelSize::new(edge, edge).expect("size");
+    let barrier = std::sync::Arc::new(std::sync::Barrier::new(THREADS));
+    let mut handles = Vec::new();
+    for _ in 0..THREADS {
+        let bytes = std::sync::Arc::clone(&bytes);
+        let barrier = std::sync::Arc::clone(&barrier);
+        handles.push(std::thread::spawn(move || {
+            barrier.wait();
+            decode_raster_joined(&bytes, limits(), &Cancellation::default())
+                .map(|raster| raster.rgba.len() as u64)
+        }));
+    }
+    let mut succeeded = 0;
+    for handle in handles {
+        let result = handle.join().expect("the thread did not panic");
+        match result {
+            Ok(len) => {
+                assert_eq!(len, size.checked_rgba_bytes().expect("rgba length"));
+                succeeded += 1;
+            }
+            Err(error) => panic!("a concurrent decode was refused with {error:?}"),
+        }
+    }
+    assert_eq!(succeeded, THREADS);
+    eprintln!("{THREADS} concurrent decodes all admitted and released");
+}

@@ -18,7 +18,8 @@ pub use cache::{
 };
 pub use decode::{
     DECODER_BOOKKEEPING_BYTES, DecodeAdmission, DecodeBudget, DecodeLimits, DecodeLimitsOverride,
-    DecodeRequest, MAX_SUPPORTED_BIT_DEPTH, MAX_SUPPORTED_CHANNELS, admit_decode,
+    DecodeRequest, IN_FLIGHT_POOL_BYTES, MAX_SUPPORTED_BIT_DEPTH, MAX_SUPPORTED_CHANNELS,
+    admit_decode,
 };
 pub use key::{
     DecodePolicy, LocalId, LocalProvenance, Orientation, PixelSize, RepresentationKey,
