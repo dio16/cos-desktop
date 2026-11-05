@@ -693,9 +693,9 @@ pub fn non_text_pairs(colors: &ShellColors) -> Vec<NonTextPair> {
             carries_state: true,
         },
         NonTextPair {
-            purpose: "selection indicator on the shell background",
-            indicator: crate::shell_style::selection_indicator(colors),
-            surface: colors.background,
+            purpose: "selection indicator on the dock row surface",
+            indicator: crate::shell_style::selection_indicator(colors, colors.button_face),
+            surface: colors.button_face,
             carries_state: true,
         },
         NonTextPair {
@@ -1421,6 +1421,41 @@ mod tests {
         assert_ne!(palette_values(&black), palette_values(&white));
     }
 
+    #[test]
+    fn a_theme_that_separates_window_and_button_face_keeps_the_selection_visible() {
+        // The reviewer's case: window white, button face black. An indicator chosen against the
+        // window would be invisible on the row it is actually drawn on.
+        let split = SystemColors {
+            window: 0xffffff,
+            window_text: 0x000000,
+            highlight: 0xffffff,
+            highlight_text: 0x000000,
+            gray_text: 0x6d6d6d,
+            button_face: 0x000000,
+            button_text: 0xffffff,
+        };
+        let colors = colors_for(ContrastScheme::HighContrast, &split);
+        assert_ne!(
+            colors.background, colors.button_face,
+            "the probe must separate the two surfaces for this test to mean anything"
+        );
+        let indicator = crate::shell_style::selection_indicator(&colors, colors.button_face);
+        let ratio = contrast_ratio(indicator, colors.button_face);
+        assert!(
+            ratio >= 3.0,
+            "the selection indicator is {ratio:.2}:1 on the row surface it is drawn on"
+        );
+        // And the row visual really uses that value.
+        assert_eq!(
+            crate::shell_style::row_visual(
+                crate::shell_style::RowState::Selected,
+                &colors,
+                colors.button_face
+            )
+            .border,
+            indicator
+        );
+    }
     #[test]
     fn both_high_contrast_themes_keep_the_required_ratios() {
         // The black theme was already checked; the white one is its mirror and had never been

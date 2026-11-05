@@ -220,7 +220,11 @@ pub(crate) fn row_visual(
 ) -> RowVisual {
     let (border, preferred_text, cue) = match state {
         RowState::Normal => (colors.border, colors.text, ""),
-        RowState::Selected => (selection_indicator(colors), colors.selection_text, "閲覧中"),
+        RowState::Selected => (
+            selection_indicator(colors, colors.button_face),
+            colors.selection_text,
+            "閲覧中",
+        ),
         RowState::Focused => (colors.focus, colors.text, "キーボード操作対象"),
         RowState::SelectedAndFocused => (
             colors.focus,
@@ -278,13 +282,15 @@ pub(crate) fn stop_control_visual(
 /// The colour the shell draws a selection indicator with.
 ///
 /// `colors.selection` is the theme's own highlight, but a high contrast theme can hand out a
-/// highlight that is nearly invisible on its background (the navy `0x000080` on black measures
-/// **1.31:1**). A selection indicator has to be seen, so this falls back through the palette in a
-/// fixed order and returns the first candidate that clears the **3:1** a meaningful graphic needs.
-pub(crate) fn selection_indicator(colors: &crate::contrast::ShellColors) -> u32 {
+/// highlight that is nearly invisible on the surface it is drawn on (the navy `0x000080` measures
+/// **1.31:1** on black). A selection indicator has to be seen, so this falls back through the
+/// palette in a fixed order and returns the first candidate that clears the **3:1** a meaningful
+/// graphic needs **on that surface** - the caller passes the surface the indicator really sits on,
+/// because a theme can resolve the window and the button face differently.
+pub(crate) fn selection_indicator(colors: &crate::contrast::ShellColors, surface: u32) -> u32 {
     crate::contrast::first_visible(
         &[colors.selection, colors.focus, colors.text, colors.disabled],
-        colors.background,
+        surface,
     )
 }
 
