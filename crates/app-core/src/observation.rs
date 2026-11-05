@@ -2205,6 +2205,8 @@ mod publication_shape {
     fn every_connection_state_maps_to_its_published_category() {
         // The mapping is what an operator sees, and it must not conflate "connecting" with
         // "observing" or "recovering" with "disconnected": those are different answers to a user.
+        // Every state the enum has is covered, including the two terminal failures, which are not
+        // the same answer as a disconnect.
         let cases = [
             (
                 ConnectionState::Disconnected,
@@ -2219,6 +2221,18 @@ mod publication_shape {
                 PublicationConnection::Connecting,
             ),
             (ConnectionState::Live, PublicationConnection::Observing),
+            (
+                ConnectionState::Incompatible {
+                    reason: "no shared protocol".to_string(),
+                },
+                PublicationConnection::Incompatible,
+            ),
+            (
+                ConnectionState::Unauthorized {
+                    reason: "authorization rejected".to_string(),
+                },
+                PublicationConnection::Unauthorized,
+            ),
             (
                 ConnectionState::Reconnecting {
                     attempt: 3,
@@ -2257,15 +2271,24 @@ mod publication_shape {
         // Losing the connection makes the projection *stale*, not absent: the last admitted snapshot
         // keeps being published so the user sees the last known state alongside a connection
         // category. Treating a disconnect as an empty projection would erase what was observed.
+        let snapshot: SnapshotHandle = Arc::new(cos_client::ProjectionState::default());
         let publication = ObservationPublication {
+            snapshot: Some(Arc::clone(&snapshot)),
             stale: true,
             connection: PublicationConnection::Recovering,
             source: PublicationSource::Runtime,
             ..ObservationPublication::default()
         };
         assert!(publication.stale);
-        // The type admits a snapshot together with `stale == true`; nothing in the shape forces the
-        // snapshot to be dropped when the connection is not live.
+        // The snapshot is actually there, and it is the same one: a stale publication carries what
+        // was observed rather than an empty replacement.
+        let carried = publication
+            .snapshot
+            .as_ref()
+            .expect("a stale publication still carries its snapshot");
+        assert!(Arc::ptr_eq(carried, &snapshot));
+        // And the connection is not live, so "stale" is the only thing distinguishing this from a
+        // fresh projection - which is exactly what the user is told.
         assert_ne!(
             publication.connection,
             PublicationConnection::Observing,
