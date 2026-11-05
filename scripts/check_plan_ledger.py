@@ -104,10 +104,19 @@ def check_cards(text: str, root: str) -> list[Finding]:
         if contract:
             for target, anchor in LINK_WITH_ANCHOR.findall(contract.group(1)):
                 path = os.path.normpath(os.path.join(root, target))
-                if os.path.exists(path) and anchor and anchor not in headings(path):
-                    findings.append(
-                        Finding(name, f"design-contract anchor does not exist: {target}#{anchor}")
-                    )
+                if os.path.exists(path) and anchor:
+                    if anchor not in headings(path):
+                        findings.append(
+                            Finding(name, f"design-contract anchor does not exist: {target}#{anchor}")
+                        )
+                    expected = name.lower().replace("-", "-")
+                    if anchor != f"dc-{expected}" and anchor.startswith("dc-mp-"):
+                        findings.append(
+                            Finding(
+                                name,
+                                f"the card names {anchor} but its own contract is dc-{expected}",
+                            )
+                        )
 
         # A card may record unrun checks, but it must not also claim to be complete.
         upper = status_text.upper()
@@ -170,6 +179,15 @@ def check_prereqs(text: str) -> list[Finding]:
     return findings
 
 
+def declared_edges(text: str) -> set[tuple[str, str]]:
+    """(prerequisite, card) pairs the cards themselves declare."""
+    edges = set()
+    for name, _title, body in cards(text):
+        for target in prereq_edges(body):
+            edges.add((target, name))
+    return edges
+
+
 def check_dag(text: str) -> list[Finding]:
     """Every card referenced from a diagram must exist.
 
@@ -183,6 +201,19 @@ def check_dag(text: str) -> list[Finding]:
         referenced.update(DAG_NODE.findall(block))
     for name in sorted(referenced - names):
         findings.append(Finding(name, "appears in a diagram but has no card"))
+
+    # The diagrams are partial: they show spines, not every declared edge. A drawn edge that the
+    # cards do not declare is a contradiction; a declared edge that no diagram draws is not.
+    declared = declared_edges(text)
+    drawn = set()
+    for block in MERMAID.findall(text):
+        for source, target in DAG_EDGE.findall(block):
+            drawn.add((source, target))
+    for source, target in sorted(drawn):
+        if (source, target) not in declared:
+            findings.append(
+                Finding(target, f"the diagram draws {source} --> {target} but no card declares it")
+            )
     return findings
 
 
@@ -259,6 +290,39 @@ def self_test() -> int:
         "a prerequisite with no card is reported",
     )
 
+    anchor_fixture = (
+        "#### MP-X5 — Anchor\n- **Status:** PARTIAL\n"
+        "- **Design source / acceptance:** [n](../development/TESTING.md#no-such-heading)\n"
+    )
+    findings = check_cards(anchor_fixture, os.path.dirname(PLAN))
+    expect(
+        any("anchor does not exist" in str(f) for f in findings),
+        "a link anchor that is not a heading is reported",
+    )
+
+    wrong_dc = (
+        "#### MP-X6 — Contract\n- **Status:** PARTIAL\n"
+        "- **Design source / acceptance:** "
+        "[DC](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img3)\n"
+    )
+    findings = check_cards(wrong_dc, os.path.dirname(PLAN))
+    expect(
+        any("its own contract is" in str(f) for f in findings),
+        "a card naming another card's contract is reported",
+    )
+
+    edge_fixture = (
+        "#### MP-A — A\n- **Hard prereqs:** none.\n- **Status:** PARTIAL\n"
+        "- **Design source / acceptance:** x\n\n"
+        "#### MP-B — B\n- **Hard prereqs:** none.\n- **Status:** PARTIAL\n"
+        "- **Design source / acceptance:** x\n\n"
+        "```mermaid\nMP-A --> MP-B\n```\n"
+    )
+    expect(
+        any("but no card declares it" in str(f) for f in check_dag(edge_fixture)),
+        "a diagram edge the cards do not declare is reported",
+    )
+
     dag_text = good + "\n```mermaid\nX1[MP-X1]\nX2[MP-X2]\nX1 --> X2\n```\n"
     expect(
         any("has no card" in str(f) for f in check_dag(dag_text)),
@@ -301,7 +365,14 @@ def main() -> int:
     findings = check_cards(text, root) + check_prereqs(text) + check_dag(text)
     for finding in findings:
         print(finding)
+    cited = unverified_commits(text)
     print(f"{len(findings)} finding(s) across {len(cards(text))} card(s)")
+    # Always printed, in every mode: a ledger whose citations were never resolved is not a
+    # verified ledger, and the summary says so instead of letting the run look complete.
+    print(
+        f"unverified: {len(cited)} cited commit id(s) were not resolved by this check "
+        "(repository lookup is unavailable here); they remain an open condition"
+    )
     return 1 if findings else 0
 
 
