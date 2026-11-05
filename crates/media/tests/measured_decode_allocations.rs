@@ -590,7 +590,7 @@ fn a_lossy_class_at_two_sizes_is_measured_at_each() {
     );
 }
 
-/// Twelve decodes of a frame whose reservation is a seventh of the pool.
+/// Enough decodes of one frame that the pool could not admit them all without releasing.
 ///
 /// The pool is refused non-blockingly, so a reservation that was never released would not show up
 /// as a wrong result - it would show up as a `Busy` refusal after a handful of decodes. Running the

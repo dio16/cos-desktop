@@ -425,6 +425,72 @@ mod tests {
     }
 
     #[test]
+    fn concurrent_reservations_add_up_and_return_to_zero() {
+        // Four reservations held at the same time: the counter must equal their exact sum while all
+        // are alive, and return to zero once each guard is dropped. A lost update anywhere in the
+        // take/release would show as a total that is too small, and a leak as one that never
+        // returns to zero.
+        let _guard = DECODE_TEST_LOCK.lock().expect("test lock");
+        assert_eq!(in_flight_bytes(), 0);
+        const EACH: u64 = 1_024 * 1_024;
+        const COUNT: usize = 4;
+        let mut held = Vec::new();
+        for index in 0..COUNT {
+            held.push(reserve_in_flight(EACH).expect("capacity"));
+            assert_eq!(
+                in_flight_bytes(),
+                EACH * (index as u64 + 1),
+                "the running total is wrong after {} reservations",
+                index + 1
+            );
+        }
+        while let Some(guard) = held.pop() {
+            drop(guard);
+            assert_eq!(
+                in_flight_bytes(),
+                EACH * held.len() as u64,
+                "the running total is wrong after a release"
+            );
+        }
+        assert_eq!(in_flight_bytes(), 0);
+    }
+
+    #[test]
+    fn reservations_taken_from_several_threads_are_all_counted() {
+        // The barrier holds every thread until all four have reserved, so the sum below is the
+        // total of reservations that are genuinely held at the same instant.
+        let _guard = DECODE_TEST_LOCK.lock().expect("test lock");
+        assert_eq!(in_flight_bytes(), 0);
+        const EACH: u64 = 256 * 1_024;
+        const THREADS: usize = 4;
+        let reserved = std::sync::Arc::new(std::sync::Barrier::new(THREADS + 1));
+        let observe = std::sync::Arc::new(std::sync::Barrier::new(THREADS + 1));
+        let mut handles = Vec::new();
+        for _ in 0..THREADS {
+            let reserved = std::sync::Arc::clone(&reserved);
+            let observe = std::sync::Arc::clone(&observe);
+            handles.push(std::thread::spawn(move || {
+                let guard = reserve_in_flight(EACH).expect("capacity");
+                reserved.wait();
+                // Hold the reservation while the main thread reads the counter.
+                observe.wait();
+                drop(guard);
+            }));
+        }
+        reserved.wait();
+        assert_eq!(
+            in_flight_bytes(),
+            EACH * THREADS as u64,
+            "every held reservation must be counted"
+        );
+        observe.wait();
+        for handle in handles {
+            handle.join().expect("the thread did not panic");
+        }
+        assert_eq!(in_flight_bytes(), 0);
+    }
+
+    #[test]
     fn the_peak_formula_is_explicit_and_checked() {
         let limits = DecodeBudget::ratified_default()
             .limits()
