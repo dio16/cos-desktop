@@ -573,11 +573,16 @@ fn a_lossy_class_at_two_sizes_is_measured_at_each() {
         "the ceiling did not grow with the frame: {small_ceiling} B at {small_edge} vs \
          {large_ceiling} B at {large_edge}"
     );
-    // The ceiling is a function of area, so four times the area must be about four times the bytes.
+    // The ceiling is `2 x the decoded size + a constant`, so the exact relationship is in the
+    // **difference**: four times the area must add exactly twice that many bytes to the ceiling.
+    // Integer division would have hidden a ceiling that is merely rounded, and asserting a ratio
+    // would have ignored the constant term.
+    let small_area = u64::from(small_edge) * u64::from(small_edge) * 4;
+    let large_area = u64::from(large_edge) * u64::from(large_edge) * 4;
     assert_eq!(
-        large_ceiling / small_ceiling,
-        3,
-        "the ceiling should scale with area; got {small_ceiling} B and {large_ceiling} B"
+        large_ceiling - small_ceiling,
+        (large_area - small_area) * 2,
+        "the ceiling should grow by twice the decoded-size difference;          got {small_ceiling} B at {small_area} B decoded and {large_ceiling} B at {large_area} B decoded"
     );
     assert!(
         large_alloc > small_alloc,
