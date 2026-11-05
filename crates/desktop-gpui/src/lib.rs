@@ -3583,9 +3583,9 @@ impl Render for Shell {
                     .when(
                         list_cursor::publishes_active_descendant(
                             flow_node_focused,
-                            is_active.then_some(0),
-                            1,
-                        ),
+                            list_cursor::position_where(rows.len(), |row_index| row_index == index),
+                            rows.len(),
+                        ) && is_active,
                         |element| element.aria_active_descendant(),
                     )
                     .flex()
@@ -3672,9 +3672,11 @@ impl Render for Shell {
                     .when(
                         list_cursor::publishes_active_descendant(
                             flow_edge_focused,
-                            is_active.then_some(0),
-                            1,
-                        ),
+                            list_cursor::position_where(rows.len(), |row_index| {
+                                row_index == index
+                            }),
+                            rows.len(),
+                        ) && is_active,
                         |element| element.aria_active_descendant(),
                     )
                     .flex()
@@ -4584,9 +4586,11 @@ impl Render for Shell {
                     .when(
                         list_cursor::publishes_active_descendant(
                             rail_focused,
-                            active.then_some(0),
-                            1,
-                        ),
+                            list_cursor::position_where(search.indices.len(), |row_index| {
+                                row_index == index
+                            }),
+                            search.indices.len(),
+                        ) && active,
                         |element| element.aria_active_descendant(),
                     )
                     .children(

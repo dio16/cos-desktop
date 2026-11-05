@@ -134,6 +134,33 @@ mod tests {
     }
 
     #[test]
+    fn the_published_row_is_the_one_the_render_loop_mounted() {
+        // The render loop knows its row index and the list length; the gate must agree with what
+        // the tree actually contains, which is what these two calls give it.
+        let rows = rows();
+        for (index, key) in rows.iter().enumerate() {
+            let mounted = position_where(rows.len(), |row_index| row_index == index);
+            assert_eq!(mounted, Some(index));
+            // The mounted row publishes only while the list holds focus.
+            assert!(publishes_active_descendant(true, mounted, rows.len()));
+            assert!(!publishes_active_descendant(false, mounted, rows.len()));
+            // And the row it publishes is the row at that index, not a fixed one.
+            assert_eq!(rows[index], *key);
+        }
+        // A filter shrinks the list under a kept index: nothing is published for the old index.
+        let filtered = vec!["a"];
+        assert_eq!(
+            position_where(filtered.len(), |row_index| row_index == 3),
+            None
+        );
+        assert!(!publishes_active_descendant(
+            true,
+            position_where(filtered.len(), |row_index| row_index == 3),
+            filtered.len()
+        ));
+    }
+
+    #[test]
     fn a_removed_or_filtered_row_is_not_published() {
         let rows = rows();
         // The row the user was on disappears from the list: the stale key no longer matches.
