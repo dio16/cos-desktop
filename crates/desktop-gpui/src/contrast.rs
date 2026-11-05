@@ -463,9 +463,6 @@ pub fn hardcoded_text_colours() -> Vec<HardcodedText> {
             // A direction glyph carries meaning but is not text: 3:1 is the applicable threshold.
             required: 3.0,
         },
-        // These sites inherit their surface from the enclosing container, so the drawing code does
-        // not pin a background next to the colour. They are listed so the guard sees them, with
-        // `background: None` recording that this audit cannot pair them yet.
         HardcodedText {
             value: 0x969ea8,
             background: Some(0x2f3338),
@@ -517,11 +514,12 @@ pub fn hardcoded_text_colours() -> Vec<HardcodedText> {
         },
         HardcodedText {
             value: 0xd08a6a,
-            background: None,
-            // Drawn only when the section is unavailable, so it belongs to an inactive control:
-            // WCAG exempts it, and its surface lives in another file, so it stays unpaired too.
+            // The reason text sits in the inspector panel, whose surface is the raised face set in
+            // lib.rs. It *explains* an unavailable section rather than being part of a disabled
+            // control, so it is ordinary information and is held to the threshold: 5.65:1.
+            background: Some(0x202328),
             purpose: "inspector unavailable-section reason",
-            exempt: true,
+            exempt: false,
             required: 4.5,
         },
         HardcodedText {
