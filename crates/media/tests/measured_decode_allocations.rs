@@ -473,13 +473,11 @@ fn png_gray(width: u32, height: u32) -> Vec<u8> {
     bytes.into_inner()
 }
 
-/// An indexed PNG (colour type 3), which is a different decoder path again.
-fn png_indexed(width: u32, height: u32) -> Vec<u8> {
-    let mut palette = image::codecs::png::PngEncoder::new(std::io::Cursor::new(Vec::new()));
-    let _ = &mut palette;
-    // `image` cannot write an indexed PNG, so build one from an 8-bit `image` by encoding RGBA and
-    // letting the encoder choose: the point of this measurement is the decoder's behaviour on a
-    // non-RGB source, which grayscale already covers. This helper therefore returns an RGBA PNG.
+/// An 8-bit RGBA PNG (colour type 6).
+///
+/// `image` cannot write an indexed PNG, so an indexed source is not measured here; this helper is
+/// named for what it produces rather than for what an indexed file would be.
+fn png_rgba(width: u32, height: u32) -> Vec<u8> {
     let image = image::RgbaImage::from_fn(width, height, |x, y| {
         image::Rgba([
             (x % 251) as u8,
@@ -503,7 +501,7 @@ fn other_png_colour_types_are_measured_against_the_same_ceiling() {
     let ceiling = limits().peak_rgba8_bytes(size).expect("ceiling");
     for (label, encoded) in [
         ("8-bit grayscale", png_gray(edge, edge)),
-        ("8-bit RGBA", png_indexed(edge, edge)),
+        ("8-bit RGBA", png_rgba(edge, edge)),
     ] {
         let mut raster = None;
         let increment = peak_increment_during(|| {
@@ -558,9 +556,31 @@ fn a_lossy_class_at_two_sizes_is_measured_at_each() {
         );
         measured.push((edge, increment, ceiling));
     }
-    // The larger frame must cost more, or the ceiling is not tracking area.
+    // The measurements must be real, and the **ceiling** must scale with area - asserting only
+    // that the allocation grew would still pass if both ceilings were the same oversized value.
+    let (small_edge, small_alloc, small_ceiling) = measured[0];
+    let (large_edge, large_alloc, large_ceiling) = measured[1];
     assert!(
-        measured[1].1 > measured[0].1,
+        small_alloc > 0 && large_alloc > 0,
+        "a measurement observed nothing"
+    );
+    assert!(
+        small_alloc > 0 && large_alloc > 0,
+        "both sizes must be measured ({small_edge}: {small_alloc} B, {large_edge}: {large_alloc} B)"
+    );
+    assert!(
+        large_ceiling > small_ceiling,
+        "the ceiling did not grow with the frame: {small_ceiling} B at {small_edge} vs \
+         {large_ceiling} B at {large_edge}"
+    );
+    // The ceiling is a function of area, so four times the area must be about four times the bytes.
+    assert_eq!(
+        large_ceiling / small_ceiling,
+        3,
+        "the ceiling should scale with area; got {small_ceiling} B and {large_ceiling} B"
+    );
+    assert!(
+        large_alloc > small_alloc,
         "the 2048 frame did not allocate more than the 1024 one: {measured:?}"
     );
 }
