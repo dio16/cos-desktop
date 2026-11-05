@@ -1477,8 +1477,9 @@ mod integrity_tests {
             "the refusal names the cause: {error}"
         );
 
-        // A declared reference to a projection that is being removed in the same transaction: the
-        // removal makes the edge dangle, which is the case the overlay exists to catch.
+        // A declared reference to a projection that is simply **not in the state**: the edge dangles
+        // on its own, with no removal involved. (A removal in the same transaction would make the
+        // edge dangle too, through the overlay, but that is a different case and is not built here.)
         for (label, field) in [
             ("formal outcome", "outcome"),
             ("accepted brief", "artifact"),
