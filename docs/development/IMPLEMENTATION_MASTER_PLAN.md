@@ -5010,3 +5010,15 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **A test that was measuring the sandbox rather than the code:** `app-core`'s `a_linked_store_directory_is_refused` creates a reparse point by spawning `mklink`, and it used `std::env::temp_dir()`. On this machine **spawned child processes are denied write access to the system temp directory** (the same limitation that stops `vswhom-sys` from compiling), so the link could not be created and the test failed closed with `the linked-root rejection could not be verified`. Its temp root now lives under `target/gate-temp`, which children can write, so the test measures the rejection rule. It passes three runs in a row and the workspace is green again.
 - **Not claimed:** this does not fix the sandbox limitation - a child still cannot write in the system temp directory - and it does not make `quality.ps1` runnable here. It only stops one test from conflating the two. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p ui-model palette::` 14 passed; `cargo test -p app-core crash_report::tests` 11 passed, three consecutive runs; `cargo test --locked --workspace` all 48 binaries green.
+
+### 19.284 the rail's search classifier and row order (2026-11-05)
+
+- **Why:** `folded_field_match` (a KMP-style matcher behind `query_prefix_table`) and `compare_rows` decide what the task rail shows, in what order. The rail's fourteen tests cover derivation, selection and cancellation - not these two, so a change here would have altered the list silently.
+- **Four tests:**
+  - **the classifier separates exact, prefix and containment**: a query equal to the whole field is exact, one that starts it is a prefix, one found later is only a containment, and an absent query sets none of them;
+  - **a missing prefix does not stop a later occurrence** - `aaab` against `aab` is not a prefix but is a containment, which is the case the fallback table exists for; a self-overlapping pattern that never completes (`abababab` against `abababac`) stays unmatched, and its completing form is exact;
+  - **folding applies before classification**, so case never changes the tier - and because simple folding does not expand, `STRASSE` does not match `straße`;
+  - **the row order is status, then newer iteration, then display id, then identity**, with `Unknown` ranking **after** the known statuses so an unrecognized status never outranks a known one.
+- **Proven by mutation:** making the prefix test unconditional fails six tests; never setting `contains` fails three; dropping the iteration from the ordering fails two; ranking `Unknown` first fails two.
+- **Not claimed:** this is the classifier and the ordering, not the end-to-end search. Query generations, cancellation and publication changes are covered by the existing rail tests, and nothing here touches the UI. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p ui-model task_rail::` 18 passed; `cargo clippy -p ui-model --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.

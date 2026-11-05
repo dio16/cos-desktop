@@ -1523,3 +1523,115 @@ mod tests {
         assert!(!row.attention.unavailable_reference);
     }
 }
+
+#[cfg(test)]
+mod search_classifier_tests {
+    use super::{
+        FieldMatch, TaskRow, compare_rows, folded_field_match, query_prefix_table, status_rank,
+    };
+    use crate::simple_casefold::fold_scalar;
+    use desktop_protocol::{TaskId, TaskStatus};
+    use std::sync::Arc;
+
+    fn fold(query: &str) -> Vec<char> {
+        query.chars().map(fold_scalar).collect()
+    }
+
+    fn classify(field: &str, query: &str) -> FieldMatch {
+        let folded = fold(query);
+        let prefix = query_prefix_table(&folded, &|| false).expect("no cancellation");
+        folded_field_match(field, &folded, &prefix, &|| false).expect("no cancellation")
+    }
+
+    #[test]
+    fn the_classifier_separates_exact_prefix_and_contains() {
+        // A query equal to the whole field is exact; a query that starts it is a prefix; a query
+        // found later is only a containment. The rail ranks on exactly this distinction, so the
+        // three answers must not bleed into each other.
+        let exact = classify("task-184", "task-184");
+        assert!(exact.exact, "the whole field is an exact match");
+        assert!(exact.prefix);
+        assert!(exact.contains);
+
+        let prefix = classify("task-1847", "task-184");
+        assert!(!prefix.exact, "a longer field is not an exact match");
+        assert!(prefix.prefix);
+        assert!(prefix.contains);
+
+        let contains = classify("my-task-184", "task-184");
+        assert!(!contains.exact);
+        assert!(!contains.prefix, "the query does not start this field");
+        assert!(contains.contains);
+
+        let absent = classify("unrelated", "task-184");
+        assert!(!absent.exact && !absent.prefix && !absent.contains);
+    }
+
+    #[test]
+    fn a_missing_prefix_does_not_stop_a_later_occurrence_from_matching() {
+        // The matcher resumes from the failure position rather than restarting, so a field that
+        // fails at the first character must still find a match later in it. This is the case a
+        // naive `starts_with || contains` shortcut would still pass, and the case the fallback table
+        // exists for.
+        let repeated = classify("aaab", "aab");
+        assert!(!repeated.prefix);
+        assert!(repeated.contains, "aab occurs at offset 1");
+
+        // A pattern with a self-overlapping prefix, which exercises the fallback table directly.
+        let overlapping = classify("abababab", "abababac");
+        assert!(!overlapping.contains, "the pattern never completes");
+
+        let found = classify("ababac", "ababac");
+        assert!(found.exact);
+    }
+
+    #[test]
+    fn folding_applies_to_the_classifier_so_case_never_changes_the_tier() {
+        // The rail folds the query and each field character with the same function, so a case-only
+        // difference must not change the classification.
+        let upper = classify("TASK-184", "task-184");
+        let lower = classify("task-184", "task-184");
+        assert_eq!(
+            (upper.exact, upper.prefix, upper.contains),
+            (lower.exact, lower.prefix, lower.contains)
+        );
+        // The same holds for a non-ASCII scalar that folds: the German sharp s.
+        let folded = classify("straße", "STRASSE");
+        assert!(!folded.contains, "simple folding does not expand ss to ß");
+        assert!(classify("straße", "STRAßE").exact);
+    }
+
+    #[test]
+    fn the_row_order_is_status_then_newer_iteration_then_display_id_then_identity() {
+        fn row(status: TaskStatus, iteration: Option<u32>, display: &str, id: &str) -> TaskRow {
+            TaskRow {
+                identity: TaskId::new(id).expect("task id"),
+                display_id: Arc::from(display),
+                title: Arc::from("title"),
+                task_status: status,
+                inner_phase: Arc::from("phase"),
+                iteration_index: iteration,
+                attention: super::LocalAttention::default(),
+            }
+        }
+        let mut rows = [
+            row(TaskStatus::Completed, Some(5), "a", "fixture:a"),
+            row(TaskStatus::Active, Some(1), "b", "fixture:b"),
+            row(TaskStatus::Assigned, Some(2), "c", "fixture:c"),
+            row(TaskStatus::Active, Some(3), "z", "fixture:z"),
+            row(TaskStatus::Cancelled, None, "d", "fixture:d"),
+        ];
+        rows.sort_by(compare_rows);
+        let order: Vec<&str> = rows.iter().map(|row| row.display_id.as_ref()).collect();
+        assert_eq!(
+            order,
+            vec!["z", "b", "c", "a", "d"],
+            "active first and newest iteration first; then assigned, completed, cancelled"
+        );
+        // `Unknown` sorts last, so an unrecognized status never outranks a known one.
+        assert!(
+            status_rank(&TaskStatus::Unknown("FUTURE".to_string()))
+                > status_rank(&TaskStatus::Cancelled)
+        );
+    }
+}
