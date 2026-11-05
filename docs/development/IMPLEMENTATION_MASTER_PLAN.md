@@ -5067,13 +5067,15 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 ### 19.288 the optimistic-concurrency rule for projection mutations (2026-11-05)
 
 - **Why:** `ProjectionState::validate_mutation` decides whether an incoming upsert may be applied. A creation replayed over existing state would overwrite authoritative projections; an update against a base this client never held would merge two different histories. The rule had one indirect test (through a recorded snapshot) and no direct one.
-- **Five tests, built on the repository's recorded fixture (`observation-grant.json`, 39 mutations):**
+- **Eight tests, built on the repository's recorded fixture (`observation-grant.json`, 39 mutations):**
   - **the recorded upsert is a creation and an empty state accepts it** - the positive control, without which the three refusals below could pass for the wrong reason;
   - **a creation over an existing projection is refused** with `declares creation`;
   - **an update against an absent projection is refused** with `is absent`;
   - **a base revision that does not match the stored one is refused** with `does not match stored revision`;
-  - **the recorded snapshot is what the other tests build on** - its mutation count is asserted so a fixture change is visible.
+  - **the recorded snapshot is what the other tests build on** - its mutation count is asserted so a fixture change is visible;
+  - **a matching base with a newer revision is accepted** and **a revision that does not move forward is refused** (equal and decreasing both, with `is not newer than base`), because the refusal cases alone cannot distinguish the rule from one that refuses every update;
+  - **a removal needs an existing projection and the stored base**: accepted with both, refused with `expects an existing projection` when absent and `does not match stored revision` when the base differs - the `Remove` branch had no test at all.
 - **What writing them corrected:** my first version assumed the recorded upserts were updates and asserted an existing base revision; they are **creations** (the snapshot is a full state), and the tests failed until each case constructed the shape it needed. The positive control had to flip from "update validates" to "creation validates against an empty state".
-- **Proven by mutation:** accepting a creation over existing state fails one test; making the mismatched base pass fails one; and making the absent case succeed fails one - the third needed a real arm rewrite rather than a guard, because a non-exhaustive match only stops compilation.
+- **Proven by mutation, six ways:** accepting a creation over existing state fails one; making the mismatched base pass fails one; making the absent update succeed fails one (this needed a real arm rewrite, since a guard only stops compilation); letting a non-newer revision through fails one; accepting a removal of an absent projection fails one; and ignoring the removal base fails one.
 - **Not claimed:** this is the per-mutation rule. Snapshot entry, dangling references and the end-of-snapshot validation are covered by the existing recorded-fixture test; nothing here contacts a Runtime. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p cos-client projection::` 6 passed; `cargo clippy -p cos-client --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.

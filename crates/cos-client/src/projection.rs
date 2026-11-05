@@ -916,7 +916,7 @@ mod recorded_observation_v1 {
 
 #[cfg(test)]
 mod integrity_tests {
-    use super::ProjectionState;
+    use super::{ProjectionKey, ProjectionState};
     use desktop_protocol::{Counter, EpochId, ProjectionMutation};
 
     const GRANT: &str = include_str!("../fixtures/desktop-observation-v1/observation-grant.json");
@@ -971,6 +971,24 @@ mod integrity_tests {
             }
         }
         panic!("the recorded snapshot contains an upsert");
+    }
+
+    /// Rebuild the recorded projection with a different revision.
+    ///
+    /// The fixture's projections are task snapshots; anything else is a fixture change this test does
+    /// not know how to rebuild, so it says so instead of silently skipping.
+    fn with_revision(
+        projection: &desktop_protocol::Projection,
+        revision: Counter,
+    ) -> desktop_protocol::Projection {
+        match projection {
+            desktop_protocol::Projection::Task(snapshot) => {
+                let mut next = snapshot.clone();
+                next.projection_revision = revision;
+                desktop_protocol::Projection::Task(next)
+            }
+            other => panic!("the fixture projection is a task snapshot, got {other:?}"),
+        }
     }
 
     #[test]
@@ -1038,6 +1056,148 @@ mod integrity_tests {
             format!("{error}").contains("does not match stored revision"),
             "the refusal names the cause: {error}"
         );
+    }
+
+    #[test]
+    fn a_matching_base_with_a_newer_revision_is_a_valid_update() {
+        // The rule has a **positive** case as well: an update that names the stored revision and
+        // moves it forward must be accepted, or the refusals above would be indistinguishable from a
+        // rule that refuses every update.
+        let (state, mutations) = populated();
+        let (_base, upsert) = first_upsert(&mutations);
+        let ProjectionMutation::Upsert { projection, .. } = &upsert else {
+            panic!("the recorded upsert is an upsert");
+        };
+        let key = ProjectionKey::of_projection(projection);
+        let stored = state
+            .revisions
+            .get(&key)
+            .cloned()
+            .expect("the state holds the projection");
+        let newer = Counter::new(
+            stored
+                .as_str()
+                .parse::<u128>()
+                .expect("a counter")
+                .saturating_add(1)
+                .to_string(),
+        )
+        .expect("a counter");
+        let valid = ProjectionMutation::Upsert {
+            base_revision: Some(stored),
+            projection: with_revision(projection, newer),
+        };
+        assert!(
+            state.validate_mutation(&valid).is_ok(),
+            "a matching base with a newer revision is accepted"
+        );
+    }
+
+    #[test]
+    fn an_update_whose_revision_does_not_move_forward_is_refused() {
+        // Base match is not enough: the new revision must be strictly newer. Equal and decreasing are
+        // both refused, so a replay cannot masquerade as progress.
+        let (state, mutations) = populated();
+        let (_base, upsert) = first_upsert(&mutations);
+        let ProjectionMutation::Upsert { projection, .. } = &upsert else {
+            panic!("the recorded upsert is an upsert");
+        };
+        let key = ProjectionKey::of_projection(projection);
+        let stored = state
+            .revisions
+            .get(&key)
+            .cloned()
+            .expect("the state holds the projection");
+
+        for (label, revision) in [
+            ("equal", stored.clone()),
+            (
+                "lower",
+                Counter::new(
+                    stored
+                        .as_str()
+                        .parse::<u128>()
+                        .expect("a counter")
+                        .saturating_sub(1)
+                        .to_string(),
+                )
+                .expect("a counter"),
+            ),
+        ] {
+            let mutation = ProjectionMutation::Upsert {
+                base_revision: Some(stored.clone()),
+                projection: with_revision(projection, revision),
+            };
+            let error = state
+                .validate_mutation(&mutation)
+                .expect_err("a revision that does not move forward is refused");
+            assert!(
+                format!("{error}").contains("is not newer than base"),
+                "the {label} revision must be refused for not moving forward, got {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_removal_needs_an_existing_projection_and_the_stored_base() {
+        // `Remove` carries the same optimistic-concurrency rule as an update: the target must exist
+        // and the base must be the stored revision. Neither branch had a test.
+        let (state, mutations) = populated();
+        let (_base, upsert) = first_upsert(&mutations);
+        let ProjectionMutation::Upsert { projection, .. } = &upsert else {
+            panic!("the recorded upsert is an upsert");
+        };
+        let key = ProjectionKey::of_projection(projection);
+        let stored = state
+            .revisions
+            .get(&key)
+            .cloned()
+            .expect("the state holds the projection");
+        let target = match &key {
+            ProjectionKey::Task(task_id) => desktop_protocol::RemoveTarget::Task {
+                task_id: task_id.clone(),
+            },
+            other => panic!("the fixture projection is a task, got {other:?}"),
+        };
+
+        // Accepted: existing projection, matching base.
+        let accepted = ProjectionMutation::Remove {
+            base_revision: stored.clone(),
+            target: target.clone(),
+        };
+        assert!(
+            state.validate_mutation(&accepted).is_ok(),
+            "a removal of an existing projection with the stored base is accepted"
+        );
+
+        // Refused: matching base but the projection is not there.
+        let (epoch, all) = recorded();
+        let empty = ProjectionState::from_snapshot(&epoch, &[]).expect("an empty snapshot");
+        let absent = ProjectionMutation::Remove {
+            base_revision: stored.clone(),
+            target: target.clone(),
+        };
+        let error = empty
+            .validate_mutation(&absent)
+            .expect_err("a removal of an absent projection is refused");
+        assert!(
+            format!("{error}").contains("expects an existing projection"),
+            "the refusal names the cause: {error}"
+        );
+
+        // Refused: existing projection, wrong base.
+        let wrong = ProjectionMutation::Remove {
+            base_revision: Counter::new("999999999").expect("a counter"),
+            target,
+        };
+        let error = state
+            .validate_mutation(&wrong)
+            .expect_err("a removal with the wrong base is refused");
+        assert!(
+            format!("{error}").contains("does not match stored revision"),
+            "the refusal names the cause: {error}"
+        );
+        let _ = all;
     }
 
     #[test]
