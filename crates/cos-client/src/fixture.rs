@@ -1030,6 +1030,23 @@ mod tests {
             scenario.validate(),
             Err(FixtureError::NotFixture(_))
         ));
+
+        // The omitted key, through the JSON path: `#[serde(default)]` makes it `false`, so a file
+        // that never says "fixture" cannot become one by accident. Testing only the field would miss
+        // a change to that default.
+        let text = std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/fixtures/task-184.json"
+        ))
+        .expect("the repository fixture is readable");
+        let mut document: serde_json::Value = serde_json::from_str(&text).expect("valid JSON");
+        document.as_object_mut().expect("object").remove("fixture");
+        let error = FixtureScenario::from_json(&document.to_string())
+            .expect_err("a scenario without the flag is refused");
+        assert!(
+            matches!(error, FixtureError::NotFixture(_)),
+            "the omitted key must be refused as NotFixture, got {error:?}"
+        );
     }
 
     #[test]
@@ -1088,6 +1105,15 @@ mod tests {
             empty_schema.validate(),
             Err(FixtureError::Invalid(_))
         ));
+
+        // The schema axis has its own well-formedness check, so a reversed range there must be
+        // refused for the same reason as on the protocol axis.
+        let mut reversed_schema = base();
+        reversed_schema.hello.schema = vec![desktop_protocol::VersionRange::new(2, 5, 2)];
+        assert!(matches!(
+            reversed_schema.validate(),
+            Err(FixtureError::Invalid(_))
+        ));
     }
 
     #[test]
@@ -1099,14 +1125,35 @@ mod tests {
             "absent limits are the defaults"
         );
 
-        // Build the zeroed case from the contract defaults rather than assuming the repository
-        // fixture carries limits (it does not).
-        let mut zeroed = base();
-        zeroed.limits = Some(desktop_protocol::Limits {
-            max_frame_bytes: 0,
-            ..desktop_protocol::Limits::default()
-        });
-        assert!(matches!(zeroed.validate(), Err(FixtureError::Invalid(_))));
+        // Every one of the four bounds is checked, not just the first: a change that dropped one
+        // branch would otherwise pass. The values are built from the contract defaults, because the
+        // repository fixture does not carry limits.
+        fn zeroed(apply: fn(&mut desktop_protocol::Limits)) -> Result<(), FixtureError> {
+            let mut limits = desktop_protocol::Limits::default();
+            apply(&mut limits);
+            let mut scenario = base();
+            scenario.limits = Some(limits);
+            scenario.validate()
+        }
+        /// One of the four bounds, with the label used in the failure message.
+        type Case = (&'static str, fn(&mut desktop_protocol::Limits));
+        let cases: [Case; 4] = [
+            ("max_frame_bytes", |l| l.max_frame_bytes = 0),
+            ("max_bundle_bytes", |l| l.max_bundle_bytes = 0),
+            ("max_queue_frames", |l| l.max_queue_frames = 0),
+            ("max_queue_bytes", |l| l.max_queue_bytes = 0),
+        ];
+        for (label, apply) in cases {
+            assert!(
+                matches!(zeroed(apply), Err(FixtureError::Invalid(_))),
+                "a zero {label} must be refused"
+            );
+        }
+        // A fully positive set is accepted, so the refusals above are about the zero and not about
+        // supplying limits at all.
+        let mut positive = base();
+        positive.limits = Some(desktop_protocol::Limits::default());
+        assert!(positive.validate().is_ok());
     }
 
     #[test]
@@ -1120,6 +1167,20 @@ mod tests {
             })
             .collect();
         assert!(matches!(scenario.validate(), Err(FixtureError::Invalid(_))));
+
+        // The bound is inclusive: exactly 1024 steps is accepted, so an off-by-one change shows up.
+        let mut at_bound = base();
+        at_bound.steps = (0..1024)
+            .map(|index| super::FixtureStep {
+                id: format!("step-{index}"),
+                trigger: "after_open".to_string(),
+                actions: Vec::new(),
+            })
+            .collect();
+        assert!(
+            at_bound.validate().is_ok(),
+            "1024 steps is the documented maximum and must be accepted"
+        );
 
         let mut duplicate = base();
         let step = || super::FixtureStep {

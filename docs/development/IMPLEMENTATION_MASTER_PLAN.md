@@ -4967,15 +4967,15 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Why:** the canon says fixture mode must be **explicit and visible** and must never be a fallback. That rule lives in `FixtureScenario::validate`, which had no test of its own.
 - **Eight tests, each breaking one rule of the repository's own scenario** (`fixtures/task-184.json`) rather than hand-writing a whole scenario:
   - the repository scenario is valid, declares its mode and observes at least one task;
-  - a scenario that does not declare `fixture: true` is refused as `NotFixture`;
+  - a scenario that does not declare `fixture: true` is refused as `NotFixture`, **including when the key is omitted entirely** (checked through the JSON path, where the serde default decides it);
   - the **server identity, epoch and scope identity** must live in the `fixture:` namespace;
   - the scenario must observe at least one task;
-  - the handshake protocol and schema ranges must be present, non-empty and well-formed (min above max is not);
-  - limits may be omitted, and must be non-zero when present;
-  - at most 1024 steps, with unique step identities;
+  - the handshake protocol and schema ranges must be present, non-empty and well-formed, **on both axes** (a reversed range is refused on the protocol axis and on the schema axis);
+  - limits may be omitted, and **each of the four bounds** must be non-zero when present (a fully positive set is accepted, so the refusals are about the zero);
+  - at most 1024 steps, with unique step identities, and **1024 accepted** as the inclusive bound so an off-by-one shows up;
   - an unreadable fixture file reports its **path**, not its contents.
 - **What the namespace rule does *not* cover, recorded rather than assumed:** the **observed task list is not namespace-checked**. A scenario may observe `Task-184` while its server, epoch and scope identities must be `fixture:`-prefixed, even though the refusal message speaks of "display labels and real identities" generally. The test now asserts the current behaviour and says so; whether the task list should be included is a design question for the owning contract, not something to change here.
 - **Two of my own assumptions were wrong** while writing these: that a valid minimal scenario could be hand-written without the full field set (it cannot - the repository fixture is the practical base), and that the task list was namespace-checked (it is not).
-- **Proven by mutation:** removing the `fixture` requirement fails the explicit-mode test; making the namespace check accept anything fails the identity test.
+- **Proven by mutation, six ways:** removing the `fixture` requirement, making the namespace check accept anything, dropping the schema well-formedness check, dropping one of the four limit branches, turning the step bound into an exclusive one, and defaulting `fixture` to `true` each fail their own test.
 - **Not claimed:** this is the scenario validator. It says nothing about what a running session does with a fixture, and the fixture provider's own behaviour is covered by the integration suites. A real Runtime remains **NOT_RUN**; MP-RT1, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p cos-client fixture::tests` 8 passed; `cargo clippy -p cos-client --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
