@@ -190,10 +190,9 @@ pub(crate) enum RowState {
 
 /// Everything the row renderer needs for one state.
 ///
-/// The parts are the ones the shell actually draws: the border and text colours come from here,
-/// `cue` is the text drawn beside the row's label (the same strings the accessibility state label
-/// uses), and `ring_by_container` records that the **Dock container**, not the row, draws the focus
-/// ring - the row does not claim an outline it never draws.
+/// The parts are the ones the shell actually draws: `border` and `text` are the colours, and `cue`
+/// is the text drawn beside the row's label (the same strings the accessibility state label uses).
+/// Nothing here describes a focus ring: the Dock container draws that from its own focus flag.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct RowVisual {
     pub border: u32,
@@ -207,9 +206,8 @@ pub(crate) const ROW_TEXT_MIN_CONTRAST: f32 = 4.5;
 
 /// Choose the appearance of one row state.
 ///
-/// `surface` is the colour the row is actually drawn on and `ring_drawn` is the Dock container's
-/// real focus flag, so the returned visual describes what the shell will do rather than what the
-/// state model would like:
+/// `surface` is the colour the row is actually drawn on, so the returned visual describes what the
+/// shell will do rather than what the state model would like:
 ///
 /// - the **text** colour is chosen for contrast against `surface` (a palette that resolves the
 ///   role's text to the surface itself cannot make the label invisible);
