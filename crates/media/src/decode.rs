@@ -544,6 +544,57 @@ mod tests {
     }
 
     #[test]
+    fn the_refusal_path_cannot_wait() {
+        // A short deadline cannot distinguish "refused" from "waited a little". This reads the
+        // reservation's own source and requires the refusal to be a **return**, with no blocking
+        // primitive anywhere in the function - so a sleep, a park, a condition variable or a retry
+        // loop fails here rather than showing up as a slightly slow refusal.
+        let source = include_str!("decode.rs");
+        let start = source
+            .find("fn reserve_in_flight(")
+            .expect("the reservation function is present");
+        let braces = &source[start..];
+        let open = braces
+            .find('{')
+            .expect("the reservation function has a body");
+        let mut depth = 0usize;
+        let mut close = None;
+        for (offset, ch) in braces[open..].char_indices() {
+            match ch {
+                '{' => depth += 1,
+                '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        close = Some(open + offset);
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+        let body = &braces[..=close.expect("the reservation function has a closing brace")];
+        // Blocking primitives are forbidden outright.
+        for forbidden in ["sleep", "park(", "Condvar", ".wait(", "recv("] {
+            assert!(
+                !body.contains(forbidden),
+                "the reservation path contains `{forbidden}`, so it can wait instead of refusing"
+            );
+        }
+        // The one loop here is the compare-and-swap retry, which only re-reads the counter when
+        // another thread won the exchange; both capacity branches return. A `continue` would mean a
+        // capacity branch going round again, which is the retry-until-it-fits shape this forbids.
+        assert!(
+            !body.contains("continue"),
+            "the reservation path retries instead of refusing when the pool is full"
+        );
+        assert_eq!(
+            body.matches("return Err(MediaError::Busy)").count(),
+            2,
+            "the overflow and over-pool branches must both return Busy"
+        );
+    }
+
+    #[test]
     fn the_peak_formula_is_explicit_and_checked() {
         let limits = DecodeBudget::ratified_default()
             .limits()
