@@ -4979,3 +4979,13 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Proven by mutation, six ways:** removing the `fixture` requirement, making the namespace check accept anything, dropping the schema well-formedness check, dropping one of the four limit branches, turning the step bound into an exclusive one, and defaulting `fixture` to `true` each fail their own test.
 - **Not claimed:** this is the scenario validator. It says nothing about what a running session does with a fixture, and the fixture provider's own behaviour is covered by the integration suites. A real Runtime remains **NOT_RUN**; MP-RT1, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p cos-client fixture::tests` 8 passed; `cargo clippy -p cos-client --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
+
+### 19.281 which client failures invalidate a session (2026-11-05)
+
+- **The rule:** `ClientError::requires_resync` decides whether a failure throws away a live session. It had no test, and no caller in this checkout - so the rule was a contract nothing pinned.
+- **Three tests, all nine variants:** `Transport`, `MessageTooLarge`, `QueueOverflow` and `Protocol` require a resync; `VersionIncompatible`, `NotConnected`, `InvalidCommand`, `Server` and `Fixture` do not. The matrix asserts the enum has nine variants, so adding one without deciding its class fails the test rather than slipping through.
+- **A structured server error is answered, not resynced** - even when its **code** is `RESYNC_REQUIRED`. The variant class is about the transport, and the protocol carries the reason in the code for the caller to read; the test checks both halves, so a change that folded the code into the variant class would fail.
+- **The raw text is not a safe publication form, and the test says so:** formatting a `Server`, `Protocol` or `Transport` error reproduces the text it carries, including a synthetic credential. Redaction happens in `app-core`, which reduces these to safe categories; pinning this keeps a future change from treating `Display` here as publishable.
+- **Proven by mutation:** dropping `Transport` from the resync set fails the matrix; adding `Server` to it fails both the matrix and the code-instead-of-variant test.
+- **Not claimed:** this is the classification rule, not the session teardown. Nothing here drops or rebuilds a session; the invalidation and fence behaviour is covered in `app-core`. A real Runtime remains **NOT_RUN**; MP-RT1, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p cos-client error::tests` 3 passed; `cargo clippy -p cos-client --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
