@@ -161,3 +161,51 @@ fn cancellation_from_another_thread_mid_decode_returns_promptly() {
         "returned {micros} us after cancellation, beyond this test's {BOUND_US} us threshold"
     );
 }
+
+/// A cancellation requested **before** the decode starts must stop every class at the door.
+///
+/// The row decoder can also stop mid-decode, but that is a different property: this measures the
+/// pre-decode boundary that every class shares, so a cancelled request does not pay for a decode it
+/// will throw away.
+#[test]
+fn a_pre_cancelled_request_stops_before_the_decoder_in_every_class() {
+    use std::sync::Mutex;
+    static HEAVY: Mutex<()> = Mutex::new(());
+
+    let _guard = HEAVY.lock().unwrap_or_else(|poison| poison.into_inner());
+    let edge = 1024u32;
+    let cases = [
+        ("PNG", png_rgb(edge, edge)),
+        ("JPEG", encoded_rgb(edge, edge, ImageFormat::Jpeg)),
+        ("WebP", encoded_rgb(edge, edge, ImageFormat::WebP)),
+    ];
+    for (label, bytes) in cases {
+        let cancel = Cancellation::default();
+        cancel.cancel();
+        let started = Instant::now();
+        let result = media::decode_raster(&bytes, limits(), &cancel);
+        let micros = started.elapsed().as_micros();
+        eprintln!("pre-cancelled {label} {edge}x{edge}: {result:?} in {micros} us");
+        assert_eq!(
+            result.err(),
+            Some(MediaError::Cancelled),
+            "{label}: a request cancelled before the decode must report Cancelled"
+        );
+        // A decode of this frame would take milliseconds; the admission check returns far sooner.
+        assert!(
+            micros < 10_000,
+            "{label}: a pre-cancelled request took {micros} us, which is decode-scale"
+        );
+    }
+}
+
+fn encoded_rgb(width: u32, height: u32, format: ImageFormat) -> Vec<u8> {
+    let image = RgbImage::from_fn(width, height, |x, y| {
+        image::Rgb([(x % 251) as u8, (y % 241) as u8, 90])
+    });
+    let mut bytes = Cursor::new(Vec::new());
+    DynamicImage::ImageRgb8(image)
+        .write_to(&mut bytes, format)
+        .expect("encode the class");
+    bytes.into_inner()
+}
