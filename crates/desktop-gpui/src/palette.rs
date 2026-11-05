@@ -576,7 +576,10 @@ impl Shell {
                 .when_some(unavailable.clone(), |element, reason| {
                     element.child(
                         div()
-                            .text_color(rgb(0x8b949e))
+                            // 0x8b949e measured 4.13:1 on the active-unavailable row
+                            // (0x2f3338); the reason is ordinary information, not an inactive
+                            // control, so it is raised to 0x969ea8 (4.69:1 there).
+                            .text_color(rgb(0x969ea8))
                             .child(SharedString::from(reason)),
                     )
                 });
