@@ -1423,24 +1423,26 @@ mod tests {
     }
 
     #[test]
-    fn the_repaint_flag_does_not_depend_on_which_probe_produced_the_same_palette() {
-        // Two different probes that resolve to the same High Contrast palette must not report a
-        // change on the second reading; the flag describes the palette, not the input.
+    fn the_repaint_flag_describes_the_palette_not_the_probe() {
+        // Normal ignores the probe entirely, so two different probes resolve to the same palette.
+        // That is where two readings can differ in input and agree in output: the first Normal
+        // reading must repaint (the palette changed from High Contrast), the second must not.
         let mut state = ContrastState::default();
-        assert!(state.observe(ContrastScheme::HighContrast, &hc_black()));
-        let first = state.colors();
-        // A second probe whose values resolve identically.
-        let same = SystemColors {
-            window: 0x000000,
-            window_text: 0xffffff,
-            highlight: 0x000080,
-            highlight_text: 0xffffff,
-            gray_text: 0x808080,
-            button_face: 0x000000,
-            button_text: 0xffffff,
-        };
-        assert!(!state.observe(ContrastScheme::HighContrast, &same));
-        assert_eq!(palette_values(&state.colors()), palette_values(&first));
+        assert!(
+            state.observe(ContrastScheme::HighContrast, &hc_black()),
+            "entering High Contrast must repaint"
+        );
+        assert!(
+            state.observe(ContrastScheme::Normal, &hc_black()),
+            "leaving High Contrast must repaint"
+        );
+        let normal = palette_values(&state.colors());
+        assert!(
+            !state.observe(ContrastScheme::Normal, &hc_white()),
+            "a different probe resolving to the same palette must not repaint"
+        );
+        assert_eq!(palette_values(&state.colors()), normal);
+        assert_eq!(normal, palette_values(&NORMAL_COLORS));
     }
     #[test]
     fn the_high_contrast_palette_only_uses_values_the_probe_offered() {
