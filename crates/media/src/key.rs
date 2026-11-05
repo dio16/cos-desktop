@@ -132,3 +132,122 @@ pub struct RepresentationKey {
     pub orientation: Orientation,
     pub policy: DecodePolicy,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{LocalId, MediaError, PixelSize};
+
+    #[test]
+    fn an_opaque_local_id_refuses_the_shapes_that_could_be_a_path_or_url() {
+        // The value is opaque metadata from an untrusted publisher, so the shapes that would make it
+        // usable as a locator are the ones to refuse.
+        for refused in [
+            "",
+            ".",
+            "..",
+            "../escape",
+            "..\\escape",
+            "/absolute",
+            "\\absolute",
+            "C:\\drive",
+            "c:drive",
+            "scheme:payload",
+            "https://example.invalid/x",
+            "file:///x",
+            "a/b",
+            "a\\b",
+            "%2e%2e%2fescape",
+            "with space",
+            "with\ttab",
+            "with\nnewline",
+            "nul\0byte",
+            "é-accented",
+        ] {
+            assert_eq!(
+                LocalId::new(refused).err(),
+                Some(MediaError::InvalidMetadata),
+                "{refused:?} must be refused"
+            );
+        }
+    }
+
+    #[test]
+    fn an_opaque_local_id_accepts_the_bounded_opaque_shapes() {
+        for accepted in [
+            "a",
+            "0",
+            "abc123",
+            "a_b",
+            "a-b",
+            "a.b",
+            "release-1_2.3",
+            &"a".repeat(128),
+        ] {
+            let id = LocalId::new(accepted)
+                .unwrap_or_else(|error| panic!("{accepted:?} must be accepted, got {error:?}"));
+            assert_eq!(id.as_str(), accepted, "the value must survive unchanged");
+        }
+        // The bound is inclusive on 128 and exclusive beyond it.
+        assert_eq!(
+            LocalId::new("a".repeat(129)).err(),
+            Some(MediaError::InvalidMetadata)
+        );
+    }
+
+    #[test]
+    fn a_local_id_that_ends_with_a_dot_is_accepted_today() {
+        // Recorded rather than asserted as desirable: the character set allows a trailing dot, and on
+        // Windows a path component ending in a dot aliases the name without it. No current caller
+        // turns this value into a path - it is only a cache identity - so this is an observation
+        // about the validator, not a defect that is being blessed.
+        assert!(LocalId::new("release.").is_ok());
+        assert_eq!(
+            LocalId::new("release.").expect("accepted").as_str(),
+            "release."
+        );
+        // A leading dot is **accepted** too, and so is a doubled interior dot: what is refused is
+        // exactly the two separator spellings, not every name containing dots.
+        assert!(LocalId::new(".release").is_ok());
+        assert!(LocalId::new("a..b").is_ok());
+        assert_eq!(LocalId::new(".").err(), Some(MediaError::InvalidMetadata));
+        assert_eq!(LocalId::new("..").err(), Some(MediaError::InvalidMetadata));
+    }
+
+    #[test]
+    fn a_pixel_size_refuses_a_zero_edge() {
+        assert_eq!(
+            PixelSize::new(0, 1).err(),
+            Some(MediaError::InvalidMetadata)
+        );
+        assert_eq!(
+            PixelSize::new(1, 0).err(),
+            Some(MediaError::InvalidMetadata)
+        );
+        assert_eq!(
+            PixelSize::new(0, 0).err(),
+            Some(MediaError::InvalidMetadata)
+        );
+        let size = PixelSize::new(1, 1).expect("a one-pixel size");
+        assert_eq!((size.width(), size.height()), (1, 1));
+    }
+
+    #[test]
+    fn the_byte_arithmetic_refuses_to_wrap() {
+        // The largest square: the area still fits in `u64`, four bytes per pixel does not, so the
+        // RGBA multiplication refuses instead of wrapping.
+        let edge_max = PixelSize::new(u32::MAX, u32::MAX).expect("a non-zero size");
+        assert_eq!(
+            edge_max.checked_area(),
+            Ok(u64::from(u32::MAX) * u64::from(u32::MAX))
+        );
+        assert_eq!(edge_max.checked_rgba_bytes(), Err(MediaError::TooLarge));
+        // A large but representable size keeps exact arithmetic rather than saturating.
+        let wide = PixelSize::new(u32::MAX, 4).expect("a non-zero size");
+        assert_eq!(wide.checked_area(), Ok(u64::from(u32::MAX) * 4));
+        assert_eq!(wide.checked_rgba_bytes(), Ok(u64::from(u32::MAX) * 4 * 4));
+        // Exactness at a round size, so a future change to saturate would be visible.
+        let square = PixelSize::new(1 << 20, 1 << 20).expect("a non-zero size");
+        assert_eq!(square.checked_area(), Ok(1u64 << 40));
+        assert_eq!(square.checked_rgba_bytes(), Ok(1u64 << 42));
+    }
+}
