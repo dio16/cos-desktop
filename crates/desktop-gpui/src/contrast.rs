@@ -331,8 +331,10 @@ pub fn drawn_text_pairs(colors: &ShellColors) -> Vec<TextPair> {
             exempt: true,
         },
     ];
-    // The row states are resolved through the drawing entry point so the audit follows the model.
+    // Every state the candidate dock can actually be in, resolved through the drawing entry point so
+    // the audit follows the model rather than a subset of it.
     for (state, purpose) in [
+        (crate::shell_style::RowState::Normal, "plain dock row label"),
         (
             crate::shell_style::RowState::Selected,
             "selected dock row label",
@@ -340,6 +342,10 @@ pub fn drawn_text_pairs(colors: &ShellColors) -> Vec<TextPair> {
         (
             crate::shell_style::RowState::Focused,
             "focused dock row label",
+        ),
+        (
+            crate::shell_style::RowState::SelectedAndFocused,
+            "selected and focused dock row label",
         ),
         (
             crate::shell_style::RowState::Disabled,
