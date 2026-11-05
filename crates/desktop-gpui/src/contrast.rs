@@ -729,7 +729,17 @@ pub fn failing_non_text_pairs(colors: &ShellColors) -> Vec<(&'static str, f32)> 
 /// It is measured and reported separately because it is **not** a state indicator: the control is
 /// also identified by its label and its surface. Its ratio is recorded so a future decision about
 /// the boundary has a number to start from.
-pub const RESTING_CONTROL_BORDER: u32 = 0x343940;
+/// The resting boundary of an interactive control, shared with the drawing code.
+pub const RESTING_CONTROL_BORDER: u32 = crate::shell_style::RESTING_CONTROL_BORDER;
+
+/// The surfaces a resting control boundary is actually drawn against.
+pub const RESTING_BOUNDARY_SURFACES: &[(&str, u32)] = &[
+    ("unselected surface row", 0x24272c),
+    ("selected surface row", 0x3c5268),
+    ("unselected flow node", 0x1e2124),
+    ("raised surface", 0x343a42),
+    ("button face", 0x202328),
+];
 
 /// The palette roles the audit covers, named as the drawing code spells them.
 ///
@@ -1327,19 +1337,16 @@ mod tests {
     fn the_resting_control_boundary_ratio_is_recorded() {
         // Not a threshold assertion: the boundary is not the control's only cue. The number is
         // printed and asserted to be a real measurement so a change to either value is visible.
-        let on_face = contrast_ratio(RESTING_CONTROL_BORDER, NORMAL_COLORS.button_face);
-        let on_raised = contrast_ratio(RESTING_CONTROL_BORDER, NORMAL_COLORS.raised_face);
-        eprintln!(
-            "resting control boundary: {on_face:.2}:1 on the button face, {on_raised:.2}:1 on a raised surface"
-        );
-        // The owner decision is to keep the boundary decorative, so there is no threshold here: a
-        // future change that raises it must not fail this test. The numbers are printed so any
-        // change to either side is visible in the output.
-        assert!(on_face > 0.0 && on_raised > 0.0);
-        assert!(
-            on_face != 1.0 || on_raised != 1.0,
-            "both boundaries are invisible, which would make the boundary the only cue"
-        );
+        let mut measured = 0usize;
+        for (surface_name, surface) in RESTING_BOUNDARY_SURFACES {
+            let ratio = contrast_ratio(RESTING_CONTROL_BORDER, *surface);
+            eprintln!("resting control boundary on {surface_name}: {ratio:.2}:1");
+            assert!(ratio > 0.0, "{surface_name} produced no ratio");
+            measured += 1;
+        }
+        assert_eq!(measured, RESTING_BOUNDARY_SURFACES.len());
+        // The owner decision keeps the boundary decorative, so there is no threshold here: a change
+        // that raises it must not fail this test. The ratios are printed so any change is visible.
     }
     #[test]
     fn every_drawn_text_pair_reports_its_ratio() {

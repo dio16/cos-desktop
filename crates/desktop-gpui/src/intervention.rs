@@ -246,7 +246,11 @@ impl Shell {
                     .px_2()
                     .py_1()
                     .border_1()
-                    .border_color(rgb(if focused { 0xe6c278 } else { 0x343940 }))
+                    .border_color(rgb(if focused {
+                        0xe6c278
+                    } else {
+                        crate::shell_style::RESTING_CONTROL_BORDER
+                    }))
                     .cursor_pointer()
                     .child(SharedString::from(label))
                     .on_click(cx.listener(|this, _, window, cx| {
@@ -322,7 +326,11 @@ impl Shell {
             .px_2()
             .py_1()
             .border_1()
-            .border_color(rgb(if focused { 0xe6c278 } else { 0x343940 }))
+            .border_color(rgb(if focused {
+                0xe6c278
+            } else {
+                crate::shell_style::RESTING_CONTROL_BORDER
+            }))
             .cursor_pointer()
             .child(SharedString::from(summary))
             .child(
@@ -408,7 +416,11 @@ impl Shell {
                 .px_2()
                 .py_1()
                 .border_1()
-                .border_color(rgb(if focused { 0xe6c278 } else { 0x343940 }))
+                .border_color(rgb(if focused {
+                    0xe6c278
+                } else {
+                    crate::shell_style::RESTING_CONTROL_BORDER
+                }))
                 .cursor_pointer()
                 .child("閉じる")
                 .on_click(cx.listener(|this, _, window, cx| {

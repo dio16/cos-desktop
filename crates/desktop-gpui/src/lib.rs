@@ -3250,7 +3250,7 @@ impl Render for Shell {
                             .px_4()
                             .py_2()
                             .border_1()
-                            .border_color(rgb(if side_a_exists { 0x626870 } else { 0x343940 }))
+                            .border_color(rgb(if side_a_exists { 0x626870 } else { shell_style::RESTING_CONTROL_BORDER }))
                             .when(side_a_exists, |element| element.cursor_pointer())
                             .child("A側を変更")
                             .when(side_a_exists, |element| {
@@ -3286,7 +3286,7 @@ impl Render for Shell {
                             .px_4()
                             .py_2()
                             .border_1()
-                            .border_color(rgb(if side_b_exists { 0x626870 } else { 0x343940 }))
+                            .border_color(rgb(if side_b_exists { 0x626870 } else { shell_style::RESTING_CONTROL_BORDER }))
                             .when(side_b_exists, |element| element.cursor_pointer())
                             .child("B側を変更")
                             .when(side_b_exists, |element| {
@@ -5353,7 +5353,7 @@ impl Render for Shell {
                             .px_5()
                             .py_2()
                             .border(focus_outline)
-                            .border_color(rgb(if focused { 0xe6c278 } else { 0x343940 }))
+                            .border_color(rgb(if focused { 0xe6c278 } else { shell_style::RESTING_CONTROL_BORDER }))
                             .bg(rgb(if surface == item { 0x3c5268 } else { 0x24272c }))
                             .when(compare_unavailable, |element| {
                                 element.text_color(rgb(0x8b949e))
@@ -5590,7 +5590,7 @@ fn flow_diagram_region(
                     } else if node.matched {
                         0x626870
                     } else {
-                        0x343940
+                        shell_style::RESTING_CONTROL_BORDER
                     }))
                     .bg(rgb(if is_active {
                         0x3a4048

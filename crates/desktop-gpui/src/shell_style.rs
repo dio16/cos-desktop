@@ -275,6 +275,13 @@ pub(crate) fn stop_control_visual(
     }
 }
 
+/// The resting boundary of an interactive control (a list row, a strip row).
+///
+/// The owner decision of 2026-11-05 keeps it decorative: the control is identified by its label and
+/// surface, so WCAG does not require 3:1 from this line. It lives here so the drawing code and the
+/// audit read the same value instead of copying it.
+pub(crate) const RESTING_CONTROL_BORDER: u32 = 0x343940;
+
 /// The colour of a flow edge and its direction glyph.
 ///
 /// Shared by the drawing code and the contrast audit so the two cannot disagree. The unmatched

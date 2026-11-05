@@ -174,7 +174,11 @@ impl Shell {
                 .px_3()
                 .py_2()
                 .border_1()
-                .border_color(rgb(if focused { 0xe6c278 } else { 0x343940 }))
+                .border_color(rgb(if focused {
+                    0xe6c278
+                } else {
+                    crate::shell_style::RESTING_CONTROL_BORDER
+                }))
                 .cursor_pointer()
                 .child(
                     xs_text
