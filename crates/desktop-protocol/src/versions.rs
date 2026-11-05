@@ -254,13 +254,15 @@ mod tests {
                 expected: Some(Version::new(1, 3)),
             },
             Row {
-                label: "intersection is narrower on both sides",
-                offered: vec![range(1, 0, 5)],
-                supported: vec![range(1, 2, 3)],
+                // Each side contributes one end of the intersection, so the shared range is
+                // strictly inside both - not one range nested in the other.
+                label: "the intersection is strictly inside both ranges",
+                offered: vec![range(1, 0, 3)],
+                supported: vec![range(1, 2, 5)],
                 expected: Some(Version::new(1, 3)),
             },
             Row {
-                label: "the client is the narrower side",
+                label: "one range nested in the other",
                 offered: vec![range(1, 2, 3)],
                 supported: vec![range(1, 0, 5)],
                 expected: Some(Version::new(1, 3)),
