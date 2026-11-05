@@ -505,17 +505,28 @@ mod tests {
             .limits()
             .expect("ratified budget");
         let cancel = crate::Cancellation::default();
-        let started = std::time::Instant::now();
-        let refused = crate::raster::decode_raster(&bytes, limits, &cancel);
-        let elapsed = started.elapsed();
+        // Run the attempt on another thread and wait for it with a **deadline**. If a regression made
+        // the reservation block, the decoding thread would never return and the elapsed-time check
+        // below would never run; here the wait itself fails instead.
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let worker = {
+            let bytes = bytes.clone();
+            let cancel = cancel.clone();
+            std::thread::spawn(move || {
+                let result = crate::raster::decode_raster(&bytes, limits, &cancel);
+                let _ = sender.send(result.err());
+            })
+        };
+        let refused = receiver
+            .recv_timeout(std::time::Duration::from_secs(5))
+            .expect(
+                "the decode did not return within five seconds, so it waited instead of refusing",
+            );
+        worker.join().expect("the worker did not panic");
         assert_eq!(
-            refused.err(),
+            refused,
             Some(MediaError::Busy),
             "a full pool must refuse the decode"
-        );
-        assert!(
-            elapsed < std::time::Duration::from_secs(5),
-            "the refusal took {elapsed:?}, which looks like waiting rather than refusing"
         );
         assert_eq!(
             in_flight_bytes(),
