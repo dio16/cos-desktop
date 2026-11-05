@@ -3581,11 +3581,13 @@ impl Render for Shell {
                     .role(Role::ListItem)
                     .aria_label(SharedString::from(aria))
                     .when(
-                        list_cursor::publishes_active_descendant(
+                        list_cursor::publishes_row(
                             flow_node_focused,
-                            list_cursor::position_where(rows.len(), |row_index| row_index == index),
+                            active.as_ref(),
+                            index,
+                            &key,
                             rows.len(),
-                        ) && is_active,
+                        ),
                         |element| element.aria_active_descendant(),
                     )
                     .flex()
@@ -3670,13 +3672,13 @@ impl Render for Shell {
                     .role(Role::ListItem)
                     .aria_label(SharedString::from(aria))
                     .when(
-                        list_cursor::publishes_active_descendant(
+                        list_cursor::publishes_row(
                             flow_edge_focused,
-                            list_cursor::position_where(rows.len(), |row_index| {
-                                row_index == index
-                            }),
+                            active.as_ref(),
+                            index,
+                            &key,
                             rows.len(),
-                        ) && is_active,
+                        ),
                         |element| element.aria_active_descendant(),
                     )
                     .flex()

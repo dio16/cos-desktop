@@ -61,19 +61,6 @@ pub(crate) fn publishes_row<K: PartialEq>(
     focused && active_key.is_some_and(|active| active == row_key) && row_index < list_len
 }
 
-/// Whether the active descendant should be published for this list.
-///
-/// It is published only when the list **holds keyboard focus** and the active row **still exists**.
-/// Selection is a different thing and is not consulted here: a row can be selected while focus is
-/// elsewhere, and a row can be active without being selected.
-pub(crate) fn publishes_active_descendant(
-    focused: bool,
-    active: Option<usize>,
-    len: usize,
-) -> bool {
-    focused && active.is_some_and(|index| index < len)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -142,13 +129,13 @@ mod tests {
     fn focus_is_not_selection() {
         // The active descendant follows focus, not the selected row: a list can hold focus on one
         // row while a different row is selected.
-        assert!(publishes_active_descendant(true, Some(1), 4));
-        assert!(publishes_active_descendant(true, Some(0), 4));
-        // With focus elsewhere nothing is published, whatever the active index says.
-        assert!(!publishes_active_descendant(false, Some(1), 4));
-        assert!(!publishes_active_descendant(false, None, 4));
+        assert!(publishes_row(true, Some(&1usize), 1, &1usize, 4));
+        assert!(!publishes_row(true, Some(&1usize), 0, &0usize, 4));
+        // With focus elsewhere nothing is published, whatever the active key says.
+        assert!(!publishes_row(false, Some(&1usize), 1, &1usize, 4));
+        assert!(!publishes_row(false, None, 1, &1usize, 4));
         // Focus with no active row publishes nothing.
-        assert!(!publishes_active_descendant(true, None, 4));
+        assert!(!publishes_row(true, None, 1, &1usize, 4));
     }
 
     #[test]
@@ -204,10 +191,17 @@ mod tests {
         // The row the user was on disappears from the list: the stale key no longer matches.
         let stale = active_index(Some(&"z"), &rows);
         assert_eq!(stale, None);
-        assert!(!publishes_active_descendant(true, stale, rows.len()));
+        // No mounted row matches the stale key.
+        assert!(rows.iter().enumerate().all(|(index, key)| !publishes_row(
+            true,
+            Some(&"z"),
+            index,
+            key,
+            rows.len()
+        )));
 
         // An index past the end - the list shrank under a kept index - is not published either.
-        assert!(!publishes_active_descendant(true, Some(9), rows.len()));
+        assert!(!publishes_row(true, Some(&"a"), 9, &"a", rows.len()));
     }
 
     #[test]
