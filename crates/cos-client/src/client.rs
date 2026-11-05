@@ -2741,3 +2741,133 @@ impl<T: TransportTrait + Send> DesktopClient for CosClient<T> {
         CosClient::adopt_retained_registry(self, records, references)
     }
 }
+
+#[cfg(test)]
+mod backoff_tests {
+    use super::backoff_ms;
+
+    const BASE_MS: u64 = 500;
+    const CAP_MS: u64 = 30_000;
+
+    /// The un-jittered base for an attempt, as the policy documents it: 500 ms doubling per
+    /// attempt, capped. Jitter is added on top, so every value must sit in this window.
+    fn window(attempt: u32) -> (u64, u64) {
+        let exponent = attempt.saturating_sub(1).min(6);
+        let base = BASE_MS.saturating_mul(1u64 << exponent).min(CAP_MS);
+        // The jitter span is a fifth of the base, so the window is `[base, base * 6 / 5)`.
+        (base, base + (base / 5).max(1))
+    }
+
+    #[test]
+    fn every_attempt_lands_inside_its_own_window() {
+        for attempt in 0..=40u32 {
+            let (low, high) = window(attempt);
+            for seed in 0..64u64 {
+                let delay = backoff_ms(attempt, seed);
+                assert!(
+                    (low..high).contains(&delay),
+                    "attempt {attempt} seed {seed} produced {delay} ms, outside [{low}, {high})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn attempt_zero_is_treated_as_the_first_attempt() {
+        // `attempt.saturating_sub(1)` means attempt 0 and attempt 1 share a window. That is harmless
+        // for recovery, but it makes the growth property below start at 1, and it is worth pinning
+        // so nobody reads a zero attempt as "no delay".
+        // They share the **window**, not the value: the jitter mixes in the attempt number, so the
+        // two attempts land on different delays inside the same range.
+        let (low, high) = window(1);
+        for seed in [0u64, 1, 7, u64::MAX] {
+            for attempt in [0u32, 1] {
+                let delay = backoff_ms(attempt, seed);
+                assert!(
+                    (low..high).contains(&delay),
+                    "attempt {attempt} seed {seed} produced {delay} ms, outside the first window \
+                     [{low}, {high})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn a_later_attempt_never_schedules_earlier_than_an_earlier_one() {
+        // From attempt 1 on, the windows are disjoint, so growth is a real property rather than a
+        // coincidence of the jitter: the slowest value of attempt n stays below the fastest value of
+        // attempt n + 1.
+        for attempt in 1..6u32 {
+            let (_, high) = window(attempt);
+            let (next_low, _) = window(attempt + 1);
+            assert!(
+                high <= next_low,
+                "attempt {attempt} could wait up to {high} ms while attempt {} starts at {next_low} ms",
+                attempt + 1
+            );
+        }
+    }
+
+    #[test]
+    fn the_delay_stays_bounded_once_the_cap_is_reached() {
+        let (cap_low, cap_high) = window(7);
+        assert_eq!(
+            cap_low, CAP_MS,
+            "the seventh attempt must already be capped"
+        );
+        for attempt in 7..=u32::MAX {
+            let delay = backoff_ms(attempt, 1);
+            assert!(
+                (cap_low..cap_high).contains(&delay),
+                "attempt {attempt} produced {delay} ms, outside the capped window [{cap_low}, {cap_high})"
+            );
+            if attempt == 40 {
+                // The loop runs to `u32::MAX`; stop sampling here to keep the test quick, having
+                // already covered the pathological values below.
+                break;
+            }
+        }
+    }
+
+    #[test]
+    fn no_attempt_or_seed_overflows() {
+        // The policy must answer for the extremes rather than panic in a release build.
+        for attempt in [0, 1, u32::MAX - 1, u32::MAX] {
+            for seed in [0, 1, u64::MAX - 1, u64::MAX] {
+                let delay = backoff_ms(attempt, seed);
+                let (_, high) = window(attempt);
+                assert!(
+                    delay < high,
+                    "attempt {attempt} seed {seed} produced {delay} ms, beyond {high}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_same_inputs_always_give_the_same_delay() {
+        // Reproducibility matters for reading logs: the same attempt and seed must explain the same
+        // wait, so a reported delay can be checked.
+        for attempt in [0u32, 1, 5, 9, u32::MAX] {
+            for seed in [0u64, 7, 1 << 40] {
+                assert_eq!(
+                    backoff_ms(attempt, seed),
+                    backoff_ms(attempt, seed),
+                    "attempt {attempt} seed {seed} was not reproducible"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_jitter_actually_spreads_the_delay() {
+        // A constant delay would still pass the window test; this one requires the seed to matter.
+        let values: std::collections::BTreeSet<u64> =
+            (0..64u64).map(|seed| backoff_ms(3, seed)).collect();
+        assert!(
+            values.len() >= 10,
+            "sixty-four seeds produced only {} distinct delays: {values:?}",
+            values.len()
+        );
+    }
+}

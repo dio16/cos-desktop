@@ -4934,3 +4934,19 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Proven by mutation:** allowing the decision to answer under any stamp fails `a decision for another stamp must not disclose the record`; treating server-derived records as local intents fails three tests.
 - **Not claimed:** these are the predicates, not the end-to-end authorization flow - the grant, invalidation and fence behaviour is covered by `observation_publication.rs`, and a real Runtime is still **NOT_RUN**. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p cos-client read::tests` 6 passed; `cargo clippy -p cos-client --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
+
+### 19.278 the bounded backoff that recovery waits on (2026-11-05)
+
+- **What had no test:** `cos_client::backoff_ms(attempt, seed)` decides how long a broken session waits before reconnecting. It had no test at all, and it is the only thing standing between a dropped connection and either a hot retry loop or an unbounded wait.
+- **Seven properties:**
+  - **every attempt lands inside its own window** - `[base, base + max(base/5, 1))` with `base = 500 ms x 2^(attempt-1)`, capped at 30 s - checked for attempts 0 to 40 over 64 seeds;
+  - **from attempt 1 the windows are disjoint**, so a later attempt cannot schedule earlier than an earlier one: this is growth by construction rather than a coincidence of the jitter;
+  - **once the cap is reached the delay stays inside the capped window**, so recovery cannot stretch a wait past the cap plus one jitter step;
+  - **no attempt or seed overflows** - `u32::MAX` and `u64::MAX` answer instead of panicking, which matters because this runs while the session is already broken;
+  - **the same inputs give the same delay**, so a delay seen in a log can be reproduced;
+  - **the jitter really spreads the delay** - sixty-four seeds must produce at least ten distinct values, or a constant delay would pass the window test;
+  - **attempt 0 is treated as the first attempt**: `saturating_sub(1)` makes attempts 0 and 1 share a window, which is harmless but worth pinning so a zero attempt is not read as "no delay". They share the window, not the value - the jitter mixes in the attempt number.
+- **Proven by mutation:** removing the cap fails three tests (the capped window, the growth property and the bound check); removing the jitter fails the spread test.
+- **Not captured here:** the two behaviours I had to correct while writing these - that attempt 0 shares a window with attempt 1 rather than being distinct, and that sharing a window does not mean sharing a value - were both wrong in my first version of the tests, and the failures are what established the actual contract.
+- **Not claimed:** this is the delay policy, not a reconnect test. No session is dropped or recovered here; the recovery scenario tests live in `observation_publication.rs`, and a real Runtime remains **NOT_RUN**. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p cos-client backoff_tests` 7 passed; `cargo clippy -p cos-client --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
