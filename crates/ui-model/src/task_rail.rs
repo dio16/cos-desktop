@@ -1633,5 +1633,44 @@ mod search_classifier_tests {
             status_rank(&TaskStatus::Unknown("FUTURE".to_string()))
                 > status_rank(&TaskStatus::Cancelled)
         );
+
+        // The two later keys need rows that tie on status **and** iteration, or their comparisons are
+        // never reached: the first version stopped at the iteration and could not see them.
+        let tied = |display: &'static str, id: &'static str| TaskRow {
+            identity: TaskId::new(id).expect("task id"),
+            display_id: Arc::from(display),
+            title: Arc::from("title"),
+            task_status: TaskStatus::Active,
+            inner_phase: Arc::from("phase"),
+            iteration_index: Some(7),
+            attention: super::LocalAttention::default(),
+        };
+        let mut by_display = [
+            tied("c", "fixture:1"),
+            tied("a", "fixture:3"),
+            tied("b", "fixture:2"),
+        ];
+        by_display.sort_by(compare_rows);
+        assert_eq!(
+            by_display
+                .iter()
+                .map(|row| row.display_id.as_ref())
+                .collect::<Vec<_>>(),
+            vec!["a", "b", "c"],
+            "equal status and iteration fall back to the display id"
+        );
+
+        // Same display id, different identity: the canonical identity breaks the tie, so the order is
+        // total rather than dependent on the incoming order.
+        let mut by_identity = [tied("same", "fixture:z"), tied("same", "fixture:a")];
+        by_identity.sort_by(compare_rows);
+        assert_eq!(
+            by_identity
+                .iter()
+                .map(|row| row.identity.as_str())
+                .collect::<Vec<_>>(),
+            vec!["fixture:a", "fixture:z"],
+            "equal display ids fall back to the canonical identity"
+        );
     }
 }
