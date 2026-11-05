@@ -24,7 +24,10 @@ CARD = re.compile(r"^#### (MP-[A-Z0-9]+) — (.+)$", re.MULTILINE)
 STATUS = re.compile(r"\*\*Status:\*\* (.+?)(?: · | \| |$)", re.MULTILINE)
 CONTRACT = re.compile(r"^- \*\*Design source / acceptance:\*\* (.+)$", re.MULTILINE)
 RELATIVE_LINK = re.compile(r"\[[^\]]+\]\((?!https?:|#)([^)#]+)(?:#[^)]*)?\)")
+LINK_WITH_ANCHOR = re.compile(r"\[[^\]]+\]\((?!https?:|#)([^)#]+)(?:#([^)]*))?\)")
 MERMAID = re.compile(r"```mermaid\n(.*?)```", re.DOTALL)
+PREREQS = re.compile(r"^- \*\*Hard prereqs:\*\* (.+)$", re.MULTILINE)
+DAG_EDGE = re.compile(r"\b(MP-[A-Z0-9]+)\s*-->\s*(MP-[A-Z0-9]+)\b")
 DAG_NODE = re.compile(r"\b(MP-[A-Z0-9]+)\b")
 UNRUN = ("NOT_RUN", "NOT_MEASURED", "NOT_VERIFIED", "NOT RUN", "未検証", "未測定")
 
@@ -48,6 +51,29 @@ def cards(text: str) -> list[tuple[str, str, str]]:
     return found
 
 
+def headings(path: str) -> set[str]:
+    """GitHub-style anchors for the headings of a markdown file."""
+    try:
+        with open(path, encoding="utf-8") as handle:
+            content = handle.read()
+    except OSError:
+        return set()
+    anchors = set()
+    for line in content.splitlines():
+        if not line.startswith("#"):
+            continue
+        title = line.lstrip("#").strip()
+        # GitHub keeps letters, digits, underscores and spaces; every other mark is dropped.
+        slug = re.sub(r"[^\w\s-]", "", title.lower()).strip()
+        anchors.add(slug.replace(" ", "-"))
+    return anchors
+
+
+def unverified_commits(text: str) -> set[str]:
+    """Commit ids the plan cites. They cannot be resolved without a repository lookup."""
+    return set(re.findall(r"`([0-9a-f]{7,40})`", text))
+
+
 def check_cards(text: str, root: str) -> list[Finding]:
     findings: list[Finding] = []
     names = set()
@@ -65,11 +91,23 @@ def check_cards(text: str, root: str) -> list[Finding]:
         if not CONTRACT.search(body):
             findings.append(Finding(name, "has no design source / acceptance line"))
 
-        bullets = body.split("\n\n", 1)[0]
-        for target in RELATIVE_LINK.findall(bullets):
+        bullets = "\n".join(line for line in body.splitlines() if line.startswith("- "))
+        for target, anchor in LINK_WITH_ANCHOR.findall(bullets):
             path = os.path.normpath(os.path.join(root, target))
             if not os.path.exists(path):
                 findings.append(Finding(name, f"link target does not exist: {target}"))
+                continue
+            if anchor and anchor not in headings(path):
+                findings.append(Finding(name, f"link anchor does not exist: {target}#{anchor}"))
+        # The design contract a card names must exist as a heading.
+        contract = CONTRACT.search(body)
+        if contract:
+            for target, anchor in LINK_WITH_ANCHOR.findall(contract.group(1)):
+                path = os.path.normpath(os.path.join(root, target))
+                if os.path.exists(path) and anchor and anchor not in headings(path):
+                    findings.append(
+                        Finding(name, f"design-contract anchor does not exist: {target}#{anchor}")
+                    )
 
         # A card may record unrun checks, but it must not also claim to be complete.
         upper = status_text.upper()
@@ -83,6 +121,52 @@ def check_cards(text: str, root: str) -> list[Finding]:
             findings.append(
                 Finding(name, "claims COMPLETE while recording an unrun or unmeasured check")
             )
+    return findings
+
+
+def prereq_edges(card_body: str) -> list[str]:
+    """The card names this card declares as hard prerequisites."""
+    match = PREREQS.search(card_body)
+    if not match:
+        return []
+    return DAG_NODE.findall(match.group(1))
+
+
+def check_prereqs(text: str) -> list[Finding]:
+    """Every declared prerequisite must exist and no prerequisite chain may loop."""
+    findings: list[Finding] = []
+    names = {name for name, _title, _body in cards(text)}
+    graph: dict[str, list[str]] = {}
+    for name, _title, body in cards(text):
+        edges = prereq_edges(body)
+        for target in edges:
+            if target not in names:
+                findings.append(Finding(name, f"declares a prerequisite without a card: {target}"))
+        graph[name] = [target for target in edges if target in names]
+
+    # A depth-first walk that records the path, so a cycle can be reported rather than only seen.
+    colour: dict[str, int] = {}
+    for start in graph:
+        if colour.get(start):
+            continue
+        stack = [(start, iter(graph[start]))]
+        path = [start]
+        colour[start] = 1
+        while stack:
+            node, children = stack[-1]
+            for child in children:
+                if colour.get(child) == 1:
+                    cycle = " -> ".join(path[path.index(child) :] + [child])
+                    findings.append(Finding(node, f"prerequisite cycle: {cycle}"))
+                elif not colour.get(child):
+                    colour[child] = 1
+                    path.append(child)
+                    stack.append((child, iter(graph[child])))
+                    break
+            else:
+                colour[node] = 2
+                stack.pop()
+                path.pop()
     return findings
 
 
@@ -152,6 +236,29 @@ def self_test() -> int:
         "a link to a missing file is reported",
     )
 
+    cycle = (
+        "#### MP-A — A\n- **Hard prereqs:** MP-B\n- **Status:** PARTIAL\n"
+        "- **Design source / acceptance:** x\n\n"
+        "#### MP-B — B\n- **Hard prereqs:** MP-A\n- **Status:** PARTIAL\n"
+        "- **Design source / acceptance:** x\n"
+    )
+    expect(
+        any("prerequisite cycle" in str(f) for f in check_prereqs(cycle)),
+        "a prerequisite cycle is reported",
+    )
+    expect(
+        not check_prereqs(good.replace("- **Status:** COMPLETE", "- **Hard prereqs:** none\n- **Status:** COMPLETE")),
+        "a card with no prerequisites passes the graph check",
+    )
+    missing_prereq = (
+        "#### MP-A — A\n- **Hard prereqs:** MP-Z\n- **Status:** PARTIAL\n"
+        "- **Design source / acceptance:** x\n"
+    )
+    expect(
+        any("without a card" in str(f) for f in check_prereqs(missing_prereq)),
+        "a prerequisite with no card is reported",
+    )
+
     dag_text = good + "\n```mermaid\nX1[MP-X1]\nX2[MP-X2]\nX1 --> X2\n```\n"
     expect(
         any("has no card" in str(f) for f in check_dag(dag_text)),
@@ -171,12 +278,27 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.self_test:
-        return 1 if self_test() else 0
+        failures = self_test()
+        # The self-test proves the rules; the live run proves the rules against the plan. Both are
+        # reported so a passing self-test cannot stand in for an unchecked ledger.
+        with open(args.plan, encoding="utf-8") as handle:
+            text = handle.read()
+        root = os.path.dirname(os.path.abspath(args.plan))
+        live = check_cards(text, root) + check_prereqs(text) + check_dag(text)
+        cited = unverified_commits(text)
+        for finding in live:
+            print(finding)
+        print(f"live: {len(live)} finding(s) across {len(cards(text))} card(s)")
+        print(
+            f"unverified here: {len(cited)} commit id(s) cited by the plan were not resolved "
+            "(that needs a repository lookup, so they are not counted as passing)"
+        )
+        return 1 if failures or live else 0
 
     with open(args.plan, encoding="utf-8") as handle:
         text = handle.read()
     root = os.path.dirname(os.path.abspath(args.plan))
-    findings = check_cards(text, root) + check_dag(text)
+    findings = check_cards(text, root) + check_prereqs(text) + check_dag(text)
     for finding in findings:
         print(finding)
     print(f"{len(findings)} finding(s) across {len(cards(text))} card(s)")
