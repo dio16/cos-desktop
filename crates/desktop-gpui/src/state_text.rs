@@ -128,7 +128,7 @@ pub(crate) fn rail_row_state_texts(
             id: format!("task-state-reference-{task_id}"),
             name: "参照先の情報",
             value: StateValue::Unavailable.text(),
-            description: "この行が参照している情報の一部を、いまは取得できていないことを示します。候補・能力・反復のいずれの参照でも同じ表示になり、対象は特定しません。タスクの状態とは別の情報です。",
+            description: "この行が参照している関連情報の一部を、いまは取得できていないことを示します。参照先の種類は区別せず、タスクの状態とは別の情報として扱います。",
         });
     }
     texts
@@ -317,6 +317,33 @@ mod tests {
             surface_state_texts("flow", "処理の流れ", &StateValue::Reported("表示中".into()));
         assert_ne!(idle[0].id, other[0].id);
         assert_eq!(other[0].value, "処理の流れ");
+    }
+
+    #[test]
+    fn the_drawing_code_assigns_the_name_and_the_value_to_the_right_attributes() {
+        // `accessibility_attributes` returning the right parts is not enough: the drawing code has
+        // to put the name in `aria_label` and the value in `aria_value`. Both row families must do
+        // it, so this reads the drawing code and requires the two assignments to appear together,
+        // in that order, for each family.
+        let source = include_str!("lib.rs");
+        let mut sites = 0;
+        for (index, _) in source.match_indices(".aria_label(SharedString::from(name))") {
+            let after = &source[index..];
+            let window = &after[..after.len().min(400)];
+            assert!(
+                window.contains(".aria_value(SharedString::from(value))"),
+                "a state row sets its name as the label but not its value as the value"
+            );
+            assert!(
+                !window.contains(".aria_value(SharedString::from(name))"),
+                "a state row swapped the name and the value"
+            );
+            sites += 1;
+        }
+        assert_eq!(
+            sites, 2,
+            "expected the task row and the surface row to set both attributes"
+        );
     }
 
     #[test]
