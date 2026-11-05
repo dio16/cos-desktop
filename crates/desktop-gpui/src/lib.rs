@@ -4385,7 +4385,7 @@ impl Render for Shell {
                             .flex_none()
                             .when_some(hairline, |element, width| element.border_r(width))
                             .border_color(rgb(if group_start {
-                                colors.selection
+                                shell_style::selection_indicator(&colors)
                             } else {
                                 colors.border
                             }))

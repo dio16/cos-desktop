@@ -694,7 +694,7 @@ pub fn non_text_pairs(colors: &ShellColors) -> Vec<NonTextPair> {
         },
         NonTextPair {
             purpose: "selection indicator on the shell background",
-            indicator: colors.selection,
+            indicator: crate::shell_style::selection_indicator(colors),
             surface: colors.background,
             carries_state: true,
         },
@@ -763,6 +763,23 @@ pub fn failing_text_pairs(colors: &ShellColors) -> Vec<(&'static str, f32, f32)>
         .filter(|pair| !pair.meets_threshold())
         .map(|pair| (pair.purpose, pair.actual_ratio(), pair.required_ratio()))
         .collect()
+}
+
+/// The first candidate that clears `minimum` against `surface`, or the last candidate if none does.
+///
+/// Returning a value either way keeps this total: a caller never has to decide what "invisible"
+/// means, and the fallback is the candidate with the best chance rather than a panic.
+pub fn first_visible(candidates: &[u32], surface: u32) -> u32 {
+    let mut best = candidates[0];
+    for candidate in candidates {
+        if contrast_ratio(*candidate, surface) >= 3.0 {
+            return *candidate;
+        }
+        if contrast_ratio(*candidate, surface) > contrast_ratio(best, surface) {
+            best = *candidate;
+        }
+    }
+    best
 }
 
 /// Focus, selection and disabled must remain three different indicators.
@@ -1315,6 +1332,110 @@ mod tests {
         }
     }
 
+    /// The black High Contrast theme Windows offers.
+    fn hc_black() -> SystemColors {
+        SystemColors {
+            window: 0x000000,
+            window_text: 0xffffff,
+            highlight: 0x000080,
+            highlight_text: 0xffffff,
+            gray_text: 0x808080,
+            button_face: 0x000000,
+            button_text: 0xffffff,
+        }
+    }
+
+    /// The white High Contrast theme, which is the mirror case.
+    fn hc_white() -> SystemColors {
+        SystemColors {
+            window: 0xffffff,
+            window_text: 0x000000,
+            highlight: 0x316ac5,
+            highlight_text: 0xffffff,
+            gray_text: 0x6d6d6d,
+            button_face: 0xffffff,
+            button_text: 0x000000,
+        }
+    }
+
+    /// The set of values a probe actually offers.
+    fn probe_values(system: &SystemColors) -> Vec<u32> {
+        vec![
+            system.window,
+            system.window_text,
+            system.highlight,
+            system.highlight_text,
+            system.gray_text,
+            system.button_face,
+            system.button_text,
+        ]
+    }
+
+    fn palette_values(colors: &ShellColors) -> Vec<u32> {
+        vec![
+            colors.background,
+            colors.text,
+            colors.focus,
+            colors.selection,
+            colors.selection_text,
+            colors.disabled,
+            colors.border,
+            colors.button_face,
+            colors.danger_face,
+            colors.danger_text,
+            colors.danger_border,
+            colors.raised_face,
+            colors.disabled_face,
+            colors.muted_text,
+            colors.disabled_border,
+        ]
+    }
+
+    #[test]
+    fn the_high_contrast_palette_only_uses_values_the_probe_offered() {
+        // A role that quietly came from the normal palette would be a real defect: under High
+        // Contrast every colour must follow the system theme.
+        for system in [hc_black(), hc_white()] {
+            let colors = colors_for(ContrastScheme::HighContrast, &system);
+            let offered = probe_values(&system);
+            for value in palette_values(&colors) {
+                assert!(
+                    offered.contains(&value),
+                    "{value:#x} is not one of the probe's values, so it does not follow the scheme"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_high_contrast_mapping_is_deterministic_and_follows_the_probe() {
+        let black = colors_for(ContrastScheme::HighContrast, &hc_black());
+        let black_again = colors_for(ContrastScheme::HighContrast, &hc_black());
+        let white = colors_for(ContrastScheme::HighContrast, &hc_white());
+        assert_eq!(palette_values(&black), palette_values(&black_again));
+        assert_eq!(black.background, 0x000000);
+        assert_eq!(black.text, 0xffffff);
+        assert_eq!(white.background, 0xffffff);
+        assert_eq!(white.text, 0x000000);
+        // The two themes must not resolve to the same palette, or the probe is being ignored.
+        assert_ne!(palette_values(&black), palette_values(&white));
+    }
+
+    #[test]
+    fn both_high_contrast_themes_keep_the_required_ratios() {
+        // The black theme was already checked; the white one is its mirror and had never been
+        // exercised. Both must keep the thresholds the audit asserts.
+        for (name, system) in [("black", hc_black()), ("white", hc_white())] {
+            let colors = colors_for(ContrastScheme::HighContrast, &system);
+            let failing = failing_text_pairs(&colors);
+            assert!(failing.is_empty(), "{name} theme, text pairs: {failing:?}");
+            let failing_non_text = failing_non_text_pairs(&colors);
+            assert!(
+                failing_non_text.is_empty(),
+                "{name} theme, state indicators: {failing_non_text:?}"
+            );
+        }
+    }
     #[test]
     fn the_state_indicators_meet_the_non_text_threshold() {
         let failing = failing_non_text_pairs(&NORMAL_COLORS);
