@@ -7,7 +7,7 @@
 
 ## Wall-clock assertions: an audit and the rule they follow
 
-A gate that fails on a loaded machine is worse than no gate: it teaches the team to re-run instead of to read. Every duration in the test surface was audited for that (2026-11-05) and falls into exactly one of three kinds.
+A gate that fails on a loaded machine is worse than no gate: it teaches the team to re-run instead of to read. Every duration in the test surface was audited for that (2026-11-05) and falls into exactly one of **four** kinds.
 
 | Kind | Rule | Where it lives |
 |---|---|---|
@@ -17,7 +17,7 @@ A gate that fails on a loaded machine is worse than no gate: it teaches the team
 
 A fourth kind needs its own line, because it is neither a hang guard nor an event: **a threshold that compares a duration against the work it measures**. `crates/media/tests/measured_cancel_latency.rs` asserts a cancelled decode returns within `BOUND_US` (250 ms) against a decode that costs seconds, and the pre-cancel test asserts a cancelled call returns within 10 ms. Those assertions do test time-dependent behaviour - that the loop kept checking, or that nothing was decoded - so they are **not** safety nets; they are thresholds with a wide margin (roughly an order of magnitude in each case). Read them as such when changing them, and do not reclassify them as safety nets to justify loosening them.
 
-The rule that follows, and the reason two tests were rewritten: **an event is a better assertion than a duration.** The history matters for honesty: the aborted-cancel bound was first loosened from three to five and then to eight seconds before the assertion moved to an event at all, so the fix was **not** "never touch the number" - it was number first, event last, and the event is what the test now rests on. The cross-thread cancel replaced its five-millisecond sleep with a wait for a counted row. Both tests that failed a gate on machine load end up asserting an event, with a duration left only as a safety net. A future test may observe a duration under the second or third rule; it may not assert a property under the first.
+The rule that follows, and the reason two tests were rewritten: **an event is a better assertion than a duration.** The history matters for honesty: the aborted-cancel bound was first loosened from three to five and then to eight seconds before the assertion moved to an event at all, so the fix was **not** "never touch the number" - it was number first, event last, and the event is what the test now rests on. The cross-thread cancel replaced its five-millisecond sleep with a wait for a counted row. Both tests that failed a gate on machine load end up asserting an event. What differs is what the event covers: in the aborted-cancel test the **wake** became an event and the duration is only a safety net, while the cross-thread cancel test made the **cancellation start** an event and still asserts the 250 ms threshold that shows the row loop kept checking - a fourth-kind threshold, not a leftover. A future test may observe a duration under the **second**, **third** or **fourth** rule - a threshold with a stated margin is an accepted way to test time-dependent behaviour - and may not treat a duration as the property under the **first**.
 
 ## 1. Quality gates and impact routes
 
