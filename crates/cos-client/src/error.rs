@@ -130,7 +130,25 @@ mod tests {
                 false,
             ),
         ];
-        assert_eq!(cases.len(), 9, "the enum has nine variants");
+        // A wildcard-free match is the actual exhaustiveness guarantee: a tenth variant makes this
+        // function fail to compile, which the count alone could never do.
+        fn evaluate(probe: &ClientError) -> bool {
+            match probe {
+                ClientError::Transport(_) => panic!("constructed by the table above"),
+                ClientError::MessageTooLarge { .. } => panic!("constructed by the table above"),
+                ClientError::QueueOverflow => panic!("constructed by the table above"),
+                ClientError::Protocol(_) => panic!("constructed by the table above"),
+                ClientError::VersionIncompatible(_) => panic!("constructed by the table above"),
+                ClientError::NotConnected(_) => panic!("constructed by the table above"),
+                ClientError::InvalidCommand(_) => panic!("constructed by the table above"),
+                ClientError::Server(_) => panic!("constructed by the table above"),
+                ClientError::Fixture(_) => panic!("constructed by the table above"),
+            }
+        }
+        // Referenced so the exhaustive match is not dead code, and so the table below stays the only
+        // place that decides the expected class.
+        let _ = evaluate as fn(&ClientError) -> bool;
+        assert_eq!(cases.len(), 9, "the table must name every variant once");
         for (label, error, expected) in cases {
             assert_eq!(
                 error.requires_resync(),
