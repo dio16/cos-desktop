@@ -1115,9 +1115,11 @@ mod tests {
         let mut arguments = Vec::new();
         for (name, source) in SOURCES {
             let found = text_colour_arguments(source);
+            // Every listed file draws text today; a file that stops yielding sites means the scan
+            // broke, not that the file became exempt.
             assert!(
-                *name == "help.rs" || !found.is_empty(),
-                "{name} draws text but the scan found nothing"
+                !found.is_empty(),
+                "{name} is listed as a drawing file but the scan found nothing"
             );
             arguments.extend(found);
         }
