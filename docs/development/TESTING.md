@@ -9,6 +9,19 @@
 
 The repository keeps one declared quality workflow; adding a test category does not imply another CI job or platform lane. FAST feedback runs the relevant sequence from the existing workflow: `cargo fmt --all -- --check`; `cargo metadata --locked --no-deps --format-version 1`; `python -B scripts/check_dependency_rules.py --self-test`; `python -B scripts/check_dependency_rules.py`; `cargo clippy --locked --workspace --all-targets -- -D warnings`; affected tests (for example, `cargo test -p app-core local_disconnect_never_sends_stop_implicitly`); and `cargo build --locked --workspace`. The aggregate Windows entry point is `pwsh scripts/quality.ps1`, which runs the repository's declared gates in order. It resolves and proves a concrete Python interpreter and a concrete `cargo` before any gate runs (a bare `python` or an extensionless launcher is not proof on Windows), prints both resolved paths, and fails closed with an explicit message when a tool cannot be proven rather than skipping the gate; [BUILD_AND_RUN §4.14](BUILD_AND_RUN.md#414-mp-img2-gdi-comparison-probe-and-fail-closed-gate-entry-point-2026-10-24) records the details and [§4.11](BUILD_AND_RUN.md#411-fixed-interpreter-and-environment-rules-2026-10-24) the interpreter rules. The Windows native startup smoke is specified in §6. CI configuration and service-side execution status are distinct evidence; do not report a PASS unless observed.
 
+**A known limitation of this machine's confined shell (2026-11-05):** the `check`/`clippy`/`tests`/`build` gates need to compile `vswhom-sys`, a C++ build script that GPUI pulls in, and that build script's child compiler cannot create its intermediate file. The failing build reports
+
+```text
+c1xx: fatal error C1083: cannot open compiler intermediate file
+  'C:\Users\DIOBRA~1\AppData\Local\Temp\_CL_d4e28eabex': Permission denied
+```
+
+and the same file compiles cleanly when the identical command is run directly in the same shell (`cl.exe -nologo -MD -Brepro -W4 /Zm2000 -c ext/vswhom.cpp` exits 0), so the denial is specific to the process the build script spawns, not to the source or the toolchain. Redirecting `TMP`/`TEMP` moves the failing path but not the failure. Consequences to state honestly:
+
+- in this shell, `pwsh scripts/quality.ps1` reaches `plan ledger` and then fails at `check`; that is **environment**, not a red gate, and **`quality.ps1` as a whole is `NOT_RUN` here**;
+- `cargo` invocations that reuse an already-built `vswhom-sys` (for example `CARGO_TARGET_DIR=C:\dev\cos-build-fresh`) run normally, and every gate recorded in this session was run that way;
+- a full local completion route needs a shell where the child compiler can write its temporary file. Whether the cause is the confined token or the temp directory's permissions is **unresolved**; the file-permission diagnostics were not run to completion here.
+
 **Inner edit loop (not a completion route):** `pwsh scripts/quality.ps1 -CheckOnly` runs format, metadata, dependency checker/self-test and `cargo check --locked --workspace --all-targets`. It deliberately does not run clippy, tests, normal build or Native smoke, and reports those as `NOT_RUN`. Use this or a crate-scoped `cargo check` for frequent feedback; it does not replace FAST/full quality, independent Gates, effect-specific tests or Native evidence. The no-switch invocation retains all existing gates.
 
 | Route | Scope and impact |
