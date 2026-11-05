@@ -109,17 +109,7 @@ pub(crate) fn rail_row_state_texts(
     iteration: Option<u32>,
     unavailable: bool,
 ) -> Vec<StateText> {
-    // A row the presentation marks as referring to something unavailable says so; it does not keep
-    // showing the last value it had.
-    if unavailable {
-        return task_state_texts(
-            task_id,
-            &StateValue::Unavailable,
-            &StateValue::Unavailable,
-            &StateValue::Unavailable,
-        );
-    }
-    task_state_texts(
+    let mut texts = task_state_texts(
         task_id,
         &StateValue::Reported(status.to_string()),
         &phase
@@ -130,7 +120,18 @@ pub(crate) fn rail_row_state_texts(
         &iteration.map_or(StateValue::NotDetermined, |iteration| {
             StateValue::Reported(iteration.to_string())
         }),
-    )
+    );
+    // A missing candidate reference is **its own** fact about this row's presentation: it says
+    // nothing about the task's own status, which the origin still reports.
+    if unavailable {
+        texts.push(StateText {
+            id: format!("task-state-reference-{task_id}"),
+            name: "候補の参照",
+            value: StateValue::Unavailable.text(),
+            description: "この行が参照している候補を、いまは取得できていないことを示します。タスクの状態とは別の情報です。",
+        });
+    }
+    texts
 }
 
 /// The work-surface rows the current surface publishes.
@@ -152,9 +153,9 @@ pub(crate) fn surface_state_texts(
         },
         StateText {
             id: format!("surface-state-state-{surface_slug}"),
-            name: "画面の状態",
+            name: "画面の表示",
             value: state.text(),
-            description: "画面が表示できる状態かどうかの通知です。タスクの状態とは別の軸です。",
+            description: "この画面がいま表示されているというローカルの事実です。実行元が通知するタスクの状態とは別の軸で、利用可能性の判定ではありません。",
         },
     ]
 }
@@ -259,16 +260,26 @@ mod tests {
     }
 
     #[test]
-    fn an_unavailable_row_shows_unavailable_rather_than_its_last_value() {
+    fn a_missing_reference_is_its_own_fact_and_leaves_the_task_state_alone() {
         let texts = rail_row_state_texts("task-1", "実行中", Some("生成"), Some(2), true);
-        for text in &texts {
-            assert_eq!(text.value, UNAVAILABLE);
-        }
-        // The identity still does not move, so the same element updates in place.
+        // The task's own reported state is still published as reported.
+        assert_eq!(texts[0].value, "実行中");
+        assert_eq!(texts[1].value, "生成");
+        assert_eq!(texts[2].value, "2");
+        // The missing reference is a separate row, with its own identity.
+        let reference = texts
+            .iter()
+            .find(|text| text.name == "候補の参照")
+            .expect("a missing reference is published");
+        assert_eq!(reference.value, UNAVAILABLE);
+        assert!(reference.id.ends_with("task-1"));
+
+        // Without the condition that row does not exist at all.
         let reported = rail_row_state_texts("task-1", "実行中", Some("生成"), Some(2), false);
+        assert!(reported.iter().all(|text| text.name != "候補の参照"));
+        // The task's own rows keep their identity across the two states.
         for (a, b) in texts.iter().zip(&reported) {
             assert_eq!(a.id, b.id);
-            assert_eq!(a.name, b.name);
         }
     }
 

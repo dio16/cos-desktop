@@ -4608,14 +4608,16 @@ impl Render for Shell {
                         )
                         .into_iter()
                         .map(|text| {
-                            let accessible =
-                                SharedString::from(format!("{}: {}", text.name, text.value));
+                            let shown = SharedString::from(format!("{}: {}", text.name, text.value));
                             div()
                                 .id(text.id)
                                 .role(Role::Label)
-                                .aria_label(accessible.clone())
+                                // The name is fixed and the value is what moves: an update must not
+                                // change the element's accessible name.
+                                .aria_label(SharedString::from(text.name))
+                                .aria_value(SharedString::from(text.value))
                                 .aria_description(SharedString::from(text.description))
-                                .child(accessible)
+                                .child(shown)
                         })
                         .collect::<Vec<_>>(),
                     )
@@ -4974,14 +4976,15 @@ impl Render for Shell {
                                 )
                                 .into_iter()
                                 .map(|text| {
-                                    let accessible =
+                                    let shown =
                                         SharedString::from(format!("{}: {}", text.name, text.value));
                                     div()
                                         .id(text.id)
                                         .role(Role::Label)
-                                        .aria_label(accessible.clone())
+                                        .aria_label(SharedString::from(text.name))
+                                        .aria_value(SharedString::from(text.value))
                                         .aria_description(SharedString::from(text.description))
-                                        .child(accessible)
+                                        .child(shown)
                                 })
                                 .collect::<Vec<_>>(),
                             )
