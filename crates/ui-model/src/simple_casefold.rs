@@ -1518,3 +1518,102 @@ static SIMPLE_FOLD: &[(char, char)] = &[
     ('\u{1e920}', '\u{1e942}'),
     ('\u{1e921}', '\u{1e943}'),
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::{SIMPLE_FOLD, fold_scalar};
+
+    /// The search paths fold a query and a field with the same function, so a scalar that folds to
+    /// something which folds again would make two searches for the same text disagree. Every target
+    /// must therefore be its own fixed point.
+    #[test]
+    fn every_target_is_a_fixed_point() {
+        for &(from, to) in SIMPLE_FOLD {
+            let folded = fold_scalar(to);
+            assert_eq!(
+                folded, to,
+                "U+{:04X} folds to U+{:04X}, which folds again to U+{:04X}",
+                from as u32, to as u32, folded as u32
+            );
+        }
+    }
+
+    /// `binary_search_by_key` is the lookup, so the table must be strictly ascending: a duplicate or
+    /// an out-of-order pair would silently make some scalars unreachable.
+    #[test]
+    fn the_table_is_strictly_ascending() {
+        let mut previous = 0u32;
+        for &(from, _to) in SIMPLE_FOLD {
+            assert!(
+                from as u32 > previous,
+                "the table is not strictly ascending at U+{:04X}",
+                from as u32
+            );
+            previous = from as u32;
+        }
+    }
+
+    /// The fast path is the whole ASCII range, so it has to agree with the rule it replaces.
+    #[test]
+    fn ascii_folds_exactly_like_the_standard_lowercase() {
+        for byte in 0u8..=127 {
+            let value = char::from(byte);
+            assert_eq!(
+                fold_scalar(value),
+                value.to_ascii_lowercase(),
+                "U+{byte:04X} folded differently on the ASCII fast path"
+            );
+        }
+    }
+
+    /// Folding twice must equal folding once, for every scalar: search folds user input, and a query
+    /// typed with an already-folded character must rank the same.
+    #[test]
+    fn folding_is_idempotent_for_every_scalar() {
+        for value in [
+            'A', 'Z', 'a', 'z', '0', 'Ä', 'ä', 'Σ', 'σ', 'ς', 'Ω', 'ω', '\u{2126}', '\u{212a}',
+        ] {
+            let once = fold_scalar(value);
+            assert_eq!(
+                fold_scalar(once),
+                once,
+                "U+{:04X} is not idempotent",
+                value as u32
+            );
+        }
+        for &(from, to) in SIMPLE_FOLD {
+            assert_eq!(fold_scalar(from), to);
+            assert_eq!(fold_scalar(to), to);
+        }
+    }
+
+    /// The mappings the search experience depends on. These are read from Unicode 16.0.0 simple
+    /// case folding (`C` + `S`); `F`/`T` mappings and normalization are excluded by design.
+    #[test]
+    fn the_mappings_searches_rely_on_are_pinned() {
+        // German umlauts and the ring above: the same letter in two cases folds together.
+        assert_eq!(fold_scalar('Ä'), 'ä');
+        assert_eq!(fold_scalar('Å'), 'å');
+        assert_eq!(fold_scalar('Ÿ'), 'ÿ');
+        // Greek sigma has three forms in text; all three fold to the medial sigma, so a query typed
+        // with the final sigma still matches.
+        assert_eq!(fold_scalar('Σ'), 'σ');
+        assert_eq!(fold_scalar('ς'), 'σ');
+        // Compatibility characters: the ohm sign and the Kelvin sign fold like their letters.
+        assert_eq!(fold_scalar('\u{2126}'), 'ω');
+        assert_eq!(fold_scalar('\u{212a}'), 'k');
+        // A Turkish dotless i is a different letter, not a case variant: it must not fold.
+        assert_eq!(fold_scalar('ı'), 'ı');
+    }
+
+    /// Simple folding never expands a scalar, which is a limitation users can notice: searching for
+    /// "ss" will not find "ß". Pinning it keeps a future change from silently altering results.
+    #[test]
+    fn simple_folding_does_not_expand() {
+        assert_eq!(fold_scalar('ß'), 'ß');
+        assert_eq!(fold_scalar('ẞ'), 'ß');
+        assert_eq!(fold_scalar('ﬀ'), 'ﬀ');
+        // The full folding of "ß" is "ss"; simple folding deliberately is not that.
+        assert_ne!(fold_scalar('ß'), 's');
+    }
+}
