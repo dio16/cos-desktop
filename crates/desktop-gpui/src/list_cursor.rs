@@ -1,0 +1,141 @@
+//! Where a keyboard list's **active descendant** is, as one pure rule.
+//!
+//! Three lists in the shell (the task rail, the flow node list and the flow edge list) move one
+//! active row with Up/Down and Home/End, and publish that row to the accessibility tree only while
+//! the list itself holds focus. The rule was written three times, so it now lives here and both the
+//! movement code and the tests read it from the same place.
+//!
+//! Nothing here describes what a screen reader announces; that remains unmeasured.
+
+/// The row the keyboard is on, given the rows that exist right now.
+///
+/// A stale key - one whose row was filtered out or removed - resolves to `None`, which is what
+/// keeps a removed row from staying published.
+pub(crate) fn active_index<K: PartialEq>(active: Option<&K>, rows: &[K]) -> Option<usize> {
+    let active = active?;
+    rows.iter().position(|row| row == active)
+}
+
+/// The index a Up/Down move lands on.
+///
+/// With no current row the move starts at the first one, which is what pressing Down in an
+/// unfocused-but-actived list should do. The result is clamped into the list, so holding Down at
+/// the end stays there instead of wrapping or overflowing.
+pub(crate) fn stepped_index(current: Option<usize>, len: usize, delta: isize) -> Option<usize> {
+    if len == 0 {
+        return None;
+    }
+    let last = len - 1;
+    Some(match current {
+        None => 0,
+        Some(current) => {
+            let moved = current as isize + delta;
+            moved.clamp(0, last as isize) as usize
+        }
+    })
+}
+
+/// Whether the active descendant should be published for this list.
+///
+/// It is published only when the list **holds keyboard focus** and the active row **still exists**.
+/// Selection is a different thing and is not consulted here: a row can be selected while focus is
+/// elsewhere, and a row can be active without being selected.
+pub(crate) fn publishes_active_descendant(
+    focused: bool,
+    active: Option<usize>,
+    len: usize,
+) -> bool {
+    focused && active.is_some_and(|index| index < len)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A list of stable keys, as the shell keeps them.
+    fn rows() -> Vec<&'static str> {
+        vec!["a", "b", "c", "d"]
+    }
+
+    #[test]
+    fn down_and_up_move_one_row_and_stop_at_the_ends() {
+        let rows = rows();
+        assert_eq!(
+            stepped_index(active_index(Some(&"a"), &rows), rows.len(), 1),
+            Some(1)
+        );
+        assert_eq!(
+            stepped_index(active_index(Some(&"c"), &rows), rows.len(), 1),
+            Some(3)
+        );
+        // At the end, Down stays; at the start, Up stays.
+        assert_eq!(
+            stepped_index(active_index(Some(&"d"), &rows), rows.len(), 1),
+            Some(3)
+        );
+        assert_eq!(
+            stepped_index(active_index(Some(&"a"), &rows), rows.len(), -1),
+            Some(0)
+        );
+        // No current row: the move starts at the first.
+        assert_eq!(stepped_index(None, rows.len(), 1), Some(0));
+        assert_eq!(stepped_index(None, rows.len(), -1), Some(0));
+        // An empty list has nowhere to go.
+        assert_eq!(stepped_index(None, 0, 1), None);
+    }
+
+    #[test]
+    fn home_and_end_land_on_the_first_and_last_row() {
+        assert_eq!(crate::rail_edge_index(4, crate::RailEdge::First), Some(0));
+        assert_eq!(crate::rail_edge_index(4, crate::RailEdge::Last), Some(3));
+        assert_eq!(crate::rail_edge_index(0, crate::RailEdge::First), None);
+        assert_eq!(crate::rail_edge_index(0, crate::RailEdge::Last), None);
+    }
+
+    #[test]
+    fn focus_is_not_selection() {
+        // The active descendant follows focus, not the selected row: a list can hold focus on one
+        // row while a different row is selected.
+        assert!(publishes_active_descendant(true, Some(1), 4));
+        assert!(publishes_active_descendant(true, Some(0), 4));
+        // With focus elsewhere nothing is published, whatever the active index says.
+        assert!(!publishes_active_descendant(false, Some(1), 4));
+        assert!(!publishes_active_descendant(false, None, 4));
+        // Focus with no active row publishes nothing.
+        assert!(!publishes_active_descendant(true, None, 4));
+    }
+
+    #[test]
+    fn a_removed_or_filtered_row_is_not_published() {
+        let rows = rows();
+        // The row the user was on disappears from the list: the stale key no longer matches.
+        let stale = active_index(Some(&"z"), &rows);
+        assert_eq!(stale, None);
+        assert!(!publishes_active_descendant(true, stale, rows.len()));
+
+        // An index past the end - the list shrank under a kept index - is not published either.
+        assert!(!publishes_active_descendant(true, Some(9), rows.len()));
+    }
+
+    #[test]
+    fn a_stale_key_restarts_at_the_first_row_instead_of_jumping() {
+        let rows = rows();
+        let stale = active_index(Some(&"z"), &rows);
+        // Moving from a stale key lands on the first row, not on wherever the old index was.
+        assert_eq!(stepped_index(stale, rows.len(), 1), Some(0));
+        assert_eq!(stepped_index(stale, rows.len(), -1), Some(0));
+    }
+
+    #[test]
+    fn a_reordered_list_moves_from_the_rows_current_position() {
+        let before = rows();
+        let index = active_index(Some(&"c"), &before);
+        assert_eq!(index, Some(2));
+        // The same keys come back in a different order: the active row is looked up by key again.
+        let after = vec!["d", "c", "b", "a"];
+        let moved = active_index(Some(&"c"), &after);
+        assert_eq!(moved, Some(1));
+        assert_eq!(stepped_index(moved, after.len(), 1), Some(2));
+        assert_eq!(after[2], "b");
+    }
+}

@@ -28,6 +28,7 @@ mod flow;
 mod help;
 mod inspector;
 mod intervention;
+mod list_cursor;
 mod palette;
 #[cfg(feature = "r0-s2b-instrumentation")]
 pub mod r0_probe;
@@ -2081,13 +2082,14 @@ impl Shell {
         if search.indices.is_empty() {
             return;
         }
+        // The rail keeps an index rather than a key, so the shared rule is given the same view the
+        // drawing code has: an index that no longer addresses a visible row resolves to `None`.
         let current = self
             .rail_active_index
             .filter(|index| *index < search.indices.len());
-        let next = current.map_or(0, |current| {
-            (current as isize + delta).clamp(0, search.indices.len().saturating_sub(1) as isize)
-                as usize
-        });
+        let Some(next) = list_cursor::stepped_index(current, search.indices.len(), delta) else {
+            return;
+        };
         let task = collection.rows[search.indices[next]].identity.clone();
         self.set_rail_active(task, next);
         self.rail_list.scroll_to_reveal_item(next);
@@ -2339,14 +2341,11 @@ impl Shell {
         if rows.nodes.is_empty() {
             return;
         }
-        let current = self
-            .flow_node_active
-            .as_ref()
-            .and_then(|active| rows.nodes.iter().position(|row| row.key() == *active));
-        let next = current.map_or(0, |current| {
-            (current as isize + delta).clamp(0, rows.nodes.len().saturating_sub(1) as isize)
-                as usize
-        });
+        let keys: Vec<_> = rows.nodes.iter().map(|row| row.key()).collect();
+        let current = list_cursor::active_index(self.flow_node_active.as_ref(), &keys);
+        let Some(next) = list_cursor::stepped_index(current, rows.nodes.len(), delta) else {
+            return;
+        };
         self.flow_node_active = Some(rows.nodes[next].key());
         self.flow_node_list.scroll_to_reveal_item(next);
         self.flow_node_focus.focus(window, cx);
@@ -2388,14 +2387,11 @@ impl Shell {
         if rows.edges.is_empty() {
             return;
         }
-        let current = self
-            .flow_edge_active
-            .as_ref()
-            .and_then(|active| rows.edges.iter().position(|row| row.key() == *active));
-        let next = current.map_or(0, |current| {
-            (current as isize + delta).clamp(0, rows.edges.len().saturating_sub(1) as isize)
-                as usize
-        });
+        let keys: Vec<_> = rows.edges.iter().map(|row| row.key()).collect();
+        let current = list_cursor::active_index(self.flow_edge_active.as_ref(), &keys);
+        let Some(next) = list_cursor::stepped_index(current, rows.edges.len(), delta) else {
+            return;
+        };
         self.flow_edge_active = Some(rows.edges[next].key());
         self.flow_edge_list.scroll_to_reveal_item(next);
         self.flow_edge_focus.focus(window, cx);
@@ -3578,9 +3574,14 @@ impl Render for Shell {
                     .accessibility_id(element_id)
                     .role(Role::ListItem)
                     .aria_label(SharedString::from(aria))
-                    .when(is_active && flow_node_focused, |element| {
-                        element.aria_active_descendant()
-                    })
+                    .when(
+                        list_cursor::publishes_active_descendant(
+                            flow_node_focused,
+                            is_active.then_some(0),
+                            1,
+                        ),
+                        |element| element.aria_active_descendant(),
+                    )
                     .flex()
                     .flex_col()
                     .gap_0()
@@ -3662,9 +3663,14 @@ impl Render for Shell {
                     .accessibility_id(element_id)
                     .role(Role::ListItem)
                     .aria_label(SharedString::from(aria))
-                    .when(is_active && flow_edge_focused, |element| {
-                        element.aria_active_descendant()
-                    })
+                    .when(
+                        list_cursor::publishes_active_descendant(
+                            flow_edge_focused,
+                            is_active.then_some(0),
+                            1,
+                        ),
+                        |element| element.aria_active_descendant(),
+                    )
                     .flex()
                     .flex_col()
                     .gap_0()
@@ -4569,7 +4575,14 @@ impl Render for Shell {
                     .role(Role::ListItem)
                     .aria_selected(selected)
                     .aria_label(SharedString::new(format!("{} — {}", row.display_id, row.title)))
-                    .when(active && rail_focused, |element| element.aria_active_descendant())
+                    .when(
+                        list_cursor::publishes_active_descendant(
+                            rail_focused,
+                            active.then_some(0),
+                            1,
+                        ),
+                        |element| element.aria_active_descendant(),
+                    )
                     .children(
                         [
                             selected.then_some((
