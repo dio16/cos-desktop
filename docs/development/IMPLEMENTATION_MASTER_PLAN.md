@@ -4989,3 +4989,12 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Proven by mutation:** dropping `Transport` from the resync set fails the matrix; adding `Server` to it fails both the matrix and the code-instead-of-variant test.
 - **Not claimed:** this is the classification rule, not the session teardown. Nothing here drops or rebuilds a session; the invalidation and fence behaviour is covered in `app-core`. A real Runtime remains **NOT_RUN**; MP-RT1, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p cos-client error::tests` 3 passed; `cargo clippy -p cos-client --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
+
+### 19.282 the independent Gate checks the plan too (2026-11-05)
+
+- **What changed:** the Gate request for a candidate now pins **five** verification commands instead of four - `fmt`, the dependency-rules checker, **`plan-ledger`**, `clippy` and the workspace tests - so the plan ledger is enforced on the pinned commit by the independent Gate, not only by `quality.ps1` in the edit loop.
+- **Why the position matters:** the ledger check is cheap (**405 ms** in the receipt, against 19,583 ms for the dependency check and 214,493 ms for the tests) and runs before `clippy`, so an inconsistent plan fails early rather than after several minutes.
+- **Evidence from the run:** gate `ff6b3e1d-ad6d-4b68-a3f4-74aec79e58fc` on `cc702ee` **SUCCEEDED** with all five entries `pass` and exit 0; `gate verify` returned the same `candidate_sha256` before and after the documented disposal, and the workspace was released.
+- **A limit worth stating:** the composition lives in the **request file** (`mprt1-gate-request-with-ledger.json` in the verification workspace), not in the repository. A Gate built from a request that omits the entry still passes and simply does not check the ledger; its receipt shows four entries rather than five. `TESTING.md` says so, so a reader can tell which kind of Gate produced a receipt.
+- **Not claimed:** this adds a check, not coverage. The Gate still cannot run the native smoke, the GPU path or anything needing a real Runtime, and `quality.ps1` as a whole remains **FAILED** on this machine for the child-compiler reason recorded earlier. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** the five-entry Gate above; `python -B scripts/check_plan_ledger.py` reports 0 findings across 62 cards at the same commit.
