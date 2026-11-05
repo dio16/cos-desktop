@@ -205,6 +205,106 @@ pub fn focus_ring_on(colors: &ShellColors, background: u32, extra_candidates: &[
     FocusRing::Invisible
 }
 
+/// One foreground/background pair the shell actually draws text on.
+#[derive(Clone, Copy, Debug)]
+pub struct TextPair {
+    /// What the pair is for, so a failure names the surface rather than two numbers.
+    pub purpose: &'static str,
+    pub foreground: u32,
+    pub background: u32,
+    /// Whether the text is large enough for the 3:1 threshold rather than the 4.5:1 one.
+    pub large_text: bool,
+    /// Whether WCAG exempts this pair from its contrast minimum because the control is inactive.
+    pub exempt: bool,
+}
+
+impl TextPair {
+    /// The WCAG AA ratio this pair must meet.
+    pub fn required_ratio(&self) -> f32 {
+        if self.large_text { 3.0 } else { 4.5 }
+    }
+
+    /// The ratio this pair actually has.
+    pub fn actual_ratio(&self) -> f32 {
+        contrast_ratio(self.foreground, self.background)
+    }
+
+    /// Whether the pair meets its threshold, or is exempt from having one.
+    pub fn meets_threshold(&self) -> bool {
+        self.exempt || self.actual_ratio() >= self.required_ratio()
+    }
+}
+
+/// Every text-on-surface pair the shell draws, so contrast can be checked as a set rather than
+/// surface by surface.
+///
+/// This is the audit list, not a claim that the rendering is adequate: a pair appearing here means
+/// the shell draws text in that combination, and the test beside it asserts the ratio.
+pub fn drawn_text_pairs(colors: &ShellColors) -> Vec<TextPair> {
+    let pairs = vec![
+        TextPair {
+            purpose: "body text on the shell background",
+            foreground: colors.text,
+            background: colors.background,
+            large_text: false,
+            exempt: false,
+        },
+        TextPair {
+            purpose: "muted text (axis labels) on the shell background",
+            foreground: colors.muted_text,
+            background: colors.background,
+            large_text: false,
+            exempt: false,
+        },
+        TextPair {
+            purpose: "text on a raised surface",
+            foreground: colors.text,
+            background: colors.raised_face,
+            large_text: false,
+            exempt: false,
+        },
+        TextPair {
+            purpose: "text on a button face",
+            foreground: colors.text,
+            background: colors.button_face,
+            large_text: false,
+            exempt: false,
+        },
+        TextPair {
+            purpose: "selection text on a selection",
+            foreground: colors.selection_text,
+            background: colors.selection,
+            large_text: false,
+            exempt: false,
+        },
+        TextPair {
+            purpose: "destructive text on the destructive face",
+            foreground: colors.danger_text,
+            background: colors.danger_face,
+            large_text: false,
+            exempt: false,
+        },
+        TextPair {
+            purpose: "disabled text on a disabled face",
+            foreground: colors.disabled,
+            background: colors.disabled_face,
+            large_text: false,
+            // WCAG exempts inactive controls, so this pair is reported but not required.
+            exempt: true,
+        },
+    ];
+    pairs
+}
+
+/// The pairs that do not meet their threshold, as `(purpose, ratio, required)`.
+pub fn failing_text_pairs(colors: &ShellColors) -> Vec<(&'static str, f32, f32)> {
+    drawn_text_pairs(colors)
+        .into_iter()
+        .filter(|pair| !pair.meets_threshold())
+        .map(|pair| (pair.purpose, pair.actual_ratio(), pair.required_ratio()))
+        .collect()
+}
+
 /// Focus, selection and disabled must remain three different indicators.
 pub fn focus_selection_and_disabled_are_distinct(colors: &ShellColors) -> bool {
     colors.focus != colors.selection
@@ -365,6 +465,52 @@ mod tests {
         );
     }
 
+    #[test]
+    fn every_drawn_text_pair_reports_its_ratio() {
+        // The audit exists to be read: print each pair so a failure names the surface, and assert
+        // the list is not empty rather than assuming it.
+        let colors = NORMAL_COLORS;
+        let pairs = drawn_text_pairs(&colors);
+        assert!(!pairs.is_empty(), "the audit list must not be empty");
+        for pair in &pairs {
+            eprintln!(
+                "{}: {:.2}:1 (needs {:.1}:1)",
+                pair.purpose,
+                pair.actual_ratio(),
+                pair.required_ratio()
+            );
+        }
+    }
+
+    #[test]
+    fn the_normal_palette_meets_its_text_thresholds() {
+        let failing = failing_text_pairs(&NORMAL_COLORS);
+        assert!(
+            failing.is_empty(),
+            "the normal palette has text pairs below their threshold: {failing:?}"
+        );
+    }
+
+    #[test]
+    fn the_high_contrast_palette_meets_its_text_thresholds() {
+        // A high contrast system probe: white on black. The pair list is the same, so this asserts
+        // the High Contrast resolution keeps every drawn combination legible.
+        let system = SystemColors {
+            window: 0x000000,
+            window_text: 0xffffff,
+            highlight: 0x000080,
+            highlight_text: 0xffffff,
+            gray_text: 0x808080,
+            button_face: 0x000000,
+            button_text: 0xffffff,
+        };
+        let colors = colors_for(ContrastScheme::HighContrast, &system);
+        let failing = failing_text_pairs(&colors);
+        assert!(
+            failing.is_empty(),
+            "the High Contrast palette has text pairs below their threshold: {failing:?}"
+        );
+    }
     #[test]
     fn focus_selection_and_disabled_are_distinct_in_both_schemes() {
         let system = system();
