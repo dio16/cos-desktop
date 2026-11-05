@@ -438,3 +438,149 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod ranking_tests {
+    use super::{Command, Descriptor, Entry, MAX_RESULTS, Outcome, Rank, search};
+
+    fn entry(descriptor: &'static Descriptor) -> Entry<'static> {
+        Entry {
+            descriptor,
+            unavailable: None,
+        }
+    }
+
+    fn ranks(outcome: &Outcome) -> Vec<Rank> {
+        match outcome {
+            Outcome::Hits(hits) => hits.iter().map(|hit| hit.rank).collect(),
+            other => panic!("expected hits, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn the_rank_ladder_is_exact_then_prefix_then_substring_then_category_then_list() {
+        // The sort key is `(rank, slot)`, so the enum's ordering *is* the priority order. Pinning the
+        // ladder keeps a reordering of the variants from silently changing what a user sees first.
+        assert!(Rank::ExactId < Rank::TitlePrefix);
+        assert!(Rank::TitlePrefix < Rank::Substring);
+        assert!(Rank::Substring < Rank::Category);
+        assert!(Rank::Category < Rank::List);
+    }
+
+    #[test]
+    fn one_query_produces_the_ladder_in_order_regardless_of_inventory_position() {
+        // The inventory is deliberately written worst-first: if the sort were removed or the key
+        // changed, the result order would follow the slots instead of the ranks.
+        static CATEGORY: Descriptor = Descriptor {
+            command: Command::StopTask,
+            id: "beta",
+            title: "Beta",
+            category: "gamma",
+        };
+        static SUBSTRING: Descriptor = Descriptor {
+            command: Command::StopTask,
+            id: "who-gamma-x",
+            title: "Who",
+            category: "unrelated",
+        };
+        static PREFIX: Descriptor = Descriptor {
+            command: Command::StopTask,
+            id: "other",
+            title: "gamma at the start",
+            category: "unrelated",
+        };
+        static EXACT: Descriptor = Descriptor {
+            command: Command::StopTask,
+            id: "gamma",
+            title: "Gamma",
+            category: "unrelated",
+        };
+        let entries = vec![
+            entry(&CATEGORY),
+            entry(&SUBSTRING),
+            entry(&PREFIX),
+            entry(&EXACT),
+        ];
+        let outcome = search("gamma", &entries);
+        assert_eq!(
+            ranks(&outcome),
+            vec![
+                Rank::ExactId,
+                Rank::TitlePrefix,
+                Rank::Substring,
+                Rank::Category
+            ],
+            "the ladder must order the hits, not the inventory"
+        );
+    }
+
+    #[test]
+    fn rows_of_the_same_rank_keep_the_inventory_order() {
+        // Equal ranks are broken by slot, so the list is stable: two runs of the same search must
+        // produce the same order, and a later entry never jumps ahead of an equal one.
+        static FIRST: Descriptor = Descriptor {
+            command: Command::StopTask,
+            id: "first",
+            title: "alpha one",
+            category: "unrelated",
+        };
+        static SECOND: Descriptor = Descriptor {
+            command: Command::StopTask,
+            id: "second",
+            title: "alpha two",
+            category: "unrelated",
+        };
+        let entries = vec![entry(&FIRST), entry(&SECOND)];
+        let outcome = search("alpha", &entries);
+        match outcome {
+            Outcome::Hits(hits) => {
+                assert_eq!(hits.len(), 2);
+                assert!(hits.iter().all(|hit| hit.rank == Rank::TitlePrefix));
+                assert_eq!(hits[0].slot, 0);
+                assert_eq!(hits[1].slot, 1);
+            }
+            other => panic!("expected hits, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_very_wide_match_is_truncated_to_the_best_rows() {
+        // `MAX_RESULTS` bounds the list, and truncation happens **after** sorting, so the cap keeps
+        // the best rows rather than the first ones. One exact match sits at the end of the inventory
+        // on purpose: if truncation came first, it would be dropped.
+        // Leaked descriptors are fine in a test: the process ends after it, and the entries need a
+        // `'static` descriptor to match `Entry<'static>`.
+        let mut descriptors: Vec<&'static Descriptor> = (0..MAX_RESULTS + 8)
+            .map(|index| {
+                Box::leak(Box::new(Descriptor {
+                    command: Command::StopTask,
+                    id: Box::leak(format!("id-{index}").into_boxed_str()),
+                    title: Box::leak(format!("target {index}").into_boxed_str()),
+                    category: "unrelated",
+                })) as &'static Descriptor
+            })
+            .collect();
+        let exact = Box::leak(Box::new(Descriptor {
+            command: Command::StopTask,
+            id: "target",
+            title: "Target",
+            category: "unrelated",
+        }));
+        descriptors.push(exact);
+        let entries: Vec<Entry<'static>> = descriptors.into_iter().map(entry).collect();
+
+        let outcome = search("target", &entries);
+        match outcome {
+            Outcome::Hits(hits) => {
+                assert_eq!(hits.len(), MAX_RESULTS, "the list is capped");
+                assert_eq!(
+                    hits[0].rank,
+                    Rank::ExactId,
+                    "the exact match must survive truncation, so the cap applies after sorting"
+                );
+                assert_eq!(hits[0].slot, MAX_RESULTS + 8);
+            }
+            other => panic!("expected hits, got {other:?}"),
+        }
+    }
+}

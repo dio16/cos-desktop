@@ -730,7 +730,17 @@ mod tests {
         use std::sync::atomic::{AtomicU64, Ordering};
         static COUNTER: AtomicU64 = AtomicU64::new(0);
         let sequence = COUNTER.fetch_add(1, Ordering::Relaxed);
-        std::env::temp_dir().join(format!(
+        // Under the build directory rather than `std::env::temp_dir()`: one test creates a reparse
+        // point by spawning `mklink`, and a spawned child may be denied write access to the system
+        // temp directory on a confined machine. The workspace build tree is writable by children, so
+        // the test measures the rejection rule rather than the sandbox.
+        let base = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..")
+            .join("target")
+            .join("gate-temp");
+        let _ = std::fs::create_dir_all(&base);
+        base.join(format!(
             "cos-crash-unit-{}-{name}-{sequence}",
             std::process::id()
         ))

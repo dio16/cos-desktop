@@ -4998,3 +4998,15 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **A limit worth stating:** the composition lives in the **request file** (`mprt1-gate-request-with-ledger.json` in the verification workspace), not in the repository. A Gate built from a request that omits the entry still passes and simply does not check the ledger; its receipt shows four entries rather than five. `TESTING.md` says so, so a reader can tell which kind of Gate produced a receipt.
 - **Not claimed:** this adds a check, not coverage. The Gate still cannot run the native smoke, the GPU path or anything needing a real Runtime, and `quality.ps1` as a whole remains **FAILED** on this machine for the child-compiler reason recorded earlier. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** the five-entry Gate above; `python -B scripts/check_plan_ledger.py` reports 0 findings across 62 cards at the same commit.
+
+### 19.283 the palette's rank ladder, and a test that measured the sandbox (2026-11-05)
+
+- **Palette ranking (four tests in `ui-model/src/palette.rs`):**
+  - the **ladder order is pinned** - `ExactId < TitlePrefix < Substring < Category < List` - because the sort key is `(rank, slot)`, so the enum's declaration order *is* the priority order and reordering the variants would silently reorder what a user sees first;
+  - **one query produces the ladder in order regardless of inventory position**: the inventory is written worst-first, so a missing sort would be visible as slot order;
+  - **equal ranks keep the inventory order**, so a search is stable;
+  - **a wide match is truncated to the best rows**: `MAX_RESULTS` is applied *after* sorting, and the test puts the exact match at the very end of the inventory, so truncating first would drop it.
+- **Proven by mutation:** swapping `TitlePrefix` and `Substring` in the enum fails two tests; dropping the rank from the sort key fails two; truncating before the sort fails the truncation test.
+- **A test that was measuring the sandbox rather than the code:** `app-core`'s `a_linked_store_directory_is_refused` creates a reparse point by spawning `mklink`, and it used `std::env::temp_dir()`. On this machine **spawned child processes are denied write access to the system temp directory** (the same limitation that stops `vswhom-sys` from compiling), so the link could not be created and the test failed closed with `the linked-root rejection could not be verified`. Its temp root now lives under `target/gate-temp`, which children can write, so the test measures the rejection rule. It passes three runs in a row and the workspace is green again.
+- **Not claimed:** this does not fix the sandbox limitation - a child still cannot write in the system temp directory - and it does not make `quality.ps1` runnable here. It only stops one test from conflating the two. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p ui-model palette::` 14 passed; `cargo test -p app-core crash_report::tests` 11 passed, three consecutive runs; `cargo test --locked --workspace` all 48 binaries green.
