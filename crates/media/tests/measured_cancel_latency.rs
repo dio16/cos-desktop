@@ -125,14 +125,29 @@ fn cancellation_from_another_thread_mid_decode_returns_promptly() {
     let helper_progress = Arc::clone(&progress);
     let helper_rows = Arc::clone(&rows_at_flag);
     let helper = std::thread::spawn(move || {
-        std::thread::sleep(Duration::from_millis(5));
-        let rows = helper_progress.lock().expect("progress");
-        // Snapshot first, then set the flag, both while holding the lock the loop needs to count
-        // its next row: no row can be counted between these two statements.
-        helper_rows.store(*rows, Ordering::SeqCst);
-        *helper_stamp.lock().expect("stamp") = Some(Instant::now());
-        helper_cancel.cancel();
-        drop(rows);
+        // Wait for the decode to actually start before cancelling. A fixed sleep raced with the
+        // first row under load: the flag could be set before row one, and the test then failed its
+        // own "landed mid-image" assertion even though the code was right. Waiting for a counted
+        // row makes the starting point an event; the cancel still comes from another thread.
+        let deadline = Instant::now() + Duration::from_secs(30);
+        loop {
+            let rows = helper_progress.lock().expect("progress");
+            if *rows > 0 {
+                // Snapshot first, then set the flag, both while holding the lock the loop needs to
+                // count its next row: no row can be counted between these two statements.
+                helper_rows.store(*rows, Ordering::SeqCst);
+                *helper_stamp.lock().expect("stamp") = Some(Instant::now());
+                helper_cancel.cancel();
+                drop(rows);
+                return;
+            }
+            drop(rows);
+            assert!(
+                Instant::now() < deadline,
+                "the decode never counted a row, so this measurement cannot start"
+            );
+            std::thread::sleep(Duration::from_millis(1));
+        }
     });
 
     let loop_progress = Arc::clone(&progress);
