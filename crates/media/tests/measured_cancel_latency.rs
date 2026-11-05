@@ -183,6 +183,7 @@ fn a_pre_cancelled_request_stops_before_the_decoder_in_every_class() {
         ("PNG", png_rgb(edge, edge)),
         ("JPEG", encoded_rgb(edge, edge, ImageFormat::Jpeg)),
         ("WebP", encoded_rgb(edge, edge, ImageFormat::WebP)),
+        ("GIF", encoded_rgb(edge, edge, ImageFormat::Gif)),
     ];
     for (label, bytes) in cases {
         let cancel = Cancellation::default();
