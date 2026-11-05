@@ -5487,7 +5487,7 @@ fn flow_diagram_region(
             ) else {
                 continue;
             };
-            let color = if edge.matched { 0x6f9bc6 } else { 0x3c4046 };
+            let color = shell_style::flow_edge_colour(edge.matched);
             let start_x = center_x(from.lane);
             let start_y = top_y(from.depth) + FLOW_CARD_H;
             let end_x = center_x(to.lane);
@@ -5599,7 +5599,7 @@ fn flow_diagram_region(
                     } else {
                         0x1e2124
                     }))
-                    .text_color(rgb(if node.matched { 0xe6e8eb } else { 0x8b949e }))
+                    .text_color(rgb(if node.matched { 0xe6e8eb } else { 0xaeb6bf }))
                     .flex()
                     .flex_col()
                     .justify_center()
@@ -5610,7 +5610,7 @@ fn flow_diagram_region(
                             .clone()
                             .apply(div())
                             .truncate()
-                            .text_color(rgb(if node.matched { 0xaeb6bf } else { 0x6b727a }))
+                            .text_color(rgb(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }))
                             .child(SharedString::from(format!(
                                 "{layer} · {}",
                                 node.node.as_str()

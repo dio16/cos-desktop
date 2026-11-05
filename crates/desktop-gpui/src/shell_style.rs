@@ -275,6 +275,15 @@ pub(crate) fn stop_control_visual(
     }
 }
 
+/// The colour of a flow edge and its direction glyph.
+///
+/// Shared by the drawing code and the contrast audit so the two cannot disagree. The unmatched
+/// value was `0x3c4046`, which measures **1.69:1** on the shell background - below the 3:1 a
+/// meaningful non-text graphic needs - so it was raised to `0x6b727a` (**3.62:1**).
+pub(crate) fn flow_edge_colour(matched: bool) -> u32 {
+    if matched { 0x6f9bc6 } else { 0x6b727a }
+}
+
 /// The text a row draws for its label, including the state's non-colour cue.
 pub(crate) fn dock_row_text(label: &str, visual: &RowVisual) -> String {
     if visual.cue.is_empty() {

@@ -390,6 +390,8 @@ pub struct HardcodedText {
     /// Whether this text belongs to a control the shell draws as unavailable. WCAG exempts those,
     /// so the row is reported and measured but not held to the threshold.
     pub exempt: bool,
+    /// The ratio this entry must meet: 4.5:1 for body text, 3:1 for a meaningful non-text graphic.
+    pub required: f32,
 }
 
 impl HardcodedText {
@@ -407,63 +409,117 @@ pub fn hardcoded_text_colours() -> &'static [HardcodedText] {
             background: Some(0x24272c),
             purpose: "unavailable surface label on its idle row",
             exempt: true,
+            required: 4.5,
         },
         HardcodedText {
             value: 0x8b949e,
             background: Some(0x3c5268),
             purpose: "unavailable surface label on its selected row",
             exempt: true,
+            required: 4.5,
         },
         HardcodedText {
             value: 0xbcc6d0,
-            background: None,
-            purpose: "flow node secondary label",
+            background: Some(0x1e2124),
+            purpose: "flow node secondary label on the idle background",
             exempt: false,
+            required: 4.5,
         },
         HardcodedText {
             value: 0xe6c278,
             background: None,
             purpose: "flow node matched/idle accent label",
             exempt: false,
+            required: 4.5,
+        },
+        HardcodedText {
+            value: 0x6f9bc6,
+            background: Some(0x17191c),
+            purpose: "matched flow edge and direction glyph",
+            exempt: false,
+            // A direction glyph carries meaning but is not text: 3:1 is the applicable threshold.
+            required: 3.0,
+        },
+        HardcodedText {
+            value: 0x6b727a,
+            background: Some(0x17191c),
+            purpose: "unmatched flow edge and direction glyph",
+            exempt: false,
+            // A direction glyph carries meaning but is not text: 3:1 is the applicable threshold.
+            required: 3.0,
         },
         HardcodedText {
             value: 0x9dc0e0,
             background: Some(0x17191c),
             purpose: "matched flow edge label on the shell background",
             exempt: false,
+            required: 4.5,
         },
         HardcodedText {
             value: 0x8b949e,
             background: Some(0x17191c),
             purpose: "unmatched flow edge label on the shell background",
             exempt: false,
+            required: 4.5,
         },
         HardcodedText {
             value: 0xe6e8eb,
             background: Some(0x343a42),
             purpose: "matched flow node label on the active row",
             exempt: false,
+            required: 4.5,
         },
         HardcodedText {
-            value: 0x8b949e,
-            background: Some(0x25292e),
-            purpose: "unmatched flow node label on the idle row",
+            value: 0xaeb6bf,
+            background: Some(0x1e2124),
+            purpose: "unmatched flow node heading on its idle background",
             exempt: false,
+            required: 4.5,
+        },
+        HardcodedText {
+            value: 0xaeb6bf,
+            background: Some(0x3a4048),
+            purpose: "unmatched flow node heading on its active background",
+            exempt: false,
+            required: 4.5,
         },
         HardcodedText {
             value: 0xaeb6bf,
             background: None,
             purpose: "flow node detail on a matched node",
             exempt: false,
+            required: 4.5,
         },
         HardcodedText {
-            value: 0x6b727a,
-            background: None,
-            purpose: "flow node detail on an unmatched node",
+            value: 0xaeb6bf,
+            background: Some(0x1e2124),
+            purpose: "flow node detail on an unmatched idle node",
             exempt: false,
+            required: 4.5,
+        },
+        HardcodedText {
+            value: 0xaeb6bf,
+            background: Some(0x3a4048),
+            purpose: "flow node detail on an unmatched active node",
+            exempt: false,
+            required: 4.5,
+        },
+        HardcodedText {
+            value: 0xbcc6d0,
+            background: Some(0x272b31),
+            purpose: "flow node detail on a matched node",
+            exempt: false,
+            required: 4.5,
         },
     ]
 }
+
+/// Values the drawing code passes to `text_color` that this audit trusts because the code that
+/// produces them is audited: the variable name, and where it comes from.
+pub const DERIVED_TEXT_VARIABLES: &[(&str, &str)] = &[
+    ("row_visual.text", "RowVisual from dock_row_visual"),
+    ("color", "shell_style::flow_edge_colour"),
+];
 
 /// The palette roles the audit covers, named as the drawing code spells them.
 ///
@@ -648,17 +704,76 @@ mod tests {
         );
     }
 
-    #[test]
-    fn every_text_colour_in_the_shell_is_either_audited_or_pinned() {
-        // The audit is maintained by hand, so this guard closes the gap mechanically: read the
-        // drawing code, collect every `text_color(rgb(...))` argument, and require each one to be a
-        // role the audit covers or a literal the hardcoded table lists.
-        let source = include_str!("lib.rs");
-        let mut roles = Vec::new();
-        let mut literals = Vec::new();
+    /// How one `text_color(rgb(...))` argument is accounted for.
+    #[derive(Debug, PartialEq, Eq)]
+    enum ColourSource {
+        /// A palette role, named as the drawing code spells it.
+        Role(String),
+        /// A hex literal, as written.
+        Literal(u32),
+        /// A value derived elsewhere (for example a resolved `RowVisual`), which the audit trusts
+        /// because the type it comes from is audited.
+        Derived,
+        /// Anything the audit does not know how to classify.
+        Unknown(String),
+    }
+
+    fn classify_argument(argument: &str) -> Vec<ColourSource> {
+        let mut sources = Vec::new();
+        // Palette roles: every `colors.<ident>` occurrence, whether or not it is audited.
+        let mut rest = argument;
+        while let Some(index) = rest.find("colors.") {
+            let after = &rest[index + "colors.".len()..];
+            let name: String = after
+                .chars()
+                .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_')
+                .collect();
+            if name.is_empty() {
+                rest = after;
+                continue;
+            }
+            rest = &after[name.len()..];
+            sources.push(ColourSource::Role(name));
+        }
+        // Hex literals: `0x` followed by hex digits, which is what the drawing code writes.
+        let bytes = argument.as_bytes();
+        let mut index = 0usize;
+        while index + 2 < bytes.len() {
+            if bytes[index] == b'0' && (bytes[index + 1] | 32) == b'x' {
+                let mut end = index + 2;
+                while end < bytes.len() && (bytes[end] as char).is_ascii_hexdigit() {
+                    end += 1;
+                }
+                if end > index + 2 {
+                    if let Ok(value) = u32::from_str_radix(&argument[index + 2..end], 16) {
+                        sources.push(ColourSource::Literal(value));
+                    }
+                    index = end;
+                    continue;
+                }
+            }
+            index += 1;
+        }
+        if sources.is_empty() {
+            // No role and no literal: the argument must be a derived value the audit knows, either
+            // a variable whose producer is audited or a call to an audited helper.
+            let derived = DERIVED_TEXT_VARIABLES
+                .iter()
+                .any(|(name, _)| argument.trim() == *name)
+                || argument.contains("flow_edge_colour(");
+            if derived {
+                sources.push(ColourSource::Derived);
+            } else {
+                sources.push(ColourSource::Unknown(argument.to_string()));
+            }
+        }
+        sources
+    }
+
+    fn text_colour_arguments(source: &str) -> Vec<String> {
+        let mut arguments = Vec::new();
         for (index, _) in source.match_indices("text_color(rgb(") {
             let rest = &source[index + "text_color(rgb(".len()..];
-            // Keep the argument balanced, so a nested call does not split the expression.
             let mut depth = 1usize;
             let mut value = String::new();
             for ch in rest.chars() {
@@ -674,33 +789,82 @@ mod tests {
                 }
                 value.push(ch);
             }
-            let value = value.trim();
-            for token in AUDITED_ROLES {
-                if value.contains(&format!("colors.{token}")) {
-                    roles.push((*token).to_string());
-                }
-            }
-            for piece in value.split(|c: char| !(c.is_ascii_hexdigit() || c == 'x')) {
-                let stripped = piece.strip_prefix('x').or_else(|| piece.strip_prefix('X'));
-                if let Some(Ok(parsed)) = stripped.map(|hex| u32::from_str_radix(hex, 16)) {
-                    literals.push(parsed);
-                }
-            }
+            arguments.push(value.trim().to_string());
         }
-        assert!(!roles.is_empty(), "the scan found no palette roles at all");
+        arguments
+    }
+
+    #[test]
+    fn the_classifier_separates_audited_from_unknown_colours() {
+        // Positive controls: what the drawing code really writes.
+        assert_eq!(
+            classify_argument("colors.text"),
+            vec![ColourSource::Role("text".to_string())]
+        );
+        assert_eq!(
+            classify_argument("0xe6e8eb"),
+            vec![ColourSource::Literal(0xe6e8eb)]
+        );
+        assert_eq!(
+            classify_argument("if node.matched { 0xe6e8eb } else { 0xaeb6bf }"),
+            vec![
+                ColourSource::Literal(0xe6e8eb),
+                ColourSource::Literal(0xaeb6bf)
+            ]
+        );
+        assert_eq!(
+            classify_argument("row_visual.text"),
+            vec![ColourSource::Derived]
+        );
+
+        // Negative controls: the guard has to reject these, which is what the previous version
+        // could not do.
+        assert_eq!(
+            classify_argument("colors.disabled_border"),
+            vec![ColourSource::Role("disabled_border".to_string())]
+        );
+        assert_eq!(
+            classify_argument("0x123456"),
+            vec![ColourSource::Literal(0x123456)]
+        );
+        assert_eq!(
+            classify_argument("some_other_colour"),
+            vec![ColourSource::Unknown("some_other_colour".to_string())]
+        );
+    }
+
+    #[test]
+    fn every_text_colour_in_the_shell_is_either_audited_or_pinned() {
+        // Read the drawing code and require every argument to be classified, and every classified
+        // colour to be one the audit accounts for. This is what makes the hand-maintained list
+        // self-checking: an unknown role, an unknown literal or an unclassifiable expression fails.
+        let arguments = text_colour_arguments(include_str!("lib.rs"));
+        assert!(
+            arguments.len() >= 20,
+            "the scan found only {} arguments, so it is not reading the drawing code",
+            arguments.len()
+        );
 
         let audited = hardcoded_text_colours();
-        for literal in literals {
-            assert!(
-                audited.iter().any(|entry| entry.value == literal),
-                "text colour {literal:#x} is drawn but missing from hardcoded_text_colours()"
-            );
-        }
-        for role in roles {
-            assert!(
-                AUDITED_ROLES.contains(&role.as_str()),
-                "text colour role {role} is drawn but missing from AUDITED_ROLES"
-            );
+        for argument in &arguments {
+            for source in classify_argument(argument) {
+                match source {
+                    ColourSource::Role(name) => assert!(
+                        AUDITED_ROLES.contains(&name.as_str()),
+                        "role colors.{name} is drawn but not in AUDITED_ROLES"
+                    ),
+                    ColourSource::Literal(value) => assert!(
+                        audited.iter().any(|entry| entry.value == value),
+                        "text colour {value:#x} is drawn but missing from hardcoded_text_colours()"
+                    ),
+                    ColourSource::Derived => {}
+                    ColourSource::Unknown(text) => {
+                        panic!(
+                            "text colour `{text}` is neither a role, a literal nor a known derived value"
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -723,10 +887,11 @@ mod tests {
                 continue;
             }
             assert!(
-                ratio >= 4.5,
-                "{}: {:#x} on its pinned surface is {ratio:.2}:1",
+                ratio >= entry.required,
+                "{}: {:#x} on its pinned surface is {ratio:.2}:1 (needs {:.1}:1)",
                 entry.purpose,
-                entry.value
+                entry.value,
+                entry.required
             );
         }
     }
