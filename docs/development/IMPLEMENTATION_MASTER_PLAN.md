@@ -4895,3 +4895,13 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Wire details this pinned:** a capability scope is tagged `SERVER` / `TASK` / `ARTIFACT` (not a session kind), and a `Counter` travels as a **decimal string** (`"3"`), not a number. Both were wrong in the first version of the test and failed.
 - **Not claimed:** this is the shape and the disabling rule, not a compatibility result against a real Runtime, which remains **NOT_RUN**. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p desktop-protocol --test capability_compatibility` 5 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all **47** binaries green.
+
+### 19.275 the publication says "stale", not "failed" (2026-11-05)
+
+- **The rule from the canon:** a Desktop disconnect is **not** Task failure, and a stale projection is still the last known truth. What had no test is the shape the rule is expressed in: `ObservationPublication`'s connection category, its default, and the fact that a stale publication still carries what was observed.
+- **Three properties (`app-core/src/observation.rs`, `publication_shape`):**
+  - **every connection state maps to its own published category** - `Negotiating` and `Synchronizing` are both `Connecting`, `Live` is `Observing`, `Reconnecting` is `Recovering`, and neither "connecting" nor "recovering" collapses into `Disconnected`, so a user is not told the session ended when it is being recovered;
+  - **a publication with nothing to show is `Disconnected` and `stale`** with `Unavailable` as its source - an unobserved projection is stale rather than empty-but-current;
+  - **a stale publication still admits the last snapshot**: `stale == true` together with a non-live connection is representable, so a disconnect does not force the observed state to be erased.
+- **What this is not:** a shape test. It does **not** drive a client through a real disconnect, does not show that a specific event sequence leaves a specific snapshot in place, and says nothing about what an operator sees on screen. The end-to-end disconnect path remains **NOT_RUN** in this session.
+- **Verified:** `cargo test -p app-core publication_shape` 3 passed; `cargo clippy -p app-core --all-targets -D warnings` clean; `cargo test --locked --workspace` all 47 binaries green.

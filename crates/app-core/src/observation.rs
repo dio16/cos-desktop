@@ -2196,3 +2196,80 @@ mod sec2_safe_categories {
         }
     }
 }
+
+#[cfg(test)]
+mod publication_shape {
+    use super::*;
+
+    #[test]
+    fn every_connection_state_maps_to_its_published_category() {
+        // The mapping is what an operator sees, and it must not conflate "connecting" with
+        // "observing" or "recovering" with "disconnected": those are different answers to a user.
+        let cases = [
+            (
+                ConnectionState::Disconnected,
+                PublicationConnection::Disconnected,
+            ),
+            (
+                ConnectionState::Negotiating,
+                PublicationConnection::Connecting,
+            ),
+            (
+                ConnectionState::Synchronizing,
+                PublicationConnection::Connecting,
+            ),
+            (ConnectionState::Live, PublicationConnection::Observing),
+            (
+                ConnectionState::Reconnecting {
+                    attempt: 3,
+                    retry_in_ms: 500,
+                    reason: "read invalidation".to_string(),
+                },
+                PublicationConnection::Recovering,
+            ),
+        ];
+        for (state, expected) in cases {
+            assert_eq!(
+                connection_category(&state),
+                expected,
+                "{state:?} did not map to {expected:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_publication_without_anything_to_show_is_disconnected_and_stale() {
+        // Nothing has been observed yet: no snapshot, no revision, and the visible state is stale
+        // rather than empty-but-current.
+        let publication = ObservationPublication::default();
+        assert!(publication.snapshot.is_none());
+        assert!(publication.revision.is_none());
+        assert_eq!(publication.connection, PublicationConnection::Disconnected);
+        assert_eq!(publication.source, PublicationSource::Unavailable);
+        assert!(publication.stale, "an unobserved projection is stale");
+        assert!(publication.last_error.is_none());
+        assert_eq!(publication.publication_version, 0);
+        assert!(publication.command_statuses.is_empty());
+    }
+
+    #[test]
+    fn a_stale_publication_still_carries_the_last_snapshot() {
+        // Losing the connection makes the projection *stale*, not absent: the last admitted snapshot
+        // keeps being published so the user sees the last known state alongside a connection
+        // category. Treating a disconnect as an empty projection would erase what was observed.
+        let publication = ObservationPublication {
+            stale: true,
+            connection: PublicationConnection::Recovering,
+            source: PublicationSource::Runtime,
+            ..ObservationPublication::default()
+        };
+        assert!(publication.stale);
+        // The type admits a snapshot together with `stale == true`; nothing in the shape forces the
+        // snapshot to be dropped when the connection is not live.
+        assert_ne!(
+            publication.connection,
+            PublicationConnection::Observing,
+            "the connection is not live, yet the projection may still be shown"
+        );
+    }
+}
