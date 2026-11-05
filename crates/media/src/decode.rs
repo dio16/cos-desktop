@@ -491,6 +491,48 @@ mod tests {
     }
 
     #[test]
+    fn a_full_pool_refuses_a_decode_without_waiting_or_mutating() {
+        // The refusal contract: a decode that cannot reserve is refused **non-blockingly** with
+        // `Busy`, the counter is unchanged by the attempt, and the request succeeds once the pool
+        // comes back. A blocking wait would hang here; a partial take would leave the total wrong.
+        let _guard = DECODE_TEST_LOCK.lock().expect("test lock");
+        assert_eq!(in_flight_bytes(), 0);
+        let held = reserve_in_flight(IN_FLIGHT_POOL_BYTES).expect("the whole pool");
+        assert_eq!(in_flight_bytes(), IN_FLIGHT_POOL_BYTES);
+
+        let bytes = crate::raster::tiny_png();
+        let limits = DecodeBudget::ratified_default()
+            .limits()
+            .expect("ratified budget");
+        let cancel = crate::Cancellation::default();
+        let started = std::time::Instant::now();
+        let refused = crate::raster::decode_raster(&bytes, limits, &cancel);
+        let elapsed = started.elapsed();
+        assert_eq!(
+            refused.err(),
+            Some(MediaError::Busy),
+            "a full pool must refuse the decode"
+        );
+        assert!(
+            elapsed < std::time::Duration::from_secs(5),
+            "the refusal took {elapsed:?}, which looks like waiting rather than refusing"
+        );
+        assert_eq!(
+            in_flight_bytes(),
+            IN_FLIGHT_POOL_BYTES,
+            "a refused attempt must not change the counter"
+        );
+
+        drop(held);
+        assert_eq!(in_flight_bytes(), 0);
+        let admitted = crate::raster::decode_raster(&bytes, limits, &cancel);
+        assert!(
+            admitted.is_ok(),
+            "the same request must succeed once capacity returns: {admitted:?}"
+        );
+    }
+
+    #[test]
     fn the_peak_formula_is_explicit_and_checked() {
         let limits = DecodeBudget::ratified_default()
             .limits()

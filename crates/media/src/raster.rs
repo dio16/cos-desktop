@@ -549,6 +549,19 @@ fn decoder_limits(limits: DecodeLimits) -> image::Limits {
     decoder
 }
 
+/// A 2x2 PNG, for tests that need a decodable frame without caring about its pixels.
+#[cfg(test)]
+pub(crate) fn tiny_png() -> Vec<u8> {
+    let image = image::RgbaImage::from_fn(2, 2, |x, y| {
+        image::Rgba([(x * 40) as u8, (y * 40) as u8, 90, 255])
+    });
+    let mut bytes = Cursor::new(Vec::new());
+    image::DynamicImage::ImageRgba8(image)
+        .write_to(&mut bytes, image::ImageFormat::Png)
+        .expect("encode a 2x2 PNG");
+    bytes.into_inner()
+}
+
 #[cfg(test)]
 mod tests {
     use super::{AcceptedFormat, decode_raster};
