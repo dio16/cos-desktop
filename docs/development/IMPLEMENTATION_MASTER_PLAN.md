@@ -5029,7 +5029,7 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Five tests:**
   - **a server may never raise a limit**: a proposal above the local values on every axis negotiates to the local values, and each axis is checked to be `<=` the local one;
   - **a server may lower any subset**: per axis, so a proposal that lowers two bounds and raises two keeps the local value on the raised ones and takes the lower value on the rest; lowering everything is taken as given;
-  - **no proposal keeps the local limits**, and `Limits::default()` equals the contract `DEFAULT` (whose four constants are asserted individually);
+  - **no proposal keeps the local limits**, and `Limits::default()` equals the contract `DEFAULT`; the four protocol values are asserted as **literals** (1 MiB control frame, 8 MiB staged bundle, 256 queued frames, 8 MiB queued bytes) rather than against the constants, because a default built from a changed constant would still compare equal - a review pointed that out, and raising the frame constant now fails the test with `1 MiB control frame`;
   - **negotiation is idempotent and order-independent**: applying the same proposal twice changes nothing, a later raise changes nothing, and a later lowering applies - so a retry cannot widen a limit;
   - **the size checks are inclusive at the bound**: a frame or bundle exactly at its limit fits and one byte more does not, and `u64::MAX` does not pass a smaller bound through any arithmetic.
 - **Proven by mutation:** taking the **maximum** instead of the minimum fails three tests; making either bound **exclusive** fails its own test.

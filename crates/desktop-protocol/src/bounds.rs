@@ -153,10 +153,31 @@ mod tests {
     fn no_proposal_keeps_the_local_limits_and_default_is_the_contract_default() {
         assert_eq!(local().negotiate(None), local());
         assert_eq!(Limits::default(), Limits::DEFAULT);
-        assert_eq!(Limits::DEFAULT.max_frame_bytes, MAX_CONTROL_FRAME_BYTES);
-        assert_eq!(Limits::DEFAULT.max_bundle_bytes, MAX_STAGED_BUNDLE_BYTES);
-        assert_eq!(Limits::DEFAULT.max_queue_frames, MAX_QUEUE_FRAMES);
-        assert_eq!(Limits::DEFAULT.max_queue_bytes, MAX_QUEUE_BYTES);
+        // The numbers the protocol states, written as literals. Comparing the fields against the
+        // constants would pass even if a constant were changed, because the default is built from
+        // them; these assertions pin the values themselves.
+        assert_eq!(
+            Limits::DEFAULT.max_frame_bytes,
+            1024 * 1024,
+            "1 MiB control frame"
+        );
+        assert_eq!(
+            Limits::DEFAULT.max_bundle_bytes,
+            8 * 1024 * 1024,
+            "8 MiB staged bundle"
+        );
+        assert_eq!(Limits::DEFAULT.max_queue_frames, 256, "256 queued frames");
+        assert_eq!(
+            Limits::DEFAULT.max_queue_bytes,
+            8 * 1024 * 1024,
+            "8 MiB of queued frames"
+        );
+        // And the exported constants agree with those literals, so a caller reading either sees the
+        // same bound.
+        assert_eq!(MAX_CONTROL_FRAME_BYTES, 1024 * 1024);
+        assert_eq!(MAX_STAGED_BUNDLE_BYTES, 8 * 1024 * 1024);
+        assert_eq!(MAX_QUEUE_FRAMES, 256);
+        assert_eq!(MAX_QUEUE_BYTES, 8 * 1024 * 1024);
     }
 
     #[test]
