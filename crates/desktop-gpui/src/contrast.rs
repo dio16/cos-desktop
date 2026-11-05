@@ -737,6 +737,7 @@ pub const RESTING_BOUNDARY_SURFACES: &[(&str, u32)] = &[
     ("unselected surface row", 0x24272c),
     ("selected surface row", 0x3c5268),
     ("unselected flow node", 0x1e2124),
+    ("intervention notification", 0x2a2f36),
     ("raised surface", 0x343a42),
     ("button face", 0x202328),
 ];
