@@ -402,8 +402,8 @@ impl HardcodedText {
 }
 
 /// Every literal text colour the shell draws, with its surface where the surface is pinned too.
-pub fn hardcoded_text_colours() -> &'static [HardcodedText] {
-    &[
+pub fn hardcoded_text_colours() -> Vec<HardcodedText> {
+    vec![
         HardcodedText {
             value: 0x8b949e,
             background: Some(0x24272c),
@@ -433,7 +433,8 @@ pub fn hardcoded_text_colours() -> &'static [HardcodedText] {
             required: 4.5,
         },
         HardcodedText {
-            value: 0x6f9bc6,
+            // Read from the entry point the drawing code uses, so a regression there fails here.
+            value: crate::shell_style::flow_edge_colour(true),
             background: Some(0x17191c),
             purpose: "matched flow edge and direction glyph",
             exempt: false,
@@ -441,7 +442,7 @@ pub fn hardcoded_text_colours() -> &'static [HardcodedText] {
             required: 3.0,
         },
         HardcodedText {
-            value: 0x6b727a,
+            value: crate::shell_style::flow_edge_colour(false),
             background: Some(0x17191c),
             purpose: "unmatched flow edge and direction glyph",
             exempt: false,
@@ -519,6 +520,14 @@ pub fn hardcoded_text_colours() -> &'static [HardcodedText] {
 pub const DERIVED_TEXT_VARIABLES: &[(&str, &str)] = &[
     ("row_visual.text", "RowVisual from dock_row_visual"),
     ("color", "shell_style::flow_edge_colour"),
+    (
+        "shell_style::stop_control_visual(false, &colors).text",
+        "the disabled stop control's resolved text",
+    ),
+    (
+        "shell_style::stop_control_visual(false, &colors).text",
+        "the disabled stop control's resolved text",
+    ),
 ];
 
 /// The palette roles the audit covers, named as the drawing code spells them.
@@ -719,55 +728,88 @@ mod tests {
     }
 
     fn classify_argument(argument: &str) -> Vec<ColourSource> {
+        // Every branch is classified on its own: a known value in one arm must not excuse an
+        // unknown one in another. The branches are the `{ ... }` blocks of an `if`/`match`
+        // expression, or the whole argument when there are none.
+        let mut branches: Vec<String> = Vec::new();
+        let mut depth = 0usize;
+        let mut current = String::new();
+        let argument: String = argument
+            .lines()
+            .map(|line| match line.find("//") {
+                Some(index) => &line[..index],
+                None => line,
+            })
+            .collect::<Vec<_>>()
+            .join(
+                "
+",
+            );
+        let argument = argument.as_str();
+        for ch in argument.chars() {
+            match ch {
+                '{' => {
+                    depth += 1;
+                    if depth > 1 {
+                        current.push(ch);
+                    }
+                }
+                '}' => {
+                    depth = depth.saturating_sub(1);
+                    if depth == 0 {
+                        branches.push(current.trim().to_string());
+                        current.clear();
+                    } else {
+                        current.push(ch);
+                    }
+                }
+                _ if depth > 0 => current.push(ch),
+                _ => {}
+            }
+        }
+        if branches.is_empty() {
+            branches.push(argument.trim().to_string());
+        }
+
         let mut sources = Vec::new();
-        // Palette roles: every `colors.<ident>` occurrence, whether or not it is audited.
-        let mut rest = argument;
-        while let Some(index) = rest.find("colors.") {
-            let after = &rest[index + "colors.".len()..];
-            let name: String = after
+        for branch in branches {
+            sources.push(classify_branch(&branch));
+        }
+        sources
+    }
+
+    /// Classify one branch: it must be exactly a role, a literal, or a declared derived value.
+    fn classify_branch(branch: &str) -> ColourSource {
+        let trimmed = branch.trim();
+        if let Some(rest) = trimmed.strip_prefix("colors.") {
+            let name: String = rest
                 .chars()
                 .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_')
                 .collect();
-            if name.is_empty() {
-                rest = after;
-                continue;
+            if name.len() == rest.len() && !name.is_empty() {
+                return ColourSource::Role(name);
             }
-            rest = &after[name.len()..];
-            sources.push(ColourSource::Role(name));
+            return ColourSource::Unknown(trimmed.to_string());
         }
-        // Hex literals: `0x` followed by hex digits, which is what the drawing code writes.
-        let bytes = argument.as_bytes();
-        let mut index = 0usize;
-        while index + 2 < bytes.len() {
-            if bytes[index] == b'0' && (bytes[index + 1] | 32) == b'x' {
-                let mut end = index + 2;
-                while end < bytes.len() && (bytes[end] as char).is_ascii_hexdigit() {
-                    end += 1;
-                }
-                if end > index + 2 {
-                    if let Ok(value) = u32::from_str_radix(&argument[index + 2..end], 16) {
-                        sources.push(ColourSource::Literal(value));
-                    }
-                    index = end;
-                    continue;
-                }
+        if let Some(hex) = trimmed
+            .strip_prefix("0x")
+            .or_else(|| trimmed.strip_prefix("0X"))
+        {
+            let is_hex = !hex.is_empty() && hex.chars().all(|ch| ch.is_ascii_hexdigit());
+            if let Some(Ok(value)) = is_hex.then(|| u32::from_str_radix(hex, 16)) {
+                return ColourSource::Literal(value);
             }
-            index += 1;
+            return ColourSource::Unknown(trimmed.to_string());
         }
-        if sources.is_empty() {
-            // No role and no literal: the argument must be a derived value the audit knows, either
-            // a variable whose producer is audited or a call to an audited helper.
-            let derived = DERIVED_TEXT_VARIABLES
-                .iter()
-                .any(|(name, _)| argument.trim() == *name)
-                || argument.contains("flow_edge_colour(");
-            if derived {
-                sources.push(ColourSource::Derived);
-            } else {
-                sources.push(ColourSource::Unknown(argument.to_string()));
-            }
+        if DERIVED_TEXT_VARIABLES
+            .iter()
+            .any(|(name, _)| trimmed == *name)
+        {
+            return ColourSource::Derived;
         }
-        sources
+        // `if`/`else` keywords and their condition are not branches themselves, but an argument with
+        // no braces and no known value lands here, and must not pass.
+        ColourSource::Unknown(trimmed.to_string())
     }
 
     fn text_colour_arguments(source: &str) -> Vec<String> {
