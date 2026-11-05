@@ -235,13 +235,18 @@ impl TextPair {
     }
 }
 
-/// Every text-on-surface pair the shell draws, so contrast can be checked as a set rather than
-/// surface by surface.
+/// The text-on-surface pairs this audit enumerates, taken from the drawing code rather than
+/// invented here.
 ///
-/// This is the audit list, not a claim that the rendering is adequate: a pair appearing here means
-/// the shell draws text in that combination, and the test beside it asserts the ratio.
+/// **What this is:** the combinations a review of `lib.rs` found the shell drawing: the row states
+/// resolved through `dock_row_visual`, the stop control through `stop_control_visual`, the axis
+/// labels, the adopted-candidate label and the task rail's fixed pair.
+///
+/// **What this is not:** a proof of completeness. The list is maintained by hand against the
+/// drawing code, so a new `text_color(...)` call can appear without a row here; the audit says so
+/// instead of claiming every pair is covered.
 pub fn drawn_text_pairs(colors: &ShellColors) -> Vec<TextPair> {
-    let pairs = vec![
+    let mut pairs = vec![
         TextPair {
             purpose: "body text on the shell background",
             foreground: colors.text,
@@ -284,16 +289,82 @@ pub fn drawn_text_pairs(colors: &ShellColors) -> Vec<TextPair> {
             large_text: false,
             exempt: false,
         },
+        // An axis label is ordinary information, not an inactive control: it is drawn with the
+        // muted/disabled role but carries real content, so it is not exempt.
         TextPair {
-            purpose: "disabled text on a disabled face",
+            purpose: "axis label on the panel face",
             foreground: colors.disabled,
+            background: colors.button_face,
+            large_text: false,
+            exempt: false,
+        },
+        TextPair {
+            purpose: "adopted-candidate label on the dock row",
+            foreground: colors.focus,
+            background: colors.button_face,
+            large_text: false,
+            exempt: false,
+        },
+        // The task rail pins its own two values rather than reading the palette.
+        TextPair {
+            purpose: "task rail text on an idle row",
+            foreground: TASK_RAIL_TEXT,
+            background: TASK_RAIL_IDLE,
+            large_text: false,
+            exempt: false,
+        },
+        TextPair {
+            purpose: "task rail text on the active row",
+            foreground: TASK_RAIL_TEXT,
+            background: TASK_RAIL_ACTIVE,
+            large_text: false,
+            exempt: false,
+        },
+        // The disabled stop control resolves its text through the same entry point the product
+        // uses, so this row cannot drift from what is drawn.
+        TextPair {
+            purpose: "disabled stop control text on its face",
+            foreground: stop_control_text_for_audit(colors),
             background: colors.disabled_face,
             large_text: false,
-            // WCAG exempts inactive controls, so this pair is reported but not required.
+            // Inactive control: WCAG exempts it, and the row stays listed anyway.
             exempt: true,
         },
     ];
+    // The row states are resolved through the drawing entry point so the audit follows the model.
+    for (state, purpose) in [
+        (
+            crate::shell_style::RowState::Selected,
+            "selected dock row label",
+        ),
+        (
+            crate::shell_style::RowState::Focused,
+            "focused dock row label",
+        ),
+        (
+            crate::shell_style::RowState::Disabled,
+            "disabled dock row label",
+        ),
+    ] {
+        pairs.push(TextPair {
+            purpose,
+            foreground: crate::shell_style::dock_row_visual(state, colors).text,
+            background: colors.button_face,
+            large_text: false,
+            exempt: state == crate::shell_style::RowState::Disabled,
+        });
+    }
     pairs
+}
+
+/// The task rail's fixed colours, as drawn in `lib.rs`.
+pub const TASK_RAIL_TEXT: u32 = 0xe6e8eb;
+pub const TASK_RAIL_IDLE: u32 = 0x25292e;
+pub const TASK_RAIL_ACTIVE: u32 = 0x343a42;
+
+/// The disabled stop control's text, resolved the way the product resolves it.
+fn stop_control_text_for_audit(colors: &ShellColors) -> u32 {
+    crate::shell_style::stop_control_visual(false, colors).text
 }
 
 /// The pairs that do not meet their threshold, as `(purpose, ratio, required)`.
