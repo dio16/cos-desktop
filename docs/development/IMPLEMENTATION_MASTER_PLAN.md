@@ -4866,3 +4866,16 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **A wire detail this pinned:** the reason travels as the upper-snake token (`NO_PROTOCOL_INTERSECTION`), not the Rust variant name. The test asserted the variant spelling first and failed, which is how it was found.
 - **Not claimed:** this is **shape**, not behaviour - it says a frame with an unknown field can be parsed, not that the desktop does the right thing with a newer peer's semantics. Observation-v1 compatibility against a real Runtime remains **NOT_RUN**; MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p desktop-protocol --test wire_compatibility` 4 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all **45** binaries green (the new test binary is the 45th).
+
+### 19.273 MP-RT1: the observation messages, field by field (2026-11-05)
+
+- **Scope:** still the **desktop-protocol** half. No Runtime is connected; **the RT1 card does not move.**
+- **What is pinned (`tests/observation_compatibility.rs`, 5 tests):**
+  - **Resume coordinates are optional** and mean a fresh session when absent; when present they survive the round trip. A frame with none of `scope_id`, `last_seen_cursor`, `epoch` is a new session, not a malformed resumption.
+  - **`filters` may be omitted** (it is `#[serde(default)]`) and means "no extra filters"; **`task_ids` may not** - a scope without its task list does not deserialize. A filter entry has no optional half.
+  - **An unrecognized server message defaults to `affects_state: true`.** That default is the safe one: an unknown event that might change authoritative state must be treated as if it does, so a newer peer cannot silently desynchronise the desktop. A peer that says otherwise is believed, and the cursor it declares is kept.
+  - **`ResyncRequired` must carry a reason** (its human message is optional) and **`ReplayAccepted` must name its cursor**; omitting either is invalid.
+  - **Newer peers may add fields** to the observation messages without the frame becoming invalid.
+- **A wire detail this pinned:** a cursor is an **opaque string on the wire** (`"cursor-12"`), not an object with a sequence number. The test assumed the latter and failed, which is how the shape was confirmed.
+- **Not claimed:** this is the shape of the messages, not what the desktop does with a newer peer's semantics, and not a compatibility result against a real Runtime - that remains **NOT_RUN**. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p desktop-protocol --test observation_compatibility` 5 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all **46** binaries green.
