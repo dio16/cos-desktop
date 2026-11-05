@@ -4608,15 +4608,16 @@ impl Render for Shell {
                         )
                         .into_iter()
                         .map(|text| {
-                            let shown = SharedString::from(format!("{}: {}", text.name, text.value));
+                            let (name, value, description) = state_text::accessibility_attributes(&text);
+                            let shown = SharedString::from(format!("{name}: {value}"));
                             div()
                                 .id(text.id)
                                 .role(Role::Label)
                                 // The name is fixed and the value is what moves: an update must not
                                 // change the element's accessible name.
-                                .aria_label(SharedString::from(text.name))
-                                .aria_value(SharedString::from(text.value))
-                                .aria_description(SharedString::from(text.description))
+                                .aria_label(SharedString::from(name))
+                                .aria_value(SharedString::from(value))
+                                .aria_description(SharedString::from(description))
                                 .child(shown)
                         })
                         .collect::<Vec<_>>(),
@@ -4976,14 +4977,15 @@ impl Render for Shell {
                                 )
                                 .into_iter()
                                 .map(|text| {
-                                    let shown =
-                                        SharedString::from(format!("{}: {}", text.name, text.value));
+                                    let (name, value, description) =
+                                        state_text::accessibility_attributes(&text);
+                                    let shown = SharedString::from(format!("{name}: {value}"));
                                     div()
                                         .id(text.id)
                                         .role(Role::Label)
-                                        .aria_label(SharedString::from(text.name))
-                                        .aria_value(SharedString::from(text.value))
-                                        .aria_description(SharedString::from(text.description))
+                                        .aria_label(SharedString::from(name))
+                                        .aria_value(SharedString::from(value))
+                                        .aria_description(SharedString::from(description))
                                         .child(shown)
                                 })
                                 .collect::<Vec<_>>(),

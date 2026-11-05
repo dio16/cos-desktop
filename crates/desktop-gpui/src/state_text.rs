@@ -126,9 +126,9 @@ pub(crate) fn rail_row_state_texts(
     if unavailable {
         texts.push(StateText {
             id: format!("task-state-reference-{task_id}"),
-            name: "候補の参照",
+            name: "参照先の情報",
             value: StateValue::Unavailable.text(),
-            description: "この行が参照している候補を、いまは取得できていないことを示します。タスクの状態とは別の情報です。",
+            description: "この行が参照している情報の一部を、いまは取得できていないことを示します。候補・能力・反復のいずれの参照でも同じ表示になり、対象は特定しません。タスクの状態とは別の情報です。",
         });
     }
     texts
@@ -158,6 +158,15 @@ pub(crate) fn surface_state_texts(
             description: "この画面がいま表示されているというローカルの事実です。実行元が通知するタスクの状態とは別の軸で、利用可能性の判定ではありません。",
         },
     ]
+}
+
+/// The three accessibility attributes one state row sets, in the order the drawing code applies
+/// them: the **fixed** name, the **mutable** value, and the **fixed** description.
+///
+/// It exists so the attribute wiring can be checked without a window: the drawing code and the test
+/// read the same function, so a row that puts the value into the name fails here.
+pub(crate) fn accessibility_attributes(text: &StateText) -> (&'static str, String, &'static str) {
+    (text.name, text.value.clone(), text.description)
 }
 
 #[cfg(test)]
@@ -269,14 +278,14 @@ mod tests {
         // The missing reference is a separate row, with its own identity.
         let reference = texts
             .iter()
-            .find(|text| text.name == "候補の参照")
+            .find(|text| text.name == "参照先の情報")
             .expect("a missing reference is published");
         assert_eq!(reference.value, UNAVAILABLE);
         assert!(reference.id.ends_with("task-1"));
 
         // Without the condition that row does not exist at all.
         let reported = rail_row_state_texts("task-1", "実行中", Some("生成"), Some(2), false);
-        assert!(reported.iter().all(|text| text.name != "候補の参照"));
+        assert!(reported.iter().all(|text| text.name != "参照先の情報"));
         // The task's own rows keep their identity across the two states.
         for (a, b) in texts.iter().zip(&reported) {
             assert_eq!(a.id, b.id);
@@ -308,5 +317,50 @@ mod tests {
             surface_state_texts("flow", "処理の流れ", &StateValue::Reported("表示中".into()));
         assert_ne!(idle[0].id, other[0].id);
         assert_eq!(other[0].value, "処理の流れ");
+    }
+
+    #[test]
+    fn the_attributes_carry_the_fixed_parts_and_the_moving_one() {
+        let before = accessibility_attributes(
+            &task_state_texts(
+                "task-1",
+                &StateValue::Reported("実行中".into()),
+                &StateValue::NotDetermined,
+                &StateValue::NotDetermined,
+            )[0],
+        );
+        let after = accessibility_attributes(
+            &task_state_texts(
+                "task-1",
+                &StateValue::Reported("完了".into()),
+                &StateValue::NotDetermined,
+                &StateValue::NotDetermined,
+            )[0],
+        );
+        // The name and description are the fixed parts.
+        assert_eq!(before.0, after.0);
+        assert_eq!(before.0, "タスクの状態");
+        assert_eq!(before.2, after.2);
+        assert!(!before.2.is_empty(), "the description is never empty");
+        // The value is the part that moves.
+        assert_ne!(before.1, after.1);
+        assert_eq!(before.1, "実行中");
+        assert_eq!(after.1, "完了");
+        assert!(!after.1.contains(": "), "the value is not a concatenation");
+
+        // The same holds for the surface rows.
+        let idle = accessibility_attributes(
+            &surface_state_texts("artifact", "成果物", &StateValue::Reported("表示中".into()))[1],
+        );
+        let busy = accessibility_attributes(
+            &surface_state_texts(
+                "artifact",
+                "成果物",
+                &StateValue::Reported("別の表示".into()),
+            )[1],
+        );
+        assert_eq!(idle.0, busy.0);
+        assert_eq!(idle.2, busy.2);
+        assert_ne!(idle.1, busy.1);
     }
 }
