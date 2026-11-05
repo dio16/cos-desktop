@@ -821,8 +821,13 @@ mod tests {
         // operators and punctuation. Anything else - a bare variable holding a colour, or an
         // operator combining the branches with one - is rejected.
         for token in outside.split(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '_')) {
-            if token.is_empty() || token.chars().next().is_some_and(|ch| ch.is_ascii_digit()) {
+            if token.is_empty() {
                 continue;
+            }
+            // A numeric literal outside the branches is a colour the audit cannot see:
+            // `(if c { a } else { b }) ^ 1` is a different colour, not structure.
+            if token.chars().next().is_some_and(|ch| ch.is_ascii_digit()) {
+                return vec![ColourSource::Unknown(outside.trim().to_string())];
             }
             if EXPRESSION_KEYWORDS.contains(&token) || CONDITION_IDENTIFIERS.contains(&token) {
                 continue;
@@ -976,6 +981,13 @@ mod tests {
             [ColourSource::Unknown(_)] => {}
             other => {
                 panic!("an unknown variable outside the branches must be rejected, got {other:?}")
+            }
+        }
+        // A decimal literal outside the branches shifts the colour and must not pass.
+        match classify_argument("(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ 1").as_slice() {
+            [ColourSource::Unknown(_)] => {}
+            other => {
+                panic!("a numeric literal outside the branches must be rejected, got {other:?}")
             }
         }
         // A role *outside* the branches is not.
