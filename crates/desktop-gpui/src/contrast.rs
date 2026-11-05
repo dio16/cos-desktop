@@ -449,6 +449,51 @@ pub fn hardcoded_text_colours() -> Vec<HardcodedText> {
             // A direction glyph carries meaning but is not text: 3:1 is the applicable threshold.
             required: 3.0,
         },
+        // These sites inherit their surface from the enclosing container, so the drawing code does
+        // not pin a background next to the colour. They are listed so the guard sees them, with
+        // `background: None` recording that this audit cannot pair them yet.
+        HardcodedText {
+            value: 0x8b949e,
+            background: None,
+            purpose: "palette row unavailable reason (surface inherited)",
+            exempt: false,
+            required: 4.5,
+        },
+        HardcodedText {
+            value: 0x8b949e,
+            background: None,
+            purpose: "palette hint line (surface inherited)",
+            exempt: false,
+            required: 4.5,
+        },
+        HardcodedText {
+            value: 0x9da3aa,
+            background: None,
+            purpose: "intervention row detail (surface inherited)",
+            exempt: false,
+            required: 4.5,
+        },
+        HardcodedText {
+            value: 0xbcc6d0,
+            background: None,
+            purpose: "intervention row next-action line (surface inherited)",
+            exempt: false,
+            required: 4.5,
+        },
+        HardcodedText {
+            value: 0xd08a6a,
+            background: None,
+            purpose: "inspector warning label (surface inherited)",
+            exempt: false,
+            required: 4.5,
+        },
+        HardcodedText {
+            value: 0xe6e8eb,
+            background: Some(0x24272c),
+            purpose: "tooltip text on the tooltip surface",
+            exempt: false,
+            required: 4.5,
+        },
         HardcodedText {
             value: 0x9dc0e0,
             background: Some(0x17191c),
@@ -557,6 +602,9 @@ pub const CONDITION_IDENTIFIERS: &[&str] = &[
     "retryable_admission",
     "compare_unavailable",
     "index",
+    "unavailable",
+    "is_some",
+    "none",
 ];
 
 /// The palette roles the audit covers, named as the drawing code spells them.
@@ -1056,7 +1104,23 @@ mod tests {
         // Read the drawing code and require every argument to be classified, and every classified
         // colour to be one the audit accounts for. This is what makes the hand-maintained list
         // self-checking: an unknown role, an unknown literal or an unclassifiable expression fails.
-        let arguments = text_colour_arguments(include_str!("lib.rs"));
+        // Every shell source file that draws text, so the guard is not limited to lib.rs.
+        const SOURCES: &[(&str, &str)] = &[
+            ("lib.rs", include_str!("lib.rs")),
+            ("palette.rs", include_str!("palette.rs")),
+            ("intervention.rs", include_str!("intervention.rs")),
+            ("inspector.rs", include_str!("inspector.rs")),
+            ("help.rs", include_str!("help.rs")),
+        ];
+        let mut arguments = Vec::new();
+        for (name, source) in SOURCES {
+            let found = text_colour_arguments(source);
+            assert!(
+                *name == "help.rs" || !found.is_empty(),
+                "{name} draws text but the scan found nothing"
+            );
+            arguments.extend(found);
+        }
         assert!(
             arguments.len() >= 20,
             "the scan found only {} arguments, so it is not reading the drawing code",
