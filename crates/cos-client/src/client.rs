@@ -2796,12 +2796,11 @@ mod backoff_tests {
                 coincide += 1;
             }
         }
-        // Both outcomes occur, which is why the test asserts the window and not a relation between
-        // the two values.
-        assert!(
-            coincide > 0 && coincide < 64,
-            "sixty-four seeds gave {coincide} coincidences, so this pair is not actually unconstrained"
-        );
+        // Both outcomes occur today, but that is an observation rather than a contract: a legal change
+        // to the jitter could make the pair always coincide or never, with the window and the spread
+        // rule still satisfied. So it is printed, not asserted - the contract asserted here is the
+        // range, and the spread is covered by its own test.
+        eprintln!("attempt 0 and 1 coincided for {coincide} of 64 seeds");
     }
 
     #[test]
