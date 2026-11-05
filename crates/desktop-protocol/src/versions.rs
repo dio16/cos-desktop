@@ -226,3 +226,158 @@ pub struct HelloRejected {
     #[serde(default)]
     pub schema: Vec<VersionRange>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn range(major: u16, min_minor: u16, max_minor: u16) -> VersionRange {
+        VersionRange::new(major, min_minor, max_minor)
+    }
+
+    #[test]
+    fn the_compatibility_matrix_selects_the_highest_shared_version() {
+        // One row per shape the negotiation table has to handle: exact overlap, an intersection
+        // narrower than either side, a single shared version, no shared minor, a different major,
+        // and a malformed entry that must never match.
+        struct Row {
+            label: &'static str,
+            offered: Vec<VersionRange>,
+            supported: Vec<VersionRange>,
+            expected: Option<Version>,
+        }
+        let rows = vec![
+            Row {
+                label: "identical ranges",
+                offered: vec![range(1, 0, 3)],
+                supported: vec![range(1, 0, 3)],
+                expected: Some(Version::new(1, 3)),
+            },
+            Row {
+                label: "intersection is narrower on both sides",
+                offered: vec![range(1, 0, 5)],
+                supported: vec![range(1, 2, 3)],
+                expected: Some(Version::new(1, 3)),
+            },
+            Row {
+                label: "the client is the narrower side",
+                offered: vec![range(1, 2, 3)],
+                supported: vec![range(1, 0, 5)],
+                expected: Some(Version::new(1, 3)),
+            },
+            Row {
+                label: "a single shared version",
+                offered: vec![range(1, 4, 4)],
+                supported: vec![range(1, 4, 4)],
+                expected: Some(Version::new(1, 4)),
+            },
+            Row {
+                label: "ranges that only touch at one minor",
+                offered: vec![range(1, 0, 2)],
+                supported: vec![range(1, 2, 7)],
+                expected: Some(Version::new(1, 2)),
+            },
+            Row {
+                label: "no shared minor",
+                offered: vec![range(1, 0, 1)],
+                supported: vec![range(1, 4, 6)],
+                expected: None,
+            },
+            Row {
+                label: "different major",
+                offered: vec![range(1, 0, 9)],
+                supported: vec![range(2, 0, 9)],
+                expected: None,
+            },
+            Row {
+                label: "a malformed entry never matches",
+                offered: vec![range(1, 5, 1)],
+                supported: vec![range(1, 0, 9)],
+                expected: None,
+            },
+            Row {
+                label: "the highest of several candidates wins",
+                offered: vec![range(1, 0, 2), range(1, 5, 7)],
+                supported: vec![range(1, 0, 9)],
+                expected: Some(Version::new(1, 7)),
+            },
+        ];
+        for row in rows {
+            assert_eq!(
+                negotiate(&row.offered, &row.supported),
+                row.expected,
+                "{}: offered {:?} against supported {:?}",
+                row.label,
+                row.offered,
+                row.supported
+            );
+        }
+    }
+
+    #[test]
+    fn negotiation_does_not_depend_on_which_side_offers() {
+        // The same two advertisements must resolve the same way whichever one is the client: a
+        // negotiation that only looked at one side would pass the matrix above and fail here.
+        let pairs = [
+            (vec![range(1, 0, 3)], vec![range(1, 1, 5)]),
+            (vec![range(1, 0, 9)], vec![range(2, 0, 9)]),
+            (vec![range(3, 2, 2), range(3, 8, 12)], vec![range(3, 1, 9)]),
+            (vec![range(1, 5, 1)], vec![range(1, 0, 9)]),
+        ];
+        for (left, right) in pairs {
+            assert_eq!(
+                negotiate(&left, &right),
+                negotiate(&right, &left),
+                "{left:?} against {right:?} negotiated differently depending on which side offered"
+            );
+        }
+    }
+
+    #[test]
+    fn a_negotiated_version_is_inside_both_ranges() {
+        // Whatever is selected has to be acceptable to both advertisements; returning a version the
+        // client never offered would be a silent incompatibility.
+        let offered = vec![range(1, 0, 4), range(2, 1, 3)];
+        let supported = vec![range(1, 2, 9), range(2, 0, 2), range(3, 0, 9)];
+        let selected = negotiate(&offered, &supported).expect("an intersection exists");
+        assert!(offered.iter().any(|r| r.contains(selected)));
+        assert!(supported.iter().any(|r| r.contains(selected)));
+        // The rule is the lexicographically greatest `(major, minor)` both sides accept, so a
+        // higher major wins over a higher minor - `(2, 2)` here, not `(1, 4)`. The assertion pins
+        // that rule; the two assertions above pin the property that matters for compatibility.
+        assert_eq!(selected, Version::new(2, 2));
+    }
+
+    #[test]
+    fn a_session_needs_both_a_protocol_and_a_schema_intersection() {
+        let server = VersionAdvertisement {
+            protocol: vec![range(1, 0, 4)],
+            schema: vec![range(2, 0, 1)],
+        };
+        let agreeing_client = VersionAdvertisement {
+            protocol: vec![range(1, 0, 9)],
+            schema: vec![range(2, 0, 9)],
+        };
+        let session = negotiate_session(&agreeing_client, &server).expect("both axes intersect");
+        assert_eq!(session.protocol, Version::new(1, 4));
+        assert_eq!(session.schema, Version::new(2, 1));
+
+        let protocol_only = VersionAdvertisement {
+            protocol: vec![range(1, 0, 9)],
+            schema: vec![range(5, 0, 9)],
+        };
+        assert_eq!(
+            negotiate_session(&protocol_only, &server),
+            Err(NegotiationFailure::NoSchemaIntersection)
+        );
+
+        let schema_only = VersionAdvertisement {
+            protocol: vec![range(7, 0, 9)],
+            schema: vec![range(2, 0, 9)],
+        };
+        assert_eq!(
+            negotiate_session(&schema_only, &server),
+            Err(NegotiationFailure::NoProtocolIntersection)
+        );
+    }
+}
