@@ -1332,10 +1332,13 @@ mod tests {
         eprintln!(
             "resting control boundary: {on_face:.2}:1 on the button face, {on_raised:.2}:1 on a raised surface"
         );
+        // The owner decision is to keep the boundary decorative, so there is no threshold here: a
+        // future change that raises it must not fail this test. The numbers are printed so any
+        // change to either side is visible in the output.
         assert!(on_face > 0.0 && on_raised > 0.0);
         assert!(
-            on_face < 3.0,
-            "if the boundary now clears 3:1 this row can be promoted to a state indicator"
+            on_face != 1.0 || on_raised != 1.0,
+            "both boundaries are invisible, which would make the boundary the only cue"
         );
     }
     #[test]
