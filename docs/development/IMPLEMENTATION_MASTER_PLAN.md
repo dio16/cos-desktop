@@ -5022,3 +5022,16 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Proven by mutation, six ways:** making the prefix test unconditional fails six tests; never setting `contains` fails three; dropping the iteration fails two; ranking `Unknown` first fails two; dropping the display-id comparison fails two; dropping the identity comparison fails one.
 - **Not claimed:** this is the classifier and the ordering, not the end-to-end search. Query generations, cancellation and publication changes are covered by the existing rail tests, and nothing here touches the UI. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p ui-model task_rail::` 18 passed; `cargo clippy -p ui-model --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
+
+### 19.285 a peer may lower a bound but never raise it (2026-11-05)
+
+- **Why:** `desktop_protocol::bounds::Limits::negotiate` states the rule - *the result never exceeds the local limits; a server may only lower them* - and the module had **no test**. A peer that could raise a bound would widen the desktop's declared frame, bundle and queue limits, which is the one thing this type exists to prevent.
+- **Five tests:**
+  - **a server may never raise a limit**: a proposal above the local values on every axis negotiates to the local values, and each axis is checked to be `<=` the local one;
+  - **a server may lower any subset**: per axis, so a proposal that lowers two bounds and raises two keeps the local value on the raised ones and takes the lower value on the rest; lowering everything is taken as given;
+  - **no proposal keeps the local limits**, and `Limits::default()` equals the contract `DEFAULT` (whose four constants are asserted individually);
+  - **negotiation is idempotent and order-independent**: applying the same proposal twice changes nothing, a later raise changes nothing, and a later lowering applies - so a retry cannot widen a limit;
+  - **the size checks are inclusive at the bound**: a frame or bundle exactly at its limit fits and one byte more does not, and `u64::MAX` does not pass a smaller bound through any arithmetic.
+- **Proven by mutation:** taking the **maximum** instead of the minimum fails three tests; making either bound **exclusive** fails its own test.
+- **Not claimed:** these are the arithmetic and the negotiation rule. Nothing here exchanges a proposal with a real peer; the handshake path that calls this is covered by the version-negotiation tests, and a real Runtime remains **NOT_RUN**. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p desktop-protocol bounds` 5 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
