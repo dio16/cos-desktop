@@ -917,7 +917,7 @@ mod recorded_observation_v1 {
 #[cfg(test)]
 mod integrity_tests {
     use super::{ProjectionKey, ProjectionState};
-    use desktop_protocol::{Counter, EpochId, ProjectionMutation};
+    use desktop_protocol::{Counter, EpochId, Projection, ProjectionMutation};
 
     const GRANT: &str = include_str!("../fixtures/desktop-observation-v1/observation-grant.json");
 
@@ -1198,6 +1198,105 @@ mod integrity_tests {
             "the refusal names the cause: {error}"
         );
         let _ = all;
+    }
+
+    #[test]
+    fn applying_a_validated_update_moves_the_projection_and_its_revision() {
+        // Validation and application must agree: after a mutation the validator accepted, the derived
+        // view must show the new revision, and the next update must then be measured against it. A
+        // validator that accepted an update the store then ignored would leave the two disagreeing.
+        let (mut state, mutations) = populated();
+        let (_base, upsert) = first_upsert(&mutations);
+        let ProjectionMutation::Upsert { projection, .. } = &upsert else {
+            panic!("the recorded upsert is an upsert");
+        };
+        let Projection::Task(snapshot) = projection else {
+            panic!("the fixture projection is a task snapshot");
+        };
+        let task_id = snapshot.task_ref.clone();
+        let key = ProjectionKey::of_projection(projection);
+        let stored = state
+            .revisions
+            .get(&key)
+            .cloned()
+            .expect("the state holds the projection");
+        let newer = Counter::new(
+            stored
+                .as_str()
+                .parse::<u128>()
+                .expect("a counter")
+                .saturating_add(1)
+                .to_string(),
+        )
+        .expect("a counter");
+        let mutation = ProjectionMutation::Upsert {
+            base_revision: Some(stored),
+            projection: with_revision(projection, newer.clone()),
+        };
+        state
+            .validate_mutation(&mutation)
+            .expect("a matching base with a newer revision is accepted");
+        state.apply(std::slice::from_ref(&mutation));
+        assert_eq!(
+            state
+                .task(&task_id)
+                .map(|task| task.projection_revision.clone()),
+            Some(newer),
+            "the applied update is visible in the derived view"
+        );
+        // And the same mutation is now stale, because the revision moved.
+        assert!(
+            state.validate_mutation(&mutation).is_err(),
+            "replaying the accepted update is refused against the new state"
+        );
+    }
+
+    #[test]
+    fn applying_a_validated_removal_drops_the_projection_and_its_revision() {
+        // The removal half: the projection disappears and its revision bookkeeping goes with it, so a
+        // later creation is accepted rather than treated as an update against a stale revision.
+        let (mut state, mutations) = populated();
+        let (_base, upsert) = first_upsert(&mutations);
+        let ProjectionMutation::Upsert { projection, .. } = &upsert else {
+            panic!("the recorded upsert is an upsert");
+        };
+        let Projection::Task(snapshot) = projection else {
+            panic!("the fixture projection is a task snapshot");
+        };
+        let task_id = snapshot.task_ref.clone();
+        let key = ProjectionKey::of_projection(projection);
+        let stored = state
+            .revisions
+            .get(&key)
+            .cloned()
+            .expect("the state holds the projection");
+        let removal = ProjectionMutation::Remove {
+            base_revision: stored,
+            target: desktop_protocol::RemoveTarget::Task {
+                task_id: task_id.clone(),
+            },
+        };
+        state
+            .validate_mutation(&removal)
+            .expect("the removal matches the stored revision");
+        state.apply(std::slice::from_ref(&removal));
+        assert!(
+            state.task(&task_id).is_none(),
+            "the removed projection is gone from the derived view"
+        );
+        assert!(
+            !state.revisions.contains_key(&key),
+            "its revision bookkeeping is gone too"
+        );
+        // A creation is now accepted, which is only true if the revision was dropped with it.
+        let recreation = ProjectionMutation::Upsert {
+            base_revision: None,
+            projection: projection.clone(),
+        };
+        assert!(
+            state.validate_mutation(&recreation).is_ok(),
+            "after a removal the projection may be created again"
+        );
     }
 
     #[test]
