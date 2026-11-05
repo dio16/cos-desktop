@@ -148,7 +148,7 @@ mod tests {
             assert_eq!(rows[index], *key);
         }
         // A filter shrinks the list under a kept index: nothing is published for the old index.
-        let filtered = vec!["a"];
+        let filtered = ["a"];
         assert_eq!(
             position_where(filtered.len(), |row_index| row_index == 3),
             None
