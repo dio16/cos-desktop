@@ -200,8 +200,6 @@ pub(crate) struct RowVisual {
     pub text: u32,
     /// Non-colour cue drawn beside the row's label. Empty for a plain row.
     pub cue: &'static str,
-    /// Whether the Dock container draws the focus ring for this row.
-    pub ring_by_container: bool,
 }
 
 /// The minimum contrast a row's text must keep against the surface it is drawn on.
@@ -217,12 +215,10 @@ pub(crate) const ROW_TEXT_MIN_CONTRAST: f32 = 4.5;
 ///   role's text to the surface itself cannot make the label invisible);
 /// - **selection**, **focus** and **disabled** each carry a cue in text, so no colour collapse can
 ///   merge two of them;
-/// - `ring_by_container` reports the container's flag, not a hope.
 pub(crate) fn row_visual(
     state: RowState,
     colors: &crate::contrast::ShellColors,
     surface: u32,
-    ring_drawn: bool,
 ) -> RowVisual {
     let (border, preferred_text, cue) = match state {
         RowState::Normal => (colors.border, colors.text, ""),
@@ -236,8 +232,8 @@ pub(crate) fn row_visual(
         RowState::Disabled => (colors.disabled, colors.disabled, "利用不可"),
     };
     // Falling back through the palette in a fixed order keeps the choice deterministic while the
-    // contrast check is what decides: the first candidate that clears the minimum wins, and if none
-    // does the best one is used rather than an invisible label.
+    // contrast check decides: the first candidate that clears the minimum wins, and if none does
+    // the best one is used rather than an invisible label.
     let text = [preferred_text, colors.text, colors.background]
         .into_iter()
         .find(|candidate| {
@@ -253,12 +249,7 @@ pub(crate) fn row_visual(
                 })
                 .unwrap_or(preferred_text)
         });
-    RowVisual {
-        border,
-        text,
-        cue,
-        ring_by_container: ring_drawn,
-    }
+    RowVisual { border, text, cue }
 }
 
 /// The text a row draws for its label, including the state's non-colour cue.
@@ -283,8 +274,8 @@ pub(crate) fn row_states_differ(
     surface: u32,
 ) -> bool {
     let (a, b) = (
-        row_visual(left, colors, surface, false),
-        row_visual(right, colors, surface, false),
+        row_visual(left, colors, surface),
+        row_visual(right, colors, surface),
     );
     a.cue != b.cue || a.border != b.border
 }
@@ -513,15 +504,15 @@ mod tests {
     fn row_colour_expresses_selection_and_never_focus() {
         let colors = crate::contrast::NORMAL_COLORS;
         assert_eq!(
-            row_visual(RowState::Selected, &colors, colors.background, false).border,
+            row_visual(RowState::Selected, &colors, colors.background).border,
             colors.selection
         );
         assert_eq!(
-            row_visual(RowState::Normal, &colors, colors.background, false).border,
+            row_visual(RowState::Normal, &colors, colors.background).border,
             colors.border
         );
         assert_ne!(
-            row_visual(RowState::Selected, &colors, colors.background, false).border,
+            row_visual(RowState::Selected, &colors, colors.background).border,
             crate::contrast::colors_for(
                 crate::contrast::ContrastScheme::HighContrast,
                 &crate::contrast::SystemColors {
@@ -692,7 +683,7 @@ mod tests {
             RowState::SelectedAndFocused,
             RowState::Disabled,
         ] {
-            let visual = row_visual(state, &colors, colors.background, false);
+            let visual = row_visual(state, &colors, colors.background);
             let ratio = crate::contrast::contrast_ratio(visual.text, colors.background);
             assert!(
                 ratio >= ROW_TEXT_MIN_CONTRAST,
@@ -721,52 +712,28 @@ mod tests {
         let colors = crate::contrast::NORMAL_COLORS;
         let surface = colors.background;
         assert_eq!(
-            dock_row_text(
-                "候補",
-                &row_visual(RowState::Selected, &colors, surface, false)
-            ),
+            dock_row_text("候補", &row_visual(RowState::Selected, &colors, surface)),
             "候補（閲覧中）"
         );
         assert_eq!(
-            dock_row_text(
-                "候補",
-                &row_visual(RowState::Focused, &colors, surface, false)
-            ),
+            dock_row_text("候補", &row_visual(RowState::Focused, &colors, surface)),
             "候補（キーボード操作対象）"
         );
         assert_eq!(
             dock_row_text(
                 "候補",
-                &row_visual(RowState::SelectedAndFocused, &colors, surface, false)
+                &row_visual(RowState::SelectedAndFocused, &colors, surface)
             ),
             "候補（閲覧中・キーボード操作対象）"
         );
         assert_eq!(
-            dock_row_text(
-                "停止",
-                &row_visual(RowState::Disabled, &colors, surface, false)
-            ),
+            dock_row_text("停止", &row_visual(RowState::Disabled, &colors, surface)),
             "停止（利用不可）"
         );
         // A plain row draws its label unchanged, so the cue is a real difference and not noise.
         assert_eq!(
-            dock_row_text(
-                "候補",
-                &row_visual(RowState::Normal, &colors, surface, false)
-            ),
+            dock_row_text("候補", &row_visual(RowState::Normal, &colors, surface)),
             "候補"
         );
-    }
-
-    #[test]
-    fn the_ring_flag_reports_the_container_and_not_the_state() {
-        let colors = crate::contrast::NORMAL_COLORS;
-        let surface = colors.background;
-        // The Dock container draws the ring from its own focus flag; the model must report that
-        // flag for every state rather than asserting an outline the row never draws.
-        for state in [RowState::Normal, RowState::Selected, RowState::Disabled] {
-            assert!(!row_visual(state, &colors, surface, false).ring_by_container);
-            assert!(row_visual(state, &colors, surface, true).ring_by_container);
-        }
     }
 }

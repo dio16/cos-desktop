@@ -3957,8 +3957,7 @@ impl Render for Shell {
                 shell_style::row_visual(
                     shell_style::RowState::Disabled,
                     &colors,
-                    colors.background,
-                    false,
+                    colors.disabled_face,
                 )
                 .text
             }))
@@ -3972,8 +3971,7 @@ impl Render for Shell {
                     &shell_style::row_visual(
                         shell_style::RowState::Disabled,
                         &colors,
-                        colors.background,
-                        false,
+                        colors.disabled_face,
                     ),
                 )
             });
@@ -4306,8 +4304,7 @@ impl Render for Shell {
                         (false, false) => shell_style::RowState::Normal,
                     },
                     &colors,
-                    colors.background,
-                    dock_focused,
+                    colors.button_face,
                 );
                 let state_label = match (selected, compared, active) {
                     (true, true, true) => "閲覧中・比較対象・キーボード操作対象",
@@ -4413,11 +4410,18 @@ impl Render for Shell {
                             .px_1()
                             .flex()
                             .flex_col()
-                            .child(div().truncate().child(SharedString::from(format!(
-                                "{}{}",
-                                if group_start { "▸ " } else { "" },
-                                shell_style::dock_row_text(&label, &row_visual)
-                            ))))
+                            .child(
+                                div()
+                                    .truncate()
+                                    // The label colour comes from the state model, which chose it
+                                    // for contrast against this row's actual surface.
+                                    .text_color(rgb(row_visual.text))
+                                    .child(SharedString::from(format!(
+                                        "{}{}",
+                                        if group_start { "▸ " } else { "" },
+                                        shell_style::dock_row_text(&label, &row_visual)
+                                    ))),
+                            )
                             .child(xs_text.clone().apply(div()).truncate().child(state_label))
                             .when(formal, |element| {
                                 element.child(
