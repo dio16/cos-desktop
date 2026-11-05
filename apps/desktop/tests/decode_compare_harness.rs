@@ -3251,7 +3251,10 @@ fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
     config.invocation = helper_invocation(HELPER);
     config.timeout_ms = 10_000;
     config.cancel_after_ms = Some(100);
-    config.watch_delay = Some(std::time::Duration::from_secs(4));
+    // The watcher is delayed far past the confirmation limit. If the aborted cancel waited for it
+    // instead of aborting, the run would cost at least this delay, so the bound below compares
+    // against the delay rather than against a plausible-looking number of seconds.
+    config.watch_delay = Some(std::time::Duration::from_secs(10));
     let heartbeat = fixture.cases.join("a.heartbeat");
     let started = std::time::Instant::now();
     let report = harness::run(&config).unwrap();
@@ -3267,12 +3270,14 @@ fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
         observation.cancellation_observed_ms.is_none(),
         "an unconfirmed exit keeps no confirmation duration"
     );
-    // The cancel waits at most SAMPLE_EXIT_GRACE (2 s) for confirmation before aborting,
-    // so the run costs about that. The point is that it is bounded by that limit and not by
-    // the 4 s watcher delay it is waiting on.
+    // The property is ordering, not speed: the aborted cancel returns after SAMPLE_EXIT_GRACE
+    // (2 s) and well before the delayed watcher wakes. The bound is **half the watcher delay**, so
+    // an implementation that waited for the watcher (10 s or more) fails while a loaded machine
+    // still has room - a fixed three-second bound made this test fail under gate load at 4.6 s
+    // while the same build passed in 2.45 s when run alone.
     assert!(
-        elapsed < std::time::Duration::from_secs(3),
-        "an aborted cancel must return before the delayed watcher wakes (took {elapsed:?})"
+        elapsed < std::time::Duration::from_secs(5),
+        "an aborted cancel must return before the delayed watcher wakes (took {elapsed:?},          against a 10 s watcher delay)"
     );
     // The aborted stop must have killed the helper: a heartbeat that stops growing proves
     // the process is gone rather than merely unconfirmed. It must also have been produced,
