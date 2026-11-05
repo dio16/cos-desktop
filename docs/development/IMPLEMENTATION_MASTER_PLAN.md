@@ -5050,3 +5050,16 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **A mutation that could not be caught, and why:** deleting the encoder's own **key sort** changes nothing, because `serde_json::Value`'s object is already ordered - the test pins the output order but cannot attribute it to the sort or to the map. The sort stays as the guarantee that would survive a change to that representation (for example `preserve_order`); the test's own doc comment says so, so a later reader does not over-read the green.
 - **Not claimed:** this is the encoder's determinism, not the digest and not the projection-bundle parity, which `canonical_v1_parity` covers separately. MP-RT1 as a whole, MP-RT2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p desktop-protocol canonical::` 20 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.
+
+### 19.287 the opaque identity's actual rules (2026-11-05)
+
+- **Why:** every identity type in `desktop-protocol` is built through one validator, `validate_opaque`, and the module had **no test**. The rules are narrower than "sanitise the string": a bound, a control-character refusal, and nothing else.
+- **Five tests:**
+  - **the bound counts bytes, not characters**: 512 bytes is accepted and 513 refused; 257 `é` characters are only 257 characters but 514 bytes and are refused, while 256 of them sit exactly at the bound;
+  - **the empty string and control characters are refused**, and **a space is accepted** - the rule is the control class, not whitespace - which is a distinction my first version got wrong and the test corrected;
+  - **the fixture namespace is constructible and still bounded**: `fixture:` values round-trip, and a `fixture:`-prefixed value of 520 bytes is refused like any other;
+  - **a counter is decimal digits within 39 of them**: `0` and the largest `u64` are accepted, 39 digits are accepted and 40 refused, and `` "", "-1", "+1", " 1", "1 ", "0x10", "١٢٣", "1.5", "1_000" `` are all refused - the bound is digits, not value;
+  - **an identity round-trips through serde unchanged**, and a value the constructor refuses is refused on the wire rather than repaired.
+- **Proven by mutation:** removing the byte bound fails two tests; removing the control check fails two; letting the counter accept non-digits fails one; unbinding its digit count fails one.
+- **Not claimed:** this is the validator. What a caller does with an accepted identity - including the media crate's stricter rule that an identity is never a path - is a separate contract covered by `media`'s own tests. A real Runtime remains **NOT_RUN**; MP-RT1, MP-RT2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p desktop-protocol ids::` 5 passed; `cargo clippy -p desktop-protocol --all-targets -D warnings` clean; `cargo test --locked --workspace` all 48 binaries green.

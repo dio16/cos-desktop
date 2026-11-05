@@ -540,3 +540,99 @@ pub struct PlanRef {
     /// Plan digest.
     pub plan_digest: ArtifactDigest,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{Counter, MAX_COUNTER_DIGITS, MAX_OPAQUE_BYTES, ServerId};
+
+    #[test]
+    fn an_opaque_identity_is_bounded_by_bytes_not_characters() {
+        // The bound is in **bytes**: a multi-byte scalar counts for its encoded length, so a string of
+        // 512 characters can be over the limit while one of 512 bytes cannot.
+        let at_bound = "a".repeat(MAX_OPAQUE_BYTES);
+        assert!(ServerId::new(at_bound).is_ok(), "512 bytes is accepted");
+        assert!(
+            ServerId::new("a".repeat(MAX_OPAQUE_BYTES + 1)).is_err(),
+            "one byte more is refused"
+        );
+        // 'é' is two bytes in UTF-8, so 257 of them exceed the byte bound although the character
+        // count is far below it.
+        let multi_byte = "é".repeat(MAX_OPAQUE_BYTES / 2 + 1);
+        assert_eq!(multi_byte.chars().count(), MAX_OPAQUE_BYTES / 2 + 1);
+        assert!(
+            ServerId::new(multi_byte).is_err(),
+            "the bound counts bytes, so this is over the limit"
+        );
+        // Exactly at the byte bound with multi-byte scalars is accepted.
+        assert!(ServerId::new("é".repeat(MAX_OPAQUE_BYTES / 2)).is_ok());
+    }
+
+    #[test]
+    fn an_opaque_identity_refuses_the_empty_string_and_control_characters() {
+        assert!(ServerId::new("").is_err(), "an empty identity is refused");
+        // A space is **not** a control character and is accepted; only the control class is refused.
+        // Recorded here so the rule is not read as "no whitespace at all".
+        assert!(ServerId::new("with space").is_ok());
+        for refused in [
+            "with\ttab",
+            "with\nnewline",
+            "with\rcarriage",
+            "nul\0byte",
+            "escape\u{1b}",
+        ] {
+            assert!(
+                ServerId::new(refused).is_err(),
+                "{refused:?} contains a control character"
+            );
+        }
+        // Ordinary punctuation is not control and is therefore allowed: the identity is opaque, not
+        // restricted to alphanumerics (that is the media local id's rule, not this one).
+        assert!(ServerId::new("runtime/server:1#frag").is_ok());
+    }
+
+    #[test]
+    fn the_fixture_namespace_is_constructible_and_marked() {
+        // The synthetic namespace exists so a fixture identity can never be mistaken for a real one,
+        // and it stays inside the opaque rules.
+        let fixture = ServerId::fixture("server");
+        assert!(fixture.as_str().starts_with("fixture:"));
+        assert_eq!(fixture.as_str(), "fixture:server");
+        // A fixture identity is still bounded like any other, so the namespace cannot smuggle an
+        // unbounded value past the limit.
+        assert!(ServerId::new(format!("fixture:{}", "a".repeat(MAX_OPAQUE_BYTES))).is_err());
+    }
+
+    #[test]
+    fn a_counter_accepts_only_decimal_digits_within_its_bound() {
+        assert!(Counter::new("0").is_ok());
+        assert!(Counter::new("1").is_ok());
+        assert_eq!(
+            Counter::new("18446744073709551615").expect("huge").as_str(),
+            "18446744073709551615"
+        );
+        // The bound is digits, not value: 39 digits is accepted, 40 refused.
+        assert!(Counter::new("9".repeat(MAX_COUNTER_DIGITS)).is_ok());
+        assert!(Counter::new("9".repeat(MAX_COUNTER_DIGITS + 1)).is_err());
+        // Anything that is not a decimal digit is refused, including signs, spaces and letters.
+        for refused in ["", "-1", "+1", " 1", "1 ", "0x10", "١٢٣", "1.5", "1_000"] {
+            assert!(
+                Counter::new(refused).is_err(),
+                "{refused:?} is not a decimal counter"
+            );
+        }
+    }
+
+    #[test]
+    fn an_identity_round_trips_through_serde_unchanged() {
+        // A value that survives construction must survive the wire: no trimming, no re-encoding.
+        for value in ["runtime/server:1#frag", "fixture:task", "a b"] {
+            let id = ServerId::new(value).expect("constructible");
+            let encoded = serde_json::to_string(&id).expect("serializes");
+            let decoded: ServerId = serde_json::from_str(&encoded).expect("deserializes");
+            assert_eq!(decoded.as_str(), value);
+        }
+        // A value that construction refuses is refused on the wire too, rather than being repaired.
+        let wire = serde_json::to_string("with\ttab").expect("json");
+        assert!(serde_json::from_str::<ServerId>(&wire).is_err());
+    }
+}
