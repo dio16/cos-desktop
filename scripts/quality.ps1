@@ -342,6 +342,10 @@ try {
         "metadata"                     = { Invoke-CargoGate -Arguments @("metadata", "--locked", "--no-deps", "--format-version", "1") -AsMetadataJson }
         "dependency rules (self-test)" = { Invoke-Python -Arguments @("-B", "scripts/check_dependency_rules.py", "--self-test") -ExpectedPattern 'Ran \d+ tests?' }
         "dependency rules (workspace)" = { Invoke-Python -Arguments @("-B", "scripts/check_dependency_rules.py") -ExpectedPattern 'allowlist edges verified for \d+ workspace member' }
+        # The plan is the execution index the whole workflow reads, so a card that lost its Status
+        # line, a link that no longer resolves, a prerequisite cycle or an unqualified "complete"
+        # alongside an unrun check fails the same way a compile error does.
+        "plan ledger"                  = { Invoke-Python -Arguments @("-B", "scripts/check_plan_ledger.py", "--self-test") -ExpectedPattern 'live: \d+ finding\(s\) across \d+ card\(s\)' }
     }
     if ($CheckOnly) {
         $gates["check (no link)"] = { Invoke-CargoGate -Arguments @("check", "--locked", "--workspace", "--all-targets") -SignaturePattern 'Checking|Compiling|Finished' }
