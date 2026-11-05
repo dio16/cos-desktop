@@ -3275,7 +3275,14 @@ fn an_aborted_cancel_stops_the_child_and_stays_unconfirmed() {
         observation.cancellation_observed_ms.is_none(),
         "an unconfirmed exit keeps no confirmation duration"
     );
-    // The event: the watcher never left its delay while this run was going on.
+    // The event: the watcher never left its delay while this run was going on. A failed attempt to
+    // write the marker is reported separately, so "no marker" cannot stand for "write failed".
+    let mut marker_failure = watch_marker.clone().into_os_string();
+    marker_failure.push(".failed");
+    assert!(
+        !std::path::PathBuf::from(marker_failure).exists(),
+        "the watcher woke and could not record it, so this run proves nothing"
+    );
     assert!(
         !watch_marker.exists(),
         "the watcher woke during the run, so the abort waited for it instead of aborting"

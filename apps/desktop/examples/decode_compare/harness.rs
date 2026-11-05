@@ -3151,7 +3151,13 @@ impl ExitWatch {
                 // The delay elapsed without an abort, so the watcher did wake. A test that asserts
                 // this marker's absence is asserting the event, not a duration.
                 if let Some(marker) = watch_delay_marker.as_ref() {
-                    let _ = std::fs::write(marker, b"watch-delay-elapsed");
+                    // A failed write must not look like "the watcher never woke": the test asserts
+                    // this marker's absence, so silence here would turn a real wake into a pass.
+                    if std::fs::write(marker, b"watch-delay-elapsed").is_err() {
+                        let mut failed = marker.clone().into_os_string();
+                        failed.push(".failed");
+                        let _ = std::fs::write(PathBuf::from(failed), b"marker-write-failed");
+                    }
                 }
             }
             // Bounded confirmation: try_wait is polled up to confirm_bound; no unbounded
