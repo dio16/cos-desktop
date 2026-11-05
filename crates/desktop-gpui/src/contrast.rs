@@ -1392,6 +1392,57 @@ mod tests {
     }
 
     #[test]
+    fn a_probe_sequence_repaints_only_when_the_palette_changes() {
+        // Normal -> HC black -> HC black again -> HC white -> normal. The repaint flag must be
+        // exactly "the resolved colours changed", or the shell repaints on every probe tick.
+        let mut state = ContrastState::default();
+        let steps: [(ContrastScheme, SystemColors, bool); 5] = [
+            (ContrastScheme::Normal, hc_black(), false),
+            (ContrastScheme::HighContrast, hc_black(), true),
+            (ContrastScheme::HighContrast, hc_black(), false),
+            (ContrastScheme::HighContrast, hc_white(), true),
+            (ContrastScheme::Normal, hc_white(), true),
+        ];
+        for (index, (scheme, system, expected)) in steps.iter().enumerate() {
+            let changed = state.observe(*scheme, system);
+            assert_eq!(
+                changed, *expected,
+                "step {index} ({scheme:?}) reported changed={changed}"
+            );
+            assert_eq!(state.scheme(), *scheme);
+            // Whatever the step, the palette it landed on must keep its thresholds.
+            assert!(
+                failing_text_pairs(&state.colors()).is_empty(),
+                "step {index} left text pairs below threshold"
+            );
+            assert!(
+                failing_non_text_pairs(&state.colors()).is_empty(),
+                "step {index} left state indicators below 3:1"
+            );
+        }
+    }
+
+    #[test]
+    fn the_repaint_flag_does_not_depend_on_which_probe_produced_the_same_palette() {
+        // Two different probes that resolve to the same High Contrast palette must not report a
+        // change on the second reading; the flag describes the palette, not the input.
+        let mut state = ContrastState::default();
+        assert!(state.observe(ContrastScheme::HighContrast, &hc_black()));
+        let first = state.colors();
+        // A second probe whose values resolve identically.
+        let same = SystemColors {
+            window: 0x000000,
+            window_text: 0xffffff,
+            highlight: 0x000080,
+            highlight_text: 0xffffff,
+            gray_text: 0x808080,
+            button_face: 0x000000,
+            button_text: 0xffffff,
+        };
+        assert!(!state.observe(ContrastScheme::HighContrast, &same));
+        assert_eq!(palette_values(&state.colors()), palette_values(&first));
+    }
+    #[test]
     fn the_high_contrast_palette_only_uses_values_the_probe_offered() {
         // A role that quietly came from the normal palette would be a real defect: under High
         // Contrast every colour must follow the system theme.

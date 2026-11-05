@@ -4780,3 +4780,11 @@ SecretValue` are all refused; existing redactor behavior is unchanged.
 - **Measured after the fix:** the selection indicator reads **9.49:1** on the button face it is drawn on in the normal palette (10.61:1 was the figure against the window colour, which is not the surface the rows use); both High Contrast themes pass every text pair and every state indicator.
 - **Not claimed:** this is a **contrast** property, not a claim that the two themes render correctly on Windows - no High Contrast theme was applied to a running window, and screen readers and AT remain `NOT_MEASURED`. MP-AX1 as a whole, MP-AX2 and product acceptance remain **NOT_RUN**.
 - **Verified:** `cargo test -p desktop-gpui contrast` **42 passed** (the split-surface probe added one); workspace clippy clean; `cargo test --locked --workspace` all 44 binaries green.
+
+### 19.264 MP-AX1: the probe sequence and the repaint flag (2026-11-05)
+
+- **What was untested:** `ContrastState::observe` decides whether the shell repaints. Its contract - "changed exactly when the resolved colours changed" - had no test, so a regression could repaint on every probe tick or, worse, skip a repaint when the theme really changed.
+- **Sequence test:** normal -> High Contrast black -> High Contrast black again -> High Contrast white -> normal, asserting the flag at every step (**false, true, false, true, true**) and, after each step, that the palette it landed on still passes **both** audits - every text pair and every state indicator.
+- **Contract test:** two different probes that resolve to the same palette must report **no** change on the second reading, which is what "the flag describes the palette, not the input" means in practice.
+- **Not claimed:** this is the state machine, not the wiring to the window. Whether the shell repaints at the right moment on a real High Contrast theme change is still **unmeasured**: applying a High Contrast theme to a running window and observing the redraw is outside what this session can do, so **native display quality, screen readers and AT remain `NOT_MEASURED`**. MP-AX1 as a whole, MP-AX2 and product acceptance remain **NOT_RUN**.
+- **Verified:** `cargo test -p desktop-gpui contrast` 44 passed; workspace clippy clean; `cargo test --locked --workspace` all 44 binaries green.
