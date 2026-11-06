@@ -50,7 +50,7 @@ pub fn bind_keys(cx: &mut App) {
 
 /// Fast retirement polls run shortly after a release, then one persistent slow cadence applies so
 /// a delayed last-detach is still collected without waking an idle window every frame.
-const FAST_RETIREMENT_MILLIS: u64 = 40;
+const FAST_RETIREMENT_MILLIS: u64 = 100;
 const SLOW_RETIREMENT_MILLIS: u64 = 500;
 /// Number of fast sweeps before the slow cadence takes over for good.
 const FAST_RETIREMENT_SWEEPS: u8 = 8;
@@ -84,7 +84,6 @@ pub struct ImageViewer {
     /// Frames detached from this viewer but still reachable from the last presented scene.
     retiring: Vec<Arc<PreparedImage>>,
     retirement_scheduled: bool,
-    retirement_due: bool,
     retirement_attempts: u8,
     retirement_slow: bool,
     serial: u64,
@@ -93,6 +92,8 @@ pub struct ImageViewer {
     generation: u64,
     transform: Option<ViewTransform>,
     dpi: f64,
+    /// Handle used by the deferred retirement sweep, which must also run while not rendered.
+    window: gpui::AnyWindowHandle,
     viewport: Bounds<Pixels>,
     focus: FocusHandle,
     drag: Option<gpui::Point<Pixels>>,
@@ -104,15 +105,16 @@ pub struct ImageViewer {
 }
 
 impl ImageViewer {
-    pub fn new(mode: ViewerMode, _window: &Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(mode: ViewerMode, window: &Window, cx: &mut Context<Self>) -> Self {
+        let window = window.window_handle();
         Self {
             service: ImageUploadService::global(), current: None, cancel: Cancellation::default(),
             tile_cancel: Cancellation::default(), demand: None, demand_id: 0, tile_attempts: 0,
             retiring: Vec::new(),
-            retirement_scheduled: false, retirement_due: false, retirement_attempts: 0,
+            retirement_scheduled: false, retirement_attempts: 0,
             retirement_slow: false,
             serial: 0, view_serial: 0, revision: 0, generation: 0, transform: None,
-            dpi: 0.0, viewport: Bounds::default(), focus: cx.focus_handle().tab_stop(true), drag: None,
+            dpi: 0.0, window, viewport: Bounds::default(), focus: cx.focus_handle().tab_stop(true), drag: None,
             mode, phase: 0, status: "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。".into(),
             palette: Palette { scheme: ContrastScheme::Normal, colors: NORMAL_COLORS }, consumer: ConsumerId::allocate(),
         }
@@ -221,25 +223,31 @@ impl ImageViewer {
     }
 
     /// Wait on a background timer, never on a chain of frame callbacks: an idle window must not be
-    /// woken every frame just to poll a frame it cannot evict yet.
+    /// woken every frame just to poll a frame it cannot evict yet. The sweep uses this view's
+    /// window handle, so it also runs while the Artifact surface is not being rendered.
     fn schedule_retirement(&mut self, cx: &mut Context<Self>) {
-        if self.retirement_scheduled || self.retirement_due || self.retiring.is_empty() {
+        if self.retirement_scheduled || self.retiring.is_empty() {
             return;
         }
         self.retirement_scheduled = true;
         let interval = retirement_interval(self.retirement_attempts, self.retirement_slow);
+        let window = self.window;
         cx.spawn(async move |this, cx| {
             cx.background_executor()
                 .timer(std::time::Duration::from_millis(interval))
                 .await;
-            let _ = this.update(cx, |this, cx| {
-                this.retirement_scheduled = false;
-                if this.retiring.is_empty() {
-                    return;
-                }
-                // One deferred frame, from which the sweep can run with a window.
-                this.retirement_due = true;
-                cx.notify();
+            let _ = cx.update(|app| {
+                window.update(app, |_, window, app| {
+                    let _ = this.update(app, |this, cx| {
+                        this.retirement_scheduled = false;
+                        if this.retiring.is_empty() {
+                            this.retirement_attempts = 0;
+                            this.retirement_slow = false;
+                            return;
+                        }
+                        this.evict_retired(window, cx);
+                    });
+                })
             });
         })
         .detach();
@@ -413,10 +421,6 @@ impl Drop for ImageViewer {
 
 impl Render for ImageViewer {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        if std::mem::take(&mut self.retirement_due) {
-            // The timer decided a sweep is due; this deferred callback supplies the window.
-            cx.defer_in(window, |this, window, cx| this.evict_retired(window, cx));
-        }
         let palette = self.palette;
         let scale = self
             .transform

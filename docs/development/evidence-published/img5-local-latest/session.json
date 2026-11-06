@@ -285,11 +285,55 @@
     "pixel_identity": "Byte-identical to the a4b41e0 captures, so the round-3 changes altered no rendered pixels.",
     "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown"
   },
-  "final_native": {
-    "candidate_sources": "the commit that contains this record (round-5 repairs: timer-driven retirement polling instead of per-frame callbacks; DPI-aware viewport invalidation before the next request)",
+  "repair4_native": {
+    "candidate_commit": "4603864e2f260fd1f84fa7e33af7af2fca4986b7",
+    "candidate_sources": "commit 4603864 (round-4 repairs: repaint only on real state change, demand identity, persistent slow retirement cadence, resize invalidation)",
     "binary": {
       "path": "C:/dev/cos-build-release/release/examples/image_viewer.exe",
-      "sha256": "sha256:47a93dcb043de2cbf5c53f23a212980db7d717d5b3f3a5d2076792a342410e92"
+      "sha256": "sha256:2834d6bfa4bc2ead8bfd30ea0b13fcdf9f2861452cb3abd7e25ba8b455f7a4b5"
+    },
+    "release": true,
+    "display_scale": 1.0,
+    "observed": [
+      "Fit 28.2% with the revision-1 magenta marker",
+      "Physical 1:1 100.0%",
+      "Next revision switches to the revision-2 cyan marker without stale tiles",
+      "Maximize recomputes Fit to 56.0%; restore returns to 28.2% with the marker intact",
+      "Close exits with no diagnostic output"
+    ],
+    "captures": [
+      {
+        "path": "final-native-fit.png",
+        "sha256": "sha256:ebadbaf7021a1f22a17c1a031636ac15699160c67df0749a69457350c15093d2",
+        "width": 1095,
+        "height": 832
+      },
+      {
+        "path": "final-native-1to1.png",
+        "sha256": "sha256:2c2c4a9b93d49183779b89cf01bf3f2baf40c2efbca7ca5add38ddd9613ebad0",
+        "width": 1095,
+        "height": 832
+      },
+      {
+        "path": "final-native-revision2.png",
+        "sha256": "sha256:561d0d8edc4c364e21baf3deeecfdc62e99674a41f051df357902d40bbe2ae7d",
+        "width": 1095,
+        "height": 832
+      },
+      {
+        "path": "final-native-maximized.png",
+        "sha256": "sha256:dad9a7d64aba5b746cfcf45bb8759c95343fffc0c2a31437785578181ff75b69",
+        "width": 3432,
+        "height": 1384
+      }
+    ],
+    "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown"
+  },
+  "final_native": {
+    "candidate_sources": "the commit that contains this record (round-6 repairs: retirement sweep runs through this view's window handle so it is not tied to rendering; evidence history per candidate)",
+    "binary": {
+      "path": "C:/dev/cos-build-release/release/examples/image_viewer.exe",
+      "sha256": "sha256:e02934998948101aa6e9eaf47d801fdfbcb9075744c8f2ef6af4debeb80b570e"
     },
     "release": true,
     "display_scales": [
@@ -308,8 +352,8 @@
       "Fit 28.2% with the revision-1 magenta marker; all four quadrants complete",
       "Physical 1:1 100.0% at native window size",
       "Next revision switches to the revision-2 cyan marker at Fit without stale tiles",
-      "Maximize recomputes Fit to 56.0%; restore returns to 28.2% with the marker intact and no blank viewport after the viewport-change invalidation",
-      "Settled idle window: 0 ms of process CPU time over a 5 s sample, so retirement polling no longer requests a frame every cycle",
+      "Maximize recomputes Fit to 56.0%; restore returns to 28.2% with the marker intact",
+      "Settled idle window CPU: 0 ms over a 5 s sample on the 8348cd3 build and 46.9 ms over 8 s (109.4 ms over 10 s) on this build; no per-frame callback chain remains",
       "Close exits with no diagnostic output",
       "IMG4 --manifest 32 exits 0 with one shared retention, one process_quarantine refusal and failures:0"
     ],
@@ -339,7 +383,8 @@
         "height": 1384
       }
     ],
-    "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown"
+    "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown",
+    "retirement_path": "The sweep is scheduled by a background timer and executed through ImageViewer's AnyWindowHandle, so it runs even while the Artifact surface is not being rendered; the window-close hook remains the last boundary."
   },
   "review_round_3_repairs": {
     "transient_preparation": "PreparationBusy retries are bounded to 20 per demand and then report an explicit limitation; the counter resets on a new view, image or revision. A permanent failure keeps its own message.",
