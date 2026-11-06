@@ -14,6 +14,8 @@ gpui.workspace = true
 ui-model = { path = "../ui-model" }
 app-core = { path = "../app-core" }
 desktop-protocol = { path = "../desktop-protocol" }
+media = { path = "../media" }
+image = { version = "0.25.10", default-features = false }
 
 [lints]
 workspace = true

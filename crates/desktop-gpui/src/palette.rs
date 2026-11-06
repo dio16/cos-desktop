@@ -473,7 +473,13 @@ impl Shell {
     }
 
     /// Render the palette overlay; an empty element while the palette is closed.
-    pub(super) fn palette_overlay(&mut self, facts: &Facts, cx: &mut Context<Self>) -> AnyElement {
+    pub(super) fn palette_overlay(
+        &mut self,
+        facts: &Facts,
+        scheme: crate::contrast::ContrastScheme,
+        colors: crate::contrast::ShellColors,
+        cx: &mut Context<Self>,
+    ) -> AnyElement {
         if !self.palette_open {
             return div().into_any_element();
         }
@@ -545,7 +551,14 @@ impl Shell {
                             }
                             None => format!("{title}（{category}）を実行します。"),
                         };
-                        crate::help::tooltip(SharedString::from(text), style.clone(), width, cx)
+                        crate::help::tooltip(
+                            SharedString::from(text),
+                            style.clone(),
+                            width,
+                            scheme,
+                            colors,
+                            cx,
+                        )
                     }
                 })
                 .flex()
@@ -554,17 +567,27 @@ impl Shell {
                 .px_3()
                 .py_2()
                 .bg(rgb(if is_active && unavailable.is_none() {
-                    0x3c5268
+                    crate::contrast::role_color(scheme, 0x3c5268, colors.selection)
                 } else if is_active {
-                    0x2f3338
+                    crate::contrast::role_color(scheme, 0x2f3338, colors.disabled_face)
                 } else {
-                    0x24272c
+                    crate::contrast::role_color(scheme, 0x24272c, colors.button_face)
                 }))
-                .text_color(rgb(if unavailable.is_some() {
-                    0x8b949e
-                } else {
-                    0xe6e8eb
-                }))
+                .text_color(rgb(crate::contrast::readable_text(
+                    &colors,
+                    if unavailable.is_some() {
+                        colors.disabled
+                    } else {
+                        colors.text
+                    },
+                    if is_active && unavailable.is_none() {
+                        crate::contrast::role_color(scheme, 0x3c5268, colors.selection)
+                    } else if is_active {
+                        crate::contrast::role_color(scheme, 0x2f3338, colors.disabled_face)
+                    } else {
+                        crate::contrast::role_color(scheme, 0x24272c, colors.button_face)
+                    },
+                )))
                 .child(
                     div()
                         .flex()
@@ -574,12 +597,18 @@ impl Shell {
                         .child(SharedString::from(descriptor.category)),
                 )
                 .when_some(unavailable.clone(), |element, reason| {
+                    let background = if is_active {
+                        crate::contrast::role_color(scheme, 0x2f3338, colors.disabled_face)
+                    } else {
+                        crate::contrast::role_color(scheme, 0x24272c, colors.button_face)
+                    };
                     element.child(
                         div()
-                            // 0x8b949e measured 4.13:1 on the active-unavailable row
-                            // (0x2f3338); the reason is ordinary information, not an inactive
-                            // control, so it is raised to 0x969ea8 (4.69:1 there).
-                            .text_color(rgb(0x969ea8))
+                            .text_color(rgb(crate::contrast::readable_text(
+                                &colors,
+                                crate::contrast::role_color(scheme, 0x969ea8, colors.disabled),
+                                background,
+                            )))
                             .child(SharedString::from(reason)),
                     )
                 });
@@ -623,7 +652,11 @@ impl Shell {
                     .aria_label("Escapeキーで閉じる")
                     .px_3()
                     .py_1()
-                    .text_color(rgb(0x8b949e))
+                    .text_color(rgb(crate::contrast::readable_text(
+                        &colors,
+                        crate::contrast::role_color(scheme, 0x8b949e, colors.muted_text),
+                        crate::contrast::role_color(scheme, 0x1c1f23, colors.raised_face),
+                    )))
                     .child("Enterキーで選択中のコマンドを実行、Escapeキーで閉じます。")
             }));
         div()
@@ -640,8 +673,17 @@ impl Shell {
             .gap_1()
             .p_2()
             .border_1()
-            .border_color(rgb(0x626870))
-            .bg(rgb(0x1c1f23))
+            .border_color(rgb(colors.border))
+            .bg(rgb(crate::contrast::role_color(
+                scheme,
+                0x1c1f23,
+                colors.raised_face,
+            )))
+            .text_color(rgb(crate::contrast::readable_text(
+                &colors,
+                colors.text,
+                crate::contrast::role_color(scheme, 0x1c1f23, colors.raised_face),
+            )))
             .on_action(cx.listener(|this, _: &crate::PaletteClose, window, cx| {
                 this.palette_close(window, cx);
             }))
@@ -689,8 +731,13 @@ impl Shell {
                     .px_3()
                     .py_2()
                     .border_1()
-                    .border_color(rgb(0xe6c278))
-                    .bg(rgb(0x17191c))
+                    .border_color(rgb(colors.focus))
+                    .bg(rgb(colors.background))
+                    .text_color(rgb(crate::contrast::readable_text(
+                        &colors,
+                        colors.text,
+                        colors.background,
+                    )))
                     .child(display)
                     .child(
                         div()

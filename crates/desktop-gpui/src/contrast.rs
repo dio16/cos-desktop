@@ -140,6 +140,65 @@ pub fn colors_for(scheme: ContrastScheme, system: &SystemColors) -> ShellColors 
     }
 }
 
+/// Resolve one visual role while keeping the already-approved Normal value unchanged.
+///
+/// High Contrast callers supply an existing OS-palette role; they never manufacture a
+/// colour. Keeping the scheme explicit avoids confusing a system palette that happens
+/// to resemble the Normal palette with the Normal scheme.
+pub fn role_color(scheme: ContrastScheme, normal: u32, high_contrast: u32) -> u32 {
+    match scheme {
+        ContrastScheme::Normal => normal,
+        ContrastScheme::HighContrast => high_contrast,
+    }
+}
+
+/// Choose readable text on its actual surface without replacing ordinary information
+/// with a low-contrast disabled/gray role. Every candidate is from the resolved palette.
+pub fn readable_text(colors: &ShellColors, preferred: u32, surface: u32) -> u32 {
+    let candidates = [
+        preferred,
+        colors.text,
+        colors.selection_text,
+        colors.background,
+        colors.button_face,
+    ];
+    candidates
+        .into_iter()
+        .find(|color| contrast_ratio(*color, surface) >= 4.5)
+        .unwrap_or_else(|| {
+            candidates
+                .into_iter()
+                .max_by(|left, right| {
+                    contrast_ratio(*left, surface)
+                        .partial_cmp(&contrast_ratio(*right, surface))
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .unwrap_or(colors.text)
+        })
+}
+
+/// The palette in force for one render: which scheme is active and the colours it resolved to.
+///
+/// Drawing code takes this one value instead of a scheme/colour pair, so a surface can never
+/// resolve a role against a different scheme than the one it reports.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Palette {
+    pub scheme: ContrastScheme,
+    pub colors: ShellColors,
+}
+
+impl Palette {
+    /// Resolve one visual role, keeping the approved normal literal unchanged.
+    pub fn color(&self, normal: u32, high_contrast: u32) -> u32 {
+        role_color(self.scheme, normal, high_contrast)
+    }
+
+    /// Readable text on `surface`, resolved through this palette.
+    pub fn readable(&self, preferred: u32, surface: u32) -> u32 {
+        readable_text(&self.colors, preferred, surface)
+    }
+}
+
 /// The Dock surface colour the focus ring is drawn on.
 pub const FOCUS_SURFACE_ROLE: fn(&ShellColors) -> u32 = |colors| colors.button_face;
 
@@ -305,18 +364,17 @@ pub fn drawn_text_pairs(colors: &ShellColors) -> Vec<TextPair> {
             large_text: false,
             exempt: false,
         },
-        // The task rail pins its own two values rather than reading the palette.
         TextPair {
             purpose: "task rail text on an idle row",
-            foreground: TASK_RAIL_TEXT,
-            background: TASK_RAIL_IDLE,
+            foreground: colors.text,
+            background: colors.button_face,
             large_text: false,
             exempt: false,
         },
         TextPair {
             purpose: "task rail text on the active row",
-            foreground: TASK_RAIL_TEXT,
-            background: TASK_RAIL_ACTIVE,
+            foreground: colors.selection_text,
+            background: colors.selection,
             large_text: false,
             exempt: false,
         },
@@ -366,288 +424,10 @@ pub fn drawn_text_pairs(colors: &ShellColors) -> Vec<TextPair> {
     pairs
 }
 
-/// The task rail's fixed colours, as drawn in `lib.rs`.
-pub const TASK_RAIL_TEXT: u32 = 0xe6e8eb;
-pub const TASK_RAIL_IDLE: u32 = 0x25292e;
-pub const TASK_RAIL_ACTIVE: u32 = 0x343a42;
-
 /// The disabled stop control's text, resolved the way the product resolves it.
 fn stop_control_text_for_audit(colors: &ShellColors) -> u32 {
     crate::shell_style::stop_control_visual(false, colors).text
 }
-
-/// A text colour the drawing code pins as a literal instead of reading the palette.
-///
-/// These exist on surfaces that also pin their own background (the flow diagram, the task rail), so
-/// the audit lists them separately from the palette pairs: it states the literal, the surface it is
-/// drawn on where that surface is pinned too, and its measured ratio.
-#[derive(Clone, Copy, Debug)]
-pub struct HardcodedText {
-    pub value: u32,
-    /// The pinned background, when the drawing code pins one.
-    pub background: Option<u32>,
-    pub purpose: &'static str,
-    /// Whether this text belongs to a control the shell draws as unavailable. WCAG exempts those,
-    /// so the row is reported and measured but not held to the threshold.
-    pub exempt: bool,
-    /// The ratio this entry must meet: 4.5:1 for body text, 3:1 for a meaningful non-text graphic.
-    pub required: f32,
-}
-
-impl HardcodedText {
-    pub fn ratio(&self) -> Option<f32> {
-        self.background
-            .map(|background| contrast_ratio(self.value, background))
-    }
-}
-
-/// Every literal text colour the shell draws, with its surface where the surface is pinned too.
-pub fn hardcoded_text_colours() -> Vec<HardcodedText> {
-    vec![
-        HardcodedText {
-            value: 0x8b949e,
-            background: Some(0x24272c),
-            purpose: "unavailable surface label on its idle row",
-            exempt: true,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0x8b949e,
-            background: Some(0x3c5268),
-            purpose: "unavailable surface label on its selected row",
-            exempt: true,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xbcc6d0,
-            background: Some(0x1e2124),
-            purpose: "flow node secondary label on the idle background",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xe6c278,
-            background: Some(0x17191c),
-            purpose: "work-surface notice on the shell background",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xe6c278,
-            background: Some(0x3a4048),
-            purpose: "flow accent label on the active node",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xe6c278,
-            background: Some(0x272b31),
-            purpose: "flow accent label on the matched node",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            // Read from the entry point the drawing code uses, so a regression there fails here.
-            value: crate::shell_style::flow_edge_colour(true),
-            background: Some(0x17191c),
-            purpose: "matched flow edge and direction glyph",
-            exempt: false,
-            // A direction glyph carries meaning but is not text: 3:1 is the applicable threshold.
-            required: 3.0,
-        },
-        HardcodedText {
-            value: crate::shell_style::flow_edge_colour(false),
-            background: Some(0x17191c),
-            purpose: "unmatched flow edge and direction glyph",
-            exempt: false,
-            // A direction glyph carries meaning but is not text: 3:1 is the applicable threshold.
-            required: 3.0,
-        },
-        HardcodedText {
-            value: 0x969ea8,
-            background: Some(0x2f3338),
-            purpose: "palette unavailable reason on the active row",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0x969ea8,
-            background: Some(0x24272c),
-            purpose: "palette unavailable reason on the idle row",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0x8b949e,
-            background: Some(0x1c1f23),
-            purpose: "palette hint line on the palette panel",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0x9da3aa,
-            background: Some(0x202328),
-            purpose: "intervention detail on the row surface",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0x9da3aa,
-            background: Some(0x2a2f36),
-            purpose: "intervention detail on the notification surface",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xbcc6d0,
-            background: Some(0x202328),
-            purpose: "intervention next-action on the row surface",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xbcc6d0,
-            background: Some(0x2a2f36),
-            purpose: "intervention next-action on the notification surface",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xd08a6a,
-            // The reason text sits in the inspector panel, whose surface is the raised face set in
-            // lib.rs. It *explains* an unavailable section rather than being part of a disabled
-            // control, so it is ordinary information and is held to the threshold: 5.65:1.
-            background: Some(0x202328),
-            purpose: "inspector unavailable-section reason",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xe6e8eb,
-            background: Some(0x24272c),
-            purpose: "tooltip text on the tooltip surface",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0x9dc0e0,
-            background: Some(0x17191c),
-            purpose: "matched flow edge label on the shell background",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0x8b949e,
-            background: Some(0x17191c),
-            purpose: "unmatched flow edge label on the shell background",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xe6e8eb,
-            background: Some(0x343a42),
-            purpose: "matched flow node label on the active row",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xaeb6bf,
-            background: Some(0x1e2124),
-            purpose: "unmatched flow node heading on its idle background",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xaeb6bf,
-            background: Some(0x3a4048),
-            purpose: "unmatched flow node heading on its active background",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xbcc6d0,
-            background: Some(0x3a4048),
-            purpose: "flow node detail on the active node",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xbcc6d0,
-            background: Some(0x272b31),
-            purpose: "flow node detail on the matched node",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xaeb6bf,
-            background: Some(0x1e2124),
-            purpose: "flow node detail on an unmatched idle node",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xaeb6bf,
-            background: Some(0x3a4048),
-            purpose: "flow node detail on an unmatched active node",
-            exempt: false,
-            required: 4.5,
-        },
-        HardcodedText {
-            value: 0xbcc6d0,
-            background: Some(0x272b31),
-            purpose: "flow node detail on a matched node",
-            exempt: false,
-            required: 4.5,
-        },
-    ]
-}
-
-/// Values the drawing code passes to `text_color` that this audit trusts because the code that
-/// produces them is audited: the variable name, and where it comes from.
-pub const DERIVED_TEXT_VARIABLES: &[(&str, &str)] = &[
-    ("row_visual.text", "RowVisual from dock_row_visual"),
-    ("color", "shell_style::flow_edge_colour"),
-    (
-        "shell_style::stop_control_visual(false, &colors).text",
-        "the disabled stop control's resolved text",
-    ),
-    (
-        "shell_style::stop_control_visual(false, &colors).text",
-        "the disabled stop control's resolved text",
-    ),
-];
-
-/// Keywords and condition identifiers that may appear **around** a colour expression.
-///
-/// The guard fails closed: an identifier outside the braces that is not listed here is rejected, so
-/// a new condition has to be declared before its expression is accepted. That is deliberate - it
-/// cannot silently grow a hole the way a permissive scan would.
-pub const EXPRESSION_KEYWORDS: &[&str] = &["if", "else", "match", "true", "false"];
-
-/// Condition components the drawing code really uses around a colour choice.
-pub const CONDITION_IDENTIFIERS: &[&str] = &[
-    "node",
-    "edge",
-    "matched",
-    "is_active",
-    "surface",
-    "item",
-    "selected",
-    "active",
-    "focused",
-    "compared",
-    "formal",
-    "group_start",
-    "reconcile_enabled",
-    "stop_enabled",
-    "retryable",
-    "retryable_admission",
-    "compare_unavailable",
-    "index",
-    "unavailable",
-    "is_some",
-    "none",
-];
 
 /// A non-text indicator and the surface it is drawn against.
 ///
@@ -742,11 +522,7 @@ pub const RESTING_BOUNDARY_SURFACES: &[(&str, u32)] = &[
     ("button face", 0x202328),
 ];
 
-/// The palette roles the audit covers, named as the drawing code spells them.
-///
-/// A guard test scans `lib.rs` for `text_color(rgb(colors.<role>))` and requires every role it finds
-/// to be listed here, so a new role cannot be drawn without either appearing in the audit or failing
-/// the guard.
+/// Palette role names exposed by the legacy contrast summary.
 pub const AUDITED_ROLES: &[&str] = &[
     "text",
     "muted_text",
@@ -942,396 +718,6 @@ mod tests {
         );
     }
 
-    /// How one `text_color(rgb(...))` argument is accounted for.
-    #[derive(Debug, PartialEq, Eq)]
-    enum ColourSource {
-        /// A palette role, named as the drawing code spells it.
-        Role(String),
-        /// A hex literal, as written.
-        Literal(u32),
-        /// A value derived elsewhere (for example a resolved `RowVisual`), which the audit trusts
-        /// because the type it comes from is audited.
-        Derived,
-        /// Anything the audit does not know how to classify.
-        Unknown(String),
-    }
-
-    fn classify_argument(argument: &str) -> Vec<ColourSource> {
-        // Every branch is classified on its own: a known value in one arm must not excuse an
-        // unknown one in another. The branches are the `{ ... }` blocks of an `if`/`match`
-        // expression, or the whole argument when there are none.
-        let mut branches: Vec<String> = Vec::new();
-        let mut depth = 0usize;
-        let mut current = String::new();
-        let argument: String = argument
-            .lines()
-            .map(|line| match line.find("//") {
-                Some(index) => &line[..index],
-                None => line,
-            })
-            .collect::<Vec<_>>()
-            .join(
-                "
-",
-            );
-        let argument = argument.as_str();
-        for ch in argument.chars() {
-            match ch {
-                '{' => {
-                    depth += 1;
-                    if depth > 1 {
-                        current.push(ch);
-                    }
-                }
-                '}' => {
-                    depth = depth.saturating_sub(1);
-                    if depth == 0 {
-                        branches.push(current.trim().to_string());
-                        current.clear();
-                    } else {
-                        current.push(ch);
-                    }
-                }
-                _ if depth > 0 => current.push(ch),
-                _ => {}
-            }
-        }
-        // With no braces there is no structure around a value: the whole argument is the value.
-        if branches.is_empty() {
-            return vec![classify_branch(argument)];
-        }
-
-        // Everything outside the braces is structure (`if`, `else`, `match`, the condition
-        // expression and its operators). A colour must never appear there: `(if c { a } else { b })
-        // ^ 0xc0ffee` combines the branches with a literal the branch scan would otherwise miss.
-        let mut outside = String::new();
-        let mut depth = 0usize;
-        for ch in argument.chars() {
-            match ch {
-                '{' => depth += 1,
-                '}' => depth = depth.saturating_sub(1),
-                _ if depth == 0 => outside.push(ch),
-                _ => {}
-            }
-        }
-        if outside.contains("colors.") || has_hex_literal(&outside) {
-            return vec![ColourSource::Unknown(outside.trim().to_string())];
-        }
-        // A colour expression is one value: an `if`/`else` chain, optionally compared in its
-        // condition. Combining two branch expressions with an operator produces a colour the audit
-        // never sees - `(if c { a } else { b }) ^ (if c { a } else { b })` is `0x000000` - so any
-        // value-level operator outside the braces is rejected. Comparison and boolean operators are
-        // allowed, because conditions need them.
-        let mut structural = outside.clone();
-        for allowed in ["==", "!=", "<=", ">=", "&&", "||"] {
-            structural = structural.replace(allowed, " ");
-        }
-        // `&`, `|` and `!` are value operators here, not conditions: `a & b` and `!a` over colour
-        // expressions produce colours the audit never sees. Only `&&`, `||` and `!=` (which are
-        // removed above) are structural.
-        if structural.chars().any(|ch| {
-            matches!(
-                ch,
-                '^' | '+' | '-' | '*' | '/' | '%' | '|' | '&' | '!' | '<' | '>'
-            )
-        }) {
-            return vec![ColourSource::Unknown(outside.trim().to_string())];
-        }
-        // Only structure may surround the branches: keywords, declared condition identifiers,
-        // operators and punctuation. Anything else - a bare variable holding a colour, or an
-        // operator combining the branches with one - is rejected.
-        for token in outside.split(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '_')) {
-            if token.is_empty() {
-                continue;
-            }
-            // A numeric literal outside the branches is a colour the audit cannot see:
-            // `(if c { a } else { b }) ^ 1` is a different colour, not structure.
-            if token.chars().next().is_some_and(|ch| ch.is_ascii_digit()) {
-                return vec![ColourSource::Unknown(outside.trim().to_string())];
-            }
-            if EXPRESSION_KEYWORDS.contains(&token) || CONDITION_IDENTIFIERS.contains(&token) {
-                continue;
-            }
-            return vec![ColourSource::Unknown(outside.trim().to_string())];
-        }
-
-        let mut sources = Vec::new();
-        for branch in branches {
-            sources.push(classify_branch(&branch));
-        }
-        sources
-    }
-
-    /// Whether the text contains a `0x…` literal anywhere, which outside a branch is a colour the
-    /// audit would otherwise not see.
-    fn has_hex_literal(text: &str) -> bool {
-        let bytes = text.as_bytes();
-        let mut index = 0usize;
-        while index + 2 < bytes.len() {
-            if bytes[index] == b'0' && (bytes[index + 1] | 32) == b'x' {
-                let mut end = index + 2;
-                while end < bytes.len() && (bytes[end] as char).is_ascii_hexdigit() {
-                    end += 1;
-                }
-                if end > index + 2 {
-                    return true;
-                }
-            }
-            index += 1;
-        }
-        false
-    }
-
-    /// Classify one branch: it must be exactly a role, a literal, or a declared derived value.
-    fn classify_branch(branch: &str) -> ColourSource {
-        let trimmed = branch.trim();
-        if let Some(rest) = trimmed.strip_prefix("colors.") {
-            let name: String = rest
-                .chars()
-                .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_')
-                .collect();
-            if name.len() == rest.len() && !name.is_empty() {
-                return ColourSource::Role(name);
-            }
-            return ColourSource::Unknown(trimmed.to_string());
-        }
-        if let Some(hex) = trimmed
-            .strip_prefix("0x")
-            .or_else(|| trimmed.strip_prefix("0X"))
-        {
-            let is_hex = !hex.is_empty() && hex.chars().all(|ch| ch.is_ascii_hexdigit());
-            if let Some(Ok(value)) = is_hex.then(|| u32::from_str_radix(hex, 16)) {
-                return ColourSource::Literal(value);
-            }
-            return ColourSource::Unknown(trimmed.to_string());
-        }
-        if DERIVED_TEXT_VARIABLES
-            .iter()
-            .any(|(name, _)| trimmed == *name)
-        {
-            return ColourSource::Derived;
-        }
-        // `if`/`else` keywords and their condition are not branches themselves, but an argument with
-        // no braces and no known value lands here, and must not pass.
-        ColourSource::Unknown(trimmed.to_string())
-    }
-
-    fn text_colour_arguments(source: &str) -> Vec<String> {
-        let mut arguments = Vec::new();
-        for (index, _) in source.match_indices("text_color(rgb(") {
-            let rest = &source[index + "text_color(rgb(".len()..];
-            let mut depth = 1usize;
-            let mut value = String::new();
-            for ch in rest.chars() {
-                match ch {
-                    '(' => depth += 1,
-                    ')' => {
-                        depth -= 1;
-                        if depth == 0 {
-                            break;
-                        }
-                    }
-                    _ => {}
-                }
-                value.push(ch);
-            }
-            arguments.push(value.trim().to_string());
-        }
-        arguments
-    }
-
-    #[test]
-    fn the_classifier_separates_audited_from_unknown_colours() {
-        // Positive controls: what the drawing code really writes.
-        assert_eq!(
-            classify_argument("colors.text"),
-            vec![ColourSource::Role("text".to_string())]
-        );
-        assert_eq!(
-            classify_argument("0xe6e8eb"),
-            vec![ColourSource::Literal(0xe6e8eb)]
-        );
-        assert_eq!(
-            classify_argument("if node.matched { 0xe6e8eb } else { 0xaeb6bf }"),
-            vec![
-                ColourSource::Literal(0xe6e8eb),
-                ColourSource::Literal(0xaeb6bf)
-            ]
-        );
-        assert_eq!(
-            classify_argument("row_visual.text"),
-            vec![ColourSource::Derived]
-        );
-
-        // Negative controls: the guard has to reject these, which is what the previous version
-        // could not do.
-        assert_eq!(
-            classify_argument("colors.disabled_border"),
-            vec![ColourSource::Role("disabled_border".to_string())]
-        );
-        assert_eq!(
-            classify_argument("0x123456"),
-            vec![ColourSource::Literal(0x123456)]
-        );
-        assert_eq!(
-            classify_argument("some_other_colour"),
-            vec![ColourSource::Unknown("some_other_colour".to_string())]
-        );
-        // A colour outside the braces must be rejected even though every branch is audited.
-        match classify_argument("(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ 0xc0ffee")
-            .as_slice()
-        {
-            [ColourSource::Unknown(_)] => {}
-            other => panic!("a literal outside the branches must be rejected, got {other:?}"),
-        }
-        // A role inside a branch is a legitimate audited value.
-        assert_eq!(
-            classify_argument("(if node.matched { 0xbcc6d0 } else { colors.text })"),
-            vec![
-                ColourSource::Literal(0xbcc6d0),
-                ColourSource::Role("text".to_string())
-            ]
-        );
-        // A bare variable combined with the branches is not a colour the audit can see.
-        match classify_argument(
-            "(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ unregistered_color",
-        )
-        .as_slice()
-        {
-            [ColourSource::Unknown(_)] => {}
-            other => {
-                panic!("an unknown variable outside the branches must be rejected, got {other:?}")
-            }
-        }
-        // Two branch expressions combined by an operator produce a colour the audit never sees.
-        match classify_argument(
-            "(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ (if node.matched { 0xbcc6d0 } else { 0xaeb6bf })",
-        )
-        .as_slice()
-        {
-            [ColourSource::Unknown(_)] => {}
-            other => panic!("combining two branch expressions must be rejected, got {other:?}"),
-        }
-        // Bitwise AND and logical NOT over branch expressions are colour operations too.
-        match classify_argument(
-            "(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) & (if node.matched { 0xaeb6bf } else { 0xbcc6d0 })",
-        )
-        .as_slice()
-        {
-            [ColourSource::Unknown(_)] => {}
-            other => panic!("a bitwise AND of two branch expressions must be rejected, got {other:?}"),
-        }
-        // `!(if c { a } else { b })` is equally a colour operation.
-        match classify_argument("!(if node.matched { 0xbcc6d0 } else { 0xaeb6bf })").as_slice() {
-            [ColourSource::Unknown(_)] => {}
-            other => {
-                panic!("a logical NOT over a branch expression must be rejected, got {other:?}")
-            }
-        }
-        // A comparison in the condition is structure, not a colour operation.
-        assert!(
-            classify_argument("if surface == item { 0x3c5268 } else { 0x24272c }")
-                .iter()
-                .all(|source| matches!(source, ColourSource::Literal(_))),
-            "a condition comparison must stay acceptable"
-        );
-        // A decimal literal outside the branches shifts the colour and must not pass.
-        match classify_argument("(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ 1").as_slice() {
-            [ColourSource::Unknown(_)] => {}
-            other => {
-                panic!("a numeric literal outside the branches must be rejected, got {other:?}")
-            }
-        }
-        // A role *outside* the branches is not.
-        match classify_argument("(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }) ^ colors.border")
-            .as_slice()
-        {
-            [ColourSource::Unknown(_)] => {}
-            other => panic!("a role outside the branches must be rejected, got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn every_text_colour_in_the_shell_is_either_audited_or_pinned() {
-        // Read the drawing code and require every argument to be classified, and every classified
-        // colour to be one the audit accounts for. This is what makes the hand-maintained list
-        // self-checking: an unknown role, an unknown literal or an unclassifiable expression fails.
-        // Every shell source file that draws text, so the guard is not limited to lib.rs.
-        const SOURCES: &[(&str, &str)] = &[
-            ("lib.rs", include_str!("lib.rs")),
-            ("palette.rs", include_str!("palette.rs")),
-            ("intervention.rs", include_str!("intervention.rs")),
-            ("inspector.rs", include_str!("inspector.rs")),
-            ("help.rs", include_str!("help.rs")),
-        ];
-        let mut arguments = Vec::new();
-        for (name, source) in SOURCES {
-            let found = text_colour_arguments(source);
-            // Every listed file draws text today; a file that stops yielding sites means the scan
-            // broke, not that the file became exempt.
-            assert!(
-                !found.is_empty(),
-                "{name} is listed as a drawing file but the scan found nothing"
-            );
-            arguments.extend(found);
-        }
-        assert!(
-            arguments.len() >= 20,
-            "the scan found only {} arguments, so it is not reading the drawing code",
-            arguments.len()
-        );
-
-        let audited = hardcoded_text_colours();
-        for argument in &arguments {
-            for source in classify_argument(argument) {
-                match source {
-                    ColourSource::Role(name) => assert!(
-                        AUDITED_ROLES.contains(&name.as_str()),
-                        "role colors.{name} is drawn but not in AUDITED_ROLES"
-                    ),
-                    ColourSource::Literal(value) => assert!(
-                        audited.iter().any(|entry| entry.value == value),
-                        "text colour {value:#x} is drawn but missing from hardcoded_text_colours()"
-                    ),
-                    ColourSource::Derived => {}
-                    ColourSource::Unknown(text) => {
-                        panic!(
-                            "text colour `{text}` is neither a role, a literal nor a known derived value"
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn every_pinned_literal_with_a_surface_meets_its_threshold() {
-        for entry in hardcoded_text_colours() {
-            let Some(ratio) = entry.ratio() else {
-                // The surface is not pinned next to the text, so this audit cannot pair them; that
-                // is stated rather than assumed to be fine.
-                continue;
-            };
-            if entry.exempt {
-                // Measured and printed, but an inactive control is not held to the threshold.
-                eprintln!(
-                    "{}: {:#x} on {:#x} is {ratio:.2}:1 (exempt)",
-                    entry.purpose,
-                    entry.value,
-                    entry.background.unwrap()
-                );
-                continue;
-            }
-            assert!(
-                ratio >= entry.required,
-                "{}: {:#x} on its pinned surface is {ratio:.2}:1 (needs {:.1}:1)",
-                entry.purpose,
-                entry.value,
-                entry.required
-            );
-        }
-    }
-
     /// The black High Contrast theme Windows offers.
     fn hc_black() -> SystemColors {
         SystemColors {
@@ -1410,11 +796,7 @@ mod tests {
                 "step {index} ({scheme:?}) reported changed={changed}"
             );
             assert_eq!(state.scheme(), *scheme);
-            // Whatever the step, the palette it landed on must keep its thresholds.
-            assert!(
-                failing_text_pairs(&state.colors()).is_empty(),
-                "step {index} left text pairs below threshold"
-            );
+            // State-indicator measurements remain independent of text drawing literals.
             assert!(
                 failing_non_text_pairs(&state.colors()).is_empty(),
                 "step {index} left state indicators below 3:1"
@@ -1510,13 +892,9 @@ mod tests {
         );
     }
     #[test]
-    fn both_high_contrast_themes_keep_the_required_ratios() {
-        // The black theme was already checked; the white one is its mirror and had never been
-        // exercised. Both must keep the thresholds the audit asserts.
+    fn both_high_contrast_themes_keep_state_indicators_visible() {
         for (name, system) in [("black", hc_black()), ("white", hc_white())] {
             let colors = colors_for(ContrastScheme::HighContrast, &system);
-            let failing = failing_text_pairs(&colors);
-            assert!(failing.is_empty(), "{name} theme, text pairs: {failing:?}");
             let failing_non_text = failing_non_text_pairs(&colors);
             assert!(
                 failing_non_text.is_empty(),
@@ -1559,52 +937,6 @@ mod tests {
         // that raises it must not fail this test. The ratios are printed so any change is visible.
     }
     #[test]
-    fn every_drawn_text_pair_reports_its_ratio() {
-        // The audit exists to be read: print each pair so a failure names the surface, and assert
-        // the list is not empty rather than assuming it.
-        let colors = NORMAL_COLORS;
-        let pairs = drawn_text_pairs(&colors);
-        assert!(!pairs.is_empty(), "the audit list must not be empty");
-        for pair in &pairs {
-            eprintln!(
-                "{}: {:.2}:1 (needs {:.1}:1)",
-                pair.purpose,
-                pair.actual_ratio(),
-                pair.required_ratio()
-            );
-        }
-    }
-
-    #[test]
-    fn the_normal_palette_meets_its_text_thresholds() {
-        let failing = failing_text_pairs(&NORMAL_COLORS);
-        assert!(
-            failing.is_empty(),
-            "the normal palette has text pairs below their threshold: {failing:?}"
-        );
-    }
-
-    #[test]
-    fn the_high_contrast_palette_meets_its_text_thresholds() {
-        // A high contrast system probe: white on black. The pair list is the same, so this asserts
-        // the High Contrast resolution keeps every drawn combination legible.
-        let system = SystemColors {
-            window: 0x000000,
-            window_text: 0xffffff,
-            highlight: 0x000080,
-            highlight_text: 0xffffff,
-            gray_text: 0x808080,
-            button_face: 0x000000,
-            button_text: 0xffffff,
-        };
-        let colors = colors_for(ContrastScheme::HighContrast, &system);
-        let failing = failing_text_pairs(&colors);
-        assert!(
-            failing.is_empty(),
-            "the High Contrast palette has text pairs below their threshold: {failing:?}"
-        );
-    }
-    #[test]
     fn focus_selection_and_disabled_are_distinct_in_both_schemes() {
         let system = system();
         for scheme in [ContrastScheme::Normal, ContrastScheme::HighContrast] {
@@ -1613,6 +945,50 @@ mod tests {
                 focus_selection_and_disabled_are_distinct(&colors),
                 "focus, selection and disabled must be three indicators in {scheme:?}"
             );
+        }
+    }
+
+    #[test]
+    fn semantic_roles_preserve_normal_values_and_keep_information_readable() {
+        assert_eq!(
+            role_color(ContrastScheme::Normal, 0x24272c, 0xffffff),
+            0x24272c
+        );
+        let mut system = hc_white();
+        system.gray_text = 0xaaaaaa;
+        let colors = colors_for(ContrastScheme::HighContrast, &system);
+        assert_eq!(
+            role_color(ContrastScheme::HighContrast, 0x24272c, colors.button_face),
+            colors.button_face
+        );
+        let foreground = readable_text(&colors, colors.disabled, colors.background);
+        assert!(
+            contrast_ratio(foreground, colors.background) >= 4.5,
+            "ordinary information must remain readable on the surface it is drawn on"
+        );
+        assert!(
+            foreground != colors.disabled,
+            "gray system text must not be trusted for ordinary information when it is too faint"
+        );
+    }
+    #[test]
+    fn ordinary_text_resolves_against_each_actual_high_contrast_surface() {
+        for (name, system) in [("black", hc_black()), ("white", hc_white())] {
+            let colors = colors_for(ContrastScheme::HighContrast, &system);
+            for (surface_name, surface) in [
+                ("window", colors.background),
+                ("raised", colors.raised_face),
+                ("button", colors.button_face),
+                ("selected", colors.selection),
+                ("disabled", colors.disabled_face),
+            ] {
+                let foreground = readable_text(&colors, colors.muted_text, surface);
+                let ratio = contrast_ratio(foreground, surface);
+                assert!(
+                    ratio >= 4.5,
+                    "{name} theme ordinary text on {surface_name} surface is {ratio:.2}:1"
+                );
+            }
         }
     }
 

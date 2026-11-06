@@ -8,7 +8,9 @@
 use std::sync::Arc;
 
 use desktop_protocol::TaskId;
-use gpui::{AnyElement, Context, IntoElement, Role, SharedString, Window, div, prelude::*, rgb};
+use gpui::{
+    AnyElement, Context, IntoElement, Role, SharedString, Window, div, prelude::*, px, rgb,
+};
 use ui_model::inspector::{Section, View};
 
 use crate::shell_style::TextSpec;
@@ -19,6 +21,14 @@ use crate::{InspectorToggle, Shell};
 pub(super) struct PanelScope<'a> {
     pub task: Option<&'a TaskId>,
     pub withheld: Option<&'static str>,
+}
+
+/// The compared/viewed candidate the inspector captions: its local label and whether the
+/// authorized projection actually contains it. One value, so the label can never be rendered
+/// with an availability that belongs to another candidate.
+pub(super) struct ViewedCaption {
+    pub label: SharedString,
+    pub available: bool,
 }
 
 /// Why the inspector must withhold the current projection, if it must.
@@ -57,12 +67,16 @@ impl Shell {
     pub(super) fn inspector_panel(
         &mut self,
         view: View,
-        viewed_label: SharedString,
-        viewed_available: bool,
+        viewed: ViewedCaption,
         scope: PanelScope<'_>,
+        palette: crate::contrast::Palette,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
+        let scheme = palette.scheme;
+        let colors = palette.colors;
+        // Text is resolved against the surface the panel actually paints, not the window.
+        let panel_surface = palette.color(0x202328, colors.raised_face);
         let body_text = TextSpec::ui(&self.tokens, TextStyle::Body);
         let xs_text = TextSpec::ui(&self.tokens, TextStyle::Xs);
         let mut panel = div()
@@ -71,7 +85,13 @@ impl Shell {
             .aria_label("詳細と説明")
             .flex()
             .flex_col()
-            .gap_2();
+            .gap_2()
+            .bg(rgb(crate::contrast::role_color(
+                scheme,
+                0x202328,
+                colors.raised_face,
+            )))
+            .text_color(rgb(palette.readable(colors.text, panel_surface)));
         if let Some(reason) = scope.withheld {
             // A blocked or out-of-scope projection invalidates disclosure state
             // instead of merely skipping the sync, so the next in-scope Task or
@@ -95,7 +115,7 @@ impl Shell {
         // disappearance, so a returning identity starts collapsed.
         self.inspector_disclosure.sync_task(scope.task);
         self.inspector_disclosure
-            .sync(view.candidate.as_ref(), viewed_available);
+            .sync(view.candidate.as_ref(), viewed.available);
         let current: Vec<(Section, Arc<str>)> = view
             .sections
             .iter()
@@ -103,9 +123,10 @@ impl Shell {
             .collect();
         self.inspector_disclosure.prune(&current);
 
+        let viewed_label = &viewed.label;
         let candidate_state: SharedString = if view.candidate.is_none() {
             "候補は表示されていません".into()
-        } else if viewed_available {
+        } else if viewed.available {
             SharedString::from(format!(
                 "閲覧中の候補（この画面での選択）: {viewed_label} — 正式採用ではありません。正式採用は実行基盤から通知されます。"
             ))
@@ -131,6 +152,20 @@ impl Shell {
                 .inspector_disclosure
                 .is_open(section.id, &section.revision);
             let focused = handle.is_focused(window);
+            // Focus changes the border width as well as the colour: a monochrome High
+            // Contrast palette can resolve focus and the resting border to one value.
+            let (header_border_width, header_border_color) = match crate::shell_style::control_focus(
+                &self.tokens,
+                focused,
+                window.scale_factor(),
+                &colors,
+                panel_surface,
+                colors.border,
+                &[],
+            ) {
+                Ok(border) => border,
+                Err(_) => (px(0.0), colors.border),
+            };
             let state_label = if section.available {
                 format!("利用可能: {}", section.summary)
             } else {
@@ -166,6 +201,8 @@ impl Shell {
                             )),
                             style.clone(),
                             width,
+                            scheme,
+                            colors,
                             cx,
                         )
                     }
@@ -173,12 +210,8 @@ impl Shell {
                 .key_context("InspectorSection")
                 .px_3()
                 .py_2()
-                .border_1()
-                .border_color(rgb(if focused {
-                    0xe6c278
-                } else {
-                    crate::shell_style::RESTING_CONTROL_BORDER
-                }))
+                .border(header_border_width)
+                .border_color(rgb(header_border_color))
                 .cursor_pointer()
                 .child(
                     xs_text
@@ -210,7 +243,11 @@ impl Shell {
                     xs_text
                         .clone()
                         .apply(div())
-                        .text_color(rgb(0xd08a6a))
+                        .text_color(rgb(crate::contrast::readable_text(
+                            &colors,
+                            crate::contrast::role_color(scheme, 0xd08a6a, colors.muted_text),
+                            crate::contrast::role_color(scheme, 0x202328, colors.raised_face),
+                        )))
                         .child(SharedString::from(
                             section
                                 .absent_reason
@@ -237,7 +274,19 @@ impl Shell {
                                 xs_text
                                     .clone()
                                     .apply(div())
-                                    .text_color(rgb(0x8b949e))
+                                    .text_color(rgb(crate::contrast::readable_text(
+                                        &colors,
+                                        crate::contrast::role_color(
+                                            scheme,
+                                            0x8b949e,
+                                            colors.muted_text,
+                                        ),
+                                        crate::contrast::role_color(
+                                            scheme,
+                                            0x202328,
+                                            colors.raised_face,
+                                        ),
+                                    )))
                                     .child(SharedString::from(Arc::clone(&field.label))),
                             )
                             .child(

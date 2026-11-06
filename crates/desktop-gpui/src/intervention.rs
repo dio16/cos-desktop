@@ -187,9 +187,12 @@ impl Shell {
     pub(super) fn intervention_strip(
         &mut self,
         strip: Strip,
+        palette: crate::contrast::Palette,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
+        let scheme = palette.scheme;
+        let colors = palette.colors;
         if strip.is_empty() {
             return div().into_any_element();
         }
@@ -203,19 +206,19 @@ impl Shell {
             .gap_2()
             .p_3()
             .border_1()
-            .border_color(rgb(0x626870))
-            .bg(rgb(0x2a2f36));
+            .border_color(rgb(colors.border))
+            .bg(rgb(crate::contrast::role_color(
+                scheme,
+                0x2a2f36,
+                colors.button_face,
+            )))
+            .text_color(rgb(
+                palette.readable(colors.text, palette.color(0x2a2f36, colors.button_face))
+            ));
         let expanded = self.strip_selection.expanded();
         let revealed = revealed_rows(&strip, expanded);
-        for (slot, revealed_row) in revealed.into_iter().enumerate() {
-            panel = panel.child(self.strip_row(
-                &revealed_row.row,
-                slot,
-                revealed_row.count,
-                &xs_text,
-                window,
-                cx,
-            ));
+        for (slot, revealed_row) in revealed.iter().enumerate() {
+            panel = panel.child(self.strip_row(revealed_row, slot, &xs_text, palette, window, cx));
         }
         if strip.grouped_away() > 0 {
             let label = if expanded {
@@ -241,16 +244,29 @@ impl Shell {
                         });
                         let style = xs_text.clone();
                         let width = crate::shell_style::inspector_width(&self.tokens);
-                        move |_, cx| crate::help::tooltip(help.clone(), style.clone(), width, cx)
+                        move |_, cx| {
+                            crate::help::tooltip(
+                                help.clone(),
+                                style.clone(),
+                                width,
+                                scheme,
+                                colors,
+                                cx,
+                            )
+                        }
                     })
                     .px_2()
                     .py_1()
                     .border_1()
-                    .border_color(rgb(if focused {
-                        0xe6c278
-                    } else {
-                        crate::shell_style::RESTING_CONTROL_BORDER
-                    }))
+                    .border_color(rgb(crate::contrast::role_color(
+                        scheme,
+                        if focused {
+                            0xe6c278
+                        } else {
+                            crate::shell_style::RESTING_CONTROL_BORDER
+                        },
+                        if focused { colors.focus } else { colors.border },
+                    )))
                     .cursor_pointer()
                     .child(SharedString::from(label))
                     .on_click(cx.listener(|this, _, window, cx| {
@@ -266,20 +282,24 @@ impl Shell {
         if let Some(identity) = self.strip_selection.detail().cloned()
             && let Some(row) = strip.rows.iter().find(|row| row.identity == identity)
         {
-            panel = panel.child(self.strip_details(row, &xs_text, window, cx));
+            panel = panel.child(self.strip_details(row, &xs_text, palette, window, cx));
         }
         panel.into_any_element()
     }
 
     fn strip_row(
         &mut self,
-        row: &Row,
+        revealed: &RevealedRow,
         slot: usize,
-        count: usize,
         xs_text: &TextSpec,
+        palette: crate::contrast::Palette,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
+        let scheme = palette.scheme;
+        let colors = palette.colors;
+        let row = &revealed.row;
+        let count = revealed.count;
         let handle = self
             .strip_focus
             .entry(row.identity.clone())
@@ -314,7 +334,14 @@ impl Shell {
                         detail,
                         action.map_or("追加の操作はありません。", Action::label)
                     );
-                    crate::help::tooltip(SharedString::from(text), style.clone(), width, cx)
+                    crate::help::tooltip(
+                        SharedString::from(text),
+                        style.clone(),
+                        width,
+                        scheme,
+                        colors,
+                        cx,
+                    )
                 }
             })
             .aria_keyshortcuts("Enter Space")
@@ -326,25 +353,37 @@ impl Shell {
             .px_2()
             .py_1()
             .border_1()
-            .border_color(rgb(if focused {
-                0xe6c278
-            } else {
-                crate::shell_style::RESTING_CONTROL_BORDER
-            }))
+            .border_color(rgb(crate::contrast::role_color(
+                scheme,
+                if focused {
+                    0xe6c278
+                } else {
+                    crate::shell_style::RESTING_CONTROL_BORDER
+                },
+                if focused { colors.focus } else { colors.border },
+            )))
             .cursor_pointer()
             .child(SharedString::from(summary))
             .child(
                 xs_text
                     .clone()
                     .apply(div())
-                    .text_color(rgb(0x9da3aa))
+                    .text_color(rgb(crate::contrast::readable_text(
+                        &colors,
+                        crate::contrast::role_color(scheme, 0x9da3aa, colors.muted_text),
+                        crate::contrast::role_color(scheme, 0x2a2f36, colors.button_face),
+                    )))
                     .child(SharedString::from(row.detail.to_string())),
             )
             .child(
                 xs_text
                     .clone()
                     .apply(div())
-                    .text_color(rgb(0xbcc6d0))
+                    .text_color(rgb(crate::contrast::readable_text(
+                        &colors,
+                        crate::contrast::role_color(scheme, 0xbcc6d0, colors.text),
+                        crate::contrast::role_color(scheme, 0x2a2f36, colors.button_face),
+                    )))
                     .child(SharedString::from(format!(
                         "次にすること：{}",
                         row.action
@@ -369,9 +408,12 @@ impl Shell {
         &mut self,
         row: &Row,
         xs_text: &TextSpec,
+        palette: crate::contrast::Palette,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> AnyElement {
+        let scheme = palette.scheme;
+        let colors = palette.colors;
         let detail_help =
             SharedString::from(format!("{}。詳細を確認して閉じられます。", row.detail));
         let focused = self.strip_detail_focus.is_focused(window);
@@ -384,8 +426,15 @@ impl Shell {
             .gap_1()
             .p_2()
             .border_1()
-            .border_color(rgb(0x626870))
-            .bg(rgb(0x202328))
+            .border_color(rgb(colors.border))
+            .bg(rgb(crate::contrast::role_color(
+                scheme,
+                0x202328,
+                colors.raised_face,
+            )))
+            .text_color(rgb(
+                palette.readable(colors.text, palette.color(0x202328, colors.raised_face))
+            ))
             .child(SharedString::from(row.display_label()))
             .child(
                 xs_text
@@ -397,7 +446,11 @@ impl Shell {
                 xs_text
                     .clone()
                     .apply(div())
-                    .text_color(rgb(0x9da3aa))
+                    .text_color(rgb(crate::contrast::readable_text(
+                        &colors,
+                        crate::contrast::role_color(scheme, 0x9da3aa, colors.muted_text),
+                        crate::contrast::role_color(scheme, 0x202328, colors.raised_face),
+                    )))
                     .child("読み取り専用 — コマンドは送信されません。"),
             );
         panel = panel.child(
@@ -410,17 +463,30 @@ impl Shell {
                 .tooltip({
                     let style = xs_text.clone();
                     let width = crate::shell_style::inspector_width(&self.tokens);
-                    move |_, cx| crate::help::tooltip(detail_help.clone(), style.clone(), width, cx)
+                    move |_, cx| {
+                        crate::help::tooltip(
+                            detail_help.clone(),
+                            style.clone(),
+                            width,
+                            scheme,
+                            colors,
+                            cx,
+                        )
+                    }
                 })
                 .key_context("InterventionStrip")
                 .px_2()
                 .py_1()
                 .border_1()
-                .border_color(rgb(if focused {
-                    0xe6c278
-                } else {
-                    crate::shell_style::RESTING_CONTROL_BORDER
-                }))
+                .border_color(rgb(crate::contrast::role_color(
+                    scheme,
+                    if focused {
+                        0xe6c278
+                    } else {
+                        crate::shell_style::RESTING_CONTROL_BORDER
+                    },
+                    if focused { colors.focus } else { colors.border },
+                )))
                 .cursor_pointer()
                 .child("閉じる")
                 .on_click(cx.listener(|this, _, window, cx| {

@@ -29,6 +29,8 @@ The checker's allowlist covers workspace-member edges only; crates.io dependenci
 
 `png` **0.18.1** is a **normal dependency of `media`** added so the row-wise decoder can read one row at a time and check cancellation between rows (§19.234). That is the same version `image` 0.25.10 resolves to, so this edge introduces no new crate version; the direct edge exists only because `image` does not re-export the row reader. The lock also contains a `png` 0.17.16 copy pulled by another dependency - it is **not** introduced by this edge, and `media` does not link it. No TLS, runtime, network or filesystem capability is added.
 
+`image` 0.25.10 is a **normal dependency of `desktop-gpui`** added for the MP-IMG3-S2 presentation path (§19.289). `desktop-gpui` builds GPUI `RenderImage` payloads from the already-admitted raster, and those payloads are an `image::RgbaImage`; the crate is declared with `default-features = false`, so **no decoder** enters through this edge - the codec features stay exclusively in `media`, which remains the only component that decodes untrusted input. It is the same version `media` already resolves, so no new crate version enters the graph, and the edge adds no TLS, network, filesystem or subprocess capability. Upload, tile conversion and retention stay GPUI-boundary concerns; `media` still owns admission, identity and accounting.
+
 ## Prohibitions
 
 - No cycles, including build/dev edges; no Runtime internal crate, checkout path, submodule, DB/CAS/config access.

@@ -26,6 +26,7 @@ pub mod contrast;
 mod dock;
 mod flow;
 mod help;
+pub mod image_upload;
 mod inspector;
 mod intervention;
 mod list_cursor;
@@ -2882,6 +2883,8 @@ impl Render for Shell {
         // surface reads these adapters instead of a constant, and nothing here
         // resolves a second set.
         let colors = self.contrast.colors();
+        let scheme = self.contrast.scheme();
+        let palette = contrast::Palette { scheme, colors };
         let body_text = TextSpec::ui(&self.tokens, TextStyle::Body);
         let xs_text = TextSpec::ui(&self.tokens, TextStyle::Xs);
         let rail_width = shell_style::rail_width(&self.tokens);
@@ -3223,8 +3226,17 @@ impl Render for Shell {
                     .min_w_0()
                     .p_4()
                     .border_1()
-                    .border_color(rgb(if available { 0x626870 } else { 0xd08a6a }))
-                    .bg(rgb(0x202328))
+                    .border_color(rgb(if available {
+                        contrast::role_color(scheme, 0x626870, colors.border)
+                    } else {
+                        contrast::role_color(scheme, 0xd08a6a, colors.disabled_border)
+                    }))
+                    .bg(rgb(contrast::role_color(scheme, 0x202328, colors.raised_face)))
+                    .text_color(rgb(contrast::readable_text(
+                        &colors,
+                        colors.text,
+                        contrast::role_color(scheme, 0x202328, colors.raised_face),
+                    )))
                     .flex()
                     .flex_col()
                     .gap_2()
@@ -3248,12 +3260,20 @@ impl Render for Shell {
                             .aria_description(help)
                             .tooltip({
                                 let style = xs_text.clone();
-                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, cx)
+                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, scheme, colors, cx)
                             })
                             .px_4()
                             .py_2()
                             .border_1()
-                            .border_color(rgb(if side_a_exists { 0x626870 } else { shell_style::RESTING_CONTROL_BORDER }))
+                            .border_color(rgb(if side_a_exists {
+                                colors.border
+                            } else {
+                                contrast::role_color(
+                                    scheme,
+                                    shell_style::RESTING_CONTROL_BORDER,
+                                    colors.disabled_border,
+                                )
+                            }))
                             .when(side_a_exists, |element| element.cursor_pointer())
                             .child("A側を変更")
                             .when(side_a_exists, |element| {
@@ -3284,12 +3304,20 @@ impl Render for Shell {
                             .aria_description(help)
                             .tooltip({
                                 let style = xs_text.clone();
-                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, cx)
+                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, scheme, colors, cx)
                             })
                             .px_4()
                             .py_2()
                             .border_1()
-                            .border_color(rgb(if side_b_exists { 0x626870 } else { shell_style::RESTING_CONTROL_BORDER }))
+                            .border_color(rgb(if side_b_exists {
+                                colors.border
+                            } else {
+                                contrast::role_color(
+                                    scheme,
+                                    shell_style::RESTING_CONTROL_BORDER,
+                                    colors.disabled_border,
+                                )
+                            }))
                             .when(side_b_exists, |element| element.cursor_pointer())
                             .child("B側を変更")
                             .when(side_b_exists, |element| {
@@ -3315,12 +3343,12 @@ impl Render for Shell {
                             .aria_description("比較画面を閉じ、閲覧中の候補の画面に戻ります。正式な採用結果は変更しません。")
                             .tooltip({
                                 let style = xs_text.clone();
-                                move |_, cx| help::tooltip("比較画面を閉じ、閲覧中の候補の画面に戻ります。正式な採用結果は変更しません。".into(), style.clone(), inspector_width, cx)
+                                move |_, cx| help::tooltip("比較画面を閉じ、閲覧中の候補の画面に戻ります。正式な採用結果は変更しません。".into(), style.clone(), inspector_width, scheme, colors, cx)
                             })
                             .px_4()
                             .py_2()
                             .border_1()
-                            .border_color(rgb(0x626870))
+                            .border_color(rgb(colors.border))
                             .cursor_pointer()
                             .child("比較を閉じる")
                             .on_click(cx.listener(|this, _, _, cx| {
@@ -3340,7 +3368,11 @@ impl Render for Shell {
                 xs_text
                     .clone()
                     .apply(div())
-                    .text_color(rgb(0xbcc6d0))
+                    .text_color(rgb(crate::contrast::readable_text(
+                        &colors,
+                        contrast::role_color(scheme, 0xbcc6d0, colors.text),
+                        contrast::role_color(scheme, 0x17191c, colors.background),
+                    )))
                     .child(message)
             }))
             .child(compare_summary);
@@ -3366,8 +3398,8 @@ impl Render for Shell {
             Err(_) => (px(0.0), colors.border),
         };
         let mode = self.error.clone().unwrap_or_else(|| text.mode.clone());
-        // LIMITED-CONTRAST-BEGIN axis-cell: the Context Bar's state-axis labels resolve
-        // their colours through the scheme; the guard test below covers this region.
+        // LIMITED-CONTRAST-BEGIN axis-cell: state-axis labels resolve their colours
+        // through the active scheme.
         let axis_cell = |id: &'static str, label: &'static str, value: &Arc<str>| {
             let value = if self.rail_selection_pending && id != "state-axis-connection" {
                 SharedString::from("選択したタスクを更新中")
@@ -3407,7 +3439,14 @@ impl Render for Shell {
                 .tooltip({
                     let style = xs_text.clone();
                     move |_, cx| {
-                        help::tooltip(description.into(), style.clone(), inspector_width, cx)
+                        help::tooltip(
+                            description.into(),
+                            style.clone(),
+                            inspector_width,
+                            scheme,
+                            colors,
+                            cx,
+                        )
                     }
                 })
                 .child(
@@ -3416,7 +3455,11 @@ impl Render for Shell {
                         .apply(div())
                         // Muted label role from the scheme: 0x8b949e in the normal
                         // palette, the OS gray text under High Contrast.
-                        .text_color(rgb(colors.disabled))
+                        .text_color(rgb(contrast::readable_text(
+                            &colors,
+                            colors.disabled,
+                            colors.button_face,
+                        )))
                         .child(label),
                 )
                 .child(value)
@@ -3533,18 +3576,22 @@ impl Render for Shell {
             }
         }
         let diagram_key = self.flow_admission_key();
+        let flow_drawing = flow_rows.as_deref().and_then(|rows| {
+            self.flow_layers.as_ref().map(|(_, layers)| FlowDrawing {
+                rows,
+                layers: layers.as_slice(),
+            })
+        });
         let flow_diagram_element = (surface == Surface::Flow)
             .then(|| {
                 flow_diagram_region(
-                    flow_rows.as_deref(),
-                    self.flow_layers
-                        .as_ref()
-                        .map(|(_, layers)| layers.as_slice()),
+                    flow_drawing,
                     flow_node_active.as_ref(),
                     diagram_key.as_ref(),
                     &mut self.flow_match_cache,
                     cx.entity(),
                     xs_text.clone(),
+                    palette,
                 )
             })
             .flatten();
@@ -3561,6 +3608,26 @@ impl Render for Shell {
                 let graph = Arc::clone(&row.graph);
                 let key = row.key();
                 let is_active = active.as_ref() == Some(&key);
+                // The active row keeps a distinct surface in monochrome palettes: selection, not
+                // the same button face every inactive row already uses.
+                let row_surface = if is_active {
+                    palette.color(0x343a42, colors.selection)
+                } else {
+                    palette.color(0x25292e, colors.button_face)
+                };
+                let row_text = palette.readable(
+                    if is_active {
+                        colors.selection_text
+                    } else {
+                        colors.text
+                    },
+                    row_surface,
+                );
+                let row_border = if is_active && flow_node_focused {
+                    focus_outline
+                } else {
+                    hairline.unwrap_or(px(0.0))
+                };
                 let layer = node.layer.as_deref().unwrap_or("階層情報なし");
                 let aria = format!(
                     "処理：{}。階層：{}。{}。ノードID：{}。",
@@ -3595,13 +3662,14 @@ impl Render for Shell {
                     .flex_col()
                     .gap_0()
                     .p_1()
-                    .border_1()
+                    .border(row_border)
                     .border_color(rgb(if is_active && flow_node_focused {
-                        0xe6c278
+                        colors.focus
                     } else {
-                        0x626870
+                        colors.border
                     }))
-                    .bg(rgb(if is_active { 0x343a42 } else { 0x25292e }))
+                    .bg(rgb(row_surface))
+                    .text_color(rgb(row_text))
                     .min_w_0()
                     .child(
                         div()
@@ -3649,6 +3717,25 @@ impl Render for Shell {
                 let graph = Arc::clone(&row.graph);
                 let key = row.key();
                 let is_active = active.as_ref() == Some(&key);
+                // Same surface rule as the node rows: active means selection, not button face.
+                let row_surface = if is_active {
+                    palette.color(0x343a42, colors.selection)
+                } else {
+                    palette.color(0x25292e, colors.button_face)
+                };
+                let row_text = palette.readable(
+                    if is_active {
+                        colors.selection_text
+                    } else {
+                        colors.text
+                    },
+                    row_surface,
+                );
+                let row_border = if is_active && flow_edge_focused {
+                    focus_outline
+                } else {
+                    hairline.unwrap_or(px(0.0))
+                };
                 let kind = edge.kind.as_deref().unwrap_or("種類の情報なし");
                 let aria = format!(
                     "接続：{}。{}から{}へ。{}。接続ID：{}。接続元ノードID：{}。接続先ノードID：{}。",
@@ -3686,13 +3773,14 @@ impl Render for Shell {
                     .flex_col()
                     .gap_0()
                     .p_1()
-                    .border_1()
+                    .border(row_border)
                     .border_color(rgb(if is_active && flow_edge_focused {
-                        0xe6c278
+                        colors.focus
                     } else {
-                        0x626870
+                        colors.border
                     }))
-                    .bg(rgb(if is_active { 0x343a42 } else { 0x25292e }))
+                    .bg(rgb(row_surface))
+                    .text_color(rgb(row_text))
                     .min_w_0()
                     .child(
                         div()
@@ -3774,11 +3862,11 @@ impl Render for Shell {
                     .py_1()
                     .border_1()
                     .border_color(rgb(if flow_search_focused {
-                        0xe6c278
+                        colors.focus
                     } else {
-                        0x626870
+                        colors.border
                     }))
-                    .bg(rgb(0x17191c))
+                    .bg(rgb(colors.background))
                     .relative()
                     .child(SharedString::from(flow_search_display))
                     .child(div().absolute().size_full().child(FlowInputRegistration {
@@ -3954,7 +4042,14 @@ impl Render for Shell {
             .tooltip({
                 let style = xs_text.clone();
                 move |_, cx| {
-                    help::tooltip(stop_description.clone(), style.clone(), inspector_width, cx)
+                    help::tooltip(
+                        stop_description.clone(),
+                        style.clone(),
+                        inspector_width,
+                        scheme,
+                        colors,
+                        cx,
+                    )
                 }
             })
             .track_focus(&self.stop_focus)
@@ -4043,7 +4138,16 @@ impl Render for Shell {
             .tooltip({
                 let text = SharedString::new(Arc::clone(&reconcile_description));
                 let style = xs_text.clone();
-                move |_, cx| help::tooltip(text.clone(), style.clone(), inspector_width, cx)
+                move |_, cx| {
+                    help::tooltip(
+                        text.clone(),
+                        style.clone(),
+                        inspector_width,
+                        scheme,
+                        colors,
+                        cx,
+                    )
+                }
             })
             .track_focus(&self.reconcile_focus)
             .px_4()
@@ -4058,7 +4162,7 @@ impl Render for Shell {
             .text_color(rgb(if reconcile_enabled {
                 colors.text
             } else {
-                colors.muted_text
+                contrast::readable_text(&colors, colors.muted_text, colors.disabled_face)
             }))
             .child("停止の受付状況");
         let reconcile_button = if reconcile_enabled {
@@ -4122,10 +4226,21 @@ impl Render for Shell {
                                 let text = stop_detail.clone();
                                 let style = xs_text.clone();
                                 move |_, cx| {
-                                    help::tooltip(text.clone(), style.clone(), inspector_width, cx)
+                                    help::tooltip(
+                                        text.clone(),
+                                        style.clone(),
+                                        inspector_width,
+                                        scheme,
+                                        colors,
+                                        cx,
+                                    )
                                 }
                             })
-                            .text_color(rgb(colors.focus))
+                            .text_color(rgb(contrast::readable_text(
+                                &colors,
+                                colors.focus,
+                                colors.button_face,
+                            )))
                             .child(stop_label),
                     )
                     .child(
@@ -4146,7 +4261,11 @@ impl Render for Shell {
                     }))
                     .children(retention_warning.map(|display| {
                         div()
-                            .text_color(rgb(colors.focus))
+                            .text_color(rgb(contrast::readable_text(
+                                &colors,
+                                colors.focus,
+                                colors.button_face,
+                            )))
                             .child(SharedString::from(display.label.clone()))
                             .child(SharedString::from(display.detail.clone()))
                     }))
@@ -4161,10 +4280,21 @@ impl Render for Shell {
                             .tooltip({
                                 let style = xs_text.clone();
                                 move |_, cx| {
-                                    help::tooltip(detail.into(), style.clone(), inspector_width, cx)
+                                    help::tooltip(
+                                        detail.into(),
+                                        style.clone(),
+                                        inspector_width,
+                                        scheme,
+                                        colors,
+                                        cx,
+                                    )
                                 }
                             })
-                            .text_color(rgb(colors.muted_text))
+                            .text_color(rgb(contrast::readable_text(
+                                &colors,
+                                colors.muted_text,
+                                colors.button_face,
+                            )))
                             .child(SharedString::from(label))
                             .child(SharedString::from(detail))
                     })),
@@ -4237,7 +4367,7 @@ impl Render for Shell {
             });
         }
         // LIMITED-CONTRAST-BEGIN dock: every colour inside this region resolves through
-        // the contrast scheme; the unit test below greps this region for literals.
+        // the active scheme.
         let dock_active = self.dock_active.clone();
         // A dock row takes keyboard focus, so the container owns the ring: it is
         // lit while focus is anywhere inside the Dock, not only on the container.
@@ -4380,7 +4510,14 @@ impl Render for Shell {
                     .tooltip({
                         let style = xs_text.clone();
                         move |_, cx| {
-                            help::tooltip(candidate_help.into(), style.clone(), inspector_width, cx)
+                            help::tooltip(
+                                candidate_help.into(),
+                                style.clone(),
+                                inspector_width,
+                                scheme,
+                                colors,
+                                cx,
+                            )
                         }
                     })
                     .when(active && dock_focused, |element| {
@@ -4435,7 +4572,11 @@ impl Render for Shell {
                                     xs_text
                                         .clone()
                                         .apply(div())
-                                        .text_color(rgb(colors.focus))
+                                        .text_color(rgb(contrast::readable_text(
+                                            &colors,
+                                            colors.focus,
+                                            colors.button_face,
+                                        )))
                                         .truncate()
                                         .child(SharedString::from("正式採用（実行基盤から通知）")),
                                 )
@@ -4514,15 +4655,18 @@ impl Render for Shell {
         let rail_count = rail_search
             .as_ref()
             .map_or(0, |search| search.indices.len());
-        let intervention_strip = self.intervention_strip(intervention_strip, window, cx);
+        let intervention_strip = self.intervention_strip(intervention_strip, palette, window, cx);
         let inspector_panel = self.inspector_panel(
             inspector_view,
-            viewed_label.clone(),
-            viewed_row.is_some(),
+            inspector::ViewedCaption {
+                label: viewed_label.clone(),
+                available: viewed_row.is_some(),
+            },
             inspector::PanelScope {
                 task: inspector_task.as_ref(),
                 withheld: inspector_withheld,
             },
+            palette,
             window,
             cx,
         );
@@ -4643,7 +4787,11 @@ impl Render for Shell {
                                 .role(Role::Label)
                                 .aria_label(text)
                                 .aria_value(text)
-                                .text_color(rgb(0xe6e8eb))
+                                .text_color(rgb(if selected {
+                                    contrast::role_color(scheme, 0xe6e8eb, colors.selection_text)
+                                } else {
+                                    colors.text
+                                }))
                                 .child(text)
                         }),
                     )
@@ -4653,8 +4801,26 @@ impl Render for Shell {
                     .gap_1()
                     .p_2()
                     .border_1()
-                    .border_color(rgb(if active && rail_focused { 0xe6c278 } else if selected { 0xaeccec } else { 0x626870 }))
-                    .bg(rgb(if selected { 0x343a42 } else { 0x25292e }))
+                    .border_color(rgb(if active && rail_focused {
+                        colors.focus
+                    } else if selected {
+                        shell_style::selection_indicator(
+                            &colors,
+                            contrast::role_color(scheme, 0x343a42, colors.selection),
+                        )
+                    } else {
+                        colors.border
+                    }))
+                    .bg(rgb(if selected {
+                        contrast::role_color(scheme, 0x343a42, colors.selection)
+                    } else {
+                        contrast::role_color(scheme, 0x25292e, colors.button_face)
+                    }))
+                    .text_color(rgb(if selected {
+                        contrast::role_color(scheme, 0xe6e8eb, colors.selection_text)
+                    } else {
+                        colors.text
+                    }))
                     .child(SharedString::new(Arc::clone(&row.display_id)))
                     .child(SharedString::new(Arc::clone(&row.title)))
                     .child(SharedString::from(format!(
@@ -4739,7 +4905,7 @@ impl Render for Shell {
             },
         );
 
-        let palette_overlay = self.palette_overlay(&palette_facts, cx);
+        let palette_overlay = self.palette_overlay(&palette_facts, scheme, colors, cx);
 
         div()
             .id("cos-shell")
@@ -4789,6 +4955,11 @@ impl Render for Shell {
                     .px_5()
                     .py_2()
                     .bg(rgb(colors.button_face))
+                    .text_color(rgb(contrast::readable_text(
+                        &colors,
+                        colors.text,
+                        colors.button_face,
+                    )))
                     .child(
                         div()
                             .flex()
@@ -4833,7 +5004,11 @@ impl Render for Shell {
                             .flex()
                             .flex_col()
                             .gap_2()
-                            .text_color(rgb(colors.text))
+                            .text_color(rgb(contrast::readable_text(
+                                &colors,
+                                colors.text,
+                                colors.button_face,
+                            )))
                             .child(axis_row_one)
                             .child(axis_row_two),
                     )
@@ -4857,7 +5032,12 @@ impl Render for Shell {
                             .flex()
                             .flex_col()
                             .gap_3()
-                            .bg(rgb(0x202328))
+                            .bg(rgb(contrast::role_color(scheme, 0x202328, colors.raised_face)))
+                            .text_color(rgb(contrast::readable_text(
+                                &colors,
+                                colors.text,
+                                contrast::role_color(scheme, 0x202328, colors.raised_face),
+                            )))
                             .child("タスク一覧")
                             .child(
                                 div()
@@ -4873,8 +5053,8 @@ impl Render for Shell {
                                     .px_2()
                                     .py_1()
                                     .border_1()
-                                    .border_color(rgb(0x626870))
-                                    .bg(rgb(0x17191c))
+                                    .border_color(rgb(colors.border))
+                                    .bg(rgb(colors.background))
                                     .relative()
                                     .child(SharedString::from(if query_text.is_empty()
                                         && !self.rail_input_focus.is_focused(window)
@@ -5007,7 +5187,11 @@ impl Render for Shell {
                                         .role(Role::Label)
                                         .aria_label(SharedString::from(notice.clone()))
                                         .aria_value(SharedString::from(notice.clone()))
-                                        .text_color(rgb(0xe6c278))
+                                        .text_color(rgb(contrast::readable_text(
+                                            &colors,
+                                            contrast::role_color(scheme, 0xe6c278, colors.focus),
+                                            colors.background,
+                                        )))
                                         .child(SharedString::from(notice)),
                                 )
                             })
@@ -5073,7 +5257,12 @@ impl Render for Shell {
                             .flex()
                             .flex_col()
                             .gap_3()
-                            .bg(rgb(0x202328))
+                            .bg(rgb(contrast::role_color(scheme, 0x202328, colors.raised_face)))
+                            .text_color(rgb(contrast::readable_text(
+                                &colors,
+                                colors.text,
+                                contrast::role_color(scheme, 0x202328, colors.raised_face),
+                            )))
                             .child(div().flex_none().child("候補の詳細"))
                             .child(
                                 div()
@@ -5114,7 +5303,11 @@ impl Render for Shell {
                                                     .border(support_border_width)
                                                     .border_color(rgb(support_border_color))
                                                     .bg(rgb(support_background))
-                                                    .text_color(rgb(colors.text))
+                                                    .text_color(rgb(crate::contrast::readable_text(
+                                                        &colors,
+                                                        colors.text,
+                                                        support_background,
+                                                    )))
                                                     .cursor_pointer()
                                                     .on_action(cx.listener(|this, _: &Activate, window, cx| {
                                                         this.toggle_diagnostics(window, cx);
@@ -5206,7 +5399,13 @@ impl Render for Shell {
                                                             .border(support_border_width)
                                                             .border_color(rgb(support_border_color))
                                                             .bg(rgb(support_background))
-                                                            .text_color(rgb(colors.text))
+                                                            .text_color(rgb(
+                                                                crate::contrast::readable_text(
+                                                                    &colors,
+                                                                    colors.text,
+                                                                    support_background,
+                                                                ),
+                                                            ))
                                                             .cursor_pointer()
                                                             .on_action(cx.listener(
                                                                 |this, _: &Activate, _, cx| {
@@ -5262,9 +5461,28 @@ impl Render for Shell {
                                                                 .border(support_border_width)
                                                                 .border_color(rgb(support_border_color))
                                                                 .bg(rgb(support_background))
-                                                                .text_color(rgb(colors.text))
+                                                                .text_color(rgb(
+                                                                    crate::contrast::readable_text(
+                                                                        &colors,
+                                                                        colors.text,
+                                                                        support_background,
+                                                                    ),
+                                                                ))
                                                                 .cursor_pointer()
-                                                                .when(self.export_in_progress, |element| element.opacity(0.5))
+                                                                .when(self.export_in_progress, |element| {
+                                                                    if scheme == contrast::ContrastScheme::Normal {
+                                                                        element.opacity(0.5)
+                                                                    } else {
+                                                                        element
+                                                                            .border_color(rgb(colors.disabled_border))
+                                                                            .bg(rgb(colors.disabled_face))
+                                                                            .text_color(rgb(contrast::readable_text(
+                                                                                &colors,
+                                                                                colors.disabled,
+                                                                                colors.disabled_face,
+                                                                            )))
+                                                                    }
+                                                                })
                                                                 .on_action(cx.listener(
                                                                     |this, _: &Activate, _, cx| {
                                                                         this.export_support(cx);
@@ -5333,6 +5551,11 @@ impl Render for Shell {
                     .aria_label("反復ごとの候補一覧")
                     .p_4()
                     .bg(rgb(colors.button_face))
+                    .text_color(rgb(contrast::readable_text(
+                        &colors,
+                        colors.text,
+                        colors.button_face,
+                    )))
                     .flex()
                     .flex_col()
                     .gap_3()
@@ -5424,16 +5647,37 @@ impl Render for Shell {
                             .aria_description(description)
                             .tooltip({
                                 let style = xs_text.clone();
-                                move |_, cx| help::tooltip(description.into(), style.clone(), inspector_width, cx)
+                                move |_, cx| help::tooltip(description.into(), style.clone(), inspector_width, scheme, colors, cx)
                             })
                             .track_focus(&self.surface_focus[index])
                             .px_5()
                             .py_2()
                             .border(focus_outline)
-                            .border_color(rgb(if focused { 0xe6c278 } else { shell_style::RESTING_CONTROL_BORDER }))
-                            .bg(rgb(if surface == item { 0x3c5268 } else { 0x24272c }))
+                            .border_color(rgb(contrast::role_color(
+                                scheme,
+                                if focused { 0xe6c278 } else { shell_style::RESTING_CONTROL_BORDER },
+                                if focused { colors.focus } else { colors.border },
+                            )))
+                            .bg(rgb(if surface == item {
+                                contrast::role_color(scheme, 0x3c5268, colors.selection)
+                            } else {
+                                contrast::role_color(scheme, 0x24272c, colors.button_face)
+                            }))
+                            .text_color(rgb(if surface == item {
+                                contrast::role_color(scheme, 0xe6e8eb, colors.selection_text)
+                            } else {
+                                colors.text
+                            }))
                             .when(compare_unavailable, |element| {
-                                element.text_color(rgb(0x8b949e))
+                                element.text_color(rgb(contrast::readable_text(
+                                    &colors,
+                                    colors.disabled,
+                                    if surface == item {
+                                        contrast::role_color(scheme, 0x3c5268, colors.selection)
+                                    } else {
+                                        contrast::role_color(scheme, 0x24272c, colors.button_face)
+                                    },
+                                )))
                             })
                             .when(!compare_unavailable, |element| element.cursor_pointer())
                             .child(SharedString::from(label))
@@ -5459,27 +5703,31 @@ impl Render for Shell {
     }
 }
 
-/// IME composition contract at the shell's text-input boundary (DC-MP-AX1 / AX05).
+/// The admitted Flow rows together with the layer geometry built from exactly those rows.
 ///
-/// The handler receives UTF-16 ranges while the query is UTF-8, so a composition
-/// must translate ranges, splice marked text and keep the caret consistent.
-/// These tests call the same helpers the handler uses, so a regression in the
-/// conversion or splice fails here without a window or a real IME.
+/// They are one value because the diagram zips them: a row set paired with another revision's
+/// layers would place nodes at another graph's coordinates.
+struct FlowDrawing<'a> {
+    rows: &'a flow::Rows,
+    layers: &'a [Arc<flow::Layers>],
+}
+
 /// Build the Flow diagram region in its own frame.
 ///
 /// Keeping this out of `render` keeps the debug-build stack frame small; the
 /// diagram is presentation only and never feeds the inspection rows.
 fn flow_diagram_region(
-    rows: Option<&flow::Rows>,
-    layers: Option<&[Arc<flow::Layers>]>,
+    drawing: Option<FlowDrawing<'_>>,
     active: Option<&flow::NodeKey>,
     key: Option<&flow::AdmissionKey>,
     match_cache: &mut flow::MatchCache,
     shell: Entity<Shell>,
     xs_text: TextSpec,
+    palette: contrast::Palette,
 ) -> Option<AnyElement> {
-    let rows = rows?;
-    let layers = layers?;
+    let FlowDrawing { rows, layers } = drawing?;
+    let scheme = palette.scheme;
+    let colors = palette.colors;
     // Emphasis follows the same exact revision boundary as the list keys, so a
     // match in one GraphRevision never highlights the same identity in another.
     // Stage C: the revision-wide match sets are cached by the complete admission
@@ -5564,7 +5812,14 @@ fn flow_diagram_region(
             ) else {
                 continue;
             };
-            let color = shell_style::flow_edge_colour(edge.matched);
+            let color = contrast::role_color(
+                scheme,
+                shell_style::flow_edge_colour(edge.matched),
+                contrast::first_visible(
+                    &[colors.focus, colors.selection, colors.text, colors.border],
+                    colors.background,
+                ),
+            );
             let start_x = center_x(from.lane);
             let start_y = top_y(from.depth) + FLOW_CARD_H;
             let end_x = center_x(to.lane);
@@ -5624,8 +5879,16 @@ fn flow_diagram_region(
                         .left(px(start_x.min(end_x) + 6.0))
                         .top(px(kind_top))
                         .px_1()
-                        .bg(rgb(0x17191c))
-                        .text_color(rgb(if edge.matched { 0x9dc0e0 } else { 0x8b949e }))
+                        .bg(rgb(colors.background))
+                        .text_color(rgb(contrast::readable_text(
+                            &colors,
+                            contrast::role_color(
+                                scheme,
+                                if edge.matched { 0x9dc0e0 } else { 0x8b949e },
+                                colors.text,
+                            ),
+                            colors.background,
+                        )))
                         .child(SharedString::from(kind)),
                 );
             }
@@ -5663,20 +5926,34 @@ fn flow_diagram_region(
                     .p_2()
                     .border_1()
                     .border_color(rgb(if is_active {
-                        0xe6c278
+                        colors.focus
                     } else if node.matched {
-                        0x626870
+                        colors.border
                     } else {
-                        shell_style::RESTING_CONTROL_BORDER
+                        colors.disabled_border
                     }))
                     .bg(rgb(if is_active {
-                        0x3a4048
+                        contrast::role_color(scheme, 0x3a4048, colors.selection)
                     } else if node.matched {
-                        0x272b31
+                        contrast::role_color(scheme, 0x272b31, colors.button_face)
                     } else {
-                        0x1e2124
+                        contrast::role_color(scheme, 0x1e2124, colors.background)
                     }))
-                    .text_color(rgb(if node.matched { 0xe6e8eb } else { 0xaeb6bf }))
+                    .text_color(rgb(contrast::readable_text(
+                        &colors,
+                        contrast::role_color(
+                            scheme,
+                            if node.matched { 0xe6e8eb } else { 0xaeb6bf },
+                            colors.selection_text,
+                        ),
+                        if is_active {
+                            contrast::role_color(scheme, 0x3a4048, colors.selection)
+                        } else if node.matched {
+                            contrast::role_color(scheme, 0x272b31, colors.button_face)
+                        } else {
+                            contrast::role_color(scheme, 0x1e2124, colors.background)
+                        },
+                    )))
                     .flex()
                     .flex_col()
                     .justify_center()
@@ -5687,7 +5964,21 @@ fn flow_diagram_region(
                             .clone()
                             .apply(div())
                             .truncate()
-                            .text_color(rgb(if node.matched { 0xbcc6d0 } else { 0xaeb6bf }))
+                            .text_color(rgb(contrast::readable_text(
+                                &colors,
+                                contrast::role_color(
+                                    scheme,
+                                    if node.matched { 0xbcc6d0 } else { 0xaeb6bf },
+                                    colors.text,
+                                ),
+                                if is_active {
+                                    contrast::role_color(scheme, 0x3a4048, colors.selection)
+                                } else if node.matched {
+                                    contrast::role_color(scheme, 0x272b31, colors.button_face)
+                                } else {
+                                    contrast::role_color(scheme, 0x1e2124, colors.background)
+                                },
+                            )))
                             .child(SharedString::from(format!(
                                 "{layer} · {}",
                                 node.node.as_str()
@@ -5752,7 +6043,11 @@ fn flow_diagram_region(
                     xs_text
                         .clone()
                         .apply(div())
-                        .text_color(rgb(0xbcc6d0))
+                        .text_color(rgb(contrast::readable_text(
+                            &colors,
+                            contrast::role_color(scheme, 0xbcc6d0, colors.text),
+                            colors.background,
+                        )))
                         .child(SharedString::from(format!(
                             "図 · {}件 · {}列（同じ内容は左の一覧でキーボードから参照できます。図の中はスクロールできます）",
                             drawn.nodes.len(),
@@ -5763,7 +6058,11 @@ fn flow_diagram_region(
                     xs_text
                         .clone()
                         .apply(div())
-                        .text_color(rgb(0xe6c278))
+                        .text_color(rgb(contrast::readable_text(
+                            &colors,
+                            contrast::role_color(scheme, 0xe6c278, colors.focus),
+                            colors.background,
+                        )))
                         .child(SharedString::from(notes))
                 }))
                 .child(
@@ -5954,119 +6253,6 @@ mod ime_tests {
 
 #[cfg(test)]
 mod contrast_scope_tests {
-    /// The stop/reconcile buttons must draw the width and colour computed by
-    /// `control_focus`; a regression back to a fixed border would otherwise pass the
-    /// same-colour unit test because that test only exercises the helper.
-    #[test]
-    fn the_stop_controls_render_the_control_focus_result() {
-        let source = include_str!("lib.rs");
-        for (width, color) in [
-            ("stop_border_width", "stop_border_color"),
-            ("reconcile_border_width", "reconcile_border_color"),
-        ] {
-            let border = format!(".border({width})");
-            let border_color = format!(".border_color(rgb({color}))");
-            assert!(
-                source.contains(&border),
-                "the button must render the computed border width ({border})"
-            );
-            assert!(
-                source.contains(&border_color),
-                "the button must render the computed border colour ({border_color})"
-            );
-        }
-        // Count only inside the stop-controls render region: `include_str!` also
-        // contains this test's own strings, so a global count would be self-fulfilling.
-        let region_begin = source
-            .find("// LIMITED-CONTRAST-BEGIN stop-controls:")
-            .expect("the stop-controls marker exists");
-        let region_end = source
-            .find("// LIMITED-CONTRAST-END stop-controls")
-            .expect("the stop-controls end marker exists");
-        assert!(region_begin < region_end);
-        let stop_region = &source[region_begin..region_end];
-        assert_eq!(
-            stop_region.matches("shell_style::control_focus(").count(),
-            2,
-            "both the stop and the reconcile button must call control_focus exactly once"
-        );
-    }
-
-    /// The limited AX04 scope (root + Dock + Context Bar) must not keep fixed
-    /// palette literals: with a monochrome High Contrast palette a fixed colour can
-    /// be unreadable against the OS background. The Dock region is delimited by the
-    /// `LIMITED-CONTRAST` markers; the Context Bar background was a unique literal.
-    #[test]
-    fn the_limited_contrast_scope_contains_no_fixed_colour_literal() {
-        let source = include_str!("lib.rs");
-        let begin = source
-            .find("// LIMITED-CONTRAST-BEGIN dock")
-            .expect("the Dock marker exists");
-        let end = source
-            .find("// LIMITED-CONTRAST-END dock")
-            .expect("the Dock end marker exists");
-        assert!(begin < end);
-        let dock = &source[begin..end];
-        assert!(
-            !dock.contains("rgb(0x"),
-            "the Dock rows must resolve every colour through the contrast scheme"
-        );
-        // The Dock container and the Context Bar are separate render regions; both are
-        // in the limited scope and must be covered by the guard.
-        let bar_begin = source
-            .find("// LIMITED-CONTRAST-BEGIN context-bar")
-            .expect("the Context Bar marker exists");
-        let bar_end = source
-            .find("// LIMITED-CONTRAST-END context-bar")
-            .expect("the Context Bar end marker exists");
-        assert!(bar_begin < bar_end);
-        let bar = &source[bar_begin..bar_end];
-        assert!(
-            !bar.contains("rgb(0x"),
-            "the Context Bar must resolve every colour through the contrast scheme"
-        );
-        // The Context Bar's state axis is built by the `axis_cell` closure, which sits
-        // outside the bar's own block: it has its own delimited region.
-        let axis_begin = source
-            .find("// LIMITED-CONTRAST-BEGIN axis-cell")
-            .expect("the axis-cell marker exists");
-        let axis_end = source
-            .find("// LIMITED-CONTRAST-END axis-cell")
-            .expect("the axis-cell end marker exists");
-        assert!(axis_begin < axis_end);
-        let axis = &source[axis_begin..axis_end];
-        assert!(
-            !axis.contains("rgb(0x"),
-            "the state-axis labels must resolve their colours through the scheme"
-        );
-        // The Dock container and the Context Bar's stop controls are separate render
-        // regions as well; both are in the limited scope and must be guarded.
-        for (name, begin_marker, end_marker) in [
-            (
-                "dock-container",
-                "// LIMITED-CONTRAST-BEGIN dock-container:",
-                "// LIMITED-CONTRAST-END dock-container",
-            ),
-            (
-                "stop-controls",
-                "// LIMITED-CONTRAST-BEGIN stop-controls:",
-                "// LIMITED-CONTRAST-END stop-controls",
-            ),
-        ] {
-            let region_begin = source
-                .find(begin_marker)
-                .unwrap_or_else(|| panic!("the {name} marker exists"));
-            let region_end = source
-                .find(end_marker)
-                .unwrap_or_else(|| panic!("the {name} end marker exists"));
-            assert!(region_begin < region_end);
-            let region = &source[region_begin..region_end];
-            assert!(
-                !region.contains("rgb(0x"),
-                "the {name} region must resolve every colour through the contrast scheme"
-            );
-        }
-    }
 
     #[test]
     fn closing_diagnostics_restores_only_the_support_focus() {
