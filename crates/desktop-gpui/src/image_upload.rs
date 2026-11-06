@@ -179,8 +179,9 @@ pub struct EvictionOutcome {
     /// CPU payload bytes released because the admission had never begun a transfer.
     pub released_bytes: u64,
     /// CPU payload bytes left charged to the quarantine because a transfer had already begun and
-    /// termination is not measurable. These stay reserved until a superseded device generation
-    /// lets the caller assert termination (`release_terminated_generation`).
+    /// termination is not measurable. These stay reserved for the life of the process (or until a
+    /// real device teardown can be proven, which this module does not have), and the process
+    /// budget refuses new work instead of releasing them.
     pub quarantined_bytes: u64,
 }
 
@@ -458,14 +459,13 @@ impl ImageUploadService {
                     .saturating_add(usage.in_flight_stuck);
             }
             let capacity = quarantine_capacity();
-            let retained = state
-                .quarantined_payload_bytes
-                .max(staging_total)
-                .max(in_flight_total);
-            if retained.saturating_add(FRAME_RGBA8_BYTES) > capacity
-                || staging_total.saturating_add(FRAME_RGBA8_BYTES) > capacity
-                || in_flight_total.saturating_add(FRAME_RGBA8_BYTES) > capacity
-            {
+            if let Some(retained) = budget_breach(
+                staging_total,
+                in_flight_total,
+                state.quarantined_payload_bytes,
+                capacity,
+                FRAME_RGBA8_BYTES,
+            ) {
                 return Err(ImageUploadError::QuarantineBudgetExhausted {
                     retained,
                     cap: capacity,
@@ -592,11 +592,10 @@ impl ImageUploadService {
 
     /// Release a frame whose consumers have all detached.
     ///
-    /// The caller must have stopped presenting it: this removes the window's atlas entries, drops
-    /// the admission (a `Staged` payload is released; an already-begun transfer is quarantined),
-    /// then asserts that the transfer is terminated so that quarantined payload can be freed.
-    /// That assertion is the body's only option without a GPU completion signal, and the module
-    /// says so instead of reporting a measured release.
+    /// The caller must have stopped presenting it: this removes the window's atlas entries and
+    /// drops the admission. A payload that never began a transfer is released; one whose transfer
+    /// already began is quarantined and **stays charged** because no completion signal exists, and
+    /// eviction never asserts termination. The process budget refuses new work at the cap.
     ///
     /// The previously painted scene may still reference a removed sprite until the next frame is
     /// composed; that is why eviction is a caller decision taken *after* the frame stopped being
@@ -860,6 +859,27 @@ fn pool_is_idle(generation: u64, usage: &media::UploadUsage, live: &[u64]) -> bo
         .saturating_add(usage.in_flight_stuck)
         .saturating_add(usage.resident_stuck)
         == 0
+}
+
+/// Whether admitting `incoming` more bytes would exceed the process budget.
+///
+/// Three axes are checked: the quarantine ledger, the summed staging reservations of every
+/// generation and the summed in-flight reservations of every generation. Returns the retained
+/// figure that the caller should report when the boundary is crossed.
+fn budget_breach(
+    staging_total: u64,
+    in_flight_total: u64,
+    quarantined: u64,
+    capacity: u64,
+    incoming: u64,
+) -> Option<u64> {
+    let retained = quarantined.max(staging_total).max(in_flight_total);
+    let exceeds = |total: u64| total.saturating_add(incoming) > capacity;
+    if exceeds(retained) || exceeds(staging_total) || exceeds(in_flight_total) {
+        Some(retained)
+    } else {
+        None
+    }
 }
 
 fn validate_request(request: &UploadRequest) -> Result<(), ImageUploadError> {
@@ -1368,6 +1388,34 @@ mod tests {
                 requested: 3
             })
         ));
+    }
+
+    #[test]
+    fn the_process_budget_boundary_is_inclusive_and_per_axis() {
+        let capacity = 32 * 1024 * 1024;
+        let frame = FRAME_RGBA8_BYTES;
+        // Below the boundary, exactly at it, and one byte over.
+        assert_eq!(budget_breach(0, 0, 0, capacity, frame), None);
+        assert_eq!(
+            budget_breach(frame, frame, 0, capacity, frame),
+            None,
+            "an admission that lands exactly on the cap is allowed"
+        );
+        assert_eq!(
+            budget_breach(2 * frame, frame, 0, capacity, frame),
+            Some(2 * frame),
+            "the staging axis alone can block an admission"
+        );
+        assert_eq!(
+            budget_breach(frame, 2 * frame, 0, capacity, frame),
+            Some(2 * frame),
+            "the in-flight axis alone can block an admission"
+        );
+        assert_eq!(
+            budget_breach(frame, frame, 3 * frame, capacity, frame),
+            Some(3 * frame),
+            "the quarantine ledger can block an admission on its own"
+        );
     }
 
     #[test]

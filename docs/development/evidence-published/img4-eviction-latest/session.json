@@ -1,12 +1,16 @@
 {
   "schema_version": 1,
-  "status": "IMPLEMENTED_LOCAL_GATES_PASS_NATIVE_OBSERVED_GATE_AND_REVIEW_PENDING_REPAIRED_AFTER_ROUND_3",
+  "status": "IMPLEMENTED_LOCAL_GATES_PASS_NATIVE_OBSERVED_GATE_AND_REVIEW_PENDING_REPAIRED_AFTER_ROUND_4",
   "task": "MP-IMG4",
   "contract": "DC-MP-IMG4",
   "caller_authority": "Tern next-task directive for MP-IMG4 (baseline 669fafca318944066596368e2ca73b37859d1781) under the Caller's resumption instruction and ADR-0014. Round-1 to round-3 review repairs are included.",
   "baseline_source_commit": "669fafca318944066596368e2ca73b37859d1781",
-  "profile": {"native": "release", "os": "Windows 10.0.26300.0", "dpi": 96,
-    "debug_note": "The debug profile aborts with a main-thread stack overflow on this host regardless of this change (§19.214); native sets use release."},
+  "profile": {
+    "native": "release",
+    "os": "Windows 10.0.26300.0",
+    "dpi": 96,
+    "debug_note": "The debug profile aborts with a main-thread stack overflow on this host regardless of this change (§19.214); native sets use release."
+  },
   "round_3_review_repairs": [
     "B-01: the admission decision now sums the live staging and in-flight reservations of every generation (plus each pool's stuck bytes) under the service lock and admits inside that lock, so two generations cannot each pass a per-pool check and together exceed the 64 MiB process budget; the quarantine ledger is checked separately because its payloads are already the pools' stuck bytes",
     "A-01: the native ladder exercises the boundary at 32 MiB (refusal when retained == cap) and at the ratified 64 MiB default (three quarantined payloads, then refusal when the aggregate reaches 64 MiB)",
@@ -24,36 +28,110 @@
   "native_evidence": {
     "default_cap_run": {
       "command": "\"C:/dev/cos-build-release/release/examples/image_upload.exe\" --manifest 64",
-      "exit_code": 0, "failures": 0,
-      "cycles": ["shared@1 (two consumers)", "alpha@1", "alpha@2"],
-      "evictions": 3, "shared_consumer_retentions": 1, "painted_before_eviction": 3,
-      "atlas_drop_calls": 48, "quarantined_bytes": 50331648,
-      "refusal": {"reason": "process_quarantine", "retained": 67108864, "cap": 67108864},
-      "prepaint_frame_swept_at_close": {"evicted": 1, "skipped": 0, "unattributed": 0, "released_bytes": 16777216},
-      "final": {"retained": 0, "consumers": 0, "quarantine_ledger": 50331648, "failures": 0},
-      "sampled_working_set": {"samples": 7, "first_bytes": 16556032, "peak_bytes": 183549952}
+      "exit_code": 0,
+      "failures": 0,
+      "cycles": [
+        "shared@1 (two consumers)",
+        "alpha@1",
+        "alpha@2"
+      ],
+      "evictions": 3,
+      "shared_consumer_retentions": 1,
+      "painted_before_eviction": 3,
+      "atlas_drop_calls": 48,
+      "quarantined_bytes": 50331648,
+      "refusal": {
+        "reason": "process_quarantine",
+        "retained": 67108864,
+        "cap": 67108864
+      },
+      "prepaint_frame_swept_at_close": {
+        "evicted": 1,
+        "skipped": 0,
+        "unattributed": 0,
+        "released_bytes": 16777216
+      },
+      "final": {
+        "retained": 0,
+        "consumers": 0,
+        "quarantine_ledger": 50331648,
+        "failures": 0
+      },
+      "sampled_working_set": {
+        "samples": 7,
+        "first_bytes": 16556032,
+        "peak_bytes": 183549952
+      }
     },
     "boundary_32mib_run": {
       "command": "\"C:/dev/cos-build-release/release/examples/image_upload.exe\" --manifest 32",
-      "exit_code": 0, "failures": 0,
-      "evictions": 1, "shared_consumer_retentions": 1,
-      "refusal": {"reason": "process_quarantine", "retained": 33554432, "cap": 33554432},
-      "final": {"retained": 0, "quarantine_ledger": 16777216, "failures": 0}
+      "exit_code": 0,
+      "failures": 0,
+      "evictions": 1,
+      "shared_consumer_retentions": 1,
+      "refusal": {
+        "reason": "process_quarantine",
+        "retained": 33554432,
+        "cap": 33554432
+      },
+      "final": {
+        "retained": 0,
+        "quarantine_ledger": 16777216,
+        "failures": 0
+      }
     },
     "interactive": {
-      "captures": ["interactive-evicted-frame-quarantine.png", "interactive-retained-payload-refusal.png"],
+      "captures": [
+        "interactive-evicted-frame-quarantine.png",
+        "interactive-retained-payload-refusal.png"
+      ],
       "claim": "Evict current reports atlas calls=16, released_staged=0 B, quarantined=16777216 B; reloading the same identity is refused with Admission(DuplicateRepresentation); Evict owned and close exits 0."
     },
     "ledger_note": "one 16 MiB payload reads as 50,331,648 B summed across the three per-resource quarantine categories; each category has its own 64 MiB limit and the process ledger tracks the payload once"
   },
   "resources_and_owners": [
-    {"resource": "encoded CPU bytes", "owner": "caller Arc<[u8]> for one prepare", "capacity": "max_encoded_bytes", "release": "dropped when prepare returns"},
-    {"resource": "decoded raster", "owner": "AdmittedUpload or pool quarantine", "capacity": "16 MiB per frame; process staging/in-flight totals and ledger bounded by the configured capacity", "release": "staged at eviction; in-flight never without measured termination"},
-    {"resource": "tile payload", "owner": "PreparedImage tiles", "capacity": "16 MiB per frame", "release": "frame eviction"},
-    {"resource": "GPUI atlas entry", "owner": "owning window bound at attach or first paint", "capacity": "not observable", "release": "Window::drop_image per tile (call count only)"},
-    {"resource": "GPU residency", "owner": "platform/driver", "capacity": "NOT_MEASURED", "release": "not observable"},
-    {"resource": "quarantined bytes", "owner": "generation pool + process ledger", "capacity": "configured capacity (default 64 MiB)", "release": "no measured release path; new work refused at the cap"},
-    {"resource": "period allowance", "owner": "process-wide allowance", "capacity": "2 MiB / 8.333 ms", "release": "per-period reset"}
+    {
+      "resource": "encoded CPU bytes",
+      "owner": "caller Arc<[u8]> for one prepare",
+      "capacity": "max_encoded_bytes",
+      "release": "dropped when prepare returns"
+    },
+    {
+      "resource": "decoded raster",
+      "owner": "AdmittedUpload or pool quarantine",
+      "capacity": "16 MiB per frame; process staging/in-flight totals and ledger bounded by the configured capacity",
+      "release": "staged at eviction; in-flight never without measured termination"
+    },
+    {
+      "resource": "tile payload",
+      "owner": "PreparedImage tiles",
+      "capacity": "16 MiB per frame",
+      "release": "frame eviction"
+    },
+    {
+      "resource": "GPUI atlas entry",
+      "owner": "owning window bound at attach or first paint",
+      "capacity": "not observable",
+      "release": "Window::drop_image per tile (call count only)"
+    },
+    {
+      "resource": "GPU residency",
+      "owner": "platform/driver",
+      "capacity": "NOT_MEASURED",
+      "release": "not observable"
+    },
+    {
+      "resource": "quarantined bytes",
+      "owner": "generation pool + process ledger",
+      "capacity": "configured capacity (default 64 MiB)",
+      "release": "no measured release path; new work refused at the cap"
+    },
+    {
+      "resource": "period allowance",
+      "owner": "process-wide allowance",
+      "capacity": "2 MiB / 8.333 ms",
+      "release": "per-period reset"
+    }
   ],
   "not_measured": [
     "GPU transfer duration, completion, residency and Present",
@@ -62,5 +140,10 @@
     "process private bytes inside the probe; working set sampled externally",
     "MP-REC2 long-run plateau and MP-IMG5 view/zoom/pan"
   ],
-  "privacy_review": "Logs carry fixture ids, counters, byte counts and error tokens only; captures show the probe's own fixture and counters. No path, URL, credential or user document is present."
+  "privacy_review": "Logs carry fixture ids, counters, byte counts and error tokens only; captures show the probe's own fixture and counters. No path, URL, credential or user document is present.",
+  "round_4_review_repairs": [
+    "A-01: the stale Rustdoc that described a generation-based quarantine release now states the current rule — an in-flight payload stays charged for the life of the process or until a real device teardown can be proven",
+    "A-02: the close-sweep success condition includes unattributed_frames == 0, and the budget boundary is pinned by a unit regression test (the_process_budget_boundary_is_inclusive_and_per_axis) covering below, exactly at, and over the cap on each of the three axes"
+  ],
+  "test_count": 998
 }

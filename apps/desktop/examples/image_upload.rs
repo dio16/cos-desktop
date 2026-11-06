@@ -448,7 +448,10 @@ impl ImageUploadProbe {
             });
             match swept {
                 Ok((summary, counters)) => {
-                    if !prepaint_ready || summary.evicted_frames != 1 || summary.skipped_frames != 0
+                    if !prepaint_ready
+                        || summary.evicted_frames != 1
+                        || summary.skipped_frames != 0
+                        || summary.unattributed_frames != 0
                     {
                         failures = failures.saturating_add(1);
                     }
