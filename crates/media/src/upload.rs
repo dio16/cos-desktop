@@ -303,6 +303,36 @@ impl UploadPool {
         Ok(())
     }
 
+    /// Assert that every abandoned transfer of `generation` has terminated, releasing those
+    /// payloads and their quarantined bytes.
+    ///
+    /// This is only sound for a generation the caller can justify as no longer readable: a
+    /// superseded device generation invalidates its GPU objects by contract. It is still the
+    /// caller's assertion, not a measurement, and the current generation is refused by the
+    /// caller-side check in `desktop-gpui` rather than here. Returns the bytes released.
+    pub fn confirm_generation_terminated(&self, generation: u64) -> u64 {
+        let mut state = self.state.lock().expect("pool state");
+        let mut released = 0u64;
+        let mut released_keys: Vec<RepresentationKey> = Vec::new();
+        let mut kept = Vec::with_capacity(state.orphaned_payloads.len());
+        for held in state.orphaned_payloads.drain(..) {
+            if held.identity.device_generation == generation {
+                released = released.saturating_add(held.raster.rgba.len() as u64);
+                released_keys.push(held.identity.key);
+            } else {
+                kept.push(held);
+            }
+        }
+        state.orphaned_payloads = kept;
+        state
+            .unreclaimed_keys
+            .retain(|entry| !released_keys.contains(entry));
+        state.staging_stuck = state.staging_stuck.saturating_sub(released);
+        state.in_flight_stuck = state.in_flight_stuck.saturating_sub(released);
+        state.resident_stuck = state.resident_stuck.saturating_sub(released);
+        released
+    }
+
     /// Whether any per-resource quarantine is non-empty.
     pub fn has_quarantine(&self) -> bool {
         let state = self.state.lock().expect("pool state");

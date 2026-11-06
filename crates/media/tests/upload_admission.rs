@@ -845,3 +845,58 @@ fn an_identity_whose_digest_does_not_match_the_pixels_is_refused() {
     let usage = pool.usage();
     assert_eq!((usage.staging, usage.resident), (0, 0));
 }
+
+#[test]
+fn a_superseded_generation_releases_only_its_own_quarantine() {
+    let _heavy = heavy();
+    let pool = UploadPool::new(UploadBudget {
+        staging_bytes: FRAME_BYTES * 2,
+        in_flight_bytes: FRAME_BYTES * 2,
+        resident_bytes: FRAME_BYTES * 2,
+    });
+    let verified = verified_approved();
+    let first = identity_for(43, 1, &verified);
+    let second = identity_for(44, 2, &verified);
+    for (identity, generation) in [(&first, 1u64), (&second, 2u64)] {
+        let mut admitted = admit_upload(
+            &verified,
+            identity.clone(),
+            generation,
+            &pool,
+            &Cancellation::default(),
+        )
+        .expect("admitted");
+        admitted.begin_upload().expect("begin");
+    }
+    assert_eq!(pool.orphaned().len(), 2);
+
+    // Releasing generation 1 keeps generation 2's payload charged.
+    assert_eq!(pool.confirm_generation_terminated(1), FRAME_BYTES);
+    let held = pool.orphaned();
+    assert_eq!(held.len(), 1, "the other generation stays quarantined");
+    assert_eq!(held[0].device_generation, 2);
+    let usage = pool.usage();
+    assert_eq!(
+        (
+            usage.staging_stuck,
+            usage.in_flight_stuck,
+            usage.resident_stuck
+        ),
+        (FRAME_BYTES, FRAME_BYTES, FRAME_BYTES),
+        "one generation's quarantine is still charged to all three categories"
+    );
+
+    // A generation with nothing held releases nothing.
+    assert_eq!(pool.confirm_generation_terminated(1), 0);
+    assert_eq!(pool.confirm_generation_terminated(2), FRAME_BYTES);
+    assert!(pool.orphaned().is_empty());
+    let usage = pool.usage();
+    assert_eq!(
+        (
+            usage.staging_stuck,
+            usage.in_flight_stuck,
+            usage.resident_stuck
+        ),
+        (0, 0, 0)
+    );
+}

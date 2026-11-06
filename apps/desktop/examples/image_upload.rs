@@ -185,12 +185,17 @@ impl ImageUploadProbe {
                 self.current = None;
             }
         }
+        let previous = self.device_generation;
         self.device_generation = self.device_generation.saturating_add(1);
         // Cancel any in-flight preparation, but give the retained frame a live token so its next
         // paint reports the stale-generation refusal rather than a cancellation.
         self.cancel = Cancellation::default();
+        // The superseded generation is the only release condition for a quarantined payload.
+        let released = self
+            .service
+            .release_terminated_generation(previous, self.device_generation);
         self.status = format!(
-            "Logical device generation advanced to {} (no hardware device reset performed); previous frame is now stale",
+            "Logical device generation advanced to {} (no hardware device reset performed); previous frame is now stale; asserted_release={released} B",
             self.device_generation
         )
         .into();
@@ -212,6 +217,8 @@ impl ImageUploadProbe {
         )
         .into();
         self.task = Some(cx.spawn(async move |this, cx| {
+            // Any expectation violated in this run makes the process exit non-zero.
+            let mut failures = 0u32;
             for cycle in 0..cycles {
                 for (index, (source, revision)) in MANIFEST.iter().copied().enumerate() {
                     let generation = this
@@ -254,6 +261,22 @@ impl ImageUploadProbe {
                     if !attached {
                         continue;
                     }
+                    // Paint progress, not a fixed sleep: wait until the scene reports the frame
+                    // composed, up to one second. GPU Present stays unmeasured.
+                    let mut painted = false;
+                    for _ in 0..40 {
+                        if frame.progress().complete_in_scene {
+                            painted = true;
+                            break;
+                        }
+                        background.timer(Duration::from_millis(25)).await;
+                    }
+                    if !painted {
+                        failures = failures.saturating_add(1);
+                        println!(
+                            "{{\"event\":\"img4-paint-missing\",\"cycle\":{cycle},\"index\":{index}}}"
+                        );
+                    }
                     // Failure injection 1: eviction while a consumer is still attached must refuse.
                     let attached_consumers = service.consumers(&frame);
                     let refusal = this.update_in(cx, |this, window, _| {
@@ -261,24 +284,55 @@ impl ImageUploadProbe {
                         service.evict(&frame, window)
                     });
                     match refusal {
-                        Ok(Ok(_)) => println!(
-                            "{{\"event\":\"img4-evict-unexpected\",\"cycle\":{cycle},\"index\":{index}}}"
-                        ),
+                        Ok(Ok(_)) => {
+                            failures = failures.saturating_add(1);
+                            println!(
+                                "{{\"event\":\"img4-evict-unexpected\",\"cycle\":{cycle},\"index\":{index}}}"
+                            );
+                        }
                         Ok(Err(error)) => println!(
                             "{{\"event\":\"img4-evict-refused\",\"cycle\":{cycle},\"index\":{index},\"error\":\"{error:?}\",\"attached_consumers\":{attached_consumers},\"retained\":{}}}",
                             service.counters().retained_frames,
                         ),
-                        Err(_) => println!(
-                            "{{\"event\":\"img4-evict-refused\",\"cycle\":{cycle},\"index\":{index},\"error\":\"view_gone\"}}"
-                        ),
+                        Err(_) => {
+                            failures = failures.saturating_add(1);
+                            println!(
+                                "{{\"event\":\"img4-evict-unexpected\",\"cycle\":{cycle},\"index\":{index},\"reason\":\"view_gone\"}}"
+                            );
+                        }
                     }
-                    // Let the canvas paint the frame at least once before it is switched away.
-                    background.timer(Duration::from_millis(120)).await;
+                    // Failure injection 2 (shared identity only): after ONE consumer detaches, the
+                    // remaining consumer must still hold the frame.
+                    if shared {
+                        let detached = this
+                            .update(cx, |_, _| service.detach(&frame, consumers[1]))
+                            .unwrap_or(false);
+                        let refusal = this.update_in(cx, |this, window, _| {
+                            let _ = this;
+                            service.evict(&frame, window)
+                        });
+                        match refusal {
+                            Ok(Ok(_)) => {
+                                failures = failures.saturating_add(1);
+                                println!(
+                                    "{{\"event\":\"img4-shared-unexpected\",\"cycle\":{cycle},\"index\":{index}}}"
+                                );
+                            }
+                            Ok(Err(error)) => println!(
+                                "{{\"event\":\"img4-shared-retained\",\"cycle\":{cycle},\"index\":{index},\"detached\":{detached},\"error\":\"{error:?}\",\"consumers\":{},\"retained\":{}}}",
+                                service.consumers(&frame),
+                                service.counters().retained_frames,
+                            ),
+                            Err(_) => {
+                                failures = failures.saturating_add(1);
+                                println!(
+                                    "{{\"event\":\"img4-shared-unexpected\",\"cycle\":{cycle},\"index\":{index},\"reason\":\"view_gone\"}}"
+                                );
+                            }
+                        }
+                    }
                     let evicted = this.update_in(cx, |this, window, cx| {
                         service.detach(&frame, consumers[0]);
-                        if shared {
-                            service.detach(&frame, consumers[1]);
-                        }
                         this.current = None;
                         cx.notify();
                         let outcome = service.evict(&frame, window);
@@ -286,9 +340,10 @@ impl ImageUploadProbe {
                     });
                     match evicted {
                         Ok((Ok(outcome), counters, generation)) => println!(
-                            "{{\"event\":\"img4-evict\",\"cycle\":{cycle},\"index\":{index},\"source\":\"{source}\",\"revision\":{revision},\"generation\":{generation},\"shared\":{shared},\"images\":{},\"released_bytes\":{},\"retained\":{},\"consumers\":{},\"staging\":{},\"in_flight\":{},\"resident\":{},\"quarantined\":{},\"evicted_frames\":{},\"dropped_images\":{},\"released_total\":{}}}",
+                            "{{\"event\":\"img4-evict\",\"cycle\":{cycle},\"index\":{index},\"source\":\"{source}\",\"revision\":{revision},\"generation\":{generation},\"shared\":{shared},\"painted\":{painted},\"images\":{},\"released_bytes\":{},\"quarantined_bytes\":{},\"retained\":{},\"consumers\":{},\"staging\":{},\"in_flight\":{},\"resident\":{},\"quarantined\":{},\"evicted_frames\":{},\"dropped_images\":{},\"released_total\":{},\"asserted_release\":{}}}",
                             outcome.dropped_images,
                             outcome.released_bytes,
+                            outcome.quarantined_bytes,
                             counters.retained_frames,
                             counters.consumers,
                             counters.staging_reservation_bytes,
@@ -300,20 +355,42 @@ impl ImageUploadProbe {
                             counters.evicted_frames,
                             counters.dropped_atlas_images,
                             counters.released_payload_bytes,
+                            counters.asserted_release_bytes,
                         ),
-                        Ok((Err(error), counters, generation)) => println!(
-                            "{{\"event\":\"img4-evict-refused\",\"cycle\":{cycle},\"index\":{index},\"source\":\"{source}\",\"revision\":{revision},\"generation\":{generation},\"error\":\"{error:?}\",\"retained\":{},\"consumers\":{}}}",
-                            counters.retained_frames, counters.consumers,
-                        ),
-                        Err(_) => break,
+                        Ok((Err(error), counters, generation)) => {
+                            failures = failures.saturating_add(1);
+                            println!(
+                                "{{\"event\":\"img4-evict-refused-unexpected\",\"cycle\":{cycle},\"index\":{index},\"source\":\"{source}\",\"revision\":{revision},\"generation\":{generation},\"error\":\"{error:?}\",\"retained\":{},\"consumers\":{}}}",
+                                counters.retained_frames, counters.consumers,
+                            );
+                        }
+                        Err(_) => {
+                            failures = failures.saturating_add(1);
+                            break;
+                        }
                     }
+                    // A superseded generation is the only release condition for a payload whose
+                    // transfer had begun: the generation contract invalidates its GPU objects.
+                    // Advancing per frame keeps the quarantine inside the declared pool budget.
+                    let previous = this
+                        .update(cx, |this, _| this.device_generation)
+                        .unwrap_or(1);
+                    let _ = this.update(cx, |this, cx| this.advance_logical_generation(cx));
+                    let current = this
+                        .update(cx, |this, _| this.device_generation)
+                        .unwrap_or(previous + 1);
+                    let asserted = service.release_terminated_generation(previous, current);
+                    let refused_current = service.release_terminated_generation(current, current);
+                    if refused_current != 0 {
+                        failures = failures.saturating_add(1);
+                    }
+                    println!(
+                        "{{\"event\":\"img4-generation-release\",\"cycle\":{cycle},\"index\":{index},\"previous\":{previous},\"current\":{current},\"released_bytes\":{asserted},\"current_refused\":{refused_current}}}"
+                    );
                 }
-                // One logical generation change per cycle: the previous pool must not survive and
-                // the next pass must recreate resources lazily.
-                let _ = this.update(cx, |this, cx| this.advance_logical_generation(cx));
                 let counters = service.counters();
                 println!(
-                    "{{\"event\":\"img4-cycle\",\"cycle\":{cycle},\"retained\":{},\"consumers\":{},\"staging\":{},\"in_flight\":{},\"resident\":{},\"quarantined\":{},\"evicted_frames\":{},\"dropped_images\":{},\"released_bytes\":{}}}",
+                    "{{\"event\":\"img4-cycle\",\"cycle\":{cycle},\"retained\":{},\"consumers\":{},\"staging\":{},\"in_flight\":{},\"resident\":{},\"quarantined\":{},\"evicted_frames\":{},\"dropped_images\":{},\"released_payload_bytes\":{},\"asserted_release\":{}}}",
                     counters.retained_frames,
                     counters.consumers,
                     counters.staging_reservation_bytes,
@@ -325,6 +402,7 @@ impl ImageUploadProbe {
                     counters.evicted_frames,
                     counters.dropped_atlas_images,
                     counters.released_payload_bytes,
+                    counters.asserted_release_bytes,
                 );
             }
             // Failure injection 2: two retained frames fill the bound, so a third is refused.
@@ -369,8 +447,13 @@ impl ImageUploadProbe {
                 }
                 None => Err(ImageUploadError::InvalidEncodedInputLimit),
             };
+            let capacity_ok = held.len() == 2
+                && matches!(&third_result, Err(ImageUploadError::RetainedFrameLimit));
+            if !capacity_ok {
+                failures = failures.saturating_add(1);
+            }
             println!(
-                "{{\"event\":\"img4-capacity\",\"held\":{},\"third\":\"{}\",\"retained\":{}}}",
+                "{{\"event\":\"img4-capacity\",\"held\":{},\"third\":\"{}\",\"retained\":{},\"expected_refusal\":{capacity_ok}}}",
                 held.len(),
                 match &third_result {
                     Ok(()) => "admitted".to_owned(),
@@ -418,17 +501,22 @@ impl ImageUploadProbe {
                     this.close_with_sweep(window, cx);
                     let counters = service.counters();
                     println!(
-                        "{{\"event\":\"img4-summary\",\"retained\":{},\"consumers\":{},\"resident\":{},\"quarantined\":{},\"generation\":{}}}",
+                        "{{\"event\":\"img4-summary\",\"retained\":{},\"consumers\":{},\"resident\":{},\"quarantined\":{},\"asserted_release\":{},\"generation\":{},\"failures\":{failures}}}",
                         counters.retained_frames,
                         counters.consumers,
                         counters.resident_reservation_bytes,
                         counters.quarantined_staging_bytes
                             + counters.quarantined_in_flight_bytes
                             + counters.quarantined_resident_bytes,
+                        counters.asserted_release_bytes,
                         this.device_generation,
                     );
                 });
             let _ = summary;
+            // A violated expectation is a failed observation, not a pass with a warning.
+            if failures > 0 {
+                std::process::exit(1);
+            }
         }));
         cx.notify();
     }
@@ -446,10 +534,10 @@ impl ImageUploadProbe {
             Ok(outcome) => {
                 self.current = None;
                 self.status = format!(
-                    "Evicted: atlas images={} released_payload={} B out of {} B; GPU residency NOT_MEASURED",
+                    "Evicted: atlas images={} released_staged={} B quarantined={} B (in-flight transfer; released only by a superseded generation); GPU residency NOT_MEASURED",
                     outcome.dropped_images,
                     outcome.released_bytes,
-                    FRAME_EDGE as u64 * FRAME_EDGE as u64 * 4
+                    outcome.quarantined_bytes,
                 )
                 .into();
             }
