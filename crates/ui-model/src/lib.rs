@@ -218,6 +218,15 @@ pub mod presentation {
             had_pair || had_pending
         }
 
+        /// Exchange candidates only. Viewed and the host's per-pane cameras/focus do not move.
+        pub fn swap_compare(&mut self) -> bool {
+            let Some(pair) = self.compare.as_mut() else {
+                return false;
+            };
+            pair.swap(0, 1);
+            true
+        }
+
         /// Bind the references to a task without clearing them (startup restore).
         pub fn adopt_task(&mut self, task: TaskId) {
             if self.task_scope.is_none() {
@@ -502,6 +511,33 @@ pub mod presentation {
             assert_eq!(state.viewed(), Some(&candidate("b")));
             assert_eq!(state.select(candidate("c")), SelectionEffect::CompareSideA);
             assert_eq!(state.compare_side(CompareSide::A), Some(&candidate("c")));
+        }
+
+        #[test]
+        fn swap_changes_only_pair_members_and_change_still_targets_the_named_side() {
+            let mut state = Presentation::default();
+            state.select(candidate("a"));
+            state.select(candidate("b"));
+            state.select(candidate("c"));
+            state.arm_change(CompareSide::A);
+            assert!(state.swap_compare());
+            assert_eq!(
+                state.compare_pair(),
+                Some(&[candidate("b"), candidate("a")])
+            );
+            assert_eq!(state.viewed(), Some(&candidate("c")));
+            assert_eq!(
+                state.select(candidate("d")),
+                SelectionEffect::Changed(CompareSide::A)
+            );
+            assert_eq!(
+                state.compare_pair(),
+                Some(&[candidate("d"), candidate("a")])
+            );
+            assert_eq!(state.viewed(), Some(&candidate("c")));
+            state.close_compare();
+            assert!(!state.swap_compare());
+            assert_eq!(state.viewed(), Some(&candidate("c")));
         }
 
         #[test]

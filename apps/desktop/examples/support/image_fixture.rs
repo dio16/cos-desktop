@@ -142,10 +142,6 @@ fn crc32_table() -> &'static [u32; 256] {
     });
     &TABLE
 }
-pub fn fixture_request(revision: u64, generation: u64) -> Result<UploadRequest, MediaError> {
-    fixture_request_for("landmark-png", revision, generation)
-}
-
 /// One request for a named fixture source: the manifest uses distinct source ids so each entry is
 /// a distinct identity, and a repeated (source, revision) pair is a genuinely shared frame.
 pub fn fixture_request_for(

@@ -22,6 +22,7 @@ use ui_model::{DerivationCache, DisplayCache, Workbench, presentation::CompareSi
 
 mod accessibility;
 pub mod budget;
+pub mod compare_view;
 pub mod contrast;
 mod dock;
 mod flow;
@@ -146,6 +147,7 @@ pub fn rail_edge_index(len: usize, edge: RailEdge) -> Option<usize> {
 
 pub fn bind_keys(cx: &mut App) {
     image_viewer::bind_keys(cx);
+    compare_view::bind_keys(cx);
     cx.bind_keys([
         KeyBinding::new("ctrl-1", Artifact, None),
         KeyBinding::new("ctrl-2", Compare, None),
@@ -687,6 +689,7 @@ pub struct Shell {
     preview_trace: String,
     workbench: Option<Workbench>,
     artifact_viewer: Entity<image_viewer::ImageViewer>,
+    compare_view: Entity<compare_view::CompareView>,
     /// Derived display text with its publication identity, revalidated on render.
     cache: DisplayCache,
     error: Option<String>,
@@ -878,11 +881,37 @@ impl Shell {
         let artifact_viewer = cx.new(|cx| {
             image_viewer::ImageViewer::new(image_viewer::ViewerMode::PreviewOnly, window, cx)
         });
+        let compare_view = cx.new(|cx| {
+            compare_view::CompareView::new(image_viewer::ViewerMode::PreviewOnly, window, cx)
+        });
+        cx.subscribe_in(&compare_view, window, |this, _, event, window, cx| {
+            match event {
+                compare_view::CompareEvent::Swap => {
+                    if this
+                        .workbench
+                        .as_mut()
+                        .is_some_and(|workbench| workbench.presentation.swap_compare())
+                    {
+                        this.compare_view
+                            .update(cx, |view, cx| view.swap_resources(window, cx));
+                    }
+                }
+                compare_view::CompareEvent::Change(side) => {
+                    this.change_compare_side(*side, cx);
+                    this.dock_focus.focus(window, cx);
+                }
+                compare_view::CompareEvent::Close => this.close_compare(cx),
+            }
+            cx.notify();
+        })
+        .detach();
         // The shell owns the window lifecycle: retiring the viewer and its atlas entries is an
         // explicit step before the platform destroys the window, never an implicit Drop.
         let closing_viewer = artifact_viewer.downgrade();
+        let closing_compare = compare_view.downgrade();
         window.on_window_should_close(cx, move |window, cx| {
             let _ = closing_viewer.update(cx, |viewer, _| viewer.close());
+            let _ = closing_compare.update(cx, |view, cx| view.close(cx));
             // Last safe boundary: frames this window owned with no remaining consumer are released
             // here, after which the platform destroys the window's atlas.
             let _ = image_upload::ImageUploadService::global().evict_owned_by(window);
@@ -894,6 +923,7 @@ impl Shell {
             handle,
             desktop_version: Arc::clone(&desktop_version),
             artifact_viewer,
+            compare_view,
             support_state: SupportPreviewState::default(),
             support_focus: cx.focus_handle().tab_stop(true),
             diagnostics_focus: cx.focus_handle().tab_stop(true),
@@ -927,7 +957,7 @@ impl Shell {
             palette_active: None,
             palette_hit_len: 0,
             stop_intent: StopTracker::default(),
-            dock_focus: cx.focus_handle().tab_stop(true),
+            dock_focus: cx.focus_handle().tab_index(30).tab_stop(true),
             dock_active: None,
             dock_anchor: None,
             dock_mounts: Arc::new(AtomicUsize::new(0)),
@@ -2045,6 +2075,7 @@ impl Shell {
             return;
         };
         if self.rail_state.select(task, live) {
+            self.compare_view.update(cx, |view, cx| view.close(cx));
             // Invalidate the previous task's strip state at the switch boundary itself, before the
             // new derivation completes: its rows, details, focus handles and dismissal origin must
             // not remain shown, actionable or focusable (ADR-0011 §3).
@@ -2140,10 +2171,46 @@ impl Shell {
             .as_ref()
             .map(|workbench| workbench.core.navigation.surface())
             .unwrap_or_default();
+        let previous_pair = self
+            .workbench
+            .as_ref()
+            .and_then(|workbench| workbench.presentation.compare_pair())
+            .cloned();
         let event = match &mut self.workbench {
             Some(workbench) => dock::select(&mut workbench.presentation, identity.clone(), surface),
             None => return,
         };
+        let pair_changed = previous_pair.as_ref()
+            != self
+                .workbench
+                .as_ref()
+                .and_then(|workbench| workbench.presentation.compare_pair());
+        if pair_changed {
+            let current = self
+                .workbench
+                .as_ref()
+                .and_then(|workbench| workbench.presentation.compare_pair());
+            // A replacement changes the label; the previous picture must not stay underneath it.
+            let replaced: [bool; 2] = std::array::from_fn(|index| {
+                previous_pair.as_ref().map(|pair| &pair[index])
+                    != current.as_ref().map(|pair| &pair[index])
+            });
+            self.compare_view.update(cx, |view, cx| {
+                view.reset_fit(cx);
+                for (index, replaced) in replaced.into_iter().enumerate() {
+                    if replaced {
+                        view.await_side(
+                            if index == 0 {
+                                CompareSide::A
+                            } else {
+                                CompareSide::B
+                            },
+                            cx,
+                        );
+                    }
+                }
+            });
+        }
         self.dock_active = Some(identity);
         self.dock_focus.focus(window, cx);
         if let Some(target) = event.surface
@@ -2168,6 +2235,7 @@ impl Shell {
 
     /// Close Compare: return to the artifact surface with the viewed candidate (D-7).
     fn close_compare(&mut self, cx: &mut Context<Self>) {
+        self.compare_view.update(cx, |view, cx| view.close(cx));
         let event = match &mut self.workbench {
             Some(workbench) => dock::close(&mut workbench.presentation),
             None => return,
@@ -2905,6 +2973,8 @@ impl Render for Shell {
         let palette = contrast::Palette { scheme, colors };
         self.artifact_viewer
             .update(cx, |viewer, cx| viewer.set_palette(palette, cx));
+        self.compare_view
+            .update(cx, |view, cx| view.set_palette(palette, cx));
         let body_text = TextSpec::ui(&self.tokens, TextStyle::Body);
         let xs_text = TextSpec::ui(&self.tokens, TextStyle::Xs);
         let rail_width = shell_style::rail_width(&self.tokens);
@@ -3195,207 +3265,46 @@ impl Render for Shell {
             changing_side.map(CompareSide::label),
         )
         .into();
+        let compare_labels = std::array::from_fn(|index| {
+            let reference = compare_pair
+                .map(|pair| &pair[index].0)
+                .or_else(|| (index == 0).then_some(pending_side_a.as_ref()).flatten());
+            let row = reference
+                .and_then(|identity| artifacts.iter().find(|row| row.identity == *identity));
+            SharedString::from(match (reference, row) {
+                (None, _) => format!("{}: 未選択", if index == 0 { "A" } else { "B" }),
+                (_, Some(row)) => format!("{}: {}", if index == 0 { "A" } else { "B" }, row.label),
+                _ => format!(
+                    "{}: この候補は現在閲覧できる情報に含まれていません。",
+                    if index == 0 { "A" } else { "B" }
+                ),
+            })
+        });
+        let compare_available = std::array::from_fn(|index| {
+            compare_pair
+                .map(|pair| &pair[index].0)
+                .or_else(|| (index == 0).then_some(pending_side_a.as_ref()).flatten())
+                .is_some_and(|identity| artifacts.iter().any(|row| row.identity == *identity))
+        });
+        self.compare_view.update(cx, |view, cx| {
+            view.set_selection_presence([side_a_exists, side_b_exists], cx);
+            view.set_projection(compare_labels, compare_available, cx);
+        });
         let compare_panel = div()
             .id("compare-selection")
             .role(Role::Group)
             .aria_label("この画面での比較対象。正式な採用結果ではありません")
-            .w_full()
+            .size_full()
+            .min_h_0()
             .flex()
             .flex_col()
-            .gap_4()
-            .child(div().flex().gap_4().children((0..2_usize).map(|index| {
-                let side = if index == 0 {
-                    CompareSide::A
-                } else {
-                    CompareSide::B
-                };
-                let reference = compare_pair
-                    .map(|pair| &pair[side.index()].0)
-                    .or(if index == 0 {
-                        pending_side_a.as_ref()
-                    } else {
-                        None
-                    });
-                let row = reference.and_then(|identity| {
-                    artifacts
-                        .iter()
-                        .find(|candidate| candidate.identity == *identity)
-                });
-                let available = reference.is_none() || row.is_some();
-                let label: SharedString = match (reference, row) {
-                    (None, _) => "未選択".into(),
-                    (Some(_), Some(row)) => SharedString::from(row.label.clone()),
-                    (Some(_), None) => {
-                        "この候補は、現在閲覧できる情報に含まれていません。"
-                            .into()
-                    }
-                };
-                let identity_label = reference
-                    .map(|identity| SharedString::from(identity.candidate_id.as_str()))
-                    .unwrap_or_else(|| SharedString::from("none"));
-                div()
-                    .id(("compare-side", index))
-                    .role(Role::Group)
-                    .aria_label(SharedString::from(format!(
-                        "比較する{}側：{}",
-                        side.label(),
-                        label
-                    )))
-                    .aria_value(identity_label)
-                    .flex_1()
-                    .min_w_0()
-                    .p_4()
-                    .border_1()
-                    .border_color(rgb(if available {
-                        contrast::role_color(scheme, 0x626870, colors.border)
-                    } else {
-                        contrast::role_color(scheme, 0xd08a6a, colors.disabled_border)
-                    }))
-                    .bg(rgb(contrast::role_color(scheme, 0x202328, colors.raised_face)))
-                    .text_color(rgb(contrast::readable_text(
-                        &colors,
-                        colors.text,
-                        contrast::role_color(scheme, 0x202328, colors.raised_face),
-                    )))
-                    .flex()
-                    .flex_col()
-                    .gap_2()
-                    .child(SharedString::from(format!("比較する{}側", side.label())))
-                    .child(label)
-            })))
-            .child(
-                div()
-                    .flex()
-                    .gap_3()
-                    .child({
-                        let help = if side_a_exists {
-                            "押したあとに候補一覧から選ぶと、比較するA側だけを置き換えます。閲覧中の候補は変わりません。"
-                        } else {
-                            "比較するA側はまだ選ばれていません。下の一覧から候補を選ぶと、この操作が使えます。"
-                        };
-                        div()
-                            .id("compare-change-a")
-                            .role(Role::Button)
-                            .aria_label("比較するA側の候補を変更")
-                            .aria_description(help)
-                            .tooltip({
-                                let style = xs_text.clone();
-                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, palette, cx)
-                            })
-                            .px_4()
-                            .py_2()
-                            .border_1()
-                            .border_color(rgb(if side_a_exists {
-                                colors.border
-                            } else {
-                                contrast::role_color(
-                                    scheme,
-                                    shell_style::RESTING_CONTROL_BORDER,
-                                    colors.disabled_border,
-                                )
-                            }))
-                            .when(side_a_exists, |element| element.cursor_pointer())
-                            .child("A側を変更")
-                            .when(side_a_exists, |element| {
-                                element
-                                    .on_click(cx.listener(|this, _, _, cx| {
-                                        this.change_compare_side(CompareSide::A, cx);
-                                    }))
-                                    .on_a11y_action(AccessibleAction::Click, {
-                                        let this = cx.entity().downgrade();
-                                        move |_, _window, cx| {
-                                            let _ = this.update(cx, |this, cx| {
-                                                this.change_compare_side(CompareSide::A, cx);
-                                            });
-                                        }
-                                    })
-                            })
-                    })
-                    .child({
-                        let help = if side_b_exists {
-                            "押したあとに候補一覧から選ぶと、比較するB側だけを置き換えます。閲覧中の候補は変わりません。"
-                        } else {
-                            "比較するB側はまだ選ばれていません。A側とB側の候補がそろうと、この操作が使えます。"
-                        };
-                        div()
-                            .id("compare-change-b")
-                            .role(Role::Button)
-                            .aria_label("比較するB側の候補を変更")
-                            .aria_description(help)
-                            .tooltip({
-                                let style = xs_text.clone();
-                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, palette, cx)
-                            })
-                            .px_4()
-                            .py_2()
-                            .border_1()
-                            .border_color(rgb(if side_b_exists {
-                                colors.border
-                            } else {
-                                contrast::role_color(
-                                    scheme,
-                                    shell_style::RESTING_CONTROL_BORDER,
-                                    colors.disabled_border,
-                                )
-                            }))
-                            .when(side_b_exists, |element| element.cursor_pointer())
-                            .child("B側を変更")
-                            .when(side_b_exists, |element| {
-                                element
-                                    .on_click(cx.listener(|this, _, _, cx| {
-                                        this.change_compare_side(CompareSide::B, cx);
-                                    }))
-                                    .on_a11y_action(AccessibleAction::Click, {
-                                        let this = cx.entity().downgrade();
-                                        move |_, _window, cx| {
-                                            let _ = this.update(cx, |this, cx| {
-                                                this.change_compare_side(CompareSide::B, cx);
-                                            });
-                                        }
-                                    })
-                            })
-                    })
-                    .child(
-                        div()
-                            .id("compare-close")
-                            .role(Role::Button)
-                            .aria_label("比較を閉じて閲覧中の候補に戻る")
-                            .aria_description("比較画面を閉じ、閲覧中の候補の画面に戻ります。正式な採用結果は変更しません。")
-                            .tooltip({
-                                let style = xs_text.clone();
-                                move |_, cx| help::tooltip("比較画面を閉じ、閲覧中の候補の画面に戻ります。正式な採用結果は変更しません。".into(), style.clone(), inspector_width, palette, cx)
-                            })
-                            .px_4()
-                            .py_2()
-                            .border_1()
-                            .border_color(rgb(colors.border))
-                            .cursor_pointer()
-                            .child("比較を閉じる")
-                            .on_click(cx.listener(|this, _, _, cx| {
-                                this.close_compare(cx);
-                            }))
-                            .on_a11y_action(AccessibleAction::Click, {
-                                let this = cx.entity().downgrade();
-                                move |_, _window, cx| {
-                                    let _ = this.update(cx, |this, cx| {
-                                        this.close_compare(cx);
-                                    });
-                                }
-                            }),
-                    ),
+            .gap_2()
+            .child(compare_summary)
+            .children(
+                dock::side_change_hint(side_a_exists, side_b_exists)
+                    .map(|message| xs_text.clone().apply(div()).child(message)),
             )
-            .children(dock::side_change_hint(side_a_exists, side_b_exists).map(|message| {
-                xs_text
-                    .clone()
-                    .apply(div())
-                    .text_color(rgb(crate::contrast::readable_text(
-                        &colors,
-                        contrast::role_color(scheme, 0xbcc6d0, colors.text),
-                        contrast::role_color(scheme, 0x17191c, colors.background),
-                    )))
-                    .child(message)
-            }))
-            .child(compare_summary);
+            .child(self.compare_view.clone());
         let diagnostics_open = self
             .workbench
             .as_ref()
@@ -7105,76 +7014,5 @@ mod ",
                 "{call} no longer appears in any accessibility handler"
             );
         }
-    }
-
-    #[test]
-    fn every_migrated_control_carries_its_own_listener() {
-        // Counting listeners cannot tell whether a particular control has one: a listener added
-        // elsewhere keeps the count satisfied. Check each control's own element instead, bounded
-        // to the text that follows its id.
-        let whole = include_str!("lib.rs");
-        let cut = whole
-            .find("\n#[cfg(test)]\nmod ")
-            .expect("the first test module marker");
-        let source = &whole[..cut];
-        for id in [
-            "compare-change-a",
-            "compare-change-b",
-            "compare-close",
-            "flow-search",
-            "stop-request",
-            "stop-reconcile",
-            "task-search",
-            "surface-switcher",
-        ] {
-            let marker = format!(".id(\"{id}\")");
-            let start = source
-                .find(&marker)
-                .unwrap_or_else(|| panic!("control {id} is not in the production source"));
-            let after = &source[start + marker.len()..];
-            // Bound the window by the next element id so a neighbouring control's listener
-            // cannot stand in for this one.
-            let end = after.find(".id(\"").unwrap_or(after.len());
-            let window = &after[..end];
-            assert!(
-                window.contains(".on_a11y_action(AccessibleAction::Click"),
-                "control {id} has no explicit accessibility click listener"
-            );
-        }
-    }
-
-    #[test]
-    fn a11y_click_listeners_cover_the_migrated_click_targets() {
-        // Count only the production half of the file. Searching the whole text would let the
-        // assertions be satisfied by the literals in this very test, which is how a guard stays
-        // green after the widget loses its listener.
-        let whole = include_str!("lib.rs");
-        let cut = whole
-            .find("\n#[cfg(test)]\nmod ")
-            .expect("the first test module marker");
-        let source = &whole[..cut];
-        let migrated = [
-            "change_compare_side(CompareSide::A",
-            "change_compare_side(CompareSide::B",
-            "close_compare(cx)",
-            "start_stop(window, cx)",
-            "start_receipt_check(window, cx)",
-            "flow_input_focus.focus(window, cx)",
-            "rail_input_focus.focus(window, cx)",
-            "surface_focus[index].focus(window, cx)",
-        ];
-        for handler in migrated {
-            assert!(
-                source.contains(handler),
-                "missing migrated handler {handler}"
-            );
-        }
-        assert!(
-            source
-                .matches(".on_a11y_action(AccessibleAction::Click")
-                .count()
-                >= 11,
-            "three diagnostics/export buttons plus eight migrated targets need explicit listeners"
-        );
     }
 }

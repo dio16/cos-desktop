@@ -29,6 +29,8 @@ ureq = { version = "2.12", default-features = false }
 
 [dev-dependencies]
 media = { path = "../../crates/media" }
+# The explicit Compare experiment uses the same selection state as the production shell.
+ui-model = { path = "../../crates/ui-model" }
 
 [target.'cfg(windows)'.dependencies]
 # Windows Credential Manager (DPAPI-protected at rest) for the Desktop Runtime

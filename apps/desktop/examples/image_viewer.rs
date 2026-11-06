@@ -17,7 +17,7 @@ impl Demo {
     fn load(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.revision = self.revision.saturating_add(1);
         let revision = self.revision;
-        match image_fixture::fixture_request(revision, 1) {
+        match image_fixture::fixture_request_for("landmark-png", revision, 1) {
             Ok(request) => self.viewer.update(cx, |viewer, cx| {
                 viewer.load_generated(request, window, cx, move |cancel| {
                     image_fixture::generate_fixture_png(revision, cancel).map(Arc::<[u8]>::from)

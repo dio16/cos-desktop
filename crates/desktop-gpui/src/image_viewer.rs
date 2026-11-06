@@ -7,11 +7,12 @@ use crate::{
         ConsumerId, FRAME_EDGE, ImageUploadError, ImageUploadService, PaintStatus, PreparedImage,
         TileDemand, UploadRequest, ViewPaint,
     },
-    view_transform::{Point, Size, ViewTransform},
+    view_transform::{Point, Rect, Size, ViewCamera, ViewTransform},
 };
 use gpui::{
-    App, Bounds, Context, FocusHandle, IntoElement, KeyBinding, MouseButton, Pixels, Render, Role,
-    SharedString, Window, actions, canvas, div, fill, point, prelude::*, px, rgb, size,
+    App, Bounds, Context, EventEmitter, FocusHandle, IntoElement, KeyBinding, MouseButton, Pixels,
+    Render, Role, SharedString, Window, actions, canvas, div, fill, point, prelude::*, px, rgb,
+    size,
 };
 use media::{Cancellation, MediaError, Orientation};
 use std::sync::Arc;
@@ -82,6 +83,26 @@ pub enum ViewerMode {
     ExperimentalTiles,
 }
 
+/// Local interaction only. Applying a peer camera does not emit another event.
+#[derive(Clone, Copy, Debug)]
+pub enum ViewerEvent {
+    Camera(ViewCamera),
+    Focused,
+}
+
+/// Per-pane CPU scene observation. Shared resources do not share this readiness or geometry.
+#[derive(Clone, Copy, Debug)]
+pub struct ViewerObservation {
+    pub complete_in_scene: bool,
+    pub scene_serial: u64,
+    pub view_serial: u64,
+    /// 1 follows the first thumbnail composition; 2 follows a bounded-preview composition.
+    pub phase: u8,
+    pub dpi: f64,
+    pub viewport: Size,
+    pub image_bounds: Option<Rect>,
+}
+
 /// GPU handles never leave this GPUI-boundary entity. Input must carry explicit local provenance.
 pub struct ImageViewer {
     service: ImageUploadService,
@@ -96,6 +117,7 @@ pub struct ImageViewer {
     retiring: Vec<Retired>,
     /// Paint epochs observed for the current frame; a retirement needs a later composed scene.
     scene_serial: u64,
+    complete_in_scene: bool,
     retirement_scheduled: bool,
     retirement_attempts: u8,
     retirement_slow: bool,
@@ -104,6 +126,8 @@ pub struct ImageViewer {
     revision: u64,
     generation: u64,
     transform: Option<ViewTransform>,
+    camera: ViewCamera,
+    compare_pane: Option<usize>,
     dpi: f64,
     /// Handle used by the deferred retirement sweep, which must also run while not rendered.
     window: gpui::AnyWindowHandle,
@@ -127,6 +151,8 @@ impl ImageViewer {
             retirement_scheduled: false, retirement_attempts: 0,
             retirement_slow: false,
             serial: 0, view_serial: 0, revision: 0, generation: 0, transform: None,
+            camera: ViewCamera::default(), compare_pane: None,
+            complete_in_scene: false,
             dpi: 0.0, window, viewport: Bounds::default(), focus: cx.focus_handle().tab_stop(true), drag: None,
             mode, phase: 0, status: "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。".into(),
             palette: Palette { scheme: ContrastScheme::Normal, colors: NORMAL_COLORS }, consumer: ConsumerId::allocate(),
@@ -139,6 +165,148 @@ impl ImageViewer {
             self.palette = palette;
             cx.notify();
         }
+    }
+
+    /// Compare owns its action row; each pane contributes only one keyboard stop.
+    pub fn set_compare_pane(&mut self, index: usize, cx: &mut Context<Self>) {
+        self.compare_pane = Some(index);
+        self.focus = self.focus.clone().tab_index(10 + index as isize);
+        cx.notify();
+    }
+
+    pub fn focus_handle(&self) -> FocusHandle {
+        self.focus.clone()
+    }
+
+    pub fn camera(&self) -> ViewCamera {
+        self.camera
+    }
+
+    /// Apply the shared ideal camera without copying a peer's display-clamped center.
+    pub fn set_camera(&mut self, camera: ViewCamera, cx: &mut Context<Self>) {
+        if self.camera == camera {
+            return;
+        }
+        if let Some(transform) = self.transform.as_mut()
+            && transform.set_camera(camera).is_err()
+        {
+            return;
+        }
+        self.camera = camera;
+        self.complete_in_scene = false;
+        self.view_serial = self.view_serial.saturating_add(1);
+        self.tile_cancel.cancel();
+        self.demand = None;
+        self.tile_attempts = 0;
+        cx.notify();
+    }
+
+    pub fn prepared(&self) -> Option<Arc<PreparedImage>> {
+        self.current.clone()
+    }
+
+    pub fn observation(&self) -> ViewerObservation {
+        ViewerObservation {
+            complete_in_scene: self.complete_in_scene,
+            scene_serial: self.scene_serial,
+            view_serial: self.view_serial,
+            phase: self.phase,
+            dpi: self.dpi,
+            viewport: Size {
+                width: f32::from(self.viewport.size.width) as f64,
+                height: f32::from(self.viewport.size.height) as f64,
+            },
+            image_bounds: self
+                .current
+                .as_ref()
+                .and(self.transform.as_ref())
+                .map(ViewTransform::image_bounds),
+        }
+    }
+
+    /// Attach an explicitly prepared exact resource; no source lookup or second decode occurs.
+    /// The pane camera and focus survive candidate Swap.
+    pub fn present_prepared(
+        &mut self,
+        frame: Arc<PreparedImage>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        if frame.identity().key.orientation != Orientation::Normal {
+            self.unavailable(
+                "画像を利用できません: この経路では標準の向きだけが検証済みです。".into(),
+                cx,
+            );
+            return false;
+        }
+        if self
+            .current
+            .as_ref()
+            .is_some_and(|current| Arc::ptr_eq(current, &frame))
+        {
+            return true;
+        }
+        if !self
+            .service
+            .attach(&frame, self.consumer, Some(window.window_handle()))
+        {
+            self.unavailable(
+                "画像を利用できません: 保持または表示先の所有権を確認できません。".into(),
+                cx,
+            );
+            return false;
+        }
+        self.retiring
+            .retain(|retired| !Arc::ptr_eq(&retired.frame, &frame));
+        self.cancel.cancel();
+        self.tile_cancel.cancel();
+        self.serial = self.serial.saturating_add(1);
+        self.release_current(cx);
+        self.revision = frame.identity().source_revision;
+        self.generation = frame.identity().device_generation;
+        self.phase = 0;
+        self.demand = None;
+        self.tile_attempts = 0;
+        self.cancel = Cancellation::default();
+        let preview = self.mode == ViewerMode::PreviewOnly || frame.minimum_mip() > 0;
+        self.current = Some(frame);
+        self.status = match preview {
+            true => "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
+            false => "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        }
+        .into();
+        cx.notify();
+        true
+    }
+
+    pub fn unavailable(&mut self, reason: SharedString, cx: &mut Context<Self>) {
+        self.cancel.cancel();
+        self.tile_cancel.cancel();
+        self.serial = self.serial.saturating_add(1);
+        self.release_current(cx);
+        self.demand = None;
+        self.status = reason;
+        cx.notify();
+    }
+
+    pub fn supports_one_to_one(&self) -> bool {
+        self.mode == ViewerMode::ExperimentalTiles
+            && self
+                .current
+                .as_ref()
+                .is_some_and(|frame| frame.minimum_mip() == 0)
+    }
+
+    pub fn physical_one_to_one(&mut self, cx: &mut Context<Self>) {
+        self.one(cx);
+    }
+
+    pub fn zoom_by(&mut self, factor: f64, cursor: Option<Point>, cx: &mut Context<Self>) {
+        self.zoom(factor, cursor, cx);
+    }
+
+    pub fn pan_by(&mut self, delta: Point, cx: &mut Context<Self>) {
+        self.pan(delta.x, delta.y, cx);
     }
 
     /// Open a caller-supplied generated/fixture input off-thread, never a Runtime artifact substitute.
@@ -159,6 +327,7 @@ impl ImageViewer {
         self.generation = request.current_device_generation;
         self.phase = 0;
         self.transform = None;
+        self.camera = ViewCamera::default();
         self.cancel = Cancellation::default();
         if request.key.orientation != Orientation::Normal {
             self.status =
@@ -208,6 +377,7 @@ impl ImageViewer {
     /// scene that referenced it may still be presented and there is no completion signal. Frames
     /// that never reached the atlas are released through the existing unpainted path.
     pub fn close(&mut self) {
+        self.complete_in_scene = false;
         self.cancel.cancel();
         self.tile_cancel.cancel();
         self.demand = None;
@@ -230,6 +400,7 @@ impl ImageViewer {
     /// two presented frames can no longer reference them. A frame another consumer still presents
     /// stays retired and is retried by the next sweep.
     fn release_current(&mut self, cx: &mut Context<Self>) {
+        self.complete_in_scene = false;
         let Some(frame) = self.current.take() else {
             return;
         };
@@ -283,9 +454,11 @@ impl ImageViewer {
             }
             match self.service.evict(&retired.frame, window) {
                 Ok(_) | Err(ImageUploadError::NotRetained) => {}
-                Err(error) => {
-                    // Another consumer still presents it, or release is not provable yet.
-                    self.status = format!("画像の解放を保留: {error}").into();
+                Err(_) => {
+                    // Another consumer still presents it, or release is not provable yet. The
+                    // retained frame stays owned and charged and is retried on the next sweep;
+                    // release diagnostics belong to the service counters, not to the picture's
+                    // own status line (ADR-0015 Q14).
                     keep.push(retired);
                 }
             }
@@ -391,12 +564,15 @@ impl ImageViewer {
     }
 
     fn change(&mut self, operation: impl FnOnce(&mut ViewTransform), cx: &mut Context<Self>) {
+        self.complete_in_scene = false;
         self.view_serial = self.view_serial.saturating_add(1);
         self.tile_cancel.cancel();
         self.demand = None;
         self.tile_attempts = 0;
         if let Some(transform) = self.transform.as_mut() {
             operation(transform);
+            self.camera = transform.camera();
+            cx.emit(ViewerEvent::Camera(self.camera));
         }
         cx.notify();
     }
@@ -422,7 +598,7 @@ impl ImageViewer {
         );
     }
     fn one(&mut self, cx: &mut Context<Self>) {
-        if self.mode == ViewerMode::ExperimentalTiles {
+        if self.supports_one_to_one() {
             self.change(ViewTransform::physical_one_to_one, cx);
         }
     }
@@ -448,30 +624,46 @@ impl Drop for ImageViewer {
     }
 }
 
+impl EventEmitter<ViewerEvent> for ImageViewer {}
+
 impl Render for ImageViewer {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let palette = self.palette;
-        let scale = self
-            .transform
-            .as_ref()
-            .map(ViewTransform::effective_physical_scale);
-        let description: SharedString = match (self.mode, scale) {
-            (ViewerMode::PreviewOnly, _) => "低解像度プレビュー（原寸・1:1ではありません）".into(),
-            (_, Some(scale)) => format!(
-                "物理表示倍率 {:.1}% / DIP変換 {:.2} / クリップ領域あり得ます",
-                scale * 100.0,
-                window.scale_factor()
-            )
-            .into(),
-            _ => "画像は未表示です".into(),
-        };
+        let preview = self.mode == ViewerMode::PreviewOnly
+            || self
+                .current
+                .as_ref()
+                .is_some_and(|frame| frame.minimum_mip() > 0);
+        let description: SharedString =
+            match (self.current.as_ref(), preview, self.transform.as_ref()) {
+                (None, _, _) => "画像は未表示です".into(),
+                (_, true, _) => "低解像度プレビュー（原寸・1:1ではありません）".into(),
+                (_, false, Some(transform)) => {
+                    let bounds = transform.image_bounds();
+                    let viewport = transform.viewport();
+                    let coverage = if bounds.width > viewport.width + 1.0e-6
+                        || bounds.height > viewport.height + 1.0e-6
+                    {
+                        "画像の一部を切り抜いて表示"
+                    } else {
+                        "画像全体を表示"
+                    };
+                    format!(
+                        "物理表示倍率 {:.1}% / DIP変換 {:.2} / {coverage}",
+                        transform.effective_physical_scale() * 100.0,
+                        window.scale_factor()
+                    )
+                    .into()
+                }
+                _ => "画像は未表示です".into(),
+            };
         let frame = self.current.clone();
         let cancel = self.cancel.clone();
         let revision = self.revision;
         let generation = self.generation;
         let geometry = self.transform.clone();
+        let camera = self.camera;
         let phase = self.phase;
-        let preview = self.mode == ViewerMode::PreviewOnly;
         let pending_release = !self.retiring.is_empty();
         let entity = cx.entity().downgrade();
         let demand = (self.serial, self.view_serial);
@@ -501,6 +693,9 @@ impl Render for ImageViewer {
                     },
                 };
                 if transform.set_viewport(viewport, dpi).is_err() {
+                    return;
+                }
+                if transform.set_camera(camera).is_err() {
                     return;
                 }
                 let image = transform.image_bounds();
@@ -595,6 +790,7 @@ impl Render for ImageViewer {
                         // retired frame cannot appear in it, so an empty scene still proves the
                         // old reference is gone.
                         this.scene_serial = this.scene_serial.saturating_add(1);
+                        this.complete_in_scene = complete;
                         if changed || promote || failure_present || started || resized {
                             cx.notify();
                         }
@@ -603,8 +799,13 @@ impl Render for ImageViewer {
             },
         )
         .size_full();
-        let viewport = div().id("image-viewport").role(Role::Group).aria_label("画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰")
+        let pane_label = self.compare_pane.map_or_else(
+            || "画像表示".to_owned(),
+            |index| format!("比較する{}側の画像", if index == 0 { "A" } else { "B" }),
+        );
+        let viewport = div().id("image-viewport").role(Role::Group).aria_label(SharedString::from(format!("{pane_label}。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰")))
             .key_context("ImageViewer").track_focus(&self.focus).relative().flex_1().min_h_0().w_full().overflow_hidden()
+            .border_1().border_color(rgb(if self.focus.is_focused(window) { palette.colors.focus } else { palette.colors.border }))
             .on_action(cx.listener(|this, _: &ViewerFit, _, cx| this.change(ViewTransform::fit, cx)))
             .on_action(cx.listener(|this, _: &ViewerOne, _, cx| this.one(cx)))
             .on_action(cx.listener(|this, _: &ViewerIn, _, cx| this.zoom(1.25, None, cx)))
@@ -615,7 +816,7 @@ impl Render for ImageViewer {
             .on_action(cx.listener(|this, _: &ViewerDown, _, cx| this.pan(0.0, -64.0, cx)))
             .on_action(cx.listener(|this, _: &ViewerFullscreen, window, cx| this.fullscreen(window, cx)))
             .on_action(cx.listener(|this, _: &ViewerEscape, window, cx| { if window.is_fullscreen() { this.fullscreen(window, cx); } }))
-            .on_mouse_down(MouseButton::Left, cx.listener(|this, event: &gpui::MouseDownEvent, window, cx| { this.drag = Some(event.position); this.focus.focus(window, cx); }))
+            .on_mouse_down(MouseButton::Left, cx.listener(|this, event: &gpui::MouseDownEvent, window, cx| { this.drag = Some(event.position); this.focus.focus(window, cx); cx.emit(ViewerEvent::Focused); }))
             .on_mouse_up(MouseButton::Left, cx.listener(|this, _, _, _| this.drag = None))
             .on_mouse_move(cx.listener(|this, event: &gpui::MouseMoveEvent, _, cx| {
                 if !event.dragging() { this.drag = None; return; }
@@ -648,43 +849,43 @@ impl Render for ImageViewer {
             .gap_2()
             .text_color(rgb(palette.colors.text))
             .bg(rgb(palette.colors.background))
-            .child(
-                div()
-                    .flex()
-                    .gap_2()
-                    .child(button("viewer-fit", "全体表示 (0)").on_click(cx.listener(
-                        |this, _, window, cx| {
-                            this.change(ViewTransform::fit, cx);
-                            this.focus.focus(window, cx);
-                        },
-                    )))
-                    .child(crate::accessibility::DisabledState {
-                        inner: button("viewer-one", "物理ピクセル1:1 (1)").on_click(cx.listener(
+            .when(self.compare_pane.is_none(), |element| {
+                element.child(
+                    div()
+                        .flex()
+                        .gap_2()
+                        .child(button("viewer-fit", "全体表示 (0)").on_click(cx.listener(
                             |this, _, window, cx| {
-                                this.one(cx);
+                                this.change(ViewTransform::fit, cx);
                                 this.focus.focus(window, cx);
                             },
-                        )),
-                        disabled: preview,
-                    })
-                    .child(button("viewer-in", "拡大 (+)").on_click(cx.listener(
-                        |this, _, window, cx| {
-                            this.zoom(1.25, None, cx);
-                            this.focus.focus(window, cx);
-                        },
-                    )))
-                    .child(button("viewer-out", "縮小 (-)").on_click(cx.listener(
-                        |this, _, window, cx| {
-                            this.zoom(0.8, None, cx);
-                            this.focus.focus(window, cx);
-                        },
-                    )))
-                    .child(
-                        button("viewer-fullscreen", "全画面 / 復帰 (F11)").on_click(
+                        )))
+                        .child(crate::accessibility::DisabledState {
+                            inner: button("viewer-one", "物理ピクセル1:1 (1)").on_click(
+                                cx.listener(|this, _, window, cx| {
+                                    this.one(cx);
+                                    this.focus.focus(window, cx);
+                                }),
+                            ),
+                            disabled: preview,
+                        })
+                        .child(button("viewer-in", "拡大 (+)").on_click(cx.listener(
+                            |this, _, window, cx| {
+                                this.zoom(1.25, None, cx);
+                                this.focus.focus(window, cx);
+                            },
+                        )))
+                        .child(button("viewer-out", "縮小 (-)").on_click(cx.listener(
+                            |this, _, window, cx| {
+                                this.zoom(0.8, None, cx);
+                                this.focus.focus(window, cx);
+                            },
+                        )))
+                        .child(button("viewer-fullscreen", "全画面 / 復帰 (F11)").on_click(
                             cx.listener(|this, _, window, cx| this.fullscreen(window, cx)),
-                        ),
-                    ),
-            )
+                        )),
+                )
+            })
             .child(
                 div()
                     .id("viewer-status")

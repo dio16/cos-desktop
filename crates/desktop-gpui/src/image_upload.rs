@@ -20,7 +20,9 @@
 //! presentation remain NOT_MEASURED.
 
 use std::{
-    sync::{Arc, LazyLock, Mutex},
+    collections::VecDeque,
+    sync::atomic::{AtomicU64, Ordering},
+    sync::{Arc, Condvar, LazyLock, Mutex},
     time::{Duration, Instant},
 };
 
@@ -73,7 +75,7 @@ const STAGING_LIMIT_BYTES: u64 = FRAME_RGBA8_BYTES * MAX_RETAINED_FRAMES as u64;
 static PROCESS_EPOCH: LazyLock<Instant> = LazyLock::new(Instant::now);
 static PROCESS_ALLOWANCE: LazyLock<Mutex<PeriodAllowance>> =
     LazyLock::new(|| Mutex::new(PeriodAllowance::default()));
-static PROCESS_PREPARATION: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+static PROCESS_PREPARATION: LazyLock<PreparationQueue> = LazyLock::new(PreparationQueue::default);
 static PROCESS_SERVICE: LazyLock<ImageUploadService> = LazyLock::new(|| ImageUploadService {
     inner: Arc::new(ServiceInner {
         state: Mutex::new(ServiceState::default()),
@@ -208,6 +210,12 @@ pub struct FrameProgress {
     pub device_generation: u64,
     pub issued_tiles: usize,
     pub tile_count: usize,
+    /// Number and bytes of packed CPU tiles retained for this frame.
+    pub packed_tiles: usize,
+    pub packed_bytes: u64,
+    /// Decoder invocations and accepted preparation wait attributed to this exact entry.
+    pub decode_calls: u64,
+    pub preparation_queue_wait_nanos: u64,
     /// Whether a complete tile composition was added to the most recent valid GPUI scene.
     pub complete_in_scene: bool,
     pub cancelled_before_upload: bool,
@@ -223,6 +231,14 @@ pub struct ImageUploadCounters {
     pub quarantined_staging_bytes: u64,
     pub quarantined_in_flight_bytes: u64,
     pub quarantined_resident_bytes: u64,
+    /// Number of decoder invocations entered by this service.
+    pub decode_calls: u64,
+    /// Exact-identity frame reuses after content digest verification.
+    pub reuse_calls: u64,
+    /// Packed tile payload bytes retained by viewer frames and quarantine.
+    pub packed_retained_bytes: u64,
+    /// CPU-side retained raster and packed payload bytes; not GPU residency.
+    pub cpu_retained_bytes: u64,
     pub period_index: u128,
     pub reserved_bytes_this_period: u64,
     pub period_capacity_bytes: u64,
@@ -245,6 +261,10 @@ pub struct ImageUploadCounters {
     pub quarantine_capacity_bytes: u64,
     /// Consumers currently attached across every retained frame.
     pub consumers: usize,
+    /// Cumulative background queue wait; this is not UI latency.
+    pub preparation_queue_wait_nanos: u64,
+    pub preparation_queue_rejections: u64,
+    pub preparation_queue_cancellations: u64,
 }
 
 #[derive(Default)]
@@ -256,16 +276,30 @@ struct PeriodAllowance {
     /// Repaint calls for tiles already issued; these are cache hits under the device-generation
     /// contract and are reported separately rather than charged to a period.
     repaint_calls: u64,
+    /// At most one viewer tile is admitted per retained frame in the active process period.
+    viewer_frames_with_tile: [Option<usize>; MAX_RETAINED_FRAMES],
 }
 
 impl PeriodAllowance {
-    fn reserve(&mut self, period_index: u128, bytes: u64) -> bool {
+    fn reserve(&mut self, period_index: u128, bytes: u64, frame: Option<usize>) -> bool {
         if bytes == 0 || bytes > PERIOD_UPLOAD_CAP_BYTES {
             return false;
         }
         if self.period_index != period_index {
             self.period_index = period_index;
             self.reserved_bytes = 0;
+            self.viewer_frames_with_tile.fill(None);
+        }
+        if frame.is_some_and(|frame| self.viewer_frames_with_tile.contains(&Some(frame))) {
+            return false;
+        }
+        let frame_slot = frame.and_then(|_| {
+            self.viewer_frames_with_tile
+                .iter()
+                .position(Option::is_none)
+        });
+        if frame.is_some() && frame_slot.is_none() {
+            return false;
         }
         let Some(total) = self.reserved_bytes.checked_add(bytes) else {
             return false;
@@ -274,6 +308,9 @@ impl PeriodAllowance {
             return false;
         }
         self.reserved_bytes = total;
+        if let Some(slot) = frame_slot {
+            self.viewer_frames_with_tile[slot] = frame;
+        }
         true
     }
 
@@ -286,16 +323,81 @@ impl PeriodAllowance {
         self.repaint_calls = self.repaint_calls.saturating_add(tiles);
     }
 }
+#[derive(Default)]
+struct PreparationState {
+    active: bool,
+    next_ticket: u64,
+    queue: VecDeque<u64>,
+    wait_nanos: u64,
+    rejections: u64,
+    cancellations: u64,
+}
+
+#[derive(Default)]
+struct PreparationQueue {
+    state: Mutex<PreparationState>,
+    changed: Condvar,
+}
+
+impl PreparationQueue {
+    fn acquire(&self, cancel: &Cancellation) -> Result<PreparationPermit<'_>, ImageUploadError> {
+        let entered = Instant::now();
+        let mut state = self.state.lock().expect("preparation queue");
+        let ticket = state.next_ticket;
+        state.next_ticket = state.next_ticket.wrapping_add(1);
+        if state.queue.len() >= 16 {
+            state.rejections = state.rejections.saturating_add(1);
+            return Err(ImageUploadError::PreparationBusy);
+        }
+        state.queue.push_back(ticket);
+        loop {
+            if cancel.is_cancelled() {
+                state.queue.retain(|queued| *queued != ticket);
+                state.cancellations = state.cancellations.saturating_add(1);
+                self.changed.notify_all();
+                return Err(ImageUploadError::Cancelled);
+            }
+            if !state.active && state.queue.front() == Some(&ticket) {
+                state.queue.pop_front();
+                state.active = true;
+                let wait_nanos = entered.elapsed().as_nanos().min(u64::MAX as u128) as u64;
+                state.wait_nanos = state.wait_nanos.saturating_add(wait_nanos);
+                return Ok(PreparationPermit {
+                    queue: self,
+                    wait_nanos,
+                });
+            }
+            let (next, _) = self
+                .changed
+                .wait_timeout(state, Duration::from_millis(10))
+                .expect("preparation queue wait");
+            state = next;
+        }
+    }
+}
+
+struct PreparationPermit<'a> {
+    queue: &'a PreparationQueue,
+    wait_nanos: u64,
+}
+
+impl Drop for PreparationPermit<'_> {
+    fn drop(&mut self) {
+        let mut state = self.queue.state.lock().expect("preparation queue");
+        state.active = false;
+        self.queue.changed.notify_all();
+    }
+}
 
 fn current_period_index() -> u128 {
     PROCESS_EPOCH.elapsed().as_nanos() / PERIOD_DURATION.as_nanos()
 }
 
-fn reserve_process_period(period_index: u128, bytes: u64) -> bool {
+fn reserve_process_period(period_index: u128, bytes: u64, frame: Option<usize>) -> bool {
     PROCESS_ALLOWANCE
         .lock()
         .expect("process upload allowance")
-        .reserve(period_index, bytes)
+        .reserve(period_index, bytes, frame)
 }
 
 /// Whether this paint callback may still charge its own period.
@@ -339,10 +441,11 @@ struct ServiceState {
     atlas_drop_calls: u64,
     released_payload_bytes: u64,
     quarantined_payload_bytes: u64,
+    decode_calls: u64,
+    reuse_calls: u64,
     /// Viewer mip payloads with no transfer-completion proof stay owned until process exit.
     quarantined_views: Vec<Arc<PreparedImage>>,
 }
-
 impl ImageUploadService {
     /// Obtain the process-wide service. Separate panes/windows must share this value.
     pub fn global() -> Self {
@@ -358,7 +461,7 @@ impl ImageUploadService {
         cancel: Cancellation,
         source: impl FnOnce(&Cancellation) -> Result<Arc<[u8]>, MediaError> + Send + 'static,
     ) -> Task<Result<Arc<PreparedImage>, ImageUploadError>> {
-        self.prepare_with_mips(background, request, cancel, source, None)
+        self.prepare_with_mips(background, request, cancel, source, None, false)
     }
 
     /// Decode the admitted source off-thread. Viewer tiles are prepared only for later viewport
@@ -378,6 +481,26 @@ impl ImageUploadService {
             cancel,
             source,
             Some(if preview_only { 2 } else { 0 }),
+            false,
+        )
+    }
+
+    /// Prepares a distinct entry despite an identical retained identity (for resource comparison).
+    pub fn prepare_view_independent_generated(
+        &self,
+        background: &BackgroundExecutor,
+        request: UploadRequest,
+        cancel: Cancellation,
+        preview_only: bool,
+        source: impl FnOnce(&Cancellation) -> Result<Arc<[u8]>, MediaError> + Send + 'static,
+    ) -> Task<Result<Arc<PreparedImage>, ImageUploadError>> {
+        self.prepare_with_mips(
+            background,
+            request,
+            cancel,
+            source,
+            Some(if preview_only { 2 } else { 0 }),
+            true,
         )
     }
 
@@ -388,6 +511,7 @@ impl ImageUploadService {
         cancel: Cancellation,
         source: impl FnOnce(&Cancellation) -> Result<Arc<[u8]>, MediaError> + Send + 'static,
         minimum_mip: Option<u8>,
+        independent: bool,
     ) -> Task<Result<Arc<PreparedImage>, ImageUploadError>> {
         let service = self.clone();
         background.spawn(async move {
@@ -395,15 +519,7 @@ impl ImageUploadService {
             if cancel.is_cancelled() {
                 return Err(ImageUploadError::Cancelled);
             }
-            // One full-frame decoder/converter at a time bounds transient encoded, decoded and
-            // tiled buffers process-wide while retained frames remain separately capped.
-            let _preparation = match PROCESS_PREPARATION.try_lock() {
-                Ok(guard) => guard,
-                Err(std::sync::TryLockError::WouldBlock) => {
-                    return Err(ImageUploadError::PreparationBusy);
-                }
-                Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-            };
+            let _preparation = PROCESS_PREPARATION.acquire(&cancel)?;
             if cancel.is_cancelled() {
                 return Err(ImageUploadError::Cancelled);
             }
@@ -421,12 +537,26 @@ impl ImageUploadService {
                     maximum: request.max_encoded_bytes,
                 });
             }
+            {
+                let mut state = service
+                    .inner
+                    .state
+                    .lock()
+                    .expect("image upload service state");
+                state.decode_calls = state.decode_calls.saturating_add(1);
+            }
             let verified = decode_for_upload(&encoded, request.decode_limits, &cancel)
                 .map_err(map_media_error)?;
             if cancel.is_cancelled() {
                 return Err(ImageUploadError::Cancelled);
             }
-            service.prepare_verified(verified, request, &cancel, minimum_mip)
+            let frame =
+                service.prepare_verified(verified, request, &cancel, minimum_mip, independent)?;
+            frame.decode_calls.fetch_add(1, Ordering::Relaxed);
+            frame
+                .preparation_queue_wait_nanos
+                .fetch_add(_preparation.wait_nanos, Ordering::Relaxed);
+            Ok(frame)
         })
     }
 
@@ -447,6 +577,7 @@ impl ImageUploadService {
         request: UploadRequest,
         cancel: &Cancellation,
         minimum_mip: Option<u8>,
+        independent: bool,
     ) -> Result<Arc<PreparedImage>, ImageUploadError> {
         if cancel.is_cancelled() {
             return Err(ImageUploadError::Cancelled);
@@ -471,11 +602,18 @@ impl ImageUploadService {
         // per-pool check and together exceed the process budget.
         let admission = {
             let mut state = self.inner.state.lock().expect("image upload service state");
-            if let Some(existing) = state.frames.iter().find(|frame| frame.identity == identity) {
+            if !independent
+                && let Some(existing) = state
+                    .frames
+                    .iter()
+                    .find(|frame| frame.identity == identity)
+                    .cloned()
+            {
                 if (mips && !existing.has_mips) || existing.first_mip > minimum_mip.unwrap_or(0) {
                     return Err(ImageUploadError::InvalidRasterLayout);
                 }
-                return Ok(Arc::clone(existing));
+                state.reuse_calls = state.reuse_calls.saturating_add(1);
+                return Ok(existing);
             }
             if state.frames.len() >= MAX_RETAINED_FRAMES {
                 return Err(ImageUploadError::RetainedFrameLimit);
@@ -521,22 +659,34 @@ impl ImageUploadService {
                     cap: capacity,
                 });
             }
-            let pool = state
-                .pools
-                .iter()
-                .find(|(generation, _)| *generation == request.device_generation)
-                .map(|(_, pool)| Arc::clone(pool))
-                .unwrap_or_else(|| {
-                    let pool = UploadPool::new(UploadBudget {
-                        staging_bytes: STAGING_LIMIT_BYTES,
-                        in_flight_bytes: STAGING_LIMIT_BYTES,
-                        resident_bytes: STAGING_LIMIT_BYTES,
-                    });
-                    state
-                        .pools
-                        .push((request.device_generation, Arc::clone(&pool)));
-                    pool
+            let pool = if independent {
+                let pool = UploadPool::new(UploadBudget {
+                    staging_bytes: STAGING_LIMIT_BYTES,
+                    in_flight_bytes: STAGING_LIMIT_BYTES,
+                    resident_bytes: STAGING_LIMIT_BYTES,
                 });
+                state
+                    .pools
+                    .push((request.device_generation, Arc::clone(&pool)));
+                pool
+            } else {
+                state
+                    .pools
+                    .iter()
+                    .find(|(generation, _)| *generation == request.device_generation)
+                    .map(|(_, pool)| Arc::clone(pool))
+                    .unwrap_or_else(|| {
+                        let pool = UploadPool::new(UploadBudget {
+                            staging_bytes: STAGING_LIMIT_BYTES,
+                            in_flight_bytes: STAGING_LIMIT_BYTES,
+                            resident_bytes: STAGING_LIMIT_BYTES,
+                        });
+                        state
+                            .pools
+                            .push((request.device_generation, Arc::clone(&pool)));
+                        pool
+                    })
+            };
             admit_upload(
                 &verified,
                 identity.clone(),
@@ -557,6 +707,8 @@ impl ImageUploadService {
         let issued = vec![false; tiles.len()];
         let prepared = Arc::new(PreparedImage {
             identity,
+            decode_calls: AtomicU64::new(0),
+            preparation_queue_wait_nanos: AtomicU64::new(0),
             source: mips.then_some(verified),
             has_mips: mips,
             first_mip: minimum_mip.unwrap_or(0),
@@ -569,12 +721,15 @@ impl ImageUploadService {
         });
 
         let mut state = self.inner.state.lock().expect("image upload service state");
-        if let Some(existing) = state
-            .frames
-            .iter()
-            .find(|frame| frame.identity == prepared.identity)
+        if !independent
+            && let Some(existing) = state
+                .frames
+                .iter()
+                .find(|frame| frame.identity == prepared.identity)
+                .cloned()
         {
-            return Ok(Arc::clone(existing));
+            state.reuse_calls = state.reuse_calls.saturating_add(1);
+            return Ok(existing);
         }
         if state.frames.len() >= MAX_RETAINED_FRAMES {
             return Err(ImageUploadError::RetainedFrameLimit);
@@ -603,13 +758,10 @@ impl ImageUploadService {
         if cancel.is_cancelled() {
             return Err(ImageUploadError::Cancelled);
         }
-        let _preparation = match PROCESS_PREPARATION.try_lock() {
-            Ok(guard) => guard,
-            Err(std::sync::TryLockError::WouldBlock) => {
-                return Err(ImageUploadError::PreparationBusy);
-            }
-            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
-        };
+        let _preparation = PROCESS_PREPARATION.acquire(cancel)?;
+        frame
+            .preparation_queue_wait_nanos
+            .fetch_add(_preparation.wait_nanos, Ordering::Relaxed);
         let source = frame
             .source
             .as_ref()
@@ -821,6 +973,16 @@ impl ImageUploadService {
         service
             .frames
             .retain(|candidate| !Arc::ptr_eq(candidate, frame));
+        PROCESS_ALLOWANCE
+            .lock()
+            .expect("process upload allowance")
+            .viewer_frames_with_tile
+            .iter_mut()
+            .for_each(|entry| {
+                if *entry == Some(Arc::as_ptr(frame) as usize) {
+                    *entry = None;
+                }
+            });
         service.evicted_frames = service.evicted_frames.saturating_add(1);
         service.atlas_drop_calls = service
             .atlas_drop_calls
@@ -910,6 +1072,16 @@ impl ImageUploadService {
         service
             .frames
             .retain(|candidate| !Arc::ptr_eq(candidate, frame));
+        PROCESS_ALLOWANCE
+            .lock()
+            .expect("process upload allowance")
+            .viewer_frames_with_tile
+            .iter_mut()
+            .for_each(|entry| {
+                if *entry == Some(Arc::as_ptr(frame) as usize) {
+                    *entry = None;
+                }
+            });
         prune_idle_pools(&mut service);
         true
     }
@@ -940,6 +1112,7 @@ impl ImageUploadService {
         } else {
             0
         };
+        let queue = PROCESS_PREPARATION.state.lock().expect("preparation queue");
         ImageUploadCounters {
             retained_frames: state.frames.len(),
             staging_reservation_bytes: staging,
@@ -948,6 +1121,10 @@ impl ImageUploadService {
             quarantined_staging_bytes: staging_stuck,
             quarantined_in_flight_bytes: in_flight_stuck,
             quarantined_resident_bytes: resident_stuck,
+            decode_calls: state.decode_calls,
+            reuse_calls: state.reuse_calls,
+            packed_retained_bytes: retained_packed_bytes(&state),
+            cpu_retained_bytes: retained_cpu_bytes(&state),
             period_index,
             reserved_bytes_this_period,
             period_capacity_bytes: PERIOD_UPLOAD_CAP_BYTES,
@@ -970,8 +1147,29 @@ impl ImageUploadService {
                         .unwrap_or(0)
                 })
                 .sum(),
+            preparation_queue_wait_nanos: queue.wait_nanos,
+            preparation_queue_rejections: queue.rejections,
+            preparation_queue_cancellations: queue.cancellations,
         }
     }
+}
+
+fn retained_packed_bytes(state: &ServiceState) -> u64 {
+    state
+        .frames
+        .iter()
+        .chain(&state.quarantined_views)
+        .map(|frame| {
+            frame
+                .paint_state
+                .lock()
+                .expect("image frame paint state")
+                .tiles
+                .iter()
+                .map(|tile| tile.transfer_bytes)
+                .sum::<u64>()
+        })
+        .sum()
 }
 
 fn retained_cpu_bytes(state: &ServiceState) -> u64 {
@@ -1007,22 +1205,18 @@ fn retained_cpu_bytes(state: &ServiceState) -> u64 {
 /// leave an empty entry behind and `counters()` would sum an ever-growing list. A pool that still
 /// owns a retained frame or any charged/quarantined bytes is never removed.
 fn prune_idle_pools(state: &mut ServiceState) {
-    let live: Vec<u64> = state
-        .frames
-        .iter()
-        .map(|frame| frame.identity.device_generation)
-        .collect();
-    state
-        .pools
-        .retain(|(generation, pool)| !pool_is_idle(*generation, &pool.usage(), &live));
+    state.pools.retain(|(_, pool)| !pool_is_idle(&pool.usage()));
 }
 
-/// Whether a generation's pool can be dropped: no retained frame owns it and it holds no charged
-/// or quarantined bytes.
-fn pool_is_idle(generation: u64, usage: &media::UploadUsage, live: &[u64]) -> bool {
-    if live.contains(&generation) {
-        return false;
-    }
+/// Whether a pool can be dropped: nothing is charged or quarantined against it.
+///
+/// Liveness is per pool, never per device generation. The independent comparison path creates a
+/// pool per preparation under the current generation, so a generation-wide test kept every
+/// already-empty pool alive for the rest of the process and grew both the pool list and the
+/// serialized admission scan. A pool that owns a retained frame is never idle: admission charges
+/// the frame to that pool before it is retained, and both release paths drop the frame from
+/// `state.frames` first.
+fn pool_is_idle(usage: &media::UploadUsage) -> bool {
     usage
         .staging
         .saturating_add(usage.in_flight)
@@ -1126,6 +1320,8 @@ pub struct PreparedImage {
     first_mip: u8,
     admission: Mutex<Option<media::AdmittedUpload>>,
     paint_state: Mutex<PaintState>,
+    decode_calls: AtomicU64,
+    preparation_queue_wait_nanos: AtomicU64,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1137,6 +1333,11 @@ pub(crate) struct TileDemand {
 impl PreparedImage {
     pub fn identity(&self) -> &UploadIdentity {
         &self.identity
+    }
+
+    /// Lowest mip retained for this frame (2 for preview-only frames, otherwise 0).
+    pub fn minimum_mip(&self) -> u8 {
+        self.first_mip
     }
 
     pub(crate) fn demand(
@@ -1159,6 +1360,10 @@ impl PreparedImage {
             device_generation: self.identity.device_generation,
             issued_tiles: state.issued.iter().filter(|issued| **issued).count(),
             tile_count: state.tiles.len(),
+            packed_tiles: state.tiles.len(),
+            packed_bytes: state.tiles.iter().map(|tile| tile.transfer_bytes).sum(),
+            decode_calls: self.decode_calls.load(Ordering::Relaxed),
+            preparation_queue_wait_nanos: self.preparation_queue_wait_nanos.load(Ordering::Relaxed),
             complete_in_scene: state.complete_in_scene,
             cancelled_before_upload: state.cancelled_before_upload,
         }
@@ -1264,7 +1469,12 @@ impl PreparedImage {
                             return Ok(PaintStatus::Cancelled);
                         }
                         if !period_still_current(paint_period)
-                            || !reserve_process_period(paint_period, tile.transfer_bytes)
+                            || !reserve_process_period(
+                                paint_period,
+                                tile.transfer_bytes,
+                                self.has_mips
+                                    .then_some(self as *const PreparedImage as usize),
+                            )
                         {
                             window.request_animation_frame();
                             return Ok(PaintStatus::AdmissionUnavailable);
@@ -1309,9 +1519,9 @@ impl PreparedImage {
                 })
             });
         state.owner_window = owner;
-        match result {
-            Ok(PaintStatus::CompleteInScene { .. }) => state.complete_in_scene = true,
-            _ => window.paint_quad(fill(viewport, rgb(0x141820))),
+        state.complete_in_scene = matches!(result, Ok(PaintStatus::CompleteInScene { .. }));
+        if !state.complete_in_scene {
+            window.paint_quad(fill(viewport, rgb(0x141820)));
         }
         result
     }
@@ -1597,13 +1807,17 @@ mod tests {
     #[test]
     fn period_allowance_is_shared_and_never_exceeds_the_process_cap() {
         let mut process = PeriodAllowance::default();
-        assert!(process.reserve(7, 1024 * 1024));
+        assert!(process.reserve(7, 1024 * 1024, None));
         // A second pane in the same period spends the same process allowance.
-        assert!(process.reserve(7, 1024 * 1024));
-        assert!(!process.reserve(7, 1));
+        assert!(process.reserve(7, 1024 * 1024, None));
+        assert!(!process.reserve(7, 1, None));
         assert_eq!(process.reserved_bytes, PERIOD_UPLOAD_CAP_BYTES);
-        assert!(process.reserve(8, 1024 * 1024));
+        assert!(process.reserve(8, 1024 * 1024, None));
         assert_eq!(process.reserved_bytes, 1024 * 1024);
+        assert!(process.reserve(9, 1024 * 1024, Some(11)));
+        assert!(!process.reserve(9, 1024 * 1024, Some(11)));
+        assert!(process.reserve(9, 1024 * 1024, Some(12)));
+        assert_eq!(process.reserved_bytes, PERIOD_UPLOAD_CAP_BYTES);
     }
 
     #[test]
@@ -1707,7 +1921,7 @@ mod tests {
     }
 
     #[test]
-    fn only_idle_untracked_generation_pools_are_dropped() {
+    fn only_pools_with_no_charge_are_dropped() {
         let idle = media::UploadUsage {
             staging: 0,
             in_flight: 0,
@@ -1717,11 +1931,11 @@ mod tests {
             resident_stuck: 0,
             unreclaimed: 0,
         };
-        // An empty pool for a generation no retained frame owns can go.
-        assert!(pool_is_idle(4, &idle, &[7]));
-        // A generation a retained frame still owns stays, even when nothing is charged.
-        assert!(!pool_is_idle(7, &idle, &[7]));
-        // Charged or quarantined bytes keep the pool alive even without a retained frame.
+        assert!(pool_is_idle(&idle));
+        // Charged or quarantined bytes keep their own pool alive. A retained frame always holds a
+        // resident charge, which is what replaces the old per-generation liveness test: the
+        // independent comparison path creates a pool per preparation, so two pools share one
+        // generation and only the owning pool may survive.
         for usage in [
             media::UploadUsage { staging: 1, ..idle },
             media::UploadUsage {
@@ -1745,8 +1959,53 @@ mod tests {
                 ..idle
             },
         ] {
-            assert!(!pool_is_idle(4, &usage, &[]));
+            assert!(!pool_is_idle(&usage));
         }
+    }
+
+    #[test]
+    fn an_empty_pool_is_dropped_even_when_its_generation_retains_a_frame() {
+        // The independent comparison path creates a pool per preparation under the current
+        // generation, so one generation can hold several pools. Liveness is per pool: only the
+        // pool that owns the frame carries its charge, and an empty sibling must not survive on
+        // the generation's account. The frame and pools are added and removed under one lock, so
+        // no other test observing the shared service can see them.
+        let service = ImageUploadService::global();
+        let frame = demand_frame(0);
+        let generation = frame.identity.device_generation;
+        let budget = media::UploadBudget {
+            staging_bytes: 1 << 20,
+            in_flight_bytes: 1 << 20,
+            resident_bytes: 1 << 20,
+        };
+        let mut state = service
+            .inner
+            .state
+            .lock()
+            .expect("image upload service state");
+        state.frames.push(Arc::clone(&frame));
+        state
+            .pools
+            .push((generation, media::UploadPool::new(budget)));
+        state
+            .pools
+            .push((generation, media::UploadPool::new(budget)));
+        prune_idle_pools(&mut state);
+        let remaining = state
+            .pools
+            .iter()
+            .filter(|(candidate, _)| *candidate == generation)
+            .count();
+        state
+            .frames
+            .retain(|candidate| !Arc::ptr_eq(candidate, &frame));
+        state
+            .pools
+            .retain(|(candidate, _)| *candidate != generation);
+        assert_eq!(
+            remaining, 0,
+            "a live generation must not keep an empty sibling pool alive"
+        );
     }
 
     #[test]
@@ -1777,6 +2036,8 @@ mod tests {
         };
         let frame = Arc::new(PreparedImage {
             identity,
+            decode_calls: AtomicU64::new(0),
+            preparation_queue_wait_nanos: AtomicU64::new(0),
             source: None,
             has_mips: false,
             first_mip: 0,
@@ -1833,18 +2094,22 @@ mod tests {
     }
 
     #[test]
-    fn a_concurrent_preparation_is_reported_as_busy() {
+    fn preparation_admission_queues_waiting_viewer_work() {
         let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
-        let service = ImageUploadService::global();
-        let frame = demand_frame(0);
-        let image = Bounds::new(point(px(0.0), px(0.0)), size(px(2048.0), px(2048.0)));
-        let demand = frame.demand(image, image, 0);
-        // Holding the process preparation guard models another viewer decoding at the same time.
-        let _guard = PROCESS_PREPARATION.lock().expect("preparation guard");
-        assert!(matches!(
-            service.prepare_visible_now(&frame, &demand, &Cancellation::default()),
-            Err(ImageUploadError::PreparationBusy)
-        ));
+        let queue = &*PROCESS_PREPARATION;
+        let first = queue
+            .acquire(&Cancellation::default())
+            .expect("first permit");
+        let cancel = Cancellation::default();
+        let waiter = std::thread::spawn(move || {
+            let _permit = queue.acquire(&cancel).expect("queued permit");
+            true
+        });
+        while queue.state.lock().expect("preparation queue").queue.len() != 1 {
+            std::thread::yield_now();
+        }
+        drop(first);
+        assert!(waiter.join().expect("waiter completes"));
     }
 
     #[test]
@@ -1889,6 +2154,65 @@ mod tests {
         assert_eq!(demand_frame(2).demand(image, image, 0).level, 2);
     }
 
+    #[test]
+    fn same_identity_shared_and_independent_entries_have_distinct_resource_accounting() {
+        use image::ImageEncoder;
+
+        let identity_source = demand_frame(0);
+        let request = UploadRequest {
+            key: identity_source.identity.key.clone(),
+            source_revision: identity_source.identity.source_revision,
+            device_generation: identity_source.identity.device_generation,
+            current_device_generation: identity_source.identity.device_generation,
+            decode_limits: media::DecodeBudget::ratified_default()
+                .limits()
+                .expect("declared decode limits"),
+            max_encoded_bytes: 16 * 1024 * 1024,
+        };
+        let rgb = vec![0; FRAME_EDGE as usize * FRAME_EDGE as usize * 3];
+        let mut encoded = Vec::new();
+        image::codecs::png::PngEncoder::new(&mut encoded)
+            .write_image(&rgb, FRAME_EDGE, FRAME_EDGE, image::ExtendedColorType::Rgb8)
+            .expect("encode admitted RGB8 fixture");
+        let verified = decode_for_upload(&encoded, request.decode_limits, &Cancellation::default())
+            .expect("verify admitted fixture");
+        let service = ImageUploadService {
+            inner: Arc::new(ServiceInner {
+                state: Mutex::new(ServiceState::default()),
+            }),
+        };
+        let cancellation = Cancellation::default();
+        let shared = service
+            .prepare_verified(
+                verified.clone(),
+                request.clone(),
+                &cancellation,
+                Some(0),
+                false,
+            )
+            .expect("first shared entry");
+        let shared_again = service
+            .prepare_verified(
+                verified.clone(),
+                request.clone(),
+                &cancellation,
+                Some(0),
+                false,
+            )
+            .expect("same verified identity reuses retained entry");
+        assert!(Arc::ptr_eq(&shared, &shared_again));
+        let independent = service
+            .prepare_verified(verified, request, &cancellation, Some(0), true)
+            .expect("independent same-identity entry");
+        assert!(!Arc::ptr_eq(&shared, &independent));
+        assert_eq!(shared.identity(), independent.identity());
+        let counters = service.counters();
+        assert_eq!(counters.retained_frames, 2);
+        assert_eq!(counters.reuse_calls, 1);
+        assert_eq!(counters.resident_reservation_bytes, 2 * FRAME_RGBA8_BYTES);
+        assert_eq!(counters.cpu_retained_bytes, 2 * FRAME_RGBA8_BYTES);
+    }
+
     fn demand_frame(first_mip: u8) -> Arc<PreparedImage> {
         Arc::new(PreparedImage {
             identity: media::UploadIdentity {
@@ -1915,6 +2239,8 @@ mod tests {
                 content_digest: [0u8; 32],
             },
             source: None,
+            decode_calls: AtomicU64::new(0),
+            preparation_queue_wait_nanos: AtomicU64::new(0),
             has_mips: true,
             first_mip,
             admission: Mutex::new(None),

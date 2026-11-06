@@ -43,6 +43,31 @@ pub enum ScaleMode {
     Physical,
 }
 
+/// Shared camera scale semantics for independently fitted or physically-sized panes.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum CameraScale {
+    /// Multiplier over this pane's contain-fit scale.
+    RelativeFit(f64),
+    /// Device pixels per source pixel.
+    Physical(f64),
+}
+
+/// Ideal, normalized image anchor and scale shared by compare panes.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ViewCamera {
+    pub anchor: Point,
+    pub scale: CameraScale,
+}
+
+impl Default for ViewCamera {
+    fn default() -> Self {
+        Self {
+            anchor: Point { x: 0.5, y: 0.5 },
+            scale: CameraScale::RelativeFit(1.0),
+        }
+    }
+}
+
 /// A visible original-orientation source tile and its clipped pixel rectangle.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TileCoord {
@@ -63,11 +88,11 @@ pub struct ViewTransform {
     viewport: Size,
     dpi: f64,
     orientation: Orientation,
-    mode: ScaleMode,
-    /// DIP per source pixel, before orientation (orientation preserves scale).
+    /// Effective source-to-DIP scale, derived from `camera_scale`.
     scale: f64,
-    /// Center in oriented source-pixel coordinates.
-    center: Point,
+    /// Ideal center in oriented normalized source coordinates (never display-clamped).
+    anchor: Point,
+    camera_scale: CameraScale,
 }
 
 impl ViewTransform {
@@ -80,17 +105,13 @@ impl ViewTransform {
             viewport,
             dpi,
             orientation: Orientation::Normal,
-            mode: ScaleMode::Fit,
+            camera_scale: CameraScale::RelativeFit(1.0),
             scale: 1.0,
-            center: Point {
-                x: source.width / 2.0,
-                y: source.height / 2.0,
-            },
+            anchor: Point { x: 0.5, y: 0.5 },
         };
-        result.fit();
+        result.recompute_scale();
         Ok(result)
     }
-
     pub fn source_size(&self) -> Size {
         self.source
     }
@@ -104,82 +125,114 @@ impl ViewTransform {
         self.orientation
     }
     pub fn scale_mode(&self) -> ScaleMode {
-        self.mode
+        match self.camera_scale {
+            CameraScale::RelativeFit(_) => ScaleMode::Fit,
+            CameraScale::Physical(_) => ScaleMode::Physical,
+        }
     }
 
     /// Sets the display orientation while preserving the normalized center anchor.
     pub fn set_orientation(&mut self, orientation: Orientation) {
-        let normalized = self.normalized_center();
         self.orientation = orientation;
-        self.center = self.oriented_size().to_point_scaled(normalized);
-        if self.mode == ScaleMode::Fit {
-            self.recompute_fit_scale();
-        }
+        self.recompute_scale();
     }
 
-    /// Updates viewport and DPI while retaining the normalized image-center anchor. Physical mode
-    /// retains device-pixel scale; fit mode recomputes the largest fit scale.
+    /// Updates viewport and DPI while retaining the ideal anchor and selected camera scale.
     pub fn set_viewport(&mut self, viewport: Size, dpi: f64) -> Result<(), TransformError> {
         validate_size(viewport).map_err(|_| TransformError::InvalidViewport)?;
         validate_dpi(dpi)?;
-        let normalized = self.normalized_center();
-        let physical_scale = self.effective_physical_scale();
         self.viewport = viewport;
         self.dpi = dpi;
-        self.center = self.oriented_size().to_point_scaled(normalized);
-        match self.mode {
-            ScaleMode::Fit => self.recompute_fit_scale(),
-            ScaleMode::Physical => self.scale = clamp_scale(physical_scale / dpi),
+        self.recompute_scale();
+        Ok(())
+    }
+
+    /// Returns the ideal normalized camera, not the independently clamped display center.
+    pub fn camera(&self) -> ViewCamera {
+        ViewCamera {
+            anchor: self.anchor,
+            scale: self.camera_scale,
         }
+    }
+
+    /// Applies a shared camera atomically. Invalid anchors or scales leave this transform intact.
+    pub fn set_camera(&mut self, camera: ViewCamera) -> Result<(), TransformError> {
+        if !finite_point(camera.anchor) || !valid_camera_scale(camera.scale) {
+            return Err(TransformError::InvalidArgument);
+        }
+        self.anchor = camera.anchor;
+        self.camera_scale = camera.scale;
+        self.recompute_scale();
         Ok(())
     }
 
     /// Fits the entire oriented image in the viewport and centers it.
     pub fn fit(&mut self) {
-        self.mode = ScaleMode::Fit;
-        self.center = Point {
-            x: self.oriented_size().width / 2.0,
-            y: self.oriented_size().height / 2.0,
-        };
-        self.recompute_fit_scale();
+        self.anchor = Point { x: 0.5, y: 0.5 };
+        self.camera_scale = CameraScale::RelativeFit(1.0);
+        self.recompute_scale();
     }
 
-    /// Sets one source pixel to one device pixel, retaining the normalized center anchor.
+    /// Sets one source pixel to one device pixel, retaining the ideal normalized anchor.
     pub fn physical_one_to_one(&mut self) {
-        let normalized = self.normalized_center();
-        self.mode = ScaleMode::Physical;
-        self.center = self.oriented_size().to_point_scaled(normalized);
-        self.scale = clamp_scale(1.0 / self.dpi);
+        self.camera_scale = CameraScale::Physical(1.0);
+        self.recompute_scale();
     }
 
-    /// Zooms around a cursor in viewport-local DIP, keeping the source point beneath it fixed.
+    /// Zooms around a cursor in viewport-local DIP, keeping the ideal source point fixed.
     pub fn zoom_at(&mut self, factor: f64, cursor_dip: Point) -> Result<(), TransformError> {
         if !factor.is_finite() || factor <= 0.0 || !finite_point(cursor_dip) {
             return Err(TransformError::InvalidArgument);
         }
-        let anchor = self.dip_to_oriented(cursor_dip);
-        self.scale = clamp_scale(self.scale * factor);
-        self.mode = ScaleMode::Physical;
-        let offset = Point {
-            x: cursor_dip.x - self.viewport.width / 2.0,
-            y: cursor_dip.y - self.viewport.height / 2.0,
+        if factor == 1.0 {
+            return Ok(());
+        }
+        let size = self.oriented_size();
+        let previous_scale = self.scale;
+        let desired_scale = clamp_scale(self.scale * factor);
+        let camera_scale = match self.camera_scale {
+            CameraScale::RelativeFit(_) => CameraScale::RelativeFit(
+                desired_scale
+                    / (self.viewport.width / size.width).min(self.viewport.height / size.height),
+            ),
+            CameraScale::Physical(_) => CameraScale::Physical(desired_scale * self.dpi),
         };
-        self.center = Point {
-            x: anchor.x - offset.x / self.scale,
-            y: anchor.y - offset.y / self.scale,
+        if !valid_camera_scale(camera_scale) {
+            return Err(TransformError::InvalidArgument);
+        }
+        self.camera_scale = camera_scale;
+        self.recompute_scale();
+        self.anchor = Point {
+            x: self.anchor.x
+                + (cursor_dip.x - self.viewport.width / 2.0)
+                    * (1.0 / previous_scale - 1.0 / self.scale)
+                    / size.width,
+            y: self.anchor.y
+                + (cursor_dip.y - self.viewport.height / 2.0)
+                    * (1.0 / previous_scale - 1.0 / self.scale)
+                    / size.height,
         };
         Ok(())
     }
 
-    /// Moves the image by a viewport-local DIP delta.
+    /// Moves the ideal image anchor by a viewport-local DIP delta.
     pub fn pan(&mut self, delta_dip: Point) -> Result<(), TransformError> {
         if !finite_point(delta_dip) {
             return Err(TransformError::InvalidArgument);
         }
-        self.center.x -= delta_dip.x / self.scale;
-        self.center.y -= delta_dip.y / self.scale;
-        self.mode = ScaleMode::Physical;
+        let size = self.oriented_size();
+        self.anchor.x -= delta_dip.x / (self.scale * size.width);
+        self.anchor.y -= delta_dip.y / (self.scale * size.height);
         Ok(())
+    }
+
+    fn recompute_scale(&mut self) {
+        let size = self.oriented_size();
+        let fit = (self.viewport.width / size.width).min(self.viewport.height / size.height);
+        self.scale = match self.camera_scale {
+            CameraScale::RelativeFit(z) => clamp_scale(fit * z),
+            CameraScale::Physical(s) => clamp_scale(s / self.dpi),
+        };
     }
 
     /// Display bounds in viewport-local DIP. The ideal center remains unbounded for normalized
@@ -197,17 +250,18 @@ impl ViewTransform {
 
     fn display_center(&self) -> Point {
         let size = self.oriented_size();
+        let ideal = size.to_point_scaled(self.anchor);
         let axis_center = |ideal: f64, extent: f64, viewport: f64| {
             if extent * self.scale <= viewport {
                 extent / 2.0
             } else {
-                let half_viewport = viewport / (2.0 * self.scale);
-                ideal.clamp(half_viewport, extent - half_viewport)
+                let half = viewport / (2.0 * self.scale);
+                ideal.clamp(half, extent - half)
             }
         };
         Point {
-            x: axis_center(self.center.x, size.width, self.viewport.width),
-            y: axis_center(self.center.y, size.height, self.viewport.height),
+            x: axis_center(ideal.x, size.width, self.viewport.width),
+            y: axis_center(ideal.y, size.height, self.viewport.height),
         }
     }
 
@@ -324,11 +378,6 @@ impl ViewTransform {
         tiles
     }
 
-    fn recompute_fit_scale(&mut self) {
-        let size = self.oriented_size();
-        self.scale =
-            clamp_scale((self.viewport.width / size.width).min(self.viewport.height / size.height));
-    }
     fn oriented_size(&self) -> Size {
         match self.orientation {
             Orientation::Transpose
@@ -341,18 +390,11 @@ impl ViewTransform {
             _ => self.source,
         }
     }
-    fn normalized_center(&self) -> Point {
-        let size = self.oriented_size();
-        Point {
-            x: self.center.x / size.width,
-            y: self.center.y / size.height,
-        }
-    }
     fn dip_to_oriented(&self, dip: Point) -> Point {
-        let b = self.image_bounds();
+        let bounds = self.image_bounds();
         Point {
-            x: (dip.x - b.x) / self.scale,
-            y: (dip.y - b.y) / self.scale,
+            x: (dip.x - bounds.x) / self.scale,
+            y: (dip.y - bounds.y) / self.scale,
         }
     }
     fn source_to_oriented(&self, p: Point) -> Point {
@@ -421,6 +463,13 @@ fn validate_dpi(dpi: f64) -> Result<(), TransformError> {
         Ok(())
     } else {
         Err(TransformError::InvalidDpi)
+    }
+}
+fn valid_camera_scale(scale: CameraScale) -> bool {
+    match scale {
+        CameraScale::RelativeFit(value) | CameraScale::Physical(value) => {
+            value.is_finite() && value > 0.0
+        }
     }
 }
 fn finite_point(p: Point) -> bool {
@@ -493,7 +542,7 @@ mod tests {
         let mut v = view(1.25);
         v.physical_one_to_one();
         v.pan(Point { x: 100.0, y: -50.0 }).unwrap();
-        let center = v.normalized_center();
+        let center = v.camera().anchor;
         v.set_viewport(
             Size {
                 width: 800.0,
@@ -502,7 +551,7 @@ mod tests {
             2.0,
         )
         .unwrap();
-        let resized = v.normalized_center();
+        let resized = v.camera().anchor;
         close(center.x, resized.x);
         close(center.y, resized.y);
         close(v.effective_physical_scale(), 1.0);
@@ -641,5 +690,196 @@ mod tests {
                 .iter()
                 .all(|t| t.source_rect.y == f64::from(t.y) * 512.0)
         );
+    }
+
+    #[test]
+    fn shared_relative_camera_fits_unequal_sources_independently() {
+        let camera = ViewCamera {
+            anchor: Point { x: 0.3, y: 0.7 },
+            scale: CameraScale::RelativeFit(1.4),
+        };
+        let mut a = ViewTransform::new(
+            Size {
+                width: 1000.0,
+                height: 500.0,
+            },
+            Size {
+                width: 800.0,
+                height: 600.0,
+            },
+            1.0,
+        )
+        .unwrap();
+        let mut b = ViewTransform::new(
+            Size {
+                width: 300.0,
+                height: 900.0,
+            },
+            Size {
+                width: 400.0,
+                height: 700.0,
+            },
+            1.0,
+        )
+        .unwrap();
+        a.set_camera(camera).unwrap();
+        b.set_camera(camera).unwrap();
+        close(a.scale, 1.12);
+        close(b.scale, 1.0888888888888888);
+        assert_eq!(a.camera(), camera);
+        assert_eq!(b.camera(), camera);
+    }
+
+    #[test]
+    fn clamping_never_changes_ideal_camera_and_invalid_camera_is_atomic() {
+        let mut a = ViewTransform::new(
+            Size {
+                width: 2048.0,
+                height: 2048.0,
+            },
+            Size {
+                width: 512.0,
+                height: 512.0,
+            },
+            1.0,
+        )
+        .unwrap();
+        let camera = ViewCamera {
+            anchor: Point { x: 4.0, y: -2.0 },
+            scale: CameraScale::Physical(1.0),
+        };
+        a.set_camera(camera).unwrap();
+        let before = a.camera();
+        assert_eq!(a.image_bounds().x, -1536.0);
+        assert_eq!(a.camera(), before);
+        assert_eq!(
+            a.set_camera(ViewCamera {
+                anchor: Point {
+                    x: f64::NAN,
+                    y: 0.0
+                },
+                scale: CameraScale::Physical(2.0)
+            }),
+            Err(TransformError::InvalidArgument)
+        );
+        assert_eq!(
+            a.set_camera(ViewCamera {
+                anchor: before.anchor,
+                scale: CameraScale::RelativeFit(0.0)
+            }),
+            Err(TransformError::InvalidArgument)
+        );
+        assert_eq!(a.camera(), before);
+    }
+
+    #[test]
+    fn relative_camera_survives_viewport_dpi_and_orientation_changes() {
+        let camera = ViewCamera {
+            anchor: Point { x: 0.2, y: 0.8 },
+            scale: CameraScale::RelativeFit(2.0),
+        };
+        let mut v = ViewTransform::new(
+            Size {
+                width: 1200.0,
+                height: 600.0,
+            },
+            Size {
+                width: 900.0,
+                height: 700.0,
+            },
+            1.0,
+        )
+        .unwrap();
+        v.set_camera(camera).unwrap();
+        v.set_viewport(
+            Size {
+                width: 500.0,
+                height: 400.0,
+            },
+            2.0,
+        )
+        .unwrap();
+        v.set_orientation(Orientation::Rotate90);
+        assert_eq!(v.camera(), camera);
+    }
+
+    #[test]
+    fn zoom_at_a_clamped_center_never_feeds_display_anchor_back_into_link() {
+        let mut a = view(1.0);
+        let mut b = ViewTransform::new(
+            Size {
+                width: 600.0,
+                height: 1200.0,
+            },
+            Size {
+                width: 300.0,
+                height: 800.0,
+            },
+            1.25,
+        )
+        .unwrap();
+        let camera = ViewCamera {
+            anchor: Point { x: 4.0, y: -2.0 },
+            scale: CameraScale::RelativeFit(2.0),
+        };
+        a.set_camera(camera).unwrap();
+        b.set_camera(camera).unwrap();
+        let cursor = Point {
+            x: a.viewport().width / 2.0,
+            y: a.viewport().height / 2.0,
+        };
+        for _ in 0..20 {
+            a.zoom_at(1.25, cursor).unwrap();
+            b.set_camera(a.camera()).unwrap();
+            a.zoom_at(0.8, cursor).unwrap();
+            b.set_camera(a.camera()).unwrap();
+        }
+        close(a.camera().anchor.x, 4.0);
+        close(a.camera().anchor.y, -2.0);
+        close(b.image_bounds().x, -300.0);
+        close(b.image_bounds().y, 0.0);
+    }
+
+    #[test]
+    fn independent_cameras_survive_repeated_link_unlink_and_source_swap() {
+        let mut a = view(1.0);
+        let mut b = ViewTransform::new(
+            Size {
+                width: 600.0,
+                height: 1200.0,
+            },
+            Size {
+                width: 300.0,
+                height: 800.0,
+            },
+            2.0,
+        )
+        .unwrap();
+        for _ in 0..10 {
+            a.physical_one_to_one();
+            a.pan(Point { x: -40.0, y: 20.0 }).unwrap();
+            b.set_camera(a.camera()).unwrap();
+            let held = b.image_bounds();
+            // Unlink: A's next input cannot mutate B, including its clamp.
+            a.pan(Point { x: 80.0, y: -40.0 }).unwrap();
+            assert_eq!(b.image_bounds(), held);
+        }
+        let camera = b.camera();
+        let mut replacement = ViewTransform::new(
+            Size {
+                width: 200.0,
+                height: 100.0,
+            },
+            b.viewport(),
+            b.dpi(),
+        )
+        .unwrap();
+        replacement.set_camera(camera).unwrap();
+        let pixel0 = replacement.source_to_device(Point { x: 10.0, y: 10.0 });
+        let pixel1 = replacement.source_to_device(Point { x: 11.0, y: 10.0 });
+        close(pixel1.x - pixel0.x, 1.0);
+        close(replacement.image_bounds().width, 100.0);
+        close(replacement.image_bounds().x, 100.0);
+        assert_eq!(replacement.camera(), camera);
     }
 }

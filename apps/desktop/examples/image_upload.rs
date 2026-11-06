@@ -17,7 +17,7 @@ use media::{Cancellation, MediaError};
 
 #[path = "support/image_fixture.rs"]
 mod image_fixture;
-use image_fixture::{fixture_request, fixture_request_for, generate_fixture_png};
+use image_fixture::{fixture_request_for, generate_fixture_png};
 const DISPLAY_EDGE: f32 = 480.0;
 /// Fixed manifest for the eviction loop: two revisions of one source, two further sources, and one
 /// identity repeated so a single frame is attached by two consumers.
@@ -75,7 +75,7 @@ impl ImageUploadProbe {
         )
         .into();
 
-        let request = match fixture_request(revision, generation) {
+        let request = match fixture_request_for("landmark-png", revision, generation) {
             Ok(request) => request,
             Err(error) => {
                 self.pending = false;

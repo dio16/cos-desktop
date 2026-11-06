@@ -165,6 +165,17 @@ Use `cargo run --locked --release -p cos-desktop --example image_viewer -- --fix
 - Record the actual display scale/topology, fixture identity, binary/source identity, screenshots, keyboard/pointer inputs and clean close. Absent mixed-DPI, fullscreen or GPU evidence stays `NOT_RUN`/`NOT_MEASURED`; tests of geometry do not qualify the native DPI matrix.
 - Regression coverage lives in `view_transform` and `crates/media/tests/upload_admission.rs`; the former covers anchor/clamp/DPI/orientation/visible-tile boundaries, and the latter checks mip pixels, identity, unsupported levels and cancellation.
 
+### 6.2 MP-CMP1 local two-pane compare
+
+Use `cargo run --locked --release -p cos-desktop --example compare -- --fixture` for the explicitly labelled local 2048×2048 RGB8 two-pane experiment. `--shared`, `--independent` and `--distinct` select the resource treatment, `--windows2` opens the fixed two-window arrangement, and `--trace` writes one bounded JSON line of CPU scene/request observations. None of these invocations is Runtime media, production adoption, GPU/Present evidence or an R5 measurement claim.
+
+- Exercise link/unlink, pair-wide Fit (`0`) and physical 1:1 (`1`) in **both** link states, `+`/`-`, cursor-anchored zoom, arrow/drag pan and per-pane clamping. A linked pan moves both panes by the same amount; after unlink only the originating pane moves and the other keeps its display. Check the painted pixels and the stated scale/clipping label, not only the pane text.
+- `A/Bを交換` exchanges candidates only: labels swap while each pane keeps its transform and the focus target stays the same pane. A plain candidate selection changes the Viewed choice only; `A側を変更`/`B側を変更` replace one side, keep the link state and reset the pair to Fit.
+- The fixture availability buttons remove and restore one side's picture: the reference is kept, the pane states its own unavailable reason, and a within-bound restore returns the retained frame at its previous transform. Past the retained-payload bound the same action reports that explicit limit instead of a stale picture. A retained frame another consumer still presents stays charged and is retried on the next sweep; its release detail belongs to the service counters, never to the picture's own status line (Q14).
+- Capability states stay explicit: a preview-only pane never claims 1:1, and the per-pair 1:1 control is disabled with its reason when either pane cannot show source pixels.
+- Record the actual display scale/topology, fixture and binary identity, exercised inputs, screenshots and clean close. The `--trace` output is CPU request/scene observation only (`present`, `gpu` and mixed-DPI stay `NOT_MEASURED`); the R5 reuse/fairness comparison it supports remains gated by MP-R0D and an explicit experiment authorization.
+- Regression coverage lives in `view_transform` (anchor/clamp/DPI/camera mapping), `image_upload` (admission, reuse, sharing, counters) and `ui-model` (pair, swap and selection semantics).
+
 ## 7. Deferred and external evidence
 
 - **Golden Creative Workflow** end-to-end product acceptance requires its separately approved workflow and real Runtime integration.
